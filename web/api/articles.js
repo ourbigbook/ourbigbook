@@ -97,6 +97,7 @@ router.get('/feed', auth.required, async function(req, res, next) {
   }
 })
 
+// create article
 router.post('/', auth.required, async function(req, res, next) {
   try {
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);

@@ -336,7 +336,7 @@ async function convert_input(input, cirodown_options, non_cirodown_options={}) {
   // Remove duplicate messages due to split header rendering. We could not collect
   // errors from that case at all maybe, but do we really want to run the risk of
   // missing errors?
-  for (const error_string of remove_duplicates_sorted_array(new_options.extra_returns.errors.map(e => e.toString()))) {
+  for (const error_string of cirodown_nodejs_webpack_safe.remove_duplicates_sorted_array(new_options.extra_returns.errors.map(e => e.toString()))) {
     console.error(error_string);
   }
   non_cirodown_options.extra_returns = new_options.extra_returns;
@@ -642,11 +642,6 @@ function git_toplevel(input_path) {
 function is_subpath(parent, child) {
   const relative = path.relative(parent, child);
   return relative && !relative.startsWith('..') && !path.isAbsolute(relative);
-}
-
-// https://stackoverflow.com/questions/9355403/deleting-duplicates-on-sorted-array/61974900#61974900
-function remove_duplicates_sorted_array(arr) {
-  return arr.filter((e, i, a) => e !== a[i - 1]);
 }
 
 function perf_print(name, cirodown_options) {

@@ -258,10 +258,14 @@ async function generateDemoData(params) {
       } else {
         extra += '\n\n'
       }
+      let includesString, refsString
       if (children.length > 0) {
-        includesString = '\n\n' + children.map(child => `\\Include[${cirodown.title_to_id(child[0])}]`).join('\n')
+        const ids = children.map(child => cirodown.title_to_id(child[0]))
+        includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
+        refsString = '\n\n' + ids.map(id => `\\x[${id}]`).join('\n')
       } else {
         includesString = ''
+        refsString = ''
       }
       const articleArg = {
         title,
@@ -269,7 +273,9 @@ async function generateDemoData(params) {
         createdAt: date,
         // TODO not taking effect. Appears to be because of the hook.
         updatedAt: date,
-        body: `${extra}\\i[Italic]
+        body: `${extra}${refsString}
+
+\\i[Italic]
 
 \\b[Bold]
 
@@ -320,7 +326,20 @@ Table:
 
 | c
 | 3
-| 3.3${includesString}
+| 3.3
+
+Reference to the following image: \\x[image-my-xi-chrysanthemum].
+
+\\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{title=Xi Chrysanthemum is a very nice image}
+{id=image-my-xi-chrysanthemum}
+{source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
+
+An YouTube video: \\x[video-sample-youtube-video].
+
+\\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
+{id=sample-video-from-youtube-implicit-youtube}
+{title=Sample YouTube video.}${includesString}
 
 == ${title} h2
 

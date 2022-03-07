@@ -4278,7 +4278,6 @@ async function parse(tokens, options, context, extra_returns={}) {
             options.header_tree_id_stack.delete(old_tree_node.ast.id);
           }
           header_tree_last_level = cur_header_level;
-
         }
         ast.header_tree_node = cur_header_tree_node
 

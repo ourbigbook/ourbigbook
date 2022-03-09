@@ -3984,8 +3984,8 @@ async function parse(tokens, options, context, extra_returns={}) {
                 level: parent_ast_header_level + 1,
               },
             );
-            options.include_hrefs[href] = header_ast
-            headers_from_include[href] = header_ast
+            options.include_hrefs[include_id] = header_ast
+            headers_from_include[include_id] = header_ast
             if (options.cur_header !== undefined) {
               header_ast.scope = options.cur_header.scope
             }
@@ -4886,7 +4886,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       for (const id in options.include_hrefs) {
         // We need the target it to be able to render the dummy include title
         // with link to the real content.
-        prefetch_ids.add(id_from_include_href(options.include_hrefs[id].scope, id))
+        prefetch_ids.add(id)
       }
 
       let get_noscopes_base_fetch, get_refs_to_fetch, get_refs_to_fetch_reverse
@@ -5763,18 +5763,6 @@ function x_href(target_id_ast, context) {
     ret += '#' + fragment;
   return ret;
 }
-
-// Ideally this will be removed at some point.
-// https://github.com/cirosantilli/cirodown/issues/214
-function id_from_include_href(scope, id) {
-  let ret = ''
-  if (scope !== undefined) {
-    ret += scope + Macro.HEADER_SCOPE_SEPARATOR
-  }
-  ret += id
-  return ret
-}
-exports.id_from_include_href = id_from_include_href
 
 // Get the path to the split header version
 //

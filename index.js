@@ -3894,6 +3894,10 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
       let parent_ast_header_level
       let parent_ast_header_tree_node
+      let include_id = href
+      if (options.cur_header && options.cur_header.scope) {
+        include_id = options.cur_header.scope + Macro.HEADER_SCOPE_SEPARATOR + include_id
+      }
       if (parent_ast === undefined) {
         parent_ast_header_level = 0
         parent_ast_header_tree_node = context.header_tree
@@ -3903,7 +3907,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         parent_ast_header_level = parent_ast_header_tree_node.get_level();
 
         add_to_refs_to(
-          href,
+          include_id,
           context,
           parent_ast.id,
           REFS_TABLE_PARENT,
@@ -3917,6 +3921,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       } else {
         input_dir = '.'
       }
+      // https://github.com/cirosantilli/cirodown/issues/215
       const read_include_ret = await (options.read_include(href, input_dir));
       if (read_include_ret === undefined) {
         let message = `could not find include: "${href}"`;
@@ -3975,7 +3980,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               {
                 force_no_index: true,
                 from_include,
-                id: href,
+                id: include_id,
                 level: parent_ast_header_level + 1,
               },
             );
@@ -4091,7 +4096,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           ast.id = context.toplevel_id
           if (options.toplevel_has_scope) {
             // We also need to fake an argument here, because that will
-            // get serialized to the database, which his needed for
+            // get serialized to the database, which is needed for
             // toplevel scope removal from external links.
             const scope_arg = new AstArgument([], ast.source_location);
             ast.add_argument('scope', scope_arg);
@@ -4881,8 +4886,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       for (const id in options.include_hrefs) {
         // We need the target it to be able to render the dummy include title
         // with link to the real content.
-        // https://github.com/cirosantilli/cirodown/issues/214
-        prefetch_ids.add(options.include_hrefs[id].scope + Macro.HEADER_SCOPE_SEPARATOR  + id)
+        prefetch_ids.add(id_from_include_href(options.include_hrefs[id].scope, id))
       }
 
       let get_noscopes_base_fetch, get_refs_to_fetch, get_refs_to_fetch_reverse
@@ -5759,6 +5763,18 @@ function x_href(target_id_ast, context) {
     ret += '#' + fragment;
   return ret;
 }
+
+// Ideally this will be removed at some point.
+// https://github.com/cirosantilli/cirodown/issues/214
+function id_from_include_href(scope, id) {
+  let ret = ''
+  if (scope !== undefined) {
+    ret += scope + Macro.HEADER_SCOPE_SEPARATOR
+  }
+  ret += id
+  return ret
+}
+exports.id_from_include_href = id_from_include_href
 
 // Get the path to the split header version
 //
@@ -7223,11 +7239,13 @@ const DEFAULT_MACRO_LIST = [
     Macro.TOC_MACRO_NAME,
     [],
     function(ast, context) {
-      let attrs = html_render_attrs_id(ast, context);
+      // Not rendering ID here because that function does scope culling. But TOC ID is a fixed value without scope for now.
+      // so that was removing the TOC id in subdirectories.
+      let attrs = html_render_attrs(ast, context);
       let todo_visit = [];
       let top_level = 0;
       let root_node = context.header_tree;
-      let ret = `<div class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
+      let ret = `<div id="${Macro.TOC_ID}"class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
       if (root_node.children.length === 1) {
         root_node = root_node.children[0];
       }

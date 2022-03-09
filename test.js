@@ -12,6 +12,8 @@ const cirodown_nodejs = require('cirodown/nodejs');
 const cirodown_nodejs_webpack_safe = require('cirodown/nodejs_webpack_safe');
 const models = require('cirodown/models');
 
+const PATH_SEP = cirodown.Macro.HEADER_SCOPE_SEPARATOR
+
 // Common default convert options for the tests.
 const convert_opts = {
   add_test_instrumentation: true,
@@ -99,17 +101,14 @@ function assert_convert_ast(
       options.extra_convert_opts = {};
     }
     if (!('path_sep' in options.extra_convert_opts)) {
-      options.extra_convert_opts.path_sep = '/';
+      options.extra_convert_opts.path_sep = PATH_SEP;
     }
     if (!('read_include' in options.extra_convert_opts)) {
-      options.extra_convert_opts.read_include = (input_path_noext) => {
-        const inpath = input_path_noext + cirodown.CIRODOWN_EXT
-        if (inpath in options.filesystem) {
-          return [input_path_noext + cirodown.CIRODOWN_EXT,
-            options.filesystem[input_path_noext + cirodown.CIRODOWN_EXT]];
-        }
-        return undefined
-      };
+      options.extra_convert_opts.read_include = cirodown_nodejs_webpack_safe.read_include(
+        (inpath) => inpath in options.filesystem,
+        (inpath) => options.filesystem[inpath],
+        PATH_SEP,
+      )
     }
     options.extra_convert_opts.fs_exists_sync = (my_path) => options.filesystem[my_path] !== undefined
     if (
@@ -666,7 +665,12 @@ function xpath_header(n, id, insideH) {
   } else {
     insideH = ''
   }
-  return `//x:div[@class='h' and @id='${id}' and .//x:h${n}${insideH}]`;
+  let ret = `//x:div[@class='h'`
+  if (id) {
+    ret += ` and @id='${id}'`
+  }
+  ret += ` and .//x:h${n}${insideH}]`
+  return ret
 }
 
 // xpath to match the split/nosplit link inside of a header.
@@ -2286,7 +2290,7 @@ assert_convert_ast('x to image in another file that has x title in another file'
 // mock ID provider or modify index.js. Edit: there is no more mock
 // ID provider. Just lazy now.
 //it('output_path_parts', () => {
-//  const context = {options: {path_sep: '/'}};
+//  const context = {options: {path_sep: PATH_SEP}};
 //
 //  // Non-split headers.
 //  assert.deepStrictEqual(
@@ -4515,6 +4519,24 @@ assert_error('include to file that does exists without embed includes before ext
     }
   }
 );
+assert_convert_ast('relative include in subdirectory',
+  `= Index
+
+\\Include[notindex]
+`,
+  undefined,
+  {
+    // No error with this.
+    convert_before: ['s1/notindex.ciro', 's1/notindex2.ciro'],
+    filesystem: {
+      's1/notindex.ciro': `= Notindex
+`,
+      's1/notindex2.ciro': `= Notindex2
+`,
+    },
+    input_path_noext: 's1/index',
+  }
+);
 
 // CirodownExample
 assert_convert_ast('CirodownExample basic',
@@ -4932,6 +4954,8 @@ $$
 
 \\x[h2][link to toplevel subheader]
 
+\\x[has-split-suffix][link to has split suffix]
+
 \\Include[subdir/included-by-subdir-index]
 
 == Scope
@@ -4969,6 +4993,29 @@ assert_executable(
     args: ['--split-headers', '.'],
     filesystem: complex_filesystem,
     expect_filesystem_xpath: {
+      'h2-2.html': [
+        // These headers are not children of the current toplevel header.
+        // Therefore, they do not get a number like "Section 2.".
+        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section \"h2\"']",
+        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section \"h4 3 2 1\"']",
+      ],
+      'h3-2-1.html': [
+        // Not a child of the current toplevel either.
+        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section \"h4 3 2 1\"']",
+      ],
+      'h2-3.html': [
+        // This one is under the current tree, so it shows fully.
+        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section 2.1. \"h4 3 2 1\"']",
+      ],
+      'notindex.html': [
+        xpath_header(1, 'notindex'),
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='link to index']",
+        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='link to h2']",
+      ],
+      'has-split-suffix-split.html': [
+        xpath_header(1, 'has-split-suffix'),
+      ],
+      // Custom splitSuffix `-asdf` instead of the default `-split`.
       'index.html': [
         xpath_header(1, 'index'),
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='link to notindex']",
@@ -5003,6 +5050,8 @@ assert_executable(
       'included-by-h2-in-index-split.html': [
         xpath_header_parent(1, 'included-by-h2-in-index', 'index.html#h2', 'h2'),
       ],
+      'notindex-splitsuffix-asdf.html': [
+      ],
       'split.html': [
         // Full links between split header pages have correct numbering.
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section 2. \"h2\"']",
@@ -5018,34 +5067,9 @@ assert_executable(
         // to make sure we don't have to rewrite everything.
         //"//*[@id='toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
       ],
-      'h2-2.html': [
-        // These headers are not children of the current toplevel header.
-        // Therefore, they do not get a number like "Section 2.".
-        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section \"h2\"']",
-        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section \"h4 3 2 1\"']",
-      ],
-      'h3-2-1.html': [
-        // Not a child of the current toplevel either.
-        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section \"h4 3 2 1\"']",
-      ],
-      'h2-3.html': [
-        // This one is under the current tree, so it shows fully.
-        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section 2.1. \"h4 3 2 1\"']",
-      ],
-      'notindex.html': [
-        xpath_header(1, 'notindex'),
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='link to index']",
-        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='link to h2']",
-      ],
-      'has-split-suffix-split.html': [
-        xpath_header(1, 'has-split-suffix'),
-      ],
-      // Custom splitSuffix `-asdf` instead of the default `-split`.
-      'notindex-splitsuffix-asdf.html': [
-      ],
       'subdir/index.html': [
-        xpath_header(1, 'subdir'),
-        xpath_header_split(1, 'subdir', 'split.html', cirodown.SPLIT_MARKER_TEXT),
+        xpath_header(1),
+        xpath_header_split(1, '', 'split.html', cirodown.SPLIT_MARKER_TEXT),
         xpath_header(2, 'index-h2'),
         xpath_header_split(2, 'index-h2', 'index-h2.html', cirodown.SPLIT_MARKER_TEXT),
         xpath_header(2, 'scope'),
@@ -5056,11 +5080,11 @@ assert_executable(
         "//x:a[@href='../index.html#h2' and text()='link to toplevel subheader']",
       ],
       'subdir/split.html': [
-        xpath_header(1, 'index'),
-        xpath_header_split(1, 'subdir', 'index.html', cirodown.NOSPLIT_MARKER_TEXT),
+        xpath_header(1, ''),
+        xpath_header_split(1, '', 'index.html', cirodown.NOSPLIT_MARKER_TEXT),
         // Check that split suffix works. Should be has-split-suffix-split.html,
         // not has-split-suffix.html.
-        "//x:div[@class='p']//x:a[@href='has-split-suffix-split.html' and text()='link to has split suffix']",
+        "//x:div[@class='p']//x:a[@href='../index.html#has-split-suffix' and text()='link to has split suffix']",
       ],
       'subdir/scope/h3.html': [
         xpath_header(1, 'h3'),
@@ -5076,9 +5100,6 @@ assert_executable(
       'subdir/notindex-scope/h3.html': [
         xpath_header(1, 'h3'),
         xpath_header_split(1, 'h3', '../notindex.html#notindex-scope/h3', cirodown.NOSPLIT_MARKER_TEXT),
-      ],
-      'subdir/split.html': [
-        xpath_header(1, 'subdir'),
       ],
       'subdir/index-h2.html': [
         xpath_header(1, 'index-h2'),
@@ -5265,7 +5286,7 @@ assert_executable(
       'index.html',
     ],
     expect_filesystem_xpath: {
-      'subdir/index.html': [xpath_header(1, 'subdir')],
+      'subdir/index.html': [xpath_header(1)],
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
@@ -5294,7 +5315,7 @@ assert_executable(
       'xml.xml',
     ],
     expect_filesystem_xpath: {
-      'subdir/index.html': [xpath_header(1, 'subdir')],
+      'subdir/index.html': [xpath_header(1, '')],
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
@@ -5355,8 +5376,8 @@ assert_executable(
       'subdir/notindex.html',
     ],
     expect_filesystem_xpath: {
-      'my_outdir/index.html': [xpath_header(1, 'index')],
-      'my_outdir/subdir/index.html': [xpath_header(1, 'subdir')],
+      'my_outdir/index.html': [xpath_header(1, '')],
+      'my_outdir/subdir/index.html': [xpath_header(1, '')],
       'my_outdir/subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
@@ -5752,10 +5773,6 @@ assert_executable(
   }
 );
 assert_executable(
-  // At "cross reference to non-included header in another file"
-  // we have a commented out stub for this without executable:
-  // but it would require generalizing the test system a bit,
-  // and we are lazy right now.
   'executable: reference to subdir with --embed-includes',
   {
     args: ['--embed-includes', 'README.ciro'],
@@ -5935,10 +5952,10 @@ assert_executable(
     ],
     expect_filesystem_xpath: {
       'myproject/index.html': [
-          xpath_header(1, 'index'),
+          xpath_header(1, ''),
       ],
       'myproject/subdir/index.html': [
-          xpath_header(1, 'subdir'),
+          xpath_header(1, ''),
       ]
     }
   }
@@ -5975,10 +5992,10 @@ assert_executable(
     ],
     expect_filesystem_xpath: {
       'myproject/index.html': [
-          xpath_header(1, 'index'),
+          xpath_header(1, ''),
       ],
       'myproject/subdir/index.html': [
-          xpath_header(1, 'subdir'),
+          xpath_header(1, ''),
       ]
     }
   }

@@ -47,7 +47,7 @@ const userData = [
   ['Moses', 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/14/Guido_Reni_-_Moses_with_the_Tables_of_the_Law_-_WGA19289.jpg/220px-Guido_Reni_-_Moses_with_the_Tables_of_the_Law_-_WGA19289.jpg', 'seasplitter010'],
 ]
 
-const articleData = [
+const articleData = [['Index', [
   ['Mathematics', [
     ['Algebra', [
       ['Linear algebra', [
@@ -121,7 +121,7 @@ const articleData = [
       ]],
     ]],
   ]],
-]
+]]]
 
 class ArticleDataProvider {
   constructor(articleData) {
@@ -262,7 +262,7 @@ async function generateDemoData(params) {
       if (children.length > 0) {
         const ids = children.map(child => cirodown.title_to_id(child[0]))
         includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
-        refsString = '\n\n' + ids.map(id => `\\x[${id}]`).join('\n')
+        refsString = ids.map(id => `\\x[${id}]`).join('\n') + '\n\n'
       } else {
         includesString = ''
         refsString = ''
@@ -273,9 +273,7 @@ async function generateDemoData(params) {
         createdAt: date,
         // TODO not taking effect. Appears to be because of the hook.
         updatedAt: date,
-        body: `${extra}${refsString}
-
-\\i[Italic]
+        body: `${extra}${refsString}\\i[Italic]
 
 \\b[Bold]
 
@@ -338,7 +336,6 @@ Reference to the following image: \\x[image-my-xi-chrysanthemum].
 An YouTube video: \\x[video-sample-youtube-video].
 
 \\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
-{id=sample-video-from-youtube-implicit-youtube}
 {title=Sample YouTube video.}${includesString}
 
 == ${title} h2

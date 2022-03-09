@@ -1658,6 +1658,9 @@ Note how:
 
   So in the example above, `\x[/introduction]` refers to the ID `introduction`, and not `full-and-unique-experiment-name/introduction`.
 
+= `scope` resolution
+{parent=h-scope-argument}
+
 When nested scopes are involved, \x[internal-cross-reference]{p} resolution peels off the scopes one by one trying to find the closes match, e.g. the following works as expected:
 ``
 = h1
@@ -2560,6 +2563,44 @@ The above is the recommended and slightly \x[insane-macro-shortcuts][insaner] ve
 The insaner version is a bit insaner because the `\Include` magically discards the following newline node that follows it if it just a plaintext node containing exactly a newline. With a double newline, the newline would already have been previously taken out on the lexing stage as part of a paragraph.
 
 \x[include-example]{full} shows what those actually render like.
+
+= `\Include` from subdirectories
+{parent=include}
+
+When you are in a subdirectory, include resolution works analogously to \x[scope-resolution] of \x[internal-cross-reference]{p}: it peels off the input directory bit by bit until it finds a matching file. E.g. in:
+
+subdir/index.ciro
+``
+= Subdir
+
+\Include[notindex]
+\Include[subdir2/notindex]
+\Include[top]
+``
+
+subdir/notindex.ciro
+``
+= Notindex
+``
+
+top.ciro
+``
+= Top
+``
+
+subdir/subdir2/notindex.ciro
+``
+= Notindex
+``
+
+the resolutions in `subdir/index.ciro` would go as:
+* `\Include[notindex]`:
+  *  we are under subdir, try `subdir` + `notindex`. The file `subdir/notindex.ciro` exists, so we are done.
+* `\Include[subdir2/notindex]`:
+  * try `subdir` + `subdir2/notindex`. It exists, so we are done.
+* `\Include[top]`:
+  * try `subdir/top`. Does not exist, so we continue.
+  * so we remove one level from `subdir`, leading to an empty string `''` plus `top`. `top.ciro` exists, so we are done.
 
 = `\Include` `parent` argument
 {parent=include}

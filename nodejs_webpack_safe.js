@@ -261,6 +261,11 @@ class SqliteIdProvider extends cirodown.IdProvider {
   }
 
   async fetch_header_tree_ids(starting_ids_to_asts) {
+    const starting_ids = []
+    for (const href in starting_ids_to_asts) {
+      // https://github.com/cirosantilli/cirodown/issues/214
+      starting_ids.push(starting_ids_to_asts[href].scope + cirodown.Macro.HEADER_SCOPE_SEPARATOR + href)
+    }
     // Fetch all data recursively.
     //
     // Going for WITH RECURSIVE:
@@ -301,7 +306,7 @@ WITH RECURSIVE
 ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
 `,
       { replacements: {
-        starting_ids: Object.keys(starting_ids_to_asts),
+        starting_ids,
         type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT],
       } }
     )

@@ -4527,13 +4527,26 @@ assert_convert_ast('relative include in subdirectory',
   undefined,
   {
     // No error with this.
-    convert_before: ['s1/notindex.ciro', 's1/notindex2.ciro'],
+    convert_before: ['s1/notindex2.ciro', 's1/notindex.ciro'],
     filesystem: {
       's1/notindex.ciro': `= Notindex
-`,
+
+\\Include[notindex2]
+
+== Notindex h2`,
       's1/notindex2.ciro': `= Notindex2
 `,
+      // https://github.com/cirosantilli/cirodown/issues/214
+      'top.ciro': `= Top
+`,
     },
+    assert_xpath_matches: [
+      "//*[@id='toc']//x:a[@href='notindex.html' and @data-test='0' and text()='1. Notindex']",
+      "//*[@id='toc']//x:a[@href='notindex2.html' and @data-test='1' and text()='1.1. Notindex2']",
+      "//*[@id='toc']//x:a[@href='notindex.html#notindex-h2' and @data-test='2' and text()='1.2. Notindex h2']",
+      // https://github.com/cirosantilli/cirodown/issues/214
+      //"//*[@id='toc']//x:a[@href='../top.html' and @data-test='2' and text()='2. Top']",
+    ],
     input_path_noext: 's1/index',
   }
 );

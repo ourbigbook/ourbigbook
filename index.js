@@ -3917,7 +3917,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       } else {
         input_dir = '.'
       }
-      const read_include_ret = options.read_include(href, input_dir);
+      const read_include_ret = await (options.read_include(href, input_dir));
       if (read_include_ret === undefined) {
         let message = `could not find include: "${href}"`;
         parse_error(

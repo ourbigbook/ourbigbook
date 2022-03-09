@@ -104,11 +104,11 @@ function assert_convert_ast(
       options.extra_convert_opts.path_sep = PATH_SEP;
     }
     if (!('read_include' in options.extra_convert_opts)) {
-      options.extra_convert_opts.read_include = cirodown_nodejs_webpack_safe.read_include(
-        (inpath) => inpath in options.filesystem,
-        (inpath) => options.filesystem[inpath],
-        PATH_SEP,
-      )
+      options.extra_convert_opts.read_include = cirodown_nodejs_webpack_safe.read_include({
+        exists: (inpath) => inpath in options.filesystem,
+        read: (inpath) => options.filesystem[inpath],
+        path_sep: PATH_SEP,
+      })
     }
     options.extra_convert_opts.fs_exists_sync = (my_path) => options.filesystem[my_path] !== undefined
     if (

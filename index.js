@@ -441,12 +441,11 @@ class AstNode {
       let finishedSubtrees = false
       let done = false
       for (const argname in ast_json.args) {
-        for (const child_ast_json of ast_json.args[argname].asts) {
-          if (child_ast_json === ast_head) {
-            finishedSubtrees = true
-            done = true
-            break
-          }
+        const asts = ast_json.args[argname].asts
+        if (ast_head === asts[asts.length - 1]) {
+          finishedSubtrees = true
+          done = true
+          break
         }
         if (done) {
           break

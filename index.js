@@ -2233,6 +2233,7 @@ function calculate_scope_length(parent_ast) {
 function capitalize_first_letter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
+exports.capitalize_first_letter = capitalize_first_letter
 
 function caption_number_visible(ast, context) {
   return ast.index_id || context.macros[ast.macro_name].options.caption_number_visible(ast, context);

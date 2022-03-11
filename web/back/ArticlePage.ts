@@ -2,6 +2,8 @@ import { GetStaticProps, GetStaticPaths } from 'next'
 import sequelize from 'lib/db';
 import { fallback, revalidate } from 'config'
 
+const cirodown = require('cirodown')
+
 export const getStaticPathsArticle: GetStaticPaths = async () => {
   return {
     fallback,

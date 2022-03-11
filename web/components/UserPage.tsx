@@ -17,26 +17,31 @@ import getLoggedInUser from 'lib/utils/getLoggedInUser'
 import routes from 'routes'
 import { AppContext } from 'lib'
 import useMin from 'front/api/useMin'
+import Article from 'front/Article'
+import ArticleInfo from 'front/ArticleInfo'
 
 export default function UserPage({
+  article,
   articles,
   articlesCount,
+  comments,
   user,
   authoredArticleCount,
   likedArticleCount,
   what
 }) {
   const router = useRouter();
-  useMin(
-    {
-      articleIds: articles.map(article => article.id),
-      userIds: [user?.id],
-    },
-    {
-      articles,
-      users: [user],
-    }
-  )
+  const useMin0 = {
+    userIds: [user?.id],
+  }
+  const useMin1 = {
+    users: [user],
+  }
+  if (what !== 'home') {
+    useMin0.articleIds = articles.map(article => article.id),
+    useMin1.articles = articles
+  }
+  useMin(useMin0, useMin1)
   const username = user?.username
   const loggedInUser = getLoggedInUser()
   const isCurrentUser = loggedInUser && username === loggedInUser?.username
@@ -46,7 +51,7 @@ export default function UserPage({
       paginationUrlFunc = page => routes.userViewLikes(user.username, page)
       break
     case 'user-articles-top':
-      paginationUrlFunc = page => routes.userView(user.username, page)
+      paginationUrlFunc = page => routes.userViewTop(user.username, page)
       break
     case 'user-articles-latest':
       paginationUrlFunc = page => routes.userViewLatest(user.username, page)
@@ -74,13 +79,9 @@ export default function UserPage({
   return (
     <div className="profile-page content-not-cirodown">
       <div className="user-info">
-        <h1><DisplayAndUsername user={user}></DisplayAndUsername></h1>
-        <CustomImage
-          src={user.effectiveImage}
-          alt="User's profile image"
-          className="user-img"
-        />
-        <p>
+        <h1>
+          <DisplayAndUsername user={user}></DisplayAndUsername>
+          {' '}
           <FollowUserButtonContext.Provider value={{
             following, setFollowing, followerCount, setFollowerCount
           }}>
@@ -97,16 +98,25 @@ export default function UserPage({
           {isCurrentUser &&
             <LogoutButton />
           }
-        </p>
-        <p>{user.bio}</p>
+        </h1>
+        <CustomImage
+          src={user.effectiveImage}
+          alt="User's profile image"
+          className="user-img"
+        />
       </div>
-      <h2>Articles ({authoredArticleCount})</h2>
       <div className="tab-list">
         <CustomLink
           href={routes.userView(username)}
+          className={`tab-item${what === 'home' ? ' active' : ''}`}
+        >
+          Home
+        </CustomLink>
+        <CustomLink
+          href={routes.userViewTop(username)}
           className={`tab-item${what === 'user-articles-top' ? ' active' : ''}`}
         >
-          Top
+          Top ({authoredArticleCount})
         </CustomLink>
         <CustomLink
           href={routes.userViewLatest(username)}
@@ -121,13 +131,19 @@ export default function UserPage({
           Liked ({likedArticleCount})
         </CustomLink>
       </div>
-      <ArticleList {...{
-        articles,
-        articlesCount,
-        paginationUrlFunc,
-        showAuthor: what === 'likes',
-        what,
-      }}/>
+      {what === 'home'
+        ? <>
+            <ArticleInfo {...{article}}/>
+            <Article {...{article, comments}} />
+          </>
+        : <ArticleList {...{
+            articles,
+            articlesCount,
+            paginationUrlFunc,
+            showAuthor: what === 'likes',
+            what,
+          }}/>
+      }
     </div>
   );
 }

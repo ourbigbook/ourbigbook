@@ -18,7 +18,11 @@ export function slugFromArray(arr) {
 }
 
 export function slugFromRouter(router) {
-  return slugFromArray(router.query.slug)
+  let arr = router.query.slug
+  if (!arr) {
+    return router.query.uid
+  }
+  return slugFromArray(arr)
 }
 
 export const AppContext = React.createContext<{

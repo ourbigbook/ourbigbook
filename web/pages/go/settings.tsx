@@ -19,7 +19,6 @@ const Settings = () => {
     image: "",
     username: "",
     displayName: "",
-    bio: "",
     email: "",
     password: "",
   });
@@ -84,15 +83,6 @@ const Settings = () => {
               placeholder="URL of profile picture"
               value={userInfo.image ? userInfo.image : ""}
               onChange={updateState("image")}
-            />
-          </Label>
-          <Label label="Bio">
-            <textarea
-              rows={8}
-              placeholder="Short bio about you"
-              value={userInfo.bio}
-              onChange={updateState("bio")}
-              className="not-monaco"
             />
           </Label>
           <Label label="Username">

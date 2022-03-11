@@ -126,32 +126,25 @@ const articleData = [['Index', [
 class ArticleDataProvider {
   constructor(articleData) {
     this.i = 0
+    // These store the current tree transversal state across .get calls.
     this.todo_visit = articleData.slice()
     this.head = undefined
   }
 
+  // Post order depth first transversal to ensure that we create all includees
+  // before actually including them.
   get() {
     while (this.todo_visit.length !== 0) {
       let entry = this.todo_visit[this.todo_visit.length - 1];
       let title = entry[0]
       let children = entry[1]
 
-      let finishedSubtrees = false
-      let done = false
-      for (const child of children) {
-        if (child === this.head) {
-          finishedSubtrees = true
-          done = true
-          break
-        }
-        if (done) {
-          break
-        }
-      }
+      let finishedSubtrees = this.head === children[children.length - 1]
       let isLeaf = children.length === 0
       if (finishedSubtrees || isLeaf) {
         this.todo_visit.pop()
         this.head = entry
+        this.i++
         return entry
       } else {
         for (let i = children.length - 1; i >= 0; i--) {
@@ -165,8 +158,8 @@ class ArticleDataProvider {
 
 async function generateDemoData(params) {
   // Input Param defaults.
-  const nUsers = params.nUsers === undefined ? 20 : params.nUsers
-  const nArticlesPerUser = params.nArticlesPerUser === undefined ? 50 : params.nArticlesPerUser
+  const nUsers = params.nUsers === undefined ? 11 : params.nUsers
+  const nArticlesPerUser = params.nArticlesPerUser === undefined ? 21 : params.nArticlesPerUser
   const nMaxCommentsPerArticle = params.nMaxCommentsPerArticle === undefined ? 3 : params.nMaxCommentsPerArticle
   const nFollowsPerUser = params.nFollowsPerUser === undefined ? 2 : params.nFollowsPerUser
   const nLikesPerUser = params.nLikesPerUser === undefined ? 20 : params.nLikesPerUser
@@ -262,7 +255,7 @@ async function generateDemoData(params) {
       if (children.length > 0) {
         const ids = children.map(child => cirodown.title_to_id(child[0]))
         includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
-        refsString = ids.map(id => `\\x[${id}]`).join('\n') + '\n\n'
+        refsString = 'Sample internal links to other sections: ' + ids.map(id => `\\x[${id}]`).join('\n') + '\n\n'
       } else {
         includesString = ''
         refsString = ''
@@ -337,14 +330,6 @@ An YouTube video: \\x[video-sample-youtube-video].
 
 \\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
 {title=Sample YouTube video.}${includesString}
-
-== ${title} h2
-
-Text in h2.
-
-=== ${title} h3
-
-Text in h3.
 `,
       }
       articleArgs.push(articleArg)

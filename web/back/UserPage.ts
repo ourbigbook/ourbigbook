@@ -64,7 +64,7 @@ export const makeGetStaticPropsUser = (what): GetStaticProps => {
       user.countAuthoredArticles(),
       user.countLikes(),
     ])
-    const props = {
+    const props:any = {
       user: userJson,
       authoredArticleCount,
       likedArticleCount,

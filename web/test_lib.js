@@ -221,13 +221,19 @@ async function generateDemoData(params) {
     sequelize.models.User.setPassword(userArg, 'asdf')
     userArgs.push(userArg)
   }
-  const users = await sequelize.models.User.bulkCreate(
-    userArgs,
-    {
-      validate: true,
-      individualHooks: true,
-    }
-  )
+  const users = []
+  for (const userArg of userArgs) {
+    const user = await sequelize.models.User.create(userArg)
+    users.push(user)
+  }
+  // TODO started livelocking after we started creating index articles on hooks.
+  //const users = await sequelize.models.User.bulkCreate(
+  //  userArgs,
+  //  {
+  //    validate: true,
+  //    individualHooks: true,
+  //  }
+  //)
   printTime()
 
   console.error('UserFollowUser');
@@ -376,7 +382,7 @@ An YouTube video: \\x[video-sample-youtube-video].
   let articleId = 0
   for (const articleArg of articleArgs) {
     console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
-    const article = await new sequelize.models.Article(articleArg)
+    const article = new sequelize.models.Article(articleArg)
     await article.save()
     articles.push(article)
     articleId++

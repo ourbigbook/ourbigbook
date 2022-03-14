@@ -17,7 +17,7 @@ module.exports = {
   appName: `OurBigBook.com`,
   buttonActiveClass: 'active',
   defaultProfileImage: `https://static.productionready.io/images/smiley-cyrus.jpg`,
-  defaultLimit: 20,
+  articleLimit: 20,
   defaultUserScoreTitle: 'Sum of likes of all articles authored by user',
   /** @type {boolean | 'blocking'} */
   fallback: 'blocking',

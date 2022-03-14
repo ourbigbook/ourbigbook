@@ -5,11 +5,11 @@ import { trigger } from 'swr'
 import Maybe from 'front/Maybe'
 import CommentAPI from 'front/api/comment'
 import { formatDate } from 'date'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 
 const Comment = ({ comment }) => {
-  const loggedInUser = getLoggedInUser()
+  const loggedInUser = useLoggedInUser()
   const canModify =
     loggedInUser && loggedInUser?.username === comment?.author?.username;
   const router = useRouter();

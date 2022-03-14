@@ -4,7 +4,7 @@ import Router from 'next/router'
 
 import UserAPI from 'front/api/user'
 import { buttonActiveClass } from 'front/config'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 
 export const FollowUserButtonContext = React.createContext(undefined);
@@ -13,7 +13,7 @@ const FollowUserButton = ({
   user,
   showUsername,
 }) => {
-  const loggedInUser = getLoggedInUser()
+  const loggedInUser = useLoggedInUser()
   const { following, setFollowing, followerCount, setFollowerCount } = React.useContext(FollowUserButtonContext);
   const { username } = user;
   const isCurrentUser = loggedInUser && username === loggedInUser?.username;

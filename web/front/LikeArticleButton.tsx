@@ -3,7 +3,7 @@ import Router from 'next/router'
 
 import ArticleAPI from 'front/api/article'
 import { buttonActiveClass } from 'front/config'
-import getLoggedInUser from 'getLoggedInUser'
+import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 
 export const LikeArticleButtonContext = React.createContext(undefined);
@@ -12,7 +12,7 @@ const LikeArticleButton = ({
   article,
   showText,
 }) => {
-  const loggedInUser = getLoggedInUser()
+  const loggedInUser = useLoggedInUser()
   const currentUserIsAuthor = article?.author.username === loggedInUser?.username
   const { liked, setLiked, score, setScore } = React.useContext(LikeArticleButtonContext);
   let buttonText;

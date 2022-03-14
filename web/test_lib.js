@@ -217,7 +217,6 @@ async function generateDemoData(params) {
   for (let i = 0; i < nUsers; i++) {
     let [displayName, image] = userData[i % userData.length]
     let username = cirodown.title_to_id(displayName, { normalize: { latin: true }})
-    console.error({username});
     if (i >= userData.length) {
       username = `user${i}`
       displayName = `User${i}`
@@ -311,7 +310,7 @@ ${refsString}\\i[Italic]
 
 \\b[Bold]
 
-http://example.com[Link]
+http://example.com[External link]
 
 Inline code: \`int main() { return 1; }\`
 
@@ -431,6 +430,17 @@ An YouTube video: \\x[video-sample-youtube-video].
     //  { where: { slug: username } },
     //)
   }
+
+  // Update all pages to make them render references such as parent references
+  // which were missed at initial creation time.
+  console.error('Article update');
+  let i = 0
+  for (const article of articles) {
+    console.error(`${i} authorId=${article.authorId} title=${article.title}`);
+    await article.save()
+    i++
+  }
+  //await sequelize.models.Article.update({}, { where: {}, individualHooks: true})
 
   printTime()
 

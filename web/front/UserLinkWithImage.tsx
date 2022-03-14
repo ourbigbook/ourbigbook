@@ -1,8 +1,8 @@
 /* A link to a user profile that includes a small profile picture. */
 
-import CustomLink from 'components/CustomLink'
-import CustomImage from 'components/CustomImage'
-import { User } from 'lib/types/userType'
+import CustomLink from 'front/CustomLink'
+import CustomImage from 'front/CustomImage'
+import { User } from 'front/types/userType'
 import routes from 'routes'
 import { DisplayAndUsername } from 'front/user'
 

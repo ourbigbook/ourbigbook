@@ -3,8 +3,8 @@
 import { GetStaticProps, GetStaticPaths } from 'next'
 
 import { fallback, revalidate } from 'config'
-import sequelize from 'lib/db'
-import { DEFAULT_LIMIT  } from 'lib/utils/constant'
+import sequelize from 'db'
+import { DEFAULT_LIMIT  } from 'constant'
 
 export const getStaticPathsTopic: GetStaticPaths = async () => {
   return {

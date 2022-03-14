@@ -1,6 +1,6 @@
-import Comment from 'components/Comment'
-import CommentInput from 'components/CommentInput'
-import { CommentType } from 'lib/types/commentType'
+import Comment from 'front/Comment'
+import CommentInput from 'front/CommentInput'
+import { CommentType } from 'front/types/commentType'
 
 // This also worked. But using the packaged one reduces the need to replicate
 // or factor out the webpack setup of the cirodown package.

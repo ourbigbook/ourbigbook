@@ -1,7 +1,7 @@
 import axios from 'axios'
 
-import { SERVER_BASE_URL } from 'lib/utils/constant'
-import { getQuery } from 'lib/utils/getQuery'
+import { SERVER_BASE_URL } from 'constant'
+import { getQuery } from 'getQuery'
 import { addAuthHeader } from './lib'
 
 const ArticleAPI = {

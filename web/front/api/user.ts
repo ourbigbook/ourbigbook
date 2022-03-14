@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-import { SERVER_BASE_URL } from 'lib/utils/constant'
+import { SERVER_BASE_URL } from 'constant'
 import { addAuthHeader } from './lib'
 
 const UserAPI = {

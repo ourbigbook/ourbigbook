@@ -2,11 +2,11 @@ import React from 'react'
 import { useRouter } from 'next/router'
 import { trigger } from 'swr'
 
-import Maybe from 'components/Maybe'
-import CommentAPI from 'lib/api/comment'
-import { formatDate } from 'lib/utils/date'
-import getLoggedInUser from 'lib/utils/getLoggedInUser'
-import UserLinkWithImage from 'components/UserLinkWithImage'
+import Maybe from 'front/Maybe'
+import CommentAPI from 'front/api/comment'
+import { formatDate } from 'date'
+import getLoggedInUser from 'getLoggedInUser'
+import UserLinkWithImage from 'front/UserLinkWithImage'
 
 const Comment = ({ comment }) => {
   const loggedInUser = getLoggedInUser()

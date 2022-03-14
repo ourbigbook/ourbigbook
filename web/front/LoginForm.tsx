@@ -2,10 +2,10 @@ import Router from 'next/router'
 import React from 'react'
 import { mutate } from 'swr'
 
-import ListErrors from 'components/ListErrors'
-import Label from 'components/Label'
-import { LOGIN_ACTION, REGISTER_ACTION } from 'lib'
-import UserAPI from 'lib/api/user'
+import ListErrors from 'front/ListErrors'
+import Label from 'front/Label'
+import { LOGIN_ACTION, REGISTER_ACTION } from 'front'
+import UserAPI from 'front/api/user'
 
 const LoginForm = ({ register = false }) => {
   const [isLoading, setLoading] = React.useState(false);

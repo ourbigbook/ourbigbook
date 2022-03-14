@@ -1,23 +1,23 @@
 import axios from 'axios'
 
-import { SERVER_BASE_URL } from 'constant'
+import { apiPath } from 'front/config'
 import { getQuery } from 'getQuery'
 import { addAuthHeader } from './lib'
 
 const ArticleAPI = {
   all: (page, limit = 10) =>
-    axios.get(`${SERVER_BASE_URL}/articles?${getQuery(limit, page)}`),
+    axios.get(`${apiPath}/articles?${getQuery(limit, page)}`),
 
   byAuthor: (author, page = 0, limit = 5) =>
     axios.get(
-      `${SERVER_BASE_URL}/articles?author=${encodeURIComponent(
+      `${apiPath}/articles?author=${encodeURIComponent(
         author
       )}&${getQuery(limit, page)}`
     ),
 
   create: async (article, token) => {
     const { data, status } = await axios.post(
-      `${SERVER_BASE_URL}/articles`,
+      `${apiPath}/articles`,
       JSON.stringify({ article }),
       {
         headers: addAuthHeader(token, {
@@ -32,13 +32,13 @@ const ArticleAPI = {
   },
 
   delete: (slug, token) =>
-    axios.delete(`${SERVER_BASE_URL}/articles?id=${slug}`, {
+    axios.delete(`${apiPath}/articles?id=${slug}`, {
       headers: addAuthHeader(token),
     }),
 
   like: (slug, token) => {
     axios.post(
-      `${SERVER_BASE_URL}/articles/like?id=${slug}`,
+      `${apiPath}/articles/like?id=${slug}`,
       {},
       {
         headers: addAuthHeader(token),
@@ -48,19 +48,19 @@ const ArticleAPI = {
 
   likedBy: (author, page) =>
     axios.get(
-      `${SERVER_BASE_URL}/articles?liked=${encodeURIComponent(
+      `${apiPath}/articles?liked=${encodeURIComponent(
         author
       )}&${getQuery(10, page)}`
     ),
 
   feed: (page, limit = 10) =>
-    axios.get(`${SERVER_BASE_URL}/articles/feed?${getQuery(limit, page)}`),
+    axios.get(`${apiPath}/articles/feed?${getQuery(limit, page)}`),
 
   get: (slug) => axios.get(ArticleAPI.url(slug)),
 
   unlike: (slug, token) =>
     axios.delete(
-      `${SERVER_BASE_URL}/articles/like?id=${encodeURIComponent(slug)}`,
+      `${apiPath}/articles/like?id=${encodeURIComponent(slug)}`,
       {
         headers: addAuthHeader(token),
       }
@@ -68,7 +68,7 @@ const ArticleAPI = {
 
   update: async (article, slug, token) => {
     const { data, status } = await axios.put(
-      `${SERVER_BASE_URL}/articles?id=${encodeURIComponent(slug)}`,
+      `${apiPath}/articles?id=${encodeURIComponent(slug)}`,
       JSON.stringify({ article }),
       {
         headers: addAuthHeader(token, {
@@ -82,7 +82,7 @@ const ArticleAPI = {
     };
   },
 
-  url: (slug) => `${SERVER_BASE_URL}/articles?id=${encodeURIComponent(slug)}`,
+  url: (slug) => `${apiPath}/articles?id=${encodeURIComponent(slug)}`,
 };
 
 export default ArticleAPI;

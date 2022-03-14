@@ -3,7 +3,7 @@ import { GetStaticProps, GetStaticPaths } from 'next'
 import cirodown from 'cirodown/dist/cirodown'
 import { fallback, revalidate } from 'front/config'
 import sequelize from 'db'
-import { DEFAULT_LIMIT  } from 'constant'
+import { defaultLimit  } from 'front/config'
 import { getStaticPropsArticle } from 'back/ArticlePage'
 
 export const getStaticPathsUser: GetStaticPaths = async () => {
@@ -47,8 +47,8 @@ export const makeGetStaticPropsUser = (what): GetStaticProps => {
     }
     const articlesPromise = what === 'home' ? [] : sequelize.models.Article.getArticles({
       sequelize,
-      limit: DEFAULT_LIMIT,
-      offset: page * DEFAULT_LIMIT,
+      limit: defaultLimit,
+      offset: page * defaultLimit,
       order,
       author,
       likedBy,

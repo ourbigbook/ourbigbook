@@ -1,7 +1,7 @@
-import { DEFAULT_PROFILE_IMAGE } from 'constant'
+import { defaultProfileImage } from 'front/config'
 
 const handleBrokenImage = e => {
-  e.target.src = DEFAULT_PROFILE_IMAGE;
+  e.target.src = defaultProfileImage;
   e.target.onerror = null;
 };
 

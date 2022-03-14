@@ -1,4 +1,4 @@
-import { DEFAULT_USER_SCORE_TITLE } from 'constant'
+import { defaultUserScoreTitle } from 'front/config'
 
 export function displayAndUsernameText(user) {
   let ret = ''
@@ -25,6 +25,6 @@ export function DisplayAndUsername({ user }) {
   }
   return <>
     {ret}
-    <span title={DEFAULT_USER_SCORE_TITLE}>{user.articleScoreSum}<i className="ion-heart"></i></span>)
+    <span title={defaultUserScoreTitle}>{user.articleScoreSum}<i className="ion-heart"></i></span>)
   </>
 }

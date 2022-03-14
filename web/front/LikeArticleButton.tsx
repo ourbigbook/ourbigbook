@@ -2,7 +2,7 @@ import React from 'react'
 import Router from 'next/router'
 
 import ArticleAPI from 'front/api/article'
-import { BUTTON_ACTIVE_CLASS } from 'constant'
+import { buttonActiveClass } from 'front/config'
 import getLoggedInUser from 'getLoggedInUser'
 import routes from 'routes'
 
@@ -57,7 +57,7 @@ const LikeArticleButton = ({
     buttonClassName = 'disabled'
     title = 'You cannot like your own articles'
   } else {
-    buttonClassName = liked ? BUTTON_ACTIVE_CLASS : ''
+    buttonClassName = liked ? buttonActiveClass : ''
     title = buttonTextMaybe + ' this article'
   }
   return (

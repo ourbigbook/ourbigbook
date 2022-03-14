@@ -4,7 +4,7 @@ import { mutate } from 'swr'
 
 import ListErrors from 'front/ListErrors'
 import Label from 'front/Label'
-import { LOGIN_ACTION, REGISTER_ACTION } from 'front'
+import { LOGIN_ACTION, REGISTER_ACTION, setCookie  } from 'front'
 import UserAPI from 'front/api/user'
 
 const LoginForm = ({ register = false }) => {
@@ -51,7 +51,9 @@ const LoginForm = ({ register = false }) => {
         setErrors(data.errors);
       }
       if (data?.user) {
+        data.user.effectiveImage = data.user.image
         window.localStorage.setItem("user", JSON.stringify(data.user));
+        setCookie('auth', data.user.token)
         mutate("user", data.user);
         Router.push("/");
       }

@@ -11,7 +11,7 @@ import useMin from 'front/api/useMin'
 import { appName, aboutHref, defaultLimit, apiPath } from 'front/config'
 import fetcher from 'fetcher'
 
-const Home = ({ articles, articlesCount, page, what }) => {
+const IndexPage = ({ articles, articlesCount, page, what }) => {
   const loggedInUser = getLoggedInUser()
   useMin(
     { articleIds: articles.map(article => article.id) },
@@ -133,4 +133,4 @@ const Home = ({ articles, articlesCount, page, what }) => {
   )
 }
 
-export default Home;
+export default IndexPage;

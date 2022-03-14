@@ -1871,7 +1871,7 @@ This option is similar to \x[h-title2-argument] but it additionally:
 * creates a new ID that you can refer to, and renders it with the alternate chosen title
 * the rendered ID on \x[internal-cross-reference]{p} is the same as what it is a synonym for
 * the synonym header is not rendered at all, including in the \x[table-of-contents]
-* when using \x[split-headers], a redirect output file is generated from the synonym to the main ID. This is generally a superior redirection alternative to using \x[cirodown-json/redirects] from \x[cirodown-json]
+* when using \x[split-headers], a redirect output file is generated from the synonym to the main ID
 
 Example:
 ``
@@ -5585,36 +5585,6 @@ The script arguments are:
   This means that you can use this script to place or remove files from the final publish output.
 
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
-
-= `redirects`
-{parent=cirodown-json}
-
-You are generally better using the newer \x[h-synonym-argument] feature instead of `redirects`, as that concentrates more header specific data in the .ciro files it belongs.
-
-Create HTML redirects from \x[the-toplevel-header][toplevel headers] to arbitrary IDs, for example:
-``
-"redirects": {
-  "a-toplevel-directory": "not-readme",
-  "quick-start-redirect-test": "quick-start"
-},
-``
-The HTML files are generated whenever a directory compilation is required, e.g. as in `cirodown .`.
-
-The sources must be toplevel headers for now, because it is harder to implement redirections from `#someid` as that would require JavaScript: https://github.com/cirosantilli/cirodown/issues/48[].
-
-This feature can be seen live on this document by visiting our tests:
-* \a[not-readme-redirect-test]{check=0}: redirects to \x[not-readme]
-* \a[quick-start-redirect-test]{check=0}: redirects to \x[quick-start]
-
-To quickly test bugs in redirect generation, you may use the `--generate-redirects` flag as:
-``
-cirodown --generate-redirects .
-``
-which generates the redirects while skipping everything else. A previous:
-``
-cirodown .
-``
-is required to generate the ID database.
 
 = JavaScript API
 {parent=tooling}

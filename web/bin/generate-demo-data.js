@@ -3,7 +3,7 @@
 const assert = require('assert')
 const path = require('path')
 
-const config = require('../config')
+const config = require('../front/config')
 
 function myParseInt(value, dummyPrevious) {
   const parsedValue = parseInt(value);

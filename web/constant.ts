@@ -1,4 +1,4 @@
-import { apiPath } from 'config'
+import { apiPath } from 'front/config'
 
 export const SERVER_BASE_URL = apiPath;
 export const ABOUT_HREF = "https://cirosantilli.com/ourbigbook-com"

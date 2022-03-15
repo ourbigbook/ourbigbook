@@ -2679,8 +2679,6 @@ function convert_init_context(options={}, extra_returns={}) {
         const id = cirodown_json.id
         if (!('normalize' in id)) { id.normalize = {}; }
         const normalize = id.normalize
-        if (!('latin' in normalize)) { normalize.latin = true; }
-        if (!('punctuation' in normalize)) { normalize.punctuation = true; }
       }
     }
   if (!('embed_includes' in options)) { options.embed_includes = false; }
@@ -5560,10 +5558,18 @@ function title_to_id(title, options) {
   }
   const new_chars = [];
   for (let c of title) {
-    if (options.normalize.latin) {
+    if (
+      options.normalize === undefined ||
+      options.normalize.latin === undefined ||
+      options.normalize.latin
+    ) {
       c = normalize_latin_character(c)
     }
-    if (options.normalize.punctuation) {
+    if (
+      options.normalize === undefined ||
+      options.normalize.punctuation === undefined ||
+      options.normalize.punctuation
+    ) {
       c = normalize_punctuation_character(c)
     }
     c = c.toLowerCase();

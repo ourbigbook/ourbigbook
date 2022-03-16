@@ -76,6 +76,9 @@ function assert_convert_ast(
       // before the main conversion to build up the cross-file reference database.
       options.convert_before = [];
     }
+    if (!('convert_before_norender' in options)) {
+      options.convert_before_norender = [];
+    }
     if (!('duplicate_ids' in options)) {
       options.duplicate_ids = []
     }
@@ -141,15 +144,15 @@ function assert_convert_ast(
     new_convert_opts.file_provider = new cirodown_nodejs_webpack_safe.SqliteFileProvider(
       sequelize, id_provider);
     const rendered_outputs = {}
-    for (const input_path of options.convert_before) {
+    async function convert(input_path, render) {
       //console.error({input_path});
       const extra_returns = {};
       assert(input_path in filesystem)
       const input_string = filesystem[input_path];
-      options.convert_before = [];
       const dependency_convert_opts = Object.assign({}, new_convert_opts);
       dependency_convert_opts.input_path = input_path;
       dependency_convert_opts.toplevel_id = path.parse(input_path).ext;
+      dependency_convert_opts.render = render;
       await cirodown.convert(input_string, dependency_convert_opts, extra_returns);
       Object.assign(rendered_outputs, extra_returns.rendered_outputs)
       assert.strictEqual(extra_returns.errors.length, 0)
@@ -158,8 +161,14 @@ function assert_convert_ast(
         id_provider,
         sequelize,
         path: input_path,
-        render: true,
+        render,
       })
+    }
+    for (const input_path of options.convert_before_norender) {
+      await convert(input_path, false)
+    }
+    for (const input_path of options.convert_before) {
+      await convert(input_path, true)
     }
     //console.error('main');
     if (options.input_path_noext !== undefined) {
@@ -4596,7 +4605,7 @@ assert_convert_ast('include from parent to subdirectory',
     },
   }
 );
-assert_convert_ast('subdir/index.ciro outputs to subdir without trailing slash with html_x_extension=true',
+assert_convert_ast('subdir index.ciro outputs to subdir without trailing slash with html_x_extension=true',
   `= Subdir
 
 \\x[subdir/notindex][link to subdir notindex]
@@ -4622,7 +4631,7 @@ assert_convert_ast('subdir/index.ciro outputs to subdir without trailing slash w
     },
   }
 );
-assert_convert_ast('subdir/index.ciro outputs to subdir without trailing slash with html_x_extension=false',
+assert_convert_ast('subdir index.ciro outputs to subdir without trailing slash with html_x_extension=false',
   `= Subdir
 
 \\x[subdir/notindex][link to subdir notindex]
@@ -4644,6 +4653,49 @@ assert_convert_ast('subdir/index.ciro outputs to subdir without trailing slash w
       'subdir.html': [
         "//x:a[@href='subdir/notindex' and text()='link to subdir notindex']",
         "//x:a[@href='subdir/notindex#notindex-h2' and text()='link to subdir notindex h2']",
+      ],
+    },
+  }
+);
+assert_convert_ast('subdir index.ciro removes leading @ from links with the remove_leading_at option',
+  `= Subdir
+
+\\x[notindex][link to subdir notindex]
+
+\\x[notindex-h2][link to subdir notindex h2]
+
+\\Include[notindex]
+`,
+  undefined,
+  {
+
+    convert_before_norender: ['@subdir/index.ciro'],
+    convert_before: ['@subdir/notindex.ciro', '@subdir/@notindexat.ciro'],
+    filesystem: {
+      '@subdir/notindex.ciro': `= Notindex
+
+\\x[@subdir][link to subdir]
+
+== Notindex h2
+`,
+      '@subdir/@notindexat.ciro': `= Notindexat
+
+== Notindexat h2
+`,
+    },
+    input_path_noext: '@subdir/index',
+    extra_convert_opts: {
+      remove_leading_at: true,
+      magic_leading_at: false,
+    },
+    assert_xpath: {
+      '@subdir.html': [
+        "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
+        "//x:a[@href='subdir/notindex.html#notindex-h2' and text()='link to subdir notindex h2']" ,
+      ],
+      '@subdir/notindex.html': [
+        "//x:a[@href='../subdir.html' and text()='link to subdir']",
+        xpath_header_parent(1, 'notindex', '../subdir.html', 'Subdir'),
       ],
     },
   }

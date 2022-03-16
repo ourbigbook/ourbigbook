@@ -4165,10 +4165,7 @@ assert_convert_ast('ancestors list shows after toc',
     convert_before_norender: ['index.ciro', 'notindex.ciro', 'notindex2.ciro', 'notindex3.ciro'],
     convert_before: ['notindex.ciro', 'notindex2.ciro', 'notindex3.ciro'],
     input_path_noext: 'index',
-    extra_convert_opts: {
-      body_only: false,
-      split_headers: true,
-    },
+    extra_convert_opts: { split_headers: true },
     assert_xpath: {
       'h2.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,

@@ -4907,6 +4907,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         prefetch_ids.add(id)
       }
 
+      // QUERRY EVERYTHING AT ONCE NOW!
       let get_noscopes_base_fetch, get_refs_to_fetch, get_refs_to_fetch_reverse
       ;[
         get_noscopes_base_fetch,
@@ -7409,6 +7410,99 @@ const DEFAULT_MACRO_LIST = [
       }
       let ret;
       let body = render_arg(ast.args.content, context);
+
+      // Footer metadata.
+      if (context.toplevel_ast !== undefined) {
+        {
+          const target_ids = context.id_provider.get_refs_to_as_ids(
+            REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
+          body += create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
+        }
+
+        // Ancestors
+        {
+          const ancestors = [];
+          let cur_ast = context.toplevel_ast;
+          while (true) {
+            cur_ast = cur_ast.get_header_parent_asts(context)[0];
+            if (cur_ast === undefined) {
+              break
+            }
+            ancestors.push(cur_ast);
+          }
+          if (ancestors.length !== 0) {
+            // TODO factor this out more with real headers.
+            const id = 'ancestors'
+            body += `<div>${html_hide_hover_link('#ancestors')}<h2 id="#${id}"><a href="#ancestors">Ancestors</a></h2></div>\n`;
+            const ancestor_id_asts = [];
+            for (const ancestor of ancestors) {
+              //let counts_str;
+              //if (ancestor.header_tree_node !== undefined) {
+              //  counts_str = get_descendant_count_html_sep(ancestor.header_tree_node, false);
+              //} else {
+              //  counts_str = '';
+              //}
+              ancestor_id_asts.push(new AstNode(
+                AstType.MACRO,
+                Macro.LIST_MACRO_NAME,
+                {
+                  'content': new AstArgument(
+                    [
+                      new AstNode(
+                        AstType.MACRO,
+                        Macro.X_MACRO_NAME,
+                        {
+                          'href': new AstArgument(
+                            [
+                              new PlaintextAstNode(ancestor.id),
+                            ],
+                          ),
+                          'c': new AstArgument(),
+                        },
+                      ),
+                      //new AstNode(
+                      //  AstType.MACRO,
+                      //  'passthrough',
+                      //  {
+                      //    'content': new AstArgument(
+                      //      [
+                      //        new PlaintextAstNode(counts_str),
+                      //      ],
+                      //    ),
+                      //  },
+                      //  undefined,
+                      //  {
+                      //    xss_safe: true,
+                      //  }
+                      //),
+                    ],
+                  ),
+                },
+              ));
+            }
+            const ulArgs = {
+              'content': new AstArgument(ancestor_id_asts)
+            }
+            if (context.options.add_test_instrumentation) {
+              ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
+            }
+            const incoming_ul_ast = new AstNode(
+              AstType.MACRO,
+              'Ul',
+              ulArgs,
+            );
+            const new_context = clone_and_set(context, 'validate_ast', true);
+            new_context.source_location = ast.source_location;
+            body += incoming_ul_ast.render(new_context);
+          }
+        }
+
+        {
+          const target_ids = context.id_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
+          body += create_link_list(context, ast, 'incoming-links', 'Incoming links', target_ids)
+        }
+      }
+
       if (context.options.body_only) {
         ret = body;
       } else {
@@ -7429,99 +7523,6 @@ const DEFAULT_MACRO_LIST = [
 {{ post_body }}</body>
 </html>
 `;
-        }
-        const { Liquid } = require('liquidjs');
-
-        // Footer metadata.
-        if (context.toplevel_ast !== undefined) {
-          {
-            const target_ids = context.id_provider.get_refs_to_as_ids(
-              REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
-            body += create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
-          }
-
-          // Ancestors
-          {
-            const ancestors = [];
-            let cur_ast = context.toplevel_ast;
-            while (true) {
-              cur_ast = cur_ast.get_header_parent_asts(context)[0];
-              if (cur_ast === undefined) {
-                break
-              }
-              ancestors.push(cur_ast);
-            }
-            if (ancestors.length !== 0) {
-              // TODO factor this out more with real headers.
-              const id = 'ancestors'
-              body += `<div>${html_hide_hover_link('#ancestors')}<h2 id="#${id}"><a href="#ancestors">Ancestors</a></h2></div>\n`;
-              const ancestor_id_asts = [];
-              for (const ancestor of ancestors) {
-                //let counts_str;
-                //if (ancestor.header_tree_node !== undefined) {
-                //  counts_str = get_descendant_count_html_sep(ancestor.header_tree_node, false);
-                //} else {
-                //  counts_str = '';
-                //}
-                ancestor_id_asts.push(new AstNode(
-                  AstType.MACRO,
-                  Macro.LIST_MACRO_NAME,
-                  {
-                    'content': new AstArgument(
-                      [
-                        new AstNode(
-                          AstType.MACRO,
-                          Macro.X_MACRO_NAME,
-                          {
-                            'href': new AstArgument(
-                              [
-                                new PlaintextAstNode(ancestor.id),
-                              ],
-                            ),
-                            'c': new AstArgument(),
-                          },
-                        ),
-                        //new AstNode(
-                        //  AstType.MACRO,
-                        //  'passthrough',
-                        //  {
-                        //    'content': new AstArgument(
-                        //      [
-                        //        new PlaintextAstNode(counts_str),
-                        //      ],
-                        //    ),
-                        //  },
-                        //  undefined,
-                        //  {
-                        //    xss_safe: true,
-                        //  }
-                        //),
-                      ],
-                    ),
-                  },
-                ));
-              }
-              const ulArgs = {
-                'content': new AstArgument(ancestor_id_asts)
-              }
-              if (context.options.add_test_instrumentation) {
-                ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
-              }
-              const incoming_ul_ast = new AstNode(
-                AstType.MACRO,
-                'Ul',
-                ulArgs,
-              );
-              const new_context = clone_and_set(context, 'validate_ast', true);
-              new_context.source_location = ast.source_location;
-              body += incoming_ul_ast.render(new_context);
-            }
-          }
-
-          {
-            const target_ids = context.id_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
-            body += create_link_list(context, ast, 'incoming-links', 'Incoming links', target_ids)
-          }
         }
 
         let root_page;
@@ -7558,6 +7559,7 @@ const DEFAULT_MACRO_LIST = [
         }
         render_env.style = relative_styles.join('') + render_env.style;
 
+        const { Liquid } = require('liquidjs');
         ret = (new Liquid()).parseAndRenderSync(
           template,
           render_env,

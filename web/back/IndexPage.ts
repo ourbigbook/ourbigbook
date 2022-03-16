@@ -21,7 +21,11 @@ function useLoggedInUser(req) {
   }
 }
 
-export const makeGetServerSidePropsIndex = (what): GetServerSideProps => {
+// TODO add type back, fails with:
+// Type error: Property 'params' does not exist on type 'IncomingMessage & { cookies: NextApiRequestCookies; }'.
+//
+//export const makeGetServerSidePropsIndex = (what): GetServerSideProps => {
+export const makeGetServerSidePropsIndex = (what) => {
   return async ({ req }) => {
     const loggedInUser = useLoggedInUser(req)
     const page = req?.params?.page ? parseInt(req.params.page as string, 10) - 1: 0

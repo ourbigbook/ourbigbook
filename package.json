@@ -75,6 +75,7 @@
     "build-dev": "cd web && npm run build-dev",
     "deploy": "cd web && npm run deploy",
     "dev": "cd web && npm run dev",
+    "devs": "cd web && npm run devs",
     "heroku-prebuild": "./heroku-prebuild",
     "link": "npm link && npm link cirodown",
     "publish": "cirodown --publish --unsafe-ace",

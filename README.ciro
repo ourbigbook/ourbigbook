@@ -5707,6 +5707,16 @@ Whenever you save any changes to the backend server, we listen to this and autom
 
 For frontend, changes are automatically recompiled by the webpack development server, so you can basically just refresh pages and they will be updated straightaway.
 
+=== Log database queries done
+
+``
+DEBUG='sequelize:sql:*' npm run dev
+``
+Shortcut:
+``
+npm run devs
+``
+
 = Local optimized frontend
 {parent=dynamic-website}
 

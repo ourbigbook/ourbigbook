@@ -59,7 +59,7 @@ module.exports = (sequelize) => {
         beforeValidate: async (article, options) => {
           const transaction = options.transaction
           let extra_returns = {};
-          const author = await article.getAuthor()
+          const author = await article.getAuthor({ transaction })
           const id = cirodown.title_to_id(article.title)
           const input = modifyEditorInput(article.title, article.body)
           article.render = await cirodown.convert(
@@ -147,8 +147,9 @@ module.exports = (sequelize) => {
     }
   }
 
-  Article.prototype.saveSideEffects = async function() {
-    await sequelize.transaction(async (transaction) => {
+  Article.prototype.saveSideEffects = async function(options = {}) {
+    const transaction = options.transaction
+    await sequelize.transaction({ transaction }, async (transaction) => {
       return this.save({ transaction })
     })
   }

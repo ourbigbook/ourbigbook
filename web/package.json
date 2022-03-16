@@ -16,7 +16,7 @@
     "postinstall": "cd .. && npm link cirodown",
     "migrate": "sequelize-cli db:migrate --debug",
     "seed-prod": "./prod.sh ./bin/generate-demo-data.js --force-production",
-    "start": "node --unhandled-rejections=strict ./app.js",
+    "start": "cd .. && ls -l && ls -l node_modules && rm -rf my_node_modules && mkdir -p my_node_modules && ln -s .. my_node_modules/cirodown && export NODE_PATH=\"${NODE_PATH}:$(pwd)/my_node_modules\" && cd web && ls -l && ls -l node_modules && node --unhandled-rejections=strict ./app.js",
     "start-dev": "NEXT_PUBLIC_NODE_ENV=development NODE_ENV_NEXT_SERVER_ONLY=production node --unhandled-rejections=strict ./app.js",
     "start-prod": "./prod.sh npm start",
     "test": "mocha test --ignore-leaks test.js",

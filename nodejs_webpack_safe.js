@@ -261,19 +261,21 @@ class SqliteIdProvider extends cirodown.IdProvider {
   }
 
   async fetch_header_tree_ids(starting_ids_to_asts) {
-    // Fetch all data recursively.
-    //
-    // Going for WITH RECURSIVE:
-    // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/192462#192462
-    //
-    // Sequelize doesn't support this of course.
-    // - https://stackoverflow.com/questions/34135555/recursive-include-sequelize
-    // - https://stackoverflow.com/questions/55091052/recursive-postgresql-query
-    // - https://github.com/sequelize/sequelize/issues/4890
-    // We could use one of the other constructs proposed besides WITH RECURSIVE,
-    // but it would likely be less efficient and harder to implement. So just going
-    // with this for now.
-    ;const [rows, meta] = await this.sequelize.query(`SELECT * FROM "${this.sequelize.models.Id.tableName}"
+    const starting_ids = Object.keys(starting_ids_to_asts)
+    if (starting_ids.length > 0) {
+      // Fetch all data recursively.
+      //
+      // Going for WITH RECURSIVE:
+      // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/192462#192462
+      //
+      // Sequelize doesn't support this of course.
+      // - https://stackoverflow.com/questions/34135555/recursive-include-sequelize
+      // - https://stackoverflow.com/questions/55091052/recursive-postgresql-query
+      // - https://github.com/sequelize/sequelize/issues/4890
+      // We could use one of the other constructs proposed besides WITH RECURSIVE,
+      // but it would likely be less efficient and harder to implement. So just going
+      // with this for now.
+      ;const [rows, meta] = await this.sequelize.query(`SELECT * FROM "${this.sequelize.models.Id.tableName}"
 INNER JOIN (
 WITH RECURSIVE
   tree_search (to_id, level, from_id, to_id_index) AS (
@@ -300,12 +302,15 @@ WITH RECURSIVE
 ) AS "RecRefs"
 ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
 `,
-      { replacements: {
-        starting_ids: Object.keys(starting_ids_to_asts),
-        type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT],
-      } }
-    )
-    return rows
+        { replacements: {
+          starting_ids,
+          type: this.sequelize.models.Ref.Types[cirodown.REFS_TABLE_PARENT],
+        } }
+      )
+      return rows
+    } else {
+      return []
+    }
   }
 
   // Recursively fetch all ancestors of a given ID from the database.

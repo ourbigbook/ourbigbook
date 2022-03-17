@@ -8,7 +8,7 @@ import CustomImage from 'front/CustomImage'
 import LoadingSpinner from 'front/LoadingSpinner'
 import LogoutButton from 'front/LogoutButton'
 import Maybe from 'front/Maybe'
-import FollowUserButton, { FollowUserButtonContext } from 'front/FollowUserButton'
+import FollowUserButton from 'front/FollowUserButton'
 import UserAPI from 'front/api/user'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import useLoggedInUser from 'front/useLoggedInUser'
@@ -80,11 +80,7 @@ export default function UserPage({
         <h1>
           <DisplayAndUsername user={user}></DisplayAndUsername>
           {' '}
-          <FollowUserButtonContext.Provider value={{
-            following, setFollowing, followerCount, setFollowerCount
-          }}>
-            <FollowUserButton user={user} showUsername={false}/>
-          </FollowUserButtonContext.Provider>
+          <FollowUserButton user={user} showUsername={false}/>
           <Maybe test={isCurrentUser}>
             <CustomLink
               href={routes.userEdit()}

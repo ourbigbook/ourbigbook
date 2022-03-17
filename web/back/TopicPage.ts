@@ -1,22 +1,11 @@
-// Server-only code
-
-import { GetStaticProps, GetStaticPaths } from 'next'
-
-import { fallback, revalidate } from 'front/config'
 import sequelize from 'db'
 import { articleLimit  } from 'front/config'
+import { getLoggedInUser } from 'back'
 
-export const getStaticPathsTopic: GetStaticPaths = async () => {
-  return {
-    fallback,
-    paths: [],
-  }
-}
-
-export const makeGetStaticPropsTopic = (what): GetStaticProps => {
-  return async (context) => {
-
-    const page = context?.params?.page ? parseInt(context.params.page as string, 10) - 1: 0
+export const makeGetServerSidePropsTopic = (what): GetServerSideProps => {
+  return async ({ params, req }) => {
+    const loggedInUser = await getLoggedInUser(req)
+    const page = params?.page ? parseInt(params.page as string, 10) - 1: 0
     let order
     switch (what) {
       // TODO
@@ -47,16 +36,16 @@ export const makeGetStaticPropsTopic = (what): GetStaticProps => {
       limit: articleLimit,
       offset: page * articleLimit,
       order,
-      topicId: context.params.id,
+      topicId: params.id,
     })
     return {
       props: {
-        articles: await Promise.all(articles.rows.map(article => article.toJson())),
+        articles: await Promise.all(articles.rows.map(article => article.toJson(loggedInUser))),
         articlesCount: articles.count,
+        loggedInUser: await loggedInUser.toJson(),
         page,
         what,
       },
-      revalidate,
     }
   }
 }

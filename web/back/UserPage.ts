@@ -1,12 +1,10 @@
-import { GetStaticProps } from 'next'
-
 import cirodown from 'cirodown/dist/cirodown'
 import sequelize from 'db'
 import { articleLimit  } from 'front/config'
 import { makeGetServerSidePropsArticle } from 'back/ArticlePage'
 import { getLoggedInUser } from 'back'
 
-export const makeGetServerSidePropsUser = (what): GetStaticProps => {
+export const makeGetServerSidePropsUser = (what): GetServerSideProps => {
   return async ({ params, req }) => {
     const loggedInUser = await getLoggedInUser(req)
     const user = await sequelize.models.User.findOne({

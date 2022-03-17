@@ -1,7 +1,7 @@
 import sequelize from 'db'
 import { getLoggedInUser } from 'back'
 
-export function makeGetServerSidePropsArticle(addComments?, loggedInUserCache?) {
+export function getServerSidePropsArticleHoc(addComments?, loggedInUserCache?) {
   return async ({ params: { slug }, req }) => {
     const loggedInUser = await getLoggedInUser(req, loggedInUserCache)
     const article = await sequelize.models.Article.findOne({

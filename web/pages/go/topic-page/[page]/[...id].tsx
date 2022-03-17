@@ -1,4 +1,4 @@
-import { makeGetServerSidePropsTopic } from 'back/TopicPage'
+import { getServerSidePropsTopicHoc } from 'back/TopicPage'
 import { TopicPage } from 'front/TopicPage'
-export const getServerSideProps = makeGetServerSidePropsTopic('top')
+export const getServerSideProps = getServerSidePropsTopicHoc('top')
 export default TopicPage

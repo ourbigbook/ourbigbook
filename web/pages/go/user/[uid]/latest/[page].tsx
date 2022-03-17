@@ -1,4 +1,4 @@
-import { makeGetServerSidePropsUser } from 'back/UserPage'
+import { getServerSidePropsUserHoc } from 'back/UserPage'
 import UserPage from 'front/UserPage'
-export const getServerSideProps = makeGetServerSidePropsUser('user-articles-latest')
+export const getServerSideProps = getServerSidePropsUserHoc('user-articles-latest')
 export default UserPage

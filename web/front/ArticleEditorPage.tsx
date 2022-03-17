@@ -15,7 +15,7 @@ import routes from 'routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'shared';
 
-export default function makeArticleEditorPage(isnew: boolean = false) {
+export default function ArticleEditorPageHoc(isnew: boolean = false) {
   const editor = ({ article: initialArticle }) => {
     let body;
     let initialArticleState;

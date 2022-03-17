@@ -2,7 +2,7 @@ import sequelize from 'db'
 import { articleLimit  } from 'front/config'
 import { getLoggedInUser } from 'back'
 
-export const makeGetServerSidePropsTopic = (what): GetServerSideProps => {
+export const getServerSidePropsTopicHoc = (what): GetServerSideProps => {
   return async ({ params, req }) => {
     const loggedInUser = await getLoggedInUser(req)
     const page = params?.page ? parseInt(params.page as string, 10) - 1: 0

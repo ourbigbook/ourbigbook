@@ -1,6 +1,6 @@
 import Router, { useRouter } from 'next/router'
 import React from 'react'
-import useSWR, { trigger } from 'swr'
+import { trigger } from 'swr'
 
 import CustomLink from 'front/CustomLink'
 import ArticleAPI from 'front/api/article'
@@ -17,13 +17,6 @@ const ArticleInfo = ({
     loggedInUser && loggedInUser?.username === article?.author?.username;
   const [liked, setLiked] = React.useState(false);
   const [score, setScore] = React.useState(article?.score);
-  React.useEffect(() => {
-    setLiked(article?.liked)
-    setScore(article?.score)
-  }, [
-    article?.liked,
-    article?.score,
-  ])
   const handleDelete = async () => {
     if (!loggedInUser) return;
     const result = window.confirm("Do you really want to delete this article?");

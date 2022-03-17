@@ -2,17 +2,11 @@ import { GetStaticProps, GetStaticPaths } from 'next'
 import sequelize from 'db';
 import { fallback, revalidate } from 'front/config'
 
-const cirodown = require('cirodown')
+import { getLoggedInUser } from 'back'
 
-export const getStaticPathsArticle: GetStaticPaths = async () => {
-  return {
-    fallback,
-    paths: [],
-  }
-}
-
-export function getStaticPropsArticle(addRevalidate?, addComments?) {
-  return async ({ params: { slug } }) => {
+export function makeGetServerSidePropsArticle(addComments?, loggedInUserCache?) {
+  return async ({ params: { slug }, req }) => {
+    const loggedInUser = await getLoggedInUser(req, loggedInUserCache)
     const article = await sequelize.models.Article.findOne({
       where: { slug: slug.join('/') },
       include: [{ model: sequelize.models.User, as: 'author' }],
@@ -23,7 +17,7 @@ export function getStaticPropsArticle(addRevalidate?, addComments?) {
       }
     }
     const [articleJson, topicArticleCount] = await Promise.all([
-      await article.toJson(),
+      await article.toJson(loggedInUser),
       await sequelize.models.Article.count({
         where: { topicId: article.topicId },
       }),
@@ -31,6 +25,7 @@ export function getStaticPropsArticle(addRevalidate?, addComments?) {
     const ret: any = {
       props: {
         article: articleJson,
+        loggedInUser: await loggedInUser.toJson(),
         topicArticleCount,
       },
     }
@@ -40,9 +35,6 @@ export function getStaticPropsArticle(addRevalidate?, addComments?) {
         include: [{ model: sequelize.models.User, as: 'author' }],
       })
       ret.props.comments = await Promise.all(comments.map(comment => comment.toJson()))
-    }
-    if (addRevalidate) {
-      ret.revalidate = revalidate
     }
     return ret;
   }

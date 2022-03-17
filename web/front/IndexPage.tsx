@@ -1,5 +1,4 @@
 import React from 'react'
-import useSWR  from 'swr'
 
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
@@ -11,7 +10,13 @@ import useMin from 'front/api/useMin'
 import { appName, aboutHref, articleLimit, apiPath } from 'front/config'
 import fetcher from 'fetcher'
 
-const IndexPage = ({ articles, articlesCount, loggedInUser, page, what }) => {
+const IndexPage = ({
+  articles,
+  articlesCount,
+  loggedInUser,
+  page,
+  what
+}) => {
   let paginationUrlFunc
   switch (what) {
     case 'top':

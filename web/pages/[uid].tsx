@@ -1,5 +1,4 @@
-import { getStaticPathsUser, makeGetStaticPropsUser } from 'back/UserPage'
+import { makeGetServerSidePropsUser } from 'back/UserPage'
 import UserPage from 'front/UserPage'
-export const getStaticPaths = getStaticPathsUser
-export const getStaticProps = makeGetStaticPropsUser('home')
+export const getServerSideProps = makeGetServerSidePropsUser('home')
 export default UserPage

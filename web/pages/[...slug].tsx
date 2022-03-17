@@ -11,7 +11,6 @@ import { displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
 import { AppContext } from 'front'
-import ArticleAPI from 'front/api/article'
 import CommentAPI from 'front/api/comment'
 import { ArticleType } from 'front/types/articleType'
 import { CommentType } from 'front/types/commentType'
@@ -31,12 +30,6 @@ const ArticlePage = ({
 }: ArticlePageProps) => {
   const router = useRouter();
 
-  // Fetch user-specific data.
-  // Article determines if the current user liked the article or not
-  const { data: articleApi, error } = useSWR(ArticleAPI.url(article?.slug), fetcher(!router.isFallback));
-  if (articleApi !== undefined) {
-    article = articleApi.article
-  }
   // We fetch comments so that the new posted comment will appear immediately after posted.
   // Note that we cannot calculate the exact new comment element because we need the server datetime.
   const { data: commentApi, error: commentError } = useSWR(CommentAPI.url(article?.slug), fetcher(!router.isFallback));
@@ -100,6 +93,5 @@ export default ArticlePage;
 
 // Server only.
 
-import { getStaticPathsArticle, getStaticPropsArticle } from 'back/ArticlePage'
-export const getStaticPaths = getStaticPathsArticle;
-export const getStaticProps = getStaticPropsArticle(true, true);
+import { makeGetServerSidePropsArticle } from 'back/ArticlePage'
+export const getServerSideProps = makeGetServerSidePropsArticle();

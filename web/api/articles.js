@@ -22,21 +22,6 @@ function getOrder(req) {
   }
 }
 
-router.param('comment', function(req, res, next, id) {
-  req.app.get('sequelize').models.Comment.findOne({
-    where: { id: id },
-    include: [{ model: req.app.get('sequelize').models.User, as: 'author' }],
-  })
-    .then(function(comment) {
-      if (!comment) {
-        return res.sendStatus(404)
-      }
-      req.comment = comment
-      return next()
-    })
-    .catch(next)
-})
-
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     if (req.query.id === undefined) {

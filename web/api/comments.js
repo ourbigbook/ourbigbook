@@ -3,6 +3,21 @@ const router = require('express').Router()
 const auth = require('../auth')
 const { getArticle } = require('./lib')
 
+router.param('comment', function(req, res, next, id) {
+  req.app.get('sequelize').models.Comment.findOne({
+    where: { id: id },
+    include: [{ model: req.app.get('sequelize').models.User, as: 'author' }],
+  })
+    .then(function(comment) {
+      if (!comment) {
+        return res.sendStatus(404)
+      }
+      req.comment = comment
+      return next()
+    })
+    .catch(next)
+})
+
 // return an article's comments
 router.get('/', auth.optional, async function(req, res, next) {
   try {

@@ -2,7 +2,7 @@ import { useRouter } from 'next/router'
 import React from 'react'
 
 import CustomLink from 'front/CustomLink'
-import LikeArticleButton, { LikeArticleButtonContext } from 'front/LikeArticleButton'
+import LikeArticleButton from 'front/LikeArticleButton'
 import LoadingSpinner from 'front/LoadingSpinner'
 import Pagination from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
@@ -40,21 +40,6 @@ const ArticleList = ({
   const { asPath, pathname, query } = router;
   const { like, follow, tag, uid } = query;
 
-  // Like article button state.
-  const liked = []
-  const setLiked = []
-  const score = []
-  const setScore = []
-  for (let i = 0; i < articleLimit; i++) {
-    [liked[i], setLiked[i]] = React.useState(articles[i]?.liked);
-    [score[i], setScore[i]] = React.useState(articles[i]?.score);
-  }
-  React.useEffect(() => {
-    for (let i = 0; i < articles.length; i++) {
-      setLiked[i](articles[i].liked);
-      setScore[i](articles[i].score);
-    }
-  })
   if (articles.length === 0) {
     let message;
     let voice;
@@ -112,17 +97,10 @@ const ArticleList = ({
                 </td>
               }
               <td className="shrink">
-                <LikeArticleButtonContext.Provider key={article.slug} value={{
-                  liked: liked[i],
-                  setLiked: setLiked[i],
-                  score: score[i],
-                  setScore: setScore[i],
-                }}>
-                  <LikeArticleButton
-                    article={article}
-                    showText={false}
-                  />
-                </LikeArticleButtonContext.Provider>
+                <LikeArticleButton
+                  article={article}
+                  showText={false}
+                />
               </td>
               <td className="expand title">
                 <CustomLink

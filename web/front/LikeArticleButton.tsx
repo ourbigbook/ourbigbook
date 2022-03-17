@@ -6,15 +6,14 @@ import { buttonActiveClass } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'routes'
 
-export const LikeArticleButtonContext = React.createContext(undefined);
-
 const LikeArticleButton = ({
   article,
   showText,
 }) => {
   const loggedInUser = useLoggedInUser()
   const currentUserIsAuthor = article?.author.username === loggedInUser?.username
-  const { liked, setLiked, score, setScore } = React.useContext(LikeArticleButtonContext);
+  const [liked, setLiked] = React.useState(article.liked)
+  const [score, setScore] = React.useState(article.score)
   let buttonText;
   let buttonTextMaybe;
   if (liked) {

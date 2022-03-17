@@ -6,7 +6,7 @@ import CustomLink from 'front/CustomLink'
 import ArticleAPI from 'front/api/article'
 import useLoggedInUser from 'front/useLoggedInUser'
 import { formatDate } from 'date'
-import LikeArticleButton, { LikeArticleButtonContext } from 'front/LikeArticleButton'
+import LikeArticleButton from 'front/LikeArticleButton'
 import routes from 'routes'
 
 const ArticleInfo = ({
@@ -33,14 +33,10 @@ const ArticleInfo = ({
     Router.push(`/`);
   };
   return <div className="article-info-3">
-    <LikeArticleButtonContext.Provider value={{
-      liked, setLiked, score, setScore
-    }}>
-      <LikeArticleButton
-        article={article}
-        showText={true}
-      />
-    </LikeArticleButtonContext.Provider>
+    <LikeArticleButton
+      article={article}
+      showText={true}
+    />
     {' Created: '}
     <span className="article-dates">
       {formatDate(article.createdAt)}

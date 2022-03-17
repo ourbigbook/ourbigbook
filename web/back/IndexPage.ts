@@ -56,7 +56,7 @@ export const getServerSidePropsIndexHoc = (what) => {
         (article) => {return article.toJson(loggedInUser) }))
       articlesCount = articlesAndCounts.count
     }
-    const props = {
+    const props: any = {
       articles,
       articlesCount,
       page,

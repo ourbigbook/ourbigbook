@@ -5797,7 +5797,7 @@ npm run dev-pg
 
 Got it running perfectly at as of April 2021 https://ourbigbook.com with the following steps.
 
-Initial setup:
+Initial setup for a Heroku project called "cirodown":
 ``
 sudo snap install --classic heroku
 heroku login
@@ -5812,12 +5812,15 @@ Every deployment:
 npm run deploy
 ``
 
+= Custom domain name setup
+{parent=heroku-deployment}
+
 Nuke the database and generate a demo database:
 ``
 # heroku run web/bin/generate-demo-data.js --force-production
 ``
 
-The domain was leased from: https://porkbun.com/[]. Unfortunatly, HTTPS on Heroku with a custom domain requires using a paying tier, so we upgraded from the free tier to the cheapest paid tier, "Hobby Project", to start with: https://stackoverflow.com/questions/52185560/heroku-set-ssl-certificates-on-free-plan
+The domain `ourbigbook.com` was leased from: https://porkbun.com/[]. Unfortunatly, HTTPS on Heroku with a custom domain requires using a paying tier, so we upgraded from the free tier to the cheapest paid tier, "Hobby Project", to start with: https://stackoverflow.com/questions/52185560/heroku-set-ssl-certificates-on-free-plan
 
 On the Porkbun web UI, we added a DNS record of type :
 ``
@@ -5829,6 +5832,16 @@ heroku domains:add ourbigbook.com
 heroku domains
 ``
 and we removed all other `ALIAS`/`CNAME` records from Porkbun.
+
+= Staging deployment
+{parent=heroku-deployment}
+
+Before pushing any new changes, and especially ones that seem dangerous, it is a good idea to first deploy to a staging server. E.g. using the `ourbigbook-staging` heroku project ID:
+``
+heroku git:remote -a cirodown
+heroku addons:create heroku-postgresql:hobby-dev
+heroku config:set SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
+``
 
 = Dependency organization
 {parent=heroku-deployment}

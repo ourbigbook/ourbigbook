@@ -56,14 +56,15 @@ export const makeGetServerSidePropsIndex = (what) => {
         (article) => {return article.toJson(loggedInUser) }))
       articlesCount = articlesAndCounts.count
     }
-    return {
-      props: {
-        articles,
-        articlesCount,
-        loggedInUser: await loggedInUser.toJson(),
-        page,
-        what,
-      },
+    const props = {
+      articles,
+      articlesCount,
+      page,
+      what,
     }
+    if (loggedInUser) {
+      props.loggedInUser = await loggedInUser.toJson()
+    }
+    return { props }
   }
 }

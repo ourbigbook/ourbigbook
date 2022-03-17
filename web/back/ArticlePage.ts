@@ -22,7 +22,7 @@ export function makeGetServerSidePropsArticle(addComments?, loggedInUserCache?) 
     const ret: any = {
       props: {
         article: articleJson,
-        loggedInUser: await loggedInUser.toJson(),
+        loggedInUser: await loggedInUser?.toJson(),
         topicArticleCount,
       },
     }

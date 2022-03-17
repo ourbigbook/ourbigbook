@@ -38,14 +38,15 @@ export const makeGetServerSidePropsTopic = (what): GetServerSideProps => {
       order,
       topicId: params.id,
     })
-    return {
-      props: {
-        articles: await Promise.all(articles.rows.map(article => article.toJson(loggedInUser))),
-        articlesCount: articles.count,
-        loggedInUser: await loggedInUser.toJson(),
-        page,
-        what,
-      },
+    const props = {
+      articles: await Promise.all(articles.rows.map(article => article.toJson(loggedInUser))),
+      articlesCount: articles.count,
+      page,
+      what,
     }
+    if (loggedInUser) {
+      props.loggedInUser = await loggedInUser.toJson()
+    }
+    return { props }
   }
 }

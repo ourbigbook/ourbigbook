@@ -5,7 +5,7 @@ export function displayAndUsernameText(user) {
   if (user?.displayName) {
     ret += `${user?.displayName} (`
   }
-  ret += user.username
+  ret += `@${user.username}`
   if (user?.displayName) {
     ret += ')'
   }
@@ -17,7 +17,7 @@ export function DisplayAndUsername({ user }) {
   if (user.displayName) {
     ret += `${user.displayName} (`
   }
-  ret += user.username
+  ret += `@${user.username}`
   if (user.displayName) {
     ret += ', '
   } else {

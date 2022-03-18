@@ -50,7 +50,8 @@ class IdProviderDbAdapter {
   }
 }
 
-// Reconcile the database with information that depends only on existence of Cirodown files, notably:
+// Reconcile the database with information that depends only on existence of Cirodown files,
+// but not their content, notably:
 // - remove any IDs from deleted files https://github.com/cirosantilli/cirodown/issues/125
 // - prefetch all last_render timestamps in one go
 async function reconcile_db_and_filesystem(input_path, cirodown_options, non_cirodown_options) {
@@ -65,18 +66,35 @@ async function reconcile_db_and_filesystem(input_path, cirodown_options, non_cir
     );
     const cirodown_paths_converted = new_non_cirodown_options.cirodown_paths_converted
     const [,,file_rows] = await Promise.all([
+      // Clear database of information of files that have been deleted.
       sequelize.models.Id.destroy({
         where: { path: { [Op.not]: cirodown_paths_converted } } }),
       sequelize.models.Ref.destroy({
         where: { defined_at: { [Op.not]: cirodown_paths_converted } } }),
+
+      // Prefetch the timestamps.
       sequelize.models.File.findAll({
         where: { path: cirodown_paths_converted } }),
     ])
     const file_rows_dict = {}
+    const outdated_paths = []
     for (const file_row of file_rows) {
-      file_rows_dict[file_row.path] = file_row
+      const input_path = file_row.path
+      file_rows_dict[input_path] = file_row
+
+      // Determine which files need to be updated.
+      const mtime = fs.statSync(input_path).mtime
+      const skipParse = file_row.last_parse !== null && file_row.last_parse > mtime
+      file_row.timestamp_skip_render = file_row.last_render !== null && file_row.last_render > mtime
+      file_row.timestamp_skip_parse = skipParse
+      if (!skipParse) {
+        outdated_paths.push(input_path)
+      }
     }
     non_cirodown_options.file_rows_dict = file_rows_dict
+
+    // Clear IDs of the files that will be updated.
+    await non_cirodown_options.id_provider.clear(outdated_paths)
   }
 }
 
@@ -354,9 +372,9 @@ async function convert_path_to_file(input_path, cirodown_options, non_cirodown_o
       if (file_row !== undefined) {
         const mtime = fs.statSync(input_path).mtime
         if (cirodown_options.render) {
-          timestamp_skip = non_cirodown_options.commander.renderTimestamp && file_row.last_render !== null && file_row.last_render > mtime
+          timestamp_skip = non_cirodown_options.commander.renderTimestamp && file_row.timestamp_skip_render
         } else {
-          timestamp_skip = file_row.last_parse !== null && file_row.last_parse > mtime
+          timestamp_skip = file_row.timestamp_skip_parse
         }
       }
     }

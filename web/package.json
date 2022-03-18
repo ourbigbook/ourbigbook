@@ -10,7 +10,7 @@
     "build-prod": "./prod.sh npm run build",
     "build-nodeps": "next build",
     "build-dev-nodeps": "NEXT_PUBLIC_NODE_ENV=development npm run build-nodeps",
-    "deploy": "git push -f heroku master",
+    "deploy": "git push -f heroku master && git push && git push origin HEAD:deploy",
     "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon -w . -w ../index.js ./app.js",
     "devi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./app.js",
     "dev-pg": "CIRODOWN_POSTGRES=true npm run dev",
@@ -58,6 +58,7 @@
     "request": "2.69.0",
     "sass": "1.34.0",
     "sequelize": "6.14.0",
+    "sequelize-cli": "6.2.0",
     "swr": "0.3.0",
     "termit": "0.4.4",
     "typescript": "4.3.5"
@@ -69,7 +70,6 @@
     "mocha": "6.2.2",
     "nodemon": "1.11.0",
     "prettier": "1.12.1",
-    "sequelize-cli": "6.2.0",
     "sqlite3": "5.0.2"
   },
   "cacheDirectories": [

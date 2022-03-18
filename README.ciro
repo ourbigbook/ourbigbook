@@ -5838,7 +5838,9 @@ and we removed all other `ALIAS`/`CNAME` records from Porkbun.
 = Staging deployment
 {parent=heroku-deployment}
 
-Before pushing any new changes, and especially ones that seem dangerous, it is a good idea to first deploy to a staging server. E.g. using the `ourbigbook-staging` heroku project ID:
+Before pushing any new changes, and especially ones that seem dangerous, it is a good idea to first deploy to a staging server.
+
+We just follow the exact same steps as for \x[heroku-deployment] but with a different project. E.g. using the `ourbigbook-staging` heroku project ID:
 ``
 git remote add heroku-staging https://git.heroku.com/ourbigbook-staging.git
 heroku addons:create --app ourbigbook-staging heroku-postgresql:hobby-dev

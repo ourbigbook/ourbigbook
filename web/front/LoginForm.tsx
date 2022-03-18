@@ -88,6 +88,7 @@ const LoginForm = ({ register = false }) => {
             </Label>
             <Label label="Username">
               <input
+                autoComplete="username"
                 type="text"
                 placeholder="Username"
                 value={username}
@@ -98,6 +99,7 @@ const LoginForm = ({ register = false }) => {
         }
         <Label label="Email">
           <input
+            autoComplete="email"
             type="email"
             placeholder="Email"
             value={email}
@@ -106,6 +108,7 @@ const LoginForm = ({ register = false }) => {
         </Label>
         <Label label="Password">
           <input
+            autoComplete={register ? "new-password" : "current-password"}
             type="password"
             placeholder="Password"
             value={password}

@@ -5675,7 +5675,7 @@ It is highly recommended that you use the exact same Node.js and NPM versions as
 First time setup:
 ``
 cd cirodown &&
-npm install &&
+npm run link &&
 npm run build-assets &&
 cd web/ &&
 npm install &&
@@ -5707,7 +5707,8 @@ Whenever you save any changes to the backend server, we listen to this and autom
 
 For frontend, changes are automatically recompiled by the webpack development server, so you can basically just refresh pages and they will be updated straightaway.
 
-=== Log database queries done
+= Log database queries done
+{parent=dynamic-website}
 
 ``
 DEBUG='sequelize:sql:*' npm run dev
@@ -5804,6 +5805,7 @@ heroku login
 heroku git:remote -a cirodown
 # Automatically sets DATABASE_URL.
 heroku addons:create heroku-postgresql:hobby-dev
+# We need this to be able to require("cirodown")
 heroku config:set SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
 ``
 

@@ -1,4 +1,4 @@
-const cirodown = require('cirodown')
+const cirodown = require('../index')
 
 module.exports = (sequelize) => {
   const { DataTypes, Op } = sequelize.Sequelize

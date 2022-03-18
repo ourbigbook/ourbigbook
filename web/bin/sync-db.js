@@ -23,7 +23,7 @@ try {
   }
 }
 if (!dbEmpty) {
-  out = child_process.spawnSync('npx', ['sequelize-cli', 'db:migrate'])
+  out = child_process.spawnSync('npx', ['--no-install', 'sequelize-cli', 'db:migrate'])
   console.error(out.stdout.toString());
   console.error(out.stderr.toString());
   process.exit(out.status)

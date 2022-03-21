@@ -4136,7 +4136,7 @@ assert_convert_ast('the toc is added before the first h1 when there are multiple
     a('H', undefined, {level: [t('1')], title: [t('h2')]}),
   ],
 )
-assert_convert_ast('ancestors list shows after toc',
+assert_convert_ast('ancestors list shows after toc on toplevel',
   `= Index
 
 \\Include[notindex]
@@ -6627,7 +6627,7 @@ assert_executable(
     },
   }
 );
-assert_executable('executable: cross file ancestors',
+assert_executable('executable: cross file ancestors work on single file conversions at toplevel',
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
     // purely from the database, and not from a cache shared across several input files.
@@ -6668,6 +6668,52 @@ assert_executable('executable: cross file ancestors',
     },
     assert_not_xpath: {
       'index.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
+      ],
+    },
+  }
+);
+assert_executable('executable: cross file ancestors work on single file conversions in subdir',
+  {
+    // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
+    // purely from the database, and not from a cache shared across several input files.
+    args: ['--add-test-instrumentation', 'subdir/notindex3.ciro'],
+    filesystem: {
+      'subdir/index.ciro': `= Index
+
+\\Include[notindex]
+`,
+      'subdir/notindex.ciro': `= Notindex
+
+\\Include[notindex2]
+`,
+      'subdir/notindex2.ciro': `= Notindex 2
+
+\\Include[notindex3]
+`,
+      'subdir/notindex3.ciro': `= Notindex 2
+`
+    },
+    pre_exec: [
+      // First we pre-convert everything.
+      ['cirodown', ['--add-test-instrumentation', '.']],
+    ],
+    assert_xpath: {
+      'subdir/notindex.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
+      ],
+      'subdir/notindex2.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+      ],
+      'subdir/notindex3.html': [
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
+      ],
+    },
+    assert_not_xpath: {
+      'subdir.html': [
         `//x:ul[@${cirodown.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
       ],
     },

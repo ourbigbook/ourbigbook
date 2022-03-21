@@ -5857,6 +5857,11 @@ heroku pg:copy cirodown::DATABASE_URL DATABASE_URL -a ourbigbook-staging &&
 heroku maintenance:off -a ourbigbook-staging
 ``
 
+To get a shell on the stating server you can run:
+``
+heroku run -a ourbigbook-staging bash
+``
+
 = Dependency organization
 {parent=heroku-deployment}
 
@@ -5918,6 +5923,30 @@ This is something that should be merged into Sequelize itself, or at least asked
 * \a[web/pages]: Next.js URL entry points
 * \a[web/front] and \a[web/front.tsx]: files that can be imported from either front-end of backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
 * \a[web/back] and \a[web/back.ts]: files that can be imported only from backend. See: https://stackoverflow.com/questions/64926174/module-not-found-cant-resolve-fs-in-next-js-application/70363153#70363153
+
+= web/bin/rerender-articles.js
+{file}
+{parent=dynamic-website-directory-structure}
+
+Rerender all articles.
+
+This has to be done to see updates on Cirodown changes that change the render output.
+
+Notably, this would be mandatory in case of CSS changes that require corresponding HTML changes.
+
+As the website grows, we will likey need to do a lazy version of this that marks pages as outdated, and then renders on the fly, plus a background thread that always updates outdated pages.
+
+The functionality of this script should be called from a migration whenever such HTML changes are required. \a[web/migrations/20220321000000-output-update-ancestor.js] contains an example from until we move to the outdated flag variant.
+
+= Dynamic website help
+{parent=dynamic-website}
+
+This section will eventually be moved into the website itself. We'll just likely paste it into the database under an account that is always created or something like that.
+
+= Dynamic website keyboard shortcuts
+{parent=dynamic-website-help}
+
+* Ctrl + Enter: submit the current form, e.g. save/create artiles or comments, login, register
 
 = Step debug the dynamic website
 {parent=dynamic-website}

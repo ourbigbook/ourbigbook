@@ -3,7 +3,7 @@
 import CustomLink from 'front/CustomLink'
 import CustomImage from 'front/CustomImage'
 import { User } from 'front/types/userType'
-import routes from 'routes'
+import routes from 'front/routes'
 import { DisplayAndUsername } from 'front/user'
 
 const UserLinkWithImage = ({ user }: { user: User }) => {

@@ -1,4 +1,4 @@
-const { escapeUsername } = require("./front/config");
+const { escapeUsername } = require("./config");
 
 function getPage(page) {
   return page === undefined || page === 1 ? '' : `/${page}`
@@ -12,6 +12,7 @@ module.exports = {
   articlesTop: (page) => `/${escapeUsername}/top${getPage(page)}`,
   articleEdit: slug => `/${escapeUsername}/edit/${slug}`,
   articleNew: () => `/${escapeUsername}/new`,
+  articleNewFrom: (slug) => `/${escapeUsername}/new/${slug}`,
   articleView: slug => `/${slug}`,
   userEdit: () => `/${escapeUsername}/settings`,
   userLogin: () => `/${escapeUsername}/login`,

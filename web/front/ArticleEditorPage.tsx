@@ -11,11 +11,12 @@ import ListErrors from 'front/ListErrors'
 import { slugFromRouter } from 'front'
 import ArticleAPI from 'front/api/article'
 import useLoggedInUser from 'front/useLoggedInUser'
-import routes from 'routes'
+import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'shared';
 
-export default function ArticleEditorPageHoc(isnew: boolean = false) {
+export default function ArticleEditorPageHoc(options={ }) {
+  const isnew = options.isnew === undefined ? false : options.isnew
   const editor = ({ article: initialArticle }) => {
     let body;
     let initialArticleState;
@@ -104,7 +105,7 @@ export default function ArticleEditorPageHoc(isnew: boolean = false) {
       // This is a hack for the useEffect cleanup callback issue.
       cirodownEditorElem.current.cirodownEditor.dispose()
 
-      Router.push(routes.articleView(data.article.slug), null, {scroll: true});
+      Router.push(routes.articleView(data.article.slug), null, { scroll: true });
     };
     useCtrlEnterSubmit(handleSubmit)
     const handleCancel = async (e) => {

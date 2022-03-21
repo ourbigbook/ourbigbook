@@ -6,7 +6,7 @@
 const router = require('express').Router()
 
 const auth = require('../auth')
-const routes = require('../routes')
+const routes = require('../front/routes')
 const lib = require('./lib')
 
 router.get(routes.home(), auth.required, async function(req, res, next) {

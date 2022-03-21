@@ -5,7 +5,7 @@ import Router from 'next/router'
 import UserAPI from 'front/api/user'
 import { buttonActiveClass } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
-import routes from 'routes'
+import routes from 'front/routes'
 
 const FollowUserButton = ({
   user,

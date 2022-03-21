@@ -4,7 +4,7 @@ import React from 'react'
 
 import CustomLink from 'front/CustomLink'
 import LoginForm from 'front/LoginForm'
-import routes from 'routes'
+import routes from 'front/routes'
 import { LOGIN_ACTION, REGISTER_ACTION } from 'front'
 import { AppContext } from 'front'
 

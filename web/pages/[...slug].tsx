@@ -14,18 +14,23 @@ import { AppContext } from 'front'
 import CommentAPI from 'front/api/comment'
 import { ArticleType } from 'front/types/articleType'
 import { CommentType } from 'front/types/commentType'
+import { UserType } from 'front/types/userType'
 import fetcher from 'fetcher'
-import routes from 'routes'
+import routes from 'front/routes'
 
 interface ArticlePageProps {
   article: ArticleType;
   comments: CommentType[];
+  loggedInuser?: UserType;
+  loggedInUserVersionSlug?: string;
   topicArticleCount: number;
 }
 
 const ArticlePage = ({
   article,
   comments,
+  loggedInUser,
+  loggedInUserVersionSlug,
   topicArticleCount,
 }: ArticlePageProps) => {
   const router = useRouter();
@@ -41,6 +46,8 @@ const ArticlePage = ({
   React.useEffect(() =>
     setTitle(`${article.title} by ${displayAndUsernameText(article?.author)}`)
   )
+  const showOthers = topicArticleCount > 1
+  const showCreateMyOwn = article.author.username !== loggedInUser.username
   return (
     <>
       <div className="article-page">
@@ -52,12 +59,29 @@ const ArticlePage = ({
             <FollowUserButton user={article.author} showUsername={false} />
           </div>
           <div className="article-info article-info-2">
-            {topicArticleCount > 1 &&
+            { showOthers&&
               <CustomLink
                 href={routes.topicArticlesTop(article.topicId)}
               >
-                <i className="ion-ios-people" /> Top articles by other authors about the same topic ({topicArticleCount})
+                <i className="ion-ios-people" /> {topicArticleCount - 1} article{topicArticleCount - 1 > 1 ? 's' : ''} by other authors about "{article.title}"
               </CustomLink>
+            }
+            {showOthers && showCreateMyOwn && <>{' '}</> }
+            {showCreateMyOwn &&
+              <>
+                {loggedInUserVersionSlug === undefined
+                  ? <CustomLink
+                      href={routes.articleNewFrom(article.slug)}
+                    >
+                      <i className="ion-edit" /> Create my own version
+                    </CustomLink>
+                  : <CustomLink
+                      href={routes.articleView(loggedInUserVersionSlug)}
+                    >
+                      <i className="ion-eye" /> View my version
+                    </CustomLink>
+                }
+              </>
             }
           </div>
           <ArticleInfo {...{article}}/>

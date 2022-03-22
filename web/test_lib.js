@@ -206,14 +206,15 @@ async function generateDemoData(params) {
   const nLikesPerUser = params.nLikesPerUser === undefined ? 20 : params.nLikesPerUser
   const directory = params.directory
   const basename = params.basename
+  const verbose = params.verbose === undefined ? false : params.verbose
 
   const nArticles = nUsers * nArticlesPerUser
   const sequelize = models.getSequelize(directory, basename);
   await models.sync(sequelize, { force: true })
   if (!params.empty) {
 
-    printTimeNow = now()
-    console.error('User');
+    if (verbose) printTimeNow = now()
+    if (verbose) console.error('User');
     const userArgs = [];
     for (let i = 0; i < nUsers; i++) {
       let [displayName, image] = userData[i % userData.length]
@@ -247,9 +248,9 @@ async function generateDemoData(params) {
     //    individualHooks: true,
     //  }
     //)
-    printTime()
+    if (verbose) printTime()
 
-    console.error('UserFollowUser');
+    if (verbose) console.error('UserFollowUser');
     for (let i = 0; i < nUsers; i++) {
       let nFollowsPerUserEffective = nUsers < nFollowsPerUser ? nUsers : nFollowsPerUser
       for (var j = 0; j < nFollowsPerUserEffective; j++) {
@@ -257,9 +258,9 @@ async function generateDemoData(params) {
       }
     }
 
-    printTime()
+    if (verbose) printTime()
 
-    console.error('Article');
+    if (verbose) console.error('Article');
     const articleDataProviders = {}
     const articleArgs = [];
     let dateI = 0
@@ -395,7 +396,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     const articles = []
     let articleId = 0
     for (const articleArg of articleArgs) {
-      console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
+      if (verbose) console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
       const article = new sequelize.models.Article(articleArg)
       await article.save()
       articles.push(article)
@@ -435,18 +436,18 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
 
     // Update all pages to make them render references such as parent references
     // which were missed at initial creation time.
-    console.error('Article update');
+    if (verbose) console.error('Article update');
     let i = 0
     for (const article of articles) {
-      console.error(`${i} authorId=${article.authorId} title=${article.title}`);
+      if (verbose) console.error(`${i} authorId=${article.authorId} title=${article.title}`);
       await article.save()
       i++
     }
     //await sequelize.models.Article.update({}, { where: {}, individualHooks: true})
 
-    printTime()
+    if (verbose) printTime()
 
-    console.error('Like');
+    if (verbose) console.error('Like');
     let articleIdx = 0
     for (let i = 0; i < nUsers; i++) {
       const user = users[i]
@@ -472,9 +473,9 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     //  }
     //}
     //await sequelize.models.UserLikeArticle.bulkCreate(likeArgs)
-    printTime()
+    if (verbose) printTime()
 
-    console.error('Comment');
+    if (verbose) console.error('Comment');
     const commentArgs = [];
     let commentIdx = 0;
     for (let i = 0; i < nArticles; i++) {
@@ -489,7 +490,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
       }
     }
     const comments = await sequelize.models.Comment.bulkCreate(commentArgs)
-    printTime()
+    if (verbose) printTime()
   }
 
   return sequelize

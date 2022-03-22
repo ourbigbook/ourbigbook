@@ -21,7 +21,7 @@ import routes from 'front/routes'
 interface ArticlePageProps {
   article: ArticleType;
   comments: CommentType[];
-  loggedInuser?: UserType;
+  loggedInUser?: UserType;
   loggedInUserVersionSlug?: string;
   topicArticleCount: number;
 }

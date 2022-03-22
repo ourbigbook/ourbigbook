@@ -5991,9 +5991,9 @@ npm run test-pg
 ``
 
 Note that this will erase all data present in the database used. In order to point to a custom database use:
-....
+``
 DATABASE_URL_TEST=postgres://realworld_next_user:a@localhost:5432/realworld_next_test npm run test-pg
-....
+``
 We don't use `DATABASE_URL` when running tests as a safegard to reduce the likelyhood of accidentaly nuking the production database.
 
 The tests include two broad classes of tests:

@@ -59,8 +59,8 @@ class AstNode {
     if (!('from_include' in options)) {
       options.from_include = false;
     }
-    if (!('from_cirodown_example' in options)) {
-      options.from_cirodown_example = false;
+    if (!('from_ourbigbook_example' in options)) {
+      options.from_ourbigbook_example = false;
     }
     if (!('force_no_index' in options)) {
       options.force_no_index = false;
@@ -182,8 +182,8 @@ class AstNode {
 
     // This was added to the tree from an include.
     this.from_include = options.from_include;
-    // This was added to the tree from a cirodown_example.
-    this.from_cirodown_example = options.from_cirodown_example;
+    // This was added to the tree from a ourbigbook_example.
+    this.from_ourbigbook_example = options.from_ourbigbook_example;
 
     // Includes under this header.
     this.includes = [];
@@ -284,7 +284,7 @@ class AstNode {
     if (
       this.from_include &&
       context.in_split_headers &&
-      !this.from_cirodown_example
+      !this.from_ourbigbook_example
     ) {
       return '';
     }
@@ -301,7 +301,7 @@ class AstNode {
       // Possible for AstType === PARAGRAPH which can happen for
       // insane paragraph inside header or ID during post processing.
       // Not the nicest solution, but prevents the crash, so so be it.
-      // https://github.com/cirosantilli/cirodown/issues/143
+      // https://github.com/cirosantilli/ourbigbook/issues/143
       return ' '
     }
     const macro = context.macros[this.macro_name];
@@ -370,12 +370,12 @@ class AstNode {
   get_header_parent_ids(context) {
     const ret = new Set()
     const local_parent_id = this.get_local_header_parent_id()
-    // Refs defined in the current .ciro file + include_path_set
+    // Refs defined in the current .bigb file + include_path_set
     if (local_parent_id !== undefined) {
       ret.add(local_parent_id)
     }
 
-    // Refs not defined from outside in the current .ciro file + include_path_set
+    // Refs not defined from outside in the current .bigb file + include_path_set
     // but which were explicitly requested, e.g. we request it for all headers
     // to look for external include parents
     if (context.options.id_provider) {
@@ -388,7 +388,7 @@ class AstNode {
       }
     }
 
-    // Refs not defined from outside in the current .ciro file + include_path_set,
+    // Refs not defined from outside in the current .bigb file + include_path_set,
     // but which were automatically fetched by JOIN our fetch all IDs query:
     // we fetch all parent and children via JOIN for every ID we fetch.
     // This is needed notably for toplevel scope removal.
@@ -947,33 +947,33 @@ class MacroArgument {
       //
       // Goal: to allow the use to write both \a[http://example.com] and
       // \p[http://example.com] and get what a sane person expects, see also:
-      // https://cirosantilli.com/cirodown#insane-link-parsing-rules
+      // https://cirosantilli.com/ourbigbook#insane-link-parsing-rules
       options.elide_link_only = false;
     }
     if (!('boolean' in options)) {
-      // https://cirosantilli.com/cirodown#boolean-named-arguments
+      // https://cirosantilli.com/ourbigbook#boolean-named-arguments
       options.boolean = false;
     }
     if (!('count_words' in options)) {
       options.count_words = false;
     }
     if (!('default' in options)) {
-      // https://cirosantilli.com/cirodown#boolean-named-arguments
+      // https://cirosantilli.com/ourbigbook#boolean-named-arguments
       options.default = undefined;
     }
     if (!('mandatory' in options)) {
-      // https://cirosantilli.com/cirodown#mandatory-positional-arguments
+      // https://cirosantilli.com/ourbigbook#mandatory-positional-arguments
       options.mandatory = false;
     }
     if (!('multiple' in options)) {
-      // https://cirosantilli.com/cirodown#multiple-argument
+      // https://cirosantilli.com/ourbigbook#multiple-argument
       options.multiple = false;
     }
     if (!('positive_nonzero_integer' in options)) {
       options.positive_nonzero_integer = false;
     }
     if (!('remove_whitespace_children' in options)) {
-      // https://cirosantilli.com/cirodown#remove_whitespace_children
+      // https://cirosantilli.com/ourbigbook#remove_whitespace_children
       options.remove_whitespace_children = false;
     }
     this.boolean = options.boolean;
@@ -1015,7 +1015,7 @@ class Macro {
    */
   constructor(name, positional_args, html_render_func, options={}) {
     if (!('auto_parent' in options)) {
-      // https://cirosantilli.com/cirodown#auto_parent
+      // https://cirosantilli.com/ourbigbook#auto_parent
       options.auto_parent = undefined;
     }
     if (!('auto_parent_skip' in options)) {
@@ -1142,7 +1142,7 @@ exports.Macro = Macro;
 
 // Macro names defined here are those that have magic properties, e.g.
 // headers are used by the 'toc'.
-Macro.CIRODOWN_EXAMPLE_MACRO_NAME = 'CirodownExample';
+Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME = 'OurbigbookExample';
 Macro.CODE_MACRO_NAME = 'c';
 // Add arguments common to all macros.
 Macro.DISAMBIGUATE_ARGUMENT_NAME = 'disambiguate';
@@ -1150,8 +1150,8 @@ Macro.ID_ARGUMENT_NAME = 'id';
 // Undocumented argument used only for testing.
 // Adds data-X to one of the rendered HTML elements.
 // to facilitate XPath selection.
-Macro.TEST_DATA_ARGUMENT_NAME = 'cirodownTestData';
-Macro.TEST_DATA_HTML_PROP = 'data-cirodown-test';
+Macro.TEST_DATA_ARGUMENT_NAME = 'ourbigbookTestData';
+Macro.TEST_DATA_HTML_PROP = 'data-ourbigbook-test';
 Macro.SYNONYM_ARGUMENT_NAME = 'synonym';
 Macro.COMMON_ARGNAMES = new Set([
   Macro.DISAMBIGUATE_ARGUMENT_NAME,
@@ -2102,11 +2102,11 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
             ast.file = id_text_append
             id_text = 'file' + Macro.HEADER_SCOPE_SEPARATOR + id_text + id_text_append
           } else {
-            id_text += title_to_id(title_text, new_context.options.cirodown_json['id']);
+            id_text += title_to_id(title_text, new_context.options.ourbigbook_json['id']);
           }
           const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
           if (disambiguate_arg !== undefined) {
-            id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.cirodown_json['id']);
+            id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json['id']);
           }
           ast.id = id_text;
         } else {
@@ -2287,7 +2287,7 @@ function closing_token(token) {
 }
 
 /**
- * Main cirodown input to HTML/LaTeX/etc. output JavaScript API.
+ * Main ourbigbook input to HTML/LaTeX/etc. output JavaScript API.
  *
  * The CLI interface basically just feeds this.
  *
@@ -2338,7 +2338,7 @@ async function convert(
 
   // Setup context.media_provider_default based on `default-for`.
   {
-    const media_providers = context.options.cirodown_json['media-providers'];
+    const media_providers = context.options.ourbigbook_json['media-providers'];
     context.media_provider_default = {};
     for (const media_provider_name in media_providers) {
       const media_provider = media_providers[media_provider_name];
@@ -2521,7 +2521,7 @@ function render_arg(arg, context) {
 
 /* Similar to render_arg, but used for IDs.
  *
- * Because IDs are used programmatically in cirodown, we don't escape
+ * Because IDs are used programmatically in ourbigbook, we don't escape
  * HTML characters at this point.
  *
  * @param {AstArgument} arg
@@ -2637,12 +2637,12 @@ function convert_init_context(options={}, extra_returns={}) {
   options = Object.assign({}, options);
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }
-  if (!('cirodown_json' in options)) { options.cirodown_json = {}; }
-    const cirodown_json = options.cirodown_json;
+  if (!('ourbigbook_json' in options)) { options.ourbigbook_json = {}; }
+    const ourbigbook_json = options.ourbigbook_json;
     {
-      if (!('media-providers' in cirodown_json)) { cirodown_json['media-providers'] = {}; }
+      if (!('media-providers' in ourbigbook_json)) { ourbigbook_json['media-providers'] = {}; }
       {
-        const media_providers = cirodown_json['media-providers'];
+        const media_providers = ourbigbook_json['media-providers'];
         for (const media_provider_type of MEDIA_PROVIDER_TYPES) {
           if (!(media_provider_type in media_providers)) {
             media_providers[media_provider_type] = {};
@@ -2665,18 +2665,18 @@ function convert_init_context(options={}, extra_returns={}) {
           }
         }
       }
-      if (!('h' in cirodown_json)) { cirodown_json.h = {}; }
-      if (!('numbered' in cirodown_json.h)) { cirodown_json.h.numbered = true; }
-      if (!('splitDefault' in cirodown_json.h)) { cirodown_json.h.splitDefault = false; }
+      if (!('h' in ourbigbook_json)) { ourbigbook_json.h = {}; }
+      if (!('numbered' in ourbigbook_json.h)) { ourbigbook_json.h.numbered = true; }
+      if (!('splitDefault' in ourbigbook_json.h)) { ourbigbook_json.h.splitDefault = false; }
       {
-        if (!('lint' in cirodown_json)) { cirodown_json.lint = {}; }
-        const lint = cirodown_json.lint
+        if (!('lint' in ourbigbook_json)) { ourbigbook_json.lint = {}; }
+        const lint = ourbigbook_json.lint
         if (!('h-tag' in lint)) { lint['h-tag'] = undefined; }
         if (!('h-parent' in lint)) { lint['h-parent'] = undefined; }
       }
       {
-        if (!('id' in cirodown_json)) { cirodown_json.id = {}; }
-        const id = cirodown_json.id
+        if (!('id' in ourbigbook_json)) { ourbigbook_json.id = {}; }
+        const id = ourbigbook_json.id
         if (!('normalize' in id)) { id.normalize = {}; }
         const normalize = id.normalize
       }
@@ -2686,7 +2686,7 @@ function convert_init_context(options={}, extra_returns={}) {
   // Check if file exists.
   if (!('fs_exists_sync' in options)) { options.fs_exists_sync }
   if (!('from_include' in options)) { options.from_include = false; }
-  if (!('from_cirodown_example' in options)) { options.from_cirodown_example = false; }
+  if (!('from_ourbigbook_example' in options)) { options.from_ourbigbook_example = false; }
   if (!('html_embed' in options)) { options.html_embed = false; }
   if (!('html_x_extension' in options)) {
     // Add HTML extension to x links. And therefore also:
@@ -2725,7 +2725,7 @@ function convert_init_context(options={}, extra_returns={}) {
     options.template_scripts_relative = [];
   }
   if (!('template_styles_relative' in options)) {
-    // CSS styles relative to cirodown.json. Must be resolved by cirodown.convert.
+    // CSS styles relative to ourbigbook.json. Must be resolved by ourbigbook.convert.
     // because of split headers. The relative path expanded result gets prepended
     // to `options.template_vars.style`.
     options.template_styles_relative = [];
@@ -2740,7 +2740,7 @@ function convert_init_context(options={}, extra_returns={}) {
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
 
-  // Internalish options that may get modified by sub-includes/CirodownExample in order
+  // Internalish options that may get modified by sub-includes/OurbigbookExample in order
   // to forward state back up. Maybe we should move them to a subdict to make this clearer
   // (moving to extra_returns feels bad because they are also input), but lazy.
   //
@@ -2789,7 +2789,7 @@ function convert_init_context(options={}, extra_returns={}) {
   //
   //   If true, force the toplevel header to have this ID.
   //   Otherwise, derive the ID from the title.
-  //   https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+  //   https://cirosantilli.com/ourbigbook#the-id-of-the-first-header-is-derived-from-the-filename
   options.toplevel_id = undefined;
   let root_relpath_shift
   if (options.input_path !== undefined) {
@@ -2797,10 +2797,10 @@ function convert_init_context(options={}, extra_returns={}) {
     const [basename_noext, ext] = path_splitext(basename)
     if (INDEX_FILE_BASENAMES_NOEXT.has(basename_noext)) {
       if (input_dir === '') {
-        // https://cirosantilli.com/cirodown#the-toplevel-index-file
+        // https://cirosantilli.com/ourbigbook#the-toplevel-index-file
         options.toplevel_id = undefined;
       } else {
-        // https://cirosantilli.com/cirodown#the-id-of-the-first-header-is-derived-from-the-filename
+        // https://cirosantilli.com/ourbigbook#the-id-of-the-first-header-is-derived-from-the-filename
         options.toplevel_id = input_dir;
         options.toplevel_has_scope = true
         root_relpath_shift = input_dir
@@ -2822,7 +2822,7 @@ function convert_init_context(options={}, extra_returns={}) {
   }
 
   if (options.unsafe_xss === undefined) {
-    const unsafe_xss = cirodown_json['unsafe-xss'];
+    const unsafe_xss = ourbigbook_json['unsafe-xss'];
     if (unsafe_xss !== undefined) {
       options.unsafe_xss = unsafe_xss;
     } else {
@@ -2897,7 +2897,7 @@ function error_message_in_output(msg, context) {
   } else {
     escaped_msg = html_escape_context(context, msg);
   }
-  return `[CIRODOWN_ERROR: ${escaped_msg}]`
+  return `[OURBIGBOOK_ERROR: ${escaped_msg}]`
 }
 
 // https://stackoverflow.com/questions/9461621/format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900
@@ -3100,7 +3100,7 @@ function get_parent_argument_ast(ast, context, prev_header, include_options) {
     } else {
       // We can't use context.id_provider.get here because we don't know who
       // the parent node is, because scope can affect that choice.
-      // https://cirosantilli.com/cirodown#id-based-header-levels-and-scope-resolution
+      // https://cirosantilli.com/ourbigbook#id-based-header-levels-and-scope-resolution
       let sorted_keys = [...include_options.header_tree_stack.keys()].sort((a, b) => a - b);
       let largest_level = sorted_keys[sorted_keys.length - 1];
       for (let level = largest_level; level > 0; level--) {
@@ -3129,7 +3129,7 @@ function get_root_relpath(output_path, context) {
 }
 
 // Ensure that all children and tag targets exist. This is for error checking only.
-// https://cirosantilli.com/cirodown#h-child-argment
+// https://cirosantilli.com/ourbigbook#h-child-argment
 function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
   let ret = ''
   for (let child of childrenOrTags) {
@@ -3470,8 +3470,8 @@ function macro_list() {
 }
 exports.macro_list = macro_list;
 
-const CIRODOWN_EXT = '.ciro';
-exports.CIRODOWN_EXT = CIRODOWN_EXT;
+const OURBIGBOOK_EXT = '.bigb';
+exports.OURBIGBOOK_EXT = OURBIGBOOK_EXT;
 const MEDIA_PROVIDER_TYPES = new Set([
   'github',
   'local',
@@ -3551,7 +3551,7 @@ function noext(str) {
   return str.substring(0, str.lastIndexOf('.'));
 }
 
-// https://cirosantilli.com/cirodown#ascii-normalization
+// https://cirosantilli.com/ourbigbook#ascii-normalization
 function normalize_latin_character(c) {
   return lodash.deburr(c)
 }
@@ -3578,7 +3578,7 @@ function object_subset(source_object, keys) {
 /** Calculate the output path of an AST node,
  * or of something faked to look like one.
  *
- * cirodown ->
+ * ourbigbook ->
  *    split_headers -> index.html
  *   !split_headers -> index.html
  * quick-start ->
@@ -3623,7 +3623,7 @@ function output_path_from_ast(ast, context) {
 /* This is the centerpiece of path calculation. It determines where a given header
  * will land considering:
  *
- * * README.ciro -> index.ciro renaming
+ * * README.bigb -> index.bigb renaming
  * * split header stuff
  *
  * Note that the links need to do additional processing to determine this.
@@ -3755,7 +3755,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     token: tokens[0],
     tokens: tokens,
   };
-  // Get toplevel arguments such as {title=}, see https://cirosantilli.com/cirodown#toplevel
+  // Get toplevel arguments such as {title=}, see https://cirosantilli.com/ourbigbook#toplevel
   const ast_toplevel_args = parse_argument_list(
     state, Macro.TOPLEVEL_MACRO_NAME, AstType.MACRO);
   if ('content' in ast_toplevel_args) {
@@ -3884,7 +3884,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     let parent_arg_push_before = []
     const macro_name = ast.macro_name;
     ast.from_include = options.from_include;
-    ast.from_cirodown_example = options.from_cirodown_example;
+    ast.from_ourbigbook_example = options.from_ourbigbook_example;
     ast.source_location.path = options.input_path;
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       const peek_ast = todo_visit[todo_visit.length - 1][1];
@@ -3939,7 +3939,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       } else {
         input_dir = '.'
       }
-      // https://github.com/cirosantilli/cirodown/issues/215
+      // https://github.com/cirosantilli/ourbigbook/issues/215
       const read_include_ret = await (options.read_include(href, input_dir));
       if (read_include_ret === undefined) {
         let message = `could not find include: "${href}"`;
@@ -4064,7 +4064,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           parent_arg.push(...new_child_nodes);
         }
       }
-    } else if (macro_name === Macro.CIRODOWN_EXAMPLE_MACRO_NAME) {
+    } else if (macro_name === Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME) {
       parent_arg.push(...[
         new AstNode(
           AstType.MACRO,
@@ -4094,7 +4094,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           {
             'content': await parse_include(
               render_arg_noescape(ast.args.content, context),
-              clone_and_set(options, 'from_cirodown_example', true),
+              clone_and_set(options, 'from_ourbigbook_example', true),
               0,
               options.input_path,
               undefined,
@@ -4108,7 +4108,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         ),
       ]);
     } else {
-      // Not CirodownExample.
+      // Not OurbigbookExample.
       if (macro_name === Macro.HEADER_MACRO_NAME) {
         if (is_first_header) {
           ast.id = context.toplevel_id
@@ -4139,7 +4139,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         } else if (options.cur_header !== undefined) {
           ast.split_default = options.cur_header.split_default;
         } else {
-          ast.split_default = options.cirodown_json.h.splitDefault;
+          ast.split_default = options.ourbigbook_json.h.splitDefault;
         }
 
         if (is_synonym) {
@@ -4201,18 +4201,18 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         // lint['h-parent']
         if (
-          context.options.cirodown_json.lint['h-parent'] &&
+          context.options.ourbigbook_json.lint['h-parent'] &&
           !ast.validation_output.synonym.boolean
         ) {
           let message;
           if (
-            context.options.cirodown_json.lint['h-parent'] === 'parent' &&
+            context.options.ourbigbook_json.lint['h-parent'] === 'parent' &&
             !ast.validation_output.parent.given &&
             !is_first_header
           ) {
             message = `no parent given with lint['h-parent'] = "parent"`;
           } else if (
-            context.options.cirodown_json.lint['h-parent'] === 'number' &&
+            context.options.ourbigbook_json.lint['h-parent'] === 'number' &&
             ast.validation_output.parent.given
           ) {
             message = `parent given with lint['h-parent'] = "number"`;
@@ -4225,18 +4225,18 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         // lint['h-tag']
         if (
-          context.options.cirodown_json.lint['h-tag'] !== undefined
+          context.options.ourbigbook_json.lint['h-tag'] !== undefined
         ) {
           let message;
           let arg;
           if (
-            context.options.cirodown_json.lint['h-tag'] === 'child' &&
+            context.options.ourbigbook_json.lint['h-tag'] === 'child' &&
             ast.validation_output[Macro.HEADER_TAG_ARGNAME].given
           ) {
             message = `tag given with lint['h-tag'] = "child"`;
             arg = ast.args[Macro.HEADER_TAG_ARGNAME]
           } else if (
-            context.options.cirodown_json.lint['h-tag'] === 'tag' &&
+            context.options.ourbigbook_json.lint['h-tag'] === 'tag' &&
             ast.validation_output[Macro.HEADER_CHILD_ARGNAME].given
           ) {
             message = `child given with lint['h-tag'] = "tag"`;
@@ -4314,7 +4314,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         header_ids.push(ast.id)
 
-        // https://github.com/cirosantilli/cirodown/issues/100
+        // https://github.com/cirosantilli/ourbigbook/issues/100
         if (parent_tree_node_error) {
           const message = HEADER_PARENT_ERROR_MESSAGE + parent_id;
           ast.args[Macro.TITLE_ARGUMENT_NAME].push(
@@ -4413,7 +4413,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
 
         // Add children/tags to the child database.
-        // https://cirosantilli.com/cirodown#h-child-argment
+        // https://cirosantilli.com/ourbigbook#h-child-argment
         const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
         if (children !== undefined) {
           for (let child of children) {
@@ -4428,7 +4428,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       } else if (macro_name === Macro.X_MACRO_NAME) {
         if (header_title_ast_ancestors.length > 0 && ast.args.content === undefined) {
-          const message = 'x without content inside title of a header: https://cirosantilli.com/cirodown#x-within-title-restrictions'
+          const message = 'x without content inside title of a header: https://cirosantilli.com/ourbigbook#x-within-title-restrictions'
           ast.args.content = new AstArgument(
             [ new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location) ],
             ast.source_location
@@ -4920,7 +4920,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         ),
 
         // TODO merge the following two refs fetch into one single DB query. Lazy now.
-        // Started prototype at: https://github.com/cirosantilli/cirodown/tree/merge-ref-cache
+        // Started prototype at: https://github.com/cirosantilli/ourbigbook/tree/merge-ref-cache
         // The annoying part is deciding what needs to go in which direction of the cache.
         options.id_provider.get_refs_to_fetch(
           [
@@ -4979,7 +4979,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           // but the descendants to follow what they would actually render in the output as so they will show correctly on ToC.
           header_ast.add_argument('numbered', new AstArgument(
             [
-              new PlaintextAstNode(context.options.cirodown_json.h.numbered ? '1' : '0', header_ast.source_location),
+              new PlaintextAstNode(context.options.ourbigbook_json.h.numbered ? '1' : '0', header_ast.source_location),
             ],
             header_ast.source_location,
           ))
@@ -5112,7 +5112,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       // This to ensure that the ast we get from \x will have a consistent
       // numbering with the local parent.
       // This code will likely be removed if we do:
-      // https://github.com/cirosantilli/cirodown/issues/188
+      // https://github.com/cirosantilli/ourbigbook/issues/188
       const cached_ast = context.id_provider.get(ast.id, context)
       if (
         // Possible in error cases and TODO apparently some non-error too.
@@ -5257,7 +5257,7 @@ function parse_argument_list(state, macro_name, macro_type) {
       const multiple = macro_arg !== undefined && macro_arg.multiple
       if (arg_name in args) {
         if (!multiple) {
-          // https://github.com/cirosantilli/cirodown/issues/101
+          // https://github.com/cirosantilli/ourbigbook/issues/101
           parse_error(state,
             `named argument "${arg_name}" given multiple times`,
             open_token.source_location,
@@ -5441,7 +5441,7 @@ function protocol_is_known(src) {
   return false;
 }
 
-// https://cirosantilli.com/cirodown#scope
+// https://cirosantilli.com/ourbigbook#scope
 function remove_toplevel_scope(id, toplevel_ast, context) {
   if (
     toplevel_ast !== undefined &&
@@ -5456,7 +5456,7 @@ function remove_toplevel_scope(id, toplevel_ast, context) {
   }
 }
 
-// https://cirosantilli.com/cirodown#index-files
+// https://cirosantilli.com/ourbigbook#index-files
 const INDEX_BASENAME_NOEXT = 'index';
 exports.INDEX_BASENAME_NOEXT = INDEX_BASENAME_NOEXT;
 const INDEX_FILE_BASENAMES_NOEXT = new Set([
@@ -5509,13 +5509,13 @@ function propagate_numbered(ast, context) {
     parent_tree_node.ast === undefined
   ) {
     // Try getting parents from \Include.
-    // https://github.com/cirosantilli/cirodown/issues/188
+    // https://github.com/cirosantilli/ourbigbook/issues/188
     //const parent_asts = ast.get_header_parent_asts(context)
     //if (parent_asts.length > 0) {
     //  ast.numbered = parent_asts.some(ast => ast.numbered)
     //} else {
 
-    ast.numbered = context.options.cirodown_json.h.numbered
+    ast.numbered = context.options.ourbigbook_json.h.numbered
   } else {
     const parent_ast = parent_tree_node.ast
     if (parent_ast.validation_output.numbered.given) {
@@ -5690,7 +5690,7 @@ ${ast.toString()}`)
   }
   if (!macro.options.xss_safe && !context.options.unsafe_xss && !ast.xss_safe) {
     ast.validation_error = [
-      `XSS unsafe macro "${macro_name}" used in safe mode: https://cirosantilli.com/cirodown#unsafe-xss`,
+      `XSS unsafe macro "${macro_name}" used in safe mode: https://cirosantilli.com/ourbigbook#unsafe-xss`,
       ast.source_location
     ];
   }
@@ -5779,7 +5779,7 @@ function x_get_href_content(ast, context) {
 /** Calculate the href value to a given target AstNode.
  *
  * This takes into account e.g. if the target node is in a different source file:
- * https://cirosantilli.com/cirodown#internal-cross-file-references
+ * https://cirosantilli.com/ourbigbook#internal-cross-file-references
  *
  * @param {AstNode} target_id_ast
  * @return {String} the value of href (no quotes) that an \x cross reference to the given target_id_ast
@@ -5805,7 +5805,7 @@ function x_href(target_id_ast, context) {
 //
 // Some desired sample outcomes:
 //
-// id='cirodown'             -> ['',       'index-split']
+// id='ourbigbook'             -> ['',       'index-split']
 // id='quick-start'          -> ['',       'quick-start']
 // id='not-readme'           -> ['',       'not-readme-split']
 // id='h2-in-not-the-readme' -> ['',       'h2-in-not-the-readme']
@@ -6087,7 +6087,7 @@ function x_text(ast, context, options={}) {
     if (style_full && options.quote) {
       ret += html_escape_context(context, `"`);
     }
-    // https://cirosantilli.com/cirodown#cross-reference-title-inflection
+    // https://cirosantilli.com/ourbigbook#cross-reference-title-inflection
     if (options.from_x) {
 
       // {c}
@@ -6172,7 +6172,7 @@ const REFS_TABLE_X = 'X';
 exports.REFS_TABLE_X = REFS_TABLE_X;
 const REFS_TABLE_X_CHILD = 'X_CHILD';
 exports.REFS_TABLE_X_CHILD = REFS_TABLE_X_CHILD;
-// https://github.com/cirosantilli/cirodown/issues/198
+// https://github.com/cirosantilli/ourbigbook/issues/198
 const REFS_TABLE_X_TITLE_TITLE = 'X_TITLE_TITLE';
 exports.REFS_TABLE_X_TITLE_TITLE = REFS_TABLE_X_TITLE_TITLE;
 const END_NAMED_ARGUMENT_CHAR = '}';
@@ -6217,7 +6217,7 @@ const VIDEO_EXTENSIONS = new Set([
   'ogv',
   'webm',
 ])
-const OUTPUT_FORMAT_CIRODOWN = 'cirodown';
+const OUTPUT_FORMAT_OURBIGBOOK = 'ourbigbook';
 const OUTPUT_FORMAT_HTML = 'html';
 const OUTPUT_FORMAT_ID = 'id';
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
@@ -6370,12 +6370,12 @@ function macro_image_video_resolve_params(ast, context) {
 
   // Fixup src depending for certain providers.
   if (media_provider_type === 'local') {
-    const path = context.options.cirodown_json['media-providers'].local.path;
+    const path = context.options.ourbigbook_json['media-providers'].local.path;
     if (path !== '') {
       src = path + URL_SEP + src;
     }
   } else if (media_provider_type === 'github') {
-    src = `https://raw.githubusercontent.com/${context.options.cirodown_json['media-providers'].github.remote}/master/${src}`;
+    src = `https://raw.githubusercontent.com/${context.options.ourbigbook_json['media-providers'].github.remote}/master/${src}`;
   }
 
   return {
@@ -6410,7 +6410,7 @@ const MACRO_IMAGE_VIDEO_OPTIONS = {
       ast.validation_output.titleFromSrc.boolean ||
       (
         !ast.validation_output.titleFromSrc.given &&
-        context.options.cirodown_json['media-providers'][media_provider_type]['title-from-src']
+        context.options.ourbigbook_json['media-providers'][media_provider_type]['title-from-src']
       )
     ) {
       let basename_str;
@@ -6441,7 +6441,7 @@ const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
     name: 'alt',
   }),
 ];
-// https://cirosantilli.com/cirodown#known-url-protocols
+// https://cirosantilli.com/ourbigbook#known-url-protocols
 const KNOWN_URL_PROTOCOL_NAMES = ['http', 'https'];
 
 const KNOWN_URL_PROTOCOLS = new Set()
@@ -6585,7 +6585,7 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    Macro.CIRODOWN_EXAMPLE_MACRO_NAME,
+    Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
@@ -6704,7 +6704,7 @@ const DEFAULT_MACRO_LIST = [
         let toc_href;
         if (!is_top_level && context.has_toc) {
           toc_href = html_attr('href', '#' + toc_id(ast, context));
-          ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href} class="cirodown-h-to-toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`;
+          ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href} class="ourbigbook-h-to-toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`;
         }
 
         // Parent links.
@@ -7095,7 +7095,7 @@ const DEFAULT_MACRO_LIST = [
     function(ast, context) {
       return html_code(
         render_arg(ast.args.content, context),
-        {'class': 'cirodown-js-canvas-demo'}
+        {'class': 'ourbigbook-js-canvas-demo'}
       );
     },
     {
@@ -7313,7 +7313,7 @@ const DEFAULT_MACRO_LIST = [
           target_id_ast !== undefined
         ) {
           // ToC entries always link to the same split/nosplit type, except for included sources.
-          // This might be handled more generally through: https://github.com/cirosantilli/cirodown/issues/146
+          // This might be handled more generally through: https://github.com/cirosantilli/ourbigbook/issues/146
           // but for now we are just taking care of this specific and important ToC subcase.
           let cur_context;
           if (ast.source_location.path === target_id_ast.source_location.path) {
@@ -7517,7 +7517,7 @@ const DEFAULT_MACRO_LIST = [
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>{{ style }}</style>
 {{ head }}</head>
-<body class="cirodown">
+<body class="ourbigbook">
 {{ body }}
 {{ post_body }}</body>
 </html>
@@ -7551,7 +7551,7 @@ const DEFAULT_MACRO_LIST = [
         for (const script of context.options.template_scripts_relative) {
           relative_scripts.push(`<script src="${context.options.template_vars.root_relpath}${script}"></script>\n`);
         }
-        render_env.post_body = relative_scripts.join('') + render_env.post_body + "<script>cirodown_runtime.cirodown_runtime()</script>\n";
+        render_env.post_body = relative_scripts.join('') + render_env.post_body + "<script>ourbigbook_runtime.ourbigbook_runtime()</script>\n";
         let relative_styles = [];
         for (const style of context.options.template_styles_relative) {
           relative_styles.push(`@import "${context.options.template_vars.root_relpath}${style}";\n`);
@@ -7710,7 +7710,7 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
         new MacroArgument({
-          // https://github.com/cirosantilli/cirodown/issues/92
+          // https://github.com/cirosantilli/ourbigbook/issues/92
           name: 'child',
           boolean: true,
         }),
@@ -7723,7 +7723,7 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
         new MacroArgument({
-          // https://github.com/cirosantilli/cirodown/issues/92
+          // https://github.com/cirosantilli/ourbigbook/issues/92
           name: 'parent',
           boolean: true,
         }),
@@ -7904,7 +7904,7 @@ function create_link_list(context, ast, id, title, target_ids, body) {
   return ret
 }
 
-function cirodown_convert_simple_elem(ast, context) {
+function ourbigbook_convert_simple_elem(ast, context) {
   return ESCAPE_CHAR +
     ast.macro_name +
     START_POSITIONAL_ARGUMENT_CHAR +
@@ -7913,31 +7913,31 @@ function cirodown_convert_simple_elem(ast, context) {
 }
 
 const MACRO_CONVERT_FUNCIONS = {
-  [OUTPUT_FORMAT_CIRODOWN]: {
+  [OUTPUT_FORMAT_OURBIGBOOK]: {
     [Macro.LINK_MACRO_NAME]: function(ast, context) {
       const [href, content] = link_get_href_content(ast, context);
       return content;
     },
-    'b': cirodown_convert_simple_elem,
+    'b': ourbigbook_convert_simple_elem,
     [Macro.CODE_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
     [Macro.CODE_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.CIRODOWN_EXAMPLE_MACRO_NAME]: unconvertible,
-    'Comment': cirodown_convert_simple_elem,
-    'comment': cirodown_convert_simple_elem,
+    [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
+    'Comment': ourbigbook_convert_simple_elem,
+    'comment': ourbigbook_convert_simple_elem,
     [Macro.HEADER_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.INCLUDE_MACRO_NAME]: cirodown_convert_simple_elem,
+    [Macro.INCLUDE_MACRO_NAME]: ourbigbook_convert_simple_elem,
     [Macro.LIST_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.MATH_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
     [Macro.MATH_MACRO_NAME]: id_convert_simple_elem(),
-    'i': cirodown_convert_simple_elem,
+    'i': ourbigbook_convert_simple_elem,
     'Image': function(ast, context) { return ''; },
     'image': function(ast, context) { return ''; },
     'JsCanvasDemo': id_convert_simple_elem(),
-    'Ol': cirodown_convert_simple_elem,
+    'Ol': ourbigbook_convert_simple_elem,
     [Macro.PARAGRAPH_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {return ast.text},
     'passthrough': id_convert_simple_elem(),
-    'Q': cirodown_convert_simple_elem,
+    'Q': ourbigbook_convert_simple_elem,
     [Macro.TABLE_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.TD_MACRO_NAME]: id_convert_simple_elem(),
     [Macro.TOC_MACRO_NAME]: function(ast, context) { return '' },
@@ -7956,7 +7956,7 @@ const MACRO_CONVERT_FUNCIONS = {
     'b': id_convert_simple_elem(),
     [Macro.CODE_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
     [Macro.CODE_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.CIRODOWN_EXAMPLE_MACRO_NAME]: unconvertible,
+    [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
     'Comment': function(ast, context) { return ''; },
     'comment': function(ast, context) { return ''; },
     [Macro.HEADER_MACRO_NAME]: id_convert_simple_elem(),
@@ -7991,7 +7991,7 @@ const MACRO_CONVERT_FUNCIONS = {
   },
 };
 const TOPLEVEL_CHILD_MODIFIER = {
-  [OUTPUT_FORMAT_CIRODOWN]: function(ast, context, out) {
+  [OUTPUT_FORMAT_OURBIGBOOK]: function(ast, context, out) {
     return out;
   },
   [OUTPUT_FORMAT_HTML]: function(ast, context, out) {

@@ -10,7 +10,7 @@ update-template() (
   subdir="${3:-}"
   dir="${template_repos_dir}/$dirname"
   rm -rf "$dir"
-  cirodown --generate="$name" --outdir="$dir"
+  ourbigbook --generate="$name" --outdir="$dir"
   cd "$dir"
   if [ -n "$subdir" ]; then cd "$subdir"; fi
   npm install
@@ -21,11 +21,11 @@ update-template() (
   git remote add origin "git@github.com:cirosantilli/${dirname}.git"
   git push -f
   if [ -n "$subdir" ]; then cd "$subdir"; fi
-  npx cirodown --publish
+  npx ourbigbook --publish
   if [ -n "$subdir" ]; then cd -; fi
 )
 
-# TODO https://github.com/cirosantilli/cirodown/issues/160
-update-template subdir cirodown-template-subdir docs
-update-template min cirodown-template-min
-update-template default cirodown-template
+# TODO https://github.com/cirosantilli/ourbigbook/issues/160
+update-template subdir ourbigbook-template-subdir docs
+update-template min ourbigbook-template-min
+update-template default ourbigbook-template

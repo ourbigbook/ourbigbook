@@ -33,7 +33,7 @@ export const TopicPage = ({articles, articlesCount, what}) => {
   React.useEffect(() => { setTitle(topicId) }, [topicId])
   if (router.isFallback) { return <LoadingSpinner />; }
   return (
-    <div className="topic-page content-not-cirodown">
+    <div className="topic-page content-not-ourbigbook">
       <div className="tab-list">
         <CustomLink
           className={`tab-item${what === 'top' ? ' active' : ''}`}

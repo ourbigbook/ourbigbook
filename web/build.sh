@@ -4,8 +4,8 @@ export NODE_OPTIONS='--unhandled-rejections=strict'
 cd ../
 rm -rf my_node_modules
 mkdir -p my_node_modules
-ln -s .. my_node_modules/cirodown
-# This command needs to require cirodown.
+ln -s .. my_node_modules/ourbigbook
+# This command needs to require ourbigbook.
 # If we ever need this more generally outside of ./web/, we have once tested
 # removing this rm -rf and doing:
 # heroku config:set --app ourbigbook-staging NODE_PATH=/app/my_node_modules:/app/web/node_modules

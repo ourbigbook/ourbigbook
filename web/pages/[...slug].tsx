@@ -51,7 +51,7 @@ const ArticlePage = ({
   return (
     <>
       <div className="article-page">
-        <div className="content-not-cirodown article-meta">
+        <div className="content-not-ourbigbook article-meta">
           <div className="article-info">
             { 'Author: ' }
             <UserLinkWithImage user={article.author} />

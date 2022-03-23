@@ -1,7 +1,7 @@
-# Cirodown
+# OurBigBook
 
-Markup language + static site generator to write complex structured wikis/books/blogs, that is saner and more powerful than Markdown and Asciidoctor, with reference implementation in JavaScript.
+https://ourbigbook.com source code + a compatible local CLI static wiki generator and markup language to write complex structured wikis/books/blogs with reference implementation in JavaScript.
 
-The real README is of course [README.ciro](README.ciro)
+The real README is of course [README.bigb](README.bigb)
 
-A rendered version can be seen at: <https://cirosantilli.com/cirodown>
+A rendered version can be seen at: <https://cirosantilli.com/ourbigbook>

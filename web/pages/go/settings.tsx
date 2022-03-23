@@ -64,7 +64,7 @@ const Settings = () => {
   const { setTitle } = React.useContext(AppContext)
   React.useEffect(() => { setTitle(title) }, [])
   return (
-    <div className="settings-page content-not-cirodown">
+    <div className="settings-page content-not-ourbigbook">
       <h1>{title}</h1>
       <LogoutButton />
       <>

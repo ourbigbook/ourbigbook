@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Quick regexp hacks to do easy heuristic conversions from Asciidoctor to Cirodown.
+# Quick regexp hacks to do easy heuristic conversions from Asciidoctor to Ourbigbook.
 set -eu
 in="$1"
-out="${in%.*}.ciro"
+out="${in%.*}.bigb"
 cp "$in" "$out"
 perl -pi -e 's/<<([^>]*)>>/\\x[\1]/g' "$out"
 perl -pi -e 's/xref2?:([^[]*)\[\]/\\x[\1]/g' "$out"

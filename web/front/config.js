@@ -47,7 +47,7 @@ module.exports = {
     (process.env.NODE_ENV_NEXT_SERVER_ONLY === 'production'),
   secret: isProduction ? process.env.SECRET : 'secret',
   port: process.env.PORT || 3000,
-  postgres: process.env.CIRODOWN_POSTGRES === 'true',
+  postgres: process.env.OURBIGBOOK_POSTGRES === 'true',
   reservedUsernames: new Set([
     API_PATH_COMPONENT,
     escapeUsername,
@@ -66,7 +66,7 @@ module.exports = {
   production: {
     url:
       databaseUrl ||
-      'postgres://cirodown_user:a@localhost:5432/cirodown',
+      'postgres://ourbigbook_user:a@localhost:5432/ourbigbook',
     dialect: 'postgres',
     dialectOptions: {
       // https://stackoverflow.com/questions/27687546/cant-connect-to-heroku-postgresql-database-from-local-node-app-with-sequelize

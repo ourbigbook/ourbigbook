@@ -1,7 +1,7 @@
 const router = require('express').Router()
 const Op = require('sequelize').Op
 
-const cirodown = require('cirodown')
+const ourbigbook = require('ourbigbook')
 
 const auth = require('../auth')
 const lib = require('./lib')

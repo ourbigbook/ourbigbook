@@ -3,7 +3,7 @@
 const fs = require('fs');
 const path = require('path');
 
-const PACKAGE_NAME = 'cirodown';
+const PACKAGE_NAME = 'ourbigbook';
 exports.PACKAGE_NAME = PACKAGE_NAME;
 
 // This does not work in webpack.

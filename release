@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# https://cirosantilli.com/cirodown#do-the-release
+# https://cirosantilli.com/ourbigbook#do-the-release
 set -eux
 if [ $# -lt 1 ]; then
   version="$(./inc-version)"

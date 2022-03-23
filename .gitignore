@@ -18,7 +18,7 @@ tmp
 tmp.*
 *.tmp
 *.tmp.*
-tmp2.ciro
+tmp2.bigb
 
 # web/
 /!web/**/*.css

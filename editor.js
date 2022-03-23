@@ -1,7 +1,7 @@
-class CirodownEditor {
-  constructor(root_elem, initial_content, monaco, cirodown, cirodown_runtime, options) {
-    this.cirodown = cirodown
-    this.cirodown_runtime = cirodown_runtime
+class OurbigbookEditor {
+  constructor(root_elem, initial_content, monaco, ourbigbook, ourbigbook_runtime, options) {
+    this.ourbigbook = ourbigbook
+    this.ourbigbook_runtime = ourbigbook_runtime
     if (options === undefined) {
       options = {}
     }
@@ -29,15 +29,15 @@ class CirodownEditor {
     const output_elem = document.createElement('div');
     this.output_elem = output_elem
     output_elem.classList.add('output');
-    output_elem.classList.add('cirodown');
+    output_elem.classList.add('ourbigbook');
     root_elem.innerHTML = '';
     root_elem.appendChild(input_elem);
     root_elem.appendChild(output_elem);
 
-    monaco.languages.register({ id: 'cirodown' });
+    monaco.languages.register({ id: 'ourbigbook' });
     // TODO replace with our own tokenizer output:
-    // https://github.com/cirosantilli/cirodown/issues/106
-    monaco.languages.setMonarchTokensProvider('cirodown', {
+    // https://github.com/cirosantilli/ourbigbook/issues/106
+    monaco.languages.setMonarchTokensProvider('ourbigbook', {
       macroName: /[a-zA-Z0-9_]+/,
       tokenizer: {
         root: [
@@ -119,7 +119,7 @@ class CirodownEditor {
         ],
       }
     });
-    monaco.editor.defineTheme('vs-dark-cirodown', {
+    monaco.editor.defineTheme('vs-dark-ourbigbook', {
       base: 'vs-dark',
       inherit: true,
       rules: [
@@ -137,10 +137,10 @@ class CirodownEditor {
         // https://stackoverflow.com/questions/47017753/monaco-editor-dynamically-resizable
         automaticLayout: true,
         folding: false,
-        language: 'cirodown',
+        language: 'ourbigbook',
         minimap: {enabled: false},
         scrollBeyondLastLine: false,
-        theme: 'vs-dark-cirodown',
+        theme: 'vs-dark-ourbigbook',
         wordWrap: 'on',
         value: initial_content,
       }
@@ -165,20 +165,20 @@ class CirodownEditor {
       this.scrollPreviewToSourceLine(e.position.lineNumber, 'center');
     });
     this.convertInput();
-    this.cirodown_runtime(this.output_elem)
+    this.ourbigbook_runtime(this.output_elem)
   }
 
   async convertInput() {
     let extra_returns = {};
     let ok = true
     try {
-      this.output_elem.innerHTML = await this.cirodown.convert(
+      this.output_elem.innerHTML = await this.ourbigbook.convert(
         this.modifyEditorInput(this.editor.getValue()),
         this.options.convertOptions,
         extra_returns
       );
     } catch(e) {
-      // TODO clearly notify user on UI that they found a Cirodown crash bug for the current input.
+      // TODO clearly notify user on UI that they found a Ourbigbook crash bug for the current input.
       console.error(e);
       ok = false
       if (!this.options.production) {
@@ -188,7 +188,7 @@ class CirodownEditor {
     }
     if (ok) {
       // Rebind to newly generated elements.
-      this.cirodown_runtime(this.output_elem);
+      this.ourbigbook_runtime(this.output_elem);
       this.line_to_id = extra_returns.context.line_to_id;
     }
   }
@@ -227,5 +227,5 @@ class CirodownEditor {
 
 
 if (typeof exports !== 'undefined') {
-  exports.CirodownEditor = CirodownEditor;
+  exports.OurbigbookEditor = OurbigbookEditor;
 }

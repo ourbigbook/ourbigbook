@@ -61,6 +61,7 @@
     "main.scss",
     "models/*",
     "nodejs.js",
+    "nodejs_webpack_safe.js",
     "template/*"
   ],
   "keywords": [

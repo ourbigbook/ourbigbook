@@ -6874,7 +6874,7 @@ After publishing, a good minimal sanity check is to ensure that you can render t
 ``
 cd ~
 # Get rid of the global npm link development version just to make sure it is not being used.
-npm uninstall ourbigbook
+npm uninstall -g ourbigbook
 git clone https://github.com/cirosantilli/ourbigbook-template
 cd ourbigbook-template
 npm install

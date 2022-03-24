@@ -12,6 +12,7 @@ const fs = require('fs');
 const path = require('path');
 
 const ourbigbook = require('./index');
+const ourbigbook_nodejs_front = require('./nodejs_front');
 const models = require('./models')
 
 // DB options that have to be given to both ourbigbook CLI and dynamic website.
@@ -478,19 +479,42 @@ class SqliteFileProvider extends ourbigbook.FileProvider {
   }
 }
 
-async function create_sequelize(db_options, Sequelize) {
-  const db_path = db_options.storage
-  const default_options = {
-    dialect: 'sqlite',
-    define: { timestamps: false },
+  db_options
+
+async function create_sequelize(db_options_arg, Sequelize, sync_opts={}) {
+  db_options_arg = Object.assign({ timestamps: false }, db_options_arg, db_options)
+  const storage = db_options_arg.storage
+  delete db_options_arg.storage
+  let sequelize
+  if (ourbigbook_nodejs_front.postgres) {
+    Object.assign(
+      db_options_arg,
+      ourbigbook_nodejs_front.sequelize_postgres_opts,
+    )
+    sequelize = new Sequelize('postgres://ourbigbook_user:a@localhost:5432/ourbigbook_cli', db_options_arg)
+  } else {
+    Object.assign(db_options_arg,
+      {
+        dialect: 'sqlite',
+        storage,
+      },
+      db_options_arg,
+    )
+    sequelize = new Sequelize(db_options_arg)
   }
-  const new_db_options = Object.assign({}, default_options, db_options)
-  const sequelize = new Sequelize(new_db_options)
   models.addModels(sequelize)
-  if (db_path === ourbigbook.SQLITE_MAGIC_MEMORY_NAME && db_path || !fs.existsSync(db_path)) {
-    await sequelize.sync()
+  if (
+    db_options_arg.dialect !== 'sqlite' ||
+    storage === ourbigbook.SQLITE_MAGIC_MEMORY_NAME ||
+    (storage && !fs.existsSync(storage))
+  ) {
+    await sequelize.sync(sync_opts)
   }
   return sequelize
+}
+
+async function destroy_sequelize(sequelize) {
+  return sequelize.close()
 }
 
 async function update_database_after_convert({
@@ -662,6 +686,7 @@ module.exports = {
   check_db,
   create_sequelize,
   db_options,
+  destroy_sequelize,
   read_include,
   remove_duplicates_sorted_array,
   update_database_after_convert,

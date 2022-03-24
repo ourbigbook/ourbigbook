@@ -8,6 +8,7 @@ const util = require('util');
 const { Sequelize } = require('sequelize')
 
 const ourbigbook = require('./index')
+const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const models = require('./models');
 
@@ -137,163 +138,173 @@ function assert_convert_ast(
         logging: false,
       },
       Sequelize,
+      { force: true },
     )
-    const id_provider = new ourbigbook_nodejs_webpack_safe.SqliteIdProvider(sequelize);
-    new_convert_opts.id_provider = id_provider
-    new_convert_opts.file_provider = new ourbigbook_nodejs_webpack_safe.SqliteFileProvider(
-      sequelize, id_provider);
-    const rendered_outputs = {}
-    async function convert(input_path, render) {
-      //console.error({input_path});
+    let exception
+    try {
+      const id_provider = new ourbigbook_nodejs_webpack_safe.SqliteIdProvider(sequelize);
+      new_convert_opts.id_provider = id_provider
+      new_convert_opts.file_provider = new ourbigbook_nodejs_webpack_safe.SqliteFileProvider(
+        sequelize, id_provider);
+      const rendered_outputs = {}
+      async function convert(input_path, render) {
+        //console.error({input_path});
+        const extra_returns = {};
+        assert(input_path in filesystem)
+        const input_string = filesystem[input_path];
+        const dependency_convert_opts = Object.assign({}, new_convert_opts);
+        dependency_convert_opts.input_path = input_path;
+        dependency_convert_opts.toplevel_id = path.parse(input_path).ext;
+        dependency_convert_opts.render = render;
+        await ourbigbook.convert(input_string, dependency_convert_opts, extra_returns);
+        Object.assign(rendered_outputs, extra_returns.rendered_outputs)
+        assert.strictEqual(extra_returns.errors.length, 0)
+        await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
+          extra_returns,
+          id_provider,
+          sequelize,
+          path: input_path,
+          render,
+        })
+      }
+      for (const input_path of options.convert_before_norender) {
+        await convert(input_path, false)
+      }
+      for (const input_path of options.convert_before) {
+        await convert(input_path, true)
+      }
+      //console.error('main');
+      if (options.input_path_noext !== undefined) {
+        new_convert_opts.input_path = options.input_path_noext + ourbigbook.OURBIGBOOK_EXT;
+        new_convert_opts.toplevel_id = options.input_path_noext;
+      }
       const extra_returns = {};
-      assert(input_path in filesystem)
-      const input_string = filesystem[input_path];
-      const dependency_convert_opts = Object.assign({}, new_convert_opts);
-      dependency_convert_opts.input_path = input_path;
-      dependency_convert_opts.toplevel_id = path.parse(input_path).ext;
-      dependency_convert_opts.render = render;
-      await ourbigbook.convert(input_string, dependency_convert_opts, extra_returns);
+      const output = await ourbigbook.convert(input_string, new_convert_opts, extra_returns);
       Object.assign(rendered_outputs, extra_returns.rendered_outputs)
-      assert.strictEqual(extra_returns.errors.length, 0)
-      await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
-        extra_returns,
-        id_provider,
-        sequelize,
-        path: input_path,
-        render,
-      })
-    }
-    for (const input_path of options.convert_before_norender) {
-      await convert(input_path, false)
-    }
-    for (const input_path of options.convert_before) {
-      await convert(input_path, true)
-    }
-    //console.error('main');
-    if (options.input_path_noext !== undefined) {
-      new_convert_opts.input_path = options.input_path_noext + ourbigbook.OURBIGBOOK_EXT;
-      new_convert_opts.toplevel_id = options.input_path_noext;
-    }
-    const extra_returns = {};
-    const output = await ourbigbook.convert(input_string, new_convert_opts, extra_returns);
-    Object.assign(rendered_outputs, extra_returns.rendered_outputs)
-    if (new_convert_opts.input_path !== undefined) {
-      await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
-        extra_returns,
-        id_provider,
-        sequelize,
-        path: new_convert_opts.input_path,
-        render: true,
-      })
-    }
+      if (new_convert_opts.input_path !== undefined) {
+        await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
+          extra_returns,
+          id_provider,
+          sequelize,
+          path: new_convert_opts.input_path,
+          render: true,
+        })
+      }
 
-    // Post conversion checks.
-    const [duplicate_rows, invalid_title_title_rows] = await Promise.all([
-      await sequelize.models.Id.findDuplicates(),
-      await sequelize.models.Id.findInvalidTitleTitle(),
-    ])
-    const has_subset_extra_returns = {fail_reason: ''};
-    let is_subset;
-    let content;
-    let content_array;
-    if (expected_ast_output_subset === undefined) {
-      is_subset = true;
-    } else {
-      if (options.toplevel) {
-        content = extra_returns.ast;
-        content_array = [content]
-        is_subset = ast_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
+      // Post conversion checks.
+      const [duplicate_rows, invalid_title_title_rows] = await Promise.all([
+        await sequelize.models.Id.findDuplicates(),
+        await sequelize.models.Id.findInvalidTitleTitle(),
+      ])
+      const has_subset_extra_returns = {fail_reason: ''};
+      let is_subset;
+      let content;
+      let content_array;
+      if (expected_ast_output_subset === undefined) {
+        is_subset = true;
       } else {
-        content = extra_returns.ast.args.content;
-        content_array = content
-        is_subset = ast_arg_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
-      }
-    }
-    const expect_error_precise =
-      options.error_line !== undefined ||
-      options.error_column !== undefined ||
-      options.error_path !== undefined ||
-      options.error_message !== undefined;
-    const expect_error = expect_error_precise || options.has_error;
-    if (
-      !is_subset ||
-      (
-        !expect_error &&
-        extra_returns.errors.length !== 0
-      )
-    ) {
-      // Too verbose to show by default.
-      //console.error('tokens:');
-      //console.error(JSON.stringify(extra_returns.tokens, null, 2));
-      //console.error();
-      //console.error('ast output:');
-      //console.error(JSON.stringify(content, null, 2));
-      //console.error();
-      if (expected_ast_output_subset !== undefined) {
-        console.error('ast output toString:');
-        console.error(content_array.map(c => c.toString()).join('\n'));
-        console.error();
-        console.error('ast expect:');
-        console.error(JSON.stringify(expected_ast_output_subset, null, 2));
-        console.error();
-        console.error('errors:');
-      }
-      for (const error of extra_returns.errors) {
-        console.error(error);
-      }
-      if (!is_subset) {
-        console.error('failure reason:');
-        console.error(has_subset_extra_returns.fail_reason);
-        console.error();
-      }
-      for (const error of extra_returns.errors) {
-        console.error(error.toString());
-      }
-      console.error('input ' + util.inspect(input_string));
-      assert.strictEqual(extra_returns.errors.length, 0);
-      assert.ok(is_subset);
-    }
-    if (expect_error) {
-      assert.ok(extra_returns.errors.length > 0);
-      const error = extra_returns.errors[0];
-      if (expect_error_precise) {
-        assert.deepStrictEqual(
-          error.source_location,
-          new ourbigbook.SourceLocation(
-            options.error_line,
-            options.error_column,
-            options.error_path
-          )
-        );
-        if (options.error_message) {
-          assert.strictEqual(error.message, options.error_message)
+        if (options.toplevel) {
+          content = extra_returns.ast;
+          content_array = [content]
+          is_subset = ast_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
+        } else {
+          content = extra_returns.ast.args.content;
+          content_array = content
+          is_subset = ast_arg_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
         }
       }
-    }
-    for (const xpath_expr of options.assert_xpath_main) {
-      assert_xpath_main(xpath_expr, output);
-    }
-    for (const xpath_expr of options.assert_not_xpath_main) {
-      assert_xpath_main(xpath_expr, output, { count: 0 });
-    }
-    for (const key in options.assert_xpath) {
-      const output = rendered_outputs[key];
-      assert.notStrictEqual(output, undefined, `${key} not in ${Object.keys(extra_returns.rendered_outputs)}`);
-      for (const xpath_expr of options.assert_xpath[key]) {
-        assert_xpath_main(xpath_expr, output, {message: key});
+      const expect_error_precise =
+        options.error_line !== undefined ||
+        options.error_column !== undefined ||
+        options.error_path !== undefined ||
+        options.error_message !== undefined;
+      const expect_error = expect_error_precise || options.has_error;
+      if (
+        !is_subset ||
+        (
+          !expect_error &&
+          extra_returns.errors.length !== 0
+        )
+      ) {
+        // Too verbose to show by default.
+        //console.error('tokens:');
+        //console.error(JSON.stringify(extra_returns.tokens, null, 2));
+        //console.error();
+        //console.error('ast output:');
+        //console.error(JSON.stringify(content, null, 2));
+        //console.error();
+        if (expected_ast_output_subset !== undefined) {
+          console.error('ast output toString:');
+          console.error(content_array.map(c => c.toString()).join('\n'));
+          console.error();
+          console.error('ast expect:');
+          console.error(JSON.stringify(expected_ast_output_subset, null, 2));
+          console.error();
+          console.error('errors:');
+        }
+        for (const error of extra_returns.errors) {
+          console.error(error);
+        }
+        if (!is_subset) {
+          console.error('failure reason:');
+          console.error(has_subset_extra_returns.fail_reason);
+          console.error();
+        }
+        for (const error of extra_returns.errors) {
+          console.error(error.toString());
+        }
+        console.error('input ' + util.inspect(input_string));
+        assert.strictEqual(extra_returns.errors.length, 0);
+        assert.ok(is_subset);
       }
-    }
-    for (const key in options.assert_not_xpath) {
-      const output = rendered_outputs[key];
-      assert.notStrictEqual(output, undefined);
-      for (const xpath_expr of options.assert_not_xpath[key]) {
-        assert_xpath_main(xpath_expr, output, {
-          count: 0,
-          message: key,
-        });
+      if (expect_error) {
+        assert.ok(extra_returns.errors.length > 0);
+        const error = extra_returns.errors[0];
+        if (expect_error_precise) {
+          assert.deepStrictEqual(
+            error.source_location,
+            new ourbigbook.SourceLocation(
+              options.error_line,
+              options.error_column,
+              options.error_path
+            )
+          );
+          if (options.error_message) {
+            assert.strictEqual(error.message, options.error_message)
+          }
+        }
       }
+      for (const xpath_expr of options.assert_xpath_main) {
+        assert_xpath_main(xpath_expr, output);
+      }
+      for (const xpath_expr of options.assert_not_xpath_main) {
+        assert_xpath_main(xpath_expr, output, { count: 0 });
+      }
+      for (const key in options.assert_xpath) {
+        const output = rendered_outputs[key];
+        assert.notStrictEqual(output, undefined, `${key} not in ${Object.keys(extra_returns.rendered_outputs)}`);
+        for (const xpath_expr of options.assert_xpath[key]) {
+          assert_xpath_main(xpath_expr, output, {message: key});
+        }
+      }
+      for (const key in options.assert_not_xpath) {
+        const output = rendered_outputs[key];
+        assert.notStrictEqual(output, undefined);
+        for (const xpath_expr of options.assert_not_xpath[key]) {
+          assert_xpath_main(xpath_expr, output, {
+            count: 0,
+            message: key,
+          });
+        }
+      }
+    } catch(e) {
+      exception = e
     }
-  });
+    await ourbigbook_nodejs_webpack_safe.destroy_sequelize(sequelize)
+    if (exception) {
+      throw exception
+    }
+  })
 }
 
 function assert_db_checks(actual_rows, expects) {
@@ -352,7 +363,7 @@ function assert_executable(
   description,
   options={}
 ) {
-  it(description, function () {
+  it(description, async function () {
     options = Object.assign({}, options);
     if (!('args' in options)) {
       options.args = [];
@@ -378,6 +389,9 @@ function assert_executable(
     if (!('expect_exists' in options)) {
       options.expect_exists = [];
     }
+    if (!('expect_exists_sqlite' in options)) {
+      options.expect_exists_sqlite = [];
+    }
     if (!('expect_not_exists' in options)) {
       options.expect_not_exists = [];
     }
@@ -400,12 +414,22 @@ function assert_executable(
     }
     update_filesystem(options.filesystem, tmpdir)
     process.env.PATH = process.cwd() + ':' + process.env.PATH
-    const fakeroot_arg = ['--fakeroot', tmpdir]
+    const common_args = ['--add-test-instrumentation', '--fakeroot', tmpdir]
+    if (ourbigbook_nodejs_front.postgres) {
+      // Clear the database.
+      const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize({
+          logging: false,
+        },
+        Sequelize,
+        { force: true },
+      )
+      await ourbigbook_nodejs_webpack_safe.destroy_sequelize(sequelize)
+    }
     for (const entry of options.pre_exec) {
       if (Array.isArray(entry)) {
         let [cmd, args] = entry
         if (cmd === 'ourbigbook') {
-          args = fakeroot_arg.concat(args)
+          args = common_args.concat(args)
         }
         const out = child_process.spawnSync(cmd, args, {cwd: cwd});
         assert.strictEqual(out.status, 0, exec_assert_message(out, cmd, args, cwd));
@@ -414,7 +438,7 @@ function assert_executable(
       }
     }
     const cmd = 'ourbigbook'
-    const args = fakeroot_arg.concat(options.args)
+    const args = common_args.concat(options.args)
     const out = child_process.spawnSync(cmd, args, {
       cwd: cwd,
       input: options.stdin,
@@ -450,6 +474,13 @@ function assert_executable(
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), exec_assert_message(
         out, cmd, args, cwd, 'path should exist: ' + relpath));
+    }
+    if (!ourbigbook_nodejs_front.postgres) {
+      for (const relpath of options.expect_exists_sqlite) {
+        const fullpath = path.join(tmpdir, relpath);
+        assert.ok(fs.existsSync(fullpath), exec_assert_message(
+          out, cmd, args, cwd, 'path should exist: ' + relpath));
+      }
     }
     for (const relpath of options.expect_not_exists) {
       const fullpath = path.join(tmpdir, relpath);
@@ -6297,7 +6328,7 @@ assert_executable(
 assert_executable(
   'executable: incoming links and other children',
   {
-    args: ['--add-test-instrumentation', '-S', '.'],
+    args: ['-S', '.'],
     filesystem: {
       'README.bigb': `= Index
 
@@ -6413,7 +6444,7 @@ assert_executable(
 assert_executable(
   "executable: multiple incoming child and parent links don't blow up",
   {
-    args: ['--add-test-instrumentation', '.'],
+    args: ['.'],
     filesystem: {
       'README.bigb': `= Index
 
@@ -6460,6 +6491,8 @@ assert_executable(
       'out/html/h2.html',
       'out/html/notindex.html',
       'out/html/notindex-h2.html',
+    ],
+    expect_exists_sqlite: [
       'out/db.sqlite3',
     ],
     expect_not_exists: [
@@ -6631,7 +6664,7 @@ assert_executable('executable: cross file ancestors work on single file conversi
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
     // purely from the database, and not from a cache shared across several input files.
-    args: ['--add-test-instrumentation', 'notindex3.bigb'],
+    args: ['notindex3.bigb'],
     filesystem: {
       'index.bigb': `= Index
 
@@ -6650,7 +6683,7 @@ assert_executable('executable: cross file ancestors work on single file conversi
     },
     pre_exec: [
       // First we pre-convert everything.
-      ['ourbigbook', ['--add-test-instrumentation', '.']],
+      ['ourbigbook', ['.']],
     ],
     assert_xpath: {
       'notindex.html': [
@@ -6677,7 +6710,7 @@ assert_executable('executable: cross file ancestors work on single file conversi
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
     // purely from the database, and not from a cache shared across several input files.
-    args: ['--add-test-instrumentation', 'subdir/notindex3.bigb'],
+    args: ['subdir/notindex3.bigb'],
     filesystem: {
       'subdir/index.bigb': `= Index
 
@@ -6696,7 +6729,7 @@ assert_executable('executable: cross file ancestors work on single file conversi
     },
     pre_exec: [
       // First we pre-convert everything.
-      ['ourbigbook', ['--add-test-instrumentation', '.']],
+      ['ourbigbook', ['.']],
     ],
     assert_xpath: {
       'subdir/notindex.html': [

@@ -494,6 +494,10 @@ async function generate_redirect(ourbigbook_options, redirect_src_id, redirect_t
   if (redirect_href === undefined) {
     cli_error(`redirection target ID "${redirect_target_id}" not found`);
   }
+  generate_redirect_base(outpath, redirect_href)
+}
+
+function generate_redirect_base(outpath, redirect_href) {
   fs.mkdirSync(path.dirname(outpath), {recursive: true})
   // https://stackoverflow.com/questions/10178304/what-is-the-best-approach-for-redirection-of-old-pages-in-jekyll-and-github-page/36848440#36848440
   fs.writeFileSync(outpath,
@@ -759,6 +763,9 @@ if (commander.helpMacros) {
   if (!('ignore' in ourbigbook_json)) {
     ourbigbook_json.ignore = [];
   }
+  if (!('redirects' in ourbigbook_json)) {
+    ourbigbook_json.redirects = [];
+  }
 
   let split_headers;
   if (publish) {
@@ -774,7 +781,7 @@ if (commander.helpMacros) {
   const ourbigbook_options = {
     add_test_instrumentation: commander.addTestInstrumentation,
     body_only: commander.bodyOnly,
-    ourbigbook_json: ourbigbook_json,
+    ourbigbook_json,
     embed_includes: commander.embedIncludes,
     fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
     html_x_extension: html_x_extension,
@@ -1110,6 +1117,17 @@ if (commander.helpMacros) {
           if (!non_ourbigbook_options.had_error) {
             await convert_directory(actual_input_dir, ourbigbook_options, non_ourbigbook_options);
           }
+        }
+
+        // Generate redirects from ourbigbook.json.
+        for (let [from, to] of ourbigbook_json.redirects) {
+          if (ourbigbook_options.html_x_extension) {
+            to +=  '.' + ourbigbook.HTML_EXT
+          }
+          generate_redirect_base(
+            path.join(non_ourbigbook_options.outdir, from + '.' + ourbigbook.HTML_EXT),
+            to
+          )
         }
 
         // Publish the converted output if build succeeded.

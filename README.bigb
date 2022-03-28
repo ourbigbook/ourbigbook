@@ -5943,10 +5943,26 @@ heroku psql -a ourbigbook
 ``
 Of course, any writes could mean loss of user data!
 
+Run a query directly from your terminal:
+``
+heroku psql -a ourbigbook -c 'SELECT username,email FROM "User" ORDER BY "createdAt" DESC LIMIT 50'
+``
+
 If some spurious bugs crashes the server, you might want to restart it with:
 ``
 heroku restart -a ourbigbook
 ``
+
+Download a dump of the database as per https://devcenter.heroku.com/articles/heroku-postgres-import-export[]:
+``
+heroku pg:backups:capture -a ourbigbook
+heroku pg:backups:download -a ourbigbook
+``
+Restore it to a local database:
+``
+pg_restore --verbose --clean --no-acl --no-owner -h localhost -U ourbigbook_user -d ourbigbook latest.dump
+``
+The local password is `a` (single letter). TODO automate login.
 
 = Custom domain name setup
 {parent=heroku-deployment}
@@ -5974,7 +5990,7 @@ We have a staging server running at: https://ourbigbook-staging.herokuapp.com/
 To set it up, we just follow the exact same steps as for \x[heroku-deployment] but with a different app ID. E.g. using the `ourbigbook-staging` heroku project ID:
 ``
 git remote add staging https://git.heroku.com/ourbigbook-staging.git
-heroku addons:create -a ourbigbook-staging heroku-postgresql:hobby-dev
+heroku addons:create -a ourbigbook-staging --confirm ourbigbook-staging heroku-postgresql:hobby-dev
 heroku config:set -a ourbigbook-staging SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
 npm run deploy-staging
 ``

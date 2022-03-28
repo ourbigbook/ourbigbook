@@ -5860,18 +5860,34 @@ heroku addons:create heroku-postgresql:hobby-dev
 heroku config:set SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
 ``
 
-Every deployment:
+Additionally, you also need to setup the PostgreSQL test database for both OurBigBook CLI and OurBigBook Web as documented at: \x[test-system] and \x[local-run-as-identical-to-deployment-as-possible], because we will be running tests on PostgreSQL before pushing:
 ``
+createdb ourbigbook
+createdb ourbigbook_cli
+psql -c "CREATE ROLE ourbigbook_user with login password 'a'"
+psql -c 'GRANT ALL PRIVILEGES ON DATABASE ourbigbook TO ourbigbook_user'
+psql -c 'GRANT ALL PRIVILEGES ON DATABASE ourbigbook_cli TO ourbigbook_user'
+``
+
+Then deploy with:
+``
+cd web
 npm run deploy-prod
 ``
 
-= Custom domain name setup
-{parent=heroku-deployment}
-
 Nuke the database and generate a demo database:
 ``
-# heroku run -a ourbigbook-staging web/bin/generate-demo-data.js --force-production
+# heroku run -a ourbigbookREMOVE_ME web/bin/generate-demo-data.js --force-production
 ``
+
+Drop into a PostgreSQL shell on production:
+``
+heroku psql -a ourbigbook
+``
+Of course, any writes could mean loss of data!
+
+= Custom domain name setup
+{parent=heroku-deployment}
 
 The domain `ourbigbook.com` was leased from: https://porkbun.com/[]. Unfortunatly, HTTPS on Heroku with a custom domain requires using a paying tier, so we upgraded from the free tier to the cheapest paid tier, "Hobby Project", to start with: https://stackoverflow.com/questions/52185560/heroku-set-ssl-certificates-on-free-plan
 
@@ -5896,8 +5912,8 @@ We have a staging server running at: https://ourbigbook-staging.herokuapp.com/
 To set it up, we just follow the exact same steps as for \x[heroku-deployment] but with a different app ID. E.g. using the `ourbigbook-staging` heroku project ID:
 ``
 git remote add staging https://git.heroku.com/ourbigbook-staging.git
-heroku addons:create --app ourbigbook-staging heroku-postgresql:hobby-dev
-heroku config:set --app ourbigbook-staging SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
+heroku addons:create -a ourbigbook-staging heroku-postgresql:hobby-dev
+heroku config:set -a ourbigbook-staging SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
 npm run deploy-staging
 ``
 

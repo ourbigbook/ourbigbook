@@ -82,7 +82,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   User.hasMany(Article, {as: 'authoredArticles', foreignKey: 'authorId'})
 
   // Article has Comment
-  Article.hasMany(Comment, {foreignKey: 'articleId'})
+  Article.hasMany(Comment, { foreignKey: 'articleId' })
   Comment.belongsTo(Article, {
     foreignKey: {
       name: 'articleId',

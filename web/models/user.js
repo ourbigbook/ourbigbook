@@ -92,7 +92,7 @@ module.exports = (sequelize) => {
           // Create the index page for the user.
           const article = new sequelize.models.Article({
             title: ourbigbook.capitalize_first_letter(ourbigbook.INDEX_BASENAME_NOEXT),
-            body: 'Welcome to my home page!',
+            body: User.defaultIndexBody,
             authorId: user.id,
           })
           return article.saveSideEffects({ transaction: options.transaction })
@@ -257,6 +257,8 @@ module.exports = (sequelize) => {
       ])
     })
   }
+
+  User.defaultIndexBody = 'Welcome to my home page!'
 
   User.validPassword = function(user, password) {
     let hash = crypto.pbkdf2Sync(password, user.salt, 10000, 512, 'sha512').toString('hex')

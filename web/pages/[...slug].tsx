@@ -47,7 +47,7 @@ const ArticlePage = ({
     setTitle(`${article.title} by ${displayAndUsernameText(article?.author)}`)
   )
   const showOthers = topicArticleCount > 1
-  const showCreateMyOwn = article.author.username !== loggedInUser.username
+  const showCreateMyOwn = !loggedInUser || article.author.username !== loggedInUser.username
   return (
     <>
       <div className="article-page">

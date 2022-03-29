@@ -45,7 +45,7 @@ const Navbar = () => {
       <CustomLink href={routes.home()} className="navbar-brand">
         {appName}
       </CustomLink>
-      <a href={aboutHref}>About this website</a>
+      <a href={aboutHref} className="about">About this website</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
           <NavLink href={routes.articleNew()}>
@@ -65,10 +65,10 @@ const Navbar = () => {
           </NavLink>
         </Maybe>
         <Maybe test={!loggedInUser}>
-          <NavLink href={routes.userLogin()}>
+          <NavLink href={routes.userLogin()} className="login">
             {LOGIN_ACTION}
           </NavLink>
-          <NavLink href={routes.userNew()}>
+          <NavLink href={routes.userNew()} className="signup">
             {REGISTER_ACTION}
           </NavLink>
         </Maybe>

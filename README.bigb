@@ -1,4 +1,5 @@
 = OurBigBook
+{c}
 {title2=previously Cirodown}
 
 https://ourbigbook.com source code + a compatible local CLI static wiki generator and markup language to write complex structured wikis/books/blogs with reference implementation in JavaScript.
@@ -4060,6 +4061,7 @@ but later on we might add more precise reference fields like the page of a book 
 Implemented at: https://github.com/cirosantilli/ourbigbook/issues/137
 
 = OurBigBook syntax
+{c}
 {parent=ourbigbook}
 
 = Insane macro shortcuts
@@ -4639,6 +4641,7 @@ or from the \x[ourbigbook-json] file with an entry of form:
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
 
 = OurBigBook CLI
+{c}
 {parent=tooling}
 
 = `ourbigbook` executable
@@ -4755,6 +4758,7 @@ When there isn't a `ourbigbook.json`, everything happens as though there were an
 Internally, the general philosophy is that the JavaScript API in \a[index.js] works exclusively with paths relative to the \x[project-toplevel-directory]. It is then up to callers such as \a[ourbigbook] to ensure that filesystem specifics handle the relative paths correctly.
 
 = OurBigBook CLI options
+{c}
 {parent=ourbigbook-cli}
 
 = `ourbigbook` executable options
@@ -5702,6 +5706,7 @@ The better approach would be to implement a converter in Haskell from anything t
 And from OurBigBook to anything, create new output formats inside OurBigBook to those other formats.
 
 = OurBigBook Web
+{c}
 {parent=tooling}
 
 = Dynamic website
@@ -6070,6 +6075,7 @@ We also have a custom setup where, if the database is not initialized, we first:
 This is something that should be merged into Sequelize itself, or at least asked on Stack Overflow, but lazy now.
 
 = OurBigBook Web directory structure
+{c}
 {parent=ourbigbook-web}
 
 * \a[web/app.js]: server executable entry point, can also be used programmatically from Node.js
@@ -6094,6 +6100,7 @@ As the website grows, we will likely need to do a lazy version of this that mark
 The functionality of this script should be called from a migration whenever such HTML changes are required. TODO link to an example. We had one at `web/migrations/20220321000000-output-update-ancestor.js` that seemed to work, but lost it. It was simple though. Just you have to instantiate your  own 
 
 = OurBigBook Web help
+{c}
 {parent=ourbigbook-web}
 
 This section will eventually be moved into the website itself. We'll just likely paste it into the database under an account that is always created or something like that.

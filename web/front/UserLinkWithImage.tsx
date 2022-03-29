@@ -8,7 +8,7 @@ import { DisplayAndUsername } from 'front/user'
 
 const UserLinkWithImage = ({ user, showUsername }: {
   user: UserType,
-  showUsername: bool,
+  showUsername?: boolean,
 }) => {
   if (!user) return null;
   return (

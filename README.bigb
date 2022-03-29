@@ -6566,30 +6566,36 @@ Conversion follows the following steps:
   E.g. this is where the following functionality are implemented:
   * \x[synonym] and \x[scope]
   * \x[ourbigbookexample] and \x[embed-includes]: they are stitched into the main AST
-* DB queries: every single database query must be done at this point, after pots processing and before render.
-
-  TODO this must come after all post processing. Parse + post processing must never depend on the database. Tracked at: https://github.com/cirosantilli/ourbigbook/issues/208
-
-  Keeping all queries together is fundamental for performance reasons, especially of \x[browser-editor-with-preview] in the \x[ourbigbook-web]: imagine doing 100 scattered server queries:
-  ``
-  SELECT * from Ids WHERE id = '0'
-  SELECT * from Ids WHERE id = '1'
-  ...
-  SELECT * from Ids WHERE id = '100'
-  ``
-  vs grouping them together:
-  ``
-  SELECT * from Ids WHERE id IN ('0', '1', ..., '100')
-  ``
-  It also has the benefit of allowing us to remove `async`/`await` from almost every single function in the code, which considerably slows down the CPU-bound execution path.
-
-  As an added bonus, it also allows us to clearly see the impact of database queries when using \x[log-perf].
-
-  We call this joining up of small querries into big ones "query bundling".
 * ast post process pass 2: we now do every other post process operation that was not done in pass 1, e.g.:
   * \x[insane] paragraphs, lists and tables
 * ast post process pass 3: this does some minimal tree hierarchy linking between parents and children. TODO could it be merged into 2? Feels likely
 * render, which converts our AST tree into a output string. This is run once for the toplevel, and once for every header of the document if \x[split-headers] are enabled. We need to do this because header renders are different from their toplevel counterparts, e.g. their first paragraph has id `p-1` and not `p-283`. All of those renders are done from the same parsed tree however, parsing happens only once.
+
+  This step is skipped when using the \x[no-render] option, or during ID extraction.
+
+  Sub-steps include:
+  * DB queries: this is the first thing we do during the rendering step.
+
+    Every single database query must be done at this point, in one go.
+
+    Database queries are only done while rendering, never when parsing. The database is nothing but a cache for source file state, and this separation means that we can always cache input source state into the database during parsing without relying on the database itself, and thus preventing any circular dependencies from parsing to parsing.https://cirosantilli.com/china-dictatorship/reddit{ref}
+
+    Keeping all queries together is fundamental for performance reasons, especially of \x[browser-editor-with-preview] in the \x[ourbigbook-web]: imagine doing 100 scattered server queries:
+    ``
+    SELECT * from Ids WHERE id = '0'
+    SELECT * from Ids WHERE id = '1'
+    ...
+    SELECT * from Ids WHERE id = '100'
+    ``
+    vs grouping them together:
+    ``
+    SELECT * from Ids WHERE id IN ('0', '1', ..., '100')
+    ``
+    It also has the benefit of allowing us to remove `async`/`await` from almost every single function in the code, which considerably slows down the CPU-bound execution path.
+
+    As an added bonus, it also allows us to clearly see the impact of database queries when using \x[log-perf].
+
+    We call this joining up of small querries into big ones "query bundling".
 * and after rendering is finally done, we then save the database changes back to the DB so that the conversion of other files will pick them up. Just like for the SELECT, we do a single query per database to reduce the roundrips.
 
 = Abstract syntax tree

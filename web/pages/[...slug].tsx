@@ -2,6 +2,7 @@ import Router, { useRouter } from 'next/router'
 import React from 'react'
 import useSWR, { trigger } from 'swr'
 
+import { ArticlePageProps } from 'front/ArticlePage'
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
 import Maybe from 'front/Maybe'
@@ -12,19 +13,8 @@ import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
 import { AppContext } from 'front'
 import CommentAPI from 'front/api/comment'
-import { ArticleType } from 'front/types/articleType'
-import { CommentType } from 'front/types/commentType'
-import { UserType } from 'front/types/userType'
 import fetcher from 'fetcher'
 import routes from 'front/routes'
-
-interface ArticlePageProps {
-  article: ArticleType;
-  comments: CommentType[];
-  loggedInUser?: UserType;
-  loggedInUserVersionSlug?: string;
-  topicArticleCount: number;
-}
 
 const ArticlePage = ({
   article,
@@ -53,8 +43,8 @@ const ArticlePage = ({
       <div className="article-page">
         <div className="content-not-ourbigbook article-meta">
           <div className="article-info">
-            { 'Author: ' }
-            <UserLinkWithImage user={article.author} />
+            <span className="mobile-hide">Author: </span>
+            <UserLinkWithImage user={article.author} showUsernameMobile={false} />
             {' '}
             <FollowUserButton user={article.author} showUsername={false} />
           </div>
@@ -63,7 +53,7 @@ const ArticlePage = ({
               <CustomLink
                 href={routes.topicArticlesTop(article.topicId)}
               >
-                <i className="ion-ios-people" /> {topicArticleCount - 1} article{topicArticleCount - 1 > 1 ? 's' : ''} by other authors about "{article.title}"
+                <i className="ion-ios-people" /> {topicArticleCount - 1}<span className="mobile-hide"> article{topicArticleCount - 1 > 1 ? 's' : ''}</span> by other authors<span className="mobile-hide"> about "{article.title}"</span>
               </CustomLink>
             }
             {showOthers && showCreateMyOwn && <>{' '}</> }
@@ -78,7 +68,7 @@ const ArticlePage = ({
                   : <CustomLink
                       href={routes.articleView(loggedInUserVersionSlug)}
                     >
-                      <i className="ion-eye" /> View my version
+                      <i className="ion-eye" /> View mine
                     </CustomLink>
                 }
               </>

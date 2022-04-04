@@ -2,8 +2,8 @@ const file = require('./file')
 const id = require('./id')
 const ref = require('./ref')
 
-function addModels(sequelize) {
-  const File = file(sequelize)
+function addModels(sequelize, web) {
+  const File = file(sequelize, web)
   const Id = id(sequelize)
   const Ref = ref(sequelize)
   // constraints: false for now because when we convert multiple files, we are creating IDs

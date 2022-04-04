@@ -479,8 +479,6 @@ class SqliteFileProvider extends ourbigbook.FileProvider {
   }
 }
 
-  db_options
-
 async function create_sequelize(db_options_arg, Sequelize, sync_opts={}) {
   db_options_arg = Object.assign({ timestamps: false }, db_options_arg, db_options)
   const storage = db_options_arg.storage
@@ -526,6 +524,7 @@ async function update_database_after_convert({
   path,
   render,
   transaction,
+  title,
 }) {
   const context = extra_returns.context;
   ourbigbook.perf_print(context, 'convert_path_pre_sqlite_transaction')
@@ -570,10 +569,11 @@ async function update_database_after_convert({
           {
             authorId,
             body,
-            path,
-            toplevel_id,
             last_parse: file_bulk_create_last_parse,
             last_render: file_bulk_create_last_render,
+            path,
+            title,
+            toplevel_id,
           },
         ],
         file_bulk_create_opts,

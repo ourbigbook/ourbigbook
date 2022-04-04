@@ -12,8 +12,10 @@ const { convertOptions } = require('./front/config')
 const { modifyEditorInput } = require('./shared')
 
 // This does the type of stuff that OurBigBook CLI does for CLI
-// around the conversion itself (i.e. setting up the database, saving output files)
+// around the conversion itself, i.e. setting up the database, saving output files
 // but on the Web.
+//
+// This is how Articles should always be created and updated.
 async function convert({
   author,
   body,
@@ -69,6 +71,7 @@ async function convert({
     sequelize,
     path: filePath,
     render: true,
+    title,
     transaction,
   })
   const file = await sequelize.models.File.findOne({where: { path: filePath}})
@@ -81,25 +84,22 @@ async function convert({
     throw new ValidationError(check_db_errors, 422)
   }
   const articleArgs = []
-  const slugs = []
   for (const outpath in extra_returns.rendered_outputs) {
-    const slug = outpath.slice(ourbigbook.AT_MENTION_CHAR.length),
     articleArgs.push({
       fileId: file.id,
       render: extra_returns.rendered_outputs[outpath],
-      slug,
-      title: outpath, // TODO
+      slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length),
+      title: extra_returns.rendered_headers[outpath.slice(0, -ourbigbook.HTML_EXT.length - 1)],
       topicId: idid.slice(ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1),
     })
-    slugs.push(slug)
   }
-  // Don't return, because those Article have no ID due to the updateOnDuplicate.
-  // A separate find is necessary.
   await sequelize.models.Article.bulkCreate(
     articleArgs,
-    { updateOnDuplicate: ['title', 'render'], transaction }
+    { updateOnDuplicate: ['title', 'render', 'updatedAt'], transaction }
   )
-  return 
+  // Find here because upsert not yet supported in SQLite.
+  // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
+  return sequelize.models.Article.findAll({ where: { slug: articleArgs.map(arg => arg.slug) } })
 }
 
 module.exports = {

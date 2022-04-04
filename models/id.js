@@ -42,7 +42,7 @@ module.exports = (sequelize) => {
     }
   )
 
-  Id.findDuplicates = async (paths) => {
+  Id.findDuplicates = async (paths, transaction) => {
     const on = {
       '$Id.idid$': { [Op.col]: 'duplicate.idid' },
       '$Id.id$': { [Op.ne]: { [Op.col]: 'duplicate.id' } },
@@ -64,10 +64,11 @@ module.exports = (sequelize) => {
         ['idid', 'ASC'],
         ['path', 'ASC'],
       ],
+      transaction,
     })
   }
 
-  Id.findInvalidTitleTitle = async (paths) => {
+  Id.findInvalidTitleTitle = async (paths, transaction) => {
     let where
     if (paths !== undefined) {
       where = { 'path': paths }
@@ -93,6 +94,7 @@ module.exports = (sequelize) => {
         ['path', 'ASC'],
         ['idid', 'ASC'],
       ],
+      transaction,
     })
   }
 

@@ -1,9 +1,8 @@
 const router = require('express').Router()
 const Op = require('sequelize').Op
 
-const ourbigbook = require('ourbigbook')
-
 const auth = require('../auth')
+const convert = require('../convert')
 const lib = require('./lib')
 
 function getOrder(req) {
@@ -85,21 +84,28 @@ router.get('/feed', auth.required, async function(req, res, next) {
 // create article
 router.post('/', auth.required, async function(req, res, next) {
   try {
-    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
+    const sequelize = req.app.get('sequelize')
+    const user = await sequelize.models.User.findByPk(req.payload.id);
     if (!user) {
       return res.sendStatus(401)
     }
-    if (!req.body.article) {
+    const articleData = req.body.article
+    if (!articleData) {
       return res.status(422).json({ errors: { article: "can't be blank" } })
     }
-    if (!req.body.article.title) {
+    if (!articleData.title) {
       throw new lib.ValidationError('title cannot be empty')
     }
-    let article = new (req.app.get('sequelize').models.Article)(req.body.article)
-    article.authorId = user.id
-    await article.saveSideEffects()
-    article.author = user
-    return res.json({ article: await article.toJson(user) })
+    const articles = await convert.convert({
+      author: user,
+      body: articleData.body,
+      sequelize,
+      title: articleData.title,
+    })
+    for (const article of articles) {
+      article.author = user
+    }
+    return res.json({ articles: await Promise.all(articles.map(article => article.toJson(user))) })
   } catch(error) {
     next(error);
   }

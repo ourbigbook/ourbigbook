@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const { minPath }  = require('../shared')
+const { minPath }  = require('../front/js')
 
 // heroku bootstrap
 router.get('/', function(req, res) {

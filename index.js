@@ -2301,7 +2301,10 @@ function closing_token(token) {
  *              first pass when building an entire directory with internal cross file
  *              references to extract IDs of each file.
  * @param {Object} extra_returns
- *          {Object} rendered_outputs pairs of output_path -> rendered_output_string
+ *          {Object} key: output_path
+ *                   value: Object:
+ *                        title: rendered toplevel inner title
+ *                        full: full render, including title and body
  *                   This is needed primarily because --html-spit-header
  *                   generates multiple output files for a single input file.
  * @return {String}
@@ -2425,17 +2428,18 @@ async function convert(
     }
 
     // First render.
-    context.extra_returns.rendered_outputs = {};
-    perf_print(context, 'render_pre')
-    output = ast.render(context);
-    context.katex_macros = Object.assign({}, context.options.katex_macros);
     let toplevel_output_path
     if (context.toplevel_output_path === undefined) {
       toplevel_output_path = INDEX_BASENAME_NOEXT + '.' + HTML_EXT
     } else {
       toplevel_output_path = context.toplevel_output_path
     }
-    context.extra_returns.rendered_outputs[toplevel_output_path] = output;
+    let rendered_outputs_entry = {}
+    context.extra_returns.rendered_outputs[toplevel_output_path] = rendered_outputs_entry
+    perf_print(context, 'render_pre')
+    output = ast.render(context);
+    context.katex_macros = Object.assign({}, context.options.katex_macros);
+    rendered_outputs_entry.full = output;
 
     perf_print(context, 'split_render_pre')
     // Split header conversion.
@@ -2592,8 +2596,9 @@ function convert_header(cur_arg_list, context, has_toc) {
     options.template_vars.root_relpath = new_root_relpath
 
     // Do the conversion.
-    context.extra_returns.rendered_outputs[output_path] =
-      ast_toplevel.render(context);
+    let rendered_outputs_entry = {}
+    context.extra_returns.rendered_outputs[output_path] = rendered_outputs_entry
+    rendered_outputs_entry.full = ast_toplevel.render(context)
   }
 }
 
@@ -2831,7 +2836,7 @@ function convert_init_context(options={}, extra_returns={}) {
   }
   extra_returns.debug_perf = {};
   extra_returns.errors = [];
-  extra_returns.rendered_headers = {};
+  extra_returns.rendered_outputs = {};
   const context = {
     perf_prev: 0,
     katex_macros: Object.assign({}, options.katex_macros),
@@ -6704,7 +6709,12 @@ const DEFAULT_MACRO_LIST = [
         style_full: true,
       };
       const x_text_base_ret = x_text_base(ast, context, x_text_options);
-      context.extra_returns.rendered_headers[ast.id] = x_text_base_ret.inner;
+      if (context.toplevel_output_path) {
+        const rendered_outputs_entry = context.extra_returns.rendered_outputs[context.toplevel_output_path]
+        if (rendered_outputs_entry.title === undefined) {
+          rendered_outputs_entry.title = x_text_base_ret.inner;
+        }
+      }
       ret += x_text_base_ret.full;
       ret += `</a>`;
       ret += `</h${level_int_capped}>\n`;

@@ -103,7 +103,10 @@ router.post('/', auth.required, async function(req, res, next) {
       title: articleData.title,
     })
     for (const article of articles) {
-      article.author = user
+      if (article.file === undefined) {
+        article.file = {}
+      }
+      article.file.author = user
     }
     return res.json({ articles: await Promise.all(articles.map(article => article.toJson(user))) })
   } catch(error) {
@@ -116,7 +119,7 @@ router.put('/', auth.required, async function(req, res, next) {
   try {
     const article = await lib.getArticle(req, res)
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
-    if (article.authorId.toString() === req.payload.id.toString()) {
+    if (article.file.authorId.toString() === req.payload.id.toString()) {
       if (req.body.article) {
         if (typeof req.body.article.title !== 'undefined') {
           if (!req.body.article.title) {
@@ -149,7 +152,7 @@ router.put('/', auth.required, async function(req, res, next) {
 //    if (article.isToplevelIndex(user)) {
 //      throw new lib.ValidationError('Cannot delete the toplevel index')
 //    }
-//    if (article.author.id.toString() === req.payload.id.toString()) {
+//    if (article.file.authorId.toString() === req.payload.id.toString()) {
 //      return article.destroy().then(function() {
 //        return res.sendStatus(204)
 //      })
@@ -176,7 +179,7 @@ async function validateLike(req, res, user, article, isLike) {
       404,
     )
   }
-  if (article.author.id === user.id) {
+  if (article.file.authorId === user.id) {
     throw new lib.ValidationError(
       [`A user cannot ${isLike ? 'like' : 'unlike'} their own article`],
       403,

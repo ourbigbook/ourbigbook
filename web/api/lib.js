@@ -13,7 +13,6 @@ async function getArticle(req, res) {
     return article
   }
 }
-exports.getArticle = getArticle
 
 // When this class is thrown and would blows up on toplevel, we catch it instead
 // and gracefully return the specified error to the client instead of doing a 500.
@@ -27,14 +26,12 @@ class ValidationError extends Error {
     this.status = status
   }
 }
-exports.ValidationError = ValidationError
 
 function validatePositiveInteger(s) {
   const i = Number(s)
   let ok = s !== '' && Number.isInteger(i) && i >= 0
   return [i, ok]
 }
-exports.validatePositiveInteger = validatePositiveInteger
 
 function validate(inputString, validator, prop) {
   let [val, ok] = validator(inputString)
@@ -47,7 +44,6 @@ function validate(inputString, validator, prop) {
     )
   }
 }
-exports.validate = validate
 
 function validateParam(obj, prop, validator, defaultValue) {
   let param = obj[prop]
@@ -57,4 +53,11 @@ function validateParam(obj, prop, validator, defaultValue) {
     return validate(param, validator, prop)
   }
 }
-exports.validateParam = validateParam
+
+module.exports = {
+  getArticle,
+  ValidationError,
+  validatePositiveInteger,
+  validate,
+  validateParam,
+}

@@ -7,7 +7,15 @@ export function getServerSidePropsArticleHoc(addComments?, loggedInUserCache?) {
     const loggedInUser = await getLoggedInUser(req, res, loggedInUserCache)
     const article = await sequelize.models.Article.findOne({
       where: { slug: slug.join('/') },
-      include: [{ model: sequelize.models.User, as: 'author' }],
+      include: [
+        {
+          model: sequelize.models.File,
+          as: 'file',
+          include: [{
+            model: sequelize.models.User,
+            as: 'author',
+          }]
+      }],
     })
     if (!article) {
       return {
@@ -20,7 +28,7 @@ export function getServerSidePropsArticleHoc(addComments?, loggedInUserCache?) {
         where: { topicId: article.topicId },
       }),
     ])
-    const props:ArticlePageProps = {
+    const props: ArticlePageProps = {
       article: articleJson,
       topicArticleCount,
     }
@@ -35,14 +43,13 @@ export function getServerSidePropsArticleHoc(addComments?, loggedInUserCache?) {
         props.loggedInUserVersionSlug = slug
       }
     }
-    const ret: any = { props }
     if (addComments) {
       const comments = await article.getComments({
         order: [['createdAt', 'DESC']],
         include: [{ model: sequelize.models.User, as: 'author' }],
       })
-      ret.props.comments = await Promise.all(comments.map(comment => comment.toJson()))
+      props.comments = await Promise.all(comments.map(comment => comment.toJson()))
     }
-    return ret;
+    return { props };
   }
 }

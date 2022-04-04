@@ -108,7 +108,7 @@ const ArticleList = ({
                 </td>
                 {showAuthor &&
                   <td className="shrink">
-                    <UserLinkWithImage showUsername={false} user={article.author} />
+                    <UserLinkWithImage showUsername={false} user={article.file.author} />
                   </td>
                 }
                 <td className="shrink">{formatDate(article.createdAt)}</td>

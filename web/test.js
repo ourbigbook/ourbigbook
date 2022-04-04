@@ -5,6 +5,20 @@ const app = require('./app')
 const convert = require('./convert')
 const test_lib = require('./test_lib')
 
+function assertRows(rows, rowsExpect) {
+  assert.strictEqual(rows.length, rowsExpect.length)
+  for (let i = 0; i < rows.length; i++) {
+    let row = rows[i]
+    let rowExpect = rowsExpect[i]
+    for (let key in rowExpect) {
+      if (row[key] !== rowExpect[key]) {
+        console.error({ i, key });
+      }
+      assert.strictEqual(row[key], rowExpect[key])
+    }
+  }
+}
+
 async function createUserApi(server, i) {
   ;[res, data] = await sendJsonHttp({
     server,
@@ -17,8 +31,8 @@ async function createUserApi(server, i) {
   return data.user
 }
 
-async function createArticles(sequelize, author, i) {
-  const articleArg = createArticleArg(i, author)
+async function createArticles(sequelize, author, opts) {
+  const articleArg = createArticleArg(opts, author)
   return convert.convert({
     author,
     body: articleArg.body,
@@ -28,14 +42,19 @@ async function createArticles(sequelize, author, i) {
   return sequelize.models.Article.create(createArticleArg(i, author))
 }
 
-async function createArticle(sequelize, author, i) {
-  return (await createArticles(sequelize, author, i))[0]
+async function createArticle(sequelize, author, opts) {
+  return (await createArticles(sequelize, author, opts))[0]
 }
 
-function createArticleArg(i, author) {
+function createArticleArg(opts, author) {
+  const i = opts.i
   const ret = {
     title: `Title ${i}`,
-    body: `Body ${i}`
+  }
+  if (opts.body !== undefined) {
+    ret.body = opts.body
+  }  else {
+    ret.body = `Body ${i}`
   }
   if (author) {
     ret.authorId = author.id
@@ -140,15 +159,15 @@ it('feed shows articles by followers', async function() {
   await (user0.addFollowSideEffects(user1))
   await (user0.addFollowSideEffects(user3))
 
-  const article0_0 = await createArticle(sequelize, user0, 0)
-  const article1_0 = await createArticle(sequelize, user1, 0)
-  const article1_1 = await createArticle(sequelize, user1, 1)
-  const article1_2 = await createArticle(sequelize, user1, 2)
-  const article1_3 = await createArticle(sequelize, user1, 3)
-  const article2_0 = await createArticle(sequelize, user2, 0)
-  const article2_1 = await createArticle(sequelize, user2, 1)
-  const article3_0 = await createArticle(sequelize, user3, 0)
-  const article3_1 = await createArticle(sequelize, user3, 1)
+  const article0_0 = await createArticle(sequelize, user0, { i: 0 })
+  const article1_0 = await createArticle(sequelize, user1, { i: 0 })
+  const article1_1 = await createArticle(sequelize, user1, { i: 1 })
+  const article1_2 = await createArticle(sequelize, user1, { i: 2 })
+  const article1_3 = await createArticle(sequelize, user1, { i: 3 })
+  const article2_0 = await createArticle(sequelize, user2, { i: 0 })
+  const article2_1 = await createArticle(sequelize, user2, { i: 1 })
+  const article3_0 = await createArticle(sequelize, user3, { i: 0 })
+  const article3_1 = await createArticle(sequelize, user3, { i: 1 })
 
   const { count, rows } = await user0.findAndCountArticlesByFollowed(1, 3)
   assert.strictEqual(rows[0].title, 'Title 0')
@@ -173,7 +192,7 @@ it('api: create an article and see it on global feed', async () => {
     const token = user.token
 
     // Create article.
-    article = createArticleArg(0)
+    article = createArticleArg({ i: 0 })
     ;[res, data] = await sendJsonHttp({
       server,
       method: 'POST',
@@ -298,7 +317,10 @@ it('api: multiheader file creates multiple articles', async () => {
     const token = user.token
 
     // Create article.
-    article = createArticleArg(0)
+    article = createArticleArg({ i: 0, body: `== Title 0 0
+
+== Title 0 1
+`})
     ;[res, data] = await sendJsonHttp({
       server,
       method: 'POST',
@@ -307,11 +329,14 @@ it('api: multiheader file creates multiple articles', async () => {
       token,
     })
     assert.strictEqual(res.statusCode, 200)
-    articles = data.articles
-    assert.strictEqual(articles[0].title, 'Title 0')
-    assert.strictEqual(articles.length, 1)
+    assertRows(data.articles, [
+      { title: 'Title 0', slug: 'user0/title-0' },
+      { title: 'Title 0 0', slug: 'user0/title-0-0' },
+      { title: 'Title 0 1', slug: 'user0/title-0-1' },
+      { title: 'Title 0', slug: 'user0/title-0-split' },
+    ])
 
-    // See it on global feed.
+    // See them on global feed.
     ;[res, data] = await sendJsonHttp({
       server,
       method: 'GET',
@@ -319,10 +344,14 @@ it('api: multiheader file creates multiple articles', async () => {
       token,
     })
     assert.strictEqual(res.statusCode, 200)
-    assert.strictEqual(data.articles[0].title, 'Title 0')
-    assert.strictEqual(data.articles[0].author.username, 'user0')
-    assert.strictEqual(data.articles[1].title, 'Index')
-    assert.strictEqual(data.articles[1].author.username, 'user0')
-    assert.strictEqual(data.articlesCount, 2)
+    console.error(data.articles.map(article => article.slug));
+    assertRows(data.articles, [
+      { title: 'Index', slug: 'user0' },
+      { title: 'Index', slug: 'user0/split' },
+      { title: 'Title 0', slug: 'user0/title-0' },
+      { title: 'Title 0 0', slug: 'user0/title-0-0' },
+      { title: 'Title 0 1', slug: 'user0/title-0-1' },
+      { title: 'Title 0', slug: 'user0/title-0-split' },
+    ])
   })
 })

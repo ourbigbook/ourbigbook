@@ -284,14 +284,14 @@ function assert_convert_ast(
         const output = rendered_outputs[key];
         assert.notStrictEqual(output, undefined, `${key} not in ${Object.keys(extra_returns.rendered_outputs)}`);
         for (const xpath_expr of options.assert_xpath[key]) {
-          assert_xpath_main(xpath_expr, output, {message: key});
+          assert_xpath_main(xpath_expr, output.full, {message: key});
         }
       }
       for (const key in options.assert_not_xpath) {
         const output = rendered_outputs[key];
         assert.notStrictEqual(output, undefined);
         for (const xpath_expr of options.assert_not_xpath[key]) {
-          assert_xpath_main(xpath_expr, output, {
+          assert_xpath_main(xpath_expr, output.full, {
             count: 0,
             message: key,
           });

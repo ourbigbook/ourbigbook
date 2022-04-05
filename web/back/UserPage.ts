@@ -1,11 +1,11 @@
 import ourbigbook from 'ourbigbook/dist/ourbigbook'
-import sequelize from 'db'
 import { articleLimit  } from 'front/config'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { getLoggedInUser } from 'back'
 
 export const getServerSidePropsUserHoc = (what) => {
   return async ({ params, req, res }) => {
+    const sequelize = req.params.sequelize
     const loggedInUser = await getLoggedInUser(req, res)
     const user = await sequelize.models.User.findOne({
       where: { username: params.uid },

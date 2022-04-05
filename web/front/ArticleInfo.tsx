@@ -56,12 +56,14 @@ const ArticleInfo = ({
         >
           <i className="ion-edit" /> Edit
         </CustomLink>
-        <button
-          className="btn"
-          onClick={handleDelete}
-        >
-          <i className="ion-trash-a" /> Delete
-        </button>
+        {false &&
+          <button
+            className="btn"
+            onClick={handleDelete}
+          >
+            <i className="ion-trash-a" /> Delete
+          </button>
+        }
       </span>
     </>}
   </div>

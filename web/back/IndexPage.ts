@@ -1,7 +1,6 @@
 import { GetServerSideProps } from 'next'
 
 import { getLoggedInUser } from 'back'
-import sequelize from 'db'
 import { articleLimit, fallback } from 'front/config'
 import { IndexPageProps } from 'front/IndexPage'
 
@@ -50,7 +49,7 @@ export const getServerSidePropsIndexHoc = (what) => {
       articles = articlesAndCounts.articles
       articlesCount = articlesAndCounts.articlesCount
     } else {
-      const articlesAndCounts = await sequelize.models.Article.findAndCountAll({
+      const articlesAndCounts = await req.params.sequelize.models.Article.findAndCountAll({
         order: [[order, 'DESC']],
         limit: articleLimit,
       })

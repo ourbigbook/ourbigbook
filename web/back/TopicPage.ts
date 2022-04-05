@@ -1,6 +1,5 @@
 import { GetServerSideProps } from 'next'
 
-import sequelize from 'db'
 import { articleLimit  } from 'front/config'
 import { getLoggedInUser } from 'back'
 
@@ -33,7 +32,7 @@ export const getServerSidePropsTopicHoc = (what): GetServerSideProps => {
       default:
         throw new Error(`Unknown search: ${what}`)
     }
-    const articles = await sequelize.models.Article.getArticles({
+    const articles = await req.params.sequelize.models.Article.getArticles({
       sequelize,
       limit: articleLimit,
       offset: page * articleLimit,

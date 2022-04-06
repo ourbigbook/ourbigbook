@@ -12,18 +12,12 @@ interface CustomImageProps {
 }
 
 const CustomImage = ({ src, alt, className }: CustomImageProps) => {
-  const props: any = {}
-  if (className) {
-    props.className = className
-  }
-  return (
-    <img
-      src={src}
-      alt={alt}
-      onError={handleBrokenImage}
-      {...props}
-    />
-  )
+  return <img {...{
+    alt,
+    className,
+    onError: handleBrokenImage,
+    src,
+  }} />
 }
 
 export default CustomImage;

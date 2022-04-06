@@ -4,8 +4,8 @@ import { trigger } from 'swr'
 
 import CustomLink from 'front/CustomLink'
 import ArticleAPI from 'front/api/article'
+import { formatDate } from 'front/date'
 import useLoggedInUser from 'front/useLoggedInUser'
-import { formatDate } from 'date'
 import LikeArticleButton from 'front/LikeArticleButton'
 import routes from 'front/routes'
 

@@ -2,6 +2,7 @@ import Head from 'next/head'
 import React from 'react'
 import { useRouter } from 'next/router'
 
+import { AppContext, slugFromArray} from 'front'
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
@@ -9,9 +10,18 @@ import LogoutButton from 'front/LogoutButton'
 import Maybe from 'front/Maybe'
 import routes from 'front/routes'
 import useMin from 'front/api/useMin'
-import { AppContext, slugFromArray} from 'front'
+import { ArticleType } from 'front/types/ArticleType'
+import { UserType } from 'front/types/UserType'
 
-export const TopicPage = ({articles, articlesCount, what}) => {
+export interface TopicPageProps {
+  articles: ArticleType[];
+  articlesCount: number;
+  loggedInUser?: UserType;
+  page: number;
+  what: string;
+}
+
+export const TopicPage = ({ articles, articlesCount, loggedInUser, page, what }: TopicPageProps) => {
   const router = useRouter();
   const topicId = slugFromArray(router.query.id)
   useMin(
@@ -60,6 +70,7 @@ export const TopicPage = ({articles, articlesCount, what}) => {
       <ArticleList {...{
         articles,
         articlesCount,
+        page,
         paginationUrlFunc,
         showAuthor: true,
         what,

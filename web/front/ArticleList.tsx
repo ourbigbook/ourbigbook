@@ -4,39 +4,34 @@ import React from 'react'
 import CustomLink from 'front/CustomLink'
 import LikeArticleButton from 'front/LikeArticleButton'
 import LoadingSpinner from 'front/LoadingSpinner'
-import Pagination from 'front/Pagination'
+import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import { AppContext } from 'front'
 import { articleLimit } from 'front/config'
-import { formatDate } from 'date'
+import { formatDate } from 'front/date'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
+import { ArticleType } from 'front/types/ArticleType'
 
-type Options = {
-  articles: undefined;
-  articlesCount: undefined;
-  showAuthor: undefined;
-  what: undefined;
+export type ArticleListProps = {
+  articles: ArticleType[];
+  articlesCount: number;
+  page: number;
+  paginationUrlFunc: PaginationPropsUrlFunc;
+  showAuthor: boolean;
+  what: string;
 }
 
 const ArticleList = ({
   articles,
   articlesCount,
+  page,
   paginationUrlFunc,
   showAuthor,
   what
-}) => {
+}: ArticleListProps) => {
   const loggedInUser = useLoggedInUser()
   const router = useRouter();
-  const {
-    query: { page },
-  } = router;
-  let currentPage
-  if (page === undefined) {
-    currentPage = 0
-  } else {
-    currentPage = parseInt(page as string, 10) - 1
-  }
   const { asPath, pathname, query } = router;
   const { like, follow, tag, uid } = query;
 
@@ -122,7 +117,7 @@ const ArticleList = ({
         articlesCount,
         articlesPerPage: articleLimit,
         showPagesMax: 10,
-        currentPage,
+        currentPage: page,
         urlFunc: paginationUrlFunc,
       }} />
     </div>

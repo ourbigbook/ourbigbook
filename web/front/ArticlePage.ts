@@ -1,6 +1,6 @@
-import { ArticleType } from 'front/types/articleType'
-import { CommentType } from 'front/types/commentType'
-import { UserType } from 'front/types/userType'
+import { ArticleType } from 'front/types/ArticleType'
+import { CommentType } from 'front/types/CommentType'
+import { UserType } from 'front/types/UserType'
 
 export interface ArticlePageProps {
   article: ArticleType;

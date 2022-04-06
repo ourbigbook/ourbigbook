@@ -17,7 +17,7 @@ export async function getLoggedInUser(req, res, loggedInUser?) {
     } else {
       return null
     }
-    const user = await req.params.sequelize.models.User.findByPk(verifiedUser.id)
+    const user = await req.sequelize.models.User.findByPk(verifiedUser.id)
     if (user === null) {
       res.clearCookie(AUTH_COOKIE_NAME)
     }

@@ -1,9 +1,11 @@
 import { GetServerSideProps } from 'next'
 
-import { articleLimit  } from 'front/config'
 import { getLoggedInUser } from 'back'
+import { articleLimit  } from 'front/config'
+import { MyGetServerSideProps } from 'front/types'
+import { TopicPageProps } from 'front/TopicPage'
 
-export const getServerSidePropsTopicHoc = (what): GetServerSideProps => {
+export const getServerSidePropsTopicHoc = (what): MyGetServerSideProps => {
   return async ({ params, req, res }) => {
     const loggedInUser = await getLoggedInUser(req, res)
     const page = params?.page ? parseInt(params.page as string, 10) - 1: 0
@@ -32,14 +34,15 @@ export const getServerSidePropsTopicHoc = (what): GetServerSideProps => {
       default:
         throw new Error(`Unknown search: ${what}`)
     }
-    const articles = await req.params.sequelize.models.Article.getArticles({
+    const sequelize = req.sequelize
+    const articles = await sequelize.models.Article.getArticles({
       sequelize,
       limit: articleLimit,
       offset: page * articleLimit,
       order,
       topicId: params.id,
     })
-    const props: any = {
+    const props: TopicPageProps = {
       articles: await Promise.all(articles.rows.map(article => article.toJson(loggedInUser))),
       articlesCount: articles.count,
       page,

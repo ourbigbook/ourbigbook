@@ -17,6 +17,23 @@ import { AppContext } from 'front'
 import useMin from 'front/api/useMin'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
+import { IndexPageProps } from 'front/IndexPage'
+import { ArticleType } from 'front/types/ArticleType'
+import { CommentType } from 'front/types/CommentType'
+import { UserType } from 'front/types/UserType'
+
+export interface UserPageProps {
+  article?: ArticleType;
+  articles?: ArticleType[];
+  articlesCount?: number;
+  authoredArticleCount: number;
+  comments?: CommentType[];
+  likedArticleCount: number;
+  loggedInUser?: UserType;
+  page: number;
+  user: UserType;
+  what: string;
+}
 
 export default function UserPage({
   article,
@@ -26,14 +43,15 @@ export default function UserPage({
   comments,
   likedArticleCount,
   loggedInUser,
+  page,
   user,
   what
-}) {
+}: UserPageProps) {
   const router = useRouter();
-  const useMin0:any = {
+  const useMin0: any = {
     userIds: [user?.id],
   }
-  const useMin1:any = {
+  const useMin1: any = {
     users: [user],
   }
   if (what !== 'home') {
@@ -133,6 +151,7 @@ export default function UserPage({
         : <ArticleList {...{
             articles,
             articlesCount,
+            page,
             paginationUrlFunc,
             showAuthor: what === 'likes',
             what,

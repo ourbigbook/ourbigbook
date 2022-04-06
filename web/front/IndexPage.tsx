@@ -9,8 +9,8 @@ import { appName, aboutHref, articleLimit, apiPath } from 'front/config'
 import fetcher from 'front/fetcher'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
-import { ArticleType } from 'front/types/articleType'
-import { UserType } from 'front/types/userType'
+import { ArticleType } from 'front/types/ArticleType'
+import { UserType } from 'front/types/UserType'
 
 export interface IndexPageProps {
   articles: ArticleType[];
@@ -19,7 +19,6 @@ export interface IndexPageProps {
   page: number;
   what: string;
 }
-
 
 const IndexPage = ({
   articles,
@@ -78,6 +77,7 @@ const IndexPage = ({
       <ArticleList {...{
         articles,
         articlesCount,
+        page,
         paginationUrlFunc,
         showAuthor: true,
         what,

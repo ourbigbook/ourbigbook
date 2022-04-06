@@ -3,12 +3,14 @@ import { trigger } from 'swr'
 
 import Maybe from 'front/Maybe'
 
-interface PaginationProps {
+export type PaginationPropsUrlFunc = (number) => string;
+
+export interface PaginationProps {
   articlesCount: number;
   articlesPerPage: number;
   showPagesMax: number;
   currentPage: number;
-  urlFunc: (number) => string;
+  urlFunc: PaginationPropsUrlFunc;
 }
 
 function PaginationItem(props) {

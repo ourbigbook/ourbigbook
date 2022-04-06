@@ -242,6 +242,14 @@ it('api: create an article and see it on global feed', async () => {
       })
       assert.strictEqual(res.statusCode, 200)
 
+      // Logged out.
+      ;[res, data] = await sendJsonHttp({
+        server,
+        method: 'GET',
+        path: '/',
+      })
+      assert.strictEqual(res.statusCode, 200)
+
       ;[res, data] = await sendJsonHttp({
         server,
         method: 'GET',
@@ -250,11 +258,27 @@ it('api: create an article and see it on global feed', async () => {
       })
       assert.strictEqual(res.statusCode, 200)
 
+      // Logged out.
+      ;[res, data] = await sendJsonHttp({
+        server,
+        method: 'GET',
+        path: '/user0',
+      })
+      assert.strictEqual(res.statusCode, 200)
+
       ;[res, data] = await sendJsonHttp({
         server,
         method: 'GET',
         path: '/user0/title-0',
         token,
+      })
+      assert.strictEqual(res.statusCode, 200)
+
+      // Logged out.
+      ;[res, data] = await sendJsonHttp({
+        server,
+        method: 'GET',
+        path: '/user0/title-0',
       })
       assert.strictEqual(res.statusCode, 200)
     }

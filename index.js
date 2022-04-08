@@ -94,6 +94,10 @@ class AstNode {
     if (!('split_default' in options)) {
       options.split_default = false;
     }
+    if (!('split_default_children' in options)) {
+      // This header is not split_default, but its children are.
+      options.split_default_children = false;
+    }
     if (!('synonym' in options)) {
       options.synonym = undefined;
     }
@@ -150,6 +154,7 @@ class AstNode {
     // AstArgument
     this.parent_argument = undefined;
     this.split_default = options.split_default;
+    this.split_default_children = options.split_default_children;
     // {HeaderTreeNode} that points to the element.
     // This is used for both headers and non headers:
     // the only difference is that non-headers are not connected as
@@ -2449,6 +2454,7 @@ async function convert(
       // and all elements that belong to that header (up to the next header).
       let cur_arg_list = [];
       let has_toc = false;
+      let header_count = 0
       for (const child_ast of content) {
         const macro_name = child_ast.macro_name;
         if (macro_name === Macro.TOC_MACRO_NAME) {
@@ -2461,9 +2467,12 @@ async function convert(
           !child_ast.from_include &&
           !child_ast.validation_output.synonym.boolean
         ) {
-          convert_header(cur_arg_list, context, has_toc);
+          if (!(context.options.ourbigbook_json.h.splitDefaultNotToplevel && header_count === 1)) {
+            convert_header(cur_arg_list, context, has_toc);
+          }
           cur_arg_list = [];
           has_toc = false;
+          header_count++
         }
         cur_arg_list.push(child_ast);
       }
@@ -2673,6 +2682,7 @@ function convert_init_context(options={}, extra_returns={}) {
       if (!('h' in ourbigbook_json)) { ourbigbook_json.h = {}; }
       if (!('numbered' in ourbigbook_json.h)) { ourbigbook_json.h.numbered = true; }
       if (!('splitDefault' in ourbigbook_json.h)) { ourbigbook_json.h.splitDefault = false; }
+      if (!('splitDefaultNotToplevel' in ourbigbook_json.h)) { ourbigbook_json.h.splitDefaultNotToplevel = false; }
       {
         if (!('lint' in ourbigbook_json)) { ourbigbook_json.lint = {}; }
         const lint = ourbigbook_json.lint
@@ -3453,6 +3463,15 @@ function link_to_split_opposite(ast, context) {
   }
   let other_context = clone_and_set(context, 'to_split_headers', !context.in_split_headers);
   let other_href = x_href_attr(ast, other_context);
+  if (context.options.ourbigbook_json.h.splitDefaultNotToplevel) {
+    // This is dirty. But I am dirty.
+    // Seriously, checking this more cleanly would require
+    // unpacking a bunch of stuff down below from the toplevel scope removal.
+    const other_href_same = x_href_attr(ast, context);
+    if (other_href === other_href_same) {
+      return undefined
+    }
+  }
   return `<a${html_attr('title', title)}${other_href}>${content}</a>`;
 }
 
@@ -3683,7 +3702,10 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     // to take care of index and -split suffix.
     if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
       // basename_ret
-      if (to_split_headers === ast.split_default) {
+      if (
+        to_split_headers === ast.split_default ||
+        context.options.ourbigbook_json.h.splitDefaultNotToplevel
+      ) {
         // The name is just index.html.
         basename_ret = renamed_basename_noext;
       } else {
@@ -3716,26 +3738,29 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
   // Add -split, -nosplit or custom suffixes to basename_ret.
   let suffix_to_add;
   if (split_suffix === undefined || split_suffix === '') {
-    suffix_to_add = to_split_headers ? 'split' : 'nosplit';
+    suffix_to_add = to_split_headers ? SPLIT_MARKER_TEXT : NOSPLIT_MARKER_TEXT;
   } else {
     suffix_to_add = split_suffix;
   }
   if (
+    !context.options.ourbigbook_json.h.splitDefaultNotToplevel &&
     (
-      to_split_headers &&
       (
-        // To split.html
+        to_split_headers &&
         (
-          first_header_or_before &&
-          !ast.split_default
-        ) ||
+          // To split.html
+          (
+            first_header_or_before &&
+            !ast.split_default
+          ) ||
 
-        // User explcitly gave {splitSuffix}
-        split_suffix !== undefined
-      )
-    ) ||
-    // User gave {splitDefault}, so we link to nosplit.
-    !to_split_headers && ast.split_default
+          // User explcitly gave {splitSuffix}
+          split_suffix !== undefined
+        )
+      ) ||
+      // User gave {splitDefault}, so we link to nosplit.
+      !to_split_headers && ast.split_default
+    )
   ) {
     if (basename_ret !== '') {
       basename_ret += '-';
@@ -4149,9 +4174,14 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (ast.validation_output.splitDefault.given) {
           ast.split_default = ast.validation_output.splitDefault.boolean;
         } else if (options.cur_header !== undefined) {
-          ast.split_default = options.cur_header.split_default;
+          ast.split_default = options.cur_header.split_default || options.cur_header.split_default_children;
         } else {
-          ast.split_default = options.ourbigbook_json.h.splitDefault;
+          if (options.ourbigbook_json.h.splitDefaultNotToplevel) {
+            ast.split_default = false
+            ast.split_default_children = options.ourbigbook_json.h.splitDefault
+          } else {
+            ast.split_default = options.ourbigbook_json.h.splitDefault
+          }
         }
 
         if (is_synonym) {
@@ -6726,7 +6756,9 @@ const DEFAULT_MACRO_LIST = [
         ret += `<span class="hover-meta"> `;
         if (context.options.split_headers) {
           link_to_split = link_to_split_opposite(ast, context);
-          ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
+          if (link_to_split) {
+            ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
+          }
         }
         let toc_href;
         if (!is_top_level && context.has_toc) {
@@ -7368,7 +7400,10 @@ const DEFAULT_MACRO_LIST = [
           let toc_href = html_attr('href', '#' + my_toc_id);
           ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
           if (cur_context.options.split_headers) {
-            ret += `${HEADER_MENU_ITEM_SEP}${link_to_split_opposite(target_id_ast, cur_context)}`;
+            const link_to_split = link_to_split_opposite(target_id_ast, cur_context)
+            if (link_to_split) {
+              ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
+            }
           }
           let parent_ast = target_id_ast.get_header_parent_asts(cur_context)[0];
           if (

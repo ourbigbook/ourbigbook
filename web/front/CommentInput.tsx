@@ -5,26 +5,38 @@ import { trigger } from 'swr'
 import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
-import CommentAPI from 'front/api/comment'
-import useLoggedInUser from 'front/useLoggedInUser'
+import { CommentApi } from 'front/api'
 import routes from 'front/routes'
 
-const CommentInput = () => {
-  const loggedInUser = useLoggedInUser()
+const CommentInput = ({ loggedInUser }) => {
   const router = useRouter();
   const slug = slugFromRouter(router)
   const [body, setBody] = React.useState("");
   const [isLoading, setLoading] = React.useState(false);
+  const submitButton = React.useRef(null);
+  function changeBody(body) {
+    setBody(body);
+    if (submitButton) {
+      if (body) {
+        submitButton.current.classList.remove('disabled');
+      } else {
+        submitButton.current.classList.add('disabled');
+      }
+    }
+  }
+  React.useEffect(() => changeBody(''), [])
   const handleChange = e => {
-    setBody(e.target.value);
+    changeBody(e.target.value)
   };
   const handleSubmit = async e => {
     e.preventDefault();
-    setLoading(true);
-    await CommentAPI.create(slug, body, loggedInUser?.token)
-    setLoading(false);
-    setBody("");
-    trigger(CommentAPI.url(slug));
+    if (body) {
+      setLoading(true);
+      await CommentApi.create(slug, body)
+      setLoading(false);
+      changeBody('');
+      trigger(CommentApi.url(slug));
+    }
   };
   useCtrlEnterSubmit(handleSubmit)
   if (!loggedInUser) {
@@ -64,7 +76,7 @@ const CommentInput = () => {
             alt="author profile image"
           />
           {' '}
-          <button className="btn" type="submit">
+          <button className="btn" type="submit" ref={submitButton}>
             Post Comment
           </button>
         </div>

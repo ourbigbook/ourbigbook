@@ -5,8 +5,6 @@ import CustomLink from 'front/CustomLink'
 import ErrorMessage from 'front/ErrorMessage'
 import Maybe from 'front/Maybe'
 import { appName, aboutHref, articleLimit, apiPath } from 'front/config'
-import fetcher from 'front/fetcher'
-import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { UserType } from 'front/types/UserType'
@@ -76,6 +74,7 @@ const IndexPage = ({
       <ArticleList {...{
         articles,
         articlesCount,
+        loggedInUser,
         page,
         paginationUrlFunc,
         showAuthor: true,

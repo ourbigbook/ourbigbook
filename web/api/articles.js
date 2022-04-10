@@ -91,10 +91,10 @@ router.post('/', auth.required, async function(req, res, next) {
     }
     const articleData = req.body.article
     if (!articleData) {
-      return res.status(422).json({ errors: { article: "can't be blank" } })
+      throw new lib.ValidationError({ article: 'cannot be empty' })
     }
     if (!articleData.title) {
-      throw new lib.ValidationError('title cannot be empty')
+      throw new lib.ValidationError({ article: { title: 'cannot be empty' } })
     }
     const articles = await convert.convert({
       author: user,
@@ -102,12 +102,6 @@ router.post('/', auth.required, async function(req, res, next) {
       sequelize,
       title: articleData.title,
     })
-    for (const article of articles) {
-      if (article.file === undefined) {
-        article.file = {}
-      }
-      article.file.author = user
-    }
     return res.json({ articles: await Promise.all(articles.map(article => article.toJson(user))) })
   } catch(error) {
     next(error);
@@ -117,22 +111,29 @@ router.post('/', auth.required, async function(req, res, next) {
 // update article
 router.put('/', auth.required, async function(req, res, next) {
   try {
+    const sequelize = req.app.get('sequelize')
     const article = await lib.getArticle(req, res)
-    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
+    const user = await sequelize.models.User.findByPk(req.payload.id);
     if (article.file.authorId.toString() === req.payload.id.toString()) {
-      if (req.body.article) {
-        if (typeof req.body.article.title !== 'undefined') {
-          if (!req.body.article.title) {
+      const articleData = req.body.article
+      if (articleData) {
+        if (typeof articleData.title !== 'undefined') {
+          if (!articleData.title) {
             throw new lib.ValidationError('title cannot be empty')
           }
-          article.title = req.body.article.title
+          if (articleData.title !== article.file.title) {
+            // https://github.com/cirosantilli/ourbigbook/issues/228
+            throw new lib.ValidationError(`article ID change not implemented, create a new one instead, would change from ${article.file.title} to ${articleData.title}`)
+          }
         }
-        if (typeof req.body.article.body !== 'undefined') {
-          article.body = req.body.article.body
-        }
-        await article.save()
       }
-      return res.json({ article: await article.toJson(user) })
+      const articles = await convert.convert({
+        author: user,
+        body: articleData.body,
+        sequelize,
+        title: articleData.title,
+      })
+      return res.json({ articles: await Promise.all(articles.map(article => article.toJson(user))) })
     } else {
       return res.sendStatus(403)
     }

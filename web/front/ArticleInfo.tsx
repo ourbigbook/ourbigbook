@@ -3,16 +3,15 @@ import React from 'react'
 import { trigger } from 'swr'
 
 import CustomLink from 'front/CustomLink'
-import ArticleAPI from 'front/api/article'
+import { ArticleApi } from 'front/api'
 import { formatDate } from 'front/date'
-import useLoggedInUser from 'front/useLoggedInUser'
 import LikeArticleButton from 'front/LikeArticleButton'
 import routes from 'front/routes'
 
 const ArticleInfo = ({
   article,
+  loggedInUser,
 }) => {
-  const loggedInUser = useLoggedInUser()
   const canModify =
     loggedInUser && loggedInUser?.username === article?.file?.author?.username;
   const [liked, setLiked] = React.useState(false);
@@ -21,15 +20,16 @@ const ArticleInfo = ({
     if (!loggedInUser) return;
     const result = window.confirm("Do you really want to delete this article?");
     if (!result) return;
-    await ArticleAPI.delete(article.slug, loggedInUser?.token);
-    trigger(ArticleAPI.url(article.slug));
+    await ArticleApi.delete(article.slug);
+    trigger(ArticleApi.url(article.slug));
     Router.push(`/`);
   };
   return <div className="article-info-3">
-    <LikeArticleButton
-      article={article}
-      showText={true}
-    />
+    <LikeArticleButton {...{
+      article: article,
+      loggedInUser,
+      showText: true,
+    }} />
     {' '}
     <span className="mobile-hide">
       {'Created: '}

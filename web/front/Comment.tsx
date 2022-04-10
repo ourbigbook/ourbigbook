@@ -3,13 +3,11 @@ import { useRouter } from 'next/router'
 import { trigger } from 'swr'
 
 import Maybe from 'front/Maybe'
-import CommentAPI from 'front/api/comment'
+import { CommentApi } from 'front/api'
 import { formatDate } from 'front/date'
-import useLoggedInUser from 'front/useLoggedInUser'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 
-const Comment = ({ comment }) => {
-  const loggedInUser = useLoggedInUser()
+const Comment = ({ comment, loggedInUser }) => {
   const canModify =
     loggedInUser && loggedInUser?.username === comment?.author?.username;
   const router = useRouter();
@@ -17,8 +15,8 @@ const Comment = ({ comment }) => {
     query: { pid },
   } = router;
   const handleDelete = async (commentId) => {
-    await CommentAPI.delete(pid, commentId, loggedInUser?.token)
-    trigger(CommentAPI.url(pid));
+    await CommentApi.delete(pid, commentId)
+    trigger(CommentApi.url(pid));
   };
   return (
     <div className="comment">

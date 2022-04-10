@@ -51,6 +51,10 @@ module.exports = (sequelize) => {
           },
         }
       },
+      ip: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
       displayName: {
         type: DataTypes.STRING(256),
         allowNull: false,

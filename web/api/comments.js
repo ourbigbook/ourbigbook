@@ -1,7 +1,7 @@
 const router = require('express').Router()
 
 const auth = require('../auth')
-const { getArticle } = require('./lib')
+const { getArticle, validateParam } = require('./lib')
 
 router.param('comment', function(req, res, next, id) {
   req.app.get('sequelize').models.Comment.findOne({
@@ -44,12 +44,14 @@ router.get('/', auth.optional, async function(req, res, next) {
 
 // create a new comment
 router.post('/', auth.required, async function(req, res, next) {
+  console.error();
   try {
     const article = await getArticle(req, res)
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
     if (!user) {
       return res.sendStatus(401)
     }
+    validateParam(req.body.comment, 'body')
     const comment = await req.app.get('sequelize').models.Comment.create(
       Object.assign({}, req.body.comment, { articleId: article.id, authorId: user.id })
     )

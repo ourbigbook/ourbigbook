@@ -1,4 +1,4 @@
-import Router, { useRouter } from 'next/router'
+import { useRouter } from 'next/router'
 import React from 'react'
 import useSWR, { trigger } from 'swr'
 
@@ -11,7 +11,7 @@ import FollowUserButton from 'front/FollowUserButton'
 import { displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
-import { AppContext } from 'front'
+import { AppContext, useEEdit } from 'front'
 import { CommentApi } from 'front/api'
 import fetcher from 'front/fetcher'
 import routes from 'front/routes'
@@ -38,6 +38,8 @@ const ArticlePage = ({
   )
   const showOthers = topicArticleCount > 1
   const showCreateMyOwn = !loggedInUser || article.file.author.username !== loggedInUser.username
+  const canEdit = loggedInUser && loggedInUser?.username === article?.file?.author?.username
+  useEEdit(canEdit, article.slug)
   return (
     <>
       <div className="article-page">

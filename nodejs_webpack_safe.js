@@ -583,7 +583,6 @@ async function update_database_after_convert({
         file_bulk_create_opts,
       )
     ])
-    console.error(fileBulkCreate);
   });
   ourbigbook.perf_print(context, 'convert_path_post_sqlite_transaction')
   return { file: fileBulkCreate[0] }

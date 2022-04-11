@@ -16,7 +16,7 @@ const CommentInput = ({ loggedInUser }) => {
   const submitButton = React.useRef(null);
   function changeBody(body) {
     setBody(body);
-    if (submitButton) {
+    if (submitButton.current) {
       if (body) {
         submitButton.current.classList.remove('disabled');
       } else {
@@ -26,6 +26,7 @@ const CommentInput = ({ loggedInUser }) => {
   }
   React.useEffect(() => changeBody(''), [])
   const handleChange = e => {
+    e.stopPropagation()
     changeBody(e.target.value)
   };
   const handleSubmit = async e => {
@@ -65,6 +66,9 @@ const CommentInput = ({ loggedInUser }) => {
             placeholder="Write a comment..."
             value={body}
             onChange={handleChange}
+            // We need this to prevent the E shortcut from firing
+            // when we are editing a comment.
+            onKeyDown={(e) => e.stopPropagation()}
             disabled={isLoading}
             className="not-monaco"
           />

@@ -21,7 +21,7 @@ const Comment = ({ comment, loggedInUser }) => {
   return (
     <div className="comment">
       <div className="comment-header">
-        <UserLinkWithImage user={comment.author} />
+        <UserLinkWithImage user={comment.author} showUsernameMobile={false} />
         {' '}
         {formatDate(comment.createdAt)}
         {' '}

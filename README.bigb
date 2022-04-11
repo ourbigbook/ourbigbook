@@ -6152,7 +6152,12 @@ This section will eventually be moved into the website itself. We'll just likely
 = OurBigBook Web keyboard shortcuts
 {parent=ourbigbook-web-help}
 
-* Ctrl + Enter: submit the current form, e.g. save/create artiles or comments, login, register
+* Global:
+  * Ctrl + Enter: submit the current form, e.g. save/create artiles or comments, login, register
+  * N: create a new article
+* Page specific:
+  * Article page (and for Index page on user page):
+    * E: edit the page
 
 = Step debug the dynamic website
 {parent=ourbigbook-web}

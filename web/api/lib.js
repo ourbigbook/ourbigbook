@@ -1,25 +1,24 @@
 async function getArticle(req, res) {
-  if (req.query.id) {
-    const sequelize = req.app.get('sequelize')
-    const article = await sequelize.models.Article.findOne({
-      where: { slug: req.query.id },
+  const id = validateParam(req.query, 'id')
+  const sequelize = req.app.get('sequelize')
+  const article = await sequelize.models.Article.findOne({
+    where: { slug: id },
+    include: [{
+      model: sequelize.models.File,
+      as: 'file',
       include: [{
-        model: sequelize.models.File,
-        as: 'file',
-        include: [{
-          model: sequelize.models.User,
-          as: 'author',
-        }],
-      }]
-    })
-    if (!article) {
-      throw new ValidationError(
-        [`Article slug not found: "${req.query.id}"`],
-        404,
-      )
-    }
-    return article
+        model: sequelize.models.User,
+        as: 'author',
+      }],
+    }]
+  })
+  if (!article) {
+    throw new ValidationError(
+      [`Article slug not found: "${req.query.id}"`],
+      404,
+    )
   }
+  return article
 }
 
 // https://stackoverflow.com/questions/14382725/how-to-get-the-correct-ip-address-of-a-client-into-a-node-socket-io-app-hosted-o/14382990#14382990

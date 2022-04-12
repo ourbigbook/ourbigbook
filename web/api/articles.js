@@ -21,6 +21,7 @@ function getOrder(req) {
   }
 }
 
+// Get a single article if ?id= is given, otherwise a list of articles.
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     if (req.query.id === undefined) {

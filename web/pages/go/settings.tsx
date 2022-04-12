@@ -5,7 +5,7 @@ import Label from 'front/Label'
 import ListErrors from 'front/ListErrors'
 import LogoutButton from 'front/LogoutButton'
 import { AppContext, setupUserLocalStorage, useCtrlEnterSubmit } from 'front'
-import { UserApi } from 'front/api'
+import { userApi } from 'front/api'
 import checkLogin from 'front/checkLogin'
 import useLoggedInUser from 'front/useLoggedInUser'
 import storage from 'front/storage'
@@ -46,7 +46,7 @@ const Settings = () => {
     if (!user.password) {
       delete user.password;
     }
-    const { data, status } = await UserApi.update(user)
+    const { data, status } = await userApi.update(user)
     setLoading(false);
     if (status !== 200) {
       setErrors(data.errors.body);

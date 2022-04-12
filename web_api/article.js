@@ -1,9 +1,9 @@
-import { ApiBase } from './index'
-import { WEB_API_PATH } from '../index'
+const { ApiBase } = require('./index')
+const { WEB_API_PATH } = require('../index')
 
 const getQuery = (limit, page) => `limit=${limit}&offset=${page ? page * limit : 0}`;
 
-class ArticleApiClass extends ApiBase {
+class ArticleApi extends ApiBase {
   async all(page, limit = 10) {
     return this.req('get', `articles?${getQuery(limit, page)}`)
   }
@@ -63,4 +63,4 @@ class ArticleApiClass extends ApiBase {
   }
 };
 
-module.exports = ArticleApiClass
+module.exports = ArticleApi

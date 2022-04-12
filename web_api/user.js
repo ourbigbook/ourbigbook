@@ -1,7 +1,7 @@
-import { ApiBase } from './index'
-import { WEB_API_PATH } from '../index'
+const { ApiBase } = require('./index')
+const { WEB_API_PATH } = require('../index')
 
-class UserApiClass extends ApiBase {
+class UserApi extends ApiBase {
   async current() {
     return this.req('get', `/users`)
   }
@@ -51,4 +51,4 @@ class UserApiClass extends ApiBase {
   url(username) { return `/${WEB_API_PATH}/users/${username}` }
 };
 
-module.exports = UserApiClass
+module.exports = UserApi

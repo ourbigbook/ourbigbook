@@ -3,7 +3,7 @@ import React from 'react'
 
 import ListErrors from 'front/ListErrors'
 import Label from 'front/Label'
-import { userApi } from 'front/api'
+import { webApi } from 'front/api'
 import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie, setupUserLocalStorage } from 'front'
 
 const LoginForm = ({ register = false }) => {
@@ -42,9 +42,9 @@ const LoginForm = ({ register = false }) => {
     try {
       let data, status;
       if (register) {
-        ({ data, status } = await userApi.register(displayName, username, email, password));
+        ({ data, status } = await webApi.userRegister(displayName, username, email, password));
       } else {
-        ({ data, status } = await userApi.login(email, password));
+        ({ data, status } = await webApi.userLogin(email, password));
       }
       if (status !== 200 && data?.errors) {
         setErrors(data.errors);

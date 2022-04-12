@@ -5,7 +5,7 @@ import { trigger } from 'swr'
 import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
-import { commentApi } from 'front/api'
+import { webApi } from 'front/api'
 import routes from 'front/routes'
 
 const CommentInput = ({ loggedInUser }) => {
@@ -33,10 +33,10 @@ const CommentInput = ({ loggedInUser }) => {
     e.preventDefault();
     if (body) {
       setLoading(true);
-      await commentApi.create(slug, body)
+      await webApi.commentCreate(slug, body)
       setLoading(false);
       changeBody('');
-      trigger(commentApi.url(slug));
+      trigger(webApi.commentUrl(slug));
     }
   };
   useCtrlEnterSubmit(handleSubmit)
@@ -68,7 +68,12 @@ const CommentInput = ({ loggedInUser }) => {
             onChange={handleChange}
             // We need this to prevent the E shortcut from firing
             // when we are editing a comment.
-            onKeyDown={(e) => e.stopPropagation()}
+            onKeyDown={(e) => {
+              if (e.code === 'Enter' && e.ctrlKey) {
+                handleSubmit(e)
+              }
+              e.stopPropagation()
+            }}
             disabled={isLoading}
             className="not-monaco"
           />

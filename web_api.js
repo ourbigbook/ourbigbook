@@ -7,19 +7,14 @@ const { WEB_API_PATH } = require('./index')
 articleGetQuery = (limit, page) => `limit=${limit}&offset=${page ? page * limit : 0}`;
 
 class WebApi {
-  constructor({ getToken, https, hostname }) {
-    this.getToken = getToken
-    this.hostname = hostname
-    this.https = https
+  constructor(opts) {
+    this.opts = opts
   }
 
   async req(method, path, opts={}) {
     const newopts = Object.assign(
-      {
-        getToken: this.getToken,
-        https: this.https,
-        hostname: this.hostname,
-      },
+      {},
+      this.opts,
       opts
     )
     return sendJsonHttp(method, `/${WEB_API_PATH}/${path}`, newopts)
@@ -100,6 +95,13 @@ class WebApi {
     return `/${WEB_API_PATH}/comments?id=${encodeURIComponent(slug)}`
   }
 
+  async userCreate(attrs) {
+    return this.req('post',
+      `users`,
+      { body: { user: attrs } },
+    );
+  }
+
   async userCurrent() {
     return this.req('get', `/users`)
   }
@@ -112,17 +114,10 @@ class WebApi {
 
   async userGet(username) { return this.req('get', `users/${username}`) }
 
-  async userLogin(email, password) {
+  async userLogin(attrs) {
     return this.req('post',
       `login`,
-      { body: { user: { email, password } } },
-    );
-  }
-
-  async userRegister(displayName, username, email, password) {
-    return this.req('post',
-      `users`,
-      { body: { user: { displayName, username, email, password } } },
+      { body: { user: attrs } },
     );
   }
 

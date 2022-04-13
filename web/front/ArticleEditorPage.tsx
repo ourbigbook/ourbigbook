@@ -106,7 +106,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       if (isnew) {
         ({ data, status } = await webApi.articleCreate(file));
       } else {
-        ({ data, status } = await webApi.articleUpdate(
+        ({ data, status } = await webApi.articleCreateOrUpdate(
           file,
           slugFromRouter(router),
         ));

@@ -19,6 +19,7 @@ const { modifyEditorInput } = require('./front/js')
 async function convert({
   author,
   body,
+  forceNew,
   sequelize,
   title,
   transaction,
@@ -66,10 +67,13 @@ async function convert({
   if (extra_returns.errors.length > 0) {
     const errsNoDupes = remove_duplicates_sorted_array(
       extra_returns.errors.map(e => e.toString()))
-    throw new ValidationError(errsNoDupes, 422)
+    throw new ValidationError(errsNoDupes)
   }
   const idid = extra_returns.context.header_tree.children[0].ast.id
   const filePath = `${idid}${ourbigbook.OURBIGBOOK_EXT}`
+  if (forceNew && await sequelize.models.File.findOne({ where: { path: filePath }, transaction })) {
+    throw new ValidationError(`Article already exists: ${idid}`)
+  }
   await update_database_after_convert({
     authorId: author.id,
     body,
@@ -88,7 +92,7 @@ async function convert({
     transaction
   )
   if (check_db_errors.length > 0) {
-    throw new ValidationError(check_db_errors, 422)
+    throw new ValidationError(check_db_errors)
   }
   const articleArgs = []
   for (const outpath in extra_returns.rendered_outputs) {

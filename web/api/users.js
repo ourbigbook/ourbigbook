@@ -99,9 +99,6 @@ router.post('/users', async function(req, res, next) {
 router.put('/users/:username', auth.required, async function(req, res, next) {
   try {
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    if (!user) {
-      return res.sendStatus(401)
-    }
     if (req.body.user) {
       // only update fields that were actually passed...
       if (typeof req.body.user.username !== 'undefined') {
@@ -141,9 +138,6 @@ async function validateFollow(req, res, user, isFollow) {
 router.post('/users/:username/follow', auth.required, async function(req, res, next) {
   try {
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    if (!user) {
-      return res.sendStatus(401)
-    }
     await validateFollow(req, res, user, true)
     await user.addFollowSideEffects(req.user)
     const newUser = await req.app.get('sequelize').models.User.findOne({
@@ -157,9 +151,6 @@ router.post('/users/:username/follow', auth.required, async function(req, res, n
 router.delete('/users/:username/follow', auth.required, async function(req, res, next) {
   try {
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    if (!user) {
-      return res.sendStatus(401)
-    }
     await validateFollow(req, res, user, false)
     await user.removeFollowSideEffects(req.user)
     const newUser = await req.app.get('sequelize').models.User.findOne({

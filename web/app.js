@@ -5,6 +5,7 @@ const bodyParser = require('body-parser')
 const cors = require('cors')
 const express = require('express')
 const http = require('http')
+const UnauthorizedError = require('express-jwt/lib/errors/UnauthorizedError');
 const methods = require('methods')
 const morgan = require('morgan')
 const next = require('next')
@@ -102,6 +103,10 @@ async function start(port, startNext, cb) {
     } else if (err instanceof apilib.ValidationError) {
       return res.status(err.status).json({
         errors: err.errors,
+      })
+    } else if (err instanceof UnauthorizedError) {
+      return res.status(err.status).json({
+        errors: err.message,
       })
     }
     return next(err)

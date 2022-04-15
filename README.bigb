@@ -5241,8 +5241,9 @@ ourbigbook --publish-commit 'my amazing change' .
 
 With great power comes great responsibility of course, but who cares!
 
-= `--split-headers`
+= `-S`, `--split-headers`
 {parent=ourbigbook-cli-options}
+{id=split-headers}
 
 Split each header into its own separate HTML output file.
 
@@ -5300,35 +5301,6 @@ For example, considering the example document at \x[split-headers], \x[internal-
 The same applies to \x[internal-cross-file-reference]{p} when there are multiple input files.
 
 In order to make the split version be the default for some headers, you can use the \x[h-splitdefault-argument].
-
-= `--watch`
-{parent=ourbigbook-cli-options}
-
-Don't quit `ourbigbook` immediately.
-
-Instead, watch the selected file or directory for changes, and rebuild individual files when changes are detected.
-
-Watch every `.bigb` file in an entire directory:
-``
-ourbigbook --watch .
-``
-When a directory is given as the input path, this automatically first does an ID extraction pass on all files to support \x[internal-cross-file-reference]{p}.
-
-Now you can just edit any OurBigBook file such has `README.bigb`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `ourbigbook` command explicitly every time.
-
-Exit by entering Ctrl + C on the terminal.
-
-Watch a single file:
-``
-ourbigbook --watch README.bigb
-``
-When a single file is watched, the reference database is not automatically updated. If it is not already up-to-date, you should first update it with:
-``
-ourbigbook .
-``
-otherwise you will just get a bunch of undefined ID errors every time the input file is saved.
-
-TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with-live-preview/ to also dispense the browser refresh.
 
 = `--template`
 {parent=ourbigbook-cli-options}
@@ -5407,6 +5379,57 @@ We pick Liquid because it is server-side safe: if we ever some day offer a compi
 
 This option enables actions that would allow \x[arbitrary-code-execution], so you should only pass it if you trust the repository author. Enabled functionality includes:
 * \x[ourbigbook-json/prepublish]
+
+= `-w`, `--watch`
+{parent=ourbigbook-cli-options}
+{id=watch}
+
+Don't quit `ourbigbook` immediately.
+
+Instead, watch the selected file or directory for changes, and rebuild individual files when changes are detected.
+
+Watch every `.bigb` file in an entire directory:
+``
+ourbigbook --watch .
+``
+When a directory is given as the input path, this automatically first does an ID extraction pass on all files to support \x[internal-cross-file-reference]{p}.
+
+Now you can just edit any OurBigBook file such has `README.bigb`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `ourbigbook` command explicitly every time.
+
+Exit by entering Ctrl + C on the terminal.
+
+Watch a single file:
+``
+ourbigbook --watch README.bigb
+``
+When a single file is watched, the reference database is not automatically updated. If it is not already up-to-date, you should first update it with:
+``
+ourbigbook .
+``
+otherwise you will just get a bunch of undefined ID errors every time the input file is saved.
+
+TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with-live-preview/ to also dispense the browser refresh.
+
+= `-W`, `--web`
+{parent=ourbigbook-cli-options}
+{id=web}
+
+Sync local directory to \x[ourbigbook-web] instead of doing anything else.
+
+The source code is uploaded, and conversion to HTML happens on the server, no conversion is done locally.
+
+= `--web-email`
+{parent=ourbigbook-cli-options}
+
+Set the email for \x[web] from the command line. If not given, you will be prompted for it from the command line.
+
+= `--web-url`
+{parent=ourbigbook-cli-options}
+
+Set a custom URL for \x[web] from the command line. If not given, the canonical https://ourbigbook.com is used. This option is used e.g. for testing locally e.g. with:
+``
+ourbigbook --web-url http://localhost:3000
+``
 
 = `ourbigbook.json`
 {parent=ourbigbook-cli}

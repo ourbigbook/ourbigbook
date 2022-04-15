@@ -54,8 +54,10 @@ function assert_convert_ast(
   it(description, async function () {
     options = Object.assign({}, options);
     if (!('assert_xpath_main' in options)) {
-      // Not ideal, but sometimes there's no other easy way
-      // to test rendered stuff. All in list must match.
+      // Not ideal that this exists in addition to assert_xpath, but
+      // sometimes there's no other easy way to test rendered stuff.
+      // Notably, we would like to support the case of output to stdout.
+      // All in list must match.
       options.assert_xpath_main = [];
     }
     if (!('assert_not_xpath_main' in options)) {
@@ -4933,6 +4935,49 @@ assert_convert_ast('subdir index.bigb removes leading @ from links with the remo
         xpath_header_parent(1, 'notindex', '../subdir.html', 'Subdir'),
       ],
     },
+  }
+);
+assert_convert_ast('include of a header with a tag or child in a third file does not blow up',
+  `= Index
+
+\\Include[notindex]
+`,
+  undefined,
+  {
+    filesystem: {
+      'notindex.bigb': `= Notindex
+{child=notindex2}
+{tag=notindex2}
+`,
+      'notindex2.bigb': `= Notindex 2
+`,
+    },
+    convert_before_norender: ['index.bigb', 'notindex.bigb', 'notindex2.bigb'],
+    input_path_noext: 'index',
+  }
+);
+assert_convert_ast('tags show on embed include',
+  `= Index
+
+\\Include[notindex]
+`,
+  undefined,
+  {
+    filesystem: {
+      'notindex.bigb': `= Notindex
+{tag=notindex2}
+`,
+      'notindex2.bigb': `= Notindex 2
+`,
+    },
+    convert_before_norender: ['index.bigb', 'notindex.bigb', 'notindex2.bigb'],
+    input_path_noext: 'index',
+    assert_xpath_main: [
+      "//*[contains(@class, 'h-nav')]//x:span[@class='test-tags']//x:a[@href='notindex2.html']",
+    ],
+    extra_convert_opts: {
+      embed_includes: true,
+    }
   }
 );
 

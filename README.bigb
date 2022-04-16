@@ -5127,7 +5127,30 @@ This output format is mostly a joke.
 
 It is an intermediate step in \x[automatic-id-from-title], that unlike HTML output does not have any tags.
 
-But we decided to expose it for fun, and to start generalizing OurBigBook to multiple outputs, as this is a simple format.
+So for example, converting:
+``
+\i[asdf]
+``
+with the `id` output format produces simply:
+``
+asdf
+``
+instead of the HTML output:
+``
+<i>asdf</i>
+``
+
+This conversion type is useful in situations that users don't expect conversion to produce any HTML tags. For example, you could create a header:
+``
+= My \i[asdf]
+``
+and then following the \x[automatic-id-from-title] algorithm, that header would have the more commonly desired ID `my-asdf`, and not `my-<i>asdf</i>`.
+
+Besides being more intuitive, this also guarantees greater format portability, in case we ever decide to support other output formats!
+
+We decided to expose this format from the CLI just for fun, as it posed no extra work at all as it is treated internally exactly like any other conversion format.
+
+And it also was a good start generalizing OurBigBook to multiple outputs, as this is a simple format. 
 
 The conversion is very simplistic, it basically just pastes the `content` of most macros. Important exceptions to that include:
 * `\x` uses `href` if a content is not given. Previously, if `\x` didn't have a content, we were actually rendering the `\x` to calculate the ID. But then we noticed that doing so would require another parse pass, so we just went for this simpler approach. This is closely linked to \x[x-within-title-restrictions].

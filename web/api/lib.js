@@ -46,6 +46,11 @@ function validatePositiveInteger(s) {
   return [i, ok]
 }
 
+function validateTrueOrFalse(tf) {
+  const ok = (tf === true || tf === false)
+  return [tf, ok]
+}
+
 function validateTruthy(s) {
   return [s, !!s]
 }
@@ -81,4 +86,5 @@ module.exports = {
   validatePositiveInteger,
   validate,
   validateParam,
+  validateTrueOrFalse,
 }

@@ -101,6 +101,7 @@ async function createOrUpdateArticle(req, res, opts) {
   const sequelize = req.app.get('sequelize')
   const user = await sequelize.models.User.findByPk(req.payload.id);
   const articleData = req.body.article
+  const render = lib.validateParam(req.body, 'render', lib.validateTrueOrFalse, true)
   if (!articleData) {
     throw new lib.ValidationError({ article: 'cannot be empty' })
   }
@@ -112,6 +113,7 @@ async function createOrUpdateArticle(req, res, opts) {
     body: articleData.body,
     forceNew: opts.forceNew,
     sequelize,
+    render,
     title: articleData.title,
   })
   return res.json({ articles: await Promise.all(articles.map(article => article.toJson(user))) })

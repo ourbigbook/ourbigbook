@@ -14,6 +14,8 @@ const passport_local = require('passport-local');
 const path = require('path')
 const session = require('express-session')
 
+const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
+
 const api = require('./api')
 const apilib = require('./api/lib')
 const models = require('./models')
@@ -76,6 +78,7 @@ async function start(port, startNext, cb) {
 
   // Handle API routes.
   {
+    config.convertOptions.katex_macros = ourbigbook_nodejs_webpack_safe.preload_katex(path.join(__dirname, 'ourbigbook.tex'))
     const router = express.Router()
     router.use(config.apiPath, api)
     app.use(router)

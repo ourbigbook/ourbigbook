@@ -33,10 +33,10 @@ class WebApi {
   }
 
   async articleCreate(article, opts={}) {
-    const { render } = opts
+    const { path, render } = opts
     return this.req('post',
       `articles`,
-      { body: { article, render } },
+      { body: { article, path, render } },
     );
   }
 
@@ -69,10 +69,10 @@ class WebApi {
   }
 
   async articleCreateOrUpdate(article, opts={}) {
-    const { render } = opts
+    const { path, render } = opts
     return this.req('put',
       `articles`,
-      { body: { article, render } },
+      { body: { article, path, render } },
     );
   }
 

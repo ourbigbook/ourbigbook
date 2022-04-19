@@ -214,6 +214,7 @@ class SqliteIdProvider extends ourbigbook.IdProvider {
         to_id_key_dict_type.push(row)
         this.add_row_to_id_cache(row[include_key], context)
       }
+      return rows
     }
   }
 
@@ -621,6 +622,20 @@ async function update_database_after_convert({
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
 async function check_db(sequelize, paths_converted, transaction) {
+  // This is a sketch for doing both of:
+  // * update xrefs across scopes in different files to correctly have tags and incoming links in such cases
+  //   https://github.com/cirosantilli/ourbigbook/issues/229
+  // * ensure that all \x targets exist. As of writing this is done only during rendering, which is bad.
+  // but we decided to go with the ref_prefix hack to start with.
+  //const new_refs = await sequelize.models.Ref.findAll({ where: { defined_at: paths_converted } })
+  //for (const new_ref of new_refs) {
+  //  const new_ref_from_id_split = new_ref.from_id.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+  //  let with_query_array = 'WITH vals (ref_id, try_to_id) AS (VALUES'
+  //  for (const i = new_ref_from_id_split.length; i >= 0; i--) {
+  //    with_query_array.push(`(${new_ref.id}, '${sequelize.escape()}')`)
+  //  }
+  //  with_query_array.push(')')
+  //}
   const [duplicate_rows, invalid_title_title_rows] = await Promise.all([
     await sequelize.models.Id.findDuplicates(
       paths_converted, transaction),

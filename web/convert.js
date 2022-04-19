@@ -66,6 +66,7 @@ async function convert({
         path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
         ext: '',
       }),
+      ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${author.username}`,
       remove_leading_at: true,
       render,
       split_headers: true,

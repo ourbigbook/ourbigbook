@@ -27,6 +27,11 @@ module.exports = {
     magic_leading_at: false,
     path_sep: '/',
   },
+  convertOptionsJson: {
+    h: {
+      numbered: false,
+    },
+  },
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
   aboutHref: "https://cirosantilli.com/ourbigbook-com",

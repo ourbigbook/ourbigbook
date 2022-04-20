@@ -4,7 +4,7 @@ const axios = require('axios')
 
 const { WEB_API_PATH } = require('./index')
 
-articleGetQuery = (limit, page) => `limit=${limit}&offset=${page ? page * limit : 0}`;
+articleGetQuery = (limit, page) => `limit=${limit || 10}&offset=${page ? page * limit : 0}`;
 
 class WebApi {
   constructor(opts) {
@@ -20,15 +20,18 @@ class WebApi {
     return sendJsonHttp(method, `/${WEB_API_PATH}/${path}`, newopts)
   }
 
-  async articleAll(page, limit = 10) {
-    return this.req('get', `articles?${articleGetQuery(limit, page)}`)
+  async articleAll(opts={}) {
+    const { page, limit } = opts
+    let urlParams = ''
+    if (opts.topicId) {
+      urlParams = `&topicId=${encodeURIComponent(opts.topicId)}`
+    }
+    return this.req('get', `articles?${articleGetQuery(limit, page)}${urlParams}`)
   }
 
   async articleByAuthor(author, page = 0, limit = 5) {
     return this.req('get',
-      `articles?author=${encodeURIComponent(
-        author
-      )}&${articleGetQuery(limit, page)}`
+      `articles?author=${encodeURIComponent(author)}&${articleGetQuery(limit, page)}`
     )
   }
 
@@ -50,13 +53,11 @@ class WebApi {
 
   async articleLikedBy(author, page) {
     return this.req('get',
-      `articles?liked=${encodeURIComponent(
-        author
-      )}&${articleGetQuery(10, page)}`
+      `articles?liked=${encodeURIComponent(author)}&${articleGetQuery(10, page)}`
     )
   }
 
-  async articleFeed(page, limit = 10) {
+  async articleFeed(page, limit=10) {
     return this.req('get', `articles/feed?${articleGetQuery(limit, page)}`)
   }
 

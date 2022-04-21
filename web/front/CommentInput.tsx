@@ -1,6 +1,5 @@
 import { useRouter } from 'next/router'
 import React from 'react'
-import { trigger } from 'swr'
 
 import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
@@ -36,7 +35,6 @@ const CommentInput = ({ loggedInUser }) => {
       await webApi.commentCreate(slug, body)
       setLoading(false);
       changeBody('');
-      trigger(webApi.commentUrl(slug));
     }
   };
   useCtrlEnterSubmit(handleSubmit)

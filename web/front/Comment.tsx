@@ -1,6 +1,5 @@
 import React from 'react'
 import { useRouter } from 'next/router'
-import { trigger } from 'swr'
 
 import Maybe from 'front/Maybe'
 import { webApi } from 'front/api'
@@ -16,7 +15,6 @@ const Comment = ({ comment, loggedInUser }) => {
   } = router;
   const handleDelete = async (commentId) => {
     await webApi.commentDelete(pid, commentId)
-    trigger(webApi.commentUrl(pid));
   };
   return (
     <div className="comment">

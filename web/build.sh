@@ -14,4 +14,6 @@ NODE_PATH="${NODE_PATH}:$(pwd)/my_node_modules" npm run build-assets
 rm -rf my_node_modules
 cd web
 ./bin/sync-db.js
+#find ../node_modules -type d
+#find node_modules -type d
 npm run build-nodeps

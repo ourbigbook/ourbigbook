@@ -44,9 +44,6 @@ function writeJson(outpath, jsonObj) {
 {
   const inpath = path.join('web', 'package.json')
   const packageJson = JSON.parse(fs.readFileSync(inpath).toString())
-  deleteProps(packageJson.scripts, [
-    'postinstall',
-  ])
   const devDependencies = packageJson.devDependencies
   deleteProps(devDependencies, [
     'mocha',

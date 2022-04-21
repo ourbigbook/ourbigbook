@@ -2,7 +2,6 @@ import { useRouter } from 'next/router'
 import React from 'react'
 import useSWR, { trigger } from 'swr'
 
-import { ArticlePageProps } from 'front/ArticlePage'
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
 import Maybe from 'front/Maybe'

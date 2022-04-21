@@ -129,7 +129,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
       if (isnew) {
         redirTarget = routes.articleView(data.articles[0].slug)
       } else {
-        redirTarget = routes.articleView(slug.join('/'))
+        redirTarget = routes.articleView((slug as string[]).join('/'))
       }
       Router.push(redirTarget, null, { scroll: true });
     };

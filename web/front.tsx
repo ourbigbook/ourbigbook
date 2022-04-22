@@ -71,7 +71,6 @@ export function useCtrlEnterSubmit(handleSubmit) {
 export function useEEdit(canEdit, slug) {
   React.useEffect(() => {
     function listener(e) {
-      console.error('here');
       if (e.code === 'KeyE') {
         if (canEdit) {
           Router.push(routes.articleEdit(slug))

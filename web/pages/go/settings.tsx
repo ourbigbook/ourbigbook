@@ -73,6 +73,7 @@ const Settings = () => {
               placeholder="Username"
               value={userInfo.username}
               title="Cannot be currently modified"
+              autoComplete="username"
               //onChange={updateState("username")}
             />
           </Label>
@@ -106,6 +107,7 @@ const Settings = () => {
               placeholder="New Password"
               value={userInfo.password}
               onChange={updateState("password")}
+              autoComplete="new-password"
             />
           </Label>
           <button

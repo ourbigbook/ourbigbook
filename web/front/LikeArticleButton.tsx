@@ -21,7 +21,7 @@ const LikeArticleButton = ({
     buttonTextMaybe = 'Like'
   }
   if (showText) {
-    buttonText = ' ' + buttonTextMaybe
+    buttonText = <>{' '}<span className="disable-part">{buttonTextMaybe}</span></>
   } else {
     buttonText = ''
   }

@@ -1,3 +1,5 @@
+import React from 'react'
+
 import Comment from 'front/Comment'
 import CommentInput from 'front/CommentInput'
 import { CommentType } from 'front/types/CommentType'
@@ -19,6 +21,7 @@ const Article = ({
   loggedInUser,
 }) => {
   const markup = { __html: article.render };
+  const [curComments, setComments] = React.useState(comments)
   return <>
     <div
       dangerouslySetInnerHTML={markup}
@@ -27,12 +30,19 @@ const Article = ({
     />
     <div className="comments content-not-ourbigbook">
       <h1>Comments</h1>
-        <div className="comment-form-holder">
-          <CommentInput {...{ loggedInUser }}/>
-        </div>
-        {comments?.map((comment: CommentType) => (
-          <Comment {...{ key: comment.id, comment, loggedInUser }} />
-        ))}
+      <div className="comment-form-holder">
+        <CommentInput {...{ comments, setComments, loggedInUser }}/>
+      </div>
+      {curComments?.map((comment: CommentType) => (
+        <Comment {...{
+          comment,
+          comments,
+          id: comment.id,
+          key: comment.id,
+          loggedInUser,
+          setComments,
+        }} />
+      ))}
     </div>
   </>
 }

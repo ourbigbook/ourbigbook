@@ -73,7 +73,9 @@ button, a.btn {
   }
   &.disabled {
     cursor: default;
-    //background-color: rgb(210, 210, 210);
+    span.disable-part {
+      color: rgb(80, 80, 80);
+    }
   }
 }
 
@@ -217,6 +219,11 @@ div.tab-list {
 
 i.ion-heart {
   color: $like-button-active-color;
+}
+
+span.shortcut {
+  text-decoration: underline;
+  text-underline-offset: 1px;
 }
 
 /* Ourbigbook has a complex per-element padding structure that we can't easily override.

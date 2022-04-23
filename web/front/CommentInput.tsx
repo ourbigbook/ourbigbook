@@ -7,7 +7,7 @@ import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, deca
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 
-const CommentInput = ({ loggedInUser }) => {
+const CommentInput = ({ comments, loggedInUser, setComments }) => {
   const router = useRouter();
   const slug = slugFromRouter(router)
   const [body, setBody] = React.useState("");
@@ -32,7 +32,8 @@ const CommentInput = ({ loggedInUser }) => {
     e.preventDefault();
     if (body) {
       setLoading(true);
-      await webApi.commentCreate(slug, body)
+      const ret = await webApi.commentCreate(slug, body)
+      setComments(comments => [ret.data.comment, ...comments])
       setLoading(false);
       changeBody('');
     }
@@ -84,7 +85,7 @@ const CommentInput = ({ loggedInUser }) => {
           />
           {' '}
           <button className="btn" type="submit" ref={submitButton}>
-            Post Comment
+            <span className="disable-part">Post Comment</span>
           </button>
         </div>
       </form>

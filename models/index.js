@@ -1,11 +1,15 @@
 const file = require('./file')
 const id = require('./id')
 const ref = require('./ref')
+const cliModel = require('./cli')
 
-function addModels(sequelize, web) {
+function addModels(sequelize, { web, cli }={}) {
   const File = file(sequelize, web)
   const Id = id(sequelize)
   const Ref = ref(sequelize)
+  if (cli) {
+    const Cli = cliModel(sequelize)
+  }
   // constraints: false for now because when we convert multiple files, we are creating IDs
   // and refs of files one by one. So if one file references another, it will initially reference
   // an undefined ID. The better solution would be to group data from conversion of all files,

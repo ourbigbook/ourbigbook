@@ -6119,6 +6119,14 @@ pg_restore --verbose --clean --no-acl --no-owner -h localhost -U ourbigbook_user
 ``
 The local password is `a` (single letter). TODO automate login.
 
+= Upgrade PostgreSQL database
+{parent=heroku-deployment}
+
+The 10k rows of the free plan are easy to reach, this procedure can be used to upgrade:
+
+* https://stackoverflow.com/questions/51211921/upgrade-hobby-dev-to-hobby-basic-on-heroku
+* https://elements.heroku.com/addons/heroku-postgresql
+
 = Custom domain name setup
 {parent=heroku-deployment}
 

@@ -6305,6 +6305,7 @@ const HASHTAG_CHAR = '#';
 const WEB_HOST = 'ourbigbook.com';
 exports.WEB_HOST = WEB_HOST
 const WEB_URL = `https://${WEB_HOST}/`;
+exports.WEB_URL = WEB_URL;
 const WEB_API_PATH = 'api';
 exports.WEB_API_PATH = WEB_API_PATH;
 const WEB_API_URL = `${WEB_URL}${WEB_API_PATH}`

@@ -1098,10 +1098,10 @@ if (commander.helpMacros) {
         } else {
           const titleId = ourbigbook.title_to_id(title)
           if (titleId !== inpathParse.name) {
-            addId = inpathParse.name
+            //addId = inpathParse.name
           }
           if (inpathParse.dir) {
-            addSubdir = inpathParse.dir
+            //addSubdir = inpathParse.dir
           }
         }
         let bodyStart

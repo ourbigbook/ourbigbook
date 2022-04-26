@@ -1235,7 +1235,10 @@ class SourceLocation {
   }
   clone() {
     // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
-    return lodash.clone(this);
+    // Saves about 0.1s out of 2.1s on https://github.com/cirosantilli/cirosantilli.github.io/blob/ed5e39dad5c9ce099b554409d05be0c5c32e5209/ciro-santilli.bigb.
+    // Noticed on CDT profiling. 5% in one line? I'll take it.
+    return new SourceLocation(this.line, this.column, this.path)
+    //return lodash.clone(this);
   }
   isEqual(other) {
     return lodash.isEqual(this, other);

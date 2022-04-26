@@ -2109,63 +2109,67 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       ast.id === undefined
     ) {
       const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
-      const new_context = clone_and_set(context, 'id_conversion', true);
-      if (macro_id_arg === undefined) {
-        let id_text = '';
-        const id_prefix = context.macros[ast.macro_name].id_prefix;
-        const title_arg = macro.options.get_title_arg(ast, context);
-        if (title_arg !== undefined) {
-          if (id_prefix !== '') {
-            id_text += id_prefix + ID_SEPARATOR
-          }
-          new_context.id_conversion_for_header = is_header;
-          title_text = render_arg_noescape(title_arg, new_context)
-          if (
-            ast.macro_name === Macro.HEADER_MACRO_NAME &&
-            ast.validation_output.file.given
-          ) {
-            let id_text_append
-            const file_render = render_arg(ast.args.file, new_context)
-            if (file_render) {
-              id_text_append = file_render
-            } else {
-              id_text_append = title_text
+      clone_and_set_cb(context, 'id_conversion', true, (context) => {
+        if (macro_id_arg === undefined) {
+          let id_text = '';
+          const id_prefix = context.macros[ast.macro_name].id_prefix;
+          const title_arg = macro.options.get_title_arg(ast, context);
+          if (title_arg !== undefined) {
+            if (id_prefix !== '') {
+              id_text += id_prefix + ID_SEPARATOR
             }
-            ast.file = id_text_append
-            id_text = 'file' + Macro.HEADER_SCOPE_SEPARATOR + id_text + id_text_append
+            context.id_conversion_for_header = is_header;
+            title_text = render_arg_noescape(title_arg, context)
+            if (
+              ast.macro_name === Macro.HEADER_MACRO_NAME &&
+              ast.validation_output.file.given
+            ) {
+              let id_text_append
+              const file_render = render_arg(ast.args.file, context)
+              if (file_render) {
+                id_text_append = file_render
+              } else {
+                id_text_append = title_text
+              }
+              ast.file = id_text_append
+              id_text = 'file' + Macro.HEADER_SCOPE_SEPARATOR + id_text + id_text_append
+            } else {
+              id_text += title_to_id(title_text, context.options.ourbigbook_json['id']);
+            }
+            const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
+            if (disambiguate_arg !== undefined) {
+              id_text += ID_SEPARATOR + title_to_id(
+                render_arg_noescape(disambiguate_arg, context),
+                context.options.ourbigbook_json['id']
+              );
+            }
+            ast.id = id_text;
           } else {
-            id_text += title_to_id(title_text, new_context.options.ourbigbook_json['id']);
+            id_text += '_'
           }
-          const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
-          if (disambiguate_arg !== undefined) {
-            id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json['id']);
-          }
-          ast.id = id_text;
-        } else {
-          id_text += '_'
-        }
 
-        if (ast.id === undefined && !macro.options.phrasing) {
-          id_text += macro_count_global;
-          macro_count_global++
-          ast.id = id_text;
-          index_id = false;
-          // IDs of type p-1, p-2, q-1, q-2, etc.
-          //if (ast.macro_count !== undefined) {
-          //  id_text += ast.macro_count;
-          //  ast.id = id_text;
-          //}
+          if (ast.id === undefined && !macro.options.phrasing) {
+            id_text += macro_count_global;
+            macro_count_global++
+            ast.id = id_text;
+            index_id = false;
+            // IDs of type p-1, p-2, q-1, q-2, etc.
+            //if (ast.macro_count !== undefined) {
+            //  id_text += ast.macro_count;
+            //  ast.id = id_text;
+            //}
+          }
+        } else {
+          ast.id = render_arg_noescape(macro_id_arg, context);
         }
-      } else {
-        ast.id = render_arg_noescape(macro_id_arg, new_context);
-      }
-      if (Macro.RESERVED_IDS.has(ast.id)) {
-        let message = `reserved ID "${ast.id}"`;
-        parse_error(state, message, ast.source_location);
-      }
-      if (ast.id !== undefined && ast.scope !== undefined) {
-        ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
-      }
+        if (Macro.RESERVED_IDS.has(ast.id)) {
+          let message = `reserved ID "${ast.id}"`;
+          parse_error(state, message, ast.source_location);
+        }
+        if (ast.id !== undefined && ast.scope !== undefined) {
+          ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
+        }
+      })
     }
     if (ast.id && ast.subdir) {
       ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
@@ -2307,6 +2311,17 @@ function clone_and_set(obj, key, value) {
   return new_obj;
 }
 exports.clone_and_set = clone_and_set;
+
+// Optimization over clone_and_set and thoes not create a new object.
+// Could however go crazy with asynchronicity.
+function clone_and_set_cb(obj, key, value, cb) {
+  const old_val = obj[key]
+  obj[key] = value
+  const ret = cb(obj)
+  obj[key] = old_val
+  return ret
+}
+exports.clone_and_set_cb = clone_and_set_cb;
 
 function clone_object(obj) {
   // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
@@ -2579,7 +2594,20 @@ function render_arg(arg, context) {
  * @return {String}
  */
 function render_arg_noescape(arg, context={}) {
-  return render_arg(arg, clone_and_set(context, 'html_escape', false));
+  //return render_arg(arg, clone_and_set(context, 'html_escape', false));
+  console.error(context.html_escape);
+  let ret = clone_and_set_cb(
+    context,
+    'html_escape',
+    false,
+    (context) => {
+      console.error(context.html_escape);
+      return render_arg(arg, context)
+    }
+  );
+  console.error(context.html_escape);
+  console.error();
+  return ret
 }
 
 /* Convert one header (or content before the first header)
@@ -4040,7 +4068,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       } else {
         input_dir = '.'
       }
-      // https://github.com/cirosantilli/ourbigbook/issues/215
+      // TODO https://github.com/cirosantilli/ourbigbook/issues/215
       const read_include_ret = await (options.read_include(href, input_dir));
       if (read_include_ret === undefined) {
         if (
@@ -6126,7 +6154,7 @@ function x_href_attr(target_id_ast, context) {
  * Calculate the text of a cross reference, or the text
  * that the caption text that cross references can refer to, e.g.
  * "Table 123. My favorite table". Both are done in a single function
- * so that style_full references will show very siimlar to the caption
+ * so that style_full references will show very similar to the caption
  * they refer to.
  *
  * @param {Object} options

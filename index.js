@@ -7730,8 +7730,9 @@ const DEFAULT_MACRO_LIST = [
           root_page = '';
         }
         const render_env = {
-          body: body,
-          root_page: root_page,
+          body,
+          input_path: context.options.input_path,
+          root_page,
           title: render_arg(title, context),
         };
         Object.assign(render_env, context.options.template_vars);

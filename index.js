@@ -5610,8 +5610,12 @@ function perf_print(context, name) {
     const delta = now - context.perf_prev
     context.extra_returns.debug_perf[name] = now
     context.perf_prev = now
-    if (context.options.log.perf) {
+    if (context.options.log.perf || context.options.log.mem) {
       console.error(`perf ${name} t=${now} dt=${delta}`);
+      if (context.options.log.mem) {
+        global.gc()
+        console.error(process.memoryUsage());
+      }
     }
   }
 }
@@ -6340,6 +6344,7 @@ exports.INSANE_HEADER_CHAR = INSANE_HEADER_CHAR
 const LOG_OPTIONS = new Set([
   'ast-inside',
   'ast-pp-simple',
+  'mem',
   'parse',
   'perf',
   'split-headers',

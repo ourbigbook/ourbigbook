@@ -464,12 +464,15 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   return output;
 }
 
+const MESSAGE_PREFIX_EXTRACT_IDS = 'extract_ids'
+const MESSAGE_PREFIX_RENDER = 'render'
+
 function convert_path_to_file_print_starting(ourbigbook_options, input_path) {
   let message_prefix;
   if (ourbigbook_options.render) {
-    message_prefix = 'render';
+    message_prefix = MESSAGE_PREFIX_RENDER;
   } else {
-    message_prefix = 'extract_ids';
+    message_prefix = MESSAGE_PREFIX_EXTRACT_IDS;
   }
   const message = `${message_prefix} ${input_path}`;
   const t0 = performance.now()
@@ -1125,6 +1128,12 @@ if (commander.helpMacros) {
       }
       for (const render of [false, true]) {
         for (const article of articles) {
+          if (render) {
+            console.error();
+            console.error(`${MESSAGE_PREFIX_RENDER}:`);
+          } else {
+            console.error(`${MESSAGE_PREFIX_EXTRACT_IDS}:`);
+          }
           console.error(article.title);
           let data, status
           try {

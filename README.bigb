@@ -453,14 +453,14 @@ OurBigBook is designed entirely to allow writing complex professional HTML and P
 
 OurBigBook aims to be the ultimate \x[latex-output-format][LaTeX] "killer", allowing books to be finally published as either HTML or PDF painlessly (LaTeX being only a backend to PDF generation).
 
-It aims to be \x[features][more powerful] and \x[saner] and than Markdown and Asciidoctor. 
+It aims to be \x[features][more powerful] and \x[saner] and than Markdown and Asciidoctor.
 
 = Saner
 {parent=design-goals}
 
 Originally, OurBigBook was is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
-But alas, as Ciro started implementing and using it, he started to bring some Markdown \x[insane-macro-shortcuts][insanity he missed back in].
+But alas, as Ciro started implementing and using it, he started to bring some Markdown \x[insane-macro-shortcut][insanity he missed back in].
 
 And so this "degraded" slightly into a language slightly saner than Asciidoctor but with an amazing Node.js implementation that makes it better for book writing and website publishing.
 
@@ -476,7 +476,7 @@ For example, originally OurBigBook had exactly five magic characters, with simil
 * `\` backslash to start a macro, like LaTeX
 * `{` and `}`: left and right square brackets to delimit \x[positional-vs-named-arguments][optional macro arguments]
 * `[` and `]`: left and right curly braces bracket to start an optional arguments
-and double blank newlines for \x[paragraph]{p} if you are pedantic, but this later degenerated into many more with \x[insane-macro-shortcuts].
+and double blank newlines for \x[paragraph]{p} if you are pedantic, but this later degenerated into many more with \x[insane-macro-shortcut]{p}.
 
 We would like to have only square brackets for both optional and mandatory to have even less magic characters, but that would make the language difficult to parse for computer and humans. LaTeX was right for once!
 
@@ -528,7 +528,7 @@ Another advantage over Asciidoctor is that the reference implementation of OurBi
 {parent=design-goals}
 
 Static wiki generators: this is perhaps the best way of classifying this project :-)
-* https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice. Does not appear to have built-in static generation: 
+* https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice. Does not appear to have built-in static generation:
   * https://stackoverflow.com/questions/7210391/have-anyone-use-gollum-site-to-generete-markdown-wikis-and-host-it-on-heroku
   * https://github.com/dreverri/gollum-site
   Does not appear to check that any links are correct.
@@ -587,7 +587,7 @@ This section documents all OurBigBook macros.
 
 Macros are magic commands that do cool stuff, e.g. `\Image` to create an image.
 
-The most common macros also have \x[insane-macro-shortcuts] to keep the syntax shorter.
+The most common macros also have <insane macro shortcuts> to keep the syntax shorter.
 
 The general macro syntax is described at \x[ourbigbook-markup-syntax]{full}.
 
@@ -598,7 +598,7 @@ The general macro syntax is described at \x[ourbigbook-markup-syntax]{full}.
 {synonym}
 {title2}
 
-\x[insane-macro-shortcuts][Insane] autolink (link text is the same as the link):
+<Insane> autolink (link text is the same as the link):
 \OurbigbookExample[[
 The website http://example.com is cool. See also:
 
@@ -831,7 +831,7 @@ Note that the `http://example.com` inside `\a[http://example.com]` only works be
 
 \a[http://example.com]
 ]]
-This magic can be observed with \x[help-macros] by seeing that the `href` argument of the `a` macro has the property: 
+This magic can be observed with \x[help-macros] by seeing that the `href` argument of the `a` macro has the property:
 ``
 "elide_link_only": true,
 ``
@@ -861,7 +861,7 @@ Paragraph 2 Line 2\br
 {parent=macro}
 {title2=\c[[``]], \c[[`]], `\C`, `\c`}
 
-Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) \x[insane-macro-shortcuts][insane macro shortcut]:
+Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) \x[insane-macro-shortcut]:
 \OurbigbookExample[[
 My inline `x = 'hello\n'` is awesome.
 ]]
@@ -986,7 +986,7 @@ My inline \comment[[inside comment]] is awesome.
 {parent=macro}
 {title2=`\H`}
 
-\x[insane-macro-shortcuts][Insane] with `= ` (equal sign space):
+<Insane> with `= ` (equal sign space):
 ``
 = My h1
 
@@ -2628,7 +2628,7 @@ Here is an example of inclusion of the files `not-readme.bigb` and `not-readme-2
 \Include[not-readme-2]
 \Include[not-readme-with-scope]
 ``
-The above is the recommended and slightly \x[insane-macro-shortcuts][insaner] version of:
+The above is the recommended and slightly \x[insane-macro-shortcut][insaner] version of:
 ``
 \Include[not-readme]
 
@@ -2832,7 +2832,7 @@ void main() {
 {parent=macro}
 {title2=`* `, `\L`, `\Ul`, `\Ol`}
 
-\x[insane-macro-shortcuts][Insane] with `* ` (asterisk space):
+<Insane> with `* ` (asterisk space):
 \OurbigbookExample[[
 * a
 * b
@@ -2954,7 +2954,7 @@ And now a list outside of \x[ourbigbookexample] to test how it looks directly un
 
 Via https://katex.org/[KaTeX] server side, oh yes!
 
-Inline math is done with the dollar sign (`$`) \x[insane-macro-shortcuts][insane macro shortcut]:
+Inline math is done with the dollar sign (`$`) <insane macro shortcut>:
 \OurbigbookExample[[
 My inline $\sqrt{1 + 1}$ is awesome.
 ]]
@@ -2989,7 +2989,7 @@ or with the equivalent double open and close:
 My inline \m[[1 - [1 + 1] = -1]] is awesome.
 ``
 
-HTML escaping happens as you would expect, e.g. < shows fine in:
+HTML escaping happens as you would expect, e.g. `<` shows fine in:
 \OurbigbookExample[[
 $$
 1 < 2
@@ -3071,7 +3071,7 @@ $$
 {title2=`\P`}
 {parent=macro}
 
-OK, this is too common, so we opted for some \x[insane-macro-shortcuts][insanity] here: double newline is a paragraph!
+OK, this is too common, so we opted for some <insanity> here: double newline is a paragraph!
 \OurbigbookExample[[
 Paragraph 1.
 
@@ -3463,18 +3463,42 @@ Every macro in OurBigBook can have an optional `id` and many also have a reserve
 
 When a macro in the document has a `title` argument but no `id` argument given, get an auto-generated ID from the title: \x[automatic-id-from-title].
 
-For macros that do have an ID, derived from `title` or not, you can write a cross reference to it, e.g.:
+Usually, the most convenient way to write internal cross references is with the insane syntax with delimited angled braces:
 \OurbigbookExample[[
-See this \x[internal-cross-reference]{p} awesome section.
+<Internal cross references> are awesome.
+]]
+More details at: \x[insane-internal-cross-reference].
+
+The sane equivalent to this is:
+\OurbigbookExample[[
+\x[internal-cross-reference]{c}{p} are awesome section.
+]]
+Note how that is more verbose, especially because here we use both the \x[x-c-argument] and  \x[x-p-argument] to capitalize and pluraize as desired.
+
+Another sane equivalent would be to add an explicit link body as in:
+\OurbigbookExample[[
+\x[internal-cross-reference][Internal cross references] are awesome.
 ]]
 
-An explicit link body can be given just as for regular HTTP \x[link]{p} as:
+= Insane internal cross reference
+{parent=internal-cross-reference}
+{tag=insane-macro-shortcut}
+{title2=`<>`}
+
+When you use an insane internal cross reference (`<>`) such as in:
 \OurbigbookExample[[
-See this \x[internal-cross-reference]{p}[awesome section].
+<Internal cross references> are awesome.
 ]]
+it gets expanded exactly to the sane equivalent:
+``
+\x[Internal cross references]{magic} are alwasome
+``
+so we see that the \x[x-magic-argument] gets added. It is that argument that for example adds the missing `-`, and removes the pluralization to find the correct ID `internal-cross-reference`.  For more details, see the documentation of the \x[x-magic-argument].
 
 = Cross reference title inflection
 {parent=internal-cross-reference}
+
+In most cases it is generally more convenient to simply use the \x[x-magic-argument] through <insane internal cross references> instead of the `c` and `p` arguments as described on the rest of this section, see also: <inflection vs magic>{full}.
 
 A common usage pattern is that we want to use \x[header] titles in \x[x-full-argument][non-full] \x[internal-cross-reference]{p} as the definition of a concept without repeating the title, for example:
 ``
@@ -3630,6 +3654,32 @@ Now for a live example for quick and dirty interactive testing.
 = Inflection plural examples
 {parent=cross-reference-title-inflection-example}
 
+= Inflection vs magic
+{parent=internal-cross-reference}
+
+In most cases it is more convenient to type and read <internal cross references> that use the \x[x-magic-argument] rather than <cross reference title inflection>.
+
+Possible exceptions include:
+* the target has <macros> such as inline <code blocks> or \x[mathematics]. E.g. in:
+  ``
+  = The `inline` keyword
+
+  <The inline keyword>
+  ``
+  the output would be something like:
+  ``
+  <a>the inline keyword</a>
+  ``
+  without the code tag. Therefore, instead of using:
+  ``
+  <The `inline` keyword>
+  ``
+  and repeating formatting every time, it might be more convenient to just use:
+  ``
+  \x[the-inline-keyword]
+  ``
+  in such cases, especially if there is more extensive macro usage.
+
 = `\x` within `title` restrictions
 {parent=internal-cross-reference}
 
@@ -3701,7 +3751,7 @@ To prevent such problems, OurBigBook emits an error if you use an `\x` without c
 
 While it is technically possible relax the above limitations and give an error only in case of loops, it would require a bit of extra work which we don't want to put in right now: https://github.com/cirosantilli/ourbigbook/issues/95[].
 
-Furthermore, the above rules do not exclude infinite rendering loops, but OurBigBook detects such loops and gives a nice error message, this has been fixed at: https://github.com/cirosantilli/ourbigbook/issues/34 
+Furthermore, the above rules do not exclude infinite rendering loops, but OurBigBook detects such loops and gives a nice error message, this has been fixed at: https://github.com/cirosantilli/ourbigbook/issues/34
 
 For example this would contain an infinite loop:
 ``
@@ -4051,6 +4101,24 @@ Section 1.2 "h2 in not the readme"
 ``
 This is because the number "Section 1.2" might already have been used in the current page, leading to confusion.
 
+= `\x` `magic` argument
+{parent=x-arguments}
+{tag=boolean-argument}
+
+This argument makes writing many internal links more convenient, and it was notably introduced because it serves as the sane version of \x[insane-internal-cross-reference]{p}.
+
+If given e.g. as in:
+``
+\x[Internal references]{magic}
+``
+the link treated magically as follows:
+* the content equals the link, i.e. the content will be `Internal references`
+* the ID is calculated as follows:
+  * the last word is singularized as in the `x-p-argument` with `p=0`, giving `Internal reference`
+  * \x[automatic-id-from-title] conversion is performed, , giving `internal-reference`
+
+There are some cases where you might stilt want to use <cross reference title inflection> however, see: <inflection vs magic>{full}.
+
 = `\x` `p` argument
 {parent=x-arguments}
 
@@ -4084,13 +4152,16 @@ Implemented at: https://github.com/cirosantilli/ourbigbook/issues/137
 {c}
 {parent=ourbigbook-markup}
 
-= Insane macro shortcuts
+= Insane macro shortcut
 {parent=ourbigbook-markup-syntax}
 
 = Insane syntax
 {synonym}
 
 = Insane
+{synonym}
+
+= Insanity
 {synonym}
 
 Certain commonly used macros have insane macro shortcuts that do not start with backslash (`\`).
@@ -4101,11 +4172,14 @@ Every insane syntax does however have an equivalent sane syntax.
 
 The style recommendation is: use the insane version which is shorter, unless you have a specific reason to use the sane version.
 
+Insane in our context does not mean worse. It just mean "harder for the computer to understand". But it is more important that humans can understand in the first place! It is find to make the computer work a bit more for us when we are able to.
+
 = Macros with insane shortcut
-{parent=insane-macro-shortcuts}
+{parent=insane-macro-shortcut}
 
 * \x[paragraph]{child}{full}: `\n\n` (double newline)
 * \x[link]{child}{full}: `a http://example.com b` (space followed by `http://`)
+* \x[internal-cross-reference]{child}{full}: `<Internal cross references>` (angle brackets), see: \x[insane-internal-cross-reference]{full}
 * \x[mathematics]{child}{full}: `$`, described at: \x[insane-code-and-math-shortcuts]
 * \x[code-block]{child}{full}: \c[[`]], described at: \x[insane-code-and-math-shortcuts]
 * \x[list]{child}{full}: `* ` and indentation
@@ -4216,7 +4290,7 @@ For example, in a \x[header] definition with an ID:
 {id=asdf qwer}
 {scope}
 ``
-which is equivalent to the \x[insane-macro-shortcuts][sane] version:
+which is equivalent to the \x[insane-macro-shortcut][sane] version:
 ``
 \H[1][My asdf]
 {id=asdf qwer}
@@ -4456,7 +4530,7 @@ b
 ``
 This is extremely convenient to improve the readability of code blocks and similar constructs.
 
-The newline is however considered if it would be part of some \x[insane-macro-shortcuts]{p=0}. For example, we can start an \x[list][insane list] inside a \x[quotation]{p} as in:
+The newline is however considered if it would be part of some \x[insane-macro-shortcut]. For example, we can start an \x[list][insane list] inside a \x[quotation]{p} as in:
 \OurbigbookExample[[
 \Q[
 * a
@@ -4499,8 +4573,9 @@ For \x[literal-arguments][non-literal macro arguments], you have to use a backsl
 * `\`: backslashes start macros
 * `\` and `\`: open and close \x[positional-vs-named-arguments][positional macro arguments]
 * `\` and `\`: open and close \x[positional-vs-named-arguments][optional macro arguments]
-* `$` (dollar sign): \x[insane-macro-shortcuts][insane macro shortcut] for \x[mathematics]
-* \c[[`]] (backtick): \x[insane-macro-shortcuts][insane macro shortcut] for \x[code-block]{p}
+* `<` (open angle brackets, less than sign): \x[insane-macro-shortcut] for \x[insane-internal-cross-reference]{p}
+* `$` (dollar sign): \x[insane-macro-shortcut] for \x[mathematics]
+* \c[[`]] (backtick): \x[insane-macro-shortcut] for \x[code-block]{p}
 
 The escape rules for literal arguments are described at: \x[literal-arguments]{full}.
 
@@ -5164,7 +5239,7 @@ Besides being more intuitive, this also guarantees greater format portability, i
 
 We decided to expose this format from the CLI just for fun, as it posed no extra work at all as it is treated internally exactly like any other conversion format.
 
-And it also was a good start generalizing OurBigBook to multiple outputs, as this is a simple format. 
+And it also was a good start generalizing OurBigBook to multiple outputs, as this is a simple format.
 
 The conversion is very simplistic, it basically just pastes the `content` of most macros. Important exceptions to that include:
 * `\x`: see \x[x-id-output-format]
@@ -6260,7 +6335,7 @@ Notably, this would be mandatory in case of CSS changes that require correspondi
 
 As the website grows, we will likely need to do a lazy version of this that marks pages as outdated, and then renders on the fly, plus a background thread that always updates outdated pages.
 
-The functionality of this script should be called from a migration whenever such HTML changes are required. TODO link to an example. We had one at `web/migrations/20220321000000-output-update-ancestor.js` that seemed to work, but lost it. It was simple though. Just you have to instantiate your  own 
+The functionality of this script should be called from a migration whenever such HTML changes are required. TODO link to an example. We had one at `web/migrations/20220321000000-output-update-ancestor.js` that seemed to work, but lost it. It was simple though. Just you have to instantiate your own Sequelize instance after making the model change to move any data.
 
 = OurBigBook Web help
 {c}
@@ -6880,7 +6955,7 @@ Conversion of a directory with multiple input files works as follows:
   * duplicate IDs
   * references from one non-header title to another non-header title as mentioned at \x[x-within-title-restrictions]
   Ideally, failure of any of the above checks should lead to the database not being updated with new values, but that is not the case as of writing.
-* do one conversion pass with render. To speed up conversion, we might at some point start storing a parsed JSON after the first conversion pass, and then just deserialize it and convert the deserialized output directly without re-parsing. 
+* do one conversion pass with render. To speed up conversion, we might at some point start storing a parsed JSON after the first conversion pass, and then just deserialize it and convert the deserialized output directly without re-parsing.
 The two pass approach is required to resolve \x[internal-cross-reference]{p}
 
 = Abstract syntax tree
@@ -7009,7 +7084,7 @@ Output:
 = Performance
 {parent=developing-ourbigbook}
 
-To log some performance statistics, use: 
+To log some performance statistics, use: \x[performance-log].
 
 = Speed comparison to other markup language implementations
 {parent=performance}

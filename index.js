@@ -1567,10 +1567,17 @@ class Tokenizer {
         this.consume();
         this.consume_optional_newline_after_argument();
       } else if (this.cur_c in MAGIC_CHAR_ARGS) {
-        // Insane shortcuts e.g. $$ math and `` code.
-        let open_char = this.cur_c;
-        let open_length = this.tokenize_func(c => c === open_char).length;
-        let close_string = open_char.repeat(open_length);
+        const source_location = this.source_location.clone();
+        // Insane shortcuts e.g. $$ math, `` code and <> magic \x.
+        const open_char = this.cur_c;
+        const open_length = this.tokenize_func(c => c === open_char).length;
+        let close_char
+        if (open_char === INSANE_X_START) {
+          close_char = INSANE_X_END
+        } else {
+          close_char = open_char
+        }
+        const close_string = close_char.repeat(open_length);
         let macro_name = MAGIC_CHAR_ARGS[open_char];
         if (open_length > 1) {
           macro_name = macro_name.toUpperCase();
@@ -1581,6 +1588,11 @@ class Tokenizer {
           unterminated_literal = true;
         }
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
+        if (open_char === INSANE_X_START) {
+          this.push_token(TokenType.NAMED_ARGUMENT_START, START_NAMED_ARGUMENT_CHAR, source_location);
+          this.push_token(TokenType.NAMED_ARGUMENT_NAME, 'magic', source_location);
+          this.push_token(TokenType.NAMED_ARGUMENT_END, END_NAMED_ARGUMENT_CHAR, source_location);
+        }
         this.consume_optional_newline_after_argument()
       } else if (this.cur_c === '\n' && this.peek() === '\n') {
         this.consume();
@@ -5677,10 +5689,7 @@ function symbol_to_string(symbol) {
   return symbol.toString().slice(7, -1);
 }
 
-function title_to_id(title, options) {
-  if (options === undefined) {
-    options = {}
-  }
+function title_to_id(title, options={}) {
   if (options.normalize === undefined) {
     options.normalize = {}
   }
@@ -5859,14 +5868,20 @@ function x_get_href_content(ast, context) {
   if (target_id[0] === HASHTAG_CHAR) {
     return [html_attr('href', WEB_URL + 'go/topic/' + target_id.substr(1)), target_id];
   }
-  const target_id_ast = context.id_provider.get(target_id, context, ast.scope);
+  let target_id_eff
+  if (ast.validation_output.magic.boolean) {
+    target_id_eff = title_to_id(pluralize(target_id, 1))
+  } else {
+    target_id_eff = target_id
+  }
+  const target_id_ast = context.id_provider.get(target_id_eff, context, ast.scope);
 
   // href
   let href;
   if (target_id_ast) {
     href = x_href_attr(target_id_ast, context);
   } else {
-    let message = `cross reference to unknown id: "${target_id}"`;
+    let message = `cross reference to unknown id: "${target_id_eff}"`;
     let source_location
     if (ast.args.href) {
       source_location = ast.args.href.source_location
@@ -5881,30 +5896,34 @@ function x_get_href_content(ast, context) {
   const content_arg = ast.args.content;
   let content;
   if (content_arg === undefined) {
-    // No explicit content given, deduce content from target ID title.
-    if (context.x_parents.has(ast)) {
-      // Prevent render infinite loops.
-      let message = `x with infinite recursion`;
-      render_error(context, message, ast.source_location);
-      return [href, error_message_in_output(message, context)];
-    }
-    let x_text_options = {
-      caption_prefix_span: false,
-      capitalize: ast.validation_output.c.boolean,
-      from_x: true,
-      quote: true,
-      pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
-    };
-    if (ast.validation_output.full.given) {
-      x_text_options.style_full = ast.validation_output.full.boolean;
-    }
-    const x_parents_new = new Set(context.x_parents);
-    x_parents_new.add(ast);
-    content = x_text(target_id_ast, clone_and_set(context, 'x_parents', x_parents_new), x_text_options);
-    if (content === ``) {
-      let message = `empty cross reference body: "${target_id}"`;
-      render_error(context, message, ast.source_location);
-      return error_message_in_output(message, context);
+    if (ast.validation_output.magic.boolean) {
+      content = target_id
+    } else {
+      // No explicit content given, deduce content from target ID title.
+      if (context.x_parents.has(ast)) {
+        // Prevent render infinite loops.
+        let message = `x with infinite recursion`;
+        render_error(context, message, ast.source_location);
+        return [href, error_message_in_output(message, context)];
+      }
+      let x_text_options = {
+        caption_prefix_span: false,
+        capitalize: ast.validation_output.c.boolean,
+        from_x: true,
+        quote: true,
+        pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
+      };
+      if (ast.validation_output.full.given) {
+        x_text_options.style_full = ast.validation_output.full.boolean;
+      }
+      const x_parents_new = new Set(context.x_parents);
+      x_parents_new.add(ast);
+      content = x_text(target_id_ast, clone_and_set(context, 'x_parents', x_parents_new), x_text_options);
+      if (content === ``) {
+        let message = `empty cross reference body: "${target_id_eff}"`;
+        render_error(context, message, ast.source_location);
+        return error_message_in_output(message, context);
+      }
     }
   } else {
     // Explicit content given, just use it then.
@@ -6375,9 +6394,12 @@ const OUTPUT_FORMAT_HTML = 'html';
 const OUTPUT_FORMAT_ID = 'id';
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
 const TOC_HAS_CHILD_CLASS = 'has-child';
+const INSANE_X_START = '<';
+const INSANE_X_END = '>';
 const MAGIC_CHAR_ARGS = {
   '$': Macro.MATH_MACRO_NAME,
   '`': Macro.CODE_MACRO_NAME,
+  [INSANE_X_START]: Macro.X_MACRO_NAME,
 }
 const NAMED_ARGUMENT_EQUAL_CHAR = '=';
 const START_NAMED_ARGUMENT_CHAR = '{';
@@ -6391,6 +6413,7 @@ const ESCAPABLE_CHARS = new Set([
   END_NAMED_ARGUMENT_CHAR,
   INSANE_LIST_START[0],
   INSANE_TD_START[0],
+  INSANE_X_START,
 ]);
 const INSANE_LINK_END_CHARS = new Set([
   ' ',
@@ -7907,6 +7930,10 @@ const DEFAULT_MACRO_LIST = [
         }),
         new MacroArgument({
           name: 'full',
+          boolean: true,
+        }),
+        new MacroArgument({
+          name: 'magic',
           boolean: true,
         }),
         new MacroArgument({

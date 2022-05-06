@@ -355,7 +355,7 @@ function assert_error(description, input, line, column, path, options={}) {
 }
 
 const testdir = path.join(__dirname, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'test')
-fs.rmdirSync(testdir, { recursive: true });
+fs.rmSync(testdir, { recursive: true });
 fs.mkdirSync(testdir, { recursive: true });
 
 // Test the ourbigbook executable via a separate child process call.
@@ -1610,10 +1610,10 @@ assert_convert_ast('escape left curly brace',     'a\\{b\n',  [a('P', [t('a{b')]
 assert_convert_ast('escape right curly brace',    'a\\}b\n',  [a('P', [t('a}b')])]);
 assert_convert_ast('escape header id', `= tmp
 
-\\x["'<>&]
+\\x["'\\<>&]
 
 == tmp 2
-{id="'<>&}
+{id="'\\<>&}
 `,
   undefined,
   {
@@ -1966,7 +1966,7 @@ assert_convert_ast('link with multiple paragraphs',
   ]
 );
 assert_convert_ast('xss: a content and href',
-  '\\a[ab&<>"\'cd][ef&<>"\'gh]{check=0}\n',
+  '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{check=0}\n',
   undefined,
   {
     assert_xpath_main: [
@@ -2507,6 +2507,62 @@ assert_convert_ast('x to image in another file that has x title in another file'
 //    ['', 'index']
 //  );
 //});
+// Internal cross references \x
+// https://github.com/cirosantilli/ourbigbook/issues/213
+assert_convert_ast('cross reference magic simple sane',
+  `= Notindex
+
+== My header
+
+\\x[My headers]{magic}
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='#my-header' and text()='My headers']",
+    ],
+  }
+);
+assert_convert_ast('cross reference magic simple insane',
+  `= Notindex
+
+== My header
+
+<My headers>
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='#my-header' and text()='My headers']",
+    ],
+  }
+);
+assert_convert_ast('cross reference magic in title',
+  `= Notindex
+
+== My header
+
+\\Image[a.png]{check=0}
+{title=<My headers> are amazing}
+
+\\x[image-my-headers-are-amazing]
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='#image-my-headers-are-amazing' and text()='Figure 1. \"My headers are amazing\"']",
+    ],
+  }
+);
+assert_convert_ast('cross reference magic insane escape',
+  `a\\<>b`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p' and text()='a<>b']",
+    ],
+  }
+);
 
 // Infinite recursion.
 // failing https://github.com/cirosantilli/ourbigbook/issues/34
@@ -4003,7 +4059,7 @@ bb
 );
 assert_convert_ast('xss: H id',
   `= tmp
-{id=&<>"'}
+{id=&\\<>"'}
 `,
   undefined,
   {

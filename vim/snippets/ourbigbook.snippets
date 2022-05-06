@@ -9,6 +9,8 @@ snippet {t
 	{tag=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
 snippet \x
 	\\x[`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`]
+snippet <
+	<`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`>
 
 # Standard format for the web archive of something which must be present in the clipboard, e.g.
 # ``

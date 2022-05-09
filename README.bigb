@@ -5092,12 +5092,12 @@ Only extract IDs to fill the \x[id-database], don't render. This saves time if y
 = `--no-render-timestamp`
 {parent=ourbigbook-cli-options}
 
-OurBigBook stores the timestamp of the last sucessful:
+OurBigBook stores the timestamp of the last successful:
 * \x[conversion-process-overview][ID extraction]
 * \x[conversion-process-overview][render]
 for each file.
 
-For ID extraction, we always skip the extraction if the filesystem timestamp of a source file is older than the last sucessful extraction.
+For ID extraction, we always skip the extraction if the filesystem timestamp of a source file is older than the last successful extraction.
 
 For render:
 * we also skip rendering by default when you invoke ourbigbook on a directory, e.g. `ourbigbook .`, as this greatly speeds up the interactive error fixing turnaround time
@@ -5127,7 +5127,7 @@ file2.bigb
 \x[file-1-1]
 ``
 
-We then do the initial convertion:
+We then do the initial conversion:
 ``
 ourbigbook .
 ``
@@ -5477,7 +5477,7 @@ would produce the following output files:
 = Internal cross reference targets in split headers
 {parent=split-headers}
 
-By defeault, all internal cross references point to the non-split version of headers, including those found in split headers.
+By default, all internal cross references point to the non-split version of headers, including those found in split headers.
 
 The rationale for this is that it gives readers the most context around the header by simply scrolling.
 
@@ -5487,6 +5487,17 @@ For example, considering the example document at \x[split-headers], \x[internal-
 The same applies to \x[internal-cross-file-reference]{p} when there are multiple input files.
 
 In order to make the split version be the default for some headers, you can use the \x[h-splitdefault-argument].
+
+= `--stdout`
+{parent=ourbigbook-cli-options}
+
+When converting a file, output output to stdout in addition to outputting to a file:
+``
+convert --stdout input.bigb
+``
+The regular output file is also saved.
+
+Cannot be used when converting a directory.
 
 = `--template`
 {parent=ourbigbook-cli-options}

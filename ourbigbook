@@ -356,7 +356,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
       }
 
       // Convert.
-      const output = await convert_input(input, new_options, new_non_ourbigbook_options);
+      output = await convert_input(input, new_options, new_non_ourbigbook_options);
 
       // Write out the output the output files.
       const extra_returns = new_non_ourbigbook_options.extra_returns
@@ -673,7 +673,7 @@ commander.option('-O, --output-format <output-format>', 'https://cirosantilli.co
 commander.option('-p --publish', 'https://cirosantilli.com/ourbigbook#publish', false);
 commander.option('-P, --publish-commit <commit-message>', 'https://cirosantilli.com/ourbigbook#publish-commit');
 commander.option('-S, --split-headers', 'https://cirosantilli.com/ourbigbook#split-headers', false);
-commander.option('--stdout', 'print output to stdout instead of saving to a file', false);
+commander.option('--stdout', 'also print output to stdout in addition to saving to a file https://cirosantilli.com/ourbigbook#stdout', false);
 commander.option('--template <template>', 'https://cirosantilli.com/ourbigbook#template');
 commander.option('-w, --watch', 'https://cirosantilli.com/ourbigbook#watch', false);
 // Originally added for testing, this allows the test filesystems to be put under the repository iteslf,
@@ -1162,6 +1162,9 @@ if (commander.helpMacros) {
         }
       }
     } else if (commander.watch) {
+      if (commander.stdout) {
+        cli_error('--stdout and --watch are incompatible');
+      }
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
@@ -1186,6 +1189,9 @@ if (commander.helpMacros) {
         output = await convert_path_to_file(inputPath, ourbigbook_options, non_ourbigbook_options);
         await check_db(non_ourbigbook_options)
       } else {
+        if (commander.stdout) {
+          cli_error('--publish cannot be used in directory conversion');
+        }
         let actual_input_dir;
         let publish_branch;
         let publish_out_publish_dir;
@@ -1354,7 +1360,10 @@ if (commander.helpMacros) {
   }
   if (
     inputPath === undefined ||
-    (output !== undefined && commander.stdout)
+    (
+      output !== undefined &&
+      commander.stdout
+    )
   ) {
     process.stdout.write(output);
   }

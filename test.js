@@ -2597,6 +2597,125 @@ assert_convert_ast('cross reference magic with full uses full content',
     ],
   }
 );
+assert_convert_ast('cross reference magic cross file plural resolution',
+  `= Notindex
+
+<dogs>
+
+<two dogs>
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='notindex2.html#dog' and text()='dogs']",
+      "//x:div[@class='p']//x:a[@href='notindex2.html#two-dogs' and text()='two dogs']",
+    ],
+    convert_before: ['notindex2.bigb'],
+    filesystem: {
+     'notindex2.bigb': `= Notindex2
+
+== Dog
+
+== Two dogs
+`,
+    },
+    input_path_noext: 'notindex'
+  },
+);
+assert_convert_ast('cross reference magic detects capitalization and plural on output',
+  `= Notindex
+
+<Dog>
+
+<two dogs>
+
+<cat>
+
+<one cats>
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='notindex2.html#dog' and text()='DoG']",
+      "//x:div[@class='p']//x:a[@href='notindex2.html#two-dogs' and text()='two Dogs']",
+      "//x:div[@class='p']//x:a[@href='notindex2.html#cat' and text()='Cat']",
+      "//x:div[@class='p']//x:a[@href='notindex2.html#one-cat' and text()='one Cats']",
+    ],
+    convert_before: ['notindex2.bigb'],
+    filesystem: {
+     'notindex2.bigb': `= Notindex2
+
+== DoG
+
+== Two Dogs
+
+== Cat
+{c}
+
+== one Cat
+`,
+    },
+    input_path_noext: 'notindex'
+  },
+);
+assert_convert_ast('cross reference c simple',
+  `= Tmp
+
+== Dog
+
+\\x[dog]{c}
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='#dog' and text()='Dog']",
+    ],
+  }
+)
+assert_convert_ast('cross reference p simple',
+  `= Tmp
+
+== Dog
+
+\\x[dog]{p}
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='#dog' and text()='dogs']",
+    ],
+  }
+)
+assert_convert_ast('cross reference c ignores non plaintext first argument',
+  // Maybe we shoud go deep into the first argument tree. But let's KISS for now.
+  `= Tmp
+
+== \\i[Good] dog
+
+\\x[good-dog]
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='#good-dog']//x:i[text()='Good']",
+    ],
+  }
+)
+assert_convert_ast('cross reference p ignores non plaintext last argument',
+  // Maybe we shoud go deep into the last argument tree. But let's KISS for now.
+  `= Tmp
+
+== Good \\i[dog]
+
+\\x[good-dog]{p}
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='#good-dog']//x:i[text()='dog']",
+    ],
+  }
+)
 
 // Infinite recursion.
 // failing https://github.com/cirosantilli/ourbigbook/issues/34

@@ -4104,7 +4104,7 @@ If given e.g. as in:
 \x[Internal references]{magic}
 ``
 the link treated magically as follows:
-* content capitalization and pluralization are detected from the string, and implicitly set <h c argument> and <h p argument>. In the example:
+* content capitalization and pluralization are detected from the string, and implicitly set the <x c argument> and <x p argument>. In the example:
   * `{c}` capitalization is set because `Internal references` starts with an upper case character `I`
   * `{p}` pluralization is set because `Internal references` ends in a plural word
   In this simple example, the content therefore will be exactly `Internal references` as in the source. But note that this does not necessarily need to be the case, e.g. if we had done:

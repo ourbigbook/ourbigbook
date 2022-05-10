@@ -136,6 +136,9 @@ function assert_convert_ast(
     if (options.toplevel) {
       new_convert_opts.body_only = false;
     }
+    if ('bigb' in options) {
+      new_convert_opts.output_format = ourbigbook.OUTPUT_FORMAT_OURBIGBOOK
+    }
 
     // SqliteIdProvider with in-memory database.
     const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize({
@@ -205,6 +208,9 @@ function assert_convert_ast(
       let is_subset;
       let content;
       let content_array;
+      if (options.bigb) {
+        assert.strictEqual(output, options.bigb);
+      }
       if (expected_ast_output_subset === undefined) {
         is_subset = true;
       } else {
@@ -5521,6 +5527,20 @@ it(`api: x does not blow up without ID provider`, async function () {
 == h2
 `, {'body_only': true})
 })
+
+const bigb_input = `p1
+
+p2
+
+my \\i[itallic] text
+`
+assert_convert_ast('bigb output format',
+  bigb_input,
+  undefined,
+  {
+    bigb: bigb_input,
+  },
+);
 
 // ourbigbook executable tests.
 assert_executable(

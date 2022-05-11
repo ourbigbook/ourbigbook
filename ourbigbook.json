@@ -6,6 +6,7 @@
     "my_node_modules",
     "ourbigbook_runtime.js",
     "template",
+    "test_bigb_output.bigb",
     "tmp",
     "tmp.bigb",
     "web"

@@ -1,0 +1,167 @@
+= tmp
+
+Escape chars: \\, \[, \], \{, \}, \<, \`, \$
+
+Sane inline element: \i[qwer] after.
+
+Sane inline element with named argument: \a[qwer]{check=0} after.
+
+Sane inline element with positional and named argument: \a[qwer][zxcv]{check=0} after.
+
+Insane link http://example.com after.
+
+Insane link http://example.com[], with comma immediately following.
+
+Inline code block: `f(x + 1)[]` after.
+
+Inline code block with backtick: \c[[a ` b]] after.
+
+Inline code block with backtick and double open square brackets: \c[[[a ` [[ b]]] after.
+
+Inline code block with backtick and double close square brackets: \c[[[a ` ]] b]]] after.
+
+Inline code block with backtick and triple open square brackets: \c[[[[a ` [[[ b]]]] after.
+
+Block code block:
+
+``
+x = 1
+x = x + 1
+``
+
+Block code with double backtick:
+
+```
+x = 1
+``
+x = x + 1
+```
+
+Block code with triple backtick:
+
+````
+x = 1
+```
+x = x + 1
+````
+
+Inline math: $\sqrt{2}$ after.
+
+Block math:
+
+$$
+\sqrt{2} \\
+\sqrt{2}
+$$
+
+List:
+
+* p1
+* p2
+
+List with paragraph:
+
+* p1
+
+  p1 2
+
+  p1 3
+* p2
+
+Nested list:
+
+* p1
+* p2
+  * p2 1
+  * p2 2
+    * p2 2 1
+  * p2 3
+* p3
+  * p3 1
+
+Nested list with paragraph:
+
+* p1
+* p2
+  * p2 p1
+
+    p2 p2
+
+    * p2 p2 1
+    * p2 p2 2
+
+    p2 p3
+  * p2 2
+  * p2 3
+* p3
+  * p3 1
+
+List with ID:
+
+\Ul[
+* p1
+* p2
+]
+{id=my-list}
+
+Table:
+
+|| header 1
+|| header 2
+
+| row 1 1
+| row 1 2
+
+| row 2 1
+| row 2 2
+
+Table with title:
+
+\Table[
+|| header 1
+|| header 2
+
+| row 1 1
+| row 1 2
+
+| row 2 1
+| row 2 2
+]
+{title=My table}
+
+Table with paragraph and list:
+
+|| header 1
+|| header 2
+
+| row 1 1
+
+  row 1 1 1
+
+  * row 1 1 1 1
+  * row 1 1 1 2
+    * row 1 1 1 2 1
+
+  row 1 1 2
+| row 1 2
+
+| row 2 1
+| row 2 2
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{id=image-my-test-image}
+{title=The title of my image.}
+{description=The description of my image.}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+
+== Dog
+
+\Include[tmp2]{parent=dog}
+\Include[tmp3]{parent=dog}
+
+== Cat
+
+== Header with args
+{id=tmp-2}
+{c}
+{wiki}

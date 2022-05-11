@@ -5528,102 +5528,16 @@ it(`api: x does not blow up without ID provider`, async function () {
 `, {'body_only': true})
 })
 
-const bigb_input = `= tmp
-
-Sane inline element: \i[qwer] after.
-
-Sane inline element with named argument: \a[qwer]{check=0} after.
-
-Sane inline element with positional and named argument: \a[qwer][zxcv]{check=0} after.
-
-Insane link http://example.com after.
-
-Insane link http://example.com[], with comma immediately following.
-
-Inline code block: `f(x + 1)` after.
-
-Block code block:
-
-``
-x = 1
-x = x + 1
-``
-
-Inline math: $\sqrt{2}$ after.
-
-Block math:
-
-$$
-\sqrt{2} \\
-\sqrt{2}
-$$
-
-List:
-
-* p1
-* p2
-
-Nested list:
-
-* p1
-* p2
-  * p2 1
-  * p2 2
-    * p2 2 1
-  * p2 3
-* p3
-  * p3 1
-
-List with ID:
-
-\Ul[
-* p1
-* p2
-]{id=my-list}
-
-Table:
-
-|| header 1
-|| header 2
-
-| row 1 1
-| row 1 2
-
-| row 2 1
-| row 2 2
-
-Table with title:
-
-\Table{title=My table}[
-|| header 1
-|| header 2
-
-| row 1 1
-| row 1 2
-
-| row 2 1
-| row 2 2
-]
-
-\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=The title of my image.}
-{id=image-my-test-image}
-{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
-{description=The description of my image.}
-
-== Header with args
-{c}
-{id=tmp2}
-{wiki}
-`
 // TODO
-//assert_convert_ast('bigb output format',
-//  bigb_input,
-//  undefined,
-//  {
-//    bigb: bigb_input,
-//  },
-//);
+const bigb_input = fs.readFileSync(path.join(__dirname, 'test_bigb_output.bigb'), ourbigbook_nodejs_webpack_safe.ENCODING)
+assert_convert_ast('bigb output format is unchanched for the preferred format',
+  // https://github.com/cirosantilli/ourbigbook/issues/83
+  bigb_input,
+  undefined,
+  {
+    bigb: bigb_input,
+  },
+);
 
 // ourbigbook executable tests.
 assert_executable(

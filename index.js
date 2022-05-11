@@ -352,7 +352,7 @@ class AstNode {
         this.id !== undefined &&
         macro.toplevel_link
       ) {
-        out = TOPLEVEL_CHILD_MODIFIER[context.options.output_format](this, context, out);
+        out = OUTPUT_FORMATS[context.options.output_format].toplevel_child_modifier(this, context, out);
       }
     }
 
@@ -961,6 +961,7 @@ class DictIdProvider extends IdProvider {
   }
 }
 
+/** Represents possible arguments of each Macro */
 class MacroArgument {
   /**
    * @param {String} name
@@ -977,7 +978,7 @@ class MacroArgument {
       options.elide_link_only = false;
     }
     if (!('boolean' in options)) {
-      // https://cirosantilli.com/ourbigbook#boolean-named-arguments
+      // https://cirosantilli.com/ourbigbook#boolean-argument
       options.boolean = false;
     }
     if (!('count_words' in options)) {
@@ -1039,7 +1040,7 @@ class Macro {
    *                 to this node. This is usually the case for nodes that are not visible in the final output,
    *                 otherwise that would confuse readers.
    */
-  constructor(name, positional_args, html_render_func, options={}) {
+  constructor(name, positional_args, options={}) {
     if (!('auto_parent' in options)) {
       // https://cirosantilli.com/ourbigbook#auto_parent
     }
@@ -1108,12 +1109,7 @@ class Macro {
     }
     this.auto_parent = options.auto_parent;
     this.auto_parent_skip = options.auto_parent_skip;
-    // This produces incredibly superior render backtraces as you can immediately spot which
-    // type of macro is being rendered without entering the line numbers.
-    Object.defineProperty(html_render_func, 'name', { value: `html_render_func_${name}`  })
-    this.convert_funcs = {
-      html: html_render_func
-    }
+    this.convert_funcs = {}
     this.id_prefix = options.id_prefix;
     this.options = options;
     this.remove_whitespace_children = options.remove_whitespace_children;
@@ -1137,12 +1133,15 @@ class Macro {
     }
   }
 
-  add_convert_function(output_format, my_function) {
+  add_convert_function(output_format, my_function, macro_name) {
     this.convert_funcs[output_format] = my_function;
+    // This produces incredibly superior render backtraces as you can immediately spot which
+    // type of macro is being rendered without entering the line numbers.
+    Object.defineProperty(my_function, 'name', { value: `render_func_${macro_name}`  })
   }
 
   check_name(name) {
-    if (Macro.COMMON_ARGNAMES.has(name)) {
+    if (Macro.COMMON_ARGNAMES_SET.has(name)) {
       throw new Error(`name "${name}" is reserved and automatically added`);
     }
     if (name in this.name_to_arg) {
@@ -1179,11 +1178,12 @@ Macro.ID_ARGUMENT_NAME = 'id';
 Macro.TEST_DATA_ARGUMENT_NAME = 'ourbigbookTestData';
 Macro.TEST_DATA_HTML_PROP = 'data-ourbigbook-test';
 Macro.SYNONYM_ARGUMENT_NAME = 'synonym';
-Macro.COMMON_ARGNAMES = new Set([
-  Macro.DISAMBIGUATE_ARGUMENT_NAME,
+Macro.COMMON_ARGNAMES = [
   Macro.ID_ARGUMENT_NAME,
+  Macro.DISAMBIGUATE_ARGUMENT_NAME,
   Macro.TEST_DATA_ARGUMENT_NAME,
-]);
+];
+Macro.COMMON_ARGNAMES_SET = new Set(Macro.COMMON_ARGNAMES)
 Macro.HEADER_MACRO_NAME = 'H';
 Macro.HEADER_CHILD_ARGNAME = 'child';
 Macro.HEADER_TAG_ARGNAME = 'tag';
@@ -1191,7 +1191,7 @@ Macro.X_MACRO_NAME = 'x';
 Macro.HEADER_SCOPE_SEPARATOR = '/';
 Macro.INCLUDE_MACRO_NAME = 'Include';
 Macro.LINK_MACRO_NAME = 'a';
-Macro.LIST_MACRO_NAME = 'L';
+Macro.LIST_ITEM_MACRO_NAME = 'L';
 Macro.MATH_MACRO_NAME = 'm';
 Macro.PARAGRAPH_MACRO_NAME = 'P';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
@@ -2482,7 +2482,7 @@ async function convert(
     // First render.
     let toplevel_output_path
     if (context.toplevel_output_path === undefined) {
-      toplevel_output_path = INDEX_BASENAME_NOEXT + '.' + HTML_EXT
+      toplevel_output_path = INDEX_BASENAME_NOEXT + '.' + OUTPUT_FORMATS[context.options.output_format].ext
     } else {
       toplevel_output_path = context.toplevel_output_path
     }
@@ -3553,8 +3553,12 @@ function link_to_split_opposite(ast, context) {
 function macro_list_to_macros() {
   const macros = {};
   for (const macro of macro_list()) {
-    for (const format in MACRO_CONVERT_FUNCIONS) {
-      macro.add_convert_function(format, MACRO_CONVERT_FUNCIONS[format][macro.name]);
+    for (const format_id in OUTPUT_FORMATS) {
+      const convert_func = OUTPUT_FORMATS[format_id].convert_funcs[macro.name]
+      if (convert_func === undefined) {
+        throw new Error(`undefined convert function for format "${format_id}" macro "${macro.name}"`)
+      }
+      macro.add_convert_function(format_id, convert_func, macro.name);
     }
     macros[macro.name] = macro;
   }
@@ -3567,7 +3571,7 @@ function macro_list() {
 }
 exports.macro_list = macro_list;
 
-const OURBIGBOOK_EXT = '.bigb';
+const OURBIGBOOK_EXT = 'bigb';
 exports.OURBIGBOOK_EXT = OURBIGBOOK_EXT;
 const MEDIA_PROVIDER_TYPES = new Set([
   'github',
@@ -3702,7 +3706,7 @@ function object_subset(source_object, keys) {
 function output_path(input_path, id, context={}, split_suffix=undefined) {
   const [dirname, basename] = output_path_parts(input_path, id, context, split_suffix);
   return [
-    path_join(dirname, basename + '.' + HTML_EXT, context.options.path_sep),
+    path_join(dirname, basename + '.' + OUTPUT_FORMATS[context.options.output_format].ext, context.options.path_sep),
     dirname,
     basename
   ];
@@ -5831,7 +5835,7 @@ ${ast.toString()}`)
       if (macro_arg.positive_nonzero_integer) {
         const arg_string = render_arg_noescape(arg, context);
         const int_value = parseInt(arg_string);
-        ast.validation_output[argname]['positive_nonzero_integer'] = int_value;
+        ast.validation_output[argname].positive_nonzero_integer = int_value;
         if (!Number.isInteger(int_value) || !(int_value > 0)) {
           ast.validation_error = [
             `argument "${argname}" of macro "${ast.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
@@ -6420,6 +6424,10 @@ const IMAGE_EXTENSIONS = new Set([
   'tiff',
   'webp',
 ])
+const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
+exports.OUTPUT_FORMAT_OURBIGBOOK = OUTPUT_FORMAT_OURBIGBOOK
+const OUTPUT_FORMAT_HTML = 'html';
+const OUTPUT_FORMAT_ID = 'id';
 const VIDEO_EXTENSIONS = new Set([
   'avi',
   'mkv',
@@ -6428,17 +6436,16 @@ const VIDEO_EXTENSIONS = new Set([
   'ogv',
   'webm',
 ])
-const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
-exports.OUTPUT_FORMAT_OURBIGBOOK = OUTPUT_FORMAT_OURBIGBOOK
-const OUTPUT_FORMAT_HTML = 'html';
-const OUTPUT_FORMAT_ID = 'id';
+
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
 const TOC_HAS_CHILD_CLASS = 'has-child';
 const INSANE_X_START = '<';
 const INSANE_X_END = '>';
+const INSANE_CODE_CHAR = '`'
+const INSANE_MATH_CHAR = '$'
 const MAGIC_CHAR_ARGS = {
-  '$': Macro.MATH_MACRO_NAME,
-  '`': Macro.CODE_MACRO_NAME,
+  [INSANE_MATH_CHAR]: Macro.MATH_MACRO_NAME,
+  [INSANE_CODE_CHAR]: Macro.CODE_MACRO_NAME,
   [INSANE_X_START]: Macro.X_MACRO_NAME,
 }
 const NAMED_ARGUMENT_EQUAL_CHAR = '=';
@@ -6464,7 +6471,7 @@ const INSANE_LINK_END_CHARS = new Set([
   END_NAMED_ARGUMENT_CHAR,
 ]);
 const INSANE_STARTS_TO_MACRO_NAME = {
-  [INSANE_LIST_START]:  Macro.LIST_MACRO_NAME,
+  [INSANE_LIST_START]:  Macro.LIST_ITEM_MACRO_NAME,
   [INSANE_TD_START]: Macro.TD_MACRO_NAME,
   [INSANE_TH_START]: Macro.TH_MACRO_NAME,
 };
@@ -6681,24 +6688,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    function(ast, context) {
-      let [href, content] = link_get_href_content(ast, context);
-      if (ast.validation_output.ref.boolean) {
-        content = '<sup class="ref">[ref]</sup>';
-      }
-      const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
-      const relative = ast.validation_output.relative.given ? ast.validation_output.relative.boolean : undefined
-      const attrs = html_render_attrs_id(ast, context);
-      return get_link_html({
-        attrs,
-        check,
-        content,
-        context,
-        href,
-        relative,
-        source_location: ast.args.href.source_location,
-      })
-    },
     {
       named_args: [
         new MacroArgument({
@@ -6726,9 +6715,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    html_render_simple_elem(
-      'b',
-    ),
     {
       phrasing: true,
     }
@@ -6736,9 +6722,6 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'br',
     [],
-    function(ast, context) {
-      return '<br>'
-    },
     {
       phrasing: true,
     }
@@ -6752,22 +6735,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    function(ast, context) {
-      let attrs = html_render_attrs_id(ast, context);
-      let content = render_arg(ast.args.content, context);
-      let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
-      let ret = `<div class="code${multiline_caption}"${attrs}>\n`;
-      if (ast.index_id || ast.validation_output.description.given) {
-        ret += `\n<div class="caption">${
-          x_text(ast, context, {
-            href_prefix: html_self_link(ast, context),
-            force_separator
-          })}${description}</div>\n`;
-      }
-      ret += html_code(content);
-      ret += `</div>`;
-      return ret;
-    },
     {
       caption_number_visible: function (ast, context) {
         return 'description' in ast.args
@@ -6795,7 +6762,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    html_render_simple_elem('code', {newline_after_close: false}),
     {
       phrasing: true,
     }
@@ -6807,7 +6773,6 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    unconvertible,
     {
       macro_counts_ignore: function(ast) { return true; }
     }
@@ -6819,9 +6784,6 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    function(ast, context) {
-      return '';
-    },
     {
       macro_counts_ignore: function(ast) { return true; }
     }
@@ -6833,9 +6795,6 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    function(ast, context) {
-      return '';
-    },
     {
       phrasing: true,
     }
@@ -6853,229 +6812,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    function(ast, context) {
-      if (context.in_header) {
-        // Previously was doing an infinite loop when rendering the parent header.
-        // But not valid HTML, so I don't think it is worth allowing at all:
-        // https://stackoverflow.com/questions/17363465/is-nesting-a-h2-tag-inside-another-header-with-h1-tag-semantically-wrong/71130770#71130770
-        const message = `cannot have a header inside another`;
-        render_error(context, message, ast.source_location);
-        return error_message_in_output(message, context);
-      }
-      context = clone_and_set(context, 'in_header', true)
-      const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
-      const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
-      if (ast.validation_output.synonym.boolean) {
-        if (children !== undefined) {
-          const message = `"synonym" and "child" are incompatible`;
-          render_error(context, message, children.source_location);
-          return error_message_in_output(message, context);
-        }
-        if (tags !== undefined) {
-          const message = `"synonym" and "tags" are incompatible`;
-          render_error(context, message, tags.source_location);
-          return error_message_in_output(message, context);
-        }
-        return '';
-      }
-      let level_int = ast.header_tree_node.get_level();
-      if (typeof level_int !== 'number') {
-        throw new Error('header level is not an integer after validation');
-      }
-      let custom_args;
-      const level_int_output = level_int - context.header_tree_top_level + 1;
-      const is_top_level = level_int === context.header_tree_top_level
-      let level_int_capped;
-      if (level_int_output > 6) {
-        custom_args = {'data-level': new AstArgument([new PlaintextAstNode(
-          level_int_output.toString(), ast.source_location)], ast.source_location)};
-        level_int_capped = 6;
-      } else {
-        custom_args = {};
-        level_int_capped = level_int_output;
-      }
-      let attrs = html_render_attrs(ast, context, [], custom_args);
-      let id_attr = html_render_attrs_id(ast, context);
-      let ret = '';
-      // Div that contains h + on hover span.
-      ret += `<div class="h"${id_attr}>`;
-      ret += `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
-      let x_text_options = {
-        show_caption_prefix: false,
-        style_full: true,
-      };
-      const x_text_base_ret = x_text_base(ast, context, x_text_options);
-      if (context.toplevel_output_path) {
-        const rendered_outputs_entry = context.extra_returns.rendered_outputs[context.toplevel_output_path]
-        if (rendered_outputs_entry.title === undefined) {
-          rendered_outputs_entry.title = x_text_base_ret.inner;
-        }
-      }
-      ret += x_text_base_ret.full;
-      ret += `</a>`;
-      ret += `</h${level_int_capped}>\n`;
-
-      // On hover metadata.
-      let link_to_split;
-      let parent_links;
-      {
-        ret += `<span class="hover-meta"> `;
-        if (context.options.split_headers) {
-          link_to_split = link_to_split_opposite(ast, context);
-          if (link_to_split) {
-            ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
-          }
-        }
-        let toc_href;
-        if (!is_top_level && context.has_toc) {
-          toc_href = html_attr('href', '#' + html_escape_attr(toc_id(ast, context)));
-          ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href} class="ourbigbook-h-to-toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`;
-        }
-
-        // Parent links.
-        let parent_asts = ast.get_header_parent_asts(context)
-        parent_links = [];
-        for (const parent_ast of parent_asts) {
-          let parent_href = x_href_attr(parent_ast, context);
-          let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-          parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} "${parent_body}"</a>`);
-        }
-        parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
-        if (parent_links) {
-          ret += `${HEADER_MENU_ITEM_SEP}${parent_links}`;
-        }
-        let descendant_count = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
-        if (descendant_count !== undefined) {
-          ret += `${HEADER_MENU_ITEM_SEP}${descendant_count}`;
-        }
-
-        ret += `</span>`;
-      }
-      ret += `</div>`;
-
-      // Metadata that shows on separate lines below toplevel header.
-      let wiki_link;
-      if (ast.validation_output.wiki.given) {
-        let wiki = render_arg(ast.args.wiki, context);
-        if (wiki === '') {
-          wiki = (render_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)).replace(/ /g, '_');
-          if (ast.validation_output[Macro.DISAMBIGUATE_ARGUMENT_NAME].given) {
-            wiki += '_(' + (render_arg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
-          }
-        }
-        wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}"><span class="fa-brands-400" title="Wikipedia">\u{f266}</span> wiki</a>`;
-      }
-
-      // Calculate file_link_html
-      let file_link_html
-      if (ast.file) {
-        file_link_html = get_link_html({
-          content: 'View file',
-          context,
-          href: ast.file,
-          relative: undefined,
-          source_location: ast.source_location,
-        })
-      }
-
-      // Calculate tag_ids_html
-      const tag_ids_html_array = [];
-      let tag_ids_html
-      const showTags = !ast.from_include || context.options.embed_includes
-      if (showTags) {
-        const tag_ids = context.id_provider.get_refs_to_as_ids(
-          REFS_TABLE_X_CHILD, ast.id);
-        const new_context = clone_and_set(context, 'validate_ast', true);
-        new_context.source_location = ast.source_location;
-        // This is needed because in case of an an undefined \\x with {parent},
-        // the undefined target would render as a link on the parent, leading
-        // to an error that happens on the header, which is before the actual
-        // root cause.
-        new_context.ignore_errors = true;
-        for (const target_id of Array.from(tag_ids).sort()) {
-          const x_ast = new AstNode(
-            AstType.MACRO,
-            Macro.X_MACRO_NAME,
-            {
-              'href': new AstArgument(
-                [
-                  new PlaintextAstNode(target_id),
-                ],
-              ),
-              'c': new AstArgument(),
-            },
-            ast.source_location,
-            {
-              scope: ast.scope,
-            }
-          );
-          tag_ids_html_array.push(x_ast.render(new_context));
-        }
-        tag_ids_html = ''
-        if (context.options.add_test_instrumentation) {
-          tag_ids_html += '<span class="test-tags">'
-        }
-        tag_ids_html += `<span title="tags" class="fa-solid-900">\u{f02c}</span> tags: ` + tag_ids_html_array.join(', ');
-        if (context.options.add_test_instrumentation) {
-          tag_ids_html += '</span>'
-        }
-      }
-
-      // Calculate header_meta and header_meta
-      let header_meta = [];
-      let header_meta2 = [];
-      let first_header = (
-        // May fail in some error scenarios.
-        context.toplevel_ast !== undefined &&
-        ast.id === context.toplevel_ast.id
-      )
-      if (file_link_html !== undefined) {
-        header_meta2.push(file_link_html);
-      }
-      if (wiki_link !== undefined) {
-        header_meta2.push(wiki_link);
-      }
-      if (tag_ids_html_array.length) {
-        header_meta2.push(tag_ids_html);
-      }
-      if (first_header) {
-        if (parent_links !== '') {
-          header_meta.push(parent_links);
-        }
-        if (link_to_split !== undefined) {
-          header_meta.push(link_to_split);
-        }
-        if (context.has_toc) {
-          header_meta.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>${TOC_MARKER}</a>`);
-        }
-        let descendant_count_html = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
-        if (descendant_count_html !== undefined) {
-          header_meta.push(descendant_count_html);
-        }
-      }
-
-      const header_has_meta = header_meta2.length > 0 || header_meta.length > 0
-      if (header_has_meta) {
-        ret += `<nav class="h-nav h-nav-toplevel">`;
-      }
-      for (const meta of [header_meta, header_meta2]) {
-        if (meta.length > 0) {
-          ret += `<div class="nav"> ${meta.join(HEADER_MENU_ITEM_SEP)}</div>`;
-        }
-      }
-      if (header_has_meta) {
-        ret += `</nav>\n`;
-      }
-      if (showTags) {
-        if (children !== undefined) {
-          ret += header_check_child_tag_exists(ast, context, children, 'child')
-        }
-        if (tags !== undefined) {
-          ret += header_check_child_tag_exists(ast, context, tags, 'tag')
-        }
-      }
-      return ret;
-    },
     {
       caption_prefix: 'Section',
       default_x_style_full: false,
@@ -7144,18 +6880,6 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'Iframe',
-    [
-      new MacroArgument({
-        name: 'src',
-      }),
-    ],
-    function(ast, context) {
-      const attrs = html_render_attrs_id(ast, context, ['src']);
-      return `<iframe${attrs}></iframe>`
-    },
-  ),
-  new Macro(
     Macro.INCLUDE_MACRO_NAME,
     [
       new MacroArgument({
@@ -7163,7 +6887,6 @@ const DEFAULT_MACRO_LIST = [
         mandatory: true,
       }),
     ],
-    unconvertible,
     {
       macro_counts_ignore: function(ast) { return true; },
       named_args: [
@@ -7174,14 +6897,13 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    Macro.LIST_MACRO_NAME,
+    Macro.LIST_ITEM_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
         count_words: true,
       }),
     ],
-    html_render_simple_elem('li', {newline_after_close: true}),
     {
       auto_parent: 'Ul',
       auto_parent_skip: new Set(['Ol']),
@@ -7196,26 +6918,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    function(ast, context) {
-      let attrs = html_render_attrs_id(ast, context);
-      let katex_output = html_katex_convert(ast, context);
-      let ret = ``;
-      if (ast.validation_output.show.boolean) {
-        let href = html_attr('href', '#' + html_escape_attr(ast.id));
-        ret += `<div class="math-container"${attrs}>`;
-        if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
-          ret += `<div class="math-caption-container">\n`;
-          ret += `<span class="math-caption">${x_text(ast, context, {href_prefix: href})}</span>`;
-          ret += `</div>\n`;
-        }
-        ret += `<div class="math-equation">\n`
-        ret += `<div>${katex_output}</div>\n`;
-        ret += `<div><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`;
-        ret += `</div>\n`;
-        ret += `</div>\n`;
-      }
-      return ret;
-    },
     {
       caption_prefix: 'Equation',
       id_prefix: 'equation',
@@ -7248,10 +6950,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    function(ast, context) {
-      // KaTeX already adds a <span> for us.
-      return html_katex_convert(ast, context);
-    },
     {
       phrasing: true,
     }
@@ -7264,9 +6962,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    html_render_simple_elem(
-      'i',
-    ),
     {
       phrasing: true,
     }
@@ -7274,7 +6969,6 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'Image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_block_convert_function,
     Object.assign(
       {
         caption_prefix: 'Figure',
@@ -7308,22 +7002,6 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'image',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    function(ast, context) {
-      let alt_arg;
-      if (ast.args.alt === undefined) {
-        alt_arg = ast.args.src;
-      } else {
-        alt_arg = ast.args.alt;
-      }
-      let alt = html_attr('alt', html_escape_attr(render_arg(alt_arg, context)));
-      let rendered_attrs = html_render_attrs_id(ast, context, ['height', 'width']);
-      let { error_message, src } = macro_image_video_resolve_params(ast, context);
-      let ret = html_img({ alt, ast, context, rendered_attrs, src })
-      if (error_message) {
-        ret += error_message_in_output(error_message, context)
-      }
-      return ret
-    },
     {
       named_args: IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS,
       phrasing: true,
@@ -7337,12 +7015,6 @@ const DEFAULT_MACRO_LIST = [
         mandatory: true,
       }),
     ],
-    function(ast, context) {
-      return html_code(
-        render_arg(ast.args.content, context),
-        { 'class': 'ourbigbook-js-canvas-demo' }
-      );
-    },
     {
       xss_safe: false,
       xss_safe_alt: {
@@ -7361,7 +7033,6 @@ const DEFAULT_MACRO_LIST = [
         remove_whitespace_children: true,
       }),
     ],
-    html_render_simple_elem('ol', {newline_after_open: true}),
   ),
   new Macro(
     Macro.PARAGRAPH_MACRO_NAME,
@@ -7371,12 +7042,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    html_render_simple_elem(
-      'div',
-      {
-        attrs: {'class': 'p'},
-      }
-    ),
   ),
   new Macro(
     Macro.PLAINTEXT_MACRO_NAME,
@@ -7386,9 +7051,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    function(ast, context) {
-      return html_escape_context(context, ast.text);
-    },
     {
       phrasing: true,
     }
@@ -7400,9 +7062,6 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    function(ast, context) {
-      return render_arg_noescape(ast.args.content, context);
-    },
     {
       phrasing: true,
       xss_safe: false,
@@ -7416,9 +7075,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    html_render_simple_elem(
-      'blockquote',
-    ),
     {
       caption_prefix: 'Quotation',
     }
@@ -7430,9 +7086,6 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    html_render_simple_elem(
-      'sub',
-    ),
     {
       phrasing: true,
     }
@@ -7444,9 +7097,6 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    html_render_simple_elem(
-      'sup',
-    ),
     {
       phrasing: true,
     }
@@ -7460,34 +7110,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    function(ast, context) {
-      let attrs = html_render_attrs_id(ast, context);
-      let content = render_arg(ast.args.content, context);
-      let ret = ``;
-      let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
-      ret += `<div class="table${multiline_caption}"${attrs}>\n`;
-      // TODO not using caption because I don't know how to allow the caption to be wider than the table.
-      // I don't want the caption to wrap to a small table size.
-      //
-      // If we ever solve that, re-add the following style:
-      //
-      // caption {
-      //   color: black;
-      //   text-align: left;
-      // }
-      //
-      //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
-      let href = html_attr('href', '#' + html_escape_attr(ast.id));
-      if (ast.index_id || ast.validation_output.description.given) {
-        ret += `<div class="caption">${x_text(ast, context, {
-          href_prefix: href,
-          force_separator,
-        })}${description}</div>`;
-      }
-      ret += `<table>\n${content}</table>\n`;
-      ret += `</div>\n`;
-      return ret;
-    },
     {
       caption_number_visible: function (ast, context) {
         return 'description' in ast.args
@@ -7512,7 +7134,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    html_render_simple_elem('td', {newline_after_close: true}),
     {
       newline_after_close: true,
     }
@@ -7520,117 +7141,6 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     Macro.TOC_MACRO_NAME,
     [],
-    function(ast, context) {
-      // Not rendering ID here because that function does scope culling. But TOC ID is a fixed value without scope for now.
-      // so that was removing the TOC id in subdirectories.
-      let attrs = html_render_attrs(ast, context);
-      let todo_visit = [];
-      let top_level = 0;
-      let root_node = context.header_tree;
-      let ret = `<div id="${Macro.TOC_ID}"class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
-      if (root_node.children.length === 1) {
-        root_node = root_node.children[0];
-      }
-      let descendant_count_html = get_descendant_count_html_sep(context, root_node, { long_style: false, show_descendant_count: true });
-      ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title"${x_href_attr(ast, context)}>Table of contents</a><span class="hover-metadata">${descendant_count_html}</span></span></div>\n`;
-      for (let i = root_node.children.length - 1; i >= 0; i--) {
-        todo_visit.push([root_node.children[i], 1]);
-      }
-      if (todo_visit.length === 0) {
-        // Empty ToC. Don't render. Initial common case: leaf split header nodes.
-        return '';
-      }
-      let linear_count = 0
-      while (todo_visit.length > 0) {
-        const [tree_node, level] = todo_visit.pop();
-        if (level > top_level) {
-          ret += `<ul>\n`;
-        } else if (level < top_level) {
-          ret += `</li>\n</ul>\n`.repeat(top_level - level);
-        } else {
-          ret += `</li>\n`;
-        }
-        ret += '<li';
-        if (tree_node.children.length > 0) {
-          ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
-        }
-        ret += '>'
-        let target_id_ast = context.id_provider.get(tree_node.ast.id, context);
-        if (
-          // Can happen in test error cases:
-          // - cross reference from header title without ID to previous header is not allowed
-          // - include to file that does exists without embed includes before extracting IDs fails gracefully
-          target_id_ast !== undefined
-        ) {
-          // ToC entries always link to the same split/nosplit type, except for included sources.
-          // This might be handled more generally through: https://github.com/cirosantilli/ourbigbook/issues/146
-          // but for now we are just taking care of this specific and important ToC subcase.
-          let cur_context;
-          if (ast.source_location.path === target_id_ast.source_location.path) {
-            cur_context = clone_and_set(context, 'to_split_headers', context.in_split_headers);
-          } else {
-            cur_context = context;
-          }
-
-          let content = x_text(target_id_ast, cur_context, {style_full: true, show_caption_prefix: false});
-          let href = x_href_attr(target_id_ast, cur_context);
-          const my_toc_id = toc_id(target_id_ast, cur_context);
-          let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
-          // The inner <div></div> inside arrow is so that:
-          // - outter div: takes up space to make clicking easy
-          // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-          let descendant_count_html = get_descendant_count_html_sep(context, tree_node, { long_style: false, show_descendant_count: false });
-          let linear_count_str
-          if (context.options.add_test_instrumentation) {
-            linear_count_str = html_attr('data-test', linear_count)
-          } else {
-            linear_count_str = ''
-          }
-          ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
-
-          let toc_href = html_attr('href', '#' + html_escape_attr(my_toc_id));
-          ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
-          if (cur_context.options.split_headers) {
-            const link_to_split = link_to_split_opposite(target_id_ast, cur_context)
-            if (link_to_split) {
-              ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
-            }
-          }
-          let parent_ast = target_id_ast.get_header_parent_asts(cur_context)[0];
-          if (
-            // Possible on broken h1 level.
-            parent_ast !== undefined
-          ) {
-            let parent_href_target;
-            if (
-              parent_ast.header_tree_node !== undefined &&
-              parent_ast.header_tree_node.get_level() === cur_context.header_tree_top_level
-            ) {
-              parent_href_target = Macro.TOC_ID;
-            } else {
-              parent_href_target = toc_id(parent_ast, cur_context);
-            }
-            let parent_href = html_attr('href', '#' + parent_href_target);
-            let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-            ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
-          }
-          ret += `${descendant_count_html}</span></span></div>`;
-          linear_count++
-        }
-        if (tree_node.children.length > 0) {
-          for (let i = tree_node.children.length - 1; i >= 0; i--) {
-            todo_visit.push([tree_node.children[i], level + 1]);
-          }
-          ret += `\n`;
-        }
-        top_level = level;
-      }
-      ret += `</li>\n</ul>\n`.repeat(top_level);
-      // Close the table of contents list.
-      ret += `</li>\n</ul>\n`;
-      ret += `</div>\n`
-      return ret;
-    },
   ),
   new Macro(
     Macro.TOPLEVEL_MACRO_NAME,
@@ -7640,190 +7150,6 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
       }),
     ],
-    function(ast, context) {
-      let title = ast.args[Macro.TITLE_ARGUMENT_NAME];
-      if (title === undefined) {
-        let text_title;
-        if (Macro.TITLE_ARGUMENT_NAME in context.options) {
-          text_title = context.options[Macro.TITLE_ARGUMENT_NAME];
-        } else if (context.header_tree.children.length > 0) {
-          text_title = render_arg(
-            context.header_tree.children[0].ast.args[Macro.TITLE_ARGUMENT_NAME],
-            clone_and_set(context, 'id_conversion', true)
-          );
-        } else {
-          text_title = 'dummy title because title is mandatory in HTML';
-        }
-        title = new AstArgument([
-          new PlaintextAstNode(text_title, ast.source_location)],
-          ast.source_location,
-          text_title
-        );
-      }
-      let ret;
-      let body = render_arg(ast.args.content, context);
-
-      // Footer metadata.
-      if (context.toplevel_ast !== undefined) {
-        {
-          const target_ids = context.id_provider.get_refs_to_as_ids(
-            REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
-          body += create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
-        }
-
-        // Ancestors
-        {
-          const ancestors = [];
-          let cur_ast = context.toplevel_ast;
-          while (true) {
-            cur_ast = cur_ast.get_header_parent_asts(context)[0];
-            if (cur_ast === undefined) {
-              break
-            }
-            ancestors.push(cur_ast);
-          }
-          if (ancestors.length !== 0) {
-            // TODO factor this out more with real headers.
-            const id = 'ancestors'
-            body += `<div>${html_hide_hover_link('#ancestors')}<h2 id="#${id}"><a href="#ancestors">Ancestors</a></h2></div>\n`;
-            const ancestor_id_asts = [];
-            for (const ancestor of ancestors) {
-              //let counts_str;
-              //if (ancestor.header_tree_node !== undefined) {
-              //  counts_str = get_descendant_count_html_sep(ancestor.header_tree_node, false);
-              //} else {
-              //  counts_str = '';
-              //}
-              ancestor_id_asts.push(new AstNode(
-                AstType.MACRO,
-                Macro.LIST_MACRO_NAME,
-                {
-                  'content': new AstArgument(
-                    [
-                      new AstNode(
-                        AstType.MACRO,
-                        Macro.X_MACRO_NAME,
-                        {
-                          'href': new AstArgument(
-                            [
-                              new PlaintextAstNode(ancestor.id),
-                            ],
-                          ),
-                          'c': new AstArgument(),
-                        },
-                      ),
-                      //new AstNode(
-                      //  AstType.MACRO,
-                      //  'passthrough',
-                      //  {
-                      //    'content': new AstArgument(
-                      //      [
-                      //        new PlaintextAstNode(counts_str),
-                      //      ],
-                      //    ),
-                      //  },
-                      //  undefined,
-                      //  {
-                      //    xss_safe: true,
-                      //  }
-                      //),
-                    ],
-                  ),
-                },
-              ));
-            }
-            const ulArgs = {
-              'content': new AstArgument(ancestor_id_asts)
-            }
-            if (context.options.add_test_instrumentation) {
-              ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
-            }
-            const incoming_ul_ast = new AstNode(
-              AstType.MACRO,
-              'Ul',
-              ulArgs,
-            );
-            const new_context = clone_and_set(context, 'validate_ast', true);
-            new_context.source_location = ast.source_location;
-            body += incoming_ul_ast.render(new_context);
-          }
-        }
-
-        {
-          const target_ids = context.id_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
-          body += create_link_list(context, ast, 'incoming-links', 'Incoming links', target_ids)
-        }
-      }
-
-      if (context.options.body_only) {
-        ret = body;
-      } else {
-        let template;
-        if (context.options.template !== undefined) {
-          template = context.options.template;
-        } else {
-          template = `<!doctype html>
-<html lang=en>
-<head>
-<meta charset=utf-8>
-<title>{{ title }}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>{{ style }}</style>
-{{ head }}</head>
-<body class="ourbigbook">
-{{ body }}
-{{ post_body }}</body>
-</html>
-`;
-        }
-
-        let root_page;
-        if (context.options.html_x_extension) {
-          context.options.template_vars.html_ext = '.html';
-          root_page = context.options.template_vars.root_relpath + INDEX_BASENAME_NOEXT + '.' + HTML_EXT;
-        } else {
-          context.options.template_vars.html_ext = '';
-          if (context.options.template_vars.root_relpath === '') {
-            root_page = '.'
-          } else {
-            root_page = context.options.template_vars.root_relpath;
-          }
-        }
-        if (root_page === context.toplevel_output_path) {
-          root_page = '';
-        }
-        const render_env = {
-          body,
-          input_path: context.options.input_path,
-          root_page,
-          title: render_arg(title, context),
-        };
-        Object.assign(render_env, context.options.template_vars);
-
-        // Resolve relative styles and scripts.
-        let relative_scripts = [];
-        for (const script of context.options.template_scripts_relative) {
-          relative_scripts.push(`<script src="${context.options.template_vars.root_relpath}${script}"></script>\n`);
-        }
-        render_env.post_body = relative_scripts.join('') + render_env.post_body + "<script>ourbigbook_runtime.ourbigbook_runtime()</script>\n";
-        let relative_styles = [];
-        for (const style of context.options.template_styles_relative) {
-          relative_styles.push(`@import "${context.options.template_vars.root_relpath}${style}";\n`);
-        }
-        render_env.style = relative_styles.join('') + render_env.style;
-
-        const { Liquid } = require('liquidjs');
-        ret = (new Liquid()).parseAndRenderSync(
-          template,
-          render_env,
-          {
-            strictFilters: true,
-            strictVariables: true,
-          }
-        );
-      }
-      return ret;
-    },
     {
       macro_counts_ignore: function(ast) { return true; },
       named_args: [
@@ -7842,7 +7168,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    html_render_simple_elem('th', {newline_after_close: true}),
   ),
   new Macro(
     Macro.TR_MACRO_NAME,
@@ -7853,45 +7178,6 @@ const DEFAULT_MACRO_LIST = [
         remove_whitespace_children: true,
       }),
     ],
-    function(ast, context) {
-      let content_ast = ast.args.content;
-      let content = render_arg(content_ast, context);
-      let res = '';
-      if (ast.args.content.get(0).macro_name === Macro.TH_MACRO_NAME) {
-        if (
-          ast.parent_argument_index === 0 ||
-          ast.parent_argument.get(ast.parent_argument_index - 1).args.content.get(0).macro_name !== Macro.TH_MACRO_NAME
-        ) {
-          res += `<thead>\n`;
-        }
-      }
-      if (ast.args.content.get(0).macro_name === Macro.TD_MACRO_NAME) {
-        if (
-          ast.parent_argument_index === 0 ||
-          ast.parent_argument.get(ast.parent_argument_index - 1).args.content.get(0).macro_name !== Macro.TD_MACRO_NAME
-        ) {
-          res += `<tbody>\n`;
-        }
-      }
-      res += `<tr${html_render_attrs_id(ast, context)}>\n${content}</tr>\n`;
-      if (ast.args.content.get(0).macro_name === Macro.TH_MACRO_NAME) {
-        if (
-          ast.parent_argument_index === ast.parent_argument.length() - 1 ||
-          ast.parent_argument.get(ast.parent_argument_index + 1).args.content.get(0).macro_name !== Macro.TH_MACRO_NAME
-        ) {
-          res += `</thead>\n`;
-        }
-      }
-      if (ast.args.content.get(0).macro_name === Macro.TD_MACRO_NAME) {
-        if (
-          ast.parent_argument_index === ast.parent_argument.length() - 1 ||
-          ast.parent_argument.get(ast.parent_argument_index + 1).args.content.get(0).macro_name !== Macro.TD_MACRO_NAME
-        ) {
-          res += `</tbody>\n`;
-        }
-      }
-      return res;
-    },
     {
       auto_parent: Macro.TABLE_MACRO_NAME,
     }
@@ -7905,10 +7191,6 @@ const DEFAULT_MACRO_LIST = [
         remove_whitespace_children: true,
       }),
     ],
-    html_render_simple_elem('ul', {
-      newline_after_open: true,
-      wrap: true,
-    }),
   ),
   new Macro(
     Macro.X_MACRO_NAME,
@@ -7922,70 +7204,6 @@ const DEFAULT_MACRO_LIST = [
         count_words: true,
       }),
     ],
-    function(ast, context) {
-      let [href, content, target_ast] = x_get_href_content(ast, context);
-      let incompatible_pair
-      if (ast.validation_output.full.given) {
-        if (ast.validation_output.ref.given) {
-          incompatible_pair = ['full', 'ref']
-        }
-        if (ast.validation_output.content.given) {
-          incompatible_pair = ['full', 'content']
-        }
-        if (ast.validation_output.c.given) {
-          incompatible_pair = ['full', 'c']
-        }
-        if (ast.validation_output.p.given) {
-          incompatible_pair = ['full', 'p']
-        }
-      } else if (ast.validation_output.content.given) {
-        if (ast.validation_output.ref.given) {
-          incompatible_pair = ['content', 'ref']
-        }
-        if (ast.validation_output.c.given) {
-          incompatible_pair = ['content', 'c']
-        }
-        if (ast.validation_output.p.given) {
-          incompatible_pair = ['content', 'p']
-        }
-      } else if (ast.validation_output.ref.given) {
-        if (ast.validation_output.c.given) {
-          incompatible_pair = ['ref', 'c']
-        }
-        if (ast.validation_output.p.given) {
-          incompatible_pair = ['ref', 'p']
-        }
-      }
-      if (incompatible_pair) {
-        const message = `"${incompatible_pair[0]}" and "${incompatible_pair[1]}" are incompatible`;
-        render_error(context, message, ast.source_location);
-        content = error_message_in_output(message, context);
-      } else if (ast.validation_output.ref.boolean) {
-        content = '*';
-      }
-      if (context.x_parents.size === 0) {
-        // Counts.
-        let counts_str;
-        if (
-          // Happens on error case of linking to non existent ID.
-          target_ast === undefined ||
-          // Happens for cross links. TODO make those work too...
-          target_ast.parent_node === undefined
-        ) {
-          counts_str = '';
-        } else {
-          const counts = get_descendant_count(target_ast.header_tree_node);
-          for (let i = 0; i < counts.length; i++) {
-            counts[i] = format_number_approx(counts[i]);
-          }
-          counts_str = `\nword count: ${counts[0]}\ndescendant word count: ${counts[2]}\ndescendant count: ${counts[1]}`;
-        }
-        const attrs = html_render_attrs_id(ast, context);
-        return `<a${href}${attrs}${html_attr('title', 'internal link' + counts_str)}>${content}</a>`;
-      } else {
-        return content;
-      }
-    },
     {
       named_args: [
         new MacroArgument({
@@ -8025,7 +7243,6 @@ const DEFAULT_MACRO_LIST = [
   new Macro(
     'Video',
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
-    macro_image_video_block_convert_function,
     Object.assign(
       {
         caption_prefix: 'Video',
@@ -8140,7 +7357,7 @@ function create_link_list(context, ast, id, title, target_ids, body) {
         //}
         target_id_asts.push(new AstNode(
           AstType.MACRO,
-          Macro.LIST_MACRO_NAME,
+          Macro.LIST_ITEM_MACRO_NAME,
           {
             'content': new AstArgument(
               [
@@ -8191,22 +7408,47 @@ function create_link_list(context, ast, id, title, target_ids, body) {
   return ret
 }
 
-function ourbigbook_convert_simple_elem(ast, context) {
-  const ret = []
-  ret.push(ESCAPE_CHAR + ast.macro_name)
-  const macro = context.macros[ast.macro_name]
-  ourbigbook_convert_args(ast, context, ret)
-  if (!macro.options.phrasing) {
-    ret.push('\n')
+function ourbigbook_code_math_inline(c) {
+  return function(ast, context) {
+    const content = render_arg(ast.args.content, context)
+    if (content.indexOf(c) === -1) {
+      return `${c}${content}${c}`
+    } else {
+      return ourbigbook_convert_simple_elem(ast, context)
+    }
   }
-  return ret.join('')
 }
 
-function ourbigbook_convert_args(ast, context, ret) {
+function ourbigbook_code_math_block(c) {
+  return function(ast, context) {
+    const content = render_arg(ast.args.content, context)
+    let found = true
+    let delim = c + c
+    while (content.indexOf(c) !== -1) {
+      delim += c
+    }
+    return `${delim}
+${content}${delim}
+
+`
+  }
+}
+
+function ourbigbook_ul(ast, context) {
+  if (!ast.args.content || Object.keys(ast.args).length !== 1) {
+    return ourbigbook_convert_simple_elem(ast, context)
+  } else {
+    return `${render_arg(ast.args.content, context)}\n`
+  }
+}
+
+function ourbigbook_convert_args(ast, context, options={}) {
+  const ret = options.ret || []
+  const skip = options.skip || new Set()
   const macro = context.macros[ast.macro_name]
   for (const arg of macro.positional_args) {
     const argname = arg.name
-    if (ast.validation_output[argname].given) {
+    if (!skip.has(argname) && ast.validation_output[argname].given) {
       ret.push(START_POSITIONAL_ARGUMENT_CHAR)
       if (arg.remove_whitespace_children) {
         ret.push('\n')
@@ -8215,112 +7457,958 @@ function ourbigbook_convert_args(ast, context, ret) {
         render_arg(ast.args[argname], context) +
         END_POSITIONAL_ARGUMENT_CHAR
       )
+      if (!macro.options.phrasing) {
+        ret.push('\n')
+      }
     }
   }
-  for (const arg of macro.options.named_args) {
-    const argname = arg.name
-    if (ast.validation_output[argname].given) {
+  for (const argname of Macro.COMMON_ARGNAMES.concat(macro.options.named_args.map(arg => arg.name))) {
+    const arg = macro.named_args[argname]
+    const validation_output = ast.validation_output[argname]
+    if (!skip.has(argname) && validation_output.given) {
+      const macro_arg = macro.name_to_arg[argname]
+      const argstr = render_arg(ast.args[argname], context)
+      let skip_val = false
+      if (macro_arg.boolean) {
+        const argstr_default = macro_arg.default === undefined ? '0' : '1'
+        const argstr_eff = validation_output.boolean ? '1' : '0'
+        if (argstr_default === argstr_eff) {
+          continue
+        }
+        skip_val = validation_output.boolean
+      } else if(argstr === '') {
+        skip_val = true
+      }
       ret.push(
-        '\n' +
         START_NAMED_ARGUMENT_CHAR +
-        argname +
-        NAMED_ARGUMENT_EQUAL_CHAR +
-        render_arg(ast.args[argname], context) +
-        END_NAMED_ARGUMENT_CHAR
+        argname
       )
+      if (!skip_val) {
+        ret.push(NAMED_ARGUMENT_EQUAL_CHAR + argstr)
+      }
+      ret.push(END_NAMED_ARGUMENT_CHAR)
+      if (!macro.options.phrasing) {
+        ret.push('\n')
+      }
+    }
+  }
+  return ret
+}
+
+function ourbigbook_convert_simple_elem(ast, context) {
+  const ret = []
+  ret.push(ESCAPE_CHAR + ast.macro_name)
+  const macro = context.macros[ast.macro_name]
+  ourbigbook_convert_args(ast, context, { ret })
+  if (!macro.options.phrasing) {
+    ret.push('\n')
+  }
+  return ret.join('')
+}
+
+class OutputFormat {
+  constructor(id, opts={}) {
+    this.id = id
+    this.ext = opts.ext
+    this.convert_funcs = opts.convert_funcs
+    if ('toplevel_child_modifier' in opts) {
+      this.toplevel_child_modifier = opts.toplevel_child_modifier
+    } else {
+      this.toplevel_child_modifier = (ast, context, out) => out
     }
   }
 }
+const OUTPUT_FORMATS_LIST = [
+  new OutputFormat(
+    OUTPUT_FORMAT_HTML,
+    {
+      ext: HTML_EXT,
+      toplevel_child_modifier: function(ast, context, out) {
+        return `<div>${html_hide_hover_link(x_href(ast, context))}${out}</div>`;
+      },
+      convert_funcs: {
+        [Macro.LINK_MACRO_NAME]: function(ast, context) {
+          let [href, content] = link_get_href_content(ast, context);
+          if (ast.validation_output.ref.boolean) {
+            content = '<sup class="ref">[ref]</sup>';
+          }
+          const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
+          const relative = ast.validation_output.relative.given ? ast.validation_output.relative.boolean : undefined
+          const attrs = html_render_attrs_id(ast, context);
+          return get_link_html({
+            attrs,
+            check,
+            content,
+            context,
+            href,
+            relative,
+            source_location: ast.args.href.source_location,
+          })
+        },
+        'b': html_render_simple_elem('b'),
+        'br': function(ast, context) { return '<br>' },
+        [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
+          let attrs = html_render_attrs_id(ast, context);
+          let content = render_arg(ast.args.content, context);
+          let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
+          let ret = `<div class="code${multiline_caption}"${attrs}>\n`;
+          if (ast.index_id || ast.validation_output.description.given) {
+            ret += `\n<div class="caption">${
+              x_text(ast, context, {
+                href_prefix: html_self_link(ast, context),
+                force_separator
+              })}${description}</div>\n`;
+          }
+          ret += html_code(content);
+          ret += `</div>`;
+          return ret;
+        },
+        [Macro.CODE_MACRO_NAME]: html_render_simple_elem('code', { newline_after_close: false }),
+        [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
+        'Comment': function(ast, context) { return ''; },
+        'comment': function(ast, context) { return ''; },
+        [Macro.HEADER_MACRO_NAME]: function(ast, context) {
+          if (context.in_header) {
+            // Previously was doing an infinite loop when rendering the parent header.
+            // But not valid HTML, so I don't think it is worth allowing at all:
+            // https://stackoverflow.com/questions/17363465/is-nesting-a-h2-tag-inside-another-header-with-h1-tag-semantically-wrong/71130770#71130770
+            const message = `cannot have a header inside another`;
+            render_error(context, message, ast.source_location);
+            return error_message_in_output(message, context);
+          }
+          context = clone_and_set(context, 'in_header', true)
+          const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
+          const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
+          if (ast.validation_output.synonym.boolean) {
+            if (children !== undefined) {
+              const message = `"synonym" and "child" are incompatible`;
+              render_error(context, message, children.source_location);
+              return error_message_in_output(message, context);
+            }
+            if (tags !== undefined) {
+              const message = `"synonym" and "tags" are incompatible`;
+              render_error(context, message, tags.source_location);
+              return error_message_in_output(message, context);
+            }
+            return '';
+          }
+          let level_int = ast.header_tree_node.get_level();
+          if (typeof level_int !== 'number') {
+            throw new Error('header level is not an integer after validation');
+          }
+          let custom_args;
+          const level_int_output = level_int - context.header_tree_top_level + 1;
+          const is_top_level = level_int === context.header_tree_top_level
+          let level_int_capped;
+          if (level_int_output > 6) {
+            custom_args = {'data-level': new AstArgument([new PlaintextAstNode(
+              level_int_output.toString(), ast.source_location)], ast.source_location)};
+            level_int_capped = 6;
+          } else {
+            custom_args = {};
+            level_int_capped = level_int_output;
+          }
+          let attrs = html_render_attrs(ast, context, [], custom_args);
+          let id_attr = html_render_attrs_id(ast, context);
+          let ret = '';
+          // Div that contains h + on hover span.
+          ret += `<div class="h"${id_attr}>`;
+          ret += `<h${level_int_capped}${attrs}><a${html_self_link(ast, context)} title="link to this element">`;
+          let x_text_options = {
+            show_caption_prefix: false,
+            style_full: true,
+          };
+          const x_text_base_ret = x_text_base(ast, context, x_text_options);
+          if (context.toplevel_output_path) {
+            const rendered_outputs_entry = context.extra_returns.rendered_outputs[context.toplevel_output_path]
+            if (rendered_outputs_entry.title === undefined) {
+              rendered_outputs_entry.title = x_text_base_ret.inner;
+            }
+          }
+          ret += x_text_base_ret.full;
+          ret += `</a>`;
+          ret += `</h${level_int_capped}>\n`;
 
-const MACRO_CONVERT_FUNCIONS = {
-  [OUTPUT_FORMAT_OURBIGBOOK]: {
-    [Macro.LINK_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    'b': ourbigbook_convert_simple_elem,
-    'br': ourbigbook_convert_simple_elem,
-    [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbook_convert_simple_elem,
-    [Macro.CODE_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    'Comment': ourbigbook_convert_simple_elem,
-    'comment': ourbigbook_convert_simple_elem,
-    [Macro.HEADER_MACRO_NAME]: function(ast, context) {
-      //ast.header_tree_node.get_level()
-      //return ourbigbook_convert_simple_elem(ast, context, ret)
-      return ''
-    },
-    [Macro.INCLUDE_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    [Macro.LIST_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    [Macro.MATH_MACRO_NAME.toUpperCase()]: ourbigbook_convert_simple_elem,
-    [Macro.MATH_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    'i': ourbigbook_convert_simple_elem,
-    'Image': ourbigbook_convert_simple_elem,
-    'image': ourbigbook_convert_simple_elem,
-    'JsCanvasDemo': ourbigbook_convert_simple_elem,
-    'Ol': ourbigbook_convert_simple_elem,
-    [Macro.PARAGRAPH_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) { return ast.text },
-    'passthrough': ourbigbook_convert_simple_elem,
-    'Q': ourbigbook_convert_simple_elem,
-    [Macro.TABLE_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    [Macro.TD_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    [Macro.TOC_MACRO_NAME]: function(ast, context) { return '' },
-    [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.TH_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    [Macro.TR_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    'Ul': ourbigbook_convert_simple_elem,
-    [Macro.X_MACRO_NAME]: ourbigbook_convert_simple_elem,
-    'Video': ourbigbook_convert_simple_elem,
-  },
-  [OUTPUT_FORMAT_ID]: {
-    [Macro.LINK_MACRO_NAME]: function(ast, context) {
-      const [href, content] = link_get_href_content(ast, context);
-      return content;
-    },
-    'b': id_convert_simple_elem(),
-    'br': function(ast, context) { return '\n'; },
-    [Macro.CODE_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
-    [Macro.CODE_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
-    'Comment': function(ast, context) { return ''; },
-    'comment': function(ast, context) { return ''; },
-    [Macro.HEADER_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.INCLUDE_MACRO_NAME]: unconvertible,
-    [Macro.LIST_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.MATH_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
-    [Macro.MATH_MACRO_NAME]: id_convert_simple_elem(),
-    'i': id_convert_simple_elem(),
-    'Image': function(ast, context) { return ''; },
-    'image': function(ast, context) { return ''; },
-    'JsCanvasDemo': id_convert_simple_elem(),
-    'Ol': id_convert_simple_elem(),
-    [Macro.PARAGRAPH_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {return ast.text},
-    'passthrough': id_convert_simple_elem(),
-    'Q': id_convert_simple_elem(),
-    [Macro.TABLE_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.TD_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.TOC_MACRO_NAME]: function(ast, context) { return '' },
-    [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
-    [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
-    'Ul': id_convert_simple_elem(),
-    [Macro.X_MACRO_NAME]: function(ast, context) {
-      if (ast.args.content) {
-        return id_convert_simple_elem('content')(ast, context)
-      } else {
-        return id_convert_simple_elem('href')(ast, context)
+          // On hover metadata.
+          let link_to_split;
+          let parent_links;
+          {
+            ret += `<span class="hover-meta"> `;
+            if (context.options.split_headers) {
+              link_to_split = link_to_split_opposite(ast, context);
+              if (link_to_split) {
+                ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
+              }
+            }
+            let toc_href;
+            if (!is_top_level && context.has_toc) {
+              toc_href = html_attr('href', '#' + html_escape_attr(toc_id(ast, context)));
+              ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href} class="ourbigbook-h-to-toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`;
+            }
+
+            // Parent links.
+            let parent_asts = ast.get_header_parent_asts(context)
+            parent_links = [];
+            for (const parent_ast of parent_asts) {
+              let parent_href = x_href_attr(parent_ast, context);
+              let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+              parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} "${parent_body}"</a>`);
+            }
+            parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
+            if (parent_links) {
+              ret += `${HEADER_MENU_ITEM_SEP}${parent_links}`;
+            }
+            let descendant_count = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
+            if (descendant_count !== undefined) {
+              ret += `${HEADER_MENU_ITEM_SEP}${descendant_count}`;
+            }
+
+            ret += `</span>`;
+          }
+          ret += `</div>`;
+
+          // Metadata that shows on separate lines below toplevel header.
+          let wiki_link;
+          if (ast.validation_output.wiki.given) {
+            let wiki = render_arg(ast.args.wiki, context);
+            if (wiki === '') {
+              wiki = (render_arg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)).replace(/ /g, '_');
+              if (ast.validation_output[Macro.DISAMBIGUATE_ARGUMENT_NAME].given) {
+                wiki += '_(' + (render_arg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
+              }
+            }
+            wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}"><span class="fa-brands-400" title="Wikipedia">\u{f266}</span> wiki</a>`;
+          }
+
+          // Calculate file_link_html
+          let file_link_html
+          if (ast.file) {
+            file_link_html = get_link_html({
+              content: 'View file',
+              context,
+              href: ast.file,
+              relative: undefined,
+              source_location: ast.source_location,
+            })
+          }
+
+          // Calculate tag_ids_html
+          const tag_ids_html_array = [];
+          let tag_ids_html
+          const showTags = !ast.from_include || context.options.embed_includes
+          if (showTags) {
+            const tag_ids = context.id_provider.get_refs_to_as_ids(
+              REFS_TABLE_X_CHILD, ast.id);
+            const new_context = clone_and_set(context, 'validate_ast', true);
+            new_context.source_location = ast.source_location;
+            // This is needed because in case of an an undefined \\x with {parent},
+            // the undefined target would render as a link on the parent, leading
+            // to an error that happens on the header, which is before the actual
+            // root cause.
+            new_context.ignore_errors = true;
+            for (const target_id of Array.from(tag_ids).sort()) {
+              const x_ast = new AstNode(
+                AstType.MACRO,
+                Macro.X_MACRO_NAME,
+                {
+                  'href': new AstArgument(
+                    [
+                      new PlaintextAstNode(target_id),
+                    ],
+                  ),
+                  'c': new AstArgument(),
+                },
+                ast.source_location,
+                {
+                  scope: ast.scope,
+                }
+              );
+              tag_ids_html_array.push(x_ast.render(new_context));
+            }
+            tag_ids_html = ''
+            if (context.options.add_test_instrumentation) {
+              tag_ids_html += '<span class="test-tags">'
+            }
+            tag_ids_html += `<span title="tags" class="fa-solid-900">\u{f02c}</span> tags: ` + tag_ids_html_array.join(', ');
+            if (context.options.add_test_instrumentation) {
+              tag_ids_html += '</span>'
+            }
+          }
+
+          // Calculate header_meta and header_meta
+          let header_meta = [];
+          let header_meta2 = [];
+          let first_header = (
+            // May fail in some error scenarios.
+            context.toplevel_ast !== undefined &&
+            ast.id === context.toplevel_ast.id
+          )
+          if (file_link_html !== undefined) {
+            header_meta2.push(file_link_html);
+          }
+          if (wiki_link !== undefined) {
+            header_meta2.push(wiki_link);
+          }
+          if (tag_ids_html_array.length) {
+            header_meta2.push(tag_ids_html);
+          }
+          if (first_header) {
+            if (parent_links !== '') {
+              header_meta.push(parent_links);
+            }
+            if (link_to_split !== undefined) {
+              header_meta.push(link_to_split);
+            }
+            if (context.has_toc) {
+              header_meta.push(`<a${html_attr('href', '#' + Macro.TOC_ID)}>${TOC_MARKER}</a>`);
+            }
+            let descendant_count_html = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
+            if (descendant_count_html !== undefined) {
+              header_meta.push(descendant_count_html);
+            }
+          }
+
+          const header_has_meta = header_meta2.length > 0 || header_meta.length > 0
+          if (header_has_meta) {
+            ret += `<nav class="h-nav h-nav-toplevel">`;
+          }
+          for (const meta of [header_meta, header_meta2]) {
+            if (meta.length > 0) {
+              ret += `<div class="nav"> ${meta.join(HEADER_MENU_ITEM_SEP)}</div>`;
+            }
+          }
+          if (header_has_meta) {
+            ret += `</nav>\n`;
+          }
+          if (showTags) {
+            if (children !== undefined) {
+              ret += header_check_child_tag_exists(ast, context, children, 'child')
+            }
+            if (tags !== undefined) {
+              ret += header_check_child_tag_exists(ast, context, tags, 'tag')
+            }
+          }
+          return ret;
+        },
+        [Macro.INCLUDE_MACRO_NAME]: unconvertible,
+        [Macro.LIST_ITEM_MACRO_NAME]: html_render_simple_elem('li', { newline_after_close: true }),
+        [Macro.MATH_MACRO_NAME.toUpperCase()]: function(ast, context) {
+          let attrs = html_render_attrs_id(ast, context);
+          let katex_output = html_katex_convert(ast, context);
+          let ret = ``;
+          if (ast.validation_output.show.boolean) {
+            let href = html_attr('href', '#' + html_escape_attr(ast.id));
+            ret += `<div class="math-container"${attrs}>`;
+            if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
+              ret += `<div class="math-caption-container">\n`;
+              ret += `<span class="math-caption">${x_text(ast, context, {href_prefix: href})}</span>`;
+              ret += `</div>\n`;
+            }
+            ret += `<div class="math-equation">\n`
+            ret += `<div>${katex_output}</div>\n`;
+            ret += `<div><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`;
+            ret += `</div>\n`;
+            ret += `</div>\n`;
+          }
+          return ret;
+        },
+        [Macro.MATH_MACRO_NAME]: function(ast, context) {
+          // KaTeX already adds a <span> for us.
+          return html_katex_convert(ast, context);
+        },
+        'i': html_render_simple_elem('i'),
+        'Image': macro_image_video_block_convert_function,
+        'image': function(ast, context) {
+          let alt_arg;
+          if (ast.args.alt === undefined) {
+            alt_arg = ast.args.src;
+          } else {
+            alt_arg = ast.args.alt;
+          }
+          let alt = html_attr('alt', html_escape_attr(render_arg(alt_arg, context)));
+          let rendered_attrs = html_render_attrs_id(ast, context, ['height', 'width']);
+          let { error_message, src } = macro_image_video_resolve_params(ast, context);
+          let ret = html_img({ alt, ast, context, rendered_attrs, src })
+          if (error_message) {
+            ret += error_message_in_output(error_message, context)
+          }
+          return ret
+        },
+        'JsCanvasDemo': function(ast, context) {
+          return html_code(
+            render_arg(ast.args.content, context),
+            { 'class': 'ourbigbook-js-canvas-demo' }
+          );
+        },
+        'Ol': html_render_simple_elem('ol', { newline_after_open: true }),
+        [Macro.PARAGRAPH_MACRO_NAME]: html_render_simple_elem(
+          'div',
+          {
+            attrs: {'class': 'p'},
+          }
+        ),
+        [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {
+          return html_escape_context(context, ast.text);
+        },
+        'passthrough': function(ast, context) {
+          return render_arg_noescape(ast.args.content, context);
+        },
+        'Q': html_render_simple_elem('blockquote'),
+        'sub': html_render_simple_elem('sub'),
+        'sup': html_render_simple_elem('sup'),
+        [Macro.TABLE_MACRO_NAME]: function(ast, context) {
+          let attrs = html_render_attrs_id(ast, context);
+          let content = render_arg(ast.args.content, context);
+          let ret = ``;
+          let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
+          ret += `<div class="table${multiline_caption}"${attrs}>\n`;
+          // TODO not using caption because I don't know how to allow the caption to be wider than the table.
+          // I don't want the caption to wrap to a small table size.
+          //
+          // If we ever solve that, re-add the following style:
+          //
+          // caption {
+          //   color: black;
+          //   text-align: left;
+          // }
+          //
+          //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
+          let href = html_attr('href', '#' + html_escape_attr(ast.id));
+          if (ast.index_id || ast.validation_output.description.given) {
+            ret += `<div class="caption">${x_text(ast, context, {
+              href_prefix: href,
+              force_separator,
+            })}${description}</div>`;
+          }
+          ret += `<table>\n${content}</table>\n`;
+          ret += `</div>\n`;
+          return ret;
+        },
+        [Macro.TD_MACRO_NAME]: html_render_simple_elem('td', { newline_after_close: true }),
+        [Macro.TOC_MACRO_NAME]: function(ast, context) {
+          // Not rendering ID here because that function does scope culling. But TOC ID is a fixed value without scope for now.
+          // so that was removing the TOC id in subdirectories.
+          let attrs = html_render_attrs(ast, context);
+          let todo_visit = [];
+          let top_level = 0;
+          let root_node = context.header_tree;
+          let ret = `<div id="${Macro.TOC_ID}"class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
+          if (root_node.children.length === 1) {
+            root_node = root_node.children[0];
+          }
+          let descendant_count_html = get_descendant_count_html_sep(context, root_node, { long_style: false, show_descendant_count: true });
+          ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title"${x_href_attr(ast, context)}>Table of contents</a><span class="hover-metadata">${descendant_count_html}</span></span></div>\n`;
+          for (let i = root_node.children.length - 1; i >= 0; i--) {
+            todo_visit.push([root_node.children[i], 1]);
+          }
+          if (todo_visit.length === 0) {
+            // Empty ToC. Don't render. Initial common case: leaf split header nodes.
+            return '';
+          }
+          let linear_count = 0
+          while (todo_visit.length > 0) {
+            const [tree_node, level] = todo_visit.pop();
+            if (level > top_level) {
+              ret += `<ul>\n`;
+            } else if (level < top_level) {
+              ret += `</li>\n</ul>\n`.repeat(top_level - level);
+            } else {
+              ret += `</li>\n`;
+            }
+            ret += '<li';
+            if (tree_node.children.length > 0) {
+              ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
+            }
+            ret += '>'
+            let target_id_ast = context.id_provider.get(tree_node.ast.id, context);
+            if (
+              // Can happen in test error cases:
+              // - cross reference from header title without ID to previous header is not allowed
+              // - include to file that does exists without embed includes before extracting IDs fails gracefully
+              target_id_ast !== undefined
+            ) {
+              // ToC entries always link to the same split/nosplit type, except for included sources.
+              // This might be handled more generally through: https://github.com/cirosantilli/ourbigbook/issues/146
+              // but for now we are just taking care of this specific and important ToC subcase.
+              let cur_context;
+              if (ast.source_location.path === target_id_ast.source_location.path) {
+                cur_context = clone_and_set(context, 'to_split_headers', context.in_split_headers);
+              } else {
+                cur_context = context;
+              }
+
+              let content = x_text(target_id_ast, cur_context, {style_full: true, show_caption_prefix: false});
+              let href = x_href_attr(target_id_ast, cur_context);
+              const my_toc_id = toc_id(target_id_ast, cur_context);
+              let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
+              // The inner <div></div> inside arrow is so that:
+              // - outter div: takes up space to make clicking easy
+              // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
+              let descendant_count_html = get_descendant_count_html_sep(context, tree_node, { long_style: false, show_descendant_count: false });
+              let linear_count_str
+              if (context.options.add_test_instrumentation) {
+                linear_count_str = html_attr('data-test', linear_count)
+              } else {
+                linear_count_str = ''
+              }
+              ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
+
+              let toc_href = html_attr('href', '#' + html_escape_attr(my_toc_id));
+              ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
+              if (cur_context.options.split_headers) {
+                const link_to_split = link_to_split_opposite(target_id_ast, cur_context)
+                if (link_to_split) {
+                  ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
+                }
+              }
+              let parent_ast = target_id_ast.get_header_parent_asts(cur_context)[0];
+              if (
+                // Possible on broken h1 level.
+                parent_ast !== undefined
+              ) {
+                let parent_href_target;
+                if (
+                  parent_ast.header_tree_node !== undefined &&
+                  parent_ast.header_tree_node.get_level() === cur_context.header_tree_top_level
+                ) {
+                  parent_href_target = Macro.TOC_ID;
+                } else {
+                  parent_href_target = toc_id(parent_ast, cur_context);
+                }
+                let parent_href = html_attr('href', '#' + parent_href_target);
+                let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+                ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
+              }
+              ret += `${descendant_count_html}</span></span></div>`;
+              linear_count++
+            }
+            if (tree_node.children.length > 0) {
+              for (let i = tree_node.children.length - 1; i >= 0; i--) {
+                todo_visit.push([tree_node.children[i], level + 1]);
+              }
+              ret += `\n`;
+            }
+            top_level = level;
+          }
+          ret += `</li>\n</ul>\n`.repeat(top_level);
+          // Close the table of contents list.
+          ret += `</li>\n</ul>\n`;
+          ret += `</div>\n`
+          return ret;
+        },
+        [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) {
+          let title = ast.args[Macro.TITLE_ARGUMENT_NAME];
+          if (title === undefined) {
+            let text_title;
+            if (Macro.TITLE_ARGUMENT_NAME in context.options) {
+              text_title = context.options[Macro.TITLE_ARGUMENT_NAME];
+            } else if (context.header_tree.children.length > 0) {
+              text_title = render_arg(
+                context.header_tree.children[0].ast.args[Macro.TITLE_ARGUMENT_NAME],
+                clone_and_set(context, 'id_conversion', true)
+              );
+            } else {
+              text_title = 'dummy title because title is mandatory in HTML';
+            }
+            title = new AstArgument([
+              new PlaintextAstNode(text_title, ast.source_location)],
+              ast.source_location,
+              text_title
+            );
+          }
+          let ret;
+          let body = render_arg(ast.args.content, context);
+
+          // Footer metadata.
+          if (context.toplevel_ast !== undefined) {
+            {
+              const target_ids = context.id_provider.get_refs_to_as_ids(
+                REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
+              body += create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
+            }
+
+            // Ancestors
+            {
+              const ancestors = [];
+              let cur_ast = context.toplevel_ast;
+              while (true) {
+                cur_ast = cur_ast.get_header_parent_asts(context)[0];
+                if (cur_ast === undefined) {
+                  break
+                }
+                ancestors.push(cur_ast);
+              }
+              if (ancestors.length !== 0) {
+                // TODO factor this out more with real headers.
+                const id = 'ancestors'
+                body += `<div>${html_hide_hover_link('#ancestors')}<h2 id="#${id}"><a href="#ancestors">Ancestors</a></h2></div>\n`;
+                const ancestor_id_asts = [];
+                for (const ancestor of ancestors) {
+                  //let counts_str;
+                  //if (ancestor.header_tree_node !== undefined) {
+                  //  counts_str = get_descendant_count_html_sep(ancestor.header_tree_node, false);
+                  //} else {
+                  //  counts_str = '';
+                  //}
+                  ancestor_id_asts.push(new AstNode(
+                    AstType.MACRO,
+                    Macro.LIST_ITEM_MACRO_NAME,
+                    {
+                      'content': new AstArgument(
+                        [
+                          new AstNode(
+                            AstType.MACRO,
+                            Macro.X_MACRO_NAME,
+                            {
+                              'href': new AstArgument(
+                                [
+                                  new PlaintextAstNode(ancestor.id),
+                                ],
+                              ),
+                              'c': new AstArgument(),
+                            },
+                          ),
+                          //new AstNode(
+                          //  AstType.MACRO,
+                          //  'passthrough',
+                          //  {
+                          //    'content': new AstArgument(
+                          //      [
+                          //        new PlaintextAstNode(counts_str),
+                          //      ],
+                          //    ),
+                          //  },
+                          //  undefined,
+                          //  {
+                          //    xss_safe: true,
+                          //  }
+                          //),
+                        ],
+                      ),
+                    },
+                  ));
+                }
+                const ulArgs = {
+                  'content': new AstArgument(ancestor_id_asts)
+                }
+                if (context.options.add_test_instrumentation) {
+                  ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
+                }
+                const incoming_ul_ast = new AstNode(
+                  AstType.MACRO,
+                  'Ul',
+                  ulArgs,
+                );
+                const new_context = clone_and_set(context, 'validate_ast', true);
+                new_context.source_location = ast.source_location;
+                body += incoming_ul_ast.render(new_context);
+              }
+            }
+
+            {
+              const target_ids = context.id_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
+              body += create_link_list(context, ast, 'incoming-links', 'Incoming links', target_ids)
+            }
+          }
+
+          if (context.options.body_only) {
+            ret = body;
+          } else {
+            let template;
+            if (context.options.template !== undefined) {
+              template = context.options.template;
+            } else {
+              template = `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>{{ title }}</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>{{ style }}</style>
+{{ head }}</head>
+<body class="ourbigbook">
+{{ body }}
+{{ post_body }}</body>
+</html>
+`;
+            }
+
+            let root_page;
+            if (context.options.html_x_extension) {
+              context.options.template_vars.html_ext = '.html';
+              root_page = context.options.template_vars.root_relpath + INDEX_BASENAME_NOEXT + '.' + HTML_EXT;
+            } else {
+              context.options.template_vars.html_ext = '';
+              if (context.options.template_vars.root_relpath === '') {
+                root_page = '.'
+              } else {
+                root_page = context.options.template_vars.root_relpath;
+              }
+            }
+            if (root_page === context.toplevel_output_path) {
+              root_page = '';
+            }
+            const render_env = {
+              body,
+              input_path: context.options.input_path,
+              root_page,
+              title: render_arg(title, context),
+            };
+            Object.assign(render_env, context.options.template_vars);
+
+            // Resolve relative styles and scripts.
+            let relative_scripts = [];
+            for (const script of context.options.template_scripts_relative) {
+              relative_scripts.push(`<script src="${context.options.template_vars.root_relpath}${script}"></script>\n`);
+            }
+            render_env.post_body = relative_scripts.join('') + render_env.post_body + "<script>ourbigbook_runtime.ourbigbook_runtime()</script>\n";
+            let relative_styles = [];
+            for (const style of context.options.template_styles_relative) {
+              relative_styles.push(`@import "${context.options.template_vars.root_relpath}${style}";\n`);
+            }
+            render_env.style = relative_styles.join('') + render_env.style;
+
+            const { Liquid } = require('liquidjs');
+            ret = (new Liquid()).parseAndRenderSync(
+              template,
+              render_env,
+              {
+                strictFilters: true,
+                strictVariables: true,
+              }
+            );
+          }
+          return ret;
+        },
+        [Macro.TH_MACRO_NAME]: html_render_simple_elem('th', { newline_after_close: true }),
+        [Macro.TR_MACRO_NAME]: function(ast, context) {
+          let content_ast = ast.args.content;
+          let content = render_arg(content_ast, context);
+          let res = '';
+          if (ast.args.content.get(0).macro_name === Macro.TH_MACRO_NAME) {
+            if (
+              ast.parent_argument_index === 0 ||
+              ast.parent_argument.get(ast.parent_argument_index - 1).args.content.get(0).macro_name !== Macro.TH_MACRO_NAME
+            ) {
+              res += `<thead>\n`;
+            }
+          }
+          if (ast.args.content.get(0).macro_name === Macro.TD_MACRO_NAME) {
+            if (
+              ast.parent_argument_index === 0 ||
+              ast.parent_argument.get(ast.parent_argument_index - 1).args.content.get(0).macro_name !== Macro.TD_MACRO_NAME
+            ) {
+              res += `<tbody>\n`;
+            }
+          }
+          res += `<tr${html_render_attrs_id(ast, context)}>\n${content}</tr>\n`;
+          if (ast.args.content.get(0).macro_name === Macro.TH_MACRO_NAME) {
+            if (
+              ast.parent_argument_index === ast.parent_argument.length() - 1 ||
+              ast.parent_argument.get(ast.parent_argument_index + 1).args.content.get(0).macro_name !== Macro.TH_MACRO_NAME
+            ) {
+              res += `</thead>\n`;
+            }
+          }
+          if (ast.args.content.get(0).macro_name === Macro.TD_MACRO_NAME) {
+            if (
+              ast.parent_argument_index === ast.parent_argument.length() - 1 ||
+              ast.parent_argument.get(ast.parent_argument_index + 1).args.content.get(0).macro_name !== Macro.TD_MACRO_NAME
+            ) {
+              res += `</tbody>\n`;
+            }
+          }
+          return res;
+        },
+        'Ul': html_render_simple_elem('ul', {
+          newline_after_open: true,
+          wrap: true,
+        }),
+        [Macro.X_MACRO_NAME]: function(ast, context) {
+          let [href, content, target_ast] = x_get_href_content(ast, context);
+          let incompatible_pair
+          if (ast.validation_output.full.given) {
+            if (ast.validation_output.ref.given) {
+              incompatible_pair = ['full', 'ref']
+            }
+            if (ast.validation_output.content.given) {
+              incompatible_pair = ['full', 'content']
+            }
+            if (ast.validation_output.c.given) {
+              incompatible_pair = ['full', 'c']
+            }
+            if (ast.validation_output.p.given) {
+              incompatible_pair = ['full', 'p']
+            }
+          } else if (ast.validation_output.content.given) {
+            if (ast.validation_output.ref.given) {
+              incompatible_pair = ['content', 'ref']
+            }
+            if (ast.validation_output.c.given) {
+              incompatible_pair = ['content', 'c']
+            }
+            if (ast.validation_output.p.given) {
+              incompatible_pair = ['content', 'p']
+            }
+          } else if (ast.validation_output.ref.given) {
+            if (ast.validation_output.c.given) {
+              incompatible_pair = ['ref', 'c']
+            }
+            if (ast.validation_output.p.given) {
+              incompatible_pair = ['ref', 'p']
+            }
+          }
+          if (incompatible_pair) {
+            const message = `"${incompatible_pair[0]}" and "${incompatible_pair[1]}" are incompatible`;
+            render_error(context, message, ast.source_location);
+            content = error_message_in_output(message, context);
+          } else if (ast.validation_output.ref.boolean) {
+            content = '*';
+          }
+          if (context.x_parents.size === 0) {
+            // Counts.
+            let counts_str;
+            if (
+              // Happens on error case of linking to non existent ID.
+              target_ast === undefined ||
+              // Happens for cross links. TODO make those work too...
+              target_ast.parent_node === undefined
+            ) {
+              counts_str = '';
+            } else {
+              const counts = get_descendant_count(target_ast.header_tree_node);
+              for (let i = 0; i < counts.length; i++) {
+                counts[i] = format_number_approx(counts[i]);
+              }
+              counts_str = `\nword count: ${counts[0]}\ndescendant word count: ${counts[2]}\ndescendant count: ${counts[1]}`;
+            }
+            const attrs = html_render_attrs_id(ast, context);
+            return `<a${href}${attrs}${html_attr('title', 'internal link' + counts_str)}>${content}</a>`;
+          } else {
+            return content;
+          }
+        },
+        'Video': macro_image_video_block_convert_function,
+      },
+    }
+  ),
+  new OutputFormat(
+    OUTPUT_FORMAT_ID,
+    {
+      ext: 'id',
+      convert_funcs: {
+        [Macro.LINK_MACRO_NAME]: function(ast, context) {
+          const [href, content] = link_get_href_content(ast, context);
+          return content;
+        },
+        'b': id_convert_simple_elem(),
+        'br': function(ast, context) { return '\n'; },
+        [Macro.CODE_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
+        [Macro.CODE_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
+        'Comment': function(ast, context) { return ''; },
+        'comment': function(ast, context) { return ''; },
+        [Macro.HEADER_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.INCLUDE_MACRO_NAME]: unconvertible,
+        [Macro.LIST_ITEM_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.MATH_MACRO_NAME.toUpperCase()]: id_convert_simple_elem(),
+        [Macro.MATH_MACRO_NAME]: id_convert_simple_elem(),
+        'i': id_convert_simple_elem(),
+        'Image': function(ast, context) { return ''; },
+        'image': function(ast, context) { return ''; },
+        'JsCanvasDemo': id_convert_simple_elem(),
+        'Ol': id_convert_simple_elem(),
+        [Macro.PARAGRAPH_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) { return ast.text },
+        'passthrough': id_convert_simple_elem(),
+        'Q': id_convert_simple_elem(),
+        'sub': id_convert_simple_elem(),
+        'sup': id_convert_simple_elem(),
+        [Macro.TABLE_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.TD_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.TOC_MACRO_NAME]: function(ast, context) { return '' },
+        [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
+        'Ul': id_convert_simple_elem(),
+        [Macro.X_MACRO_NAME]: function(ast, context) {
+          if (ast.args.content) {
+            return id_convert_simple_elem('content')(ast, context)
+          } else {
+            return id_convert_simple_elem('href')(ast, context)
+          }
+        },
+        'Video': function(ast, context) { return ''; },
       }
-    },
-    'Video': function(ast, context) { return ''; },
-  },
-};
-const TOPLEVEL_CHILD_MODIFIER = {
-  [OUTPUT_FORMAT_OURBIGBOOK]: function(ast, context, out) {
-    return out;
-  },
-  [OUTPUT_FORMAT_HTML]: function(ast, context, out) {
-    return `<div>${html_hide_hover_link(x_href(ast, context))}${out}</div>`;
-  },
-  [OUTPUT_FORMAT_ID]: function(ast, context, out) {
-    return out;
-  },
+    }
+  ),
+  new OutputFormat(
+    OUTPUT_FORMAT_OURBIGBOOK,
+    {
+      ext: OURBIGBOOK_EXT,
+      convert_funcs: {
+        [Macro.LINK_MACRO_NAME]: function(ast, context) {
+          const href = render_arg(ast.args.href, context)
+          if (protocol_is_known(href)) {
+            return `${href}${ourbigbook_convert_args(ast, context, { skip: new Set(['href']) }).join('')}`
+          } else {
+            return ourbigbook_convert_simple_elem(ast, context)
+          }
+        },
+        'b': ourbigbook_convert_simple_elem,
+        'br': ourbigbook_convert_simple_elem,
+        [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbook_code_math_block(INSANE_CODE_CHAR),
+        [Macro.CODE_MACRO_NAME]: ourbigbook_code_math_inline(INSANE_CODE_CHAR),
+        [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: ourbigbook_convert_simple_elem,
+        'Comment': ourbigbook_convert_simple_elem,
+        'comment': ourbigbook_convert_simple_elem,
+        [Macro.HEADER_MACRO_NAME]: function(ast, context) {
+          return `${INSANE_HEADER_CHAR.repeat(ast.validation_output.level.positive_nonzero_integer)} ${render_arg(ast.args.title, context)}
+    ${ourbigbook_convert_args(ast, context, { skip: new Set(['level', 'title']) }).join('')}
+    `
+        },
+        [Macro.INCLUDE_MACRO_NAME]: ourbigbook_convert_simple_elem,
+        [Macro.LIST_ITEM_MACRO_NAME]: function(ast, context) {
+          if (!ast.args.content || Object.keys(ast.args).length !== 1) {
+            return ourbigbook_convert_simple_elem(ast, context)
+          } else {
+            return `* ${render_arg(ast.args.content, context)}\n`
+          }
+        },
+        [Macro.MATH_MACRO_NAME.toUpperCase()]: ourbigbook_code_math_block(INSANE_MATH_CHAR),
+        [Macro.MATH_MACRO_NAME]: ourbigbook_code_math_inline(INSANE_MATH_CHAR),
+        'i': ourbigbook_convert_simple_elem,
+        'Image': ourbigbook_convert_simple_elem,
+        'image': ourbigbook_convert_simple_elem,
+        'JsCanvasDemo': ourbigbook_convert_simple_elem,
+        'Ol': ourbigbook_ul,
+        [Macro.PARAGRAPH_MACRO_NAME]: function(ast, context) {
+          if (!ast.args.content || Object.keys(ast.args).length !== 1) {
+            return ourbigbook_convert_simple_elem(ast, context)
+          } else {
+            return `${render_arg(ast.args.content, context)}\n\n`
+          }
+        },
+        [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) { return ast.text },
+        'passthrough': ourbigbook_convert_simple_elem,
+        'Q': ourbigbook_convert_simple_elem,
+        'sub': ourbigbook_convert_simple_elem,
+        'sup': ourbigbook_convert_simple_elem,
+        [Macro.TABLE_MACRO_NAME]: ourbigbook_ul,
+        [Macro.TD_MACRO_NAME]: ourbigbook_convert_simple_elem,
+        [Macro.TOC_MACRO_NAME]: function(ast, context) { return '' },
+        [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
+        [Macro.TH_MACRO_NAME]: ourbigbook_convert_simple_elem,
+        [Macro.TR_MACRO_NAME]: ourbigbook_convert_simple_elem,
+        'Ul': ourbigbook_ul,
+        [Macro.X_MACRO_NAME]: ourbigbook_convert_simple_elem,
+        'Video': ourbigbook_convert_simple_elem,
+      }
+    }
+  ),
+]
+const OUTPUT_FORMATS = {}
+exports.OUTPUT_FORMATS = OUTPUT_FORMATS
+for (const output_format of OUTPUT_FORMATS_LIST) {
+  OUTPUT_FORMATS[output_format.id] = output_format
 }

@@ -58,7 +58,7 @@ export default function ArticleEditorPageHoc(options = { isnew: false}) {
         let editor;
         loader.init().then(monaco => {
           //const id = ourbigbook.title_to_id(file.title)
-          //const input_path = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${id}${ourbigbook.OURBIGBOOK_EXT}`
+          //const input_path = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${id}.${ourbigbook.OURBIGBOOK_EXT}`
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,
             body,

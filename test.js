@@ -121,7 +121,7 @@ function assert_convert_ast(
     if (!('input_path_noext' in options) && options.extra_convert_opts.split_headers) {
       options.input_path_noext = ourbigbook.INDEX_BASENAME_NOEXT;
     }
-    const main_input_path = options.input_path_noext + ourbigbook.OURBIGBOOK_EXT
+    const main_input_path = options.input_path_noext + '.' + ourbigbook.OURBIGBOOK_EXT
     assert(!(main_input_path in options.filesystem))
     const filesystem = Object.assign({}, options.filesystem)
     filesystem[main_input_path] = input_string
@@ -183,7 +183,7 @@ function assert_convert_ast(
       }
       //console.error('main');
       if (options.input_path_noext !== undefined) {
-        new_convert_opts.input_path = options.input_path_noext + ourbigbook.OURBIGBOOK_EXT;
+        new_convert_opts.input_path = options.input_path_noext + '.' + ourbigbook.OURBIGBOOK_EXT;
         new_convert_opts.toplevel_id = options.input_path_noext;
       }
       const extra_returns = {};
@@ -2105,7 +2105,7 @@ assert_convert_ast('id of first header comes from header title if index',
   ],
   {
     extra_convert_opts: {
-      input_path: ourbigbook.INDEX_BASENAME_NOEXT + ourbigbook.OURBIGBOOK_EXT
+      input_path: ourbigbook.INDEX_BASENAME_NOEXT + '.' + ourbigbook.OURBIGBOOK_EXT
     }
   },
 );
@@ -5528,19 +5528,102 @@ it(`api: x does not blow up without ID provider`, async function () {
 `, {'body_only': true})
 })
 
-const bigb_input = `p1
+const bigb_input = `= tmp
 
-p2
+Sane inline element: \i[qwer] after.
 
-my \\i[itallic] text
+Sane inline element with named argument: \a[qwer]{check=0} after.
+
+Sane inline element with positional and named argument: \a[qwer][zxcv]{check=0} after.
+
+Insane link http://example.com after.
+
+Insane link http://example.com[], with comma immediately following.
+
+Inline code block: `f(x + 1)` after.
+
+Block code block:
+
+``
+x = 1
+x = x + 1
+``
+
+Inline math: $\sqrt{2}$ after.
+
+Block math:
+
+$$
+\sqrt{2} \\
+\sqrt{2}
+$$
+
+List:
+
+* p1
+* p2
+
+Nested list:
+
+* p1
+* p2
+  * p2 1
+  * p2 2
+    * p2 2 1
+  * p2 3
+* p3
+  * p3 1
+
+List with ID:
+
+\Ul[
+* p1
+* p2
+]{id=my-list}
+
+Table:
+
+|| header 1
+|| header 2
+
+| row 1 1
+| row 1 2
+
+| row 2 1
+| row 2 2
+
+Table with title:
+
+\Table{title=My table}[
+|| header 1
+|| header 2
+
+| row 1 1
+| row 1 2
+
+| row 2 1
+| row 2 2
+]
+
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{title=The title of my image.}
+{id=image-my-test-image}
+{source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
+{description=The description of my image.}
+
+== Header with args
+{c}
+{id=tmp2}
+{wiki}
 `
-assert_convert_ast('bigb output format',
-  bigb_input,
-  undefined,
-  {
-    bigb: bigb_input,
-  },
-);
+// TODO
+//assert_convert_ast('bigb output format',
+//  bigb_input,
+//  undefined,
+//  {
+//    bigb: bigb_input,
+//  },
+//);
 
 // ourbigbook executable tests.
 assert_executable(

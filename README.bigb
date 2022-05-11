@@ -5681,7 +5681,7 @@ If we reach the root path `/` and no `ourbigbook.json` is found, then we underst
 = `ignore`
 {parent=ourbigbook-json}
 
-List of paths relative to the \x[project-toplevel-directory] that \x[ourbigbook-executable] will ignore.
+List of paths relative to the \x[project-toplevel-directory] that \x[ourbigbook-cli] will ignore.
 
 Useful if your project has a large directory that does not contain OurBigBook sources, and you don't want OurBigBook to mess with it.
 
@@ -6732,7 +6732,7 @@ error: tmp.bigb:5:3: cross reference to unknown id: "b"
 
 OurBigBook is designed to not allow arbitrary code execution by default on any \x[ourbigbook-cli] command.
 
-This means that it it should be safe to just download any untrusted OurBigBook repository, and convert it with the \x[ourbigbook-executable], even if you don't trust its author.
+This means that it it should be safe to just download any untrusted OurBigBook repository, and convert it with \x[ourbigbook-cli], even if you don't trust its author.
 
 In order to allow code execution for pre/post processing tasks e.g. from \x[ourbigbook-json/prepublish], use the \x[unsafe-ace] option.
 
@@ -6746,7 +6746,7 @@ OurBigBook HTML output is designed to be XSS safe by default, any non-XSS safe c
 
 Of course, we are walking on eggs, and this is hard to assert, so the best thing to do later on will be to parse the output e.g. with https://developer.mozilla.org/en-US/docs/Web/API/DOMParser[`DOMParser`] to ensure that it is valid and does not contain any `script` tags, but it is not as simple as that: https://stackoverflow.com/questions/37435077/execute-javascript-for-xss-without-script-tags/61588322#61588322
 
-XSS unsafe constructs lead to errors by default. XSS unsafe constructs can be allowed \x[ourbigbook-executable][from the command] line with:
+XSS unsafe constructs lead to errors by default. XSS unsafe constructs can be allowed \x[ourbigbook-cli][from the command] line with:
 ``
 ./ourbigbook --unsafe-xss
 ``
@@ -6849,9 +6849,9 @@ which allos you to just:
 npmtg one paragraph
 ``
 
-Run all tests that don't start with `executable:`:
+Run all tests that don't start with `cli:`:
 ``
-npm test -- -g '^(?!executable:)'
+npm test -- -g '^(?!cli:)'
 ``
 This works because `-g` takes JavaScript regular expressions, so we can use negative lookahead, see also: https://stackoverflow.com/questions/26908288/with-mocha-how-do-i-run-all-tests-that-dont-have-slow-in-the-name
 
@@ -6864,7 +6864,7 @@ There are two types of test in our test suite:
 
   Whenever possible, these tests check their results just from the \x[abstract-syntax-tree] tree returned by the API, which is cleaner than parsing the HTML. But sometimes HTML parsing is inevitable.
 * tests that call the \x[ourbigbook-executable] itself:
-  * their titles are prefixed with `executable: `
+  * their titles are prefixed with `cli: `
   * they tend to be a lot slower than the API test
   * can test functionality that is done outside of the `ourbigbook.convert` JavaScript API, notably stuff prevent in ourbigbook, so they are more end to end
   * don't do any mocking, and could therefore be more representative.

@@ -27,6 +27,15 @@ highlight link ourbigbookHeader Title
 "syntax match ourbigbookCode /`[^`]\+`/ contains=@NoSpell
 syntax region ourbigbookCode start=/\z(`\+\)/ end=/\z1/ contains=@NoSpell
 highlight link ourbigbookCode Identifier
+" TODO can't find a way to match N times [ with n times] ]
+"syntax region ourbigbookLiteral start=/\z(\[\{2,}\)/ end=/\z1/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/\[\[/ end=/\]\]/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/\[\[\[/ end=/\]\]\]/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/\[\[\[\[/ end=/\]\]\]\]/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/{{/ end=/}}/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/{{{/ end=/}}}/ contains=@NoSpell
+syntax region ourbigbookLiteral start=/{{{{/ end=/}}}}/ contains=@NoSpell
+highlight link ourbigbookLiteral Identifier
 
 " TODO get TeX syntax highlighting inside $$ $$ working some day:
 " https://vim.fandom.com/wiki/Different_syntax_highlighting_within_regions_of_a_file

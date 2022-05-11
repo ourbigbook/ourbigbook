@@ -5255,9 +5255,9 @@ assert_convert_ast('tags show on embed include',
   }
 );
 
-// OurbigbookExample
-assert_convert_ast('OurbigbookExample basic',
-  `\\OurbigbookExample[[aa \\i[bb] cc]]`,
+// OurBigBookExample
+assert_convert_ast('OurBigBookExample basic',
+  `\\OurBigBookExample[[aa \\i[bb] cc]]`,
   [
     // TODO get rid of this paragaraph.
     a('P', [
@@ -5274,8 +5274,8 @@ assert_convert_ast('OurbigbookExample basic',
     ])
   ],
 );
-assert_convert_ast('OurbigbookExample that links to id in another file',
-  `\\OurbigbookExample[[\\x[notindex\\]]]`,
+assert_convert_ast('OurBigBookExample that links to id in another file',
+  `\\OurBigBookExample[[\\x[notindex\\]]]`,
   undefined,
   {
     assert_xpath_main: [
@@ -5538,6 +5538,31 @@ assert_convert_ast('bigb output format is unchanched for the preferred format',
     bigb: bigb_input,
   },
 );
+assert_convert_ast('bigb output converts sane refs to insane ones',
+  `= Animal
+
+\\x[black-cat]
+
+\\x[black-cat]{c}
+
+\\x[black-cat]{p}
+
+== Black cat
+`,
+  undefined,
+  {
+    bigb: `= Animal
+
+<black cat>
+
+<Black cat>
+
+<black cats>
+
+== Black cat
+`
+  },
+);
 
 // ourbigbook executable tests.
 assert_executable(
@@ -5607,7 +5632,7 @@ $$
 \\newcommand{\\mycmd}[0]{hello}
 $$
 
-\\OurbigbookExample[[
+\\OurBigBookExample[[
 \\Q[A Ourbigbook example!]
 ]]
 
@@ -5794,7 +5819,7 @@ assert_executable(
         // Full links between split header pages have correct numbering.
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section 2. \"h2\"']",
 
-        // OurbigbookExample renders in split header.
+        // OurBigBookExample renders in split header.
         "//x:blockquote[text()='A Ourbigbook example!']",
 
         // ToC entries point to the split version of articles.

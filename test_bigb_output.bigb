@@ -12,6 +12,14 @@ Insane link http://example.com after.
 
 Insane link http://example.com[], with comma immediately following.
 
+Insane ref: <black cat>.
+
+Insane ref capital: <Black cat>.
+
+Insane ref plural: <black cats>.
+
+Insane ref full: <black cats>{full}.
+
 Inline code block: `f(x + 1)[]` after.
 
 Inline code block with backtick: \c[[a ` b]] after.
@@ -159,7 +167,13 @@ Table with paragraph and list:
 \Include[tmp2]{parent=dog}
 \Include[tmp3]{parent=dog}
 
-== Cat
+\OurBigBookExample[[
+Hello
+
+World
+]]
+
+== Black cat
 
 == Header with args
 {id=tmp-2}

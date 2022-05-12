@@ -272,6 +272,8 @@ class AstNode {
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
     }
+    //if (!('last_render' in context)) {
+    //}
     if (!('macros' in context)) {
       throw new Error('context does not have a mandatory .macros property');
     }
@@ -359,6 +361,7 @@ class AstNode {
       }
     }
 
+    context.last_render = out
     return out;
   }
 
@@ -8302,9 +8305,18 @@ function ourbigbook_li(marker) {
     if (!ast.args.content || Object.keys(ast.args).length !== 1) {
       return ourbigbook_convert_simple_elem(ast, context)
     } else {
+      let newline_before
+      if (
+        ast.parent_argument_index === 0 &&
+        // This feels hacky, but I can't find a better way.
+        context.last_render[context.last_render.length - 1] !== '\n'
+      ) {
+        newline_before = '\n'
+      } else {
+        newline_before = ''
+      }
       const content = render_arg(ast.args.content, context)
       const content_indent = content.replace(/\n(.)/g, '\n  $1')
-      const newline_before = context.li_depth > 0 && ast.parent_argument_index === 0 ? '\n' : ''
       const newline = ast.is_last_in_argument() ? '' : '\n'
       return `${newline_before}${marker}${content_indent}${newline}`
     }
@@ -8359,7 +8371,7 @@ function ourbigbook_convert_args(ast, context, options={}) {
       const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
       ret.push(START_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
-      if (delim_repeat > 1 || arg.remove_whitespace_children) {
+      if (arg.remove_whitespace_children) {
         ret.push('\n')
       } else {
         if (rendered_arg.indexOf('\n') !== -1) {
@@ -8419,6 +8431,7 @@ function ourbigbook_convert_args(ast, context, options={}) {
     }
     ret.push(END_NAMED_ARGUMENT_CHAR.repeat(delim_repeat))
     if (!macro.options.phrasing && i !== named_args.length - 1 && !context.in_paragraph) {
+      ret.push('\n')
     }
     i++
   }

@@ -269,9 +269,6 @@ class AstNode {
     if (!('in_literal' in context)) {
       context.in_literal = false;
     }
-    if (!('li_depth' in context)) {
-      context.li_depth = 0;
-    }
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
     }
@@ -8304,9 +8301,7 @@ function ourbigbook_li(marker) {
     if (!ast.args.content || Object.keys(ast.args).length !== 1) {
       return ourbigbook_convert_simple_elem(ast, context)
     } else {
-      context.li_depth++
       const content = render_arg(ast.args.content, context)
-      context.li_depth--
       const content_indent = content.replace(/\n(.)/g, '\n  $1')
       const newline_before = context.li_depth > 0 && ast.parent_argument_index === 0 ? '\n' : ''
       const newline = ast.is_last_in_argument() ? '' : '\n'
@@ -8363,11 +8358,22 @@ function ourbigbook_convert_args(ast, context, options={}) {
       const { delim_repeat, rendered_arg } = ourbigbook_prefer_literal(
         ast, context, arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
       ret.push(START_POSITIONAL_ARGUMENT_CHAR.repeat(delim_repeat))
-      if (delim_repeat > 1) {
+      if (delim_repeat > 1 || arg.remove_whitespace_children) {
         ret.push('\n')
-      }
-      if (arg.remove_whitespace_children) {
-        ret.push('\n')
+      } else {
+        if (rendered_arg.indexOf('\n') !== -1) {
+          if (rendered_arg[0] !== '\n') {
+            ret.push('\n')
+          }
+          // TODO this alters rendered output, adds newline, e.g.:
+          // \Q[My line
+          // ]
+          // ends in \n in the output. Leading \n however removed already:
+          // see <Argument leading newline removal>.
+          if (rendered_arg[rendered_arg.length - 1] !== '\n') {
+            ret.push('\n')
+          }
+        }
       }
       ret.push(
         rendered_arg +

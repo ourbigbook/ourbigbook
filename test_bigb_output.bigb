@@ -30,6 +30,14 @@ Inline code block with backtick and double close square brackets: \c[[[a ` ]] b]
 
 Inline code block with backtick and triple open square brackets: \c[[[[a ` [[[ b]]]] after.
 
+\Q[Sane block with a single line.]
+
+\Q[
+Sane block with a single line.
+
+With multiple lines.
+]
+
 Sane block together with paragraph:
 \Q[To be]
 and another:

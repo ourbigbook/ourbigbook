@@ -3430,7 +3430,7 @@ function html_hide_hover_link(id) {
 function html_img({ alt, ast, context, rendered_attrs, src }) {
   let error
   ;({ href: src, error } = check_and_update_local_link({
-    check: ast.validation_output.check.boolean,
+    check: ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined,
     context,
     href: src,
     source_location: ast.args.src.source_location,
@@ -6526,6 +6526,7 @@ const IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS = [
   new MacroArgument({
     name: 'check',
     boolean: true,
+    default: '1',
   }),
   new MacroArgument({
     name: 'height',
@@ -7319,7 +7320,7 @@ const DEFAULT_MACRO_LIST = [
             const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined
             let error
             ;({ href: src, error } = check_and_update_local_link({
-              check: ast.validation_output.check.boolean,
+              check,
               context,
               href: src,
               source_location: ast.args.src.source_location,

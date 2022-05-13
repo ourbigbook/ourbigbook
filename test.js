@@ -2794,12 +2794,15 @@ assert_convert_ast('cross reference magic cross file plural resolution',
 <dogs>
 
 <two dogs>
+
+<my scope/in scope>
 `,
   undefined,
   {
     assert_xpath_main: [
       "//x:div[@class='p']//x:a[@href='notindex2.html#dog' and text()='dogs']",
       "//x:div[@class='p']//x:a[@href='notindex2.html#two-dogs' and text()='two dogs']",
+      "//x:div[@class='p']//x:a[@href='notindex2.html#my-scope/in-scope' and text()='in scope']",
     ],
     convert_before: ['notindex2.bigb'],
     filesystem: {
@@ -2808,6 +2811,11 @@ assert_convert_ast('cross reference magic cross file plural resolution',
 == Dog
 
 == Two dogs
+
+== My Scope
+{scope}
+
+=== In scope
 `,
     },
     input_path_noext: 'notindex'
@@ -2848,6 +2856,27 @@ assert_convert_ast('cross reference magic detects capitalization and plural on o
     },
     input_path_noext: 'notindex'
   },
+);
+assert_convert_ast('cross reference magic insane to scope',
+  `= Notindex
+
+\\Q[<My scope/In scope>]{id=same}
+
+\\Q[<My scope/in scope>]{id=lower}
+
+== My scope
+{scope}
+
+=== In scope
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:blockquote[@id='same']//x:a[@href='#my-scope/in-scope' and text()='In scope']",
+      // Case is controlled only by the last scope component.
+      "//x:blockquote[@id='lower']//x:a[@href='#my-scope/in-scope' and text()='in scope']",
+    ],
+  }
 );
 assert_convert_ast('cross reference c simple',
   `= Tmp

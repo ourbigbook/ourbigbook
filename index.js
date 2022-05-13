@@ -8294,7 +8294,7 @@ function ourbigbook_code_math_block(c) {
     while (content.indexOf(delim) !== -1) {
       delim += c
     }
-    const newline = context.in_paragraph ? '' : '\n\n'
+    const newline = ourbigbook_add_newlines_after_block(ast, context) ? '\n\n' : ''
     return `${delim}
 ${content}${delim}${newline}`
   }
@@ -8324,15 +8324,16 @@ function ourbigbook_li(marker) {
   }
 }
 
+function ourbigbook_add_newlines_after_block(ast, context) {
+  return !ast.is_last_in_argument() &&
+    !context.macros[ast.parent_argument.get(ast.parent_argument_index + 1).macro_name].options.phrasing
+}
+
 function ourbigbook_ul(ast, context) {
   if (!ast.args.content || Object.keys(ast.args).length !== 1) {
     return ourbigbook_convert_simple_elem(ast, context)
   } else {
-    const newline = (
-      ast.is_last_in_argument() ||
-      context.macros[ast.parent_argument.get(ast.parent_argument_index + 1).macro_name].options.phrasing
-    ) ? '' : '\n\n'
-    //const newline = ast.is_last_in_argument() ? '' : '\n\n'
+    const newline = ourbigbook_add_newlines_after_block(ast, context) ? '\n\n' : ''
     return `${render_arg(ast.args.content, context)}${newline}`
   }
 }
@@ -8452,7 +8453,6 @@ function ourbigbook_convert_args(ast, context, options={}) {
       ret.push(END_NAMED_ARGUMENT_CHAR.repeat(delim_repeat))
       if (
         !macro.options.phrasing &&
-        !context.in_paragraph &&
         (
           argname_idx !== named_args.length - 1 ||
           multiple_idx !== ast_args.length - 1
@@ -8472,7 +8472,7 @@ function ourbigbook_convert_simple_elem(ast, context) {
   ret.push(ESCAPE_CHAR + ast.macro_name)
   const macro = context.macros[ast.macro_name]
   ourbigbook_convert_args(ast, context, { ret })
-  if (!macro.options.phrasing && !ast.is_last_in_argument() && !context.in_paragraph) {
+  if (ourbigbook_add_newlines_after_block(ast, context)) {
     ret.push('\n\n')
   }
   return ret.join('')
@@ -8517,7 +8517,7 @@ OUTPUT_FORMATS_LIST.push(
           if (!ast.args.content || Object.keys(ast.args).length !== 1) {
             return ourbigbook_convert_simple_elem(ast, context)
           } else {
-            const rendered_arg = render_arg(ast.args.content, clone_and_set(context, 'in_paragraph', true))
+            const rendered_arg = render_arg(ast.args.content, context)
             const newline = ast.is_last_in_argument() ? '' : '\n\n'
             return `${rendered_arg}${newline}`
           }

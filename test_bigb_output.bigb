@@ -189,6 +189,14 @@ Nested and tight:
   done.
 * after
 
+\Q[list after block tight]
+* the list
+
+List in paragraph with blocks with paragraph:
+* \Q[first]
+
+  \Q[second]
+
 Table:
 
 || header 1

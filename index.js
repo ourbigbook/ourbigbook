@@ -8302,6 +8302,7 @@ ${content}${delim}${newline}`
 
 function ourbigbook_li(marker) {
   return function(ast, context) {
+    context = clone_and_set(context, 'in_paragraph', false)
     if (!ast.args.content || Object.keys(ast.args).length !== 1) {
       return ourbigbook_convert_simple_elem(ast, context)
     } else {
@@ -8326,6 +8327,7 @@ function ourbigbook_li(marker) {
 
 function ourbigbook_add_newlines_after_block(ast, context) {
   return !ast.is_last_in_argument() &&
+    !context.in_paragraph &&
     !context.macros[ast.parent_argument.get(ast.parent_argument_index + 1).macro_name].options.phrasing
 }
 
@@ -8517,7 +8519,7 @@ OUTPUT_FORMATS_LIST.push(
           if (!ast.args.content || Object.keys(ast.args).length !== 1) {
             return ourbigbook_convert_simple_elem(ast, context)
           } else {
-            const rendered_arg = render_arg(ast.args.content, context)
+            const rendered_arg = render_arg(ast.args.content, clone_and_set(context, 'in_paragraph', true))
             const newline = ast.is_last_in_argument() ? '' : '\n\n'
             return `${rendered_arg}${newline}`
           }

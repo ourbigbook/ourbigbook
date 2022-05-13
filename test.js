@@ -1061,9 +1061,29 @@ assert_convert_ast('nested list insane',
     ]),
   ]
 );
-assert_convert_ast('escape insane list',
+assert_convert_ast('escape insane list at start of document',
   '\\* a',
   [a('P', [t('* a')])],
+);
+assert_convert_ast('escape insane list after a newline',
+  `a
+\\* b`,
+  [a('P', [t('a\n* b')])],
+);
+assert_convert_ast('escape insane list inside list indent',
+  `* a
+  \\* b`,
+  [
+    a('Ul', [
+      a('L', [
+        t('a\n* b'),
+      ]),
+    ]),
+  ]
+);
+assert_convert_ast('asterisk in the middle of line does not need to be escaped',
+  'a * b',
+  [a('P', [t('a * b')])],
 );
 // https://github.com/cirosantilli/ourbigbook/issues/81
 assert_convert_ast('insane list immediately inside insane list',
@@ -3951,6 +3971,10 @@ assert_error('header file argument to a file that does not exist give an error',
 == dont-exist
 {file}
 `, 3, 1);
+assert_convert_ast('escape insane header at start of document',
+  '\\= a',
+  [a('P', [t('= a')])],
+);
 
 // Code.
 assert_convert_ast('code inline sane',

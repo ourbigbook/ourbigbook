@@ -2,6 +2,29 @@
 
 Escape chars: \\, \[, \], \{, \}, \<, \`, \$
 
+Escape at start of newline only:
+\* *
+\= =
+\|| ||
+\| |
+
+
+* Same in list indent:
+  \* *
+  \= =
+  \|| ||
+  \| |
+
+Same at start of argument:
+
+\Q[\* *]
+
+\Q[\= =]
+
+\Q[\|| ||]
+
+\Q[\| |]
+
 Sane inline element: \i[qwer] after.
 
 Sane inline element with named argument: \a[qwer]{check=0} after.
@@ -43,6 +66,10 @@ Sane block together with paragraph:
 and another:
 \Q[or maybe not]
 and finally.
+
+Literal block that renders as sane:
+
+\Q[[To be \i[or] maybe not.]]
 
 Insane block together with paragraph:
 ``
@@ -204,7 +231,19 @@ Hello
 World
 ]]
 
+\Comment[[
+Hello
+
+World
+]]
+
 == Black cat
+
+== Black
+
+== Black dog
+{tag=dog}
+{tag=black}
 
 == Header with args
 {id=tmp-2}

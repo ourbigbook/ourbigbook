@@ -1231,26 +1231,7 @@ For example, the word "Python" could either refer to:
 The `disambiguate` \x[positional-vs-named-arguments][name argument], which is automatically defined for all macros, helps you deal more neatly with such problems.
 
 Have a look at this example:
-``
-My favorite snakes are \x[python-genus]{p}!
-
-My favorite programming language is \x[python-programming-language]!
-
-\x[python-genus]{full}
-
-\x[python-programming-language]{full}
-
-== Python
-{disambiguate=genus}
-
-== Python
-{c}
-{disambiguate=programming language}
-{title2=.py}
-{wiki}
-``
-which renders as:
-\Q[
+\OurBigBookExample[[
 My favorite snakes are \x[python-genus]{p}!
 
 My favorite programming language is \x[python-programming-language]!
@@ -1269,7 +1250,7 @@ My favorite programming language is \x[python-programming-language]!
 {parent=h-disambiguate-argument}
 {title2=.py}
 {wiki}
-]
+]]
 from which we observe how `disambiguate`:
 * gets added to the ID after conversion following the same rules as \x[automatic-id-from-title]
 * shows up on the header between parenthesis, much like Wikipedia, as well as in \x[x-full-argument][`full` cross references]

@@ -4967,6 +4967,21 @@ Examples of embedding that could be implemented in the future:
 Keep in mind that certain things can never be embedded, e.g.:
 * YouTube videos, since YouTube does not offer any download API
 
+= `--format-source`
+{parent=ourbigbook-cli-options}
+
+Parse and overwrite the local .bigb <OurBigBook Markup> input source files with the recommended code format. E.g.:
+``
+ourbigbook README.bigb
+``
+overwrites `README.bigb` with the recommended formatting, and:
+``
+ourbigbook .
+``
+does that for every single file in the current directory.
+
+This option uses the <bigb output format>.
+
 = `--generate`
 {parent=ourbigbook-cli-options}
 
@@ -5262,7 +5277,7 @@ The default output format. Web pages!!!
 Outputs as <OurBigBook Markup>, i.e. the same format as the input itself!
 
 While using `-O bigb` is not a common use case, the existence of this format has the following applications:
-* automatic source code formatting
+* automatic source code formatting e.g. with <--format-source>. The recommended format, including several edge cases, can be seen in the test file \a[test_bigb_output.bigb], which should be left unchanged by a `bigb` conversion.
 * manipulating source code on <ourbigbook web> to allow editing either individual sections separatelly, or multiple sections at once
 * this could be adapted to allows us to migrate updates with breaking changes to the source code more easily. Alternatively on <ourbigbook web>, we might just start storing the <ast> instead of source, and just rendering the source whenever users want to edit it.
 

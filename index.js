@@ -8309,6 +8309,7 @@ function ourbigbook_li(marker) {
       if (
         ast.parent_argument_index === 0 &&
         // This feels hacky, but I can't find a better way.
+        context.last_render &&
         context.last_render[context.last_render.length - 1] !== '\n'
       ) {
         newline_before = '\n'
@@ -8327,7 +8328,11 @@ function ourbigbook_ul(ast, context) {
   if (!ast.args.content || Object.keys(ast.args).length !== 1) {
     return ourbigbook_convert_simple_elem(ast, context)
   } else {
-    const newline = ast.is_last_in_argument() ? '' : '\n\n'
+    const newline = (
+      ast.is_last_in_argument() ||
+      context.macros[ast.parent_argument.get(ast.parent_argument_index + 1).macro_name].options.phrasing
+    ) ? '' : '\n\n'
+    //const newline = ast.is_last_in_argument() ? '' : '\n\n'
     return `${render_arg(ast.args.content, context)}${newline}`
   }
 }

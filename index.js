@@ -4487,7 +4487,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         // Handle the H file argument previews.
         header_file_preview_ast = header_file_preview_ast_next
         header_file_preview_ast_next = undefined
-        if (ast.file) {
+        if (ast.file && context.options.output_format !== OUTPUT_FORMAT_OURBIGBOOK) {
           if (IMAGE_EXTENSIONS.has(path_splitext(ast.file)[1])) {
             header_file_preview_ast_next = new AstNode(
               AstType.MACRO,

@@ -197,6 +197,10 @@ List in paragraph with blocks with paragraph:
 
   \Q[second]
 
+List in paragraph with block followed by nested list tight:
+* \Q[first]
+  * second
+
 Table:
 
 || header 1

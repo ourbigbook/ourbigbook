@@ -914,7 +914,7 @@ bb
     a('Ul', [
       a('L', [
         a('P', [t('aa')]),
-        a('P', [t('bb\n')]),
+        a('P', [t('bb')]),
       ]),
     ]),
   ]
@@ -1692,7 +1692,7 @@ e
 [
   a('P', [t('a')]),
   a('P', [
-    a('C', [t('b\nc\n')]),
+    a('C', [t('b\nc')]),
     t('\nd'),
   ]),
   a('P', [t('e')]),
@@ -1712,7 +1712,7 @@ e
 [
   a('P', [t('a')]),
   a('P', [
-    a('C', [t('b\nc\n')]),
+    a('C', [t('b\nc')]),
     t('\n'),
     a('c', [t('d')]),
   ]),
@@ -1741,13 +1741,13 @@ d
   a('P', [t('d')]),
 ],
 );
-assert_convert_ast('non-literal argument leading newline gets removed',
+assert_convert_ast('non-literal argument leading and trailing newline get removed',
   `\\P[
 a
 b
 ]
 `,
-  [a('P', [t('a\nb\n')])],
+  [a('P', [t('a\nb')])],
 );
 assert_convert_ast('literal argument leading newline gets removed',
   `\\P[[
@@ -5814,6 +5814,46 @@ assert_convert_ast('bigb output: converts sane refs to insane ones',
 
 == Black cat
 `
+  },
+);
+assert_convert_ast('bigb output: adds newlines to start and end of multiline arguments',
+  `\\Q[Positional oneline first]
+
+\\Q[Positional multiline first
+
+Positional multiline second]
+
+\\Image[a.png]
+{description=Named oneline first}
+
+\\Image[a.png]
+{description=Named multiline first
+
+Named multiline second}
+`,
+  undefined,
+  {
+    bigb: `\\Q[Positional oneline first]
+
+\\Q[
+Positional multiline first
+
+Positional multiline second
+]
+
+\\Image[a.png]
+{description=Named oneline first}
+
+\\Image[a.png]
+{description=
+Named multiline first
+
+Named multiline second
+}
+`,
+    filesystem: {
+      'a.png': '',
+    }
   },
 );
 

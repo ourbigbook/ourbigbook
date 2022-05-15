@@ -49,7 +49,11 @@ Inline code block with backtick and triple open square brackets: \c[[[[a ` [[[ b
 \Q[
 Sane block with a single line.
 
-With multiple lines.
+No, actually multiple lines.
+]
+
+\Q[
+\Q[Nested sane block]tight.
 ]
 
 Sane block together with paragraph:

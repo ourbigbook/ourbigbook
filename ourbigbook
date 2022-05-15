@@ -177,13 +177,15 @@ async function convert_directory(input_path, ourbigbook_options, non_ourbigbook_
 
 /** Extract IDs from all input files into the ID database, without fully converting. */
 async function convert_directory_extract_ids(input_path, ourbigbook_options, non_ourbigbook_options) {
-  await convert_directory(
-    input_path,
-    ourbigbook.clone_and_set(ourbigbook_options, 'render', false),
-    non_ourbigbook_options
-  );
-  if (non_ourbigbook_options.sequelize) {
-    non_ourbigbook_options.sequelize
+  if (!non_ourbigbook_options.commander.formatSource) {
+    // Currently we don't use the database at all for -O bigb.
+    // It is true that using the DB would allow slightly better magic internal reference decisions,
+    // between plural or not, but we haven't implemented that so far, so just skip for now.
+    await convert_directory(
+      input_path,
+      ourbigbook.clone_and_set(ourbigbook_options, 'render', false),
+      non_ourbigbook_options
+    );
   }
 }
 

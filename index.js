@@ -8551,7 +8551,10 @@ OUTPUT_FORMATS_LIST.push(
           }
         },
         'b': ourbigbook_convert_simple_elem,
-        'br': ourbigbook_convert_simple_elem,
+        'br': function (ast, context) {
+          const newline = ast.is_last_in_argument() ? '' : '\n'
+          return `${ourbigbook_convert_simple_elem(ast, context)}${newline}`
+        },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbook_code_math_block(INSANE_CODE_CHAR),
         [Macro.CODE_MACRO_NAME]: ourbigbook_code_math_inline(INSANE_CODE_CHAR),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: ourbigbook_convert_simple_elem,

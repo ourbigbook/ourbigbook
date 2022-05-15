@@ -118,6 +118,13 @@ x = 1
 x = x + 1
 ````
 
+Insane code block with attribute:
+
+``
+x = 1
+``
+{description=My code}
+
 Inline math: $\sqrt{2}$ after.
 
 Block math:

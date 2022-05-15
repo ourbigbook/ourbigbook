@@ -8417,6 +8417,12 @@ function ourbigbook_prefer_literal(ast, context, ast_arg, arg, open, close) {
       ) {
         delim_repeat++
       }
+      if (rendered_arg[0] === open) {
+        rendered_arg = ESCAPE_CHAR + rendered_arg
+      }
+      if (rendered_arg[rendered_arg.length - 1] === close) {
+        rendered_arg = rendered_arg.substring(0, rendered_arg.length - 1) + ESCAPE_CHAR + close
+      }
     }
   }
   if (!rendered_arg) {

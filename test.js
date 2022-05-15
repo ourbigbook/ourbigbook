@@ -2878,6 +2878,24 @@ assert_convert_ast('cross reference magic insane to scope',
     ],
   }
 );
+assert_convert_ast('cross reference magic insane to header file argument',
+  `= Notindex
+
+<file/path/to/my_file.jpg>
+
+== path/to/my_file.jpg
+{file}
+`,
+  undefined,
+  {
+    assert_xpath_main: [
+      "//x:div[@class='p']//x:a[@href='#file/path/to/my_file.jpg' and text()='path/to/my_file.jpg']",
+    ],
+    filesystem: {
+      'path/to/my_file.jpg': '',
+    },
+  }
+);
 assert_convert_ast('cross reference c simple',
   `= Tmp
 

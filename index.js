@@ -82,14 +82,14 @@ class AstNode {
     if (!('numbered' in options)) {
       options.numbered = true;
     }
-    if (!('parent_node' in options)) {
+    if (!('parent_ast' in options)) {
       // AstNode. This is different from header_tree_node because
       // it points to the parent ast node, i.e. the ast_node that
       // contains this inside one of its arguments.
       //
       // header_tree_node on the other hand points to the header tree.
       // The header tree is currently not even connected via arguments.
-      options.parent_node = undefined;
+      options.parent_ast = undefined;
     }
     if (!('split_default' in options)) {
       options.split_default = false;
@@ -151,7 +151,7 @@ class AstNode {
     // that argument determines this .numbered of descendants only. This is analogous to scope.
     this.numbered = options.numbered;
     // {AstNode} that contains this as an argument.
-    this.parent_node = options.parent_node;
+    this.parent_ast = options.parent_ast;
     // AstArgument
     this.parent_argument = undefined;
     this.split_default = options.split_default;
@@ -215,7 +215,7 @@ class AstNode {
       const arg = args[argname]
       this.setup_argument(argname, arg);
       for (const ast of arg) {
-        ast.parent_node = this
+        ast.parent_ast = this
       }
     }
   }
@@ -353,10 +353,10 @@ class AstNode {
     // Add a div to all direct children of toplevel to implement
     // the on hover links to self and left margin.
     {
-      const parent_node = this.parent_node;
+      const parent_ast = this.parent_ast;
       if (
-        parent_node !== undefined &&
-        parent_node.macro_name === Macro.TOPLEVEL_MACRO_NAME &&
+        parent_ast !== undefined &&
+        parent_ast.macro_name === Macro.TOPLEVEL_MACRO_NAME &&
         this.id !== undefined &&
         macro.toplevel_link
       ) {
@@ -377,10 +377,10 @@ class AstNode {
   get_local_header_parent_id() {
     if (
       this.header_tree_node !== undefined &&
-      this.header_tree_node.parent_node !== undefined &&
-      this.header_tree_node.parent_node.ast !== undefined
+      this.header_tree_node.parent_ast !== undefined &&
+      this.header_tree_node.parent_ast.ast !== undefined
     ) {
-      return this.header_tree_node.parent_node.ast.id
+      return this.header_tree_node.parent_ast.ast.id
     }
     return undefined
   }
@@ -533,7 +533,7 @@ class AstNode {
 
   setup_argument(argname, arg) {
     // TODO the second post process pass is destroying this information.
-    arg.parent_node = this;
+    arg.parent_ast = this;
     arg.argument_name = argname;
   }
 
@@ -678,9 +678,11 @@ class AstArgument {
     }
     this.source_location = source_location;
     // AstNode
-    this.parent_node = undefined;
+    this.parent_ast = undefined;
     // String
     this.argument_name = undefined;
+    // boolean
+    //this.has_paragraph = undefined;
     let i = 0;
     for (const ast of this.asts) {
       ast.parent_argument = this;
@@ -1911,23 +1913,23 @@ class HeaderTreeNode {
    *
    * toplevel -> value -> toplevel header ast
    *   -> child[0] -> value -> h2 1 header ast
-   *               -> parent_node -> toplevel
+   *               -> parent_ast -> toplevel
    *   -> child[1] -> value -> h2 2 header ast
-   *               -> parent_node -> toplevel
+   *               -> parent_ast -> toplevel
    *
    * P inside  h2 1:
-   *   -> parent_node -> child[0]
+   *   -> parent_ast -> child[0]
    * a inside P inside  h2 1:
-   *   -> parent_node -> child[0]
+   *   -> parent_ast -> child[0]
    *
    * And every non-header element also gets a parent link to its header without child down:
    *
    * @param {AstNode} value
-   * @param {HeaderTreeNode} parent_node
+   * @param {HeaderTreeNode} parent_ast
    */
-  constructor(ast, parent_node, options={}) {
+  constructor(ast, parent_ast, options={}) {
     this.ast = ast;
-    this.parent_node = parent_node;
+    this.parent_ast = parent_ast;
     this.children = [];
     this.index = undefined;
     this.descendant_count = 0;
@@ -1935,8 +1937,8 @@ class HeaderTreeNode {
     if (ast !== undefined) {
       this.word_count = ast.word_count;
       if (!ast.in_header) {
-        let cur_node = this.parent_node;
-        if (cur_node !== undefined && cur_node.parent_node !== undefined) {
+        let cur_node = this.parent_ast;
+        if (cur_node !== undefined && cur_node.parent_ast !== undefined) {
           cur_node.update_ancestor_counts(this.word_count + ast.header_tree_node_word_count)
         }
       }
@@ -1951,7 +1953,7 @@ class HeaderTreeNode {
     let cur_node = this;
     while (cur_node !== undefined) {
       cur_node.descendant_count += 1;
-      cur_node = cur_node.parent_node;
+      cur_node = cur_node.parent_ast;
     }
   }
 
@@ -1959,10 +1961,10 @@ class HeaderTreeNode {
    * the to of the root of the tree. */
   get_level() {
     let level = 0;
-    let cur_node = this.parent_node;
+    let cur_node = this.parent_ast;
     while (cur_node !== undefined) {
       level++;
-      cur_node = cur_node.parent_node;
+      cur_node = cur_node.parent_ast;
     }
     return level;
   }
@@ -1982,7 +1984,7 @@ class HeaderTreeNode {
       cur_node.get_level() !== header_tree_top_level
     ) {
       indexes.push(cur_node.index + 1);
-      cur_node = cur_node.parent_node;
+      cur_node = cur_node.parent_ast;
     }
     return indexes.reverse().join('.');
   }
@@ -2006,10 +2008,10 @@ class HeaderTreeNode {
   }
 
   update_ancestor_counts(add) {
-    let cur_node = this.parent_node
+    let cur_node = this.parent_ast
     while (cur_node !== undefined) {
       cur_node.descendant_word_count += add;
-      cur_node = cur_node.parent_node;
+      cur_node = cur_node.parent_ast;
     }
   }
 }
@@ -2591,6 +2593,16 @@ exports.convert = convert;
 function render_arg(arg, context) {
   let converted_arg = [];
   if (arg !== undefined) {
+    if (context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
+      for (const ast of arg) {
+        if (ast.macro_name === Macro.PARAGRAPH_MACRO_NAME) {
+          arg.has_paragraph = true
+        }
+        if (context.macros[ast.macro_name].options.phrasing) {
+          arg.not_all_block = true
+        }
+      }
+    }
     for (const ast of arg) {
       converted_arg.push(ast.render(context));
     }
@@ -4009,7 +4021,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
     const [parent_arg, ast] = pop
     if (parent_arg.argument_name === Macro.TITLE_ARGUMENT_NAME) {
-      const parent_ast = parent_arg.parent_node
+      const parent_ast = parent_arg.parent_ast
       title_ast_ancestors.push(parent_ast)
       todo_visit.push('pop_title_ast_ancestors')
       if (parent_ast.macro_name === Macro.HEADER_MACRO_NAME) {
@@ -4042,7 +4054,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           if (parent_ast === undefined) {
             const message = Macro.INCLUDE_MACRO_NAME + ' ' + HEADER_PARENT_ERROR_MESSAGE + parent_id;
             const error_ast = new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location);
-            error_ast.parent_node = ast.parent_node;
+            error_ast.parent_ast = ast.parent_ast;
             parent_arg.push(error_ast);
             parse_error(state, message, ast.args.parent.source_location);
           }
@@ -4206,7 +4218,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             // - the current header level must not move, so that consecutive \Include
             //   calls won't nest into one another
             for (const new_child_node of new_child_nodes) {
-              new_child_node.parent_node = ast.parent_node;
+              new_child_node.parent_ast = ast.parent_ast;
             }
             parent_arg.push(...new_child_nodes);
           }
@@ -4706,7 +4718,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           context.has_toc = true;
         } else if (
           macro_name === Macro.TOPLEVEL_MACRO_NAME &&
-          ast.parent_node !== undefined
+          ast.parent_ast !== undefined
         ) {
           // Prevent this from happening. When this was committed originally,
           // it actually worked and output an `html` inside another `html`.
@@ -4737,7 +4749,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               {},
               new SourceLocation(undefined, undefined, context.options.input_path),
               {
-                parent_node: ast.parent_node
+                parent_ast: ast.parent_ast
               }
             ))
             context.has_toc = true;
@@ -4782,7 +4794,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             arg.get(0).macro_name === Macro.LINK_MACRO_NAME
           ) {
             const href_arg = arg.get(0).args.href;
-            href_arg.parent_node = ast;
+            href_arg.parent_ast = ast;
             arg = href_arg;
           }
 
@@ -4851,7 +4863,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                       },
                       start_auto_child_node.source_location,
                       {
-                        parent_node: child_node.parent_node
+                        parent_ast: child_node.parent_ast
                       }
                     )], child_node.source_location);
                     // Because the for loop will advance past it.
@@ -4920,7 +4932,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                       },
                       start_auto_child_node.source_location,
                       {
-                        parent_node: child_node.parent_node
+                        parent_ast: child_node.parent_ast
                       }
                     )], child_node.source_location);
                     // Because the for loop will advance past it.
@@ -5028,8 +5040,8 @@ async function parse(tokens, options, context, extra_returns={}) {
           // Propagate some header properties to non-header children.
           // This allows us to save some extra DB fetches, at the cost of making the JSON slightly larger.
           // and duplicating data a bit. But whaterver, simpler code with less JOINs.
-          if (ast.header_tree_node.parent_node !== undefined && ast.header_tree_node.parent_node.ast !== undefined) {
-            const header_ast = ast.header_tree_node.parent_node.ast
+          if (ast.header_tree_node.parent_ast !== undefined && ast.header_tree_node.parent_ast.ast !== undefined) {
+            const header_ast = ast.header_tree_node.parent_ast.ast
             ast.split_default = header_ast.split_default;
             ast.is_first_header_in_input_file = header_ast.is_first_header_in_input_file;
           }
@@ -5344,7 +5356,7 @@ function parse_add_paragraph(
           },
           arg.get(paragraph_start).source_location,
           {
-            parent_node: ast,
+            parent_ast: ast,
           }
         )
       );
@@ -5693,7 +5705,7 @@ exports.perf_print = perf_print
 function propagate_numbered(ast, context) {
   // numbered propagation to children.
   // Note that the property only affects descendants, but not the node itself.
-  const parent_tree_node = ast.header_tree_node.parent_node
+  const parent_tree_node = ast.header_tree_node.parent_ast
   if (
     parent_tree_node === undefined ||
     parent_tree_node.ast === undefined
@@ -6503,6 +6515,7 @@ const INSANE_STARTS_TO_MACRO_NAME = {
   [INSANE_TD_START]: Macro.TD_MACRO_NAME,
   [INSANE_TH_START]: Macro.TH_MACRO_NAME,
 };
+const INSANE_STARTS_MACRO_NAMES = new Set(Object.values(INSANE_STARTS_TO_MACRO_NAME))
 const AstType = make_enum([
   // An in-output error message.
   'ERROR',
@@ -8207,7 +8220,7 @@ const OUTPUT_FORMATS_LIST = [
               // Happens on error case of linking to non existent ID.
               target_ast === undefined ||
               // Happens for cross links. TODO make those work too...
-              target_ast.parent_node === undefined
+              target_ast.parent_ast === undefined
             ) {
               counts_str = '';
             } else {
@@ -8313,6 +8326,10 @@ function ourbigbook_li(marker) {
       let newline_before
       if (
         ast.parent_argument_index === 0 &&
+        !(
+          INSANE_STARTS_MACRO_NAMES.has(ast.parent_ast.parent_ast.macro_name) &&
+          ast.parent_ast.parent_argument_index === 0
+        ) &&
         // This feels hacky, but I can't find a better way.
         context.last_render &&
         context.last_render[context.last_render.length - 1] !== '\n'
@@ -8330,10 +8347,22 @@ function ourbigbook_li(marker) {
 }
 
 function ourbigbook_add_newlines_after_block(ast, context) {
-  return !context.in_paragraph &&
+  return !context.macros[ast.macro_name].options.phrasing &&
     !ast.is_last_in_argument() &&
-    !context.macros[ast.macro_name].options.phrasing &&
-    !context.macros[ast.parent_argument.get(ast.parent_argument_index + 1).macro_name].options.phrasing
+    (
+      (context.li_depth === 0 && !context.in_paragraph) ||
+      (
+        // It is a bit sad that we have to use this special li_depth > 0 processing here.
+        // It would be saner if indented blocks were exactly the same as toplevel.
+        // But it just intuitively feels that the "no loose on toplevel, but loose in lists"
+        // sound good, so going for it like that now...
+        context.li_depth > 0 &&
+          (
+            ( ast.parent_argument.has_paragraph && !context.in_paragraph ) ||
+            ( !ast.parent_argument.has_paragraph && !ast.parent_argument.not_all_block )
+          )
+      )
+    )
 }
 
 function ourbigbook_ul(ast, context) {

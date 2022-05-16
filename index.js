@@ -1520,7 +1520,7 @@ class Tokenizer {
       if (this.cur_c === ESCAPE_CHAR) {
         this.consume();
         if (this.is_end()) {
-          // Maybe this should be an error.
+          this.error(`trailing unescaped ${ESCAPE_CHAR}`, start_source_location);
         } else if (!char_is_identifier(this.cur_c)) {
           this.consume_plaintext_char();
         } else {

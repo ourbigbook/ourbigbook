@@ -4525,8 +4525,11 @@ and close examples:
 <code>a \]</code>
 ``
 
-= Argument leading newline removal
+= Argument leading and trailing newline removal
 {parent=macro-argument-syntax}
+
+= Argument leading newline removal
+{synonym}
 
 If the very first or very last character of an argument is a newline, then that character is ignored if it would be part of a regular plaintext node.
 

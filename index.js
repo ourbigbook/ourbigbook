@@ -3493,9 +3493,13 @@ function html_is_whitespace(string) {
 }
 
 function html_katex_convert(ast, context) {
+  let katex_in = render_arg(ast.args.content, clone_and_set(context, 'html_escape', false))
+  if (!katex_in.endsWith('\n')) {
+    katex_in += '\n'
+  }
   try {
     return katex.renderToString(
-      render_arg(ast.args.content, clone_and_set(context, 'html_escape', false)),
+      katex_in,
       {
         globalGroup: true,
         macros: context.katex_macros,

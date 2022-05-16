@@ -1918,6 +1918,7 @@ class Tokenizer {
       plaintext + append,
       start_source_location,
     );
+    this.consume_optional_newline_before_close();
 
     // Skip over the closing string.
     for (let i = 0; i < close_string.length; i++)
@@ -8334,7 +8335,8 @@ function ourbigbook_code_math_block(c) {
     const newline = ourbigbook_add_newlines_after_block(ast, context) ? '\n\n' : ''
     const attrs = ourbigbook_convert_args(ast, context, { skip: new Set(['content']) }).join('')
     return `${delim}
-${content}${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`
+${content}
+${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`
   }
 }
 

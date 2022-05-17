@@ -8337,12 +8337,13 @@ function ourbigbook_code_math_inline(c) {
 
 function ourbigbook_code_math_block(c) {
   return function(ast, context) {
-    const content = render_arg(ast.args.content, clone_and_set(context, 'in_literal', true))
+    context = clone_and_set(context, 'in_literal', true)
+    const content = render_arg(ast.args.content, context)
     let delim = c + c
     while (content.indexOf(delim) !== -1) {
       delim += c
     }
-    const newline = ourbigbook_add_newlines_after_block(ast, context) ? '\n\n' : ''
+    const newline = '\n'.repeat(ourbigbook_add_newlines_after_block(ast, context))
     const attrs = ourbigbook_convert_args(ast, context, { skip: new Set(['content']) }).join('')
     return `${delim}
 ${content}
@@ -8379,7 +8380,8 @@ function ourbigbook_li(marker) {
 }
 
 function ourbigbook_add_newlines_after_block(ast, context) {
-  return !context.macros[ast.macro_name].options.phrasing &&
+  if (
+    !context.macros[ast.macro_name].options.phrasing &&
     !ast.is_last_in_argument() &&
     (
       // It is a bit sad that we have to use this "am I on toplevel" checks processing here.
@@ -8400,14 +8402,29 @@ function ourbigbook_add_newlines_after_block(ast, context) {
           )
       )
     )
+  ) {
+    let n = 2
+    if (context.last_render) {
+      if (context.last_render[context.last_render.length - 1] === '\n') {
+        n--
+        if (context.last_render[context.last_render.length - 2] === '\n') {
+          n--
+        }
+      }
+    }
+    return n
+  } else {
+    return 0
+  }
 }
 
 function ourbigbook_ul(ast, context) {
   if (!ast.args.content || Object.keys(ast.args).length !== 1) {
     return ourbigbook_convert_simple_elem(ast, context)
   } else {
-    const newline = ourbigbook_add_newlines_after_block(ast, context) ? '\n\n' : ''
-    return `${render_arg(ast.args.content, context)}${newline}`
+    const argstr = render_arg(ast.args.content, context)
+    const newline = '\n'.repeat(ourbigbook_add_newlines_after_block(ast, context))
+    return `${argstr}${newline}`
   }
 }
 
@@ -8552,9 +8569,7 @@ function ourbigbook_convert_simple_elem(ast, context) {
   ret.push(ESCAPE_CHAR + ast.macro_name)
   const macro = context.macros[ast.macro_name]
   ourbigbook_convert_args(ast, context, { ret })
-  if (ourbigbook_add_newlines_after_block(ast, context)) {
-    ret.push('\n\n')
-  }
+  ret.push('\n'.repeat(ourbigbook_add_newlines_after_block(ast, context)))
   return ret.join('')
 }
 

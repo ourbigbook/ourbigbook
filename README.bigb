@@ -4594,6 +4594,13 @@ There is one exception to this however: inside an \x[header][insane header], any
 ``
 and the `id` gets assigned to the header rather than the trailing code element.
 
+= Document trailing newline removal
+{parent=macro-argument-syntax}
+
+If the document ends one newline, it is ignored.
+
+If it is two or more, then that generates an error.
+
 = Escape characters
 {parent=macro-argument-syntax}
 

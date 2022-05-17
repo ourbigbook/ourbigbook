@@ -2414,13 +2414,18 @@ async function convert(
   let sub_extra_returns;
   sub_extra_returns = {};
   perf_print(context, 'tokenize_pre')
-  let tokens = (new Tokenizer(
+  input_string = input_string.replace(/\n$/, '')
+  const tokenizer = new Tokenizer(
     input_string,
     sub_extra_returns,
     context.options.log.tokenize,
     context.options.start_line,
     context.options.input_path,
-  )).tokenize();
+  )
+  let tokens = tokenizer.tokenize();
+  if (input_string[input_string.length - 1] === '\n') {
+    context.errors.push(new ErrorMessage(`the document cannot end in two or more newlines`, tokenizer.source_location))
+  }
   perf_print(context, 'tokenize_post')
   if (context.options.log['tokens-inside']) {
     console.error('tokens:');

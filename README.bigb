@@ -6010,9 +6010,25 @@ If the `prepublish` script returns with a non-zero exit value, the publish is ab
 
 Generate custom redirects.
 
-When dealing with regular \x[header]{p}, you generally don't want to use this option, because the \x[h-synonym-argument] does that for you.
+For example:
+``
+"redirects": [
+  ["cirodown", "ourbigbook"]
+],
+``
+produces a file in the output called `cirodown.html` that redirects to `ourbigbook.html`.
 
-This option can be useful however for dealing with things that are outside of your OurBigBook project.
+Absolute URLs are also accepted, e.g.:
+``
+"redirects": [
+  ["ourbigbook", "https://docs.ourbigbook.com"]
+],
+``
+produces a file in the output called `ourbigbook.html` that redirects to `https://docs.ourbigbook.com`.
+
+When dealing with regular \x[header]{p}, you generally don't want to use this option and instead use the \x[h-synonym-argument], which already creates the redirection for you.
+
+This JSON option can be useful however for dealing with things that are outside of your OurBigBook project.
 
 For example, at one point, this project renamed the repository https://github.com/cirosantilli/cirodown[] to https://github.com/cirosantilli/ourbigbook[].
 

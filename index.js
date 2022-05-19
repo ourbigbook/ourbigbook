@@ -1019,7 +1019,7 @@ class MacroArgument {
       options.positive_nonzero_integer = false;
     }
     if (!('remove_whitespace_children' in options)) {
-      // https://cirosantilli.com/ourbigbook#remove_whitespace_children
+      // https://cirosantilli.com/ourbigbook#remove-whitespace-children
       options.remove_whitespace_children = false;
     }
     this.boolean = options.boolean;
@@ -7505,7 +7505,8 @@ const OUTPUT_FORMATS_LIST = [
     {
       ext: HTML_EXT,
       toplevel_child_modifier: function(ast, context, out) {
-        return `<div>${html_hide_hover_link(x_href(ast, context))}${out}</div>`;
+        return `<div>${html_hide_hover_link(x_href(ast, context))}${out}</div>
+`;
       },
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {

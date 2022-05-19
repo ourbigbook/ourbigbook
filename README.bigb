@@ -6480,7 +6480,7 @@ This section will eventually be moved into the website itself. We'll just likely
 {parent=ourbigbook-web-help}
 
 * Global:
-  * Ctrl + Enter: submit the current form, e.g. save/create artiles or comments, login, register
+  * Ctrl + Enter: submit the current form, e.g. save/create articles or comments, login, register
   * TODO N: create a new article. This requires making sure that all input fields and textareas don't propagate N key events. We did that as a one off for E in comment textareas.
 * Page specific:
   * Article page (and for Index page on user page):

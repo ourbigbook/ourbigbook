@@ -181,7 +181,7 @@ These will show up on the metadata of a given header.
 
 Note that metadata is only visible when the header is the toplevel header of a page, otherwise it would clutter your headers too much, so it is not very easy to see in this single page example.
 
-But all headers get their own toplevel pages when using split headers: https://cirosantilli.com/ourbigbook/split-headers
+But all headers get their own toplevel pages when using split headers: https://docs.ourbigbook.com/split-headers
 
 === Animal
 

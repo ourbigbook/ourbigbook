@@ -990,26 +990,26 @@ class MacroArgument {
       //
       // Goal: to allow the use to write both \a[http://example.com] and
       // \p[http://example.com] and get what a sane person expects, see also:
-      // https://cirosantilli.com/ourbigbook#insane-link-parsing-rules
+      // https://docs.ourbigbook.com#insane-link-parsing-rules
       options.elide_link_only = false;
     }
     if (!('boolean' in options)) {
-      // https://cirosantilli.com/ourbigbook#boolean-argument
+      // https://docs.ourbigbook.com#boolean-argument
       options.boolean = false;
     }
     if (!('count_words' in options)) {
       options.count_words = false;
     }
     if (!('default' in options)) {
-      // https://cirosantilli.com/ourbigbook#boolean-named-arguments
+      // https://docs.ourbigbook.com#boolean-named-arguments
       options.default = undefined;
     }
     if (!('mandatory' in options)) {
-      // https://cirosantilli.com/ourbigbook#mandatory-positional-arguments
+      // https://docs.ourbigbook.com#mandatory-positional-arguments
       options.mandatory = false;
     }
     if (!('multiple' in options)) {
-      // https://cirosantilli.com/ourbigbook#multiple-argument
+      // https://docs.ourbigbook.com#multiple-argument
       options.multiple = false;
     }
     if (!('ourbigbook_output_prefer_literal' in options)) {
@@ -1019,7 +1019,7 @@ class MacroArgument {
       options.positive_nonzero_integer = false;
     }
     if (!('remove_whitespace_children' in options)) {
-      // https://cirosantilli.com/ourbigbook#remove-whitespace-children
+      // https://docs.ourbigbook.com#remove-whitespace-children
       options.remove_whitespace_children = false;
     }
     this.boolean = options.boolean;
@@ -1062,7 +1062,7 @@ class Macro {
    */
   constructor(name, positional_args, options={}) {
     if (!('auto_parent' in options)) {
-      // https://cirosantilli.com/ourbigbook#auto_parent
+      // https://docs.ourbigbook.com#auto_parent
     }
     if (!('auto_parent_skip' in options)) {
       options.auto_parent_skip = new Set();
@@ -2346,7 +2346,7 @@ function char_is_alphanumeric(c) {
 
 // Valid macro name / argument characters.
 // Compatible with JavaScript-like function names / variables.
-// https://cirosantilli.com/ourbigbook#macro-identifier
+// https://docs.ourbigbook.com#macro-identifier
 function char_is_identifier(c) {
   return char_is_alphanumeric(c)
 };
@@ -2933,7 +2933,7 @@ function convert_init_context(options={}, extra_returns={}) {
   //
   //   If true, force the toplevel header to have this ID.
   //   Otherwise, derive the ID from the title.
-  //   https://cirosantilli.com/ourbigbook#the-id-of-the-first-header-is-derived-from-the-filename
+  //   https://docs.ourbigbook.com#the-id-of-the-first-header-is-derived-from-the-filename
   options.toplevel_id = undefined;
   let root_relpath_shift
   if (options.input_path !== undefined) {
@@ -2941,10 +2941,10 @@ function convert_init_context(options={}, extra_returns={}) {
     const [basename_noext, ext] = path_splitext(basename)
     if (INDEX_FILE_BASENAMES_NOEXT.has(basename_noext)) {
       if (input_dir === '') {
-        // https://cirosantilli.com/ourbigbook#the-toplevel-index-file
+        // https://docs.ourbigbook.com#the-toplevel-index-file
         options.toplevel_id = undefined;
       } else {
-        // https://cirosantilli.com/ourbigbook#the-id-of-the-first-header-is-derived-from-the-filename
+        // https://docs.ourbigbook.com#the-id-of-the-first-header-is-derived-from-the-filename
         options.toplevel_id = input_dir;
         options.toplevel_has_scope = true
         root_relpath_shift = input_dir
@@ -3245,7 +3245,7 @@ function get_parent_argument_ast(ast, context, prev_header, include_options) {
     } else {
       // We can't use context.id_provider.get here because we don't know who
       // the parent node is, because scope can affect that choice.
-      // https://cirosantilli.com/ourbigbook#id-based-header-levels-and-scope-resolution
+      // https://docs.ourbigbook.com#id-based-header-levels-and-scope-resolution
       let sorted_keys = [...include_options.header_tree_stack.keys()].sort((a, b) => a - b);
       let largest_level = sorted_keys[sorted_keys.length - 1];
       for (let level = largest_level; level > 0; level--) {
@@ -3274,7 +3274,7 @@ function get_root_relpath(output_path, context) {
 }
 
 // Ensure that all children and tag targets exist. This is for error checking only.
-// https://cirosantilli.com/ourbigbook#h-child-argment
+// https://docs.ourbigbook.com#h-child-argment
 function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
   let ret = ''
   for (let child of childrenOrTags) {
@@ -3719,7 +3719,7 @@ function noext(str) {
   return str.substring(0, str.lastIndexOf('.'));
 }
 
-// https://cirosantilli.com/ourbigbook#ascii-normalization
+// https://docs.ourbigbook.com#ascii-normalization
 function normalize_latin_character(c) {
   return lodash.deburr(c)
 }
@@ -3935,7 +3935,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     token: tokens[0],
     tokens: tokens,
   };
-  // Get toplevel arguments such as {title=}, see https://cirosantilli.com/ourbigbook#toplevel
+  // Get toplevel arguments such as {title=}, see https://docs.ourbigbook.com#toplevel
   const ast_toplevel_args = parse_argument_list(
     state, Macro.TOPLEVEL_MACRO_NAME, AstType.MACRO);
   if ('content' in ast_toplevel_args) {
@@ -4613,7 +4613,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
 
         // Add children/tags to the child database.
-        // https://cirosantilli.com/ourbigbook#h-child-argment
+        // https://docs.ourbigbook.com#h-child-argment
         const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
         if (children !== undefined) {
           for (let child of children) {
@@ -4628,7 +4628,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       } else if (macro_name === Macro.X_MACRO_NAME) {
         if (header_title_ast_ancestors.length > 0 && ast.args.content === undefined) {
-          const message = 'x without content inside title of a header: https://cirosantilli.com/ourbigbook#x-within-title-restrictions'
+          const message = 'x without content inside title of a header: https://docs.ourbigbook.com#x-within-title-restrictions'
           ast.args.content = new AstArgument(
             [ new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location) ],
             ast.source_location
@@ -5672,7 +5672,7 @@ function protocol_is_known(src) {
   return false;
 }
 
-// https://cirosantilli.com/ourbigbook#scope
+// https://docs.ourbigbook.com#scope
 function remove_toplevel_scope(id, toplevel_ast, context) {
   if (
     toplevel_ast !== undefined &&
@@ -5687,7 +5687,7 @@ function remove_toplevel_scope(id, toplevel_ast, context) {
   }
 }
 
-// https://cirosantilli.com/ourbigbook#index-files
+// https://docs.ourbigbook.com#index-files
 const INDEX_BASENAME_NOEXT = 'index';
 exports.INDEX_BASENAME_NOEXT = INDEX_BASENAME_NOEXT;
 const INDEX_FILE_BASENAMES_NOEXT = new Set([
@@ -5934,7 +5934,7 @@ ${ast.toString()}`)
     !ast.xss_safe
   ) {
     ast.validation_error = [
-      `XSS unsafe macro "${macro_name}" used in safe mode: https://cirosantilli.com/ourbigbook#unsafe-xss`,
+      `XSS unsafe macro "${macro_name}" used in safe mode: https://docs.ourbigbook.com#unsafe-xss`,
       ast.source_location
     ];
   }
@@ -6061,7 +6061,7 @@ function x_get_href_content(ast, context) {
 /** Calculate the href value to a given target AstNode.
  *
  * This takes into account e.g. if the target node is in a different source file:
- * https://cirosantilli.com/ourbigbook#internal-cross-file-references
+ * https://docs.ourbigbook.com#internal-cross-file-references
  *
  * @param {AstNode} target_id_ast
  * @return {String} the value of href (no quotes) that an \x cross reference to the given target_id_ast
@@ -6373,7 +6373,7 @@ function x_text_base(ast, context, options={}) {
     if (style_full && options.quote) {
       ret += html_escape_context(context, `"`);
     }
-    // https://cirosantilli.com/ourbigbook#cross-reference-title-inflection
+    // https://docs.ourbigbook.com#cross-reference-title-inflection
     if (options.from_x) {
 
       // {c}
@@ -6736,7 +6736,7 @@ const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
     name: 'alt',
   }),
 ];
-// https://cirosantilli.com/ourbigbook#known-url-protocols
+// https://docs.ourbigbook.com#known-url-protocols
 const KNOWN_URL_PROTOCOL_NAMES = ['http', 'https'];
 
 const KNOWN_URL_PROTOCOLS = new Set()

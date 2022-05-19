@@ -42,11 +42,11 @@ module.exports = (sequelize) => {
     }
   )
   Ref.Types = {
-    // https://cirosantilli.com/ourbigbook/include
+    // https://docs.ourbigbook.com/include
     [ourbigbook.REFS_TABLE_PARENT]: 0,
-    // https://cirosantilli.com/ourbigbook/internal-cross-reference
+    // https://docs.ourbigbook.com/internal-cross-reference
     [ourbigbook.REFS_TABLE_X]: 1,
-    // https://cirosantilli.com/ourbigbook/secondary-children
+    // https://docs.ourbigbook.com/secondary-children
     [ourbigbook.REFS_TABLE_X_CHILD]: 2,
     // https://github.com/cirosantilli/ourbigbook/issues/198
     [ourbigbook.REFS_TABLE_X_TITLE_TITLE]: 3,

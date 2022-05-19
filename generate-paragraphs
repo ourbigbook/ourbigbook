@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// https://cirosantilli.com/ourbigbook#generate-paragraphs
+// https://docs.ourbigbook.com#generate-paragraphs
 
 const cli_args = process.argv.slice(2);
 

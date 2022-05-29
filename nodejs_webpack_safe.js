@@ -426,14 +426,19 @@ ORDER BY "RecRefs".level DESC
           ) {
             const ref_props = from_ids[from_id];
             const defined_ats = ref_props.defined_at
-            for (const defined_at of defined_ats) {
-              refs.push({
-                from_id,
-                defined_at,
-                to_id_index: ref_props.child_index,
-                to_id,
-                type: sequelize.models.Ref.Types[type]
-              })
+            for (const defined_at in defined_ats) {
+              for (const { line: defined_at_line, column: defined_at_col, inflected } of defined_ats[defined_at]) {
+                refs.push({
+                  from_id,
+                  defined_at,
+                  defined_at_line,
+                  defined_at_col,
+                  to_id_index: ref_props.child_index,
+                  to_id,
+                  type: sequelize.models.Ref.Types[type],
+                  inflected,
+                })
+              }
             }
           }
         }
@@ -520,11 +525,13 @@ async function destroy_sequelize(sequelize) {
   return sequelize.close()
 }
 
+// Update the database after converting each separate file.
 async function update_database_after_convert({
   authorId,
   body,
   extra_returns,
   id_provider,
+  is_render_after_extract,
   sequelize,
   path,
   render,
@@ -567,12 +574,7 @@ async function update_database_after_convert({
   let idProviderUpdate, fileBulkCreate
   await sequelize.transaction({ transaction }, async (transaction) => {
     file_bulk_create_opts.transaction = transaction
-    ;[idProviderUpdate, fileBulkCreate] = await Promise.all([
-      id_provider.update(
-        extra_returns,
-        sequelize,
-        transaction,
-      ),
+    const promises = [
       sequelize.models.File.bulkCreate(
         [
           {
@@ -587,7 +589,19 @@ async function update_database_after_convert({
         ],
         file_bulk_create_opts,
       )
-    ])
+    ]
+    if (
+      // This is not just an optimization, but actually required, because otherwise the second database
+      // update would override \x magic plural/singular check_db removal.
+      !is_render_after_extract
+    ) {
+      promises.push(id_provider.update(
+        extra_returns,
+        sequelize,
+        transaction,
+      ))
+    }
+    ;[fileBulkCreate, idProviderUpdate] = await Promise.all(promises)
   });
   ourbigbook.perf_print(context, 'convert_path_post_sqlite_transaction')
   return { file: fileBulkCreate[0] }
@@ -595,6 +609,7 @@ async function update_database_after_convert({
 
 // Do various post conversion checks to verify database integrity:
 //
+// - refs to IDs that don't exist
 // - duplicate IDs
 // - https://docs.ourbigbook.com/x-within-title-restrictions
 //
@@ -608,22 +623,79 @@ async function check_db(sequelize, paths_converted, transaction) {
   //   https://github.com/cirosantilli/ourbigbook/issues/229
   // * ensure that all \x targets exist. As of writing this is done only during rendering, which is bad.
   // but we decided to go with the ref_prefix hack to start with.
-  //const new_refs = await sequelize.models.Ref.findAll({ where: { defined_at: paths_converted } })
-  //for (const new_ref of new_refs) {
-  //  const new_ref_from_id_split = new_ref.from_id.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
-  //  let with_query_array = 'WITH vals (ref_id, try_to_id) AS (VALUES'
-  //  for (const i = new_ref_from_id_split.length; i >= 0; i--) {
-  //    with_query_array.push(`(${new_ref.id}, '${sequelize.escape()}')`)
-  //  }
-  //  with_query_array.push(')')
-  //}
-  const [duplicate_rows, invalid_title_title_rows] = await Promise.all([
+  const [new_refs, duplicate_rows, invalid_title_title_rows] = await Promise.all([
+    await sequelize.models.Ref.findAll({
+      where: { defined_at: paths_converted },
+      order: [
+        ['defined_at', 'ASC'],
+        ['defined_at_line', 'ASC'],
+        ['defined_at_col', 'ASC'],
+        ['type'],
+      ],
+      include: [
+        {
+          model: sequelize.models.Id,
+          as: 'to',
+          attributes: ['id'],
+        }
+      ]
+    }),
     await sequelize.models.Id.findDuplicates(
       paths_converted, transaction),
     await sequelize.models.Id.findInvalidTitleTitle(
       paths_converted, transaction),
   ])
   const error_messages = []
+
+  // Check that each link has at least one hit for the available magic inflections if any.
+  // TODO maybe it is possible to do this in a single query. But I'm not smart enough.
+  // So just doing some Js code and an extra deletion query afterwards
+  let i = 0
+  const delete_unused_inflection_ids = []
+  while (i < new_refs.length) {
+    let new_ref = new_refs[i]
+    let error_ref
+    const new_ref_next = new_refs[i + 1]
+    if (
+      new_ref_next &&
+      new_ref.defined_at      === new_ref_next.defined_at &&
+      new_ref.defined_at_line === new_ref_next.defined_at_line &&
+      new_ref.defined_at_col  === new_ref_next.defined_at_col &&
+      new_ref.type            === new_ref_next.type
+    ) {
+      let not_inflected
+      let inflected
+      if (new_ref.inflected) {
+        not_inflected = new_ref_next
+        inflected = new_ref
+      } else {
+        not_inflected = new_ref
+        inflected = new_ref_next
+      }
+      if (not_inflected.to) {
+        delete_unused_inflection_ids.push(inflected.id)
+      } else if (inflected.to) {
+        delete_unused_inflection_ids.push(not_inflected.id)
+      } else {
+        error_ref = not_inflected
+      }
+      i++
+    } else {
+      if (!new_ref.to) {
+        error_ref = new_ref
+      }
+    }
+    if (error_ref) {
+      error_messages.push(
+        `${error_ref.defined_at}:${error_ref.defined_at_line}:${error_ref.defined_at_col}: reference to undefined ID: "${error_ref.to_id}"`
+      )
+    }
+    i++
+  }
+  if (delete_unused_inflection_ids.length) {
+    await sequelize.models.Ref.destroy({ where: { id: delete_unused_inflection_ids } })
+  }
+
   if (duplicate_rows.length > 0) {
     for (const duplicate_row of duplicate_rows) {
       const ast = ourbigbook.AstNode.fromJSON(duplicate_row.ast_json)

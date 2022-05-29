@@ -394,6 +394,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
           sequelize: non_ourbigbook_options.sequelize,
           path: input_path_relative_to_ourbigbook_json,
           render: ourbigbook_options.render,
+          is_render_after_extract: non_ourbigbook_options.is_render_after_extract,
         })
       }
       if (new_non_ourbigbook_options.had_error) {
@@ -971,6 +972,7 @@ if (commander.helpMacros) {
     encoding: ourbigbook_nodejs_webpack_safe.ENCODING,
     external_css_and_js: false,
     had_error: false,
+    is_render_after_extract: false,
     log: non_ourbigbook_options_log,
     out_css_path: ourbigbook_nodejs.DIST_CSS_PATH,
     out_js_path: ourbigbook_nodejs.DIST_JS_PATH,
@@ -1283,7 +1285,11 @@ if (commander.helpMacros) {
         }
         if (commander.render) {
           if (!non_ourbigbook_options.had_error) {
-            await convert_directory(actual_input_dir, ourbigbook_options, non_ourbigbook_options);
+            await convert_directory(
+              actual_input_dir,
+              ourbigbook_options,
+              ourbigbook.clone_and_set(non_ourbigbook_options, 'is_render_after_extract', true)
+            );
           }
         }
 

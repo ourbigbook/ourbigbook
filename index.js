@@ -3088,6 +3088,29 @@ function format_number_approx(num, digits) {
   return (num / FORMAT_NUMBER_APPROX_MAP[i].value).toFixed(digits).replace(rx, "$1") + FORMAT_NUMBER_APPROX_MAP[i].symbol;
 }
 
+// Get all possible IDs due to walking up scope resolution
+// into the given ids array.
+//
+// This very slightly duplicates the resolution code in IdProvider.get,
+// but it was not trivial to factor them out, so just going for this now.
+function get_all_possible_scope_resolutions(current_scope, id, context) {
+  let ids = []
+  if (is_absolute_xref(id, context)) {
+    ids.push(resolve_absolute_xref(id, context))
+  } else {
+    if (current_scope !== undefined) {
+      current_scope += Macro.HEADER_SCOPE_SEPARATOR
+      for (let i = current_scope.length - 1; i > 0; i--) {
+        if (current_scope[i] === Macro.HEADER_SCOPE_SEPARATOR) {
+          ids.push(current_scope.substring(0, i + 1) + id)
+        }
+      }
+    }
+    ids.push(id)
+  }
+  return ids
+}
+
 function get_descendant_count(tree_node) {
   return [
     tree_node.descendant_count,
@@ -4636,16 +4659,24 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         // Add children/tags to the child database.
         // https://docs.ourbigbook.com#h-child-argment
-        const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
-        if (children !== undefined) {
-          for (let child of children) {
-            options.refs_to_h.push({ ast, child: true, content: child.args.content, type: REFS_TABLE_X_CHILD })
-          }
-        }
-        const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
-        if (tags !== undefined) {
-          for (let tag of tags) {
-            options.refs_to_h.push({ ast, child: false, content: tag.args.content, type: REFS_TABLE_X_CHILD })
+        for (const [argname, child] of [
+          [Macro.HEADER_CHILD_ARGNAME, true],
+          [Macro.HEADER_TAG_ARGNAME, false],
+        ]) {
+          const tags_or_children = ast.args[argname]
+          if (tags_or_children !== undefined) {
+            for (const tag_or_child of tags_or_children) {
+              const target_id = render_arg_noescape(tag_or_child.args.content, context)
+              for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.scope, target_id, context)) {
+                options.refs_to_h.push({
+                  ast,
+                  child,
+                  source_location: tag_or_child.source_location,
+                  target_id: target_id_with_scope,
+                  type: REFS_TABLE_X_CHILD,
+                })
+              }
+            }
           }
         }
       } else if (macro_name === Macro.X_MACRO_NAME) {
@@ -4657,18 +4688,23 @@ async function parse(tokens, options, context, extra_returns={}) {
           );
           parse_error(state, message, ast.source_location);
         }
+
+        // refs database updates.
         let target_id = convert_id_arg(ast.args.href, context)
-        validate_ast(ast, context);
-        const fetch_plural = ast.validation_output.magic.boolean || context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK
+        validate_ast(ast, context)
+        const fetch_plural = ast.validation_output.magic.boolean ||
+          context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK
         if (fetch_plural) {
           target_id = magic_title_to_id(target_id)
         }
-        options.refs_to_x.push({
-          ast,
-          title_ast_ancestors: Object.assign([], title_ast_ancestors),
-          target_id,
-          inflected: false,
-        })
+        for (const target_id_with_scope of get_all_possible_scope_resolutions(options.cur_header ? options.cur_header.scope : '', target_id, context)) {
+          options.refs_to_x.push({
+            ast,
+            title_ast_ancestors: Object.assign([], title_ast_ancestors),
+            target_id: target_id_with_scope,
+            inflected: false,
+          })
+        }
         if (fetch_plural) {
           // In the case of magic, also fetch a singularized version from DB. We don't know
           // which one is the correct one, so just fetch both and decide at render time.
@@ -4685,12 +4721,14 @@ async function parse(tokens, options, context, extra_returns={}) {
               last_ast.text = new_text
               const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context))
               last_ast.text = old_text
-              options.refs_to_x.push({
-                ast,
-                title_ast_ancestors: Object.assign([], title_ast_ancestors),
-                target_id,
-                inflected: true,
-              })
+              for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.scope, target_id, context)) {
+                options.refs_to_x.push({
+                  ast,
+                  title_ast_ancestors: Object.assign([], title_ast_ancestors),
+                  target_id: target_id_with_scope,
+                  inflected: true,
+                })
+              }
             }
           }
         }
@@ -5131,16 +5169,15 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     // Setup refs DB.
     for (const ref of options.refs_to_h) {
-      ref.target_id = render_arg_noescape(ref.content, context)
       const target_id_effective = x_child_db_effective_id(
         ref.target_id,
         context,
         ref.ast
       )
       if (ref.child) {
-        add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type, { source_location: ref.ast.source_location });
+        add_to_refs_to(target_id_effective, context, ref.ast.id, ref.type, { source_location: ref.source_location });
       } else {
-        add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type, { source_location: ref.ast.source_location });
+        add_to_refs_to(ref.ast.id, context, target_id_effective, ref.type, { source_location: ref.source_location });
       }
     }
     for (const ref of options.refs_to_x) {
@@ -5215,29 +5252,15 @@ async function parse(tokens, options, context, extra_returns={}) {
       if (options.id_provider !== undefined) {
         const prefetch_ids = new Set()
         for (const ref of options.refs_to_h) {
-          const ast = ref.ast
-          const id = ref.target_id
-          const ids = push_scope_resolution(ast.scope, id, context)
-          for (const id of ids) {
-            prefetch_ids.add(id)
-          }
+          prefetch_ids.add(ref.target_id)
         }
         for (const ref of options.refs_to_x) {
-          const ast = ref.ast
+          // TODO as an easy optimization, just get all refs defined on the current source files.
+          // These are already resolved for scope and \x magic pluralization, so the final query
+          // would be much smaller than this.
           const id = ref.target_id
-
-          // We are going to walk up the scope tree and try to fetch
-          // everything as we just can't know which level is the correct
-          // level. Previously, we would do a query, go up, query, go up,
-          // interactively until found, but that is not possible anymore that
-          // we have grouped all queries at one point.
-          const ids = push_scope_resolution(ast.scope, id, context)
-
-          // We need the target IDs of any x to render it.
-          for (const id of ids) {
-            prefetch_ids.add(id)
-            prefetch_file_ids.add(id)
-          }
+          prefetch_ids.add(id)
+          prefetch_file_ids.add(id)
         }
         for (const id in options.include_hrefs) {
           // We need the target it to be able to render the dummy include title
@@ -5806,29 +5829,6 @@ function propagate_numbered(ast, context) {
 }
 exports.propagate_numbered = propagate_numbered
 
-// Push all possible IDs due to walking up scope resolution
-// into the given ids array.
-//
-// This very slightly duplicates the resolution code in IdProvider.get,
-// but it was not trivial to factor them out, so just going for this now.
-function push_scope_resolution(current_scope, id, context) {
-  let ids = []
-  if (is_absolute_xref(id, context)) {
-    ids.push(resolve_absolute_xref(id, context))
-  } else {
-    if (current_scope !== undefined) {
-      current_scope += Macro.HEADER_SCOPE_SEPARATOR
-      for (let i = current_scope.length - 1; i > 0; i--) {
-        if (current_scope[i] === Macro.HEADER_SCOPE_SEPARATOR) {
-          ids.push(current_scope.substring(0, i + 1) + id)
-        }
-      }
-    }
-    ids.push(id)
-  }
-  return ids
-}
-
 // Fuck JavaScript? Can't find a built-in way to get the symbol string without the "Symbol(" part.
 // https://stackoverflow.com/questions/30301728/get-the-description-of-a-es6-symbol
 function symbol_to_string(symbol) {
@@ -6034,7 +6034,7 @@ function x_get_href_content(ast, context) {
   if (target_id_ast) {
     href = x_href_attr(target_id_ast, context);
   } else {
-    let message = `cross reference to unknown id: "${target_id_eff}"`;
+    let message = `cross reference to unknown id: "${target_id_eff}" at render time`;
     let source_location
     if (ast.args.href) {
       source_location = ast.args.href.source_location

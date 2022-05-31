@@ -618,11 +618,12 @@ async function update_database_after_convert({
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
 async function check_db(sequelize, paths_converted, transaction) {
-  // This is a sketch for doing both of:
-  // * update xrefs across scopes in different files to correctly have tags and incoming links in such cases
+  // * delete unused xrefs in different files to correctly have tags and incoming links in such cases
   //   https://github.com/cirosantilli/ourbigbook/issues/229
-  // * ensure that all \x targets exist. As of writing this is done only during rendering, which is bad.
-  // but we decided to go with the ref_prefix hack to start with.
+  //   These can happen due to:
+  //   * directory based scopes
+  //   * \x magic pluralization variants
+  // * ensure that all \x targets exist
   const [new_refs, duplicate_rows, invalid_title_title_rows] = await Promise.all([
     await sequelize.models.Ref.findAll({
       where: { defined_at: paths_converted },
@@ -630,14 +631,22 @@ async function check_db(sequelize, paths_converted, transaction) {
         ['defined_at', 'ASC'],
         ['defined_at_line', 'ASC'],
         ['defined_at_col', 'ASC'],
-        ['type'],
+        ['type', 'ASC'],
+        ['inflected', 'ASC'],
+        // Longest matching scope first, we then ignore all others.
+        [sequelize.fn('length', sequelize.col('to_id')), 'DESC'],
       ],
       include: [
         {
           model: sequelize.models.Id,
           as: 'to',
           attributes: ['id'],
-        }
+        },
+        {
+          model: sequelize.models.Id,
+          as: 'from',
+          attributes: ['id'],
+        },
       ]
     }),
     await sequelize.models.Id.findDuplicates(
@@ -648,49 +657,93 @@ async function check_db(sequelize, paths_converted, transaction) {
   const error_messages = []
 
   // Check that each link has at least one hit for the available magic inflections if any.
+  // If there are multiple matches pick the one that is either:
+  // - on the longest scope
+  // - if there's a draw on scope length, prefer the non inflected one
   // TODO maybe it is possible to do this in a single query. But I'm not smart enough.
   // So just doing some Js code and an extra deletion query afterwards
   let i = 0
   const delete_unused_inflection_ids = []
+  //console.error(new_refs.map((r, i) => { return {
+  //  i,
+  //  defined_at: r.defined_at,
+  //  defined_at_line: r.defined_at_line,
+  //  defined_at_col: r.defined_at_col,
+  //  from_id: r.from_id,
+  //  to_id: r.to_id,
+  //  type: r.type,
+  //  inflected: r.inflected,
+  //} }));
   while (i < new_refs.length) {
+    let new_ref_start = i
     let new_ref = new_refs[i]
-    let error_ref
-    const new_ref_next = new_refs[i + 1]
-    if (
+    let new_ref_next = new_ref
+    let not_inflected_match_local_idx, inflected_match_local_idx, not_inflected_match_global_idx, inflected_match_global_idx
+    do {
+      let do_delete = true
+      let not_inflected_idx = 0
+      let inflected_idx = 0
+      if (new_ref_next.inflected) {
+        if (
+          inflected_match_global_idx === undefined &&
+          new_ref_next.to &&
+          new_ref_next.from
+        ) {
+          inflected_match_global_idx = i
+          inflected_match_local_idx = inflected_idx
+          do_delete = false
+        }
+        inflected_idx++
+      } else if (inflected_match_global_idx === undefined) {
+        shortest_not_inflected_ref = new_ref_next
+        if (
+          not_inflected_match_global_idx === undefined &&
+          new_ref_next.to &&
+          new_ref_next.from
+        ) {
+          not_inflected_match_global_idx = i
+          not_inflected_match_local_idx = not_inflected_idx
+          do_delete = false
+        }
+        not_inflected_idx++
+      }
+      if (do_delete) {
+        //console.error(`do_delete ${i}`);
+        delete_unused_inflection_ids.push(new_ref_next.id)
+      }
+      i++
+      new_ref_next = new_refs[i]
+    } while (
       new_ref_next &&
       new_ref.defined_at      === new_ref_next.defined_at &&
       new_ref.defined_at_line === new_ref_next.defined_at_line &&
       new_ref.defined_at_col  === new_ref_next.defined_at_col &&
       new_ref.type            === new_ref_next.type
+    )
+
+    // Select between inflected and non-inflected since both match.
+    if (
+      not_inflected_match_global_idx !== undefined &&
+      inflected_match_global_idx !== undefined
     ) {
-      let not_inflected
-      let inflected
-      if (new_ref.inflected) {
-        not_inflected = new_ref_next
-        inflected = new_ref
+      let delete_idx
+      if (inflected_match_local_idx < not_inflected_match_local_idx) {
+        delete_idx = not_inflected_match_global_idx
       } else {
-        not_inflected = new_ref
-        inflected = new_ref_next
+        delete_idx = inflected_match_global_idx
       }
-      if (not_inflected.to) {
-        delete_unused_inflection_ids.push(inflected.id)
-      } else if (inflected.to) {
-        delete_unused_inflection_ids.push(not_inflected.id)
-      } else {
-        error_ref = not_inflected
-      }
-      i++
-    } else {
-      if (!new_ref.to) {
-        error_ref = new_ref
-      }
+      delete_unused_inflection_ids.push(new_refs[delete_idx].id)
     }
-    if (error_ref) {
+
+    // No matches, so error.
+    if (
+      not_inflected_match_global_idx === undefined &&
+      inflected_match_global_idx === undefined
+    ) {
       error_messages.push(
-        `${error_ref.defined_at}:${error_ref.defined_at_line}:${error_ref.defined_at_col}: reference to undefined ID: "${error_ref.to_id}"`
+        `${new_ref.defined_at}:${new_ref.defined_at_line}:${new_ref.defined_at_col}: cross reference to unknown id: "${shortest_not_inflected_ref.to_id}"`
       )
     }
-    i++
   }
   if (delete_unused_inflection_ids.length) {
     await sequelize.models.Ref.destroy({ where: { id: delete_unused_inflection_ids } })

@@ -1140,13 +1140,13 @@ if (commander.helpMacros) {
       }
       for (const render of [false, true]) {
         for (const article of articles) {
+          let pref
           if (render) {
-            console.error();
-            console.error(`${MESSAGE_PREFIX_RENDER}:`);
+            pref = MESSAGE_PREFIX_RENDER
           } else {
-            console.error(`${MESSAGE_PREFIX_EXTRACT_IDS}:`);
+            pref = MESSAGE_PREFIX_EXTRACT_IDS
           }
-          console.error(article.title);
+          console.error(`${pref}: ${article.title}`);
           let data, status
           try {
             ;({ data, status } = await webApi.articleCreateOrUpdate(

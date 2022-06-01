@@ -5724,18 +5724,22 @@ Some important known limitations:
 * everything file is rebuilt every time, even if it was not modified. To avoid this, we would need to use or reimplement parts of Git, this is the kind of stuff that Git does very well.
 * if there's an error in a later file, the database is still modified by the previous files, i.e. there is no atomicity. A way to improve that would be to upload all files to the server in one go, and let the server convert everything in one transaction. However, this would lead to a very long server action, which would block any other incoming request (I tested, everything is single threaded)
 
-= `--web-email`
-{parent=ourbigbook-cli-options}
-
-Set the email for \x[web] from the command line. If not given, you will be prompted for it from the command line.
-
 = `--web-url`
 {parent=ourbigbook-cli-options}
 
 Set a custom URL for \x[web] from the command line. If not given, the canonical https://ourbigbook.com is used. This option is used e.g. for testing locally e.g. with:
 ``
-ourbigbook --web-url http://localhost:3000
+ourbigbook --web --web-url http://localhost:3000
 ``
+
+= `--web-username`
+{parent=ourbigbook-cli-options}
+
+Set the username for \x[web] from the command line, e.g.:
+``
+ourbigbook --web --web-url http://localhost:3000 --web-username donald-trump
+``
+If not given, you will be prompted for it from the command line.
 
 = `ourbigbook.json`
 {parent=ourbigbook-cli}

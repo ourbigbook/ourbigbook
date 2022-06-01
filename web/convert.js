@@ -92,15 +92,15 @@ async function convert({
     title,
     transaction,
   })
-  const check_db_errors = await ourbigbook_nodejs_webpack_safe.check_db(
-    sequelize,
-    [input_path],
-    transaction
-  )
-  if (check_db_errors.length > 0) {
-    throw new ValidationError(check_db_errors)
-  }
   if (render) {
+    const check_db_errors = await ourbigbook_nodejs_webpack_safe.check_db(
+      sequelize,
+      [input_path],
+      transaction
+    )
+    if (check_db_errors.length > 0) {
+      throw new ValidationError(check_db_errors)
+    }
     const file = await sequelize.models.File.findOne({ where: { path: filePath }, transaction })
     const articleArgs = []
     for (const outpath in extra_returns.rendered_outputs) {

@@ -410,7 +410,7 @@ function assert_error(description, input, line, column, path, options={}) {
 }
 
 const testdir = path.join(__dirname, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'test')
-fs.rmSync(testdir, { recursive: true });
+fs.rmSync(testdir, { recursive: true, force: true });
 fs.mkdirSync(testdir, { recursive: true });
 
 // Test the ourbigbook executable via a separate child process call.
@@ -1673,6 +1673,32 @@ assert_lib('link to image in other files that has title with x to header in anot
     assert_xpath: {
       'index.html': [
         "//x:a[@href='image.html#image-my-notindex' and text()='Figure \"My notindex h1\"']",
+      ],
+    },
+  }
+);
+assert_lib('link to image in other files that has title with two x to other headers',
+  // check_db extra ID removal was removing the first ID because the link line/columns were the same for both,
+  // fixed at title= argument position, and not at the \x position.
+  {
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Index
+
+\\x[image-my-notindex-2-notindex-3]
+`,
+     'notindex.bigb': `= Notindex
+
+\\Image[aa]{title=My \\x[notindex-2] \\x[notindex-3]}{check=0}
+
+== Notindex 2
+
+== Notindex 3
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@href='notindex.html#image-my-notindex-2-notindex-3' and text()='Figure \"My notindex 2 notindex 3\"']",
       ],
     },
   }

@@ -737,7 +737,7 @@ async function check_db(sequelize, paths_converted, transaction) {
         not_inflected_idx++
       }
       if (do_delete) {
-        //console.error(`do_delete ${i}`);
+        //console.error(`do_delete ${i} ${new_refs[i].from_id} -> ${new_refs[i].to_id}`);
         delete_unused_inflection_ids.push(new_ref_next.id)
       }
       i++

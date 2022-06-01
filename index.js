@@ -5226,7 +5226,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           context,
           title_ast.id,
           REFS_TABLE_X_TITLE_TITLE,
-          { source_location: title_ast.source_location }
+          { source_location: ast.source_location }
         );
       }
     }

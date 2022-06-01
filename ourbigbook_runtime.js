@@ -24,13 +24,13 @@ export function ourbigbook_runtime(toplevel) {
   }
 
   if (
-    ourbigbook_split_headers &&
+    window.ourbigbook_split_headers &&
     window.location.hash &&
     !window.location.hash.startsWith(':~:text=')
   ) {
     const hash = window.location.hash.substring(1)
     if(!toplevel.getElementById(hash)) {
-      const dest = ourbigbook_redirect_prefix + hash + (ourbigbook_html_x_extension ? '.html' : '')
+      const dest = window.ourbigbook_redirect_prefix + hash + (window.ourbigbook_html_x_extension ? '.html' : '')
       console.error(`redirecting to: ${dest}`);
       window.location.replace(dest)
     }

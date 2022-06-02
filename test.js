@@ -3746,7 +3746,7 @@ assert_lib('x leading slash to escape scopes works across files',
 //    }
 //  }
 //);
-assert_lib('scopes hierarchy resolution works across files with directories',
+assert_lib('scopes hierarchy resolution works across files with directories and not magic',
   // https://github.com/cirosantilli/ourbigbook/issues/229
   {
     convert_dir: true,
@@ -3787,6 +3787,24 @@ assert_lib('scopes hierarchy resolution works across files with directories',
       'subdir/subdir/notindex.html': [
         "//x:div[@class='p']//x:a[@href='../notindex.html#notindex-h2' and text()='subdir/subdir/notindex to subdir/notindex-h2']",
       ],
+    },
+  }
+);
+assert_lib('scopes hierarchy resolution works across files with directories and magic plural',
+  {
+    convert_dir: true,
+    extra_convert_opts: {
+      split_headers: true,
+    },
+    filesystem: {
+      'subdir/notindex.bigb': `= Notindex
+
+\\x[dogs]{magic}
+`,
+     'subdir/notindex2.bigb': `= Notindex2
+
+== Dog
+`,
     },
   }
 );

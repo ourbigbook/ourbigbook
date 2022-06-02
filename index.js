@@ -4692,7 +4692,8 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (fetch_plural) {
           target_id = magic_title_to_id(target_id)
         }
-        for (const target_id_with_scope of get_all_possible_scope_resolutions(options.cur_header ? options.cur_header.scope : '', target_id, context)) {
+        const cur_scope = options.cur_header ? options.cur_header.scope : ''
+        for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
           options.refs_to_x.push({
             ast,
             title_ast_ancestors: Object.assign([], title_ast_ancestors),
@@ -4716,7 +4717,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               last_ast.text = new_text
               const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context))
               last_ast.text = old_text
-              for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.scope, target_id, context)) {
+              for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
                 options.refs_to_x.push({
                   ast,
                   title_ast_ancestors: Object.assign([], title_ast_ancestors),

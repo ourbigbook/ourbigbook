@@ -4734,7 +4734,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             last_ast.node_type === AstType.PLAINTEXT
           ) {
             const old_text = last_ast.text
-            const new_text = pluralize(old_text,  context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK ? 2 : 1)
+            const new_text = pluralize(old_text, 1)
             if (new_text !== old_text) {
               last_ast.text = new_text
               const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context))
@@ -5279,6 +5279,18 @@ async function parse(tokens, options, context, extra_returns={}) {
           const id = ref.target_id
           prefetch_ids.add(id)
           prefetch_file_ids.add(id)
+          const ast = ref.ast
+          if (
+            context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK &&
+            ast.validation_output.p.boolean
+          ) {
+            const id_plural = pluralize(id.replaceAll(ID_SEPARATOR, ' ')).replaceAll(' ', ID_SEPARATOR)
+            if (id !== id_plural) {
+              // We need to also fetch this to decide if we can use magic plural or not, in case
+              // there are separate IDs for both singular and plural.
+              prefetch_ids.add(id_plural)
+            }
+          }
         }
         for (const id in options.include_hrefs) {
           // We need the target it to be able to render the dummy include title

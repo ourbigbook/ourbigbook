@@ -6192,6 +6192,434 @@ assert_lib('bigb output: unused ID check does not blow up across files with magi
     extra_convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
   }
 );
+assert_lib('bigb output: x uses text conversion as the target link',
+  {
+    filesystem: {
+      'index.bigb': `= Index
+
+\\x[dog-and-cat]{c}{p}
+
+\\x[asdf-asdf]
+`,
+      'notindex.bigb': `= Notindex
+
+== Dog $and$ Cat
+
+== Qwer qwer
+{id=asdf-asdf}
+`,
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'index.bigb': `= Index
+
+<Dog and Cats>
+
+<asdf asdf>
+`,
+    }
+  }
+);
+assert_lib('bigb output: x magic input across files',
+  {
+    filesystem: {
+      'index.bigb': `= Index
+
+<Dog and cat>
+
+<Dog and cats>
+
+<Uppercase>
+
+<uppercase>
+
+<Lowercase>
+
+<lowercase>
+
+<my plurals>
+`,
+      'notindex.bigb': `= Notindex
+
+== Dog and cat
+
+== Uppercase
+{c}
+
+== lowercase
+{c}
+
+== My plurals
+`,
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'index.bigb': `= Index
+
+<Dog and cat>
+
+<Dog and cats>
+
+<Uppercase>
+
+<Uppercase>
+
+<lowercase>
+
+<lowercase>
+
+<my plurals>
+`,
+    }
+  }
+);
+assert_lib('bigb output: x to disambiguate',
+  {
+    filesystem: {
+      'index.bigb': `= Index
+
+\\x[python-animal]
+
+\\x[python-animal]{p}
+
+<python animal>
+
+<Python (animal)>
+`,
+      'notindex.bigb': `= Notindex
+
+== Python
+{disambiguate=animal}
+`,
+    },
+    convert_dir: true,
+    // TODO maybe https://github.com/cirosantilli/ourbigbook/issues/244
+    assert_bigb: {
+      'index.bigb': `= Index
+
+<python (animal)>
+
+\\x[python-animal]{p}
+
+<python (animal)>
+
+<Python (animal)>
+`,
+    }
+  }
+);
+assert_lib('bigb output: x to plural disambiguate',
+  // Happens notably with pluralize false plural bugs such as "Mathematics".
+  {
+    filesystem: {
+      'index.bigb': `= Index
+
+<field cats>
+`,
+      'notindex.bigb': `= Notindex
+
+== Field
+{disambiguate=cats}
+`,
+    },
+    convert_dir: true,
+    // TODO maybe https://github.com/cirosantilli/ourbigbook/issues/244
+    assert_bigb: {
+      'index.bigb': `= Index
+
+<field (cats)>
+`,
+    }
+  }
+);
+assert_lib('bigb output: x to scope',
+  {
+    filesystem: {
+      'index.bigb': `= Index
+
+<my dog/pit bull>
+
+<my dog/Pit bull>
+
+<my dog/pit bulls>
+
+<fruit/banana>
+
+== Fruit
+{scope}
+
+<banana>
+
+<bananas>
+
+<car/ferrari>
+
+=== Banana
+
+== Car
+{scope}
+
+=== Ferrari
+`,
+      'animal.bigb': `= Animal
+
+== My dog
+{scope}
+
+=== Pit bull
+`,
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'index.bigb': `= Index
+
+<my dog/pit bull>
+
+<my dog/Pit bull>
+
+<my dog/pit bulls>
+
+<fruit/banana>
+
+== Fruit
+{scope}
+
+<banana>
+
+<bananas>
+
+<car/ferrari>
+
+=== Banana
+
+== Car
+{scope}
+
+=== Ferrari
+`,
+    }
+  }
+);
+assert_lib('bigb output: x with leading slash to escape scope',
+  {
+    filesystem: {
+      'index.bigb': `= Index
+
+== Fruit
+{scope}
+
+=== Fruit
+{scope}
+
+<fruit>
+
+</fruit>
+`,
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'index.bigb': `= Index
+
+== Fruit
+{scope}
+
+=== Fruit
+{scope}
+
+<fruit>
+
+</fruit>
+`,
+    }
+  }
+);
+assert_lib('bigb output: magic x in subdir scope',
+  {
+    filesystem: {
+      'myscope/notindex.bigb': `= Index
+
+<dog>
+`,
+      'myscope/notindex2.bigb': `= Animal
+
+== Dog
+`,
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'myscope/notindex.bigb': `= Index
+
+<dog>
+`,
+    }
+  }
+);
+assert_lib('bigb output: magic x to image',
+  {
+    filesystem: {
+      'notindex.bigb': `= Index
+
+<image My dog>
+
+\\Image[dog.jpg]
+{title=My dog}
+
+<video My cat>
+
+\\Video[dog.jpg]
+{title=My cat}
+`,
+      'dog.jpg': '',
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'notindex.bigb': `= Index
+
+<image My dog>
+
+\\Image[dog.jpg]
+{title=My dog}
+
+<video My cat>
+
+\\Video[dog.jpg]
+{title=My cat}
+`,
+    }
+  }
+);
+assert_lib('bigb output: slash in title',
+  // We have to remove slashes, otherwise it searches for scopes instead.
+  // Don't have a solution for that now.
+  {
+    filesystem: {
+      'notindex.bigb': `= Index
+
+<my title>
+
+== My/title
+`,
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'notindex.bigb': `= Index
+
+<my title>
+
+== My/title
+`,
+    }
+  }
+);
+assert_lib('bigb output: id from filename',
+  // We have to remove slashes, otherwise it searches for scopes instead.
+  // Don't have a solution for that now.
+  {
+    filesystem: {
+      'notindex.bigb': `= Index
+
+<notindex2>
+`,
+      'notindex2.bigb': `= My notindex2
+`
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'notindex.bigb': `= Index
+
+<notindex2>
+`,
+    }
+  }
+);
+assert_lib('bigb output: pluralize fail',
+  // Was blowing up on pluralize failures. Notably, pluralize is wrong for every -osis suffix,
+  // common in scientific literature. This is the current buggy behaviour of pluralize:
+  //
+  // So for now, if pluralize is wrong, we just abort and do a sane link.
+  //
+  //> pluralize('tuberculosis', 1)
+  // 'tuberculosi'
+  // > pluralize('tuberculosis', 2)
+  // 'tuberculoses'
+  // > pluralize('tuberculoses', 2)
+  // 'tuberculoses'
+  // > pluralize('tuberculoses', 1)
+  // 'tuberculose'
+  {
+    filesystem: {
+      'notindex.bigb': `= Index
+
+\\x[tuberculosis]
+
+\\x[tuberculosis]{p}
+
+\\x[tuberculosis]{magic}
+
+== Tuberculosis
+`,
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'notindex.bigb': `= Index
+
+<tuberculosis>
+
+\\x[tuberculosis]{p}
+
+\\x[tuberculosis]{magic}
+
+== Tuberculosis
+`,
+    }
+  }
+);
+assert_lib('bigb output: to file',
+  {
+    filesystem: {
+      'notindex.bigb': `= Index
+
+<file/path/to/my file>
+
+== path/to/my file
+{file}
+`,
+      'path/to/my file': '',
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'notindex.bigb': `= Index
+
+<file/path/to/my file>
+
+== path/to/my file
+{file}
+`,
+    }
+  }
+)
+assert_lib('bigb output: x do not change capitalization if the first ast is not plaintext',
+  {
+    filesystem: {
+      'notindex.bigb': `= Index
+
+<so 3>
+
+== $SO(3)$
+`,
+      'path/to/my file': '',
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'notindex.bigb': `= Index
+
+<SO(3)>
+
+== $SO(3)$
+`,
+    }
+  }
+)
 
 // ourbigbook executable tests.
 assert_cli(

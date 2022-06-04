@@ -573,6 +573,9 @@ async function update_database_after_convert({
   if (non_ourbigbook_options === undefined) {
     non_ourbigbook_options = {}
   }
+  if (non_ourbigbook_options.commander === undefined) {
+    non_ourbigbook_options.commander = {}
+  }
   ourbigbook.perf_print(context, 'convert_path_pre_sqlite_transaction')
   let toplevel_id;
   if (context.toplevel_ast !== undefined) {

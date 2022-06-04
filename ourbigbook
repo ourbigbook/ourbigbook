@@ -342,8 +342,8 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
           timestamp_skip = non_ourbigbook_options.commander.renderTimestamp &&
             file_row.last_render !== null &&
             file_row.last_render > mtime &&
-            // Some day we might have one timestamp per output format. But lazy now, just never use
-            // timestamp for --format-source.
+            // Some day we might have one timestamp per output format.
+            // But lazy now, just never use timestamp for --format-source.
             !non_ourbigbook_options.commander.formatSource
         } else {
           timestamp_skip = file_row.last_parse !== null && file_row.last_parse > mtime
@@ -395,6 +395,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
           extra_returns,
           db_provider: non_ourbigbook_options.db_provider,
+          non_ourbigbook_options,
           sequelize: non_ourbigbook_options.sequelize,
           path: input_path_relative_to_ourbigbook_json,
           render: ourbigbook_options.render,

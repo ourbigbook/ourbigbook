@@ -5287,7 +5287,8 @@ async function parse(tokens, options, context, extra_returns={}) {
             const id_plural = pluralize(id.replaceAll(ID_SEPARATOR, ' ')).replaceAll(' ', ID_SEPARATOR)
             if (id !== id_plural) {
               // We need to also fetch this to decide if we can use magic plural or not, in case
-              // there are separate IDs for both singular and plural.
+              // there are separate IDs for both singular and plural. But we don't want to put it into
+              // refs_to_x, because we don't want it to end up in the Refs database.
               prefetch_ids.add(id_plural)
             }
           }

@@ -45,7 +45,7 @@ async function convert({
       input_path,
       ourbigbook_json: {
         h: {
-          splitDefault: true,
+          splitDefault: false,
           splitDefaultNotToplevel: true,
         },
       },

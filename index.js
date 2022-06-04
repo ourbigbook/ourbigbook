@@ -2202,16 +2202,18 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           id_text += '_'
         }
 
-        if (ast.id === undefined && !macro.options.phrasing) {
-          id_text += macro_count_global;
-          macro_count_global++
-          ast.id = id_text;
+        if (ast.id === undefined) {
           index_id = false;
-          // IDs of type p-1, p-2, q-1, q-2, etc.
-          //if (ast.macro_count !== undefined) {
-          //  id_text += ast.macro_count;
-          //  ast.id = id_text;
-          //}
+          if (!macro.options.phrasing) {
+            id_text += macro_count_global;
+            macro_count_global++
+            ast.id = id_text;
+            // IDs of type p-1, p-2, q-1, q-2, etc.
+            //if (ast.macro_count !== undefined) {
+            //  id_text += ast.macro_count;
+            //  ast.id = id_text;
+            //}
+          }
         }
       } else {
         ast.id = render_arg_noescape(macro_id_arg, new_context);
@@ -3456,7 +3458,25 @@ function html_render_simple_elem(elem_name, options={}) {
       test_data_attr = html_attr(Macro.TEST_DATA_HTML_PROP, render_arg(test_data_arg, context))
     }
 
-    let res = `<${elem_name}${extra_attrs_string}${attrs}${test_data_attr}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
+    let res = ''
+    let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
+    const show_caption = ast.index_id || (ast.validation_output.description && ast.validation_output.description.given)
+    let elem_attrs
+    if (show_caption) {
+      res += `<div class="${multiline_caption ? multiline_caption.substring(1) : ''}"${attrs}>\n`;
+      res += `\n<div class="caption">${
+        x_text(ast, context, {
+          href_prefix: html_self_link(ast, context),
+          force_separator
+        })}${description}</div>\n`;
+      elem_attrs = ''
+    } else {
+      elem_attrs = `${extra_attrs_string}${attrs}`
+    }
+    res += `<${elem_name}${elem_attrs}${test_data_attr}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
+    if (show_caption) {
+      `</div>\n`;
+    }
     if (options.wrap) {
       res = html_elem('div', res);
     }
@@ -3762,8 +3782,10 @@ function normalize_latin_character(c) {
 }
 
 const NORMALIZE_PUNCTUATION_CHARACTER_MAP = {
-  '+': 'plus',
+  '%': 'percent',
   '&': 'and',
+  '+': 'plus',
+  '@': 'at',
 }
 function normalize_punctuation_character(c) {
   if (c in NORMALIZE_PUNCTUATION_CHARACTER_MAP) {
@@ -7196,7 +7218,18 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      caption_prefix: 'Quotation',
+      caption_prefix: 'Quote',
+      id_prefix: 'quote',
+      named_args: [
+        new MacroArgument({
+          name: Macro.TITLE_ARGUMENT_NAME,
+          count_words: true,
+        }),
+        new MacroArgument({
+          name: 'description',
+          count_words: true,
+        }),
+      ],
     }
   ),
   new Macro(

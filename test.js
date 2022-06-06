@@ -3988,6 +3988,22 @@ assert_convert_ast('header 7 parent',
 `,
   header_7_expect
 );
+assert_convert_ast('header parent does title to ID conversion',
+  `= 1
+
+= a b%c
+{parent=1}
+
+= 3
+{parent=a b%c}
+`,
+  [
+    a('H', undefined, {level: [t('1')], title: [t('1')]}),
+    a('Toc'),
+    a('H', undefined, {level: [t('2')], title: [t('a b%c')]}, { id: 'a-b-percent-c' }),
+    a('H', undefined, {level: [t('3')], title: [t('3')]}),
+  ],
+);
 assert_error('header with parent argument must have level equal 1',
   `= 1
 
@@ -4025,6 +4041,18 @@ assert_error('header tag argument to id that does not exist gives an error',
 == 2
 `,
   3, 1
+);
+assert_lib('header tag and child argument does title to ID conversion',
+  `= 1
+
+== a b%c
+{child=d e%f}
+
+== 3
+{tag=a b%c}
+
+== d e%f
+`,
 );
 // This almost worked, but "Other children" links were not showing.
 // Either we support it fully, or it blows up clearly, this immediately

@@ -359,8 +359,13 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
       // Convert.
       output = await convert_input(input, new_options, new_non_ourbigbook_options);
       const extra_returns = new_non_ourbigbook_options.extra_returns
-      if (non_ourbigbook_options.commander.formatSource && ourbigbook_options.render) {
-        fs.writeFileSync(full_path, output);
+      if (
+        non_ourbigbook_options.commander.formatSource &&
+        ourbigbook_options.render
+      ) {
+        if (!new_non_ourbigbook_options.had_error) {
+          fs.writeFileSync(full_path, output);
+        }
         first_output_path = full_path
       } else {
         // Write out the output the output files.

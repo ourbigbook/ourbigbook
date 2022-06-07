@@ -6816,7 +6816,7 @@ const MACRO_IMAGE_VIDEO_OPTIONS = {
       } else {
         basename_str = src;
       }
-      let title_str = basename_str.replace(/_/g, ' ').replace(/\.[^.]+$/, '') + '.';
+      const title_str = basename_str.replace(/_/g, ' ').replace(/\.[^.]+$/, '') + '.';
       return new AstArgument([new PlaintextAstNode(
         title_str, ast.source_location)], ast.source_location);
     }

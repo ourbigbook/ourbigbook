@@ -300,7 +300,7 @@ Table with paragraph and list:
 
 <code In OurBigBookExample>
 
-<image Tank man standing in front of some tanks>
+<image Tank man standing in front of some tanks.>
 
 \OurBigBookExample[[
 Hello
@@ -314,6 +314,7 @@ Hello
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {check=0}
+{provider=github}
 {titleFromSrc}
 ]]
 

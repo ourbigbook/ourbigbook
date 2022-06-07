@@ -5059,6 +5059,31 @@ does that for every single file in the current directory.
 
 This option uses the <bigb output format>.
 
+In order to reach a final stable state, you might need to run the conversion twice. This is not ideal but we don't have the patience to fix it. The reason is that links in image titles may expand twice. This is the usual type of two level recursion that has caused much more serious problems, see e.g. \x[x-within-title-restrictions]. E.g. starting with:
+``
+<image my big dog>
+
+\Image[image.png]{title=My <big dog>}
+
+= Big dog
+``
+the first conversion leads to uppercasing inside the image title:
+``
+<image my big dog>
+
+\Image[image.png]{title=My <big Dog>}
+
+= Big Dog
+``
+and the second one to uppercasing the reference to the image title:
+``
+<image my big Dog>
+
+\Image[image.png]{title=My <big Dog>}
+
+= Big Dog
+``
+
 = `--generate`
 {parent=ourbigbook-cli-options}
 

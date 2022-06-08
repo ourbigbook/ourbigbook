@@ -34,6 +34,8 @@ Insane ref plural: <black cats>.
 
 Insane ref full: <black cats>{full}.
 
+Insane ref with greater than: <greater than>
+
 Inline code block: `f(x + 1)[]` after.
 
 Inline code block with backtick: \c[[a ` b]] after.
@@ -141,6 +143,12 @@ Block math:
 
 $$
 \sqrt{2} \\
+\sqrt{2}
+$$
+
+Block math single line:
+
+$$
 \sqrt{2}
 $$
 
@@ -346,6 +354,8 @@ World
 == Black dog
 {tag=dog}
 {tag=black}
+
+== Greater > than
 
 == My scope
 {scope}

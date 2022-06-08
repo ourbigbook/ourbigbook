@@ -86,6 +86,13 @@ Literal block with escaped leading and trailing:
 
 \Q[\Q[asdf]]
 
+Literal block with multiple lines starting in \[ and ending in \]:
+
+\Q[[
+[
+]
+]]
+
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {{description=\{asdf\}}}
 

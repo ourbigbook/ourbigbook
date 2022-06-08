@@ -3318,6 +3318,19 @@ function get_root_relpath(output_path, context) {
   return root_relpath
 }
 
+function get_title_and_description(title, description, source) {
+  let sep
+  if (is_punctuation(title[title.length - 1])) {
+    sep = ''
+  } else {
+    sep = '.'
+  }
+  if (source === undefined) {
+    source = ''
+  }
+  return `${title}${sep}${source}${description}`
+}
+
 // Ensure that all children and tag targets exist. This is for error checking only.
 // https://docs.ourbigbook.com#h-child-argment
 function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
@@ -3465,16 +3478,17 @@ function html_render_simple_elem(elem_name, options={}) {
     }
 
     let res = ''
-    let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
     const show_caption = ast.index_id || (ast.validation_output.description && ast.validation_output.description.given)
     let elem_attrs
     if (show_caption) {
+      const { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
+      const title = x_text(ast, context, {
+        href_prefix: html_self_link(ast, context),
+        force_separator
+      })
+      const title_and_description = get_title_and_description(title, description)
       res += `<div class="${multiline_caption ? multiline_caption.substring(1) : ''}"${attrs}>\n`;
-      res += `\n<div class="caption">${
-        x_text(ast, context, {
-          href_prefix: html_self_link(ast, context),
-          force_separator
-        })}${description}</div>\n`;
+      res += `\n<div class="caption">${title_and_description}</div>\n`;
       elem_attrs = ''
     } else {
       elem_attrs = `${extra_attrs_string}${attrs}`
@@ -3756,8 +3770,9 @@ function macro_image_video_block_convert_function(ast, context) {
   ret += context.macros[ast.macro_name].options.image_video_content_func(
     ast, context, src, rendered_attrs, alt, media_provider_type, is_url);
   if (has_caption) {
-    ret += `<figcaption>${x_text(ast, context, {href_prefix:
-      href_prefix, force_separator})}${source}${description}</figcaption>\n`;
+    const title = x_text(ast, context, { href_prefix, force_separator })
+    const title_and_description = get_title_and_description(title, description, source)
+    ret += `<figcaption>${title_and_description}</figcaption>\n`;
   }
   ret += '</figure>\n';
   return ret;
@@ -6172,6 +6187,13 @@ function x_href(target_ast, context) {
   return ret;
 }
 
+function is_punctuation(c) {
+  return c === '.' ||
+    c === '!' ||
+    c === '?' ||
+    c === ')'
+}
+
 // Get the path to the split header version
 //
 // to_split_headers is set explicitly when making
@@ -7645,11 +7667,12 @@ const OUTPUT_FORMATS_LIST = [
           let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
           let ret = `<div class="code${multiline_caption}"${attrs}>\n`;
           if (ast.index_id || ast.validation_output.description.given) {
-            ret += `\n<div class="caption">${
-              x_text(ast, context, {
-                href_prefix: html_self_link(ast, context),
-                force_separator
-              })}${description}</div>\n`;
+            const title = x_text(ast, context, {
+              href_prefix: html_self_link(ast, context),
+              force_separator
+            })
+            const title_and_description = get_title_and_description(title, description)
+            ret += `\n<div class="caption">${title_and_description}</div>\n`;
           }
           ret += html_code(content);
           ret += `</div>`;
@@ -7984,10 +8007,12 @@ const OUTPUT_FORMATS_LIST = [
           //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
           let href = html_attr('href', '#' + html_escape_attr(ast.id));
           if (ast.index_id || ast.validation_output.description.given) {
-            ret += `<div class="caption">${x_text(ast, context, {
+            const title = x_text(ast, context, {
               href_prefix: href,
               force_separator,
-            })}${description}</div>`;
+            })
+            const title_and_description = get_title_and_description(title, description)
+            ret += `<div class="caption">${title_and_description}</div>`;
           }
           ret += `<table>\n${content}</table>\n`;
           ret += `</div>\n`;

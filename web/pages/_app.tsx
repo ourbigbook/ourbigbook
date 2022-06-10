@@ -17,7 +17,7 @@ import 'style.scss'
 
 function MyHead() {
   const { title } = React.useContext(AppContext)
-  let realTitle = title === undefined ? '' : title + ' - '
+  let realTitle = title ? title + ' - ' : ''
   return (
     <Head>
       <meta

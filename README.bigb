@@ -25,7 +25,7 @@ Key links:
 * https://cirosantilli.com/ourbigbook-template[]: good template to get started, see <quick start>{full}
 
 = Features
-{parent=ourbigbook}
+{parent=OurBigBook}
 
 * <cross references> to any <header> (including e.g. h2, h3, etc. <internal cross file references>[in other files]), <images>, etc. with amazing <error reporting>[error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do. E.g.:
 
@@ -316,10 +316,10 @@ Key links:
 * automatic code formatting: <--format-source>
 
 = Quick start
-{parent=ourbigbook}
+{parent=OurBigBook}
 
 = Play with the template
-{parent=quick-start}
+{parent=Quick start}
 
 Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/editor[].
 
@@ -380,7 +380,7 @@ The following files of the template control the global style of the output, and 
   ``
 
 = Important command line options
-{parent=quick-start}
+{parent=Quick start}
 
 When you run:
 ``
@@ -420,7 +420,7 @@ You can now just give `index.html` to any reader and they should be able to view
 * <--embed-resources>: by default, we link to CSS and JavaScript that lives inside `node_modules`. With this flag, that CSS and JavaScript is copied inline into the document instead. One day we will try to handle <images> that way as well
 
 = Useless knowledge
-{parent=quick-start}
+{parent=Quick start}
 
 Install the NPM package globally and use it from the command line for a quick conversion:
 ``
@@ -450,7 +450,7 @@ npm install ourbigbook
 ``
 
 = Design goals
-{parent=ourbigbook}
+{parent=OurBigBook}
 
 OurBigBook is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
@@ -459,7 +459,7 @@ OurBigBook aims to be the ultimate <latex output format>[LaTeX] "killer", allowi
 It aims to be <features>[more powerful] and <saner> and than Markdown and Asciidoctor.
 
 = Saner
-{parent=design-goals}
+{parent=Design goals}
 
 Originally, OurBigBook was is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
@@ -512,7 +512,7 @@ More precisely:
   maps to the internal content of `<a>Link text<>`.
 
 = More powerful
-{parent=design-goals}
+{parent=Design goals}
 
 The <saner>[high sanity of OurBigBook], also makes creating new macro extensions extremely easy and intuitive.
 
@@ -534,7 +534,7 @@ and we feel that some of those features have required specialized code that coul
 Another advantage over Asciidoctor is that the reference implementation of OurBigBook is in JavaScript, and can therefore be used on browser live preview out of the box. Asciidoctor does Transpile to JS with https://github.com/opal/opal[Opal], but who wants to deal with that layer of complexity?
 
 = Related projects
-{parent=design-goals}
+{parent=Design goals}
 
 Static wiki generators: this is perhaps the best way of classifying this project :-)
 * https://github.com/gollum/gollum[]: already has a local server editor! But no WYSIWYG nor live preview. Git integration by default, so when you save on the UI already generates a Git commit. We could achieve that with: https://github.com/isomorphic-git/isomorphic-git[], would be really nice. Does not appear to have built-in static generation:
@@ -565,7 +565,7 @@ Less related but of interest, similar philosophy to what Ciro wants, but no expl
 * https://tutorial.math.lamar.edu/
 
 = Motivation
-{parent=design-goals}
+{parent=Design goals}
 
 Ciro Santilli developed OurBigBook to perfectly satisfy his writing style, which is basically "create one humongous document where you document everything you know about a subject so everyone can understand it, and just keep adding to it".
 
@@ -584,14 +584,14 @@ The key limitations have repeatedly annoyed Ciro were:
 
 = OurBigBook Markup
 {c}
-{parent=ourbigbook}
+{parent=OurBigBook}
 
 OurBigBook Markup is the markup language used in the <OurBigBook> project.
 
 It works both on the <OurBigBook Web> dynamic website, and on <OurBigBook CLI> static websites from the command line.
 
 = Macro
-{parent=ourbigbook-markup}
+{parent=OurBigBook Markup}
 
 This section documents all OurBigBook macros.
 
@@ -602,7 +602,7 @@ The most common macros also have <insane macro shortcuts> to keep the syntax sho
 The general macro syntax is described at <OurBigBook Markup syntax>{full}.
 
 = Link
-{parent=macro}
+{parent=Macro}
 
 = `\a`
 {synonym}
@@ -639,7 +639,7 @@ paragraphs]
 ]]
 
 = `\a` `check` argument
-{parent=link}
+{parent=Link}
 
 If `{check=0}` is given, this disables the local file existence check that is done by default for <relative links>.
 
@@ -681,7 +681,7 @@ See this awesome style guide: \a[markdown-style-guide]{check=0}
 The general lesson is clear: in a server, paths could be re-routed to anything, including content that lies outside of a OurBigBook project.
 
 = `\a` `href` argument
-{parent=link}
+{parent=Link}
 
 The link target, e.g. in:
 ``
@@ -694,20 +694,20 @@ Important behaviours associated with this property for local links:
 * they are modified as per <relative link>{full} to account for <scopes> with <split headers>
 
 = `\a` `ref` argument
-{parent=link}
+{parent=Link}
 
 Analogous to the <\x ref argument>, e.g.:
 \OurBigBookExample[[Trump said this and that.https://en.wikipedia.org/wiki/Donald_Trump_Access_Hollywood_tape#Trump's_responses{ref}https://web.archive.org/web/20161007210105/https://www.donaldjtrump.com/press-releases/statement-from-donald-j.-trump{ref} Then he said that and this.https://en.wikipedia.org/wiki/Donald_Trump_Access_Hollywood_tape#Trump's_responses{ref}https://web.archive.org/web/20161007210105/https://www.donaldjtrump.com/press-releases/statement-from-donald-j.-trump{ref}]]
 
 = `\a` `relative` argument
-{parent=link}
+{parent=Link}
 
 If given, this <boolean argument> forces a given link to be a <relative link> or not.
 
 Otherwise, the link is automatically guessed based on the address given as explained at <relative link>{full}.
 
 = Relative link
-{parent=a-relative-argument}
+{parent=a relative argument}
 
 A relative link is a link that points to a resource that will be present a final URL relative to the input `.bigb` file.
 
@@ -759,7 +759,7 @@ Implemented at: https://github.com/cirosantilli/ourbigbook/issues/87[].
 
 = URL with protocol
 {c}
-{parent=relative-link}
+{parent=Relative link}
 
 A URL with protocol is a URL that matches the regular expression `^[a-zA-Z]+://`. The following are examples of URLs with protocol:
 * `http://cirosantilli.com`
@@ -777,7 +777,7 @@ The following aren't:
   For simplicity's sake, we just consider it as a URL without protocol.
 
 = Insane link parsing rules
-{parent=link}
+{parent=Link}
 
 Insane start at any of the recognized protocols are the ones shown at: <known URL protocols>{full}.
 * `http://`
@@ -829,13 +829,13 @@ This magic can be observed with <--help-macros> by seeing that the `href` argume
 ``
 
 = Bold
-{parent=macro}
+{parent=Macro}
 {title2=`\b`}
 
 \OurBigBookExample[[Some \b[bold] text.]]
 
 = Line break
-{parent=macro}
+{parent=Macro}
 {title2=`\br`}
 
 There is basically one application for this: poetry, which would be too ugly with <code block> due to fixed width font:
@@ -848,7 +848,7 @@ Paragraph 2 Line 2\br
 ]]
 
 = Code block
-{parent=macro}
+{parent=Macro}
 {title2=\c[[``]], \c[[`]], `\C`, `\c`}
 
 Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) <insane macro shortcut>:
@@ -931,7 +931,7 @@ cd
 ]]
 
 = `\OurBigBookExample`
-{parent=macro}
+{parent=Macro}
 
 Shows both the OurBigBook code and its rendered output, e.g.:
 \OurBigBookExample[[[
@@ -945,7 +945,7 @@ Its input should be thought of as a literal code string, and it then injects the
 This macro is used extensively in the OurBigBook documentation.
 
 = Comment
-{parent=macro}
+{parent=Macro}
 {title2=`\Comment`}
 
 The `Comment` and `comment` macros are regular macros that does not produce any output. Capitalization is explained at: <block vs inline macros>{full}.
@@ -969,7 +969,7 @@ My inline \comment[[inside comment]] is awesome.
 ]]]
 
 = Header
-{parent=macro}
+{parent=Macro}
 {title2=`\H`}
 
 <Insane> with `= ` (equal sign space):
@@ -1013,7 +1013,7 @@ Sane equivalent:
 ``
 
 = Unlimited header levels
-{parent=header}
+{parent=Header}
 
 There is no limit to how many levels we can have, for either sane or insane headers!
 
@@ -1033,40 +1033,40 @@ To avoid this, we considered making the insane syntax be instead:
 but it just didn't feel as good, and is a bit harder to type than just smashing `=` n times for lower levels, which is the most common use case. So we just copied markdown.
 
 = My h3
-{parent=unlimited-header-levels}
+{parent=Unlimited header levels}
 
 = My h4
-{parent=my-h3}
+{parent=My h3}
 
 = My h5
-{parent=my-h4}
+{parent=My h4}
 
 = My h6
-{parent=my-h5}
+{parent=My h5}
 
 = My h7
-{parent=my-h6}
+{parent=My h6}
 
 = My h8
-{parent=my-h7}
+{parent=My h7}
 
 = My h9
-{parent=my-h8}
+{parent=My h8}
 
 = My h10
-{parent=my-h9}
+{parent=My h9}
 
 = My h11
-{parent=my-h10}
+{parent=My h10}
 
 = My h12
-{parent=my-h11}
+{parent=My h11}
 
 = My h13
-{parent=my-h12}
+{parent=My h12}
 
 = Skipping header levels
-{parent=header}
+{parent=Header}
 
 The very first header of a document can be of any level, although we highly recommend your document to start with a `\H[1]`, and to contain exactly just one `\H[1]`, as this has implications such as:
 * `\H[1]` is used for the document title: <HTML document title>
@@ -1082,7 +1082,7 @@ After the initial header however, you must not skip a header level, e.g. the fol
 ``
 
 = The toplevel header
-{parent=header}
+{parent=Header}
 
 If the document has only a single header of the highest level, e.g. like the following has only a single `h2`:
 ``
@@ -1095,7 +1095,7 @@ If the document has only a single header of the highest level, e.g. like the fol
 then this has some magical effects.
 
 = The toplevel header IDs don't show
-{parent=the-toplevel-header}
+{parent=The toplevel header}
 
 Header IDs won't show for the toplevel level. For example, the headers would render like:
 ``
@@ -1116,7 +1116,7 @@ rather than:
 This is because in this case, we guess that the `h2` is the toplevel.
 
 = The ID of the first header is derived from the filename
-{parent=the-toplevel-header}
+{parent=The toplevel header}
 
 TODO: we kind of wanted this to be the ID of the toplevel header instead of the first header, but this would require an extra postprocessing pass (to determine if the first header is toplevel or not), which might affect performance, so we are not doing it right now.
 
@@ -1151,17 +1151,17 @@ For example, a <publish to GitHub Pages>[GitHub pages] root directory must be na
 As a consequence of this, the toplevel index file cannot <include>[be included in other files].
 
 = `\H` arguments
-{parent=header}
+{parent=Header}
 
 = `\H` `c` argument
-{parent=h-arguments}
+{parent=H arguments}
 
 If given, makes the header capitalized by default on <cross file references>.
 
 More details at: <cross reference title inflection>{full}.
 
 = `\H` `child` argument
-{parent=h-arguments}
+{parent=H arguments}
 
 This <multiple argument> marks given IDs as being children of the current page.
 
@@ -1211,7 +1211,7 @@ The header `child` syntax is generally preferred because at some point while edi
 The <\H tag argument> does the same as the <\x child argument> but in the opposite direction.
 
 = `\H` `disambiguate` argument
-{parent=h-arguments}
+{parent=H arguments}
 
 Sometimes the short version of a name is ambiguous, and you need to add some extra text to make both its title and ID unique.
 
@@ -1270,7 +1270,7 @@ Note that unlike for headers, `disambiguate` does not appear on the title of ima
 This use case is even more useful when `title-from-src` is enable by default for the <ourbigbook json/media-providers> entry, so you don't have to repeat titles several times over and over.
 
 = `\H` `file` argument
-{parent=h-arguments}
+{parent=H arguments}
 
 If given, the current section contains metadata about file or other resource with the given URL.
 
@@ -1332,23 +1332,23 @@ An explanation of what this video is about.
 ``
 
 = `\H` `file` argument demo
-{parent=h-file-argument}
+{parent=H file argument}
 
 = Tank_man_standing_in_front_of_some_tanks.jpg
 {file}
-{parent=h-file-argument-demo}
+{parent=H file argument demo}
 
 An explanation of what this video is about.
 
 = Tank Man by CNN (1989)
 {file=https://www.youtube.com/watch?v=YeFzeNAHEhU}
-{parent=h-file-argument-demo}
+{parent=H file argument demo}
 
 An explanation of what this video is about.
 
 = `\H` `numbered` argument
 {c}
-{parent=h-arguments}
+{parent=H arguments}
 
 This <boolean argument> determines whether renderings of a header will have section numbers or not. This affects all of:
 * <headers> themselves
@@ -1460,7 +1460,7 @@ Note how in this case the number for `h4` is just `1.` rather than `1.1.1.`. We 
 
 = `\H` `parent` argument
 {c}
-{parent=h-arguments}
+{parent=H arguments}
 
 = ID-based header levels
 {c}
@@ -1531,7 +1531,7 @@ See also: <header explicit levels vs nesting design choice>{full} for further ra
 
 = ID-based header levels and scope resolution
 {c}
-{parent=h-parent-argument}
+{parent=H parent argument}
 
 When mixing both <\H parent argument> and <scopes>, things get a bit complicated, because when writing or parsing, we have to first determine the parent header before resolving scopes.
 
@@ -1582,7 +1582,7 @@ will lead to the following header tree with <--log headers>:
 ``
 
 = Header explicit levels vs nesting design choice
-{parent=h-parent-argument}
+{parent=H parent argument}
 
 Arguably, the language would be even saner if we did:
 ``
@@ -1600,7 +1600,7 @@ But we chose not to do it like most markups available because it leads to too ma
 Ciro later "invented" (?) <\H parent argument>, which he feels reaches the perfect balance between the advantages of those two options.
 
 = `\H` `scope` argument
-{parent=h-arguments}
+{parent=H arguments}
 
 = Scope
 {synonym}
@@ -1671,7 +1671,7 @@ Note how:
   So in the example above, `\x[/introduction]` refers to the ID `introduction`, and not `full-and-unique-experiment-name/introduction`.
 
 = `scope` resolution
-{parent=h-scope-argument}
+{parent=H scope argument}
 
 When nested scopes are involved, <cross references> resolution peels off the scopes one by one trying to find the closes match, e.g. the following works as expected:
 ``
@@ -1692,7 +1692,7 @@ Here OurBigBook:
 * then it removes the `h2`, leading to `h1/h2`, and that one is found, and therefore is taken
 
 = Directory-based `scope`
-{parent=h-scope-argument}
+{parent=H scope argument}
 
 Putting files in subdirectories of the build has the same effect as adding a <scope> to their top level header.
 
@@ -1701,22 +1701,22 @@ Notably, all headers inside that directory get the directory prepended to their 
 The toplevel directory is determined as described at: <the toplevel index file>.
 
 = Test scope 1
-{parent=h-scope-argument}
+{parent=H scope argument}
 {scope}
 
 For fun and profit.
 
 = Test scope 2
-{parent=test-scope-1}
+{parent=Test scope 1}
 {scope}
 
 Let's break this local link: \a[ourbigbook].
 
 = Not scoped
-{parent=test-scope-2}
+{parent=Test scope 2}
 
 = `\H` `scope` argument of toplevel headers
-{parent=h-scope-argument}
+{parent=H scope argument}
 
 When <the toplevel header> is given the `scope` property OurBigBook automatically uses the file path for the scope and heaves fragments untouched.
 
@@ -1743,7 +1743,7 @@ Some quick interactive cross file link tests:
 * <not readme with scope/image My image>
 
 = `\H` `splitDefault` argument
-{parent=h-arguments}
+{parent=H arguments}
 
 When using <split headers>, <cross references> always point to non-split pages as mentioned at <cross reference targets in split headers>.
 
@@ -1808,7 +1808,7 @@ And any links from the tutorial, back to the main massive README will link back 
 This feature was implemented at: https://github.com/cirosantilli/ourbigbook/issues/131
 
 = `\H` `splitSuffix` argument
-{parent=h-arguments}
+{parent=H arguments}
 
 If given, add a custom suffix to the output filename of the header when using <split headers>.
 
@@ -1874,7 +1874,7 @@ notindex-asdf.bigb
 ``
 
 = `\H` `synonym` argument
-{parent=h-arguments}
+{parent=H arguments}
 
 = Synonym
 {synonym}
@@ -1913,7 +1913,7 @@ which contains a redirection from `gdb.html` to `gnu-debugger.html`.
 Implemented at: https://github.com/cirosantilli/ourbigbook/issues/114
 
 = `\H` `title` argument
-{parent=h-synonym-argument}
+{parent=H synonym argument}
 
 Contains the main content of the header. The <insane syntax>:
 ``
@@ -1928,7 +1928,7 @@ and in both cases `My title` is the title argument.
 The title argument is also notably used for <automatic ID from title>.
 
 = Automatic ID from title
-{parent=h-title-argument}
+{parent=H title argument}
 
 If a <the toplevel header>[non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
 * do a <id output format> conversion on the title to remove for example any HTML tags that would be present in the conversion output
@@ -1943,7 +1943,7 @@ as capitalization and determining if something "is a letter or not" in those cas
 
 For toplevel headers, see: <the ID of the first header is derived from the filename>.
 
-So for example, the following automatic IDs would be generated: <table Examples of automatically generated IDs.>.
+So for example, the following automatic IDs would be generated: <table Examples of automatically generated IDs>.
 
 \Table[
 || title
@@ -1998,7 +1998,7 @@ For <the toplevel header>[the toplevel header], its ID is derived from the basen
 
 = ID target from title
 {c}
-{parent=h-synonym-argument}
+{parent=H synonym argument}
 
 This conversion type is similar to <Automatic ID from title>, but it is used in certain cases where we are targeting IDs rather than setting them, notably:
 * <\H parent argument>
@@ -2006,7 +2006,7 @@ This conversion type is similar to <Automatic ID from title>, but it is used in 
 * <\H tag argument>
 
 = `\H` `title2` argument of a synonym header
-{parent=h-synonym-argument}
+{parent=H synonym argument}
 
 Unlike <\H title2 argument>, the synonym does not show up by default next to the title. This is because we sometimes want that, and sometimes not. To make the title appear, you can simply add an empty `title2` argument to the synonym header as in:
 ``
@@ -2033,8 +2033,8 @@ Note how we added the synonym to the title only when it is not just a simple fle
 
 = `\H` `tag` argument
 {c}
-{parent=h-arguments}
-{tag=multiple-argument}
+{parent=H arguments}
+{tag=multiple argument}
 
 Same as <\x child argument> but in the opposite direction, e.g.:
 ``
@@ -2069,7 +2069,7 @@ You generally want to use `tag` instead of the <\H child argument> because other
 It is possible to enforce the <\H child argument> or the <\H tag argument> in a given project with the <ourbigbook json/lint h-tag> option.
 
 = `\H` `title2` argument
-{parent=h-arguments}
+{parent=H arguments}
 
 The `title2` argument can be given to any element that has the `title` argument.
 
@@ -2129,7 +2129,7 @@ This option is a convenience helper for the common use case of "writting a tutor
 ]]
 
 = `\H` `wiki` argument
-{parent=h-arguments}
+{parent=H arguments}
 
 If given, show a link to the Wikipedia article that corresponds to the header.
 
@@ -2146,7 +2146,7 @@ which looks like:
 
 = Tiananmen Square
 {id=wiki-explicit}
-{parent=h-wiki-argument}
+{parent=H wiki argument}
 {wiki=Tiananmen_Square}
 
 or equivalently with the value deduced from the title:
@@ -2160,7 +2160,7 @@ which looks like:
 
 = Tiananmen Square
 {id=wiki-implicit}
-{parent=h-wiki-argument}
+{parent=H wiki argument}
 {wiki}
 
 You can only link to subsections of wiki pages with explicit links as in:
@@ -2174,18 +2174,18 @@ which looks like:
 
 = History of Tiananmen Square
 {id=wiki-explicit-subsection}
-{parent=h-wiki-argument}
+{parent=H wiki argument}
 {wiki=Tiananmen_Square#History}
 
 = Header metadata section
-{parent=header}
+{parent=Header}
 
 OurBigBook adds some header metadata to the toplevel header at the bottom of each page. this section describes this metadata.
 
 Although the <table of contents>{child} has a macro to specify its placement, it is also automatically placed at the bottom of the page, and could be considered a header metadata section.
 
 = Incoming links
-{parent=header-metadata-section}
+{parent=Header metadata section}
 
 Lists other sections that link to the current section.
 
@@ -2211,7 +2211,7 @@ the page `tmp-1.html` would contain a list of incoming links as:
 since those pages link to the `tmp-1` ID.
 
 = Tagged
-{parent=header-metadata-section}
+{parent=Header metadata section}
 
 Lists sections that are <secondary children> of the current section, i.e. tagged under the current section.
 
@@ -2242,7 +2242,7 @@ the tagged sections for:
 * Flying will contain Bat and Bee
 
 = Ancestors
-{parent=header-metadata-section}
+{parent=Header metadata section}
 
 Shows a list of ancestors of the page. E.g. in:
 ``
@@ -2264,7 +2264,7 @@ the ancestor lists would be for:
 so we see that this basically provides a type of breadcrumb navigation.
 
 = Image
-{parent=macro}
+{parent=Macro}
 {title2=`\Image` and `\image`}
 
 A block image with <block vs inline macros>[capital] 'i' `Image` showcasing most of the image properties <image my test image>.
@@ -2295,14 +2295,14 @@ And now for an image outside of <\OurBigBookExample> to test how it looks direct
 {id=image-my-test-image-toplevel}
 
 = Image height
-{parent=image}
+{parent=Image}
 
 By default, we fix image heights to `height=315`, and let the `width` be calculated proportionally once the image loads. We therefore ignore the actual image size. This is done to:
 * prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page
 * create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger
 
 = Image ID
-{parent=image}
+{parent=Image}
 
 Here is an image without a <image description argument>[description] but with an ID so we can link to it: <image my test image 2>.
 \OurBigBookExample[[
@@ -2322,7 +2322,7 @@ Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-t
 ]]
 
 = Image caption
-{parent=image-id}
+{parent=Image ID}
 
 If the image has neither <image ID>[ID] nor title nor <image description argument>[description] nor `source`, then it does not get a caption at all:
 \OurBigBookExample[[\Image[Tank_man_standing_in_front_of_some_tanks.jpg\]]]
@@ -2353,10 +2353,10 @@ If the image has any visible metadata such as `source` or `description` however,
 ]]
 
 = Where to store images
-{parent=image}
+{parent=Image}
 
 = Store images inside the repository itself
-{parent=where-to-store-images}
+{parent=Where to store images}
 
 If you are making a limited repository that will not have a ton of images, then you can get away with simply git tracking your images in the main repository.
 
@@ -2375,7 +2375,7 @@ However, if you are making a huge tutorial, which can have a huge undefined numb
 A generally better alternative is to <store images in a separate media repository>, and especially <store images in a separate media repository and track it as a git submodule>.
 
 = Store images in a separate media repository
-{parent=where-to-store-images}
+{parent=Where to store images}
 
 In this approach, you create a separate GitHub repository in addition to the main one containing the text to contain only media such as images.
 
@@ -2416,7 +2416,7 @@ Therefore, images could easily fill up the maximum repository size you are allow
 https://git-lfs.github.com/[Git LFS] is one approach to deal with this, but we feel that it adds too much development overhead.
 
 = Store images in a separate media repository and track it as a git submodule
-{parent=store-images-in-a-separate-media-repository}
+{parent=Store images in a separate media repository}
 
 This is likely the sanest approach possible, as it clearly specifies which media version matches which repository version through the submodule link.
 
@@ -2453,7 +2453,7 @@ Now, as mentioned at <ourbigbook json/media-providers>, everything will work bea
   * also, that directory is automatically gitignore, so it won't be pushed as part of the main render and thus duplicate things
 
 = Store images in Wikimedia Commons
-{parent=where-to-store-images}
+{parent=Where to store images}
 
 Wikimedia Commons is another great possibility to upload your images to:
 \OurBigBookExample[[
@@ -2490,7 +2490,7 @@ Downsides:
 * uploading a bunch of images to Wikimedia Commons does feel a bit more laborious than it should because you have to write down so much repeated metadata for them
 
 = Image lazy loading
-{parent=image}
+{parent=Image}
 
 We do this by default because OurBigBook is meant to allow producing huge single page documents like Ciro likes it, and in this way:
 * images that the user is looking at will load first
@@ -2499,7 +2499,7 @@ We do this by default because OurBigBook is meant to allow producing huge single
 TODO: maybe create a mechanism to disable this for the entire build with <ourbigbook.json>.
 
 = Background color of transparent images
-{parent=image}
+{parent=Image}
 
 For the love of God, there is no standardized for SVG to set its background color without a rectangle? https://stackoverflow.com/questions/11293026/default-background-color-of-svg-root-element `viewport-fill` was just left in limbo?
 
@@ -2510,25 +2510,25 @@ Therefore for now we just force white background on <overview of files in this r
 Then if someone ever has an SVG that needs another background color, we can add an image attribute to set that color as a local style.
 
 = Image generators
-{parent=image}
+{parent=Image}
 
 TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.
 
 https://github.com/cirosantilli/ourbigbook/issues/40
 
 = Image argument
-{parent=image}
+{parent=Image}
 
 = Image `check` argument
-{parent=image-argument}
-{tag=named-argument}
-{tag=boolean-argument}
+{parent=Image argument}
+{tag=Named argument}
+{tag=Boolean argument}
 
 Analogous to the <\a check argument> when checking if the <image src argument> exists or not.
 
 = Image `description` argument
-{parent=image-argument}
-{tag=named-argument}
+{parent=Image argument}
+{tag=Named argument}
 
 The `description` argument similar to the <image title argument> argument, but allows allowing longer explanations without them appearing in <cross references> to the image.
 
@@ -2566,8 +2566,8 @@ Stuff after the image description.
 We recommend adding a period or other punctuation to the end of every description.
 
 = Image `src` argument
-{parent=image-argument}
-{tag=positional-argument}
+{parent=Image argument}
+{tag=Positional argument}
 
 The address of the image, e.g. in:
 ``
@@ -2578,12 +2578,12 @@ the `src` is `image.png`.
 Analogous to the <\a href argument>.
 
 = Image `title` argument
-{parent=image-argument}
+{parent=Image argument}
 
 Analogous to the <\H title argument>.
 
 = Include
-{parent=macro}
+{parent=Macro}
 {title2=`\Include`}
 
 The `\Include` macro allows including an external OurBigBook headers under the current header.
@@ -2628,7 +2628,7 @@ The insaner version is a bit insaner because the `\Include` magically discards t
 <\Include example>{full} shows what those actually render like.
 
 = `\Include` from subdirectories
-{parent=include}
+{parent=Include}
 
 When you are in a subdirectory, include resolution just is simply relative to the subdirectory. E.g. we could do:
 
@@ -2653,7 +2653,7 @@ subdir/subdir2/notindex.bigb
 It is not currently possible to include from ancestor directories: https://github.com/cirosantilli/ourbigbook/issues/214[].
 
 = `\Include` `parent` argument
-{parent=include}
+{parent=Include}
 
 This option is analogous to <\H parent argument>, but for <includes>.
 
@@ -2696,7 +2696,7 @@ and now Cat will be a child of Animal as desired.
 Implemented at: https://github.com/cirosantilli/ourbigbook/issues/127
 
 = `\Include` example
-{parent=include}
+{parent=Include}
 
 This shows what includes render as.
 
@@ -2707,13 +2707,13 @@ This shows what includes render as.
 \Include[subdir/notindex]
 
 = Italic
-{parent=macro}
+{parent=Macro}
 {title2=`\i`}
 
 \OurBigBookExample[[Some \i[italic] text.]]
 
 = `\JsCanvasDemo`
-{parent=macro}
+{parent=Macro}
 
 The `JsCanvasDemo` macro allows you to create interactive HTML/JavaScript https://en.wikipedia.org/wiki/Canvas_element[canvas] demos easily.
 
@@ -2814,7 +2814,7 @@ void main() {
 ]]
 
 = List
-{parent=macro}
+{parent=Macro}
 {title2=`* `, `\L`, `\Ul`, `\Ol`}
 
 <Insane> with `* ` (asterisk space):
@@ -2932,7 +2932,7 @@ And now a list outside of <\OurBigBookExample> to test how it looks directly und
 * c
 
 = Mathematics
-{parent=macro}
+{parent=Macro}
 {title2=`$$`, `$`, `\M`, `\m`}
 
 Via https://katex.org/[KaTeX] server side, oh yes!
@@ -2973,14 +2973,14 @@ $$
 $$
 ]]
 
-Equation IDs and titles and linking to equations works identically to <images>, see that section for full details. Here is one equation reference example that links to the following insane syntax equation: <equation My first insane equation.>:
+Equation IDs and titles and linking to equations works identically to <images>, see that section for full details. Here is one equation reference example that links to the following insane syntax equation: <equation My first insane equation>:
 \OurBigBookExample[[
 $$
 \sqrt{1 + 1}
 $$
 {title=My first insane equation}
 ]]
-and the sane equivalent <equation My first sane equation.>:
+and the sane equivalent <equation My first sane equation>:
 \OurBigBookExample[[[
 \M{title=My first sane equation}[[
 \sqrt{1 + 1}
@@ -2993,7 +2993,7 @@ $$
 $$
 
 = Math defines across blocks
-{parent=mathematics}
+{parent=Mathematics}
 
 First here is an invisible block (with `{show=0}`) defining with a `\newcommand` definition after this paragraph:
 \OurBigBookExample[[
@@ -3031,7 +3031,7 @@ $$3 + 3$${show=1}
 ]]
 
 = `ourbigbook.tex`
-{parent=mathematics}
+{parent=Mathematics}
 
 If your project has multiple `.bigb` input files, you can share Mathematics definitions across all files by adding them to the `ourbigbook.tex` file on the toplevel directory.
 
@@ -3047,7 +3047,7 @@ $$
 ``
 
 = Paragraph
-{parent=macro}
+{parent=Macro}
 {title2=`\P`}
 
 OK, this is too common, so we opted for some <insanity> here: double newline is a paragraph!
@@ -3079,7 +3079,7 @@ which renders as a single paragraph.
 One major advantage of this, is that when writing documentation, you often want to keep lists or code blocks inside a given paragraph, so that it is easy to reference the entire paragraph with an ID. Think for example of paragraphs in the C++ standard.
 
 = Passthrough
-{parent=macro}
+{parent=Macro}
 {title2=`\passthrough`}
 
 Dumps its contents directly into the rendered output.
@@ -3097,7 +3097,7 @@ And for an inline passthrough:
 \OurBigBookExample[[[Hello \passthrough[[<b>raw</b>]] world!]]]
 
 = Quotation
-{parent=macro}
+{parent=Macro}
 {title2=`\Q`}
 
 With `q`:
@@ -3114,7 +3114,7 @@ and it was great.
 ]]
 
 = Table
-{parent=macro}
+{parent=Macro}
 {title2=`|| `, `| `, `\Table`, `\Tr`, `\Th` and `\Td`}
 
 The <insane syntax> marks:
@@ -3242,7 +3242,7 @@ And a fully insane one:
 | 2 2
 
 = Table sorting
-{parent=table}
+{parent=Table}
 
 JavaScript interactive on-click table sorting is enabled by default, try it out by clicking on the header row:
 \OurBigBookExample[[
@@ -3265,7 +3265,7 @@ JavaScript interactive on-click table sorting is enabled by default, try it out 
 Powered by: https://github.com/tristen/tablesort
 
 = Table of contents
-{parent=macro}
+{parent=Macro}
 {title2=`\Toc`}
 
 OurBigBook automatically adds a ToC at the end of the first <the toplevel header>[non-toplevel header] of every document.
@@ -3311,7 +3311,7 @@ The ToC ignores <the toplevel header> if you have one.
 For when you want a quick outline of the header tree on the terminal, also consider the <--log headers> option.
 
 = Table of contents JavaScript open close interaction
-{parent=table-of-contents}
+{parent=Table of contents}
 
 To the left of table of content entries you can click on an open/close icon to toggle the visibility of different levels of the table of contents.
 
@@ -3335,7 +3335,7 @@ but we feel that it is worth it to do things like this to cover the main use cas
 Clicking on the link from a <header> up to the table of contents also automatically opens up the node for you in case it had been previously closed manually.
 
 = Video
-{parent=macro}
+{parent=Macro}
 {title2=`\Video` and `\video`}
 
 Very analogous to <images>, only differences will be documented here.
@@ -3408,7 +3408,7 @@ And as for images, setting `titleFromSrc` automatically calculates a title for y
 ]]
 
 = Video lazy loading
-{parent=video}
+{parent=Video}
 
 Unlike <image lazy loading>, we don't support video lazy loading yet because:
 * non-`youtube` videos use the `video` tag which has no `loading` property yet
@@ -3421,12 +3421,12 @@ Both of this cases could be worked around with JavaScript:
 * `youtube` videos: same as above for the `iframe`, but this should be less problematic since YouTube videos are not viewable without JavaScript anyways, and who cares about `iframe` semantics?
 
 = `\Video` `start` argument
-{parent=video}
+{parent=Video}
 
 The time to start playing the video at in seconds. Works for both `youtube` and non-YouTube videos.
 
 = Cross reference
-{parent=macro}
+{parent=Macro}
 
 = Internal cross reference
 {synonym}
@@ -3451,8 +3451,8 @@ Another sane equivalent would be to add an explicit link body as in:
 \OurBigBookExample[[\x[cross-reference][Cross references] are awesome.]]
 
 = Insane cross reference
-{parent=cross-reference}
-{tag=insane-macro-shortcut}
+{parent=Cross reference}
+{tag=Insane macro shortcut}
 {title2=`<>`}
 
 When you use an insane cross reference (`<>`) such as in:
@@ -3469,7 +3469,7 @@ which gets converted to exact the same as the sane:
 \OurBigBookExample[[\x[cross-reference]{full} are awesome.]]
 
 = Cross reference title inflection
-{parent=cross-reference}
+{parent=Cross reference}
 
 In most cases it is generally more convenient to simply use the <\x magic argument> through <insane cross references> instead of the `c` and `p` arguments as described on the rest of this section, see also: <inflection vs magic>{full}.
 
@@ -3544,7 +3544,7 @@ If plural and capitalization don't handle your common desired inflections, you c
 Now for a live example for quick and dirty interactive testing.
 
 = Cross reference title inflection example
-{parent=cross-reference-title-inflection}
+{parent=Cross reference title inflection}
 
 \OurBigBookExample[[\x[inflection-example-not-proper\]]]
 
@@ -3579,24 +3579,24 @@ Now for a live example for quick and dirty interactive testing.
 \OurBigBookExample[[\x[not-the-readme-header-with-fixed-case\]]]
 
 = Inflection example not-proper
-{parent=cross-reference-title-inflection-example}
+{parent=Cross reference title inflection example}
 
 = Inflection example proper
 {c}
-{parent=cross-reference-title-inflection-example}
+{parent=Cross reference title inflection example}
 
 = inflection example not-proper lower
-{parent=cross-reference-title-inflection-example}
+{parent=Cross reference title inflection example}
 
 = inflection example proper lower
 {c}
-{parent=cross-reference-title-inflection-example}
+{parent=Cross reference title inflection example}
 
 = Inflection plural examples
-{parent=cross-reference-title-inflection-example}
+{parent=Cross reference title inflection example}
 
 = Inflection vs magic
-{parent=cross-reference}
+{parent=Cross reference}
 
 The <\x magic argument> was introduced later, and basically became a better alternative to <cross reference title inflection> in all but the following cases:
 * <\H disambiguate argument>: disambiguate prevents the determination of plural inflection, e.g. in:
@@ -3634,7 +3634,7 @@ The <\x magic argument> was introduced later, and basically became a better alte
   ``
 
 = `\x` within `title` restrictions
-{parent=cross-reference}
+{parent=Cross reference}
 
 If you use `\x` within a `title`, which most commonly happens for <image>[image titles], that can generate complex dependencies between IDs, which would either be harder to implement, or lead to infinite recursion.
 
@@ -3741,7 +3741,7 @@ or:
 A closely related limitation is the simplistic approach to <\x id output format>.
 
 = Cross file reference
-{parent=cross-reference}
+{parent=Cross reference}
 
 = Internal cross file reference
 {synonym}
@@ -3810,7 +3810,7 @@ rather than:
 This is why IDs must be unique for elements across all pages.
 
 = Cross file reference internals
-{parent=cross-file-reference}
+{parent=Cross file reference}
 {title2=`db.sqlite3`}
 
 = ID database
@@ -3846,7 +3846,7 @@ sqlite3 out/db.sqlite3 'select id from ids'
 You can force `ourbigbook` to not use the ID database with the <--no-db> command line option
 
 = Cross reference title link removal
-{parent=cross-file-reference}
+{parent=Cross file reference}
 
 If the target `title` argument contains a link from either another <cross references> or a regular <link>[external hyperlink], OurBigBook automatically prevents that link from rendering as a link when no explicit body is given.
 
@@ -3883,17 +3883,17 @@ This is a nice image: \x[image-aa-zxcv-lolol-bb].
 ]]
 
 = `\x` arguments
-{parent=cross-reference}
+{parent=Cross reference}
 
 = `\x` `c` argument
-{parent=x-arguments}
+{parent=x arguments}
 
 Capitalizes the first letter of the target title.
 
 For more details, see: <cross reference title inflection>{full}.
 
 = `\x` `child` argument
-{parent=x-arguments}
+{parent=x arguments}
 
 Setting the `child` <boolean argument> on a cross reference to a header as in:
 ``
@@ -3965,7 +3965,7 @@ A live demo can be seen at: <\x child argument demo>.
 Generally, a better alternative to this argument is to use <\H child argument>.
 
 = Secondary children
-{parent=x-child-argument}
+{parent=x child argument}
 
 The term refers to sections that have a parent/child relationship via either of the:
 * <\x child argument>
@@ -3999,43 +3999,43 @@ TODO the fact that this transformation is done currently makes it impossible to 
 but definitely the most important use case is having easier to type and read source with the standard IDs.
 
 = `\x` `child` argument demo
-{parent=x-child-argument}
+{parent=x child argument}
 {scope}
 
 = Animal
-{parent=x-child-argument-demo}
+{parent=x child argument demo}
 
 = Ant
-{parent=animal}
+{parent=Animal}
 
 = Cow
-{parent=animal}
+{parent=Animal}
 
 Oh, and cows are also <mammals>{parent}.
 
 = Mammal
-{parent=animal}
+{parent=Animal}
 
 = Bat
-{parent=mammal}
+{parent=Mammal}
 
 = Cat
-{parent=mammal}
+{parent=Mammal}
 
 = Flying animal
-{parent=animal}
+{parent=Animal}
 
 <Bats>{child} can fly.
 
 But <cats> can't.
 
 = `\x` `parent` argument
-{parent=x-child-argument}
+{parent=x child argument}
 
 The `parent` argument is exactly like the <\x child argument>, but it reverses the direction of the parent/child relation.
 
 = `\x` `full` argument
-{parent=x-arguments}
+{parent=x arguments}
 
 To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` <boolean argument> to the cross reference, for example:
 \OurBigBookExample[[\x[x-full-argument]{full}.]]
@@ -4044,7 +4044,7 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 \OurBigBookExample[[Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.]]
 
 = `\x` `full` argument in cross file references
-{parent=x-full-argument}
+{parent=x full argument}
 
 For example in the following <cross file reference>:
 \OurBigBookExample[[\x[h2-in-not-the-readme]{full}.]]
@@ -4059,8 +4059,8 @@ Section 1.2 "h2 in not the readme"
 This is because the number "Section 1.2" might already have been used in the current page, leading to confusion.
 
 = `\x` `magic` argument
-{parent=x-arguments}
-{tag=boolean-argument}
+{parent=x arguments}
+{tag=Boolean argument}
 
 This argument makes writing many internal links more convenient, and it was notably introduced because it serves as the sane version of <insane cross references>.
 
@@ -4105,14 +4105,14 @@ the link treated magically as follows:
 There may be some cases where you might still want to use <cross reference title inflection> however, see: <inflection vs magic>{full}.
 
 = `\x` `p` argument
-{parent=x-arguments}
+{parent=x arguments}
 
 Pluralizes or singularizes the last word of the target title.
 
 For more details, see: <cross reference title inflection>{full}.
 
 = `\x` `ref` argument
-{parent=x-arguments}
+{parent=x arguments}
 
 The `ref` argument of `\x` marks the link as reference, e.g.:
 ``
@@ -4135,10 +4135,10 @@ Implemented at: https://github.com/cirosantilli/ourbigbook/issues/137
 
 = OurBigBook Markup syntax
 {c}
-{parent=ourbigbook-markup}
+{parent=OurBigBook Markup}
 
 = Insane macro shortcut
-{parent=ourbigbook-markup-syntax}
+{parent=OurBigBook Markup syntax}
 
 = Insane syntax
 {synonym}
@@ -4160,7 +4160,7 @@ The style recommendation is: use the insane version which is shorter, unless you
 Insane in our context does not mean worse. It just mean "harder for the computer to understand". But it is more important that humans can understand in the first place! It is find to make the computer work a bit more for us when we are able to.
 
 = Macros with insane shortcut
-{parent=insane-macro-shortcut}
+{parent=Insane macro shortcut}
 
 * <paragraph>{child}{full}: `\n\n` (double newline)
 * <link>{child}{full}: `a http://example.com b` (space followed by `http://`)
@@ -4171,7 +4171,7 @@ Insane in our context does not mean worse. It just mean "harder for the computer
 * <table>{child}{full}: `|| `, `| ` and indentation
 
 = Insane code and math shortcuts
-{parent=macros-with-insane-shortcut}
+{parent=Macros with insane shortcut}
 
 The insane code and math shortcuts work very analogously and are therefore described together in this section.
 
@@ -4204,7 +4204,7 @@ d
 ``
 
 = Insane macro shortcut extra arguments
-{parent=macros-with-insane-shortcut}
+{parent=Macros with insane shortcut}
 
 Insane arguments always work by abbreviating:
 * the macro name
@@ -4227,7 +4227,7 @@ a {id=ef}`b c` g
 This restriction things easy to parse for humans and machines alike.
 
 = Escapes in insane macro shortcuts
-{parent=macros-with-insane-shortcut}
+{parent=Macros with insane shortcut}
 
 Literal backticks and dollar signs can be produced witha backslash escape as in:
 \OurBigBookExample[[a \` \$ b]]
@@ -4255,7 +4255,7 @@ nice
 ]]
 
 = Macro identifier
-{parent=ourbigbook-markup-syntax}
+{parent=OurBigBook Markup syntax}
 
 <OurBigBook Markup> macro identifiers can consist of the following letters:
 * `a-z` lowercase
@@ -4267,10 +4267,10 @@ OurBigBookExample
 ``
 
 = Macro argument syntax
-{parent=ourbigbook-markup-syntax}
+{parent=OurBigBook Markup syntax}
 
 = Positional vs named arguments
-{parent=macro-argument-syntax}
+{parent=Macro argument syntax}
 {title2=`[...]` vs `{key=...}`}
 
 Every argument in OurBigBook is either positional or named.
@@ -4340,12 +4340,12 @@ The following are therefore all equivalent:
 Just like named arguments, positional arguments are never mandatory.
 
 = Positional argument
-{parent=positional-vs-named-arguments}
+{parent=Positional vs named arguments}
 
 See: <positional vs named arguments>{full}.
 
 = Positional argument default values
-{parent=positional-argument}
+{parent=Positional argument}
 
 Most positional arguments will default to an empty string if not given.
 
@@ -4363,7 +4363,7 @@ This can be contrasted with named arguments, for which there is always a default
 See also: <link>{full}.
 
 = Mandatory positional arguments
-{parent=positional-argument}
+{parent=Positional argument}
 
 Some positional arguments are required, and if not given OurBigBook reports an error and does not render the node.
 
@@ -4372,19 +4372,19 @@ This is for example the `level` of a <header>.
 These arguments marked with the `mandatory: true` <--help-macros> argument property.
 
 = Named argument
-{parent=positional-vs-named-arguments}
+{parent=Positional vs named arguments}
 
 See: <positional vs named arguments>{full}.
 
 = Boolean argument
-{child=a-relative-argument}
-{child=h-child-argument}
-{child=h-numbered-argument}
-{child=h-splitdefault-argument}
-{child=x-c-argument}
-{child=x-p-argument}
-{child=x-ref-argument}
-{parent=macro-argument-syntax}
+{child=a relative argument}
+{child=H child argument}
+{child=H numbered argument}
+{child=H splitDefault argument}
+{child=x c argument}
+{child=x p argument}
+{child=x ref argument}
+{parent=Macro argument syntax}
 
 Name arguments marked in <--help-macros> as `boolean: true` must either:
 * take no value and no `=` sign, in which case the value is implicitly set to `1`
@@ -4402,7 +4402,7 @@ The name "boolean argument" is given by analogy to the https://stackoverflow.com
 
 = JavaScript interface for arguments
 {c}
-{parent=macro-argument-syntax}
+{parent=Macro argument syntax}
 
 The JavaScript interface sees arguments as follows:
 ``
@@ -4415,7 +4415,7 @@ where args is a dict such that:
   For example, the link API names its arguments `href` and `text`.
 
 = Literal arguments
-{parent=macro-argument-syntax}
+{parent=Macro argument syntax}
 {title2=`[[...]]` and `{{key=...}}`}
 
 Arguments that are opened with more than one square brackets `[` or curly braces `{` are literal arguments.
@@ -4480,7 +4480,7 @@ and close examples:
 ``
 
 = Argument leading and trailing newline removal
-{parent=macro-argument-syntax}
+{parent=Macro argument syntax}
 
 = Argument leading newline removal
 {synonym}
@@ -4521,7 +4521,7 @@ The newline is however considered if it would be part of some <insane macro shor
 where the insane list requires a leading newline `\n* ` to work. That newline is not ignored, even though it comes immediately after the `\Q[` opening.
 
 = Argument newlines between arguments removal
-{parent=macro-argument-syntax}
+{parent=Macro argument syntax}
 
 The macro name and the first argument, and any two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
 ``
@@ -4549,14 +4549,14 @@ There is one exception to this however: inside an <header>[insane header], any n
 and the `id` gets assigned to the header rather than the trailing code element.
 
 = Document trailing newline removal
-{parent=macro-argument-syntax}
+{parent=Macro argument syntax}
 
 If the document ends one newline, it is ignored.
 
 If it is two or more, then that generates an error.
 
 = Escape characters
-{parent=macro-argument-syntax}
+{parent=Macro argument syntax}
 
 Every character that cannot be a <macro identifier> can be escaped with a backslash `\`. If you try to escape a macro identifier it of course treats the thing as a macro instead and fails, e.g. in `\a` it would try to use a macro called `\a`, not escape the character `a`.
 
@@ -4585,10 +4585,10 @@ The escape rules for literal arguments are described at: <literal arguments>{ful
 This is good for short arguments of regular text, but for longer blocks like <code blocks> or <mathematics>, you may want to use <literal arguments>
 
 = Macro argument property
-{parent=macro-argument-syntax}
+{parent=Macro argument syntax}
 
 = `remove_whitespace_children`
-{parent=macro-argument-property}
+{parent=Macro argument property}
 
 In HTML, certain elements such as `<ul>` cannot have any `text` nodes in them, and any whitespace is ignored, see https://stackoverflow.com/questions/2161337/can-we-use-any-other-tag-inside-ul-along-with-li/60885802#60885802[].
 
@@ -4619,8 +4619,8 @@ also does not include the newline between the list items.
 The definition of whitespace is the same as the ASCII whitespace definition of HTML5: ` \r\n\f\t`.
 
 = `multiple` argument
-{child=h-child-argument}
-{parent=macro-argument-property}
+{child=H child argument}
+{parent=Macro argument property}
 
 By default, arguments can be given only once.
 
@@ -4643,13 +4643,13 @@ AstNode: H
 ``
 
 = OurBigBook Markup concepts
-{parent=ourbigbook-markup}
+{parent=OurBigBook Markup}
 
 These are shared concepts that are used across other sections.
 
 = `auto_parent` macro property
 {id=auto-parent}
-{parent=ourbigbook-markup-concepts}
+{parent=OurBigBook Markup concepts}
 
 Some sequences of macros such as `l` from <lists> and `tr` from <tables> automatically generate implicit parents, e.g.:
 ``
@@ -4669,7 +4669,7 @@ The children are always added as arguments of the `content` argument of the impl
 If present, the `auto_parent` macro property determines which auto-parent gets added to those macros.
 
 = Block vs inline macros
-{parent=ourbigbook-markup-concepts}
+{parent=OurBigBook Markup concepts}
 
 Every OurBigBook macro is either block or inline:
 * a block macro is one that takes up the entire line when rendered
@@ -4685,7 +4685,7 @@ Some macros have both a block and an inline version, and like any other macro, t
 * <comments>
 
 = Known URL protocols
-{parent=ourbigbook-markup-concepts}
+{parent=OurBigBook Markup concepts}
 
 Certain common URL protocols are treated as "known" by OurBigBook, and when found they have special effects in some parts of the conversion.
 
@@ -4699,7 +4699,7 @@ Effects of known protocols include:
 
 = JavaScript case conversion
 {c}
-{parent=ourbigbook-markup-concepts}
+{parent=OurBigBook Markup concepts}
 
 Some parts of OurBigBook use "JavaScript case conversion".
 
@@ -4713,7 +4713,7 @@ These conversions are also specified in the Unicode standard.
 
 = OurBigBook CLI
 {c}
-{parent=ourbigbook}
+{parent=OurBigBook}
 
 = `ourbigbook` executable
 {synonym}
@@ -4754,7 +4754,7 @@ printf 'ab\ncd\n' | ourbigbook --body-only
 ``
 
 = Index file
-{parent=ourbigbook-cli}
+{parent=OurBigBook CLI}
 
 The following basenames are considered "index files":
 * `README.bigb`
@@ -4769,7 +4769,7 @@ Those basenames have the following magic properties:
 * the default <the toplevel header>[toplevel header] ID of an index files is derived from the parent directory basename rather than from the source file basename
 
 = Project toplevel directory
-{parent=index-file}
+{parent=Index file}
 
 This directory is determined by first checking the presence of a <ourbigbook.json> file.
 
@@ -4796,7 +4796,7 @@ In this case:
   * if we run `ourbigbook path/to/notindex.bigb`: same
 
 = The toplevel index file
-{parent=project-toplevel-directory}
+{parent=Project toplevel directory}
 
 This is the <index file> present in the <project toplevel directory>.
 
@@ -4804,7 +4804,7 @@ Being the toplevel index file has the following implications compared to other <
 * its ID is derived from the header itself, not the directory, see also: <the ID of the first header is derived from the filename>
 
 = The current working directory does not matter when there is a `ourbigbook.json`
-{parent=the-toplevel-index-file}
+{parent=The toplevel index file}
 
 When the file or directory being converted has an ancestor directory with a `ourbigbook.json` file, then your current working directory does not have any effect on OurBigBook output. For example if we have:
 ``
@@ -4830,13 +4830,13 @@ Internally, the general philosophy is that the JavaScript API in \a[index.js] wo
 
 = OurBigBook CLI options
 {c}
-{parent=ourbigbook-cli}
+{parent=OurBigBook CLI}
 
 = `ourbigbook` executable options
 {synonym}
 
 = `--china`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 This is the most important option of the software.
 
@@ -4851,7 +4851,7 @@ firefox china.html
 ``
 
 = `--dry-run`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 The `--dry-run` option is a good way to debug <publish>[`--publish` option], as it builds the publish output files without doing any git commands that would be annoying to revert. So after doing:
 ``
@@ -4866,7 +4866,7 @@ see also: <the out directory>.
 Inspiration: https://github.com/cirosantilli/linux-kernel-module-cheat/tree/6d0a900f4c3c15e65d850f9d29d63315a6f976bf#dry-run-to-get-commands-for-your-project
 
 = `--dry-run-push`
-{parent=dry-run}
+{parent=--dry-run}
 
 Similar to <--dry-run>, but it runs all git commands except for `git push`, which gives a clearer idea of what `--publish` would actually do including the git operations, but without publishing anything:
 ``
@@ -4874,7 +4874,7 @@ Similar to <--dry-run>, but it runs all git commands except for `git push`, whic
 ``
 
 = `--embed-includes`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Makes <includes> render the included content in the same output file as the include is located, instead of the default behaviour of creating links.
 
@@ -4892,7 +4892,7 @@ Otherwise, `include` only adds the headers of the other file to the table of con
 You may want to use this option together with <--embed-resources> to produce fully self-contained individual HTML files for your project.
 
 = `--embed-resources`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Embed as many external resources such as images and CSS as possible into the HTML output files, rather than linking to external resources.
 
@@ -4929,7 +4929,7 @@ Keep in mind that certain things can never be embedded, e.g.:
 * YouTube videos, since YouTube does not offer any download API
 
 = `--format-source`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Parse and overwrite the local .bigb <OurBigBook Markup> input source files with the recommended code format. E.g.:
 ``
@@ -4969,7 +4969,7 @@ and the second one to uppercasing the reference to the image title:
 ``
 
 = `--generate`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Generate one of the template repositories locally:
 * `ourbigbook --generate default`: a good starter template that illustrates many key OurBigBook features
@@ -4994,7 +4994,7 @@ so maybe we should just get rid of that option and just ensure that we can provi
 For now we are keeping this as it is useful to automate the updating of templates during the <release procedure>.
 
 = `--help-macros`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 You can get an overview of all macros in JSON format with:
 ``
@@ -5002,7 +5002,7 @@ ourbigbook --help-macros
 ``
 
 = `--log`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Give multiple times to enable a list of certain types of logs to stderr help debugging, e.g.:
 ``
@@ -5035,7 +5035,7 @@ Values not documented in other sections:
   Also adds token index to the output, which makes debugging the parser way easier.
 
 = `--log headers`
-{parent=log}
+{parent=--log}
 
 This nifty little option outputs to stderr what the header graph looks like!
 
@@ -5057,7 +5057,7 @@ This option can also serve as a debug tool for header tree related features (con
 TODO
 
 = `--log perf`
-{parent=log}
+{parent=--log}
 
 print <performance> statistics to stderr, for example
 ``
@@ -5091,12 +5091,12 @@ and we would see the database requests made at each conversion phase.
 Note that `--log perf` currently does not take sub-converts into account, e.g. <include> and <\OurBigBookExample> both call the toplevel conversion  function `convert`, and therefore go through all the conversion intervals, but we do not take those it account, and just dump them all into the same toplevel interval that they happen in, currently between `post_process_start` and `post_process_end`.
 
 = `--no-db`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Don't use the <ID database> during this run. This implies that the on-disk database is not read, and also not written to. Instead, a temporary clean in-memory database is used.
 
 = `--no-html-x-extension`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 If not given, <cross references> render with the `.html` extension as in:
 ``
@@ -5117,12 +5117,12 @@ which is what is needed for servers such as GitHub Pages, which automatically re
 This option is automatically implied when publishing to targets that remove the `.html` extension such as GitHub pages.
 
 = `--no-render`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Only extract IDs to fill the <ID database>, don't render. This saves time if you only want to render a single file which has references to other files without getting any errors.
 
 = `--no-render-timestamp`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 OurBigBook stores the timestamp of the last successful:
 * <conversion process overview>[ID extraction]
@@ -5200,7 +5200,7 @@ We could in principle solve this problem by figuring out exactly which files nee
 
 = `--outdir <outdir>`
 {id=outdir}
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Set a custom output directory for the conversion
 
@@ -5233,7 +5233,7 @@ This means that the source tree remains completely clean, and every output and t
 
 = `--outfile <outfie>`
 {id=outfile}
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Save the output to a given file instead of outputting to stdout:
 ``
@@ -5248,17 +5248,17 @@ because with `--outfile` we know where the output is going, and so we can genera
 
 = `-O --output-format <outformat>`
 {id=output-format}
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Default: <html output format>.
 
 = `html` output format
-{parent=output-format}
+{parent=output format}
 
 The default output format. Web pages!!!
 
 = `bigb` output format
-{parent=output-format}
+{parent=output format}
 
 Outputs as <OurBigBook Markup>, i.e. the same format as the input itself!
 
@@ -5286,7 +5286,7 @@ diff -u out/html/old.html out/html/index.html
 This was tracked at: https://github.com/cirosantilli/ourbigbook/issues/83
 
 = `id` output format
-{parent=output-format}
+{parent=output format}
 
 This output format is mostly a joke.
 
@@ -5336,7 +5336,7 @@ then the image ID would be `image-my-nice-title`:
 Stuff that is primarily non-textual like <images> is just completely removed. We could put effort in outputting their title correctly, but meh, not worth the effort.
 
 = `\x` `id` output format
-{parent=id-output-format}
+{parent=id output format}
 
 `\x` uses `href` if the content is not given explicitly.
 
@@ -5399,10 +5399,10 @@ This can however be worked around with the <\x magic argument> as in;
 ``
 
 = Unimplemented output formats
-{parent=id-output-format}
+{parent=id output format}
 
 = `latex` output format
-{parent=unimplemented-output-formats}
+{parent=Unimplemented output formats}
 
 TODO: https://github.com/cirosantilli/ourbigbook/issues/38
 
@@ -5410,7 +5410,7 @@ One day, one day. Maybe.
 
 = `-p, --publish`
 {id=publish}
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 OurBigBook tooling is so amazing that we also take care of the HTML publishing for you!
 
@@ -5447,7 +5447,7 @@ https://pages.github.com/[GitHub pages] is the default OurBigBook publish target
 Since that procedure is so important, it is documented directly at: <play with the template>.
 
 = Publish to GitHub pages root page
-{parent=publish-to-github-pages}
+{parent=Publish to GitHub Pages}
 
 If you want to publish your root user page, which appears at `/` (e.g. https://github.com/cirosantilli/cirosantilli.github.io for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
 * https://github.com/isaacs/github/issues/212
@@ -5474,7 +5474,7 @@ You then will also want to set your default repository branch to `dev` in the se
 
 = `-P, --publish-commit <commit-message>`
 {id=publish-commit}
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Like <publish>, but also automatically:
 * `git add -u` to automatically add change to any files that have been previously git tracked
@@ -5489,7 +5489,7 @@ With great power comes great responsibility of course, but who cares!
 
 = `-S`, `--split-headers`
 {id=split-headers}
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Split each header into its own separate HTML output file.
 
@@ -5535,7 +5535,7 @@ would produce the following output files:
 `--split-headers` is implied by <publish>: the published website will automatically get the split pages. There is no way to turn it off currently. A pull request would be accepted, especially if it offers a <ourbigbook.json> way to do it. Maybe it would be nice to have a more generalized way of setting any CLI option equivalent from the `ourbigbook.json`, and an option `cli` vs `cli-publish` so that `cli-publish` is publish only. Just lazy for now/not enough pressing use case met.
 
 = Cross reference targets in split headers
-{parent=split-headers}
+{parent=split headers}
 
 By default, all cross references point to the non-split version of headers, including those found in split headers.
 
@@ -5549,7 +5549,7 @@ The same applies to <cross file references> when there are multiple input files.
 In order to make the split version be the default for some headers, you can use the <\H splitDefault argument>.
 
 = `--stdout`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 When converting a file, output output to stdout in addition to outputting to a file:
 ``
@@ -5560,7 +5560,7 @@ The regular output file is also saved.
 Cannot be used when converting a directory.
 
 = `--template`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Select a custom https://github.com/harttle/liquidjs[Liquid template] file for the output.
 
@@ -5632,15 +5632,15 @@ Defined variables:
 We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
 
 = `--unsafe-ace`
-{parent=ourbigbook-cli-options}
-{tag=security}
+{parent=OurBigBook CLI options}
+{tag=Security}
 
 This option enables actions that would allow <arbitrary code execution>, so you should only pass it if you trust the repository author. Enabled functionality includes:
 * <ourbigbook json/prepublish>
 
 = `-w`, `--watch`
 {id=watch}
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Don't quit `ourbigbook` immediately.
 
@@ -5670,7 +5670,7 @@ TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with
 
 = `-W`, `--web`
 {id=web}
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Sync local directory to <OurBigBook Web> instead of doing anything else.
 
@@ -5684,7 +5684,7 @@ Some important known limitations:
 * if there's an error in a later file, the database is still modified by the previous files, i.e. there is no atomicity. A way to improve that would be to upload all files to the server in one go, and let the server convert everything in one transaction. However, this would lead to a very long server action, which would block any other incoming request (I tested, everything is single threaded)
 
 = `--web-url`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Set a custom URL for <web> from the command line. If not given, the canonical https://ourbigbook.com is used. This option is used e.g. for testing locally e.g. with:
 ``
@@ -5692,7 +5692,7 @@ ourbigbook --web --web-url http://localhost:3000
 ``
 
 = `--web-username`
-{parent=ourbigbook-cli-options}
+{parent=OurBigBook CLI options}
 
 Set the username for <web> from the command line, e.g.:
 ``
@@ -5701,7 +5701,7 @@ ourbigbook --web --web-url http://localhost:3000 --web-username donald-trump
 If not given, you will be prompted for it from the command line.
 
 = `ourbigbook.json`
-{parent=ourbigbook-cli}
+{parent=OurBigBook CLI}
 {scope}
 
 OurBigBook configuration file that affects the behaviour of ourbigbook for all files in the directory.
@@ -5729,7 +5729,7 @@ and so on.
 If we reach the root path `/` and no `ourbigbook.json` is found, then we understand that there is no `ourbigbook.json` file present.
 
 = `ignore`
-{parent=ourbigbook-json}
+{parent=ourbigbook.json}
 
 List of paths relative to the <project toplevel directory> that <OurBigBook CLI> will ignore.
 
@@ -5755,7 +5755,7 @@ TODO: also ignore during <watch>.
 
 = `ourbigbook.json` `id`
 {id=id}
-{parent=ourbigbook-json}
+{parent=ourbigbook.json}
 
 Dictionary of options that control <automatic ID from title> generation.
 
@@ -5768,7 +5768,7 @@ Default: `true`.
 
 = Latin normalization
 {c}
-{parent=id-normalize-latin}
+{parent=id normalize latin}
 
 ASCII normalization is a custom OurBigBook defined normalization that converts many characters that look like latin characters into latin characters.
 
@@ -5793,7 +5793,7 @@ Default: `true`.
 
 = Punctuation normalization
 {c}
-{parent=id-normalize-punctuation}
+{parent=id normalize punctuation}
 
 Some selected punctuation marks are automatically converted into their dominant corresponding pronunciations. These are:
 * `%`: `percent`
@@ -5807,7 +5807,7 @@ Dashes are added around the signs if needed, e.g.:
 * `Folding@home`: `folding-at-home`
 
 = `lint`
-{parent=ourbigbook-json}
+{parent=ourbigbook.json}
 
 Dictionary of lint options to enable. OurBigBook tries to be strict about forcing specific styles by default, e.g. forbids triple newline paragraph. But sometimes we just can't bear it :-)
 
@@ -5828,7 +5828,7 @@ Possible values:
 * `tag`: forbids <headers> from using the <\H child argument>. They should instead use the <\H tag argument>.
 
 = `h`
-{parent=ourbigbook-json}
+{parent=ourbigbook.json}
 {scope}
 
 This dictionnary stores options related to headers.
@@ -5895,7 +5895,7 @@ It would also mean that metadata such as comments would be visible in two separa
 So instead of filtering the duplicate articles on every index, we just don't generate them in the first place.
 
 = `media-providers`
-{parent=ourbigbook-json}
+{parent=ourbigbook.json}
 
 The `media-providers` entry of `ourbigbook.json` specifies properties of how media such as <images> and <videos> are retrieved and rendered.
 
@@ -5944,7 +5944,7 @@ Direct children of media-providers and subproperties that are valid only for the
 See also: https://github.com/cirosantilli/ourbigbook/issues/40
 
 = `outputOutOfTree`
-{parent=ourbigbook-json}
+{parent=ourbigbook.json}
 
 Default: `false`
 
@@ -5977,7 +5977,7 @@ This option is always forced to `false` when <outdir> is given.
 Implemented at: https://github.com/cirosantilli/ourbigbook/issues/163
 
 = `prepublish`
-{parent=ourbigbook-json}
+{parent=ourbigbook.json}
 
 Path of a script that gets executed before running <publish>[`ourbigbook --publish`].
 
@@ -5993,7 +5993,7 @@ The script arguments are:
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
 = `redirects`
-{parent=ourbigbook-json}
+{parent=ourbigbook.json}
 
 Generate custom redirects.
 
@@ -6035,7 +6035,7 @@ TODO ideally we should check for conflicts with regular output from split header
 
 = OurBigBook Library
 {c}
-{parent=ourbigbook}
+{parent=OurBigBook}
 
 = JavaScript API
 {c}
@@ -6054,7 +6054,7 @@ This is because these features require interacting with the <ID database>, and w
 
 = OurBigBook Web
 {c}
-{parent=ourbigbook}
+{parent=OurBigBook}
 {title2=OurBigBook.com}
 
 = Dynamic website
@@ -6070,7 +6070,7 @@ The source for OurBigBook Web, source code is located under \a[web/]. OurBigBook
 OurBigBook Web was originally forked from the following starter boilerplate: https://github.com/cirosantilli/node-express-sequelize-realworld-example-app[]. We are trying to keep tech synced as much as possible between both projects, since the boilerplate is useful as a tech demo to quickly try out new technologies in a more minimal setup.
 
 = Local development server
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 It is highly recommended that you use the exact same Node.js and NPM versions as given under \a[package.json] `engines.js` entry. The best way to do that is likely to use NVM as explained at: https://stackoverflow.com/questions/16898001/how-to-install-a-specific-version-of-node-on-ubuntu/47376491#47376491
 
@@ -6128,7 +6128,7 @@ Whenever you save any changes to the backend server, we listen to this and autom
 For frontend, changes are automatically recompiled by the webpack development server, so you can basically just refresh pages and they will be updated straightaway.
 
 = Demo data
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 You can generate demo data for <OurBigBook Web> with \a[web/bin/generate-demo-data.js], e.g.:
 ``
@@ -6164,7 +6164,7 @@ To clear the database and start with an empty database use `--empty`:
 ``
 
 = Log database queries done
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 ``
 DEBUG='sequelize:sql:*' npm run dev
@@ -6175,7 +6175,7 @@ npm run devs
 ``
 
 = Local optimized frontend
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 First run the first time setup from <local development server>.
 
@@ -6208,7 +6208,7 @@ npm run tsc
 ``
 
 = Local run as identical to deployment as possible
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 Here we use PostgreSQL instead of SQLite with the prebuilt static frontend.
 
@@ -6247,7 +6247,7 @@ psql ourbigbook
 and then running SQL commands.
 
 = Local development run with PostgreSQL
-{parent=local-run-as-identical-to-deployment-as-possible}
+{parent=Local run as identical to deployment as possible}
 
 If you have determined that a bug is PostgreSQL specific, and it is easier to debug it interactively, first create the database as mentioned at <local run as identical to deployment as possible> and then:
 ``
@@ -6267,7 +6267,7 @@ because we have to shell out to the ugly migration CLI, and that only understand
 
 = Heroku deployment
 {c}
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 Got it running perfectly at as of April 2021 https://ourbigbook.com with the following steps.
 
@@ -6345,7 +6345,7 @@ pg_restore --verbose --clean --no-acl --no-owner -h localhost -U ourbigbook_user
 The local password is `a` (single letter). TODO automate login.
 
 = Upgrade PostgreSQL database
-{parent=heroku-deployment}
+{parent=Heroku deployment}
 
 The 10k rows of the free plan are easy to reach, this procedure can be used to upgrade:
 
@@ -6353,7 +6353,7 @@ The 10k rows of the free plan are easy to reach, this procedure can be used to u
 * https://elements.heroku.com/addons/heroku-postgresql
 
 = Custom domain name setup
-{parent=heroku-deployment}
+{parent=Heroku deployment}
 
 The domain `ourbigbook.com` was leased from: https://porkbun.com/[]. Unfortunatly, HTTPS on Heroku with a custom domain requires using a paying tier, so we upgraded from the free tier to the cheapest paid tier, "Hobby Project", to start with: https://stackoverflow.com/questions/52185560/heroku-set-ssl-certificates-on-free-plan
 
@@ -6369,7 +6369,7 @@ heroku domains
 and we removed all other `ALIAS`/`CNAME` records from Porkbun.
 
 = Staging deployment
-{parent=heroku-deployment}
+{parent=Heroku deployment}
 
 Before pushing any new changes, and especially ones that seem dangerous, it is a good idea to first deploy to a staging server.
 
@@ -6396,7 +6396,7 @@ heroku run -a ourbigbook-staging bash
 ``
 
 = Dependency organization
-{parent=heroku-deployment}
+{parent=Heroku deployment}
 
 On the toplevel we have:
 * `.`: OurBigBook package
@@ -6424,7 +6424,7 @@ Since we were unable to find any way to make things more flexible on the `packag
 Further discussion at: https://github.com/cirosantilli/ourbigbook/issues/156
 
 = OurBigBook Web tech stack
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 * Frontend
   * Next.js
@@ -6438,7 +6438,7 @@ Further discussion at: https://github.com/cirosantilli/ourbigbook/issues/156
   * SQLite for local development, PostgreSQL for deployment
 
 = OurBigBook Web database migration setup
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 Any pending migrations are done automatically during deployment as part of `npm run build`, more precisely they are run from \a[web/bin/sync-db.js].
 
@@ -6449,7 +6449,7 @@ This is something that should be merged into Sequelize itself, or at least asked
 
 = OurBigBook Web directory structure
 {c}
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 * \a[web/app.js]: server executable entry point, can also be used programmatically from Node.js
 * \a[web/models]: Sequelize database models. Most changes in this folder require the creation of a corresponding \a[web/migrations]
@@ -6461,7 +6461,7 @@ This is something that should be merged into Sequelize itself, or at least asked
 
 = web/bin/rerender-articles.js
 {file}
-{parent=ourbigbook-web-directory-structure}
+{parent=OurBigBook Web directory structure}
 
 Rerender all articles.
 
@@ -6475,12 +6475,12 @@ The functionality of this script should be called from a migration whenever such
 
 = OurBigBook Web help
 {c}
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 This section will eventually be moved into the website itself. We'll just likely paste it into the database under an account that is always created or something like that.
 
 = OurBigBook Web keyboard shortcuts
-{parent=ourbigbook-web-help}
+{parent=OurBigBook Web help}
 
 * Global:
   * Ctrl + Enter: submit the current form, e.g. save/create articles or comments, login, register
@@ -6491,7 +6491,7 @@ This section will eventually be moved into the website itself. We'll just likely
     * L: like or unlike the page. This would require moving like state out of the Like button, which is a bit annoying.
 
 = Step debug the dynamic website
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 Put a `debugger` statment where you want to break and run:
 ``
@@ -6502,7 +6502,7 @@ where `i` stands for `inspect` as in `node inspect`.
 This pauses at the start of execution. So just run `c` and normal execution resumes until the `debugger;` statement is reached.
 
 = OurBigBook Web unit tests
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 All our tests are all located inside \a[test.js].
 
@@ -6542,7 +6542,7 @@ The tests include two broad classes of tests:
 * TODO: create frontend tests: https://github.com/cirosantilli/node-express-sequelize-nextjs-realworld-example-app/issues/11
 
 = OurBigBook Web Next.js unit tests
-{parent=ourbigbook-web-unit-tests}
+{parent=OurBigBook Web unit tests}
 
 By default, we don't make any requests to Next.js, because starting up Next.js is extremely slow for regular test usage and would drive us crazy.
 
@@ -6573,7 +6573,7 @@ Note that Next.js tests are just present inside other tests, e.g. `api: create a
 These tests can only be run in production mode, and so our scripts automatically rebuild every time before running the tests, which makes things quite slow. This required because in development mode, Next.js is extremelly soft, and e.g. does not raise 500 instead returning a 200 page with error messages. Bad default.
 
 = OurBigBook Web TypeScript type checking
-{parent=ourbigbook-web}
+{parent=OurBigBook Web}
 
 TypeScript type checking of <OurBigBook Web> is run automatically during build, e.g. by:
 ``
@@ -6589,7 +6589,7 @@ nmp run typecheck
 The output format is also a bit nicer that what is shown in `npm run build-dev`.
 
 = Runtime feature
-{parent=ourbigbook}
+{parent=OurBigBook}
 
 This section describes features present in \a[ourbigbook_runtime.js]
 
@@ -6599,7 +6599,7 @@ You should use the packaged `dist/ourbigbook_runtime.js` instead of this file di
 
 = JavaScript redirect to split on missing ID
 {c}
-{parent=runtime-feature}
+{parent=Runtime feature}
 
 When you have a document like:
 
@@ -6644,12 +6644,12 @@ To make that less worse, if <split headers> are enabled, we check at runtime if 
 It would be even more awesome if we were able to redirect to the non-split version as well, `dog.html#poodle`, but that would be harder to implement, so not doing it for now.
 
 = Tooling
-{parent=ourbigbook}
+{parent=OurBigBook}
 
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
 
 = Conversion to/from other formats
-{parent=tooling}
+{parent=Tooling}
 
 The only thing we have for now is the quick and dirty \a[adoc-to-ciro].
 
@@ -6658,10 +6658,10 @@ The better approach would be to implement a converter in Haskell from anything t
 And from OurBigBook to anything, create new output formats inside OurBigBook to those other formats.
 
 = Editor support
-{parent=tooling}
+{parent=Tooling}
 
 = Vim
-{parent=editor-support}
+{parent=Editor support}
 
 You can install the support with https://github.com/VundleVim/Vundle.vim[Vundle] with:
 ``
@@ -6716,7 +6716,7 @@ The following support is provided:
   We will attempt to err on the side of "misses some stuff but does not destroy the entire page below" whenever possible.
 
 = Browser editor with preview
-{parent=editor-support}
+{parent=Editor support}
 
 There are two versions of this editor:
 * \a[editor.html] is a toy/demo with no backing database.
@@ -6787,7 +6787,7 @@ Possibilities we could reuse:
 * https://www.froala.com/wysiwyg-editor
 
 = Error reporting
-{parent=tooling}
+{parent=Tooling}
 
 A lot of effort has been put into making error reporting as good as possible in OurBigBook, to allow authors to quickly find what is wrong with their source code.
 
@@ -6798,7 +6798,7 @@ Please report any error reporting bug you find, as it will be seriously tracked 
 Notably, OurBigBook should never throw an exception due to a syntax error, as that prevents error messages from being output at all.
 
 = Order of reported errors
-{parent=error-reporting}
+{parent=Error reporting}
 
 One important philosophy of the error reporting is that the very first message should be the root cause of the problem whenever possible: users should not be forced to search a hundred messages to find the root cause. In this way, the procedure:
 * solve the first error
@@ -6850,10 +6850,10 @@ error: tmp.bigb:5:3: cross reference to unknown id: "b"
 ``
 
 = Security
-{parent=ourbigbook}
+{parent=OurBigBook}
 
 = Arbitrary code execution
-{parent=security}
+{parent=Security}
 
 OurBigBook is designed to not allow arbitrary code execution by default on any <OurBigBook CLI> command.
 
@@ -6864,7 +6864,7 @@ In order to allow code execution for pre/post processing tasks e.g. from <ourbig
 Note however that you have to be careful in general, since e.g. a malicious author could create a package with their own malicious version of the `ourbigbook` executable, that you could unknowingly run with with the standard `npx ourbigbook` execution.
 
 = unsafe-xss
-{parent=security}
+{parent=Security}
 {title2=`--unsafe-xss`}
 
 OurBigBook HTML output is designed to be XSS safe by default, any non-XSS safe constructs must be enabled with a non-default flag or setting, see: <unsafe-xss>.
@@ -6881,10 +6881,10 @@ or from the <ourbigbook.json> file with an entry of form:
 ``
 
 = Developing OurBigBook
-{parent=ourbigbook}
+{parent=OurBigBook}
 
 = Run OurBigBook master
-{parent=developing-ourbigbook}
+{parent=Developing OurBigBook}
 
 Install master globally on your machine:
 ``
@@ -6924,7 +6924,7 @@ rm node_modules/ourbigbook
 ``
 
 = Run an isolated OurBigBook master
-{parent=run-ourbigbook-master}
+{parent=Run OurBigBook master}
 
 <run OurBigBook master> mentions how to install and then run OurBigBook master globally, which is useful build some projects locally on maste.
 
@@ -6937,7 +6937,7 @@ npm run build-assets
 ``
 
 = Test system
-{parent=developing-ourbigbook}
+{parent=Developing OurBigBook}
 
 Run all tests:
 ``
@@ -7040,7 +7040,7 @@ cd out/test/executable-ourbigbook.json-outputoutoftree && node inspect "../../..
 This works since the `tmp` directory is not deleted in case of failure.
 
 = Overview of files in this repository
-{parent=developing-ourbigbook}
+{parent=Developing OurBigBook}
 
 Source files:
 * \a[index.js]: main code. Must be able to run in the browser, so no Node.js specifics. Exposes the central `convert` function. You should normally use the packaged `dist/ourbigbook.js` when using ourbigbook as an external dependency.
@@ -7070,7 +7070,7 @@ Generated files:
   This automatically reconverts when the input source files are modified, and does not optimize assets, leading to a faster conversion and easier debugging.
 
 = The `out` directory
-{parent=overview-of-files-in-this-repository}
+{parent=Overview of files in this repository}
 
 OurBigBook stores some metadata and outputs it generates/needs inside the `./out/` directory that it creates inside the <outdir>.
 
@@ -7081,7 +7081,7 @@ Overview of files it contains:
   * `publish/out/publish`: the final generated output directory that gets published, e.g. as in <publish to GitHub Pages>
 
 = Conversion process overview
-{parent=developing-ourbigbook}
+{parent=Developing OurBigBook}
 
 A conversion follows the following steps done for each file to be converted:
 * tokenizer. Reads the input and converts it to a linear list of tokens.
@@ -7155,7 +7155,7 @@ Conversion of a directory with multiple input files works as follows:
 The two pass approach is required to resolve <cross references>
 
 = Abstract syntax tree
-{parent=conversion-process-overview}
+{parent=Conversion process overview}
 
 = AST
 {c}
@@ -7239,7 +7239,7 @@ ast Toplevel
 ``
 
 = Autogenerated tests
-{parent=conversion-process-overview}
+{parent=Conversion process overview}
 
 The following scripts generate parametrized OurBigBook examples that can be used for performance or other types of interactive testing:
 * \a[generate-deep-tree]:
@@ -7252,7 +7252,7 @@ The following scripts generate parametrized OurBigBook examples that can be used
   Originally designed to be able to interactively play with a huge <table of contents> to streamline JavaScript open close interaction.
 
 = generate-paragraphs
-{parent=autogenerated-tests}
+{parent=Autogenerated tests}
 
 ``
 ./generate-paragraphs 10 > main.bigb
@@ -7282,12 +7282,12 @@ Output:
 ``
 
 = Performance
-{parent=developing-ourbigbook}
+{parent=Developing OurBigBook}
 
 To log some performance statistics, use: <performance log>.
 
 = Speed comparison to other markup language implementations
-{parent=performance}
+{parent=Performance}
 
 One quick and dirty option is to use `generate-paragraphs` which generates output compatible for most markup languages:
 ``
@@ -7350,7 +7350,7 @@ On Ubuntu 20.04 https://cirosantilli.com/linux-kernel-module-cheat/#p51[Lenovo T
   ``
 
 = Performance log
-{parent=developing-ourbigbook}
+{parent=Developing OurBigBook}
 
 On P51:
 
@@ -7455,7 +7455,7 @@ On P51:
     Answering the question: added old DB at: https://github.com/cirosantilli/ourbigbook/tree/async-slow-old-db and it is fast again. So DB debugging it is, hurray.
 
 = Internals API
-{parent=developing-ourbigbook}
+{parent=Developing OurBigBook}
 
 Tokenized token stream and AST can be obtained as JSON from the API.
 
@@ -7467,7 +7467,7 @@ All tooling will be merged into one single repo.
 
 = The `\Toplevel` implicit macro
 {id=toplevel}
-{parent=internals-api}
+{parent=Internals API}
 
 Every OurBigBook document is implicitly put inside a `\Toplevel` document and:
 * any optionally given arguments at the very beginning of the document will be treated as arguments of the `\Toplevel` macro
@@ -7493,7 +7493,7 @@ Trying to use the `\Toplevel` macro explicitly in a document leads to an error.
 
 = HTML document title
 {c}
-{parent=internals-api}
+{parent=Internals API}
 
 * if the `title` argument of `toplevel` is given, use that
 * otherwise, if the document has a `\H[1]`, use the title of the first such header
@@ -7501,7 +7501,7 @@ Trying to use the `\Toplevel` macro explicitly in a document leads to an error.
 
 = CSS
 {c}
-{parent=developing-ourbigbook}
+{parent=Developing OurBigBook}
 
 Our CSS is located at \a[main.scss] and gets processed through https://sass-lang.com[Sass].
 
@@ -7522,7 +7522,7 @@ where `root_relpath` is explained under <--template>{full}.
 
 = `ourbigbook.common.scss`
 {c}
-{parent=css}
+{parent=CSS}
 
 The file `ourbigbook.common.scss` contains stand-alone Sass definitions that can be used by third parties.
 
@@ -7534,20 +7534,20 @@ E.g. a website that stores its custom rules under \a[main.scss] can do stuff lik
 ``
 
 = Mobile guidelines
-{parent=css}
+{parent=CSS}
 
 The main design goal on narrow screens is that there should never be horizontal scrolling enabled for the hole document, only on a per element basis.
 
 = Formal grammar
-{parent=developing-ourbigbook}
+{parent=Developing OurBigBook}
 
 TODO. Describe OurBigBook's formal grammar, and classify it in the grammar hierarchy and parsing complexity.
 
 = Release procedure
-{parent=developing-ourbigbook}
+{parent=Developing OurBigBook}
 
 = Do the release
-{parent=release-procedure}
+{parent=Release procedure}
 
 Before the first time you release, you need to login to NPM with:
 ``
@@ -7571,7 +7571,7 @@ That script does the following actions, aborting immediately if any of them fail
 * publishes the NPM package
 
 = Out-of-box testing
-{parent=release-procedure}
+{parent=Release procedure}
 
 After publishing, a good minimal sanity check is to ensure that you can render the template as mentioned in <play with the template>:
 ``

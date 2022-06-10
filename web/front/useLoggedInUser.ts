@@ -7,7 +7,7 @@ import { AUTH_COOKIE_NAME, AUTH_LOCAL_STORAGE_NAME, getCookie } from 'front'
 
 export default function useLoggedInUser() {
     React.useEffect(() => {})
-    const { data: authCookie } = useSWR('auth/cookie', () => {
+    const { data: authCookie } = useSWR(AUTH_COOKIE_NAME, () => {
       const ret = getCookie(AUTH_COOKIE_NAME)
       if (!ret) {
         // E.g. if the test database was nuked, the GET request sees wrong auth,
@@ -18,7 +18,7 @@ export default function useLoggedInUser() {
       }
       return ret
     })
-    const { data: loggedInUser } = useSWR(() => authCookie ? 'user' : null, storage);
+    const { data: loggedInUser } = useSWR(() => authCookie ? AUTH_LOCAL_STORAGE_NAME : null, storage);
     if (loggedInUser === undefined) return loggedInUser
     const isLoggedIn = checkLogin(loggedInUser);
     if (isLoggedIn) {

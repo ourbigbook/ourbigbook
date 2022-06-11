@@ -95,7 +95,7 @@ module.exports = (sequelize) => {
       hooks: {
         afterCreate: async (user, options) => {
           // Create the index page for the user.
-          return convert.convert({
+          return convert.convertArticle({
             author: user,
             body: User.defaultIndexBody,
             sequelize,

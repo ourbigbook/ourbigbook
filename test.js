@@ -6828,6 +6828,14 @@ assert_error('bigb output: x to undefined does not blow up',
     extra_convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
   }
 )
+assert_error('bigb output: undefined tag does not blow up',
+  `= My header
+{tag=Asdf}`,
+  2, 1, undefined,
+  {
+    extra_convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
+  }
+)
 assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
   {
     filesystem: {

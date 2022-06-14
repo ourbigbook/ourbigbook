@@ -17,30 +17,23 @@ function renderRefCallback(elem) {
 
 const Article = ({
   article,
-  comments,
+  issues,
   loggedInUser,
 }) => {
   const markup = { __html: article.render };
-  const [curComments, setComments] = React.useState(comments)
   return <>
     <div
       dangerouslySetInnerHTML={markup}
       className="ourbigbook"
       ref={renderRefCallback}
     />
-    <div className="comments content-not-ourbigbook">
+    <div className="issues content-not-ourbigbook">
       <h1>Comments</h1>
-      <div className="comment-form-holder">
-        <CommentInput {...{ comments, setComments, loggedInUser }}/>
-      </div>
-      {curComments?.map((comment: CommentType) => (
-        <Comment {...{
-          comment,
-          comments,
-          id: comment.id,
-          key: comment.id,
+      {issues?.map((issue: IssueType) => (
+        <IssueSummary{...{
+          issue,
+          key: issue.id,
           loggedInUser,
-          setComments,
         }} />
       ))}
     </div>

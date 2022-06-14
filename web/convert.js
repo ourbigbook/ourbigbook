@@ -162,7 +162,49 @@ async function convertArticle({
   }
 }
 
+async function convertComment({ issue, number, sequelize, source, user }) {
+  const { extra_returns } = await convert({
+    author: user,
+    body: source,
+    path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
+    render: true,
+    sequelize,
+    title: undefined,
+  })
+  const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
+  return sequelize.models.Comment.create({
+    issueId: issue.id,
+    number,
+    authorId: user.id,
+    source,
+    render: extra_returns.rendered_outputs[outpath].full,
+  })
+}
+
+async function convertIssue({ article, bodySource, number, sequelize, titleSource, user }) {
+  const { extra_returns } = await convert({
+    author: user,
+    body: bodySource,
+    path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
+    render: true,
+    sequelize,
+    title: titleSource,
+  })
+  const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
+  return sequelize.models.Issue.create({
+    articleId: article.id,
+    authorId: user.id,
+    titleSource,
+    bodySource,
+    titleRender: extra_returns.rendered_outputs[outpath].title,
+    render: extra_returns.rendered_outputs[outpath].full,
+    number,
+  })
+}
+
 module.exports = {
   convert,
   convertArticle,
+  convertComment,
+  convertIssue,
 }

@@ -11,7 +11,7 @@ module.exports = (sequelize) => {
       // Rendered toplevel header title.
       titleRender: DataTypes.TEXT,
       // Full rendered output.
-      bodyRender: DataTypes.TEXT,
+      render: DataTypes.TEXT,
       // User-visible numeric identifier for the issue. 1-based.
       number: DataTypes.INTEGER,
     },
@@ -26,6 +26,7 @@ module.exports = (sequelize) => {
       number: this.number,
       titleSource: this.titleSource,
       bodySource: this.bodySource,
+      titleRender: this.titleRender,
       render: this.render,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),

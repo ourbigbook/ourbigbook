@@ -5929,6 +5929,37 @@ assert_lib('subdir index.bigb removes leading @ from links with the remove_leadi
     },
   }
 );
+assert_lib('subdir index.bigb outputs to subdir.html when there is a toplevel header',
+  {
+    filesystem: {
+      'subdir/index.bigb': `= Subdir
+
+Hello world
+`,
+    },
+    convert_dir: true,
+    assert_xpath: {
+      'subdir.html': [
+        "//x:div[@class='p' and text()='Hello world']",
+      ],
+    },
+  }
+);
+assert_lib('subdir index.bigb outputs to subdir.html when there is no toplevel header',
+  // https://github.com/cirosantilli/ourbigbook/issues/247
+  {
+    filesystem: {
+      'subdir/index.bigb': `Hello world
+`,
+    },
+    convert_dir: true,
+    assert_xpath: {
+      'subdir.html': [
+        "//x:div[@class='p' and text()='Hello world']",
+      ],
+    },
+  }
+);
 assert_lib('include of a header with a tag or child in a third file does not blow up',
   {
     filesystem: {

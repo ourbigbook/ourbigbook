@@ -1,6 +1,6 @@
 const { DataTypes, Op } = require('sequelize')
 
-const front = require('../front/js')
+const config = require('../front/config')
 
 module.exports = (sequelize) => {
   // Each Article contains rendered HTML output, analogous to a .html output file in OurBigBook CLI.
@@ -96,9 +96,13 @@ module.exports = (sequelize) => {
 
   Article.getArticle = async function({
     includeIssues,
+    limit,
     sequelize,
     slug,
   }) {
+    if (limit === undefined) {
+      limit = config.articleLimit
+    }
     const include = [{
       model: sequelize.models.File,
       as: 'file',
@@ -114,7 +118,6 @@ module.exports = (sequelize) => {
         as: 'issues',
         order: [['number', 'DESC']],
         include: [{ model: sequelize.models.User, as: 'author' }],
-        limit: front.DEFAULT_LIMIT,
       })
       order = [[
         'issues', 'number', 'DESC'
@@ -124,6 +127,8 @@ module.exports = (sequelize) => {
       where: { slug },
       include,
       order,
+      subQuery: false,
+      limit,
     })
   }
 
@@ -163,8 +168,8 @@ module.exports = (sequelize) => {
     return sequelize.models.Article.findAndCountAll({
       where,
       order: [[order, 'DESC']],
-      limit: Number(limit),
-      offset: Number(offset),
+      limit,
+      offset,
       include,
     })
   }

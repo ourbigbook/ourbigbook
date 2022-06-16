@@ -2,21 +2,25 @@
 # For these snippets, you have to first copy the header text to the clipboard.
 # The expansion result then calculates the ID for that header and injects it.
 snippet {c
-	{child=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
+	{chid=`@+`}
+snippet {d
+	{description=$1}
 snippet \I
 	\\Image[`@+`]
 	{title=$1}
 snippet {p
-	{parent=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
+	{parent=`@+`}
 snippet {t
-	{tag=`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`}
+	{tag=`@+`}
 snippet \V
 	\\Video[`@+`]
 	{title=$1}
 snippet \x
 	\\x[`substitute(substitute(tolower(@+), '[^a-z0-9]\\+', '-', 'g'), '^-\\|-$', '', 'g')`]
 snippet <
-	<`tolower(@+[0])``@+[1:]`>
+	<`substitute(substitute(tolower(@+[0]) . @+[1:], '[<> ]\\+', ' ', 'g'), '^ \\| $', '', 'g')`>
+snippet >
+	<`substitute(substitute(@+, '[<> ]\\+', ' ', 'g'), '^ \\| $', '', 'g')`>
 
 # Standard format for the web archive of something which must be present in the clipboard, e.g.
 # ``

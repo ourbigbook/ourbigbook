@@ -2,14 +2,19 @@ import { getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
 import { MyGetServerSideProps } from 'front/types'
 
-export const getServerSidePropsArticleHoc = (addIssues?, loggedInUserCache?): MyGetServerSideProps => {
+export const getServerSidePropsArticleHoc = (includeIssues?, loggedInUserCache?): MyGetServerSideProps => {
   return async ({ params: { slug }, req, res }) => {
     if (slug instanceof Array) {
       const sequelize = req.sequelize
-      const loggedInUser = await getLoggedInUser(req, res, loggedInUserCache)
-      const article = await sequelize.models.Article.getArticle({
-        slug: slug.join('/'),
-      })
+      const [article, loggedInUser] = await Promise.all([
+        sequelize.models.Article.getArticle({
+          includeIssues,
+          limit: 5,
+          sequelize,
+          slug: slug.join('/'),
+        }),
+        getLoggedInUser(req, res, loggedInUserCache),
+      ])
       if (!article) {
         return {
           notFound: true
@@ -36,12 +41,8 @@ export const getServerSidePropsArticleHoc = (addIssues?, loggedInUserCache?): My
           props.sameArticleByLoggedInUser = slug
         }
       }
-      if (addIssues) {
-        const issues = await article.getIssues({
-          order: [['createdAt', 'DESC']],
-          include: [{ model: sequelize.models.User, as: 'author' }],
-        })
-        props.issues = await Promise.all(issues.map(issue => issue.toJson()))
+      if (includeIssues) {
+        props.issues = await Promise.all(article.issues.map(comment => comment.toJson()))
       }
       return { props };
     } else {

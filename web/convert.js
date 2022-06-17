@@ -132,7 +132,7 @@ async function convertArticle({
         fileId: file.id,
         render: extra_returns.rendered_outputs[outpath].full,
         slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
-        title: extra_returns.rendered_outputs[outpath].title,
+        titleRender: extra_returns.rendered_outputs[outpath].title,
         topicId: outpath.slice(
           ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
           -ourbigbook.HTML_EXT.length - 1
@@ -154,7 +154,7 @@ async function convertArticle({
       order: [['slug', 'ASC']],
     })
     for (const article of articles) {
-      article.file.author = author
+      article.author = author
     }
     return articles
   } else {

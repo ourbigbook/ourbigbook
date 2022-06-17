@@ -10,6 +10,12 @@ module.exports = (sequelize) => {
       render: DataTypes.TEXT,
       // User-visible numeric identifier for the issue. 1-based.
       number: DataTypes.INTEGER,
+      // Upvote count.
+      score: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
     },
     {
       indexes: [{ fields: ['number'] }],
@@ -24,7 +30,8 @@ module.exports = (sequelize) => {
       render: this.render,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
-      author: (await this.author.toJson(loggedInUser))
+      author: (await this.author.toJson(loggedInUser)),
+      score: this.score,
     }
   }
   return Comment

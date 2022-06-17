@@ -39,6 +39,8 @@ export default function UserPage({
   articlesCount,
   authoredArticleCount,
   comments,
+  issues,
+  issuesCount,
   likedArticleCount,
   loggedInUser,
   page,
@@ -135,7 +137,7 @@ export default function UserPage({
       {what === 'home'
         ? <>
             <ArticleInfo {...{ article, loggedInUser }}/>
-            <Article {...{ article, comments, loggedInUser }} />
+            <Article {...{ article, comments, issues, issuesCount, loggedInUser }} />
           </>
         : <ArticleList {...{
             articles,

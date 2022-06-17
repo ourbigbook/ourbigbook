@@ -20,9 +20,10 @@ export const getServerSidePropsArticleHoc = (includeIssues?, loggedInUserCache?)
           notFound: true
         }
       }
-      const [articleJson, topicArticleCount] = await Promise.all([
-        await article.toJson(loggedInUser),
-        await sequelize.models.Article.count({
+      const [articleJson, issuesCount, topicArticleCount] = await Promise.all([
+        article.toJson(loggedInUser),
+        includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
+        sequelize.models.Article.count({
           where: { topicId: article.topicId },
         }),
       ])
@@ -34,7 +35,7 @@ export const getServerSidePropsArticleHoc = (includeIssues?, loggedInUserCache?)
         const slug = `${loggedInUser.username}/${article.topicId}`
         let loggedInUserVersionArticle
         ;[props.loggedInUser, loggedInUserVersionArticle] = await Promise.all([
-          loggedInUser.toJson(),
+          loggedInUser.toJson(loggedInUser),
           sequelize.models.Article.findOne({ where: { slug } })
         ])
         if (loggedInUserVersionArticle) {
@@ -42,7 +43,8 @@ export const getServerSidePropsArticleHoc = (includeIssues?, loggedInUserCache?)
         }
       }
       if (includeIssues) {
-        props.issues = await Promise.all(article.issues.map(comment => comment.toJson()))
+        props.issues = await Promise.all(article.issues.map(issue => issue.toJson()))
+        props.issuesCount = issuesCount
       }
       return { props };
     } else {

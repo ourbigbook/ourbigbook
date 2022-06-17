@@ -7,10 +7,11 @@ import routes from 'front/routes'
 
 const LikeArticleButton = ({
   article,
+  isIssue,
   loggedInUser,
   showText,
 }) => {
-  const currentUserIsAuthor = article?.file?.author.username === loggedInUser?.username
+  const currentUserIsAuthor = article.author.username === loggedInUser?.username
   const [liked, setLiked] = React.useState(article.liked)
   const [score, setScore] = React.useState(article.score)
   let buttonText;

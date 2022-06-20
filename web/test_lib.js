@@ -66,6 +66,7 @@ const articleData = [
         ['Fundamental theorem of calculus', [
           ['Proof of the fundamental theorem of calculus', []],
         ]],
+        [['$L^p$ space'], []],
       ]],
     ]],
   ]],
@@ -126,6 +127,36 @@ const articleData = [
       ]],
     ]],
   ]],
+]
+const issueData = [
+  ['There\'s a typo in this article at "mathmatcs"', ''],
+  ['Add mention of the fundamental theorem of calculus', `The fundamental theorem of calculus is very important to understanding this subject.
+
+I would add something like:
+\\Q[
+The reason why the superconductor laser is blue, is due to the integral of its resonance modes.
+
+From the fundamental theorem of calculus, we understand that this is because the derivative of the temperature is too small.
+]
+
+== Also mentions Newton's rule
+
+As an added bonus, a mention of Newton's rule would also be very useful.
+`],
+  ['1 + 1 = 3, not 2 as mentioned', 'I can\'t believe you got such a basic fact wrong!'],
+]
+const commentData = [
+  'Thanks, you\'re totally right, I\'ll look into it!',
+  'Just fixed the issue on a new edit, thanks.',
+  `I don\'t think this is correct.
+
+Conside what happens when $a + b > 0$`,
+  `Ah, maybe. But are you sure that the sum of:
+\`\`
+f() + 3*g()
+\`\`
+is enough to make the loop terminate?
+`,
 ]
 let todo_visit = articleData.slice()
 let articleDataCount = 0
@@ -382,14 +413,14 @@ Table:
 Reference to the following image: \\x[image-my-xi-chrysanthemum-${id_noscope}].
 
 \\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{title=Xi Chrysanthemum is a very nice image.}
+{title=Xi Chrysanthemum is a very nice image}
 {id=image-my-xi-chrysanthemum-${id_noscope}}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
 
 An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
 
 \\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
-{title=Sample YouTube video in ${title}.}${includesString}
+{title=Sample YouTube video in ${title}}${includesString}
 `,
         }
         articleArgs.push(articleArg)
@@ -448,7 +479,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
         ids.push(ourbigbook.title_to_id(title))
       }
       const includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
-      await convert.convert({
+      await convert.convertArticle({
         author: user,
         body: sequelize.models.User.defaultIndexBody + includesString,
         sequelize,
@@ -517,12 +548,13 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
       const article = articles[i]
       for (var j = 0; j < (i % (nMaxIssuesPerArticle + 1)); j++) {
         if (verbose) console.error(`${article.slug}#${articleIssueIdx}`)
+        const [titleSource, bodySource] = issueData[issueIdx % issueData.length]
         const issue = await convert.convertIssue({
           article,
-          bodySource: `My body ${issueIdx}`,
+          bodySource,
           number: articleIssueIdx + 1,
           sequelize,
-          titleSource: `My title ${issueIdx}`,
+          titleSource,
           user: users[issueIdx % nUsers],
         })
         issues.push(issue)
@@ -542,9 +574,10 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
       const issue = issues[i]
       for (var j = 0; j < (i % (nMaxCommentsPerIssue + 1)); j++) {
         if (verbose) console.error(`${articleIdToArticle[issue.articleId].slug}#${issue.number}#${issueCommentIdx}`)
+        const source = commentData[commentIdx % commentData.length]
         const comment = await convert.convertComment({
           issue,
-          source: `My body ${commentIdx}`,
+          source,
           number: issueCommentIdx + 1,
           sequelize,
           user: users[commentIdx % nUsers],

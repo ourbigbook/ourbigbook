@@ -53,7 +53,7 @@ function IndexPageHoc(isIssue = false) {
     return (
       <div className="home-page content-not-ourbigbook">
         {isIssue &&
-          <h1>Discussion about <a href={routes.articleView(issueArticle.slug)}>"{ issueArticle.titleRender }" by { issueArticle.file.author.displayName }</a></h1>
+          <h1>Discussion about <a href={routes.articleView(issueArticle.slug)}>"{ issueArticle.titleRender }" by { issueArticle.author.displayName }</a></h1>
         }
         <div className="tab-list">
           {(loggedInUser && !isIssue) &&
@@ -89,6 +89,7 @@ function IndexPageHoc(isIssue = false) {
           articles,
           articlesCount,
           isIssue,
+          issueArticle,
           loggedInUser,
           page,
           paginationUrlFunc,

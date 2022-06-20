@@ -33,9 +33,10 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
           </button>
         </Maybe>
       </div>
-      <div className="comment-body">
-        {comment.body}
-      </div>
+      <div
+        className="comment-body ourbigbook"
+        dangerouslySetInnerHTML={{ __html: comment.render }}
+      />
     </div>
   );
 };

@@ -26,7 +26,7 @@ const Article = ({
   issuesCount,
   loggedInUser,
 }) => {
-  const markup = { __html: article.render };
+  const [curComments, setComments] = React.useState(comments)
   let seeAllCreateNew
   if (!isIssue) {
     seeAllCreateNew = <>
@@ -41,13 +41,28 @@ const Article = ({
   }
   return <>
     <div
-      dangerouslySetInnerHTML={markup}
+      dangerouslySetInnerHTML={{ __html: article.render }}
       className="ourbigbook"
       ref={renderRefCallback}
     />
-    <div className="issues content-not-ourbigbook">
+    <div className="comments content-not-ourbigbook">
       {isIssue
-        ? <h2>Comments ({ commentsCount })</h2>
+        ? <>
+            <h2>Comments ({ commentsCount })</h2>
+            <div className="comment-form-holder">
+              <CommentInput {...{ comments, setComments, loggedInUser }}/>
+            </div>
+            {curComments?.map((comment: CommentType) =>
+              <Comment {...{
+                comment,
+                comments,
+                id: comment.id,
+                key: comment.id,
+                loggedInUser,
+                setComments,
+              }} />
+            )}
+          </>
         : <>
             <h2>Discussion ({ issuesCount })</h2>
             { seeAllCreateNew }

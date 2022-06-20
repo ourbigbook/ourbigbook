@@ -73,7 +73,7 @@ const ArticlePageHoc = (isIssue) => {
                 </CustomLink>
               }
               {showOthers && showCreateMyOwn && <>{' '}</> }
-              {showCreateMyOwn &&
+              {(showCreateMyOwn && !isIssue) &&
                 <>
                   {sameArticleByLoggedInUser === undefined
                     ? <CustomLink

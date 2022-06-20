@@ -137,6 +137,19 @@ div.article-list-container {
   }
 }
 
+/*
+.ourbigbook.title {
+  // Maybe rather than doing this we should instead create a minimal CSS.
+  // To override the default body color of .ourbigbook elements.
+  color: $a-color;
+  > * {
+    // Undo the toplevel padding, otherwise elements (but not text) like maths and code
+    // all get that padding.
+    padding-left: 0px;
+  }
+}
+*/
+
 div.article-page {
   div.article-meta {
     div.article-info {

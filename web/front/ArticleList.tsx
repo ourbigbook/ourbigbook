@@ -106,9 +106,11 @@ const ArticleList = ({
                 <td className="expand title">
                   <CustomLink
                     href={isIssue ? routes.issueView(issueArticle.slug, article.number) : routes.articleView(article.slug)}
-                    className="preview-link"
                   >
-                    {article.titleRender}
+                    <div
+                      className="comment-body ourbigbook-title"
+                      dangerouslySetInnerHTML={{ __html: article.titleRender }}
+                    />
                   </CustomLink>
                 </td>
                 {showAuthor &&

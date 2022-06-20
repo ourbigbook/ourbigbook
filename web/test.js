@@ -38,7 +38,7 @@ async function createArticles(sequelize, author, opts) {
     author,
     body: articleArg.body,
     sequelize,
-    title:articleArg.title,
+    title: articleArg.title,
   })
 }
 
@@ -49,7 +49,7 @@ async function createArticle(sequelize, author, opts) {
 function createArticleArg(opts, author) {
   const i = opts.i
   const ret = {
-    title: `Title ${i}`,
+    title: `title ${i}`,
   }
   if (opts.body !== undefined) {
     ret.body = opts.body
@@ -95,8 +95,13 @@ function testApp(cb, opts={}) {
     const test = {}
     test.token = undefined
     test.tokenSave = undefined
-    test.enableToken = function() {
-      test.token = test.tokenSave
+    test.enableToken = function(newToken) {
+      if (newToken) {
+        test.token = newToken
+        test.tokenSave = newToken
+      } else {
+        test.token = test.tokenSave
+      }
     }
     test.disableToken = function() {
       test.token = undefined
@@ -166,11 +171,11 @@ it('feed shows articles by followers', async function() {
   const article3_1 = await createArticle(sequelize, user3, { i: 1 })
 
   const { count, rows } = await user0.findAndCountArticlesByFollowed(1, 3)
-  assert.strictEqual(rows[0].title, 'Title 0')
+  assert.strictEqual(rows[0].titleRender, 'title 0')
   assert.strictEqual(rows[0].file.authorId, user3.id)
-  assert.strictEqual(rows[1].title, 'Title 3')
+  assert.strictEqual(rows[1].titleRender, 'title 3')
   assert.strictEqual(rows[1].file.authorId, user1.id)
-  assert.strictEqual(rows[2].title, 'Title 2')
+  assert.strictEqual(rows[2].titleRender, 'title 2')
   assert.strictEqual(rows[2].file.authorId, user1.id)
   assert.strictEqual(rows.length, 3)
   // 6 manually from all follows + 2 for the automatically created indexes.
@@ -195,7 +200,7 @@ it('api: create an article and see it on global feed', async () => {
     ;({data, status} = await test.webApi.articleCreate(article))
     assert.strictEqual(status, 200)
     articles = data.articles
-    assert.strictEqual(articles[0].title, 'Title 0')
+    assert.strictEqual(articles[0].titleRender, 'title 0')
     assert.strictEqual(articles.length, 1)
 
     // Recreating an article with POST is not allowed.
@@ -206,25 +211,44 @@ it('api: create an article and see it on global feed', async () => {
     // Access the article directly
     ;({data, status} = await test.webApi.articleGet('user0/title-0'))
     assert.strictEqual(status, 200)
-    assert.strictEqual(data.article.title, 'Title 0')
+    assert.strictEqual(data.article.titleRender, 'title 0')
     assert.match(data.article.render, /Body 0/)
 
-    // See it on global feed.
+    // Make user1 like one of the articles.
+    test.enableToken(user1.token)
+    test.webApi.articleLike('user0')
+    test.enableToken(user.token)
+
+    // See articles on global feed.
     ;({data, status} = await test.webApi.articleAll())
     assert.strictEqual(status, 200)
-    sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
-      { title: 'Index', slug: 'user0' },
-      { title: 'Title 0', slug: 'user0/title-0', render: /Body 0/ },
-      { title: 'Index', slug: 'user1' },
+      { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
+      { titleRender: 'Index', slug: 'user0' },
+      { titleRender: 'Index', slug: 'user1' },
+    ])
+
+    // See latest articles by a user.
+    ;({data, status} = await test.webApi.articleAll({ author: 'user0' }))
+    assert.strictEqual(status, 200)
+    assertRows(data.articles, [
+      { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
+      { titleRender: 'Index', slug: 'user0' },
+    ])
+
+    // Top articles by a user.
+    ;({data, status} = await test.webApi.articleAll({ author: 'user0', sort: 'score' }))
+    assert.strictEqual(status, 200)
+    assertRows(data.articles, [
+      { titleRender: 'Index', slug: 'user0' },
+      { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
     ])
 
     // Test global feed paging.
     ;({data, status} = await test.webApi.articleAll({ limit: 2, page: 1 }))
     assert.strictEqual(status, 200)
-    sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
-      { title: 'Index', slug: 'user1' },
+      { titleRender: 'Index', slug: 'user1' },
     ])
 
     if (testNext) {
@@ -273,13 +297,13 @@ it('api: create an article and see it on global feed', async () => {
     ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
     assert.strictEqual(status, 200)
     articles = data.articles
-    assert.strictEqual(articles[0].title, 'Title 1')
+    assert.strictEqual(articles[0].titleRender, 'title 1')
     assert.strictEqual(articles.length, 1)
 
     // Access the article directly
     ;({data, status} = await test.webApi.articleGet('user0/title-1'))
     assert.strictEqual(status, 200)
-    assert.strictEqual(data.article.title, 'Title 1')
+    assert.strictEqual(data.article.titleRender, 'title 1')
     assert.match(data.article.render, /Body 1/)
 
     // Update article with PUT.
@@ -290,7 +314,7 @@ it('api: create an article and see it on global feed', async () => {
     // Access the article directly
     ;({data, status} = await test.webApi.articleGet('user0/title-1'))
     assert.strictEqual(status, 200)
-    assert.strictEqual(data.article.title, 'Title 1')
+    assert.strictEqual(data.article.titleRender, 'title 1')
     assert.match(data.article.render, /Body 2/)
 
     // Create some issues.
@@ -421,20 +445,20 @@ it('api: multiheader file creates multiple articles', async () => {
     // Create article.
     article = createArticleArg({ i: 0, body: `Body 0.
 
-== Title 0 0
+== title 0 0
 
 Body 0 0.
 
-== Title 0 1
+== title 0 1
 
 Body 0 1.
 `})
     ;({data, status} = await test.webApi.articleCreate(article))
     assert.strictEqual(status, 200)
     assertRows(data.articles, [
-      { title: 'Title 0', slug: 'user0/title-0' },
-      { title: 'Title 0 0', slug: 'user0/title-0-0' },
-      { title: 'Title 0 1', slug: 'user0/title-0-1' },
+      { titleRender: 'title 0', slug: 'user0/title-0' },
+      { titleRender: 'title 0 0', slug: 'user0/title-0-0' },
+      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
     ])
     assert.match(data.articles[0].render, /Body 0\./)
     assert.match(data.articles[0].render, /Body 0 0\./)
@@ -447,36 +471,36 @@ Body 0 1.
     assert.strictEqual(status, 200)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
-      { title: 'Index', slug: 'user0' },
-      { title: 'Title 0', slug: 'user0/title-0' },
-      { title: 'Title 0 0', slug: 'user0/title-0-0' },
-      { title: 'Title 0 1', slug: 'user0/title-0-1' },
+      { titleRender: 'Index', slug: 'user0' },
+      { titleRender: 'title 0', slug: 'user0/title-0' },
+      { titleRender: 'title 0 0', slug: 'user0/title-0-0' },
+      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
     ])
 
     // Access one of the articles directly.
     ;({data, status} = await test.webApi.articleGet('user0/title-0-0'))
     assert.strictEqual(status, 200)
-    assert.strictEqual(data.article.title, 'Title 0 0')
+    assert.strictEqual(data.article.titleRender, 'title 0 0')
     assert.match(data.article.render, /Body 0 0\./)
     assert.doesNotMatch(data.article.render, /Body 0 1\./)
 
     // Modify the file.
     article = createArticleArg({ i: 0, body: `Body 0.
 
-== Title 0 0 hacked
+== title 0 0 hacked
 
 Body 0 0 hacked.
 
-== Title 0 1
+== title 0 1
 
 Body 0 1.
 `})
     ;({data, status} = await test.webApi.articleCreateOrUpdate(article, 'user0/title-0'))
     assert.strictEqual(status, 200)
     assertRows(data.articles, [
-      { title: 'Title 0', slug: 'user0/title-0' },
-      { title: 'Title 0 0 hacked', slug: 'user0/title-0-0-hacked' },
-      { title: 'Title 0 1', slug: 'user0/title-0-1' },
+      { titleRender: 'title 0', slug: 'user0/title-0' },
+      { titleRender: 'title 0 0 hacked', slug: 'user0/title-0-0-hacked' },
+      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
     ])
     assert.match(data.articles[0].render, /Body 0\./)
     assert.match(data.articles[0].render, /Body 0 0 hacked\./)
@@ -489,11 +513,11 @@ Body 0 1.
     assert.strictEqual(status, 200)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
-      { title: 'Index',     slug: 'user0', },
-      { title: 'Title 0',   slug: 'user0/title-0',  render: /Body 0 0 hacked\./ },
-      { title: 'Title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
-      { title: 'Title 0 0 hacked', slug: 'user0/title-0-0-hacked', render: /Body 0 0 hacked\./ },
-      { title: 'Title 0 1', slug: 'user0/title-0-1', render: /Body 0 1\./ },
+      { titleRender: 'Index',     slug: 'user0', },
+      { titleRender: 'title 0',   slug: 'user0/title-0',  render: /Body 0 0 hacked\./ },
+      { titleRender: 'title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
+      { titleRender: 'title 0 0 hacked', slug: 'user0/title-0-0-hacked', render: /Body 0 0 hacked\./ },
+      { titleRender: 'title 0 1', slug: 'user0/title-0-1', render: /Body 0 1\./ },
     ])
 
     // Topic shows only one subarticle.
@@ -501,7 +525,7 @@ Body 0 1.
     assert.strictEqual(status, 200)
     sortByKey(data.articles, 'slug')
     assertRows(data.articles, [
-      { title: 'Title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
+      { titleRender: 'title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
     ])
   })
 })

@@ -63,7 +63,9 @@ export default function UserPage({
       break
   }
   const canEdit = loggedInUser && loggedInUser?.username === username
-  useEEdit(canEdit, article.slug)
+  if (what === 'home') {
+    useEEdit(canEdit, article.slug)
+  }
 
   // Following state.
   const [following, setFollowing] = React.useState(false)

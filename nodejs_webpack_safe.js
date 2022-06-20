@@ -790,7 +790,7 @@ async function check_db(sequelize, paths_converted, transaction) {
     }
   }
   if (delete_unused_inflection_ids.length) {
-    await sequelize.models.Ref.destroy({ where: { id: delete_unused_inflection_ids } })
+    await sequelize.models.Ref.destroy({ where: { id: delete_unused_inflection_ids }, transaction })
   }
 
   if (duplicate_rows.length > 0) {

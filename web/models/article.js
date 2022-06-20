@@ -1,6 +1,9 @@
 const { DataTypes, Op } = require('sequelize')
 
+const ourbigbook = require('ourbigbook')
+
 const config = require('../front/config')
+const convert = require('../convert')
 
 module.exports = (sequelize) => {
   // Each Article contains rendered HTML output, analogous to a .html output file in OurBigBook CLI.
@@ -54,13 +57,17 @@ module.exports = (sequelize) => {
   )
 
   Article.prototype.getAuthor = async function() {
+    return (await this.getFileCached()).author
+  }
+
+  Article.prototype.getFileCached = async function() {
     let file
     if (this.file === undefined || this.file.author === undefined) {
       file = await this.getFile({ include: [ { model: sequelize.models.User, as: 'author' } ]})
     } else {
       file = this.file
     }
-    return file.author
+    return file
   }
 
   Article.prototype.toJson = async function(user) {
@@ -88,6 +95,23 @@ module.exports = (sequelize) => {
       },
       render: this.render,
     }
+  }
+
+  Article.prototype.rerender = async function(options = {}) {
+    const file = await this.getFileCached()
+    const transaction = options.transaction
+    await sequelize.transaction({ transaction }, async (transaction) => {
+      await convert.convertArticle({
+        author: file.author,
+        body: file.body,
+        forceNew: false,
+        path: file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR),
+        render: true,
+        sequelize,
+        title: file.title,
+        transaction,
+      })
+    })
   }
 
   Article.prototype.saveSideEffects = async function(options = {}) {
@@ -185,14 +209,14 @@ module.exports = (sequelize) => {
     if (opts.log === undefined) {
       opts.log = false
     }
-    for (const article of await sequelize.models.Article.findAll({
+    const articles = await sequelize.models.Article.findAll({
       include: [ { model: sequelize.models.File, as: 'file' } ],
-    })) {
+    })
+    for (const article of articles) {
       if (opts.log) {
         console.error(`authorId=${article.file.authorId} title=${article.titleRender}`);
       }
-      await article.convert()
-      await article.save()
+      await article.rerender()
     }
   }
 

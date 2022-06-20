@@ -6,21 +6,6 @@ const { convertIssue, convertComment } = require('../convert')
 const { getArticle, ValidationError, validateParam, validatePositiveInteger } = require('./lib')
 const { modifyEditorInput } = require('../front/js')
 
-router.param('comment', function(req, res, next, id) {
-  req.app.get('sequelize').models.Comment.findOne({
-    where: { id },
-    include: [{ model: req.app.get('sequelize').models.User, as: 'author' }],
-  })
-    .then(function(comment) {
-      if (!comment) {
-        return res.sendStatus(404)
-      }
-      req.comment = comment
-      return next()
-    })
-    .catch(next)
-})
-
 // Get issues for an article.
 router.get('/', auth.optional, async function(req, res, next) {
   try {
@@ -147,12 +132,49 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
 // Delete a comment
 router.delete('/:number/comments/:commentNumber', auth.required, async function(req, res, next) {
   try {
-    const author = await req.comment.getAuthor()
-    if (author.id.toString() === req.payload.id.toString()) {
-      await req.comment.destroy()
-      res.sendStatus(204)
+    const sequelize = req.app.get('sequelize')
+    const [comment, loggedInUser] = await Promise.all([
+      sequelize.models.Comment.findOne({
+        where: {
+          number: validateParam(req.params, 'commentNumber', validatePositiveInteger),
+        },
+        include: [
+          {
+            model: sequelize.models.Issue,
+            as: 'comments',
+            where: { number: validateParam(req.params, 'number', validatePositiveInteger) },
+            required: true,
+            include: [
+              {
+                model: sequelize.models.Article,
+                as: 'issues',
+                where: { slug: validateParam(req.query, 'id') },
+                required: true,
+              }
+            ],
+          },
+          {
+            model: sequelize.models.User,
+            as: 'author',
+          },
+        ],
+      }),
+      sequelize.models.User.findByPk(req.payload.id),
+    ])
+    if (!comment) {
+      res.sendStatus(404)
     } else {
-      res.sendStatus(403)
+      if (
+        // Only admins can do it.
+        loggedInUser.admin
+        // Users can delete their own comments
+        //req.payload.id.toString() === comment.author.id.toString()
+      ) {
+        await comment.destroy()
+        res.sendStatus(204)
+      } else {
+        res.sendStatus(403)
+      }
     }
   } catch(error) {
     next(error);

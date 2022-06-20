@@ -7,7 +7,7 @@ import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, deca
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 
-const CommentInput = ({ comments, loggedInUser, setComments }) => {
+const CommentInput = ({ comments, loggedInUser, issueNumber, setComments }) => {
   const router = useRouter();
   const slug = slugFromRouter(router)
   const [body, setBody] = React.useState("");
@@ -32,7 +32,7 @@ const CommentInput = ({ comments, loggedInUser, setComments }) => {
     e.preventDefault();
     if (body) {
       setLoading(true);
-      const ret = await webApi.commentCreate(slug, body)
+      const ret = await webApi.commentCreate(slug, issueNumber, body)
       setComments(comments => [ret.data.comment, ...comments])
       setLoading(false);
       changeBody('');

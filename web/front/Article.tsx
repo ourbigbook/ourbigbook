@@ -50,7 +50,7 @@ const Article = ({
         ? <>
             <h2>Comments ({ commentsCount })</h2>
             <div className="comment-form-holder">
-              <CommentInput {...{ comments, setComments, loggedInUser }}/>
+              <CommentInput {...{ comments, setComments, issueNumber: article.number, loggedInUser }}/>
             </div>
             {curComments?.map((comment: CommentType) =>
               <Comment {...{

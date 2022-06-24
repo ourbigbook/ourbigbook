@@ -86,12 +86,6 @@ a {
 }
 
 padding-left: 0;
-@media only screen and (max-width: $max-mobile-width) {
-  padding-right: $toplevel-horizontal-padding-mobile;
-}
-@media only screen and (min-width: $max-mobile-width + 1) {
-  padding-right: $toplevel-horizontal-padding-right;
-}
 .caption-prefix {
   font-weight: bold;
 }
@@ -181,7 +175,7 @@ div.h {
     overflow-wrap: break-word;
   }
   h1 {
-    font-size: $header-font-size * 2;
+    font-size: $header-font-size * 1.5;
   }
   h2, h3, h4, h5, h6 {
     font-size: $header-font-size;
@@ -454,6 +448,12 @@ video {
     // This makes it show up inside the padding-left of this element.
     // https://stackoverflow.com/questions/10487292/position-absolute-but-relative-to-parent
     position: relative;
+  }
+  @media only screen and (max-width: $max-mobile-width) {
+    padding-right: $toplevel-horizontal-padding-mobile;
+  }
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    padding-right: $toplevel-horizontal-padding-right;
   }
 }
 

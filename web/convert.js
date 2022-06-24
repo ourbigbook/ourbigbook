@@ -20,6 +20,7 @@ async function convert({
   path,
   render,
   sequelize,
+  splitHeaders,
   titleSource,
   transaction,
 }) {
@@ -60,7 +61,7 @@ async function convert({
       }),
       ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${author.username}`,
       render,
-      split_headers: true,
+      split_headers: splitHeaders === undefined ? true : splitHeaders,
     }, convertOptions),
     extra_returns,
   )
@@ -169,6 +170,7 @@ async function convertComment({ issue, number, sequelize, source, user }) {
     path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
     render: true,
     sequelize,
+    splitHeaders: false,
     titleSource: undefined,
   })
   const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
@@ -200,6 +202,7 @@ async function convertIssue({ article, bodySource, issue, number, sequelize, tit
     path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
     render: true,
     sequelize,
+    splitHeaders: false,
     titleSource,
   })
   const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;

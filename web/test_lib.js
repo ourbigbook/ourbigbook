@@ -500,7 +500,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     if (verbose) console.error('Article update');
     let i = 0
     for (const article of articles) {
-      if (verbose) console.error(`${i} authorId=${article.file.authorId} title=${article.titleRender}`);
+      if (verbose) console.error(`${i} authorId=${article.file.authorId} title=${article.titleSource}`);
       await article.rerender()
       i++
     }

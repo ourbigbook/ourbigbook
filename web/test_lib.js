@@ -66,7 +66,7 @@ const articleData = [
         ['Fundamental theorem of calculus', [
           ['Proof of the fundamental theorem of calculus', []],
         ]],
-        ['My $L^p$ space', []],
+        ['$L^p$ space', []],
       ]],
     ]],
   ]],

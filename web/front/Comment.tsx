@@ -22,9 +22,9 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
     <div className="comment" id={targetId}>
       <div className="comment-header">
         <a className="number" href={`#${targetId}`}>#{comment.number}</a>
-        {' '}
+        {' by '}
         <UserLinkWithImage user={comment.author} showUsernameMobile={false} />
-        {' '}
+        {' on '}
         {formatDate(comment.createdAt)}
         {' '}
         <Maybe test={can.deleteComment(loggedInUser, comment)}>

@@ -98,7 +98,8 @@ router.post('/users', async function(req, res, next) {
 // Modify information about the currently logged in user.
 router.put('/users/:username', auth.required, async function(req, res, next) {
   try {
-    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
+    const sequelize = req.app.get('sequelize')
+    const user = await sequelize.models.User.findByPk(req.payload.id)
     if (req.body.user) {
       // only update fields that were actually passed...
       if (typeof req.body.user.username !== 'undefined') {
@@ -119,7 +120,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
         user.image = req.body.user.image
       }
       if (typeof req.body.user.password !== 'undefined') {
-        req.app.get('sequelize').models.User.setPassword(user, req.body.user.password)
+        sequelize.models.User.setPassword(user, req.body.user.password)
       }
       await user.save()
     }

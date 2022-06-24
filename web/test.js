@@ -32,6 +32,8 @@ function assertRows(rows, rowsExpect) {
   }
 }
 
+// 200 status assertion helper that also prints the data to help
+// quickly see what the error is about.
 function assertStatus(status, data) {
   if (status !== 200) {
     console.error(require('util').inspect(data));
@@ -441,6 +443,26 @@ it('api: create an article and see it on global feed', async () => {
     assert.match(data.issue.render, /The <i>body<\/i> 1 index 0 hacked\./)
     assert.strictEqual(data.issue.number, 1)
 
+    ;({data, status} = await test.webApi.issueGet('user1'))
+    assertRows(data.issues, [
+      {
+        number: 1,
+        titleRender: /The <i>title<\/i> 1 index 0 hacked\./,
+        render: /The <i>body<\/i> 1 index 0 hacked\./,
+      },
+    ])
+
+    // Trying to edit someone else's issue fails.
+
+    test.enableToken(user1.token)
+
+    ;({data, status} = await test.webApi.issueEdit('user1', 1,
+      { bodySource: 'The \\i[body] 1 index 0 hacked by user1.' }))
+    assert.strictEqual(status, 403)
+
+    test.enableToken(user.token)
+
+    // The issue didn't change.
     ;({data, status} = await test.webApi.issueGet('user1'))
     assertRows(data.issues, [
       {

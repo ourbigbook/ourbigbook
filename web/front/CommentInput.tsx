@@ -33,7 +33,7 @@ const CommentInput = ({ comments, loggedInUser, issueNumber, setComments }) => {
     if (body) {
       setLoading(true);
       const ret = await webApi.commentCreate(slug, issueNumber, body)
-      setComments(comments => [ret.data.comment, ...comments])
+      setComments(comments => [...comments, ret.data.comment])
       setLoading(false);
       changeBody('');
     }

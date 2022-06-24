@@ -44,6 +44,9 @@ module.exports = {
   /** @type {boolean | 'blocking'} */
   fallback: 'blocking',
   googleAnalyticsId: 'UA-47867706-4',
+  // An ID separator that should be used or all IDs in the website to avoid conflicts with OurBigBook Markup output,
+  // of which users can control IDs to some extent. Usage is like: prefix + sep + number.
+  idSep: '_',
   // Default isProduction check. Affetcs all aspects of the application unless
   // they are individually overridden, including:
   // * is Next.js server dev or prod?

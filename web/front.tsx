@@ -20,6 +20,10 @@ export function decapitalize(s) {
   return s[0].toLowerCase() + s.slice(1)
 }
 
+export function DiscussionAbout({ article }) {
+  return <h1>Discussion: <a href={routes.articleView(article.slug)}>"{ article.titleRender }" by { article.author.displayName }</a></h1>
+}
+
 export function slugFromArray(arr, { username }: { username?: boolean } = {}) {
   if (username === undefined) {
     username = true

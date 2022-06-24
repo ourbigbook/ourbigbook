@@ -22,11 +22,11 @@ const UserLinkWithImage = ({
       />
       {' '}
       <DisplayAndUsername {...{
-        showUsername,
-        showUsernameMobile,
-        user,
-      }}
-      ></DisplayAndUsername>
+          showUsername,
+          showUsernameMobile,
+          user,
+        }}
+      />
     </CustomLink>
   )
 }

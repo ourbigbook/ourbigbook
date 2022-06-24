@@ -36,7 +36,7 @@ const Article = ({
           {' '}
         </>
       }
-      <a href={routes.issueNew(article.slug)}><i className="ion-edit" /> Create a new thread</a>
+      <a href={routes.issueNew(article.slug)}><i className="ion-edit" /> New thread</a>
     </>
   }
   return <>

@@ -60,11 +60,10 @@ module.exports = (sequelize) => {
       include.push({
         model: sequelize.models.Comment,
         as: 'comments',
-        order: [['number', 'DESC']],
         include: [{ model: sequelize.models.User, as: 'author' }],
       })
       order = [[
-        'comments', 'number', 'DESC'
+        'comments', 'number', 'ASC'
       ]]
     }
     return await sequelize.models.Issue.findOne({

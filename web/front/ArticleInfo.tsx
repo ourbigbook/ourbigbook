@@ -66,6 +66,12 @@ const ArticleInfo = ({
         }
       </span>
     </>}
+    {isIssue &&
+      <>
+        {' '}
+        <span className="see-all"><a href={routes.issuesLatest(issueArticle.slug)}><i className="ion-eye" /> Other discussions</a></span>
+      </>
+    }
   </div>
 }
 export default ArticleInfo

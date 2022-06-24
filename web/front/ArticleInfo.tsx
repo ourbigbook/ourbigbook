@@ -9,7 +9,9 @@ import routes from 'front/routes'
 
 const ArticleInfo = ({
   article,
+  isIssue,
   loggedInUser,
+  issueArticle,
 }) => {
   const canModify =
     loggedInUser && loggedInUser?.username === article?.author?.username;
@@ -49,7 +51,7 @@ const ArticleInfo = ({
       {' '}
       <span>
         <CustomLink
-          href={routes.articleEdit(article.slug)}
+          href={isIssue ? routes.issueEdit(issueArticle.slug, article.number) : routes.articleEdit(article.slug)}
           className="btn"
         >
           <i className="ion-edit" /> <span className="shortcut">E</span>dit

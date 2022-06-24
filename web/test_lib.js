@@ -326,12 +326,12 @@ async function generateDemoData(params) {
         const date = addDays(date0, dateI)
         dateI++
         const articleDataEntry = articleDataProvider.get()
-        let title, extra, children
+        let titleSource, extra, children
         if (articleDataEntry === undefined) {
-          title = `My title ${i * (userIdx + 1)}`
+          titleSource = `My title ${i * (userIdx + 1)}`
           children = []
         } else {
-          title = articleDataEntry[0]
+          titleSource = articleDataEntry[0]
           children = articleDataEntry[1]
           extra = articleDataEntry[2]
         }
@@ -349,14 +349,14 @@ async function generateDemoData(params) {
           includesString = ''
           refsString = ''
         }
-        const id_noscope = ourbigbook.title_to_id(await ourbigbook.convert(title, { output_format: ourbigbook.OUTPUT_FORMAT_ID }))
+        const id_noscope = ourbigbook.title_to_id(await ourbigbook.convert(titleSource, { output_format: ourbigbook.OUTPUT_FORMAT_ID }))
         const articleArg = {
-          title,
+          titleSource,
           authorId,
           createdAt: date,
           // TODO not taking effect. Appears to be because of the hook.
           updatedAt: date,
-          body: `${extra}This is a section about ${title}!
+          bodySource: `${extra}This is a section about ${titleSource}!
 
 ${refsString}\\i[Italic]
 
@@ -421,7 +421,7 @@ Reference to the following image: \\x[image-my-xi-chrysanthemum-${id_noscope}].
 An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
 
 \\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
-{title=Sample YouTube video in ${title}}${includesString}
+{title=Sample YouTube video in ${titleSource}}${includesString}
 `,
         }
         articleArgs.push(articleArg)
@@ -445,12 +445,12 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     const articles = []
     let articleId = 0
     for (const articleArg of articleArgs) {
-      if (verbose) console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.title}`);
+      if (verbose) console.error(`${articleId} authorId=${articleArg.authorId} title=${articleArg.titleSource}`);
       const newArticles = await convert.convertArticle({
         author: userIdToUser[articleArg.authorId],
-        body: articleArg.body,
+        bodySource: articleArg.bodySource,
         sequelize,
-        title: articleArg.title,
+        titleSource: articleArg.titleSource,
       })
       for (const article of newArticles) {
         articleIdToArticle[article.id] = article
@@ -476,15 +476,15 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
       console.error(`${userIdx} ${user.username}`);
       const articleDataProvider = articleDataProviders[user.id]
       const ids = []
-      for (const title of articleDataProvider.toplevelSet) {
-        ids.push(ourbigbook.title_to_id(title))
+      for (const titleSource of articleDataProvider.toplevelSet) {
+        ids.push(ourbigbook.title_to_id(titleSource))
       }
       const includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
       await convert.convertArticle({
         author: user,
-        body: sequelize.models.User.defaultIndexBody + includesString,
+        bodySource: sequelize.models.User.defaultIndexBody + includesString,
         sequelize,
-        title: sequelize.models.User.defaultIndexTitle,
+        titleSource: sequelize.models.User.defaultIndexTitle,
       })
 
       // TODO get working. Looks like all values that are not updated are

@@ -2,7 +2,7 @@ import { getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
 import { MyGetServerSideProps } from 'front/types'
 
-export const getServerSidePropsArticleHoc = (includeIssues?, loggedInUserCache?): MyGetServerSideProps => {
+export const getServerSidePropsArticleHoc = ({ includeIssues, loggedInUserCache }={}): MyGetServerSideProps => {
   return async ({ params: { slug }, req, res }) => {
     if (slug instanceof Array) {
       const sequelize = req.sequelize
@@ -27,6 +27,7 @@ export const getServerSidePropsArticleHoc = (includeIssues?, loggedInUserCache?)
           where: { topicId: article.topicId },
         }),
       ])
+      console.error({articleJson});
       const props: ArticlePageProps = {
         article: articleJson,
         topicArticleCount,

@@ -1,2 +1,2 @@
 import ArticleEditorPageHoc from 'front/ArticleEditorPage'
-export default ArticleEditorPageHoc({ isnew: true });
+export default ArticleEditorPageHoc({ isNew: true });

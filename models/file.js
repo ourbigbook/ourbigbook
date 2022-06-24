@@ -21,12 +21,12 @@ module.exports = (sequelize, web=false) => {
     },
   }
   if (web) {
-    cols.title = {
+    cols.titleSource = {
       // Toplevel header title source.
       type: DataTypes.TEXT,
       allowNull: false,
     }
-    cols.body = {
+    cols.bodySource = {
       // Body source, including any toplevel header arguments
       // like {c}, etc.
       type: DataTypes.TEXT,

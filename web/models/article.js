@@ -89,8 +89,8 @@ module.exports = (sequelize) => {
       // to improve post serialization polymorphism with issues.
       author,
       file: {
-        title: this.file.title,
-        body: this.file.body,
+        titleSource: this.file.titleSource,
+        bodySource: this.file.bodySource,
         path: this.file.path,
       },
       render: this.render,
@@ -103,12 +103,12 @@ module.exports = (sequelize) => {
     await sequelize.transaction({ transaction }, async (transaction) => {
       await convert.convertArticle({
         author: file.author,
-        body: file.body,
+        bodySource: file.bodySource,
         forceNew: false,
         path: file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR),
         render: true,
         sequelize,
-        title: file.title,
+        titleSource: file.titleSource,
         transaction,
       })
     })

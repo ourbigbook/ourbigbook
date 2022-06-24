@@ -16,19 +16,19 @@ const { modifyEditorInput } = require('./front/js')
 // This is a much simpler procedure as it does not alter the File/Article database.
 async function convert({
   author,
-  body,
+  bodySource,
   path,
   render,
   sequelize,
-  title,
+  titleSource,
   transaction,
 }) {
   const db_provider = new SqliteDbProvider(sequelize)
   const extra_returns = {};
-  body = body.replace(/\n+$/, '')
-  const input = modifyEditorInput(title, body).new
-  if (!path) {
-    path = `${ourbigbook.title_to_id(title)}.${ourbigbook.OURBIGBOOK_EXT}`
+  bodySource = bodySource.replace(/\n+$/, '')
+  const input = modifyEditorInput(titleSource, bodySource).new
+  if (path === undefined) {
+    path = `${ourbigbook.title_to_id(titleSource)}.${ourbigbook.OURBIGBOOK_EXT}`
   }
   const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}`
   await ourbigbook.convert(
@@ -79,12 +79,12 @@ async function convert({
 // This is how Articles should always be created and updated.
 async function convertArticle({
   author,
-  body,
+  bodySource,
   forceNew,
   path,
   render,
   sequelize,
-  title,
+  titleSource,
   transaction,
 }) {
   if (render === undefined) {
@@ -92,12 +92,12 @@ async function convertArticle({
   }
   const { db_provider, extra_returns, input_path } = await convert({
     author,
-    body,
+    bodySource,
     forceNew,
     path,
     render,
     sequelize,
-    title,
+    titleSource,
     transaction,
   })
   const idid = extra_returns.context.header_tree.children[0].ast.id
@@ -107,13 +107,13 @@ async function convertArticle({
   }
   await update_database_after_convert({
     authorId: author.id,
-    body,
+    bodySource,
     extra_returns,
     db_provider,
     sequelize,
     path: filePath,
     render,
-    title,
+    titleSource,
     transaction,
   })
   if (render) {
@@ -141,7 +141,7 @@ async function convertArticle({
     }
     await sequelize.models.Article.bulkCreate(
       articleArgs,
-      { updateOnDuplicate: ['title', 'render', 'topicId', 'updatedAt'], transaction }
+      { updateOnDuplicate: ['titleRender', 'render', 'topicId', 'updatedAt'], transaction }
     )
     // Find here because upsert not yet supported in SQLite.
     // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
@@ -165,11 +165,11 @@ async function convertArticle({
 async function convertComment({ issue, number, sequelize, source, user }) {
   const { extra_returns } = await convert({
     author: user,
-    body: source,
+    bodySource: source,
     path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
     render: true,
     sequelize,
-    title: undefined,
+    titleSource: undefined,
   })
   const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
   return sequelize.models.Comment.create({
@@ -181,25 +181,46 @@ async function convertComment({ issue, number, sequelize, source, user }) {
   })
 }
 
-async function convertIssue({ article, bodySource, number, sequelize, titleSource, user }) {
+async function convertIssue({ article, bodySource, issue, number, sequelize, titleSource, user }) {
+  if (issue) {
+    if (bodySource === undefined) {
+      bodySource = issue.bodySource
+    } else {
+      issue.bodySource = bodySource
+    }
+    if (titleSource === undefined) {
+      titleSource = issue.titleSource
+    } else {
+      issue.titleSource = titleSource
+    }
+  }
   const { extra_returns } = await convert({
     author: user,
-    body: bodySource,
+    bodySource,
     path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
     render: true,
     sequelize,
-    title: titleSource,
+    titleSource,
   })
   const outpath = `${ourbigbook.AT_MENTION_CHAR}${user.username}.${ourbigbook.HTML_EXT}`;
-  return sequelize.models.Issue.create({
-    articleId: article.id,
-    authorId: user.id,
-    titleSource,
-    bodySource,
-    titleRender: extra_returns.rendered_outputs[outpath].title,
-    render: extra_returns.rendered_outputs[outpath].full,
-    number,
-  })
+  const renders = extra_returns.rendered_outputs[outpath]
+  const titleRender = renders.title
+  const render = renders.full
+  if (issue === undefined) {
+    return sequelize.models.Issue.create({
+      articleId: article.id,
+      authorId: user.id,
+      titleSource,
+      bodySource,
+      titleRender,
+      render,
+      number,
+    })
+  } else {
+    issue.titleRender = titleRender
+    issue.render = render
+    return issue.save()
+  }
 }
 
 module.exports = {

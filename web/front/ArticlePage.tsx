@@ -48,7 +48,8 @@ const ArticlePageHoc = (isIssue) => {
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(() =>
       // TODO here we would like to have a plaintext render of the title.
-      setTitle(`${article.titleRender} by ${displayAndUsernameText(author)}`)
+      // https://github.com/cirosantilli/ourbigbook/issues/250
+      setTitle(`${article.titleSource} by ${displayAndUsernameText(author)}`)
     )
     const showOthers = topicArticleCount > 1
     const showCreateMyOwn = !loggedInUser || author.username !== loggedInUser.username
@@ -90,7 +91,7 @@ const ArticlePageHoc = (isIssue) => {
                 </>
               }
             </div>
-            <ArticleInfo {...{ article, loggedInUser }}/>
+            <ArticleInfo {...{ article, isIssue, issueArticle, loggedInUser }}/>
           </div>
           <div className="container page">
             <Article {...{ article, comments, commentsCount, issueArticle, isIssue, issues, issuesCount, loggedInUser }} />

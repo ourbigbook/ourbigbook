@@ -102,9 +102,9 @@ module.exports = (sequelize) => {
           // Create the index page for the user.
           return convert.convertArticle({
             author: user,
-            body: User.defaultIndexBody,
+            bodySource: User.defaultIndexBody,
             sequelize,
-            title: ourbigbook.capitalize_first_letter(ourbigbook.INDEX_BASENAME_NOEXT),
+            titleSource: ourbigbook.capitalize_first_letter(ourbigbook.INDEX_BASENAME_NOEXT),
             transaction: options.transaction
           })
         }

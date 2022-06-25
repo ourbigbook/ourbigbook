@@ -26,7 +26,6 @@ export interface UserPageProps {
   articlesCount?: number;
   authoredArticleCount: number;
   comments?: CommentType[];
-  likedArticleCount: number;
   loggedInUser?: UserType;
   page: number;
   user: UserType;
@@ -41,7 +40,6 @@ export default function UserPage({
   comments,
   issues,
   issuesCount,
-  likedArticleCount,
   loggedInUser,
   page,
   user,
@@ -63,9 +61,7 @@ export default function UserPage({
       break
   }
   const canEdit = loggedInUser && loggedInUser?.username === username
-  if (what === 'home') {
-    useEEdit(canEdit, article.slug)
-  }
+  useEEdit(canEdit, article?.slug)
 
   // Following state.
   const [following, setFollowing] = React.useState(false)
@@ -115,7 +111,7 @@ export default function UserPage({
           href={routes.userView(username)}
           className={`tab-item${what === 'home' ? ' active' : ''}`}
         >
-          Home ({authoredArticleCount})
+          Home
         </CustomLink>
         <CustomLink
           href={routes.userViewTop(username)}
@@ -133,7 +129,7 @@ export default function UserPage({
           href={routes.userViewLikes(username)}
           className={`tab-item${what === 'likes' ? ' active' : ''}`}
         >
-          Liked ({likedArticleCount})
+          Liked
         </CustomLink>
       </div>
       {what === 'home'

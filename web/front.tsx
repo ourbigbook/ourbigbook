@@ -74,17 +74,19 @@ export function useCtrlEnterSubmit(handleSubmit) {
 
 export function useEEdit(canEdit, slug) {
   React.useEffect(() => {
-    function listener(e) {
-      if (e.code === 'KeyE') {
-        if (canEdit) {
-          Router.push(routes.articleEdit(slug))
+    if (slug !== undefined) {
+      function listener(e) {
+        if (e.code === 'KeyE') {
+          if (canEdit) {
+            Router.push(routes.articleEdit(slug))
+          }
         }
       }
+      document.addEventListener('keydown', listener);
+      return () => {
+        document.removeEventListener('keydown', listener);
+      }
     }
-    document.addEventListener('keydown', listener);
-    return () => {
-      document.removeEventListener('keydown', listener);
-    };
   }, [canEdit, slug]);
 }
 

@@ -57,17 +57,14 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         articles,
         userJson,
         authoredArticleCount,
-        likedArticleCount
       ] = await Promise.all([
         articlesPromise,
         user.toJson(loggedInUser),
         user.countAuthoredArticles(),
-        user.countLikes(),
       ])
       const props: UserPageProps = {
         user: userJson,
         authoredArticleCount,
-        likedArticleCount,
         page: pageNum,
         what,
       }

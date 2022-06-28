@@ -22,15 +22,16 @@ const Article = ({
   comments,
   commentsCount,
   isIssue,
-  issues,
   issuesCount,
+  latestIssues,
   loggedInUser,
+  topIssues,
 }) => {
   const [curComments, setComments] = React.useState(comments)
   let seeAllCreateNew
   if (!isIssue) {
     seeAllCreateNew = <>
-      {issues.length > 0 &&
+      {latestIssues.length > 0 &&
         <>
           <a href={routes.issuesLatest(article.slug)}><i className="ion-eye" /> See all { issuesCount } threads</a>
           {' '}
@@ -66,11 +67,24 @@ const Article = ({
         : <>
             <h2><i className="ion-ios-chatbubble" /> Discussion ({ issuesCount })</h2>
             { seeAllCreateNew }
-            { issues.length > 0 ?
+            { latestIssues.length > 0 ?
                 <>
                   <h3>Latest threads</h3>
                   <ArticleList {...{
-                    articles: issues,
+                    articles: latestIssues,
+                    articlesCount: issuesCount,
+                    comments,
+                    commentsCount,
+                    issueArticle: article,
+                    isIssue: true,
+                    loggedInUser,
+                    page: 0,
+                    showAuthor: true,
+                    what: 'issues',
+                  }}/>
+                  <h3>Top threads</h3>
+                  <ArticleList {...{
+                    articles: topIssues,
                     articlesCount: issuesCount,
                     comments,
                     commentsCount,

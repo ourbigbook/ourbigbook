@@ -151,7 +151,7 @@ const commentData = [
   'Just fixed the issue on a new edit, thanks.',
   `I don\'t think this is correct.
 
-Conside what happens when $\\sqrt{a + b} > 0$`,
+Consider what happens when $\\sqrt{a + b} > 0$`,
   `Ah, maybe. But are you sure that the sum of:
 \`\`
 f() + 3*g()

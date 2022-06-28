@@ -37,7 +37,8 @@ const ArticlePageHoc = (isIssue) => {
     comments,
     commentsCount,
     issueArticle,
-    issues,
+    latestIssues,
+    topIssues,
     issuesCount,
     loggedInUser,
     sameArticleByLoggedInUser,
@@ -60,7 +61,7 @@ const ArticlePageHoc = (isIssue) => {
       <>
         <div className="article-page">
           <div className="content-not-ourbigbook article-meta">
-            {isIssue && <DiscussionAbout article={issueArticle} />}
+            {isIssue && <DiscussionAbout article={issueArticle} issue={article} />}
             <div className="article-info">
               <span className="mobile-hide">Author: </span>
               <UserLinkWithImage user={author} showUsernameMobile={false} />
@@ -98,7 +99,17 @@ const ArticlePageHoc = (isIssue) => {
             <ArticleInfo {...{ article, isIssue, issueArticle, loggedInUser }}/>
           </div>
           <div className="container page">
-            <Article {...{ article, comments, commentsCount, issueArticle, isIssue, issues, issuesCount, loggedInUser }} />
+            <Article {...{
+              article,
+              comments,
+              commentsCount,
+              issueArticle,
+              isIssue,
+              issuesCount,
+              latestIssues,
+              loggedInUser,
+              topIssues,
+            }} />
           </div>
         </div>
       </>

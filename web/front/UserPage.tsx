@@ -38,12 +38,13 @@ export default function UserPage({
   articlesCount,
   authoredArticleCount,
   comments,
-  issues,
   issuesCount,
+  latestIssues,
   loggedInUser,
   page,
+  topIssues,
   user,
-  what
+  what,
 }: UserPageProps) {
   const router = useRouter();
   const username = user?.username
@@ -135,7 +136,14 @@ export default function UserPage({
       {what === 'home'
         ? <>
             <ArticleInfo {...{ article, loggedInUser }}/>
-            <Article {...{ article, comments, issues, issuesCount, loggedInUser }} />
+            <Article {...{
+              article,
+              comments,
+              latestIssues,
+              issuesCount,
+              loggedInUser,
+              topIssues,
+            }}/>
           </>
         : <ArticleList {...{
             articles,

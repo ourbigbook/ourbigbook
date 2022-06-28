@@ -53,7 +53,7 @@ function IndexPageHoc(isIssue = false) {
     )
     return (
       <div className="home-page content-not-ourbigbook">
-        {isIssue && <DiscussionAbout article={issueArticle} />}
+        {isIssue && <DiscussionAbout article={issueArticle}/>}
         <div className="tab-list">
           {(loggedInUser && !isIssue) &&
             <>

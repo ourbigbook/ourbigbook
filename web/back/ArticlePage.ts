@@ -6,9 +6,16 @@ export const getServerSidePropsArticleHoc = ({ includeIssues, loggedInUserCache 
   return async ({ params: { slug }, req, res }) => {
     if (slug instanceof Array) {
       const sequelize = req.sequelize
-      const [article, loggedInUser] = await Promise.all([
+      const [article, articleTopIssues, loggedInUser] = await Promise.all([
         sequelize.models.Article.getArticle({
           includeIssues,
+          limit: 5,
+          sequelize,
+          slug: slug.join('/'),
+        }),
+        sequelize.models.Article.getArticle({
+          includeIssues,
+          includeIssuesOrder: 'score',
           limit: 5,
           sequelize,
           slug: slug.join('/'),
@@ -43,7 +50,8 @@ export const getServerSidePropsArticleHoc = ({ includeIssues, loggedInUserCache 
         }
       }
       if (includeIssues) {
-        props.issues = await Promise.all(article.issues.map(issue => issue.toJson(loggedInUser)))
+        props.latestIssues = await Promise.all(article.issues.map(issue => issue.toJson(loggedInUser)))
+        props.topIssues = await Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser)))
         props.issuesCount = issuesCount
       }
       return { props };

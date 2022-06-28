@@ -20,8 +20,8 @@ export function decapitalize(s) {
   return s[0].toLowerCase() + s.slice(1)
 }
 
-export function DiscussionAbout({ article }) {
-  return <h1>Discussion: <a href={routes.articleView(article.slug)}>"<span className="comment-body ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }} />" by { article.author.displayName }</a></h1>
+export function DiscussionAbout({ article, issue }) {
+  return <h1>Discussion{issue ? ` #${issue.number}` : ''}: <a href={routes.articleView(article.slug)}>"<span className="comment-body ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }} />" by { article.author.displayName }</a></h1>
 }
 
 export function slugFromArray(arr, { username }: { username?: boolean } = {}) {

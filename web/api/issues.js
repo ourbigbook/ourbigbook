@@ -9,11 +9,12 @@ const { getArticle, ValidationError, validateParam, isPositiveInteger } = lib
 const { modifyEditorInput } = require('../front/js')
 
 // Get issues for an article.
+// TODO: make article optional, generalize this more as a general find issues function.
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
     const [article, loggedInUser] = await Promise.all([
-      getArticle(req, res, { includeIssues: true }),
+      getArticle(req, res, { includeIssues: true, includeIssuesOrder: lib.getOrder(req) }),
       req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
     ])
     return res.json({
@@ -27,7 +28,7 @@ router.get('/', auth.optional, async function(req, res, next) {
 function getIssueParams(req, res) {
   return {
     number: lib.validateParam(req.params, 'number', {
-      typecast: lib.typecaseInteger,
+      typecast: lib.typecastInteger,
       validators: [lib.isPositiveInteger],
     }),
     slug: validateParam(req.query, 'id'),
@@ -38,7 +39,13 @@ async function getIssue(req, res, options={}) {
   const { includeComments } = options
   const sequelize = req.app.get('sequelize')
   const { slug, number } = getIssueParams(req, res)
-  const issue = await sequelize.models.Issue.getIssue({ includeComments, number, sequelize, slug })
+  const issue = await sequelize.models.Issue.getIssue({
+    includeComments,
+    number,
+    order: lib.getOrder(req),
+    sequelize,
+    slug,
+  })
   if (!issue) {
     throw new ValidationError(
       [`issue not found: article slug: "${slug}" issue number: ${number}`],
@@ -124,6 +131,59 @@ router.put('/:number', auth.required, async function(req, res, next) {
   }
 })
 
+async function validateLike(req, res, user, article, isLike) {
+  if (!article) {
+    throw new lib.ValidationError(
+      ['Article not found'],
+      404,
+    )
+  }
+  if (article.authorId === user.id) {
+    throw new lib.ValidationError(
+      [`A user cannot ${isLike ? 'like' : 'unlike'} their own article`],
+      403,
+    )
+  }
+  if (await user.hasLikedIssue(article) === isLike) {
+    throw new lib.ValidationError(
+      [`User '${user.username}' ${isLike ? 'already likes' : 'does not like'} article '${article.slug}'`],
+      403,
+    )
+  }
+}
+
+// Like an issue
+router.post('/:number/like', auth.required, async function(req, res, next) {
+  try {
+    const [article, loggedInUser] = await Promise.all([
+      getIssue(req, res),
+      req.app.get('sequelize').models.User.findByPk(req.payload.id),
+    ])
+    await validateLike(req, res, loggedInUser, article, true)
+    await loggedInUser.addIssueLikeSideEffects(article)
+    const newArticle = await lib.getArticle(req, res)
+    return res.json({ article: await newArticle.toJson(loggedInUser) })
+  } catch(error) {
+    next(error);
+  }
+})
+
+// Unlike an issue
+router.delete('/:number/like', auth.required, async function(req, res, next) {
+  try {
+    const [article, loggedInUser] = await Promise.all([
+      getIssue(req, res),
+      req.app.get('sequelize').models.User.findByPk(req.payload.id),
+    ])
+    await validateLike(req, res, loggedInUser, article, false)
+    await loggedInUser.removeIssueLikeSideEffects(article)
+    const newArticle = await lib.getArticle(req, res)
+    return res.json({ article: await newArticle.toJson(loggedInUser) })
+  } catch(error) {
+    next(error);
+  }
+})
+
 // Get issues's comments.
 router.get('/:number/comments', auth.optional, async function(req, res, next) {
   try {
@@ -185,11 +245,11 @@ router.delete('/:number/comments/:commentNumber', auth.required, async function(
   try {
     const sequelize = req.app.get('sequelize')
     const commentNumber = lib.validateParam(req.params, 'commentNumber', {
-      typecast: lib.typecaseInteger,
+      typecast: lib.typecastInteger,
       validators: [lib.isPositiveInteger],
     })
     const issueNumber = lib.validateParam(req.params, 'issue', {
-      typecast: lib.typecaseInteger,
+      typecast: lib.typecastInteger,
       validators: [lib.isPositiveInteger],
     })
     const [comment, loggedInUser] = await Promise.all([

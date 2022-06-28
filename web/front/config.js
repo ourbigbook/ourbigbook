@@ -40,6 +40,7 @@ module.exports = {
   buttonActiveClass: 'active',
   defaultProfileImage: `https://static.productionready.io/images/smiley-cyrus.jpg`,
   articleLimit: 20,
+  articleLimitMax: 20,
   defaultUserScoreTitle: 'Sum of likes of all articles authored by user',
   /** @type {boolean | 'blocking'} */
   fallback: 'blocking',

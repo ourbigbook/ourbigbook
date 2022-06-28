@@ -70,7 +70,7 @@ export function DisplayAndUsername(
   return <>
     {mobileMandatoryPart}
     {mobileOptionalPart}
-    <span title={defaultUserScoreTitle}>{user.articleScoreSum}<i className="ion-heart"></i></span>
+    <span title={defaultUserScoreTitle}>{user.score}<i className="ion-heart"></i></span>
     {mobileOptionalPartPost}
   </>
 }

@@ -80,7 +80,7 @@ module.exports = (sequelize) => {
       image: DataTypes.STRING(2048),
       hash: DataTypes.STRING(1024),
       salt: DataTypes.STRING,
-      articleScoreSum: {
+      score: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
@@ -135,7 +135,7 @@ module.exports = (sequelize) => {
       image: this.image,
       effectiveImage: this.image || 'https://static.productionready.io/images/smiley-cyrus.jpg',
       followerCount: this.followerCount,
-      articleScoreSum: this.articleScoreSum,
+      score: this.score,
       admin: this.admin,
     }
     if (loggedInUser) {
@@ -210,21 +210,39 @@ module.exports = (sequelize) => {
     }
   }
 
-  User.prototype.addLikeSideEffects = async function(article) {
+  User.prototype.addArticleLikeSideEffects = async function(article) {
     await sequelize.transaction(async transaction => {
       await Promise.all([
-        this.addLike(article.id, { transaction }),
-        article.getAuthor({ transaction }).then(author => author.increment('articleScoreSum', { transaction })),
+        this.addLikedArticle(article.id, { transaction }),
+        article.getAuthor({ transaction }).then(author => author.increment('score', { transaction })),
         article.increment('score', { transaction }),
       ])
     })
   }
 
-  User.prototype.removeLikeSideEffects = async function(article) {
+  User.prototype.removeArticleLikeSideEffects = async function(article) {
     await sequelize.transaction(async transaction => {
       await Promise.all([
-        this.removeLike(article.id, { transaction }),
-        article.getAuthor().then(author => author.decrement('articleScoreSum', { transaction })),
+        this.removeLikedArticle(article.id, { transaction }),
+        article.getAuthor().then(author => author.decrement('score', { transaction })),
+        article.decrement('score', { transaction }),
+      ])
+    })
+  }
+
+  User.prototype.addIssueLikeSideEffects = async function(article) {
+    await sequelize.transaction(async transaction => {
+      await Promise.all([
+        this.addLikedIssue(article.id, { transaction }),
+        article.increment('score', { transaction }),
+      ])
+    })
+  }
+
+  User.prototype.removeIssueLikeSideEffects = async function(article) {
+    await sequelize.transaction(async transaction => {
+      await Promise.all([
+        this.removeLikedIssue(article.id, { transaction }),
         article.decrement('score', { transaction }),
       ])
     })
@@ -261,6 +279,14 @@ module.exports = (sequelize) => {
 
   User.defaultIndexTitle = 'Index'
   User.defaultIndexBody = 'Welcome to my home page!'
+
+  User.getUsers = async function({ limit, offset, order, sequelize }) {
+    return sequelize.models.User.findAndCountAll({
+      limit,
+      offset,
+      order: [[order, 'DESC']],
+    })
+  }
 
   User.validPassword = function(user, password) {
     let hash = crypto.pbkdf2Sync(password, user.salt, 10000, 512, 'sha512').toString('hex')

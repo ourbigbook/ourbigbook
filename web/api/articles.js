@@ -6,44 +6,21 @@ const convert = require('../convert')
 const lib = require('./lib')
 const config = require('../front/config')
 
-function getOrder(req) {
-  let sort = req.query.sort;
-  if (sort) {
-    if (sort === 'createdAt' || sort === 'score') {
-      return sort
-    } else {
-      throw new lib.ValidationError(
-        [`Invalid sort value: '${sort}'`],
-        422,
-      )
-    }
-  } else {
-    return 'createdAt'
-  }
-}
-
 // Get a single article if ?id= is given, otherwise a list of articles.
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
     if (req.query.id === undefined) {
+      const [limit, offset] = lib.getLimitAndOffset(req, res)
       const [{count: articlesCount, rows: articles}, loggedInUser] = await Promise.all([
         sequelize.models.Article.getArticles({
           sequelize,
-          limit: lib.validateParam(req.query, 'limit', {
-            typecast: lib.typecaseInteger,
-            validators: [lib.isNonNegativeInteger],
-            defaultValue: config.articleLimit
-          }),
-          offset: lib.validateParam(req.query, 'offset', {
-            typecast: lib.typecaseInteger,
-            validators: [lib.isNonNegativeInteger],
-            defaultValue: 0
-          }),
+          limit,
+          offset,
           author: req.query.author,
           likedBy: req.query.likedBy,
           topicId: req.query.topicId,
-          order: getOrder(req),
+          order: lib.getOrder(req),
         }),
         req.payload ? sequelize.models.User.findByPk(req.payload.id) : null
       ])
@@ -51,7 +28,7 @@ router.get('/', auth.optional, async function(req, res, next) {
         articles: await Promise.all(articles.map(function(article) {
           return article.toJson(loggedInUser)
         })),
-        articlesCount: articlesCount
+        articlesCount,
       })
     } else {
       const [article, loggedInUser] = await Promise.all([
@@ -76,7 +53,7 @@ router.get('/feed', auth.required, async function(req, res, next) {
       offset = Number(req.query.offset)
     }
     const loggedInUser = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
-    const order = getOrder(req)
+    const order = lib.getOrder(req)
     const {count: articlesCount, rows: articles} = await loggedInUser.findAndCountArticlesByFollowed(offset, limit, order)
     const articlesJson = await Promise.all(articles.map((article) => {
       return article.toJson(loggedInUser)
@@ -182,13 +159,14 @@ async function validateLike(req, res, user, article, isLike) {
       404,
     )
   }
+  // TODO factor these permissions check with frontend button grayout.
   if (article.file.authorId === user.id) {
     throw new lib.ValidationError(
       [`A user cannot ${isLike ? 'like' : 'unlike'} their own article`],
       403,
     )
   }
-  if (await user.hasLike(article) === isLike) {
+  if (await user.hasLikedArticle(article) === isLike) {
     throw new lib.ValidationError(
       [`User '${user.username}' ${isLike ? 'already likes' : 'does not like'} article '${article.slug}'`],
       403,
@@ -199,10 +177,12 @@ async function validateLike(req, res, user, article, isLike) {
 // Like an article
 router.post('/like', auth.required, async function(req, res, next) {
   try {
-    const article = await lib.getArticle(req, res)
-    const loggedInUser = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
+    const [article, loggedInUser] = await Promise.all([
+      lib.getArticle(req, res),
+      req.app.get('sequelize').models.User.findByPk(req.payload.id),
+    ])
     await validateLike(req, res, loggedInUser, article, true)
-    await loggedInUser.addLikeSideEffects(article)
+    await loggedInUser.addArticleLikeSideEffects(article)
     const newArticle = await lib.getArticle(req, res)
     return res.json({ article: await newArticle.toJson(loggedInUser) })
   } catch(error) {
@@ -213,10 +193,12 @@ router.post('/like', auth.required, async function(req, res, next) {
 // Unlike an article
 router.delete('/like', auth.required, async function(req, res, next) {
   try {
-    const article = await lib.getArticle(req, res)
-    const loggedInUser = await req.app.get('sequelize').models.User.findByPk(req.payload.id);
+    const [article, loggedInUser] = await Promise.all([
+      lib.getArticle(req, res),
+      req.app.get('sequelize').models.User.findByPk(req.payload.id),
+    ])
     await validateLike(req, res, loggedInUser, article, false)
-    await loggedInUser.removeLikeSideEffects(article)
+    await loggedInUser.removeArticleLikeSideEffects(article)
     const newArticle = await lib.getArticle(req, res)
     return res.json({ article: await newArticle.toJson(loggedInUser) })
   } catch(error) {

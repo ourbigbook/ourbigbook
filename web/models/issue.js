@@ -107,12 +107,15 @@ module.exports = (sequelize) => {
   }
 
   Issue.prototype.toJson = async function(loggedInUser) {
+    // TODO do with JOINs on caller, check if it is there and skip this if so.
+    const liked = loggedInUser ? await loggedInUser.hasLikedIssue(this.id) : false
     const ret = {
       id: this.id,
       number: this.number,
+      bodySource: this.bodySource,
       titleSource: this.titleSource,
       score: this.score,
-      bodySource: this.bodySource,
+      liked,
       titleRender: this.titleRender,
       render: this.render,
       createdAt: this.createdAt.toISOString(),

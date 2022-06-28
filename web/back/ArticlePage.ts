@@ -43,7 +43,7 @@ export const getServerSidePropsArticleHoc = ({ includeIssues, loggedInUserCache 
         }
       }
       if (includeIssues) {
-        props.issues = await Promise.all(article.issues.map(issue => issue.toJson()))
+        props.issues = await Promise.all(article.issues.map(issue => issue.toJson(loggedInUser)))
         props.issuesCount = issuesCount
       }
       return { props };

@@ -11,7 +11,7 @@ import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
 import { AppContext, DiscussionAbout, useEEdit } from 'front'
 import { webApi } from 'front/api'
-import can from 'front/can'
+import cant from 'front/cant'
 import fetcher from 'front/fetcher'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
@@ -54,7 +54,7 @@ const ArticlePageHoc = (isIssue) => {
     )
     const showOthers = topicArticleCount > 1
     const showCreateMyOwn = !loggedInUser || author.username !== loggedInUser.username
-    const canEdit = loggedInUser && (isIssue ? can.editIssue(loggedInUser, article) : loggedInUser.username === article.author.username)
+    const canEdit = loggedInUser && (isIssue ? !cant.editIssue(loggedInUser, article) : loggedInUser.username === article.author.username)
     useEEdit(canEdit, article.slug)
     return (
       <>

@@ -44,6 +44,15 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      author: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          return this.file.author
+        },
+        set(value) {
+          throw new Error('cannot set virtual`author` value directly');
+        }
+      }
     },
     {
       // TODO updatedAt lazy to create migration now.

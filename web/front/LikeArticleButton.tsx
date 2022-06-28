@@ -2,6 +2,7 @@ import React from 'react'
 import Router from 'next/router'
 
 import { webApi } from 'front/api'
+import cant from 'front/cant'
 import { buttonActiveClass } from 'front/config'
 import routes from 'front/routes'
 
@@ -12,7 +13,8 @@ const LikeArticleButton = ({
   loggedInUser,
   showText,
 }) => {
-  const currentUserIsAuthor = article.author.username === loggedInUser?.username
+  const ret = {}
+  const cantLike = cant.likeArticle(loggedInUser, article, ret)
   const [liked, setLiked] = React.useState(article.liked)
   const [score, setScore] = React.useState(article.score)
   let buttonText;
@@ -29,7 +31,7 @@ const LikeArticleButton = ({
   }
   const handleClickLike = async (e) => {
     e.preventDefault();
-    if (currentUserIsAuthor) return
+    if (cantLike) return
     if (!loggedInUser) {
       Router.push(routes.userLogin());
       return;
@@ -61,9 +63,9 @@ const LikeArticleButton = ({
   }
   let buttonClassName;
   let title;
-  if (currentUserIsAuthor) {
+  if (cantLike) {
     buttonClassName = 'disabled'
-    title = 'You cannot like your own articles'
+    title = cantLike
   } else {
     buttonClassName = liked ? buttonActiveClass : ''
     title = buttonTextMaybe + ' this article'

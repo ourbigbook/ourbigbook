@@ -1,7 +1,7 @@
 import { GetServerSideProps } from 'next'
 
 import { getLoggedInUser } from 'back'
-import { articleLimit, fallback } from 'front/config'
+import { articleLimit } from 'front/config'
 import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
 
@@ -31,11 +31,9 @@ export const getServerSidePropsIndexHoc = (what): MyGetServerSideProps => {
       switch (whatEffective) {
         case 'latest':
           order = 'createdAt'
-          loggedInQuery = false
         break;
         case 'top':
           order = 'score'
-          loggedInQuery = false
           break;
         case 'latest-followed':
           order = 'createdAt'

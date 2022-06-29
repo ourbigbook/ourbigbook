@@ -13,7 +13,7 @@ function encodeGetParams(p) {
   return ret
 }
 
-const encodeGetParamsWithPage = (opts) => {
+const encodeGetParamsWithOffset = (opts) => {
   opts = Object.assign({}, opts)
   if (opts.page !== undefined && opts.limit !== undefined) {
     opts.offset = opts.page * opts.limit
@@ -37,7 +37,7 @@ class WebApi {
   }
 
   async articleAll(opts={}) {
-    return this.req('get', `articles${encodeGetParamsWithPage(opts)}`)
+    return this.req('get', `articles${encodeGetParamsWithOffset(opts)}`)
   }
 
   async articleCreate(article, opts={}) {
@@ -57,7 +57,7 @@ class WebApi {
   }
 
   async articleFeed(opts={}) {
-    return this.req('get', `articles/feed${encodeGetParamsWithPage(opts)}`)
+    return this.req('get', `articles/feed${encodeGetParamsWithOffset(opts)}`)
   }
 
   async articleGet(slug) {
@@ -82,7 +82,7 @@ class WebApi {
 
   async issueAll(opts) {
     return this.req('get',
-      `/issues${encodeGetParamsWithPage(opts)}`,
+      `/issues${encodeGetParamsWithOffset(opts)}`,
     )
   }
 
@@ -145,7 +145,7 @@ class WebApi {
   }
 
   async userAll(opts) {
-    return this.req('get', `users${encodeGetParamsWithPage(opts)}`)
+    return this.req('get', `users${encodeGetParamsWithOffset(opts)}`)
   }
 
   async userCreate(attrs) {
@@ -236,5 +236,6 @@ async function sendJsonHttp(method, path, opts={}) {
 
 module.exports = {
   WebApi,
+  encodeGetParams,
   sendJsonHttp,
 }

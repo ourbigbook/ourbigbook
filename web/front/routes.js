@@ -1,7 +1,17 @@
-const { escapeUsername } = require("./config");
+const { escapeUsername } = require('./config');
+
+const { encodeGetParams } = require('ourbigbook/web_api');
 
 function getPage(page) {
   return page === undefined || page === 1 ? '' : `/${page}`
+}
+
+const encodeGetParamsWithPage = (opts) => {
+  opts = Object.assign({}, opts)
+  if (opts.page === 1) {
+    delete opts.page
+  }
+  return encodeGetParams(opts)
 }
 
 module.exports = {
@@ -26,6 +36,7 @@ module.exports = {
   userViewTop: (uid, page) => `/${escapeUsername}/user/${uid}/top${getPage(page)}`,
   userViewLikes: (uid, page) => `/${escapeUsername}/user/${uid}/likes${getPage(page)}`,
   userViewLatest: (uid, page) => `/${escapeUsername}/user/${uid}/latest${getPage(page)}`,
+  users: (opts={}) => `/${escapeUsername}/users${encodeGetParams(opts)}`,
   topicArticlesTop: (id, page) => {
     if (page === undefined || page === 1) {
       return `/${escapeUsername}/topic/${id}`

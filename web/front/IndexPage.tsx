@@ -2,6 +2,7 @@ import React from 'react'
 
 import { AppContext, DiscussionAbout } from 'front'
 import ArticleList from 'front/ArticleList'
+import UserList from 'front/UserList'
 import CustomLink from 'front/CustomLink'
 import ErrorMessage from 'front/ErrorMessage'
 import Maybe from 'front/Maybe'
@@ -20,16 +21,27 @@ export interface IndexPageProps {
   what: string;
 }
 
-function IndexPageHoc(isIssue = false) {
+export interface UsersPageProps {
+  users: UserType[];
+  usersCount: number;
+  loggedInUser?: UserType;
+  page: number;
+  what: string;
+}
+
+function IndexPageHoc({ isIssue, showUsers }) {
   return ({
     articles,
     articlesCount,
     issueArticle,
     loggedInUser,
     page,
+    users,
+    usersCount,
     what
-  }: IndexPageProps) => {
+  }: IndexPageProps | UsersPageProps) => {
     let paginationUrlFunc
+    let isUsers
     switch (what) {
       case 'top':
         paginationUrlFunc = routes.articlesTop
@@ -42,6 +54,14 @@ function IndexPageHoc(isIssue = false) {
         break
       case 'latest-followed':
         paginationUrlFunc = routes.articlesLatestFollowed
+        break
+      case 'users-top':
+        paginationUrlFunc = (page) => routes.users({ page, sort: 'score' })
+        isUsers = true
+        break
+      case 'users-latest':
+        paginationUrlFunc = (page) => routes.users({ page })
+        isUsers = true
         break
     }
     const { setTitle } = React.useContext(AppContext)
@@ -83,6 +103,22 @@ function IndexPageHoc(isIssue = false) {
           >
             Top
           </CustomLink>
+          {showUsers &&
+            <>
+              <CustomLink
+                className={`tab-item${what === 'users-top' ? ' active' : ''}`}
+                href={routes.users({ sort: 'score' })}
+              >
+                Top Users
+              </CustomLink>
+              <CustomLink
+                className={`tab-item${what === 'users-latest' ? ' active' : ''}`}
+                href={routes.users()}
+              >
+                New Users
+              </CustomLink>
+            </>
+          }
           <CustomLink
             className="tab-item"
             href={isIssue ? routes.issueNew(issueArticle.slug) : routes.articleNew()}
@@ -90,17 +126,28 @@ function IndexPageHoc(isIssue = false) {
             <i className="ion-edit" /> New {isIssue ? 'thread' : 'article'}
           </CustomLink>
         </div>
-        <ArticleList {...{
-          articles,
-          articlesCount,
-          isIssue,
-          issueArticle,
-          loggedInUser,
-          page,
-          paginationUrlFunc,
-          showAuthor: true,
-          what,
-        }}/>
+        {isUsers ?
+          <UserList {...{
+            loggedInUser,
+            page,
+            paginationUrlFunc,
+            users,
+            usersCount,
+            what,
+          }}/>
+          :
+          <ArticleList {...{
+            articles,
+            articlesCount,
+            isIssue,
+            issueArticle,
+            loggedInUser,
+            page,
+            paginationUrlFunc,
+            showAuthor: true,
+            what,
+          }}/>
+        }
       </div>
     )
   }

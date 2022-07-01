@@ -1,3 +1,7 @@
+const url = require('url');
+
+const { sendJsonHttp } = require('ourbigbook/web_api')
+
 const router = require('express').Router()
 const passport = require('passport')
 const auth = require('../auth')
@@ -45,15 +49,10 @@ router.param('username', function(req, res, next, username) {
 // Login to the website.
 router.post('/login', async function(req, res, next) {
   try {
-    if (!req.body.user) {
-      throw new lib.ValidationError('user cannot be empty')
-    }
-    if (!req.body.user.username) {
-      throw new lib.ValidationError({ username: 'cannot be empty' })
-    }
-    if (!req.body.user.password) {
-      throw new lib.ValidationError({ password: 'cannot be empty' })
-    }
+    const body = lib.validateParam(req, 'body')
+    const user = lib.validateParam(body, 'user')
+    const username = lib.validateParam(user, 'username')
+    const password = lib.validateParam(user, 'password')
     await authenticate(req, res, next)
   } catch(error) {
     next(error);
@@ -93,28 +92,68 @@ router.get('/users/:username', auth.optional, async function(req, res, next) {
   }
 })
 
+async function sendEmail({ subject, html, text, user }) {
+  if (process.env.OURBIGBOOK_SEND_EMAIL === '1' || config.isProduction) {
+    const sgMail = require('@sendgrid/mail')
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+    const msg = {
+      to: user.email,
+      from: 'ciro@ourbigbook.com',
+      subject,
+      text,
+      html,
+    }
+    await sgMail.send(msg)
+  } else {
+    console.log(`Email sent:
+to: ${user.email}
+subject: ${subject}
+text: ${text}
+html: ${html}
+`)
+  }
+}
+
 // Create a new user.
 router.post('/users', async function(req, res, next) {
   try {
-    if (!req.body.user) {
-      throw new lib.ValidationError('user cannot be empty')
+    const body = lib.validateParam(req, 'body')
+    const userPost = lib.validateParam(body, 'user')
+    const username = lib.validateParam(userPost, 'username')
+    const email = lib.validateParam(userPost, 'email')
+    const password = lib.validateParam(userPost, 'password')
+    if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+      ;({data, status} = await sendJsonHttp(
+        'POST',
+        '/recaptcha/api/siteverify',
+        {
+          contentType: 'application/x-www-form-urlencoded',
+          https: true,
+          hostname: 'www.google.com',
+          validateStatus: () => true,
+          body: new url.URLSearchParams({
+            secret: process.env.RECAPTCHA_SECRET_KEY,
+            response: req.body.recaptchaToken,
+          }).toString(),
+        }
+      ))
+      if (status !== 200) {
+        return res.sendStatus(503)
+      }
+      if (!data.success) {
+        console.error(data);
+        throw new lib.ValidationError(['reCAPTCHA failed'])
+      }
     }
-    if (!req.body.user.username) {
-      throw new lib.ValidationError({ username: 'cannot be empty' })
-    }
-    if (!req.body.user.email) {
-      throw new lib.ValidationError({ email: 'cannot be empty' })
-    }
-    if (!req.body.user.password) {
-      throw new lib.ValidationError({ password: 'cannot be empty' })
-    }
-    let user = new (req.app.get('sequelize').models.User)()
-    user.username = req.body.user.username
-    user.displayName = req.body.user.displayName
-    user.email = req.body.user.email
+    const sequelize = req.app.get('sequelize')
+    const user = new (sequelize.models.User)()
+    user.username = username
+    user.displayName = userPost.displayName
+    user.email = email
     user.ip = lib.getClientIp(req)
-    req.app.get('sequelize').models.User.setPassword(user, req.body.user.password)
+    sequelize.models.User.setPassword(user, password)
     if (config.isTest) {
+      // Authenticate all users automatically.
       user.verified = true
     }
     await user.saveSideEffects()
@@ -122,9 +161,14 @@ router.post('/users', async function(req, res, next) {
       return authenticate(req, res, next, { forceVerify: true })
     }
     if (!config.isProduction && !config.isTest) {
-      // TODO this will go into the general email send fallback.
-      const verificationMessage = `Your verification link is: ${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`
-      console.log(verificationMessage);
+      sendEmail({
+        user,
+        subject: `Verify your OurBigBook.com account`,
+        html: `<p>Click <a href="${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}">this verification link</a>.</p>
+<p>Also check your SPAM box if the email is not visible there.</p>
+`,
+        text: `Your verification link is: ${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`,
+      })
     }
     return res.json({ user: await user.toJson(user) })
   } catch(error) {

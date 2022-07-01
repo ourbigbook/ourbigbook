@@ -148,10 +148,10 @@ class WebApi {
     return this.req('get', `users${encodeGetParamsWithOffset(opts)}`)
   }
 
-  async userCreate(attrs) {
+  async userCreate(attrs, recaptchaToken) {
     return this.req('post',
       `users`,
-      { body: { user: attrs } },
+      { body: { user: attrs, recaptchaToken } },
     );
   }
 
@@ -201,7 +201,7 @@ class WebApi {
 
 // https://stackoverflow.com/questions/6048504/synchronous-request-in-node-js/53338670#53338670
 async function sendJsonHttp(method, path, opts={}) {
-  const { body, getToken, https, hostname, port, validateStatus } = opts
+  const { body, contentType, getToken, https, hostname, port, validateStatus } = opts
   let http
   if (https) {
     http = 'https'
@@ -209,7 +209,7 @@ async function sendJsonHttp(method, path, opts={}) {
     http = 'http'
   }
   const headers = {
-    "Content-Type": "application/json",
+    "Content-Type": contentType || "application/json",
   }
   if (getToken) {
     const token = getToken()
@@ -225,7 +225,7 @@ async function sendJsonHttp(method, path, opts={}) {
     url = path
   }
   const response = await axios({
-    data: opts.body,
+    data: body,
     headers,
     method,
     url,

@@ -221,6 +221,20 @@ it('api: create an article and see it on global feed', async () => {
 
     // Article creation error cases.
 
+      // Cannot create article if logged out.
+      test.disableToken()
+      article = createArticleArg({ i: 1 })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assert.strictEqual(status, 401)
+      test.enableToken()
+
+      // Cannot create article if token is given but wrong.
+      test.enableToken('asdfqwer')
+      article = createArticleArg({ i: 1 })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assert.strictEqual(status, 401)
+      test.enableToken(user.token)
+
       // Recreating an article with POST is not allowed.
       article = createArticleArg({ i: 0, bodySource: 'Body 1' })
       ;({data, status} = await test.webApi.articleCreate(article))

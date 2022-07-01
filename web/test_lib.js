@@ -265,6 +265,7 @@ async function generateDemoData(params) {
         username,
         displayName,
         email: `user${i}@mail.com`,
+        verified: true,
       }
       if (image) {
         userArg.image = image
@@ -500,7 +501,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     if (verbose) console.error('Article update');
     let i = 0
     for (const article of articles) {
-      if (verbose) console.error(`${i} authorId=${article.file.authorId} title=${article.titleSource}`);
+      if (verbose) console.error(`${i} authorId=${article.file.authorId} title=${article.file.titleSource}`);
       await article.rerender()
       i++
     }

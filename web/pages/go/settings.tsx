@@ -50,8 +50,8 @@ const Settings = () => {
     if (status !== 200) {
       setErrors(data.errors.body);
     }
-    if (data?.user) {
-      await setupUserLocalStorage(data, setErrors)
+    if (data.user) {
+      await setupUserLocalStorage(data.user, setErrors)
     }
     Router.push(routes.userView(loggedInUser.username));
   };

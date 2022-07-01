@@ -13,15 +13,17 @@ const permissions = [
   }],
   ['deleteComment', (loggedInUser, comment) => true],
 ]
-permissions.forEach(permission => [
-  permission[0],
-  (loggedInUser, ...args) => {
-    if (!loggedInUser) {
-      return 'You must be logged in to perform this action'
+permissions.forEach((permission, i, permissions) => {
+  permissions[i] = [
+    permission[0],
+    (loggedInUser, ...args) => {
+      if (!loggedInUser) {
+        return 'You must be logged in to perform this action'
+      }
+      return permission[1](loggedInUser, ...args)
     }
-    return permission[1](loggedInUser, ...args)
-  }
-])
+  ]
+})
 module.exports = {}
 for (const [name, func] of permissions) {
   module.exports[name] = (loggedInUser, ...args) => (loggedInUser && loggedInUser.admin) ? false : func(loggedInUser, ...args)

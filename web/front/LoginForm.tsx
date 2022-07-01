@@ -1,10 +1,11 @@
 import Router from 'next/router'
 import React from 'react'
 
+import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie, setupUserLocalStorage } from 'front'
 import ListErrors from 'front/ListErrors'
 import Label from 'front/Label'
 import { webApi } from 'front/api'
-import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie, setupUserLocalStorage } from 'front'
+import routes from 'front/routes'
 
 const LoginForm = ({ register = false }) => {
   const [isLoading, setLoading] = React.useState(false);
@@ -43,15 +44,19 @@ const LoginForm = ({ register = false }) => {
       let data, status;
       if (register) {
         ({ data, status } = await webApi.userCreate({ displayName, username, email, password }));
+        Router.push(routes.userVerify(data.user.email))
       } else {
         ({ data, status } = await webApi.userLogin({ username, password }));
+        if (!data.verified) {
+          Router.push(routes.userVerify(data.user.email))
+        }
+        if (data.user) {
+          await setupUserLocalStorage(data.user, setErrors)
+          Router.back()
+        }
       }
-      if (status !== 200 && data?.errors) {
+      if (status !== 200 && data.errors) {
         setErrors(data.errors);
-      }
-      if (data?.user) {
-        await setupUserLocalStorage(data, setErrors)
-        Router.back()
       }
     } catch (error) {
       console.error(error);

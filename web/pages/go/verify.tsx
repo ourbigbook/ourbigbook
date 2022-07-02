@@ -4,18 +4,25 @@ import Router from 'next/router'
 import useLoggedInUser from 'front/useLoggedInUser'
 import { AppContext, setupUserLocalStorage } from 'front'
 import routes from 'front/routes'
+import { UserType } from 'front/types/UserType'
 
-function VerifyPage({ code, email, user, verificationOk }) {
+export interface VerifyPageProps {
+  code?: string;
+  email?: string;
+  user?: UserType;
+  verificationOk?: boolean;
+}
+
+function VerifyPage({ code, email, user, verificationOk } : VerifyPageProps) {
   const { setTitle } = React.useContext(AppContext)
   const loggedInUser = useLoggedInUser()
   if (loggedInUser) {
     Router.push(routes.home())
   }
-  React.useEffect(async () => {
+  React.useEffect(() => {
     setTitle('Verify your account')
     if (verificationOk) {
-      await setupUserLocalStorage(user)
-      Router.push(routes.home())
+      setupUserLocalStorage(user).then(() => Router.push(routes.home()))
     }
   })
   return (
@@ -41,7 +48,7 @@ import { MyGetServerSideProps } from 'front/types'
 export const getServerSideProps = async ({ params = {}, req, res }) => {
   const email = req.query.email
   const code = req.query.code
-  let props = {}
+  let props: VerifyPageProps = {}
   if (email) {
     props.email = email
     if (code) {

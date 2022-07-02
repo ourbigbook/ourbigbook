@@ -8,4 +8,5 @@ export type UserType = {
   following: boolean;
   score: number,
   followerCount: number,
+  createdAt: number,
 };

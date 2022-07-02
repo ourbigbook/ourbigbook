@@ -20,8 +20,8 @@ function renderRefCallback(elem) {
 const Article = ({
   article,
   comments,
-  commentsCount,
-  isIssue,
+  commentsCount=0,
+  isIssue=false,
   issuesCount,
   latestIssues,
   loggedInUser,

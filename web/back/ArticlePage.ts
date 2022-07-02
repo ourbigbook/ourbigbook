@@ -1,8 +1,17 @@
 import { getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
 import { MyGetServerSideProps } from 'front/types'
+import { UserType } from 'front/types/UserType'
 
-export const getServerSidePropsArticleHoc = ({ includeIssues, loggedInUserCache }={}): MyGetServerSideProps => {
+export const getServerSidePropsArticleHoc = ({
+  includeIssues=false,
+  loggedInUserCache,
+}:
+  {
+    includeIssues?: boolean,
+    loggedInUserCache?: UserType,
+  }
+={}): MyGetServerSideProps => {
   return async ({ params: { slug }, req, res }) => {
     if (slug instanceof Array) {
       const sequelize = req.sequelize

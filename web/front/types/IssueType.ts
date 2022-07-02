@@ -11,6 +11,7 @@ export type IssueType = {
   number: number;
   render: string;
   score: number;
-  source: string;
+  botySource: string;
+  titleSource: string;
   updatedAt: number;
 };

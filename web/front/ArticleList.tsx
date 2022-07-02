@@ -11,14 +11,20 @@ import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
+import { CommentType } from 'front/types/CommentType'
+import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 
 export type ArticleListProps = {
-  articles: ArticleType[];
+  articles: (ArticleType & IssueType)[];
   articlesCount: number;
+  comments?: Comment[];
+  commentsCount?: number;
+  issueArticle?: ArticleType;
+  isIssue?: boolean;
   loggedInUser?: UserType,
   page: number;
-  paginationUrlFunc: PaginationPropsUrlFunc;
+  paginationUrlFunc?: PaginationPropsUrlFunc;
   showAuthor: boolean;
   what: string;
 }
@@ -28,7 +34,7 @@ const ArticleList = ({
   articlesCount,
   comments,
   commentsCount,
-  isIssue,
+  isIssue=false,
   issueArticle,
   loggedInUser,
   page,

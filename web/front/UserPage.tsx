@@ -18,14 +18,18 @@ import ArticleInfo from 'front/ArticleInfo'
 import { IndexPageProps } from 'front/IndexPage'
 import { ArticleType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
+import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 
 export interface UserPageProps {
   article?: ArticleType;
-  articles?: ArticleType[];
+  articles?: (ArticleType & IssueType)[];
   articlesCount?: number;
   authoredArticleCount: number;
   comments?: CommentType[];
+  issuesCount?: number;
+  latestIssues?: IssueType[];
+  topIssues?: IssueType[];
   loggedInUser?: UserType;
   page: number;
   user: UserType;

@@ -14,12 +14,11 @@ import { ArticleType } from 'front/types/ArticleType'
 import { UserType } from 'front/types/UserType'
 
 export type UserListProps = {
-  users: UserType[];
-  userCount: number;
-  loggedInUser?: UserType,
+  loggedInUser?: UserType;
   page: number;
   paginationUrlFunc: PaginationPropsUrlFunc;
-  showAuthor: boolean;
+  users: UserType[];
+  usersCount: number;
   what: string;
 }
 

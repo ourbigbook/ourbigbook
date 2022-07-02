@@ -109,8 +109,7 @@ async function sendEmail({ subject, html, text, user }) {
 to: ${user.email}
 subject: ${subject}
 text: ${text}
-html: ${html}
-`)
+html: ${html}`)
   }
 }
 
@@ -165,8 +164,7 @@ router.post('/users', async function(req, res, next) {
         user,
         subject: `Verify your OurBigBook.com account`,
         html: `<p>Click <a href="${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}">this verification link</a>.</p>
-<p>Also check your SPAM box if the email is not visible there.</p>
-`,
+<p>Also check your SPAM box if the email is not visible there.</p>`,
         text: `Your verification link is: ${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`,
       })
     }

@@ -5,14 +5,15 @@ const ourbigbook = require('ourbigbook')
 
 function getOrder(req) {
   let sort = req.query.sort;
+  const default_ = 'createdAt'
   if (sort) {
     if (sort === 'createdAt' || sort === 'score') {
       return [sort]
     } else {
-      return [,`Invalid sort value: '${sort}'`]
+      return [default_, `Invalid sort value: '${sort}'`]
     }
   } else {
-    return ['createdAt']
+    return [default_]
   }
 }
 

@@ -13,23 +13,17 @@ import { UserType } from 'front/types/UserType'
 import { DisplayAndUsername } from 'front/user'
 
 export interface IndexPageProps {
-  articles: ArticleType[];
-  articlesCount: number;
+  articles?: ArticleType[];
+  articlesCount?: number;
   issueArticle?: ArticleType;
   loggedInUser?: UserType;
   page: number;
+  users?: UserType[];
+  usersCount?: number;
   what: string;
 }
 
-export interface UsersPageProps {
-  users: UserType[];
-  usersCount: number;
-  loggedInUser?: UserType;
-  page: number;
-  what: string;
-}
-
-function IndexPageHoc({ isIssue, showUsers }) {
+function IndexPageHoc({ isIssue=false, showUsers=false }) {
   return ({
     articles,
     articlesCount,
@@ -39,7 +33,7 @@ function IndexPageHoc({ isIssue, showUsers }) {
     users,
     usersCount,
     what
-  }: IndexPageProps | UsersPageProps) => {
+  }: IndexPageProps) => {
     let paginationUrlFunc
     let isUsers
     switch (what) {

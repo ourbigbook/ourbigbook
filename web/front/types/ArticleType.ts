@@ -9,12 +9,12 @@ export interface Article {
 }
 
 export type ArticleType = {
+  author: UserType,
   body: string;
   createdAt: number;
   file: {
-    author: UserType,
-    title: string,
-    body: string,
+    titleSource: string,
+    bodySource: string,
   };
   id: number;
   liked: boolean;
@@ -22,7 +22,7 @@ export type ArticleType = {
   score: number;
   slug: string;
   tagList: string[];
-  title: string;
+  titleRender: string;
   topicId: string;
   updatedAt: number;
 };

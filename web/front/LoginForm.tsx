@@ -136,7 +136,7 @@ const LoginForm = ({ register = false }) => {
           {`${register ? REGISTER_ACTION : LOGIN_ACTION}`}
         </button>
       </form>
-      {process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY &&
+      {config.useCaptcha &&
         <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
       }
     </>

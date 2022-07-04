@@ -74,7 +74,7 @@ module.exports = {
     escapeUsername,
   ]),
   revalidate: 10,
-  useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY && !isTest,
+  useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !isTest,
   usernameMinLength: 3,
   usernameMaxLength: 40,
   verbose: process.env.VERBOSE,

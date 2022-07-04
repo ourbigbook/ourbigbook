@@ -6445,8 +6445,8 @@ heroku config:set -a ourbigbook NEXT_PUBLIC_RECAPTCHA_SITE_KEY=site_key
 
 Aditionally, also setup a separate localhost reCAPTCHA to test that it is working:
 ``
-echo ourbigbook RECAPTCHA_SECRET_KEY=secret_localhost_key >> web/.env
-echo ourbigbook NEXT_PUBLIC_RECAPTCHA_SITE_KEY=site_localhost_key >> web/.env
+echo RECAPTCHA_SECRET_KEY=secret_localhost_key >> web/.env
+echo NEXT_PUBLIC_RECAPTCHA_SITE_KEY=site_localhost_key >> web/.env
 ``
 Although it is possible to use a single reCAPTCHA for both production and development, Google recommends having separate ones.
 

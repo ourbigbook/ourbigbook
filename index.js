@@ -4425,7 +4425,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         // Required by calculate_id.
         validate_ast(ast, context);
 
-        const is_synonym = ast.validation_output.synonym.boolean;
+        let is_synonym = ast.validation_output.synonym.boolean;
         const header_level = ast.validation_output.level.positive_nonzero_integer
 
         // splitDefault propagation to children.
@@ -4445,22 +4445,26 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (is_synonym) {
           if (options.cur_header === undefined) {
             const message = `the first header of an input file cannot be a synonym`;
-            parse_error(state, message, ast.args.level.source_location);
-          }
-          if (header_level !== 1) {
-            const message = `synonym headers must be h1, got: ${header_level}`;
-            parse_error(state, message, ast.args.level.source_location);
-          }
-          ast.synonym = options.cur_header.id;
-          if (ast.args.title2 !== undefined) {
-            if (ast.args.title2.length > 0) {
-              const message = `the title2 of synonym headers must be empty`;
+            parse_error(state, message, ast.args.synonym.source_location);
+            // Hack it to behave like a non-synonym. This is the easiest way to avoid further errors.
+            is_synonym = false
+          } else {
+            if (header_level !== 1) {
+              const message = `synonym headers must be h1, got: ${header_level}`;
               parse_error(state, message, ast.args.level.source_location);
             }
-            options.cur_header.title2s.push(ast);
+            ast.synonym = options.cur_header.id;
+            if (ast.args.title2 !== undefined) {
+              if (ast.args.title2.length > 0) {
+                const message = `the title2 of synonym headers must be empty`;
+                parse_error(state, message, ast.args.level.source_location);
+              }
+              options.cur_header.title2s.push(ast);
+            }
+            context.synonym_headers.add(ast);
           }
-          context.synonym_headers.add(ast);
-        } else {
+        }
+        if (!is_synonym){
           prev_header = options.cur_header;
           options.cur_header = ast;
           cur_header_level = header_level + options.h_parse_level_offset;

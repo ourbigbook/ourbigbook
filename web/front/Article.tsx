@@ -1,5 +1,6 @@
 import React from 'react'
 
+import { SignupOrLogin } from 'front'
 import Comment from 'front/Comment'
 import CommentInput from 'front/CommentInput'
 import { CommentType } from 'front/types/CommentType'
@@ -37,7 +38,10 @@ const Article = ({
           {' '}
         </>
       }
-      <a href={routes.issueNew(article.slug)}><i className="ion-edit" /> New thread</a>
+      {loggedInUser
+        ? <a href={routes.issueNew(article.slug)}><i className="ion-edit" /> New thread</a>
+        : <SignupOrLogin to="create threads"/>
+      }
     </>
   }
   return <>

@@ -1,6 +1,7 @@
 import { useRouter } from 'next/router'
 import React from 'react'
 
+import { SignupOrLogin } from 'front'
 import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
@@ -40,18 +41,7 @@ const CommentInput = ({ comments, loggedInUser, issueNumber, setComments }) => {
   };
   useCtrlEnterSubmit(handleSubmit)
   if (!loggedInUser) {
-    return (
-      <>
-        <CustomLink href={routes.userLogin()}>
-          {LOGIN_ACTION}
-        </CustomLink>
-        {' '}or{' '}
-        <CustomLink href={routes.userNew()}>
-          {decapitalize(REGISTER_ACTION)}
-        </CustomLink>
-        {' '}to add comments on this article.
-      </>
-    );
+    return <SignupOrLogin to="comment on this issue"/>
   }
 
   return (

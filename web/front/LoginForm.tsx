@@ -88,6 +88,7 @@ const LoginForm = ({ register = false }) => {
           <>
             <Label label="Display name">
               <input
+                autoComplete="name"
                 type="text"
                 placeholder="Display name"
                 value={displayName}

@@ -1164,7 +1164,7 @@ if (commander.helpMacros) {
           let data, status
           try {
             ;({ data, status } = await webApi.articleCreateOrUpdate(
-              { title: article.title, body: article.body },
+              { titleSource: article.title, bodySource: article.body },
               { path: article.inpath, render }
             ))
           } catch(err) {

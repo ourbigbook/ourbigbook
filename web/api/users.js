@@ -93,23 +93,25 @@ router.get('/users/:username', auth.optional, async function(req, res, next) {
 })
 
 async function sendEmail({ subject, html, text, user }) {
-  if (process.env.OURBIGBOOK_SEND_EMAIL === '1' || config.isProduction) {
-    const sgMail = require('@sendgrid/mail')
-    sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-    const msg = {
-      to: user.email,
-      from: 'ciro@ourbigbook.com',
-      subject,
-      text,
-      html,
-    }
-    await sgMail.send(msg)
-  } else {
-    console.log(`Email sent:
+  if (!config.isTest) {
+    if (process.env.OURBIGBOOK_SEND_EMAIL === '1' || config.isProduction) {
+      const sgMail = require('@sendgrid/mail')
+      sgMail.setApiKey(process.env.SENDGRID_API_KEY)
+      const msg = {
+        to: user.email,
+        from: 'ciro@ourbigbook.com',
+        subject,
+        text,
+        html,
+      }
+      await sgMail.send(msg)
+    } else {
+      console.log(`Email sent:
 to: ${user.email}
 subject: ${subject}
 text: ${text}
 html: ${html}`)
+    }
   }
 }
 
@@ -159,15 +161,13 @@ router.post('/users', async function(req, res, next) {
     if (config.isTest) {
       return authenticate(req, res, next, { forceVerify: true })
     }
-    if (!config.isProduction && !config.isTest) {
-      sendEmail({
-        user,
-        subject: `Verify your OurBigBook.com account`,
-        html: `<p>Click <a href="${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}">this verification link</a>.</p>
+    sendEmail({
+      user,
+      subject: `Verify your OurBigBook.com account`,
+      html: `<p>Click <a href="${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}">this verification link</a>.</p>
 <p>Also check your SPAM box if the email is not visible there.</p>`,
-        text: `Your verification link is: ${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`,
-      })
-    }
+      text: `Your verification link is: ${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`,
+    })
     return res.json({ user: await user.toJson(user) })
   } catch(error) {
     next(error);

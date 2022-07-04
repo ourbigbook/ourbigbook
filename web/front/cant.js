@@ -24,7 +24,13 @@ permissions.forEach((permission, i, permissions) => {
     }
   ]
 })
-module.exports = {}
+// I would rather operate on toplevel module.exports here directly as in:
+//module.exports = {}
+// but TypeScript doesn't like that and I don't have a solution for it:
+// * https://github.com/microsoft/TypeScript/issues/32046
+// * https://stackoverflow.com/questions/57784757/after-dynamically-export-files-typescript-cannot-find-module-file-index-tsx
+const cant = {}
 for (const [name, func] of permissions) {
-  module.exports[name] = (loggedInUser, ...args) => (loggedInUser && loggedInUser.admin) ? false : func(loggedInUser, ...args)
+  cant[name] = (loggedInUser, ...args) => (loggedInUser && loggedInUser.admin) ? false : func(loggedInUser, ...args)
 }
+exports.cant = cant

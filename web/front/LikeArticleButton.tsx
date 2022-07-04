@@ -2,7 +2,7 @@ import React from 'react'
 import Router from 'next/router'
 
 import { webApi } from 'front/api'
-import cant from 'front/cant'
+import { cant } from 'front/cant'
 import { buttonActiveClass } from 'front/config'
 import routes from 'front/routes'
 

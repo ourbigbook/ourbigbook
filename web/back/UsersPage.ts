@@ -4,6 +4,7 @@ import { getLoggedInUser } from 'back'
 import { articleLimit } from 'front/config'
 import { getOrder, getPage } from 'front/js'
 import { IndexPageProps } from 'front/IndexPage'
+import { UserType } from 'front/types/UserType'
 import { MyGetServerSideProps } from 'front/types'
 
 export const getServerSidePropsUsers: MyGetServerSideProps = async (
@@ -28,7 +29,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
   } else {
     what = 'users-top'
   }
-  const users = await Promise.all(userRows.map(
+  const users: UserType[] = await Promise.all(userRows.map(
     (user) => { return user.toJson(loggedInUser) }))
   const props: IndexPageProps = {
     users,

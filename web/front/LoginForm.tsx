@@ -3,6 +3,7 @@ import React from 'react'
 import Script from 'next/script'
 
 import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie, setupUserLocalStorage } from 'front'
+import config from 'front/config'
 import ListErrors from 'front/ListErrors'
 import Label from 'front/Label'
 import { webApi } from 'front/api'
@@ -42,7 +43,7 @@ const LoginForm = ({ register = false }) => {
     e.preventDefault();
     setLoading(true);
     let recaptchaToken
-    if (process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+    if (config.useCaptcha) {
       recaptchaToken = await new Promise((resolve, reject) => {
         grecaptcha.ready(function() {
           grecaptcha.execute(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY, {action: 'submit'}).then(function(token) {

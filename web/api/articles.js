@@ -3,6 +3,7 @@ const Op = require('sequelize').Op
 
 const auth = require('../auth')
 const { cant } = require('../front/cant')
+const front = require('../front/js')
 const convert = require('../convert')
 const lib = require('./lib')
 const config = require('../front/config')
@@ -92,21 +93,21 @@ async function createOrUpdateArticle(req, res, opts) {
   const body = lib.validateParam(req, 'body')
   const articleData = lib.validateParam(body, 'article')
   const bodySource = lib.validateParam(articleData, 'bodySource', {
-    validators: [ lib.isString ],
+    validators: [ front.isString ],
     defaultValue: ''
   })
   const titleSource = lib.validateParam(articleData, 'titleSource', {
-    validators: [lib.isString, lib.isTruthy]
+    validators: [front.isString, front.isTruthy]
   })
   const render = lib.validateParam(body, 'render', {
-    validators: [lib.isBoolean], defaultValue: true
+    validators: [front.isBoolean], defaultValue: true
   })
   const articles = await convert.convertArticle({
     author: loggedInUser,
     bodySource,
     forceNew: opts.forceNew,
     sequelize,
-    path: lib.validateParam(body, 'path', { validators: [ lib.isString ], defaultValue: undefined }),
+    path: lib.validateParam(body, 'path', { validators: [ front.isString ], defaultValue: undefined }),
     render,
     titleSource,
   })

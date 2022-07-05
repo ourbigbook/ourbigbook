@@ -1,3 +1,9 @@
+// Ideally, this would be moved entirely to front/js.js to share functionality backend API with Next.js.
+// There is just one thing that we haven't managed/tried to much to do on Next.js but which works on Express:
+// to raise error pages like 404 by throwing exceptions. So we are keeping only the exception throwing stuff
+// here for now. This type of exception interface is very convenient, as it allows you to stop processing
+// immediately and return an error from subcalls.
+
 const config = require('../front/config')
 const front = require('../front/js')
 
@@ -14,12 +20,6 @@ async function getArticle(req, res, options={}) {
   return article
 }
 
-// https://stackoverflow.com/questions/14382725/how-to-get-the-correct-ip-address-of-a-client-into-a-node-socket-io-app-hosted-o/14382990#14382990
-// Works on Heroku 2021.
-function getClientIp(req) {
-  return req.header('x-forwarded-for')
-}
-
 function getOrder(req) {
   const [sort, err] = front.getOrder(req)
   if (err) {
@@ -34,16 +34,16 @@ function getOrder(req) {
 function getLimitAndOffset(req, res) {
   return [
     validateParam(req.query, 'limit', {
-      typecast: typecastInteger,
+      typecast: front.typecastInteger,
       validators: [
-        isNonNegativeInteger,
-        isSmallerOrEqualTo(config.articleLimitMax),
+        front.isNonNegativeInteger,
+        front.isSmallerOrEqualTo(config.articleLimitMax),
       ],
       defaultValue: config.articleLimit
     }),
     validateParam(req.query, 'offset', {
-      typecast: typecastInteger,
-      validators: [isNonNegativeInteger],
+      typecast: front.typecastInteger,
+      validators: [front.isNonNegativeInteger],
       defaultValue: 0
     }),
   ]
@@ -62,39 +62,9 @@ class ValidationError extends Error {
   }
 }
 
-function typecastInteger(s) {
-  const i = Number(s)
-  let ok = s !== '' && Number.isInteger(i)
-  return [ok, i]
-}
-
-function isNonNegativeInteger(i) {
-  return i >= 0
-}
-
-function isPositiveInteger(i) {
-  return i > 0
-}
-
-function isBoolean(tf) {
-  return typeof tf === 'boolean'
-}
-
-function isSmallerOrEqualTo(max) {
-  return (n) => n <= max
-}
-
-function isString(s) {
-  return typeof s === 'string'
-}
-
-function isTruthy(s) {
-  return !!s
-}
-
 function validate(inputString, validators, prop) {
   if (validators === undefined) {
-    validators = [isTruthy]
+    validators = [front.isTruthy]
   }
   for (const validator of validators) {
     if (!validator(inputString)) {
@@ -136,7 +106,7 @@ function validateParam(obj, prop, opts={}) {
   } else {
     if (typecast !== undefined) {
       let ok
-      ;[ok, param] = typecast(param)
+      ;[param, ok] = typecast(param)
       if (!ok) {
         throw new ValidationError(
           { [prop]: [`typecast ${typecast.name} failed on ${prop} = "${param}"`] },
@@ -152,16 +122,8 @@ function validateParam(obj, prop, opts={}) {
 module.exports = {
   ValidationError,
   getArticle,
-  getClientIp,
   getLimitAndOffset,
   getOrder,
-  isBoolean,
-  isString,
-  isTruthy,
   validate,
   validateParam,
-  isNonNegativeInteger,
-  isSmallerOrEqualTo,
-  isPositiveInteger,
-  typecastInteger,
 }

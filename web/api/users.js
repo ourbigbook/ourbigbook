@@ -6,6 +6,7 @@ const router = require('express').Router()
 const passport = require('passport')
 const auth = require('../auth')
 const lib = require('./lib')
+const front = require('../front/js')
 const config = require('../front/config')
 const routes = require('../front/routes')
 
@@ -151,7 +152,7 @@ router.post('/users', async function(req, res, next) {
     user.username = username
     user.displayName = userPost.displayName
     user.email = email
-    user.ip = lib.getClientIp(req)
+    user.ip = front.getClientIp(req)
     sequelize.models.User.setPassword(user, password)
     if (config.isTest) {
       // Authenticate all users automatically.

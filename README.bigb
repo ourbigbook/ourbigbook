@@ -6395,6 +6395,8 @@ This is something that should be merged into Sequelize itself, or at least asked
 = OurBigBook Web email sending
 {parent=OurBigBook Web deployment}
 
+OurBigBook is currently hardcoded to send emails with Sendgrid. That provider was very easy to get started with, and has a free plan suitable for testing. Setup is described at: <OurBigBook Web email sending with Sendgrid>. Patches supporting other providers in a configurable way are welcome.
+
 In development mode, emails are all logged to the server stdout and not actually sent, unless you run as:
 ``
 OURBIGBOOK_SEND_EMAIL=1 npm run dev

@@ -260,11 +260,16 @@ it('api: create an article and see it on global feed', async () => {
         { titleSource: 'Error', bodySource: 'The \\notdefined' }))
       assert.strictEqual(status, 422)
 
-    // Access the article directly
-    ;({data, status} = await test.webApi.articleGet('user0/title-0'))
-    assertStatus(status, data)
-    assert.strictEqual(data.article.titleRender, 'title 0')
-    assert.match(data.article.render, /Body 0/)
+    // articleGet
+
+      // Access the article directly
+      ;({data, status} = await test.webApi.articleGet('user0/title-0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.article.titleRender, 'title 0')
+      assert.match(data.article.render, /Body 0/)
+
+      ;({data, status} = await test.webApi.articleGet('user0/dontexist'))
+      assert.strictEqual(status, 404)
 
     // See articles on global feed.
     ;({data, status} = await test.webApi.articleAll())
@@ -387,44 +392,60 @@ it('api: create an article and see it on global feed', async () => {
     assert.strictEqual(status, 422)
 
     if (testNext) {
-      ;({data, status} = await test.sendJsonHttp(
-        'GET',
-        '/',
-      ))
-      assertStatus(status, data)
+      // Logged in.
 
-      ;({data, status} = await test.sendJsonHttp(
-        'GET',
-        '/user0',
-      ))
-      assertStatus(status, data)
+        // Index.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          '/',
+        ))
+        assertStatus(status, data)
 
-      ;({data, status} = await test.sendJsonHttp(
-        'GET',
-        '/user0/title-0',
-      ))
-      assertStatus(status, data)
+        // User.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          '/user0',
+        ))
+        assertStatus(status, data)
+
+        // User that doesn't exist.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          '/dontexist',
+        ))
+        assert.strictEqual(status, 404)
+
+        // Article.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          '/user0/title-0',
+        ))
+        assertStatus(status, data)
 
       // Logged out.
-      test.disableToken()
-      ;({data, status} = await test.sendJsonHttp(
-        'GET',
-        '/',
-      ))
-      assertStatus(status, data)
 
-      ;({data, status} = await test.sendJsonHttp(
-        'GET',
-        '/user0',
-      ))
-      assertStatus(status, data)
+        // Index.
+        test.disableToken()
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          '/',
+        ))
+        assertStatus(status, data)
 
-      ;({data, status} = await test.sendJsonHttp(
-        'GET',
-        '/user0/title-0',
-      ))
-      assertStatus(status, data)
-      test.enableToken()
+        // User.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          '/user0',
+        ))
+        assertStatus(status, data)
+
+        // Article.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          '/user0/title-0',
+        ))
+        assertStatus(status, data)
+        test.enableToken()
     }
 
     // Create article with PUT.

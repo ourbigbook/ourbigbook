@@ -6,7 +6,7 @@ import { webApi } from 'front/api'
 import { formatDate } from 'front/date'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 
-const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
+const Issue = ({ comment, comments, id, loggedInUser, setComments }) => {
   const canModify =
     loggedInUser && loggedInUser?.username === comment?.author?.username;
   const router = useRouter();
@@ -40,4 +40,4 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
   );
 };
 
-export default Comment;
+export default Issue;

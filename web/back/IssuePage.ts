@@ -1,5 +1,7 @@
 import { getLoggedInUser } from 'back'
 import { MyGetServerSideProps } from 'front/types'
+import { ArticlePageProps } from 'front/ArticlePage'
+import { CommentType } from 'front/types/CommentType'
 
 export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
   return async ({ params: { slug, number: numberString }, req, res }) => {
@@ -25,17 +27,18 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
         Promise.all(issue.comments.map(comment => comment.toJson(loggedInUser))),
         sequelize.models.Comment.count({ where: { issueId: issue.id } }),
         issue.toJson(loggedInUser),
-        loggedInUser.toJson(),
+        loggedInUser ? loggedInUser.toJson() : undefined,
       ])
-      return {
-        props: {
-          article: issueJson,
-          comments,
-          commentsCount,
-          issueArticle: articleJson,
-          loggedInUser: loggedInUserJson,
-        }
-      };
+      const props: ArticlePageProps = {
+        article: issueJson,
+        comments: comments as CommentType[],
+        commentsCount,
+        issueArticle: articleJson,
+      }
+      if (loggedInUser) {
+        props.loggedInUser = loggedInUserJson
+      }
+      return { props }
     } else {
       throw new TypeError
     }

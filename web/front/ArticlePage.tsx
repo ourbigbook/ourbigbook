@@ -29,7 +29,7 @@ export interface ArticlePageProps {
   loggedInUser?: UserType;
   sameArticleByLoggedInUser?: string;
   topIssues?: IssueType[];
-  topicArticleCount: number;
+  topicArticleCount?: number;
 }
 
 const ArticlePageHoc = (isIssue=false) => {
@@ -54,7 +54,7 @@ const ArticlePageHoc = (isIssue=false) => {
       // https://github.com/cirosantilli/ourbigbook/issues/250
       setTitle(`${isIssue ? article.titleSource : article.file.titleSource} by ${displayAndUsernameText(author)}`)
     )
-    const showOthers = topicArticleCount > 1
+    const showOthers = topicArticleCount !== undefined && topicArticleCount > 1
     const showCreateMyOwn = !loggedInUser || author.username !== loggedInUser.username
     const canEdit = loggedInUser && (isIssue ? !cant.editIssue(loggedInUser, article) : loggedInUser.username === article.author.username)
     useEEdit(canEdit, article.slug)
@@ -69,34 +69,36 @@ const ArticlePageHoc = (isIssue=false) => {
               {' '}
               <FollowUserButton {...{ user: author, loggedInUser, showUsername: false }} />
             </div>
-            <div className="article-info article-info-2">
-              { showOthers&&
-                <CustomLink
-                  href={routes.topicArticlesTop(article.topicId)}
-                >
-                  <i className="ion-ios-people" /> {topicArticleCount - 1}<span className="mobile-hide"> article{
-                    topicArticleCount - 1 > 1 ? 's' : ''}</span> by others<span className="mobile-hide"> about "<span
-                     className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }} />"</span>
-                </CustomLink>
-              }
-              {showOthers && showCreateMyOwn && <>{' '}</> }
-              {(showCreateMyOwn && !isIssue) &&
-                <>
-                  {sameArticleByLoggedInUser === undefined
-                    ? <CustomLink
-                        href={routes.articleNewFrom(article.slug)}
-                      >
-                        <i className="ion-edit" /> Create my own version
-                      </CustomLink>
-                    : <CustomLink
-                        href={routes.articleView(sameArticleByLoggedInUser)}
-                      >
-                        <i className="ion-eye" /> View mine
-                      </CustomLink>
+            {!isIssue &&
+              <div className="article-info article-info-2">
+                  {showOthers &&
+                    <CustomLink
+                      href={routes.topicArticlesTop(article.topicId)}
+                    >
+                      <i className="ion-ios-people" /> {topicArticleCount - 1}<span className="mobile-hide"> article{
+                        topicArticleCount - 1 > 1 ? 's' : ''}</span> by others<span className="mobile-hide"> about "<span
+                        className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }} />"</span>
+                    </CustomLink>
                   }
-                </>
-              }
-            </div>
+                  {showOthers && showCreateMyOwn && <>{' '}</> }
+                  {(showCreateMyOwn) &&
+                    <>
+                      {sameArticleByLoggedInUser === undefined
+                        ? <CustomLink
+                            href={routes.articleNewFrom(article.slug)}
+                          >
+                            <i className="ion-edit" /> Create my own version
+                          </CustomLink>
+                        : <CustomLink
+                            href={routes.articleView(sameArticleByLoggedInUser)}
+                          >
+                            <i className="ion-eye" /> View mine
+                          </CustomLink>
+                      }
+                    </>
+                  }
+              </div>
+            }
             <ArticleInfo {...{ article, isIssue, issueArticle, loggedInUser }}/>
           </div>
           <div className="container page">

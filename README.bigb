@@ -6420,6 +6420,7 @@ Some research of different methods is shown at: https://cirosantilli.com/send-fr
   * From Name: OurBigBook.com
   * From Email Address: `notification@ourbigbook.com`
   * Reply to: `notification@ourbigbook.com`
+* we disabled their "link tracking" feature, which was turned on by default. While it is fund to track clicks, it is basically useless for transactional email, and it parse HTML and replaces the links with their tracking links, making things less clear for end users. It is also harder to debug.
 * integrate using web API
   * create an API key, and then save it on Heroku:
     ``

@@ -90,7 +90,7 @@ const LoginForm = ({ register = false }) => {
               <input
                 autoComplete="name"
                 type="text"
-                placeholder="Display name"
+                placeholder="John Smith"
                 value={displayName}
                 onChange={handleDisplayNameChange}
               />
@@ -101,7 +101,7 @@ const LoginForm = ({ register = false }) => {
           <input
             autoComplete="username"
             type="text"
-            placeholder="Username. a-z, 0-9, '-', e.g.: john-smith, johnsmith123"
+            placeholder="a-z, 0-9, '-', e.g.: john-smith, johnsmith123"
             value={username}
             onChange={handleUsernameChange}
           />

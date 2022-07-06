@@ -100,7 +100,10 @@ async function sendEmail({ subject, html, text, user }) {
       sgMail.setApiKey(process.env.SENDGRID_API_KEY)
       const msg = {
         to: user.email,
-        from: 'ciro@ourbigbook.com',
+        from: {
+          email: 'notification@ourbigbook.com',
+          name: 'OurBigBook.com',
+        },
         subject,
         text,
         html,

@@ -37,4 +37,4 @@ tmp2.bigb
 *.dump
 
 # TODO https://github.com/cirosantilli/ourbigbook/issues/254
-package-lock.json
+/package-lock.json

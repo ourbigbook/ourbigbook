@@ -42,8 +42,6 @@ db.sqlite3
 db.sqlite3-journal
 /.env
 
-package-lock.json
-
 # Temporary files
 *.tmp
 *.bak

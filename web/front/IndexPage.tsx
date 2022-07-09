@@ -41,18 +41,22 @@ function IndexPageHoc({ isIssue=false, showUsers=false }) {
   }: IndexPageProps) => {
     let paginationUrlFunc
     let isUsers
-    switch (what) {
-      case 'articles':
-        if (followed) {
-          paginationUrlFunc = (page) => routes.articlesFollowed({ page, sort: order })
-        } else {
-          paginationUrlFunc = (page) => routes.articles({ page, sort: order })
-        }
-        break
-      case 'users':
-        paginationUrlFunc = (page) => routes.users({ page, sort: order })
-        isUsers = true
-        break
+    if (isIssue) {
+      paginationUrlFunc = (page) => routes.issues(issueArticle.slug, { page, sort: order })
+    } else {
+      switch (what) {
+        case 'articles':
+          if (followed) {
+            paginationUrlFunc = (page) => routes.articlesFollowed({ page, sort: order })
+          } else {
+            paginationUrlFunc = (page) => routes.articles({ page, sort: order })
+          }
+          break
+        case 'users':
+          paginationUrlFunc = (page) => routes.users({ page, sort: order })
+          isUsers = true
+          break
+      }
     }
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(
@@ -83,13 +87,13 @@ function IndexPageHoc({ isIssue=false, showUsers=false }) {
           }
           <CustomLink
             className={`tab-item${what === 'articles' && order === 'createdAt' && !followed ? ' active' : ''}`}
-            href={isIssue ? routes.issuesLatest(issueArticle.slug) : routes.articles({ loggedInUser })}
+            href={isIssue ? routes.issues(issueArticle.slug, { sort: 'createdAt' }) : routes.articles({ loggedInUser })}
           >
             Latest
           </CustomLink>
           <CustomLink
             className={`tab-item${what === 'articles' && order === 'score' && !followed ? ' active' : ''}`}
-            href={isIssue ? routes.issuesTop(issueArticle.slug) : routes.articles({ loggedInUser, sort: 'score' })}
+            href={isIssue ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ loggedInUser, sort: 'score' })}
           >
             Top
           </CustomLink>

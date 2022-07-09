@@ -2,17 +2,13 @@ import { GetServerSideProps } from 'next'
 
 import { getLoggedInUser } from 'back'
 import { articleLimit } from 'front/config'
-import { getOrder, getPage } from 'front/js'
+import { getOrderAndPage } from 'front/js'
 import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
 
 export const getServerSidePropsIndexHoc = ({ followed=false }): MyGetServerSideProps => {
   return async ({ query, req, res }) => {
-    let order, err
-    ;[order, err] = getOrder(req)
-    if (err) { res.statusCode = 422 }
-    let pageNum
-    ;[pageNum, err] = getPage(query.page)
+    const [order, pageNum, err] = getOrderAndPage(req, query.page)
     if (err) { res.statusCode = 422 }
     const loggedInUser = await getLoggedInUser(req, res)
     let loggedInQuery

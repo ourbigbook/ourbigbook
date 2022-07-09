@@ -3,7 +3,7 @@ import ourbigbook from 'ourbigbook/dist/ourbigbook'
 import { getLoggedInUser } from 'back'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { articleLimit  } from 'front/config'
-import { getOrder, getPage } from 'front/js'
+import { getOrderAndPage } from 'front/js'
 import { MyGetServerSideProps } from 'front/types'
 import { UserPageProps } from 'front/UserPage'
 
@@ -23,11 +23,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           notFound: true
         }
       }
-      let order, err
-      ;[order, err] = getOrder(req)
-      if (err) { res.statusCode = 422 }
-      let pageNum
-      ;[pageNum, err] = getPage(query.page)
+      const [order, pageNum, err] = getOrderAndPage(req, query.page)
       if (err) { res.statusCode = 422 }
       let author, likedBy
       if (what !== 'home') {

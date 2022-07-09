@@ -67,13 +67,11 @@ const ArticleList = ({
           message = `Follow some users to see their posts here.`
         } else {
           message = (<>
-            There are no articles on this website yet.
-            Why don't you <a href={routes.articleNew()}>create a new one</a>?
+            There are no {isIssue ? 'issues' : 'articles'} on this {isIssue ? 'article' : 'website'} yet.
+            Why don't you <a href={isIssue ? routes.issueNew() : routes.articleNew()}>create a new one</a>?
           </>)
         }
         break
-      case 'issues':
-        message = 'There are no issues for this article'
       default:
         message = 'There are no articles matching this search'
     }

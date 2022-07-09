@@ -9,6 +9,19 @@ function getClientIp(req) {
   return req.header('x-forwarded-for')
 }
 
+function getOrderAndPage(req, page) {
+  const [order, orderErr] = getOrder(req)
+  const [pageNum, pageErr] = getPage(page)
+  let errs = []
+  if (orderErr) {
+    errs.push(orderErr)
+  }
+  if (pageErr) {
+    errs.push(pageErr)
+  }
+  return [order, pageNum, errs.length ? errs : undefined]
+}
+
 function getOrder(req) {
   let sort = req.query.sort;
   const default_ = 'createdAt'
@@ -64,7 +77,7 @@ function modifyEditorInput(title, body) {
 }
 
 /**
- * @param {string}
+ * @param {string} s
  * @returns {[number, boolean]}
  */
 function typecastInteger(s) {
@@ -100,6 +113,7 @@ function isTruthy(s) {
 module.exports = {
   getClientIp,
   getOrder,
+  getOrderAndPage,
   getPage,
   isBoolean,
   isNonNegativeInteger,

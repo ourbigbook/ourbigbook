@@ -80,7 +80,7 @@ const ArticleInfo = ({
     {isIssue &&
       <>
         {' '}
-        <span className="see-all"><a href={routes.issuesLatest(issueArticle.slug)}><i className="ion-eye" /> Other discussions</a></span>
+        <span className="see-all"><a href={routes.issues(issueArticle.slug)}><i className="ion-eye" /> Other discussions</a></span>
       </>
     }
   </div>

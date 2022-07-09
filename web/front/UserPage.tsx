@@ -31,6 +31,7 @@ export interface UserPageProps {
   latestIssues?: IssueType[];
   topIssues?: IssueType[];
   loggedInUser?: UserType;
+  order: string;
   page: number;
   user: UserType;
   what: string;
@@ -45,6 +46,7 @@ export default function UserPage({
   issuesCount,
   latestIssues,
   loggedInUser,
+  order,
   page,
   topIssues,
   user,
@@ -56,13 +58,10 @@ export default function UserPage({
   let paginationUrlFunc
   switch (what) {
     case 'likes':
-      paginationUrlFunc = page => routes.userViewLikes(user.username, page)
+      paginationUrlFunc = page => routes.userViewLikes(user.username, { page })
       break
-    case 'user-articles-top':
-      paginationUrlFunc = page => routes.userViewTop(user.username, page)
-      break
-    case 'user-articles-latest':
-      paginationUrlFunc = page => routes.userViewLatest(user.username, page)
+    case 'user-articles':
+      paginationUrlFunc = page => routes.userViewArticles(user.username, { page, sort: order })
       break
   }
   const canEdit = loggedInUser && loggedInUser?.username === username
@@ -119,14 +118,14 @@ export default function UserPage({
           Home
         </CustomLink>
         <CustomLink
-          href={routes.userViewTop(username)}
-          className={`tab-item${what === 'user-articles-top' ? ' active' : ''}`}
+          href={routes.userViewArticles(username, { sort: 'score' })}
+          className={`tab-item${what === 'user-articles' && order === 'score' ? ' active' : ''}`}
         >
           Top
         </CustomLink>
         <CustomLink
-          href={routes.userViewLatest(username)}
-          className={`tab-item${what === 'user-articles-latest' ? ' active' : ''}`}
+          href={routes.userViewArticles(username,  { sort: 'createdAt' })}
+          className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
         >
           Latest
         </CustomLink>

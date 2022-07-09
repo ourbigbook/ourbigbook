@@ -7,6 +7,7 @@ import LoadingSpinner from 'front/LoadingSpinner'
 import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import { AppContext } from 'front'
+import { UserLink, UserScore } from 'front/user'
 import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
@@ -19,7 +20,6 @@ export type UserListProps = {
   paginationUrlFunc: PaginationPropsUrlFunc;
   users: UserType[];
   usersCount: number;
-  what: string;
 }
 
 const UserList = ({
@@ -28,7 +28,6 @@ const UserList = ({
   paginationUrlFunc,
   users,
   usersCount,
-  what
 }: UserListProps) => {
   const router = useRouter();
   const { asPath, pathname, query } = router;
@@ -44,16 +43,22 @@ const UserList = ({
         <table className="list">
           <thead>
             <tr>
+              <th className="shrink">Score</th>
               <th className="shrink">User</th>
+              <th className="shrink">Username</th>
+              <th className="shrink">Followers</th>
               <th className="shrink">Joined</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user, i) => (
               <tr key={user.id}>
+                <td className="shrink right"><UserScore space={true} user={user} /></td>
                 <td className="shrink">
-                  <UserLinkWithImage user={user} />
+                  <UserLinkWithImage showUsername={false} showScore={false} user={user} />
                 </td>
+                <td className="shrink"><UserLink user={user}>@{user.username}</UserLink></td>
+                <td className="shrink right">{user.followerCount}</td>
                 <td className="shrink">{formatDate(user.createdAt)}</td>
               </tr>
             ))}

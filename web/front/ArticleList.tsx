@@ -20,6 +20,7 @@ export type ArticleListProps = {
   articlesCount: number;
   comments?: Comment[];
   commentsCount?: number;
+  followed: boolena;
   issueArticle?: ArticleType;
   isIssue?: boolean;
   loggedInUser?: UserType,
@@ -34,6 +35,7 @@ const ArticleList = ({
   articlesCount,
   comments,
   commentsCount,
+  followed,
   isIssue=false,
   issueArticle,
   loggedInUser,
@@ -57,20 +59,18 @@ const ArticleList = ({
       case 'likes':
         message = `${voice} liked any articles yet.`
         break
-      case 'user-articles-top':
-      case 'user-articles-latest':
+      case 'user-articles':
         message = `${voice} published any articles yet.`
         break
-      case 'top-followed':
-      case 'latest-followed':
-        message = `Follow some users to see their posts here.`
-        break
-      case 'top':
-      case 'latest':
-        message = (<>
-          There are no articles on this website yet.
-          Why don't you <a href={routes.articleNew()}>create a new one</a>?
-        </>)
+      case 'articles':
+        if (followed) {
+          message = `Follow some users to see their posts here.`
+        } else {
+          message = (<>
+            There are no articles on this website yet.
+            Why don't you <a href={routes.articleNew()}>create a new one</a>?
+          </>)
+        }
         break
       case 'issues':
         message = 'There are no issues for this article'

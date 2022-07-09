@@ -2,6 +2,8 @@ import React from 'react'
 
 import { defaultUserScoreTitle } from 'front/config'
 import { UserType } from 'front/types/UserType'
+import CustomLink from 'front/CustomLink'
+import routes from 'front/routes'
 
 export function displayAndUsernameText(user) {
   let ret = ''
@@ -15,8 +17,22 @@ export function displayAndUsernameText(user) {
   return ret
 }
 
+export function UserLink({ children, user }) {
+  return <CustomLink
+    href={routes.userView(user.username)}
+    className="author username"
+  >
+    {children}
+  </CustomLink>
+}
+
+export function UserScore({ space=false, user }) {
+  return <span title={defaultUserScoreTitle}>{user.score}{space ? ' ' : ''}<i className="ion-heart"></i></span>
+}
+
 export type DisplayAndUsernameProps = {
   user: UserType,
+  showScore?: boolean,
   showUsername?: boolean,
   showUsernameMobile?: boolean,
 }
@@ -24,6 +40,7 @@ export type DisplayAndUsernameProps = {
 export function DisplayAndUsername(
   {
     user,
+    showScore=true,
     showUsername,
     showUsernameMobile,
   }
@@ -70,7 +87,7 @@ export function DisplayAndUsername(
   return <>
     {mobileMandatoryPart}
     {mobileOptionalPart}
-    <span title={defaultUserScoreTitle}>{user.score}<i className="ion-heart"></i></span>
+    {showScore && <UserScore user={user} />}
     {mobileOptionalPartPost}
   </>
 }

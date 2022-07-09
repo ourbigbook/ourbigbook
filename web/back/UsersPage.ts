@@ -23,19 +23,14 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     order: [[order, 'DESC']],
     limit: articleLimit,
   })
-  let what
-  if (order === 'createdAt') {
-    what = 'users-latest'
-  } else {
-    what = 'users-top'
-  }
   const users: UserType[] = await Promise.all(userRows.map(
     (user) => { return user.toJson(loggedInUser) }))
   const props: IndexPageProps = {
+    order,
     users,
     usersCount,
     page: pageNum,
-    what,
+    what: 'users',
   }
   if (loggedInUser) {
     props.loggedInUser = await loggedInUser.toJson()

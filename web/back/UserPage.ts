@@ -3,16 +3,15 @@ import ourbigbook from 'ourbigbook/dist/ourbigbook'
 import { getLoggedInUser } from 'back'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { articleLimit  } from 'front/config'
-import { getPage } from 'front/js'
+import { getOrder, getPage } from 'front/js'
 import { MyGetServerSideProps } from 'front/types'
 import { UserPageProps } from 'front/UserPage'
 
 export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
   return async (context) => {
-    const { params: { page, uid }, req, res } = context
+    const { params: { uid }, query, req, res } = context
     if (
-      typeof uid === 'string' &&
-      ( typeof page === 'undefined' || typeof page === 'string' )
+      typeof uid === 'string'
     ) {
       const sequelize = req.sequelize
       const loggedInUser = await getLoggedInUser(req, res)
@@ -24,23 +23,19 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           notFound: true
         }
       }
-      const [pageNum, err] = getPage(page)
+      let order, err
+      ;[order, err] = getOrder(req)
       if (err) { res.statusCode = 422 }
-      let order
-      let author
-      let likedBy
+      let pageNum
+      ;[pageNum, err] = getPage(query.page)
+      if (err) { res.statusCode = 422 }
+      let author, likedBy
       if (what !== 'home') {
         switch (what) {
           case 'likes':
-            order = 'createdAt'
             likedBy = uid
             break
-          case 'user-articles-top':
-            order = 'score'
-            author = uid
-            break
-          case 'user-articles-latest':
-            order = 'createdAt'
+          case 'user-articles':
             author = uid
             break
           default:
@@ -65,9 +60,10 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         user.countAuthoredArticles(),
       ])
       const props: UserPageProps = {
-        user: userJson,
         authoredArticleCount,
+        order,
         page: pageNum,
+        user: userJson,
         what,
       }
       if (loggedInUser) {

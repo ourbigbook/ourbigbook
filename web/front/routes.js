@@ -11,15 +11,25 @@ const encodeGetParamsWithPage = (opts) => {
   if (opts.page === 1) {
     delete opts.page
   }
+  if (opts.sort === 'createdAt') {
+    delete opts.sort
+  }
   return encodeGetParams(opts)
 }
 
 module.exports = {
   home: () => `/`,
-  articlesLatestFollowed: (page) => page === undefined || page === 1 ? `/` : `/${escapeUsername}/latest-followed/${page}`,
-  articlesTopFollowed: (page) => `/${escapeUsername}/top-followed${getPage(page)}`,
-  articlesLatest: (page) => `/${escapeUsername}/latest${getPage(page)}`,
-  articlesTop: (page) => `/${escapeUsername}/top${getPage(page)}`,
+  articlesFollowed: (opts={}) => `/${encodeGetParamsWithPage(opts)}`,
+  articles: (opts={}) => {
+    let url
+    if (opts.loggedInUser) {
+      delete opts.loggedInUser
+      url = `/${escapeUsername}/articles`
+    } else {
+      url = `/`
+    }
+    return `${url}${encodeGetParamsWithPage(opts)}`
+  },
   articleEdit: slug => `/${escapeUsername}/edit/${slug}`,
   articleNew: () => `/${escapeUsername}/new`,
   articleNewFrom: (slug) => `/${escapeUsername}/new/${slug}`,
@@ -34,10 +44,9 @@ module.exports = {
   userNew: () => `/${escapeUsername}/register`,
   userVerify: (email) => `/${escapeUsername}/verify${encodeGetParams({ email })}`,
   userView: (uid) => `/${uid}`,
-  userViewTop: (uid, page) => `/${escapeUsername}/user/${uid}/top${getPage(page)}`,
-  userViewLikes: (uid, page) => `/${escapeUsername}/user/${uid}/likes${getPage(page)}`,
-  userViewLatest: (uid, page) => `/${escapeUsername}/user/${uid}/latest${getPage(page)}`,
-  users: (opts={}) => `/${escapeUsername}/users${encodeGetParams(opts)}`,
+  userViewArticles: (uid, opts={}) => `/${escapeUsername}/user/${uid}/articles${encodeGetParamsWithPage(opts)}`,
+  userViewLikes: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes${encodeGetParamsWithPage(opts)}`,
+  users: (opts={}) => `/${escapeUsername}/users${encodeGetParamsWithPage(opts)}`,
   topicArticlesTop: (id, page) => {
     if (page === undefined || page === 1) {
       return `/${escapeUsername}/topic/${id}`

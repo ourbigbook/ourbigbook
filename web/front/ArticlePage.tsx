@@ -73,7 +73,7 @@ const ArticlePageHoc = (isIssue=false) => {
               <div className="article-info article-info-2">
                   {showOthers &&
                     <CustomLink
-                      href={routes.topicArticlesTop(article.topicId)}
+                      href={routes.topic(article.topicId, { sort: 'score' })}
                     >
                       <i className="ion-ios-people" /> {topicArticleCount - 1}<span className="mobile-hide"> article{
                         topicArticleCount - 1 > 1 ? 's' : ''}</span> by others<span className="mobile-hide"> about "<span

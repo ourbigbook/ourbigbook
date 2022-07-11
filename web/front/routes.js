@@ -46,19 +46,5 @@ module.exports = {
   userViewArticles: (uid, opts={}) => `/${escapeUsername}/user/${uid}/articles${encodeGetParamsWithPage(opts)}`,
   userViewLikes: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes${encodeGetParamsWithPage(opts)}`,
   users: (opts={}) => `/${escapeUsername}/users${encodeGetParamsWithPage(opts)}`,
-  topicArticlesTop: (id, page) => {
-    if (page === undefined || page === 1) {
-      return `/${escapeUsername}/topic/${id}`
-    } else {
-      return `/${escapeUsername}/topic-page/${page}/${id}`
-    }
-  },
-  topicArticlesLatest: (id, page) => {
-    if (page === undefined || page === 1) {
-      return `/${escapeUsername}/topic-latest/${id}`
-    } else {
-      return `/${escapeUsername}/topic-latest-page/${page}/${id}`
-    }
-  },
-  topicUsersView: id => `/${escapeUsername}/topic-users/${id}`,
+  topic: (id, opts={}) => `/${escapeUsername}/topic/${id}${encodeGetParamsWithPage(opts)}`,
 }

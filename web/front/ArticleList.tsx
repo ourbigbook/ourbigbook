@@ -20,7 +20,7 @@ export type ArticleListProps = {
   articlesCount: number;
   comments?: Comment[];
   commentsCount?: number;
-  followed: boolena;
+  followed?: boolean;
   issueArticle?: ArticleType;
   isIssue?: boolean;
   loggedInUser?: UserType,
@@ -35,7 +35,7 @@ const ArticleList = ({
   articlesCount,
   comments,
   commentsCount,
-  followed,
+  followed=false,
   isIssue=false,
   issueArticle,
   loggedInUser,

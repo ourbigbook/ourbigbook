@@ -1,6 +1,14 @@
 // Permissions that require being logged in.
 const permissions = [
-  ['editIssue', (loggedInUser, issue) => loggedInUser.id !== issue.authorId],
+  // Users
+  ['editUser', (loggedInUser, user) => {
+    if (loggedInUser.id !== user.id) {
+      return "You cannot edit other users\' profiles"
+    }
+  }],
+  ['viewUserSettings', (loggedInUser, user) => loggedInUser.id !== user.id],
+
+  // Articles
   ['likeArticle', (loggedInUser, article) => {
     if (loggedInUser.id === article.author.id) {
       return 'You cannot like your own article or issue'
@@ -11,6 +19,11 @@ const permissions = [
       return 'You cannot unlike your own article or issue'
     }
   }],
+
+  // Issues
+  ['editIssue', (loggedInUser, issue) => loggedInUser.id !== issue.authorId],
+
+  // Comments
   ['deleteComment', (loggedInUser, comment) => true],
 ]
 permissions.forEach((permission, i, permissions) => {
@@ -24,6 +37,7 @@ permissions.forEach((permission, i, permissions) => {
     }
   ]
 })
+
 // I would rather operate on toplevel module.exports here directly as in:
 //module.exports = {}
 // but TypeScript doesn't like that and I don't have a solution for it:
@@ -31,6 +45,7 @@ permissions.forEach((permission, i, permissions) => {
 // * https://stackoverflow.com/questions/57784757/after-dynamically-export-files-typescript-cannot-find-module-file-index-tsx
 const cant = {}
 for (const [name, func] of permissions) {
+  // Allow admin user to do anything.
   cant[name] = (loggedInUser, ...args) => (loggedInUser && loggedInUser.admin) ? false : func(loggedInUser, ...args)
 }
 exports.cant = cant

@@ -45,7 +45,7 @@ const Settings = () => {
     if (!user.password) {
       delete user.password;
     }
-    const { data, status } = await webApi.userUpdate(user)
+    const { data, status } = await webApi.userUpdate(user.username, user)
     setLoading(false);
     if (status !== 200) {
       setErrors(data.errors.body);

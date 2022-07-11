@@ -6676,7 +6676,7 @@ All lists of things will never be ISR'ed, as those can change constantly. One co
 * other search-like parameters
 which appear only in lists of things, will always be part of the GET query, and not params.
 
-It is a bit annoying that due to <scopes> being separated with `/`, we always have to put article names last in any URL to avoid ambiguities. E.g. it would be arguably nicer to have:
+It is a bit annoying that due to <scopes> being separated with `/`, we always have to put article names last in any URL (outside GET parameters) to avoid ambiguities. E.g. it would be arguably nicer to have:
 ``
 /go/donald-trump/linear-algebra/issues
 ``
@@ -6685,6 +6685,20 @@ rather than the current:
 /go/issues/donald-trump/linear-algebra
 ``
 but this produces ambiguity, what is `donald-trump` has an article with title `Issues` under scope `linear-algebra`?
+
+= OurBigBook Web API standards
+{parent=OurBigBook Web URL standards}
+
+In the API article slugs are always passed as a GET parameter, unlike in the case of browser visible URLs. This is because we don't care about having:
+* nice human readable URLs
+* ISR, at least for now
+so the `id=` parameter is always used.
+
+For now there is no API that returns single items: getting a single item is done simply using a filter that uniquely selects a single element, e.g.:
+``
+/api/articles?id=johnsmith/mathematics
+``
+Maybe this will change if someday we ever de to have full vs minimized versions of API objects. But then at that point we might as well go to GraphQL.
 
 = OurBigBook Web directory structure
 {c}

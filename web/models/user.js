@@ -298,11 +298,45 @@ module.exports = (sequelize) => {
   User.defaultIndexTitle = 'Index'
   User.defaultIndexBody = 'Welcome to my home page!'
 
-  User.getUsers = async function({ limit, offset, order, sequelize }) {
+  User.getUsers = async function({
+    limit,
+    following,
+    followedBy,
+    offset,
+    order,
+    sequelize,
+    username,
+  }) {
+    const include = []
+    if (following) {
+      include.push({
+        model: sequelize.models.User,
+        as: 'follows',
+        where: { username: following },
+      })
+    }
+    if (followedBy) {
+      include.push({
+        model: sequelize.models.User,
+        as: 'follows',
+        where: { username: followedBy },
+      })
+    }
+    const orderList = [[order, 'DESC']]
+    const where = {}
+    if (username) {
+      where.username = username
+    }
+    if (order !== 'createdAt') {
+      // To make results deterministic.
+      orderList.push(['createdAt', 'DESC'])
+    }
     return sequelize.models.User.findAndCountAll({
+      include,
       limit,
       offset,
-      order: [[order, 'DESC']],
+      order: orderList,
+      where,
     })
   }
 

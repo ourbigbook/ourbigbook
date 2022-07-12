@@ -5,6 +5,7 @@ import React from 'react'
 import { AppContext, useEEdit } from 'front'
 import ArticleList from 'front/ArticleList'
 import { cant  } from 'front/cant'
+import config from 'front/config'
 import CustomLink from 'front/CustomLink'
 import CustomImage from 'front/CustomImage'
 import LoadingSpinner from 'front/LoadingSpinner'
@@ -104,7 +105,6 @@ export default function UserPage({
       <div className="user-info">
         <h1>
           <DisplayAndUsername user={user}></DisplayAndUsername>
-          {' '}
           <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
           <Maybe test={!cant.viewUserSettings(loggedInUser, user)}>
             <CustomLink
@@ -118,6 +118,7 @@ export default function UserPage({
             <LogoutButton />
           }
         </h1>
+        {user.admin && <h2><i className="ion-star" /> <a href={`${config.docsUrl}/ourbigbook-web-admin`}>{config.appName} admin</a> <i className="ion-star" /> </h2>}
         <CustomImage
           src={user.effectiveImage}
           alt="User's profile image"

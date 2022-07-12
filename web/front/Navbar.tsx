@@ -5,7 +5,7 @@ import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import Maybe from 'front/Maybe'
 import { LOGIN_ACTION, REGISTER_ACTION } from 'front'
-import { appName, aboutHref } from 'front/config'
+import { appName, aboutUrl } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 
@@ -47,7 +47,7 @@ const Navbar = () => {
       <CustomLink href={routes.home()} className="navbar-brand">
         {appName}
       </CustomLink>
-      <a href={aboutHref} className="about">About this website</a>
+      <a href={aboutUrl} className="about">About this website</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
           <NavLink href={routes.articleNew()}>

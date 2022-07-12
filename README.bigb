@@ -2,31 +2,48 @@
 {c}
 {title2=previously Cirodown}
 
-https://ourbigbook.com source code + a compatible local CLI static wiki generator and markup language to write complex structured wikis/books/blogs with reference implementation in JavaScript.
+The OurBigBook Project creates writing tools to help people publish textbooks, with a strong focus on the natural sciences.
 
-This repository (The OurBigBook Project) contains two main things:
-* <OurBigBook CLI>: a static Wiki generator that can be invoked from the command line with the <ourbigbook executable>. The OurBigBook CLI calls the <OurBigBook Library> to convert each input file.
+Mission: to live in a world where you can learn university-level mathematics, physics, chemistry, biology and engineering for free whenever you want from perfect open source books made for free by people who want to get famous to get better paying jobs.
 
-  The markup language used is called <OurBigBook Markup> (file extension: `.bigb`), and it is compatible with https://ourbigbook.com[], TODO support import/export to/from https://ourbigbook.com[] to local filesystem.
-* <OurBigBook Web>: the source code of https://ourbigbook.com[], which is a regular database-backed dynamic website. Compared to OurBigBook CLI:
-  * users can write content from a browser editor, without installing anything or having to use a terminal
-  * has powerful multi-user features, such as upvotes and "find the best article for a given topic by any user"
+The <OurBigBook Web> website is the main tool being currently developed. Further project rationale can be found at: https://cirosantilli.com/ourbigbook-com[].
 
-  Web is basically a separate Node.js package that depends on the OurBigBook Library:
-  * information about OurBigBook Web is present at: <OurBigBook Web>{full}
-  * the source code of the OurBigBook Web is present under `web/`
-  Everything else in this repository outside of that section/directory is about the OurBigBook Library and the OurBigBook CLI, not the dynamic website.
-
-Key links:
-* https://cirosantilli.com[]: showcase demo document with interesting content. Primary inspiration for OurBigBook development.
+* https://ourbigbook.com[]: reference <OurBigBook Web> instance
+* https://cirosantilli.com/sponsor[]: donate to the OurBigBook Project
+* https://cirosantilli.com[]: showcase static demo document with interesting content, published with <OurBigBook CLI>. Primary inspiration for OurBigBook development.
   * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
   * https://github.com/cirosantilli/cirosantilli.github.io[] and https://github.com/cirosantilli/cirosantilli.github.io/blob/dev/oxford-nanopore-river-bacteria.bigb[]: source of the above showcase documents
-* <design goals>{full}: feature overview
+* <design goals>{full}: <OurBigBook CLI> feature overview
 * https://github.com/cirosantilli/ourbigbook[]: OurBigBook source code
 * https://github.com/cirosantilli/ourbigbook/blob/master/README.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
 * https://docs.ourbigbook.com/editor[]: live in-browser editor demo
 * https://cirosantilli.com/ourbigbook-template[]: good template to get started, see <quick start>{full}
+
+= Overview
+{parent=OurBigBook}
+
+The OurBigBook Project includes the following tools:
+* <OurBigBook Web>: the engine behind https://ourbigbook.com[], which is a regular database-backed dynamic website.
+
+  Compared to <OurBigBook CLI>:
+  * users can write content from a browser editor, without installing anything or having to use a terminal, thus making OurBigBook Web usable by anyone, including non-programmers
+  * has powerful multi-user features, such as upvotes and "find the best article for a given topic by any user"
+
+  The source code of the OurBigBook Web is present under https://github.com/cirosantilli/ourbigbook/tree/master/web[the `web/` directory of the OurBigBook Project source code].
+
+  Everything else under the source repository outside of `web/` is about the OurBigBook Library and the OurBigBook CLI, not the dynamic website.
+
+  Within the source directory, OurBigBook Web is basically a separate Node.js package that depends on the <OurBigBook Library> to convert <OurBigBook Marktup> to HTML.
+* <OurBigBook CLI>: a static Wiki generator that can be invoked from the command line with the <ourbigbook executable>.
+
+  This is how https://cirosantilli.com[] is published.
+
+  This is a program that users can run in their own computers, and which converts input <OurBigBook Markup> files (file extension: `.bigb`) into .html files, which then can be uploaded and hosted very cheaply or for free.
+
+  OurBigBook Web takes as input the exact same format of OurBigBook Markup files used by OurBigBook CLI. TODO support/improve import/export to/from OurBigBook Web, see also: <--web>.
+
+  The OurBigBook CLI calls the <OurBigBook Library> to convert each input file.
 
 = Features
 {parent=OurBigBook}
@@ -6381,9 +6398,11 @@ The output format is also a bit nicer that what is shown in `npm run build-dev`.
 = OurBigBook Web admin
 {parent=OurBigBook Web deployment}
 
-Each user has an `admin` property which when set to `true` allows the user to basically do anything for themselves and other users. TODO some actions are not possible currently because they were originally hardcoded for "do action for the current user" rather than "do action for target user", but all of those are intended to be converted.
+Each user has an `admin` property which when set to `true` allows the user to basically view and change anything for themselves and other users. E.g. admins can see private data of any user such as emails, or modify users usernames.
 
-In order to set the property, direct DB acceess is required.
+Some actions are not possible currently because they were originally hardcoded for "do action for the current user" rather than "do action for target user", but all of those are intended to be converted. E.g. that is currently the case for like/unlike, follow/unfollow from the API.
+
+In order to mark a user as admin, direct DB acceess is required.
 
 For example, to make user `barack-obama` admin on a development run:
 ``

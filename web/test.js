@@ -109,8 +109,10 @@ function sortByKey(arr, key) {
 
 function testApp(cb, opts={}) {
   const canTestNext = opts.canTestNext === undefined ? false : opts.canTestNext
-  return app.start(0, canTestNext && testNext, async (server) => {
-    const test = {}
+  return app.start(0, canTestNext && testNext, async (server, sequelize) => {
+    const test = {
+      sequelize
+    }
     test.token = undefined
     test.tokenSave = undefined
     test.enableToken = function(newToken) {
@@ -209,29 +211,59 @@ it('api: create an article and see it on global feed', async () => {
     ;({data, status} = await test.webApi.articleCreate(article))
     assert.strictEqual(status, 401)
 
-    // Create user and login.
-    const user = await test.createUserApi(0)
-    const user1 = await test.createUserApi(1)
-    const user2 = await test.createUserApi(2)
-    test.enableToken(user.token)
+    // User
 
-    // User GET
-    ;({data, status} = await test.webApi.user('user0'))
-    assertStatus(status, data)
-    assertRows([data], [{ username: 'user0', displayName: 'User 0' }])
+      // Create user and login.
+      const user = await test.createUserApi(0)
+      const user1 = await test.createUserApi(1)
+      const user2 = await test.createUserApi(2)
+      // Make user2 admin via direct DB access (the only way).
+      await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user2' } })
+      test.enableToken(user.token)
 
-    // User edit.
-    ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked' }))
-    assertStatus(status, data)
-    ;({data, status} = await test.webApi.user('user0'))
-    assertStatus(status, data)
-    assertRows([data], [{ username: 'user0', displayName: 'User 0 hacked' }])
+      // User GET
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assertRows([data], [{ username: 'user0', displayName: 'User 0' }])
 
-    // Non-admin users cannot edit other users.
-    test.enableToken(user1.token)
-    ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked 2' }))
-    assert.strictEqual(status, 403)
-    test.enableToken(user.token)
+      // User edit.
+      ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked' }))
+      assertStatus(status, data)
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assertRows([data], [{ username: 'user0', displayName: 'User 0 hacked' }])
+
+      // Non-admin users cannot edit other users.
+      test.enableToken(user1.token)
+      ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked 2' }))
+      assert.strictEqual(status, 403)
+      test.enableToken(user.token)
+
+      // Admin users can edit other users.
+      test.enableToken(user2.token)
+      ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked 3' }))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assertRows([data], [{ username: 'user0', displayName: 'User 0 hacked 3' }])
+
+      // Users see their own email on GET.
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assertRows([data], [{ email: 'user0@mail.com' }])
+
+      // Non-admin users don't see other users' email on GET.
+      ;({data, status} = await test.webApi.user('user1'))
+      assertStatus(status, data)
+      assert.strictEqual(data.email, undefined)
+
+      // Admin users see other users emails on GET.
+      test.enableToken(user2.token)
+      ;({data, status} = await test.webApi.user('user1'))
+      assertStatus(status, data)
+      assertRows([data], [{ email: 'user1@mail.com' }])
+      test.enableToken(user.token)
 
     // Create article with POST.
     article = createArticleArg({ i: 0 })

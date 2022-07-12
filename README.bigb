@@ -6385,7 +6385,11 @@ Each user has an `admin` property which when set to `true` allows the user to ba
 
 In order to set the property, direct DB acceess is required.
 
-For example, to make user `cirosantilli` admin in a <Heroku deployment> you can run:
+For example, to make user `barack-obama` admin on a development run:
+``
+sqlite3 web/db.sqlite3 "UPDATE \"User\" SET admin = true WHERE username='barack-obama'"
+``
+or to make `cirosantilli` admin in a <Heroku deployment> you can run:
 ``
 heroku psql -a ourbigbook -c "UPDATE \"User\" SET admin = true WHERE username='cirosantilli'"
 ``

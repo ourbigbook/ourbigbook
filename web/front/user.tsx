@@ -19,7 +19,7 @@ export function displayAndUsernameText(user) {
 
 export function UserLink({ children, user }) {
   return <CustomLink
-    href={routes.userView(user.username)}
+    href={routes.user(user.username)}
     className="author username"
   >
     {children}

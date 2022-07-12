@@ -20,6 +20,7 @@ import { ArticleType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
+import UserList from 'front/UserList'
 
 export interface UserPageProps {
   article?: ArticleType;
@@ -28,12 +29,15 @@ export interface UserPageProps {
   authoredArticleCount: number;
   comments?: CommentType[];
   issuesCount?: number;
+  itemType: string;
   latestIssues?: IssueType[];
   topIssues?: IssueType[];
   loggedInUser?: UserType;
   order: string;
   page: number;
   user: UserType;
+  users?: UserType[];
+  usersCount?: number;
   what: string;
 }
 
@@ -44,12 +48,15 @@ export default function UserPage({
   authoredArticleCount,
   comments,
   issuesCount,
+  itemType,
   latestIssues,
   loggedInUser,
   order,
   page,
   topIssues,
   user,
+  users,
+  usersCount,
   what,
 }: UserPageProps) {
   const router = useRouter();
@@ -57,11 +64,17 @@ export default function UserPage({
   const isCurrentUser = loggedInUser && username === loggedInUser?.username
   let paginationUrlFunc
   switch (what) {
+    case 'following':
+      paginationUrlFunc = page => routes.userFollowing(user.username, { page })
+      break
+    case 'followed':
+      paginationUrlFunc = page => routes.userFollowed(user.username, { page })
+      break
     case 'likes':
-      paginationUrlFunc = page => routes.userViewLikes(user.username, { page })
+      paginationUrlFunc = page => routes.userLikes(user.username, { page })
       break
     case 'user-articles':
-      paginationUrlFunc = page => routes.userViewArticles(user.username, { page, sort: order })
+      paginationUrlFunc = page => routes.userArticles(user.username, { page, sort: order })
       break
   }
   const canEdit = loggedInUser && loggedInUser?.username === username
@@ -112,51 +125,74 @@ export default function UserPage({
       </div>
       <div className="tab-list">
         <CustomLink
-          href={routes.userView(username)}
+          href={routes.user(username)}
           className={`tab-item${what === 'home' ? ' active' : ''}`}
         >
           Home
         </CustomLink>
         <CustomLink
-          href={routes.userViewArticles(username, { sort: 'score' })}
+          href={routes.userArticles(username, { sort: 'score' })}
           className={`tab-item${what === 'user-articles' && order === 'score' ? ' active' : ''}`}
         >
           Top
         </CustomLink>
         <CustomLink
-          href={routes.userViewArticles(username,  { sort: 'createdAt' })}
+          href={routes.userArticles(username,  { sort: 'createdAt' })}
           className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
         >
           Latest
         </CustomLink>
         <CustomLink
-          href={routes.userViewLikes(username)}
+          href={routes.userLikes(username)}
           className={`tab-item${what === 'likes' ? ' active' : ''}`}
         >
           Liked
         </CustomLink>
+        <CustomLink
+          href={routes.userFollowing(username)}
+          className={`tab-item${what === 'following' ? ' active' : ''}`}
+        >
+          Follows
+        </CustomLink>
+        <CustomLink
+          href={routes.userFollowed(username)}
+          className={`tab-item${what === 'followed' ? ' active' : ''}`}
+        >
+          Followed
+        </CustomLink>
       </div>
-      {what === 'home'
-        ? <>
-            <ArticleInfo {...{ article, loggedInUser }}/>
-            <Article {...{
-              article,
-              comments,
-              latestIssues,
-              issuesCount,
-              loggedInUser,
-              topIssues,
-            }}/>
-          </>
-        : <ArticleList {...{
-            articles,
-            articlesCount,
+      {what === 'home' &&
+        <>
+          <ArticleInfo {...{ article, loggedInUser }}/>
+          <Article {...{
+            article,
+            comments,
+            latestIssues,
+            issuesCount,
             loggedInUser,
-            page,
-            paginationUrlFunc,
-            showAuthor: what === 'likes',
-            what,
+            topIssues,
           }}/>
+        </>
+      }
+      {itemType === 'article' &&
+        <ArticleList {...{
+          articles,
+          articlesCount,
+          loggedInUser,
+          page,
+          paginationUrlFunc,
+          showAuthor: what === 'likes',
+          what,
+        }}/>
+      }
+      {itemType === 'user' &&
+        <UserList {...{
+          loggedInUser,
+          page,
+          paginationUrlFunc,
+          users,
+          usersCount,
+        }}/>
       }
     </div>
   );

@@ -838,28 +838,28 @@ it('api: create an article and see it on global feed', async () => {
         // User.
         ;({data, status} = await test.sendJsonHttp(
           'GET',
-          routes.userView('user0'),
+          routes.user('user0'),
         ))
         assertStatus(status, data)
 
         // User that doesn't exist.
         ;({data, status} = await test.sendJsonHttp(
           'GET',
-          routes.userView('dontexist'),
+          routes.user('dontexist'),
         ))
         assert.strictEqual(status, 404)
 
         // Article.
         ;({data, status} = await test.sendJsonHttp(
           'GET',
-          routes.articleView('user0/title-0'),
+          routes.article('user0/title-0'),
         ))
         assertStatus(status, data)
 
         // Article that doesn't exist.
         ;({data, status} = await test.sendJsonHttp(
           'GET',
-          routes.articleView('user0/dontexist'),
+          routes.article('user0/dontexist'),
         ))
         assert.strictEqual(status, 404)
 
@@ -873,14 +873,14 @@ it('api: create an article and see it on global feed', async () => {
         // An issue of article.
         ;({data, status} = await test.sendJsonHttp(
           'GET',
-          routes.issueView('user0/title-0', 1),
+          routes.issue('user0/title-0', 1),
         ))
         assertStatus(status, data)
 
         // An issue that doesn't exist.
         ;({data, status} = await test.sendJsonHttp(
           'GET',
-          routes.issueView('user0/title-0', 999),
+          routes.issue('user0/title-0', 999),
         ))
         assert.strictEqual(status, 404)
 

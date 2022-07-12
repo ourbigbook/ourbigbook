@@ -27,7 +27,7 @@ export function DiscussionAbout(
   { article, issue }:
   { article?: ArticleType; issue?: IssueType }
 ) {
-  return <h1>Discussion{issue ? ` #${issue.number}` : ''}: <a href={routes.articleView(article.slug)}
+  return <h1>Discussion{issue ? ` #${issue.number}` : ''}: <a href={routes.article(article.slug)}
     >"<span className="comment-body ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }}
     />" by { article.author.displayName }</a></h1>
 }

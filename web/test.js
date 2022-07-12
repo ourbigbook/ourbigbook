@@ -265,6 +265,17 @@ it('api: create an article and see it on global feed', async () => {
       assertRows([data], [{ email: 'user1@mail.com' }])
       test.enableToken(user.token)
 
+      // Cannot modify username.
+      ;({data, status} = await test.webApi.userUpdate('user0', { username: 'user0hacked' }))
+      assert.strictEqual(status, 422)
+
+      // Cannot modify email.
+      // TODO https://github.com/cirosantilli/ourbigbook/issues/268
+      // Once the above is fixed, this will likely just be allowed on dev mode and then
+      // we will just remove this test.
+      ;({data, status} = await test.webApi.userUpdate('user0', { email: 'user0hacked@mail.com' }))
+      assert.strictEqual(status, 422)
+
     // Create article with POST.
     article = createArticleArg({ i: 0 })
     ;({data, status} = await test.webApi.articleCreate(article))

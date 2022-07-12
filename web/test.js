@@ -480,38 +480,53 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.userFollow('dontexist'))
       assert.strictEqual(status, 404)
 
-      // TODO https://github.com/cirosantilli/ourbigbook/issues/260
-      //// users followedBy
-      //;({data, status} = await test.webApi.users({ followedBy: 'user0' }))
-      //assertStatus(status, data)
-      //assertRows(data.users, [
-      //  { username: 'user1' },
-      //])
-      //;({data, status} = await test.webApi.users({ followedBy: 'user1' }))
-      //assertStatus(status, data)
-      //assertRows(data.users, [])
-      //;({data, status} = await test.webApi.users({ followedBy: 'user2' }))
-      //assertStatus(status, data)
-      //assertRows(data.users, [
-      //  { username: 'user2' },
-      //  { username: 'user0' },
-      //])
+      // users followedBy
+      ;({data, status} = await test.webApi.users({ followedBy: 'user0' }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user1' },
+      ])
+      ;({data, status} = await test.webApi.users({ followedBy: 'user1' }))
+      assertStatus(status, data)
+      assertRows(data.users, [])
+      ;({data, status} = await test.webApi.users({ followedBy: 'user2' }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user2' },
+        { username: 'user0' },
+      ])
+      ;({data, status} = await test.webApi.users({ followedBy: 'user2', limit: 1 }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user2' },
+      ])
 
-      // TODO https://github.com/cirosantilli/ourbigbook/issues/260
-      //// users following
-      //;({data, status} = await test.webApi.users({ following: 'user0' }))
-      //assertStatus(status, data)
-      //assertRows(data.users, [
-      //  { username: 'user2' },
-      //])
-      //;({data, status} = await test.webApi.users({ following: 'user1' }))
-      //assertStatus(status, data)
-      //assertRows(data.users, [])
-      //;({data, status} = await test.webApi.users({ following: 'user2' }))
-      //assertStatus(status, data)
-      //assertRows(data.users, [
-      //  { username: 'user2' },
-      //])
+      // users following
+      ;({data, status} = await test.webApi.users({ following: 'user0' }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user2' },
+      ])
+      ;({data, status} = await test.webApi.users({ following: 'user1' }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user0' },
+      ])
+      ;({data, status} = await test.webApi.users({ following: 'user2' }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user2' },
+      ])
+
+      // Both followedBy and following together also works.
+      ;({data, status} = await test.webApi.users({
+        following: 'user2',
+        followedBy: 'user2',
+      }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user2' },
+      ])
 
     // User unfollowing.
 

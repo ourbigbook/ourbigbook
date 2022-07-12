@@ -66,7 +66,9 @@ function getSequelize(toplevelDir, toplevelBasename) {
       tableName: 'UserFollowUser'
     }
   );
-  User.belongsToMany(User, {through: UserFollowUser, as: 'follows', foreignKey: 'userId', otherKey: 'followId'});
+  User.belongsToMany(User, { through: UserFollowUser, as: 'follows', foreignKey: 'userId', otherKey: 'followId' });
+  // https://stackoverflow.com/questions/27065154/how-to-get-all-children-or-parents-in-a-many-to-many-association-if-one-model-re/72951602#72951602
+  User.belongsToMany(User, { through: UserFollowUser, as: 'followed', foreignKey: 'followId', otherKey: 'userId' });
   UserFollowUser.belongsTo(User, {foreignKey: 'userId'})
   User.hasMany(UserFollowUser, {foreignKey: 'followId'})
 

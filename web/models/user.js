@@ -313,13 +313,17 @@ module.exports = (sequelize) => {
         model: sequelize.models.User,
         as: 'follows',
         where: { username: following },
+        attributes: [],
+        through: { attributes: [] }
       })
     }
     if (followedBy) {
       include.push({
         model: sequelize.models.User,
-        as: 'follows',
+        as: 'followed',
         where: { username: followedBy },
+        attributes: [],
+        through: { attributes: [] }
       })
     }
     const orderList = [[order, 'DESC']]
@@ -336,6 +340,7 @@ module.exports = (sequelize) => {
       limit,
       offset,
       order: orderList,
+      subQuery: false,
       where,
     })
   }

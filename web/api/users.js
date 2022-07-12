@@ -68,9 +68,9 @@ router.get('/users', auth.optional, async function(req, res, next) {
     const [loggedInUser, {count: usersCount, rows: users}] = await Promise.all([
       req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
       sequelize.models.User.getUsers({
-        // TODO
-        //followedBy: req.query.followedBy,
-        //following: req.query.following,
+        // TODO https://github.com/cirosantilli/ourbigbook/issues/260
+        followedBy: req.query.followedBy,
+        following: req.query.following,
         limit,
         offset,
         order: lib.getOrder(req),

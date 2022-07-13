@@ -1,14 +1,15 @@
 export type UserType = {
-  username: string;
-  displayName: string;
+  admin?: string;
   bio: string;
+  createdAt: number;
+  displayName: string;
+  effectiveImage: string;
+  email?: string;
+  followerCount: number;
+  following: boolean;
   id: number;
   image: string;
-  effectiveImage: string;
-  following: boolean;
-  score: number;
-  followerCount: number;
-  createdAt: number;
-  email?: string;
   ip?: string;
+  score: number;
+  username: string;
 };

@@ -45,9 +45,10 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <CustomLink href={routes.home()} className="navbar-brand">
+        <CustomImage src="/logo.svg" className="logo"/>
         {appName}
       </CustomLink>
-      <a href={aboutUrl} className="about">About this website</a>
+      <a href={aboutUrl} className="about">About us</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
           <NavLink href={routes.articleNew()}>

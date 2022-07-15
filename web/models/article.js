@@ -114,19 +114,12 @@ module.exports = (sequelize) => {
         author: file.author,
         bodySource: file.bodySource,
         forceNew: false,
-        path: file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR),
+        path: ourbigbook.path_splitext(file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR))[0],
         render: true,
         sequelize,
         titleSource: file.titleSource,
         transaction,
       })
-    })
-  }
-
-  Article.prototype.saveSideEffects = async function(options = {}) {
-    const transaction = options.transaction
-    await sequelize.transaction({ transaction }, async (transaction) => {
-      return this.save({ transaction })
     })
   }
 

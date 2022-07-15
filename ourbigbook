@@ -1165,7 +1165,7 @@ if (commander.helpMacros) {
           try {
             ;({ data, status } = await webApi.articleCreateOrUpdate(
               { titleSource: article.title, bodySource: article.body },
-              { path: article.inpath, render }
+              { path: path_splitext(article.inpath)[0], render }
             ))
           } catch(err) {
             handleWebApiErr(err)

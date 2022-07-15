@@ -18,6 +18,7 @@ export interface TopicPageProps {
   articlesCount: number;
   loggedInUser?: UserType;
   order: string;
+  topic: TopicType;
   page: number;
   what: string;
 }
@@ -28,16 +29,18 @@ export const TopicPage = ({
   loggedInUser,
   order,
   page,
+  topic,
   what
 }: TopicPageProps) => {
   const router = useRouter();
   const topicId = slugFromArray(router.query.id)
   const paginationUrlFunc = (page) => routes.topic(topicId, { page, sort: order })
   const { setTitle } = React.useContext(AppContext)
-  React.useEffect(() => { setTitle(topicId) }, [topicId])
+  React.useEffect(() => { setTitle(topic.titleSource) }, [topic.titleSource])
   if (router.isFallback) { return <LoadingSpinner />; }
   return (
     <div className="topic-page content-not-ourbigbook">
+      <h1 className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: topic.titleRender }}></h1>
       <div className="tab-list">
         <CustomLink
           className={`tab-item${order === 'score' ? ' active' : ''}`}

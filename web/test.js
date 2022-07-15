@@ -48,6 +48,7 @@ async function createArticles(sequelize, author, opts) {
   return convert.convertArticle({
     author,
     bodySource: articleArg.bodySource,
+    path: opts.path,
     sequelize,
     titleSource: articleArg.titleSource,
   })
@@ -200,6 +201,80 @@ it('feed shows articles by followers', async function() {
   assert.strictEqual(rows.length, 3)
   // 6 manually from all follows + 2 for the automatically created indexes.
   assert.strictEqual(count, 8)
+})
+
+it('Article.updateTopicsNewArticles', async function() {
+  const sequelize = this.test.sequelize
+
+  async function getTopicIds(topicIds) {
+    return (await sequelize.models.Topic.getTopics({
+      sequelize,
+      articleOrder: 'topicId',
+      articleWhere: { topicId: topicIds },
+    })).rows
+  }
+
+  const nArticles = config.topicConsiderNArticles + 1
+  const users = []
+  for (let i = 0; i < nArticles; i++) {
+    users.push(await createUser(sequelize, i))
+  }
+
+  const articles = []
+  articles.push(await createArticle(sequelize, users[0], { i: 0 }))
+  assertRows(
+    await getTopicIds(['title-0']),
+    [{ articleId: articles[0].id, articleCount: 1 }]
+  )
+
+  // Article update does not increment the Topic.articleCount.
+  await createArticle(sequelize, users[0], { i: 0, body: 'Body 0 hacked' })
+  assertRows(
+    await getTopicIds(['title-0']),
+    [{ articleId: articles[0].id, articleCount: 1 }]
+  )
+
+  articles.push(await createArticle(sequelize, users[1], { i: 99, path: 'title-0' }))
+  // The topic title-0 is tied with two different titles, "Title 0" and "Title 99".
+  // So we keep the oldest one, "Title 0".
+  assertRows(
+    await getTopicIds(['title-0']),
+    [{ articleId: articles[0].id, articleCount: 2 }]
+  )
+
+  articles.push(await createArticle(sequelize, users[2], { i: 99, path: 'title-0' }))
+  // This broke the above tie, now "Title 99" became the representative title with 2 entries,
+  // so we update the topic to point to the oldest "Title 99".
+  assertRows(
+    await getTopicIds(['title-0']),
+    [{ articleId: articles[1].id, articleCount: 3 }]
+  )
+
+  for (let i = 3; i < 7; i++) {
+    articles.push(await createArticle(sequelize, users[i], { i: 99, path: 'title-0' }))
+  }
+  for (let i = 7; i < nArticles; i++) {
+    articles.push(await createArticle(sequelize, users[i], { i: 0, path: 'title-0' }))
+  }
+
+  // Now we have 6 "Title 99" and 5 "Title 0". All have score 0.
+  // Only top 10 most voted are considered, but we take lower IDs first,
+  // and the Title 99 are IDs 1 through 6, so it wins, 6 to 4.
+  assertRows(
+    await getTopicIds(['title-0']),
+    [{ articleId: articles[1].id, articleCount: nArticles }]
+  )
+
+  // So let's upvote the 4 trailing ones to bring them up in score.
+  // This will bring the count 5 to 5, and "Title 0" will win because
+  // it holds the smallest ID 0.
+  for (let i = 7; i < nArticles; i++) {
+    await users[0].addArticleLikeSideEffects(articles[i])
+  }
+  assertRows(
+    await getTopicIds(['title-0']),
+    [{ articleId: articles[0].id, articleCount: nArticles }]
+  )
 })
 
 it('api: create an article and see it on global feed', async () => {

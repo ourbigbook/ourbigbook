@@ -29,8 +29,9 @@ async function convert({
   bodySource = bodySource.replace(/\n+$/, '')
   const input = modifyEditorInput(titleSource, bodySource).new
   if (path === undefined) {
-    path = `${ourbigbook.title_to_id(titleSource)}.${ourbigbook.OURBIGBOOK_EXT}`
+    path = `${ourbigbook.title_to_id(titleSource)}`
   }
+  path += `.${ourbigbook.OURBIGBOOK_EXT}`
   const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}`
   await ourbigbook.convert(
     input,
@@ -142,7 +143,10 @@ async function convertArticle({
     }
     await sequelize.models.Article.bulkCreate(
       articleArgs,
-      { updateOnDuplicate: ['titleRender', 'render', 'topicId', 'updatedAt'], transaction }
+      {
+        updateOnDuplicate: ['titleRender', 'render', 'topicId', 'updatedAt'],
+        transaction
+      }
     )
     // Find here because upsert not yet supported in SQLite.
     // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
@@ -153,7 +157,9 @@ async function convertArticle({
         as: 'file',
       },
       order: [['slug', 'ASC']],
+      transaction,
     })
+    await sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction })
     return articles
   } else {
     return []
@@ -164,7 +170,7 @@ async function convertComment({ issue, number, sequelize, source, user }) {
   const { extra_returns } = await convert({
     author: user,
     bodySource: source,
-    path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
+    path: `${ourbigbook.INDEX_BASENAME_NOEXT}`,
     render: true,
     sequelize,
     splitHeaders: false,
@@ -196,7 +202,7 @@ async function convertIssue({ article, bodySource, issue, number, sequelize, tit
   const { extra_returns } = await convert({
     author: user,
     bodySource,
-    path: `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`,
+    path: `${ourbigbook.INDEX_BASENAME_NOEXT}`,
     render: true,
     sequelize,
     splitHeaders: false,

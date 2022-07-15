@@ -81,6 +81,7 @@ module.exports = {
   useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !isTest,
   usernameMinLength: 3,
   usernameMaxLength: 40,
+  topicConsiderNArticles: 10,
   verbose: process.env.VERBOSE,
 
   // Used by sequelize-cli as well as our source code.

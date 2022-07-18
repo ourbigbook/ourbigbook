@@ -27,9 +27,31 @@ export function DiscussionAbout(
   { article, issue }:
   { article?: ArticleType; issue?: IssueType }
 ) {
-  return <h1>Discussion{issue ? ` #${issue.number}` : ''}: <a href={routes.article(article.slug)}
+  return <h1><IssueIcon /> Discussion{issue ? ` #${issue.number}` : ''}: <a href={routes.article(article.slug)}
     >"<span className="comment-body ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }}
     />" by { article.author.displayName }</a></h1>
+}
+
+// Icons.
+
+export function ArticleIcon() {
+  return <i className="ion-ios-book" title="Article" />
+}
+
+export function IssueIcon() {
+  return <i className="ion-ios-chatbubble" title="Discussion" />
+}
+
+export function TimeIcon() {
+  return <i className="ion-android-time" title="Discussion" />
+}
+
+export function TopicIcon() {
+  return <i className="ion-ios-people" title="Topic" />
+}
+
+export function UserIcon() {
+  return <i className="ion-ios-person" title="User" />
 }
 
 export function SignupOrLogin(

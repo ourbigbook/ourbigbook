@@ -6,28 +6,29 @@ import LikeArticleButton from 'front/LikeArticleButton'
 import LoadingSpinner from 'front/LoadingSpinner'
 import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
-import { AppContext } from 'front'
+import { AppContext, ArticleIcon, TimeIcon, UserIcon } from 'front'
 import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
+import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 
 export type ArticleListProps = {
-  articles: (ArticleType & IssueType)[];
+  articles: (ArticleType & IssueType & TopicType)[];
   articlesCount: number;
   comments?: Comment[];
   commentsCount?: number;
   followed?: boolean;
   issueArticle?: ArticleType;
-  isIssue?: boolean;
+  itemType?: string;
   loggedInUser?: UserType,
   page: number;
   paginationUrlFunc?: PaginationPropsUrlFunc;
   showAuthor: boolean;
-  what: string;
+  what?: string;
 }
 
 const ArticleList = ({
@@ -36,17 +37,26 @@ const ArticleList = ({
   comments,
   commentsCount,
   followed=false,
-  isIssue=false,
+  itemType='article',
   issueArticle,
   loggedInUser,
   page,
   paginationUrlFunc,
   showAuthor,
-  what
+  what='all',
 }: ArticleListProps) => {
   const router = useRouter();
   const { asPath, pathname, query } = router;
   const { like, follow, tag, uid } = query;
+  let isIssue
+  switch (itemType) {
+    case 'issue':
+      isIssue = true
+      break
+    case 'topic':
+      showAuthor = false
+      break
+  }
   if (articles.length === 0) {
     let message;
     let voice;
@@ -62,7 +72,7 @@ const ArticleList = ({
       case 'user-articles':
         message = `${voice} published any articles yet.`
         break
-      case 'articles':
+      case 'all':
         if (followed) {
           message = `Follow some users to see their posts here.`
         } else {
@@ -85,35 +95,48 @@ const ArticleList = ({
         <table className="list">
           <thead>
             <tr>
-              <th className="shrink center">Score</th>
-              <th className="expand">Title</th>
+              {itemType === 'topic' ?
+                <th className="shrink right">Articles</th>
+                :
+                <th className="shrink center">Score</th>
+              }
+              <th className="expand"><ArticleIcon /> Title</th>
               {showAuthor &&
-                <th className="shrink">Author</th>
+                <th className="shrink"><UserIcon /> Author</th>
               }
               {isIssue &&
                 <th className="shrink">
                   #
                 </th>
               }
-              <th className="shrink">Created</th>
-              <th className="shrink">Updated</th>
+              <th className="shrink"><TimeIcon /> Created</th>
+              <th className="shrink"><TimeIcon /> Updated</th>
             </tr>
           </thead>
           <tbody>
             {articles?.map((article, i) => (
-              <tr key={isIssue ? article.number : article.slug}>
-                <td className="shrink center">
-                  <LikeArticleButton {...{
-                    article,
-                    isIssue,
-                    issueArticle,
-                    loggedInUser,
-                    showText: false,
-                  }} />
-                </td>
+              <tr key={itemType === 'issue' ? article.number : itemType === 'article' ? article.slug : article.topicId}>
+                {itemType === 'topic' ?
+                  <td className="shrink right bold">
+                    {article.articleCount}
+                  </td>
+                  :
+                  <td className="shrink center">
+                    <LikeArticleButton {...{
+                      article,
+                      isIssue,
+                      issueArticle,
+                      loggedInUser,
+                      showText: false,
+                    }} />
+                  </td>
+                }
                 <td className="expand title">
                   <CustomLink
-                    href={isIssue ? routes.issue(issueArticle.slug, article.number) : routes.article(article.slug)}
+                    href={itemType === 'issue' ? routes.issue(issueArticle.slug, article.number) :
+                          itemType === 'article' ? routes.article(article.slug) :
+                          routes.topic(article.topicId)
+                    }
                   >
                     <div
                       className="comment-body ourbigbook-title"
@@ -127,7 +150,7 @@ const ArticleList = ({
                   </td>
                 }
                 {isIssue &&
-                  <td className="shrink">
+                  <td className="shrink bold">
                     <CustomLink
                       href={isIssue ? routes.issue(issueArticle.slug, article.number) : routes.article(article.slug)}
                     >

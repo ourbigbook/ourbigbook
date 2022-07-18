@@ -9,7 +9,7 @@ import FollowUserButton from 'front/FollowUserButton'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
-import { AppContext, DiscussionAbout, useEEdit } from 'front'
+import { AppContext, DiscussionAbout, TopicIcon, useEEdit, UserIcon } from 'front'
 import { webApi } from 'front/api'
 import { cant } from 'front/cant'
 import fetcher from 'front/fetcher'
@@ -64,7 +64,7 @@ const ArticlePageHoc = (isIssue=false) => {
           <div className="content-not-ourbigbook article-meta">
             {isIssue && <DiscussionAbout article={issueArticle} issue={article} />}
             <div className="article-info">
-              <span className="mobile-hide">Author: </span>
+              <span className="mobile-hide"><UserIcon /> Author: </span>
               <UserLinkWithImage user={author} showUsernameMobile={false} />
               {' '}
               <FollowUserButton {...{ user: author, loggedInUser, showUsername: false }} />
@@ -75,7 +75,7 @@ const ArticlePageHoc = (isIssue=false) => {
                     <CustomLink
                       href={routes.topic(article.topicId, { sort: 'score' })}
                     >
-                      <i className="ion-ios-people" /> {topicArticleCount - 1}<span className="mobile-hide"> article{
+                      <TopicIcon /> {topicArticleCount - 1}<span className="mobile-hide"> article{
                         topicArticleCount - 1 > 1 ? 's' : ''}</span> by others<span className="mobile-hide"> about "<span
                         className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: article.titleRender }} />"</span>
                     </CustomLink>

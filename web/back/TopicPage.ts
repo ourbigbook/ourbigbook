@@ -25,7 +25,7 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
       sequelize.models.Topic.getTopics({
         count: false,
         sequelize,
-        whereArticle: { topicId },
+        articleWhere: { topicId },
       }).then(topics => {
         if (topics.length) {
           return topics[0].toJson(loggedInUser)

@@ -1,6 +1,8 @@
 export type TopicType = {
+  articleCount: number;
+  createdAt: number;
   titleRender: string;
   titleSource: string;
-  articleCount: number;
   topicId: number;
+  updatedAt: number;
 };

@@ -2,7 +2,7 @@ import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
 
-import { AppContext, useEEdit } from 'front'
+import { AppContext, ArticleIcon, useEEdit, UserIcon } from 'front'
 import ArticleList from 'front/ArticleList'
 import { cant  } from 'front/cant'
 import config from 'front/config'
@@ -17,7 +17,6 @@ import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import routes from 'front/routes'
 import Article from 'front/Article'
 import ArticleInfo from 'front/ArticleInfo'
-import { IndexPageProps } from 'front/IndexPage'
 import { ArticleType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
@@ -105,6 +104,8 @@ export default function UserPage({
       <div className="user-info">
         <h1>
           <DisplayAndUsername user={user}></DisplayAndUsername>
+        </h1>
+        <div className="user-actions">
           <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
           <Maybe test={!cant.viewUserSettings(loggedInUser, user)}>
             <CustomLink
@@ -117,7 +118,7 @@ export default function UserPage({
           {isCurrentUser &&
             <LogoutButton />
           }
-        </h1>
+        </div>
         {user.admin && <h2><i className="ion-star" /> <a href={`${config.docsUrl}/ourbigbook-web-admin`}>{config.appName} admin</a> <i className="ion-star" /> </h2>}
         <CustomImage
           src={user.effectiveImage}
@@ -136,7 +137,7 @@ export default function UserPage({
           href={routes.userArticles(username, { sort: 'score' })}
           className={`tab-item${what === 'user-articles' && order === 'score' ? ' active' : ''}`}
         >
-          Top
+          <ArticleIcon /> Top
         </CustomLink>
         <CustomLink
           href={routes.userArticles(username,  { sort: 'createdAt' })}
@@ -154,13 +155,13 @@ export default function UserPage({
           href={routes.userFollowing(username)}
           className={`tab-item${what === 'following' ? ' active' : ''}`}
         >
-          Follows
+          <UserIcon /> Follows
         </CustomLink>
         <CustomLink
           href={routes.userFollowed(username)}
           className={`tab-item${what === 'followed' ? ' active' : ''}`}
         >
-          Followed
+          Followed by
         </CustomLink>
       </div>
       {what === 'home' &&

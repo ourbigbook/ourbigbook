@@ -6,6 +6,7 @@ import { webApi } from 'front/api'
 import { formatDate } from 'front/date'
 import LikeArticleButton from 'front/LikeArticleButton'
 import routes from 'front/routes'
+import { TimeIcon } from 'front'
 import { ArticleType } from 'front/types/ArticleType'
 import { UserType } from 'front/types/UserType'
 
@@ -43,7 +44,7 @@ const ArticleInfo = ({
     }} />
     {' '}
     <span className="mobile-hide">
-      {'Created: '}
+      <TimeIcon /> Created: {' '}
       <span className="article-dates">
         {formatDate(article.createdAt)}
       </span>

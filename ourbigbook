@@ -1052,7 +1052,7 @@ if (commander.helpMacros) {
       const host_row = await non_ourbigbook_options.sequelize.models.Cli.findOne({ where: { host } })
       const webApi = new WebApi({
         getToken: () => token,
-        https: url.protocol === 'https',
+        https: url.protocol === 'https:',
         port: url.port,
         hostname: url.hostname,
         validateStatus: () => true,
@@ -1080,6 +1080,8 @@ if (commander.helpMacros) {
         }
         if (status === 422) {
           cli_error('invalid username or password');
+        } else if (status !== 200) {
+          cli_error(`error status: ${status}`);
         }
         token = data.user.token
         await non_ourbigbook_options.sequelize.models.Cli.create({ host, token })
@@ -1165,12 +1167,13 @@ if (commander.helpMacros) {
           try {
             ;({ data, status } = await webApi.articleCreateOrUpdate(
               { titleSource: article.title, bodySource: article.body },
-              { path: path_splitext(article.inpath)[0], render }
+              { path: ourbigbook.path_splitext(article.inpath)[0], render }
             ))
           } catch(err) {
             handleWebApiErr(err)
           }
           if (status !== 200) {
+            console.error(`error status: ${status}`);
             const errors = data.errors
             if (errors instanceof Array) {
               for (const error of data.errors) {

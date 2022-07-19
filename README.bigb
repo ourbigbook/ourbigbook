@@ -6428,7 +6428,7 @@ npm run deploy-prod
 ``
 This breaks the website, because the DB is out of sync. So then you go and manually fix it up:
 ``
-heroku run -a ourbigbook web/bin/generate-demo-data.js --force-production
+# heroku run -a ourbigbook web/bin/generate-demo-data.js --force-production --clear
 ``
 
 = OurBigBook Web email sending

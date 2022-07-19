@@ -390,7 +390,7 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.articleCreate({}))
       assert.strictEqual(status, 422)
 
-      // Marktup errors.
+      // Markup errors.
       ;({data, status} = await test.webApi.articleCreate({
         titleSource: 'The \\notdefined', bodySource: 'The \\i[body]' }))
       assert.strictEqual(status, 422)

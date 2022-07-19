@@ -39,11 +39,12 @@ const LoginForm = ({ register = false }) => {
     (e) => setPassword(e.target.value),
     []
   );
+  const useCaptcha = register && config.useCaptcha
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     let recaptchaToken
-    if (config.useCaptcha) {
+    if (useCaptcha) {
       recaptchaToken = await new Promise((resolve, reject) => {
         grecaptcha.ready(function() {
           grecaptcha.execute(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY, {action: 'submit'}).then(function(token) {
@@ -132,7 +133,7 @@ const LoginForm = ({ register = false }) => {
           {`${register ? REGISTER_ACTION : LOGIN_ACTION}`}
         </button>
       </form>
-      {config.useCaptcha &&
+      {useCaptcha &&
         <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
       }
     </>

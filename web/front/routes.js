@@ -40,7 +40,7 @@ module.exports = {
   userFollowed: (uid, opts={}) => `/${escapeUsername}/user/${uid}/followed${encodeGetParamsWithPage(opts)}`,
   userLikes: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes${encodeGetParamsWithPage(opts)}`,
   users: (opts={}) => `/${escapeUsername}/users${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`,
-  topic: (id, opts={}) => `/${escapeUsername}/topic/${id}${encodeGetParamsWithPage(opts)}`,
+  topic: (id, opts={}) => `/${escapeUsername}/topic/${id}${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`,
   topics: (opts={}) => {
     let url
     if (opts.loggedInUser) {

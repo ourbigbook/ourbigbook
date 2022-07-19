@@ -135,7 +135,7 @@ const ArticleList = ({
                   <CustomLink
                     href={itemType === 'issue' ? routes.issue(issueArticle.slug, article.number) :
                           itemType === 'article' ? routes.article(article.slug) :
-                          routes.topic(article.topicId)
+                          routes.topic(article.topicId, { sort: 'score' })
                     }
                   >
                     <div

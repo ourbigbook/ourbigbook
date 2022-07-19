@@ -23,12 +23,11 @@ export const getServerSidePropsIndexHoc = ({
       }
     }
     const getOrderAndPageOpts: { defaultOrder?: string } = {}
-    if (itemType === 'topics') {
-      getOrderAndPageOpts.defaultOrder = 'score'
+    if (itemType === 'topic') {
+      getOrderAndPageOpts.defaultOrder = 'articleCount'
     }
     const [order, pageNum, err] = getOrderAndPage(req, query.page, getOrderAndPageOpts)
     if (err) { res.statusCode = 422 }
-
     let articles
     let articlesCount
     const offset = pageNum * articleLimit

@@ -1002,6 +1002,13 @@ it('api: create an article and see it on global feed', async () => {
         ))
         assert.strictEqual(status, 404)
 
+        // Topic index.
+        ;({data, status} = await test.sendJsonHttp(
+          'GET',
+          routes.topics(),
+        ))
+        assertStatus(status, data)
+
         // Topic.
         ;({data, status} = await test.sendJsonHttp(
           'GET',

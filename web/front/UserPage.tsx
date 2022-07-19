@@ -20,12 +20,13 @@ import ArticleInfo from 'front/ArticleInfo'
 import { ArticleType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
+import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 import UserList from 'front/UserList'
 
 export interface UserPageProps {
   article?: ArticleType;
-  articles?: (ArticleType & IssueType)[];
+  articles?: (ArticleType & IssueType & TopicType)[];
   articlesCount?: number;
   authoredArticleCount: number;
   comments?: CommentType[];

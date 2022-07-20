@@ -80,11 +80,11 @@ const articleData = [
               ['Azimuthal quantum number', []],
               ['Magnetic quantum number', []],
             ]],
-          ], '{c}'],
-        ], '{c}'],
+          ], { extra: '{c}' }],
+        ], { extra: '{c}' }],
         ['Quantum mechanics experiment', [
           ['Emission spectrum', [
-            ['Rydberg formula', [], '{c}'],
+            ['Rydberg formula', [], { extra: '{c}' }],
             ['Fine structure', [
               ['Hyperfine structure', []],
             ]],
@@ -95,9 +95,9 @@ const articleData = [
       ['Special relativity', [
         ['Lorentz transformation', [
           ['Time dilation', []],
-        ], '{c}'],
+        ], { extra: '{c}' }],
       ]],
-    ]],
+    ], { toplevel: true }],
     ['Chemistry', [
       ['Chemical element', [
         ['Hydrogen', [
@@ -110,10 +110,10 @@ const articleData = [
       ]],
       ['Organic chemistry', [
       ]],
-    ]],
+    ], { toplevel: true }],
     ['Biology', [
       ['Molecular biology', [
-        ['DNA', [], '{c}'],
+        ['DNA', [], { extra: '{c}' }],
         ['Protein', []],
       ]],
       ['Cell biology', [
@@ -125,7 +125,7 @@ const articleData = [
           ]],
         ]],
       ]],
-    ]],
+    ], { toplevel: true }],
   ]],
 ]
 const issueData = [
@@ -200,7 +200,7 @@ class ArticleDataProvider {
     this.head = undefined
     // Set of all entries we visited that don't have a parent.
     // We will want to include those from the toplevel index.
-    this.toplevelSet = new Set()
+    this.toplevelTitleToEntry = {}
   }
 
   // Post order depth first transversal to ensure that we create all includees
@@ -218,9 +218,9 @@ class ArticleDataProvider {
         this.head = entry
         this.i++
         for (const child of children) {
-          this.toplevelSet.delete(child[0])
+          delete this.toplevelTitleToEntry[child[0]]
         }
-        this.toplevelSet.add(title)
+        this.toplevelTitleToEntry[title] = entry
         return entry
       } else {
         for (let i = children.length - 1; i >= 0; i--) {
@@ -319,115 +319,83 @@ async function generateDemoData(params) {
       articleDataProviders[authorId] = articleDataProvider
     }
     const articleArgs = [];
+    const toplevelTopicIds = new Set()
     let dateI = 0
-    for (let i = 0; i < nArticlesPerUser; i++) {
-      for (let userIdx = 0; userIdx < nUsers; userIdx++) {
-        let authorId = users[userIdx].id
-        const articleDataProvider = articleDataProviders[authorId]
-        const date = addDays(date0, dateI)
-        dateI++
-        const articleDataEntry = articleDataProvider.get()
-        let titleSource, extra, children
-        if (articleDataEntry === undefined) {
-          titleSource = `My title ${i * (userIdx + 1)}`
-          children = []
-        } else {
-          titleSource = articleDataEntry[0]
-          children = articleDataEntry[1]
-          extra = articleDataEntry[2]
-        }
+    async function makeArticleArg(articleDataEntry, forceToplevel, i, authorId) {
+      const date = addDays(date0, dateI)
+      dateI++
+      articleDataEntry.articleIdx = i
+      let { titleSource, extra, children, opts } = expandArticleDataEntry(articleDataEntry)
+      if (opts.toplevel || forceToplevel) {
+        extra = opts.extra
         if (extra === undefined) {
           extra = ''
         } else {
           extra += '\n\n'
         }
-        let includesString, refsString
+        let refsString
         if (children.length > 0) {
           const ids = children.map(child => ourbigbook.title_to_id(child[0]))
-          includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
           refsString = 'Internal links: ' + ids.map(id => `\\x[${id}]`).join(', ') + '\n\n'
         } else {
-          includesString = ''
           refsString = ''
         }
-        const id_noscope = ourbigbook.title_to_id(await ourbigbook.convert(titleSource, { output_format: ourbigbook.OUTPUT_FORMAT_ID }))
-        const articleArg = {
+        let includesString = ''
+        const todo_visit = children.slice().reverse().map(child => [child, 2])
+        while (todo_visit.length > 0) {
+          const [articleDataEntry, level] = todo_visit.pop()
+          const { titleSource, extra, children, opts } = expandArticleDataEntry(articleDataEntry)
+          if (opts.toplevel) {
+            includesString += `\\Include[${ourbigbook.title_to_id(titleSource)}]\n`
+          } else {
+            includesString += `\n${'='.repeat(level)} ${titleSource}\n`
+            if (extra) {
+              includesString += `\n${extra}\n`
+            }
+            includesString += `\n${makeBody(titleSource)}`
+            for (let i = children.length - 1; i >= 0; i--) {
+              todo_visit.push([children[i], level + 1])
+            }
+          }
+        }
+        const id_noscope = ourbigbook.title_to_id(
+          await ourbigbook.convert(titleSource, { output_format: ourbigbook.OUTPUT_FORMAT_ID }))
+        toplevelTopicIds.add(id_noscope)
+        return {
           titleSource,
           authorId,
           createdAt: date,
           // TODO not taking effect. Appears to be because of the hook.
           updatedAt: date,
-          bodySource: `${extra}This is a section about ${titleSource}!
-
-${refsString}\\i[Italic]
-
-\\b[Bold]
-
-http://example.com[External link]
-
-Inline code: \`int main() { return 1; }\`
-
-Code block:
-\`\`
-function myFunc() {
-  return 1;
-}
-\`\`
-
-Inline math: $\\sqrt{1 + 1}$
-
-Block math and a reference to it: \\x[equation-in-${id_noscope}]:
-$$\\frac{1}{\\sqrt{2}}$$\{id=equation-in-${id_noscope}}
-
-Block quote:
-\\Q[
-To be or not to be.
-
-That is the question.
-]
-
-List:
-* item 1
-* item 2
-* item 3
-
-Table:
-|| String col
-|| Integer col
-|| Float col
-
-| ab
-| 2
-| 10.1
-
-| a
-| 10
-| 10.2
-
-| c
-| 2
-| 3.4
-
-| c
-| 3
-| 3.3
-
-Reference to the following image: \\x[image-my-xi-chrysanthemum-${id_noscope}].
-
-\\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
-{title=Xi Chrysanthemum is a very nice image}
-{id=image-my-xi-chrysanthemum-${id_noscope}}
-{source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
-
-An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
-
-\\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
-{title=Sample YouTube video in ${titleSource}}${includesString}
-`,
+          bodySource: `${extra}${makeBody(titleSource)}${includesString}`,
         }
-        articleArgs.push(articleArg)
       }
     }
+    let i
+    for (i = 0; i < nArticlesPerUser; i++) {
+      for (let userIdx = 0; userIdx < nUsers; userIdx++) {
+        let authorId = users[userIdx].id
+        const articleDataProvider = articleDataProviders[authorId]
+        const articleDataEntry = articleDataProvider.get()
+        const articleArg = await makeArticleArg(articleDataEntry, false, i, authorId)
+        if (articleArg) {
+          articleArgs.push(articleArg)
+        }
+      }
+    }
+    // All toplevel entries must be in their own articles as they will be
+    // automatically included from the Index.
+    for (let userIdx = 0; userIdx < nUsers; userIdx++) {
+      for (const title in articleDataProvider.toplevelTitleToEntry) {
+        let authorId = users[userIdx].id
+        const articleDataEntry = articleDataProvider.toplevelTitleToEntry[title]
+        const articleArg = await makeArticleArg(articleDataEntry, true, ++i, authorId)
+        if (articleArg) {
+          articleArgs.push(articleArg)
+        }
+      }
+    }
+
     //// Sort first by topic id, and then by user id to mix up votes a little:
     //// otherwise user0 gets all votes, then user1, and so on.
     //articleArgs.sort((a, b) => {
@@ -477,7 +445,7 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
       console.error(`${userIdx} ${user.username}`);
       const articleDataProvider = articleDataProviders[user.id]
       const ids = []
-      for (const titleSource of articleDataProvider.toplevelSet) {
+      for (const titleSource in articleDataProvider.toplevelTitleToEntry) {
         ids.push(ourbigbook.title_to_id(titleSource))
       }
       const includesString = '\n\n' + ids.map(id => `\\Include[${id}]`).join('\n')
@@ -499,11 +467,13 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
     // Update all pages to make them render references such as parent references
     // which were missed at initial creation time.
     if (verbose) console.error('Article update');
-    let i = 0
+    i = 0
     for (const article of articles) {
-      if (verbose) console.error(`${i} authorId=${article.file.authorId} title=${article.file.titleSource}`);
-      await article.rerender()
-      i++
+      if (toplevelTopicIds.has(article.topicId)) {
+        if (verbose) console.error(`${i} authorId=${article.file.authorId} title=${article.file.titleSource}`);
+        await article.rerender()
+        i++
+      }
     }
     //await sequelize.models.Article.update({}, { where: {}, individualHooks: true})
 
@@ -595,3 +565,95 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
   return sequelize
 }
 exports.generateDemoData = generateDemoData
+
+function expandArticleDataEntry(articleDataEntry) {
+  let titleSource, extra, children, opts
+  if (articleDataEntry === undefined) {
+    titleSource = `My title ${articleDataEntry.articleIdx * (userIdx + 1)}`
+    children = []
+    opts = {}
+  } else {
+    titleSource = articleDataEntry[0]
+    children = articleDataEntry[1]
+    opts = articleDataEntry[2] || {}
+  }
+  return { titleSource, extra, children, opts }
+}
+
+function makeBody(titleSource) {
+  return `This is a section about ${titleSource}!
+
+${titleSource} is a very important subject about which there is a lot to say.
+
+For example, this sentence. And then another one.
+`
+/*
+`This is a section about ${titleSource}!
+
+${refsString}\\i[Italic]
+
+\\b[Bold]
+
+http://example.com[External link]
+
+Inline code: \`int main() { return 1; }\`
+
+Code block:
+\`\`
+function myFunc() {
+  return 1;
+}
+\`\`
+
+Inline math: $\\sqrt{1 + 1}$
+
+Block math and a reference to it: \\x[equation-in-${id_noscope}]:
+$$\\frac{1}{\\sqrt{2}}$$\{id=equation-in-${id_noscope}}
+
+Block quote:
+\\Q[
+To be or not to be.
+
+That is the question.
+]
+
+List:
+* item 1
+* item 2
+* item 3
+
+Table:
+|| String col
+|| Integer col
+|| Float col
+
+| ab
+| 2
+| 10.1
+
+| a
+| 10
+| 10.2
+
+| c
+| 2
+| 3.4
+
+| c
+| 3
+| 3.3
+
+Reference to the following image: \\x[image-my-xi-chrysanthemum-${id_noscope}].
+
+\\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
+{title=Xi Chrysanthemum is a very nice image}
+{id=image-my-xi-chrysanthemum-${id_noscope}}
+{source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
+
+An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
+
+\\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
+{title=Sample YouTube video in ${titleSource}}${includesString}
+`,
+*/
+}

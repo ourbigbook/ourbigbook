@@ -5865,7 +5865,7 @@ This options is exactly analogous to the <numbered> option, but it affects the <
 
 If given, the toplevel output of each input source is always non-split, and a split version is not generated at all.
 
-This overrides the <\H splitDefault argument> for the toplevel header.
+This of course overrides the <\H splitDefault argument> for toplevel headers, making any links go to the non split version, as we won't have a split version at all in this case.
 
 E.g.:
 

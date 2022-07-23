@@ -63,6 +63,7 @@ async function convert({
       ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${author.username}`,
       render,
       split_headers: splitHeaders === undefined ? true : splitHeaders,
+      web: true,
     }, convertOptions),
     extra_returns,
   )

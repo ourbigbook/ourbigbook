@@ -14,8 +14,16 @@ module.exports = (sequelize) => {
         // ID is moved between two files. Previousy, we were nuking the DB of files to be converted,
         // and just extracing IDs every time. But with timestamp skipping, we just don't know if the
         // ID was moved between files or not until everything is done.
+        //
+        // Once there are no conversion errors however and the DB is stable, then they should be unique.
         //unique: true,
       },
+      // Path at which the ID is defined, relative to project toplevel. E.g.:
+      // animal/dog.bigb
+      // or on web:
+      // @username/dog.bigb
+      // It would likely have been nicer if we had just not kept the extension in there,
+      // but lazy to change now.
       path: {
         type: DataTypes.TEXT,
         allowNull: false,

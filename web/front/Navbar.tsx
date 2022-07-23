@@ -4,7 +4,7 @@ import { useRouter } from 'next/router'
 import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import Maybe from 'front/Maybe'
-import { LOGIN_ACTION, REGISTER_ACTION } from 'front'
+import { LOGIN_ACTION, REGISTER_ACTION, NewArticleIcon } from 'front'
 import { appName, aboutUrl } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
@@ -28,14 +28,13 @@ const NavLink = ({ href, onClick, children, className }: NavLinkProps) => {
     classes.push(...className.split(' '))
   }
   return (
-    <Link href={href} passHref>
-      <a
-        onClick={onClick}
-        className={classes.join(' ')}
-      >
-        {children}
-      </a>
-    </Link>
+    <CustomLink
+      href={href}
+      onClick={onClick}
+      className={classes.join(' ')}
+    >
+      {children}
+    </CustomLink>
   );
 };
 
@@ -52,7 +51,7 @@ const Navbar = () => {
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
           <NavLink href={routes.articleNew()}>
-            <i className="ion-compose" />
+            <NewArticleIcon />
             &nbsp;New
           </NavLink>
           <NavLink

@@ -1,4 +1,4 @@
-import ourbigbook from 'ourbigbook/dist/ourbigbook'
+import ourbigbook from 'ourbigbook'
 
 import { getLoggedInUser } from 'back'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
@@ -96,7 +96,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       } else {
         const articleContext = Object.assign({}, context, { params: { slug: [ uid ] } })
         const articleProps = await (getServerSidePropsArticleHoc({
-          includeIssues: true, loggedInUserCache: loggedInUser })(articleContext))
+          includeIssues: true, loggedInUserCache: loggedInUser
+        })(articleContext))
         if ('props' in articleProps) {
           Object.assign(props, articleProps.props)
         }

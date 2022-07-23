@@ -17,6 +17,7 @@ export type ArticleType = {
     bodySource: string,
   };
   id: number;
+  issuecount?: number;
   liked: boolean;
   render: string;
   score: number;
@@ -24,5 +25,6 @@ export type ArticleType = {
   tagList: string[];
   titleRender: string;
   topicId: string;
+  topicCount?: number;
   updatedAt: number;
 };

@@ -3,7 +3,7 @@ import React, { useRef, useEffect } from 'react'
 import Router, { useRouter } from 'next/router'
 import lodash from 'lodash'
 
-import ourbigbook from 'ourbigbook/dist/ourbigbook.js';
+import ourbigbook from 'ourbigbook';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
 import { convertOptions, isProduction } from 'front/config';
@@ -127,7 +127,7 @@ export default function ArticleEditorPageHoc({
           ;({ data, status } = await webApi.articleCreateOrUpdate(
             file,
             {
-              path: slugFromArray(initialFile.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false }),
+              path: slugFromArray(ourbigbook.path_splitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false }),
             }
           ))
         }

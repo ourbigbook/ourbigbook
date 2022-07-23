@@ -66,7 +66,7 @@ function createArticleArg(opts, author) {
   if (opts.bodySource !== undefined) {
     ret.bodySource = opts.bodySource
   }  else {
-    ret.bodySource = `Body ${i}`
+    ret.bodySource = `Body ${i}\.`
   }
   if (author) {
     ret.authorId = author.id
@@ -352,10 +352,11 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(status, 422)
 
     // Create article with POST.
-    article = createArticleArg({ i: 0 })
-    ;({data, status} = await test.webApi.articleCreate(article))
-    assertStatus(status, data)
-    assertRows(data.articles, [{ titleRender: 'title 0' }])
+
+      article = createArticleArg({ i: 0 })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assertStatus(status, data)
+      assertRows(data.articles, [{ titleRender: 'title 0' }])
 
     // Article creation error cases.
 
@@ -398,31 +399,51 @@ it('api: create an article and see it on global feed', async () => {
         { titleSource: 'Error', bodySource: 'The \\notdefined' }))
       assert.strictEqual(status, 422)
 
-    // Article
+    // View articles.
 
       // Access the article directly
       ;({data, status} = await test.webApi.article('user0/title-0'))
       assertStatus(status, data)
       assert.strictEqual(data.titleRender, 'title 0')
-      assert.match(data.render, /Body 0/)
+      assert.match(data.render, /Body 0\./)
 
-    // See articles on global feed.
-    ;({data, status} = await test.webApi.articles())
-    assertStatus(status, data)
-    assertRows(data.articles, [
-      { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
-      { titleRender: 'Index', slug: 'user2' },
-      { titleRender: 'Index', slug: 'user1' },
-      { titleRender: 'Index', slug: 'user0' },
-    ])
+      // See articles on global feed.
 
-    // See latest articles by a user.
-    ;({data, status} = await test.webApi.articles({ author: 'user0' }))
-    assertStatus(status, data)
-    assertRows(data.articles, [
-      { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
-      { titleRender: 'Index', slug: 'user0' },
-    ])
+      ;({data, status} = await test.webApi.articles())
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
+        { titleRender: 'Index', slug: 'user2' },
+        { titleRender: 'Index', slug: 'user1' },
+        { titleRender: 'Index', slug: 'user0' },
+      ])
+
+      // See latest articles by a user.
+
+      ;({data, status} = await test.webApi.articles({ author: 'user0' }))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { titleRender: 'title 0', slug: 'user0/title-0', render: /Body 0/ },
+        { titleRender: 'Index', slug: 'user0' },
+      ])
+
+    // Edit article.
+
+      article = createArticleArg({ i: 0, bodySource: 'Body 0 hacked.' })
+      ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
+      assertStatus(status, data)
+      assertRows(data.articles, [{ render: /Body 0 hacked\./ }])
+
+      ;({data, status} = await test.webApi.article('user0/title-0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.titleRender, 'title 0')
+      assert.match(data.render, /Body 0 hacked\./)
+
+      // Undo it for sanity.
+      article = createArticleArg({ i: 0, bodySource: 'Body 0.' })
+      ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
+      assertStatus(status, data)
+      assertRows(data.articles, [{ render: /Body 0\./ }])
 
     // Article like.
 
@@ -1098,7 +1119,7 @@ Body 0 0 hacked.
 
 Body 0 1.
 `})
-    ;({data, status} = await test.webApi.articleCreateOrUpdate(article, 'user0/title-0'))
+    ;({data, status} = await test.webApi.articleCreateOrUpdate(article, { path: 'title-0' }))
     assertStatus(status, data)
     assertRows(data.articles, [
       { titleRender: 'title 0', slug: 'user0/title-0' },

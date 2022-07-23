@@ -1,4 +1,6 @@
-/* Helper for a link that accepts parameters such as className */
+/* Helper for a link that accepts parameters such as className.
+ * Why doesn't Next.js have their own implementation? Who knows!
+ * Should be used for every single internal link. */
 
 import Link from 'next/link'
 import React from 'react'

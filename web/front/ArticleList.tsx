@@ -77,8 +77,8 @@ const ArticleList = ({
           message = `Follow some users to see their posts here.`
         } else {
           message = (<>
-            There are no {isIssue ? 'issues' : 'articles'} on this {isIssue ? 'article' : 'website'} yet.
-            Why don't you <a href={isIssue ? routes.issueNew() : routes.articleNew()}>create a new one</a>?
+            There are no {isIssue ? 'discussions' : 'articles'} on this {isIssue ? 'article' : 'website'} yet.
+            Why don't you <a href={isIssue ? routes.issueNew(issueArticle.slug) : routes.articleNew()}>create a new one</a>?
           </>)
         }
         break

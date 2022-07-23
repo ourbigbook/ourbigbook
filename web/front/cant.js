@@ -9,6 +9,9 @@ const permissions = [
   ['viewUserSettings', (loggedInUser, user) => loggedInUser.id !== user.id],
 
   // Articles
+  ['editArticle', (loggedInUser, article) => {
+    return loggedInUser.username !== article.author.username
+  }],
   ['likeArticle', (loggedInUser, article) => {
     if (loggedInUser.id === article.author.id) {
       return 'You cannot like your own article or issue'

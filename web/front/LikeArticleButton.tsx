@@ -31,9 +31,10 @@ const LikeArticleButton = ({
   }
   const handleClickLike = async (e) => {
     e.preventDefault();
-    if (cantLike) return
-    if (!loggedInUser) {
-      Router.push(routes.userLogin());
+    if (loggedInUser) {
+      if (cantLike) return
+    } else {
+      Router.push(routes.userNew());
       return;
     }
     setLiked(!liked)
@@ -63,7 +64,7 @@ const LikeArticleButton = ({
   }
   let buttonClassName;
   let title;
-  if (cantLike) {
+  if (loggedInUser && cantLike) {
     buttonClassName = 'disabled'
     title = cantLike
   } else {

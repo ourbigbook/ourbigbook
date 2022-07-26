@@ -226,6 +226,7 @@ div.editor-page {
 }
 
 div.tab-list {
+  font-weight: bold;
   margin: 10px 0;
   overflow: hidden;
   a.tab-item {
@@ -235,7 +236,6 @@ div.tab-list {
     overflow: hidden;
     &.active {
       color: $tab-bar-active-color;
-      font-weight: bold;
     }
     &:hover {
       color: $tab-bar-active-color;

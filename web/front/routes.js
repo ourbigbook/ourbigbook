@@ -23,7 +23,7 @@ module.exports = {
   articlesFollowed: (opts={}) => `/${encodeGetParamsWithPage(opts)}`,
   articles: (opts={}) => `/${escapeUsername}/articles/${encodeGetParamsWithPage(opts)}`,
   articleEdit: slug => `/${escapeUsername}/edit/${slug}`,
-  articleNew: () => `/${escapeUsername}/new`,
+  articleNew: (opts={}) => `/${escapeUsername}/new${encodeGetParams(opts)}`,
   articleNewFrom: (slug) => `/${escapeUsername}/new/${slug}`,
   article: slug => `/${slug}`,
   issueEdit: (slug, number) => `/${escapeUsername}/issue-edit/${number}/${slug}`,

@@ -17,11 +17,19 @@ import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
 import { modifyEditorInput } from 'front/js';
 
+export interface EditorPageProps {
+  article: ArticleType & IssueType;
+  titleSource?: string;
+}
+
 export default function ArticleEditorPageHoc({
   isIssue=false,
   isNew=false,
 }={}) {
-  const editor = ({ article: initialArticle }: ArticlePageProps) => {
+  const editor = ({
+  article: initialArticle,
+  titleSource,
+}: EditorPageProps) => {
     const router = useRouter();
     const {
       query: { slug },
@@ -42,12 +50,12 @@ export default function ArticleEditorPageHoc({
         bodySource += `${ourbigbook.PARAGRAPH_SEP}Adapted from: \\x[${ourbigbook.AT_MENTION_CHAR}${slugString}].`
       }
       initialFileState = {
-        titleSource: initialFile.titleSource,
+        titleSource: initialFile.titleSource || titleSource,
       }
     } else {
       bodySource = ""
       initialFileState = {
-        titleSource: "",
+        titleSource,
       }
     }
     const [isLoading, setLoading] = React.useState(false);
@@ -55,11 +63,6 @@ export default function ArticleEditorPageHoc({
     const [file, setFile] = React.useState(initialFileState);
     const ourbigbookEditorElem = useRef(null);
     const loggedInUser = useLoggedInUser()
-    useEffect(() => {
-      if (loggedInUser === null) {
-        Router.push(routes.userNew());
-      }
-    }, [loggedInUser])
     useEffect(() => {
       if (ourbigbookEditorElem && loggedInUser) {
         let editor;

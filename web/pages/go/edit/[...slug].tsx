@@ -1,4 +1,4 @@
+import { getServerSidePropsEditorHoc } from 'back/EditorPage'
+export const getServerSideProps = getServerSidePropsEditorHoc()
 import ArticleEditorPageHoc from 'front/ArticleEditorPage'
-import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
-export const getServerSideProps = getServerSidePropsArticleHoc();
-export default ArticleEditorPageHoc();
+export default ArticleEditorPageHoc()

@@ -50,7 +50,6 @@ class WebApi {
 
   async articleCreateOrUpdate(article, opts={}) {
     const { path, render } = opts
-    console.error({path, article});
     return this.req('put',
       `articles`,
       { body: { article, path, render } },

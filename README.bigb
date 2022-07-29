@@ -6936,6 +6936,7 @@ Then, if the project picks up steam, we can start considering a full WYSIWYG.
 It would be amazing to have a WebKit interface that works both on browser for the and locally.
 
 Possibilities we could reuse:
+* CKeditor https://ckeditor.com/ Used e.g. by Trilium Notes.
 * Editor.js
 
   Returns JSON AST!

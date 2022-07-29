@@ -149,6 +149,10 @@ class OurbigbookEditor {
       }
     );
     this.editor = editor
+    if (options.initialLine) {
+      // https://stackoverflow.com/questions/45123386/scroll-to-line-in-monaco-editor
+      editor.revealLineInCenter(options.initialLine)
+    }
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
       options.handleSubmit();
     })

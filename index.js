@@ -7839,8 +7839,19 @@ const OUTPUT_FORMATS_LIST = [
           const x_text_base_ret = x_text_base(ast, context, x_text_options);
           if (context.toplevel_output_path) {
             const rendered_outputs_entry = context.extra_returns.rendered_outputs[context.toplevel_output_path]
-            if (rendered_outputs_entry.title === undefined) {
+            if (
+              // Can fail due to splits, which could overwrite nonsplit values.
+              rendered_outputs_entry.title === undefined
+            ) {
               rendered_outputs_entry.title = x_text_base_ret.inner;
+              const title_arg = ast.args[Macro.TITLE_ARGUMENT_NAME]
+              rendered_outputs_entry.titleSource = render_arg(
+                title_arg,
+                clone_and_set(context, 'options',
+                  clone_and_set(context.options, 'output_format', OUTPUT_FORMAT_OURBIGBOOK)
+                )
+              )
+              rendered_outputs_entry.titleSourceLocation = title_arg.source_location
             }
           }
           ret += x_text_base_ret.full;

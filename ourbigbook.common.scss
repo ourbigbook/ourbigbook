@@ -27,6 +27,7 @@ $toplevel-horizontal-padding-right: 15px;
 
 $font-family: Arial, Helvetica, sans-serif;
 $header-font-size: 24px;
+$h1-font-size: $header-font-size * 1.5;
 
 @mixin body {
   background-color: $background-color;
@@ -40,4 +41,28 @@ $header-font-size: 24px;
       text-decoration: underline;
     }
   }
+}
+
+@mixin h-common {
+  display: inline-block;
+  font-size: $header-font-size;
+  font-weight: bold;
+  width: 100%;
+  box-sizing: border-box;
+  h1, h2, h3, h4, h5, h6 {
+    > a:first-child {
+      color: $color;
+      &:visited {
+        color: $color;
+      }
+    }
+    display: inline;
+    margin: 0;
+    // To make `word-wrap: break-word;` work, otherwise it does not take effect.
+    overflow-wrap: break-word;
+  }
+}
+
+@mixin h1-only {
+  font-size: $h1-font-size;
 }

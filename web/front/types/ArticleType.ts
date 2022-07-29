@@ -17,13 +17,15 @@ export type ArticleType = {
     bodySource: string,
   };
   id: number;
-  issuecount?: number;
+  issueCount?: number;
+  titleSourceLine: number;
   liked: boolean;
   render: string;
   score: number;
   slug: string;
   tagList: string[];
   titleRender: string;
+  titleSource: string;
   topicId: string;
   topicCount?: number;
   updatedAt: number;

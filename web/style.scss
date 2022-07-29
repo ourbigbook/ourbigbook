@@ -2,8 +2,8 @@
 
 $border-radius: 10px;
 $like-button-active-color: #FF1493;
-$tab-bar-active-color: #FF80D0;
 $nav-background-color: #AA0;
+$tab-bar-active-color: #CC0;
 $toplevel-padding: 20px;
 $toplevel-padding-mobile: 5px;
 $max-mobile-width: 635px;
@@ -159,8 +159,52 @@ div.list-container {
 }
 */
 
+// For elements that are injected into the rendered OurBigBook HTML.
+.ourbigbook {
+  .web {
+    display: inline;
+    &.top {
+      font-size: 18px;
+    }
+    &:not(.top) {
+      a,btn, button {
+        vertical-align: text-bottom;
+      }
+      .see, .new, .edit {
+        i {
+          padding: 0 4px;
+        }
+      }
+    }
+    .by-others, .issues, .see, .new, .edit {
+      i {
+        line-height: 1em;
+        vertical-align: text-bottom;
+      }
+    }
+    .by-others {
+      i {
+        font-size: 1.3em;
+      }
+    }
+    .issues {
+      i {
+        font-size: 1.2em;
+      }
+    }
+    .see, .new, .edit {
+      i {
+        font-size: 1.2em;
+      }
+    }
+  }
+}
+
 div.article-page {
   div.article-meta {
+    nav.issue-nav {
+      font-weight: bold;
+    }
     div.article-info {
       margin-bottom: 10px;
       .username {
@@ -277,7 +321,7 @@ span.shortcut {
   border-radius: $border-radius;
   margin-bottom: 10px;
   &:target .comment-header {
-    background-color: $target-background-color;
+    background-color: #552222;
   }
   .comment-header {
     border-bottom: 1px solid $color;
@@ -425,7 +469,9 @@ footer, nav.navbar {
   color: $background-color;
 }
 
-h1 {
+h1, .h1 {
+  @include h-common;
+  @include h1-only;
   margin-top: 0;
   margin-bottom: 0.2em;
 }

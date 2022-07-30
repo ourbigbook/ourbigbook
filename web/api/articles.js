@@ -64,6 +64,19 @@ router.get('/feed', auth.required, async function(req, res, next) {
 // Create File and corresponding Articles. The File must not already exist.
 router.post('/', auth.required, async function(req, res, next) {
   try {
+    const sequelize = req.app.get('sequelize')
+    const [articleCountByLoggedInUser, loggedInUser] = await Promise.all([
+      sequelize.models.User.findByPk(req.payload.id),
+      sequelize.models.Article.count({
+        include: {
+          model: sequelize.models.File,
+          as: 'file',
+          where: { authorId: req.payload.id },
+        },
+      })
+    ])
+    const err = front.hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, 'articles')
+    if (err) { throw new lib.ValidationError(err, 403) }
     return await createOrUpdateArticle(req, res, { forceNew: true })
   } catch(error) {
     next(error);
@@ -85,9 +98,12 @@ async function createOrUpdateArticle(req, res, opts) {
   const body = lib.validateParam(req, 'body')
   const articleData = lib.validateParam(body, 'article')
   const bodySource = lib.validateParam(articleData, 'bodySource', {
-    validators: [ front.isString ],
+    validators: [
+      front.isString,
+    ],
     defaultValue: ''
   })
+  lib.validateBodySize(loggedInUser, bodySource)
   const titleSource = lib.validateParam(articleData, 'titleSource', {
     validators: [front.isString, front.isTruthy]
   })

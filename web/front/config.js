@@ -41,6 +41,7 @@ module.exports = {
       },
     },
   },
+  contactUrl: 'https://github.com/cirosantilli/ourbigbook/issues',
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
   appDomain,
@@ -70,6 +71,8 @@ module.exports = {
   isProductionNext: process.env.NODE_ENV_NEXT_SERVER_ONLY === undefined ?
     (isProduction) :
     (process.env.NODE_ENV_NEXT_SERVER_ONLY === 'production'),
+  maxArticleSize: 100000,
+  maxArticles: 1000,
   secret: isProduction ? process.env.SECRET : 'secret',
   port: process.env.PORT || 3000,
   postgres: ourbigbook_nodejs_front.postgres,

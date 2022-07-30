@@ -3,6 +3,8 @@
 
 const ourbigbook = require('ourbigbook')
 
+const config = require('./config')
+
 // https://stackoverflow.com/questions/14382725/how-to-get-the-correct-ip-address-of-a-client-into-a-node-socket-io-app-hosted-o/14382990#14382990
 // Works on Heroku 2021.
 function getClientIp(req) {
@@ -54,6 +56,12 @@ function getPage(page='1') {
     }
   } else {
     return [0, 'Invalid page number']
+  }
+}
+
+function hasReachedMaxItemCount(loggedInUser, itemCount, itemType) {
+  if (!loggedInUser.admin && itemCount >= loggedInUser.maxArticles) {
+    return `You have reached your maximum number of ${itemType}: ${loggedInUser.maxArticles}. Please ask an admin to raise it for you: ${config.contactUrl}`
   }
 }
 
@@ -118,6 +126,7 @@ module.exports = {
   getOrder,
   getOrderAndPage,
   getPage,
+  hasReachedMaxItemCount,
   isBoolean,
   isNonNegativeInteger,
   isPositiveInteger,

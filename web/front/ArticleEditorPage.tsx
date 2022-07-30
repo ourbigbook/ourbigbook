@@ -2,6 +2,7 @@ import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react'
 import React, { useRef, useEffect } from 'react'
 import Router, { useRouter } from 'next/router'
 import lodash from 'lodash'
+import pluralize from 'pluralize'
 
 import ourbigbook from 'ourbigbook';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
@@ -9,18 +10,20 @@ import { OurbigbookEditor } from 'ourbigbook/editor.js';
 import { convertOptions, isProduction } from 'front/config';
 
 import { ArticlePageProps } from 'front/ArticlePage'
-import { slugFromArray } from 'front'
+import { capitalize, slugFromArray } from 'front'
 import ListErrors from 'front/ListErrors'
-import useLoggedInUser from 'front/useLoggedInUser'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
-import { modifyEditorInput } from 'front/js';
+import { hasReachedMaxItemCount, modifyEditorInput } from 'front/js';
 import { ArticleType } from 'front/types/ArticleType'
 import { IssueType } from 'front/types/IssueType'
+import { UserType } from 'front/types/UserType'
 
 export interface EditorPageProps {
   article: ArticleType & IssueType;
+  articleCountByLoggedInUser: number;
+  loggedInUser: UserType;
   titleSource?: string;
   titleSourceLine?: number;
 }
@@ -30,9 +33,11 @@ export default function ArticleEditorPageHoc({
   isNew=false,
 }={}) {
   const editor = ({
-  article: initialArticle,
-  titleSource,
-}: EditorPageProps) => {
+    article: initialArticle,
+    articleCountByLoggedInUser,
+    loggedInUser,
+    titleSource,
+  }: EditorPageProps) => {
     const router = useRouter();
     const {
       query: { slug },
@@ -46,10 +51,10 @@ export default function ArticleEditorPageHoc({
     }
     let initialFileState;
     let initialFile
-    if (initialArticle) {
+    if (initialArticle && !(isNew && isIssue)) {
       initialFile = isIssue ? initialArticle : initialArticle.file
       bodySource = initialFile.bodySource
-      if (slugString && isNew) {
+      if (slugString && isNew && !isIssue) {
         bodySource += `${ourbigbook.PARAGRAPH_SEP}Adapted from: \\x[${ourbigbook.AT_MENTION_CHAR}${slugString}].`
       }
       initialFileState = {
@@ -58,16 +63,21 @@ export default function ArticleEditorPageHoc({
     } else {
       bodySource = ""
       initialFileState = {
-        titleSource,
+        titleSource: titleSource || '',
       }
     }
+    const itemType = isIssue ? 'issue' : 'article'
     const [isLoading, setLoading] = React.useState(false);
     const [errors, setErrors] = React.useState([]);
     const [file, setFile] = React.useState(initialFileState);
     const ourbigbookEditorElem = useRef(null);
-    const loggedInUser = useLoggedInUser()
+    const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
     useEffect(() => {
-      if (ourbigbookEditorElem && loggedInUser) {
+      if (
+        ourbigbookEditorElem &&
+        loggedInUser &&
+        !maxReached
+      ) {
         let editor;
         loader.init().then(monaco => {
           //const id = ourbigbook.title_to_id(file.titleSource)
@@ -171,44 +181,48 @@ export default function ArticleEditorPageHoc({
     }
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(() => {
-      setTitle(isNew ? `New ${isIssue ? 'issue' : 'article'}` : `Editing: ${initialFile?.titleSource}`)
+      setTitle(isNew ? `New ${itemType}` : `Editing: ${initialFile?.titleSource}`)
     }, [isNew, initialFile?.titleSource])
     return (
       <div className="editor-page content-not-ourbigbook">
-        { /* <ListErrors errors={errors} /> */ }
-        <form className="editor-form">
-          <div className="title-and-actions">
-            <input
-              type="text"
-              className="title"
-              placeholder="Article Title"
-              value={file.titleSource}
-              onChange={handleTitle}
-            />
-            <div className="actions">
-              <button
-                className="btn"
-                type="button"
-                onClick={handleCancel}
-              >
-                <i className="ion-close" />&nbsp;Cancel
-              </button>
-              <button
-                className="btn"
-                type="button"
-                disabled={isLoading}
-                onClick={handleSubmit}
-              >
-                <i className="ion-checkmark" />&nbsp;{isNew ? 'Create' : 'Submit'}
-              </button>
+        { maxReached
+          ?
+          <p>{maxReached}</p>
+          :
+          <form className="editor-form">
+            <div className="title-and-actions">
+              <input
+                type="text"
+                className="title"
+                placeholder={`${capitalize(itemType)} Title`}
+                value={file.titleSource}
+                onChange={handleTitle}
+              />
+              <div className="actions">
+                <button
+                  className="btn"
+                  type="button"
+                  onClick={handleCancel}
+                >
+                  <i className="ion-close" />&nbsp;Cancel
+                </button>
+                <button
+                  className="btn"
+                  type="button"
+                  disabled={isLoading}
+                  onClick={handleSubmit}
+                >
+                  <i className="ion-checkmark" />&nbsp;{isNew ? 'Create' : 'Submit'}
+                </button>
+              </div>
             </div>
-          </div>
-          <div
-            className="ourbigbook-editor"
-            ref={ourbigbookEditorElem}
-          >
-          </div>
-        </form>
+            <div
+              className="ourbigbook-editor"
+              ref={ourbigbookEditorElem}
+            >
+            </div>
+          </form>
+        }
       </div>
     );
   };

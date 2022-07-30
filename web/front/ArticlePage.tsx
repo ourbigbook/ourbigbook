@@ -23,6 +23,7 @@ export interface ArticlePageProps {
   articlesInSamePage?: ArticleType[];
   comments?: CommentType[];
   commentsCount?: number;
+  commentCountByLoggedInUser?: number;
   issueArticle?: ArticleType;
   issuesCount?: number;
   latestIssues?: IssueType[];
@@ -35,6 +36,7 @@ const ArticlePageHoc = (isIssue=false) => {
   return ({
     article,
     articlesInSamePage,
+    commentCountByLoggedInUser,
     comments,
     commentsCount,
     issueArticle,
@@ -45,7 +47,6 @@ const ArticlePageHoc = (isIssue=false) => {
     topicArticleCount,
   }: ArticlePageProps) => {
     const router = useRouter();
-
     const author = article.author
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(() =>
@@ -53,7 +54,6 @@ const ArticlePageHoc = (isIssue=false) => {
       // https://github.com/cirosantilli/ourbigbook/issues/250
       setTitle(`${article.titleSource} by ${displayAndUsernameText(author)}`)
     )
-
     const showOthers = topicArticleCount !== undefined && topicArticleCount > 1
     const showCreateMyOwn = !loggedInUser || author.username !== loggedInUser.username
     const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
@@ -89,6 +89,7 @@ const ArticlePageHoc = (isIssue=false) => {
             <Article {...{
               article,
               articlesInSamePage,
+              commentCountByLoggedInUser,
               comments,
               commentsCount,
               issueArticle,

@@ -6,6 +6,7 @@ const permissions = [
       return "You cannot edit other users\' profiles"
     }
   }],
+  ['setUserLimits', (loggedInUser) => true],
   ['viewUserSettings', (loggedInUser, user) => loggedInUser.id !== user.id],
 
   // Articles

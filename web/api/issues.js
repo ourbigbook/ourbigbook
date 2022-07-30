@@ -47,7 +47,7 @@ async function getIssue(req, res, options={}) {
     slug,
   })
   if (!issue) {
-    throw new ValidationError(
+    throw new lib.ValidationError(
       [`issue not found: article slug: "${slug}" issue number: ${number}`],
       404,
     )
@@ -60,8 +60,9 @@ router.post('/', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
     const slug = validateParam(req.query, 'id')
-    const [article, lastIssue, loggedInUser] = await Promise.all([
+    const [article, issueCountByLoggedInUser, lastIssue, loggedInUser] = await Promise.all([
       getArticle(req, res),
+      sequelize.models.Issue.count({ where: { authorId: req.payload.id } }),
       sequelize.models.Issue.findOne({
         order: [['number', 'DESC']],
         include: [{
@@ -72,12 +73,15 @@ router.post('/', auth.required, async function(req, res, next) {
       }),
       sequelize.models.User.findByPk(req.payload.id),
     ])
+    const err = front.hasReachedMaxItemCount(loggedInUser, issueCountByLoggedInUser, 'issues')
+    if (err) { throw new ValidationError(err, 403) }
     const body = lib.validateParam(req, 'body')
     const issueData = lib.validateParam(body, 'issue')
     const bodySource = lib.validateParam(issueData, 'bodySource', {
       validators: [ front.isString ],
       defaultValue: ''
     })
+    lib.validateBodySize(loggedInUser, bodySource)
     const titleSource = lib.validateParam(issueData, 'titleSource', {
       validators: [front.isString, front.isTruthy]
     })
@@ -113,6 +117,9 @@ router.put('/:number', auth.required, async function(req, res, next) {
       validators: [front.isString],
       defaultValue: undefined,
     })
+    if (bodySource !== undefined) {
+      lib.validateBodySize(loggedInUser, bodySource)
+    }
     const titleSource = lib.validateParam(issueData, 'titleSource', {
       validators: [front.isString, front.isTruthy],
       defaultValue: undefined,
@@ -207,7 +214,8 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
   try {
     const { slug, number } = getIssueParams(req, res)
     const sequelize = req.app.get('sequelize')
-    const [issue, lastComment, loggedInUser] = await Promise.all([
+    const [commentCountByLoggedInUser, issue, lastComment, loggedInUser] = await Promise.all([
+      sequelize.models.Comment.count({ where: { authorId: req.payload.id } }),
       getIssue(req, res),
       sequelize.models.Comment.findOne({
         order: [['number', 'DESC']],
@@ -224,11 +232,14 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
       }),
       sequelize.models.User.findByPk(req.payload.id),
     ])
+    const err = front.hasReachedMaxItemCount(loggedInUser, commentCountByLoggedInUser, 'comments')
+    if (err) { throw new ValidationError(err, 403) }
     const body = lib.validateParam(req, 'body')
     const commentData = lib.validateParam(body, 'comment')
     const source = lib.validateParam(commentData, 'source', {
       validators: [front.isString],
     })
+    lib.validateBodySize(loggedInUser, source)
     const comment = await convertComment({
       issue,
       number: lastComment ? lastComment.number + 1 : 1,

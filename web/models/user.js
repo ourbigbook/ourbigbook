@@ -110,6 +110,16 @@ module.exports = (sequelize) => {
         type: DataTypes.DATE,
         allowNull: true,
       },
+      maxArticles: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: config.maxArticles,
+      },
+      maxArticleSize: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: config.maxArticleSize,
+      },
     },
     {
       hooks: {
@@ -157,6 +167,10 @@ module.exports = (sequelize) => {
       score: this.score,
       admin: this.admin,
       createdAt: this.createdAt.toISOString(),
+      // Until there are ever private articles/paid plans, you can always get
+      // a lower bound on their capacities. Let's just make them public for now then.
+      maxArticles: this.maxArticles,
+      maxArticleSize: this.maxArticleSize,
     }
     if (loggedInUser) {
       ret.following = await loggedInUser.hasFollow(this.id)

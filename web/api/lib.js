@@ -7,6 +7,15 @@
 const config = require('../front/config')
 const front = require('../front/js')
 
+function validateBodySize(loggedInUser, bodySource) {
+  if (!loggedInUser.admin && bodySource.length > loggedInUser.maxArticleSize) {
+    throw new ValidationError(
+      `The body size (${bodySource.length} bytes) was larger than you maximum article size (${loggedInUser.maxArticleSize} bytes)`,
+      403,
+    )
+  }
+}
+
 async function getArticle(req, res, options={}) {
   const slug = validateParam(req.query, 'id')
   const sequelize = req.app.get('sequelize')
@@ -125,5 +134,6 @@ module.exports = {
   getLimitAndOffset,
   getOrder,
   validate,
+  validateBodySize,
   validateParam,
 }

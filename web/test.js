@@ -89,11 +89,18 @@ function createArticleArg(opts, author) {
   return ret
 }
 
-function createIssueArg(i, j, k) {
-  return {
+function createIssueArg(i, j, k, opts={}) {
+  const ret = {
     titleSource: `The \\i[title] ${i} ${j} ${k}.`,
     bodySource: `The \\i[body] ${i} ${j} ${k}.`,
   }
+  if (opts.titleSource !== undefined) {
+    ret.titleSource = opts.titleSource
+  }
+  if (opts.bodySource !== undefined) {
+    ret.bodySource = opts.bodySource
+  }
+  return ret
 }
 
 async function createUser(sequelize, i) {
@@ -1268,5 +1275,157 @@ Body 0 1.
     assertRows(data.articles, [
       { titleRender: 'title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
     ])
+  })
+})
+
+it('api: resource limits', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    const user = await test.createUserApi(0)
+    const admin = await test.createUserApi(1)
+    await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user1' } })
+    test.enableToken(user.token)
+
+    // Non-admin users cannot edit their own resource limits.
+    ;({data, status} = await test.webApi.userUpdate('user0', {
+      maxArticles: 1,
+      maxArticleSize: 2,
+    }))
+    assertStatus(status, data)
+    assertRows([data.user], [{
+      username: 'user0',
+      maxArticles: config.maxArticles,
+      maxArticleSize: config.maxArticleSize,
+    }])
+
+    // Admin users can edit other users's resource limits.
+    test.enableToken(admin.token)
+    ;({data, status} = await test.webApi.userUpdate('user0', {
+      maxArticles: 2,
+      maxArticleSize: 3,
+    }))
+    assertStatus(status, data)
+    assertRows([data.user], [{
+      username: 'user0',
+      maxArticles: 2,
+      maxArticleSize: 3,
+    }])
+    test.enableToken(user.token)
+
+    // Article.
+
+      // maxArticleSize resource limit is enforced for non-admins.
+      article = createArticleArg({ i: 0, bodySource: 'abcd' })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assert.strictEqual(status, 403)
+
+      // maxArticleSize resource limit is not enforced for admins.
+      test.enableToken(admin.token)
+      article = createArticleArg({ i: 0, bodySource: 'abcd' })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+
+      // OK
+      article = createArticleArg({ i: 0, bodySource: 'abc' })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assertStatus(status, data)
+
+      // OK 2.
+      article = createArticleArg({ i: 1, bodySource: 'abc' })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assertStatus(status, data)
+
+      // maxArticles resource limit is enforced for non-admins.
+      article = createArticleArg({ i: 0, bodySource: 'abcd' })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assert.strictEqual(status, 403)
+
+      // OK 2 for admin.
+      test.enableToken(admin.token)
+      article = createArticleArg({ i: 1, bodySource: 'abc' })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+
+      // maxArticles resource limit is not enforced for admins.
+      test.enableToken(admin.token)
+      article = createArticleArg({ i: 2, bodySource: 'abcd' })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+
+    // Issue.
+
+      // maxArticleSize resource limit is enforced for non-admins.
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abcd' })))
+      assert.strictEqual(status, 403)
+
+      // maxArticleSize resource limit is not enforced for admins.
+      test.enableToken(admin.token)
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abcd' })))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+
+      // OK.
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
+      assertStatus(status, data)
+
+      // OK 2.
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
+      assertStatus(status, data)
+
+      // maxArticles resource limit is enforced for non-admins.
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
+      assert.strictEqual(status, 403)
+
+      // OK 2 for admin.
+      test.enableToken(admin.token)
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+
+      // maxArticles resource limit is not enforced for admins.
+      test.enableToken(admin.token)
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+
+    // Comment.
+
+      // maxArticleSize resource limit is enforced for non-admins.
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abcd'))
+      assert.strictEqual(status, 403)
+
+      // maxArticleSize resource limit is not enforced for admins.
+      test.enableToken(admin.token)
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abcd'))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+
+      // OK.
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
+      assertStatus(status, data)
+
+      // OK 2.
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
+      assertStatus(status, data)
+
+      // maxArticles resource limit is enforced for non-admins.
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
+      assert.strictEqual(status, 403)
+
+      // OK 2 for admin.
+      test.enableToken(admin.token)
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+
+      // maxArticles resource limit is not enforced for admins.
+      test.enableToken(admin.token)
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
+      assertStatus(status, data)
+      test.enableToken(user.token)
   })
 })

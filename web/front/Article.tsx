@@ -22,6 +22,7 @@ const Article = ({
   articlesInSamePage,
   comments,
   commentsCount=0,
+  commentCountByLoggedInUser=undefined,
   isIssue=false,
   issueArticle=undefined,
   issuesCount,
@@ -39,7 +40,7 @@ const Article = ({
         </>
       }
       {loggedInUser
-        ? <CustomLink href={routes.issueNew(article.slug)}><NewArticleIcon /> New Discussion</CustomLink>
+        ? <CustomLink href={routes.issueNew(article.slug)}><NewArticleIcon /> New discussion</CustomLink>
         : <SignupOrLogin to="create discussions"/>
       }
     </>
@@ -180,7 +181,13 @@ const Article = ({
         ? <>
             <h2><IssueIcon /> Comments ({ commentsCount })</h2>
             <div className="comment-form-holder">
-              <CommentInput {...{ comments, setComments, issueNumber: article.number, loggedInUser }}/>
+              <CommentInput {...{
+                comments,
+                commentCountByLoggedInUser,
+                issueNumber: article.number,
+                loggedInUser,
+                setComments,
+              }}/>
             </div>
             {curComments?.map((comment: CommentType) =>
               <Comment {...{

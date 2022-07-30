@@ -6402,7 +6402,18 @@ For example, to make user `barack-obama` admin on a development run:
 ``
 sqlite3 web/db.sqlite3 "UPDATE \"User\" SET admin = true WHERE username='barack-obama'"
 ``
-or to make `cirosantilli` admin in a <Heroku deployment> you can run:
+We have a helper for that at:
+``
+./web/bin/make-admin barack-obama
+``
+It can be called from any directory, e.g.:
+``
+cd web
+./bin/make-admin barack-obama
+``
+It currently only works on SQLite.
+
+Or e.g. to make `cirosantilli` admin in a <Heroku deployment> you can run:
 ``
 heroku psql -a ourbigbook -c "UPDATE \"User\" SET admin = true WHERE username='cirosantilli'"
 ``

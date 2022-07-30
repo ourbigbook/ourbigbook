@@ -21,7 +21,7 @@ commander.option('-c, --max-comments-per-article <n>', 'maximum number of commen
 commander.option('-f, --follows-per-user <n>', 'n follows per user', myParseInt);
 commander.option('-l, --likes-per-user <n>', 'n likes per user', myParseInt);
 commander.option('--force-production', 'allow running in production, DELETES ALL DATA', false);
-commander.option('--clear', 'clear the database and create demo data from scratch instead of just updating existing entries', false);
+commander.option('-C, --clear', 'clear the database and create demo data from scratch instead of just updating existing entries', false);
 commander.option('--empty', 'ignore everything else and make an empty database instead. Implies --reset', false);
 commander.option('-u, --users <n>', 'n users', myParseInt);
 commander.parse(process.argv);

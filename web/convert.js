@@ -148,7 +148,14 @@ async function convertArticle({
     await sequelize.models.Article.bulkCreate(
       articleArgs,
       {
-        updateOnDuplicate: ['titleRender', 'titleSource', 'titleSourceLine', 'render', 'topicId', 'updatedAt'],
+        updateOnDuplicate: [
+          'titleRender',
+          'titleSource',
+          'titleSourceLine',
+          'render',
+          'topicId',
+          'updatedAt',
+        ],
         transaction
       }
     )

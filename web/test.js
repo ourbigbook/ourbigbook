@@ -1356,13 +1356,13 @@ it('api: resource limits', async () => {
     // Admin users can edit other users's resource limits.
     test.enableToken(admin.token)
     ;({data, status} = await test.webApi.userUpdate('user0', {
-      maxArticles: 2,
+      maxArticles: 3,
       maxArticleSize: 3,
     }))
     assertStatus(status, data)
     assertRows([data.user], [{
       username: 'user0',
-      maxArticles: 2,
+      maxArticles: 3,
       maxArticleSize: 3,
     }])
     test.enableToken(user.token)
@@ -1381,18 +1381,18 @@ it('api: resource limits', async () => {
       assertStatus(status, data)
       test.enableToken(user.token)
 
-      // OK
+      // OK, second article including Index.
       article = createArticleArg({ i: 0, bodySource: 'abc' })
       ;({data, status} = await test.webApi.articleCreate(article))
       assertStatus(status, data)
 
-      // OK 2.
+      // OK 2, third article including Index.
       article = createArticleArg({ i: 1, bodySource: 'abc' })
       ;({data, status} = await test.webApi.articleCreate(article))
       assertStatus(status, data)
 
       // maxArticles resource limit is enforced for non-admins.
-      article = createArticleArg({ i: 0, bodySource: 'abcd' })
+      article = createArticleArg({ i: 2, bodySource: 'abcd' })
       ;({data, status} = await test.webApi.articleCreate(article))
       assert.strictEqual(status, 403)
 
@@ -1410,7 +1410,39 @@ it('api: resource limits', async () => {
       assertStatus(status, data)
       test.enableToken(user.token)
 
+    // Multiheader articles count as just one article.
+
+      // Increment article limit by two from 3 to 5. User had 3, so now there are two left.
+      // Also increment article size so we can fit the header in.
+      test.enableToken(admin.token)
+      ;({data, status} = await test.webApi.userUpdate('user0', {
+        maxArticles: 5,
+        maxArticleSize: 100,
+      }))
+      assertStatus(status, data)
+      test.enableToken(user.token)
+
+      // This should count as just one, totalling 4.
+      article = createArticleArg({ i: 2, bodySource: `== Title 2 1
+` })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assertStatus(status, data)
+
+      // So now we can still do one more, totalling 5.
+      article = createArticleArg({ i: 3, bodySource: `abc`})
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assertStatus(status, data)
+
     // Issue.
+
+      // Change limit to 2 now that we don't have Index.
+      test.enableToken(admin.token)
+      ;({data, status} = await test.webApi.userUpdate('user0', {
+        maxArticles: 2,
+        maxArticleSize: 3,
+      }))
+      assertStatus(status, data)
+      test.enableToken(user.token)
 
       // maxArticleSize resource limit is enforced for non-admins.
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abcd' })))

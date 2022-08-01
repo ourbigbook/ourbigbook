@@ -66,14 +66,8 @@ router.post('/', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
     const [articleCountByLoggedInUser, loggedInUser] = await Promise.all([
+      sequelize.models.File.count({ where: { authorId: req.payload.id } }),
       sequelize.models.User.findByPk(req.payload.id),
-      sequelize.models.Article.count({
-        include: {
-          model: sequelize.models.File,
-          as: 'file',
-          where: { authorId: req.payload.id },
-        },
-      })
     ])
     const err = front.hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, 'articles')
     if (err) { throw new lib.ValidationError(err, 403) }

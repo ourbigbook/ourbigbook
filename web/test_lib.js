@@ -234,7 +234,7 @@ class ArticleDataProvider {
 
 async function generateDemoData(params) {
   // Input Param defaults.
-  const nUsers = params.nUsers === undefined ? 11 : params.nUsers
+  const nUsers = params.nUsers === undefined ? 2 : params.nUsers
   const nArticlesPerUser = params.nArticlesPerUser === undefined ? articleDataCount : params.nArticlesPerUser
   const nMaxIssuesPerArticle = params.nMaxIssuesPerArticle === undefined ? 3 : params.nMaxIssuesPerArticle
   const nMaxCommentsPerIssue = params.nMaxCommentsPerIssue === undefined ? 3 : params.nMaxCommentsPerIssue

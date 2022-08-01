@@ -767,7 +767,9 @@ function xpath_header(n, id, insideH) {
   } else {
     insideH = ''
   }
-  let ret = `//x:div[@class='h'`
+  // The horror:
+  // https://stackoverflow.com/questions/1604471/how-can-i-find-an-element-by-css-class-with-xpath
+  let ret = `//x:div[(@class='h' or contains(@class, 'h '))`
   if (id) {
     ret += ` and @id='${id}'`
   }
@@ -5099,7 +5101,7 @@ assert_convert_ast('xss: H id',
   undefined,
   {
     assert_xpath_main: [
-      "//x:div[@class=\"h\" and @id=concat('&<>\"', \"'\")]",
+      "//x:div[contains(@class, \"h \") and @id=concat('&<>\"', \"'\")]",
     ]
   }
 );

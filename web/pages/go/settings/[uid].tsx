@@ -170,6 +170,14 @@ export async function getServerSideProps(context) {
     ])
     if (!user) { return { notFound: true } }
     const props: SettingsProps = {}
+    if (!loggedInUser) {
+      return {
+        redirect: {
+          destination: routes.userNew(),
+          permanent: false,
+        }
+      }
+    }
     if (cant.viewUserSettings(loggedInUser, user)) {
       return { notFound: true }
     } else {

@@ -1,4 +1,5 @@
-import { getCookieFromReq, AUTH_COOKIE_NAME } from 'front'
+import { getCookieFromReq } from 'front'
+import { AUTH_COOKIE_NAME } from 'front/js'
 import { verify } from 'jsonwebtoken'
 import { secret } from 'front/config'
 

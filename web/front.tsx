@@ -5,12 +5,12 @@ import { mutate } from 'swr'
 import ourbigbook from 'ourbigbook';
 
 import { webApi } from 'front/api'
+import { AUTH_COOKIE_NAME } from 'front/js'
 import CustomLink from 'front/CustomLink'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { IssueType } from 'front/types/IssueType'
 
-export const AUTH_COOKIE_NAME = 'auth'
 export const AUTH_LOCAL_STORAGE_NAME = 'user'
 export const LOGIN_ACTION = 'Sign in'
 export const REGISTER_ACTION = 'Sign up'

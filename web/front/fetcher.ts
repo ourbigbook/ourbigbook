@@ -1,5 +1,6 @@
 import axios from 'axios'
-import { AUTH_COOKIE_NAME, getCookie } from 'front'
+import { getCookie } from 'front'
+import { AUTH_COOKIE_NAME } from 'front/js'
 
 const updateOptions = () => {
   if (typeof window === "undefined") return {};

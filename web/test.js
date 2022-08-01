@@ -7,6 +7,7 @@ const config = require('./front/config')
 const routes = require('./front/routes')
 const convert = require('./convert')
 const test_lib = require('./test_lib')
+const { AUTH_COOKIE_NAME } = require('./front/js')
 
 const web_api = require('ourbigbook/web_api')
 
@@ -158,16 +159,21 @@ function testApp(cb, opts={}) {
     }
     test.sendJsonHttp = async function (method, path, opts={}) {
       const { body, useToken } = opts
-      let token
+      let token, headers = {}
       if (useToken === undefined || useToken) {
         token = test.token
+        if (token) {
+          // So we can test logged-in Next.js GET requests.
+          // This is never done on the actual website from js (cookies are sent by browser automatically only).
+          headers.Cookie = `${AUTH_COOKIE_NAME}=${token}`
+        }
       } else {
         token = undefined
       }
       return web_api.sendJsonHttp(
         method,
         path,
-        Object.assign({ body }, jsonHttpOpts)
+        Object.assign({ body, headers }, jsonHttpOpts)
       )
     }
     // Create user and save the token for future requests.
@@ -1083,7 +1089,8 @@ it('api: create an article and see it on global feed', async () => {
     assert.strictEqual(status, 404)
 
     if (testNext) {
-      async function testNextRun() {
+      // Tests with the same result for logged in or off.
+      async function testNextLoggedInOrOff() {
         // Index.
         ;({data, status} = await test.sendJsonHttp(
           'GET',
@@ -1171,12 +1178,59 @@ it('api: create an article and see it on global feed', async () => {
       }
 
       // Logged in.
-      await testNextRun()
+      await testNextLoggedInOrOff()
 
       // Logged out.
       test.disableToken()
-      await testNextRun()
-      test.enableToken()
+      await testNextLoggedInOrOff()
+      test.enableToken(user.token)
+
+      // Cases where logged out access leads to redirect to signup page.
+      async function testRedirIfLoggedOff(cb) {
+        test.disableToken()
+        let {data, status} = await cb()
+        assert.strictEqual(status, 307)
+        test.enableToken(user.token)
+        ;({data, status} = await cb())
+        assertStatus(status, data)
+      }
+      await testRedirIfLoggedOff(async () => test.sendJsonHttp(
+        'GET',
+        routes.articleNew(),
+      ))
+      await testRedirIfLoggedOff(async () => test.sendJsonHttp(
+        'GET',
+        routes.articleEdit('user0/title-0'),
+      ))
+      await testRedirIfLoggedOff(async () => test.sendJsonHttp(
+        'GET',
+        routes.issueNew('user0/title-0'),
+      ))
+      await testRedirIfLoggedOff(async () => test.sendJsonHttp(
+        'GET',
+        routes.issueEdit('user0/title-0', 1),
+      ))
+      await testRedirIfLoggedOff(async () => test.sendJsonHttp(
+        'GET',
+        routes.userEdit('user0'),
+      ))
+
+      // Non admins cannot see the settings page of other users.
+      test.enableToken(user.token)
+      ;({data, status} = await test.sendJsonHttp(
+        'GET',
+        routes.userEdit('user1'),
+      ))
+      assert.strictEqual(status, 404)
+
+      // Admins can see the settings page of other users.
+      test.enableToken(user2.token)
+      ;({data, status} = await test.sendJsonHttp(
+        'GET',
+        routes.userEdit('user1'),
+      ))
+      assertStatus(status, data)
+      test.enableToken(user.token)
     }
   }, { canTestNext: true })
 })

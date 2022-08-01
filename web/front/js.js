@@ -122,6 +122,7 @@ function isTruthy(s) {
 }
 
 module.exports = {
+  AUTH_COOKIE_NAME: 'auth',
   getClientIp,
   getOrder,
   getOrderAndPage,

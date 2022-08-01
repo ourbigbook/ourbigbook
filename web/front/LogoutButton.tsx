@@ -1,7 +1,8 @@
 import Router from 'next/router'
 import { mutate } from 'swr'
 
-import { AUTH_COOKIE_NAME, AUTH_LOCAL_STORAGE_NAME, deleteCookie } from 'front'
+import { AUTH_LOCAL_STORAGE_NAME, deleteCookie } from 'front'
+import { AUTH_COOKIE_NAME } from 'front/js'
 
 const LogoutButton = () => {
   const handleLogout = async (e) => {

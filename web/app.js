@@ -110,7 +110,7 @@ async function start(port, startNext, cb) {
   app.use(function(err, req, res, next) {
     // Automatiaclly handle Sequelize validation errors.
     if (err instanceof sequelize.Sequelize.ValidationError) {
-      if (!config.isProduction) {
+      if (!config.isProduction && !config.isTest) {
         // The fuller errors can be helpful during development.
         console.error(err);
       }

@@ -9,7 +9,7 @@ const {
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 const { ValidationError } = require('./api/lib')
-const { convertOptions } = require('./front/config')
+const { convertOptions, maxArticleTitleSize } = require('./front/config')
 const { modifyEditorInput } = require('./front/js')
 
 // Subset of convertArticle for usage in issues and comments.
@@ -90,91 +90,100 @@ async function convertArticle({
   titleSource,
   transaction,
 }) {
-  if (render === undefined) {
-    render = true
-  }
-  const { db_provider, extra_returns, input_path } = await convert({
-    author,
-    bodySource,
-    forceNew,
-    path,
-    render,
-    sequelize,
-    titleSource,
-    transaction,
-  })
-  const idid = extra_returns.context.header_tree.children[0].ast.id
-  const filePath = `${idid}.${ourbigbook.OURBIGBOOK_EXT}`
-  if (forceNew && await sequelize.models.File.findOne({ where: { path: filePath }, transaction })) {
-    throw new ValidationError(`Article already exists: ${idid}`)
-  }
-  await update_database_after_convert({
-    authorId: author.id,
-    bodySource,
-    extra_returns,
-    db_provider,
-    sequelize,
-    path: filePath,
-    render,
-    titleSource,
-    transaction,
-  })
-  if (render) {
-    const check_db_errors = await ourbigbook_nodejs_webpack_safe.check_db(
+  let articles
+  await sequelize.transaction({ transaction }, async (transaction) => {
+    if (render === undefined) {
+      render = true
+    }
+    const { db_provider, extra_returns, input_path } = await convert({
+      author,
+      bodySource,
+      forceNew,
+      path,
+      render,
       sequelize,
-      [input_path],
-      transaction
-    )
-    if (check_db_errors.length > 0) {
-      throw new ValidationError(check_db_errors)
-    }
-    const file = await sequelize.models.File.findOne({ where: { path: filePath }, transaction })
-    const articleArgs = []
-    for (const outpath in extra_returns.rendered_outputs) {
-      const rendered_output = extra_returns.rendered_outputs[outpath]
-      articleArgs.push({
-        fileId: file.id,
-        render: rendered_output.full,
-        slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
-        titleRender: rendered_output.title,
-        titleSource: rendered_output.titleSource,
-        titleSourceLine: rendered_output.titleSourceLocation.line,
-        topicId: outpath.slice(
-          ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
-          -ourbigbook.HTML_EXT.length - 1
-        ),
-      })
-    }
-    await sequelize.models.Article.bulkCreate(
-      articleArgs,
-      {
-        updateOnDuplicate: [
-          'titleRender',
-          'titleSource',
-          'titleSourceLine',
-          'render',
-          'topicId',
-          'updatedAt',
-        ],
-        transaction
-      }
-    )
-    // Find here because upsert not yet supported in SQLite.
-    // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
-    const articles = await sequelize.models.Article.findAll({
-      where: { slug: articleArgs.map(arg => arg.slug) },
-      include: {
-        model: sequelize.models.File,
-        as: 'file',
-      },
-      order: [['slug', 'ASC']],
+      titleSource,
       transaction,
     })
-    await sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction })
-    return articles
-  } else {
-    return []
-  }
+    const idid = extra_returns.context.header_tree.children[0].ast.id
+    const filePath = `${idid}.${ourbigbook.OURBIGBOOK_EXT}`
+    if (forceNew && await sequelize.models.File.findOne({ where: { path: filePath }, transaction })) {
+      throw new ValidationError(`Article already exists: ${idid}`)
+    }
+    await update_database_after_convert({
+      authorId: author.id,
+      bodySource,
+      extra_returns,
+      db_provider,
+      sequelize,
+      path: filePath,
+      render,
+      titleSource,
+      transaction,
+    })
+    if (render) {
+      const check_db_errors = await ourbigbook_nodejs_webpack_safe.check_db(
+        sequelize,
+        [input_path],
+        transaction
+      )
+      if (check_db_errors.length > 0) {
+        throw new ValidationError(check_db_errors)
+      }
+      const file = await sequelize.models.File.findOne({ where: { path: filePath }, transaction })
+      const articleArgs = []
+      for (const outpath in extra_returns.rendered_outputs) {
+        const rendered_output = extra_returns.rendered_outputs[outpath]
+        articleArgs.push({
+          fileId: file.id,
+          render: rendered_output.full,
+          slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
+          titleRender: rendered_output.title,
+          titleSource: rendered_output.titleSource,
+          titleSourceLine: rendered_output.titleSourceLocation.line,
+          topicId: outpath.slice(
+            ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
+            -ourbigbook.HTML_EXT.length - 1
+          ),
+        })
+        if (titleSource.length > maxArticleTitleSize) {
+          throw new ValidationError(`Title source too long: ${titleSource.length} bytes, maximum: ${maxArticleTitleSize} bytes, title: ${titleSource}`)
+        }
+      }
+      await sequelize.models.Article.bulkCreate(
+        articleArgs,
+        {
+          updateOnDuplicate: [
+            'titleRender',
+            'titleSource',
+            'titleSourceLine',
+            'render',
+            'topicId',
+            'updatedAt',
+          ],
+          transaction,
+          // Trying this to validate mas titleSource length here leads to another error.
+          // validate: true,
+          // individualHooks: true,
+        }
+      )
+      // Find here because upsert not yet supported in SQLite.
+      // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
+      articles = await sequelize.models.Article.findAll({
+        where: { slug: articleArgs.map(arg => arg.slug) },
+        include: {
+          model: sequelize.models.File,
+          as: 'file',
+        },
+        order: [['slug', 'ASC']],
+        transaction,
+      })
+      await sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction })
+    } else {
+      articles = []
+    }
+  })
+  return articles
 }
 
 async function convertComment({ issue, number, sequelize, source, user }) {
@@ -209,6 +218,9 @@ async function convertIssue({ article, bodySource, issue, number, sequelize, tit
     } else {
       issue.titleSource = titleSource
     }
+  }
+  if (titleSource.length > maxArticleTitleSize) {
+    //throw new ValidationError(`Title source too long: ${titleSource.length} bytes, maximum: ${maxArticleTitleSize} bytes, title: ${titleSource}`)
   }
   const { extra_returns } = await convert({
     author: user,

@@ -8,7 +8,14 @@ module.exports = (sequelize) => {
     'Issue',
     {
       // OurBigBook Markup source for toplevel header title.
-      titleSource: DataTypes.STRING(512),
+      titleSource: {
+        type: DataTypes.TEXT,
+        validate: {
+          len: {
+            args: [1, config.maxArticleTitleSize],
+          },
+        },
+      },
       // OurBigBook Markup source for body withotu toplevel header title..
       bodySource: DataTypes.TEXT,
       // Rendered toplevel header title.

@@ -6430,6 +6430,42 @@ We also have a custom setup where, if the database is not initialized, we first:
 * manually fill in the `SequelizeMeta` migration tracking table with all available migrations to tell Sequelize that all migrations have been done up to this point
 This is something that should be merged into Sequelize itself, or at least asked on Stack Overflow, but lazy now.
 
+In order to test migrations locally interactivelly, you can:
+* commit them on Git
+* `git checkout HEAD~`
+* reset the database with <demo data>:
+  ``
+  cd web
+  ./bin/generate-demo-data.js --clear
+  ``
+* Move back to master:
+  `git checkout -`
+* Run the migration:
+  ``
+  ./bin/sync-db.js
+  ``
+This is usually done in a single command:
+``
+cd web &&
+git add migrations &&
+git commit -an &&
+git checkout HEAD~ &&
+./bin/generate-demo-data.js --clear &&
+git checkout - &&
+./bin/sync-db.js
+``
+
+For PostgreSQL:
+``
+cd web &&
+git add migrations &&
+git commit -an &&
+git checkout HEAD~ &&
+OURBIGBOOK_POSTGRES=true ./bin/generate-demo-data.js --clear &&
+git checkout - &&
+NODE_ENV=production OURBIGBOOK_POSTGRES=true ./bin/sync-db.js
+``
+
 = OurBigBook Web nuke DB instead of migrating
 {c}
 {parent=OurBigBook Web database migration setup}

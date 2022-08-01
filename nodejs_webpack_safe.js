@@ -695,7 +695,8 @@ async function check_db(sequelize, paths_converted, transaction) {
           as: 'from',
           attributes: ['id'],
         },
-      ]
+      ],
+      transaction,
     }),
     await sequelize.models.Id.findDuplicates(
       paths_converted, transaction),

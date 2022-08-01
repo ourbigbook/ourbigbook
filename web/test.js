@@ -76,8 +76,11 @@ async function createArticle(sequelize, author, opts) {
 
 function createArticleArg(opts, author) {
   const i = opts.i
-  const ret = {
-    titleSource: `title ${i}`,
+  const ret = {}
+  if (opts.titleSource !== undefined) {
+    ret.titleSource = opts.titleSource
+  } else {
+    ret.titleSource = `title ${i}`
   }
   if (opts.bodySource !== undefined) {
     ret.bodySource = opts.bodySource
@@ -261,7 +264,7 @@ it('Article.getArticlesInSamePage', async function() {
     bodySource: '',
     number: 1,
     sequelize,
-    titleSource: '',
+    titleSource: 'a',
     user: user0
   })
 
@@ -1353,7 +1356,7 @@ it('api: resource limits', async () => {
       maxArticleSize: config.maxArticleSize,
     }])
 
-    // Admin users can edit other users's resource limits.
+    // Admin users can edit other users' resource limits.
     test.enableToken(admin.token)
     ;({data, status} = await test.webApi.userUpdate('user0', {
       maxArticles: 3,
@@ -1386,8 +1389,20 @@ it('api: resource limits', async () => {
       ;({data, status} = await test.webApi.articleCreate(article))
       assertStatus(status, data)
 
+      // maxArticleSize resource limit is enforced for all users.
+      article = createArticleArg({ titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assert.strictEqual(status, 422)
+
+      // Even admin.
+      test.enableToken(admin.token)
+      article = createArticleArg({ titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })
+      ;({data, status} = await test.webApi.articleCreate(article))
+      assert.strictEqual(status, 422)
+      test.enableToken(user.token)
+
       // OK 2, third article including Index.
-      article = createArticleArg({ i: 1, bodySource: 'abc' })
+      article = createArticleArg({ titleSource: '0'.repeat(config.maxArticleTitleSize), bodySource: 'abc' })
       ;({data, status} = await test.webApi.articleCreate(article))
       assertStatus(status, data)
 
@@ -1458,8 +1473,21 @@ it('api: resource limits', async () => {
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
       assertStatus(status, data)
 
+      // maxArticleSize resource limit is enforced for all users.
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(
+        0, 0, 0, { titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })))
+      assert.strictEqual(status, 422)
+
+      // Even admin.
+      test.enableToken(admin.token)
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(
+        0, 0, 0, { titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })))
+      assert.strictEqual(status, 422)
+      test.enableToken(user.token)
+
       // OK 2.
-      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(
+        0, 0, 0, { titleSource: '0'.repeat(config.maxArticleTitleSize), bodySource: 'abc' })))
       assertStatus(status, data)
 
       // maxArticles resource limit is enforced for non-admins.

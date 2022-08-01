@@ -113,6 +113,10 @@ function isSmallerOrEqualTo(max) {
   return (n) => n <= max
 }
 
+function isLengthSmallerOrEqualTo(max) {
+  return (s) => s.length <= max
+}
+
 function isString(s) {
   return typeof s === 'string'
 }
@@ -129,6 +133,7 @@ module.exports = {
   getPage,
   hasReachedMaxItemCount,
   isBoolean,
+  isLengthSmallerOrEqualTo,
   isNonNegativeInteger,
   isPositiveInteger,
   isSmallerOrEqualTo,

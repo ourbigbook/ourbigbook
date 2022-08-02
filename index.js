@@ -3668,6 +3668,9 @@ function link_get_href_content(ast, context) {
   let content = render_arg(ast.args.content, context);
   if (content === '') {
     content = render_arg(ast.args.href, context);
+    if (!context.id_conversion) {
+      content = content.replace(/^https?:\/\//, '')
+    }
   }
   return [href, content];
 }

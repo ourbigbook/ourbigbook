@@ -609,13 +609,15 @@ The general macro syntax is described at <OurBigBook Markup syntax>{full}.
 {synonym}
 {title2}
 
-<Insane> autolink (link text is the same as the link):
+<Insane> autolink, i.e. the link text is the same as the link address:
 \OurBigBookExample[[
 The website http://example.com is cool. See also:
 
 \Q[http://example.com/2]
 ]]
 Exact parsing rules described at: <insane link parsing rules>{full}.
+
+Note that the prefixes `http://` and `https://` are automatically removed from the displayed link, since they are so common that they woudly simply add noise.
 
 Equivalent sane version:
 \OurBigBookExample[[[

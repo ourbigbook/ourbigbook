@@ -6,7 +6,6 @@ $nav-background-color: #AA0;
 $tab-bar-active-color: #CC0;
 $toplevel-padding: 20px;
 $toplevel-padding-mobile: 5px;
-$max-mobile-width: 635px;
 
 html {
 height: 100%;
@@ -206,7 +205,12 @@ div.article-page {
       font-weight: bold;
     }
     div.article-info {
-      margin-bottom: 10px;
+      @media only screen and (max-width: $max-mobile-width) {
+        margin-bottom: 10px;
+      }
+      @media only screen and (min-width: $max-mobile-width + 1) {
+        margin-bottom: 20px;
+      }
       .username {
         font-size: 1.2em;
         img.profile-thumb {
@@ -306,6 +310,12 @@ span.shortcut {
  * So for now we are taking the approach of adding this class to every content (non-hav/footer)
  * to make them align nicely with rendered Ourbigbook. */
 .content-not-ourbigbook {
+  h1, .h1 {
+    @include h-common;
+    @include h1-only;
+    margin-top: 0;
+    margin-bottom: 0.2em;
+  }
   @media only screen and (max-width: $max-mobile-width) {
     padding-left: $toplevel-padding-mobile;
     padding-right: $toplevel-padding-mobile;
@@ -467,13 +477,6 @@ footer {
 footer, nav.navbar {
   background-color: $nav-background-color;
   color: $background-color;
-}
-
-h1, .h1 {
-  @include h-common;
-  @include h1-only;
-  margin-top: 0;
-  margin-bottom: 0.2em;
 }
 
 nav.navbar {

@@ -28,6 +28,7 @@ $toplevel-horizontal-padding-right: 15px;
 $font-family: Arial, Helvetica, sans-serif;
 $header-font-size: 24px;
 $h1-font-size: $header-font-size * 1.5;
+$max-mobile-width: 635px;
 
 @mixin body {
   background-color: $background-color;

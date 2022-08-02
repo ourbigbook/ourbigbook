@@ -18,9 +18,6 @@ module.exports = (sequelize) => {
     {
       username: {
         type: DataTypes.STRING(config.usernameMaxLength),
-        set(v) {
-          this.setDataValue('username', v.toLowerCase())
-        },
         unique: {
           msg: 'This username is taken.'
         },
@@ -29,25 +26,22 @@ module.exports = (sequelize) => {
             args: [config.usernameMinLength, config.usernameMaxLength],
             msg: `Usernames must be between ${config.usernameMinLength} and ${config.usernameMaxLength} characters`
           },
-          not: {
-            args: /[^a-z0-9-]/,
-            msg: 'Usernames can only contain lowercase letters (a-z), numbers (0-9) and dashes (-)' + sampleUsername
-          },
           is: {
             args: /^[a-z]/,
             msg: 'Usernames must start with a letter lowercase letter (a-z)' + sampleUsername
           },
-          not: {
-            args: /--/,
-            msg: 'Usernames cannot contain a double dash (-)' + sampleUsername
-          },
-          not: {
-            args: /-$/,
-            msg: 'Usernames cannot end in a dash (-)' + sampleUsername
-          },
           isNotReserved(value) {
             if (value in config.reservedUsernames) {
-              throw new Error(`This username is reserved: ${value}`);
+              throw new Error(`This username is reserved: ${value}`)
+            }
+            if (/[^a-z0-9-]/.test(value)) {
+              throw new Error('Usernames can only contain lowercase letters (a-z), numbers (0-9) and dashes (-)' + sampleUsername)
+            }
+            if (/--/.test(value)) {
+              throw new Error('Usernames cannot contain a double dash (-)' + sampleUsername)
+            }
+            if (/-$/.test(value)) {
+              throw new Error('Usernames cannot end in a dash (-)' + sampleUsername)
             }
           },
         }

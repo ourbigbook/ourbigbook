@@ -2,19 +2,29 @@
 {c}
 {id=ourbigbook}
 
+= OurBigBook Project
+{c}
+{synonym}
+
 The OurBigBook Project creates writing tools to help anyone publish textbooks, with a strong focus on the natural sciences.
 
 Mission: to live in a world where you can learn university-level mathematics, physics, chemistry, biology and engineering from perfect free open source books that anyone can write to get famous.
+
+How to get there: <OurBigBook Web>[create a website] that incentivizes learners (notably university students taking courses) to write freely licensed university-level natural science books for free. Their motivation for doing that are:
+* getting their knowledge globally recognized and thus better jobs
+* improving the world
+* learning by teaching
 
 \Image[logo.svg]
 {height=150}
 {title=Logo of the OurBigBook Project}
 
-The <OurBigBook Web> website is the main tool of the project, further rationale for it can be found at: https://cirosantilli.com/ourbigbook-com[]. <OurBigBook CLI> is another complementary tool.
+The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> is another complementary tool.
 
-* https://ourbigbook.com[]: reference <OurBigBook Web> instance
+* https://OurBigBook.com[]: reference <OurBigBook Web> instance
 * https://cirosantilli.com/sponsor[]: donate to the OurBigBook Project
-* https://twitter.com/OurBigBook[]: announcements
+* https://twitter.com/OurBigBook[]: announcements. Other official accounts at: <official accounts>{full}
+* https://cirosantilli.com/ourbigbook-com[]: further rationale behind the project
 * https://cirosantilli.com[]: showcase static demo document with interesting content, published with <OurBigBook CLI>. Primary inspiration for OurBigBook development.
   * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
   * https://github.com/cirosantilli/cirosantilli.github.io[] and https://github.com/cirosantilli/cirosantilli.github.io/blob/dev/oxford-nanopore-river-bacteria.bigb[]: source of the above showcase documents
@@ -2385,8 +2395,8 @@ In this approach, you create a separate GitHub repository in addition to the mai
 This approach is more suitable than <store images inside the repository itself> if you are going to have a lot of images.
 
 When using this approach, you could of course just point directly to the final image URL, e.g. as in:
-\OurBigBookExample[[\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg\]]]
-but OurBigBook allows you use configurations that allow you to enter just the image basename: `Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg` which we will cover next.
+\OurBigBookExample[[\Image[https://raw.githubusercontent.com/cirosantilli/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page.png\]]]
+but OurBigBook allows you use configurations that allow you to enter just the image basename: `Fundamental_theorem_of_calculus_topic_page.png` which we will cover next.
 
 In order to get this to work, the recommended repository setup is:
 * `./main-repo/.git`: main repository at https://github.com/username/main-repo
@@ -2394,12 +2404,12 @@ In order to get this to work, the recommended repository setup is:
 The directory and repository names are not mandatory, but if you place media in `data/media` and name its repository by adding the `*-media` suffix, then `ourbigbook` will handle everything for you without any further configuration in <ourbigbook json/media-providers>.
 
 This particular documentation repository does have a different setup as can be seen from its \a[ourbigbook.json]. Then, when everything is setup correctly, we can refer to images simply as:
-\OurBigBookExample[[\Image[Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}]]
+\OurBigBookExample[[\Image[Fundamental_theorem_of_calculus_topic_page.png]{provider=github}]]
 In this example, we also needed to set `{provider=github}` explicitly since it was not set as the default image provider in our `ourbigbook.json`. In most projects however, all of your images will be in the default repository, so this won't be needed.
 
 `provider` must not be given when a full URL is given because we automatically detect providers from URLs, e.g.:
 ``
-\Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]{provider=github}
+\Image[https://raw.githubusercontent.com/cirosantilli/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page.png]{provider=github}
 ``
 is an error.
 
@@ -2521,6 +2531,20 @@ https://github.com/cirosantilli/ourbigbook/issues/40
 
 = Image argument
 {parent=Image}
+
+= Image `border` argument
+{parent=Image argument}
+{tag=Named argument}
+{tag=Boolean argument}
+
+Adds a border around the image. This can be useful to make it clearer where images start and end when the image background color is the same as the background color of the OurBigBook document.
+
+\OurBigBookExample[[
+\Image[logo.svg]
+{border}
+{height=150}
+{title=Logo of the OurBigBook Project with a border around it.}
+]]
 
 = Image `check` argument
 {parent=Image argument}
@@ -6061,7 +6085,7 @@ The main entry point for the JavaScript API is the `ourbigbook.convert` function
 
 An example can be seen under \a[lib_hello.js].
 
-Note that while doing a simple conversion is easy, things get harder if you want to take multifile features in consideration, notably <cross file reference internals>.
+Note that while doing a simple conversion is easy, things get harder if you want to take multi-file features in consideration, notably <cross file reference internals>.
 
 This is because these features require interacting with the <ID database>, and we don't do that from the default `ourbigbook.convert` API because different deployments will have very different implementations, notably:
 * local Node.js run uses SQLite, an implementation can be seen in the \a[ourbigbook] file class `SqliteDbProvider`
@@ -6076,7 +6100,143 @@ This is because these features require interacting with the <ID database>, and w
 {synonym}
 {title2}
 
-OurBigBook Web is the project that powers https://ourbigbook.com[]. Some more motivation is available at: https://cirosantilli.com/ourbigbook-com[].
+OurBigBook Web is the software program that powers https://OurBigBook.com[], its official flagship instance. <OurBigBook Web> is currently the main tool developed by the <OurBigBook Project>.
+
+This section contains both <OurBigBook Web user manual>[end user documentation] and <OurBigBook Web development>[developer documentation].
+
+More subjective rationale, motivation and planning aspects of the project are documented at: https://cirosantilli.com/ourbigbook-com[].
+
+= OurBigBook Web user manual
+{c}
+{parent=OurBigBook Web}
+
+<OurBigBook Web> is a bit like Wikipedia, but where each user can have their own version of each page, and it <can my OurBigBook.com content be edited or removed by other users?>[cannot be edited by others without permission].
+
+Suppose that Mr. Barack Obama is your calculus teacher this semester.
+
+Being an enlightened teacher, Mr. Obama writes everything that he knows on his OurBigBook.com account. His home page look something like the following tree:
+* https://ourbigbook.com/barack-obama[]: Obama's toplevel index pages linking to all his pages
+  * https://ourbigbook.com/barack-obama/mathematics[Mathematics]
+    * https://ourbigbook.com/barack-obama/calculus[Calculus]
+      * https://ourbigbook.com/barack-obama/derivativep[Derivative]
+      * https://ourbigbook.com/barack-obama/integral[Integral]
+        * https://ourbigbook.com/barack-obama/fundamental-theorem-of-calculus[Fundamental theorem of calculus]
+    * https://ourbigbook.com/barack-obama/algebra[Algebra]
+  * https://ourbigbook.com/barack-obama/physics[Physics]
+
+On your first day of class, Mr. Obama tells his students to read the "Calculus" section, ask him any questions that come up online, and just walks away. No time wasted!
+
+While you are working through the sections under "Calculus", you happen to notice that the "Fundamental theorem of calculus" article is a bit hard to understand. Mr. Obama is a good teacher, but no one can write perfect tutorials of every little thing, right?
+
+This is where OurBigBook comes to your rescue. There are two ways that it can help you solve the problem:
+* <OurBigBook Web topics>
+* <OurBigBook Web discussions>
+
+= OurBigBook Web topics
+{c}
+{parent=OurBigBook Web user manual}
+
+Topics group articles that have the same title by different users. This feature allows you to find the best article for a given topic.
+
+\Image[Fundamental_theorem_of_calculus_subheader_by_others.png]
+{height=350}
+{border}
+{provider=github}
+{description=Click the "Articles by other on the same topic" button. We can see that there are 3 articles in total by "Fundamental theorem of calculus", so maybe one of the others will help! URL: https://ourbigbook.com/barack-obama/mathematics#fundamental-theorem-of-calculus[]}
+
+\Image[Fundamental_theorem_of_calculus_topic_page.png]
+{border}
+{provider=github}
+{height=300}
+{description=After clicking that button, we reach the page for the "Fundamental theorem of calculus" topic page. Here we see that there are 3 articles in total. The one by Mr. Donald Trump has 1 vote, while the others have zero. So maybe it is the best one. Let's click it. URL: https://ourbigbook.com/go/topic/fundamental-theorem-of-calculus[]}
+
+\Image[Fundamental_theorem_of_calculus_by_Donald_Trump.png]
+{border}
+{provider=github}
+{description=So finally, we are now in Trump's page. Clearly, a superior article, that will enlighten our problem. Donald must either be a very good teacher or a hard working student from some other university. URL: https://ourbigbook.com/donald-trump/fundamental-theorem-of-calculus[]}
+
+= OurBigBook Web discussions
+{c}
+{parent=OurBigBook Web user manual}
+
+Each article has their own discussion section. This way you can easily see if other user
+
+\Image[Fundamental_theorem_of_calculus_subheader_discussion.png]
+{border}
+{height=300}
+{provider=github}
+{description=Click the "Discussions" button to see if other people hit the same problem as you and created a discussion thread for it. We see that there are 3 total discussions about this header, so let's check them out. URL: https://ourbigbook.com/barack-obama/mathematics#fundamental-theorem-of-calculus[]}
+
+\Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussions.png]
+{border}
+{height=300}
+{provider=github}
+{description=From these 3 recent threads, the first one has one like, and it seems that someone found the same difficulty that we did. URL: https://ourbigbook.com/go/issues/barack-obama/fundamental-theorem-of-calculus[]}
+
+\Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png]
+{border}
+{height=600}
+{provider=github}
+{description=So let's inspect that discussion. Ah, clearly, the comments are very illuminating, our problem is solved! URL: https://ourbigbook.com/go/issue/1/barack-obama/fundamental-theorem-of-calculus[]}
+
+= OurBigBook.com policies
+{c}
+{parent=OurBigBook Web user manual}
+{wiki}
+
+This session describes policies specific to the OurBigBook.com instance of <OurBigBook Web>.
+
+Documentation present under <OurBigBook Web user manual> describes <OurBigBook Web> in general.
+
+These policies only applies to the official reference https://OurBigBook.com instance. If you host your own <OurBigBook Web>, there are no constraints imposed on your content, only on the source code as per \a[LICENSE.txt].
+
+= OurBigBook.com content license
+{c}
+{parent=OurBigBook.com policies}
+
+All original content, or reuploads of pre-published content that you own copyright for, are immediately licensed as under the https://creativecommons.org/licenses/by-sa/4.0/[Creative Commons CC BY-SA 4.0] license upon upload. This is for example the same license family used by Wikipedia.
+
+Any non-freely licensed content that you upload and do not own copyright for might be considered fair use. Fair use are murky waters. Wikipedia takes a very strict approach of very limited fair use: https://en.wikipedia.org/wiki/Wikipedia:Non-free_content[], but we are more relaxed to it, and only take gray cases down upon copyright owner request.
+
+Some examples of what should generally be OK:
+* quote up to a paragraph from a copyrighted book, clearly attributing it
+* explain what you've learned from a book or course in your own words.
+
+  You also have to take some care to not copy the exact structure of the original, as that itself could be subject to copyright.
+
+  One good approach is to just use several sources. If multiple sources use the same structure, then it is more arguable that this structure is not a novel copyrighted thing.
+* use a copyrighted photograph when there is no free alternative to illustrate what you are talking about
+
+If the copyright owner complains, we might have to take something down, but as long as you are not just uploading a bunch of obviously copyrighted content, it's not the end of the world, we'll just find another freer way to explain things without them.
+
+= What content can I publish on OurBigBook.com?
+{parent=OurBigBook.com policies}
+
+Anything you want, as long as it is legal. This notably includes not violating copyright, see also: <OurBigBook.com content license>.
+
+At some distant point in the future we could start letting people self tag content that is illegal in certain countries or for certain age groups, and we could then block this content to satisfy the laws of each country.
+
+= Can my OurBigBook.com content be edited or removed by other users?
+{parent=OurBigBook.com policies}
+
+Websites such as Wikipedia or Stack Exchange have a political system where users can gain priviledges, and once they have gained those priviledges, they can edit or delete your content.
+
+In OurBigBook Web, unless you explicitly give other users permission to do so, only <OurBigBook Web admin>[admins] of the website can ever delete any content, and that will only ever be done if:
+* the content is illegal, see also <What content can I publish on OurBigBook.com?>
+* you are trying to hack us!
+
+Admins will always be a small number of people, either employed by, or highly trusted by OurBigBook Project leaders. They are not community elected. Their actions may be reversed at anytime by the OurBigBook Project leadership.
+
+= If OurBigBook.com shuts down, will I lose all my content?
+{parent=OurBigBook.com policies}
+
+We haven't implemented it yet, but it is an important feature that we will implement: you will be able to download all your content as a .zip file containing <OurBigBook Markup> files, and then you will be able to generate the HTML for your content on your own computer with the open source OurB implementation. There are then several alternative ways to host the generated HTML files, including free ones such as GitHub Pages.
+
+= OurBigBook Web development
+{parent=OurBigBook Web}
+
+= Local development server
+{parent=OurBigBook Web development}
 
 OurBigBook Web is a regular databased backed dynamic website. This is unlike the static websites generated by <OurBigBook CLI>:
 * static websites are simpler and cheaper to run, but they are harder to setup for non-programmers
@@ -6085,12 +6245,6 @@ OurBigBook Web is a regular databased backed dynamic website. This is unlike the
 The source for OurBigBook Web, source code is fully contained under https://github.com/cirosantilli/ourbigbook/tree/master/web[the `web/` directory of the OurBigBook Project source code]. OurBigBook Web can be seen as a separate Node.js package which uses the <OurBigBook Library> as a dependency.
 
 OurBigBook Web was originally forked from the following starter boilerplate: https://github.com/cirosantilli/node-express-sequelize-realworld-example-app[]. We are trying to keep tech synced as much as possible between both projects, since the boilerplate is useful as a tech demo to quickly try out new technologies in a more minimal setup, but it has started to lag a bit behind. The web stack of OurBigBook Web is described at: <OurBigBook Web tech stack>.
-
-= OurBigBook Web development
-{parent=OurBigBook Web}
-
-= Local development server
-{parent=OurBigBook Web development}
 
 It is highly recommended that you use the exact same Node.js and NPM versions as given under \a[package.json] `engines.js` entry. The best way to do that is likely to use NVM as explained at: https://stackoverflow.com/questions/16898001/how-to-install-a-specific-version-of-node-on-ubuntu/47376491#47376491
 
@@ -7828,6 +7982,19 @@ firefox index.html
 
 = Public relations
 {parent=Developing OurBigBook}
+
+= Official accounts
+{parent=Public relations}
+
+* https://OurBigBook.com (base insensitive)
+* https://twitter.com/OurBigBook (case insensitive)
+* Discord: OurBigBook#6998 "OurBigBook's Server" invite link: https://discord.gg/A8P5zGcWUh
+* LinkedIn group: https://www.linkedin.com/groups/9164882/
+* Facebook:
+  * page: https://www.facebook.com/OurBigBook (case insensitive)
+  * group: https://www.facebook.com/groups/OurBigBook (case insensitive)
+* https://www.instagram.com/ourbigbook (case insensitive)
+* https://github.com/OurBigBook GitHub organization (case insensitive)
 
 = Project logo
 {parent=Public relations}

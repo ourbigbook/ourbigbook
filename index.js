@@ -3570,9 +3570,15 @@ function html_img({ alt, ast, context, rendered_attrs, src }) {
     href: src,
     source_location: ast.args.src.source_location,
   }))
+  let border_attr
+  if (ast.validation_output.border.boolean) {
+    border_attr = html_attr('class', 'border')
+  } else {
+    border_attr = ''
+  }
   return `<img${html_attr('src',
     html_escape_attr(src))
-  }${html_attr('loading', 'lazy')}${rendered_attrs}${alt}>${error}\n`;
+  }${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}>${error}\n`;
 }
 
 function html_is_whitespace_text_node(ast) {
@@ -6781,6 +6787,10 @@ const TokenType = make_enum([
 ]);
 const DEFAULT_MEDIA_HEIGHT = 315;
 const IMAGE_INLINE_BLOCK_COMMON_NAMED_ARGUMENTS = [
+  new MacroArgument({
+    name: 'border',
+    boolean: true,
+  }),
   new MacroArgument({
     name: 'check',
     boolean: true,

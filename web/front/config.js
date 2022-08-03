@@ -25,6 +25,7 @@ if (process.env.NODE_ENV === 'test') {
 }
 
 const appDomain = 'ourbigbook.com'
+const docsUrl = `https://docs.${appDomain}`
 
 module.exports = {
   apiPath: '/' + ourbigbook.WEB_API_PATH,
@@ -45,8 +46,8 @@ module.exports = {
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
   appDomain,
-  docsUrl: `https://docs.${appDomain}`,
-  aboutUrl: "https://cirosantilli.com/ourbigbook-com",
+  docsUrl,
+  aboutUrl: `${docsUrl}#ourbigbook-web-user-manual`,
   appName: `OurBigBook.com`,
   buttonActiveClass: 'active',
   defaultProfileImage: `https://static.productionready.io/images/smiley-cyrus.jpg`,

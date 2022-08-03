@@ -18,9 +18,10 @@ if (typeof window !== 'undefined') {
   require('tablesort/src/sorts/tablesort.number.js')
 }
 
+let myDocument
+
 // toplevel: if given, is an Element (not document) under which OurBigBook Marktup runtime will take effect.
 export function ourbigbook_runtime(toplevel) {
-  let myDocument
   if (toplevel === undefined) {
     toplevel = document;
     myDocument = document
@@ -157,10 +158,10 @@ async function ourbigbook_load_scripts(script_urls) {
       if (ourbigbook_load_scripts.loaded.has(script_url)) {
         resolve();
       } else {
-        var script = toplevel.createElement('script');
+        var script = myDocument.createElement('script');
         script.onload = resolve;
         script.src = script_url
-        toplevel.head.appendChild(script);
+        myDocument.head.appendChild(script);
       }
     });
   }

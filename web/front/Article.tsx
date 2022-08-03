@@ -52,125 +52,128 @@ const Article = ({
     }
   }
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
-  function renderRefCallback(elem) {
-    if (elem) {
-      for (const h of elem.querySelectorAll('.h')) {
-        const id = h.id
-        const web = h.querySelector('.web')
-        const toplevel = web.classList.contains('top')
-        // TODO rename to article later on.
-        let curArticle, isIndex
-        if (isIssue) {
-          if (!toplevel) {
-            continue
-          }
-          curArticle = article
-        } else if (
-          // Happens on user index page.
-          id === ''
-        ) {
-          curArticle = article
-          isIndex = true
-        } else {
-          curArticle = articlesInSamePageMap[id]
-          if (!curArticle) {
-            // Possible for Include headers. Maybe one day we will cover them.
-            continue
-          }
-        }
-        let mySlug
-        if (loggedInUser) {
-          mySlug = `${loggedInUser.username}/${curArticle.topicId}`
-        }
-        ReactDOM.render(
-          <>
-            <LikeArticleButton {...{
-              article: curArticle,
-              loggedInUser,
-              isIssue: false,
-              showText: toplevel,
-            }} />
-            {!isIssue &&
-              <>
-                {' '}
-                {!isIndex &&
-                  <a className="by-others btn" href={routes.topic(id)} title="Articles by others on the same topic">
-                    <TopicIcon title={false} /> {curArticle.topicCount}{toplevel ? <> By Others<span className="mobile-hide"> On Same Topic</span></> : ''}
-                  </a>
-                }
-                {' '}
-                <a className="issues btn" href={routes.issues(curArticle.slug)} title="Discussions">
-                  <IssueIcon title={false} /> {isIndex ? issuesCount : curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
-              </>
+  const renderRefCallback = React.useCallback(
+    (elem) => {
+      if (elem) {
+        for (const h of elem.querySelectorAll('.h')) {
+          const id = h.id
+          const web = h.querySelector('.web')
+          const toplevel = web.classList.contains('top')
+          // TODO rename to article later on.
+          let curArticle, isIndex
+          if (isIssue) {
+            if (!toplevel) {
+              continue
             }
-            {toplevel &&
-              <>
-                {' '}
-                <span title="Last updated">
-                  <TimeIcon />{' '}
+            curArticle = article
+          } else if (
+            // Happens on user index page.
+            id === ''
+          ) {
+            curArticle = article
+            isIndex = true
+          } else {
+            curArticle = articlesInSamePageMap[id]
+            if (!curArticle) {
+              // Possible for Include headers. Maybe one day we will cover them.
+              continue
+            }
+          }
+          let mySlug
+          if (loggedInUser) {
+            mySlug = `${loggedInUser.username}/${curArticle.topicId}`
+          }
+          ReactDOM.render(
+            <>
+              <LikeArticleButton {...{
+                article: curArticle,
+                loggedInUser,
+                isIssue: false,
+                showText: toplevel,
+              }} />
+              {!isIssue &&
+                <>
+                  {' '}
+                  {!isIndex &&
+                    <a className="by-others btn" href={routes.topic(id)} title="Articles by others on the same topic">
+                      <TopicIcon title={false} /> {curArticle.topicCount}{toplevel ? <> By Others<span className="mobile-hide"> On Same Topic</span></> : ''}
+                    </a>
+                  }
+                  {' '}
+                  <a className="issues btn" href={routes.issues(curArticle.slug)} title="Discussions">
+                    <IssueIcon title={false} /> {isIndex ? issuesCount : curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
+                </>
+              }
+              {toplevel &&
+                <>
+                  {' '}
+                  <span title="Last updated">
+                    <TimeIcon />{' '}
+                    <span className="article-dates">
+                      {formatDate(article.updatedAt)}
+                    </span>
+                  </span>
+                </>
+              }
+              {false && article.createdAt !== article.updatedAt &&
+                <>
+                  <span className="mobile-hide">
+                    {' Updated: '}
+                  </span>
                   <span className="article-dates">
                     {formatDate(article.updatedAt)}
                   </span>
-                </span>
-              </>
-            }
-            {false && article.createdAt !== article.updatedAt &&
-              <>
-                <span className="mobile-hide">
-                  {' Updated: '}
-                </span>
-                <span className="article-dates">
-                  {formatDate(article.updatedAt)}
-                </span>
-              </>
-            }
-            {canEdit
-              ?
-              <>
-                {' '}
-                <span>
-                  {false && <>TODO: convert this a and all other injected links to Link. https://github.com/cirosantilli/ourbigbook/issues/274</> }
-                  <a
-                    href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
-                    className="btn edit"
-                  >
-                    <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
-                  </a>
-                </span>
-              </>
-              :
-              <>
-                {!isIssue &&
-                  <>
-                    {curArticle.hasSameTopic
-                      ? <>
-                          {article.slug !== mySlug &&
-                            <>
-                              {' '}
-                              <a href={routes.article(mySlug)} className="btn see" title="See my version of this topic">
-                                  {' '}<SeeIcon title={false}/>{toplevel ? ' See My Version' : ''}{' '}
-                              </a>
-                            </>
-                          }
-                        </>
-                      : <>
-                          {' '}
-                          <a href={routes.articleNew({ title: curArticle.titleSource })} className="btn new" title="Create my version of this topic">
-                            {' '}<NewArticleIcon title={false}/>{toplevel ? ' Create my own version' : ''}{' '}
-                          </a>
-                        </>
-                    }
-                  </>
-                }
-              </>
-            }
-          </>,
-          web
-        );
+                </>
+              }
+              {canEdit
+                ?
+                <>
+                  {' '}
+                  <span>
+                    {false && <>TODO: convert this a and all other injected links to Link. https://github.com/cirosantilli/ourbigbook/issues/274</> }
+                    <a
+                      href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
+                      className="btn edit"
+                    >
+                      <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
+                    </a>
+                  </span>
+                </>
+                :
+                <>
+                  {!isIssue &&
+                    <>
+                      {curArticle.hasSameTopic
+                        ? <>
+                            {article.slug !== mySlug &&
+                              <>
+                                {' '}
+                                <a href={routes.article(mySlug)} className="btn see" title="See my version of this topic">
+                                    {' '}<SeeIcon title={false}/>{toplevel ? ' See My Version' : ''}{' '}
+                                </a>
+                              </>
+                            }
+                          </>
+                        : <>
+                            {' '}
+                            <a href={routes.articleNew({ title: curArticle.titleSource })} className="btn new" title="Create my version of this topic">
+                              {' '}<NewArticleIcon title={false}/>{toplevel ? ' Create my own version' : ''}{' '}
+                            </a>
+                          </>
+                      }
+                    </>
+                  }
+                </>
+              }
+            </>,
+            web
+          );
+        }
+        ourbigbook_runtime(elem);
       }
-      ourbigbook_runtime(elem);
-    }
-  }
+    },
+    []
+  );
   return <>
     <div
       dangerouslySetInnerHTML={{ __html: article.render }}

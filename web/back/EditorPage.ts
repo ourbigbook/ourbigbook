@@ -15,12 +15,13 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
       const slugString = slug instanceof Array ? slug.join('/') : undefined
       const number = params ? params.number ? Number(params.number) : undefined : undefined
       const sequelize = req.sequelize
+      const existingIssue = isIssue && number
       const [article, issue, [loggedInUser, articleCountByLoggedInUser]] = await Promise.all([
         slugString ? sequelize.models.Article.getArticle({
           sequelize,
           slug: slugString,
         }) : null,
-        (isIssue && number) ? sequelize.models.Issue.getIssue({
+        (existingIssue) ? sequelize.models.Issue.getIssue({
           sequelize,
           number,
           slug: slugString,
@@ -51,7 +52,10 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
         }
       }
       const [articleJson, loggedInUserJson] = await Promise.all([
-        slugString ? article.toJson(loggedInUser) : null,
+        isIssue
+          ? existingIssue ? issue.toJson(loggedInUser) : null
+          : slugString ? article.toJson(loggedInUser) : null
+        ,
         loggedInUser.toJson(),
       ])
       const props: EditorPageProps = {

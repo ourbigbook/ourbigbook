@@ -66,7 +66,11 @@ const LoginForm = ({ register = false }) => {
           if (data.verified) {
             if (data.user) {
               await setupUserLocalStorage(data.user, setErrors)
-              Router.back()
+              // TODO would be cool to have proper return home here.
+              // But as it stands it is too broken, notably our default redirection pattern now is page -> signup -> signin.
+              // so after signin user goes back to signup, making it feel like the signin failed.
+              //Router.back()
+              Router.push(routes.home())
             }
           } else {
             Router.push(routes.userVerify(data.user.email))

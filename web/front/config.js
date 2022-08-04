@@ -33,9 +33,9 @@ module.exports = {
   convertOptions: {
     body_only: true,
     html_x_extension: false,
-    magic_leading_at: false,
+    x_leading_at_to_web: false,
     path_sep: '/',
-    remove_leading_at: true,
+    x_remove_leading_at: true,
     ourbigbook_json: {
       h: {
         numbered: false,

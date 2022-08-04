@@ -5,6 +5,7 @@ import lodash from 'lodash'
 import pluralize from 'pluralize'
 
 import ourbigbook from 'ourbigbook';
+import web_api from 'ourbigbook/web_api';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
 import { convertOptions, isProduction } from 'front/config';
@@ -26,6 +27,48 @@ export interface EditorPageProps {
   loggedInUser: UserType;
   titleSource?: string;
   titleSourceLine?: number;
+}
+
+class RestDbProvider extends web_api.DbProviderBase {
+  constructor() {
+    super()
+  }
+
+  async get_noscopes_base_fetch(ids, ignore_paths_set, context) {
+    const { data: { rows }, status } = await webApi.editorGetNoscopesBaseFetch(ids, Array.from(ignore_paths_set))
+    return this.rows_to_asts(rows, context)
+  }
+
+  async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set, context }) {
+    return []
+  }
+
+  async fetch_header_tree_ids(starting_ids_to_asts) {
+    return []
+  }
+
+  async fetch_ancestors(toplevel_id) {
+    return []
+  }
+
+  build_header_tree(fetch_header_tree_ids_rows, { context }) {
+    return []
+  }
+
+  fetch_ancestors_build_tree(rows, context) {
+    return []
+  }
+
+  get_refs_to(type, to_id, reversed=false) {
+    return []
+  }
+
+  async fetch_files(paths, context) {
+    const { data: { rows }, status } = await webApi.editorFetchFiles(paths)
+    for (const row of rows) {
+      this.add_file_row_to_cache(row, context)
+    }
+  }
 }
 
 export default function ArticleEditorPageHoc({
@@ -81,7 +124,6 @@ export default function ArticleEditorPageHoc({
         let editor;
         loader.init().then(monaco => {
           //const id = ourbigbook.title_to_id(file.titleSource)
-          //const input_path = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${id}.${ourbigbook.OURBIGBOOK_EXT}`
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,
             bodySource,
@@ -90,8 +132,11 @@ export default function ArticleEditorPageHoc({
             ourbigbook_runtime,
             {
               convertOptions: lodash.merge({
-                input_path: initialFile?.path,
+                db_provider: new RestDbProvider(),
+                input_path: initialFile?.path || `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/asdf.${ourbigbook.OURBIGBOOK_EXT}`,
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
+                x_external_prefix: '../'.repeat(window.location.pathname.match(/\//g).length - 1),
+                //input_path: `${.slice(1)}.${ourbigbook.OURBIGBOOK_EXT}`,
               }, convertOptions),
               handleSubmit,
               initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,

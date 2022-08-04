@@ -105,6 +105,20 @@ function isPositiveInteger(i) {
   return i > 0
 }
 
+function isArrayOf(cb) {
+  return (a) => {
+    if (!(a instanceof Array)) {
+      return false
+    }
+    for (const elem of a) {
+      if (!cb(elem)) {
+        return false
+      }
+    }
+    return true
+  }
+}
+
 function isBoolean(tf) {
   return typeof tf === 'boolean'
 }
@@ -132,6 +146,7 @@ module.exports = {
   getOrderAndPage,
   getPage,
   hasReachedMaxItemCount,
+  isArrayOf,
   isBoolean,
   isLengthSmallerOrEqualTo,
   isNonNegativeInteger,

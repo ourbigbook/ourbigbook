@@ -238,24 +238,25 @@ export default function ArticleEditorPageHoc({
         }
       }
       setLoading(false);
-      if (status !== 200) {
+      if (status === 200) {
+        // This is a hack for the useEffect cleanup callback issue.
+        ourbigbookEditorElem.current.ourbigbookEditor.dispose()
+
+        let redirTarget
+        if (isIssue) {
+          redirTarget = routes.issue(slugString, data.issue.number)
+        } else {
+          if (isNew) {
+            redirTarget = routes.article(data.articles[0].slug)
+          } else {
+            redirTarget = routes.article(slugString)
+          }
+        }
+        Router.push(redirTarget, null, { scroll: true });
+      } else {
         setErrors(data.errors);
       }
 
-      // This is a hack for the useEffect cleanup callback issue.
-      ourbigbookEditorElem.current.ourbigbookEditor.dispose()
-
-      let redirTarget
-      if (isIssue) {
-        redirTarget = routes.issue(slugString, data.issue.number)
-      } else {
-        if (isNew) {
-          redirTarget = routes.article(data.articles[0].slug)
-        } else {
-          redirTarget = routes.article(slugString)
-        }
-      }
-      Router.push(redirTarget, null, { scroll: true });
     };
     useCtrlEnterSubmit(handleSubmit)
     const handleCancel = async (e) => {

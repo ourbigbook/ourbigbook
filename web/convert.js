@@ -125,7 +125,11 @@ async function convertArticle({
           slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
           titleRender: rendered_output.title,
           titleSource: rendered_output.titleSource,
-          titleSourceLine: rendered_output.titleSourceLocation.line,
+          titleSourceLine:
+            rendered_output.titleSourceLocation
+              ? rendered_output.titleSourceLocation.line
+              // Can happen if user tries to add h1 to a document. TODO investigate further why.
+              : undefined,
           topicId: outpath.slice(
             ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
             -ourbigbook.HTML_EXT.length - 1

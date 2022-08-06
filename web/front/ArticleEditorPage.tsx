@@ -32,11 +32,24 @@ export interface EditorPageProps {
 class RestDbProvider extends web_api.DbProviderBase {
   constructor() {
     super()
+    this.fetched_ids = new Set()
+    this.fetched_files = new Set()
   }
 
   async get_noscopes_base_fetch(ids, ignore_paths_set, context) {
-    const { data: { rows }, status } = await webApi.editorGetNoscopesBaseFetch(ids, Array.from(ignore_paths_set))
-    return this.rows_to_asts(rows, context)
+    const unfetched_ids = []
+    for (const id of ids) {
+      if (!this.fetched_ids.has(id)) {
+        this.fetched_ids.add(id)
+        unfetched_ids.push(id)
+      }
+    }
+    if (unfetched_ids.length) {
+      const { data: { rows }, status } = await webApi.editorGetNoscopesBaseFetch(unfetched_ids, Array.from(ignore_paths_set))
+      return this.rows_to_asts(rows, context)
+    } else {
+      return []
+    }
   }
 
   async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set, context }) {
@@ -64,9 +77,18 @@ class RestDbProvider extends web_api.DbProviderBase {
   }
 
   async fetch_files(paths, context) {
-    const { data: { rows }, status } = await webApi.editorFetchFiles(paths)
-    for (const row of rows) {
-      this.add_file_row_to_cache(row, context)
+    const unfetched_files = []
+    for (const path of paths) {
+      if (!this.fetched_files.has(path)) {
+        this.fetched_files.add(path)
+        unfetched_files.push(path)
+      }
+    }
+    if (unfetched_files.length) {
+      const { data: { rows }, status } = await webApi.editorFetchFiles(unfetched_files)
+      for (const row of rows) {
+        this.add_file_row_to_cache(row, context)
+      }
     }
   }
 }

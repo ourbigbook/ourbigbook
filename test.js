@@ -10,6 +10,7 @@ const { Sequelize } = require('sequelize')
 const ourbigbook = require('./index')
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
+const { read_include } = require('./web_api');
 const models = require('./models');
 const { assert_xpath_main } = require('./test_lib')
 
@@ -125,7 +126,7 @@ function assert_convert_ast(
       options.extra_convert_opts.path_sep = PATH_SEP;
     }
     if (!('read_include' in options.extra_convert_opts)) {
-      options.extra_convert_opts.read_include = ourbigbook_nodejs_webpack_safe.read_include({
+      options.extra_convert_opts.read_include = read_include({
         exists: (inpath) => inpath in options.filesystem,
         read: (inpath) => options.filesystem[inpath],
         path_sep: PATH_SEP,

@@ -20,7 +20,7 @@ const { Op, Sequelize } = require('sequelize')
 const ourbigbook = require('ourbigbook');
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
-const { WebApi } = require('ourbigbook/web_api')
+const { WebApi, read_include } = require('ourbigbook/web_api')
 
 const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
 const OURBIGBOOK_TEX_BASENAME = 'ourbigbook.tex';
@@ -830,7 +830,7 @@ if (commander.helpMacros) {
     output_format,
     outfile: commander.outfile,
     path_sep: path.sep,
-    read_include: ourbigbook_nodejs_webpack_safe.read_include({
+    read_include: read_include({
       exists: (inpath) => fs.existsSync(path.join(ourbigbook_json_dir, inpath)),
       read: (inpath) => fs.readFileSync(path.join(ourbigbook_json_dir, inpath), ourbigbook_nodejs_webpack_safe.ENCODING),
       path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,

@@ -5832,6 +5832,7 @@ function path_split(str, sep) {
     return [str.substring(0, dir_sep_index), str.substr(dir_sep_index + 1)];
   }
 }
+exports.path_split = path_split
 
 function path_splitext(str) {
   const sep_index = str.lastIndexOf('.')

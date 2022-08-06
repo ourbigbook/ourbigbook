@@ -40,6 +40,7 @@ class RestDbProvider extends web_api.DbProviderBase {
   }
 
   async get_noscopes_base_fetch(ids, ignore_paths_set, context) {
+<<<<<<< Updated upstream
     const unfetched_ids = []
     for (const id of ids) {
       if (
@@ -59,6 +60,11 @@ class RestDbProvider extends web_api.DbProviderBase {
     } else {
       return []
     }
+=======
+    const { data: { rows }, status } = await webApi.editorGetNoscopesBaseFetch(ids, Array.from(ignore_paths_set))
+    console.error({ids});
+    return this.rows_to_asts(rows, context)
+>>>>>>> Stashed changes
   }
 
   async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set, context }) {
@@ -164,8 +170,13 @@ export default function ArticleEditorPageHoc({
             {
               convertOptions: lodash.merge({
                 db_provider: new RestDbProvider(),
+<<<<<<< Updated upstream
                 input_path: initialFile?.path || `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/asdf.${ourbigbook.OURBIGBOOK_EXT}`,
                 read_include: read_include_web((idid) => webApi.editorIdExists(idid)),
+=======
+                //input_path: initialFile?.path || `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/asdf.${ourbigbook.OURBIGBOOK_EXT}`,
+                input_path: `${window.location.pathname.slice(1)}.${ourbigbook.OURBIGBOOK_EXT}`,
+>>>>>>> Stashed changes
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
                 x_external_prefix: '../'.repeat(window.location.pathname.match(/\//g).length - 1),
                 //input_path: `${.slice(1)}.${ourbigbook.OURBIGBOOK_EXT}`,

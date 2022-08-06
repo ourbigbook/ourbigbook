@@ -51,10 +51,14 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
           notFound: true
         }
       }
-      const [articleJson, loggedInUserJson] = await Promise.all([
+      const [articleJson, issueArticleJson, loggedInUserJson] = await Promise.all([
         isIssue
           ? existingIssue ? issue.toJson(loggedInUser) : null
           : slugString ? article.toJson(loggedInUser) : null
+        ,
+        isIssue
+          ? article.toJson(loggedInUser)
+          : null
         ,
         loggedInUser.toJson(),
       ])
@@ -62,6 +66,9 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
         article: articleJson,
         articleCountByLoggedInUser,
         loggedInUser: loggedInUserJson,
+      }
+      if (isIssue) {
+        props.issueArticle = issueArticleJson
       }
       if (title) {
         props.titleSource = title || ""

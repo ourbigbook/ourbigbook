@@ -23,6 +23,30 @@ export function decapitalize(s) {
   return s[0].toLowerCase() + s.slice(1)
 }
 
+export function ArticleBy(
+  { article }:
+  { article?: ArticleType }
+) {
+  return <CustomLink href={routes.article(article.slug)}>
+    "<span
+      className="comment-body ourbigbook-title"
+      dangerouslySetInnerHTML={{ __html: article.titleRender }}
+    />" by { article.author.displayName }
+  </CustomLink>
+}
+
+export function IssueBy(
+  { article }:
+  { article?: ArticleType }
+) {
+  return <CustomLink href={routes.article(article.slug)}>
+    "<span
+      className="comment-body ourbigbook-title"
+      dangerouslySetInnerHTML={{ __html: article.titleRender }}
+    />" by { article.author.displayName }
+  </CustomLink>
+}
+
 export function DiscussionAbout(
   { article, issue }:
   { article?: ArticleType; issue?: IssueType }
@@ -30,12 +54,7 @@ export function DiscussionAbout(
   const inner = <>
       <IssueIcon />{' '}
       Discussion{issue ? ` #${issue.number}` : ''}:{' '}
-      <CustomLink href={routes.article(article.slug)}>
-        "<span
-          className="comment-body ourbigbook-title"
-          dangerouslySetInnerHTML={{ __html: article.titleRender }}
-        />" by { article.author.displayName }
-      </CustomLink>
+      <ArticleBy {...{article, issue}} />
     </>
   if (issue) {
     return <div className="h1">{ inner }</div>

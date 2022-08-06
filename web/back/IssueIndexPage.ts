@@ -51,7 +51,7 @@ export const getServerSidePropsIssueIndexHoc = (): MyGetServerSideProps => {
     const props: IndexPageProps = {
       articles: issues,
       articlesCount: issuesAndCounts.count,
-      itemType: 'issue',
+      itemType: 'discussion',
       issueArticle: articleJson,
       page: pageNum,
       order,

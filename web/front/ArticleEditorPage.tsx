@@ -11,7 +11,8 @@ import { OurbigbookEditor } from 'ourbigbook/editor.js';
 import { convertOptions, isProduction, read_include_web } from 'front/config';
 
 import { ArticlePageProps } from 'front/ArticlePage'
-import { capitalize, slugFromArray } from 'front'
+import { ArticleBy, capitalize, slugFromArray } from 'front'
+import CustomLink from 'front/CustomLink'
 import ListErrors from 'front/ListErrors'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
@@ -21,14 +22,7 @@ import { ArticleType } from 'front/types/ArticleType'
 import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 
-export interface EditorPageProps {
-  article: ArticleType & IssueType;
-  articleCountByLoggedInUser: number;
-  loggedInUser: UserType;
-  titleSource?: string;
-  titleSourceLine?: number;
-}
-
+/** Fetchs ID and other DB elements via our REST API. */
 class RestDbProvider extends web_api.DbProviderBase {
   fetched_ids: Set<string>;
   fetched_files: Set<string>;
@@ -40,7 +34,6 @@ class RestDbProvider extends web_api.DbProviderBase {
   }
 
   async get_noscopes_base_fetch(ids, ignore_paths_set, context) {
-<<<<<<< Updated upstream
     const unfetched_ids = []
     for (const id of ids) {
       if (
@@ -60,11 +53,6 @@ class RestDbProvider extends web_api.DbProviderBase {
     } else {
       return []
     }
-=======
-    const { data: { rows }, status } = await webApi.editorGetNoscopesBaseFetch(ids, Array.from(ignore_paths_set))
-    console.error({ids});
-    return this.rows_to_asts(rows, context)
->>>>>>> Stashed changes
   }
 
   async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set, context }) {
@@ -108,6 +96,15 @@ class RestDbProvider extends web_api.DbProviderBase {
   }
 }
 
+export interface EditorPageProps {
+  article: ArticleType & IssueType;
+  articleCountByLoggedInUser: number;
+  issueArticle?: ArticleType;
+  loggedInUser: UserType;
+  titleSource?: string;
+  titleSourceLine?: number;
+}
+
 export default function ArticleEditorPageHoc({
   isIssue=false,
   isNew=false,
@@ -115,6 +112,7 @@ export default function ArticleEditorPageHoc({
   const editor = ({
     article: initialArticle,
     articleCountByLoggedInUser,
+    issueArticle,
     loggedInUser,
     titleSource,
   }: EditorPageProps) => {
@@ -146,7 +144,7 @@ export default function ArticleEditorPageHoc({
         titleSource: titleSource || '',
       }
     }
-    const itemType = isIssue ? 'issue' : 'article'
+    const itemType = isIssue ? 'discussion' : 'article'
     const [isLoading, setLoading] = React.useState(false);
     const [errors, setErrors] = React.useState([]);
     const [file, setFile] = React.useState(initialFileState);
@@ -170,13 +168,9 @@ export default function ArticleEditorPageHoc({
             {
               convertOptions: lodash.merge({
                 db_provider: new RestDbProvider(),
-<<<<<<< Updated upstream
+                //input_path: `${window.location.pathname.slice(1)}.${ourbigbook.OURBIGBOOK_EXT}`,
                 input_path: initialFile?.path || `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/asdf.${ourbigbook.OURBIGBOOK_EXT}`,
                 read_include: read_include_web((idid) => webApi.editorIdExists(idid)),
-=======
-                //input_path: initialFile?.path || `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/asdf.${ourbigbook.OURBIGBOOK_EXT}`,
-                input_path: `${window.location.pathname.slice(1)}.${ourbigbook.OURBIGBOOK_EXT}`,
->>>>>>> Stashed changes
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
                 x_external_prefix: '../'.repeat(window.location.pathname.match(/\//g).length - 1),
                 //input_path: `${.slice(1)}.${ourbigbook.OURBIGBOOK_EXT}`,
@@ -270,47 +264,66 @@ export default function ArticleEditorPageHoc({
     }
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(() => {
-      setTitle(isNew ? `New ${itemType}` : `Editing: ${initialFile?.titleSource}`)
+      setTitle(isNew ? `New ${itemType}` : `Editing ${isIssue
+        ? `discussion #${initialFile.number} "${initialFile.titleSource}" on ${issueArticle.titleSource} by ${issueArticle.author.displayName}`
+        : `"${initialFile.titleSource}" by ${initialArticle.author.displayName}`
+      }`)
     }, [isNew, initialFile?.titleSource])
     return (
       <div className="editor-page content-not-ourbigbook">
         { maxReached
-          ?
-          <p>{maxReached}</p>
-          :
-          <form className="editor-form">
-            <div className="title-and-actions">
-              <input
-                type="text"
-                className="title"
-                placeholder={`${capitalize(itemType)} Title`}
-                value={file.titleSource}
-                onChange={handleTitle}
-              />
-              <div className="actions">
-                <button
-                  className="btn"
-                  type="button"
-                  onClick={handleCancel}
+          ? <p>{maxReached}</p>
+          : <>
+              <h1>
+                {isNew
+                  ? `New ${itemType}`
+                  : <>
+                      Editing
+                      {' '}
+                      {isIssue
+                        ? <CustomLink href={isIssue ? routes.issue(issueArticle.slug, initialArticle.number) : routes.article(initialArticle.slug) }>
+                            {isIssue ? `discussion #${initialArticle.number}: ` : ''}"{initialFile?.titleSource}"
+                          </CustomLink>
+                        : <ArticleBy article={initialArticle} />
+                      }
+                    </>
+                }
+                {isIssue && <> on <ArticleBy article={issueArticle} issue={initialArticle} /></>}
+              </h1>
+              <form className="editor-form">
+                <div className="title-and-actions">
+                  <input
+                    type="text"
+                    className="title"
+                    placeholder={`${capitalize(itemType)} Title`}
+                    value={file.titleSource}
+                    onChange={handleTitle}
+                  />
+                  <div className="actions">
+                    <button
+                      className="btn"
+                      type="button"
+                      onClick={handleCancel}
+                    >
+                      <i className="ion-close" />&nbsp;Cancel
+                    </button>
+                    <button
+                      className="btn"
+                      type="button"
+                      disabled={isLoading}
+                      onClick={handleSubmit}
+                    >
+                      <i className="ion-checkmark" />&nbsp;{isNew ? 'Create' : 'Submit'}
+                    </button>
+                  </div>
+                </div>
+                <div
+                  className="ourbigbook-editor"
+                  ref={ourbigbookEditorElem}
                 >
-                  <i className="ion-close" />&nbsp;Cancel
-                </button>
-                <button
-                  className="btn"
-                  type="button"
-                  disabled={isLoading}
-                  onClick={handleSubmit}
-                >
-                  <i className="ion-checkmark" />&nbsp;{isNew ? 'Create' : 'Submit'}
-                </button>
-              </div>
-            </div>
-            <div
-              className="ourbigbook-editor"
-              ref={ourbigbookEditorElem}
-            >
-            </div>
-          </form>
+                </div>
+              </form>
+            </>
         }
       </div>
     );

@@ -24,15 +24,21 @@ export function decapitalize(s) {
 }
 
 export function ArticleBy(
-  { article }:
+  { article, newTab=false }:
   { article?: ArticleType }
 ) {
-  return <CustomLink href={routes.article(article.slug)}>
+  const inner = <>
     "<span
       className="comment-body ourbigbook-title"
       dangerouslySetInnerHTML={{ __html: article.titleRender }}
     />" by { article.author.displayName }
-  </CustomLink>
+  </>
+  const href = routes.article(article.slug)
+  if (newTab) {
+    return <a href={href} target="_blank">{inner}</a>
+  } else {
+    return <CustomLink href={href}>{inner}</CustomLink>
+  }
 }
 
 export function IssueBy(
@@ -74,12 +80,16 @@ export function ArticleIcon(opts) {
   return Icon("ion-ios-book", "Article", opts)
 }
 
-export function IssueIcon(opts) {
-  return Icon("ion-ios-chatbubble", "Discussion", opts)
-}
-
 export function EditArticleIcon(opts) {
   return Icon("ion-edit", "Edit", opts)
+}
+
+export function HelpIcon(opts) {
+  return Icon("ion-help-circled", "Help", opts)
+}
+
+export function IssueIcon(opts) {
+  return Icon("ion-ios-chatbubble", "Discussion", opts)
 }
 
 export function NewArticleIcon(opts) {

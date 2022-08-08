@@ -33,10 +33,20 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
 * https://github.com/cirosantilli/ourbigbook/blob/master/README.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
 * https://docs.ourbigbook.com/editor[]: live in-browser editor demo
-* https://cirosantilli.com/ourbigbook-template[]: good template to get started with <OurBigBook CLI>, see <quick start>{full}
+* https://cirosantilli.com/ourbigbook-template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
+
+= Quick start
+{parent=OurBigBook}
+
+See the relevant specific section:
+* <OurBigBook Markup quick start>
+* <OurBigBook CLI quick start>
+
+= OurBigBook Markup and CLI overview
+{parent=OurBigBook}
 
 = Features
-{parent=OurBigBook}
+{parent=OurBigBook Markup and CLI overview}
 
 * <cross references> to any <header> (including e.g. h2, h3, etc. <internal cross file references>[in other files]), <images>, etc. with amazing <error reporting>[error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do. E.g.:
 
@@ -326,142 +336,8 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
     ``
 * automatic code formatting: <--format-source>
 
-= Quick start
-{parent=OurBigBook}
-
-= Play with the template
-{parent=Quick start}
-
-Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/editor[].
-
-Play with https://github.com/cirosantilli/ourbigbook-template[a OurBigBook template] locally:
-``
-git clone https://github.com/cirosantilli/ourbigbook-template
-cd ourbigbook-template
-npm install
-npx ourbigbook .
-firefox index.html
-``
-That template can be seen rendered live at: http://cirosantilli.com/ourbigbook-generate-multifile/ Other templates are documented at: <--generate>.
-
-To <publish to GitHub Pages> on your repository you can just fork the repository https://github.com/cirosantilli/ourbigbook-template to your own https://github.com/johndoe/ourbigbook-template and then:
-``
-git remote set-url origin git@github.com:johndoe/ourbigbook-template.git
-npx ourbigbook --publish
-``
-and it should now be visible at: https://johndoe.github.io/ourbigbook-template
-
-Then, every time you make a change you can publish the new version with:
-``
-git add .
-git commit --message 'hacked stuff'
-ourbigbook --publish .
-``
-or equivalently with the <publish commit> shortcut:
-``
-ourbigbook --publish-commit 'hacked stuff'
-``
-
-If you want to publish to your root page https://johndoe.github.io instead of https://johndoe.github.io/ourbigbook-template you need to rename the `master` branch to `dev` as mentioned at <publish to GitHub pages root page>:
-``
-git remote set-url origin git@github.com:johndoe/johndoe.github.io.git
-
-# Rename master to dev, and delete the old master.
-git checkout -b dev
-git push origin dev:dev
-git branch -D master
-git push --delete origin master
-
-npx ourbigbook --publish
-``
-
-The following files of the template control the global style of the output, and you are free to edit them:
-* `main.liquid.html`: global HTML template in https://shopify.github.io/liquid/[Liquid format]. Available variables are documented at <--template>, and it is being selected in that repository with :
-  ``
-  "template": "main.liquid.html"
-  ``
-  in the <ourbigbook.json> configuration file.
-* `main.scss`: https://sass-lang.com/[Sass] file that gets converted to raw CSS `main.css` by `npx ourbigbook .`.
-
-  Sass is just much more convenient to write than raw CSS.
-
-  That file gets included into the global HTML template inside `main.liquid.html` at:
-  ``
-  <link rel="stylesheet" href="{{ root_relpath }}main.css">
-  ``
-
-= Important command line options
-{parent=Quick start}
-
-When you run:
-``
-npx ourbigbook .
-``
-it converts all files in the current directory separately, e.g.:
-* `README.bigb` to `index.html`, since `README` is a magic name that we want to show on the root URL
-* `not-readme.bigb` to `not-readme.html`, as this one is a regular name unlike `README`
-* `main.scss` to `main.css`
-
-If one of the input files starts getting too large, usually the toplevel `README.bigb` in which you dump everything by default like Ciro does, you can speed up development and just compile files individually with either:
-``
-npx ourbigbook README.bigb
-npx ourbigbook not-readme.bigb
-``
-Note however that when those individual files have a <cross file reference> to something defined in `not-readme.bigb`, e.g. via `\x[h2-in-not-the-readme]`, then you must first do a first pass once with:
-``
-npx ourbigbook .
-``
-to parse all files and extract all necessary IDs to the <ID database>. That would be optimized slightly wit the <--no-render> command line option:
-``
-npx ourbigbook --no-render .
-``
-to only extract the IDs but not render, which speeds things up considerably
-
-When dealing with large files, you might also be interested in the following amazing options:
-* <split headers>
-* <\H splitDefault argument>
-
-To produce a single standalone output file that contains everything in a directory run:
-``
-npx ourbigbook --embed-resources --embed-includes README.bigb
-xdg-open index.html
-``
-You can now just give `index.html` to any reader and they should be able to view it offline without installing anything. The flags are:
-* <--embed-includes>: without this, `\Include[not-readme]` shows as a link to the file `not-readme.html` which comes from `not-readme.bigb` With the flag, `not-readme.bigb` output gets embedded into the output `index.html` directly
-* <--embed-resources>: by default, we link to CSS and JavaScript that lives inside `node_modules`. With this flag, that CSS and JavaScript is copied inline into the document instead. One day we will try to handle <images> that way as well
-
-= Useless knowledge
-{parent=Quick start}
-
-Install the NPM package globally and use it from the command line for a quick conversion:
-``
-npm install -g ourbigbook
-printf 'ab\ncd\n' | ourbigbook --body-only
-``
-or to a file:
-``
-printf 'ab\ncd\n' | ourbigbook > tmp.html
-``
-You almost never want to do this except when <developing OurBigBook>, as it won't be clear what version of `ourbigbook` the document should be compiled with. Just be a good infant and use OurBigBook <play with the template>[with the template] that contains a `package.json` via `npx`, OK?
-
-Furthermore, the default install of Chromium on Ubuntu 21.04 uses Snap and blocks access to dotfiles. For example, in a sane NVM install, our global CSS would live under `/home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/ourbigbook/dist/ourbigbook.css`, which gets blocked because of the `.nvm` part:
-* https://forum.snapcraft.io/t/dot-files/7062
-* https://bugs.launchpad.net/snapd/+bug/1607067
-* https://superuser.com/questions/1546550/chromium-81-wont-display-dotfiles-anymore
-* https://askubuntu.com/questions/1184357/why-cant-chromium-suddenly-access-any-partition-except-for-home
-* https://askubuntu.com/questions/1214346/as-a-user-is-there-any-way-to-change-the-confinement-of-a-snap-package
-One workaround is to use <--embed-resources>, but this of course generates larger outputs.
-
-To run master globally from source for development see: <run OurBigBook master>{full}. This one actually works despite the dotfile thing since your development path is normally outside of dotfiles.
-
-Try out the JavaScript API with \a[lib_hello.js]:
-``
-npm install ourbigbook
-./lib_hello.js
-``
-
 = Design goals
-{parent=OurBigBook}
+{parent=OurBigBook Markup and CLI overview}
 
 OurBigBook is designed entirely to allow writing complex professional HTML and PDF scientific books, blogs, articles and encyclopedias.
 
@@ -597,9 +473,214 @@ The key limitations have repeatedly annoyed Ciro were:
 {c}
 {parent=OurBigBook}
 
-OurBigBook Markup is the markup language used in the <OurBigBook> project.
+OurBigBook Markup is the https://en.wikipedia.org/wiki/Lightweight_markup_language[lightweight markup language] used in the <OurBigBook> project.
 
 It works both on the <OurBigBook Web> dynamic website, and on <OurBigBook CLI> static websites from the command line.
+
+= OurBigBook Markup quick start
+{c}
+{parent=OurBigBook Markup}
+
+<Paragraphs> are made by simplying adding an empty line, e.g.:
+\OurBigBookExample[[
+My first paragraph.
+
+And now my second paragraph.
+
+Third one to finish.
+]]
+
+<Headers> are created by starting the line with equal signs. The more equal signs the deeper you are, e.g.:
+``
+= Animal
+
+== Mammal
+
+=== Dog
+
+=== Cat
+
+== Bird
+
+=== Pigeon
+
+=== Chicken
+``
+On <OurBigBook Web>, the toplevel header of each page goes into a separate title box, so there things would just look like:
+* title box: "Animal"
+* body:
+  ``
+  == Mammal
+
+  === Dog
+
+  === Cat
+
+  == Bird
+
+  === Pigeon
+
+  === Chicken
+  ``
+
+You can can use any header as a <`\H` `tag` argument>[tag] of any other header, e.g.:
+``
+= Animal
+
+== Dog
+{tag=Cute animal}
+
+== Turtle
+{tag=Ugly animal}
+
+== Animal cuteness
+
+=== Cute animal
+
+=== Ugly animal
+``
+
+Headers have several powerful features that you can read more about under <`\H` arguments>, e.g. <`\H` `synonym` argument> and <`\H` `disambiguate` argument>.
+
+To <internal cross references>[link to any of your other pages], you can use angle brackets (less than/greater than) signs:
+``
+I have a <cute animal>. <Birds> are too noisy.
+``
+Note how <cross reference title inflection>[capitalization and pluralization generally just work].
+
+To use a custom link text on a reference, use the following syntax:
+``
+I have a <cute animal>[furry animal]. <Birds>[feathery animals] are too noisy.
+``
+
+External links can be input directly as:
+\OurBigBookExample[[
+This is a great website: https://example.com
+
+I really like https://example.com[this website].
+]]
+
+<Code blocks> are done with backticks \c[[`]]. With just one backtick, you get a code block inside the text:
+\OurBigBookExample[[
+The function call `f(x + 1, "abc")` is wrong.
+]]
+and with two ore more backticks you get a code block on its own line, and possibly with multiple code lines:
+\OurBigBookExample[[
+The function:
+``
+function f(x, s) {
+  return x + s
+}
+``
+is wrong.
+]]
+
+<Mathematics> syntax is very similar to code blocks, you can just enter you LaTeX code in it:
+\OurBigBookExample[[
+The number $\sqrt{2}$ is irrational.
+
+The same goes for:
+$$
+\frac{1}{\sqrt{2}}
+$$
+]]
+
+You can refer to specific equations like this:
+\OurBigBookExample[[
+As shown in <equation Very important equation>, this is true.
+
+$$
+\frac{1}{\sqrt{2}}
+$$
+{title=Very important equation}
+]]
+
+<Images> and <videos> are easy to add and refer to:
+\OurBigBookExample[[
+As shown at <image Cute chicken chick>, chicks are cute.
+
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/800px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201]
+{title=Cute chicken chick}
+
+\Video[https://www.youtube.com/watch?v=j_fl4xoGTKU]
+{title=Top Down 2D Continuous Game by Ciro Santilli (2018)}
+]]
+
+Images can take a bunch of options, about which you can read more about at <image arguments>. Most should be self explanatory, here is an image with a bunch of useful arguments:
+\OurBigBookExample[[
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/800px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201]
+{title=Ultra cute chicken chick}
+{description=
+The chicken is yellow, and the hand is brown.
+
+The background is green.
+}
+{border}
+{height=400}
+{source=https://commons.wikimedia.org/wiki/File:H%C3%BChnerk%C3%BCken_02.jpg}
+]]
+
+<Lists> are written by starting the line with an asterisk `*`:
+\OurBigBookExample[[
+* first item
+* second item
+* and the third
+]]
+
+A nested list:
+\OurBigBookExample[[
+* first item
+  * first item version 1
+  * first item version 2
+    * first item version 2 1
+    * first item version 2 2
+* second item
+* and the third
+]]
+
+Lists items can contain any markup, e.g. paragraphs. You just need to keep the same number of spaces, e.g.:
+\OurBigBookExample[[
+* first item.
+
+  Second paragraph of first item.
+
+  And a third one.
+* second item
+  * second item v1
+
+    Another paragraph in second item v1
+  * second item v2
+]]
+
+<Tables> are not very different from lists. We use double pipes for headers `||`, and a single pipe `|` for regular rows:
+\OurBigBookExample[[
+|| City
+|| Sales
+
+| Salt Lake City
+| 124,00
+
+| New York
+| 1,000,000
+]]
+
+To add a title we need to use an explicit `\Table` macro as in:
+\OurBigBookExample[[
+See <table Sales per city> for more information.
+
+\Table
+{title=Sales per city}
+[
+|| City
+|| Sales
+
+| Salt Lake City
+| 124,00
+
+| New York
+| 1,000,000
+]
+]]
 
 = Macro
 {parent=OurBigBook Markup}
@@ -4742,6 +4823,140 @@ These conversions are also specified in the Unicode standard.
 {c}
 {parent=OurBigBook}
 
+= OurBigBook CLI quick start
+{parent=OurBigBook CLI}
+
+= Play with the template
+{parent=OurBigBook CLI quick start}
+
+Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/editor[].
+
+Play with https://github.com/cirosantilli/ourbigbook-template[a OurBigBook template] locally:
+``
+git clone https://github.com/cirosantilli/ourbigbook-template
+cd ourbigbook-template
+npm install
+npx ourbigbook .
+firefox index.html
+``
+That template can be seen rendered live at: http://cirosantilli.com/ourbigbook-generate-multifile/ Other templates are documented at: <--generate>.
+
+To <publish to GitHub Pages> on your repository you can just fork the repository https://github.com/cirosantilli/ourbigbook-template to your own https://github.com/johndoe/ourbigbook-template and then:
+``
+git remote set-url origin git@github.com:johndoe/ourbigbook-template.git
+npx ourbigbook --publish
+``
+and it should now be visible at: https://johndoe.github.io/ourbigbook-template
+
+Then, every time you make a change you can publish the new version with:
+``
+git add .
+git commit --message 'hacked stuff'
+ourbigbook --publish .
+``
+or equivalently with the <publish commit> shortcut:
+``
+ourbigbook --publish-commit 'hacked stuff'
+``
+
+If you want to publish to your root page https://johndoe.github.io instead of https://johndoe.github.io/ourbigbook-template you need to rename the `master` branch to `dev` as mentioned at <publish to GitHub pages root page>:
+``
+git remote set-url origin git@github.com:johndoe/johndoe.github.io.git
+
+# Rename master to dev, and delete the old master.
+git checkout -b dev
+git push origin dev:dev
+git branch -D master
+git push --delete origin master
+
+npx ourbigbook --publish
+``
+
+The following files of the template control the global style of the output, and you are free to edit them:
+* `main.liquid.html`: global HTML template in https://shopify.github.io/liquid/[Liquid format]. Available variables are documented at <--template>, and it is being selected in that repository with :
+  ``
+  "template": "main.liquid.html"
+  ``
+  in the <ourbigbook.json> configuration file.
+* `main.scss`: https://sass-lang.com/[Sass] file that gets converted to raw CSS `main.css` by `npx ourbigbook .`.
+
+  Sass is just much more convenient to write than raw CSS.
+
+  That file gets included into the global HTML template inside `main.liquid.html` at:
+  ``
+  <link rel="stylesheet" href="{{ root_relpath }}main.css">
+  ``
+
+= Important command line options
+{parent=OurBigBook CLI quick start}
+
+When you run:
+``
+npx ourbigbook .
+``
+it converts all files in the current directory separately, e.g.:
+* `README.bigb` to `index.html`, since `README` is a magic name that we want to show on the root URL
+* `not-readme.bigb` to `not-readme.html`, as this one is a regular name unlike `README`
+* `main.scss` to `main.css`
+
+If one of the input files starts getting too large, usually the toplevel `README.bigb` in which you dump everything by default like Ciro does, you can speed up development and just compile files individually with either:
+``
+npx ourbigbook README.bigb
+npx ourbigbook not-readme.bigb
+``
+Note however that when those individual files have a <cross file reference> to something defined in `not-readme.bigb`, e.g. via `\x[h2-in-not-the-readme]`, then you must first do a first pass once with:
+``
+npx ourbigbook .
+``
+to parse all files and extract all necessary IDs to the <ID database>. That would be optimized slightly wit the <--no-render> command line option:
+``
+npx ourbigbook --no-render .
+``
+to only extract the IDs but not render, which speeds things up considerably
+
+When dealing with large files, you might also be interested in the following amazing options:
+* <split headers>
+* <\H splitDefault argument>
+
+To produce a single standalone output file that contains everything in a directory run:
+``
+npx ourbigbook --embed-resources --embed-includes README.bigb
+xdg-open index.html
+``
+You can now just give `index.html` to any reader and they should be able to view it offline without installing anything. The flags are:
+* <--embed-includes>: without this, `\Include[not-readme]` shows as a link to the file `not-readme.html` which comes from `not-readme.bigb` With the flag, `not-readme.bigb` output gets embedded into the output `index.html` directly
+* <--embed-resources>: by default, we link to CSS and JavaScript that lives inside `node_modules`. With this flag, that CSS and JavaScript is copied inline into the document instead. One day we will try to handle <images> that way as well
+
+= Useless knowledge
+{parent=OurBigBook CLI quick start}
+
+Install the NPM package globally and use it from the command line for a quick conversion:
+``
+npm install -g ourbigbook
+printf 'ab\ncd\n' | ourbigbook --body-only
+``
+or to a file:
+``
+printf 'ab\ncd\n' | ourbigbook > tmp.html
+``
+You almost never want to do this except when <developing OurBigBook>, as it won't be clear what version of `ourbigbook` the document should be compiled with. Just be a good infant and use OurBigBook <play with the template>[with the template] that contains a `package.json` via `npx`, OK?
+
+Furthermore, the default install of Chromium on Ubuntu 21.04 uses Snap and blocks access to dotfiles. For example, in a sane NVM install, our global CSS would live under `/home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/ourbigbook/dist/ourbigbook.css`, which gets blocked because of the `.nvm` part:
+* https://forum.snapcraft.io/t/dot-files/7062
+* https://bugs.launchpad.net/snapd/+bug/1607067
+* https://superuser.com/questions/1546550/chromium-81-wont-display-dotfiles-anymore
+* https://askubuntu.com/questions/1184357/why-cant-chromium-suddenly-access-any-partition-except-for-home
+* https://askubuntu.com/questions/1214346/as-a-user-is-there-any-way-to-change-the-confinement-of-a-snap-package
+One workaround is to use <--embed-resources>, but this of course generates larger outputs.
+
+To run master globally from source for development see: <run OurBigBook master>{full}. This one actually works despite the dotfile thing since your development path is normally outside of dotfiles.
+
+Try out the JavaScript API with \a[lib_hello.js]:
+``
+npm install ourbigbook
+./lib_hello.js
+``
+
 = `ourbigbook` executable
 {synonym}
 {title2}
@@ -6118,7 +6333,7 @@ Being an enlightened teacher, Mr. Obama writes everything that he knows on his O
 * https://ourbigbook.com/barack-obama[]: Obama's toplevel index pages linking to all his pages
   * https://ourbigbook.com/barack-obama/mathematics[Mathematics]
     * https://ourbigbook.com/barack-obama/calculus[Calculus]
-      * https://ourbigbook.com/barack-obama/derivativep[Derivative]
+      * https://ourbigbook.com/barack-obama/derivative[Derivative]
       * https://ourbigbook.com/barack-obama/integral[Integral]
         * https://ourbigbook.com/barack-obama/fundamental-theorem-of-calculus[Fundamental theorem of calculus]
     * https://ourbigbook.com/barack-obama/algebra[Algebra]
@@ -6972,7 +7187,7 @@ All lists of things will never be ISR'ed, as those can change constantly. One co
 * other search-like parameters
 which appear only in lists of things, will always be part of the GET query, and not params.
 
-= OurBigBook Web URL standards: GET param vs url component
+= OurBigBook Web URL standards: article ID comes last due to slash
 {c}
 {parent=OurBigBook Web URL standards}
 

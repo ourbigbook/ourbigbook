@@ -105,13 +105,13 @@ function IndexPageHoc({
             </>
           }
           <CustomLink
-            className={`tab-item${(itemType === 'article' || itemType === 'issue') && order === 'createdAt' && !followed ? ' active' : ''}`}
+            className={`tab-item${(itemType === 'article' || itemType === 'discussion') && order === 'createdAt' && !followed ? ' active' : ''}`}
             href={isIssue ? routes.issues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
           >
             {!showFollowed && <><ArticleIcon />{' '}</>}Latest
           </CustomLink>
           <CustomLink
-            className={`tab-item${(itemType === 'article' || itemType === 'issue') && order === 'score' && !followed ? ' active' : ''}`}
+            className={`tab-item${(itemType === 'article' || itemType === 'discussion') && order === 'score' && !followed ? ' active' : ''}`}
             href={isIssue ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
           >
             Top

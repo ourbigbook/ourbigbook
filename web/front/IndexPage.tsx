@@ -83,7 +83,7 @@ function IndexPageHoc({
           {isHomepage &&
             <CustomLink
               className={`tab-item${itemType === 'topic' ? ' active' : ''}`}
-              href={isIssue ? routes.issues(issueArticle.slug, { sort: 'articleCount' }) : routes.topics({ loggedInUser })}
+              href={routes.topics({ loggedInUser, sort: 'article-count' })}
             >
               <TopicIcon /> Topics
             </CustomLink>
@@ -106,7 +106,7 @@ function IndexPageHoc({
           }
           <CustomLink
             className={`tab-item${(itemType === 'article' || itemType === 'issue') && order === 'createdAt' && !followed ? ' active' : ''}`}
-            href={isIssue ? routes.issues(issueArticle.slug, { sort: 'createdAt' }) : routes.articles()}
+            href={isIssue ? routes.issues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
           >
             {!showFollowed && <><ArticleIcon />{' '}</>}Latest
           </CustomLink>
@@ -126,7 +126,7 @@ function IndexPageHoc({
               </CustomLink>
               <CustomLink
                 className={`tab-item${itemType === 'user'  && order === 'createdAt' ? ' active' : ''}`}
-                href={routes.users({ sort: 'createdAt' })}
+                href={routes.users({ sort: 'created' })}
               >
                 New Users
               </CustomLink>

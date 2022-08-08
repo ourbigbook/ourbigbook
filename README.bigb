@@ -6946,6 +6946,20 @@ The JWT token is only given to users after account verification. Having the JWT 
 {c}
 {parent=OurBigBook Web architecture}
 
+It would be impossible to have upper case characters on any URL of the website. Words should be separated by hyphens `-` instead.
+
+Use the usual gramatical ordering for action object pairs, e.g.:
+* `new-discussion`
+* `edit-discussion`
+instead of:
+* `discussion-new`
+* `discussion-edit`
+The latter is tempting to groupr all "Discussion" actions under a prefix, but let's use the nice grammar instead.
+
+= OurBigBook Web URL standards: GET param vs url component
+{c}
+{parent=OurBigBook Web URL standards}
+
 Next.js imposes one constraint: ISR only works with URL parameters like `/articles/<page>`, not GET parameters like `/articles?page=1`.
 
 As of writing however, we don't use any ISR as it adds a lot of complication. But still, we are trying to stick to the general principle that if something might ever be ISR'ed in the future, then we would like to keep it as parameter rather then GET. It feels sane.
@@ -6958,6 +6972,10 @@ All lists of things will never be ISR'ed, as those can change constantly. One co
 * other search-like parameters
 which appear only in lists of things, will always be part of the GET query, and not params.
 
+= OurBigBook Web URL standards: GET param vs url component
+{c}
+{parent=OurBigBook Web URL standards}
+
 It is a bit annoying that due to <scopes> being separated with `/`, we always have to put article names last in any URL (outside GET parameters) to avoid ambiguities. E.g. it would be arguably nicer to have:
 ``
 /go/donald-trump/linear-algebra/issues
@@ -6966,7 +6984,7 @@ rather than the current:
 ``
 /go/issues/donald-trump/linear-algebra
 ``
-but this produces ambiguity, what is `donald-trump` has an article with title `Issues` under scope `linear-algebra`?
+but this produces ambiguity, what if user `issues` has an article with title `Linear algebra` under scope `donald-trump`?
 
 = OurBigBook Web API standards
 {parent=OurBigBook Web URL standards}

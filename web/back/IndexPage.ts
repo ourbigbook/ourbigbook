@@ -24,9 +24,15 @@ export const getServerSidePropsIndexHoc = ({
         itemTypeEff = 'topic'
       }
     }
-    const getOrderAndPageOpts: { defaultOrder?: string } = {}
+    const getOrderAndPageOpts: {
+      defaultOrder?: string;
+      urlToDbSort?: any;
+    } = {}
     if (itemTypeEff === 'topic') {
       getOrderAndPageOpts.defaultOrder = 'articleCount'
+      getOrderAndPageOpts.urlToDbSort = {
+        'article-count': 'articleCount'
+      }
     }
     const [order, pageNum, err] = getOrderAndPage(req, query.page, getOrderAndPageOpts)
     if (err) { res.statusCode = 422 }

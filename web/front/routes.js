@@ -11,7 +11,7 @@ const encodeGetParamsWithPage = (opts, opts2={}) => {
   if (opts.page === 1) {
     delete opts.page
   }
-  const defaultSort = opts2.defaultSort || 'createdAt'
+  const defaultSort = opts2.defaultSort || 'created'
   if (opts.sort === defaultSort) {
     delete opts.sort
   }
@@ -49,6 +49,6 @@ module.exports = {
     } else {
       url = `/`
     }
-    return `${url}${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`
+    return `${url}${encodeGetParamsWithPage(opts, { defaultSort: 'article-count' })}`
   },
 }

@@ -55,7 +55,7 @@ export const TopicPage = ({
             </CustomLink>
             <CustomLink
               className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
-              href={routes.topic(topicId, { sort: 'createdAt' })}
+              href={routes.topic(topicId, { sort: 'created' })}
             >
               Latest Articles
             </CustomLink>

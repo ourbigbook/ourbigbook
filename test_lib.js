@@ -22,6 +22,9 @@ function assert_xpath_main(xpath_expr, string, options={}) {
   if (!('count' in options)) {
     options.count = 1;
   }
+  if (!('main' in options)) {
+    options.main = true;
+  }
   if (!('message' in options)) {
     options.message = '';
   }
@@ -32,7 +35,7 @@ function assert_xpath_main(xpath_expr, string, options={}) {
     } else {
       count_str = ` count=${options.count}`
     }
-    console.error(`assert_xpath_main${count_str}: ` + options.message);
+    console.error(`assert_xpath${options.main ? '_main' : ''}${count_str}: ` + options.message);
     console.error('xpath: ' + xpath_expr);
     console.error('string:');
     console.error(string);

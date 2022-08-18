@@ -1883,9 +1883,9 @@ Then the following links would be generated:
   * `notreadme to h2`: `h2.html`, because `h2` is `splitDefault`
   * `notreadme to notreadme h2`: `notreadme.html#notreadme-h2`, because `notreadme-h2` is not `splitDefault`
 
-The major application of this is that Ciro likes to work with a huge `README.bigb` containing thousands of random small topics. This is the case for example for: https://cirosantilli.com
+The major application of this if you like work with a huge `README.bigb` containing thousands of random small topics.
 
-And splitting those into separate source files would be quite laborious, as it would require duplicating IDs on the filename, and setting up <includes>.
+Splitting those into separate source files would be quite laborious, as it would require duplicating IDs on the filename, and setting up <includes>.
 
 However, after this README reaches a certain size, page loads start becoming annoyingly slow, even despite already loading large assets like <images> video <videos> only on hover or click: the annoying slowness comes from the loading of the HTML itself before the browser can jump to the ID.
 
@@ -1900,6 +1900,8 @@ This way, any links into the smaller tutorial will show the entire page as gener
 And any links from the tutorial, back to the main massive README will link back to split versions, leading to fast loads.
 
 This feature was implemented at: https://github.com/cirosantilli/ourbigbook/issues/131
+
+Note that this huge README style is not recommended however. Ciro Santilli used to do it, but moved away from it. The currently recommended approach is to manually create not too large subtrees in each page. This way, readers can easily view several nearby sections without having to load a new page every time.
 
 = `\H` `splitSuffix` argument
 {parent=H arguments}
@@ -5801,6 +5803,8 @@ For example, considering the example document at <split headers>, <cross referen
 The same applies to <cross file references> when there are multiple input files.
 
 In order to make the split version be the default for some headers, you can use the <\H splitDefault argument>.
+
+This is something that we might consider changing with some option, e.g. keeping the split headers more self contained. But for now, the general feeling is that going to nosplit by default is the best default.
 
 = `--stdout`
 {parent=OurBigBook CLI options}

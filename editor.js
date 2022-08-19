@@ -2,7 +2,7 @@ class OurbigbookEditor {
   constructor(root_elem, initial_content, monaco, ourbigbook, ourbigbook_runtime, options) {
     this.ourbigbook = ourbigbook
     this.ourbigbook_runtime = ourbigbook_runtime
-    let modified = false
+    this.modified = false
     if (options === undefined) {
       options = {}
     }
@@ -159,7 +159,7 @@ class OurbigbookEditor {
     })
     editor.onDidChangeModelContent(async (e) => {
       options.onDidChangeModelContentCallback(editor)
-      modified = true
+      this.modified = true
       await this.convertInput()
     });
     editor.onDidScrollChange(e => {
@@ -176,14 +176,15 @@ class OurbigbookEditor {
     this.convertInput();
     this.ourbigbook_runtime(this.output_elem)
 
-    // https://stackoverflow.com/questions/7317273/warn-user-before-leaving-web-page-with-unsaved-changes
-    this.beforeunload = function (e) {
-      if (modified) {
-        e.preventDefault()
-        return e.returnValue = modified;
-      }
+    window.addEventListener('beforeunload', this.beforeunload.bind(this))
+  }
+
+  // https://stackoverflow.com/questions/7317273/warn-user-before-leaving-web-page-with-unsaved-changes
+  beforeunload(e) {
+    if (this.modified) {
+      e.preventDefault()
+      return e.returnValue = this.modified;
     }
-    window.addEventListener('beforeunload', this.beforeunload)
   }
 
   async convertInput() {
@@ -239,7 +240,7 @@ class OurbigbookEditor {
         if (elem) {
           elem.scrollIntoView({
             behavior: 'smooth',
-            block: block,
+            block,
           });
         } else {
           console.error(`could not find ID for line ${line_number}: ${id}`);

@@ -221,6 +221,7 @@ class OurbigbookEditor {
   getValue() { return this.editor.getValue() }
 
   scrollPreviewToSourceLine(line_number, block) {
+    const line_number_orig = line_number
     line_number += this.modifyEditorInputRet.offset
     if (block === undefined) {
       block = 'center';
@@ -238,10 +239,21 @@ class OurbigbookEditor {
         // window.location.hash = id;
         const elem = document.getElementById(id)
         if (elem) {
-          elem.scrollIntoView({
-            behavior: 'smooth',
-            block,
-          });
+          if (line_number_orig === 1) {
+            // To show the h1 toplevel.
+            this.output_elem.scrollTop = 0
+          } else {
+            // https://stackoverflow.com/questions/45408920/plain-javascript-scrollintoview-inside-div
+            // https://stackoverflow.com/questions/5389527/how-to-get-offset-relative-to-a-specific-parent
+            // https://stackoverflow.com/questions/37137450/scroll-all-nested-scrollbars-to-bring-an-html-element-into-view
+            function scrollParentToChild(parent, child) {
+              const parentRect = parent.getBoundingClientRect();
+              const childRect = child.getBoundingClientRect();
+              const scrollTop = childRect.top - parentRect.top;
+              parent.scrollTop += scrollTop;
+            }
+            scrollParentToChild(this.output_elem, elem);
+          }
         } else {
           console.error(`could not find ID for line ${line_number}: ${id}`);
         }

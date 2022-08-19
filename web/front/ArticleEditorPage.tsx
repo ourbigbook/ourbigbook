@@ -274,56 +274,56 @@ export default function ArticleEditorPageHoc({
         { maxReached
           ? <p>{maxReached}</p>
           : <>
-              <h1>
-                {isNew
-                  ? `New ${itemType}`
-                  : <>
-                      Editing
-                      {' '}
-                      {isIssue
-                        ? <a href={isIssue ? routes.issue(issueArticle.slug, initialArticle.number) : routes.article(initialArticle.slug)} target="_blank">
-                            {isIssue ? `discussion #${initialArticle.number}: ` : ''}"{initialFile?.titleSource}"
-                          </a>
-                        : <ArticleBy article={initialArticle} newTab={true}/>
-                      }
-                    </>
-                }
-                {isIssue && <> on <ArticleBy article={issueArticle} issue={initialArticle} newTab={true}/></>}
-              </h1>
-              <p><a href={`${docsUrl}#ourbigbook-markup-quick-start`} target="_blank"><HelpIcon /> Learn how to write with our OurBigBook Markup format here!</a></p>
-              <form className="editor-form">
-                <div className="title-and-actions">
-                  <input
-                    type="text"
-                    className="title"
-                    placeholder={`${capitalize(itemType)} Title`}
-                    value={file.titleSource}
-                    onChange={handleTitle}
-                  />
-                  <div className="actions">
-                    <button
-                      className="btn"
-                      type="button"
-                      disabled={isLoading}
-                      onClick={handleSubmit}
-                    >
-                      <i className="ion-checkmark" />&nbsp;{isNew ? `Publish ${capitalize(itemType)}` : 'Save Changes'}
-                    </button>
-                    <button
-                      className="btn"
-                      type="button"
-                      onClick={handleCancel}
-                    >
-                      <i className="ion-close" />&nbsp;Cancel
-                    </button>
-                  </div>
+              <div id="obb_header">
+                <h1>
+                  {isNew
+                    ? `New ${itemType}`
+                    : <>
+                        Editing
+                        {' '}
+                        {isIssue
+                          ? <a href={isIssue ? routes.issue(issueArticle.slug, initialArticle.number) : routes.article(initialArticle.slug)} target="_blank">
+                              {isIssue ? `discussion #${initialArticle.number}: ` : ''}"{initialFile?.titleSource}"
+                            </a>
+                          : <ArticleBy article={initialArticle} newTab={true}/>
+                        }
+                      </>
+                  }
+                  {isIssue && <> on <ArticleBy article={issueArticle} issue={initialArticle} newTab={true}/></>}
+                </h1>
+                <p><a href={`${docsUrl}#ourbigbook-markup-quick-start`} target="_blank"><HelpIcon /> Learn how to write with our OurBigBook Markup format here!</a></p>
+              </div>
+              <div className="title-and-actions">
+                <input
+                  type="text"
+                  className="title"
+                  placeholder={`${capitalize(itemType)} Title`}
+                  value={file.titleSource}
+                  onChange={handleTitle}
+                />
+                <div className="actions">
+                  <button
+                    className="btn"
+                    type="button"
+                    disabled={isLoading}
+                    onClick={handleSubmit}
+                  >
+                    <i className="ion-checkmark" />&nbsp;{isNew ? `Publish ${capitalize(itemType)}` : 'Save Changes'}
+                  </button>
+                  <button
+                    className="btn"
+                    type="button"
+                    onClick={handleCancel}
+                  >
+                    <i className="ion-close" />&nbsp;Cancel
+                  </button>
                 </div>
-                <div
-                  className="ourbigbook-editor"
-                  ref={ourbigbookEditorElem}
-                >
-                </div>
-              </form>
+              </div>
+              <div
+                className="ourbigbook-editor"
+                ref={ourbigbookEditorElem}
+              >
+              </div>
             </>
         }
       </div>

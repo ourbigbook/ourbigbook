@@ -8,7 +8,7 @@ import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
-import ListErrors from 'front/ListErrors'
+import MapErrors from 'front/MapErrors'
 
 const CommentInput = ({
   commentCountByLoggedInUser,
@@ -66,7 +66,7 @@ const CommentInput = ({
 
   return (
     <>
-      <ListErrors errors={errors} />
+      <MapErrors errors={errors} />
       <form className="card comment-form" onSubmit={handleSubmit}>
         <div className="comment-form-textarea">
           <textarea

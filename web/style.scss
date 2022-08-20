@@ -52,7 +52,7 @@ button, a.btn {
   margin: 0;
   padding: 2px 5px;
   text-decoration: none;
-  &:not(.disabled) {
+  &:not(.disabled):not(.disabled-hover) {
     &, &:hover.active {
       background-color: rgb(239, 239, 239);
       color: $button-fg-color;
@@ -69,11 +69,12 @@ button, a.btn {
       //border-color: $button-bg-color;
     }
   }
-  &.disabled {
+  &.disabled, &.disabled-hover {
     cursor: default;
-    span.disable-part {
-      color: rgb(80, 80, 80);
-    }
+  }
+  &.disabled {
+    background-color: #BBB;
+    color: black;
   }
 }
 
@@ -264,6 +265,7 @@ div.editor-page {
     flex-grow: 0;
     flex-shrink: 0;
     font-size: $title-font-size;
+    margin-bottom: 10px;
     input.title {
       flex: 1 1 auto;
       margin-bottom: 0;
@@ -377,9 +379,12 @@ span.shortcut {
   }
 }
 
-.error-message {
+.error-messages {
+  color: #F55;
   display: flex;
-  justify-content: center;
+  font-weight: bold;
+  margin-top: 0;
+  margin-bottom: 0.5em;
   .error-message-presenter {
     display: inline-block;
     margin: 20px auto;

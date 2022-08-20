@@ -3,7 +3,7 @@ import React from 'react'
 
 import { contactUrl } from 'front/config'
 import Label from 'front/Label'
-import ListErrors from 'front/ListErrors'
+import MapErrors from 'front/MapErrors'
 import LogoutButton from 'front/LogoutButton'
 import { AppContext, setupUserLocalStorage, useCtrlEnterSubmit } from 'front'
 import { webApi } from 'front/api'
@@ -61,7 +61,7 @@ const Settings = ({
       <h1>{title}</h1>
       <LogoutButton />
       <>
-        <ListErrors errors={errors} />
+        <MapErrors errors={errors} />
         <form onSubmit={handleSubmit}>
           <Label label="Username">
             <input

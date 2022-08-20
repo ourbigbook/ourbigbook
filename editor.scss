@@ -3,7 +3,6 @@
   /* https://stackoverflow.com/questions/12989931/body-height-100-displaying-vertical-scrollbar/46847795#46847795
    * 20 == 2x 10px padding (top + bottom). */
   height: 100%;
-  padding: 10px 0 0 0;
   .errorDecoration {
     background: red;
     width: 4px !important;
@@ -19,15 +18,17 @@
   }
   .output {
     align-items: center;
-    flex-grow: 1;
+    flex: 1 1 auto;
     height: 100%;
     margin: 0 0 0 5px;
     overflow: auto;
     width: 50%;
   }
   .errors {
+    flex: 1 1 auto;
     &.has-error {
       padding: 0 1em;
+      width: 50%;
     }
     .title {
       font-weight: bold;

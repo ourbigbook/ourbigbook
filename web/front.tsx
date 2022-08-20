@@ -80,8 +80,16 @@ export function ArticleIcon(opts) {
   return Icon("ion-ios-book", "Article", opts)
 }
 
+export function CancelIcon(opts) {
+  return Icon("ion-close", "Cancel", opts)
+}
+
 export function EditArticleIcon(opts) {
   return Icon("ion-edit", "Edit", opts)
+}
+
+export function ErrorIcon(opts) {
+  return Icon("ion-close", "Edit", opts)
 }
 
 export function HelpIcon(opts) {
@@ -126,6 +134,20 @@ export function SignupOrLogin(
     </CustomLink>
     {' '}{to}.
   </>
+}
+
+export function disableButton(btn, msg) {
+  btn.setAttribute('disabled', '')
+  btn.setAttribute('title', msg)
+  btn.classList.add('disabled')
+}
+
+export function enableButton(btn, msgGiven) {
+  btn.removeAttribute('disabled')
+  if (msgGiven) {
+    btn.removeAttribute('title')
+  }
+  btn.classList.remove('disabled')
 }
 
 export function slugFromArray(arr, { username }: { username?: boolean } = {}) {

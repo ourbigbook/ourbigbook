@@ -11,9 +11,9 @@ import { OurbigbookEditor } from 'ourbigbook/editor.js';
 import { convertOptions, docsUrl, isProduction, read_include_web } from 'front/config';
 
 import { ArticlePageProps } from 'front/ArticlePage'
-import { ArticleBy, capitalize, HelpIcon, slugFromArray } from 'front'
+import { ArticleBy, capitalize, disableButton, enableButton, CancelIcon, HelpIcon, slugFromArray } from 'front'
 import CustomLink from 'front/CustomLink'
-import ListErrors from 'front/ListErrors'
+import ErrorList from 'front/ErrorList'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
@@ -146,12 +146,37 @@ export default function ArticleEditorPageHoc({
     }
     const itemType = isIssue ? 'discussion' : 'article'
     const [isLoading, setLoading] = React.useState(false);
-    const [errors, setErrors] = React.useState([]);
+    const [titleErrors, setTitleErrors] = React.useState([]);
+    const [hasConvertError, setHasConvertError] = React.useState(false);
     const [file, setFile] = React.useState(initialFileState);
     const ourbigbookEditorElem = useRef(null);
     const ourbigbookHeaderElem = useRef(null);
+    const saveButtonElem = useRef(null);
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
     let editor
+    function checkTitle(titleSource) {
+      if (titleSource) {
+        const newTopicId = ourbigbook.title_to_id(titleSource)
+        if (!isNew && !isIssue && initialArticle.topicId !== newTopicId) {
+          setTitleErrors([`Topic ID changed from "${initialArticle.topicId}" to "${newTopicId}", this is not currently allowed`])
+        } else {
+          setTitleErrors([])
+        }
+      } else {
+        const msg = 'The title cannot be empty'
+        setTitleErrors([msg])
+      }
+    }
+    useEffect(() => {
+      checkTitle(file.titleSource)
+    }, [saveButtonElem, file.titleSource])
+    useEffect(() => {
+      if (hasConvertError || titleErrors.length) {
+        disableButton(saveButtonElem.current, 'Cannot submit due to errors')
+      } else {
+        enableButton(saveButtonElem.current, true)
+      }
+    }, [hasConvertError, titleErrors])
     useEffect(() => {
       if (
         ourbigbookEditorElem &&
@@ -160,7 +185,6 @@ export default function ArticleEditorPageHoc({
       ) {
         let editor
         loader.init().then(monaco => {
-          //const id = ourbigbook.title_to_id(file.titleSource)
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,
             bodySource,
@@ -178,6 +202,9 @@ export default function ArticleEditorPageHoc({
               handleSubmit,
               initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,
               modifyEditorInput: (oldInput) => modifyEditorInput(file.titleSource, oldInput),
+              postBuildCallback: (extra_returns) => {
+                setHasConvertError(extra_returns.errors.length > 0)
+              },
               production: isProduction,
               scrollPreviewToSourceLineCallback: (opts={}) => {
                 const { ourbigbook_editor, line_number, line_number_orig } = opts
@@ -222,9 +249,10 @@ export default function ArticleEditorPageHoc({
       }
     }, [loggedInUser?.username])
     const handleTitle = async (e) => {
+      const titleSource = e.target.value
       setFile(file => { return {
         ...file,
-        titleSource: e.target.value,
+        titleSource,
       }})
       await ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
         oldInput => modifyEditorInput(e.target.value, oldInput))
@@ -271,7 +299,7 @@ export default function ArticleEditorPageHoc({
         }
         Router.push(redirTarget, null, { scroll: true });
       } else {
-        setErrors(data.errors);
+        setTitleErrors(data.errors);
       }
     };
     useCtrlEnterSubmit(handleSubmit)
@@ -331,6 +359,7 @@ export default function ArticleEditorPageHoc({
                     type="button"
                     disabled={isLoading}
                     onClick={handleSubmit}
+                    ref={saveButtonElem}
                   >
                     <i className="ion-checkmark" />&nbsp;{isNew ? `Publish ${capitalize(itemType)}` : 'Save Changes'}
                   </button>
@@ -339,10 +368,11 @@ export default function ArticleEditorPageHoc({
                     type="button"
                     onClick={handleCancel}
                   >
-                    <i className="ion-close" />&nbsp;Cancel
+                    <CancelIcon />&nbsp;Cancel
                   </button>
                 </div>
               </div>
+              <ErrorList errors={titleErrors}/>
               <div
                 className="ourbigbook-editor"
                 ref={ourbigbookEditorElem}

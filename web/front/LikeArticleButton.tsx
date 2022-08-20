@@ -25,7 +25,7 @@ const LikeArticleButton = ({
     buttonTextMaybe = 'Like'
   }
   if (showText) {
-    buttonText = <>{' '}<span className="disable-part">{buttonTextMaybe}</span></>
+    buttonText = <>{' '}{buttonTextMaybe}</>
   } else {
     buttonText = ''
   }
@@ -65,7 +65,7 @@ const LikeArticleButton = ({
   let buttonClassName;
   let title;
   if (loggedInUser && cantLike) {
-    buttonClassName = 'disabled'
+    buttonClassName = 'disabled-hover'
     title = cantLike
   } else {
     buttonClassName = liked ? buttonActiveClass : ''

@@ -315,7 +315,7 @@ export default function ArticleEditorPageHoc({
                   }
                   {isIssue && <> on <ArticleBy article={issueArticle} issue={initialArticle} newTab={true}/></>}
                 </h1>
-                <p><a href={`${docsUrl}#ourbigbook-markup-quick-start`} target="_blank"><HelpIcon /> Learn how to write with our OurBigBook Markup format here!</a></p>
+                <div className="help"><a href={`${docsUrl}#ourbigbook-markup-quick-start`} target="_blank"><HelpIcon /> Learn how to write with our OurBigBook Markup format here!</a></div>
               </div>
               <div className="title-and-actions">
                 <input

@@ -3,6 +3,8 @@ class OurbigbookEditor {
     this.ourbigbook = ourbigbook
     this.ourbigbook_runtime = ourbigbook_runtime
     this.modified = false
+    this.monaco = monaco
+    this.decorations = []
     if (options === undefined) {
       options = {}
     }
@@ -34,9 +36,13 @@ class OurbigbookEditor {
     this.output_elem = output_elem
     output_elem.classList.add('output');
     output_elem.classList.add('ourbigbook');
+    const errors_elem = document.createElement('div');
+    this.errors_elem = errors_elem
+    errors_elem.classList.add('errors');
     root_elem.innerHTML = '';
     root_elem.appendChild(input_elem);
     root_elem.appendChild(output_elem);
+    root_elem.appendChild(errors_elem);
 
     monaco.languages.register({ id: 'ourbigbook' });
     // TODO replace with our own tokenizer output:
@@ -213,6 +219,39 @@ class OurbigbookEditor {
       // Rebind to newly generated elements.
       this.ourbigbook_runtime(this.output_elem);
       this.line_to_id = extra_returns.context.line_to_id;
+
+      // Error handling.
+      this.errors_elem.innerHTML = ''
+      if (extra_returns.errors.length) {
+        this.errors_elem.classList.add('has-error')
+      } else {
+        this.errors_elem.classList.remove('has-error')
+      }
+      for (const e of extra_returns.errors) {
+        const error_elem = document.createElement('div');
+        error_elem.classList.add('error')
+        const a = document.createElement('a');
+        a.classList.add('loc')
+        const line = e.source_location.line - this.modifyEditorInputRet.offset
+        a.innerHTML = `Line ${line}`
+        a.addEventListener('click', (e) => { this.editor.revealLineNearTop(line) })
+        error_elem.appendChild(a)
+        error_elem.appendChild(document.createTextNode(`: ${e.message}`))
+        this.errors_elem.appendChild(error_elem)
+      }
+      this.decorations = this.editor.deltaDecorations(
+        this.decorations,
+        extra_returns.errors.map(e => {
+          const line = e.source_location.line - this.modifyEditorInputRet.offset
+          return {
+            range: new this.monaco.Range(line, 1, line, 1),
+            options: {
+              isWholeLine: true,
+              linesDecorationsClassName: 'errorDecoration'
+            }
+          }
+        })
+      );
     }
   }
 

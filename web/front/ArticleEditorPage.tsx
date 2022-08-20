@@ -195,6 +195,9 @@ export default function ArticleEditorPageHoc({
               convertOptions: lodash.merge({
                 db_provider: new RestDbProvider(),
                 input_path: initialFile?.path || `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/asdf.${ourbigbook.OURBIGBOOK_EXT}`,
+                ourbigbook_json: {
+                  openLinksOnNewTabs: true,
+                },
                 read_include: read_include_web((idid) => webApi.editorIdExists(idid)),
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
                 x_external_prefix: '../'.repeat(window.location.pathname.match(/\//g).length - 1),

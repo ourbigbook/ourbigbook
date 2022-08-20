@@ -52,7 +52,7 @@ const MyApp = ({ Component, pageProps }) => {
     <AppContextProvider>
       <MyHead />
       <div className={`toplevel${isEditor ? ' editor' : ''}`}>
-        <Navbar />
+        <Navbar isEditor={isEditor} />
         <div className="main">
           <Component {...pageProps} />
         </div>

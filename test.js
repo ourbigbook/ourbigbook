@@ -3380,6 +3380,69 @@ assert_lib('x_external_prefix option',
     },
   }
 );
+assert_lib('ourbigbook.json reroutePrefix',
+  {
+    convert_dir: true,
+    extra_convert_opts: {
+      split_headers: true,
+      ourbigbook_json: {
+        reroutePrefix: 'asdf/',
+      },
+    },
+    filesystem: {
+      'index.bigb': `= Index
+
+<Index 2>[index to index 2]
+
+<Notindex 2>[index to notindex 2]
+
+== Index 2
+`,
+      'notindex.bigb': `= Notindex
+
+== Notindex 2
+`,
+      'subdir/notindex.bigb': `= Notindex
+
+<Notindex 2>[notindex to notindex 2]
+
+<Notindex2 2>[notindex to notindex2 2]
+
+== Notindex 2
+`,
+      'subdir/notindex2.bigb': `= Notindex2
+
+== Notindex2 2
+`,
+      'subdir/subdir2/notindex.bigb': `= Notindex
+
+</Notindex 2>[subdir/subdir2/notindex to notindex 2]
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:div[@class='p']//x:a[@href='#index-2' and text()='index to index 2']",
+        "//x:div[@class='p']//x:a[@href='asdf/notindex.html#notindex-2' and text()='index to notindex 2']",
+      ],
+      'split.html': [
+        "//x:div[@class='p']//x:a[@href='asdf/index.html#index-2' and text()='index to index 2']",
+        "//x:div[@class='p']//x:a[@href='asdf/notindex.html#notindex-2' and text()='index to notindex 2']",
+      ],
+      'notindex.html': [
+        // Don't add the suffix for -split or -nosplit outputs. Rationale: they don't
+        // exist on Web, which is the main use case that we redirect to. Just keep them working locally instead.
+        xpath_header_split(1, 'notindex', 'notindex-split.html', ourbigbook.SPLIT_MARKER_TEXT),
+      ],
+      'subdir/notindex.html': [
+        "//x:div[@class='p']//x:a[@href='#notindex-2' and text()='notindex to notindex 2']",
+        "//x:div[@class='p']//x:a[@href='asdf/subdir/notindex2.html#notindex2-2' and text()='notindex to notindex2 2']",
+      ],
+      'subdir/subdir2/notindex.html': [
+        "//x:div[@class='p']//x:a[@href='asdf/subdir/subdir2/../../notindex.html#notindex-2' and text()='subdir/subdir2/notindex to notindex 2']",
+      ],
+    },
+  },
+);
 
 // Infinite recursion.
 // failing https://github.com/cirosantilli/ourbigbook/issues/34

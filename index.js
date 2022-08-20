@@ -2535,7 +2535,7 @@ async function convert(
             context.options.input_path,
             id,
             clone_and_set(context, 'to_split_headers', false)
-          ))[0];
+          )).path;
         }
         if (outpath !== undefined) {
           context.options.template_vars.root_relpath = get_root_relpath(outpath, context);
@@ -2714,7 +2714,7 @@ function convert_header(cur_arg_list, context, has_toc, header_count) {
     const output_path = (output_path_from_ast(
       first_ast,
       clone_and_set(context, 'to_split_headers', true)
-    ))[0];
+    )).path;
     if (options.log['split-headers']) {
       console.error('split-headers: ' + output_path);
     }
@@ -2834,6 +2834,7 @@ function convert_init_context(options={}, extra_returns={}) {
         if (!('normalize' in id)) { id.normalize = {}; }
         const normalize = id.normalize
       }
+      if (!('reroutePrefix' in ourbigbook_json)) { ourbigbook_json.reroutePrefix = undefined; }
     }
   if (!('embed_includes' in options)) { options.embed_includes = false; }
   // Check if file exists.
@@ -3906,12 +3907,13 @@ function object_subset(source_object, keys) {
  * subdir/subdir-h2
  */
 function output_path(input_path, id, context={}, split_suffix=undefined) {
-  const [dirname, basename] = output_path_parts(input_path, id, context, split_suffix);
-  return [
-    path_join(dirname, basename + '.' + OUTPUT_FORMATS[context.options.output_format].ext, context.options.path_sep),
+  const { dirname, basename, split_suffix: split_suffix_used } = output_path_parts(input_path, id, context, split_suffix);
+  return {
+    path: path_join(dirname, basename + '.' + OUTPUT_FORMATS[context.options.output_format].ext, context.options.path_sep),
     dirname,
-    basename
-  ];
+    basename,
+    split_suffix: split_suffix_used,
+  };
 }
 
 /** Helper for when we have an actual AstNode. */
@@ -3962,7 +3964,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
   let first_header_or_before = false;
   if (ast === undefined) {
     const [dirname_ret, basename_ret] = index_path_from_dirname(dirname, renamed_basename_noext, context.options.path_sep)
-    return [dirname_ret, basename_ret];
+    return { dirname: dirname_ret, basename: basename_ret };
   } else {
     if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
       id = ast.id;
@@ -4020,6 +4022,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
 
   // Add -split, -nosplit or custom suffixes to basename_ret.
   let suffix_to_add;
+  let suffix_added;
   if (split_suffix === undefined || split_suffix === '') {
     suffix_to_add = to_split_headers ? SPLIT_MARKER_TEXT : NOSPLIT_MARKER_TEXT;
   } else {
@@ -4049,9 +4052,10 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
       basename_ret += '-';
     }
     basename_ret += suffix_to_add;
+    suffix_added = suffix_to_add;
   }
 
-  return [dirname_ret, basename_ret];
+  return { dirname: dirname_ret, basename: basename_ret, split_suffix: suffix_added };
 }
 exports.output_path_parts = output_path_parts;
 
@@ -6358,7 +6362,7 @@ function x_href_parts(target_ast, context) {
   ;
 
   // href_path
-  let href_path;
+  let href_path, toplevel_output_path_dirname = '', toplevel_output_path_basename, full_output_path, target_output_path_dirname, target_output_path_basename, split_suffix;
   const target_input_path = target_ast.source_location.path;
   if (
     target_ast.source_location.path === undefined ||
@@ -6383,19 +6387,20 @@ function x_href_parts(target_ast, context) {
   ) {
     href_path = '';
   } else {
-    const [toplevel_output_path_dirname, toplevel_output_path_basename] =
+    ;[toplevel_output_path_dirname, toplevel_output_path_basename] =
       path_split(context.toplevel_output_path, context.options.path_sep);
-    let [
-      full_output_path,
-      target_output_path_dirname,
-      target_output_path_basename
-    ] = output_path_from_ast(
+    ;({
+      path: full_output_path,
+      dirname: target_output_path_dirname,
+      basename: target_output_path_basename,
+      split_suffix,
+    } = output_path_from_ast(
       target_ast,
       context,
       {
         effective_id: target_ast_effective_id,
       }
-    );
+    ));
     if (context.options.x_remove_leading_at) {
       if (target_output_path_dirname) {
         if (target_output_path_dirname[0] === AT_MENTION_CHAR) {
@@ -6439,6 +6444,10 @@ function x_href_parts(target_ast, context) {
   }
   if (!context.options.include_path_set.has(target_input_path)) {
     href_path = context.options.x_external_prefix + href_path
+  }
+  if (context.options.ourbigbook_json.reroutePrefix !== undefined && href_path !== '' && split_suffix === undefined) {
+    href_path = context.options.ourbigbook_json.reroutePrefix +
+      path_join(toplevel_output_path_dirname, href_path, context.options.path_sep)
   }
 
   // Fragment

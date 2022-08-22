@@ -1,5 +1,7 @@
 "use strict";
 
+let dolog = false
+
 const globals = {};
 
 if (typeof performance === 'undefined') {
@@ -198,6 +200,8 @@ class AstNode {
     // Array of AstNode of synonym headers of this one that have title2 set.
     this.title2s = []
 
+    this.toplevel_id = undefined
+
     // Has this node already been validated? This cannot happen twice e.g. because of booleans:
     // booleans currently just work by adding a dummy argument with a default. But then we lose
     // the fact if the thing was given or not. This matters for example for numbered, which
@@ -268,6 +272,9 @@ class AstNode {
     }
     if (!('in_literal' in context)) {
       context.in_literal = false;
+    }
+    if (!('in_x_text' in context)) {
+      context.in_x_text = false;
     }
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
@@ -456,10 +463,7 @@ class AstNode {
     return this.parent_argument_index === this.parent_argument.length() - 1
   }
 
-  /** Manual implementation. There must be a better way, but I can't find it...
-   *
-   * * row: a row from the Ids database
-   */
+  /** Manual implementation. There must be a better way, but I can't find it... */
   static fromJSON(ast_json, context) {
     // Post order depth first convert the AST JSON tree.
     let new_ast
@@ -536,6 +540,68 @@ class AstNode {
       }
     }
     return new_ast
+  }
+
+  /** Calculate the output path for this Ast. */
+  output_path(context, options={}) {
+    let ast = this
+    let id
+    let input_path = ast.source_location.path
+    if (input_path === undefined) {
+      return {}
+    } else {
+      if ('effective_id' in options) {
+        // Used for synonyms.
+        id = options.effective_id
+        ast = context.db_provider.get(id, context);
+      } else {
+        id = ast.id
+      }
+      const ast_undefined = ast === undefined
+      if (!ast_undefined && ast.macro_name !== Macro.HEADER_MACRO_NAME) {
+        id = ast.get_header_parent_ids(context).values().next().value;
+      }
+      let ast_input_path_toplevel_id
+      const get_file_ret = context.options.db_provider.get_file(input_path);
+      if (get_file_ret) {
+        ast_input_path_toplevel_id = get_file_ret.toplevel_id
+      } else {
+        // The only way this can happen is if we are in the current file, and it hasn't
+        // been added to the file db yet.
+        ast_input_path_toplevel_id = context.toplevel_id
+      }
+      let split_suffix;
+      if (!ast_undefined && ast.args.splitSuffix !== undefined) {
+        split_suffix = render_arg(ast.args.splitSuffix, context);
+      }
+      const args = {
+        ast_id: id,
+        ast_input_path: input_path,
+        ast_undefined,
+        context_to_split_headers: context.to_split_headers,
+        ast_input_path_toplevel_id,
+        path_sep: context.options.path_sep,
+        splitDefaultNotToplevel: context.options.ourbigbook_json.h.splitDefaultNotToplevel,
+        split_suffix,
+      }
+      if (!ast_undefined) {
+        args.ast_is_first_header_in_input_file = ast.is_first_header_in_input_file
+        args.ast_split_default = ast.split_default
+        args.ast_toplevel_id = ast.toplevel_id
+      }
+      const ret = output_path_base(args);
+      if (ret === undefined) {
+        return {}
+      } else {
+        const { dirname, basename, split_suffix: split_suffix_used } = ret
+        return {
+          path: path_join(dirname, basename + '.' + OUTPUT_FORMATS[context.options.output_format].ext, context.options.path_sep),
+          dirname,
+          basename,
+          split_suffix: split_suffix_used,
+        }
+      }
+    }
   }
 
   setup_argument(argname, arg) {
@@ -1225,7 +1291,6 @@ Macro.TH_MACRO_NAME = 'Th';
 Macro.TR_MACRO_NAME = 'Tr';
 Macro.TITLE_ARGUMENT_NAME = 'title';
 Macro.TITLE2_ARGUMENT_NAME = 'title2';
-Macro.TOC_MACRO_NAME = 'Toc';
 // We set a fixed magic ID to the ToC because:
 // - when doing --split-headers, the easy approach is to add the ToC node
 //   after normal ID indexing has happened, which means that we can't link
@@ -2018,7 +2083,7 @@ class HeaderTreeNode {
     let todo_visit;
     // False for toplevel of the tree.
     if (this.ast === undefined) {
-      todo_visit = this.children.slice();
+      todo_visit = this.children.slice().reverse();
     } else {
       todo_visit = [this];
     }
@@ -2151,131 +2216,127 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
 ) {
   let title_text
   const macro_name = ast.macro_name;
-  if (macro_name === Macro.TOC_MACRO_NAME) {
-    ast.id = Macro.TOC_ID;
-  } else {
-    const macro = context.macros[macro_name];
+  const macro = context.macros[macro_name];
 
-    // Linear count of each macro type for macros that have IDs.
-    if (!macro.options.macro_counts_ignore(ast)) {
-      if (!(macro_name in macro_counts)) {
-        macro_counts[macro_name] = 0;
-      }
-      const macro_count = macro_counts[macro_name] + 1;
-      macro_counts[macro_name] = macro_count;
-      ast.macro_count = macro_count;
+  // Linear count of each macro type for macros that have IDs.
+  if (!macro.options.macro_counts_ignore(ast)) {
+    if (!(macro_name in macro_counts)) {
+      macro_counts[macro_name] = 0;
     }
+    const macro_count = macro_counts[macro_name] + 1;
+    macro_counts[macro_name] = macro_count;
+    ast.macro_count = macro_count;
+  }
 
-    let index_id = true;
-    if (
-      // This can happen be false for included headers, and this is notably important
-      // for the toplevel header which gets its ID from the filename.
-      ast.id === undefined
-    ) {
-      const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
-      const new_context = clone_and_set(context, 'id_conversion', true);
-      if (macro_id_arg === undefined) {
-        let id_text = '';
-        const id_prefix = context.macros[ast.macro_name].id_prefix;
-        const title_arg = macro.options.get_title_arg(ast, context);
-        if (title_arg !== undefined) {
-          if (id_prefix !== '') {
-            id_text += id_prefix + ID_SEPARATOR
-          }
-          title_text = render_arg_noescape(title_arg, new_context)
-          if (
-            ast.macro_name === Macro.HEADER_MACRO_NAME &&
-            ast.validation_output.file.given
-          ) {
-            let id_text_append
-            const file_render = render_arg(ast.args.file, new_context)
-            if (file_render) {
-              id_text_append = file_render
-            } else {
-              id_text_append = title_text
-            }
-            ast.file = id_text_append
-            id_text = Macro.FILE_ID_PREFIX + id_text + id_text_append
+  let index_id = true;
+  if (
+    // This can happen be false for included headers, and this is notably important
+    // for the toplevel header which gets its ID from the filename.
+    ast.id === undefined
+  ) {
+    const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
+    const new_context = clone_and_set(context, 'id_conversion', true);
+    if (macro_id_arg === undefined) {
+      let id_text = '';
+      const id_prefix = context.macros[ast.macro_name].id_prefix;
+      const title_arg = macro.options.get_title_arg(ast, context);
+      if (title_arg !== undefined) {
+        if (id_prefix !== '') {
+          id_text += id_prefix + ID_SEPARATOR
+        }
+        title_text = render_arg_noescape(title_arg, new_context)
+        if (
+          ast.macro_name === Macro.HEADER_MACRO_NAME &&
+          ast.validation_output.file.given
+        ) {
+          let id_text_append
+          const file_render = render_arg(ast.args.file, new_context)
+          if (file_render) {
+            id_text_append = file_render
           } else {
-            id_text += title_to_id(title_text, new_context.options.ourbigbook_json['id'], new_context);
+            id_text_append = title_text
           }
-          const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
-          if (disambiguate_arg !== undefined) {
-            id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json['id']);
-          }
-          ast.id = id_text;
+          ast.file = id_text_append
+          id_text = Macro.FILE_ID_PREFIX + id_text + id_text_append
         } else {
-          id_text += '_'
+          id_text += title_to_id(title_text, new_context.options.ourbigbook_json['id'], new_context);
         }
+        const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
+        if (disambiguate_arg !== undefined) {
+          id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json['id']);
+        }
+        ast.id = id_text;
+      } else {
+        id_text += '_'
+      }
 
-        if (ast.id === undefined) {
-          index_id = false;
-          if (!macro.options.phrasing) {
-            id_text += macro_count_global;
-            macro_count_global++
-            ast.id = id_text;
-            // IDs of type p-1, p-2, q-1, q-2, etc.
-            //if (ast.macro_count !== undefined) {
-            //  id_text += ast.macro_count;
-            //  ast.id = id_text;
-            //}
-          }
+      if (ast.id === undefined) {
+        index_id = false;
+        if (!macro.options.phrasing) {
+          id_text += macro_count_global;
+          macro_count_global++
+          ast.id = id_text;
+          // IDs of type p-1, p-2, q-1, q-2, etc.
+          //if (ast.macro_count !== undefined) {
+          //  id_text += ast.macro_count;
+          //  ast.id = id_text;
+          //}
         }
-      } else {
-        ast.id = render_arg_noescape(macro_id_arg, new_context);
       }
-      if (Macro.RESERVED_IDS.has(ast.id)) {
-        let message = `reserved ID "${ast.id}"`;
-        parse_error(state, message, ast.source_location);
-      }
-      if (ast.id !== undefined && ast.scope !== undefined) {
-        ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
-      }
+    } else {
+      ast.id = render_arg_noescape(macro_id_arg, new_context);
     }
-    if (ast.id && ast.subdir) {
-      ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
+    if (Macro.RESERVED_IDS.has(ast.id)) {
+      let message = `reserved ID "${ast.id}"`;
+      parse_error(state, message, ast.source_location);
     }
-    ast.index_id = index_id;
-    if (ast.id !== undefined && !ast.force_no_index) {
-      let non_indexed_ast = non_indexed_ids[ast.id];
-      if (non_indexed_ast === undefined) {
-        non_indexed_ids[ast.id] = ast;
-        if (index_id) {
-          indexed_ids[ast.id] = ast;
-          const local_id = ast.get_local_header_parent_id()
-          if (local_id !== undefined) {
-            add_to_refs_to(
-              ast.id,
-              context,
-              local_id,
-              REFS_TABLE_PARENT,
-              {
-                child_index: ast.header_tree_node.index,
-                source_location: ast.source_location,
-              }
-            )
-          }
+    if (ast.id !== undefined && ast.scope !== undefined) {
+      ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
+    }
+  }
+  if (ast.id && ast.subdir) {
+    ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
+  }
+  ast.index_id = index_id;
+  if (ast.id !== undefined && !ast.force_no_index) {
+    let non_indexed_ast = non_indexed_ids[ast.id];
+    if (non_indexed_ast === undefined) {
+      non_indexed_ids[ast.id] = ast;
+      if (index_id) {
+        indexed_ids[ast.id] = ast;
+        const local_id = ast.get_local_header_parent_id()
+        if (local_id !== undefined) {
+          add_to_refs_to(
+            ast.id,
+            context,
+            local_id,
+            REFS_TABLE_PARENT,
+            {
+              child_index: ast.header_tree_node.index,
+              source_location: ast.source_location,
+            }
+          )
         }
-      } else {
-        const message = duplicate_id_error_message(
-          ast.id,
-          non_indexed_ast.source_location.path,
-          non_indexed_ast.source_location.line,
-          non_indexed_ast.source_location.column
-        )
-        parse_error(state, message, ast.source_location);
       }
-      if (caption_number_visible(ast, context)) {
-        if (!(macro_name in macro_counts_visible)) {
-          macro_counts_visible[macro_name] = 0;
-        }
-        const macro_count = macro_counts_visible[macro_name] + 1;
-        macro_counts_visible[macro_name] = macro_count;
-        ast.macro_count_visible = macro_count;
-      }
-      binary_search_insert(line_to_id_array,
-        [ast.source_location.line, ast.synonym || ast.id], binary_search_line_to_id_array_fn);
+    } else {
+      const message = duplicate_id_error_message(
+        ast.id,
+        non_indexed_ast.source_location.path,
+        non_indexed_ast.source_location.line,
+        non_indexed_ast.source_location.column
+      )
+      parse_error(state, message, ast.source_location);
     }
+    if (caption_number_visible(ast, context)) {
+      if (!(macro_name in macro_counts_visible)) {
+        macro_counts_visible[macro_name] = 0;
+      }
+      const macro_count = macro_counts_visible[macro_name] + 1;
+      macro_counts_visible[macro_name] = macro_count;
+      ast.macro_count_visible = macro_count;
+    }
+    binary_search_insert(line_to_id_array,
+      [ast.source_location.line, ast.synonym || ast.id], binary_search_line_to_id_array_fn);
   }
   return { title_text, macro_count_global }
 }
@@ -2496,82 +2557,95 @@ async function convert(
     }
   }
 
-  let ast = await parse(tokens, context.options, context, sub_extra_returns);
+  const toplevel_ast = await parse(tokens, context.options, context, sub_extra_returns);
   if (context.options.log['ast-inside']) {
     console.error('ast:');
-    console.error(JSON.stringify(ast, null, 2));
+    console.error(JSON.stringify(toplevel_ast, null, 2));
     console.error();
   }
-  extra_returns.ast = ast;
+  extra_returns.ast = toplevel_ast;
   extra_returns.context = context;
   extra_returns.ids = sub_extra_returns.ids;
   Object.assign(extra_returns.debug_perf, sub_extra_returns.debug_perf);
   extra_returns.errors.push(...sub_extra_returns.errors);
   let output;
   if (context.options.render) {
-    if (context.options.log['split-headers']) {
-      console.error('split-headers non-split: ' + context.options.input_path);
-    }
 
-    // For non-split header toplevel conversion.
-    if (context.options.outfile === undefined) {
-      let outpath;
-      if (context.options.input_path !== undefined) {
-        let id;
-        if (context.toplevel_id === undefined) {
-          const toplevel_header_node = context.header_tree.children[0];
-          if (toplevel_header_node === undefined) {
-            id = undefined
+    // Gather toplevel ids and their asts.
+    const toplevel_ids = {}
+    const content = toplevel_ast.args.content;
+    let first_toplevel_id
+    let undefined_asts = []
+    for (const child_ast of content) {
+      if (child_ast.toplevel_id === undefined) {
+        /** Some undefined topleve_ids are unescapable e.g. input from stdin.
+         *
+         * But there is on case that we could improve:
+         *
+         * ``
+         * aa
+         *
+         * = Bb
+         * ``
+         *
+         * aa is undefined toplevel_id. We are just semi hacking it and grouping all
+         * undefined toplevel_id with the first defined one.
+         * */
+        undefined_asts.push(child_ast)
+      } else {
+        let toplevel_ids_entry = toplevel_ids[child_ast.toplevel_id]
+        if (first_toplevel_id === undefined) {
+          first_toplevel_id = child_ast.toplevel_id
+        }
+        if (toplevel_ids_entry === undefined) {
+          if (undefined_asts.length) {
+            toplevel_ids_entry = undefined_asts
+            undefined_asts = []
           } else {
-            const toplevel_header_ast = toplevel_header_node.ast;
-            id = toplevel_header_ast.id;
+            toplevel_ids_entry = []
           }
-          context.toplevel_id = id;
-        } else {
-          id = context.toplevel_id;
+          toplevel_ids[child_ast.toplevel_id] = toplevel_ids_entry
         }
-        if (id !== undefined) {
-          outpath = (output_path(
-            context.options.input_path,
-            id,
-            clone_and_set(context, 'to_split_headers', false)
-          )).path;
-        }
-        if (outpath !== undefined) {
-          context.options.template_vars.root_relpath = get_root_relpath(outpath, context);
-        }
+        toplevel_ids_entry.push(child_ast)
       }
-      context.toplevel_output_path = outpath;
     }
 
-    // First render.
-    let toplevel_output_path
-    if (context.toplevel_output_path === undefined) {
-      toplevel_output_path = INDEX_BASENAME_NOEXT + '.' + OUTPUT_FORMATS[context.options.output_format].ext
-    } else {
-      toplevel_output_path = context.toplevel_output_path
+    // Nosplit renders. \H toplevel is split here.
+    for (const toplevel_id in toplevel_ids) {
+      // TODO this prevents toplevel arguments (currently only {title}) from working. Never used them though.
+      // The Toplevel element is a bit useless given this setup.
+      const ret = render_ast_list({
+        asts: toplevel_ids[toplevel_id],
+        context,
+        first_toplevel: toplevel_id === first_toplevel_id,
+        split: false,
+      });
+      if (toplevel_id === first_toplevel_id) {
+        output = ret
+      }
     }
-    let rendered_outputs_entry = {}
-    context.extra_returns.rendered_outputs[toplevel_output_path] = rendered_outputs_entry
-    perf_print(context, 'render_pre')
-    output = ast.render(context);
-    context.katex_macros = Object.assign({}, context.options.katex_macros);
-    rendered_outputs_entry.full = output;
+    if (undefined_asts.length) {
+      // There are no headers.
+      output = render_ast_list({
+        asts: undefined_asts,
+        context,
+        split: false,
+      });
+    }
 
     perf_print(context, 'split_render_pre')
     // Split header conversion.
     if (context.options.split_headers) {
-      const content = ast.args.content;
+      // Reset katex_macros to the ourbigbook.json defaults, otherwise
+      // macros will get redefiend in the split render, as they are redefined on every render.
+      context.katex_macros = Object.assign({}, context.options.katex_macros);
+      const content = toplevel_ast.args.content;
       // Gather up each header (must be a direct child of toplevel)
       // and all elements that belong to that header (up to the next header).
-      let cur_arg_list = [];
-      let has_toc = false;
+      let asts = [];
       let header_count = 0
       for (const child_ast of content) {
         const macro_name = child_ast.macro_name;
-        if (macro_name === Macro.TOC_MACRO_NAME) {
-          has_toc = true;
-        }
         if (
           macro_name === Macro.HEADER_MACRO_NAME &&
           // Just ignore extra added include headers, these
@@ -2579,14 +2653,13 @@ async function convert(
           !child_ast.from_include &&
           !child_ast.validation_output.synonym.boolean
         ) {
-          convert_header(cur_arg_list, context, has_toc, header_count);
-          cur_arg_list = [];
-          has_toc = false;
+          render_ast_list({ asts, context, header_count, split: true });
+          asts = [];
           header_count++
         }
-        cur_arg_list.push(child_ast);
+        asts.push(child_ast);
       }
-      convert_header(cur_arg_list, context, has_toc, header_count);
+      render_ast_list({ asts, context, header_count, split: true });
       // Because the following conversion would redefine them.
     }
     perf_print(context, 'render_post')
@@ -2664,14 +2737,25 @@ function render_arg_noescape(arg, context={}) {
   return render_arg(arg, clone_and_set(context, 'html_escape', false));
 }
 
-/* Convert one header (or content before the first header)
- * in --split-headers mode. */
-function convert_header(cur_arg_list, context, has_toc, header_count) {
+/* Convert a list of asts.
+ *
+ * The simplest type of conversion os to convert
+ * a single Toplevel element all the way down.
+ *
+ * This function adds a dummy Toplevel to a list of AstNodes, and
+ * sets up some other related stuff to convert that list.
+ *
+ * Applications for this include:
+ * - --split-headers
+ * - \H toplevel argument
+ */
+function render_ast_list(opts) {
+  let { asts, context, first_toplevel, header_count, split } = opts
   if (
     // Can fail if:
     // * the first thing in the document is a header
     // * the document has no headers
-    cur_arg_list.length > 0 &&
+    asts.length > 0 &&
     !(
       context.options.ourbigbook_json.h.splitDefaultNotToplevel &&
       header_count === 1
@@ -2680,58 +2764,59 @@ function convert_header(cur_arg_list, context, has_toc, header_count) {
     context = Object.assign({}, context);
     const options = Object.assign({}, context.options);
     context.options = options;
-    const first_ast = clone_object(cur_arg_list[0]);
-    if (!has_toc && first_ast.macro_name === Macro.HEADER_MACRO_NAME) {
-      cur_arg_list.push(new AstNode(
-        AstType.MACRO,
-        Macro.TOC_MACRO_NAME,
-        {},
-        first_ast.source_location,
-        {id: Macro.TOC_ID}
-      ));
+    const first_ast = clone_object(asts[0]);
+    if (!first_toplevel) {
+      // When not in simple header mode, we always have a value-less node, with
+      // children with values. Now things are a bit more complicated, because we
+      // want to keep the header tree intact, but at the same time also uniquely point
+      // to one of the headers. So let's fake a tree node that has only one child we care
+      // about. And the child does not have this fake parent to be able to see actual parents.
+      context.header_tree = new HeaderTreeNode();
+      // Clone this, because we are going to modify it, and it would affect
+      // non-split headers and final outputs afterwards.
+      first_ast.header_tree_node = clone_object(first_ast.header_tree_node);
+      context.header_tree.add_child(first_ast.header_tree_node);
+      context.header_tree_top_level = first_ast.header_tree_node.get_level();
     }
+    const output_path = first_ast.output_path(
+      clone_and_set(context, 'to_split_headers', split)
+    ).path;
+    if (options.log['split-headers']) {
+      console.error(`split-headers${split ? '' : ' nosplit'}: ` + output_path);
+    }
+    context.toplevel_output_path = output_path;
+    context.toplevel_ast = first_ast;
     const ast_toplevel = new AstNode(
       AstType.MACRO,
       Macro.TOPLEVEL_MACRO_NAME,
       {
-        'content': new AstArgument(cur_arg_list, first_ast.source_location)
+        'content': new AstArgument(asts, first_ast.source_location)
       },
       first_ast.source_location,
     );
     context.toplevel_id = first_ast.id;
-    context.in_split_headers = true;
-    // When not in simple header mode, we always have a value-less node, with
-    // children with values. Now things are a bit more complicated, because we
-    // want to keep the header tree intact, but at the same time also uniquely point
-    // to one of the headers. So let's fake a tree node that has only one child we care
-    // about. And the child does not have this fake parent to be able to see actual parents.
-    context.header_tree = new HeaderTreeNode();
-    // Clone this, because we are going to modify it, and it would affect
-    // non-split headers and final outputs afterwards.
-    first_ast.header_tree_node = clone_object(first_ast.header_tree_node);
-    context.header_tree.add_child(first_ast.header_tree_node);
-    context.header_tree_top_level = first_ast.header_tree_node.get_level();
-    const output_path = (output_path_from_ast(
-      first_ast,
-      clone_and_set(context, 'to_split_headers', true)
-    )).path;
-    if (options.log['split-headers']) {
-      console.error('split-headers: ' + output_path);
-    }
-    context.toplevel_output_path = output_path;
-    context.toplevel_ast = first_ast;
+    context.in_split_headers = split;
 
-    // root_relpath
-    options.template_vars = Object.assign({}, options.template_vars);
-    const new_root_relpath = get_root_relpath(output_path, context)
-    context.root_relpath_shift = path.relative(options.template_vars.root_relpath,
-      path.join(context.root_relpath_shift, new_root_relpath))
-    options.template_vars.root_relpath = new_root_relpath
-
-    // Do the conversion.
     let rendered_outputs_entry = {}
-    context.extra_returns.rendered_outputs[output_path] = rendered_outputs_entry
-    rendered_outputs_entry.full = ast_toplevel.render(context)
+    if (output_path !== undefined) {
+      if (split) {
+        // root_relpath
+        options.template_vars = Object.assign({}, options.template_vars);
+        const new_root_relpath = get_root_relpath(output_path, context)
+        context.root_relpath_shift = path.relative(options.template_vars.root_relpath,
+          path.join(context.root_relpath_shift, new_root_relpath))
+        options.template_vars.root_relpath = new_root_relpath
+      }
+
+      context.extra_returns.rendered_outputs[output_path] = rendered_outputs_entry
+    }
+    // Do the conversion.
+    context.toc_was_rendered = false
+    const ret = ast_toplevel.render(context)
+    if (output_path !== undefined) {
+      rendered_outputs_entry.full = ret
+    }
+    return ret
   }
 }
 
@@ -3028,7 +3113,6 @@ function convert_init_context(options={}, extra_returns={}) {
   extra_returns.errors = [];
   extra_returns.rendered_outputs = {};
   const context = {
-    perf_prev: 0,
     katex_macros: Object.assign({}, options.katex_macros),
     in_split_headers: false,
     in_parse: false,
@@ -3042,11 +3126,20 @@ function convert_init_context(options={}, extra_returns={}) {
     // - scope + split headers e.g. scope/notindex.html
     // - subdirectories
     root_relpath_shift,
+    perf_prev: 0,
     synonym_headers: new Set(),
+    toc_was_rendered: false,
     toplevel_id: options.toplevel_id,
+    // Map from each toplevel_id to a list of AstNodes with that toplevel_id.
+    // Updated during render if it is a map, ignored if it is undefined.
+    toplevel_ids: undefined,
     // Output path for the current rendering.
     // Gets modified by split headers to point to the split header output path of each split header.
     toplevel_output_path: options.outfile,
+    // undefined: follow defaults set otherwise
+    // true: force to split headers, e.g. split links
+    // false: force to nosplit headers, e.g. nosplit links
+    to_split_headers: undefined,
   };
   perf_print(context, 'start_convert')
   return context;
@@ -3365,6 +3458,14 @@ function get_title_and_description({ title, description, source, inner }) {
     description = ' ' + description
   }
   return `${title}${sep}${source}${description}`
+}
+
+function has_toc(context) {
+  let root_node = context.header_tree;
+  if (root_node.children.length === 1) {
+    root_node = root_node.children[0];
+  }
+  return root_node.children.length > 0
 }
 
 // Ensure that all children and tag targets exist. This is for error checking only.
@@ -3880,113 +3981,56 @@ function object_subset(source_object, keys) {
   return new_object;
 }
 
-/** Calculate the output path of an AST node,
- * or of something faked to look like one.
+/* Calculate the output path given a billion parameters.
  *
- * ourbigbook ->
- *    split_headers -> index.html
- *   !split_headers -> index.html
- * quick-start ->
- *    split_headers -> quick-start.html
- *   !split_headers -> index.html
- * not-readme -> not-readme.html
- *    split_headers -> not-readme.html
- *   !split_headers -> not-readme.html
- * h2 in not the README -> not-readme.html
- *    split_headers -> h2-in-not-the-readme.html
- *   !split_headers -> not-readme.html
- * not-readme-with-scope ->
- *    split_headers -> not-readme-with-scope.html
- *   !split_headers ->  not-readme-with-scope.html
- * not-readme-with-scope/h2 ->
- *    split_headers -> not-readme-with-scope/h2.html
- *   !split_headers ->  not-readme-with-scope.html
- * subdir ->
- *    split_headers -> subdir/index.html
- *   !html_x_extension -> subdir
- *   !split_headers -> subdir/index.html
- * subdir/subdir-h2
- */
-function output_path(input_path, id, context={}, split_suffix=undefined) {
-  const { dirname, basename, split_suffix: split_suffix_used } = output_path_parts(input_path, id, context, split_suffix);
-  return {
-    path: path_join(dirname, basename + '.' + OUTPUT_FORMATS[context.options.output_format].ext, context.options.path_sep),
-    dirname,
-    basename,
-    split_suffix: split_suffix_used,
-  };
-}
-
-/** Helper for when we have an actual AstNode. */
-function output_path_from_ast(ast, context, options={}) {
-  let effective_id
-  if ('effective_id' in options) {
-    effective_id = options.effective_id
-  } else {
-    effective_id = ast.id
-  }
-  let split_suffix;
-  if (ast.args.splitSuffix !== undefined) {
-    split_suffix = render_arg(ast.args.splitSuffix, context);
-  }
-  return output_path(ast.source_location.path, effective_id, context, split_suffix);
-}
-
-/* This is the centerpiece of path calculation. It determines where a given header
- * will land considering:
+ * This is the centerpiece of output path calculation. It is notably used in both:
+ * - calculating the output paths for a given input
+ * - calculating where \x links should point
+ * Since the exact same function is used for both, this guarantees that \x links always
+ * point to the correct file.
  *
+ * We keep only simple types as inputs to this function (e.g. strings, and notably no AstNode and context)
+ * to this function so that it can be unit tested, or at least to make it clearer to us what the exact input is.
+ *
+ * Countless hours have been wasted writing and debugging this function. It is extremelly hard.
+ *
+ * Some of the things this function considers include:
  * * README.bigb -> index.bigb renaming
  * * split header stuff
- *
- * Note that the links need to do additional processing to determine this.
- *
- * This function does not determine if something is in the current file
- * or not: it always assumes it is not.
- *
- * Return an array [dirname, basename without extension] of the
- * path to where an AST gets rendered to. */
-function output_path_parts(input_path, id, context, split_suffix=undefined) {
-  let ret = '';
-  let custom_split_suffix;
-  const [dirname, basename] = path_split(input_path, context.options.path_sep);
+ **/
+function output_path_base(args={}) {
+  let {
+    ast_undefined,
+    ast_id,
+    ast_input_path,
+    ast_is_first_header_in_input_file,
+    ast_split_default,
+    ast_toplevel_id,
+    context_to_split_headers,
+    ast_input_path_toplevel_id,
+    path_sep,
+    splitDefaultNotToplevel,
+    split_suffix,
+  } = args
+  if (ast_input_path === undefined) {
+    return undefined
+  }
+  const [dirname, basename] = path_split(ast_input_path, path_sep);
   const renamed_basename_noext = rename_basename(noext(basename));
-  const ast = context.db_provider.get(id, context);
-
-  function index_path_from_dirname(dirname_ret, basename_ret, sep) {
-    const [dir_dir, dir_base] = path_split(dirname_ret, sep);
-    if (basename_ret === INDEX_BASENAME_NOEXT && dirname_ret) {
-      dirname_ret = dir_dir
-      basename_ret = dir_base
-    }
-    return [dirname_ret, basename_ret]
-  }
-
   // We are the first header, or something that comes before it.
-  let first_header_or_before = false;
-  if (ast === undefined) {
-    const [dirname_ret, basename_ret] = index_path_from_dirname(dirname, renamed_basename_noext, context.options.path_sep)
+  if (ast_undefined) {
+    const [dirname_ret, basename_ret] = index_path_from_dirname(dirname, renamed_basename_noext, path_sep)
     return { dirname: dirname_ret, basename: basename_ret };
-  } else {
-    if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
-      id = ast.id;
-    } else {
-      id = ast.get_header_parent_ids(context).values().next().value;
-    }
-    if (ast.is_first_header_in_input_file) {
-      first_header_or_before = true;
-    }
   }
-
   // Calculate the base basename_ret and dirname_ret.
   let dirname_ret;
   let basename_ret;
-  const [id_dirname, id_basename] = path_split(id, URL_SEP);
-  const to_split_headers = is_to_split_headers(ast, context);
+  const to_split_headers = is_to_split_headers_base(ast_split_default, context_to_split_headers);
   if (
-    first_header_or_before ||
+    ast_is_first_header_in_input_file ||
     (
-      context.to_split_headers !== undefined &&
-      !context.to_split_headers
+      !to_split_headers &&
+      ast_input_path_toplevel_id === ast_toplevel_id
     )
   ) {
     // For toplevel elements in split header mode, we have
@@ -3994,8 +4038,8 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     if (renamed_basename_noext === INDEX_BASENAME_NOEXT) {
       // basename_ret
       if (
-        to_split_headers === ast.split_default ||
-        context.options.ourbigbook_json.h.splitDefaultNotToplevel
+        to_split_headers === ast_split_default ||
+        splitDefaultNotToplevel
       ) {
         // The name is just index.html.
         basename_ret = renamed_basename_noext;
@@ -4008,18 +4052,22 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     }
     dirname_ret = dirname;
   } else {
-    if (to_split_headers) {
+    if (to_split_headers && ast_id !== undefined) {
       // Non-toplevel elements in split header mode are simple,
       // the ID just gives the output path directly.
-      dirname_ret = id_dirname;
-      basename_ret = id_basename;
+      ;[dirname_ret, basename_ret] = path_split(ast_id, URL_SEP);
     } else {
-      dirname_ret = dirname;
-      basename_ret = renamed_basename_noext;
+      if (dirname_ret === undefined) {
+        if (ast_toplevel_id !== undefined) {
+          ;[dirname_ret, basename_ret] = path_split(ast_toplevel_id, URL_SEP);
+        } else {
+          ;[dirname_ret, basename_ret] = [dirname, renamed_basename_noext]
+        }
+      }
     }
   }
 
-  ;[dirname_ret, basename_ret] = index_path_from_dirname(dirname_ret, basename_ret, context.options.path_sep)
+  ;[dirname_ret, basename_ret] = index_path_from_dirname(dirname_ret, basename_ret, path_sep)
 
   // Add -split, -nosplit or custom suffixes to basename_ret.
   let suffix_to_add;
@@ -4030,15 +4078,15 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
     suffix_to_add = split_suffix;
   }
   if (
-    !context.options.ourbigbook_json.h.splitDefaultNotToplevel &&
+    !splitDefaultNotToplevel &&
     (
       (
         to_split_headers &&
         (
           // To split.html
           (
-            first_header_or_before &&
-            !ast.split_default
+            ast_id === ast_toplevel_id &&
+            !ast_split_default
           ) ||
 
           // User explcitly gave {splitSuffix}
@@ -4046,7 +4094,10 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
         )
       ) ||
       // User gave {splitDefault}, so we link to nosplit.
-      !to_split_headers && ast.split_default
+      (
+        !to_split_headers &&
+        ast_split_default
+      )
     )
   ) {
     if (basename_ret !== '') {
@@ -4058,7 +4109,7 @@ function output_path_parts(input_path, id, context, split_suffix=undefined) {
 
   return { dirname: dirname_ret, basename: basename_ret, split_suffix: suffix_added };
 }
-exports.output_path_parts = output_path_parts;
+exports.output_path_base = output_path_base;
 
 /** Parse tokens into the AST tree.
  *
@@ -4894,12 +4945,12 @@ async function parse(tokens, options, context, extra_returns={}) {
     perf_print(context, 'post_process_2')
     // Calculate header_tree_top_level.
     //
-    // - if aa header of this level is present in the document,
+    // - if a header of this level is present in the document,
     //   there is only one of it. This implies for example that
     //   it does not get numerical prefixes like "1.2.3 My Header".
     //   when rendering, and it does not show up in the ToC.
+    context.header_tree_top_level = first_header_level;
     if (context.header_tree.children.length === 1) {
-      context.header_tree_top_level = first_header_level;
       const toplevel_header_node = context.header_tree.children[0];
       const toplevel_header_ast = toplevel_header_node.ast;
       if (toplevel_header_node.children.length > 0) {
@@ -4907,7 +4958,6 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
       context.toplevel_ast = toplevel_header_ast;
     } else {
-      context.header_tree_top_level = first_header_level - 1;
       context.toplevel_ast = undefined;
       if (context.header_tree.children.length > 0) {
         context.header_tree.children[0].ast.toc_header = true;
@@ -4915,7 +4965,6 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
     // Not modified by split headers.
     context.nosplit_toplevel_ast = context.toplevel_ast
-    context.has_toc = false;
     let toplevel_parent_arg = new AstArgument([], new SourceLocation(1, 1));
     {
       const todo_visit = [[toplevel_parent_arg, ast_toplevel]];
@@ -4924,13 +4973,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         const macro_name = ast.macro_name;
         const macro = context.macros[macro_name];
 
-        if (macro_name === Macro.TOC_MACRO_NAME) {
-          if (ast.from_include || context.has_toc) {
-            // Skip.
-            continue;
-          }
-          context.has_toc = true;
-        } else if (
+        if (
           macro_name === Macro.TOPLEVEL_MACRO_NAME &&
           ast.parent_ast !== undefined
         ) {
@@ -4944,41 +4987,47 @@ async function parse(tokens, options, context, extra_returns={}) {
           ast.macro_name === Macro.HEADER_MACRO_NAME
         ) {
           propagate_numbered(ast, context)
+
+          // Propagate toplevel_id for headers.
+          if (
+            // Fails for include dummies. No patience to find a better way now.
+            ast.validation_output.toplevel &&
+            ast.validation_output.toplevel.boolean
+          ) {
+            ast.toplevel_id = ast.id
+          } else {
+            const parent_tree_node = ast.header_tree_node.parent_ast
+            if (
+              parent_tree_node === undefined ||
+              parent_tree_node.ast === undefined
+            ) {
+              if (ast.is_first_header_in_input_file) {
+                ast.toplevel_id = ast.id
+              } else {
+                // Multiple toplevel h1, so after the first one we pick the same toplevel_id as the first one has.
+                if (parent_tree_node !== undefined) {
+                  ast.toplevel_id = parent_tree_node.children[0].ast.toplevel_id
+                }
+              }
+            } else {
+              ast.toplevel_id = parent_tree_node.ast.toplevel_id
+            }
+          }
         }
+
         // Dump index of headers with includes.
         if (ast.includes.length > 0) {
           context.headers_with_include.push(ast);
         }
         if (
-          // These had been validated earlier during header processing.
-          macro_name === Macro.HEADER_MACRO_NAME
+          // This only happens in the following cases
+          // * \x are validated before for magic stuff
+          // * when you have include without embed,
+          //   where we do a context.db_provider.get, and we set the attributes to it
+          //   and the thing comes out of serialization validated.
+          macro_name !== Macro.HEADER_MACRO_NAME && !ast.validated
         ) {
-          if (
-            !context.has_toc &&
-            ast.toc_header
-          ) {
-            parent_arg.push(new AstNode(
-              AstType.MACRO,
-              Macro.TOC_MACRO_NAME,
-              {},
-              new SourceLocation(undefined, undefined, context.options.input_path),
-              {
-                parent_ast: ast.parent_ast
-              }
-            ))
-            context.has_toc = true;
-          }
-        } else {
-          if (
-            // This only happens in the following cases
-            // * \x are validated before for magic stuff
-            // * when you have include without embed,
-            //   where we do a context.db_provider.get, and we set the attributes to it
-            //   and the thing comes out of serialization validated.
-            !ast.validated
-          ) {
-            validate_ast(ast, context);
-          }
+          validate_ast(ast, context);
         }
 
         // Push this node into the parent argument list.
@@ -5222,6 +5271,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     perf_print(context, 'post_process_3')
     {
       const todo_visit = [ast_toplevel];
+      let cur_header_tree_node
       while (todo_visit.length > 0) {
         const ast = todo_visit.pop();
         const macro_name = ast.macro_name;
@@ -5258,6 +5308,17 @@ async function parse(tokens, options, context, extra_returns={}) {
             const header_ast = ast.header_tree_node.parent_ast.ast
             ast.split_default = header_ast.split_default;
             ast.is_first_header_in_input_file = header_ast.is_first_header_in_input_file;
+            // TODO calculate a value for this when there is not existing header_ast, e.g.:
+            //
+            // ``
+            // abc
+            //
+            // = First header
+            // ``
+            //
+            // currently leaves abc without toplevel_id. This would make it impossible to link from other files to it.
+            // Not fixing it now because this is forbidden in Web articles.
+            ast.toplevel_id = header_ast.toplevel_id
           }
         }
 
@@ -5928,6 +5989,120 @@ function render_error_x_undefined(ast, context, target_id, options={}) {
   return error_message_in_output(message, context)
 }
 
+function render_toc(context) {
+  if (context.toc_was_rendered || !has_toc(context)) {
+    // Empty ToC. Don't render. Initial common case: leaf split header nodes.
+    return '';
+  }
+  context.toc_was_rendered = true
+  // Not rendering ID here because that function does scope culling. But TOC ID is a fixed value without scope for now.
+  // so that was removing the TOC id in subdirectories.
+  let todo_visit = [];
+  let top_level = 0;
+  let root_node = context.header_tree;
+  let ret = `<div id="${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
+  if (root_node.children.length === 1) {
+    root_node = root_node.children[0];
+  }
+  let descendant_count_html = get_descendant_count_html_sep(context, root_node, { long_style: false, show_descendant_count: true });
+  ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${Macro.TOC_ID}">Table of contents</a><span class="hover-metadata">${descendant_count_html}</span></span></div>\n`;
+  for (let i = root_node.children.length - 1; i >= 0; i--) {
+    todo_visit.push([root_node.children[i], 1]);
+  }
+  let linear_count = 0
+  while (todo_visit.length > 0) {
+    const [tree_node, level] = todo_visit.pop();
+    if (level > top_level) {
+      ret += `<ul>\n`;
+    } else if (level < top_level) {
+      ret += `</li>\n</ul>\n`.repeat(top_level - level);
+    } else {
+      ret += `</li>\n`;
+    }
+    ret += '<li';
+    if (tree_node.children.length > 0) {
+      ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
+    }
+    ret += '>'
+    let target_ast = context.db_provider.get(tree_node.ast.id, context);
+    if (
+      // Can happen in test error cases:
+      // - cross reference from header title without ID to previous header is not allowed
+      // - include to file that does exists without embed includes before extracting IDs fails gracefully
+      target_ast !== undefined
+    ) {
+      // I had this at one point, but it was too confusing that \x links linked to split, and ToC to nonsplit.
+      // If we want to keep split self contained, then we have to do it everywhere I think, not just ToC.
+      //// ToC entries always link to the same split/nosplit type, except for included sources.
+      //// This might be handled more generally through: https://github.com/cirosantilli/ourbigbook/issues/146
+      //// but for now we are just taking care of this specific and important ToC subcase.
+      //let cur_context;
+      //if (ast.source_location.path === target_ast.source_location.path) {
+      //  cur_context = clone_and_set(context, 'to_split_headers', context.in_split_headers);
+      //} else {
+      //  cur_context = context;
+      //}
+
+      let content = x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
+      let href = x_href_attr(target_ast, context);
+      const my_toc_id = toc_id(target_ast, context);
+      let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
+      // The inner <div></div> inside arrow is so that:
+      // - outter div: takes up space to make clicking easy
+      // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
+      let descendant_count_html = get_descendant_count_html_sep(context, tree_node, { long_style: false, show_descendant_count: false });
+      let linear_count_str
+      if (context.options.add_test_instrumentation) {
+        linear_count_str = html_attr('data-test', linear_count)
+      } else {
+        linear_count_str = ''
+      }
+      ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
+
+      let toc_href = html_attr('href', '#' + html_escape_attr(my_toc_id));
+      ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
+      if (context.options.split_headers) {
+        const link_to_split = link_to_split_opposite(target_ast, context)
+        if (link_to_split) {
+          ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
+        }
+      }
+      let parent_ast = target_ast.get_header_parent_asts(context)[0];
+      if (
+        // Possible on broken h1 level.
+        parent_ast !== undefined
+      ) {
+        let parent_href_target;
+        if (
+          parent_ast.header_tree_node !== undefined &&
+          parent_ast.header_tree_node.get_level() === context.header_tree_top_level
+        ) {
+          parent_href_target = Macro.TOC_ID;
+        } else {
+          parent_href_target = toc_id(parent_ast, context);
+        }
+        let parent_href = html_attr('href', '#' + parent_href_target);
+        let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+        ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
+      }
+      ret += `${descendant_count_html}</span></span></div>`;
+      linear_count++
+    }
+    if (tree_node.children.length > 0) {
+      for (let i = tree_node.children.length - 1; i >= 0; i--) {
+        todo_visit.push([tree_node.children[i], level + 1]);
+      }
+      ret += `\n`;
+    }
+    top_level = level;
+  }
+  ret += `</li>\n</ul>\n`.repeat(top_level);
+  // Close the table of contents list.
+  ret += `</li>\n</ul>\n`;
+  ret += `</div>\n`
+  return ret;
+}
+
 function perf_print(context, name) {
   // Includes and CirodowExample also call convert to parse.
   // For now we are ignoring those recursions. A more correct approach
@@ -6301,6 +6476,15 @@ function x_href(target_ast, context) {
   return ret;
 }
 
+function index_path_from_dirname(dirname_ret, basename_ret, sep) {
+  const [dir_dir, dir_base] = path_split(dirname_ret, sep);
+  if (basename_ret === INDEX_BASENAME_NOEXT && dirname_ret) {
+    dirname_ret = dir_dir
+    basename_ret = dir_base
+  }
+  return [dirname_ret, basename_ret]
+}
+
 function is_punctuation(c) {
   return c === '.' ||
     c === '!' ||
@@ -6330,8 +6514,12 @@ function is_punctuation(c) {
 // id='subdir/notindex'      -> ['subdir', 'notindex']
 // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
 function is_to_split_headers(ast, context) {
-  return (context.to_split_headers === undefined && ast.split_default) ||
-         (context.to_split_headers !== undefined && context.to_split_headers);
+  return is_to_split_headers_base(ast.split_default, context.to_split_headers)
+}
+
+function is_to_split_headers_base(ast_split_default, context_to_split_headers) {
+  return (context_to_split_headers === undefined && ast_split_default) ||
+         (context_to_split_headers !== undefined && context_to_split_headers);
 }
 
 /** This is the centerpiece of x href calculation!
@@ -6343,11 +6531,6 @@ function is_to_split_headers(ast, context) {
  * @param {AstNode} target_ast
  */
 function x_href_parts(target_ast, context) {
-  if (target_ast.macro_name === Macro.TOC_MACRO_NAME) {
-    // Otherwise, split header ToCs would link to the toplevel source ToC,
-    // since split header ToCs are not really properly registered.
-    return ['', Macro.TOC_ID];
-  }
   let target_ast_effective_id
   if (target_ast.synonym !== undefined) {
     target_ast_effective_id = target_ast.synonym
@@ -6356,14 +6539,21 @@ function x_href_parts(target_ast, context) {
   }
   let to_split_headers = is_to_split_headers(target_ast, context);
   let to_current_toplevel =
-      target_ast_effective_id === context.toplevel_id &&
-      // Also requires outputting to the same type of split/nonsplit
-      // as the current one.
-      context.in_split_headers === to_split_headers
+    target_ast_effective_id === context.toplevel_id &&
+    // Also requires outputting to the same type of split/nonsplit
+    // as the current one.
+    context.in_split_headers === to_split_headers
   ;
 
   // href_path
-  let href_path, toplevel_output_path_dirname = '', toplevel_output_path_basename, full_output_path, target_output_path_dirname, target_output_path_basename, split_suffix;
+  let href_path,
+    toplevel_output_path_dirname = '',
+    toplevel_output_path_basename,
+    full_output_path,
+    target_output_path_dirname,
+    target_output_path_basename,
+    split_suffix
+  ;
   const target_input_path = target_ast.source_location.path;
   if (
     target_ast.source_location.path === undefined ||
@@ -6376,7 +6566,7 @@ function x_href_parts(target_ast, context) {
         context.to_split_headers !== undefined &&
         context.to_split_headers
       ) &&
-      context.options.include_path_set.has(target_input_path)
+      context.toplevel_id === target_ast.toplevel_id
     ) ||
     (
       // Split header link to image in current header.
@@ -6386,6 +6576,11 @@ function x_href_parts(target_ast, context) {
     ) ||
     to_current_toplevel
   ) {
+    // The output path is the same as the current path. Stop.
+    // Everything else is basically handled by output_path_base.
+    // That function doesn't have the concept of "where am I looking from".
+    // so we do that here. Maybe it would be better to change that, if if
+    // is hair tearing.
     href_path = '';
   } else {
     ;[toplevel_output_path_dirname, toplevel_output_path_basename] =
@@ -6395,8 +6590,7 @@ function x_href_parts(target_ast, context) {
       dirname: target_output_path_dirname,
       basename: target_output_path_basename,
       split_suffix,
-    } = output_path_from_ast(
-      target_ast,
+    } = target_ast.output_path(
       context,
       {
         effective_id: target_ast_effective_id,
@@ -6467,13 +6661,16 @@ function x_href_parts(target_ast, context) {
     (
       target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
       (
-        // Linking to a toplevel ID.
-        target_ast.first_toplevel_child ||
-        // Linking towards a split header not included in the current output.
-        to_split_headers
+        (
+          // Linking to a toplevel ID.
+          target_ast.first_toplevel_child ||
+          // Linking towards a split header not included in the current output.
+          to_split_headers
+        ) ||
+        to_current_toplevel ||
+        target_ast.id === target_ast.toplevel_id
       )
-    ) ||
-    to_current_toplevel
+    )
   ) {
     // An empty href means the beginning of the page.
     fragment = '';
@@ -6484,20 +6681,18 @@ function x_href_parts(target_ast, context) {
     if (to_split_headers) {
       // We know not a header target, as that would have been caught previously.
       toplevel_ast = target_ast.get_header_parent_asts(context)[0];
-    } else if (
-      // The header was included inline into the current file.
-      context.options.include_path_set.has(target_input_path) && !context.in_split_headers
-    ) {
-      toplevel_ast = context.toplevel_ast;
     } else {
-      const get_file_ret = context.options.db_provider.get_file(target_input_path);
-      if (get_file_ret) {
-        toplevel_ast = context.db_provider.get(get_file_ret.toplevel_id, context);
-      } else {
-        // The only way this can happen is if we are in the current file, and it hasn't
-        // been added to the file db yet.
+      if (target_ast.toplevel_id === undefined) {
         toplevel_ast = context.nosplit_toplevel_ast
+      } else {
+        toplevel_ast = context.db_provider.get(target_ast.toplevel_id, context);
       }
+      //const get_file_ret = context.options.db_provider.get_file(target_input_path);
+      //if (get_file_ret) {
+      //} else {
+      //  // The only way this can happen is if we are in the current file, and it hasn't
+      //  // been added to the file db yet.
+      //}
     }
     fragment = remove_toplevel_scope(target_ast_effective_id, toplevel_ast, context);
   }
@@ -6512,7 +6707,7 @@ function x_href_attr(target_ast, context) {
 }
 
 /**
- * Calculate the text of a cross reference, or the text
+ * Calculate the text (visible content) of a cross reference, or the text
  * that the caption text that cross references can refer to, e.g.
  * "Table 123. My favorite table". Both are done in a single function
  * so that style_full references will show very siimlar to the caption
@@ -6524,6 +6719,7 @@ function x_href_attr(target_ast, context) {
  *   if this link should not be given.
  */
 function x_text_base(ast, context, options={}) {
+  context = clone_and_set(context, 'in_x_text', true)
   if (!('caption_prefix_span' in options)) {
     options.caption_prefix_span = true;
   }
@@ -6627,6 +6823,10 @@ function x_text_base(ast, context, options={}) {
         // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
         title_arg = lodash.clone(title_arg)
         title_arg.asts = lodash.clone(title_arg.asts)
+        // This is not amazing, as it can change some properties of the node,
+        // as we are not copying anything besides text and source_location.
+        // This almost had an impact on {toplevel} rendering, but it dien't matter
+        // so we didn't try to sanitize it further for now.
         title_arg.set(0, new PlaintextAstNode(first_ast.text, first_ast.source_location))
         let txt = title_arg.get(0).text;
         let first_c = txt[0];
@@ -7208,6 +7408,10 @@ const DEFAULT_MACRO_LIST = [
           multiple: true,
         }),
         new MacroArgument({
+          name: 'toplevel',
+          boolean: true,
+        }),
+        new MacroArgument({
           name: Macro.TITLE2_ARGUMENT_NAME,
         }),
         // Should I?
@@ -7492,10 +7696,6 @@ const DEFAULT_MACRO_LIST = [
     {
       newline_after_close: true,
     }
-  ),
-  new Macro(
-    Macro.TOC_MACRO_NAME,
-    [],
   ),
   new Macro(
     Macro.TOPLEVEL_MACRO_NAME,
@@ -7838,6 +8038,7 @@ const OUTPUT_FORMATS_LIST = [
             render_error(context, message, ast.source_location);
             return error_message_in_output(message, context);
           }
+          const context_old = context
           context = clone_and_set(context, 'in_header', true)
           const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
           const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
@@ -7873,13 +8074,24 @@ const OUTPUT_FORMATS_LIST = [
           let attrs = html_render_attrs(ast, context, [], custom_args)
           let id_attr = html_render_attrs_id(ast, context);
           let ret = '';
+          let hasToc = false
+          if (
+            level_int !== context.header_tree_top_level ||
+            context.header_tree.children.length > 1
+          ) {
+            let render_toc_ret = render_toc(context)
+            if (render_toc_ret !== '') {
+              ret += render_toc_ret
+              hasToc = true
+            }
+          }
           // Div that contains h + on hover span.
           let first_header = (
             // May fail in some error scenarios.
             context.toplevel_ast !== undefined &&
             ast.id === context.toplevel_ast.id
           )
-          ret += `<div class="h${first_header ? ' top' : ''}"${id_attr}>`;
+          ret += `<div class="h${first_header ? ' top' : ''}"${id_attr}${hasToc && context.options.add_test_instrumentation ? ' data-has-toc="1"' : ''}>`;
 
           // Self link.
           let self_link_context
@@ -7946,7 +8158,7 @@ const OUTPUT_FORMATS_LIST = [
               }
             }
             let toc_href;
-            if (!is_top_level && context.has_toc) {
+            if (!is_top_level && has_toc(context)) {
               toc_href = html_attr('href', '#' + html_escape_attr(toc_id(ast, context)));
               items.push(`<a${toc_href} class="toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`);
             }
@@ -8067,7 +8279,7 @@ const OUTPUT_FORMATS_LIST = [
             if (link_to_split !== undefined) {
               header_meta.push(link_to_split);
             }
-            if (context.has_toc) {
+            if (has_toc(context)) {
               header_meta.push(`<a${html_attr('href', '#' + Macro.TOC_ID)} class="toc">${TOC_MARKER}</a>`);
             }
             let descendant_count_html = get_descendant_count_html(context, ast.header_tree_node, { long_style: true });
@@ -8097,6 +8309,8 @@ const OUTPUT_FORMATS_LIST = [
               ret += header_check_child_tag_exists(ast, context, tags, 'tag')
             }
           }
+          // Variables we want permanently modify the context.
+          context_old.toc_was_rendered = context.toc_was_rendered
           return ret;
         },
         [Macro.INCLUDE_MACRO_NAME]: unconvertible,
@@ -8196,119 +8410,6 @@ const OUTPUT_FORMATS_LIST = [
           return ret;
         },
         [Macro.TD_MACRO_NAME]: html_render_simple_elem('td', { newline_after_close: true }),
-        [Macro.TOC_MACRO_NAME]: function(ast, context) {
-          // Not rendering ID here because that function does scope culling. But TOC ID is a fixed value without scope for now.
-          // so that was removing the TOC id in subdirectories.
-          let attrs = html_render_attrs(ast, context);
-          let todo_visit = [];
-          let top_level = 0;
-          let root_node = context.header_tree;
-          let ret = `<div id="${Macro.TOC_ID}"class="toc-container"${attrs}>\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
-          if (root_node.children.length === 1) {
-            root_node = root_node.children[0];
-          }
-          let descendant_count_html = get_descendant_count_html_sep(context, root_node, { long_style: false, show_descendant_count: true });
-          ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc"${x_href_attr(ast, context)}>Table of contents</a><span class="hover-metadata">${descendant_count_html}</span></span></div>\n`;
-          for (let i = root_node.children.length - 1; i >= 0; i--) {
-            todo_visit.push([root_node.children[i], 1]);
-          }
-          if (todo_visit.length === 0) {
-            // Empty ToC. Don't render. Initial common case: leaf split header nodes.
-            return '';
-          }
-          let linear_count = 0
-          while (todo_visit.length > 0) {
-            const [tree_node, level] = todo_visit.pop();
-            if (level > top_level) {
-              ret += `<ul>\n`;
-            } else if (level < top_level) {
-              ret += `</li>\n</ul>\n`.repeat(top_level - level);
-            } else {
-              ret += `</li>\n`;
-            }
-            ret += '<li';
-            if (tree_node.children.length > 0) {
-              ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
-            }
-            ret += '>'
-            let target_ast = context.db_provider.get(tree_node.ast.id, context);
-            if (
-              // Can happen in test error cases:
-              // - cross reference from header title without ID to previous header is not allowed
-              // - include to file that does exists without embed includes before extracting IDs fails gracefully
-              target_ast !== undefined
-            ) {
-              // I had this at one point, but it was too confusing that \x links linked to split, and ToC to nonsplit.
-              // If we want to keep split self contained, then we have to do it everywhere I think, not just ToC.
-              //// ToC entries always link to the same split/nosplit type, except for included sources.
-              //// This might be handled more generally through: https://github.com/cirosantilli/ourbigbook/issues/146
-              //// but for now we are just taking care of this specific and important ToC subcase.
-              //let cur_context;
-              //if (ast.source_location.path === target_ast.source_location.path) {
-              //  cur_context = clone_and_set(context, 'to_split_headers', context.in_split_headers);
-              //} else {
-              //  cur_context = context;
-              //}
-
-              let content = x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
-              let href = x_href_attr(target_ast, context);
-              const my_toc_id = toc_id(target_ast, context);
-              let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
-              // The inner <div></div> inside arrow is so that:
-              // - outter div: takes up space to make clicking easy
-              // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-              let descendant_count_html = get_descendant_count_html_sep(context, tree_node, { long_style: false, show_descendant_count: false });
-              let linear_count_str
-              if (context.options.add_test_instrumentation) {
-                linear_count_str = html_attr('data-test', linear_count)
-              } else {
-                linear_count_str = ''
-              }
-              ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
-
-              let toc_href = html_attr('href', '#' + html_escape_attr(my_toc_id));
-              ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
-              if (context.options.split_headers) {
-                const link_to_split = link_to_split_opposite(target_ast, context)
-                if (link_to_split) {
-                  ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
-                }
-              }
-              let parent_ast = target_ast.get_header_parent_asts(context)[0];
-              if (
-                // Possible on broken h1 level.
-                parent_ast !== undefined
-              ) {
-                let parent_href_target;
-                if (
-                  parent_ast.header_tree_node !== undefined &&
-                  parent_ast.header_tree_node.get_level() === context.header_tree_top_level
-                ) {
-                  parent_href_target = Macro.TOC_ID;
-                } else {
-                  parent_href_target = toc_id(parent_ast, context);
-                }
-                let parent_href = html_attr('href', '#' + parent_href_target);
-                let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-                ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
-              }
-              ret += `${descendant_count_html}</span></span></div>`;
-              linear_count++
-            }
-            if (tree_node.children.length > 0) {
-              for (let i = tree_node.children.length - 1; i >= 0; i--) {
-                todo_visit.push([tree_node.children[i], level + 1]);
-              }
-              ret += `\n`;
-            }
-            top_level = level;
-          }
-          ret += `</li>\n</ul>\n`.repeat(top_level);
-          // Close the table of contents list.
-          ret += `</li>\n</ul>\n`;
-          ret += `</div>\n`
-          return ret;
-        },
         [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) {
           let title = ast.args[Macro.TITLE_ARGUMENT_NAME];
           if (title === undefined) {
@@ -8329,10 +8430,10 @@ const OUTPUT_FORMATS_LIST = [
               text_title
             );
           }
-          let ret;
           let body = render_arg(ast.args.content, context);
 
           // Footer metadata.
+          body += render_toc(context)
           if (context.toplevel_ast !== undefined) {
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(
@@ -8424,6 +8525,7 @@ const OUTPUT_FORMATS_LIST = [
             }
           }
 
+          let ret
           if (context.options.body_only) {
             ret = body;
           } else {
@@ -8664,7 +8766,6 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
         'sup': id_convert_simple_elem(),
         [Macro.TABLE_MACRO_NAME]: id_convert_simple_elem(),
         [Macro.TD_MACRO_NAME]: id_convert_simple_elem(),
-        [Macro.TOC_MACRO_NAME]: function(ast, context) { return '' },
         [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
         [Macro.TH_MACRO_NAME]: id_convert_simple_elem(),
         [Macro.TR_MACRO_NAME]: id_convert_simple_elem(),
@@ -9220,7 +9321,6 @@ OUTPUT_FORMATS_LIST.push(
         'sup': ourbigbook_convert_simple_elem,
         [Macro.TABLE_MACRO_NAME]: ourbigbook_ul,
         [Macro.TD_MACRO_NAME]: ourbigbook_li(INSANE_TD_START),
-        [Macro.TOC_MACRO_NAME]: function(ast, context) { return '' },
         [Macro.TOPLEVEL_MACRO_NAME]: id_convert_simple_elem(),
         [Macro.TH_MACRO_NAME]: ourbigbook_li(INSANE_TH_START),
         [Macro.TR_MACRO_NAME]: ourbigbook_ul,

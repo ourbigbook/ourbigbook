@@ -377,10 +377,16 @@ class DbProviderBase extends ourbigbook.DbProvider {
     return cached_asts
   }
 
+  /** Convert a Id DB row to a JavaScript AstNode object.
+   *
+   * @param row: a row from the Ids database
+   * @return {AstNode}
+   **/
   row_to_ast(row, context) {
     const ast = ourbigbook.AstNode.fromJSON(row.ast_json, context)
     ast.input_path = row.path
     ast.id = row.idid
+    ast.toplevel_id = row.toplevel_id
     return ast
   }
 

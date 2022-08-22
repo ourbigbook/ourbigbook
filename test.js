@@ -12,7 +12,7 @@ const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const { read_include } = require('./web_api');
 const models = require('./models');
-const { assert_xpath_main } = require('./test_lib')
+const { assert_xpath } = require('./test_lib')
 
 const PATH_SEP = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR
 
@@ -32,38 +32,48 @@ const convert_opts = {
   }
 };
 
-/** THE ASSERT EVERYTHING ENTRYPOINT for lib.
- *
- * This is named after the most common use case, which is asserting a
- * certain subset of the AST.
- *
- * But we extended it to actually test everything possible given the correct options,
- * in order to factor out all the settings across all asserts. Other asserts are just
- * convenience functions for this function.
- *
- * Asserting the AST is ideal whenever possible as opposed to HTML,
- * since the HTML is more complicated, and change more often.
- *
- * This function automatically only considers the content argument of the
- * toplevel node for further convenience.
- */
-function assert_convert_ast(
+// assert_lib helper for Ast tests.
+function assert_lib_ast(
   description,
-  input_string,
-  expected_ast_output_subset,
+  stdin,
+  assert_ast,
   options={}
 ) {
-  it(description, async function () {
+  options.stdin = stdin
+  options.assert_ast = assert_ast
+  return assert_lib(description, options)
+}
+
+/** THE ASSERT EVERYTHING ENTRYPOINT for library based tests.
+ *
+ * For full CLI tests, use assert_cli instead.
+ *
+ * assert_lib uses very minimal mocking, so tests are highly meaningful.
+ *
+ * Its interface is highly compatible with assert_cli, in many cases you can just
+ * switch between the two freely by just converting assert_cli 'args' to the corresponding
+ *
+ * and assert_lib generally preferred
+ * as it runs considerably faster.
+ */
+function assert_lib(
+  description,
+  options={}
+) {
+  it('lib: ' + description, async function () {
     options = Object.assign({}, options);
-    if (!('assert_xpath_main' in options)) {
-      // Not ideal that this exists in addition to assert_xpath, but
-      // sometimes there's no other easy way to test rendered stuff.
-      // Notably, we would like to support the case of output to stdout.
-      // All in list must match.
-      options.assert_xpath_main = [];
+    if (!('assert_ast' in options)) {
+      // Assert that this given Ast subset is present in the output.
+      // Only considers the content argument of the toplevel node for convenience.
+      options.assert_ast = undefined;
     }
-    if (!('assert_not_xpath_main' in options)) {
-      options.assert_not_xpath_main = [];
+    if (!('assert_xpath_stdout' in options)) {
+      // Like assert_xpath, but for the input coming from options.stdin.
+      // This is analogous to stdout output on the CLI.
+      options.assert_xpath_stdout = [];
+    }
+    if (!('assert_not_xpath_stdout' in options)) {
+      options.assert_not_xpath_stdout = [];
     }
     if (!('assert_xpath' in options)) {
       // Assert xpath on other outputs besides the main output.
@@ -75,8 +85,8 @@ function assert_convert_ast(
       // Like assert_xpath but assert it does not match.
       options.assert_not_xpath = {};
     }
-    //if (!('assert_bigb_main' in options)) {
-    //  options.assert_bigb_main = undefined;
+    //if (!('assert_bigb_stdout' in options)) {
+    //  options.assert_bigb_stdout = undefined;
     //}
     if (!('assert_bigb' in options)) {
       options.assert_bigb = {};
@@ -96,6 +106,11 @@ function assert_convert_ast(
       // You generally just want to use this option always.
       options.convert_dir = false;
     }
+    if (!('convert_opts' in options)) {
+      // Extra convert options on top of the default ones
+      // to be passed to ourbigbook.convert.
+      options.convert_opts = {};
+    }
     if (!('duplicate_ids' in options)) {
       options.duplicate_ids = []
     }
@@ -110,38 +125,38 @@ function assert_convert_ast(
       // one error message.
       options.has_error = false;
     }
+    if (!('stdin' in options)) {
+      // A string to be converted directly. Input can also be provided via filesystem:
+      // through our mock filesystem. This option is somewhat analogous to stdin input on CLI.
+      // This is the preferred approach for when the filename doesn't matter to the test.
+      options.stdin = undefined
+    }
     if (!('invalid_title_titles' in options)) {
       options.invalid_title_titles = []
-    }
-
-    // extra_convert_opts defaults.
-    if (!('extra_convert_opts' in options)) {
-      // Passed to ourbigbook.convert.
-      options.extra_convert_opts = {};
     }
     if (!('expect_not_exists' in options)) {
       options.expect_not_exists = [];
     }
-    if (!('path_sep' in options.extra_convert_opts)) {
-      options.extra_convert_opts.path_sep = PATH_SEP;
+    if (!('path_sep' in options.convert_opts)) {
+      options.convert_opts.path_sep = PATH_SEP;
     }
-    if (!('read_include' in options.extra_convert_opts)) {
-      options.extra_convert_opts.read_include = read_include({
+    if (!('read_include' in options.convert_opts)) {
+      options.convert_opts.read_include = read_include({
         exists: (inpath) => inpath in options.filesystem,
         read: (inpath) => options.filesystem[inpath],
         path_sep: PATH_SEP,
       })
     }
-    options.extra_convert_opts.fs_exists_sync = (my_path) => options.filesystem[my_path] !== undefined
+    options.convert_opts.fs_exists_sync = (my_path) => options.filesystem[my_path] !== undefined
     let filesystem = options.filesystem
-    if (input_string !== undefined) {
-      if (!('input_path_noext' in options) && options.extra_convert_opts.split_headers) {
+    if (options.stdin !== undefined) {
+      if (!('input_path_noext' in options) && options.convert_opts.split_headers) {
         options.input_path_noext = ourbigbook.INDEX_BASENAME_NOEXT;
       }
       const main_input_path = options.input_path_noext + '.' + ourbigbook.OURBIGBOOK_EXT
       assert(!(main_input_path in options.filesystem))
       filesystem = Object.assign({}, filesystem)
-      filesystem[main_input_path] = input_string
+      filesystem[main_input_path] = options.stdin
     }
     let convert_before, convert_before_norender
     if (options.convert_dir) {
@@ -158,11 +173,11 @@ function assert_convert_ast(
       options.toplevel = false;
     }
     const new_convert_opts = Object.assign({}, convert_opts);
-    Object.assign(new_convert_opts, options.extra_convert_opts);
+    Object.assign(new_convert_opts, options.convert_opts);
     if (options.toplevel) {
       new_convert_opts.body_only = false;
     }
-    if (Object.keys(options.assert_bigb).length || 'assert_bigb_main' in options) {
+    if (Object.keys(options.assert_bigb).length || 'assert_bigb_stdout' in options) {
       new_convert_opts.output_format = ourbigbook.OUTPUT_FORMAT_OURBIGBOOK
     }
 
@@ -216,17 +231,17 @@ function assert_convert_ast(
         await convert(input_path, true)
       }
       //console.error('main');
-      if (input_string === undefined) {
+      if (options.stdin === undefined) {
         if (options.input_path_noext !== undefined) throw new Error('input_string === undefined && input_path_noext !== undefined')
-        if (options.assert_xpath_main.length) throw new Error('input_string === undefined && options.assert_xpath_main !== []')
-        if (options.assert_not_xpath_main.length) throw new Error('input_string === undefined && options.assert_not_xpath_main !== []')
+        if (options.assert_xpath_stdout.length) throw new Error('input_string === undefined && options.assert_xpath_stdout !== []')
+        if (options.assert_not_xpath_stdout.length) throw new Error('input_string === undefined && options.assert_not_xpath_stdout !== []')
       } else {
         if (options.input_path_noext !== undefined) {
           new_convert_opts.input_path = options.input_path_noext + '.' + ourbigbook.OURBIGBOOK_EXT;
           new_convert_opts.toplevel_id = options.input_path_noext;
         }
         const extra_returns = {};
-        const output = await ourbigbook.convert(input_string, new_convert_opts, extra_returns);
+        const output = await ourbigbook.convert(options.stdin, new_convert_opts, extra_returns);
         Object.assign(rendered_outputs, extra_returns.rendered_outputs)
         if (new_convert_opts.input_path !== undefined) {
           await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
@@ -243,20 +258,20 @@ function assert_convert_ast(
         let is_subset;
         let content;
         let content_array;
-        if (options.assert_bigb_main) {
-          assert.strictEqual(output, options.assert_bigb_main);
+        if (options.assert_bigb_stdout) {
+          assert.strictEqual(output, options.assert_bigb_stdout);
         }
-        if (expected_ast_output_subset === undefined) {
+        if (options.assert_ast === undefined) {
           is_subset = true;
         } else {
           if (options.toplevel) {
             content = extra_returns.ast;
             content_array = [content]
-            is_subset = ast_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
+            is_subset = ast_has_subset(content, options.assert_ast, has_subset_extra_returns);
           } else {
             content = extra_returns.ast.args.content;
             content_array = content
-            is_subset = ast_arg_has_subset(content, expected_ast_output_subset, has_subset_extra_returns);
+            is_subset = ast_arg_has_subset(content, options.assert_ast, has_subset_extra_returns);
           }
         }
         const expect_error_precise =
@@ -279,12 +294,12 @@ function assert_convert_ast(
           //console.error('ast output:');
           //console.error(JSON.stringify(content, null, 2));
           //console.error();
-          if (expected_ast_output_subset !== undefined) {
+          if (options.assert_ast !== undefined) {
             console.error('ast output toString:');
             console.error(content_array.map(c => c.toString()).join('\n'));
             console.error();
             console.error('ast expect:');
-            console.error(JSON.stringify(expected_ast_output_subset, null, 2));
+            console.error(JSON.stringify(options.assert_ast, null, 2));
             console.error();
             console.error('errors:');
           }
@@ -299,7 +314,7 @@ function assert_convert_ast(
           for (const error of extra_returns.errors) {
             console.error(error.toString());
           }
-          console.error('input ' + util.inspect(input_string));
+          console.error('input ' + util.inspect(options.stdin));
           assert.strictEqual(extra_returns.errors.length, 0);
           assert.ok(is_subset);
         }
@@ -320,11 +335,11 @@ function assert_convert_ast(
             }
           }
         }
-        for (const xpath_expr of options.assert_xpath_main) {
-          assert_xpath_main(xpath_expr, output);
+        for (const xpath_expr of options.assert_xpath_stdout) {
+          assert_xpath(xpath_expr, output);
         }
-        for (const xpath_expr of options.assert_not_xpath_main) {
-          assert_xpath_main(xpath_expr, output, { count: 0 });
+        for (const xpath_expr of options.assert_not_xpath_stdout) {
+          assert_xpath(xpath_expr, output, { count: 0 });
         }
       }
       for (const key in options.assert_bigb) {
@@ -332,19 +347,19 @@ function assert_convert_ast(
       }
       for (const key in options.assert_xpath) {
         const output = rendered_outputs[key];
-        assert.notStrictEqual(output, undefined, `"${key}" not in ${Object.keys(rendered_outputs)}`);
+        assert.notStrictEqual(output, undefined, `missing output path "${key}", existing: ${Object.keys(rendered_outputs)}`);
         for (const xpath_expr of options.assert_xpath[key]) {
-          assert_xpath_main(xpath_expr, output.full, { message: key, main: false });
+          assert_xpath(xpath_expr, output.full, { message: key, stdout: false });
         }
       }
       for (const key in options.assert_not_xpath) {
         const output = rendered_outputs[key];
         assert.notStrictEqual(output, undefined);
         for (const xpath_expr of options.assert_not_xpath[key]) {
-          assert_xpath_main(xpath_expr, output.full, {
+          assert_xpath(xpath_expr, output.full, {
             count: 0,
             message: key,
-            main: false,
+            stdout: false,
           });
         }
       }
@@ -361,16 +376,9 @@ function assert_convert_ast(
   })
 }
 
-// Convenience caller for assert_convert_ast.
-// It looks more like assert_cli, which is a good thing.
-// Basically any test that cares about file names, or that has multiple files, should likely use this.
-// We should also expose more and more test functionality so that it can work on all input files,
-// not just the "main" input.
-function assert_lib(
-  description,
-  options={}
-) {
-  return assert_convert_ast(description, undefined, undefined, options)
+/** Similar to assert_lib, but allow input not coming from files, analogous to stdin. */
+function assert_lib_stdin(description, input, options) {
+  assert_lib_ast(description, input, undefined, options)
 }
 
 function assert_db_checks(actual_rows, expects) {
@@ -404,7 +412,7 @@ function assert_error(description, input, line, column, path, options={}) {
   new_convert_opts.error_line = line;
   new_convert_opts.error_column = column;
   new_convert_opts.error_path = path;
-  assert_convert_ast(
+  assert_lib_ast(
     description,
     input,
     undefined,
@@ -429,7 +437,7 @@ function assert_cli(
   description,
   options={}
 ) {
-  it(description, async function () {
+  it('cli: ' + description, async function () {
     options = Object.assign({}, options);
     if (!('args' in options)) {
       options.args = [];
@@ -522,7 +530,7 @@ function assert_cli(
     const assert_msg = exec_assert_message(out, cmd, args, cwd);
     assert.strictEqual(out.status, options.expect_exit_status, assert_msg);
     for (const xpath_expr of options.assert_xpath_stdout) {
-      assert_xpath_main(
+      assert_xpath(
         xpath_expr,
         out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING),
         {message: assert_msg},
@@ -534,7 +542,7 @@ function assert_cli(
       assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
       const html = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING);
       for (const xpath_expr of options.assert_xpath[relpath]) {
-        assert_xpath_main(xpath_expr, html, {message: assert_msg_xpath});
+        assert_xpath(xpath_expr, html, {message: assert_msg_xpath});
       }
     }
     for (const relpath in options.assert_not_xpath) {
@@ -543,7 +551,7 @@ function assert_cli(
       assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
       const html = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING);
       for (const xpath_expr of options.assert_not_xpath[relpath]) {
-        assert_xpath_main(xpath_expr, html, {message: assert_msg_xpath, count: 0});
+        assert_xpath(xpath_expr, html, {message: assert_msg_xpath, count: 0});
       }
     }
     for (const relpath of options.expect_exists) {
@@ -564,12 +572,6 @@ function assert_cli(
         out, cmd, args, cwd, 'path should not exist: ' + relpath));
     }
   });
-}
-
-/** For stuff that is hard to predict the exact output of, just check the
- * exit status at least. */
-function assert_no_error(description, input, options) {
-  assert_convert_ast(description, input, undefined, options)
 }
 
 /** Determine if a given Ast argument has a subset.
@@ -725,19 +727,32 @@ function update_filesystem(filesystem, tmpdir) {
 }
 
 // xpath to match the parent div of a given header.
-function xpath_header(n, id, insideH) {
+function xpath_header(n, id, insideH, opts={}) {
   if (insideH) {
     insideH = '//' + insideH
   } else {
     insideH = ''
   }
+  const { hasToc } = opts
   // The horror:
   // https://stackoverflow.com/questions/1604471/how-can-i-find-an-element-by-css-class-with-xpath
   let ret = `//x:div[(@class='h' or contains(@class, 'h '))`
   if (id) {
     ret += ` and @id='${id}'`
   }
-  ret += ` and .//x:h${n}${insideH}]`
+  if (n <= 6) {
+    ret += ` and .//x:h${n}${insideH}`
+  } else {
+    ret += ` and .//x:h6[@data-level="${n}"]`
+  }
+  if (hasToc !== undefined) {
+    if (hasToc) {
+      ret += ` and @data-has-toc="1"`
+    } else {
+      ret += ` and not(@data-has-toc)`
+    }
+  }
+  ret += ']'
   return ret
 }
 
@@ -758,22 +773,22 @@ function xpath_header_parent(n, id, href, title) {
 }
 
 // Empty document.
-assert_convert_ast('empty document', '', []);
+assert_lib_ast('empty document', '', []);
 
 // Paragraphs.
-assert_convert_ast('one paragraph implicit no split headers', 'ab\n',
+assert_lib_ast('one paragraph implicit no split headers', 'ab\n',
   [a('P', [t('ab')])],
 );
-assert_convert_ast('one paragraph explicit', '\\P[ab]\n',
+assert_lib_ast('one paragraph explicit', '\\P[ab]\n',
   [a('P', [t('ab')])],
 );
-assert_convert_ast('two paragraphs', 'p1\n\np2\n',
+assert_lib_ast('two paragraphs', 'p1\n\np2\n',
   [
     a('P', [t('p1')]),
     a('P', [t('p2')]),
   ]
 );
-assert_convert_ast('three paragraphs',
+assert_lib_ast('three paragraphs',
   'p1\n\np2\n\np3\n',
   [
     a('P', [t('p1')]),
@@ -781,7 +796,7 @@ assert_convert_ast('three paragraphs',
     a('P', [t('p3')]),
   ]
 );
-assert_convert_ast('insane paragraph at start of sane quote',
+assert_lib_ast('insane paragraph at start of sane quote',
   '\\Q[\n\naa]\n',
   [
     a('Q', [
@@ -789,17 +804,18 @@ assert_convert_ast('insane paragraph at start of sane quote',
     ),
   ]
 );
-assert_convert_ast('sane quote without inner paragraph',
+assert_lib_ast('sane quote without inner paragraph',
   '\\Q[aa]\n',
   [a('Q', [t('aa')])],
 );
 assert_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
-assert_convert_ast('both quotes and paragraphs get the on-hover link',
+assert_lib_ast('both quotes and paragraphs get the on-hover link',
   `= tmp
 
 aa
 
-\\Q[bb]`,
+\\Q[bb]
+`,
   [
     a('H', undefined, {
       level: [t('1')],
@@ -809,24 +825,24 @@ aa
     a('Q', [t('bb')], {}, {id: '_2'}),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='hide-hover']//x:a[@href='#_1']",
       "//x:span[@class='hide-hover']//x:a[@href='#_2']",
     ],
   }
 );
-assert_convert_ast('a non-header first element has a on-hover link with its id',
+assert_lib_ast('a non-header first element has a on-hover link with its id',
   `aa`,
   [
     a('P', [t('aa')], {}, {id: '_1'}),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='hide-hover']//x:a[@href='#_1']",
     ],
   }
 );
-assert_convert_ast('a header first element has an empty on-hover link',
+assert_lib_ast('a header first element has an empty on-hover link',
   `= tmp`,
   [
     a('H', undefined, {
@@ -835,16 +851,16 @@ assert_convert_ast('a header first element has an empty on-hover link',
     }),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='hide-hover']//x:a[@href='']",
     ],
-    assert_not_xpath_main: [
+    assert_not_xpath_stdout: [
       "//x:span[@class='hide-hover']//x:a[@href='#tmp']",
     ],
   }
 );
 assert_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
-assert_convert_ast('one newline at the end of document is ignored', 'p1\n', [a('P', [t('p1')])]);
+assert_lib_ast('one newline at the end of document is ignored', 'p1\n', [a('P', [t('p1')])]);
 assert_error('two newlines at the end of document are an error', 'p1\n\n', 1, 3);
 assert_error('three newline at the end of document an error', 'p1\n\n\n', 2, 1);
 
@@ -857,7 +873,7 @@ const l_with_explicit_ul_expect = [
   ]),
   a('P', [t('gh')]),
 ];
-assert_convert_ast('l with explicit ul and no extra spaces',
+assert_lib_ast('l with explicit ul and no extra spaces',
   `ab
 
 \\Ul[\\L[cd]\\L[ef]]
@@ -866,7 +882,7 @@ gh
 `,
   l_with_explicit_ul_expect
 );
-assert_convert_ast('l with implicit ul sane',
+assert_lib_ast('l with implicit ul sane',
   `ab
 
 \\L[cd]
@@ -876,7 +892,7 @@ gh
 `,
   l_with_explicit_ul_expect
 );
-assert_convert_ast('l with implicit ul insane',
+assert_lib_ast('l with implicit ul insane',
   `ab
 
 * cd
@@ -886,7 +902,7 @@ gh
 `,
   l_with_explicit_ul_expect
 );
-assert_convert_ast('empty insane list item without a space',
+assert_lib_ast('empty insane list item without a space',
   `* ab
 *
 * cd
@@ -899,7 +915,7 @@ assert_convert_ast('empty insane list item without a space',
   ]),
 ]
 );
-assert_convert_ast('l with explicit ul and extra spaces',
+assert_lib_ast('l with explicit ul and extra spaces',
   `ab
 
 \\Ul[
@@ -912,7 +928,7 @@ gh
 `,
   l_with_explicit_ul_expect
 );
-assert_convert_ast('ordered list',
+assert_lib_ast('ordered list',
   `ab
 
 \\Ol[
@@ -931,7 +947,7 @@ gh
   a('P', [t('gh')]),
 ]
 );
-assert_convert_ast('list with paragraph sane',
+assert_lib_ast('list with paragraph sane',
   `\\L[
 aa
 
@@ -947,7 +963,7 @@ bb
     ]),
   ]
 )
-assert_convert_ast('list with paragraph insane',
+assert_lib_ast('list with paragraph insane',
   `* aa
 
   bb
@@ -961,7 +977,7 @@ assert_convert_ast('list with paragraph insane',
     ]),
   ]
 );
-assert_convert_ast('list with multiline paragraph insane',
+assert_lib_ast('list with multiline paragraph insane',
   `* aa
 
   bb
@@ -977,7 +993,7 @@ assert_convert_ast('list with multiline paragraph insane',
   ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/54
-assert_convert_ast('insane list with literal no error',
+assert_lib_ast('insane list with literal no error',
   `* aa
 
   \`\`
@@ -1004,7 +1020,7 @@ cc
 `,
   4, 1
 );
-assert_convert_ast('insane list with literal with double newline is not an error',
+assert_lib_ast('insane list with literal with double newline is not an error',
   `* aa
 
   \`\`
@@ -1023,7 +1039,7 @@ assert_convert_ast('insane list with literal with double newline is not an error
   ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/53
-assert_convert_ast('insane list with element with newline separated arguments',
+assert_lib_ast('insane list with element with newline separated arguments',
   `* aa
 
   \`\`
@@ -1040,7 +1056,7 @@ assert_convert_ast('insane list with element with newline separated arguments',
     ]),
   ]
 );
-assert_convert_ast('insane list inside paragraph',
+assert_lib_ast('insane list inside paragraph',
   `aa
 * bb
 * cc
@@ -1057,7 +1073,7 @@ dd
     ]),
   ]
 );
-assert_convert_ast('insane list at start of positional argument with newline',
+assert_lib_ast('insane list at start of positional argument with newline',
   `\\Q[
 * bb
 * cc
@@ -1074,7 +1090,7 @@ assert_convert_ast('insane list at start of positional argument with newline',
     ]),
   ]
 );
-assert_convert_ast('insane list at start of positional argument without newline',
+assert_lib_ast('insane list at start of positional argument without newline',
   `\\Q[* bb
 * cc
 ]
@@ -1088,7 +1104,7 @@ assert_convert_ast('insane list at start of positional argument without newline'
     ]),
   ]
 );
-assert_convert_ast('insane list at end of positional argument without newline',
+assert_lib_ast('insane list at end of positional argument without newline',
   `\\Q[
 * bb
 * cc]
@@ -1102,7 +1118,7 @@ assert_convert_ast('insane list at end of positional argument without newline',
     ]),
   ]
 );
-assert_convert_ast('insane list at start of named argument with newline',
+assert_lib_ast('insane list at start of named argument with newline',
   `\\Image[http://example.com]
 {description=
 * bb
@@ -1120,7 +1136,7 @@ assert_convert_ast('insane list at start of named argument with newline',
     }),
   ]
 );
-assert_convert_ast('insane list at start of named argument without newline',
+assert_lib_ast('insane list at start of named argument without newline',
   `\\Image[http://example.com]
 {description=* bb
 * cc
@@ -1137,7 +1153,7 @@ assert_convert_ast('insane list at start of named argument without newline',
     }),
   ]
 );
-//assert_convert_ast('insane list at end of named argument without newline',
+//assert_lib_ast('insane list at end of named argument without newline',
 //  // TODO https://github.com/cirosantilli/ourbigbook/issues/246
 //  `\\Image[http://example.com]
 //{description=
@@ -1155,7 +1171,7 @@ assert_convert_ast('insane list at start of named argument without newline',
 //    }),
 //  ]
 //);
-assert_convert_ast('nested list insane',
+assert_lib_ast('nested list insane',
   `* aa
   * bb
 `,
@@ -1172,16 +1188,16 @@ assert_convert_ast('nested list insane',
     ]),
   ]
 );
-assert_convert_ast('escape insane list at start of document',
+assert_lib_ast('escape insane list at start of document',
   '\\* a',
   [a('P', [t('* a')])],
 );
-assert_convert_ast('escape insane list after a newline',
+assert_lib_ast('escape insane list after a newline',
   `a
 \\* b`,
   [a('P', [t('a\n* b')])],
 );
-assert_convert_ast('escape insane list inside list indent',
+assert_lib_ast('escape insane list inside list indent',
   `* a
   \\* b`,
   [
@@ -1192,12 +1208,12 @@ assert_convert_ast('escape insane list inside list indent',
     ]),
   ]
 );
-assert_convert_ast('asterisk in the middle of line does not need to be escaped',
+assert_lib_ast('asterisk in the middle of line does not need to be escaped',
   'a * b',
   [a('P', [t('a * b')])],
 );
 // https://github.com/cirosantilli/ourbigbook/issues/81
-assert_convert_ast('insane list immediately inside insane list',
+assert_lib_ast('insane list immediately inside insane list',
   `* * aa
   * bb
   * cc
@@ -1234,7 +1250,7 @@ const tr_with_explicit_table_expect = [
   ]),
   a('P', [t('gh')]),
 ];
-assert_convert_ast('tr with explicit table',
+assert_lib_ast('tr with explicit table',
   `ab
 
 \\Table[
@@ -1256,7 +1272,7 @@ gh
 `,
   tr_with_explicit_table_expect
 );
-assert_convert_ast('tr with implicit table',
+assert_lib_ast('tr with implicit table',
   `ab
 
 \\Tr[
@@ -1276,7 +1292,7 @@ gh
 `,
   tr_with_explicit_table_expect
 );
-assert_convert_ast('fully implicit table',
+assert_lib_ast('fully implicit table',
   `ab
 
 || cd
@@ -1292,7 +1308,7 @@ gh
 `,
   tr_with_explicit_table_expect
 );
-assert_convert_ast('insane table inside insane list inside insane table',
+assert_lib_ast('insane table inside insane list inside insane table',
   `| 00
 | 01
 
@@ -1340,7 +1356,7 @@ assert_convert_ast('insane table inside insane list inside insane table',
   ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/81
-assert_convert_ast('insane table immediately inside insane list',
+assert_lib_ast('insane table immediately inside insane list',
   `* | 00
   | 01
 
@@ -1364,7 +1380,7 @@ assert_convert_ast('insane table immediately inside insane list',
     ])
   ]
 );
-assert_convert_ast('insane table body with empty cell and no space',
+assert_lib_ast('insane table body with empty cell and no space',
   `| 00
 |
 | 02
@@ -1378,7 +1394,7 @@ assert_convert_ast('insane table body with empty cell and no space',
   ]),
 ],
 );
-assert_convert_ast('insane table head with empty cell and no space',
+assert_lib_ast('insane table head with empty cell and no space',
   `|| 00
 ||
 || 02
@@ -1392,13 +1408,13 @@ assert_convert_ast('insane table head with empty cell and no space',
   ]),
 ],
 );
-assert_convert_ast('implicit table escape', '\\| a\n',
+assert_lib_ast('implicit table escape', '\\| a\n',
   [a('P', [t('| a')])],
 );
-assert_convert_ast("pipe space in middle of line don't need escape", 'a | b\n',
+assert_lib_ast("pipe space in middle of line don't need escape", 'a | b\n',
   [a('P', [t('a | b')])],
 );
-assert_convert_ast('auto_parent consecutive implicit tr and l',
+assert_lib_ast('auto_parent consecutive implicit tr and l',
   `\\Tr[\\Td[ab]]
 \\L[cd]
 `,
@@ -1415,7 +1431,7 @@ assert_convert_ast('auto_parent consecutive implicit tr and l',
   ]),
 ]
 );
-assert_convert_ast('table with id has caption',
+assert_lib_ast('table with id has caption',
   `\\Table{id=ab}
 [
 | 00
@@ -1432,12 +1448,12 @@ assert_convert_ast('table with id has caption',
     ], {}, { id: 'ab' }),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
 );
-assert_convert_ast('table with title has caption',
+assert_lib_ast('table with title has caption',
   `\\Table{title=a b}
 [
 | 00
@@ -1454,12 +1470,12 @@ assert_convert_ast('table with title has caption',
     ], {}, { id: 'table-a-b' }),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
 );
-assert_convert_ast('table with description has caption',
+assert_lib_ast('table with description has caption',
   `\\Table{description=a b}
 [
 | 00
@@ -1476,12 +1492,12 @@ assert_convert_ast('table with description has caption',
     ], {}, { id: '_1' }),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
 );
-assert_convert_ast('table without id, title, nor description does not have caption',
+assert_lib_ast('table without id, title, nor description does not have caption',
   `\\Table[
 | 00
 | 01
@@ -1496,12 +1512,12 @@ assert_convert_ast('table without id, title, nor description does not have capti
     ]),
   ],
   {
-    assert_not_xpath_main: [
+    assert_not_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
 );
-assert_convert_ast('table without id, title, nor description does not increment the table count',
+assert_lib_ast('table without id, title, nor description does not increment the table count',
   `\\Table{id=0}[
 | 00
 | 01
@@ -1538,18 +1554,18 @@ assert_convert_ast('table without id, title, nor description does not increment 
     ]),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Table 1']",
       "//x:span[@class='caption-prefix' and text()='Table 2']",
     ],
-    assert_not_xpath_main: [
+    assert_not_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Table 3']",
     ],
   },
 );
 
 // Images.
-assert_convert_ast('image simple',
+assert_lib_ast('image simple',
   `ab
 
 \\Image[cd]
@@ -1563,12 +1579,12 @@ gh
 ],
   {
     filesystem: { cd: '' },
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:img[@src='cd']",
     ],
   },
 );
-assert_convert_ast('video simple',
+assert_lib_ast('video simple',
   `ab
 
 \\Video[cd]
@@ -1582,12 +1598,12 @@ gh
 ],
   {
     filesystem: { cd: '' },
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:video[@src='cd']",
     ],
   },
 );
-assert_convert_ast('image title',
+assert_lib_ast('image title',
   `\\Image[ab]{title=c d}`,
 [
   a('Image', undefined, {
@@ -1605,11 +1621,10 @@ assert_error('image provider that does not match actual source',
   `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=local}`,
   1, 96
 );
-assert_no_error('image provider that does match actual source',
+assert_lib_stdin('image provider that does match actual source',
   `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=wikimedia}`,
-  1, 96
 );
-assert_convert_ast('image with id has caption',
+assert_lib_ast('image with id has caption',
   `\\Image[aa]{id=bb}{check=0}\n`,
   [
     a('Image', undefined, {
@@ -1618,12 +1633,12 @@ assert_convert_ast('image with id has caption',
     }),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
 );
-assert_convert_ast('image with title has caption',
+assert_lib_ast('image with title has caption',
   `\\Image[aa]{title=b b}{check=0}\n`,
   [
     a('Image', undefined, {
@@ -1632,12 +1647,12 @@ assert_convert_ast('image with title has caption',
     }, {}, { id: 'b-b' }),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
 );
-assert_convert_ast('image with description has caption',
+assert_lib_ast('image with description has caption',
   `\\Image[aa]{description=b b}{check=0}\n`,
   [
     a('Image', undefined, {
@@ -1646,12 +1661,12 @@ assert_convert_ast('image with description has caption',
     }, {}, { id: '_1' }),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
 );
-assert_convert_ast('image with source has caption',
+assert_lib_ast('image with source has caption',
   `\\Image[aa]{source=b b}{check=0}\n`,
   [
     a('Image', undefined, {
@@ -1660,12 +1675,12 @@ assert_convert_ast('image with source has caption',
     }, {}, { id: '_1' }),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
 );
-assert_convert_ast('image without id, title, description nor source does not have caption',
+assert_lib_ast('image without id, title, description nor source does not have caption',
   `\\Image[aa]{check=0}
 `,
   [
@@ -1674,12 +1689,12 @@ assert_convert_ast('image without id, title, description nor source does not hav
     }, {}, { id: '_1' }),
   ],
   {
-    assert_not_xpath_main: [
+    assert_not_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
 )
-assert_convert_ast('image without id, title, description nor source does not increment the image count',
+assert_lib_ast('image without id, title, description nor source does not increment the image count',
   `\\Image[aa]{id=aa}{check=0}
 
 \\Image[bb]{check=0}
@@ -1692,16 +1707,16 @@ assert_convert_ast('image without id, title, description nor source does not inc
     a('Image', undefined, { src: [t('cc')], }, {}, { id: 'cc' }),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
       "//x:span[@class='caption-prefix' and text()='Figure 2']",
     ],
-    assert_not_xpath_main: [
+    assert_not_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Figure 3']",
     ],
   },
 )
-assert_convert_ast('image title with x to header in another file',
+assert_lib_ast('image title with x to header in another file',
   `\\Image[aa]{title=My \\x[notindex]}{check=0}`,
   [
     a('Image', undefined, { src: [t('aa')], }, {}, { id: 'my-notindex-h1' }),
@@ -1874,12 +1889,12 @@ f()
 );
 
 // Escapes.
-assert_convert_ast('escape backslash',            'a\\\\b\n', [a('P', [t('a\\b')])]);
-assert_convert_ast('escape left square bracket',  'a\\[b\n',  [a('P', [t('a[b')])]);
-assert_convert_ast('escape right square bracket', 'a\\]b\n',  [a('P', [t('a]b')])]);
-assert_convert_ast('escape left curly brace',     'a\\{b\n',  [a('P', [t('a{b')])]);
-assert_convert_ast('escape right curly brace',    'a\\}b\n',  [a('P', [t('a}b')])]);
-assert_convert_ast('escape header id', `= tmp
+assert_lib_ast('escape backslash',            'a\\\\b\n', [a('P', [t('a\\b')])]);
+assert_lib_ast('escape left square bracket',  'a\\[b\n',  [a('P', [t('a[b')])]);
+assert_lib_ast('escape right square bracket', 'a\\]b\n',  [a('P', [t('a]b')])]);
+assert_lib_ast('escape left curly brace',     'a\\{b\n',  [a('P', [t('a{b')])]);
+assert_lib_ast('escape right curly brace',    'a\\}b\n',  [a('P', [t('a}b')])]);
+assert_lib_ast('escape header id', `= tmp
 
 \\x["'\\<>&]
 
@@ -1888,7 +1903,7 @@ assert_convert_ast('escape header id', `= tmp
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//*[@id=concat('\"', \"'<>&\")]",
     ],
   }
@@ -1896,15 +1911,15 @@ assert_convert_ast('escape header id', `= tmp
 
 // Positional arguments.
 // Has no content argument.
-assert_convert_ast('p with no content argument', '\\P\n', [a('P')]);
-assert_convert_ast('table with no content argument', '\\Table\n', [a('Table')]);
+assert_lib_ast('p with no content argument', '\\P\n', [a('P')]);
+assert_lib_ast('table with no content argument', '\\Table\n', [a('Table')]);
 // Has empty content argument.
-assert_convert_ast('p with empty content argument', '\\P[]\n', [a('P', [])]);
+assert_lib_ast('p with empty content argument', '\\P[]\n', [a('P', [])]);
 
 // Named arguments.
-assert_convert_ast('p with id before', '\\P{id=ab}[cd]\n',
+assert_lib_ast('p with id before', '\\P{id=ab}[cd]\n',
   [a('P', [t('cd')], {id: [t('ab')]})]);
-assert_convert_ast('p with id after', '\\P[cd]{id=ab}\n',
+assert_lib_ast('p with id after', '\\P[cd]{id=ab}\n',
   [a('P', [t('cd')], {id: [t('ab')]})]);
 // https://github.com/cirosantilli/ourbigbook/issues/101
 assert_error('named argument given multiple times',
@@ -1917,13 +1932,13 @@ assert_error(
     input_path_noext: 'notindex',
   }
 );
-assert_convert_ast('empty named argument without = is allowed',
+assert_lib_ast('empty named argument without = is allowed',
   '\\P[cd]{id=}\n',
   [a('P', [t('cd')], {id: []})]
 );
 
 // Newline after close.
-assert_convert_ast('text after block element',
+assert_lib_ast('text after block element',
   `a
 
 \\C[
@@ -1943,7 +1958,7 @@ e
   a('P', [t('e')]),
 ]
 );
-assert_convert_ast('macro after block element',
+assert_lib_ast('macro after block element',
   `a
 
 \\C[
@@ -1966,11 +1981,11 @@ e
 );
 
 // Literal arguments.
-assert_convert_ast('literal argument code inline',
+assert_lib_ast('literal argument code inline',
   '\\c[[\\ab[cd]{ef}]]\n',
   [a('P', [a('c', [t('\\ab[cd]{ef}')])])],
 );
-assert_convert_ast('literal argument code block',
+assert_lib_ast('literal argument code block',
   `a
 
 \\C[[
@@ -1986,7 +2001,7 @@ d
   a('P', [t('d')]),
 ],
 );
-assert_convert_ast('non-literal argument leading and trailing newline get removed',
+assert_lib_ast('non-literal argument leading and trailing newline get removed',
   `\\P[
 a
 b
@@ -1994,7 +2009,7 @@ b
 `,
   [a('P', [t('a\nb')])],
 );
-assert_convert_ast('literal argument leading and trailing newlines get removed',
+assert_lib_ast('literal argument leading and trailing newlines get removed',
   `\\P[[
 a
 b
@@ -2002,7 +2017,7 @@ b
 `,
   [a('P', [t('a\nb')])],
 );
-assert_convert_ast('literal argument leading and trailing newlines get removed but not the second one',
+assert_lib_ast('literal argument leading and trailing newlines get removed but not the second one',
   `\\P[[
 
 a
@@ -2012,27 +2027,27 @@ b
 `,
   [a('P', [t('\na\nb\n')])],
 );
-assert_convert_ast('literal agument escape leading open no escape',
+assert_lib_ast('literal agument escape leading open no escape',
   '\\c[[\\ab]]\n',
   [a('P', [a('c', [t('\\ab')])])],
 );
-assert_convert_ast('literal agument escape leading open one backslash',
+assert_lib_ast('literal agument escape leading open one backslash',
   '\\c[[\\[ab]]\n',
   [a('P', [a('c', [t('[ab')])])],
 );
-assert_convert_ast('literal agument escape leading open two backslashes',
+assert_lib_ast('literal agument escape leading open two backslashes',
   '\\c[[\\\\[ab]]\n',
   [a('P', [a('c', [t('\\[ab')])])],
 );
-assert_convert_ast('literal agument escape trailing close no escape',
+assert_lib_ast('literal agument escape trailing close no escape',
   '\\c[[\\]]\n',
   [a('P', [a('c', [t('\\')])])],
 );
-assert_convert_ast('literal agument escape trailing one backslash',
+assert_lib_ast('literal agument escape trailing one backslash',
   '\\c[[\\]]]\n',
   [a('P', [a('c', [t(']')])])],
 );
-assert_convert_ast('literal agument escape trailing two backslashes',
+assert_lib_ast('literal agument escape trailing two backslashes',
   '\\c[[\\\\]]]\n',
   [a('P', [a('c', [t('\\]')])])],
 );
@@ -2041,7 +2056,7 @@ assert_convert_ast('literal agument escape trailing two backslashes',
 const newline_between_arguments_expect = [
   a('C', [t('ab')], {id: [t('cd')]}),
 ];
-assert_convert_ast('not literal argument with argument after newline',
+assert_lib_ast('not literal argument with argument after newline',
   `\\C[
 ab
 ]
@@ -2049,7 +2064,7 @@ ab
 `,
   newline_between_arguments_expect
 );
-assert_convert_ast('yes literal argument with argument after newline',
+assert_lib_ast('yes literal argument with argument after newline',
   `\\C[[
 ab
 ]]
@@ -2057,7 +2072,7 @@ ab
 `,
   newline_between_arguments_expect
 );
-assert_convert_ast('yes insane literal argument with argument after newline',
+assert_lib_ast('yes insane literal argument with argument after newline',
   `\`\`
 ab
 \`\`
@@ -2068,7 +2083,7 @@ ab
 
 // Links.
 // \a
-assert_convert_ast('link simple to external URL',
+assert_lib_ast('link: simple to external URL',
   'a \\a[http://example.com][example link] b\n',
   [
     a('P', [
@@ -2078,7 +2093,7 @@ assert_convert_ast('link simple to external URL',
     ]),
   ]
 );
-assert_convert_ast('link auto sane',
+assert_lib_ast('link: auto sane',
   'a \\a[http://example.com] b\n',
   [
     a('P', [
@@ -2088,7 +2103,7 @@ assert_convert_ast('link auto sane',
     ]),
   ]
 );
-assert_convert_ast('link auto insane space start and end',
+assert_lib_ast('link: auto insane space start and end',
   'a http://example.com b\n',
   [
     a('P', [
@@ -2098,7 +2113,7 @@ assert_convert_ast('link auto insane space start and end',
     ]),
   ]
 );
-assert_convert_ast('link simple to local file that exists',
+assert_lib_ast('link: simple to local file that exists',
   'a \\a[local-path.txt] b\n',
   [
     a('P', [
@@ -2109,48 +2124,48 @@ assert_convert_ast('link simple to local file that exists',
   ],
   { filesystem: { 'local-path.txt': '' } }
 );
-assert_error('link simple to local file that does not exist give an error without check=0',
+assert_error('link: simple to local file that does not exist give an error without check=0',
   'a \\a[local-path.txt] b\n',
   1, 5,
 );
-assert_no_error('link simple to local file that does not exist does not give an error with check=0',
+assert_lib_stdin('link: simple to local file that does not exist does not give an error with check=0',
   'a \\a[local-path.txt]{check=0} b\n',
 );
-assert_convert_ast('link auto insane start end document',
+assert_lib_ast('link: auto insane start end document',
   'http://example.com',
   [a('P', [a('a', undefined, {'href': [t('http://example.com')]})])],
 );
-assert_convert_ast('link auto insane start end square brackets',
+assert_lib_ast('link: auto insane start end square brackets',
   '\\P[http://example.com]\n',
   [a('P', [a('a', undefined, {'href': [t('http://example.com')]})])],
 );
-assert_convert_ast('link auto insane with alpha character before it',
+assert_lib_ast('link: auto insane with alpha character before it',
   'ahttp://example.com',
   [a('P', [
     t('a'),
     a('a', undefined, {'href': [t('http://example.com')]})
   ])]
 );
-assert_convert_ast('link auto insane with literal square brackets around it',
+assert_lib_ast('link: auto insane with literal square brackets around it',
   '\\[http://example.com\\]\n',
   [a('P', [
     t('['),
     a('a', undefined, {'href': [t('http://example.com]')]})
   ])]
 );
-assert_convert_ast('link auto insane can be escaped with a backslash',
+assert_lib_ast('link: auto insane can be escaped with a backslash',
   '\\http://example.com\n',
   [a('P', [t('http://example.com')])],
 );
-assert_convert_ast('link auto insane is not a link if the domain is empty at eof',
+assert_lib_ast('link: auto insane is not a link if the domain is empty at eof',
   'http://\n',
   [a('P', [t('http://')])],
 );
-assert_convert_ast('link auto insane is not a link if the domain is empty at space',
+assert_lib_ast('link: auto insane is not a link if the domain is empty at space',
   'http:// a\n',
   [a('P', [t('http:// a')])],
 );
-assert_convert_ast('link auto insane start end named argument',
+assert_lib_ast('link: auto insane start end named argument',
   '\\Image[aaa.jpg]{description=http://example.com}\n',
   [a('Image', undefined, {
     description: [a('a', undefined, {'href': [t('http://example.com')]})],
@@ -2158,7 +2173,7 @@ assert_convert_ast('link auto insane start end named argument',
   })],
   { filesystem: { 'aaa.jpg': '' } }
 );
-assert_convert_ast('link auto insane start end named argument',
+assert_lib_ast('link: auto insane start end named argument',
   '\\Image[aaa.jpg]{source=http://example.com}\n',
   [a('Image', undefined, {
     source: [t('http://example.com')],
@@ -2166,7 +2181,7 @@ assert_convert_ast('link auto insane start end named argument',
   })],
   { filesystem: { 'aaa.jpg': '' } }
 );
-assert_convert_ast('link auto insane newline',
+assert_lib_ast('link: auto insane newline',
   `a
 
 http://example.com
@@ -2179,7 +2194,7 @@ b
     a('P', [t('b')]),
   ]
 );
-assert_convert_ast('link insane with custom body no newline',
+assert_lib_ast('link: insane with custom body no newline',
   'http://example.com[aa]',
   [
     a('P', [
@@ -2187,7 +2202,7 @@ assert_convert_ast('link insane with custom body no newline',
     ]),
   ]
 );
-assert_convert_ast('link insane with custom body with newline',
+assert_lib_ast('link: insane with custom body with newline',
   'http://example.com\n[aa]',
   [
     a('P', [
@@ -2195,7 +2210,7 @@ assert_convert_ast('link insane with custom body with newline',
     ]),
   ]
 );
-assert_convert_ast('link auto end in space',
+assert_lib_ast('link: auto end in space',
   `a http://example.com b`,
   [
     a('P', [
@@ -2205,7 +2220,7 @@ assert_convert_ast('link auto end in space',
     ])
   ]
 );
-assert_convert_ast('link auto end in square bracket',
+assert_lib_ast('link: auto end in square bracket',
   `\\P[a http://example.com]`,
   [
     a('P', [
@@ -2214,7 +2229,7 @@ assert_convert_ast('link auto end in square bracket',
     ])
   ]
 );
-assert_convert_ast('link auto containing escapes',
+assert_lib_ast('link: auto containing escapes',
   `\\P[a http://example.com\\]a\\}b\\\\c\\ d]`,
   [
     a('P', [
@@ -2223,7 +2238,7 @@ assert_convert_ast('link auto containing escapes',
     ])
   ]
 );
-assert_convert_ast('link auto sane http https removal',
+assert_lib_ast('link: auto sane http https removal',
   '\\a[http://example.com] \\a[https://example.com] \\a[ftp://example.com]',
   [
     a('P', [
@@ -2235,14 +2250,14 @@ assert_convert_ast('link auto sane http https removal',
     ]),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:a[@href='http://example.com' and text()='example.com']",
       "//x:a[@href='https://example.com' and text()='example.com']",
       "//x:a[@href='ftp://example.com' and text()='ftp://example.com']",
     ]
   }
 );
-assert_convert_ast('link auto insane http https removal',
+assert_lib_ast('link: auto insane http https removal',
   'http://example.com https://example.com',
   [
     a('P', [
@@ -2252,13 +2267,13 @@ assert_convert_ast('link auto insane http https removal',
     ]),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:a[@href='http://example.com' and text()='example.com']",
       "//x:a[@href='https://example.com' and text()='example.com']",
     ]
   }
 );
-assert_convert_ast('link with multiple paragraphs',
+assert_lib_ast('link: with multiple paragraphs',
   '\\a[http://example.com][aaa\n\nbbb]\n',
   [
     a('P', [
@@ -2273,27 +2288,26 @@ assert_convert_ast('link with multiple paragraphs',
     ]),
   ]
 );
-assert_convert_ast('xss: a content and href',
+assert_lib_ast('xss: a content and href',
   '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{check=0}\n',
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:a[@href=concat('ab&<>\"', \"'\", 'cd') and text()=concat('ef&<>\"', \"'\", 'gh')]",
     ]
   }
 );
-assert_convert_ast('xss: a content and href',
+assert_lib_ast('xss: a content and href',
   '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{check=0}\n',
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:a[@href=concat('ab&<>\"', \"'\", 'cd') and text()=concat('ef&<>\"', \"'\", 'gh')]",
     ]
   }
 );
-
-// {check} local file existence of \a and \Image and local link automodifications.
 assert_error(
+  // {check} local file existence of \a and \Image and local link automodifications.
   'link: relative reference to nonexistent file leads to failure in link',
   `\\a[i-dont-exist]
 `, 1, 3, 'README.bigb',
@@ -2309,7 +2323,7 @@ assert_error(
     input_path_noext: 'README',
   }
 );
-assert_convert_ast(
+assert_lib_ast(
   'link: relative reference to existent file does not lead to failure in link',
   `\\a[i-exist]
 `,
@@ -2321,7 +2335,7 @@ assert_convert_ast(
     }
   }
 );
-assert_convert_ast(
+assert_lib_ast(
   'link: relative reference to existent file does not lead to failure in image',
   `\\Image[i-exist]
 `,
@@ -2333,7 +2347,7 @@ assert_convert_ast(
     }
   }
 );
-assert_convert_ast(
+assert_lib_ast(
   'link: check=0 prevents existence checks in link',
   `\\a[i-dont-exist]{check=0}
 `,
@@ -2342,7 +2356,7 @@ assert_convert_ast(
     input_path_noext: 'README',
   }
 );
-assert_convert_ast(
+assert_lib_ast(
   'link: check=0 prevents existence checks in image',
   `\\Image[i-dont-exist]{check=0}
 `,
@@ -2351,14 +2365,14 @@ assert_convert_ast(
     input_path_noext: 'README',
   }
 );
-assert_convert_ast(
+assert_lib_ast(
   'link: existence checks are skipped when media provider converts them to absolute url',
   `\\Image[i-dont-exist]
 `,
   undefined,
   {
     input_path_noext: 'README',
-    extra_convert_opts: {
+    convert_opts: {
       ourbigbook_json: {
         "media-providers": {
           "github": {
@@ -2373,7 +2387,7 @@ assert_convert_ast(
 assert_lib(
   'link: relative links and images are corrected for different output paths with scope and split-headers',
   {
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
     },
     convert_dir: true,
@@ -2456,8 +2470,8 @@ assert_lib(
 );
 
 // Internal cross references
-// x
-assert_convert_ast('cross reference simple',
+// \x
+assert_lib_ast('x: cross reference simple',
   `= My header
 
 \\x[my-header][link body]
@@ -2475,7 +2489,7 @@ assert_convert_ast('cross reference simple',
     ]),
   ],
 );
-assert_convert_ast('cross reference full boolean style without value',
+assert_lib_ast('x: cross reference full boolean style without value',
   `= My header
 
 \\x[my-header]{full}
@@ -2493,7 +2507,7 @@ assert_convert_ast('cross reference full boolean style without value',
     ]),
   ]
 );
-assert_convert_ast('cross reference full boolean style with value 0',
+assert_lib_ast('x: cross reference full boolean style with value 0',
   `= abc
 
 \\x[abc]{full=0}
@@ -2511,7 +2525,7 @@ assert_convert_ast('cross reference full boolean style with value 0',
     ]),
   ]
 );
-assert_convert_ast('cross reference full boolean style with value 1',
+assert_lib_ast('x: cross reference full boolean style with value 1',
   `= abc
 
 \\x[abc]{full=1}
@@ -2529,89 +2543,34 @@ assert_convert_ast('cross reference full boolean style with value 1',
     ]),
   ]
 );
-// https://docs.ourbigbook.com#the-id-of-the-first-header-is-derived-from-the-filename
-assert_convert_ast('id of first header comes from the file name if not index',
-  `= abc
-
-\\x[notindex]
-`,
-  [
-    a('H', undefined,
-      {
-        level: [t('1')],
-        title: [t('abc')],
-      },
-      {
-        id: 'notindex',
-      }
-    ),
-    a('P', [
-      a('x', undefined, {
-        full: [t('0')],
-        href: [t('notindex')],
-      }),
-    ]),
-  ],
-  {
-    input_path_noext: 'notindex'
-  },
-);
-assert_convert_ast('id of first header comes from header title if index',
-  `= abc
-
-\\x[abc]
-`,
-  [
-    a('H', undefined,
-      {
-        level: [t('1')],
-        title: [t('abc')],
-      },
-      {
-        id: 'abc',
-      }
-    ),
-    a('P', [
-      a('x', undefined, {
-        full: [t('0')],
-        href: [t('abc')],
-      }),
-    ]),
-  ],
-  {
-    extra_convert_opts: {
-      input_path: ourbigbook.INDEX_BASENAME_NOEXT + '.' + ourbigbook.OURBIGBOOK_EXT
-    }
-  },
-);
-assert_error('cross reference full boolean style with invalid value 2',
+assert_error('x: cross reference full boolean style with invalid value 2',
   `= abc
 
 \\x[abc]{full=2}
 `, 3, 8);
-assert_error('cross reference full boolean style with invalid value true',
+assert_error('x: cross reference full boolean style with invalid value true',
   `= abc
 
 \\x[abc]{full=true}
 `, 3, 8);
-assert_no_error('cross reference to image',
+assert_lib_stdin('x: cross reference to image',
   `\\Image[ab]{id=cd}{title=ef}
 
 \\x[cd]
 `, { filesystem: { ab: '' } });
-assert_no_error('cross reference without content nor target title style full',
+assert_lib_stdin('x: cross reference without content nor target title style full',
   `\\Image[ab]{id=cd}
 
 \\x[cd]
 `, { filesystem: { ab: '' } });
-assert_error('cross reference undefined fails gracefully', '\\x[ab]', 1, 3);
-assert_error('cross reference with child to undefined id fails gracefully',
+assert_error('x: cross reference undefined fails gracefully', '\\x[ab]', 1, 3);
+assert_error('x: cross reference with child to undefined id fails gracefully',
   `= h1
 
 \\x[ab]{child}
 `, 3, 3, undefined, {toplevel: true});
 // https://docs.ourbigbook.com#order-of-reported-errors
-assert_error('cross reference undefined errors show after other errors',
+assert_error('x: cross reference undefined errors show after other errors',
   `= a
 
 \\x[b]
@@ -2619,32 +2578,32 @@ assert_error('cross reference undefined errors show after other errors',
 \`\`
 == b
 `, 5, 1);
-assert_error('cross reference full and ref are incompatible',
+assert_error('x: cross reference full and ref are incompatible',
   `= abc
 
 \\x[abc]{full}{ref}
 `, 3, 1);
-assert_error('cross reference content and full are incompatible',
+assert_error('x: cross reference content and full are incompatible',
   `= abc
 
 \\x[abc][def]{full}
 `, 3, 1);
-assert_error('cross reference content and ref are incompatible',
+assert_error('x: cross reference content and ref are incompatible',
   `= abc
 
 \\x[abc][def]{ref}
 `, 3, 1);
-assert_error('cross reference full and c are incompatible',
+assert_error('x: cross reference full and c are incompatible',
   `= abc
 
 \\x[abc]{c}{full}
 `, 3, 1);
-assert_error('cross reference full and p are incompatible',
+assert_error('x: cross reference full and p are incompatible',
   `= abc
 
 \\x[abc]{p}{full}
 `, 3, 1);
-assert_lib('cross reference to non-included header in another file',
+assert_lib('x: cross reference to non-included header in another file',
   {
     convert_dir: true,
     filesystem: {
@@ -2658,7 +2617,7 @@ assert_lib('cross reference to non-included header in another file',
     },
   },
 );
-assert_lib('cross reference to included header in another file',
+assert_lib('x: cross reference to included header in another file',
   // I kid you not. Everything breaks everything.
   {
     convert_dir: true,
@@ -2684,7 +2643,7 @@ assert_lib('cross reference to included header in another file',
     }
   },
 );
-assert_convert_ast('cross reference to non-included ids in another file',
+assert_lib_ast('x: cross reference to non-included ids in another file',
   `= Notindex
 
 \\x[notindex]
@@ -2727,7 +2686,6 @@ assert_convert_ast('cross reference to non-included ids in another file',
     //\\x[include-two-levels-subdir/h2]
     //a('P', [a('x', undefined, {href: [t('include-two-levels-subdir')]})]),
     //a('P', [a('x', undefined, {href: [t('include-two-levels-subdir/h2')]})]),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('bb')]}),
     a('P', [a('x', [t('bb to notindex')], {href: [t('notindex')]})]),
     a('P', [a('x', [t('bb to bb')], {href: [t('bb')]})]),
@@ -2742,7 +2700,7 @@ assert_convert_ast('cross reference to non-included ids in another file',
     ),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       // Empty URL points to start of the document, which is exactly what we want.
       // https://stackoverflow.com/questions/5637969/is-an-empty-href-valid
       "//x:div[@class='p']//x:a[@href='' and text()='notindex']",
@@ -2786,17 +2744,17 @@ assert_convert_ast('cross reference to non-included ids in another file',
       // https://github.com/cirosantilli/ourbigbook/issues/116
       'include-two-levels-subdir/index.bigb',
     ],
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     filesystem: Object.assign({}, default_filesystem, {
       'bb.png': ''
     }),
     input_path_noext: 'notindex',
   },
 );
-assert_lib('splitDefault true and splitDefaultNotToplevel true',
+assert_lib('x: splitDefault true and splitDefaultNotToplevel true',
   {
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
       ourbigbook_json: {
         h: {
@@ -2896,10 +2854,10 @@ assert_lib('splitDefault true and splitDefaultNotToplevel true',
     ],
   },
 );
-assert_lib('splitDefault false and splitDefaultNotToplevel true',
+assert_lib('x: splitDefault false and splitDefaultNotToplevel true',
   {
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
       ourbigbook_json: {
         h: {
@@ -3008,7 +2966,207 @@ assert_lib('splitDefault false and splitDefaultNotToplevel true',
     ],
   },
 );
-assert_lib('cross reference to non-included image in another file',
+assert_lib(
+  'x: header splitDefault argument',
+  // https://github.com/cirosantilli/ourbigbook/issues/131
+  {
+    convert_dir: true,
+    convert_opts: { split_headers: true },
+    filesystem: {
+      'README.bigb': `= Toplevel
+{splitDefault}
+
+\\x[toplevel][toplevel to toplevel]
+
+\\x[image-my-image-toplevel][toplevel to my image toplevel]
+
+\\x[h2][toplevel to h2]
+
+\\x[image-my-image-h2][toplevel to my image h2]
+
+\\x[notindex][toplevel to notindex]
+
+\\x[notindex-h2][toplevel to notindex h2]
+
+\\Image[img.jpg]{title=My image toplevel}
+
+== H2
+
+\\x[toplevel][h2 to toplevel]
+
+\\x[image-my-image-toplevel][h2 to my image toplevel]
+
+\\x[h2][h2 to h2]
+
+\\x[image-my-image-h2][h2 to my image h2]
+
+\\x[notindex][h2 to notindex]
+
+\\x[notindex-h2][h2 to notindex h2]
+
+\\Image[img.jpg]{title=My image h2}
+
+== Split suffix
+{splitSuffix}
+`,
+      'notindex.bigb': `= Notindex
+
+\\x[toplevel][notindex to toplevel]
+
+\\x[image-my-image-toplevel][notindex to my image toplevel]
+
+\\x[h2][notindex to h2]
+
+\\x[image-my-image-h2][notindex to my image h2]
+
+\\x[notindex][notindex to notindex]
+
+\\x[notindex-h2][notindex to notindex h2]
+
+\\Image[img.jpg]{title=My image notindex}
+
+== Notindex h2
+
+\\x[toplevel][notindex h2 to toplevel]
+
+\\x[image-my-image-toplevel][notindex h2 to my image toplevel]
+
+\\x[h2][notindex h2 to h2]
+
+\\x[image-my-image-h2][notindex h2 to my image h2]
+
+\\x[notindex][notindex h2 to notindex]
+
+\\x[notindex-h2][notindex h2 to notindex h2]
+
+\\Image[img.jpg]{title=My image notindex h2}
+`,
+      'img.jpg': '',
+    },
+    assert_xpath: {
+      // This is he split one.
+      'index.html': [
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='toplevel to h2']",
+        // That one is nosplit by default.
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
+        // A child of a nosplit also becomes nosplit by default.
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
+
+        // The toplevel split header does not get a numerical prefix.
+        xpath_header(1, 'toplevel', "x:a[@href='' and text()='Toplevel']"),
+
+        // Images.
+        "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='toplevel to my image toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='toplevel to my image h2']",
+
+        // Split/nosplit.
+        xpath_header_split(1, 'toplevel', 'nosplit.html', ourbigbook.NOSPLIT_MARKER_TEXT),
+      ],
+      'nosplit.html': [
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
+        // Although h2 is split by defualt, it is already rendered in the curent page,
+        // so just link to the current page render instead.
+        "//x:div[@class='p']//x:a[@href='#h2' and text()='toplevel to h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
+
+        "//x:div[@class='p']//x:a[@href='' and text()='h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='#h2' and text()='h2 to h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
+
+        // Images.
+        "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='toplevel to my image toplevel']",
+        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='toplevel to my image h2']",
+        "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='h2 to my image toplevel']",
+        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
+
+        // Headers.
+        xpath_header(1, 'toplevel', "x:a[@href='index.html' and text()='Toplevel']"),
+        xpath_header(2, 'h2', "x:a[@href='h2.html' and text()='1. H2']"),
+
+        // Spilt/nosplit.
+        xpath_header_split(1, 'toplevel', 'index.html', ourbigbook.SPLIT_MARKER_TEXT),
+      ],
+      'h2.html': [
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='' and text()='h2 to h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
+
+        // The toplevel split header does not get a numerical prefix.
+        xpath_header(1, 'h2', "x:a[@href='' and text()='H2']"),
+
+        // Images.
+        "//x:div[@class='p']//x:a[@href='index.html#image-my-image-toplevel' and text()='h2 to my image toplevel']",
+        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
+
+        // Spilt/nosplit.
+        xpath_header_split(1, 'h2', 'nosplit.html#h2', ourbigbook.NOSPLIT_MARKER_TEXT),
+      ],
+      'split-suffix-split.html': [
+      ],
+      'notindex.html': [
+        // Link so the split one of index because that's the default of that page.
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex to h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='notindex to notindex']",
+        "//x:div[@class='p']//x:a[@href='#notindex-h2' and text()='notindex to notindex h2']",
+
+        // This is he nosplit one, so notindex h2 is also here.
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex h2 to h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='notindex h2 to notindex']",
+        "//x:div[@class='p']//x:a[@href='#notindex-h2' and text()='notindex h2 to notindex h2']",
+
+        // Images.
+        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex to my image h2']",
+        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex h2 to my image h2']",
+
+        // Headers.
+        xpath_header(1, 'notindex', "x:a[@href='notindex-split.html' and text()='Notindex']"),
+        xpath_header(2, 'notindex-h2', "x:a[@href='notindex-h2.html' and text()='1. Notindex h2']"),
+
+        // Spilt/nosplit.
+        xpath_header_split(1, 'notindex', 'notindex-split.html', ourbigbook.SPLIT_MARKER_TEXT),
+      ],
+      'notindex-split.html': [
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex to h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex to notindex']",
+
+        // Link from split to another header inside the same nonsplit page.
+        // Although external links to this header would to to its default which is nosplit,
+        // mabe when we are inside it in split mode (a rarer use case) then we should just remain
+        // inside of split mode.
+        //"//x:div[@class='p']//x:a[@href='notindex-h2.html' and text()='notindex to notindex h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='notindex to notindex h2']",
+
+        // The toplevel split header does not get a numerical prefix.
+        xpath_header(1, 'notindex', "x:a[@href='' and text()='Notindex']"),
+
+        // Spilt/nosplit.
+        xpath_header_split(1, 'notindex', 'notindex.html', ourbigbook.NOSPLIT_MARKER_TEXT),
+      ],
+      'notindex-h2.html': [
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex h2 to h2']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='notindex h2 to notindex h2']",
+
+        // Link from split to another header inside the same nonsplit page.
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex h2 to notindex']",
+
+        // The toplevel split header does not get a numerical prefix.
+        xpath_header(1, 'notindex-h2', "x:a[@href='' and text()='Notindex h2']"),
+
+        // Spilt/nosplit.
+        xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
+      ],
+    }
+  }
+);
+assert_lib('x: cross reference to non-included image in another file',
   // https://github.com/cirosantilli/ourbigbook/issues/199
   {
     convert_dir: true,
@@ -3032,7 +3190,7 @@ assert_lib('cross reference to non-included image in another file',
     }
   },
 );
-assert_convert_ast('cross reference with link inside it does not blow up',
+assert_lib_ast('x: cross reference with link inside it does not blow up',
   `= asdf
 {id=http://example.com}
 
@@ -3057,7 +3215,7 @@ assert_convert_ast('cross reference with link inside it does not blow up',
     ]),
   ],
 );
-assert_lib('x to image in another file that has x title in another file',
+assert_lib('x: to image in another file that has x title in another file',
   // https://github.com/cirosantilli/ourbigbook/issues/198
   {
     convert_dir: true,
@@ -3076,41 +3234,55 @@ assert_lib('x to image in another file that has x title in another file',
     },
   }
 );
-// TODO was working, but lazy now, will have to worry about
-// mock ID provider or modify index.js. Edit: there is no more mock
-// ID provider. Just lazy now.
-//it('output_path_parts', () => {
-//  const context = {options: {path_sep: PATH_SEP}};
+// TODO
+//it('output_path_base', () => {
+//  function assert(args, dirname, basename) {
+//    args.path_sep = '/'
+//    if (args.ast_undefined === undefined ) { args.ast_undefined = false }
+//    const ret = ourbigbook.output_path_base(args)
+//    assert.strictEqual(ret.dirname, dirname)
+//    assert.strictEqual(ret.basename, basename)
+//  }
 //
-//  // Non-split headers.
-//  assert.deepStrictEqual(
-//    ourbigbook.output_path_parts(
-//      'notindex.bigb',
-//      'notindex',
-//      context,
-//    ),
-//    ['', 'notindex']
-//  );
-//  assert.deepStrictEqual(
-//    ourbigbook.output_path_parts(
-//      'index.bigb',
-//      'index',
-//      context,
-//    ),
-//    ['', 'index']
-//  );
-//  assert.deepStrictEqual(
-//    ourbigbook.output_path_parts(
-//      'README.bigb',
-//      'index',
-//      context,
-//    ),
-//    ['', 'index']
-//  );
+//  assert({
+//    ast_undefined: false,
+//    ast_id,
+//    ast_input_path,
+//    ast_is_first_header_in_input_file,
+//    ast_split_default,
+//    ast_toplevel_id,
+//    context_to_split_headers,
+//    cur_toplevel_id,
+//    splitDefaultNotToplevel,
+//    split_suffix,
+//  }, )
+//
+//  //assert(
+//  //  {
+//  //    'notindex.bigb',
+//  //    'notindex',
+//  //  },
+//  //);
+//  //assert.deepStrictEqual(
+//  //  ourbigbook.output_path_parts(
+//  //    'index.bigb',
+//  //    'index',
+//  //    context,
+//  //  ),
+//  //  ['', 'index']
+//  //);
+//  //assert.deepStrictEqual(
+//  //  ourbigbook.output_path_parts(
+//  //    'README.bigb',
+//  //    'index',
+//  //    context,
+//  //  ),
+//  //  ['', 'index']
+//  //);
 //});
 // Internal cross references \x
 // https://github.com/cirosantilli/ourbigbook/issues/213
-assert_convert_ast('cross reference magic simple sane',
+assert_lib_ast('x: cross reference magic simple sane',
   `= Notindex
 
 == My header
@@ -3119,12 +3291,12 @@ assert_convert_ast('cross reference magic simple sane',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@class='p']//x:a[@href='#my-header' and text()='My headers']",
     ],
   }
 );
-assert_convert_ast('cross reference magic simple insane',
+assert_lib_ast('x: cross reference magic simple insane',
   `= Notindex
 
 == My header
@@ -3133,12 +3305,12 @@ assert_convert_ast('cross reference magic simple insane',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@class='p']//x:a[@href='#my-header' and text()='My headers']",
     ],
   }
 );
-assert_convert_ast('cross reference magic in title',
+assert_lib_ast('x: cross reference magic in title',
   `= Notindex
 
 == My header
@@ -3150,21 +3322,21 @@ assert_convert_ast('cross reference magic in title',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@class='p']//x:a[@href='#image-my-headers-are-amazing' and text()='Figure 1. \"My headers are amazing\"']",
     ],
   }
 );
-assert_convert_ast('cross reference magic insane escape',
+assert_lib_ast('x: cross reference magic insane escape',
   `a\\<>b`,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@class='p' and text()='a<>b']",
     ],
   }
 );
-assert_convert_ast('cross reference magic with full uses full content',
+assert_lib_ast('x: cross reference magic with full uses full content',
   `= Notindex
 
 == My header
@@ -3173,12 +3345,12 @@ assert_convert_ast('cross reference magic with full uses full content',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@class='p']//x:a[@href='#my-header' and text()='Section 1. \"My header\"']",
     ],
   }
 );
-assert_lib('cross reference magic cross file plural resolution',
+assert_lib('x: cross reference magic cross file plural resolution',
   {
     convert_dir: true,
     filesystem: {
@@ -3211,7 +3383,7 @@ assert_lib('cross reference magic cross file plural resolution',
     },
   },
 );
-assert_lib('cross reference magic detects capitalization and plural on output',
+assert_lib('x: cross reference magic detects capitalization and plural on output',
   {
     convert_dir: true,
     filesystem: {
@@ -3247,7 +3419,7 @@ assert_lib('cross reference magic detects capitalization and plural on output',
     },
   },
 );
-assert_convert_ast('cross reference magic insane to scope',
+assert_lib_ast('x: cross reference magic insane to scope',
   `= Notindex
 
 \\Q[<My scope/In scope>]{id=same}
@@ -3261,14 +3433,14 @@ assert_convert_ast('cross reference magic insane to scope',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@id='same']//x:blockquote//x:a[@href='#my-scope/in-scope' and text()='In scope']",
       // Case is controlled only by the last scope component.
       "//x:div[@id='lower']//x:blockquote//x:a[@href='#my-scope/in-scope' and text()='in scope']",
     ],
   }
 );
-assert_convert_ast('cross reference magic insane to header file argument',
+assert_lib_ast('cross reference magic insane to header file argument',
   `= Notindex
 
 <file/path/to/my_file.jpg>
@@ -3278,7 +3450,7 @@ assert_convert_ast('cross reference magic insane to header file argument',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@class='p']//x:a[@href='#file/path/to/my_file.jpg' and text()='path/to/my_file.jpg']",
     ],
     filesystem: {
@@ -3286,7 +3458,7 @@ assert_convert_ast('cross reference magic insane to header file argument',
     },
   }
 );
-assert_convert_ast('cross reference c simple',
+assert_lib_ast('x: cross reference c simple',
   `= Tmp
 
 == Dog
@@ -3295,12 +3467,12 @@ assert_convert_ast('cross reference c simple',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@class='p']//x:a[@href='#dog' and text()='Dog']",
     ],
   }
 )
-assert_convert_ast('cross reference p simple',
+assert_lib_ast('cross reference p simple',
   `= Tmp
 
 == Dog
@@ -3309,12 +3481,12 @@ assert_convert_ast('cross reference p simple',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@class='p']//x:a[@href='#dog' and text()='dogs']",
     ],
   }
 )
-assert_convert_ast('cross reference c ignores non plaintext first argument',
+assert_lib_ast('x: cross reference c ignores non plaintext first argument',
   // Maybe we shoud go deep into the first argument tree. But let's KISS for now.
   `= Tmp
 
@@ -3324,12 +3496,12 @@ assert_convert_ast('cross reference c ignores non plaintext first argument',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@class='p']//x:a[@href='#good-dog']//x:i[text()='Good']",
     ],
   }
 )
-assert_convert_ast('cross reference p ignores non plaintext last argument',
+assert_lib_ast('x: cross reference p ignores non plaintext last argument',
   // Maybe we shoud go deep into the last argument tree. But let's KISS for now.
   `= Tmp
 
@@ -3339,12 +3511,12 @@ assert_convert_ast('cross reference p ignores non plaintext last argument',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[@class='p']//x:a[@href='#good-dog']//x:i[text()='dog']",
     ],
   }
 )
-assert_lib('x_external_prefix option',
+assert_lib('x: x_external_prefix option',
   {
     convert_dir: true,
     filesystem: {
@@ -3365,7 +3537,7 @@ assert_lib('x_external_prefix option',
 == Notindex2 2
 `,
     },
-    extra_convert_opts: {
+    convert_opts: {
       x_external_prefix: 'asdf/'
     },
     assert_xpath: {
@@ -3380,10 +3552,10 @@ assert_lib('x_external_prefix option',
     },
   }
 );
-assert_lib('ourbigbook.json reroutePrefix',
+assert_lib('x: ourbigbook.json reroutePrefix',
   {
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
       ourbigbook_json: {
         reroutePrefix: 'asdf/',
@@ -3443,6 +3615,29 @@ assert_lib('ourbigbook.json reroutePrefix',
     },
   },
 );
+assert_lib(
+  'x: directory name is removed from link to subdir h2',
+  {
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= Index
+
+\\x[subdir/index-h2][link to subdir index h2]
+    `,
+      'ourbigbook.json': `{}\n`,
+      'subdir/index.bigb': `= Subdir index
+
+== Index h2
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        xpath_header(1, 'index'),
+        "//x:a[@href='subdir.html#index-h2' and text()='link to subdir index h2']",
+      ]
+    },
+  }
+);
 
 // Infinite recursion.
 // failing https://github.com/cirosantilli/ourbigbook/issues/34
@@ -3456,7 +3651,7 @@ assert_error('cross reference from header title to previous header is not allowe
 
 == \\x[h1] aa
 `, 3, 4);
-assert_convert_ast('cross reference from image title to previous non-header is not allowed',
+assert_lib_ast('cross reference from image title to previous non-header is not allowed',
   `\\Image[ab]{title=cd}{check=0}
 
 \\Image[ef]{title=gh \\x[image-cd]}{check=0}
@@ -3469,7 +3664,7 @@ assert_convert_ast('cross reference from image title to previous non-header is n
     ],
   }
 );
-assert_convert_ast('cross reference from image title to following non-header is not allowed',
+assert_lib_ast('cross reference from image title to following non-header is not allowed',
   `\\Image[ef]{title=gh \\x[image-cd]}{check=0}
 
 \\Image[ab]{title=cd}{check=0}
@@ -3496,7 +3691,7 @@ assert_error('cross reference infinite recursion to self IDs fails gracefully',
     input_path_noext: 'tmp',
   }
 );
-assert_convert_ast('cross reference from image to previous header with x content without image ID works',
+assert_lib_ast('cross reference from image to previous header with x content without image ID works',
   `= ab
 
 \\Image[cd]{title=\\x[ab][cd]}
@@ -3517,7 +3712,7 @@ assert_convert_ast('cross reference from image to previous header with x content
   ],
   { filesystem: { cd: '' } },
 );
-assert_convert_ast('cross reference from image to previous header without x content with image ID works',
+assert_lib_ast('cross reference from image to previous header without x content with image ID works',
   `= ab
 
 \\Image[cd]{title=\\x[ab]}{id=cd}
@@ -3535,7 +3730,7 @@ assert_convert_ast('cross reference from image to previous header without x cont
   ],
   { filesystem: { cd: '' } },
 );
-assert_convert_ast('cross reference from image to previous header without x content without image ID works',
+assert_lib_ast('cross reference from image to previous header without x content without image ID works',
   `= ab
 
 \\Image[cd]{title=\\x[ab] cd}
@@ -3562,7 +3757,7 @@ assert_convert_ast('cross reference from image to previous header without x cont
   ],
   { filesystem: { cd: '' } },
 );
-assert_convert_ast('cross reference from image to following header without x content without image id works',
+assert_lib_ast('cross reference from image to following header without x content without image id works',
   `= ab
 
 \\Image[cd]{title=ef \\x[gh]}
@@ -3588,7 +3783,6 @@ assert_convert_ast('cross reference from image to following header without x con
         id: 'image-ef-gh'
       }
     ),
-    a('Toc'),
     a('H', undefined, {
       level: [t('2')],
       title: [t('gh')],
@@ -3605,7 +3799,7 @@ assert_error('cross reference with parent to undefined ID does not throw',
 );
 
 // Scope.
-assert_no_error("internal cross references work with header scope and don't throw",
+assert_lib_stdin("internal cross references work with header scope and don't throw",
 `= h1
 
 \\x[h2-1/h3-1].
@@ -3636,7 +3830,7 @@ assert_no_error("internal cross references work with header scope and don't thro
 == h2 2
 `
 );
-assert_convert_ast('scope with parent leading slash conflict resolution',
+assert_lib_ast('scope with parent leading slash conflict resolution',
   `= h1
 
 = h2
@@ -3656,7 +3850,6 @@ assert_convert_ast('scope with parent leading slash conflict resolution',
 {parent=/h2}
 `, [
   a('H', undefined, {level: [t('1')], title: [t('h1')]}, {id: 'h1'}),
-  a('Toc'),
   a('H', undefined, {level: [t('2')], title: [t('h2')]}, {id: 'h2'}),
   a('H', undefined, {level: [t('3')], title: [t('h3')]}, {id: 'h3'}),
   a('H', undefined, {level: [t('4')], title: [t('h2')]}, {id: 'h3/h2'}),
@@ -3664,7 +3857,7 @@ assert_convert_ast('scope with parent leading slash conflict resolution',
   a('H', undefined, {level: [t('3')], title: [t('h4')]}, {id: 'h4'}),
 ]
 );
-assert_convert_ast('scope with parent breakout with no leading slash',
+assert_lib_ast('scope with parent breakout with no leading slash',
   `= h1
 
 = h2
@@ -3681,7 +3874,6 @@ assert_convert_ast('scope with parent breakout with no leading slash',
 {parent=h2}
 `, [
   a('H', undefined, {level: [t('1')], title: [t('h1')]}, {id: 'h1'}),
-  a('Toc'),
   a('H', undefined, {level: [t('2')], title: [t('h2')]}, {id: 'h2'}),
   a('H', undefined, {level: [t('3')], title: [t('h3')]}, {id: 'h3'}),
   a('H', undefined, {level: [t('4')], title: [t('h4')]}, {id: 'h3/h4'}),
@@ -3689,7 +3881,7 @@ assert_convert_ast('scope with parent breakout with no leading slash',
 ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/120
-assert_convert_ast('nested scope with parent',
+assert_lib_ast('nested scope with parent',
   `= h1
 {scope}
 
@@ -3718,7 +3910,6 @@ assert_convert_ast('nested scope with parent',
 {parent=h1-2/h1-2-1}
 `, [
   a('H', undefined, {level: [t('1')], title: [t('h1')]}, {id: 'h1'}),
-  a('Toc'),
   a('H', undefined, {level: [t('2')], title: [t('h1 1')]}, {id: 'h1/h1-1'}),
   a('H', undefined, {level: [t('3')], title: [t('h1 1 1')]}, {id: 'h1/h1-1/h1-1-1'}),
   a('H', undefined, {level: [t('3')], title: [t('h1 1 2')]}, {id: 'h1/h1-1/h1-1-2'}),
@@ -3728,7 +3919,7 @@ assert_convert_ast('nested scope with parent',
   a('H', undefined, {level: [t('4')], title: [t('h1 2 1 1')]}, {id: 'h1/h1-2/h1-2-1/h1-2-1-1'}),
 ]
 );
-assert_convert_ast('nested scope internal cross references resolves progressively',
+assert_lib_ast('nested scope internal cross references resolves progressively',
   `= h1
 {scope}
 
@@ -3742,7 +3933,6 @@ assert_convert_ast('nested scope internal cross references resolves progressivel
 \\x[h1-1]
 `, [
   a('H', undefined, {level: [t('1')], title: [t('h1')]}, {id: 'h1'}),
-  a('Toc'),
   a('H', undefined, {level: [t('2')], title: [t('h1 1')]}, {id: 'h1/h1-1'}),
   a('H', undefined, {level: [t('3')], title: [t('h1 1 1')]}, {id: 'h1/h1-1/h1-1-1'}),
   a('P', [a('x', undefined, {href: [t('h1-1')]})]),
@@ -3759,7 +3949,7 @@ assert_error('broken parent still generates a header ID',
 
 `, 6, 1
 );
-assert_convert_ast('cross reference to toplevel scoped split header',
+assert_lib_ast('cross reference to toplevel scoped split header',
   `= Notindex
 {scope}
 
@@ -3777,7 +3967,6 @@ assert_convert_ast('cross reference to toplevel scoped split header',
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('Notindex')]}),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('bb')]}),
     a('P', [a('x', [t('bb to cc')], {href: [t('cc')]})]),
     a('P', [a('x', [t('bb to image bb')], {href: [t('image-bb')]})]),
@@ -3793,7 +3982,7 @@ assert_convert_ast('cross reference to toplevel scoped split header',
     a('P', [a('x', [t('cc to image bb')], {href: [t('image-bb')]})]),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       // Not `#notindex/image-bb`.
       // https://docs.ourbigbook.com#header-scope-argument-of-toplevel-headers
       "//x:a[@href='#image-bb' and text()='bb to image bb']",
@@ -3808,12 +3997,12 @@ assert_convert_ast('cross reference to toplevel scoped split header',
       ],
     },
     input_path_noext: 'notindex',
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     filesystem: { 'bb.png': '' },
   },
 );
 // https://github.com/cirosantilli/ourbigbook/issues/173
-assert_convert_ast('cross reference to non-toplevel scoped split header',
+assert_lib_ast('cross reference to non-toplevel scoped split header',
   `= tmp
 
 == tmp 2
@@ -3829,7 +4018,6 @@ assert_convert_ast('cross reference to non-toplevel scoped split header',
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('tmp')]}),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('tmp 2')]}),
     a('H', undefined, {level: [t('3')], title: [t('tmp 3')]}),
     a('P', [a('x', [t('tmp 3 to tmp')], {href: [t('tmp')]})]),
@@ -3844,12 +4032,12 @@ assert_convert_ast('cross reference to non-toplevel scoped split header',
         "//x:a[@href='../tmp.html#tmp-2/tmp-3' and text()='tmp 3 to tmp 3']",
       ],
     },
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     input_path_noext: 'tmp',
   },
 );
 // https://docs.ourbigbook.com#header-scope-argument-of-toplevel-headers
-assert_convert_ast('cross reference to non-included file with toplevel scope',
+assert_lib_ast('cross reference to non-included file with toplevel scope',
   `\\x[toplevel-scope]
 
 \\x[toplevel-scope/h2]
@@ -3865,7 +4053,7 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
     a('P', [a('x', undefined, {href: [t('toplevel-scope/image-h2')]})]),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       // Not `toplevel-scope.html#toplevel-scope`.
       "//x:div[@class='p']//x:a[@href='toplevel-scope.html' and text()='toplevel scope']",
       // Not `toplevel-scope.html#toplevel-scope/h2`.
@@ -3880,7 +4068,7 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
     },
     convert_before: ['toplevel-scope.bigb'],
     input_path_noext: 'notindex',
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     filesystem: {
       'toplevel-scope.bigb': `= Toplevel scope
 {scope}
@@ -3896,7 +4084,7 @@ assert_convert_ast('cross reference to non-included file with toplevel scope',
     }
   }
 );
-assert_convert_ast('toplevel scope gets removed from IDs in the file',
+assert_lib_ast('toplevel scope gets removed from IDs in the file',
   `= Notindex
 {scope}
 
@@ -3910,11 +4098,10 @@ assert_convert_ast('toplevel scope gets removed from IDs in the file',
     a('H', undefined, {level: [t('1')], title: [t('Notindex')]}),
     a('P', [a('x', undefined, {href: [t('notindex')]})]),
     a('P', [a('x', undefined, {href: [t('h2')]})]),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('h2')]}),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       xpath_header(1, 'notindex'),
       "//x:div[@class='p']//x:a[@href='' and text()='link to notindex']",
       "//x:div[@class='p']//x:a[@href='#h2' and text()='link to h2']",
@@ -3925,7 +4112,7 @@ assert_convert_ast('toplevel scope gets removed from IDs in the file',
 assert_lib(
   'cross reference incoming links and other children simple',
   {
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
     },
     convert_dir: true,
@@ -4054,7 +4241,7 @@ assert_lib(
   // We can have confusion between singular and plural here unless proper resolution is done.
   'lib: cross reference incoming links and other children with magic',
   {
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
     },
     convert_dir: true,
@@ -4101,7 +4288,7 @@ assert_lib(
   // would then fix it as it fetched the File.
   {
     convert_dir: true,
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     filesystem: {
       'README.bigb': `= Index
 
@@ -4168,7 +4355,7 @@ assert_lib('scopes hierarchy resolution works across files with directories and 
   // https://github.com/cirosantilli/ourbigbook/issues/229
   {
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
     },
     filesystem: {
@@ -4211,7 +4398,7 @@ assert_lib('scopes hierarchy resolution works across files with directories and 
 assert_lib('scopes hierarchy resolution works across files with directories and magic plural',
   {
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
     },
     filesystem: {
@@ -4229,7 +4416,7 @@ assert_lib('scopes hierarchy resolution works across files with directories and 
 assert_lib('x: ref_prefix gets appeneded to absolute targets',
   {
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
       ref_prefix: 'subdir',
     },
@@ -4256,9 +4443,49 @@ assert_lib('x: ref_prefix gets appeneded to absolute targets',
     },
   }
 );
+assert_lib(
+  'x: link to image in another file after link to the toplevel header of that file does not blow up',
+  {
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= Toplevel
+
+\\Image[img.jpg]{title=My image toplevel}
+`,
+      'notindex.bigb': `= Notindex
+
+\\x[toplevel]
+
+\\x[image-my-image-toplevel]
+`,
+      'img.jpg': '',
+    },
+  }
+)
+assert_lib('x: split renders by default links back to nosplit render of another header in the same file',
+  {
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= tmp
+
+<tmp 2>[index to tmp 2]
+
+== tmp 2
+`
+    },
+    assert_xpath: {
+      'split.html': [
+        "//x:div[@class='p']//x:a[@href='index.html#tmp-2' and text()='index to tmp 2']",
+      ],
+    },
+    convert_opts: { split_headers: true },
+  },
+);
 
 // Subdir.
-assert_lib('subdir basic',
+assert_lib('header: subdir argument basic',
+  // This was introduced to handle Web uploads without path: API parameter.
+  // But in the end for some reason we ended up sticking with the path parameter to start with.
   {
     convert_dir: true,
     filesystem: {
@@ -4268,7 +4495,7 @@ assert_lib('subdir basic',
 
 \\x[asdf/qwer/notindex2-2][notindex to notindex2 2]
 `,
-     'notindex2.bigb': `= Notindex2
+      'notindex2.bigb': `= Notindex2
 {subdir=asdf/qwer}
 
 == Notindex2 2
@@ -4284,7 +4511,8 @@ assert_lib('subdir basic',
 );
 
 // Headers.
-assert_convert_ast('header simple',
+// \H
+assert_lib_ast('header: simple',
   `\\H[1][My header]
 
 \\H[2][My header 2]
@@ -4295,13 +4523,12 @@ assert_convert_ast('header simple',
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('My header')]}),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('My header 2')]}),
     a('H', undefined, {level: [t('3')], title: [t('My header 3')]}),
     a('H', undefined, {level: [t('4')], title: [t('My header 4')]}),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       // The toplevel header does not have any numerical prefix, e.g. "1. My header",
       // it is just "My header".
       xpath_header(1, 'notindex', "x:a[@href='notindex-split.html' and text()='My header']"),
@@ -4317,11 +4544,11 @@ assert_convert_ast('header simple',
         xpath_header(1, 'my-header-3', "x:a[@href='' and text()='My header 3']"),
       ],
     },
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     input_path_noext: 'notindex',
   },
 );
-assert_convert_ast('header and implicit paragraphs',
+assert_lib_ast('header: and implicit paragraphs',
   `\\H[1][My header 1]
 
 My paragraph 1.
@@ -4333,14 +4560,12 @@ My paragraph 2.
   [
     a('H', undefined, {level: [t('1')], title: [t('My header 1')]}),
     a('P', [t('My paragraph 1.')]),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('My header 2')]}),
     a('P', [t('My paragraph 2.')]),
   ]
 );
 const header_7_expect = [
   a('H', undefined, {level: [t('1')], title: [t('1')]}),
-  a('Toc'),
   a('H', undefined, {level: [t('2')], title: [t('2')]}),
   a('H', undefined, {level: [t('3')], title: [t('3')]}),
   a('H', undefined, {level: [t('4')], title: [t('4')]}),
@@ -4348,7 +4573,7 @@ const header_7_expect = [
   a('H', undefined, {level: [t('6')], title: [t('6')]}),
   a('H', undefined, {level: [t('7')], title: [t('7')]}),
 ];
-assert_convert_ast('header 7 sane',
+assert_lib_ast('header: 7 sane',
   `\\H[1][1]
 
 \\H[2][2]
@@ -4365,8 +4590,8 @@ assert_convert_ast('header 7 sane',
 `,
   header_7_expect
 );
-// https://github.com/cirosantilli/ourbigbook/issues/32
-assert_convert_ast('header 7 insane',
+assert_lib_ast('header: 7 insane',
+  // https://github.com/cirosantilli/ourbigbook/issues/32
   `= 1
 
 == 2
@@ -4383,7 +4608,7 @@ assert_convert_ast('header 7 insane',
 `,
   header_7_expect
 );
-assert_convert_ast('header 7 parent',
+assert_lib_ast('header: 7 parent',
   `= 1
 
 = 2
@@ -4406,7 +4631,7 @@ assert_convert_ast('header 7 parent',
 `,
   header_7_expect
 );
-assert_convert_ast('header parent does title to ID conversion',
+assert_lib_ast('header: parent does title to ID conversion',
   `= 1
 
 = a b%c
@@ -4417,12 +4642,11 @@ assert_convert_ast('header parent does title to ID conversion',
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('1')]}),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('a b%c')]}, { id: 'a-b-percent-c' }),
     a('H', undefined, {level: [t('3')], title: [t('3')]}),
   ],
 );
-assert_error('header with parent argument must have level equal 1',
+assert_error('header: with parent argument must have level equal 1',
   `= 1
 
 == 2
@@ -4430,7 +4654,7 @@ assert_error('header with parent argument must have level equal 1',
 `,
   3, 1
 );
-assert_error('header parent cannot be an older id of a level',
+assert_error('header: parent cannot be an older id of a level',
   `= 1
 
 == 2
@@ -4442,7 +4666,7 @@ assert_error('header parent cannot be an older id of a level',
 `,
   8, 1
 );
-assert_error('header child argument to id that does not exist gives an error',
+assert_error('header: child argument to id that does not exist gives an error',
   `= 1
 {child=2}
 {child=3}
@@ -4451,7 +4675,7 @@ assert_error('header child argument to id that does not exist gives an error',
 `,
   3, 1
 );
-assert_error('header tag argument to id that does not exist gives an error',
+assert_error('header: tag argument to id that does not exist gives an error',
   `= 1
 {tag=2}
 {tag=3}
@@ -4460,7 +4684,7 @@ assert_error('header tag argument to id that does not exist gives an error',
 `,
   3, 1
 );
-assert_lib('header tag and child argument does title to ID conversion',
+assert_lib('header: tag and child argument does title to ID conversion',
   {
     convert_dir: true,
     filesystem: {
@@ -4477,10 +4701,10 @@ assert_lib('header tag and child argument does title to ID conversion',
     },
   }
 );
-// This almost worked, but "Other children" links were not showing.
-// Either we support it fully, or it blows up clearly, this immediately
-// confused me a bit on cirosantilli.com.
-assert_error('header child and synonym arguments are incompatible',
+assert_error('header: child and synonym arguments are incompatible',
+  // This almost worked, but "Other children" links were not showing.
+  // Either we support it fully, or it blows up clearly, this immediately
+  // confused me a bit on cirosantilli.com.
   `= 1
 
 = 1 2
@@ -4491,7 +4715,7 @@ assert_error('header child and synonym arguments are incompatible',
 `,
   5, 1
 );
-assert_error('header tag and synonym arguments are incompatible',
+assert_error('header: tag and synonym arguments are incompatible',
   `= 1
 
 = 1 2
@@ -4502,7 +4726,7 @@ assert_error('header tag and synonym arguments are incompatible',
 `,
   5, 1
 );
-assert_error('h: synonym without preceeding header fails gracefully',
+assert_error('header: synonym without preceeding header fails gracefully',
   `asdf
 
 = qwer
@@ -4512,7 +4736,7 @@ assert_error('h: synonym without preceeding header fails gracefully',
 );
 //// This would be the ideal behaviour, but I'm lazy now.
 //// https://github.com/cirosantilli/ourbigbook/issues/200
-//assert_convert_ast('full link to synonym renders the same as full link to the main header',
+//assert_lib_ast('full link to synonym renders the same as full link to the main header',
 //  `= 1
 //
 //\\Q[\\x[1-3]{full}]
@@ -4524,7 +4748,7 @@ assert_error('h: synonym without preceeding header fails gracefully',
 //`,
 //  undefined,
 //  {
-//    assert_xpath_main: [
+//    assert_xpath_stdout: [
 //      "//x:blockquote//x:a[@href='#1-2' and text()='Section 1. \"1 2\"']",
 //    ],
 //  }
@@ -4532,7 +4756,7 @@ assert_error('h: synonym without preceeding header fails gracefully',
 // This is not the ideal behaviour, the above test would be the ideal.
 // But it will be good enough for now.
 // https://github.com/cirosantilli/ourbigbook/issues/200
-assert_convert_ast('full link to synonym with title2 does not get dummy empty parenthesis',
+assert_lib_ast('header: full link to synonym with title2 does not get dummy empty parenthesis',
   `= 1
 
 \\Q[\\x[1-3]{full}]
@@ -4545,22 +4769,106 @@ assert_convert_ast('full link to synonym with title2 does not get dummy empty pa
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:blockquote//x:a[@href='#1-2' and text()='Section 1. \"1 3\"']",
     ],
   }
 );
+assert_lib('header: synonym basic',
+  // https://github.com/cirosantilli/ourbigbook/issues/114
+  {
+    convert_opts: {
+      split_headers: true,
+    },
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= Index
+
+== h2
+
+= My h2 synonym
+{c}
+{synonym}
+
+\\x[h2]
+
+\\x[my-h2-synonym]
+
+\\x[my-notindex-h2-synonym]
+
+= h3 parent
+{parent=h2}
+`,
+      'notindex.bigb': `= Notindex
+
+== Notindex h2
+
+= My notindex h2 synonym
+{synonym}
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:div[@class='p']//x:a[@href='#h2' and text()='h2']",
+        "//x:div[@class='p']//x:a[@href='#h2' and text()='My h2 synonym']",
+        // Across files to test sqlite db.
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='my notindex h2 synonym']",
+      ],
+      'h2.html': [
+        // It does not generate a split header for `My h2 synonym`.
+        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='h2']",
+      ],
+      //// Redirect generated by synonym.
+      //'my-h2-synonym.html': [
+      //  "//x:script[text()=\"location='index.html#h2'\"]",
+      //],
+      // Redirect generated by synonym.
+      //'my-notindex-h2-synonym.html': [
+      //  "//x:script[text()=\"location='notindex.html#notindex-h2'\"]",
+      //],
+    }
+  }
+);
+assert_lib('header: synonym in splitDefault',
+  // https://github.com/cirosantilli/ourbigbook/issues/225
+  {
+    convert_opts: {
+      split_headers: true,
+    },
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= Index
+{splitDefault}
+
+== h2
+
+= My h2 synonym
+{c}
+{synonym}
+
+== h2 2
+
+\\x[my-h2-synonym][h2 2 to my h2 synonym]
+`,
+    },
+    assert_xpath: {
+      'h2-2.html': [
+        "//x:div[@class='p']//x:a[@href='h2.html' and text()='h2 2 to my h2 synonym']",
+      ],
+    }
+  }
+);
 const header_id_new_line_expect =
   [a('H', undefined, {level: [t('1')], title: [t('aa')], id: [t('bb')]})];
-assert_convert_ast('header id new line sane',
+assert_lib_ast('header id new line sane',
   '\\H[1][aa]\n{id=bb}',
   header_id_new_line_expect,
 );
-assert_convert_ast('header id new line insane no trailing elment',
+assert_lib_ast('header id new line insane no trailing elment',
   '= aa\n{id=bb}',
   header_id_new_line_expect,
 );
-assert_convert_ast('header id new line insane trailing element',
+assert_lib_ast('header id new line insane trailing element',
   '= aa \\c[bb]\n{id=cc}',
   [a('H', undefined, {
       level: [t('1')],
@@ -4571,26 +4879,22 @@ assert_convert_ast('header id new line insane trailing element',
       id: [t('cc')],
   })],
 );
-assert_error('header level must be an integer', '\\H[a][b]\n', 1, 3);
-assert_error('non integer h2 header level in a document with a toc does not throw',
+assert_error('header: level must be an integer', '\\H[a][b]\n', 1, 3);
+assert_error('header: non integer h2 header level does not throw',
   `\\H[1][h1]
-
-\\Toc
 
 \\H[][h2 1]
 
 \\H[2][h2 2]
 
 \\H[][h2 3]
-`, 5, 3);
-assert_error('non integer h1 header level a in a document with a toc does not throw',
+`, 3, 3);
+assert_error('header: non integer h1 header level does not throw',
   `\\H[][h1]
-
-\\Toc
 `, 1, 3);
-assert_error('header must be an integer empty', '\\H[][b]\n', 1, 3);
-assert_error('header must not be zero', '\\H[0][b]\n', 1, 3);
-assert_error('header skip level is an error', '\\H[1][a]\n\n\\H[3][b]\n', 3, 3);
+assert_error('header: must be an integer empty', '\\H[][b]\n', 1, 3);
+assert_error('header: must not be zero', '\\H[0][b]\n', 1, 3);
+assert_error('header: skip level is an error', '\\H[1][a]\n\n\\H[3][b]\n', 3, 3);
 const header_numbered_input = `= tmp
 
 \\Q[
@@ -4631,25 +4935,27 @@ const header_numbered_input = `= tmp
 
 === tmp 2 2 3
 `
-assert_convert_ast('header numbered argument',
-  header_numbered_input,
-  undefined,
+assert_lib('header: numbered argument',
   {
-    assert_xpath_main: [
-      "//x:blockquote//x:a[@href='#tmp-2' and text()='Section 1. \"tmp 2\"']",
-      "//x:blockquote//x:a[@href='#tmp-4' and text()='Section \"tmp 4\"']",
-      "//x:blockquote//x:a[@href='#tmp-8' and text()='Section 1.1. \"tmp 8\"']",
-      "//*[@id='toc']//x:a[@href='#tmp-2' and text()='1. tmp 2']",
-      "//*[@id='toc']//x:a[@href='#tmp-3' and text()='1.1. tmp 3']",
-      "//*[@id='toc']//x:a[@href='#tmp-4' and text()='tmp 4']",
-      "//*[@id='toc']//x:a[@href='#tmp-5' and text()='tmp 5']",
-      "//*[@id='toc']//x:a[@href='#tmp-6' and text()='tmp 6']",
-      "//*[@id='toc']//x:a[@href='#tmp-7' and text()='1. tmp 7']",
-      "//*[@id='toc']//x:a[@href='#tmp-8' and text()='1.1. tmp 8']",
-      "//*[@id='toc']//x:a[@href='#tmp-2-2' and text()='2. tmp 2 2']",
-      "//*[@id='toc']//x:a[@href='#tmp-2-2-3' and text()='2.1. tmp 2 2 3']",
-    ],
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': header_numbered_input,
+    },
     assert_xpath: {
+      'index.html': [
+        "//x:blockquote//x:a[@href='#tmp-2' and text()='Section 1. \"tmp 2\"']",
+        "//x:blockquote//x:a[@href='#tmp-4' and text()='Section \"tmp 4\"']",
+        "//x:blockquote//x:a[@href='#tmp-8' and text()='Section 1.1. \"tmp 8\"']",
+        "//*[@id='toc']//x:a[@href='#tmp-2' and text()='1. tmp 2']",
+        "//*[@id='toc']//x:a[@href='#tmp-3' and text()='1.1. tmp 3']",
+        "//*[@id='toc']//x:a[@href='#tmp-4' and text()='tmp 4']",
+        "//*[@id='toc']//x:a[@href='#tmp-5' and text()='tmp 5']",
+        "//*[@id='toc']//x:a[@href='#tmp-6' and text()='tmp 6']",
+        "//*[@id='toc']//x:a[@href='#tmp-7' and text()='1. tmp 7']",
+        "//*[@id='toc']//x:a[@href='#tmp-8' and text()='1.1. tmp 8']",
+        "//*[@id='toc']//x:a[@href='#tmp-2-2' and text()='2. tmp 2 2']",
+        "//*[@id='toc']//x:a[@href='#tmp-2-2-3' and text()='2.1. tmp 2 2 3']",
+      ],
       'tmp-6.html': [
         "//*[@id='toc']//x:a[@href='index.html#tmp-7' and text()='1. tmp 7']",
         "//*[@id='toc']//x:a[@href='index.html#tmp-8' and text()='1.1. tmp 8']",
@@ -4658,28 +4964,30 @@ assert_convert_ast('header numbered argument',
         "//*[@id='toc']//x:a[@href='index.html#tmp-8' and text()='1. tmp 8']",
       ],
     },
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
   },
 );
-assert_convert_ast('header numbered ourbigbook.json',
-  header_numbered_input,
-  undefined,
+assert_lib('header: numbered ourbigbook.json',
   {
-    assert_xpath_main: [
-      "//x:blockquote//x:a[@href='#tmp-2' and text()='Section \"tmp 2\"']",
-      "//x:blockquote//x:a[@href='#tmp-4' and text()='Section \"tmp 4\"']",
-      "//x:blockquote//x:a[@href='#tmp-8' and text()='Section 1.1. \"tmp 8\"']",
-      "//*[@id='toc']//x:a[@href='#tmp-2' and text()='tmp 2']",
-      "//*[@id='toc']//x:a[@href='#tmp-3' and text()='tmp 3']",
-      "//*[@id='toc']//x:a[@href='#tmp-4' and text()='tmp 4']",
-      "//*[@id='toc']//x:a[@href='#tmp-5' and text()='tmp 5']",
-      "//*[@id='toc']//x:a[@href='#tmp-6' and text()='tmp 6']",
-      "//*[@id='toc']//x:a[@href='#tmp-7' and text()='1. tmp 7']",
-      "//*[@id='toc']//x:a[@href='#tmp-8' and text()='1.1. tmp 8']",
-      "//*[@id='toc']//x:a[@href='#tmp-2-2' and text()='tmp 2 2']",
-      "//*[@id='toc']//x:a[@href='#tmp-2-2-3' and text()='tmp 2 2 3']",
-    ],
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': header_numbered_input,
+    },
     assert_xpath: {
+      'index.html': [
+        "//x:blockquote//x:a[@href='#tmp-2' and text()='Section \"tmp 2\"']",
+        "//x:blockquote//x:a[@href='#tmp-4' and text()='Section \"tmp 4\"']",
+        "//x:blockquote//x:a[@href='#tmp-8' and text()='Section 1.1. \"tmp 8\"']",
+        "//*[@id='toc']//x:a[@href='#tmp-2' and text()='tmp 2']",
+        "//*[@id='toc']//x:a[@href='#tmp-3' and text()='tmp 3']",
+        "//*[@id='toc']//x:a[@href='#tmp-4' and text()='tmp 4']",
+        "//*[@id='toc']//x:a[@href='#tmp-5' and text()='tmp 5']",
+        "//*[@id='toc']//x:a[@href='#tmp-6' and text()='tmp 6']",
+        "//*[@id='toc']//x:a[@href='#tmp-7' and text()='1. tmp 7']",
+        "//*[@id='toc']//x:a[@href='#tmp-8' and text()='1.1. tmp 8']",
+        "//*[@id='toc']//x:a[@href='#tmp-2-2' and text()='tmp 2 2']",
+        "//*[@id='toc']//x:a[@href='#tmp-2-2-3' and text()='tmp 2 2 3']",
+      ],
       'tmp-6.html': [
         "//*[@id='toc']//x:a[@href='index.html#tmp-7' and text()='1. tmp 7']",
         "//*[@id='toc']//x:a[@href='index.html#tmp-8' and text()='1.1. tmp 8']",
@@ -4688,16 +4996,16 @@ assert_convert_ast('header numbered ourbigbook.json',
         "//*[@id='toc']//x:a[@href='index.html#tmp-8' and text()='1. tmp 8']",
       ],
     },
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
       ourbigbook_json: { h: { numbered: false } }
     }
   },
 );
-assert_lib('header splitDefault on ourbigbook.json',
+assert_lib('header: splitDefault on ourbigbook.json',
   {
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
       ourbigbook_json: { h: { splitDefault: true } }
     },
@@ -4724,7 +5032,7 @@ assert_lib('header splitDefault on ourbigbook.json',
     },
   },
 );
-assert_convert_ast('header file argument works',
+assert_lib_ast('header: file argument works',
   `= h1
 
 == path/to/my-file.txt
@@ -4749,7 +5057,6 @@ My youtube
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('h1')]}),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.txt')]}),
     a('P', [t('My txt')]),
     a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.png')]}),
@@ -4770,7 +5077,7 @@ My youtube
     },
   },
 );
-assert_convert_ast('header file argument that is the last header adds the preview',
+assert_lib_ast('header file argument that is the last header adds the preview',
   `= h1
 
 == path/to/my-file.png
@@ -4778,7 +5085,6 @@ assert_convert_ast('header file argument that is the last header adds the previe
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('h1')]}),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.png')]}),
     a('Image', undefined, {src: [t('path/to/my-file.png')]}),
   ],
@@ -4790,19 +5096,250 @@ assert_convert_ast('header file argument that is the last header adds the previe
     },
   },
 );
-assert_error('header file argument to a file that does not exist give an error',
+assert_error('header: file argument to a file that does not exist give an error',
   `= h1
 
 == dont-exist
 {file}
 `, 3, 1);
-assert_convert_ast('escape insane header at start of document',
+assert_lib_ast('header: escape insane header at start of document',
   '\\= a',
   [a('P', [t('= a')])],
 );
+assert_lib('header: toplevel argument',
+  {
+    convert_dir: true,
+    convert_opts: {
+      split_headers: true,
+    },
+    filesystem: {
+      'README.bigb': `= Index
+
+<h 1>[index to h 1]
+
+<h 1 1>[index to h 1 1]
+
+<h 1 1 1>[index to h 1 1 1]
+
+<image 1 1 1>[index to image 1 1 1]
+
+<h 1 1 1 1>[index to h 1 1 1 1]
+
+<h 1 1 1 1 1>[index to h 1 1 1 1 1]
+
+<h 1 1 1 1 1 1>[index to h 1 1 1 1 1 1]
+
+<h 2>[index to h 2]
+
+<h 2/h 2 1>[index to h 2 1]
+
+<h 2/h 2 1 1>[index to h 2 1 1]
+
+<h 2/h 2 1 1 1>[index to h 2 1 1 1]
+
+<notindex>[index to notindex]
+
+<notindex 1>[index to notindex 1]
+
+<notindex 1 1>[index to notindex 1 1]
+
+<notindex 1 1 1>[index to notindex 1 1 1]
+
+== h 1
+
+=== h 1 1
+{toplevel}
+
+==== h 1 1 1
+
+\\Image[asdf.png]{title=1 1 1}{check=0}
+
+\\Include[notindex]
+
+===== h 1 1 1 1
+
+====== h 1 1 1 1 1
+{toplevel}
+
+======= h 1 1 1 1 1 1
+
+======= h 1 1 1 1 1 2
+
+====== h 1 1 1 1 2
+
+==== h 1 1 2
+
+== h 2
+{scope}
+
+=== h 2 1
+
+==== h 2 1 1
+{toplevel}
+
+===== h 2 1 1 1
+`,
+      'notindex.bigb': `= Notindex
+
+== Notindex 1
+
+=== Notindex 1 1
+{toplevel}
+
+==== Notindex 1 1 1
+`
+    },
+    assert_xpath: {
+      'index.html': [
+        // Same as without toplevel sanity checks.
+        xpath_header(1, 'index'),
+        xpath_header(2, 'h-1'),
+        "//x:div[@class='p']//x:a[@href='#h-1' and text()='index to h 1']",
+        "//x:div[@class='p']//x:a[@href='#h-2' and text()='index to h 2']",
+        "//x:div[@class='p']//x:a[@href='#h-2/h-2-1' and text()='index to h 2 1']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='index to notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-1' and text()='index to notindex 1']",
+        "//x:div[@class='p']//x:a[@href='notindex-1-1.html' and text()='index to notindex 1 1']",
+        "//x:div[@class='p']//x:a[@href='notindex-1-1.html#notindex-1-1-1' and text()='index to notindex 1 1 1']",
+        "//*[@id='toc']//x:a[@href='#h-1' and text()='1. h 1']",
+        "//*[@id='toc']//x:a[@href='h-1-1.html' and text()='1.1. h 1 1']",
+        "//*[@id='toc']//x:a[@href='h-1-1.html#h-1-1-1' and text()='1.1.1. h 1 1 1']",
+
+        // Modified by toplevel.
+        "//x:div[@class='p']//x:a[@href='h-1-1.html' and text()='index to h 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1.html#h-1-1-1' and text()='index to h 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1.html#image-1-1-1' and text()='index to image 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1.html#h-1-1-1-1' and text()='index to h 1 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1-1-1-1.html' and text()='index to h 1 1 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1-1-1-1.html#h-1-1-1-1-1-1' and text()='index to h 1 1 1 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-2/h-2-1-1.html' and text()='index to h 2 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-2/h-2-1-1.html#h-2-1-1-1' and text()='index to h 2 1 1 1']",
+
+        //// How it would be without toplevel.
+        //xpath_header(3, 'h-1-1'),
+        //xpath_header(4, 'h-1-1-1'),
+        //xpath_header(5, 'h-1-1-1-1'),
+        //xpath_header(6, 'h-1-1-1-1-1'),
+        //xpath_header(7, 'h-1-1-1-1-1-1'),
+        //"//x:div[@class='p']//x:a[@href='#h-1-1' and text()='index to h 1 1']",
+        //"//x:div[@class='p']//x:a[@href='#h-1-1-1' and text()='index to h 1 1 1']",
+        //"//x:div[@class='p']//x:a[@href='#h-1-1-1-1' and text()='index to h 1 1 1 1']",
+        //"//x:div[@class='p']//x:a[@href='#h-1-1-1-1-1' and text()='index to h 1 1 1 1 1']",
+        //"//x:div[@class='p']//x:a[@href='#h-1-1-1-1-1-1' and text()='index to h 1 1 1 1 1 1']",
+      ],
+      'h-1-1.html': [
+        xpath_header(1, 'h-1-1'),
+        xpath_header(2, 'h-1-1-1'),
+        xpath_header(3, 'h-1-1-1-1'),
+      ],
+      'h-1-1-split.html': [
+        xpath_header(1, 'h-1-1'),
+      ],
+      'h-1-1-1-1-1.html': [
+        xpath_header(1, 'h-1-1-1-1-1'),
+        xpath_header(2, 'h-1-1-1-1-1-1'),
+      ],
+      'h-2/h-2-1-1.html': [
+        xpath_header(1, 'h-2-1-1'),
+        xpath_header(2, 'h-2-1-1-1'),
+      ],
+      'h-2/h-2-1-1-split.html': [
+        xpath_header(1, 'h-2-1-1'),
+      ],
+      'notindex.html': [
+        xpath_header(1, 'notindex'),
+        xpath_header(2, 'notindex-1'),
+      ],
+      'notindex-1-1.html': [
+        xpath_header(1, 'notindex-1-1'),
+        xpath_header(2, 'notindex-1-1-1'),
+      ],
+      'notindex-1-1-split.html': [
+        xpath_header(1, 'notindex-1-1'),
+      ],
+    },
+    assert_not_xpath: {
+      'index.html': [
+        xpath_header(4, 'h-1-1-1'),
+        xpath_header(5, 'h-1-1-1-1'),
+        xpath_header(6, 'h-1-1-1-1-1'),
+        xpath_header(7, 'h-1-1-1-1-1-1'),
+      ],
+      'h-1-1-split.html': [
+        xpath_header(2, 'h-1-1-1'),
+        xpath_header(3, 'h-1-1-1-1'),
+      ],
+      'h-2/h-2-1-1-split.html': [
+        xpath_header(2, 'h-2-1-1-1'),
+      ],
+      'notindex.html': [
+        xpath_header(3, 'notindex-1-1'),
+        xpath_header(4, 'notindex-1-1-1'),
+      ],
+      'notindex-1-1-split.html': [
+        xpath_header(2, 'notindex-1-1-1'),
+      ],
+    }
+  },
+);
+assert_lib_ast('header: id of first header comes from the file name if not index',
+  // https://docs.ourbigbook.com#the-id-of-the-first-header-is-derived-from-the-filename
+  `= abc
+
+\\x[notindex]
+`,
+  [
+    a('H', undefined,
+      {
+        level: [t('1')],
+        title: [t('abc')],
+      },
+      {
+        id: 'notindex',
+      }
+    ),
+    a('P', [
+      a('x', undefined, {
+        full: [t('0')],
+        href: [t('notindex')],
+      }),
+    ]),
+  ],
+  {
+    input_path_noext: 'notindex'
+  },
+);
+assert_lib_ast('header: id of first header comes from header title if index',
+  `= abc
+
+\\x[abc]
+`,
+  [
+    a('H', undefined,
+      {
+        level: [t('1')],
+        title: [t('abc')],
+      },
+      {
+        id: 'abc',
+      }
+    ),
+    a('P', [
+      a('x', undefined, {
+        full: [t('0')],
+        href: [t('abc')],
+      }),
+    ]),
+  ],
+  {
+    convert_opts: {
+      input_path: ourbigbook.INDEX_BASENAME_NOEXT + '.' + ourbigbook.OURBIGBOOK_EXT
+    }
+  },
+);
 
 // Code.
-assert_convert_ast('code inline sane',
+assert_lib_ast('code inline sane',
   'a \\c[b c] d\n',
   [
     a('P', [
@@ -4812,7 +5349,7 @@ assert_convert_ast('code inline sane',
     ]),
   ],
 );
-assert_convert_ast('code inline insane simple',
+assert_lib_ast('code inline insane simple',
   'a `b c` d\n',
   [
     a('P', [
@@ -4823,7 +5360,7 @@ assert_convert_ast('code inline insane simple',
   ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/171
-assert_convert_ast('code inline insane with only a backslash',
+assert_lib_ast('code inline insane with only a backslash',
   'a `\\` d\n',
   [
     a('P', [
@@ -4833,11 +5370,11 @@ assert_convert_ast('code inline insane with only a backslash',
     ]),
   ]
 );
-assert_convert_ast('code inline insane escape backtick',
+assert_lib_ast('code inline insane escape backtick',
   'a \\`b c\n',
   [a('P', [t('a `b c')])]
 );
-assert_convert_ast('code block literal sane',
+assert_lib_ast('code block literal sane',
   `a
 
 \\C[[
@@ -4853,7 +5390,7 @@ d
     a('P', [t('d')]),
   ]
 );
-assert_convert_ast('code block insane',
+assert_lib_ast('code block insane',
   `a
 
 \`\`
@@ -4869,7 +5406,7 @@ d
     a('P', [t('d')]),
   ]
 );
-assert_convert_ast('code with id has caption',
+assert_lib_ast('code with id has caption',
   `\`\`
 aa
 \`\`
@@ -4879,12 +5416,12 @@ aa
     a('C', [t('aa')], { id: [t('bb')] }, { id: 'bb'} ),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
 );
-assert_convert_ast('code with title has caption',
+assert_lib_ast('code with title has caption',
   `\`\`
 aa
 \`\`
@@ -4894,12 +5431,12 @@ aa
     a('C', [t('aa')], { title: [t('b b')] }, { id: 'code-b-b'} ),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
 );
-assert_convert_ast('code with description has caption',
+assert_lib_ast('code with description has caption',
   `\`\`
 aa
 \`\`
@@ -4909,12 +5446,12 @@ aa
     a('C', [t('aa')], { description: [t('b b')] }, { id: '_1'} ),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
 );
-assert_convert_ast('code without id, title, nor description does not have caption',
+assert_lib_ast('code without id, title, nor description does not have caption',
   `\`\`
 aa
 \`\`
@@ -4923,12 +5460,12 @@ aa
     a('C', [t('aa')], {}, { id: '_1'} ),
   ],
   {
-    assert_not_xpath_main: [
+    assert_not_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
 )
-assert_convert_ast('code without id, title, nor description does not increment the code count',
+assert_lib_ast('code without id, title, nor description does not increment the code count',
   `\`\`
 aa
 \`\`
@@ -4949,24 +5486,24 @@ cc
     a('C', [t('cc')], { id: [t('22')] }, { id: '22'} ),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Code 1']",
       "//x:span[@class='caption-prefix' and text()='Code 2']",
     ],
-    assert_not_xpath_main: [
+    assert_not_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Code 3']",
     ],
   },
 )
 
 // lint h-parent
-assert_no_error('header parent works with ourbigbook.json lint h-parent equal parent and no includes',
+assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal parent and no includes',
   `= 1
 
 = 2
 {parent=1}
 `,
-  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
+  { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
 );
 assert_error('header number fails with ourbigbook.json lint h-parent = parent',
   `= 1
@@ -4974,14 +5511,14 @@ assert_error('header number fails with ourbigbook.json lint h-parent = parent',
 == 2
 `,
   3, 1, undefined,
-  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
+  { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
 );
-assert_no_error('header number works with ourbigbook.json lint h-parent = number',
+assert_lib_stdin('header number works with ourbigbook.json lint h-parent = number',
   `= 1
 
 == 2
 `,
-  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
+  { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
 );
 assert_error('header parent fails with ourbigbook.json lint h-parent = number',
   `= 1
@@ -4990,9 +5527,9 @@ assert_error('header parent fails with ourbigbook.json lint h-parent = number',
 {parent=1}
 `,
   3, 1, undefined,
-  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
+  { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
 );
-assert_no_error('header parent works with ourbigbook.json lint h-parent equal parent and includes with parent',
+assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal parent and includes with parent',
   `= 1
 
 = 2
@@ -5001,7 +5538,7 @@ assert_no_error('header parent works with ourbigbook.json lint h-parent equal pa
 \\Include[include-two-levels-parent]
 `,
   {
-    extra_convert_opts: {
+    convert_opts: {
       ourbigbook_json: { lint: { 'h-parent': 'parent', } },
       embed_includes: true,
     }
@@ -5017,7 +5554,7 @@ assert_error('header parent fails with ourbigbook.json lint h-parent equal paren
 `,
   5, 1, 'include-two-levels.bigb',
   {
-    extra_convert_opts: {
+    convert_opts: {
       ourbigbook_json: { lint: { 'h-parent': 'parent', } },
       embed_includes: true,
     }
@@ -5031,15 +5568,15 @@ assert_error('lint h-tag child failure',
 == 2
 `,
   2, 1, undefined,
-  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'child', } } } }
+  { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'child', } } } }
 );
-assert_no_error('lint h-tag child pass',
+assert_lib_stdin('lint h-tag child pass',
   `= 1
 {child=2}
 
 == 2
 `,
-  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'child', } } } }
+  { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'child', } } } }
 );
 assert_error('lint h-tag tag failure',
   `= 1
@@ -5048,31 +5585,31 @@ assert_error('lint h-tag tag failure',
 == 2
 `,
   2, 1, undefined,
-  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
+  { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
 );
-assert_no_error('lint h-tag tag pass',
+assert_lib_stdin('lint h-tag tag pass',
   `= 1
 {tag=2}
 
 == 2
 `,
-  { extra_convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
+  { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
 );
 
 // Word counts.
-assert_convert_ast('word count simple',
+assert_lib_ast('word count simple',
   `= h1
 
 11 22 33
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='3']",
     ],
   }
 );
-assert_convert_ast('word count x',
+assert_lib_ast('word count x',
   `= h1
 
 I like \\x[my-h2]
@@ -5081,13 +5618,13 @@ I like \\x[my-h2]
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       // TODO the desired value is 4. 2 is not terrible though, better than 3 if we were considering the href.
       "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='2']",
     ],
   }
 );
-assert_convert_ast('word count descendant in source',
+assert_lib_ast('word count descendant in source',
   `= h1
 
 11 22 33
@@ -5098,7 +5635,7 @@ assert_convert_ast('word count descendant in source',
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='3']",
       "//*[contains(@class, 'h-nav')]//*[@class='word-count-descendant' and text()='5']",
     ],
@@ -5107,7 +5644,7 @@ assert_convert_ast('word count descendant in source',
         "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='2']",
       ]
     },
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
   }
 );
 assert_lib('word count descendant from include without embed includes',
@@ -5135,58 +5672,8 @@ assert_lib('word count descendant from include without embed includes',
 );
 
 // Toc
-assert_convert_ast('second explicit toc is removed',
-  `a
-
-\\Toc
-
-b
-
-\\Toc
-`,
-[
-  a('P', [t('a')]),
-  a('Toc'),
-  a('P', [t('b')]),
-]
-);
-assert_convert_ast('implicit toc after explcit toc is removed',
-  `= aa
-
-bb
-
-\\Toc
-
-cc
-
-== dd
-`,
-  [
-    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
-    a('P', [t('bb')]),
-    a('Toc'),
-    a('P', [t('cc')]),
-    a('H', undefined, {level: [t('2')], title: [t('dd')]}),
-]
-);
-assert_convert_ast('explicit toc after implicit toc is removed',
-  `= aa
-
-bb
-
-== cc
-
-\\Toc
-`,
-  [
-    a('H', undefined, {level: [t('1')], title: [t('aa')]}),
-    a('P', [t('bb')]),
-    a('Toc'),
-    a('H', undefined, {level: [t('2')], title: [t('cc')]}),
-]
-);
 // https://github.com/cirosantilli/ourbigbook/issues/143
-assert_convert_ast('header with insane paragraph in the content does not blow up',
+assert_lib_ast('header with insane paragraph in the content does not blow up',
   `\\H[1][a
 
 b]
@@ -5203,20 +5690,20 @@ b]
     )
   ]
 );
-assert_convert_ast('xss: H id',
+assert_lib_ast('xss: H id',
   `= tmp
 {id=&\\<>"'}
 `,
   undefined,
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       "//x:div[contains(@class, \"h \") and @id=concat('&<>\"', \"'\")]",
     ]
   }
 );
 
 // Table of contents
-assert_convert_ast('split headers have correct table of contents',
+assert_lib_ast('toc: split headers have correct table of contents',
   `= h1
 
 == h1 1
@@ -5229,14 +5716,13 @@ assert_convert_ast('split headers have correct table of contents',
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('h1')]}),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('h1 1')]}),
     a('H', undefined, {level: [t('2')], title: [t('h1 2')]}),
     a('H', undefined, {level: [t('3')], title: [t('h1 2 1')]}),
     a('H', undefined, {level: [t('4')], title: [t('h1 2 1 1')]}),
   ],
   {
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       // There is a self-link to the Toc.
       "//*[@id='toc']",
       "//*[@id='toc']//x:a[@href='#toc' and text()='Table of contents']",
@@ -5292,20 +5778,20 @@ assert_convert_ast('split headers have correct table of contents',
       // as it would just be empty and waste space.
       'h1-2-1-1.html': ["//*[text()='Table of contents']"],
     },
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     input_path_noext: 'notindex',
   },
 );
-assert_error('toc is a reserved id',
+assert_error('toc: toc is a reserved id',
   `= h1
 
 == toc
 `,
   3, 1);
-assert_lib('table of contents contains included headers numbered without embed includes',
+assert_lib('toc: table of contents contains included headers numbered without embed includes',
   {
     convert_dir: true,
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     filesystem: {
       'notindex.bigb': `= Notindex
 
@@ -5350,7 +5836,7 @@ assert_lib('table of contents contains included headers numbered without embed i
     },
   },
 );
-assert_lib('table of contents respects numbered=0 of included headers',
+assert_lib('toc: table of contents respects numbered=0 of included headers',
   {
     convert_dir: true,
     filesystem: {
@@ -5375,7 +5861,7 @@ assert_lib('table of contents respects numbered=0 of included headers',
     },
   },
 );
-assert_lib('table of contents include placeholder header has no number when under numbered=0',
+assert_lib('toc: table of contents include placeholder header has no number when under numbered=0',
   {
     convert_dir: true,
     filesystem: {
@@ -5403,7 +5889,7 @@ assert_lib('table of contents include placeholder header has no number when unde
     },
   },
 );
-assert_lib('table of contents does not show synonyms of included headers',
+assert_lib('toc: table of contents does not show synonyms of included headers',
   {
     convert_dir: true,
     filesystem: {
@@ -5421,24 +5907,24 @@ assert_lib('table of contents does not show synonyms of included headers',
 == Notindex2 h2 2
 `,
     },
-    assert_xpath: {
-      'notindex.html': [
-        "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
-        "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
-        "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2-2' and text()='1.2. Notindex2 h2 2']",
-      ],
-    },
-    assert_not_xpath: {
-      'notindex.html': [
-        "//*[@id='toc']//x:a[contains(text(),'synonym')]",
-      ],
-    },
+    //assert_xpath: {
+    //  'notindex.html': [
+    //    "//*[@id='toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
+    //    "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
+    //    "//*[@id='toc']//x:a[@href='notindex2.html#notindex2-h2-2' and text()='1.2. Notindex2 h2 2']",
+    //  ],
+    //},
+    //assert_not_xpath: {
+    //  'notindex.html': [
+    //    "//*[@id='toc']//x:a[contains(text(),'synonym')]",
+    //  ],
+    //},
   },
 );
-assert_lib('header numbered=0 in ourbigbook.json works across source files and on table of contents',
+assert_lib('toc: header numbered=0 in ourbigbook.json works across source files and on table of contents',
   {
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
       ourbigbook_json: { h: { numbered: false } }
     },
@@ -5466,11 +5952,11 @@ assert_lib('header numbered=0 in ourbigbook.json works across source files and o
     },
   },
 );
-assert_lib('split header with an include and no headers has a single table of contents',
+assert_lib('toc: split header with an include and no headers has a single table of contents',
   // At 074bacbdd3dc9d3fa8dafec74200043f42779bec was getting two.
   {
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       split_headers: true,
       ourbigbook_json: { h: { numbered: false } }
     },
@@ -5489,10 +5975,10 @@ assert_lib('split header with an include and no headers has a single table of co
     },
   },
 );
-assert_lib('lib: toplevel scope gets removed on table of contents of included headers',
+assert_lib('toc: lib: toplevel scope gets removed on table of contents of included headers',
   {
     convert_dir: true,
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     filesystem: {
       'index.bigb': `= Index
 
@@ -5520,7 +6006,7 @@ assert_lib('lib: toplevel scope gets removed on table of contents of included he
   },
 );
 
-assert_convert_ast('the toc is added before the first h1 when there are multiple toplevel h1',
+assert_lib_ast('toc: the toc is added before the first h1 when there are multiple toplevel h1',
   `aa
 
 = h1
@@ -5529,12 +6015,50 @@ assert_convert_ast('the toc is added before the first h1 when there are multiple
 `,
   [
     a('P', [t('aa')]),
-    a('Toc'),
     a('H', undefined, {level: [t('1')], title: [t('h1')]}),
     a('H', undefined, {level: [t('1')], title: [t('h2')]}),
   ],
+  {
+    assert_xpath_stdout: [
+      "//x:div[@class='p' and text()='aa']",
+      "//*[@id='toc']",
+      xpath_header(1, 'h1', undefined, { hasToc: true }),
+      xpath_header(1, 'h2', undefined, { hasToc: false }),
+    ],
+  }
 )
-assert_lib('ancestors list shows after toc on toplevel',
+assert_lib_ast('toc: the toc is added before the first h2 when there is a single h1 and a single h2',
+  `= h1
+
+== h2
+`,
+  undefined,
+  {
+    assert_xpath_stdout: [
+      "//*[@id='toc']",
+      xpath_header(1, 'h1', undefined, { hasToc: false }),
+      xpath_header(2, 'h2', undefined, { hasToc: true }),
+    ],
+  }
+)
+assert_lib_ast('toc: the toc is added before the first h2 when there is a single h1 and a two h2',
+  `= h1
+
+== h2
+
+== h2 2
+`,
+  undefined,
+  {
+    assert_xpath_stdout: [
+      "//*[@id='toc']",
+      xpath_header(1, 'h1', undefined, { hasToc: false }),
+      xpath_header(2, 'h2', undefined, { hasToc: true }),
+      xpath_header(2, 'h2-2', undefined, { hasToc: false }),
+    ],
+  }
+)
+assert_lib('toc: ancestors list shows after toc on toplevel',
   {
     filesystem: {
       'index.bigb': `= Index
@@ -5559,7 +6083,7 @@ assert_lib('ancestors list shows after toc on toplevel',
 `
     },
     convert_dir: true,
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     assert_xpath: {
       'h2.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
@@ -5594,28 +6118,44 @@ assert_lib('ancestors list shows after toc on toplevel',
   }
 );
 
-// Math. Minimal testing since this is mostly factored out with code tests.
-assert_convert_ast('math inline sane',
+// Math.
+// \M
+// Minimal testing since this is mostly factored out with code tests.
+assert_lib_ast('math: inline sane',
   '\\m[[\\sqrt{1 + 1}]]\n',
   [a('P', [a('m', [t('\\sqrt{1 + 1}')])])],
 );
-assert_convert_ast('math inline insane simple',
+assert_lib_ast('math: inline insane simple',
   '$\\sqrt{1 + 1}$\n',
   [a('P', [a('m', [t('\\sqrt{1 + 1}')])])],
 );
-assert_convert_ast('math inline escape dollar',
+assert_lib_ast('math: inline escape dollar',
   'a \\$b c\n',
   [a('P', [t('a $b c')])],
 );
-assert_no_error('math block sane',
+assert_lib_ast('math: block sane',
   '\\M[[\\sqrt{1 + 1}]]',
   [a('M', [t('\\sqrt{1 + 1}')])],
 );
-assert_no_error('math block insane',
+assert_lib_ast('math: block insane',
   '$$\\sqrt{1 + 1}$$',
   [a('M', [t('\\sqrt{1 + 1}')])],
 );
-assert_no_error('math block with comment on last line',
+assert_lib_stdin('math: define and use in another block with split headers',
+  // Can lead to double redefinition errors if we are not careful on implementation.
+  `$$
+  \\newcommand{\\mycmd}[0]{hello}
+  $$
+
+$$
+\\mycmd
+$$
+`,
+  {
+    convert_opts: { split_headers: true },
+  }
+)
+assert_lib_stdin('math block with comment on last line',
   // KaTeX parse error: LaTeX-incompatible input and strict mode is set to 'error': % comment has no terminating newline; LaTeX would fail because of commenting the end of math mode (e.g. $) [commentAtEnd]
   `$$
 % my comment
@@ -5625,7 +6165,7 @@ $$
 assert_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 
 // Include.
-const include_opts = {extra_convert_opts: {
+const include_opts = {convert_opts: {
   embed_includes: true,
 }};
 const include_two_levels_ast_args = [
@@ -5634,7 +6174,7 @@ const include_two_levels_ast_args = [
   a('H', undefined, {level: [t('3')], title: [t('gg')]}),
   a('P', [t('hh')]),
 ]
-assert_convert_ast('include simple with paragraph with embed',
+assert_lib_ast('include simple with paragraph with embed',
   `= aa
 
 bb
@@ -5646,7 +6186,6 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
     a('P', [t('dd')]),
     a('H', undefined, {level: [t('2')], title: [t('ee')]}),
@@ -5654,7 +6193,7 @@ bb
   ],
   include_opts
 );
-assert_convert_ast('include parent argument with embed',
+assert_lib_ast('include parent argument with embed',
   `= h1
 
 == h2
@@ -5663,7 +6202,6 @@ assert_convert_ast('include parent argument with embed',
 `,
   [
     a('H', undefined, {level: [t('1')], title: [t('h1')]}),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('h2')]}),
     // This is level 2, not three, since it's parent is h1.
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
@@ -5682,7 +6220,7 @@ assert_error('include parent argument to old ID fails gracefully',
 `,
   7, 30, undefined, include_opts,
 );
-assert_convert_ast('include simple without parent in the include with embed',
+assert_lib_ast('include simple without parent in the include with embed',
   `= aa
 
 bb
@@ -5692,7 +6230,6 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('ee')]}),
     a('P', [t('ff')]),
     a('H', undefined, {level: [t('3')], title: [t('gg')]}),
@@ -5700,7 +6237,7 @@ bb
   ],
   include_opts
 );
-assert_convert_ast('include simple with parent in the include with embed',
+assert_lib_ast('include simple with parent in the include with embed',
   `= aa
 
 bb
@@ -5710,7 +6247,6 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('Include two levels parent')]}),
     a('P', [t('h1 content')]),
     a('H', undefined, {level: [t('3')], title: [t('Include two levels parent h2')]}),
@@ -5718,7 +6254,7 @@ bb
   ],
   include_opts
 );
-assert_convert_ast('include simple with paragraph with no embed',
+assert_lib_ast('include simple with paragraph with no embed',
   `= Notindex
 
 bb
@@ -5728,7 +6264,6 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('Notindex')]}),
     a('P', [t('bb')]),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('Notindex2')]}),
     a('P', [
       a(
@@ -5740,12 +6275,12 @@ bb
   ],
   {
     convert_before: ['notindex2.bigb'],
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     filesystem: {
       'notindex2.bigb': `= Notindex2
 `,
     },
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       xpath_header(1, 'notindex', "x:a[@href='notindex-split.html' and text()='Notindex']"),
       xpath_header(2, 'notindex2', "x:a[@href='notindex2.html' and text()='1. Notindex2']"),
     ],
@@ -5753,7 +6288,7 @@ bb
   },
 );
 // https://github.com/cirosantilli/ourbigbook/issues/74
-assert_convert_ast('cross reference to embed include header',
+assert_lib_ast('cross reference to embed include header',
   `= aa
 
 \\x[include-two-levels]
@@ -5770,19 +6305,18 @@ assert_convert_ast('cross reference to embed include header',
     a('P', [
       a('x', undefined, {href: [t('gg')]}),
     ]),
-    a('Toc'),
   ].concat(include_two_levels_ast_args),
   Object.assign({
-      assert_xpath_main: [
+      assert_xpath_stdout: [
         "//x:div[@class='p']//x:a[@href='#include-two-levels' and text()='ee']",
         "//x:div[@class='p']//x:a[@href='#gg' and text()='gg']",
       ],
-      extra_convert_opts: { split_headers: true },
+      convert_opts: { split_headers: true },
     },
     include_opts
   ),
 );
-assert_convert_ast('include multilevel with paragraph',
+assert_lib_ast('include multilevel with paragraph',
   `= aa
 
 bb
@@ -5794,7 +6328,6 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
-    a('Toc'),
   ].concat(include_two_levels_ast_args)
   .concat([
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
@@ -5803,7 +6336,7 @@ bb
   include_opts
 );
 // https://github.com/cirosantilli/ourbigbook/issues/35
-assert_convert_ast('include simple no paragraph',
+assert_lib_ast('include simple no paragraph',
   `= aa
 
 bb
@@ -5814,7 +6347,6 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
-    a('Toc'),
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
     a('P', [t('dd')]),
     a('H', undefined, {level: [t('2')], title: [t('ee')]}),
@@ -5822,7 +6354,7 @@ bb
   ],
   include_opts
 );
-assert_convert_ast('include multilevel no paragraph',
+assert_lib_ast('include multilevel no paragraph',
   `= aa
 
 bb
@@ -5833,7 +6365,6 @@ bb
   [
     a('H', undefined, {level: [t('1')], title: [t('aa')]}),
     a('P', [t('bb')]),
-    a('Toc'),
   ].concat(include_two_levels_ast_args)
   .concat([
     a('H', undefined, {level: [t('2')], title: [t('cc')]}),
@@ -5863,7 +6394,7 @@ assert_error('include circular dependency 1 <-> 2',
   //3, 1, 'include-circular.bigb',
   undefined, undefined, undefined,
   {
-    extra_convert_opts: {
+    convert_opts: {
       embed_includes: true,
       input_path_noext: 'notindex',
     },
@@ -5893,7 +6424,7 @@ assert_error('include circular dependency 1 -> 2 <-> 3',
   undefined, undefined, undefined,
   ourbigbook.clone_and_set(include_opts, 'has_error', true)
 );
-assert_convert_ast('include without parent header with embed includes',
+assert_lib_ast('include without parent header with embed includes',
   // https://github.com/cirosantilli/ourbigbook/issues/73
   `\\Include[include-one-level-1]
 \\Include[include-one-level-2]
@@ -5907,17 +6438,17 @@ assert_convert_ast('include without parent header with embed includes',
     a('P', [t('ff')]),
   ],
   {
-    //assert_xpath_main: [
+    //assert_xpath_stdout: [
     //  // TODO getting corrupt <hNaN>
     //  xpath_header(1, 'include-one-level-1'),
     //  xpath_header(1, 'include-one-level-2'),
     //],
-    extra_convert_opts: {
+    convert_opts: {
       embed_includes: true,
     }
   },
 );
-assert_convert_ast('include without parent header without embed includes',
+assert_lib_ast('include without parent header without embed includes',
   // https://github.com/cirosantilli/ourbigbook/issues/73
   `aa
 
@@ -5926,7 +6457,6 @@ assert_convert_ast('include without parent header without embed includes',
 `,
   [
     a('P', [t('aa')]),
-    a('Toc'),
     a('H', undefined, {level: [t('1')], title: [t('cc')]}),
     a('P', [
       a(
@@ -5949,7 +6479,7 @@ assert_convert_ast('include without parent header without embed includes',
       'include-one-level-1.bigb',
       'include-one-level-2.bigb',
     ],
-    assert_xpath_main: [
+    assert_xpath_stdout: [
       // TODO getting corrupt <hNaN>
       //xpath_header(1, 'include-one-level-1'),
       //xpath_header(1, 'include-one-level-2'),
@@ -6091,7 +6621,7 @@ assert_lib('subdir index.bigb outputs to subdir without trailing slash with html
 `,
     },
     convert_dir: true,
-    extra_convert_opts: { html_x_extension: true },
+    convert_opts: { html_x_extension: true },
     assert_xpath: {
       'subdir.html': [
         "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
@@ -6115,7 +6645,7 @@ assert_lib('subdir index.bigb outputs to subdir without trailing slash with html
 `,
     },
     convert_dir: true,
-    extra_convert_opts: { html_x_extension: false },
+    convert_opts: { html_x_extension: false },
     assert_xpath: {
       'subdir.html': [
         "//x:a[@href='subdir/notindex' and text()='link to subdir notindex']",
@@ -6149,7 +6679,7 @@ assert_lib('subdir index.bigb removes leading @ from links with the x_remove_lea
 `,
     },
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       x_remove_leading_at: true,
       x_leading_at_to_web: false,
     },
@@ -6227,7 +6757,7 @@ assert_lib('tags show on embed include',
 `,
     },
     convert_dir: true,
-    extra_convert_opts: {
+    convert_opts: {
       embed_includes: true,
     },
     assert_xpath: {
@@ -6239,7 +6769,7 @@ assert_lib('tags show on embed include',
 );
 
 // OurBigBookExample
-assert_convert_ast('OurBigBookExample basic',
+assert_lib_ast('OurBigBookExample basic',
   `\\OurBigBookExample[[aa \\i[bb] cc]]`,
   [
     // TODO get rid of this paragaraph.
@@ -6276,7 +6806,7 @@ assert_lib('OurBigBookExample that links to id in another file',
 
 // ID auto-generation.
 // https://docs.ourbigbook.com/automatic-id-from-title
-assert_convert_ast('id autogeneration without title',
+assert_lib_ast('id autogeneration without title',
   '\\P[aa]\n',
   [a('P', [t('aa')], {}, {id: '_1'})],
 );
@@ -6293,7 +6823,7 @@ assert_error('id conflict with later autogenerated id',
   3, 1
 );
 // https://github.com/cirosantilli/ourbigbook/issues/4
-assert_convert_ast('id autogeneration nested',
+assert_lib_ast('id autogeneration nested',
   '\\Q[\\P[aa]]\n\n\\P[bb]\n',
   [
     a('Q', [
@@ -6305,7 +6835,7 @@ assert_convert_ast('id autogeneration nested',
     a('P', [t('bb')], {}, {id: '_3'}),
   ],
 );
-assert_convert_ast('id autogeneration unicode normalize',
+assert_lib_ast('id autogeneration unicode normalize',
   `= 0A.你ÉŁŒy++z
 
 \\x[0a-你eloey-plus-plus-z]
@@ -6317,7 +6847,7 @@ assert_convert_ast('id autogeneration unicode normalize',
     ])
   ],
 );
-assert_convert_ast('id autogeneration unicode no normalize',
+assert_lib_ast('id autogeneration unicode no normalize',
   `= 0A.你ÉŁŒy++z
 
 \\x[0a-你éłœy-z]
@@ -6328,9 +6858,9 @@ assert_convert_ast('id autogeneration unicode no normalize',
       a('x', undefined, {href: [t('0a-你éłœy-z')]})
     ])
   ],
-  { extra_convert_opts: { ourbigbook_json: { id: { normalize: { latin: false, punctuation: false } } } } }
+  { convert_opts: { ourbigbook_json: { id: { normalize: { latin: false, punctuation: false } } } } }
 );
-assert_convert_ast('id autogeneration with disambiguate',
+assert_lib_ast('id autogeneration with disambiguate',
   `= ab
 {disambiguate=cd}
 
@@ -6347,7 +6877,7 @@ assert_error('id autogeneration with undefined reference in title fails graceful
   `= \\x[reserved_undefined]
 `, 1, 3);
 // https://github.com/cirosantilli/ourbigbook/issues/45
-assert_convert_ast('id autogeneration with nested elements does an id conversion and works',
+assert_lib_ast('id autogeneration with nested elements does an id conversion and works',
   `= ab \`cd\` ef
 
 \\x[ab-cd-ef]
@@ -6387,7 +6917,7 @@ assert_error('id conflict with previous id on the same file',
     input_path_noext: 'index',
   },
 );
-assert_convert_ast('id conflict with id on another file simple',
+assert_lib_ast('id conflict with id on another file simple',
   // https://github.com/cirosantilli/ourbigbook/issues/201
   `= index
 
@@ -6409,7 +6939,7 @@ assert_convert_ast('id conflict with id on another file simple',
     input_path_noext: 'index'
   }
 );
-assert_convert_ast('id conflict with id on another file where conflict header has a child header',
+assert_lib_ast('id conflict with id on another file where conflict header has a child header',
   // Bug introduced at ef9e2445654300c4ac41e1d06d3d2a1889dd0554
   `= tmp
 
@@ -6439,7 +6969,7 @@ assert_equal('title_to_id with hyphen', ourbigbook.title_to_id('.0A. - z.a Z..')
 assert_equal('title_to_id with unicode chars', ourbigbook.title_to_id('0A.你好z'), '0a-你好z');
 
 // Toplevel.
-assert_convert_ast('toplevel arguments',
+assert_lib_ast('toplevel: arguments',
   `{title=aaa}
 
 bbb
@@ -6457,18 +6987,18 @@ assert_error('explicit toplevel macro',
 
 // split_headers
 // A split headers hello world.
-assert_convert_ast('one paragraph implicit split headers',
+assert_lib_ast('one paragraph implicit split headers',
   'ab\n',
   [a('P', [t('ab')])],
   {
-    extra_convert_opts: { split_headers: true },
+    convert_opts: { split_headers: true },
     input_path_noext: 'notindex',
   }
 );
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!
-assert_convert_ast('backslash without macro', '\\ a', [a('P', [t(' a')])],);
+assert_lib_ast('backslash without macro', '\\ a', [a('P', [t(' a')])],);
 assert_error('unknown macro without args', '\\reserved_undefined', 1, 1);
 assert_error('unknown macro with positional arg', '\\reserved_undefined[aa]', 1, 1);
 assert_error('unknown macro with named arg', '\\reserved_undefined{aa=bb}', 1, 1);
@@ -6500,15 +7030,15 @@ it(`api: x does not blow up without ID provider`, async function () {
 
 // TODO
 const bigb_input = fs.readFileSync(path.join(__dirname, 'test_bigb_output.bigb'), ourbigbook_nodejs_webpack_safe.ENCODING)
-assert_convert_ast('bigb output: format is unchanged for the preferred format',
+assert_lib_ast('bigb output: format is unchanged for the preferred format',
   // https://github.com/cirosantilli/ourbigbook/issues/83
   bigb_input,
   undefined,
   {
-    assert_bigb_main: bigb_input,
+    assert_bigb_stdout: bigb_input,
   },
 );
-assert_convert_ast('bigb output: converts plaintext arguments with escapes to literal arguments when possible',
+assert_lib_ast('bigb output: converts plaintext arguments with escapes to literal arguments when possible',
   `\\Q[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
 
 \\Q[\\* *]
@@ -6531,7 +7061,7 @@ assert_convert_ast('bigb output: converts plaintext arguments with escapes to li
 `,
   undefined,
   {
-    assert_bigb_main: `\\Q[[\\ [ ] { } < \` $]]
+    assert_bigb_stdout: `\\Q[[\\ [ ] { } < \` $]]
 
 \\Q[[* *]]
 
@@ -6553,7 +7083,7 @@ assert_convert_ast('bigb output: converts plaintext arguments with escapes to li
 `
   },
 );
-assert_convert_ast('bigb output: converts sane refs to insane ones',
+assert_lib_ast('bigb output: converts sane refs to insane ones',
   `= Animal
 
 \\x[black-cat]
@@ -6566,7 +7096,7 @@ assert_convert_ast('bigb output: converts sane refs to insane ones',
 `,
   undefined,
   {
-    assert_bigb_main: `= Animal
+    assert_bigb_stdout: `= Animal
 
 <black cat>
 
@@ -6578,7 +7108,7 @@ assert_convert_ast('bigb output: converts sane refs to insane ones',
 `
   },
 );
-assert_convert_ast('bigb output: adds newlines to start and end of multiline arguments',
+assert_lib_ast('bigb output: adds newlines to start and end of multiline arguments',
   `\\Q[Positional oneline first]
 
 \\Q[Positional multiline first
@@ -6595,7 +7125,7 @@ Named multiline second}
 `,
   undefined,
   {
-    assert_bigb_main: `\\Q[Positional oneline first]
+    assert_bigb_stdout: `\\Q[Positional oneline first]
 
 \\Q[
 Positional multiline first
@@ -6618,7 +7148,7 @@ Named multiline second
     }
   },
 );
-assert_convert_ast('bigb output: nested sane list followed by paragraph',
+assert_lib_ast('bigb output: nested sane list followed by paragraph',
   // This was leading to an AST change because the input has inner list as
   // `ccc\n` but the output only `ccc`. But lazy to fix now, what we want is the
   // input to parse as `ccc` without the `\n`: https://github.com/cirosantilli/ourbigbook/issues/245
@@ -6633,7 +7163,7 @@ ddd
 `,
   undefined,
   {
-    assert_bigb_main: `aaa
+    assert_bigb_stdout: `aaa
 
 * bbb
   * ccc
@@ -6682,7 +7212,7 @@ assert_lib('bigb output: unused ID check does not blow up across files with magi
 `,
     },
     convert_dir: true,
-    extra_convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
+    convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
   }
 );
 assert_lib('bigb output: x uses text conversion as the target link',
@@ -7197,7 +7727,7 @@ assert_error('bigb output: x to undefined does not blow up',
   `<asdf>`,
   1, 2, undefined,
   {
-    extra_convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
+    convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
   }
 )
 assert_error('bigb output: undefined tag does not blow up',
@@ -7205,7 +7735,7 @@ assert_error('bigb output: undefined tag does not blow up',
 {tag=Asdf}`,
   2, 1, undefined,
   {
-    extra_convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
+    convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
   }
 )
 assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
@@ -7262,7 +7792,7 @@ assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
 
 // ourbigbook executable tests.
 assert_cli(
-  'cli: input from stdin produces output on stdout',
+  'input from stdin produces output on stdout',
   {
     stdin: 'aabb',
     expect_not_exists: ['out'],
@@ -7270,7 +7800,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: input from file and --stdout produces output on stdout',
+  'input from file and --stdout produces output on stdout',
   {
     args: ['--stdout', 'notindex.bigb'],
     assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
@@ -7279,7 +7809,7 @@ assert_cli(
 );
 assert_cli(
   // Was blowing up on file existence check.
-  'cli: input from stdin with relative link does not blow up',
+  'input from stdin with relative link does not blow up',
   {
     stdin: '\\a[asdf]',
     expect_not_exists: ['out'],
@@ -7288,7 +7818,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: input from file produces an output file',
+  'input from file produces an output file',
   {
     args: ['notindex.bigb'],
     filesystem: {
@@ -7447,7 +7977,7 @@ Goodbye world.
 `,
 };
 assert_cli(
-  'cli: input from directory with ourbigbook.json produces several output files',
+  'input from directory with ourbigbook.json produces several output files',
   {
     args: ['--split-headers', '.'],
     filesystem: complex_filesystem,
@@ -7617,31 +8147,8 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: directory name is removed from link to subdir h2',
-  {
-    args: ['.'],
-    filesystem: {
-      'README.bigb': `= Index
-
-\\x[subdir/index-h2][link to subdir index h2]
-    `,
-      'ourbigbook.json': `{}\n`,
-      'subdir/index.bigb': `= Subdir index
-
-== Index h2
-`,
-    },
-    assert_xpath: {
-      'index.html': [
-        xpath_header(1, 'index'),
-        "//x:a[@href='subdir.html#index-h2' and text()='link to subdir index h2']",
-      ]
-    },
-  }
-);
-assert_cli(
   // https://github.com/cirosantilli/ourbigbook/issues/123
-  'cli: includers should show as a parents of the includee',
+  'includers should show as a parents of the includee',
   {
     args: ['.'],
     filesystem: {
@@ -7665,7 +8172,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: include should not generate an incoming links entry',
+  'include should not generate an incoming links entry',
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -7684,7 +8191,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: --dry-run --split-headers --publish works',
+  '--dry-run --split-headers --publish works',
   {
     args: ['--dry-run', '--split-headers', '--publish', '.'],
     filesystem: complex_filesystem,
@@ -7721,7 +8228,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: convert subdirectory only with ourbigbook.json',
+  'convert subdirectory only with ourbigbook.json',
   {
     args: ['subdir'],
     filesystem: {
@@ -7753,7 +8260,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: convert subdirectory only without ourbigbook.json',
+  'convert subdirectory only without ourbigbook.json',
   {
     args: ['subdir'],
     filesystem: {
@@ -7782,7 +8289,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: convert a subdirectory file only with ourbigbook.json',
+  'convert a subdirectory file only with ourbigbook.json',
   {
     args: ['subdir/notindex.bigb'],
     filesystem: {
@@ -7800,7 +8307,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: convert a subdirectory file only without ourbigbook.json',
+  'convert a subdirectory file only without ourbigbook.json',
   {
     args: ['subdir/notindex.bigb'],
     filesystem: {
@@ -7817,7 +8324,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: convert with --outdir',
+  'convert with --outdir',
   {
     args: ['--outdir', 'my_outdir', '.'],
     filesystem: {
@@ -7844,7 +8351,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: ourbigbook.tex does not blow up',
+  'ourbigbook.tex does not blow up',
   {
     args: ['README.bigb'],
     filesystem: {
@@ -7854,87 +8361,7 @@ assert_cli(
   }
 );
 assert_cli(
-  // https://github.com/cirosantilli/ourbigbook/issues/114
-  'cli: synonym basic',
-  {
-    args: ['--split-headers', '.'],
-    filesystem: {
-      'README.bigb': `= Index
-
-== h2
-
-= My h2 synonym
-{c}
-{synonym}
-
-\\x[h2]
-
-\\x[my-h2-synonym]
-
-\\x[my-notindex-h2-synonym]
-
-= h3 parent
-{parent=h2}
-`,
-      'notindex.bigb': `= Notindex
-
-== Notindex h2
-
-= My notindex h2 synonym
-{synonym}
-`,
-    },
-    assert_xpath: {
-      'index.html': [
-        "//x:div[@class='p']//x:a[@href='#h2' and text()='h2']",
-        "//x:div[@class='p']//x:a[@href='#h2' and text()='My h2 synonym']",
-        // Across files to test sqlite db.
-        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='my notindex h2 synonym']",
-      ],
-      'h2.html': [
-        // It does not generate a split header for `My h2 synonym`.
-        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='h2']",
-      ],
-      // Redirect generated by synonym.
-      'my-h2-synonym.html': [
-        "//x:script[text()=\"location='index.html#h2'\"]",
-      ],
-      // Redirect generated by synonym.
-      'my-notindex-h2-synonym.html': [
-        "//x:script[text()=\"location='notindex.html#notindex-h2'\"]",
-      ],
-    }
-  }
-);
-assert_cli(
-  // https://github.com/cirosantilli/ourbigbook/issues/225
-  'cli: synonym in splitDefault',
-  {
-    args: ['--split-headers', '.'],
-    filesystem: {
-      'README.bigb': `= Index
-{splitDefault}
-
-== h2
-
-= My h2 synonym
-{c}
-{synonym}
-
-== h2 2
-
-\\x[my-h2-synonym][h2 2 to my h2 synonym]
-`,
-    },
-    assert_xpath: {
-      'h2-2.html': [
-        "//x:div[@class='p']//x:a[@href='h2.html' and text()='h2 2 to my h2 synonym']",
-      ],
-    }
-  }
-);
-assert_cli(
-  'cli: synonym to outdir generates correct redirct',
+  'synonym to outdir generates correct redirct with outdir',
   {
     args: ['--outdir', 'asdf', '--split-headers', '.'],
     filesystem: {
@@ -7954,226 +8381,40 @@ assert_cli(
     }
   }
 );
- https://github.com/cirosantilli/ourbigbook/issues/131
 assert_cli(
-  'cli: splitDefault',
+  // https://github.com/cirosantilli/ourbigbook/issues/114
+  'synonym to outdir generates correct redirct without outdir',
   {
     args: ['--split-headers', '.'],
     filesystem: {
-      'README.bigb': `= Toplevel
-{splitDefault}
+      'README.bigb': `= Index
 
-\\x[toplevel][toplevel to toplevel]
+== h2
 
-\\x[image-my-image-toplevel][toplevel to my image toplevel]
-
-\\x[h2][toplevel to h2]
-
-\\x[image-my-image-h2][toplevel to my image h2]
-
-\\x[notindex][toplevel to notindex]
-
-\\x[notindex-h2][toplevel to notindex h2]
-
-\\Image[img.jpg]{title=My image toplevel}
-
-== H2
-
-\\x[toplevel][h2 to toplevel]
-
-\\x[image-my-image-toplevel][h2 to my image toplevel]
-
-\\x[h2][h2 to h2]
-
-\\x[image-my-image-h2][h2 to my image h2]
-
-\\x[notindex][h2 to notindex]
-
-\\x[notindex-h2][h2 to notindex h2]
-
-\\Image[img.jpg]{title=My image h2}
-
-== Split suffix
-{splitSuffix}
+= My h2 synonym
+{c}
+{synonym}
 `,
       'notindex.bigb': `= Notindex
 
-\\x[toplevel][notindex to toplevel]
-
-\\x[image-my-image-toplevel][notindex to my image toplevel]
-
-\\x[h2][notindex to h2]
-
-\\x[image-my-image-h2][notindex to my image h2]
-
-\\x[notindex][notindex to notindex]
-
-\\x[notindex-h2][notindex to notindex h2]
-
-\\Image[img.jpg]{title=My image notindex}
-
 == Notindex h2
 
-\\x[toplevel][notindex h2 to toplevel]
-
-\\x[image-my-image-toplevel][notindex h2 to my image toplevel]
-
-\\x[h2][notindex h2 to h2]
-
-\\x[image-my-image-h2][notindex h2 to my image h2]
-
-\\x[notindex][notindex h2 to notindex]
-
-\\x[notindex-h2][notindex h2 to notindex h2]
-
-\\Image[img.jpg]{title=My image notindex h2}
+= My notindex h2 synonym
+{synonym}
 `,
-      'img.jpg': '',
     },
     assert_xpath: {
-      // This is he split one.
-      'index.html': [
-        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
-        "//x:div[@class='p']//x:a[@href='h2.html' and text()='toplevel to h2']",
-        // That one is nosplit by default.
-        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
-        // A child of a nosplit also becomes nosplit by default.
-        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
-
-        // The toplevel split header does not get a numerical prefix.
-        xpath_header(1, 'toplevel', "x:a[@href='' and text()='Toplevel']"),
-
-        // Images.
-        "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='toplevel to my image toplevel']",
-        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='toplevel to my image h2']",
-
-        // Split/nosplit.
-        xpath_header_split(1, 'toplevel', 'nosplit.html', ourbigbook.NOSPLIT_MARKER_TEXT),
+      'my-h2-synonym.html': [
+        "//x:script[text()=\"location='index.html#h2'\"]",
       ],
-      'nosplit.html': [
-        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
-        // Although h2 is split by defualt, it is already rendered in the curent page,
-        // so just link to the current page render instead.
-        "//x:div[@class='p']//x:a[@href='#h2' and text()='toplevel to h2']",
-        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
-        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
-
-        "//x:div[@class='p']//x:a[@href='' and text()='h2 to toplevel']",
-        "//x:div[@class='p']//x:a[@href='#h2' and text()='h2 to h2']",
-        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
-        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
-
-        // Images.
-        "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='toplevel to my image toplevel']",
-        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='toplevel to my image h2']",
-        "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='h2 to my image toplevel']",
-        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
-
-        // Headers.
-        xpath_header(1, 'toplevel', "x:a[@href='index.html' and text()='Toplevel']"),
-        xpath_header(2, 'h2', "x:a[@href='h2.html' and text()='1. H2']"),
-
-        // Spilt/nosplit.
-        xpath_header_split(1, 'toplevel', 'index.html', ourbigbook.SPLIT_MARKER_TEXT),
-      ],
-      'h2.html': [
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
-        "//x:div[@class='p']//x:a[@href='' and text()='h2 to h2']",
-        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
-        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
-
-        // The toplevel split header does not get a numerical prefix.
-        xpath_header(1, 'h2', "x:a[@href='' and text()='H2']"),
-
-        // Images.
-        "//x:div[@class='p']//x:a[@href='index.html#image-my-image-toplevel' and text()='h2 to my image toplevel']",
-        "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
-
-        // Spilt/nosplit.
-        xpath_header_split(1, 'h2', 'nosplit.html#h2', ourbigbook.NOSPLIT_MARKER_TEXT),
-      ],
-      'split-suffix-split.html': [
-      ],
-      'notindex.html': [
-        // Link so the split one of index because that's the default of that page.
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
-        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex to h2']",
-        "//x:div[@class='p']//x:a[@href='' and text()='notindex to notindex']",
-        "//x:div[@class='p']//x:a[@href='#notindex-h2' and text()='notindex to notindex h2']",
-
-        // This is he nosplit one, so notindex h2 is also here.
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
-        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex h2 to h2']",
-        "//x:div[@class='p']//x:a[@href='' and text()='notindex h2 to notindex']",
-        "//x:div[@class='p']//x:a[@href='#notindex-h2' and text()='notindex h2 to notindex h2']",
-
-        // Images.
-        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex to my image h2']",
-        "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='notindex h2 to my image h2']",
-
-        // Headers.
-        xpath_header(1, 'notindex', "x:a[@href='notindex-split.html' and text()='Notindex']"),
-        xpath_header(2, 'notindex-h2', "x:a[@href='notindex-h2.html' and text()='1. Notindex h2']"),
-
-        // Spilt/nosplit.
-        xpath_header_split(1, 'notindex', 'notindex-split.html', ourbigbook.SPLIT_MARKER_TEXT),
-      ],
-      'notindex-split.html': [
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
-        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex to h2']",
-        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex to notindex']",
-
-        // Link from split to another header inside the same nonsplit page.
-        // Although external links to this header would to to its default which is nosplit,
-        // mabe when we are inside it in split mode (a rarer use case) then we should just remain
-        // inside of split mode.
-        //"//x:div[@class='p']//x:a[@href='notindex-h2.html' and text()='notindex to notindex h2']",
-        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='notindex to notindex h2']",
-
-        // The toplevel split header does not get a numerical prefix.
-        xpath_header(1, 'notindex', "x:a[@href='' and text()='Notindex']"),
-
-        // Spilt/nosplit.
-        xpath_header_split(1, 'notindex', 'notindex.html', ourbigbook.NOSPLIT_MARKER_TEXT),
-      ],
-      'notindex-h2.html': [
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
-        "//x:div[@class='p']//x:a[@href='h2.html' and text()='notindex h2 to h2']",
-        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='notindex h2 to notindex h2']",
-
-        // Link from split to another header inside the same nonsplit page.
-        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex h2 to notindex']",
-
-        // The toplevel split header does not get a numerical prefix.
-        xpath_header(1, 'notindex-h2', "x:a[@href='' and text()='Notindex h2']"),
-
-        // Spilt/nosplit.
-        xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
+      'my-notindex-h2-synonym.html': [
+        "//x:script[text()=\"location='notindex.html#notindex-h2'\"]",
       ],
     }
   }
 );
 assert_cli(
-  'cli: link to image in another file after link to the toplevel header of that file does not blow up',
-  {
-    args: ['.'],
-    filesystem: {
-      'README.bigb': `= Toplevel
-
-\\Image[img.jpg]{title=My image toplevel}
-`,
-      'notindex.bigb': `= Notindex
-
-\\x[toplevel]
-
-\\x[image-my-image-toplevel]
-`,
-      'img.jpg': '',
-    },
-  }
-)
-assert_cli(
-  'cli: --generate min followed by conversion does not blow up',
+  '--generate min followed by conversion does not blow up',
   {
     args: ['.'],
     pre_exec: [
@@ -8182,7 +8423,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: --generate min in subdir does not alter toplevel',
+  '--generate min in subdir does not alter toplevel',
   {
     args: ['.'],
     filesystem: {
@@ -8201,7 +8442,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: --generate default followed by conversion does not blow up',
+  '--generate default followed by conversion does not blow up',
   {
     args: ['.'],
     pre_exec: [
@@ -8213,7 +8454,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: --generate min followed by publish conversion does not blow up',
+  '--generate min followed by publish conversion does not blow up',
   {
     args: ['--dry-run', '--publish'],
     pre_exec: [
@@ -8226,7 +8467,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: --generate default followed by publish conversion does not blow up',
+  '--generate default followed by publish conversion does not blow up',
   {
     args: ['--dry-run', '--publish'],
     pre_exec: [
@@ -8239,7 +8480,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: --embed-resources actually embeds resources',
+  '--embed-resources actually embeds resources',
   {
     args: ['--embed-resources', '.'],
     filesystem: {
@@ -8261,7 +8502,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: reference to subdir with --embed-includes',
+  'reference to subdir with --embed-includes',
   {
     args: ['--embed-includes', 'README.bigb'],
     filesystem: {
@@ -8293,7 +8534,7 @@ assert_cli(
 
 // executable cwd tests
 assert_cli(
-  "cli: cwd outside project directory given by ourbigbook.json",
+  "cwd outside project directory given by ourbigbook.json",
   {
     args: ['myproject'],
     filesystem: {
@@ -8335,7 +8576,7 @@ assert_cli(
   }
 );
 assert_cli(
-  "cli: if there is no ourbigbook.json and the input is not under cwd then the project dir is the input dir",
+  "if there is no ourbigbook.json and the input is not under cwd then the project dir is the input dir",
   {
     args: [path.join('..', 'myproject')],
     cwd: 'notmyproject',
@@ -8376,7 +8617,7 @@ assert_cli(
 );
 
 assert_cli(
-  'cli: root_relpath and root_path in main.liquid.html work',
+  'root_relpath and root_path in main.liquid.html work',
   {
     args: ['-S', '.'],
     filesystem: {
@@ -8440,9 +8681,8 @@ assert_cli(
     }
   }
 );
-
 assert_cli(
-  "cli: multiple incoming child and parent links don't blow up",
+  "multiple incoming child and parent links don't blow up",
   {
     args: ['.'],
     filesystem: {
@@ -8466,9 +8706,8 @@ assert_cli(
     },
   }
 );
-
 assert_cli(
-  'cli: ourbigbook.json: outputOutOfTree',
+  'ourbigbook.json: outputOutOfTree',
   {
     args: ['-S', '.'],
     filesystem: {
@@ -8506,7 +8745,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: IDs are removed from the database after you removed them from the source file and convert the file',
+  'IDs are removed from the database after you removed them from the source file and convert the file',
   {
     args: ['notindex.bigb'],
     filesystem: {
@@ -8533,7 +8772,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: IDs are removed from the database after you removed them from the source file and convert the directory one way',
+  'IDs are removed from the database after you removed them from the source file and convert the directory one way',
   {
     args: ['.'],
     filesystem: {
@@ -8559,7 +8798,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: IDs are removed from the database after you removed them from the source file and convert the directory reverse',
+  'IDs are removed from the database after you removed them from the source file and convert the directory reverse',
   {
     args: ['.'],
     filesystem: {
@@ -8585,7 +8824,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: IDs are removed from the database after you delete the source file they were present in and convert the directory',
+  'IDs are removed from the database after you delete the source file they were present in and convert the directory',
   {
     args: ['.'],
     filesystem: {
@@ -8611,7 +8850,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'cli: when invoking with a single file timestamps are automatically ignored and render is forced',
+  'when invoking with a single file timestamps are automatically ignored and render is forced',
   {
     args: ['notindex.bigb'],
     assert_xpath: {
@@ -8646,7 +8885,7 @@ assert_cli(
 );
 
 assert_cli(
-  "cli: toplevel index file without a header produces output to index.html",
+  "toplevel index file without a header produces output to index.html",
   {
     args: ['README.bigb'],
     filesystem: {
@@ -8660,7 +8899,7 @@ assert_cli(
     },
   }
 );
-assert_cli('cli: cross file ancestors work on single file conversions at toplevel',
+assert_cli('cross file ancestors work on single file conversions at toplevel',
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
     // purely from the database, and not from a cache shared across several input files.
@@ -8706,7 +8945,7 @@ assert_cli('cli: cross file ancestors work on single file conversions at topleve
     },
   }
 );
-assert_cli('cli: cross file ancestors work on single file conversions in subdir',
+assert_cli('cross file ancestors work on single file conversions in subdir',
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
     // purely from the database, and not from a cache shared across several input files.
@@ -8754,7 +8993,7 @@ assert_cli('cli: cross file ancestors work on single file conversions in subdir'
 );
 assert_cli(
   // See also corresponding lib:.
-  'cli: cross reference incoming links and other children with magic',
+  'cross reference incoming links and other children with magic',
   {
     args: ['-S', '.'],
     filesystem: {
@@ -8820,7 +9059,7 @@ assert_cli(
 
 // JSON
 // ourbigbook.json
-assert_cli('cli: ourbigbook.json redirects',
+assert_cli('ourbigbook.json redirects',
   {
     args: ['.'],
     filesystem: {
@@ -8844,7 +9083,7 @@ assert_cli('cli: ourbigbook.json redirects',
   }
 );
 
-assert_cli('cli: toplevel scope gets removed on table of contents of included headers',
+assert_cli('toplevel scope gets removed on table of contents of included headers',
   {
     args: ['--split-headers', '.'],
     filesystem: {
@@ -8870,7 +9109,7 @@ assert_cli('cli: toplevel scope gets removed on table of contents of included he
     },
   },
 );
-assert_cli('cli: id conflict with id on another file simple',
+assert_cli('id conflict with id on another file simple',
   {
     args: ['.'],
     filesystem: {
@@ -8888,7 +9127,7 @@ assert_cli('cli: id conflict with id on another file simple',
 );
 assert_cli(
   // https://github.com/cirosantilli/ourbigbook/issues/241
-  'cli: fixing a header parent bug on a file in the include chain does not blow up afterwards',
+  'fixing a header parent bug on a file in the include chain does not blow up afterwards',
   {
     args: ['.'],
     filesystem: {

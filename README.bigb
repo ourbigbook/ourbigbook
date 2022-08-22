@@ -17,7 +17,7 @@ How to get there: <OurBigBook Web>[create a website] that incentivizes learners 
 
 \Image[logo.svg]
 {height=150}
-{title=Logo of the OurBigBook Project}
+{title=<project logo>[Logo of] the OurBigBook Project}
 
 The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> is another complementary tool.
 
@@ -2224,6 +2224,62 @@ The `title2` argument has a special meaning when applied to a <header> with the 
 This option is a convenience helper for the common use case of "writting a tutorial". The same would also apply to a report, or an article.
 ]]
 
+= `\H` `toplevel` argument
+{parent=H arguments}
+{tag=Boolean argument}
+
+When the `\H` `toplevel` argument is set, the header and its descendants will be automatically output to a separate file, even without <--split-headers>.
+
+For example given:
+
+animal.bigb
+``
+= Animal
+
+== Vertebrate
+
+=== Dog
+{toplevel}
+
+==== Bulldog
+
+== Invertebrate
+``
+
+and if you convert as:
+``
+ourbigbook animal.bigb
+``
+we get the following output files:
+* `animal.html`: contains the headers: "Animal", "Vertebrate" and "Invertebrate", but not "Dog" and "Bulldog"
+* `dog.html`: contains only the headers: "Dog" and "Bulldog"
+
+This option is intended to produce output identical to using <includes> and separate files, i.e. the above is equivalent to:
+
+animal.bigb
+``
+= Animal
+
+== Vertebrate
+
+\Include[dog]
+``
+
+== Invertebrate
+``
+
+dog.bigb
+``
+= Dog
+{toplevel}
+
+== Bulldog
+``
+
+Or in other words: <the toplevel header> of each source file gets `{toplevel}` set implicitly for it by default.
+
+This design choice might change some day. Arguably, the most awesome setup is on in which source files and outputs are completely decoupled. <OurBigBook Web> also essentially wants this, as ideally we want to store one source per header there in each DB entry. We shall see.
+
 = `\H` `wiki` argument
 {parent=H arguments}
 
@@ -3105,6 +3161,10 @@ $$
 = Math defines across blocks
 {parent=Mathematics}
 
+This feature does not work:
+* across <headers> on <OurBigBook Web>
+* across different source files on <OurBigBook CLI>. That can be worked around with <ourbigbook.tex> on CLI, but <ourbigbook.tex> does not work on Web either.
+
 First here is an invisible block (with `{show=0}`) defining with a `\newcommand` definition after this paragraph:
 \OurBigBookExample[[
 $$
@@ -3376,9 +3436,9 @@ Powered by: https://github.com/tristen/tablesort
 
 = Table of contents
 {parent=Macro}
-{title2=`\Toc`}
+{title2=ToC}
 
-OurBigBook automatically adds a ToC at the end of the first <the toplevel header>[non-toplevel header] of every document.
+OurBigBook automatically adds a table of contents at the end of the first <the toplevel header>[non-toplevel header] of every document.
 
 For example, on a standard document with a single toplevel header:
 ``
@@ -3390,7 +3450,7 @@ Animals are cute!
 
 == Cat
 ``
-the ToC is rendered like:
+the ToC is rendered something like:
 ``
 = Animal
 
@@ -3405,13 +3465,7 @@ Table of Contents
 == Cat
 ``
 
-You may customize ToC placement with `\Toc` macro, but just don't do it, it will just go against common convention and confuse readers.
-
-This is especially important when considering <split headers>, where you almost always want an automatically generated ToC for every split header, otherwise you would need to add them all manually.
-
-Only one ToC is rendered per document. Any ToC besides the first one is ignored. In particular, this means that <includes> with <--embed-includes> work seamlessly and render a single table of contents, even if multiple `\Toc` macros are present in the included pages.
-
-The <cross reference>[ID] of the ToC is always fixed to `#toc`. If you try to use that for another element, you will get the following error:
+The <cross reference>[ID] of the ToC is always fixed to `toc`. If you try to use that for another element, you will get the following error:
 ``
 error: tmp.bigb:3:1: reserved ID "toc"
 ``
@@ -4050,7 +4104,7 @@ These animals don't fly:
 ``
 so note how "Bat" has a list of tags including "Flying animal", but Cat does not, due to the `child`.
 
-This property does not affect how the <table of contents>[`\Toc`] is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
+This property does not affect how the <table of contents> is rendered. We could insert elements sections there multiple times, but it has the downside that browser Ctrl + F searches would hit the same thing multiple times on the table of contents, which might make finding things harder.
 ``
 == My title{id=my-id}
 
@@ -7653,14 +7707,28 @@ rm node_modules/ourbigbook
 = Run an isolated OurBigBook master
 {parent=Run OurBigBook master}
 
-<run OurBigBook master> mentions how to install and then run OurBigBook master globally, which is useful build some projects locally on maste.
+<Run OurBigBook master> mentions how to install and then run OurBigBook master globally, which is useful build some projects locally on master.
 
 To instead install locally in the current directory only instead, which can be useful for bisection:
 ``
 npm install
 ln -s .. node_modules/ourbigbook
 npm run build-assets
+``
+
+You can now run tests as:
+``
+npm test
+``
+or the executable interactively as:
+``
 ./ourbigbook .
+``
+It also works from a subdirectory:
+``
+mkdir -p tmp
+cd tmp
+../ourbigbook .
 ``
 
 = Test system
@@ -8350,3 +8418,14 @@ Some rationale:
 * yellow, green and blue are the colors of Brazil, where Ciro Santilli was born!
 
 It might be cool if we were able to come up with something that looks more like an actual book though instead of just using a boring lettermark.
+
+Some other ideas follow.
+
+A letter square with uppercase monospace font letters:
+``
+OUR
+BIG
+BOOK
+.COM
+``
+Could make the `OBB` red and other letters white. But that does come a bit closer to our dreaded https://en.wikipedia.org/wiki/ÖBB[ÖBB] name competitor.

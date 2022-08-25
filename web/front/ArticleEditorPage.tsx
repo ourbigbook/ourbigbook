@@ -156,9 +156,23 @@ export default function ArticleEditorPageHoc({
     let editor
     function checkTitle(titleSource) {
       if (titleSource) {
-        const newTopicId = ourbigbook.title_to_id(titleSource)
+        let newTopicId = ourbigbook.title_to_id(titleSource)
+        let showToUserNew
+        if (newTopicId === ourbigbook.INDEX_BASENAME_NOEXT) {
+          // Maybe there is a more factored out way of dealing with this edge case.
+          newTopicId = ''
+          showToUserNew = ourbigbook.INDEX_BASENAME_NOEXT
+        } else {
+          showToUserNew = newTopicId
+        }
         if (!isNew && !isIssue && initialArticle.topicId !== newTopicId) {
-          setTitleErrors([`Topic ID changed from "${initialArticle.topicId}" to "${newTopicId}", this is not currently allowed`])
+          let showToUserOld
+          if (initialArticle?.topicId === '') {
+            showToUserOld = ourbigbook.INDEX_BASENAME_NOEXT
+          } else {
+            showToUserOld = initialArticle?.topicId
+          }
+          setTitleErrors([`Topic ID changed from "${showToUserOld}" to "${showToUserNew}", this is not currently allowed`])
         } else {
           setTitleErrors([])
         }

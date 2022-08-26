@@ -4650,6 +4650,17 @@ assert_lib_error('header: parent cannot be an older id of a level',
 `,
   8, 1
 );
+assert_lib_error('header: header inside parent',
+  `= 1
+
+== 2
+{parent=1
+
+== 3
+}
+`,
+  3, 1
+);
 assert_lib_error('header: child argument to id that does not exist gives an error',
   `= 1
 {child=2}

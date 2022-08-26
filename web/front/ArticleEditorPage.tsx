@@ -132,7 +132,7 @@ async function cachedIdExists(idid) {
 }
 
 const parentTitleDisplay = 'Parent Title'
-const previousSiblingTitleDisplay = 'Insert After'
+const previousSiblingTitleDisplay = 'Insert after article'
 
 export default function ArticleEditorPageHoc({
   isIssue=false,
@@ -525,7 +525,7 @@ export default function ArticleEditorPageHoc({
                   <input
                     type="text"
                     className="title"
-                    placeholder={`${previousSiblingTitleDisplay}. Empty means first child of parent.`}
+                    placeholder={`${previousSiblingTitleDisplay}. Empty means first child.`}
                     value={previousSiblingTitle}
                     onChange={handlePreviousSiblingTitle}
                   />

@@ -347,93 +347,155 @@ module.exports = (sequelize) => {
 
   // Maybe try to merge into getArticle one day?
   Article.getArticlesInSamePage = async ({
+    article,
     loggedInUser,
+    // Get just the article itself. This is just as a way to get the number of
+    // articles on same topic + discussion count which we already get the for the h2,
+    // which are the main use case of this function.
+    //
+    // We don't want to pull both of them together because then we'd be pulling
+    // both h1 and h2 renders which we don't need. Talk about premature optimization!
+    h1,
     sequelize,
-    slug,
   }) => {
-    if (false) {
-    const articlesInSamePageAttrs = [
-      'id',
-      'score',
-      'slug',
-      'topicId',
-    ]
-    const include = [
-      {
-        model: sequelize.models.File,
-        as: 'file',
-        required: true,
-        attributes: ['id'],
-        include: [
-          {
-            model: sequelize.models.User,
-            as: 'author',
-          },
-          {
-            model: sequelize.models.Article,
-            as: 'file',
-            required: true,
-            attributes: ['id'],
-            where: { slug },
-          }
-        ]
-      },
-      {
-        model: sequelize.models.Issue,
-        as: 'issues',
-      },
-      {
-        model: sequelize.models.Article,
-        as: 'sameTopic',
-        attributes: [],
-        required: true,
-        include: [{
-          model: sequelize.models.Topic,
-          as: 'article',
-          required: true,
-        }]
-      },
-    ]
-    // This is the part I don't know how to do here. Analogous for current user liked check.
-    // It works, but breaks "do I have my version check".
-    // https://github.com/cirosantilli/cirosantilli.github.io/blob/1be5cb8ef7c03d03e54069c6a5329f54e044de9c/nodejs/sequelize/raw/many_to_many.js#L351
-    //if (loggedInUser) {
-    //  include.push({
-    //    model: sequelize.models.Article,
-    //    as: 'sameTopic2',
-    //    //attributes: [],
-    //    required: true,
-    //    include: [{
-    //      model: sequelize.models.File,
-    //      as: 'file',
-    //      //attributes: [],
-    //      required: true,
-    //      include: [{
-    //        model: sequelize.models.User,
-    //        as: 'author',
-    //        attributes: ['id'],
-    //        required: false,
-    //        where: { id: loggedInUser.id },
-    //      }]
-    //    }],
-    //  })
-    //}
-    return sequelize.models.Article.findAll({
-      attributes: articlesInSamePageAttrs.concat([
-        [sequelize.fn('COUNT', sequelize.col('issues.id')), 'issueCount'],
-        [sequelize.col('sameTopic.article.articleCount'), 'topicCount'],
-        // This works for "do I have my version check".
-        //[sequelize.fn('max', sequelize.col('sameTopic2.file.author.id')), 'hasSameTopic'],
-      ]),
-      group: articlesInSamePageAttrs.map(a => `Article.${a}`),
-      subQuery: false,
-      order: [['topicId', 'ASC']],
-      include,
-    })
-    }
+//    // OLD VERSION 1: as much as possible from calls, same article by file.
+//    const articlesInSamePageAttrs = [
+//      'id',
+//      'score',
+//      'slug',
+//      'topicId',
+//    ]
+//    const include = [
+//      {
+//        model: sequelize.models.File,
+//        as: 'file',
+//        required: true,
+//        attributes: ['id'],
+//        include: [
+//          {
+//            model: sequelize.models.User,
+//            as: 'author',
+//          },
+//          {
+//            model: sequelize.models.Article,
+//            as: 'file',
+//            required: true,
+//            attributes: ['id'],
+//            where: { slug },
+//          }
+//        ]
+//      },
+//      {
+//        model: sequelize.models.Issue,
+//        as: 'issues',
+//      },
+//      {
+//        model: sequelize.models.Article,
+//        as: 'sameTopic',
+//        attributes: [],
+//        required: true,
+//        include: [{
+//          model: sequelize.models.Topic,
+//          as: 'article',
+//          required: true,
+//        }]
+//      },
+//    ]
+//    // This is the part I don't know how to do here. Analogous for current user liked check.
+//    // It works, but breaks "do I have my version check".
+//    // https://github.com/cirosantilli/cirosantilli.github.io/blob/1be5cb8ef7c03d03e54069c6a5329f54e044de9c/nodejs/sequelize/raw/many_to_many.js#L351
+//    //if (loggedInUser) {
+//    //  include.push({
+//    //    model: sequelize.models.Article,
+//    //    as: 'sameTopic2',
+//    //    //attributes: [],
+//    //    required: true,
+//    //    include: [{
+//    //      model: sequelize.models.File,
+//    //      as: 'file',
+//    //      //attributes: [],
+//    //      required: true,
+//    //      include: [{
+//    //        model: sequelize.models.User,
+//    //        as: 'author',
+//    //        attributes: ['id'],
+//    //        required: false,
+//    //        where: { id: loggedInUser.id },
+//    //      }]
+//    //    }],
+//    //  })
+//    //}
+//    return sequelize.models.Article.findAll({
+//      attributes: articlesInSamePageAttrs.concat([
+//        [sequelize.fn('COUNT', sequelize.col('issues.id')), 'issueCount'],
+//        [sequelize.col('sameTopic.article.articleCount'), 'topicCount'],
+//        // This works for "do I have my version check".
+//        //[sequelize.fn('max', sequelize.col('sameTopic2.file.author.id')), 'hasSameTopic'],
+//      ]),
+//      group: articlesInSamePageAttrs.map(a => `Article.${a}`),
+//      subQuery: false,
+//      order: [['topicId', 'ASC']],
+//      include,
+//    })
+//
+//    // OLD VERSION 2: same article by file, one megaquery.
+//    // For a minimal prototype of the difficult SameTopicByLoggedIn part:
+//    // https://github.com/cirosantilli/cirosantilli.github.io/blob/1be5cb8ef7c03d03e54069c6a5329f54e044de9c/nodejs/sequelize/raw/many_to_many.js#L351
+//    ;const [rows, meta] = await sequelize.query(`
+//SELECT
+//  "Article"."id" AS "id",
+//  "Article"."score" AS "score",
+//  "Article"."slug" AS "slug",
+//  "Article"."topicId" AS "topicId",
+//  "Article"."titleSource" AS "titleSource",
+//  "File.Author"."id" AS "file.author.id",
+//  "File.Author"."username" AS "file.author.username",
+//  "SameTopic"."articleCount" AS "topicCount",
+//  "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic",
+//  "UserLikeArticle"."userId" AS "liked",
+//  COUNT("issues"."id") AS "issueCount"
+//FROM
+//  "Article"
+//  INNER JOIN "File" ON "Article"."fileId" = "File"."id"
+//  LEFT OUTER JOIN "User" AS "File.Author" ON "File"."authorId" = "File.Author"."id"
+//  INNER JOIN "Article" AS "ArticleSameFile"
+//    ON "File"."id" = "ArticleSameFile"."fileId"
+//    AND "ArticleSameFile"."slug" = :slug
+//  INNER JOIN "Article" AS "ArticleSameTopic" ON "Article"."topicId" = "ArticleSameTopic"."topicId"
+//  INNER JOIN "Topic" AS "SameTopic" ON "ArticleSameTopic"."id" = "SameTopic"."articleId"
+//  LEFT OUTER JOIN (
+//    SELECT "Article"."id", "Article"."topicId"
+//    FROM "Article"
+//    INNER JOIN "File"
+//      ON "Article"."fileId" = "File"."id"
+//      AND "File"."authorId" = :loggedInUserId
+//  ) AS "ArticleSameTopicByLoggedIn"
+//    ON "Article"."topicId" = "ArticleSameTopicByLoggedIn"."topicId"
+//  LEFT OUTER JOIN "UserLikeArticle"
+//    ON "UserLikeArticle"."articleId" = "Article"."id" AND
+//       "UserLikeArticle"."userId" = :loggedInUserId
+//  LEFT OUTER JOIN "Issue" AS "issues" ON "Article"."id" = "issues"."articleId"
+//GROUP BY
+//  "Article"."id",
+//  "Article"."score",
+//  "Article"."slug",
+//  "Article"."topicId",
+//  "Article"."titleSource",
+//  "File.Author"."id",
+//  "File.Author"."username",
+//  "SameTopic"."articleCount",
+//  "ArticleSameTopicByLoggedIn"."id",
+//  "UserLikeArticle"."userId"
+//ORDER BY "slug" ASC
+//`,
+//      {
+//        replacements: {
+//          loggedInUserId: loggedInUser ? loggedInUser.id : null,
+//          slug,
+//        }
+//      }
+//    )
 
-    // For a minimal prototype of the difficult SameTopicByLoggedIn part:
-    // https://github.com/cirosantilli/cirosantilli.github.io/blob/1be5cb8ef7c03d03e54069c6a5329f54e044de9c/nodejs/sequelize/raw/many_to_many.js#L351
     ;const [rows, meta] = await sequelize.query(`
 SELECT
   "Article"."id" AS "id",
@@ -441,6 +503,11 @@ SELECT
   "Article"."slug" AS "slug",
   "Article"."topicId" AS "topicId",
   "Article"."titleSource" AS "titleSource",
+  "Article"."render" AS "render",
+  ${h1 ? '"Article"."h1Render" AS "h1Render"' : '"Article"."h2Render" AS "h2Render"'},
+  "Article"."topicId" AS "topicId",
+  "Article"."titleRender" AS "titleRender",
+  "Article"."depth" AS "depth",
   "File.Author"."id" AS "file.author.id",
   "File.Author"."username" AS "file.author.username",
   "SameTopic"."articleCount" AS "topicCount",
@@ -450,10 +517,9 @@ SELECT
 FROM
   "Article"
   INNER JOIN "File" ON "Article"."fileId" = "File"."id"
-  LEFT OUTER JOIN "User" AS "File.Author" ON "File"."authorId" = "File.Author"."id"
-  INNER JOIN "Article" AS "ArticleSameFile"
-    ON "File"."id" = "ArticleSameFile"."fileId"
-    AND "ArticleSameFile"."slug" = :slug
+  INNER JOIN "User" AS "File.Author"
+    ON "File"."authorId" = "File.Author"."id" AND
+       "File.Author"."username" = :authorUsername
   INNER JOIN "Article" AS "ArticleSameTopic" ON "Article"."topicId" = "ArticleSameTopic"."topicId"
   INNER JOIN "Topic" AS "SameTopic" ON "ArticleSameTopic"."id" = "SameTopic"."articleId"
   LEFT OUTER JOIN (
@@ -468,6 +534,11 @@ FROM
     ON "UserLikeArticle"."articleId" = "Article"."id" AND
        "UserLikeArticle"."userId" = :loggedInUserId
   LEFT OUTER JOIN "Issue" AS "issues" ON "Article"."id" = "issues"."articleId"
+  ${h1
+    ? `WHERE "Article"."nestedSetIndex" = :nestedSetIndex`
+    : `WHERE "Article"."nestedSetIndex" > :nestedSetIndex AND
+    "Article"."nestedSetIndex" < :nestedSetNextSibling`
+  }
 GROUP BY
   "Article"."id",
   "Article"."score",
@@ -479,15 +550,30 @@ GROUP BY
   "SameTopic"."articleCount",
   "ArticleSameTopicByLoggedIn"."id",
   "UserLikeArticle"."userId"
-ORDER BY "slug" ASC
+ORDER BY "Article"."nestedSetIndex" ASC
 `,
       {
         replacements: {
+          authorUsername: article.author.username,
           loggedInUserId: loggedInUser ? loggedInUser.id : null,
-          slug,
+          nestedSetIndex: article.nestedSetIndex,
+          nestedSetNextSibling: article.nestedSetNextSibling,
         }
       }
     )
+
+    //sequelize.query(`
+    //FROM "Article"
+    //WHERE "nestedSetIndex" > :nestedSetIndex AND "nestedSetIndex" < :nestedSetNextSibling
+    //ORDER BY "nestedSetIndex" ASC
+    //     {
+    //       replacements: {
+    //         nestedSetIndex: article.nestedSetIndex,
+    //         nestedSetNextSibling: article.nestedSetNextSibling,
+    //       }
+    //     }
+    //   ),
+    //`)
     for (const row of rows) {
       row.hasSameTopic = row.hasSameTopic === null ? false : true
       row.liked = row.liked === null ? false : true
@@ -496,6 +582,8 @@ ORDER BY "slug" ASC
         id: row['file.author.id'],
         username: row['file.author.username'],
       }
+      delete row['file.author.id']
+      delete row['file.author.username']
     }
     return rows
   }

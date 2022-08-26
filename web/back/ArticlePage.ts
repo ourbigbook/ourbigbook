@@ -51,42 +51,24 @@ export const getServerSidePropsArticleHoc = ({
       const [
         articleJson,
         articlesInSamePage,
+        h1ArticlesInSamePage,
         issuesCount,
         topicArticleCount,
         latestIssues,
         topIssues
       ] = await Promise.all([
         article.toJson(loggedInUser),
-        // TODO do the toJson LIKE fetching on a JOIN.
-        sequelize.models.Article.findAll({
-          where: {
-            nestedSetIndex: {
-              [sequelize.Sequelize.Op.gte]: article.nestedSetIndex,
-              [sequelize.Sequelize.Op.lt]: article.nestedSetNextSibling,
-            },
-          },
-          include: [
-            {
-              model: sequelize.models.File,
-              as: 'file',
-            },
-          ],
-        }).then(
-          articles => Promise.all(articles.map(article => article.toJson(loggedInUser))),
-        ),
-        // Keep this around a little longer for the incoming mega JOIN version.
-        //sequelize.query(`
-        //FROM "Article"
-        //WHERE "nestedSetIndex" > :nestedSetIndex AND "nestedSetIndex" < :nestedSetNextSibling
-        //ORDER BY "nestedSetIndex" ASC
-        //     {
-        //       replacements: {
-        //         nestedSetIndex: article.nestedSetIndex,
-        //         nestedSetNextSibling: article.nestedSetNextSibling,
-        //       }
-        //     }
-        //   ),
-        //`)
+        sequelize.models.Article.getArticlesInSamePage({
+          article,
+          loggedInUser,
+          sequelize,
+        }),
+        sequelize.models.Article.getArticlesInSamePage({
+          article,
+          loggedInUser,
+          h1: true,
+          sequelize,
+        }),
         includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
         sequelize.models.Article.count({
           where: { topicId: article.topicId },
@@ -94,6 +76,10 @@ export const getServerSidePropsArticleHoc = ({
         includeIssues ? Promise.all(article.issues.map(issue => issue.toJson(loggedInUser))) : null,
         includeIssues ? Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser))) : null,
       ])
+      const h1ArticleInSamePage = h1ArticlesInSamePage[0]
+      //articleJson.topicCount = h1ArticleInSamePage.topicCount
+      //articleJson.issueCount = h1ArticleInSamePage.issueCount
+      //articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
       const props: ArticlePageProps = {
         article: articleJson,
         articlesInSamePage,

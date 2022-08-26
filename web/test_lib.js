@@ -401,44 +401,6 @@ async function generateDemoData(params) {
     //  }
     //)
 
-    // Now we update the index pages.
-    if (verbose) console.error('Index update');
-    for (let userIdx = 0; userIdx < nUsers; userIdx++) {
-      const user = users[userIdx]
-      console.error(`${userIdx} ${user.username}`);
-      const articleDataProvider = articleDataProviders[user.id]
-      const ids = []
-      for (const titleSource in articleDataProvider.toplevelTitleToEntry) {
-        ids.push(ourbigbook.title_to_id(titleSource))
-      }
-      await convert.convertArticle({
-        author: user,
-        bodySource: sequelize.models.User.defaultIndexBody,
-        sequelize,
-        titleSource: sequelize.models.User.defaultIndexTitle,
-      })
-
-      // TODO get working. Looks like all values that are not updated are
-      // not present in the hook (unlike during initial create()), which breaks it.
-      //await sequelize.models.Article.update(
-      //  { body: sequelize.fn('concat', sequelize.col('body'), includesString), },
-      //  { where: { slug: username } },
-      //)
-    }
-
-    // Update all pages to make them render references such as parent references
-    // which were missed at initial creation time.
-    if (verbose) console.error('Article update');
-    i = 0
-    for (const article of articles) {
-      if (toplevelTopicIds.has(article.topicId)) {
-        if (verbose) console.error(`${i} author=${userIdToUser[article.file.authorId].username} title=${article.file.titleSource}`);
-        await article.rerender()
-        i++
-      }
-    }
-    //await sequelize.models.Article.update({}, { where: {}, individualHooks: true})
-
     if (verbose) printTime()
 
     if (verbose) console.error('Like');

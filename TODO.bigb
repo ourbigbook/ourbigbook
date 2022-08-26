@@ -1,5 +1,22 @@
 = TODO
+{scope}
 
-* LIKE metadata on JOIN on
-  * web descendants
-  * all article lists
+== Tags
+
+=== Web
+
+== Issues
+
+=== Web page h1 edit vs view my own broken
+{tag=Web}
+
+=== Remove scope from toc entry IDs
+
+Happens on CLI.
+
+E.g. https://cirosantilli.com/x86-paging#toc-x86-paging/sample-code should instead be just: https://cirosantilli.com/x86-paging#toc-sample-code[]. Links from headers to currently work however, 
+
+=== LIKE metadata on JOIN on
+
+* web descendants
+* all article lists

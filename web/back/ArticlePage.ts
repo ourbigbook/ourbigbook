@@ -77,9 +77,15 @@ export const getServerSidePropsArticleHoc = ({
         includeIssues ? Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser))) : null,
       ])
       const h1ArticleInSamePage = h1ArticlesInSamePage[0]
-      //articleJson.topicCount = h1ArticleInSamePage.topicCount
-      //articleJson.issueCount = h1ArticleInSamePage.issueCount
-      //articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
+      if (
+        // False for Index pages, I think because they have no associated topic.
+        // Which is correct.
+        h1ArticleInSamePage
+      ) {
+        articleJson.topicCount = h1ArticleInSamePage.topicCount
+        articleJson.issueCount = h1ArticleInSamePage.issueCount
+        articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
+      }
       const props: ArticlePageProps = {
         article: articleJson,
         articlesInSamePage,

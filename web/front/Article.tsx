@@ -12,7 +12,7 @@ import routes from 'front/routes'
 import { cant } from 'front/cant'
 import CustomLink from 'front/CustomLink'
 
-import { render_toc_from_entry_list } from 'ourbigbook'
+import { AT_MENTION_CHAR, render_toc_from_entry_list } from 'ourbigbook'
 // This also worked. But using the packaged one reduces the need to replicate
 // or factor out the webpack setup of the ourbigbook package.
 //import { ourbigbook_runtime } from 'ourbigbook/ourbigbook_runtime.js';
@@ -145,7 +145,7 @@ const Article = ({
                 <>
                   {!isIssue &&
                     <>
-                      {curArticle.hasSameTopic
+                      {(curArticle.hasSameTopic || isIndex)
                         ? <>
                             {article.slug !== mySlug &&
                               <>
@@ -188,8 +188,9 @@ const Article = ({
     const levelToHeader = { 0: article }
     for (let i = 0; i < articlesInSamePage.length; i++) {
       const a = articlesInSamePage[i]
+      const authorUsername = article.author.username
       const level = a.depth - article.depth
-      const href = ` href="../${article.author.username}/${a.topicId}"`
+      const href = ` href="../${authorUsername}/${a.topicId}"`
       const content = a.titleRender
       let parent_href, parent_content
       if (level > 1) {
@@ -201,13 +202,19 @@ const Article = ({
         href,
         level,
         has_child: i < articlesInSamePage.length - 1 && articlesInSamePage[i + 1].depth === a.depth + 1,
+        // A quick hack as it will be easier to do it here than to modify the link generation.
+        // We'll later fix both at once to remove the user prefix one day. Maybe.
+        // https://docs.ourbigbook.com/TODO/remove-scope-from-toc-entry-ids
+        id_prefix: AT_MENTION_CHAR + authorUsername + '/',
         parent_href,
         parent_content,
         target_id: a.topicId,
       })
     }
-    const tocHtml = render_toc_from_entry_list({ entry_list })
-    html += tocHtml + articlesInSamePage.slice(1).map(a => a.h2Render + a.render).join('')
+    if (entry_list.length) {
+      html += render_toc_from_entry_list({ entry_list })
+    }
+    html += articlesInSamePage.map(a => a.h2Render + a.render).join('')
   }
   return <>
     <div

@@ -1,18 +1,28 @@
 = TODO
 {scope}
 
-== Tags
+== Tag
 
 === Web
 
+==== Dynamic tree fetch
+
+=== CLI
+
 == Issues
 
-=== Web page h1 edit vs view my own broken
+=== Fix ToC links on web, missing scope
+{tag=Dynamic tree fetch}
+{tag=Web}
+
+=== Remove word count on web
+{tag=Dynamic tree fetch}
 {tag=Web}
 
 === Remove scope from toc entry IDs
+{tag=CLI}
 
-Happens on CLI.
+Happens on CLI and Web, though the web one is a bit artificial.
 
 E.g. https://cirosantilli.com/x86-paging#toc-x86-paging/sample-code should instead be just: https://cirosantilli.com/x86-paging#toc-sample-code[]. Links from headers to currently work however, 
 
@@ -20,3 +30,27 @@ E.g. https://cirosantilli.com/x86-paging#toc-x86-paging/sample-code should inste
 
 * web descendants
 * all article lists
+
+=== View article source
+{tag=Web}
+
+Can start simple with either raw or contained, and then add both some day. GitHub copy.
+
+=== parentId dropdown autocomplete
+{tag=Web}
+
+=== Add sibling/add child buttons next to self headers and toc
+{tag=Web}
+
+=== Prefix unnumbered IDs with the parent header's ID
+{tag=Dynamic tree fetch}
+{tag=Web}
+
+=== Word count on web
+{tag=Web}
+
+Likely also at same time do a source character count.
+
+Likely would be easy to implement as it would reuse the exact same query that we already use to update ncestors of the nested set index.
+
+== Closed issues

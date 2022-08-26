@@ -269,6 +269,8 @@ it('User.findAndCountArticlesByFollowed', async function() {
 })
 
 it('Article.getArticlesInSamePage', async function() {
+  let rows
+  let article_0_0, article_0_0_0, article_1_0, article
   const sequelize = this.test.sequelize
   const user0 = await createUser(sequelize, 0)
   const user1 = await createUser(sequelize, 1)
@@ -279,14 +281,39 @@ it('Article.getArticlesInSamePage', async function() {
   await createArticle(sequelize, user0, { titleSource: 'Title 0 0', parentId: '@user0/title-0' })
   await createArticle(sequelize, user0, { titleSource: 'Title 0 0 0', parentId: '@user0/title-0-0'  })
 
+  // Single user tests.
+  article = await sequelize.models.Article.getArticle({ sequelize, slug: 'user0/title-0' })
+  rows = await sequelize.models.Article.getArticlesInSamePage({ sequelize, article, loggedInUser: user0 })
+  assertRows(rows, [
+    { slug: 'user0/title-0-0',   topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+    { slug: 'user0/title-0-1',   topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+  ])
+
+  rows = await sequelize.models.Article.getArticlesInSamePage({ sequelize, article, loggedInUser: user0, h1: true })
+  assertRows(rows, [
+    { slug: 'user0/title-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+  ])
+
+  article = await sequelize.models.Article.getArticle({ sequelize, slug: 'user0/title-0-0' })
+  rows = await sequelize.models.Article.getArticlesInSamePage({ sequelize, article, loggedInUser: user0 })
+  assertRows(rows, [
+    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+  ])
+
+  article = await sequelize.models.Article.getArticle({ sequelize, slug: 'user0/title-0-0-0' })
+  rows = await sequelize.models.Article.getArticlesInSamePage({ sequelize, article, loggedInUser: user0 })
+  assertRows(rows, [])
+
   await createArticle(sequelize, user1, { titleSource: 'Title 0' })
   await createArticle(sequelize, user1, { titleSource: 'Title 0 1', parentId: '@user1/title-0' })
   await createArticle(sequelize, user1, { titleSource: 'Title 0 1 0', parentId: '@user1/title-0-1' })
   await createArticle(sequelize, user1, { titleSource: 'Title 0 0', parentId: '@user1/title-0' })
 
-  const article_0_0 = await sequelize.models.Article.getArticle({ sequelize, slug: 'user0/title-0' })
-  const article_0_0_0 = await sequelize.models.Article.getArticle({ sequelize, slug: 'user0/title-0-0' })
-  const article_1_0 = await sequelize.models.Article.getArticle({ sequelize, slug: 'user1/title-0' })
+  // We have to refetch here because the counts involved are changed by other articles/issues/likes.
+  article_0_0 = await sequelize.models.Article.getArticle({ sequelize, slug: 'user0/title-0' })
+  article_0_0_0 = await sequelize.models.Article.getArticle({ sequelize, slug: 'user0/title-0-0' })
+  article_1_0 = await sequelize.models.Article.getArticle({ sequelize, slug: 'user1/title-0' })
 
   // User1 likes user0/title-0-0
   await user1.addArticleLikeSideEffects(article_0_0_0)
@@ -301,8 +328,7 @@ it('Article.getArticlesInSamePage', async function() {
     user: user0
   })
 
-  // Check the data each user gets for each article.
-  let rows
+  // Multi user tests.
   rows = await sequelize.models.Article.getArticlesInSamePage({
     sequelize,
     article: article_0_0,

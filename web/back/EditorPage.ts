@@ -2,13 +2,18 @@ import ourbigbook from 'ourbigbook'
 
 import { getLoggedInUser } from 'back'
 import routes from 'front/routes'
-import { EditorPageProps } from 'front/ArticleEditorPage'
+import { EditorPageProps } from 'front/EditorPage'
 import { MyGetServerSideProps } from 'front/types'
 
 export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSideProps => {
   return async ({ params, query, req, res }) => {
     const title = query.title
-    if (title instanceof Array) {
+    const parentTitle = query['parent-title']
+    const previousSiblingTitle = query['previous-sibling']
+    if (
+      title instanceof Array ||
+      parentTitle instanceof Array
+    ) {
       throw new TypeError
     } else {
       const slug = params ? params.slug : undefined
@@ -16,7 +21,11 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
       const number = params ? params.number ? Number(params.number) : undefined : undefined
       const sequelize = req.sequelize
       const existingIssue = isIssue && number
-      const [article, issue, [loggedInUser, articleCountByLoggedInUser]] = await Promise.all([
+      const [
+        article,
+        issue,
+        [loggedInUser, articleCountByLoggedInUser],
+      ] = await Promise.all([
         slugString ? sequelize.models.Article.getArticle({
           includeParentAndPreviousSibling: true,
           sequelize,
@@ -52,7 +61,12 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
           notFound: true
         }
       }
-      const [articleJson, issueArticleJson, loggedInUserJson] = await Promise.all([
+      const [
+        articleJson,
+        issueArticleJson,
+        loggedInUserJson,
+        previousSiblingArticle,
+      ] = await Promise.all([
         isIssue
           ? existingIssue ? issue.toJson(loggedInUser) : null
           : slugString ? article.toJson(loggedInUser) : null
@@ -62,6 +76,11 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
           : null
         ,
         loggedInUser.toJson(),
+        previousSiblingTitle ? sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          sequelize,
+          slug: `${loggedInUser.username}/${ourbigbook.title_to_id(previousSiblingTitle)}`,
+        }) : null,
       ])
       const props: EditorPageProps = {
         article: articleJson,
@@ -76,6 +95,14 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
         }
         if (article.previousSiblingId) {
           props.previousSiblingTitle = article.previousSiblingId.File.titleSource
+        }
+      }
+      if (previousSiblingTitle) {
+        props.previousSiblingTitle = previousSiblingTitle
+        props.parentTitle = previousSiblingArticle.parentId.File.titleSource
+      } else {
+        if (parentTitle) {
+          props.parentTitle = parentTitle
         }
       }
       if (title) {

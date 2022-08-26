@@ -135,7 +135,7 @@ async function cachedIdExists(idid) {
 const parentTitleDisplay = 'Parent article'
 const previousSiblingTitleDisplay = 'Previous sibling'
 
-export default function ArticleEditorPageHoc({
+export default function EditorPageHoc({
   isIssue=false,
   isNew=false,
 }={}) {

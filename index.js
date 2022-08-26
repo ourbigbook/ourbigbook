@@ -3491,7 +3491,10 @@ function check_and_update_local_link({
       } else {
         check_path = path.join(input_path_directory, href)
       }
-      if (context.options.fs_exists_sync && !context.options.fs_exists_sync(check_path)) {
+      if (
+        context.options.fs_exists_sync &&
+        !context.options.fs_exists_sync(check_path)
+      ) {
         error = `link to inexistent local file: ${href}`;
         render_error(context, error, source_location);
       }
@@ -4437,7 +4440,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   }
   context.db_provider = db_provider;
   options.include_path_set.add(options.input_path);
-  let header_file_preview_ast, header_file_preview_ast_next
+  let header_file_preview_asts, header_file_preview_asts_next
   const title_ast_ancestors = []
   const header_title_ast_ancestors = []
   const header_ids = []
@@ -4968,11 +4971,36 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
 
         // Handle the H file argument previews.
-        header_file_preview_ast = header_file_preview_ast_next
-        header_file_preview_ast_next = undefined
+        header_file_preview_asts = header_file_preview_asts_next
+        header_file_preview_asts_next = undefined
+
         if (ast.file && context.options.output_format !== OUTPUT_FORMAT_OURBIGBOOK) {
+          // TODO move to render https://docs.ourbigbook.com/todo/remove-synthetic-asts
+          const is_about_asts = [
+            new AstNode(AstType.PARAGRAPH),
+            new PlaintextAstNode(`This section is about the file: `),
+            new AstNode(AstType.MACRO, 'b', {
+              content: new AstArgument([
+                new AstNode(AstType.MACRO,
+                  Macro.LINK_MACRO_NAME,
+                  {
+                    content: new AstArgument(),
+                    href: new AstArgument(
+                      [new PlaintextAstNode(ast.file)],
+                    ),
+                  }
+                ),
+              ])
+            }),
+            new AstNode(AstType.PARAGRAPH)
+          ]
+          for (const a of is_about_asts) {
+            a.set_source_location(ast.source_location)
+          }
+          parent_arg_push_after.push(...is_about_asts)
+
           if (IMAGE_EXTENSIONS.has(path_splitext(ast.file)[1])) {
-            header_file_preview_ast_next = new AstNode(
+            const newast = new AstNode(
               AstType.MACRO,
               'Image',
               {
@@ -4983,11 +5011,13 @@ async function parse(tokens, options, context, extra_returns={}) {
                 ),
               },
             )
+            newast.set_source_location(ast.source_location)
+            parent_arg_push_after.push(newast)
           } else if (
             VIDEO_EXTENSIONS.has(path_splitext(ast.file)[1]) ||
             ast.file.match(media_provider_type_youtube_re)
           ) {
-            header_file_preview_ast_next = new AstNode(
+            const newast = new AstNode(
               AstType.MACRO,
               'Video',
               {
@@ -4998,41 +5028,63 @@ async function parse(tokens, options, context, extra_returns={}) {
                 ),
               },
             )
+            newast.set_source_location(ast.source_location)
+            parent_arg_push_after.push(newast)
           } else {
-            // This works. We are not enabling it for now for the following reasons:
-            // - what is a binary file or not?
-            // - do we really want to duplicate huge files? How large is huge? iframe does not work well, e.g.
-            //   files that would be downloaded like .yml are also downloaded from the iframe.
-            //const protocol = protocol_get(ast.file)
-            //if (protocol === null || protocol === 'file') {
-            //  const content = context.options.read_file(ast.file, context)
-            //  console.error({content});
-            //  console.error(/[\x00-\x10]/.test(content));
-            //  if (
-            //    content !== undefined &&
-            //    // https://stackoverflow.com/questions/1677644/detect-non-printable-characters-in-javascript
-            //    !/[\x00]/.test(content)
-            //  ) {
-            //    header_file_preview_ast_next = new AstNode(
-            //      AstType.MACRO,
-            //      Macro.CODE_MACRO_NAME.toUpperCase(),
-            //      {
-            //        'content': new AstArgument(
-            //          [
-            //            new PlaintextAstNode(content)
-            //          ],
-            //        ),
-            //      },
-            //    )
-            //  }
-            //}
+            // Plaintext file.
+            const protocol = protocol_get(ast.file)
+            if (protocol === null || protocol === 'file') {
+              const content = context.options.read_file(ast.file, context)
+              if (
+                content !== undefined
+              ) {
+                // https://stackoverflow.com/questions/1677644/detect-non-printable-characters-in-javascript
+                const bold_file_ast = new AstNode(AstType.MACRO, 'b', {
+                  content: new AstArgument([
+                    new PlaintextAstNode(`${ast.file}`),
+                  ])
+                })
+                let no_preview_msg
+                if (/[\x00]/.test(content)) {
+                  no_preview_msg = ` it is a binary file (contains \\x00) of unsupported type (e.g. not an image).`
+                } else if (
+                  content.length > FILE_PREVIEW_MAX_SIZE
+                ) {
+                  no_preview_msg = `it is too large (> ${FILE_PREVIEW_MAX_SIZE} bytes)`
+                }
+                if (no_preview_msg) {
+                  header_file_preview_asts_next = [
+                    bold_file_ast,
+                    new PlaintextAstNode(` was not rendered because ${no_preview_msg}`, ast.source_location),
+                  ]
+                } else {
+                  header_file_preview_asts_next = [
+                    bold_file_ast,
+                    new AstNode(AstType.PARAGRAPH, undefined, undefined),
+                    new AstNode(
+                      AstType.MACRO,
+                      Macro.CODE_MACRO_NAME.toUpperCase(),
+                      {
+                        content: new AstArgument(
+                          [
+                            new PlaintextAstNode(content)
+                          ],
+                        ),
+                      },
+                    )
+                  ]
+                }
+              }
+            }
           }
-          if (header_file_preview_ast_next) {
-            header_file_preview_ast_next.set_source_location(ast.source_location)
+          if (header_file_preview_asts_next) {
+            for (const a of header_file_preview_asts_next) {
+              a.set_source_location(ast.source_location)
+            }
           }
         }
-        if (header_file_preview_ast) {
-          parent_arg_push_before.push(header_file_preview_ast);
+        if (header_file_preview_asts) {
+          parent_arg_push_before.push(...header_file_preview_asts);
         }
 
         if (parent_arg_push_before.length) {
@@ -5144,8 +5196,8 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
     }
   }
-  if (header_file_preview_ast_next) {
-    ast_toplevel.args.content.push(header_file_preview_ast_next)
+  if (header_file_preview_asts_next) {
+    ast_toplevel.args.content.push(...header_file_preview_asts_next)
   }
   if (context.options.log['ast-pp-simple']) {
     console.error('ast-pp-simple: after pass 1');
@@ -7254,6 +7306,13 @@ exports.REFS_TABLE_X_TITLE_TITLE = REFS_TABLE_X_TITLE_TITLE;
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\';
+// Rationale: 1 line  = 80 characters.
+// We want to preview files that are up to about 25 lines.
+// More than that is wasteful in visual vertical area and bandwidth.
+// Ideally we could just link to the files like images, but iframe does
+// not work well, e.g. files that would be downloaded like .yml are also
+// downloaded from the iframe
+const FILE_PREVIEW_MAX_SIZE = 2000;
 const HEADER_PARENT_ERROR_MESSAGE = 'header parent either is a previous ID of a level, a future ID, or an invalid ID: '
 const HTML_ASCII_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
 const HTML_EXT = 'html';

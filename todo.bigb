@@ -3,12 +3,46 @@
 
 == Issues
 
-=== Put files in a separate namespace
+=== Don't use helper synthetic AST nodes, render at render time instead
+{id=remove-synthetic-asts}
+{tag=File}
+
+This is a hard refactor that likely will never be done. But so be it.
+
+=== Add a `File:` prefix to `{file}` headers
+{tag=File}
+
+And also to full links, at least on ToC.
+
+=== Allow `{parent}` to point to `{file}` header
+{tag=File}
+
+``
+= my/file.txt
+
+= Asdf
+{parent=my/file.txt}
+{parentFile}
+``
+
+Same for tags.
+
+Currently there is some confusion in the code on treating the `<>{file}` like the file in `= Header{file}`: one if about pointing to things, the other is about the current thing. We will disambiguate with `parentFile`.
+
+Same for `tag` and `tagFile`.
+
+=== Put raw files in a separate magic prefix
 {tag=File}
 
 We should have:
-* `_file/path/to/main.py`: OurBigBook section showing preview of file + comments/metadata
 * `_raw/path/to/main.py`: raw file
+for every file `path/to/main.py` in the repo to avoid URL clashes, e.g. between:
+``
+configure
+configure.bigb
+``
+
+Will also serve as a mechanism to view .bigb source without GitHub.
 
 === Show likers list on article page
 {tag=Web}
@@ -605,6 +639,14 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Put files in a separate namespace
+{tag=File}
+
+We should have:
+* `_file/path/to/main.py`: OurBigBook section showing preview of file + comments/metadata
+* `_raw/path/to/main.py`: raw file
+Done the `_file` part.
 
 === Following and followed tabs are swapped
 {tag=Web}

@@ -935,19 +935,23 @@ if (cli.helpMacros) {
       read: (inpath) => fs.readFileSync(path.join(ourbigbook_json_dir, inpath), ourbigbook_nodejs_webpack_safe.ENCODING),
       path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
     }),
-    // Part of considering file previews for source code.
-    //read_file: (readpath, context) => {
-    //  readpath = path.join(path.dirname(context.options.input_path), readpath)
-    //  if (
-    //    fs.existsSync(readpath) &&
-    //    // Let's prevent path transverasl a bit by default.
-    //    path.resolve(readpath).startsWith(path.resolve(ourbigbook_json_dir))
-    //  ) {
-    //    return fs.readFileSync(readpath, ourbigbook_nodejs_webpack_safe.ENCODING);
-    //  } else {
-    //    return undefined
-    //  }
-    //},
+    read_file: (readpath, context) => {
+      readpath = path.join(path.dirname(context.options.input_path), readpath)
+      if (
+        // Let's prevent path transversal a bit by default.
+        path.resolve(readpath).startsWith(path.resolve(ourbigbook_json_dir)) &&
+        fs.existsSync(readpath)
+      ) {
+        if (fs.lstatSync(readpath).isFile()) {
+          return fs.readFileSync(readpath, ourbigbook_nodejs_webpack_safe.ENCODING);
+        } else {
+          // TODO implement.
+          return undefined
+        }
+      } else {
+        return undefined
+      }
+    },
     render: cli.render,
     split_headers: split_headers,
     template_vars: {},

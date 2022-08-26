@@ -177,16 +177,38 @@ const Article = ({
         // Only go to another page if the ID is not already present on the page.
         for (const a of elem.getElementsByTagName('a')) {
           a.addEventListener(`click`, e => {
-            // + 4 for the '../' and trailing `/`
-            const idNoprefix = e.target.getAttribute('href').slice(article.author.username.length + 4)
-            const targetElem = document.getElementById(idNoprefix)
+            const target = e.currentTarget
+            const href = target.getAttribute('href')
+            const url = new URL(href, document.baseURI)
             if (
-              targetElem &&
-              // h2 self link, we want those to actually go to the separated page.
-              e.target.parentElement.tagName !== 'H2'
+              // Don't do processing for external links.
+              url.origin === new URL(document.baseURI).origin
             ) {
-              e.preventDefault()
-              window.location.hash = idNoprefix
+              let idNoprefix
+              if (url.hash) {
+                idNoprefix = url.hash.slice(1)
+              } else {
+                // + 4 for the '../' and trailing `/`
+                let sliceLen = article.author.username.length + 4
+                if (article.hasScope) {
+                  // TODO don't add to len, remove prefix + / instead if present,
+                  // otherwise we will have false hits on external pages.
+                  sliceLen += article.topicId.length + 1
+                }
+                idNoprefix = href.slice(sliceLen)
+              }
+              const targetElem = document.getElementById(idNoprefix)
+              if (
+                targetElem &&
+                // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
+                // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
+                !e.ctrlKey &&
+                // h2 self link, we want those to actually go to the separated page.
+                target.parentElement.tagName !== 'H2'
+              ) {
+                e.preventDefault()
+                window.location.hash = idNoprefix
+              }
             }
           });
         }

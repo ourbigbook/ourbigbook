@@ -25,6 +25,7 @@ export interface ArticlePageProps {
   comments?: CommentType[];
   commentsCount?: number;
   commentCountByLoggedInUser?: number;
+  hasScope?: boolean;
   issueArticle?: ArticleType;
   issuesCount?: number;
   latestIssues?: IssueType[];

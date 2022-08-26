@@ -17,17 +17,60 @@
 
 == Issues
 
-=== Fix toc links to scope on web
+=== Prop dangerouslySetInnerHtml did not match on some pages
 {tag=Web}
 
-Likely locally too then right. Will also be more uniform with h2 which now has parent link.
+Happens on some pages but not others, e.g. `barack-obama/ciro-santilli`.
 
-=== Wiki link on same line as parent link on web h1
+=== Self links broken on /ciro-santilli starting at Budget transparency
+
+There is some kind of fundamentally wrong HTML content being rendered, not Web specific: https://cirosantilli.com/sponsor#budget-transparency
+
+=== h2 self links are empty on Web
 {tag=Web}
 
-Likely locally too then right. Will also be more uniform with h2 which now has parent link.
+And therefore lead users to the toplevel page instead of a link to current header.
 
-Also seems like empty line (no wiki) is showing: http://localhost:3000/barack-obama/x86-paging/sample-code
+=== Separate lines with field label for parent and previous sibling on web editor
+{tag=Web}
+
+Otherwise too confusing what is what when fields are pre-filled, e.g. when editing existing, and in the future when clicking a "add here" button.
+
+=== Don't move to a separate page when clicking link to image to another header that is already visible on current page on web
+{tag=Web}
+
+=== Headers under scope don't have scope on ID leads to ID conflicts and a link misses on Web
+{tag=Web}
+
+E.g. in:
+``
+= x86
+
+== Sample code
+
+== x86 paging
+{scope}
+
+=== Sample code
+``
+
+both `Sample code` headers have `id="sample-code"`, which would lead to ID conflicts on the same page.
+
+Also, as a result, the toc link from `x86` intended to go to `x86-paging/sample-code` misses and opens on a separate page.
+
+I don't know how to solve this besides always including scopes on every ID... This does however lead to ugly local IDs on individual pages which is a bit of a shame... oh cruel life.
+
+We could also have two versions of every page, scoped and non scoped, but things likely go exponential when we start dealing with subscope.
+
+This could mean that a lot of toplevel scope removal work will go to the trash! :-( But what can you do, it is the inevitable outcome of dynamic page fetch?
+
+=== Each header tag shows up twice on web
+{tag=Web}
+
+=== Skip absolute link exit check on web
+{tag=Web}
+
+Maybe: https://stackoverflow.com/questions/10687099/how-to-test-if-a-url-string-is-absolute-or-relative
 
 === Add sibling/add child buttons next to self headers and toc
 {tag=Web}
@@ -36,6 +79,15 @@ Also seems like empty line (no wiki) is showing: http://localhost:3000/barack-ob
 {tag=Web}
 
 Maybe some will be list by default, but some will definitely be article show by default. Notably topic has to show the rendered body by default.
+
+=== Allow creating new pages under scope
+{tag=Web}
+
+We likely just have to set the `path:` API argument based on the has scope status of the parent article.
+
+=== Prefix unnumbered IDs with the parent header's ID
+{tag=Dynamic tree fetch}
+{tag=Web}
 
 === ToC link on headers not opening collapsed toc entries
 {c}
@@ -69,10 +121,6 @@ Either with scroll or a load more button. Slightly tempted by a load more button
 
 To implement, we just have to expose the ArticlePage.ts fetch in an API manner. The page then tracks current limit on a state variable, and just requests more from that point onwards.
 
-=== Prefix unnumbered IDs with the parent header's ID
-{tag=Dynamic tree fetch}
-{tag=Web}
-
 === Word count on web
 {tag=Web}
 
@@ -91,6 +139,16 @@ We should likely not show it on link hover however, only headers, as doing so wo
 It seems that the third party library we are using is just a hack and doesn't properly provide the thing offline... OMG could it be so crap? https://stackoverflow.com/questions/59773190/monaco-editor-with-nextjs/68611592#68611592
 
 == Closed issues
+
+=== Don't move to a separate page when clicking toc links in a page that has scope on web
+{tag=Web}
+
+=== Wiki link on same line as parent link on web h1
+{tag=Web}
+
+Likely locally too then right. Will also be more uniform with h2 which now has parent link.
+
+Also seems like empty line (no wiki) is showing: http://localhost:3000/barack-obama/x86-paging/sample-code
 
 === h1 arguments broken on web
 {tag=Bug}

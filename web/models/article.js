@@ -508,7 +508,7 @@ SELECT
   "Article"."slug" AS "slug",
   "Article"."topicId" AS "topicId",
   "Article"."titleSource" AS "titleSource",${render ? `\n  "Article"."render" AS "render",` : ''}
-  ${h1 ? '"Article"."h1Render" AS "h1Render"' : '"Article"."h2Render" AS "h2Render"'},
+  ${h1 ? '"Article"."h1Render" AS "h1Render"' : '"Article"."h2Render" AS "h2Render"'},${h1 ? '\n  "Id"."ast_json" AS "ast_json",' : ''}
   "Article"."topicId" AS "topicId",
   "Article"."titleRender" AS "titleRender",
   "Article"."depth" AS "depth",
@@ -520,7 +520,7 @@ SELECT
   COUNT("issues"."id") AS "issueCount"
 FROM
   "Article"
-  INNER JOIN "File" ON "Article"."fileId" = "File"."id"
+  INNER JOIN "File" ON "Article"."fileId" = "File"."id"${h1 ? '\n  INNER JOIN "Id" ON "File"."toplevel_id" = "Id"."idid"' : ''}
   INNER JOIN "User" AS "File.Author"
     ON "File"."authorId" = "File.Author"."id" AND
        "File.Author"."username" = :authorUsername

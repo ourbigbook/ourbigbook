@@ -38,24 +38,34 @@ async function convert({
   const extra_returns = {};
   bodySource = bodySource.replace(/\n+$/, '')
   const input = modifyEditorInput(titleSource, bodySource).new
+  let input_path_given
   if (path === undefined) {
     path = titleSource ? ourbigbook.title_to_id(titleSource) : 'asdf'
+    input_path_given = false
+  } else {
+    path = path
+    input_path_given = true
   }
-  let input_path
   if (parentId) {
     const parentIdRow = await sequelize.models.Id.findOne({
       where: { idid: parentId },
     })
     if (!parentIdRow) {
-      throw new ValidationError(`${parentIdRow}`)
+      throw new ValidationError(`parentId did not match any known parent: "${parentId}"`)
     }
-    const context = ourbigbook.convert_init_context()
-    const parentH1Ast = ourbigbook.AstNode.fromJSON(parentIdRow.ast_json, context)
-    parentH1Ast.id = parentIdRow.idid
-    const parentScope = parentH1Ast.calculate_scope()
-    // Inherit scope from parent. In particular, this forces every article by a
-    // user to be scoped under @username due to this being recursive from the index page.
-    input_path = `${parentScope}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
+    let scope
+    if (input_path_given) {
+      scope = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+    } else {
+      const context = ourbigbook.convert_init_context()
+      const parentH1Ast = ourbigbook.AstNode.fromJSON(parentIdRow.ast_json, context)
+      parentH1Ast.id = parentIdRow.idid
+      const parentScope = parentH1Ast.calculate_scope()
+      // Inherit scope from parent. In particular, this forces every article by a
+      // user to be scoped under @username due to this being recursive from the index page.
+      scope = parentScope
+    }
+    input_path = `${scope}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
   } else {
     let usernameDir
     if (fakeUsernameDir) {

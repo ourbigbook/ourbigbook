@@ -1316,13 +1316,15 @@ if (commander.helpMacros) {
             } else {
               pref = MESSAGE_PREFIX_EXTRACT_IDS
             }
-            console.error(`${pref}: ${article.title}`);
+            console.error(`${pref}: ${article.title} (${article.inpath})`);
             let data, status
+            const inpathParse = path.parse(article.inpath)
             try {
               ;({ data, status } = await webApi.articleCreateOrUpdate(
                 { titleSource: article.title, bodySource: article.body },
                 {
-                  path: ourbigbook.path_splitext(article.inpath)[0],
+                  // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
+                  path: path.join(inpathParse.dir, inpathParse.name),
                   render,
                   parentId: article.parentId === null ? undefined : article.parentId,
                 }

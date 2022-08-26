@@ -36,6 +36,8 @@ We likely want to get rid of the `path` parameter, and instead determine IDs ful
 
 Both `{scope}` for subdirs and `{id}` for custom id basename !== from title should already be working, we just haven't setup ourbigbook CLI to inject `{id}` based on file path I think.
 
+`{scope}` is however not really usable in general on the same source tree of cirosantilli.github.io due to https://github.com/cirosantilli/ourbigbook/issues/284[].
+
 === Prevent full page reload on links using our existing link capture
 {tag=Web}
 

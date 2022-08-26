@@ -8429,24 +8429,6 @@ const OUTPUT_FORMATS_LIST = [
                 items.push(`${link_to_split}`);
               }
             }
-            let toc_href;
-            if (
-              context.forceHeadersHaveTocLink ||
-              (
-                !is_top_level &&
-                has_toc(context)
-              )
-            ) {
-              let id = ast.id
-              const fixedScopeRemoval = context.options.fixedScopeRemoval
-              if (fixedScopeRemoval !== undefined) {
-                // This is hacky, maybe we shouldn't overload fixedScopeRemoval for this...
-                // it is used only on web so... lazy to think now.
-                id = id.slice(fixedScopeRemoval)
-              }
-              toc_href = html_attr('href', '#' + html_escape_attr(toc_id(id)));
-              items.push(`<a${toc_href} class="toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`);
-            }
 
             // Parent links.
             let parent_asts = ast.get_header_parent_asts(context)
@@ -8542,6 +8524,27 @@ const OUTPUT_FORMATS_LIST = [
             }
           }
 
+          let toc_link_html;
+          {
+            if (
+              context.forceHeadersHaveTocLink ||
+              (
+                !is_top_level &&
+                has_toc(context)
+              )
+            ) {
+              let id = ast.id
+              const fixedScopeRemoval = context.options.fixedScopeRemoval
+              if (fixedScopeRemoval !== undefined) {
+                // This is hacky, maybe we shouldn't overload fixedScopeRemoval for this...
+                // it is used only on web so... lazy to think now.
+                id = id.slice(fixedScopeRemoval)
+              }
+              const toc_href = html_attr('href', '#' + html_escape_attr(toc_id(id)));
+              toc_link_html = `<a${toc_href} class="toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`
+            }
+          }
+
           // Calculate header_meta and header_meta
           let header_meta = [];
           let header_meta2 = [];
@@ -8553,6 +8556,9 @@ const OUTPUT_FORMATS_LIST = [
           }
           if (!first_header && parent_links !== undefined) {
             header_meta.push(parent_links);
+          }
+          if (toc_link_html) {
+            header_meta.push(toc_link_html);
           }
           if (tag_ids_html_array.length) {
             header_meta.push(tag_ids_html);

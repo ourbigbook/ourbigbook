@@ -8847,6 +8847,19 @@ We are thinking about the following layout:
 
 We are planning on using a clear green on white color scheme to reflect the current website CSS.
 
+= Sticker
+{c}
+{parent=Merchandise}
+
+* https://www.redbubble.com/people/OurBigBook/shop (case insensitive) has a marketplace mechanism 6.64 pound/unit for the recommended 21cm size, which is quite expensive. It is unclear how much they pay the creator.
+
+  https://www.redbubble.com/i/sticker/OurBigBook-com-sticker-with-URL-logo-and-slogan-by-OurBigBook/133297659.JCQM3
+
+  Their delivery is a bit slow, 7 business days.
+* https://stickerapp.co.uk/ does not seem to have a marketplace, 2 pounds/unit on an 11 unit order, so much cheaper. But why would we need 11 is the question. Just going with the marketplace for now.
+
+  Standard delivery in a bout 7 business days.
+
 = tshirtstudio.com
 {parent=T-shirt}
 

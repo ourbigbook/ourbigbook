@@ -22,9 +22,6 @@ Self headers done. ToC missing.
 
 <Article create and update slow on web> was an extreme case of slowness, but it taught us that we do want some kind of immediate feedback as soon as users click a form submission, and one feedback blocks further action such as typing.
 
-=== Computer sticker
-{tag=Publicity}
-
 === Topics video demo
 {tag=Publicity}
 
@@ -333,6 +330,9 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Computer sticker
+{tag=Publicity}
 
 === Prevent full page reload on links using our existing link capture
 {tag=Web}

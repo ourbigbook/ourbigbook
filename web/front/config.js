@@ -38,6 +38,8 @@ module.exports = {
     forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
     renderH2: true,
     path_sep: '/',
+    // https://docs.ourbigbook.com/todo/word-count-on-web
+    show_descendant_count: false,
     ourbigbook_json: {
       h: {
         numbered: false,

@@ -141,20 +141,24 @@ const Article = ({
                       </a>
                     </span>
                     {' '}
-                    <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is a child of this one">
-                      {' '}<NewArticleIcon title={false}/>
-                      {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
-                      <i className="ion-arrow-down-c"/>{toplevel ? ' Create child article' : ''}{' '}
-                    </a>
-                    {' '}
-                    {!isIndex &&
-                      <a
-                        href={routes.articleNew({ 'parent-title': curArticle.parentTitle, 'previous-sibling': curArticle.titleSource })}
-                        className="btn new"
-                        title="Create a new article that is the next sibling of this one"
-                      >
-                        {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? ' Create sibling article' : ''}{' '}
-                      </a>
+                    {!isIssue &&
+                      <>
+                        <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is a child of this one">
+                          {' '}<NewArticleIcon title={false}/>
+                          {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
+                          <i className="ion-arrow-down-c"/>{toplevel ? ' Create child article' : ''}{' '}
+                        </a>
+                        {' '}
+                        {!isIndex &&
+                          <a
+                            href={routes.articleNew({ 'parent-title': curArticle.parentTitle, 'previous-sibling': curArticle.titleSource })}
+                            className="btn new"
+                            title="Create a new article that is the next sibling of this one"
+                          >
+                            {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? ' Create sibling article' : ''}{' '}
+                          </a>
+                        }
+                      </>
                     }
                   </>
                 : <>

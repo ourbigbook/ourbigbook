@@ -50,6 +50,7 @@ class RestDbProvider extends web_api.DbProviderBase {
     }
     if (unfetched_ids.length) {
       const { data: { rows }, status } = await webApi.editorGetNoscopesBaseFetch(unfetched_ids, Array.from(ignore_paths_set))
+      // @ts-ignore: Property 'rows_to_asts' does not exist on type 'RestDbProvider'.
       return this.rows_to_asts(rows, context)
     } else {
       return []
@@ -91,6 +92,7 @@ class RestDbProvider extends web_api.DbProviderBase {
     if (unfetched_files.length) {
       const { data: { rows }, status } = await webApi.editorFetchFiles(unfetched_files)
       for (const row of rows) {
+        // @ts-ignore: Property 'add_file_row_to_cache' does not exist on type 'RestDbProvider'.
         this.add_file_row_to_cache(row, context)
       }
     }
@@ -103,7 +105,7 @@ export interface EditorPageProps {
   issueArticle?: ArticleType;
   loggedInUser: UserType;
   parentTitle?: string,
-  previousSiblingTtitle?: string,
+  previousSiblingTitle?: string,
   titleSource?: string;
   titleSourceLine?: number;
 }
@@ -237,13 +239,13 @@ export default function EditorPageHoc({
           }
         }
       } else {
-        titleErrors.push('Article Title cannot be empty')
+        titleErrors.push('Title cannot be empty')
       }
       setTitleErrors(titleErrors)
     }
-    useEffect(async () => {
+    useEffect(() => {
       // Initial check here, then check only on title update.
-      await checkTitle(file.titleSource)
+      checkTitle(file.titleSource)
     }, [])
     useEffect(() => {
       if (
@@ -291,7 +293,13 @@ export default function EditorPageHoc({
                 }
               },
               production: isProduction,
-              scrollPreviewToSourceLineCallback: (opts={}) => {
+              scrollPreviewToSourceLineCallback: (
+                opts : {
+                  line_number?: number;
+                  line_number_orig?: number;
+                  ourbigbook_editor?: any;
+                } = {}
+              ) => {
                 const { ourbigbook_editor, line_number, line_number_orig } = opts
                 const editor = ourbigbook_editor.editor
                 const visibleRange = editor.getVisibleRanges()[0]
@@ -484,7 +492,7 @@ export default function EditorPageHoc({
                         }
                       </>
                   }
-                  {isIssue && <> on <ArticleBy article={issueArticle} issue={initialArticle} newTab={true}/></>}
+                  {isIssue && <> on <ArticleBy article={issueArticle} newTab={true}/></>}
                 </h1>
                 <div className="help"><a href={`${docsUrl}#ourbigbook-markup-quick-start`} target="_blank"><HelpIcon /> Learn how to write with our OurBigBook Markup format here!</a></div>
               </div>
@@ -503,7 +511,7 @@ export default function EditorPageHoc({
                     disabled={isLoading}
                     onClick={handleSubmit}
                     ref={saveButtonElem}
-                    tabIndex="-1"
+                    tabIndex={-1}
                   >
                     <i className="ion-checkmark" />&nbsp;{isNew ? `Publish ${capitalize(itemType)}` : 'Save Changes'}
                   </button>
@@ -511,7 +519,7 @@ export default function EditorPageHoc({
                     className="btn"
                     type="button"
                     onClick={handleCancel}
-                    tabIndex="-1"
+                    tabIndex={-1}
                   >
                     <CancelIcon />&nbsp;Cancel
                   </button>

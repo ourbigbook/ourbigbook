@@ -25,8 +25,13 @@ export function decapitalize(s) {
 }
 
 export function ArticleBy(
-  { article, newTab=false }:
-  { article?: ArticleType }
+  {
+    article,
+    newTab=false
+  }: {
+    article?: ArticleType,
+    newTab?: boolean,
+  }
 ) {
   const inner = <>
     "<span

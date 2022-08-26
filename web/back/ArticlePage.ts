@@ -4,6 +4,7 @@ import { getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
 import { maxArticlesFetch } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
+import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 
 export const getServerSidePropsArticleHoc = ({
@@ -82,8 +83,8 @@ export const getServerSidePropsArticleHoc = ({
         sequelize.models.Article.count({
           where: { topicId: article.topicId },
         }),
-        includeIssues ? Promise.all(article.issues.map(issue => issue.toJson(loggedInUser))) : null,
-        includeIssues ? Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser))) : null,
+        includeIssues ? Promise.all(article.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
+        includeIssues ? Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
       ])
       const h1ArticleInSamePage = h1ArticlesInSamePage[0]
       if (

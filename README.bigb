@@ -7101,7 +7101,9 @@ It currently only works on SQLite.
 
 Or e.g. to make `cirosantilli` admin in a <Heroku deployment> you can run:
 ``
+heroku maintenance:on -a ourbigbook
 heroku psql -a ourbigbook -c "UPDATE \"User\" SET admin = true WHERE username='cirosantilli'"
+heroku maintenance:off -a ourbigbook
 ``
 
 = OurBigBook Web database migration setup

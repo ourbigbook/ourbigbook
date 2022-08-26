@@ -438,7 +438,8 @@ async function generateDemoData(params) {
         }
       }
       for (const articleArg of articleArgs) {
-        if (verbose) console.error(`${render ? `${articleId} ` : ''}${userIdToUser[articleArg.authorId].username}/${articleArg.titleSource}`);
+        const msg = `${articleId} ${userIdToUser[articleArg.authorId].username}/${articleArg.titleSource}`
+        if (verbose) console.error(msg);
         const author = userIdToUser[articleArg.authorId]
         const opts = articleArg.opts
         const parentEntry = opts.parentEntry
@@ -452,14 +453,18 @@ async function generateDemoData(params) {
         const args = {
           author,
           bodySource: articleArg.bodySource,
+          enforceMaxArticles: false,
           parentId,
           render,
           sequelize,
           titleSource: articleArg.titleSource,
         }
+        const before = now();
         const { articles: newArticles, extra_returns } = await convert.convertArticle(args)
+        const after = now();
         opts.topicId = extra_returns.context.header_tree.children[0].ast.id.substr(
           ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1)
+        if (verbose) console.error(`${msg} finished in ${after - before}ms`);
         for (const article of newArticles) {
           articleIdToArticle[article.id] = article
           articles.push(article)
@@ -474,7 +479,8 @@ async function generateDemoData(params) {
       const articles = (await sequelize.models.Article.getArticles({
         sequelize,
         count: false,
-        author: user.username
+        author: user.username,
+        limit: nArticlesPerUser,
       }))
       for (const article of articles) {
         const slugParse = path.parse(article.slug)

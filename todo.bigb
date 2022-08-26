@@ -3,8 +3,32 @@
 
 == Issues
 
+=== ToC Js folding broken on Web
+{tag=ToC}
+{tag=Web}
+{tag=Bug}
+
+Working on static.
+
+=== Don't skip parent/previous sibling updates on --web uploads
+{tag=Web}
+{tag=Web upload}
+
+We have recently implemented SHA-256 skips when article content hasn't changed.
+
+But we also need to check if the parent or previous sibling has changed, and if it has then update that.
+
+Likey just return parent and previous sibling on the /sha256 endpoint. Ideally we should also have a way to change the tree without re-render, though we could start with re-render for simplicity.
+
+=== Pass previousSiblingId on web upload
+{tag=Web}
+{tag=Web upload}
+
+Otherwise uploads become irreproducible if you stop half way. Unacceptable.
+
 === ourbigbook.com --web uploads sometimes fail with ETIMEDOUT or ECONNRESET
 {tag=Bug}
+{tag=Web upload}
 
 ourbigbook --web sometimes randomly times out on ourbigbook.com. First an ID extraction or render hangs, and then after a few seconds things blow up Usually happens around the thousands of articles uploaded.
 
@@ -607,17 +631,17 @@ Didin't help :-(
 
 A cleaner benchmarking can now be done with:
 ``
-OURBIGBOOK_POSTGRES=true ./bin/generate-demo-data.js -C -u1 -a650 -i0 -c0
+OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js -C -u1 -a650 -i0 -c0
 ``
 By this size, things are already unreasonably slow, and you can visibly see the latter renders being much slower than the early ones. We can then do a very minimal one off benchmark of a single slow article update with:
 ``
-OURBIGBOOK_POSTGRES=true ./bin/generate-demo-data.js -u1 -a1 -i0 -c0
+OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js -u1 -a1 -i0 -c0
 ``
 OK, now the test case is clearer.
 
 By also enabling SQL logging:
 ``
-time DEBUG='*:sql:*' OURBIGBOOK_POSTGRES=true ./bin/generate-demo-data.js -u1 -a1 -i0 -c0
+time DEBUG='*:sql:*' OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js -u1 -a1 -i0 -c0
 ``
 which gave:
 ``
@@ -825,6 +849,31 @@ After this, the only DB activity that has more than 15ms is:
 sequelize:sql:pg Executing (default): SELECT "id", "username", "ip", "displayName", "email", "image", "hash", "salt", "score", "followerCount", "admin", "verified", "verificationCode", "verificationCodeSent", "maxArticles", "maxArticleSize", "createdAt", "updatedAt" FROM "User" AS "User" WHERE "User"."username" = 'barack-obama'; +53ms
 ``
 but we don't reproduce it in isolation, must be something else in play, e.g. something in parallel.
+
+==== Article create and update slow on web update 1
+
+As of this commit did a bit further investigation with a better tooling and more understanding, notably now we run:
+``
+OURBIGBOOK_LOG_DB=1 num run dev-pg
+``
+
+Heroku is definitely slower than local, at around 1 t o2 s on the bit first ten pages:
+``
+ourbigbook --web --web-force-render --web-max-renders 10
+``
+but local was also rather slow when we have about the same number of articles for the user.
+
+After some improved benchmarking setup, there seem to be two separate causes:
+* preventing: `options.db_provider.fetch_header_tree_ids(` on web. It is not necessary as we render the ToC dynamically.
+
+  This matters the most for toplevel articles with many descendants.
+* the other problem we haven't solved yet: the nested index update querries are slow. We don't know how to solve that easily.
+
+  Those querries simply update a huge number of rows.
+
+  Maybe we could have a fallback mechanism to build that index on the background, and use the tree index temporarily?
+
+  Hard call.
 
 === Donate button on web
 {tag=Web}
@@ -1057,6 +1106,8 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 === Web
 
 ==== Web upload
+
+This tag is about `ourbigbook --web` uploading from the local filesystem to OurBigBook Web.
 
 ==== Comment
 

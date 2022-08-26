@@ -11,9 +11,11 @@ const config = require('../front/config')
 function getSequelize(toplevelDir, toplevelBasename) {
   const sequelizeParams = Object.assign(
     {
-      logging: config.verbose ? console.log : false,
+      logging: config.log.db ? console.log : false,
       // https://stackoverflow.com/questions/52260934/how-to-measure-query-execution-time-in-seqilize
       benchmark: true,
+      // https://stackoverflow.com/questions/55715724/how-to-log-queries-with-bounded-paramenters-in-sequelize/70954144#70954144
+      logQueryParameters: true,
     },
     ourbigbook_nodejs_webpack_safe.db_options,
   );

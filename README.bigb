@@ -7053,7 +7053,7 @@ To clear the database and start with an empty database use `--empty`:
 
 To regenerate the PostgreSQL database instead of SQLite as mentioned at <local development run with PostgreSQL>:
 ``
-OURBIGBOOK_POSTGRES=true ./bin/generate-demo-data.js
+OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js
 ``
 
 = Demo data local file output
@@ -7081,10 +7081,15 @@ This setup can be useful for quickly testing things locally, and in particular t
 
 These files have nothing to do with <OurBigBook Web> specifically, and would be used from <OurBigBook CLI> itself. It would be nice to bring them up to <OurBigBook CLI> at some point, and only expose the Web-specific database functions from Web.
 
-= Log database queries done
+= Log database queries
 {parent=OurBigBook Web development}
 
-To log all queries use:
+= Log all database queries
+{parent=Log database queries}
+
+There are two methods.
+
+One option is to use the standard Express.js logging mechanism:
 ``
 DEBUG='sequelize:sql:*' npm run dev
 ``
@@ -7092,7 +7097,28 @@ Shortcut:
 ``
 npm run devs
 ``
-The logs also include timing information, which can be invaluable to debug slow database queries.
+
+These logs also include some kind of timing information. However, we are not entirely sure that the timings mean, as they show for both `Executing` (query is about to start) and `Executed` (query finished) lines with possibly different values e.g.:
+``
+sequelize:sql:pg Executing (default): SELECT 1+1 AS result +0ms
+sequelize:sql:pg Executed (default): SELECT 1+1 AS result +1ms
+``
+The meaning of `+0ms` and `+1ms` appears to be the timing since last the last message with the same ID, i.e. `sequelize:sql:pg` in this case. Therefore, so long as there wasn't any `sequelize:sql:pg` between and the corresponding `Executing`, the `Executing` timing should give us the query time.
+
+This is a bit messy however, as we often want to find the largest numbers for profiling, and there could be a large time delta during inactivity.
+
+A better method for benchmarking is to use intead:
+``
+OURBIGBOOK_LOG_DB=1 npm run dev
+``
+which produces output of type:
+``
+Executed (default): SELECT 1+1 AS result Elapsed time: 0ms
+``
+without the corresponding `Executing` marker. This methos uses Sequelize's `benchamrk: true` option as per: https://stackoverflow.com/questions/52260934/how-to-measure-query-execution-time-in-seqilize[].
+
+= Log specific database queries
+{parent=Log database queries}
 
 However, you often want to long only a few selected queries, otherwise it becomes very difficult to determine which query is which, in partciular due asynchronous execution. In this case, use the technique mentioned at: https://stackoverflow.com/questions/21427501/how-can-i-see-the-sql-generated-by-sequelize-js/21431627#21431627 and just add:
 ``
@@ -7101,7 +7127,7 @@ logging: console.log,
 to the code in the query you want to log.
 
 = Pretty print SQL queries
-{parent=Log database queries done}
+{parent=Log database queries}
 
 Maybe we should do a better integration: https://stackoverflow.com/questions/70948142/how-to-indent-logged-queries-in-sequelize this is something that we do a lot:
 ``
@@ -7214,8 +7240,8 @@ and then running SQL commands.
 
 If you have determined that a bug is PostgreSQL specific, and it is easier to debug it interactively, first create the database as mentioned at <local run as identical to deployment as possible> and then:
 ``
-OURBIGBOOK_POSTGRES=true ./bin/generate-demo-data.js
-OURBIGBOOK_POSTGRES=true npm run dev
+OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js
+OURBIGBOOK_POSTGRES=1 npm run dev
 ``
 or shortcut for the run:
 ``
@@ -7224,7 +7250,7 @@ npm run dev-pg
 
 Note that doing `sync-db` also requires `NODE_ENV=production` as in:
 ``
-NODE_ENV=production OURBIGBOOK_POSTGRES=true bin/sync-db.js
+NODE_ENV=production OURBIGBOOK_POSTGRES=1 bin/sync-db.js
 ``
 because we have to shell out to the ugly <OurBigBook Web database migration setup>[migration] CLI, and that only understands `NODE_ENV`.
 
@@ -7249,7 +7275,7 @@ PORT=3001 OURBIGBOOK_DB_NAME=ourbigbook2 npm run dev-pg
 
 To restore a dump to the secondary database:
 ``
-web/bin/pg_restore -d ourbigbook2
+web/bin/pg_restore -d ourbigbook2 latest.dump
 ``
 
 = Save and restore local PostgreSQL development database
@@ -7663,7 +7689,7 @@ heroku run -a ourbigbook-staging bash
 {c}
 {parent=Heroku deployment}
 
-Enable Sequelize logs:
+To <log database queries> you can run:
 ``
 heroku config:set -a ourbigbook DEBUG='*:sql:*'
 ``

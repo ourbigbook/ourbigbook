@@ -1,7 +1,12 @@
 // Safe for web/front
 
+// Value of environment variables considered as true.
+env_true = '1'
+
 module.exports = {
-  postgres: process.env.OURBIGBOOK_POSTGRES === 'true',
+  env_true,
+  // TODO convert to OURBIGBOOK_DBMS=pg rather than boolean.
+  postgres: process.env.OURBIGBOOK_POSTGRES === env_true,
   sequelize_postgres_opts: {
     dialect: 'postgres',
     dialectOptions: {

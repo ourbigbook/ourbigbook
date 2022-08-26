@@ -3124,6 +3124,7 @@ function convert_init_context(options={}, extra_returns={}) {
   }
   if (!('render_metadata' in options)) {
     // Render article "metadata" such as: ToC, tagged, incoming links, ancestors.
+    // This is notable disabled on Web, where metadata is fetched on the fly at page load.
     options.render_metadata = true;
   }
   if (!('start_line' in options)) { options.start_line = 1; }
@@ -5731,13 +5732,16 @@ async function parse(tokens, options, context, extra_returns={}) {
               ignore_paths_set: context.options.include_path_set,
             }
           ),
-          options.db_provider.fetch_header_tree_ids(
-            options.forbid_include
-              // Since \Include is not allowed, we must check every header.
-              // Parent relations are encoded directly on DB only. Used in Web.
-              ? header_ids
-              : Object.keys(options.include_hrefs)
-          ),
+          context.options.render_metadata
+            ? options.db_provider.fetch_header_tree_ids(
+                options.forbid_include
+                  // Since \Include is not allowed, we must check every header.
+                  // Parent relations are encoded directly on DB only. Used in Web.
+                  ? header_ids
+                  : Object.keys(options.include_hrefs)
+              )
+            : []
+          ,
           options.db_provider.fetch_ancestors(context.toplevel_id, context),
         ])
       };

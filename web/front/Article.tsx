@@ -1,5 +1,6 @@
 import React from 'react'
 import * as ReactDOM from 'react-dom'
+import Router from 'next/router'
 
 import { formatDate } from 'front/date'
 import { IssueIcon, EditArticleIcon, NewArticleIcon, SeeIcon, SignupOrLogin, TimeIcon, TopicIcon } from 'front'
@@ -213,22 +214,27 @@ const Article = ({
               }
               const targetElem = document.getElementById(idNoprefix)
               if (
-                targetElem &&
                 // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
                 // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
-                !e.ctrlKey &&
-                // h2 self link, we want those to actually go to the separated page.
-                target.parentElement.tagName !== 'H2'
+                !e.ctrlKey
               ) {
                 e.preventDefault()
-                window.location.hash = idNoprefix
+                if (
+                  targetElem &&
+                  // h2 self link, we want those to actually go to the separated page.
+                  target.parentElement.tagName !== 'H2'
+                ) {
+                  window.location.hash = idNoprefix
+                } else {
+                  Router.push(href)
+                }
               }
             }
           });
         }
       }
     },
-    []
+    [articlesInSamePageMap]
   );
   let html = ''
   if (!isIssue) {

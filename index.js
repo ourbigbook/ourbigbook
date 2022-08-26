@@ -6231,6 +6231,9 @@ function render_error_x_undefined(ast, context, target_id, options={}) {
  **/
 function render_toc_from_entry_list({ add_test_instrumentation, entry_list, descendant_count_html, tocIdPrefix }) {
   let top_level = 0;
+  if (tocIdPrefix === undefined) {
+    tocIdPrefix = ''
+  }
   let ret = `<div id="${tocIdPrefix}${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
   ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}">${TOC_MARKER_SYMBOL} Table of contents</a>`
   if (descendant_count_html) {

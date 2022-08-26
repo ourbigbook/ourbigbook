@@ -152,7 +152,7 @@ Please click this link to verify your account: ${verifyUrl}
     for (const admin of admins) {
       lib.sendEmail({
         to: admin.email,
-        subject: `A new user signed up: ${user.displayName} (${user.username})!`,
+        subject: `A new user signed up: ${user.displayName} (@${user.username}, ${user.email})!`,
         html: `<p><a href="${profileUrl}">${profileUrl}</a></p><p>Another step towards world domination is taken!</p>`,
         text: `${profileUrl}
 

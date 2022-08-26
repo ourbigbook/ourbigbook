@@ -3,11 +3,24 @@
 
 == Issues
 
+=== Topics video demo
+{tag=Publicity}
+
+=== Photos of the merchandise!
+{tag=Publicity}
+
 === Skip re-render from API if article was unchanged
 {tag=Web}
 {tag=Web upload}
 
 Would radically speed sync up.
+
+=== Start a basic notification system
+{tag=Web}
+
+OK, now afetr the big redirect from cirosantilli.com to ourbigbook.com, this is becoming more pressing.
+
+We could start simple without any in-browser things, email only. Though having both would be ideal...
 
 === Store last modified SHA of each article to skip API re-renders
 {tag=Web}
@@ -62,30 +75,17 @@ Self headers done. ToC missing.
 
 <Article create and update slow on web> was an extreme case of slowness, but it taught us that we do want some kind of immediate feedback as soon as users click a form submission, and one feedback blocks further action such as typing.
 
-=== Topics video demo
-{tag=Publicity}
-
-=== Photos of the merchandise!
-{tag=Publicity}
-
 === Hide unconfirmed users
 {tag=Web}
 
 === Design a project banner
-{tag=Web}
+{tag=Publicity}
 
 E.g. for Twitter and LinkedIn.
 
 Maybe a screenshot of the website?
 
 If we could represent topics somehow that would be ideal...
-
-=== Start a basic notification system
-{tag=Web}
-
-OK, now afetr the big redirect from cirosantilli.com to ourbigbook.com, this is becoming more pressing.
-
-We could start simple without any in-browser things, email only. Though having both would be ideal...
 
 === Fragment redirects not working on web
 {tag=Web}

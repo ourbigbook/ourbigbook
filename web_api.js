@@ -377,6 +377,10 @@ class DbProviderBase extends ourbigbook.DbProvider {
     return cached_asts
   }
 
+  get_file(path) {
+    return this.path_to_file_cache[path]
+  }
+
   /** Convert a Id DB row to a JavaScript AstNode object.
    *
    * @param row: a row from the Ids database

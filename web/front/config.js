@@ -51,11 +51,12 @@ module.exports = {
     x_leading_at_to_web: false,
     x_remove_leading_at: true,
   },
-  contactUrl: 'https://github.com/cirosantilli/ourbigbook/issues',
+  contactUrl: `${docsUrl}/contact`,
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
   appDomain,
   docsUrl,
+  donateUrl: `${docsUrl}#donate`,
   aboutUrl: `${docsUrl}#ourbigbook-web-user-manual`,
   appName: `OurBigBook.com`,
   buttonActiveClass: 'active',

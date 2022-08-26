@@ -10,7 +10,7 @@ The OurBigBook Project creates writing tools to help anyone publish textbooks, w
 
 Mission: to live in a world where you can learn university-level mathematics, physics, chemistry, biology and engineering from perfect free open source books that anyone can write to get famous.
 
-How to get there: <OurBigBook Web>[create a website] that incentivizes learners (notably university students taking courses) to write freely licensed university-level natural science books for free. Their motivation for doing that are:
+How to get there: <OurBigBook Web>[create a website] that incentivizes learners (notably university students taking courses) to write freely licensed university-level natural science books in their own words for free. Their motivation for doing that are:
 * getting their knowledge globally recognized and thus better jobs
 * improving the world
 * learning by teaching
@@ -22,7 +22,7 @@ How to get there: <OurBigBook Web>[create a website] that incentivizes learners 
 The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> is another complementary tool.
 
 * https://OurBigBook.com[]: reference <OurBigBook Web> instance
-* https://cirosantilli.com/sponsor[]: donate to the OurBigBook Project
+* donate to the OurBigBook Project: <donate>
 * https://twitter.com/OurBigBook[]: announcements. Other official accounts at: <official accounts>{full}
 * https://cirosantilli.com/ourbigbook-com[]: further rationale behind the project
 * https://cirosantilli.com[]: showcase static demo document with interesting content, published with <OurBigBook CLI>. Primary inspiration for OurBigBook development.
@@ -30,11 +30,20 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
   * https://github.com/cirosantilli/cirosantilli.github.io[] and https://github.com/cirosantilli/cirosantilli.github.io/blob/dev/oxford-nanopore-river-bacteria.bigb[]: source of the above showcase documents
 * <design goals>{full}: <OurBigBook Markup> and <OurBigBook CLI> feature overview
 * https://github.com/cirosantilli/ourbigbook[]: OurBigBook source code
+* https://github.com/cirosantilli/ourbigbook/issues[]: project issue tracker
 * https://github.com/cirosantilli/ourbigbook/blob/master/README.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
 * https://docs.ourbigbook.com/editor[]: live in-browser editor demo
 * https://cirosantilli.com/ourbigbook-template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
 * https://cirosantilli.com/ourbigbook-media[]: media for the project such as for documentation and <publicity>, more info: <OurBigBook media repository>{full}
+
+= Donate
+{parent=OurBigBook}
+
+You can donate to the <OurBigBook Project> to sponsor its development in the following ways:
+* https://cirosantilli.com/sponsor[]: give money direclty to Ciro Santilli, who is currently the only maintainer and developer of the project. If things ever grow in scope we will set up a foundation and register a charity for it. One may dream.
+* by project merchanidise, see: <merchandise>{full}
+We are happy to discuss paid contracts to implement sepcific features, to get in touch see: <contact>.
 
 = Quick start
 {parent=OurBigBook}
@@ -7998,6 +8007,17 @@ or from the <ourbigbook.json> file with an entry of form:
 "unsafe-xss": true
 ``
 
+= Contact
+{parent=OurBigBook}
+
+* https://github.com/cirosantilli/ourbigbook/issues for any public contact, see also: <OurBigBook issue tracker>{full}
+* for private contact email: `ciro@ourbigbook.com`
+
+= OurBigBook issue tracker
+{parent=Contact}
+
+https://github.com/cirosantilli/ourbigbook/issues
+
 = Developing OurBigBook
 {parent=OurBigBook}
 
@@ -8755,7 +8775,8 @@ Some blobs were unfortunately added to this repository earlier on, but when we s
 * https://OurBigBook.com (case insensitive)
 * https://twitter.com/OurBigBook (case insensitive)
 * Discord: OurBigBook#6998 "OurBigBook's Server" invite link: https://discord.gg/A8P5zGcWUh
-* LinkedIn group: https://www.linkedin.com/groups/9164882/
+* LinkedIn company: https://www.linkedin.com/company/ourbigbook
+  * LinkedIn group: https://www.linkedin.com/groups/9164882/ TODO vs the company.
 * Facebook:
   * page: https://www.facebook.com/OurBigBook (case insensitive)
   * group: https://www.facebook.com/groups/OurBigBook (case insensitive)
@@ -8776,7 +8797,7 @@ We are thinking about the following layout:
 
 * front: "OurBigBook.com" on upper left chest text
 * back:
-  * "OurBigBook.com" on top across back. This positioning is crucial as it will show above chairs in amphiteathers.
+  * "OurBigBook.com" on top across back. This positioning is crucial as it will show above chairs in amphitheatres
   * logo below text centered
 
 We are planning on using a clear green on white color scheme to reflect the current website CSS.
@@ -8888,3 +8909,37 @@ but we wonder if that wouldn't be too close to: https://www.learningforreal.org/
 Another one that is also somewhat taken is:
 \Q[You be the teacher]
 https://www.teacherspayteachers.com/Product/You-Be-The-Teacher-Independent-Research-Project-Distance-Learning-3785062
+
+= OurBigBook.com Fellowship
+{parent=Publicity}
+
+The <OurBigBook.com Projct> has sporadically offered a scholarship called the "OurBigBook.com Fellowship". Its recipients are called the "OurBigBook.com Fellows".
+
+The goal of the fellowship is to pay brilliant students to focus exclusively on pursuing ambitious goals in STEM research and education for a pre-determined length of time, without having to worry about earning money in the short term.
+
+The scholarship is both excellency and need based, focusing on students from developing countries whose families were not financially able to support them.
+
+Being brilliant, such students would be tempted and able to go for less ambitious jobs that pay them the short term. The goal of the scholarship is to free such students to instead pursue more ambitious, longer term goals.
+
+Or in other words: to allow smart people to https://www.youtube.com/watch?v=khOaAHK7efc[do whatever the fuck they really want to do].
+
+The scholarship is paid as a single monetary transfer to the recipient.
+
+There are no legally binding terms to the fellowship: we pick good people and trust them to do what they think is best.
+
+The following ethical guidelines are however highly encouraged:
+* to acknowledge the funding where appropriate, e.g.:
+  * at "funding slide" (usually the last one) of a presentation for work done during, or that you feel is a direct consequence of the scholarship
+  * by marking yourself as a "OurBigBook.com Fellow" on LinkedIn, under the organization: https://www.linkedin.com/company/ourbigbook for the period of award
+* keep in touch. Let us know about any large successes (or failures!) you've have as the consequence of the funding, e.g. publications, starting a cool new job, or deciding to quit academia.
+* give back culture: if one day, in a potentially far and undefined future, recipients achieve a stable financial situation, they are encouraged to give back to the OurBigBook.com Fellowship fund an amount at least equal to their funding.
+
+  This enables us to keep sustainably investing in new brilliant talent who needs the money.
+
+  We are more than happy to take the consider the fellow's suggestion for a recipient of their choice.
+* pivoting is OK.
+
+= OurBigBook.com Fellows
+{parent=OurBigBook.com Fellowship}
+
+This page lists current and past OurBigBook.com Fellows.

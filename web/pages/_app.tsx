@@ -2,7 +2,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useEffect } from 'react';
 
-import { aboutUrl, appName, contactUrl, googleAnalyticsId, isProduction } from 'front/config';
+import { aboutUrl, appName, contactUrl, donateUrl, googleAnalyticsId, isProduction } from 'front/config';
 import CustomLink from 'front/CustomLink'
 import Navbar from 'front/Navbar'
 import { AppContext, AppContextProvider } from 'front'
@@ -64,11 +64,12 @@ const MyApp = ({ Component, pageProps }) => {
         {!isEditor &&
           <footer>
             <div className="container">
-              <a href={aboutUrl}>What is this website???</a>  |
-              Content license: <a href="https://cirosantilli.com/ourbigbook-com/content-license">CC BY-SA 4.0 unless noted</a>  |
-              {' '}<a href="https://github.com/cirosantilli/ourbigbook/tree/master/web">Website source code</a> |
-              {' '}<a href={contactUrl}>Contact, bugs, suggestions, abuse reports</a> |
-              {' '}<a href="https://twitter.com/OurBigBook">Announcements: @OurBigBook</a> |
+              <a href={aboutUrl}>What is this website???</a>
+              {' '}| <a href={donateUrl}>Donate</a>
+              {' '}| Content license: <a href="https://cirosantilli.com/ourbigbook-com/content-license">CC BY-SA 4.0 unless noted</a>
+              {' '}| <a href="https://github.com/cirosantilli/ourbigbook/tree/master/web">Website source code</a>
+              {' '}| <a href={contactUrl}>Contact, bugs, suggestions, abuse reports</a>
+              {' '}| <a href="https://twitter.com/OurBigBook">Announcements: @OurBigBook</a>
             </div>
           </footer>
         }

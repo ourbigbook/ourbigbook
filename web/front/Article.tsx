@@ -70,6 +70,7 @@ const Article = ({
             }
             curArticle = article
           } else if (
+            loggedInUser &&
             // Happens on user index page.
             id === loggedInUser.username
           ) {

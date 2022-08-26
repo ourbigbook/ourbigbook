@@ -2263,7 +2263,6 @@ animal.bigb
 == Vertebrate
 
 \Include[dog]
-``
 
 == Invertebrate
 ``
@@ -6193,9 +6192,6 @@ it is possible to override it for a specific file with and explicit `=0` <\H num
 == Child also inherits not numbered
 ``
 
-= `openLinksOnNewTabs`
-{parent=ourbigbook.json}
-
 Make every link to something that is not on the current page open on a new tab instead of the current one, i.e. add `target="_blank"` to such links.
 
 = `splitDefault`
@@ -6298,6 +6294,9 @@ Direct children of media-providers and subproperties that are valid only for the
 * `youtube`: YouTube <videos>
 
 See also: https://github.com/cirosantilli/ourbigbook/issues/40
+
+= `openLinksOnNewTabs`
+{parent=ourbigbook.json}
 
 = `outputOutOfTree`
 {parent=ourbigbook.json}
@@ -6418,7 +6417,7 @@ Originally that would render as:
 <a href="#dog">Dogs</a> don't eat <a href="plant#banana">bananas</a>.
 ``
 
-But then if you set in `ourbigbook.json:
+But then if you set in `ourbigbook.json`:
 ``
 {
   "reroutePrefix": "https://mynewsite.com/"
@@ -7938,11 +7937,11 @@ npmtgi() ( npm run testi -- -g "$*" )
 
 Note however that this does not work for tests that run the `ourbigbook` executable itself, since those spawn a separate process. TODO how to do it? Tried along:
 ``
-    const out = child_process.spawnSync('node', ['inspect', 'ourbigbook'].concat(options.args), {
-      cwd: tmpdir,
-      input: options.stdin,
-      stdio: 'inherit',
-    });
+const out = child_process.spawnSync('node', ['inspect', 'ourbigbook'].concat(options.args), {
+  cwd: tmpdir,
+  input: options.stdin,
+  stdio: 'inherit',
+});
 ``
 but not working, related: https://stackoverflow.com/questions/23612087/gulp-target-to-debug-mocha-tests So for now, we are just printing the command being run as in:
 ``

@@ -43,47 +43,46 @@ export const TopicPage = ({
   if (router.isFallback) { return <LoadingSpinner />; }
   return (
     <div className="topic-page content-not-ourbigbook">
-      {topic ?
-        <>
-          <h1><a href=""><TopicIcon /> <span className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: topic.titleRender }} /></a></h1>
-          <div className="tab-list">
-            <CustomLink
-              className={`tab-item${order === 'score' ? ' active' : ''}`}
-              href={routes.topic(topicId, { sort: 'score' })}
-            >
-              <ArticleIcon /> Top Articles
-            </CustomLink>
-            <CustomLink
-              className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
-              href={routes.topic(topicId, { sort: 'created' })}
-            >
-              Latest Articles
-            </CustomLink>
-            <CustomLink
-              className={`tab-item`}
-              href={routes.articleNew({ title: topic.titleSource })}
-            >
-              <NewArticleIcon /> New Article in Topic
-            </CustomLink>
-          </div>
-          <ArticleList {...{
-            articles,
-            articlesCount,
-            loggedInUser,
-            page,
-            paginationUrlFunc,
-            showAuthor: true,
-            showBody: true,
-            what,
-          }}/>
-        </>
-        :
-        <>
-          <h1><TopicIcon /> Topic does not exist: {topicId}</h1>
-          {false &&
-            <div>TODO: add a link for user to create an article with that topic.</div>
-          }
-        </>
+      {topic
+        ? <>
+            <h1><a href=""><TopicIcon /> <span className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: topic.titleRender }} /></a></h1>
+            <div className="tab-list">
+              <CustomLink
+                className={`tab-item${order === 'score' ? ' active' : ''}`}
+                href={routes.topic(topicId, { sort: 'score' })}
+              >
+                <ArticleIcon /> Top Articles
+              </CustomLink>
+              <CustomLink
+                className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
+                href={routes.topic(topicId, { sort: 'created' })}
+              >
+                Latest Articles
+              </CustomLink>
+              <CustomLink
+                className={`tab-item`}
+                href={routes.articleNew({ title: topic.titleSource })}
+              >
+                <NewArticleIcon /> New Article in Topic
+              </CustomLink>
+            </div>
+            <ArticleList {...{
+              articles,
+              articlesCount,
+              loggedInUser,
+              page,
+              paginationUrlFunc,
+              showAuthor: true,
+              showBody: true,
+              what,
+            }}/>
+          </>
+        : <>
+            <h1><TopicIcon /> Topic does not exist: {topicId}</h1>
+            {false &&
+              <div>TODO: add a link for user to create an article with that topic.</div>
+            }
+          </>
       }
     </div>
   )

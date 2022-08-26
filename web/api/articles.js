@@ -126,41 +126,45 @@ async function createOrUpdateArticle(req, res, opts) {
   }
 
   // Skip conversion if unchanged.
-  let articles, unmodified
+  let articles
+  let modified = true
+  let sourceNewerThanRender = true
   if (
     path !== undefined
   ) {
-    const components = path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
-    let slug = loggedInUser.username
-    if (path !== ourbigbook.INDEX_BASENAME_NOEXT) {
-      slug = `${slug}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${path}`
-    }
-    const article = await sequelize.models.Article.getArticle({ sequelize, slug })
-    if (article) {
-      if (
-        // Don't skip re-renders if we are rendering. The rationale for this is: normally
-        // ourbigbook --web first does an ID extract run, then followed by a render run.
-        // The ID extraction run already updates the source code to the new source,
-        // so without any checks, the render run would always be skipped as the new
-        // source matches the old source. Actually, I just noticed that we could make 
-        // titleSource and bodySource (and every other parameter) optional on render,
-        // and just make it a bump operation with values from DB (implemented now).
-        render
-      ) {
+    const file = await sequelize.models.File.findOne({
+      where: {
+        path: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${path}.${ourbigbook.OURBIGBOOK_EXT}`
+      },
+      include: [
+        {
+          model: sequelize.models.LastRender,
+          where: {
+            type: sequelize.models.LastRender.Types[ourbigbook.OUTPUT_FORMAT_HTML],
+          },
+          required: false,
+        },
+      ],
+    })
+    if (file) {
+      if (render) {
         if (bodySource === undefined) {
-          bodySource = article.file.bodySource
+          bodySource = file.bodySource
         }
         if (titleSource === undefined) {
-          titleSource = article.file.titleSource
+          titleSource = file.titleSource
         }
-      } else {
-        if (
-          titleSource === article.file.titleSource &&
-          bodySource === article.file.bodySource
-        ) {
-          articles = [article]
-          unmodified = true
-        }
+      }
+      if (
+        titleSource === file.titleSource &&
+        bodySource === file.bodySource
+      ) {
+        articles = []
+        modified = false
+      }
+      const lastRender = file.LastRender
+      if (lastRender) {
+        sourceNewerThanRender = lastRender.date < file.updatedAt
       }
     }
   }
@@ -177,8 +181,12 @@ async function createOrUpdateArticle(req, res, opts) {
     throw new lib.ValidationError(`param "${missingName}" is mandatory when not rendering or when "path" to an existing article is not given`)
   }
 
-  // Article was changed, do the conversion.
-  if (articles === undefined) {
+  // Render.
+  if (
+    render ||
+    modified ||
+    sourceNewerThanRender
+  ) {
     const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`
     if (!(
       parentId === undefined ||
@@ -205,12 +213,16 @@ async function createOrUpdateArticle(req, res, opts) {
       render,
       titleSource,
     })).articles
-    unmodified = false
   }
   return res.json({
     articles: await Promise.all(articles.map(article => article.toJson(loggedInUser))),
-    // bool: was the article re-rendered, or did we skip it because contents didn't change?
-    unmodified,
+    // bool: were article contents modified from what we had in the database?
+    modified,
+    // bool: is the source newer than the render output? Could happen if we
+    // just extracted IDs but didn't render later on for some reason, e.g.
+    // ourbigbook --web crashed half way through ID extraction. false means
+    // either not, or there was no
+    sourceNewerThanRender,
   })
 }
 

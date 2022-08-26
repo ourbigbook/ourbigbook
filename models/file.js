@@ -1,3 +1,6 @@
+const ourbigbook = require('../index')
+const last_render = require('./last_render')
+
 module.exports = (sequelize, web=false) => {
   const { DataTypes } = sequelize.Sequelize
   const cols = {
@@ -17,10 +20,6 @@ module.exports = (sequelize, web=false) => {
       type: DataTypes.DATE,
       allowNull: true,
     },
-    last_render: {
-      type: DataTypes.DATE,
-      allowNull: true,
-    },
   }
   if (web) {
     cols.titleSource = {
@@ -37,7 +36,6 @@ module.exports = (sequelize, web=false) => {
   }
   const indexes = [
     { fields: ['last_parse'], },
-    { fields: ['last_render'], },
     { fields: ['path'], },
     { fields: ['toplevel_id'], },
   ]
@@ -45,11 +43,12 @@ module.exports = (sequelize, web=false) => {
     // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
     indexes.push({ fields: ['authorId'], })
   }
-  return sequelize.define(
+  const File = sequelize.define(
     'File',
     cols,
     {
       indexes,
     }
   )
+  return File
 }

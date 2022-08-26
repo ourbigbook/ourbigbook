@@ -298,7 +298,7 @@ async function generateDemoData(params) {
   const sequelize = models.getSequelize(directory, basename);
   await models.sync(sequelize, { force: empty || clear })
   if (!empty) {
-    const sourceRoot = path.join(__dirname, 'tmp')
+    const sourceRoot = path.join(__dirname, 'tmp', 'demo')
     fs.rmSync(sourceRoot, { recursive: true, force: true });
 
     if (verbose) printTimeNow = now()
@@ -427,6 +427,7 @@ async function generateDemoData(params) {
     //    return 0;
     //  }
     //})
+    const articles = []
     for (const render of [false, true]) {
       let articleId = 0
       if (verbose) {
@@ -461,32 +462,36 @@ async function generateDemoData(params) {
           ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1)
         for (const article of newArticles) {
           articleIdToArticle[article.id] = article
+          articles.push(article)
           articleId++
         }
       }
     }
-    // Re-find needed (instead e.g. .push on the above creation loop) in order to fetch the correct final nestedSetIndex values.
-    const articles = (await sequelize.models.Article.getArticles({ sequelize, count: false }))
 
     // Write files to filesystem.
     // https://docs.ourbigbook.com/demo-data-local-file-output
-    for (const article of articles) {
-      const slugParse = path.parse(article.slug)
-      let outdir, outbase_noext
-      if (slugParse.dir) {
-        outdir = path.join(sourceRoot, slugParse.dir)
-        outbase_noext = slugParse.base
-      } else {
-        // Toplevel README.
-        outdir = path.join(sourceRoot, slugParse.base)
-        outbase_noext = ourbigbook.README_BASENAME_NOEXT
-      }
-      fs.mkdirSync(outdir, { recursive: true })
-      const outpath = path.join(outdir, outbase_noext + '.' + ourbigbook.OURBIGBOOK_EXT)
-      const file = article.file
-      fs.writeFileSync(outpath, await article.getSourceExport());
-    }
     for (const user of users) {
+      const articles = (await sequelize.models.Article.getArticles({
+        sequelize,
+        count: false,
+        author: user.username
+      }))
+      for (const article of articles) {
+        const slugParse = path.parse(article.slug)
+        let outdir, outbase_noext
+        if (slugParse.dir) {
+          outdir = path.join(sourceRoot, slugParse.dir)
+          outbase_noext = slugParse.base
+        } else {
+          // Toplevel README.
+          outdir = path.join(sourceRoot, slugParse.base)
+          outbase_noext = ourbigbook.README_BASENAME_NOEXT
+        }
+        fs.mkdirSync(outdir, { recursive: true })
+        const outpath = path.join(outdir, outbase_noext + '.' + ourbigbook.OURBIGBOOK_EXT)
+        const file = article.file
+        fs.writeFileSync(outpath, await article.getSourceExport());
+      }
       fs.writeFileSync(path.join(sourceRoot, user.username, ourbigbook.OURBIGBOOK_JSON_BASENAME), '{}\n');
     }
 

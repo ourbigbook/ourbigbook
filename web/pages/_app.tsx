@@ -79,13 +79,13 @@ const MyApp = ({ Component, pageProps }) => {
         </div>
         {!isEditor &&
           <footer>
-            <span><a href={aboutUrl}><HelpIcon /> About</a></span>
-            <span><a href={donateUrl}>$ Donate</a></span>
-            <span><i className="ion-document-text" /> Content license: <a href="https://cirosantilli.com/ourbigbook-com/content-license">CC BY-SA 4.0 unless noted</a></span>
-            <span><a href="https://github.com/ourbigbook/ourbigbook/tree/master/web"><i className="ion-social-github" /> Website source code</a></span>
-            <span><a href={contactUrl}><i className="ion-ios-chatbubble" /> Contact, bugs, suggestions, abuse reports</a></span>
-            <span><a href="https://twitter.com/OurBigBook"><i className="ion-social-twitter" /> @OurBigBook</a></span>
-            <span><a href="https://www.youtube.com/@OurBigBook"><i className="ion-social-youtube" /> @OurBigBook</a></span>
+            <a href={aboutUrl}><HelpIcon /> About</a>
+            <a href={donateUrl}>$ Donate</a>
+            <a href="https://cirosantilli.com/ourbigbook-com/content-license"><i className="ion-document-text" /> Content license: CC BY-SA 4.0 unless noted</a>
+            <a href="https://github.com/ourbigbook/ourbigbook/tree/master/web"><i className="ion-social-github" /> Website source code</a>
+            <a href={contactUrl}><i className="ion-ios-chatbubble" /> Contact, bugs, suggestions, abuse reports</a>
+            <a href="https://twitter.com/OurBigBook"><i className="ion-social-twitter" /> @OurBigBook</a>
+            <a href="https://www.youtube.com/@OurBigBook"><i className="ion-social-youtube" /> @OurBigBook</a>
           </footer>
         }
       </div>

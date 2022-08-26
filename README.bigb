@@ -9109,56 +9109,77 @@ Some blobs were unfortunately added to this repository earlier on, but when we s
 = Merchandise
 {parent=Publicity}
 
-Official project merchandise is avaiable at:
-* https://www.tshirtstudio.com/marketplace/ourbigbook-com from <tshirtstudio.com>. Each sale includes a 5 dollar/euro/pound donation to the project.
-  * T-shirt https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-t-shirt
-
-    Very slightly too straight on shoulders, but not bad. The front color is a bit off/too white-ish, but not terrible.
-  * Zip Hoodie https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-zip-hoodie
-
-    Good quality, but the material is slightly warmer than I'd like, I tend to prefer slightly fluffier ones.
-
 = T-shirt
 {c}
 {parent=Merchandise}
 
 We are thinking about the following layout:
-
 * front: "OurBigBook.com" on upper left chest text
 * back:
   * "OurBigBook.com" on top across back. This positioning is crucial as it will show above chairs in amphitheatres
   * logo below text centered
-
 We are planning on using a clear green on white color scheme to reflect the current website CSS.
 
 = tshirtstudio.com
 {parent=T-shirt}
 
-This is a reasonable website. It is a shame that you can't easily drag and drop move/resize images on the web UI, which has led us to do that manually on the in the source images. But still, relatively easy to use, and easy to setup a marketplace in.
+All items available at: https://www.tshirtstudio.com/marketplace/ourbigbook-com from <tshirtstudio.com>. Each sale includes a 5 dollar/euro/pound donation to the project.
+
+This is a reasonable website.
+
+It is a shame that you can't easily drag and drop move/resize images on the web UI, which has led us to do that manually on the in the source images.
+
+But still, relatively easy to use, and easy to setup a marketplace in.
+
+Another downside is that it does not seem possible to edit existing designs, so it is a bit hard to know exactly what you had done when it is time to update things.
 
 \Image[merch/tshirtstudio/tshirt-front.jpg]
 {title=TShirt Studio black t-shirt front}
-{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-t-shirt[].}
+{description=
+Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-black-t-shirt[].
+
+Very slightly too straight on shoulders, but not bad. The front color is a bit off/too white-ish, but not terrible.
+
+This is a picture from version one, which did not have the <project slogan>. Version one is no longer available for sale, only the new one with the slogan.
+}
 {height=800}
 {provider=github}
 
 \Image[merch/tshirtstudio/tshirt-back.jpg]
 {title=TShirt Studio black t-shirt back}
-{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-t-shirt[].}
+{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-black-t-shirt[].}
 {height=800}
 {provider=github}
 
 \Image[merch/tshirtstudio/hoodie-front.jpg]
 {title=TShirt Studio black hoodie front}
-{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-zip-hoodie[].}
+{description=
+Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-black-zip-hoodie-2[].
+
+Good quality, but the material is slightly warmer than I'd like, I tend to prefer slightly fluffier ones.
+
+This is a picture from version one, which did not have the <project slogan>. Version one is no longer available for sale, only the new one with the slogan.
+
+It was slighty concerning if the hoodie would cover the URL or not, but it does not do often in practice.
+}
 {height=800}
 {provider=github}
 
 \Image[merch/tshirtstudio/hoodie-back.jpg]
 {title=TShirt Studio black hoodie back}
-{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-zip-hoodie[].}
+{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-black-zip-hoodie-2[].}
 {height=800}
 {provider=github}
+
+\Image[https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-white-t-shirt-front.jpg]
+{title=TShirt Studio white t-shirt front}
+{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-white-t-shirt[].}
+{height=600}
+
+\Image[https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-white-t-shirt-back.jpg]
+{title=TShirt Studio white t-shirt back}
+{description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-white-t-shirt[].}
+{height=600}
 
 = Sticker
 {c}
@@ -9233,6 +9254,19 @@ This version of the logo was useful when designing project <T-shirts> on <tshirt
 {provider=github}
 {title=logo-transparent-with-text-and-slogan-2000.png}
 {description=This is perhaps a superior alternative to <Image logo-transparent-with-text.svg> for <merchandise>, as the <project slogan> could clarify further what the merchandise is all about.}
+
+\Image[logo-transparent-with-text-and-slogan-2000-2150.png]
+{height=300}
+{provider=github}
+{title=logo-transparent-with-text-and-slogan-2000-2150.png}
+{description=
+This is the same as `logo-transparent-with-text-and-slogan-2000.png` but with a 150 px border added to the top to ensure that the <tshirtstudio.com> hoodie hood won't hide the URL.
+
+It was created with:
+``
+convert logo-transparent-with-text-and-slogan-2000.png -gravity north -background transparent -splice 0x150 logo-transparent-with-text-and-slogan-2000-2150.png
+``
+}
 
 Some rationale:
 * the lowercase `b` followed by uppercase `B` gives the idea of big and small
@@ -9354,6 +9388,7 @@ Video guidelines:
   ``
   ffmpeg -i raw.mkv -vf subtitles=sub.ass out.mkv
   ``
+* add the video as the first video of the "Videos" playlist: https://www.youtube.com/playlist?list=PLshTOzrBHLkZlpvTuBdphKLWwU7xBV6VF This list is needed because otherwise YouTube's stupid "Shorts" features produces two separate timelines by default, one for shorts and one for non-shorts. With this list, all videos can be seen easily as non-shorts.
 
 = OurBigBook.com Fellowship
 {parent=Publicity}

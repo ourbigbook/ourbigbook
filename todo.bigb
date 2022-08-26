@@ -3,6 +3,39 @@
 
 == Issues
 
+=== Include should work transparently with README in subdirectory
+{tag=Include}
+{tag=Web}
+
+We should be able to write:
+
+animal.bigb
+``
+= Animal
+
+\Include[dog]
+``
+
+dog/README.bigb
+``
+= Dog
+``
+
+since the dog.bigb file should ideally be fully equivalent to
+
+dog.bigb
+``
+= Dog
+{scope}
+``
+
+=== Remove the path parameter from the article creation API
+{tag=Web}
+
+We likely want to get rid of the `path` parameter, and instead determine IDs fully from more "in-band" things like `{id}` and `{scope}`.
+
+Both `{scope}` for subdirs and `{id}` for custom id basename !== from title should already be working, we just haven't setup ourbigbook CLI to inject `{id}` based on file path I think.
+
 === Prevent full page reload on links using our existing link capture
 {tag=Web}
 
@@ -388,6 +421,8 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 
 ==== Editor
 
+==== Include
+
 ==== Issue
 
 ==== Offline development
@@ -399,5 +434,7 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 === Bug
 
 === Scope
+
+=== Refactor
 
 === ToC

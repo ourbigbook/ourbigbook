@@ -555,9 +555,13 @@ nav.navbar {
     &.profile {
       padding-left: 0px;
     }
+    .home {
+      padding-left: 3px;
+    }
     img.profile-thumb, img.logo {
       height: $font-size * 1.2;
       padding-right: 5px;
+      padding-left: 5px;
     }
     @media only screen and (max-width: $max-mobile-width) {
       // TODO don't hardcode this width, autohide when there is no more room:

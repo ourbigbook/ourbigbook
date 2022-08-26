@@ -66,7 +66,7 @@ const Navbar = ({ isEditor }) => {
             className="profile"
             newTab={isEditor}
           >
-            <HomeIcon />&nbsp;Home
+            <HomeIcon /><span class="home">Home</span>
             <CustomImage
               className="profile-thumb"
               src={loggedInUser?.effectiveImage}

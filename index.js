@@ -2856,6 +2856,13 @@ function render_ast_list(opts) {
       console.error(`split-headers${split ? '' : ' nosplit'}: ` + output_path);
     }
     context.toplevel_output_path = output_path;
+    if (output_path !== undefined) {
+      const [toplevel_output_path_dir, toplevel_output_path_basename] =
+        path_split(output_path, context.options.path_sep);
+      context.toplevel_output_path_dir = toplevel_output_path_dir;
+    } else {
+      context.toplevel_output_path_dir = '';
+    }
     context.toplevel_ast = first_ast;
     const ast_toplevel = new AstNode(
       AstType.MACRO,
@@ -2870,15 +2877,12 @@ function render_ast_list(opts) {
 
     let rendered_outputs_entry = {}
     if (output_path !== undefined) {
-      if (split) {
-        // root_relpath
-        options.template_vars = Object.assign({}, options.template_vars);
-        const new_root_relpath = get_root_relpath(output_path, context)
-        context.root_relpath_shift = path.relative(options.template_vars.root_relpath,
-          path.join(context.root_relpath_shift, new_root_relpath))
-        options.template_vars.root_relpath = new_root_relpath
-      }
-
+      // root_relpath
+      options.template_vars = Object.assign({}, options.template_vars);
+      const new_root_relpath = get_root_relpath(output_path, context)
+      context.root_relpath_shift = path.relative(options.template_vars.root_relpath,
+        path.join(context.root_relpath_shift, new_root_relpath))
+      options.template_vars.root_relpath = new_root_relpath
       context.extra_returns.rendered_outputs[output_path] = rendered_outputs_entry
     }
     // Do the conversion.
@@ -3244,8 +3248,9 @@ function convert_init_context(options={}, extra_returns={}) {
   //   https://docs.ourbigbook.com#the-id-of-the-first-header-is-derived-from-the-filename
   options.toplevel_id = undefined;
   let root_relpath_shift
+  let input_dir, basename
   if (options.input_path !== undefined) {
-    const [input_dir, basename] = path_split(options.input_path, options.path_sep)
+    ;[input_dir, basename] = path_split(options.input_path, options.path_sep)
     const [basename_noext, ext] = path_splitext(basename)
     if (INDEX_FILE_BASENAMES_NOEXT.has(basename_noext)) {
       if (input_dir === '') {
@@ -3268,6 +3273,8 @@ function convert_init_context(options={}, extra_returns={}) {
     } else {
       options.toplevel_parent_scope = input_dir
     }
+  } else {
+    input_dir = ''
   }
   if (root_relpath_shift === undefined) {
     root_relpath_shift = ''
@@ -3292,6 +3299,7 @@ function convert_init_context(options={}, extra_returns={}) {
     extra_returns,
     forceHeaderHasToc: false,
     include_path_set: new Set(options.include_path_set),
+    input_dir,
     in_header: false,
     macros: macro_list_to_macros(),
     options,
@@ -3518,7 +3526,13 @@ function check_and_update_local_link({
       )
     )
   ) {
-    href = path.join(context.root_relpath_shift, href);
+    // We'll use this for _raw
+    // https://docs.ourbigbook.com/todo/Put raw files in a separate magic prefix
+    // context.root_relpath_shift,
+    href = path.relative(
+      context.toplevel_output_path_dir,
+      path.join(context.input_dir, href),
+    )
   }
   return { href, error }
 }

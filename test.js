@@ -8916,6 +8916,41 @@ assert_cli(
   }
 );
 assert_cli(
+  'root_relpath and root_page work from subdirs',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'subdir/notindex.bigb': `= Notindex
+`,
+      'ourbigbook.json': `{
+  "template": "main.liquid.html"
+}
+`,
+      'main.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<body>
+<header>
+<a id="root-relpath" href="{{ root_relpath }}">Root relpath</a>
+<a id="root-page" href="{{ root_page }}">Root page</a>
+</body>
+</html>
+`
+    },
+    assert_xpath: {
+      'subdir/notindex.html': [
+        "//x:a[@id='root-relpath' and @href='../']",
+        "//x:a[@id='root-page' and @href='../index.html']",
+      ],
+      'subdir/notindex-split.html': [
+        "//x:a[@id='root-relpath' and @href='../']",
+        "//x:a[@id='root-page' and @href='../index.html']",
+      ],
+    }
+  }
+);
+assert_cli(
   "multiple incoming child and parent links don't blow up",
   {
     args: ['.'],

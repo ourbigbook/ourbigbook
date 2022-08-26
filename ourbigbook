@@ -78,6 +78,8 @@ function assertApiStatus(status, data) {
 
 async function read(opts) {
   return new Promise((resolve, reject) => {
+    // TODO allow program to exit on Ctrl + C, currently ony cancels read
+    // https://stackoverflow.com/questions/24037545/how-to-hide-password-in-the-nodejs-console
     readCb(opts, (err, line) => {
       resolve([err, line])
     })

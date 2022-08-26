@@ -4,10 +4,13 @@ const path = require('path')
 const { DataTypes, Op } = require('sequelize')
 
 const ourbigbook = require('ourbigbook')
+const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 const config = require('../front/config')
 const front_js = require('../front/js')
 const convert = require('../convert')
+const e = require('cors')
+const { execPath } = require('process')
 
 module.exports = (sequelize) => {
   // Each Article contains rendered HTML output, analogous to a .html output file in OurBigBook CLI.
@@ -86,7 +89,11 @@ module.exports = (sequelize) => {
       author: {
         type: DataTypes.VIRTUAL,
         get() {
-          return this.file.author
+          if (this.file) {
+            return this.file.author
+          } else {
+            return null
+          }
         },
         set(value) {
           throw new Error('cannot set virtual`author` value directly');
@@ -253,6 +260,40 @@ module.exports = (sequelize) => {
 
   Article.prototype.isToplevelIndex = function() {
     return !this.slug.includes(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+  }
+
+  /**
+   * Return Articles ordered by username and nested sets.
+   * @return {Article[]}
+   */
+  Article.findNestedSets = async function(opts={}) {
+    const userWhere = {}
+    const username = opts.username
+    if (username) {
+      userWhere.username = username
+    }
+    return sequelize.models.Article.findAll({
+      include: [{
+        model: sequelize.models.File,
+        as: 'file',
+        required: true,
+        include: [{
+          model: sequelize.models.User,
+          as: 'author',
+          where: userWhere,
+          required: true,
+        }],
+      }],
+      order: [
+        [
+          { model: sequelize.models.File, as: 'file' },
+          { model: sequelize.models.User, as: 'author' },
+          'username',
+          'ASC'
+        ],
+        ['nestedSetIndex', 'ASC'],
+      ],
+    })
   }
 
   Article.getArticle = async function({
@@ -695,6 +736,91 @@ LIMIT ${limit}` : ''}
     return rows
   }
 
+  /**
+   * Calculate nested sets from Ref information and return this data.
+   * As of creating this function, this was supposed to be incrementally
+   * done by the convertArticle() internal function. But we are considering
+   * doing it in bulk to speed things up. And also creating this to quickfix
+   * a wrong index observed in production for unknown reasons:
+   * https://docs.ourbigbook.com/subsections-missing-on-web-dynamic-tree
+   * 
+   * @param {string} username
+   */
+  Article.getNestedSetsFromRefs = async function(username) {
+    const toplevelId = `${ourbigbook.AT_MENTION_CHAR}${username}`
+    const idRows = await ourbigbook_nodejs_webpack_safe.fetch_header_tree_ids(
+      sequelize,
+      [toplevelId],
+    )
+    let idTreeNode = {
+      id: toplevelId,
+      children: [],
+      nextSibling: undefined,
+      parent: undefined,
+      level: 0,
+      nestedSetIndex: undefined,
+      nestedSetNextSibling: undefined,
+    }
+    const idToIdTreeNode = {
+      [toplevelId]: idTreeNode,
+    }
+    for (const row of idRows) {
+      const level = row.level
+      const parent = idToIdTreeNode[row.from_id]
+      const childIdx = parent.children.length
+      const idTreeNode = {
+        id: row.idid,
+        children: [],
+        childIdx,
+        level,
+        parent,
+        nestedSetIndex: undefined,
+        nestedSetNextSibling: undefined,
+      }
+      if (childIdx > 0) {
+        parent.children[childIdx - 1].nextSibling = idTreeNode
+      }
+      idToIdTreeNode[row.idid] = idTreeNode
+      parent.children.push(idTreeNode)
+    }
+    const nestedSet = []
+
+    // Calculated nestedSetIndex, a simple pre-order traversal.
+    let i = 0
+    let todo = [idTreeNode]
+    while (todo.length) {
+      const node = todo.pop()
+      node.nestedSetIndex = i
+      nestedSet.push(node)
+      todo.push(...node.children.slice().reverse())
+      i++
+    }
+
+    // Calculated nestedSetNextSibling.
+    // Needs a second pass because it relies on the indices of nodes we
+    // haven't visited yet on the first pass.
+    todo = [idTreeNode]
+    while (todo.length) {
+      const node = todo.pop()
+      if (node.nextSibling) {
+        node.nestedSetNextSibling = node.nextSibling.nestedSetIndex
+      } else if (node.children.length === 0) {
+        const nextSibling = node.nestedSetIndex + 1
+        node.nestedSetNextSibling = nextSibling
+        let ancestor = node.parent
+        while(
+          ancestor !== undefined &&
+          ancestor.nextSibling === undefined
+        ) {
+          ancestor.nestedSetNextSibling = nextSibling
+          ancestor = ancestor.parent
+        }
+      }
+      todo.push(...node.children.slice().reverse())
+    }
+    return nestedSet
+  }
+
   Article.rerender = async (opts={}) => {
     if (opts.log === undefined) {
       opts.log = false
@@ -708,6 +834,45 @@ LIMIT ${limit}` : ''}
       }
       await article.rerender()
     }
+  }
+
+  /**
+   * Calculate nested sets from Ref information update database with those values.
+   * 
+   * @param {string} username
+   */
+  Article.updateNestedSets = async function(username, opts={}) {
+    const nestedSet = await Article.getNestedSetsFromRefs(username)
+    const vals = nestedSet.map(s => { return {
+      slug: s.id.slice(ourbigbook.AT_MENTION_CHAR.length),
+      nestedSetIndex: s.nestedSetIndex,
+      nestedSetNextSibling: s.nestedSetNextSibling,
+    }})
+    return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
+      for (const val of vals) {
+        await sequelize.models.Article.update(
+          {
+            nestedSetIndex: val.nestedSetIndex,
+            nestedSetNextSibling: val.nestedSetNextSibling,
+          },
+          {
+            transaction,
+            where: { slug: val.slug },
+          },
+        )
+      }
+    })
+    // Would be nice, but doesn't work because of NOT NULL columns:
+    // https://stackoverflow.com/questions/48816629/on-conflict-do-nothing-in-postgres-with-a-not-null-constraint
+    //return Article.bulkCreate(
+    //  vals,
+    //  {
+    //    updateOnDuplicate: [
+    //      'nestedSetIndex',
+    //      'nestedSetNextSibling',
+    //    ]
+    //  }
+    //)
   }
 
   return Article

@@ -1,0 +1,51 @@
+#!/usr/bin/env node
+
+const assert = require('assert')
+const path = require('path')
+
+const commander = require('commander')
+
+const models = require('../models')
+
+// CLI arguments
+const program = commander.program
+program.allowExcessArguments(false)
+program.description('View, check or update article nested sets: https://docs.ourbigbook.com/ourbigbook-web-dynamic-article-tree')
+program.option('-c, --check', 'check if the index is up-to-date', false);
+program.option('-u, --update', 'update index before printing', false);
+program.argument('[username]', 'username')
+program.parse(process.argv);
+const opts = program.opts()
+const [username] = program.processedArgs
+
+if (opts.check || opts.update) {
+  if (username === undefined) {
+    throw new Error('username mandatory with --check and --update')
+  }
+}
+
+// main
+const sequelize = models.getSequelize(path.dirname(__dirname));
+(async () => {
+if (opts.update) {
+  if (username === undefined) {
+    throw new Error('username mandatory with --update')
+  }
+  await sequelize.models.Article.updateNestedSets(username)
+}
+const articles = await sequelize.models.Article.findNestedSets({ username })
+if (opts.check) {
+  const nestedSetsFromRefs = await sequelize.models.Article.getNestedSetsFromRefs(username)
+  for (let i = 0; i < nestedSetsFromRefs.length; i++) {
+    const article = articles[i]
+    const fromRef = nestedSetsFromRefs[i]
+    const msg = `${article.slug} ${article.nestedSetIndex} ${article.nestedSetNextSibling} !== ${fromRef.id} ${fromRef.nestedSetIndex} ${fromRef.nestedSetNextSibling}`
+    assert.strictEqual(article.nestedSetIndex, fromRef.nestedSetIndex, msg)
+    assert.strictEqual(article.nestedSetNextSibling, fromRef.nestedSetNextSibling, msg)
+    assert.strictEqual(`@${article.slug}`, fromRef.id, msg)
+  }
+}
+for (const article of articles) {
+  console.log(`${article.nestedSetIndex} ${article.nestedSetNextSibling} ${article.slug}`)
+}
+})().finally(() => { return sequelize.close() });

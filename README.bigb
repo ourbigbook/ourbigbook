@@ -7283,11 +7283,11 @@ web/bin/pg_restore -d ourbigbook2 latest.dump
 
 Save the psql database state as per https://stackoverflow.com/questions/37984733/postgresql-database-export-to-sql-file[] with our \a[web/bin/pg_dump] helper:
 ``
-web/bin/pg_dump -Fc -f tmp.psql
+web/bin/pg_dump -Fc -f tmp.dump
 ``
 Then to restore it later with \a[web/bin/pg_restore]:
 ``
-web/bin/pg_restore tmp.psql
+web/bin/pg_restore tmp.dump
 ``
 https://stackoverflow.com/questions/2732474/restore-a-postgres-backup-file-using-the-command-line
 

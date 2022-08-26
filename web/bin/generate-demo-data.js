@@ -17,6 +17,7 @@ function cliInt(value, dummyPrevious) {
 }
 
 const program = commander.program
+program.allowExcessArguments(false)
 program.option('-a, --articles-per-user <n>', 'n articles per user', cliInt);
 program.option('-i, --max-issues-per-article <n>', 'maximum number of issues per article', cliInt);
 program.option('-c, --max-comments-per-article <n>', 'maximum number of comments per issues', cliInt);

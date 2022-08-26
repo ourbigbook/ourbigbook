@@ -430,15 +430,17 @@ async function generateDemoData(params) {
     const articles = []
     for (const render of [false, true]) {
       let articleId = 0
+      let i = 0
+      let pref
       if (verbose) {
         if (render) {
-          console.error('Render')
+          pref = 'render'
         } else {
-          console.error('Extract ids')
+          pref = 'extract_ids'
         }
       }
       for (const articleArg of articleArgs) {
-        const msg = `${articleId} ${userIdToUser[articleArg.authorId].username}/${articleArg.titleSource}`
+        const msg = `${pref}: ${i}/${articleArgs.length}: ${userIdToUser[articleArg.authorId].username}/${articleArg.titleSource}`
         if (verbose) console.error(msg);
         const author = userIdToUser[articleArg.authorId]
         const opts = articleArg.opts
@@ -470,6 +472,7 @@ async function generateDemoData(params) {
           articles.push(article)
           articleId++
         }
+        i++
       }
     }
 

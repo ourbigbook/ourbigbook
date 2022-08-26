@@ -6154,6 +6154,22 @@ Note that since the option is inherited by descendants, this can also affect the
 
 https://github.com/cirosantilli/ourbigbook/issues/188 contains a proposal to instead inherit this property across <includes>.
 
+If you set this ourbigbook.json option:
+``
+{
+  "h": {
+    "numbered": true
+  }
+}
+``
+it is possible to override it for a specific file with and explicit `=0` <\H numbered argument>:
+``
+= Not numbered exception
+{numbered=0}
+
+== Child also inherits not numbered
+``
+
 = `openLinksOnNewTabs`
 {parent=ourbigbook.json}
 

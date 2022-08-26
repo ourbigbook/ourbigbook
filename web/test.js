@@ -215,9 +215,9 @@ function testApp(cb, opts={}) {
     // Create user and save the token for future requests.
     test.createUserApi = async function(i, opts) {
       const { data, status } = await test.webApi.userCreate(createUserArg(i, opts))
+      assertStatus(status, data)
       test.tokenSave = data.user.token
       test.loginUser()
-      assertStatus(status, data)
       assert.strictEqual(data.user.username, `user${i}`)
       return data.user
     }
@@ -1672,15 +1672,24 @@ it('api: resource limits', async () => {
   })
 })
 
+async function assertNestedSets(sequelize, expect) {
+  const articles = await sequelize.models.Article.findAll({ order: [['nestedSetIndex', 'ASC']] })
+  //console.error(articles.map(a => [a.nestedSetIndex, a.nestedSetNextSibling, a.slug]));
+  assertRows(articles, expect)
+}
+
 it('api: article tree', async () => {
   await testApp(async (test) => {
     let data, status, article
     const sequelize = test.sequelize
     const user = await test.createUserApi(0)
-    const user2 = await test.createUserApi(1)
     test.loginUser(user)
 
     // Article.
+
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, slug: 'user0' },
+      ])
 
       article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
       ;({data, status} = await createArticleApi(test, article))
@@ -1688,10 +1697,21 @@ it('api: article tree', async () => {
       // TODO ./ would be better here: https://github.com/cirosantilli/ourbigbook/issues/283
       assert_xpath(xpath_header_parent(1, 'mathematics', '../user0', 'Index'), data.articles[0].render)
 
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 2, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 2, slug: 'user0/mathematics' },
+      ])
+
       article = createArticleArg({ i: 0, titleSource: 'Calculus' })
       ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics' }))
       assertStatus(status, data)
       assert_xpath(xpath_header_parent(1, 'calculus', '../user0/mathematics', 'Mathematics'), data.articles[0].render)
+
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 3, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 3, slug: 'user0/mathematics' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 3, slug: 'user0/calculus' },
+      ])
 
       // It is possible to change a parent ID.
 
@@ -1701,10 +1721,36 @@ it('api: article tree', async () => {
         assertStatus(status, data)
         assert_xpath(xpath_header_parent(1, 'derivative', '../user0/mathematics', 'Mathematics'), data.articles[0].render)
 
+        // Current tree state:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Derivative
+        //    * 2 Calculus
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 4, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 4, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 3, slug: 'user0/derivative' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, slug: 'user0/calculus' },
+        ])
+
         // Modify its parent.
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
         assertStatus(status, data)
         assert_xpath(xpath_header_parent(1, 'derivative', '../user0/calculus', 'Calculus'), data.articles[0].render)
+
+        // Current tree state:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Calculus
+        //      * 2 Derivative
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 4, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 4, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 4, slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, slug: 'user0/derivative' },
+        ])
 
       // parentId errors
 
@@ -1744,7 +1790,7 @@ it('api: article tree', async () => {
 
       // previousSiblingId
 
-        // Current tree status:
+        // Current tree state:
         // * Index
         //  * 0 Mathematics
         //    * 1 Calculus
@@ -1755,12 +1801,20 @@ it('api: article tree', async () => {
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', previousSiblingId: '@user0/derivative' }))
         assertStatus(status, data)
 
-        // Current tree status:
+        // Current tree state:
         // * Index
         //  * 0 Mathematics
         //    * 1 Calculus
         //      * 2 Derivative
         //      * 3 Integral
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 5, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 5, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 5, slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, slug: 'user0/derivative' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, slug: 'user0/integral' },
+        ])
 
         // Refresh the parent index to show this new child.
         // TODO do this on the fly during GET.
@@ -1779,7 +1833,7 @@ it('api: article tree', async () => {
         ))
         assertStatus(status, data)
 
-        // Current tree status:
+        // Current tree state:
         // * Index
         //  * 0 Mathematics
         //    * 1 Calculus
@@ -1787,53 +1841,179 @@ it('api: article tree', async () => {
         //      * 3 Derivative
         //      * 4 Integral
 
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 6, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 6, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 6, slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, slug: 'user0/limit' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, slug: 'user0/derivative' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, slug: 'user0/integral' },
+        ])
+
         ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
         assertStatus(status, data)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='2' and text()='Limit']",      data.articles[0].render)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='3' and text()='Derivative']", data.articles[0].render)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='4' and text()='Integral']",   data.articles[0].render)
 
-        // Move up. Give a parentId as well as sibling. This is not necessary.
+        // Add some children to limit as we will be moving it around a bit,
+        // and want to ensure that the children move with it.
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit of a function' }),
+          { parentId: '@user0/limit' }
+        ))
+        assertStatus(status, data)
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit of a sequence' }),
+          { parentId: '@user0/limit' }
+        ))
+        assertStatus(status, data)
+
+        // Current tree state:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Calculus
+        //      * 2 Limit
+        //        * 3 Limit of a sequence
+        //        * 4 Limit of a function
+        //      * 5 Derivative
+        //      * 6 Integral
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 8, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 8, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 8, slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 6, slug: 'user0/limit' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, slug: 'user0/derivative' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, slug: 'user0/integral' },
+        ])
+
+        ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
+        assertStatus(status, data)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='2' and text()='Limit']",      data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-sequence' and @data-test='3' and text()='Limit of a sequence']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-function' and @data-test='4' and text()='Limit of a function']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='5' and text()='Derivative']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='6' and text()='Integral']",   data.articles[0].render)
+
+        // Move Limit up. Give a parentId as well as sibling. This is not necessary.
         ;({data, status} = await createOrUpdateArticleApi(test,
           createArticleArg({ i: 0, titleSource: 'Limit' }),
           { parentId: '@user0/calculus', previousSiblingId: '@user0/integral' }
         ))
         assertStatus(status, data)
 
-        // Current tree status:
+        // Current tree state:
         // * Index
         //  * 0 Mathematics
         //    * 1 Calculus
         //      * 2 Derivative
         //      * 3 Integral
         //      * 4 Limit
+        //        * 5 Limit of a sequence
+        //        * 6 Limit of a function
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 8, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 8, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 8, slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, slug: 'user0/derivative' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, slug: 'user0/integral' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 8, slug: 'user0/limit' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, slug: 'user0/limit-of-a-function' },
+        ])
 
         ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
         assertStatus(status, data)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='2' and text()='Derivative']", data.articles[0].render)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='3' and text()='Integral']",   data.articles[0].render)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='4' and text()='Limit']",      data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-sequence' and @data-test='5' and text()='Limit of a sequence']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-function' and @data-test='6' and text()='Limit of a function']", data.articles[0].render)
 
-        // Move down. Don't give parentId on an update. Parent will be derived from sibling.
+        // Move Limit down. Don't give parentId on an update. Parent will be derived from sibling.
         ;({data, status} = await createOrUpdateArticleApi(test,
           createArticleArg({ i: 0, titleSource: 'Limit' }),
           { parentId: undefined, previousSiblingId: '@user0/derivative' }
         ))
         assertStatus(status, data)
 
-        // Current tree status:
+        // Current tree state:
         // * Index
         //  * 0 Mathematics
         //    * 1 Calculus
         //      * 2 Derivative
         //      * 3 Limit
-        //      * 4 Integral
+        //        * 4 Limit of a sequence
+        //        * 5 Limit of a function
+        //      * 6 Integral
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 8, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 8, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 8, slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, slug: 'user0/derivative' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 7, slug: 'user0/limit' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, slug: 'user0/integral' },
+        ])
+
+        // Move limit to before ancestor to check that nested set doesn't blow up.
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit' }),
+          { parentId: '@user0/mathematics', previousSiblingId: undefined }
+        ))
+        assertStatus(status, data)
+
+        // Current tree state:
+        // * Index
+        //  * Mathematics
+        //    * Limit
+        //      * Limit of a sequence
+        //      * Limit of a function
+        //    * Calculus
+        //      * Derivative
+        //      * Integral
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 8, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 8, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 5, slug: 'user0/limit' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 8, slug: 'user0/calculus' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, slug: 'user0/derivative' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, slug: 'user0/integral' },
+        ])
+
+        // Move limit back to where it was.
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit' }),
+          { parentId: undefined, previousSiblingId: '@user0/derivative' }
+        ))
+        assertStatus(status, data)
+
+        // Current tree state:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Calculus
+        //      * 2 Derivative
+        //      * 3 Limit
+        //        * 4 Limit of a sequence
+        //        * 5 Limit of a function
+        //      * 6 Integral
 
         ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
         assertStatus(status, data)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='2' and text()='Derivative']", data.articles[0].render)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='3' and text()='Limit']",      data.articles[0].render)
-        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='4' and text()='Integral']",   data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-sequence' and @data-test='4' and text()='Limit of a sequence']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-function' and @data-test='5' and text()='Limit of a function']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='6' and text()='Integral']",   data.articles[0].render)
 
         // Move back to first by not giving previousSiblingId. previousSiblingId is not maintained like most updated properties.
         ;({data, status} = await createOrUpdateArticleApi(test,
@@ -1842,19 +2022,34 @@ it('api: article tree', async () => {
         ))
         assertStatus(status, data)
 
-        // Current tree status:
+        // Current tree state:
         // * Index
         //  * 0 Mathematics
         //    * 1 Calculus
         //      * 2 Limit
-        //      * 3 Derivative
-        //      * 4 Integral
+        //        * 3 Limit of a sequence
+        //        * 4 Limit of a function
+        //      * 5 Derivative
+        //      * 6 Integral
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 8, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 8, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 8, slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 6, slug: 'user0/limit' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, slug: 'user0/derivative' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, slug: 'user0/integral' },
+        ])
 
         ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
         assertStatus(status, data)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='2' and text()='Limit']",      data.articles[0].render)
-        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='3' and text()='Derivative']", data.articles[0].render)
-        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='4' and text()='Integral']",   data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-sequence' and @data-test='3' and text()='Limit of a sequence']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-function' and @data-test='4' and text()='Limit of a function']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='5' and text()='Derivative']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='6' and text()='Integral']",   data.articles[0].render)
 
         // Deduce parentId from previousSiblingid on new article.
         ;({data, status} = await createOrUpdateArticleApi(test,
@@ -1863,21 +2058,37 @@ it('api: article tree', async () => {
         ))
         assertStatus(status, data)
 
-        // Current tree status:
+        // Current tree state:
         // * Index
         //  * 0 Mathematics
         //    * 1 Calculus
         //      * 2 Limit
-        //      * 3 Derivative
-        //      * 4 Integral
-        //      * 5 Measure
+        //        * 3 Limit of a sequence
+        //        * 4 Limit of a function
+        //      * 5 Derivative
+        //      * 6 Integral
+        //      * 7 Measure
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 9, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 9, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 9, slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 6, slug: 'user0/limit' },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, slug: 'user0/limit-of-a-sequence' },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, slug: 'user0/limit-of-a-function' },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, slug: 'user0/derivative' },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, slug: 'user0/integral' },
+          { nestedSetIndex: 8, nestedSetNextSibling: 9, slug: 'user0/measure' },
+        ])
 
         ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
         assertStatus(status, data)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='2' and text()='Limit']",      data.articles[0].render)
-        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='3' and text()='Derivative']", data.articles[0].render)
-        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='4' and text()='Integral']",   data.articles[0].render)
-        assert_xpath("//*[@id='toc']//x:a[@href='user0/measure'    and @data-test='5' and text()='Measure']",    data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-sequence' and @data-test='3' and text()='Limit of a sequence']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit-of-a-function' and @data-test='4' and text()='Limit of a function']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='5' and text()='Derivative']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='6' and text()='Integral']",   data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/measure'    and @data-test='7' and text()='Measure']",    data.articles[0].render)
 
         // Refresh Mathematics to show the source ToC.
         // Add a reference to the article self: we once had a bug where this was preventing the ToC from showing.
@@ -1942,7 +2153,20 @@ it('api: article tree', async () => {
           { from_id: '@user0/calculus',    to_id: '@user0/derivative',  to_id_index: 1, },
           { from_id: '@user0/calculus',    to_id: '@user0/integral',    to_id_index: 2, },
           { from_id: '@user0/calculus',    to_id: '@user0/measure',     to_id_index: 3, },
+          { from_id: '@user0/limit',       to_id: '@user0/limit-of-a-sequence', to_id_index: 0, },
+          { from_id: '@user0/limit',       to_id: '@user0/limit-of-a-function', to_id_index: 1, },
           { from_id: '@user0/mathematics', to_id: '@user0/calculus',    to_id_index: 0, },
+        ])
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 9, slug: 'user0',                     },
+          { nestedSetIndex: 1, nestedSetNextSibling: 9, slug: 'user0/mathematics',         },
+          { nestedSetIndex: 2, nestedSetNextSibling: 9, slug: 'user0/calculus',            },
+          { nestedSetIndex: 3, nestedSetNextSibling: 6, slug: 'user0/limit',               },
+          { nestedSetIndex: 4, nestedSetNextSibling: 5, slug: 'user0/limit-of-a-sequence', },
+          { nestedSetIndex: 5, nestedSetNextSibling: 6, slug: 'user0/limit-of-a-function', },
+          { nestedSetIndex: 6, nestedSetNextSibling: 7, slug: 'user0/derivative',          },
+          { nestedSetIndex: 7, nestedSetNextSibling: 8, slug: 'user0/integral',            },
+          { nestedSetIndex: 8, nestedSetNextSibling: 9, slug: 'user0/measure',             },
         ])
 
       // previousSiblingId errors

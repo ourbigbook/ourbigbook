@@ -133,7 +133,7 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_o
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
 async function check_db(non_ourbigbook_options) {
   const sequelize = non_ourbigbook_options.sequelize
-  if (sequelize && non_ourbigbook_options.commander.render) {
+  if (sequelize && non_ourbigbook_options.cli.render) {
     const error_messages = await ourbigbook_nodejs_webpack_safe.check_db(
       sequelize, non_ourbigbook_options.ourbigbook_paths_converted)
     if (error_messages.length > 0) {
@@ -225,7 +225,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
   if (!non_ourbigbook_options.had_error) {
     await check_db(non_ourbigbook_options)
   }
-  if (non_ourbigbook_options.commander.render) {
+  if (non_ourbigbook_options.cli.render) {
     if (!non_ourbigbook_options.had_error) {
       await convert_directory(
         input_dir,
@@ -260,7 +260,7 @@ async function convert_input(input, ourbigbook_options, non_ourbigbook_options={
   // If we don't where the output will go (the case for stdout) or
   // the user did not explicitly request full embedding, inline all CSS.
   // Otherwise, include and external CSS to make each page lighter.
-  if (non_ourbigbook_options.commander.embedResources) {
+  if (non_ourbigbook_options.cli.embedResources) {
     new_options.template_vars.style = fs.readFileSync(
       ourbigbook_nodejs.DIST_CSS_PATH,
       ourbigbook_nodejs_webpack_safe.ENCODING
@@ -369,7 +369,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   let input_path_parse = path.parse(input_path);
   let msg_ret
   let output, first_output_path;
-  let timestamp_skip = false
+  let skip = false
   if (input_path_parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}`) {
     let full_path = path.resolve(input_path);
     let input_path_parse = path.parse(full_path);
@@ -405,16 +405,16 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
             ourbigbook_options.render
           ) {
             if (file_row_render) {
-              timestamp_skip = non_ourbigbook_options.commander.renderTimestamp &&
+              skip = !non_ourbigbook_options.cli.forceRender &&
                 !file_row_render.outdated &&
                 // TODO add a Render magic format for this use case. Or maybe
                 // start tracking output paths as well in Render to also cover -o.
                 // But lazy now, just never use timestamp for --format-source.
-                !non_ourbigbook_options.commander.formatSource
+                !non_ourbigbook_options.cli.formatSource
             }
           } else {
-            timestamp_skip = file_row.last_parse !== null && file_row.last_parse > fs.statSync(input_path).mtime
-            if (!timestamp_skip && file_row_render) {
+            skip = file_row.last_parse !== null && file_row.last_parse > fs.statSync(input_path).mtime
+            if (!skip && file_row_render) {
               // We are going to update the parse, so mark as outdated here.
               // This way we don't need to fetch from DB again.
               file_row_render.outdated = true
@@ -423,7 +423,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         }
       }
     }
-    if (!timestamp_skip) {
+    if (!skip) {
       new_non_ourbigbook_options.input_path = input_path_relative_to_ourbigbook_json;
       if (sequelize) {
         new_options.db_provider = non_ourbigbook_options.db_provider;
@@ -433,7 +433,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
       output = await convert_input(input, new_options, new_non_ourbigbook_options);
       const extra_returns = new_non_ourbigbook_options.extra_returns
       if (
-        non_ourbigbook_options.commander.formatSource &&
+        non_ourbigbook_options.cli.formatSource &&
         ourbigbook_options.render
       ) {
         if (!new_non_ourbigbook_options.had_error) {
@@ -487,7 +487,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
     }
   } else {
     if (
-      non_ourbigbook_options.commander.formatSource ||
+      non_ourbigbook_options.cli.formatSource ||
       non_ourbigbook_options.ourbigbook_paths_converted_only
     ) {
       // I should use callbacks instead of doing this. But lazy.
@@ -543,7 +543,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
       output_path_str = ''
     }
     let done_str
-    if (timestamp_skip) {
+    if (skip) {
       done_str = `skipped by timestamp`
     } else {
       done_str = `finished in ${t1 - msg_ret.t0} ms`
@@ -581,7 +581,7 @@ async function create_db(ourbigbook_options, non_ourbigbook_options) {
   const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize(
     non_ourbigbook_options.db_options,
     Sequelize,
-    { force: commander.clearDb },
+    { force: cli.clearDb },
   )
   non_ourbigbook_options.sequelize = sequelize;
   non_ourbigbook_options.db_provider = new ourbigbook_nodejs_webpack_safe.SqliteDbProvider(sequelize);
@@ -685,6 +685,14 @@ function git_toplevel(input_path) {
   }).slice(0, -1);
 }
 
+function handleWebApiErr(err) {
+  if (err.code === 'ECONNREFUSED') {
+    cli_error('could not connect to server');
+  } else {
+    throw err
+  }
+}
+
 // https://stackoverflow.com/questions/37521893/determine-if-a-path-is-subdirectory-of-another-in-node-js
 function is_subpath(parent, child) {
   const relative = path.relative(parent, child);
@@ -741,72 +749,77 @@ function* walk_files_recursively(file_or_dir, skip_basenames, ignore_paths) {
 }
 
 // CLI options.
-commander.option('--add-test-instrumentation', 'For testing only', false);
-commander.option('--body-only', 'output only the content inside the HTLM body element', false);
-commander.option('--china', 'https://docs.ourbigbook.com#china', false);
-commander.option('--clear-db', 'clear the database before running', false);
-commander.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/ourbigbook#dry-run", false);
-commander.option('--dry-run-push', "don't run git push commands https://github.com/cirosantilli/ourbigbook#dry-run-push", false);
-commander.option('--embed-includes', 'https://docs.ourbigbook.com#embed-include', false);
-commander.option('--embed-resources', 'https://docs.ourbigbook.com#embed-resources', false);
-commander.option('--fakeroot <fakeroot>', 'Stop searching for ourbigbook.json at this directory rather than at the filesystem root');
-commander.option('--generate <name>', 'https://docs.ourbigbook.com#generate', false);
-commander.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://docs.ourbigbook.com#help-macros', false);
-commander.option('-l, --log <log...>', 'https://docs.ourbigbook.com#log');
-commander.option('--no-html-x-extension', 'https://docs.ourbigbook.com#no-html-x-extension');
-commander.option('--no-db', 'ignore the ID database, mostly for testing https://docs.ourbigbook.com#internal-cross-file-references-internals');
-commander.option('--no-render', "only extract IDs, don't render: https://docs.ourbigbook.com#no-render");
-commander.option('-T, --no-render-timestamp', "don't skip render by timestamp: https://docs.ourbigbook.com#no-render-timestamp");
-commander.option('--outdir <outdir>', 'https://docs.ourbigbook.com#outdir');
-commander.option('-o, --outfile <outfile>', 'https://docs.ourbigbook.com#outfile');
-commander.option('-O, --output-format <output-format>', 'https://docs.ourbigbook.com#output-format', 'html');
-commander.option('-p --publish', 'https://docs.ourbigbook.com#publish', false);
-commander.option('-P, --publish-commit <commit-message>', 'https://docs.ourbigbook.com#publish-commit');
-commander.option('--format-source', 'https://docs.ourbigbook.com#format-source');
-commander.option('-S, --split-headers', 'https://docs.ourbigbook.com#split-headers', false);
-commander.option('--stdout', 'also print output to stdout in addition to saving to a file https://docs.ourbigbook.com#stdout', false);
-commander.option('--template <template>', 'https://docs.ourbigbook.com#template');
-commander.option('-w, --watch', 'https://docs.ourbigbook.com#watch', false);
+const cli_parser = commander.program
+cli_parser.allowExcessArguments(false);
+
+// Optional arguments.
+cli_parser.option('--add-test-instrumentation', 'For testing only', false);
+cli_parser.option('--body-only', 'output only the content inside the HTLM body element', false);
+cli_parser.option('--china', 'https://docs.ourbigbook.com#china', false);
+cli_parser.option('--clear-db', 'clear the database before running', false);
+cli_parser.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/ourbigbook#dry-run", false);
+cli_parser.option('--dry-run-push', "don't run git push commands https://github.com/cirosantilli/ourbigbook#dry-run-push", false);
+cli_parser.option('--embed-includes', 'https://docs.ourbigbook.com#embed-include', false);
+cli_parser.option('--embed-resources', 'https://docs.ourbigbook.com#embed-resources', false);
+cli_parser.option('--fakeroot <fakeroot>', 'Stop searching for ourbigbook.json at this directory rather than at the filesystem root');
+cli_parser.option('--generate <name>', 'https://docs.ourbigbook.com#generate', false);
+cli_parser.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://docs.ourbigbook.com#help-macros', false);
+cli_parser.option('-l, --log <log...>', 'https://docs.ourbigbook.com#log');
+cli_parser.option('--no-html-x-extension', 'https://docs.ourbigbook.com#no-html-x-extension');
+cli_parser.option('--no-db', 'ignore the ID database, mostly for testing https://docs.ourbigbook.com#internal-cross-file-references-internals');
+cli_parser.option('--no-render', "only extract IDs, don't render: https://docs.ourbigbook.com#no-render");
+cli_parser.option('-F, --force-render', "don't skip render by timestamp: https://docs.ourbigbook.com#no-render-timestamp", false);
+cli_parser.option('--outdir <outdir>', 'https://docs.ourbigbook.com#outdir');
+cli_parser.option('-o, --outfile <outfile>', 'https://docs.ourbigbook.com#outfile');
+cli_parser.option('-O, --output-format <output-format>', 'https://docs.ourbigbook.com#output-format', 'html');
+cli_parser.option('-p --publish', 'https://docs.ourbigbook.com#publish', false);
+cli_parser.option('-P, --publish-commit <commit-message>', 'https://docs.ourbigbook.com#publish-commit');
+cli_parser.option('--format-source', 'https://docs.ourbigbook.com#format-source');
+cli_parser.option('-S, --split-headers', 'https://docs.ourbigbook.com#split-headers', false);
+cli_parser.option('--stdout', 'also print output to stdout in addition to saving to a file https://docs.ourbigbook.com#stdout', false);
+cli_parser.option('--template <template>', 'https://docs.ourbigbook.com#template');
+cli_parser.option('-w, --watch', 'https://docs.ourbigbook.com#watch', false);
 // Originally added for testing, this allows the test filesystems to be put under the repository iteslf,
 // otherwise they would pickup our toplevel ourbigbook.json.
-commander.option('-W, --web', 'sync to ourbigbook web https://docs.ourbigbook.com#web', false);
-commander.option('--web-test', 'Convenient --web-* defaults local development: https://docs.ourbigbook.com#web-test', false);
-commander.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id', false);
-commander.option('--web-url <url>', 'Set a custom sync URL for --web: https://docs.ourbigbook.com#web-url', false);
-commander.option('--web-user <username>', 'Set username from CLI: https://docs.ourbigbook.com#web-user', false);
-commander.option('--web-password <password>', 'Set password from CLI. Really bad idea for non-test users due e.g. to Bash history: https://docs.ourbigbook.com#web-user', false);
-commander.option('--unsafe-ace', 'https://docs.ourbigbook.com#unsafe-ace', false);
-commander.option('--unsafe-xss', 'https://docs.ourbigbook.com#unsafe-xss');
-let inputPath;
-commander.arguments(
-  '[input_path]',
-  undefined,
-  'http://docs.ourbigbook.com#ourbigbook-executable',
-).action(function (input_path) {
-  inputPath = input_path;
-});
-commander.parse(process.argv);
+cli_parser.option('-W, --web', 'sync to ourbigbook web https://docs.ourbigbook.com#web', false);
+cli_parser.option('--web-force-render', "same as --force-render but for --web upload: https://docs.ourbigbook.com#web-force-render", false);
+cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered: https://docs.ourbigbook.com#web-max-renders', ourbigbook_nodejs.cliInt, false);
+cli_parser.option('--web-test', 'Convenient --web-* defaults local development: https://docs.ourbigbook.com#web-test', false);
+cli_parser.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id', false);
+cli_parser.option('--web-password <password>', 'Set password from CLI. Really bad idea for non-test users due e.g. to Bash history: https://docs.ourbigbook.com#web-user', false);
+cli_parser.option('--web-url <url>', 'Set a custom sync URL for --web: https://docs.ourbigbook.com#web-url', false);
+cli_parser.option('--web-user <username>', 'Set username from CLI: https://docs.ourbigbook.com#web-user', false);
+cli_parser.option('--unsafe-ace', 'https://docs.ourbigbook.com#unsafe-ace', false);
+cli_parser.option('--unsafe-xss', 'https://docs.ourbigbook.com#unsafe-xss');
+
+// Positional arguments.
+cli_parser.argument('[input_path]', 'file or directory to convert http://docs.ourbigbook.com#ourbigbook-executable');
+
+// Parse CLI.
+cli_parser.parse(process.argv);
+let [inputPath] = cli_parser.processedArgs
+const cli = cli_parser.opts()
 
 // main action.
-(async () => {
-if (commander.helpMacros) {
+;(async () => {
+if (cli.helpMacros) {
   console.log(JSON.stringify(ourbigbook.macro_list(), null, 2));
-} else if (commander.china) {
+} else if (cli.china) {
   console.log(china_dictatorship.get_data());
 } else {
   let input;
   let title;
   let output;
-  let publish = commander.publish || commander.publishCommit !== undefined;
+  let publish = cli.publish || cli.publishCommit !== undefined;
   let html_x_extension;
   let input_dir;
-  const web = commander.web || commander.webTest
+  const web = cli.web || cli.webTest
   if (inputPath === undefined) {
-    if (web || publish || commander.watch || commander.generate) {
+    if (web || publish || cli.watch || cli.generate) {
       inputPath = '.';
     }
   } else {
-    if (commander.generate) {
+    if (cli.generate) {
       cli_error('canot give an input path with --generate');
     }
   }
@@ -841,7 +854,7 @@ if (commander.helpMacros) {
       curdir = path.dirname(curdir)
     }
     initial_dir = curdir;
-    const fakeroot = commander.fakeroot === undefined ? undefined : path.resolve(commander.fakeroot)
+    const fakeroot = cli.fakeroot === undefined ? undefined : path.resolve(cli.fakeroot)
     while (true) {
       const ourbigbook_json_path = path.join(curdir, ourbigbook.OURBIGBOOK_JSON_BASENAME);
       if (fs.existsSync(ourbigbook_json_path)) {
@@ -892,24 +905,24 @@ if (commander.helpMacros) {
     html_x_extension = false;
     split_headers = true;
   } else {
-    html_x_extension = commander.htmlXExtension === false ? false : undefined;
-    split_headers = commander.splitHeaders;
+    html_x_extension = cli.htmlXExtension === false ? false : undefined;
+    split_headers = cli.splitHeaders;
   }
 
   // Options that will be passed directly to ourbigbook.convert().
-  if (!(commander.outputFormat in ourbigbook.OUTPUT_FORMATS)) {
-    cli_error(`unknown output format: ${commander.outputFormat}`)
+  if (!(cli.outputFormat in ourbigbook.OUTPUT_FORMATS)) {
+    cli_error(`unknown output format: ${cli.outputFormat}`)
   }
-  const output_format = (commander.formatSource || web) ? ourbigbook.OUTPUT_FORMAT_OURBIGBOOK : commander.outputFormat
+  const output_format = (cli.formatSource || web) ? ourbigbook.OUTPUT_FORMAT_OURBIGBOOK : cli.outputFormat
   const ourbigbook_options = {
-    add_test_instrumentation: commander.addTestInstrumentation,
-    body_only: commander.bodyOnly,
+    add_test_instrumentation: cli.addTestInstrumentation,
+    body_only: cli.bodyOnly,
     ourbigbook_json,
-    embed_includes: commander.embedIncludes,
+    embed_includes: cli.embedIncludes,
     fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
     html_x_extension,
     output_format,
-    outfile: commander.outfile,
+    outfile: cli.outfile,
     path_sep: path.sep,
     publish,
     read_include: read_include({
@@ -930,16 +943,16 @@ if (commander.helpMacros) {
     //    return undefined
     //  }
     //},
-    render: commander.render,
+    render: cli.render,
     split_headers: split_headers,
     template_vars: {},
-    unsafe_xss: commander.unsafeXss,
+    unsafe_xss: cli.unsafeXss,
   };
 
   ourbigbook_options.log = {};
   const non_ourbigbook_options_log = {};
-  if (commander.log !== undefined) {
-    for (const log of commander.log) {
+  if (cli.log !== undefined) {
+    for (const log of cli.log) {
       if (ourbigbook.LOG_OPTIONS.has(log)) {
         ourbigbook_options.log[log] = true;
       } else if (LOG_OPTIONS.has(log)) {
@@ -951,8 +964,8 @@ if (commander.helpMacros) {
   }
   let template_path;
 
-  if (commander.template !== undefined) {
-    template_path = commander.template;
+  if (cli.template !== undefined) {
+    template_path = cli.template;
   } else if ('template' in ourbigbook_json) {
     template_path = path.join(ourbigbook_json_dir, ourbigbook_json.template);
   }
@@ -970,17 +983,17 @@ if (commander.helpMacros) {
     }
   }
   let outdir;
-  if (commander.outdir === undefined) {
-    if (commander.generate) {
+  if (cli.outdir === undefined) {
+    if (cli.generate) {
       outdir = '.'
     } else {
       outdir = ourbigbook_json_dir;
     }
   } else {
-    outdir = commander.outdir;
+    outdir = cli.outdir;
   }
-  if (commander.generate) {
-    let generate = commander.generate
+  if (cli.generate) {
+    let generate = cli.generate
     if (generate === 'subdir') {
       outdir = path.join(outdir, 'docs')
     }
@@ -1048,7 +1061,7 @@ if (commander.helpMacros) {
   ) {
     tmpdir = path.join(outdir, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME);
     if (
-      commander.outdir === undefined &&
+      cli.outdir === undefined &&
       outputOutOfTree
     ) {
       let subdir
@@ -1071,7 +1084,7 @@ if (commander.helpMacros) {
     ourbigbook_json_dir,
     ourbigbook_paths_converted: [],
     ourbigbook_paths_converted_only: false,
-    commander,
+    cli,
     db_options: {},
     file_rows_dict: {},
     encoding: ourbigbook_nodejs_webpack_safe.ENCODING,
@@ -1107,11 +1120,11 @@ if (commander.helpMacros) {
     }
     let publish_dir;
     let cmd_options = {
-      dry_run: commander.dryRun,
+      dry_run: cli.dryRun,
       throw_on_error: true,
     }
     if (!input_path_is_file) {
-      if (commander.outfile !== undefined) {
+      if (cli.outfile !== undefined) {
         cli_error(`--outfile given but multiple output files must be generated, maybe you want --outdir?`);
       }
       if (publish) {
@@ -1135,18 +1148,40 @@ if (commander.helpMacros) {
     ourbigbook_options.katex_macros = ourbigbook_nodejs_webpack_safe.preload_katex(tex_path)
 
     // Setup the ID database.
-    if (commander.db) {
+    if (cli.db) {
       non_ourbigbook_options.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
     } else {
       non_ourbigbook_options.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
     }
     if (web) {
       let token
-      const web_url = commander.webUrl ? commander.webUrl : commander.webTest ? 'http://localhost:3000' : ourbigbook.WEB_URL
+      const web_url = cli.webUrl ? cli.webUrl : cli.webTest ? 'http://localhost:3000' : ourbigbook.WEB_URL
       const url = new URL(web_url)
       const host = url.host
       await create_db(ourbigbook_options, non_ourbigbook_options);
-      const host_row = await non_ourbigbook_options.sequelize.models.Cli.findOne({ where: { host } })
+
+      // Username
+      let username
+      if (cli.webUser) {
+        username = cli.webUser
+      } else {
+        if (cli.webTest) {
+          username = 'barack-obama'
+        }
+      }
+      const cliWhere = { host }
+      if (username) {
+        cliWhere.username = username
+      } else {
+        cliWhere.defaultUsernameForHost = true
+      }
+      const host_row = await non_ourbigbook_options.sequelize.models.Cli.findOne({ where: cliWhere })
+      if (host_row === null) {
+        ;[err, username] = await read({ prompt: 'Username: ' })
+      } else if (username === undefined) {
+        username = host_row.username
+        console.log(`Using previous username: ${username}\n`);
+      }
       const webApi = new WebApi({
         getToken: () => token,
         https: url.protocol === 'https:',
@@ -1154,37 +1189,22 @@ if (commander.helpMacros) {
         hostname: url.hostname,
         validateStatus: () => true,
       })
-      function handleWebApiErr(err) {
-        if (err.code === 'ECONNREFUSED') {
-          cli_error('could not connect to server');
-        } else {
-          throw err
-        }
-      }
-      let username
       if (host_row) {
         token = host_row.token
-        username = host_row.username
       } else {
         let err, password
-        if (commander.webUser) {
-          username = commander.webUser
+
+        // Password
+        if (cli.webPassword) {
+          password = cli.webPassword
         } else {
-          if (commander.webTest) {
-            username = 'barack-obama'
-          } else {
-            ;[err, username] = await read({ prompt: 'Username: ' })
-          }
-        }
-        if (commander.webPassword) {
-          password = commander.webPassword
-        } else {
-          if (commander.webTest) {
+          if (cli.webTest) {
             password = 'asdf'
           } else {
             ;[err, password] = await read({ prompt: 'Password: ', silent: true })
           }
         }
+
         let data, status
         try {
           ;({ data, status } = await webApi.userLogin({ username, password }))
@@ -1197,7 +1217,30 @@ if (commander.helpMacros) {
           cli_error(`error status: ${status}`);
         }
         token = data.user.token
-        await non_ourbigbook_options.sequelize.models.Cli.create({ host, token, username })
+
+        await non_ourbigbook_options.sequelize.transaction(async (transaction) => {
+          await non_ourbigbook_options.sequelize.models.Cli.update(
+            {
+              defaultUsernameForHost: false
+            },
+            {
+              where: {
+                host,
+              },
+              transaction,
+            }
+          )
+          await non_ourbigbook_options.sequelize.models.Cli.upsert(
+            {
+              host,
+              username,
+              token,
+              // Use the latest one by default.
+              defaultUsernameForHost: true
+            },
+            { transaction }
+          )
+        })
       }
       ourbigbook_options.split_headers = true
       ourbigbook_options.render_include = false
@@ -1314,7 +1357,6 @@ if (commander.helpMacros) {
               const parent_ast = rendered_outputs_entry.header_ast.get_header_parent_asts(extra_returns.context)[0]
               const article = { title, body, inpath, sha256: crypto.createHash('sha256').update(source).digest('hex') }
               if (parent_ast) {
-                let parentId = `${ourbigbook.AT_MENTION_CHAR}${username}`
                 if (
                   parent_ast.id !== ourbigbook.INDEX_BASENAME_NOEXT &&
                   // Force every child of the topevel to add it as "@username" and instead of deducing it from title
@@ -1325,7 +1367,9 @@ if (commander.helpMacros) {
                     ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(path.parse(parent_ast.source_location.path).name)
                   )
                 ) {
-                  parentId = parentId + `/${parent_ast.id}`
+                  parentId = `${parent_ast.id}`
+                } else {
+                  parentId = ''
                 }
                 article.parentId = parentId
               }
@@ -1362,10 +1406,10 @@ if (commander.helpMacros) {
         process.exit(1);
       }
       let header_tree = []
-      if (input_path_is_file || commander.webId) {
+      if (input_path_is_file || cli.webId) {
         let toPush
-        if (commander.webId) {
-          toPush = commander.webId
+        if (cli.webId) {
+          toPush = cli.webId
         } else {
           toPush = treeToplevelId
         }
@@ -1375,7 +1419,7 @@ if (commander.helpMacros) {
         // It is not otherwise present as it has no parents.
         header_tree.push({ to_id: '' })
       }
-      if (!commander.webId) {
+      if (!cli.webId) {
         header_tree = header_tree.concat(await non_ourbigbook_options.db_provider.fetch_header_tree_ids(
           [treeToplevelId],
           {
@@ -1389,7 +1433,7 @@ if (commander.helpMacros) {
       }
       console.error('\nUpload');
       const dorender = [false]
-      if (commander.render) {
+      if (cli.render) {
         dorender.push(true)
       }
       // Paths that we have determined during ID extraction phase are not modified, so no need for a render stage.
@@ -1407,34 +1451,50 @@ if (commander.helpMacros) {
         console.error(msg);
       }
       let data, status, i = 0
-      const pathToSha = {}
+      const webPathToSha = {}
       do {
         ;({ data, status } = await webApi.articlesSha256({ author: username, offset: i }))
         assertApiStatus(status, data)
         const articles = data.articles
         for (const article of articles) {
-          pathToSha[article.path] = { sha256: article.sha256, renderOutdated: article.renderOutdated }
+          webPathToSha[article.path] = { sha256: article.sha256, renderOutdated: article.renderOutdated }
         }
         i += articles.length
       } while (data.articles.length > 0)
+      const idToArticleMeta = {}
+      const localArticles = await sequelizeWebArticle.findAll({ attributes: ['sha256', 'idid', 'inpath'] })
+      for (const article of localArticles) {
+        idToArticleMeta[article.idid] = article
+      }
       for (const render of dorender) {
         let i = 0
         // This ordering ensures parents come before children.
         for (const header_tree_entry of header_tree) {
           const id = header_tree_entry.to_id
-          const article = await sequelizeWebArticle.findOne({ where: { idid: id } })
+          let article = idToArticleMeta[id]
           if (
             // Can fail for synonyms.
-            article !== null
+            article
           ) {
             const inpathParse = path.parse(article.inpath)
             const articlePath = path.join(inpathParse.dir, inpathParse.name)
-            const pathToShaEntry = pathToSha[`${ourbigbook.AT_MENTION_CHAR}${username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${articlePath}.${ourbigbook.OURBIGBOOK_EXT}`]
+            const webPathToShaEntry = webPathToSha[`${ourbigbook.AT_MENTION_CHAR}${username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${articlePath}.${ourbigbook.OURBIGBOOK_EXT}`]
+            if (webPathToShaEntry === undefined ) {
+              webPathToShaEntry
+            }
             if (
-              pathToShaEntry === undefined ||
-              pathToShaEntry.sha256 !== article.sha256 ||
-              (render && pathToShaEntry.renderOutdated)
+              webPathToShaEntry === undefined ||
+              webPathToShaEntry.sha256 !== article.sha256 ||
+              (
+                render &&
+                (
+                  webPathToShaEntry.renderOutdated ||
+                  cli.webForceRender
+                )
+              )
             ) {
+              // OK, we are going to render this article, so fetch it fully now including the source.
+              article = await sequelizeWebArticle.findOne({ where: { idid: id } })
               printStatus(i, article, render)
               let data, status
               const articleArgs = {}
@@ -1443,6 +1503,15 @@ if (commander.helpMacros) {
                 articleArgs.bodySource = article.body
               }
               const t0 = performance.now()
+              let parentIdNoUsername = article.parentId
+              let parentId
+              if (parentIdNoUsername !== null) {
+                if (parentIdNoUsername === '') {
+                  parentId = `${ourbigbook.AT_MENTION_CHAR}${username}`
+                } else {
+                  parentId = `${ourbigbook.AT_MENTION_CHAR}${username}/${parentIdNoUsername}`
+                }
+              }
               try {
                 ;({ data, status } = await webApi.articleCreateOrUpdate(
                   articleArgs,
@@ -1450,7 +1519,7 @@ if (commander.helpMacros) {
                     // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
                     path: articlePath,
                     render,
-                    parentId: article.parentId === null ? undefined : article.parentId,
+                    parentId
                   }
                 ))
               } catch(err) {
@@ -1460,12 +1529,19 @@ if (commander.helpMacros) {
               const t1 = performance.now()
               printStatus(i, article, render, t0, t1)
               i++
+              if (
+                render &&
+                cli.webMaxRenders !== undefined &&
+                i === cli.webMaxRenders
+              ) {
+                break
+              }
             }
           }
         }
       }
-    } else if (commander.watch) {
-      if (commander.stdout) {
+    } else if (cli.watch) {
+      if (cli.stdout) {
         cli_error('--stdout and --watch are incompatible');
       }
       if (publish) {
@@ -1492,7 +1568,7 @@ if (commander.helpMacros) {
         output = await convert_path_to_file(inputPath, ourbigbook_options, non_ourbigbook_options);
         await check_db(non_ourbigbook_options)
       } else {
-        if (commander.stdout) {
+        if (cli.stdout) {
           cli_error('--publish cannot be used in directory conversion');
         }
         let actual_input_dir;
@@ -1517,7 +1593,7 @@ if (commander.helpMacros) {
             publish_remote_url = 'git@github.com:cirosantilli/ourbigbook.git';
           }
           src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options).slice(0, -1);
-          if (commander.dryRun) {
+          if (cli.dryRun) {
             src_branch = 'master';
           }
           const parsed_remote_url = require("git-url-parse")(publish_remote_url);
@@ -1537,9 +1613,9 @@ if (commander.helpMacros) {
             cli_error(`source and publish branches are the same: ${publish_branch}`);
           }
           fs.mkdirSync(publish_dir, {recursive: true});
-          if (commander.publishCommit !== undefined) {
+          if (cli.publishCommit !== undefined) {
             cmd_get_stdout('git', ['-C', inputPath, 'add', '-u'], cmd_options);
-            cmd_get_stdout( 'git', [ '-C', inputPath, 'commit', '-m', commander.publishCommit ], cmd_options);
+            cmd_get_stdout( 'git', [ '-C', inputPath, 'commit', '-m', cli.publishCommit ], cmd_options);
           }
           if (fs.existsSync(publish_git_dir)) {
             cmd_get_stdout('git', ['-C', publish_dir, 'checkout', '--', '.'], cmd_options);
@@ -1596,7 +1672,7 @@ if (commander.helpMacros) {
         // Publish the converted output if build succeeded.
         if (publish && !non_ourbigbook_options.had_error) {
           // Push the original source.
-          if (!commander.dryRunPush) {
+          if (!cli.dryRunPush) {
             cmd_get_stdout('git', ['-C', inputPath, 'push'], cmd_options);
           }
           cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'init'], cmd_options);
@@ -1623,7 +1699,7 @@ if (commander.helpMacros) {
 
           // Commit and push.
           if ('prepublish' in ourbigbook_json) {
-            if (!commander.dryRun && !commander.dryRunPush && !commander.unsafeAce) {
+            if (!cli.dryRun && !cli.dryRunPush && !cli.unsafeAce) {
               cli_error('prepublish in ourbigbook.json requires running with --unsafe-ace');
             }
             const prepublish_path = ourbigbook_json.prepublish
@@ -1660,7 +1736,7 @@ if (commander.helpMacros) {
             commit_cmd_options.env_extra = { GIT_COMMITTER_DATE: ourbigbook_json.publishCommitDate }
           }
           cmd_get_stdout('git', args, commit_cmd_options);
-          if (!commander.dryRunPush) {
+          if (!cli.dryRunPush) {
             cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'push', '-f', 'origin', `${publish_branch}:${publish_branch}`], cmd_options);
             // Mark the commit with the `published` branch to make it easier to find what was last published.
             cmd_get_stdout('git', ['-C', inputPath, 'checkout', '-B', 'published'], cmd_options);
@@ -1675,13 +1751,13 @@ if (commander.helpMacros) {
     inputPath === undefined ||
     (
       output !== undefined &&
-      commander.stdout
+      cli.stdout
     )
   ) {
     process.stdout.write(output);
   }
   perf_print('exit', ourbigbook_options)
-  if (!commander.watch) {
+  if (!cli.watch) {
     process.exit(non_ourbigbook_options.had_error);
   }
 }

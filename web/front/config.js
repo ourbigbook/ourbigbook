@@ -24,6 +24,10 @@ if (process.env.NODE_ENV === 'test') {
 } else {
   databaseUrl = process.env.DATABASE_URL
 }
+let databaseName = process.env.OURBIGBOOK_DB_NAME
+if (!databaseName) {
+  databaseName = 'ourbigbook'
+}
 
 const appDomain = 'ourbigbook.com'
 const docsUrl = `https://docs.${appDomain}`
@@ -133,7 +137,7 @@ module.exports = {
   production: Object.assign({
     url:
       databaseUrl ||
-      'postgres://ourbigbook_user:a@localhost:5432/ourbigbook',
+      `postgres://ourbigbook_user:a@localhost:5432/${databaseName}`,
     logging: true,
   }, ourbigbook_nodejs_front.sequelize_postgres_opts)
 }

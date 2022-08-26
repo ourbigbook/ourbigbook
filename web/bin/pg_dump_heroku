@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+heroku pg:backups:capture -a ourbigbook
+heroku pg:backups:download -a ourbigbook

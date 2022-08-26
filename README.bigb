@@ -5293,6 +5293,84 @@ Examples of embedding that could be implemented in the future:
 Keep in mind that certain things can never be embedded, e.g.:
 * YouTube videos, since YouTube does not offer any download API
 
+= -`F`, `--force-render`
+{id=force-render}
+{parent=OurBigBook CLI options}
+
+Always render all selected files, irrespectively of if they are known to be outdated or not.
+
+OurBigBook stores the timestamp of the last successful <conversion process overview>[ID extraction step] for each file.
+
+For ID extraction, we always skip the extraction if the filesystem timestamp of a source file is older than the last successful extraction.
+
+For render:
+* we mark output files as outdated when the corresponding source file is parsed
+* we also skip rendering non-outdated files by default when you invoke ourbigbook on a directory, e.g. `ourbigbook .`, as this greatly speeds up the interactive error fixing turnaround time
+* we always re-render fully when you specify a single file, e.g. `ourbigbook path/to/README.bigb`
+
+However, note that skipping renders, unlike for ID extraction, can lead to some outdated pages.
+
+This option disables the timestamp skip for rendering, so ensure that you will get a fully clean updated render.
+
+E.g. consider if you had two files:
+
+file1.bigb
+
+``
+= File 1
+
+== File 1 1
+``
+
+file2.bigb
+
+``
+= File 2
+
+== File 2 1
+
+\x[file-1-1]
+``
+
+We then do the initial conversion:
+``
+ourbigbook .
+``
+we see output like:
+``
+extract_ids file1.bigb
+extract_ids file1.bigb finished in 45.61287499964237 ms
+extract_ids file2.bigb
+extract_ids file2.bigb finished in 15.163879998028278 ms
+render file1.bigb
+render file1.bigb finished in 23.21016100049019 ms
+render file2.bigb
+render file2.bigb finished in 25.92908499762416 ms
+``
+indicating full conversion without skips.
+
+But then if we just modify fil1.bigb as:
+``
+= File 1
+
+== File 1 1 hacked
+{id=file-1-1}
+``
+the following conversion with `ourbigbook .` would look like:
+``
+extract_ids file1.bigb
+extract_ids file1.bigb finished in 45.61287499964237 ms
+extract_ids file2.bigb
+extract_ids file2.bigb skipped by timestamp
+render file1.bigb
+render file1.bigb finished in 41.026930000633 ms
+render file2.bigb
+render file2.bigb skipped by timestamp
+``
+and because we skipped `file2.bigb` render, it will still have the outdated "File 1 1" instead of "File 1 1 hacked".
+
+We could in principle solve this problem by figuring out exactly which files need to be changed when a given ID changes, and we already <conversion process overview>[have to solve a similar problem due to query bundling]. Also, this will need to be done sonner or later for the <OurBigBook Web>. But lazy now: https://github.com/cirosantilli/ourbigbook/issues/207[], this is hard stuff.
+
 = `--format-source`
 {parent=OurBigBook CLI options}
 
@@ -5485,83 +5563,6 @@ This option is automatically implied when <Publish to GitHub Pages>[publishing t
 {parent=OurBigBook CLI options}
 
 Only extract IDs to fill the <ID database>, don't render. This saves time if you only want to render a single file which has references to other files without getting any errors.
-
-= `--no-render-timestamp`
-{parent=OurBigBook CLI options}
-
-OurBigBook stores the timestamp of the last successful:
-* <conversion process overview>[ID extraction]
-* <conversion process overview>[render]
-for each file.
-
-For ID extraction, we always skip the extraction if the filesystem timestamp of a source file is older than the last successful extraction.
-
-For render:
-* we also skip rendering by default when you invoke ourbigbook on a directory, e.g. `ourbigbook .`, as this greatly speeds up the interactive error fixing turnaround time
-* we always re-render fully when you specify a single file, e.g. `ourbigbook path/to/README.bigb`
-
-However, note that skipping renders, unlike for ID extraction, can lead to some outdated pages.
-
-This option disables the timestamp skip for rendering, so ensure that you will get a fully clean updated render.
-
-E.g. consider if you had two files:
-
-file1.bigb
-
-``
-= File 1
-
-== File 1 1
-``
-
-file2.bigb
-
-``
-= File 2
-
-== File 2 1
-
-\x[file-1-1]
-``
-
-We then do the initial conversion:
-``
-ourbigbook .
-``
-we see output like:
-``
-extract_ids file1.bigb
-extract_ids file1.bigb finished in 45.61287499964237 ms
-extract_ids file2.bigb
-extract_ids file2.bigb finished in 15.163879998028278 ms
-render file1.bigb
-render file1.bigb finished in 23.21016100049019 ms
-render file2.bigb
-render file2.bigb finished in 25.92908499762416 ms
-``
-indicating full conversion without skips.
-
-But then if we just modify fil1.bigb as:
-``
-= File 1
-
-== File 1 1 hacked
-{id=file-1-1}
-``
-the following conversion with `ourbigbook .` would look like:
-``
-extract_ids file1.bigb
-extract_ids file1.bigb finished in 45.61287499964237 ms
-extract_ids file2.bigb
-extract_ids file2.bigb skipped by timestamp
-render file1.bigb
-render file1.bigb finished in 41.026930000633 ms
-render file2.bigb
-render file2.bigb skipped by timestamp
-``
-and because we skipped `file2.bigb` render, it will still have the outdated "File 1 1" instead of "File 1 1 hacked".
-
-We could in principle solve this problem by figuring out exactly which files need to be changed when a given ID changes, and we already <conversion process overview>[have to solve a similar problem due to query bundling]. Also, this will need to be done sonner or later for the <OurBigBook Web>. But lazy now: https://github.com/cirosantilli/ourbigbook/issues/207[], this is hard stuff.
 
 = `--outdir <outdir>`
 {id=outdir}
@@ -6083,6 +6084,22 @@ That ID must belong to a file being converted for everything to work well. e.g.:
 ourbigbook --web --web-id quantum-mechanics physics.bigb
 ``
 
+= `--web-force-render`
+{parent=OurBigBook CLI options}
+
+Force remote render of <web>, don't skip it if even if the render is believed to be up-to-date with source.
+
+This is analogous to <force-render>.
+
+<web-force-render> does not skip the local pre-conversion to split `bigb` format that is done before upload, only the remote render. Conversely, when used together with <web>, <force-render> does wkip the local bigb conversion, and not the remove one.
+
+= `--web-max-renders`
+{parent=OurBigBook CLI options}
+
+Render up to a maxinum of N articles.
+
+Useful for quick and dirty <OurBigBook Web performance benchmarking, especially together with <--web-force-render> to avoid skipping over finished files.
+
 = `--web-password`
 {parent=OurBigBook CLI options}
 
@@ -6121,7 +6138,12 @@ Set the username for <web> from the command line, e.g.:
 ``
 ourbigbook --web --web-url http://localhost:3000 --web-user barack-obama
 ``
-If not given, you will be prompted for it from the command line.
+If not given:
+* use the latest previous successfull web login with `ourbigbook --web` if there are any. In that case, the CLI informs you with a message of type:
+  ``
+  Using previous username: barack-obama
+  ``
+* otherwise, you will be prompted for it from the command line.
 
 = `ourbigbook.json`
 {parent=OurBigBook CLI}
@@ -7142,12 +7164,12 @@ It uses `PGPASSWORD` is mentioned at: https://stackoverflow.com/questions/640512
 = OurBigBook Web PostgreSQL setup
 {parent=OurBigBook Web PostgreSQL}
 
-Before running <OurBigBook Web>, the PostgreSQL database should be setup with \a[web/bin/psql-setup]:
+Before running <OurBigBook Web>, the PostgreSQL database should be setup with \a[web/bin/pg-setup]:
 ``
-web/bin/psql-setup
+web/bin/pg-setup
 ``
 This command:
-* drops the existing database if any
+* drops the existing database if any, i.e. nukes all data
 * creates a test user
 * re-creates the test database
 
@@ -7160,7 +7182,7 @@ For when you really need to debug some deployment stuff locally.
 
 Before the first run the <OurBigBook Web PostgreSQL setup>:
 ``
-web/bin/psql-setup
+web/bin/pg-setup
 ``
 
 Run after every modification
@@ -7206,13 +7228,40 @@ NODE_ENV=production OURBIGBOOK_POSTGRES=true bin/sync-db.js
 ``
 because we have to shell out to the ugly <OurBigBook Web database migration setup>[migration] CLI, and that only understands `NODE_ENV`.
 
+= Use a secondary PostgresQL database locally
+{parent=OurBigBook Web PostgreSQL}
+
+Setup the database:
+``
+web/bin/pg-setup ourbigbook2
+OURBIGBOOK_DB_NAME=ourbigbook2 web/bin/pg web/bin/generate-demo-data.js
+``
+
+Run the server:
+``
+OURBIGBOOK_DB_NAME=ourbigbook2 npm run dev-pg
+``
+
+Or commonly to run on a different port so that two instances may be accessed separately:
+``
+PORT=3001 OURBIGBOOK_DB_NAME=ourbigbook2 npm run dev-pg
+``
+
+To restore a dump to the secondary database:
+``
+web/bin/pg_restore -d ourbigbook2
+``
+
+= Save and restore local PostgreSQL development database
+{parent=OurBigBook Web PostgreSQL}
+
 Save the psql database state as per https://stackoverflow.com/questions/37984733/postgresql-database-export-to-sql-file[] with our \a[web/bin/pg_dump] helper:
 ``
 web/bin/pg_dump -Fc -f tmp.psql
 ``
-Then to restore it later:
+Then to restore it later with \a[web/bin/pg_restore]:
 ``
-PGPASSWORD=a pg_restore -U ourbigbook_user -h localhost --clean -d ourbigbook -v tmp.psql
+web/bin/pg_restore tmp.psql
 ``
 https://stackoverflow.com/questions/2732474/restore-a-postgres-backup-file-using-the-command-line
 
@@ -7514,7 +7563,7 @@ To finish things off, you must now:
 
 Additionally, you also need to setup the PostgreSQL test database for both OurBigBook CLI and OurBigBook Web as documented at <OurBigBook Web PostgreSQL setup>{full}:
 ``
-web/bin/psql-setup
+web/bin/pg-setup ourbigbook-cli
 ``
 
 Then deploy with:
@@ -7554,17 +7603,6 @@ If some spurious bugs crashes the server, you might want to restart it with:
 ``
 heroku restart -a ourbigbook
 ``
-
-Download a dump of the database as per https://devcenter.heroku.com/articles/heroku-postgres-import-export[]:
-``
-heroku pg:backups:capture -a ourbigbook
-heroku pg:backups:download -a ourbigbook
-``
-Restore it to a local database:
-``
-PGPASSWORD=a pg_restore --verbose --clean --no-acl --no-owner -h localhost -U ourbigbook_user -d ourbigbook latest.dump
-``
-The local password is `a` (single letter). TODO automate login.
 
 = Upgrade PostgreSQL database
 {parent=Heroku deployment}
@@ -7620,6 +7658,41 @@ To get a shell on the stating server you can run:
 ``
 heroku run -a ourbigbook-staging bash
 ``
+
+= Heroku debugging
+{c}
+{parent=Heroku deployment}
+
+Enable Sequelize logs:
+``
+heroku config:set -a ourbigbook DEBUG='*:sql:*'
+``
+
+You then then see them with other logs at:
+``
+heroku logs -a ourbigbook -t
+``
+
+Disable these verbose logs once you're done:
+``
+heroku config:unset -a ourbigbook DEBUG
+``
+
+= Download Heroku database and restore it locally
+{parent=Heroku debugging}
+
+First download a dump of the database as per https://devcenter.heroku.com/articles/heroku-postgres-import-export[] with :
+``
+web/bin/pg_dump_heroku
+``
+This produces a file `latest.dump`. If that already exists, it produces `latest.dump.1` and so on.
+
+Then restore it to a local database like in <Save and restore local PostgreSQL development database>{full}. First we nuke the database completely with `web/bin/pg-setup` to increase accuracy:
+``
+web/bin/pg-setup
+web/bin/pg_restore --no-acl --no-owner latest.dump
+``
+We also add some extra flags to reduce the ammount of warnings due to database differences. https://devcenter.heroku.com/articles/heroku-postgres-import-export says some of those warnings are normal and can be ignored.
 
 = Dependency organization
 {parent=Heroku deployment}
@@ -9059,12 +9132,22 @@ obb
 {parent=Publicity}
 
 We were thinking something like:
-\Q[Learn for real]
+\Q[Learn for real!]
 but we wonder if that wouldn't be too close to: https://www.learningforreal.org/[]. Maybe not.
 
 Another one that is also somewhat taken is:
 \Q[You be the teacher]
 https://www.teacherspayteachers.com/Product/You-Be-The-Teacher-Independent-Research-Project-Distance-Learning-3785062
+
+= Project name
+{parent=Publicity}
+
+A free domain name was the key restriction.
+
+We almost went with `destroyuni.com`!!! But Ciro regained his senses in the end. A two word domain would be sweet though.
+
+But Ciro was very happy with OurBigBook. Some other `<possessive><adjective><noun>` domains:
+* https://www.mysmallcar.com
 
 = OurBigBook.com Fellowship
 {parent=Publicity}

@@ -6,7 +6,6 @@ module.exports = (sequelize) => {
       host: {
         type: DataTypes.TEXT,
         allowNull: false,
-        unique: true,
       },
       token: {
         type: DataTypes.TEXT,
@@ -16,10 +15,14 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      defaultUsernameForHost: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+      },
     },
     {
       indexes: [
-        { fields: ['host'], },
+        { fields: ['host', 'username'], unique: true },
       ],
     }
   )

@@ -1385,10 +1385,8 @@ Macro.TITLE2_ARGUMENT_NAME = 'title2';
 //   about how to avoid ID duplication
 // - only a single ToC ever renders per document. So we can just have a fixed
 //   magic one.
-Macro.TOC_ID = 'toc';
-Macro.RESERVED_IDS = new Set([
-  Macro.TOC_ID,
-]);
+Macro.RESERVED_ID_PREFIX = '_'
+Macro.TOC_ID = Macro.RESERVED_ID_PREFIX + 'toc';
 Macro.TOC_PREFIX = Macro.TOC_ID + '-'
 Macro.TOPLEVEL_MACRO_NAME = 'Toplevel';
 
@@ -2381,8 +2379,8 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
     } else {
       ast.id = render_arg_noescape(macro_id_arg, new_context);
     }
-    if (Macro.RESERVED_IDS.has(ast.id)) {
-      let message = `reserved ID "${ast.id}"`;
+    if (index_id && ast.id !== undefined && ast.id.startsWith(Macro.RESERVED_ID_PREFIX)) {
+      let message = `IDs that start with "${Macro.RESERVED_ID_PREFIX}" are reserved: "${ast.id}"`;
       parse_error(state, message, ast.source_location);
     }
     if (ast.id !== undefined && ast.scope !== undefined && !skip_scope) {
@@ -8119,7 +8117,8 @@ function create_link_list(context, ast, id, title, target_ids, body) {
   if (target_ids.size !== 0) {
     // TODO factor this out more with real headers.
     const target_asts = [];
-    ret += `<div>${html_hide_hover_link('#' + id)}<h2 id="${id}"><a href="#${id}">${title}</a></h2></div>\n`;
+    const idWithPrefix = `${Macro.RESERVED_ID_PREFIX}${id}`
+    ret += `<div>${html_hide_hover_link('#' + idWithPrefix)}<h2 id="${idWithPrefix}"><a href="#${idWithPrefix}">${title}</a></h2></div>`;
     for (const target_id of Array.from(target_ids).sort()) {
       let target_ast = context.db_provider.get(target_id, context);
       if (
@@ -8686,7 +8685,7 @@ const OUTPUT_FORMATS_LIST = [
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(
                 REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
-              body += create_link_list(context, ast, 'tagged', 'Tagged', target_ids)
+              body += create_link_list(context, ast, `tagged`, 'Tagged', target_ids)
             }
 
             // Ancestors
@@ -8712,8 +8711,9 @@ const OUTPUT_FORMATS_LIST = [
               }
               if (ancestors.length !== 0) {
                 // TODO factor this out more with real headers.
-                const id = 'ancestors'
-                body += `<div>${html_hide_hover_link('#ancestors')}<h2 id="#${id}"><a href="#ancestors">Ancestors</a></h2></div>\n`;
+                const id = `ancestors`
+                const idWithPrefix = `${Macro.RESERVED_ID_PREFIX}${id}`
+                body += `<div>${html_hide_hover_link(`#${idWithPrefix}`)}<h2 id="${idWithPrefix}"><a href="#${idWithPrefix}">Ancestors</a></h2></div>\n`;
                 const ancestor_id_asts = [];
                 for (const ancestor of ancestors) {
                   //let counts_str;
@@ -8779,7 +8779,7 @@ const OUTPUT_FORMATS_LIST = [
 
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
-              body += create_link_list(context, ast, 'incoming-links', 'Incoming links', target_ids)
+              body += create_link_list(context, ast, `incoming-links`, 'Incoming links', target_ids)
             }
           }
 

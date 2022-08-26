@@ -2026,7 +2026,7 @@ The title argument is also notably used for <automatic ID from title>.
 = Automatic ID from title
 {parent=H title argument}
 
-If a <the toplevel header>[non-toplevel] macro has the `title` property is present but no explicit `id`, an ID is created automatically from the `title`, by applying the following transformations:
+If a <the toplevel header>[non-toplevel] macro has the `title` argument is present but no explicit `id` argument is given, an <element ID> is created automatically from the `title`, by applying the following transformations:
 * do a <id output format> conversion on the title to remove for example any HTML tags that would be present in the conversion output
 * convert all characters to lowercase. This uses <JavaScript case conversion>. Note that this does convert non-ASCII characters to lowercase, e.g. `É` to `é`.
 * if <ourbigbook json/id normalize latin> is `true` (the default) do <ourbigbook json/Latin normalization>. This converts e.g. `é` to `e`.
@@ -3464,11 +3464,6 @@ Table of Contents
 == Cat
 ``
 
-The <cross reference>[ID] of the ToC is always fixed to `toc`. If you try to use that for another element, you will get the following error:
-``
-error: tmp.bigb:3:1: reserved ID "toc"
-``
-
 The ToC ignores <the toplevel header> if you have one.
 
 For when you want a quick outline of the header tree on the terminal, also consider the <--log headers> option.
@@ -4563,6 +4558,10 @@ The `full=0` version is useful in the case of reference targets that unlike <hea
 
 The name "boolean argument" is given by analogy to the https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427["boolean attribute" concept in HTML5].
 
+= Common arguments
+{c}
+{parent=Macro argument syntax}
+
 = JavaScript interface for arguments
 {c}
 {parent=Macro argument syntax}
@@ -4873,6 +4872,50 @@ The most important fact about those functions is that they do convert non-ASCII 
 * https://stackoverflow.com/questions/929079/unicode-lowercase-characters
 
 These conversions are also specified in the Unicode standard.
+
+= Element ID
+{c}
+{parent=OurBigBook Markup concepts}
+
+In general usages of a <macro> produces an element, and every element has an ID.
+
+IDs must be unique, and they are used as the target of <internal cross references>.
+
+E.g. due to <automatic ID from title>{full}, the elements:
+``
+= Animal
+
+== Big dog
+
+I like <big dogs>.
+``
+would have IDs respectively:
+* `animal`
+* `big-dog`
+
+Such IDs are almost always rendered as HTML IDs as something like:
+``
+<h1 id="animal">
+<h2 id="big-dog">
+``
+and can therefore be linked to in a page with the corresponding fragment:
+``
+animal.html#big-dog
+``
+
+= Reserved IDs
+{parent=element-id}
+
+IDs that start with an underscore `_` are reserved for OurBigBook usage, and will give an error if you try to use them, in order to prevent ID conflicts.
+
+For example:
+* the <table of contents> uses an ID `_toc` the <cross reference>[ID] of the ToC is always fixed to `toc`. If you try to use that for another element, you will get the following error:
+* elements without an explicit ID may receive automatically generated IDs of type `_1`, `_2` and so on
+
+If you use a reserved ID, you will get an error mesasge of type:
+``
+error: tmp.bigb:3:1: IDs that start with "_" are reserved: "_toc"
+``
 
 = OurBigBook CLI
 {c}
@@ -6627,7 +6670,7 @@ In this setup the header "Physics" for example is present in one of two possible
 What dynamic article fetching allows is for us to have physics on a page such that:
 * "Physics" is the toplevel header, and therefore can get much better SEO
 * "Special Relativity", "Lorentz transformation" and any other descendants will still show up below it, so it is much more readable than a page 
-We then just cut off at a certain number of articles to not overload the server and browsers on very large pages. Those pages can still be accessed through the ToC, which is currently unlimited. We also want to implement: <TODO/Load more articles> to allow users to click to load more articles.
+We then just cut off at a certain number of articles to not overload the server and browsers on very large pages. Those pages can still be accessed through the ToC, which is currently unlimited. We also want to implement: <TODO/load more articles> to allow users to click to load more articles.
 
 And all of that is achieved:
 * without requiring authors to manually determine which headers are toplevel or not to customize page splits with reasonable load sizes.

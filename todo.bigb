@@ -21,18 +21,21 @@
 
 == Issues
 
-=== Statically render links to issues and topic under each header for better SEO
+=== First on-hover heder self link after table of content activates table of contents instead of header 
 {tag=Web}
 
-The links don't show without JavaScript. The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
+E.g.: https://cirosantilli.com/physics#how-to-teach-and-learn-physics
 
-=== Separate lines with field label for parent and previous sibling on web editor
+Broken ToC HTML render?
+
+=== Add an option to add a prefix to every ID of rendered output to avoid conflicts across comments and issue
 {tag=Web}
 
-Otherwise too confusing what is what when fields are pre-filled, e.g. when editing existing, and in the future when clicking a "add here" button.
+https://github.com/cirosantilli/ourbigbook/issues/251
 
-=== Add sibling/add child buttons next to self headers and toc
-{tag=Web}
+Will be useful for comments on web, since a single author can make multiple comments, so prefixing by usernme won't be enough.
+
+For topic pages, we can just prefix by username, and that is already currently done.
 
 === Allow showing article body on article lists
 {tag=Web}
@@ -40,6 +43,19 @@ Otherwise too confusing what is what when fields are pre-filled, e.g. when editi
 Maybe some will be list by default, but some will definitely be article show by default. Notably topic has to show the rendered body by default.
 
 This is a superset of: https://github.com/cirosantilli/ourbigbook/issues/270
+
+=== Separate lines with field label for parent and previous sibling on web editor
+{tag=Web}
+
+Otherwise too confusing what is what when fields are pre-filled, e.g. when editing existing, and in the future when clicking a "add here" button.
+
+=== Statically render links to issues and topic under each header for better SEO
+{tag=Web}
+
+The links don't show without JavaScript. The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
+
+=== Add sibling/add child buttons next to self headers and toc
+{tag=Web}
 
 === Allow creating new pages under scope
 {tag=Scope}

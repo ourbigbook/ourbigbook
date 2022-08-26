@@ -70,6 +70,7 @@ export const getServerSidePropsArticleHoc = ({
         sequelize.models.Article.getArticlesInSamePage({
           article,
           loggedInUser,
+          limit: maxArticlesFetch * 10,
           render: false,
           sequelize,
         }),

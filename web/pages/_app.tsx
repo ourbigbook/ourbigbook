@@ -14,6 +14,11 @@ import 'ourbigbook/editor.scss'
 import 'ionicons/css/ionicons.min.css'
 import 'style.scss'
 
+// https://nextjs.org/docs/advanced-features/measuring-performance
+export function reportWebVitals(metric) {
+  console.log(metric)
+}
+
 function MyHead() {
   const { title } = React.useContext(AppContext)
   let realTitle = title ? title + ' - ' : ''

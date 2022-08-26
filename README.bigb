@@ -7407,6 +7407,41 @@ Since we were unable to find any way to make things more flexible on the `packag
 
 Further discussion at: https://github.com/cirosantilli/ourbigbook/issues/156
 
+= OurBigBook Web performance benchmarking
+{c}
+{parent=OurBigBook Web development}
+
+TODO new world to me.
+
+https://stackoverflow.com/questions/18215389/how-do-i-measure-request-and-response-times-at-once-using-curl is a useful one if the server is slow:
+``
+curl -o /dev/null -s -w 'Establish Connection: %{time_connect}s\nTTFB: %{time_starttransfer}s\nTotal: %{time_total}s\n' http://localhost:3000
+``
+
+As documented at https://nextjs.org/docs/advanced-features/measuring-performance[] by uncommenting the following lines under \a[web/pages/_app.tsx]:
+``
+//export function reportWebVitals(metric) {
+//  console.log(metric)
+//}
+``
+we see a few metrics printed on the browser such as:
+``
+{
+    "id": "1667591558646-5510113745482",
+    "name": "TTFB",
+    "startTime": 0,
+    "value": 2474.199999999255,
+    "label": "web-vital"
+}
+{
+    "id": "1667591558646-9119282792899",
+    "name": "LCP",
+    "startTime": 4982.099,
+    "value": 4982.099,
+    "label": "web-vital"
+}
+``
+
 = OurBigBook Web architecture
 {c}
 {parent=OurBigBook Web development}

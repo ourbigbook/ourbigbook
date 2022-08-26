@@ -1012,31 +1012,40 @@ class DbProvider {
 
   get_noscopes_base(ids, ignore_paths_set) { throw new Error('unimplemented'); }
 
-  /** Array[{id: String, defined_at: String}] */
+  /** Array[{id: String, defined_at: String}]
+   */
   get_refs_to(type, to_id, reversed=false) { throw new Error('unimplemented'); }
 
   /**
-   * TODO this should be done as single JOIN.
+   * Unlike get_refs_to_as_ids, this function deduplicates possible scopes of an ID.
+   * selecting only the correct one for each.
    *
    * @param {String} id
    * @return {Array[AstNode]}: all header nodes that have the given ID
    *                           as a parent includer.
    */
-  get_refs_to_as_asts(type, to_id, context, reversed=false) {
+  get_refs_to_as_asts(type, to_id, context, opts={}) {
+    const { current_scope, reversed } = opts
     let ref_ids = this.get_refs_to_as_ids(type, to_id, reversed)
-    let ret = [];
+    let ret = {};
     for (const ref_id of ref_ids) {
-      const from_ast = this.get(ref_id, context);
+      const from_ast = this.get(ref_id, context, current_scope);
       if (from_ast === undefined) {
-        throw new Error(`could not find reference in database: ${ref_id}`);
+        if (!context.ignore_errors) {
+          throw new Error(`could not find reference in database: ${ref_id}`);
+        }
       } else {
-        ret.push(from_ast);
+        ret[from_ast.id] = from_ast;
       }
     }
-    return ret;
+    return Object.entries(ret).map(kv => kv[1]);
   }
 
-  /** @return Set[string] the IDs that reference the given AST .*/
+  /** @return Set[string] the IDs that reference the given AST
+   *
+   * The return contains multiple possible refs considering unresolved scopes.
+   * The final correct scope resolution is not calculated by this function.
+   **/
   get_refs_to_as_ids(type, to_id, reversed=false) {
     let other_key
     const entries = this.get_refs_to(type, to_id, reversed)
@@ -8422,16 +8431,16 @@ const OUTPUT_FORMATS_LIST = [
           let tag_ids_html
           const showTags = !ast.from_include || context.options.embed_includes
           if (showTags) {
-            const tag_ids = context.db_provider.get_refs_to_as_ids(
-              REFS_TABLE_X_CHILD, ast.id);
             const new_context = clone_and_set(context, 'validate_ast', true);
-            new_context.source_location = ast.source_location;
             // This is needed because in case of an an undefined \\x with {parent},
             // the undefined target would render as a link on the parent, leading
             // to an error that happens on the header, which is before the actual
             // root cause.
             new_context.ignore_errors = true;
-            for (const target_id of Array.from(tag_ids).sort()) {
+            new_context.source_location = ast.source_location;
+            const target_tag_asts = context.db_provider.get_refs_to_as_asts(
+              REFS_TABLE_X_CHILD, ast.id, new_context, { current_scope: ast.scope });
+            for (const target_id of target_tag_asts.map(ast => ast.id).sort()) {
               const x_ast = new AstNode(
                 AstType.MACRO,
                 Macro.X_MACRO_NAME,

@@ -6390,6 +6390,13 @@ The script arguments are:
 
 If the `prepublish` script returns with a non-zero exit value, the publish is aborted.
 
+= `publishCommitDate`
+{parent=ourbigbook.json}
+
+If given, use this fixed date as the author and comitter date of the publish commit.
+
+All Git date formats are accepted as documented in `man git-commit`, e.g. `2005-04-07T22:13:13`.
+
 = `publishRemoteUrl`
 {parent=ourbigbook.json}
 

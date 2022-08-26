@@ -187,6 +187,23 @@ async function convert_directory_extract_ids(input_path, ourbigbook_options, non
   );
 }
 
+async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_options, non_ourbigbook_options) {
+  await reconcile_db_and_filesystem(input_dir, ourbigbook_options, non_ourbigbook_options);
+  await convert_directory_extract_ids(input_dir, ourbigbook_options, non_ourbigbook_options);
+  if (!non_ourbigbook_options.had_error) {
+    await check_db(non_ourbigbook_options)
+  }
+  if (non_ourbigbook_options.commander.render) {
+    if (!non_ourbigbook_options.had_error) {
+      await convert_directory(
+        input_dir,
+        ourbigbook_options,
+        ourbigbook.clone_and_set(non_ourbigbook_options, 'is_render_after_extract', true)
+      );
+    }
+  }
+}
+
 /** Convert input from a string to output and return the output as a string.
  *
  * Wraps ourbigbook.convert with CLI usage convenience.
@@ -273,6 +290,9 @@ async function convert_input(input, ourbigbook_options, non_ourbigbook_options={
   }
   // Finally, do the conversion!
   const output = await ourbigbook.convert(input, new_options, new_options.extra_returns);
+  if (non_ourbigbook_options.post_convert_callback) {
+    non_ourbigbook_options.post_convert_callback(non_ourbigbook_options.input_path, new_options.extra_returns )
+  }
   if (non_ourbigbook_options.log.tokens) {
     console.error('tokens:');
     console.error(JSON.stringify(new_options.extra_returns.tokens, null, 2));
@@ -341,13 +361,20 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
       const file_row = non_ourbigbook_options.file_rows_dict[input_path_relative_to_ourbigbook_json]
       if (file_row !== undefined) {
         const mtime = fs.statSync(input_path).mtime
-        if (ourbigbook_options.render) {
-          timestamp_skip = non_ourbigbook_options.commander.renderTimestamp &&
-            file_row.last_render !== null &&
-            file_row.last_render > mtime &&
-            // Some day we might have one timestamp per output format.
-            // But lazy now, just never use timestamp for --format-source.
-            !non_ourbigbook_options.commander.formatSource
+        if (
+          ourbigbook_options.render
+        ) {
+          if (
+            // Web can currently only operate with in memory data structures that come out of a render.
+            !non_ourbigbook_options.commander.web
+          ) {
+            timestamp_skip = non_ourbigbook_options.commander.renderTimestamp &&
+              file_row.last_render !== null &&
+              file_row.last_render > mtime &&
+              // Some day we might have one timestamp per output format.
+              // But lazy now, just never use timestamp for --format-source.
+              !non_ourbigbook_options.commander.formatSource
+          }
         } else {
           timestamp_skip = file_row.last_parse !== null && file_row.last_parse > mtime
         }
@@ -804,6 +831,12 @@ if (commander.helpMacros) {
   if (!('redirects' in ourbigbook_json)) {
     ourbigbook_json.redirects = [];
   }
+  if (commander.web) {
+    if (!('h' in ourbigbook_json)) {
+      ourbigbook_json.h = {}
+    }
+    ourbigbook_json.h.splitDefault = true
+  }
 
   let split_headers;
   if (publish) {
@@ -819,7 +852,7 @@ if (commander.helpMacros) {
   if (!(commander.outputFormat in ourbigbook.OUTPUT_FORMATS)) {
     cli_error(`unknown output format: ${commander.outputFormat}`)
   }
-  const output_format = commander.formatSource ? ourbigbook.OUTPUT_FORMAT_OURBIGBOOK : commander.outputFormat
+  const output_format = (commander.formatSource || commander.web) ? ourbigbook.OUTPUT_FORMAT_OURBIGBOOK : commander.outputFormat
   const ourbigbook_options = {
     add_test_instrumentation: commander.addTestInstrumentation,
     body_only: commander.bodyOnly,
@@ -959,6 +992,7 @@ if (commander.helpMacros) {
     process.exit(0);
   }
   let tmpdir
+  const outputOutOfTree = ourbigbook_json.outputOutOfTree || commander.web
   if (
     // Possible on intput from stdin.
     outdir !== undefined
@@ -966,7 +1000,7 @@ if (commander.helpMacros) {
     tmpdir = path.join(outdir, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME);
     if (
       commander.outdir === undefined &&
-      ourbigbook_json.outputOutOfTree
+      outputOutOfTree
     ) {
       outdir = path.join(tmpdir, output_format)
     }
@@ -988,6 +1022,7 @@ if (commander.helpMacros) {
     out_css_path: ourbigbook_nodejs.DIST_CSS_PATH,
     out_js_path: ourbigbook_nodejs.DIST_JS_PATH,
     outdir,
+    post_convert_callback: undefined,
     publish,
   };
   if (!non_ourbigbook_options_log.db) {
@@ -1062,10 +1097,12 @@ if (commander.helpMacros) {
           cli_error('could not connect to server');
         }
       }
+      let username
       if (host_row) {
         token = host_row.token
+        username = host_row.username
       } else {
-        let err, username, password
+        let err, password
         if (commander.webUsername) {
           username = commander.webUsername
         } else {
@@ -1084,109 +1121,169 @@ if (commander.helpMacros) {
           cli_error(`error status: ${status}`);
         }
         token = data.user.token
-        await non_ourbigbook_options.sequelize.models.Cli.create({ host, token })
+        await non_ourbigbook_options.sequelize.models.Cli.create({ host, token, username })
       }
-      const new_non_ourbigbook_options = ourbigbook.clone_and_set(
-        non_ourbigbook_options, 'ourbigbook_paths_converted_only', true)
-      await convert_directory(
+      ourbigbook_options.split_headers = true
+      ourbigbook_options.render_include = false
+      const titleRegex = new RegExp(`${ourbigbook.INSANE_HEADER_CHAR} (.*)`)
+      // TODO don't keep all into memory like this. This would require:
+      // - make convert_directory_extract_ids_and_render itself follow pre-order include paths rather than linear.
+      //   Otherwise we get parentId undefined on web.
+      const id_to_article = {}
+      let index_id
+      non_ourbigbook_options.post_convert_callback = (inpath, extra_returns) => {
+        if (extra_returns.errors.length === 0) {
+          const rendered_outputs = extra_returns.rendered_outputs
+          for (let inpath in rendered_outputs) {
+            const rendered_outputs_entry = rendered_outputs[inpath]
+            if (rendered_outputs_entry.split) {
+              // To convert:
+              //
+              // linux-kernel-module-cheat-split.bigb
+              //
+              // to:
+              //
+              // linux-kernel-module-cheat.bigb
+              //
+              // on:
+              //
+              // = Linux kernel module cheat
+              // {splitSuffix}
+              //
+              // otherwise the ID becomes linux-kernel-module-cheat and \x links fail.
+              const source = rendered_outputs_entry.full;
+              const lines = source.split('\n')
+              let title = lines[0].match(titleRegex)[1]
+              const inpathParse = path.parse(inpath)
+              const basenameNoext = path.join(inpathParse.dir, inpathParse.name)
+              if (rendered_outputs_entry.split_suffix) {
+                inpath = basenameNoext.slice(0, -(rendered_outputs_entry.split_suffix.length + 1)) + `.${ourbigbook.OURBIGBOOK_EXT}`
+              }
+              let addId
+              let addSubdir
+              const header_ast = rendered_outputs_entry.header_ast
+              if (ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(inpathParse.name)) {
+                if (inpathParse.dir) {
+                  const dirPathParse = path.parse(inpathParse.dir)
+                  const titleId = ourbigbook.title_to_id(title)
+                  if (titleId !== dirPathParse.name) {
+                    // This would be ideal, allowing us to store all information about the article in the body itself.
+                    // But it was hard to implement, since now the input path is an important input of conversion.
+                    // So to start with we will just always provide the input path as a separate parameter.
+                    // {id= for toplevel was ignored as of writing, which is bad, should be either used or error.
+                    //addId = dirPathParse.name
+                  }
+                  if (dirPathParse.dir) {
+                    // Same as addId
+                    //addSubdir = dirPathParse.dir
+                  }
+                } else {
+                  title = 'Index'
+                  index_id = header_ast.id
+                }
+                inpath = `index.${ourbigbook.OURBIGBOOK_EXT}`
+              } else {
+                const titleId = ourbigbook.title_to_id(title)
+                if (titleId !== inpathParse.name) {
+                  //addId = inpathParse.name
+                }
+                if (inpathParse.dir) {
+                  //addSubdir = inpathParse.dir
+                }
+              }
+              let bodyStart
+              if (lines[1] === '' && !addId && !addSubdir) {
+                bodyStart = 2
+              } else {
+                bodyStart = 1
+              }
+              let body = ''
+              if (addId) {
+                // Restore this if we ever remove the separate path magic input.
+                // Also id of toplevel header is currently ignored as of writing:
+                //body += `{id=${addId}}\n`
+              }
+              if (addSubdir) {
+                // Restore this if we ever remove the separate path magic input.
+                //body += `{subdir=${addSubdir}}\n`
+              }
+              body += lines.slice(bodyStart).join('\n')
+              const parent_ast = rendered_outputs_entry.header_ast.get_header_parent_asts(extra_returns.context)[0]
+              const article = { title, body, inpath }
+              if (parent_ast) {
+                let parentId = `${ourbigbook.AT_MENTION_CHAR}${username}`
+                if (
+                  parent_ast.id !== ourbigbook.INDEX_BASENAME_NOEXT &&
+                  // Force every child of the topevel to add it as "@username" and instead of deducing it from title
+                  // as done on CLI. This means that giving the toplevel a custom ID and using that ID will fail to upload...
+                  // there is no solution to that. We should just force the toplevel to have no ID then on CLI for compatibility?
+                  !(
+                    parent_ast.is_first_header_in_input_file &&
+                    ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(path.parse(parent_ast.source_location.path).name)
+                  )
+                ) {
+                  parentId = parentId + `/${parent_ast.id}`
+                }
+                article.parentId = parentId
+              }
+              id_to_article[header_ast.id] = article
+            }
+          }
+        }
+      }
+      console.error(`Local conversion for header split`);
+      await convert_directory_extract_ids_and_render(
         inputPath,
         ourbigbook_options,
-        new_non_ourbigbook_options,
+        non_ourbigbook_options,
       );
-      const ourbigbook_paths_converted = new_non_ourbigbook_options.ourbigbook_paths_converted
-      const sources = await Promise.all(ourbigbook_paths_converted.map(
-        (inpath) => fs.promises.readFile(inpath, ourbigbook_nodejs_webpack_safe.ENCODING)))
-      const titleRegex = new RegExp(`${ourbigbook.INSANE_HEADER_CHAR} (.*)`)
-      let articles = []
-      for (let i = 0; i < sources.length; i++) {
-        const source = sources[i]
-        let inpath = ourbigbook_paths_converted[i]
-        const lines = source.split('\n')
-        let title = lines[0].match(titleRegex)[1]
-        const inpathParse = path.parse(inpath)
-        const basenameNoext = path.join(inpathParse.dir, inpathParse.name)
-        let addId
-        let addSubdir
-        if (ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(inpathParse.name)) {
-          if (inpathParse.dir) {
-            const dirPathParse = path.parse(inpathParse.dir)
-            const titleId = ourbigbook.title_to_id(title)
-            if (titleId !== dirPathParse.name) {
-              // This would be ideal, allowing us to store all information about the article in the body itself.
-              // But it was hard to implement, since now the input path is an important input of conversion.
-              // So to start with we will just always provide the input path as a separate parameter.
-              // {id= for toplevel was ignored as of writing, which is bad, should be either used or error.
-              //addId = dirPathParse.name
-            }
-            if (dirPathParse.dir) {
-              // Same as addId
-              //addSubdir = dirPathParse.dir
-            }
-          } else {
-            title = 'Index'
-          }
-          inpath = `index.${ourbigbook.OURBIGBOOK_EXT}`
-        } else {
-          const titleId = ourbigbook.title_to_id(title)
-          if (titleId !== inpathParse.name) {
-            //addId = inpathParse.name
-          }
-          if (inpathParse.dir) {
-            //addSubdir = inpathParse.dir
-          }
-        }
-        let bodyStart
-        if (lines[1] === '' && !addId && !addSubdir) {
-          bodyStart = 2
-        } else {
-          bodyStart = 1
-        }
-        let body = ''
-        if (addId) {
-          // Restore this if we ever remove the separate path magic input.
-          // Also id of toplevel header is currently ignored as of writing:
-          //body += `{id=${addId}}\n`
-        }
-        if (addSubdir) {
-          // Restore this if we ever remove the separate path magic input.
-          //body += `{subdir=${addSubdir}}\n`
-        }
-        body += lines.slice(bodyStart).join('\n')
-        articles.push({ title, body, inpath })
-      }
+      const header_tree = await non_ourbigbook_options.db_provider.fetch_header_tree_ids([index_id])
+      console.error(`\nUpload`);
       for (const render of [false, true]) {
-        for (const article of articles) {
-          let pref
-          if (render) {
-            pref = MESSAGE_PREFIX_RENDER
-          } else {
-            pref = MESSAGE_PREFIX_EXTRACT_IDS
-          }
-          console.error(`${pref}: ${article.title}`);
-          let data, status
-          try {
-            ;({ data, status } = await webApi.articleCreateOrUpdate(
-              { titleSource: article.title, bodySource: article.body },
-              { path: ourbigbook.path_splitext(article.inpath)[0], render }
-            ))
-          } catch(err) {
-            handleWebApiErr(err)
-          }
-          if (status !== 200) {
-            console.error(`error status: ${status}`);
-            const errors = data.errors
-            if (errors instanceof Array) {
-              for (const error of data.errors) {
-                console.error(error);
-              }
+        // This ordering ensures parents come before children.
+        for (const header_tree_entry of header_tree) {
+          const id = header_tree_entry.to_id
+          const article = id_to_article[id]
+          if (
+            // Can fail for synonyms.
+            article !== undefined
+          ) {
+            let pref
+            if (render) {
+              pref = MESSAGE_PREFIX_RENDER
             } else {
-              if (errors === undefined) {
-                console.error(data);
-              } else {
-                console.error(errors);
-              }
+              pref = MESSAGE_PREFIX_EXTRACT_IDS
             }
-            cli_error('conversion error')
+            console.error(`${pref}: ${article.title}`);
+            let data, status
+            try {
+              ;({ data, status } = await webApi.articleCreateOrUpdate(
+                { titleSource: article.title, bodySource: article.body },
+                {
+                  path: ourbigbook.path_splitext(article.inpath)[0],
+                  render,
+                  parentId: article.parentId,
+                }
+              ))
+            } catch(err) {
+              handleWebApiErr(err)
+            }
+            if (status !== 200) {
+              console.error(`error status: ${status}`);
+              const errors = data.errors
+              if (errors instanceof Array) {
+                for (const error of data.errors) {
+                  console.error(error);
+                }
+              } else {
+                if (errors === undefined) {
+                  console.error(data);
+                } else {
+                  console.error(errors);
+                }
+              }
+              cli_error('conversion error')
+            }
           }
         }
       }
@@ -1290,22 +1387,9 @@ if (commander.helpMacros) {
         }
         non_ourbigbook_options.outdir = publish_out_publish_dir;
         await create_db(ourbigbook_options, non_ourbigbook_options);
-        await reconcile_db_and_filesystem(actual_input_dir, ourbigbook_options, non_ourbigbook_options);
 
         // Do the actual conversion.
-        await convert_directory_extract_ids(actual_input_dir, ourbigbook_options, non_ourbigbook_options);
-        if (!non_ourbigbook_options.had_error) {
-          await check_db(non_ourbigbook_options)
-        }
-        if (commander.render) {
-          if (!non_ourbigbook_options.had_error) {
-            await convert_directory(
-              actual_input_dir,
-              ourbigbook_options,
-              ourbigbook.clone_and_set(non_ourbigbook_options, 'is_render_after_extract', true)
-            );
-          }
-        }
+        await convert_directory_extract_ids_and_render(actual_input_dir, ourbigbook_options, non_ourbigbook_options)
 
         // Generate redirects from ourbigbook.json.
         for (let [from, to] of ourbigbook_json.redirects) {

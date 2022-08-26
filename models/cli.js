@@ -12,6 +12,10 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
       },
+      username: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
     },
     {
       indexes: [

@@ -12,6 +12,7 @@ export type ArticleType = {
   author: UserType,
   body: string;
   createdAt: number;
+  depth: number;
   file: {
     titleSource: string,
     bodySource: string,

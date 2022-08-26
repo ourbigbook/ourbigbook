@@ -174,12 +174,13 @@ const Article = ({
     },
     []
   );
+  const firstArticle = articlesInSamePage[0]
   return <>
     <div
       dangerouslySetInnerHTML={{
-        __html: articlesInSamePage[0].h1Render + articlesInSamePage[0].render +
+        __html: firstArticle.h1Render + firstArticle.render +
                 `<div>THE TOC, YOUR'RE WELCOME</div>` +
-                articlesInSamePage.slice(1).map(a => `<div><a href="${a.topicId}">${a.titleRender}</a></div>`).join('') +
+                articlesInSamePage.slice(1).map(a => `<div style="padding-left:${30 * (a.depth - firstArticle.depth)}px;"><a href="../${article.author.username}/${a.topicId}">${a.titleRender}</a></div>`).join('') +
                 articlesInSamePage.slice(1).map(a => a.h2Render + a.render).join('')
       }}
       className="ourbigbook"

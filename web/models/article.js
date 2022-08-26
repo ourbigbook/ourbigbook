@@ -154,6 +154,7 @@ module.exports = (sequelize) => {
     }
     this.topicCount = this.get('topicCount')
     addToDictWithoutUndefined(ret, this, [
+      'depth',
       'h1Render',
       'h2Render',
       'id',

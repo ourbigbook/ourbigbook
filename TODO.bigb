@@ -28,10 +28,6 @@ And therefore lead users to the toplevel page instead of a link to current heade
 
 The links by clicking on the header itself are correct and go to a dedicated page with it on top. The problem is just for the on-hover links on the margin which we'd like to link to self in the current page.
 
-=== Prefix unnumbered IDs with the parent header's ID
-{tag=Dynamic tree fetch}
-{tag=Web}
-
 === Statically render links to issues and topic under each header for better SEO
 {tag=Web}
 
@@ -123,6 +119,10 @@ We should likely not show it on link hover however, only headers, as doing so wo
 It seems that the third party library we are using is just a hack and doesn't properly provide the thing offline... OMG could it be so crap? https://stackoverflow.com/questions/59773190/monaco-editor-with-nextjs/68611592#68611592
 
 == Closed issues
+
+=== Prefix unnumbered IDs with the parent header's ID
+{tag=Dynamic tree fetch}
+{tag=Web}
 
 === Remove @ from toc IDs
 {tag=Web}

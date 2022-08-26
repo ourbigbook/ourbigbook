@@ -2318,6 +2318,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   }
 
   let index_id = true;
+  let skip_scope = false
   if (
     // This can happen be false for included headers, and this is notably important
     // for the toplevel header which gets its ID from the filename.
@@ -2362,6 +2363,11 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       if (ast.id === undefined) {
         index_id = false;
         if (!macro.options.phrasing) {
+          const parent_header_tree_node = ast.header_tree_node.parent_ast
+          if (parent_header_tree_node && new_context.options.prefixNonIndexedIdsWithParentId) {
+            skip_scope = true
+            id_text = parent_header_tree_node.ast.id + Macro.HEADER_SCOPE_SEPARATOR + id_text;
+          }
           id_text += macro_count_global;
           macro_count_global++
           ast.id = id_text;
@@ -2379,11 +2385,11 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
       let message = `reserved ID "${ast.id}"`;
       parse_error(state, message, ast.source_location);
     }
-    if (ast.id !== undefined && ast.scope !== undefined) {
+    if (ast.id !== undefined && ast.scope !== undefined && !skip_scope) {
       ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
     }
   }
-  if (ast.id && ast.subdir) {
+  if (ast.id && ast.subdir &&  !skip_scope) {
     ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
   }
   ast.index_id = index_id;
@@ -3041,12 +3047,17 @@ function convert_init_context(options={}, extra_returns={}) {
     // Prefix all IDs of a file with this prefix.
     // Internal links should be updated to still work.
     // External incoming links to such modified IDs are not supported.
-    // Use case: avoid ID conflicts when web when showing multiple:
-    // * comments on issue page
-    // * articles on topic page
+    // Use case: avoid ID conflicts when web when showing multiple
+    // comments on issue page.
     // https://github.com/cirosantilli/ourbigbook/issues/251
     options.id_prefix = '';
   }
+  if (!('prefixNonIndexedIdsWithParentId' in options)) {
+    // E.g. the first paragraph of a header would have ID `_1` without this.
+    // This this option it becomes instead `header-id/_1`.
+    options.prefixNonIndexedIdsWithParentId = false;
+  }
+  if (!('ourbigbook_json' in options)) { options.ourbigbook_json = {}; }
   if (!('log' in options)) { options.log = {}; }
   if (!('outfile' in options)) {
     // Override the default calculated output file for the main input.

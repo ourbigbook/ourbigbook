@@ -56,6 +56,7 @@ module.exports = {
         numbered: false,
       },
     },
+    prefixNonIndexedIdsWithParentId: true,
     render_metadata: false,
     x_leading_at_to_web: false,
     x_remove_leading_at: true,

@@ -61,16 +61,20 @@ const articleData = [
       ]],
       ['Test scope 2', []],
     ], { headerArgs: '{scope}' }],
-    ['Test tag', [], { headerArgs: '{tag=Mathematics}' }],
+    ['Test tag', [
+      ['Test tagged', [], { headerArgs: '{tag=Test tagger}' }],
+      ['Test tagger', []],
+    ]],
     ['Test child', [
       ['Test child 1', [
         ['Test child 1 1', []],
-      ], { body: `Link to outsider: <mathematics>
+      ], { body: `Link to outsider: <test child 2>
 
 Link to parent: <test child>
 
 Link to child: <test child 1 1>
 ` }],
+      ['Test child 2', []],
     ]],
   ]],
   ['Mathematics', [

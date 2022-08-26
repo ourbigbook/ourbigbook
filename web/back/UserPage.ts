@@ -29,12 +29,12 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       if (err) { res.statusCode = 422 }
       let author, articlesFollowedBy, likedBy, following, followedBy, itemType
       switch (what) {
-        case 'following':
-          following = uid
+        case 'follows':
+          followedBy = uid
           itemType = 'user'
           break
         case 'followed':
-          followedBy = uid
+          following = uid
           itemType = 'user'
           break
         case 'home':
@@ -86,8 +86,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       const likesPromise = itemType === 'like' ? sequelize.models.User.findAndCountArticleLikesReceived(
         user.id, { offset, order }) : []
       const usersPromise = itemType === 'user' ? sequelize.models.User.getUsers({
-        followedBy,
         following,
+        followedBy,
         limit: articleLimit,
         offset,
         order,

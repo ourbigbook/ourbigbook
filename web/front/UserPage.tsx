@@ -39,7 +39,7 @@ export interface UserPageProps {
   user: UserType;
   users?: UserType[];
   usersCount?: number;
-  what: string;
+  what: 'follows' | 'followed' | 'followed-articles' | 'home' | 'liked' | 'likes' | 'user-issues' | 'user-articles'
 }
 
 export default function UserPage({
@@ -67,11 +67,14 @@ export default function UserPage({
   const isCurrentUser = loggedInUser && username === loggedInUser?.username
   let paginationUrlFunc
   switch (what) {
-    case 'following':
+    case 'follows':
       paginationUrlFunc = page => routes.userFollows(user.username, { page })
       break
     case 'followed':
       paginationUrlFunc = page => routes.userFollowed(user.username, { page })
+      break
+    case 'followed-articles':
+      paginationUrlFunc = page => routes.userFollowsArticles(user.username, { page })
       break
     case 'liked':
       paginationUrlFunc = page => routes.userLiked(user.username, { page })
@@ -171,7 +174,7 @@ export default function UserPage({
           </CustomLink>
           <CustomLink
             href={routes.userFollows(username)}
-            className={`tab-item${what === 'following' ? ' active' : ''}`}
+            className={`tab-item${what === 'follows' ? ' active' : ''}`}
           >
             <UserIcon /> Follows
           </CustomLink>
@@ -182,7 +185,7 @@ export default function UserPage({
             <UserIcon /> Followed by
           </CustomLink>
           <CustomLink
-            href={routes.userFollowsArticle(username)}
+            href={routes.userFollowsArticles(username)}
             className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
           >
             <ArticleIcon /> Follows

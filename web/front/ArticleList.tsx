@@ -116,7 +116,7 @@ const ArticleList = ({
                 key={itemType === 'discussion' ? article.number : itemType === 'article' ? article.slug : article.topicId}
                 className="item"
               >
-                <div className="content-not-ourbigbook">
+                <div className="content-not-ourbigbook title-container">
                   <LikeArticleButton {...{
                     article,
                     isIssue,

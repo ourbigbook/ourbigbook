@@ -5,27 +5,25 @@
 const assert = require('assert')
 const path = require('path')
 
-// Does not support positional arguments? OMG?
-//const commander = require('commander');
-//commander.argument('<usename>');
-//commander.parse(process.argv);
-console.error(commander.username);
-//(async () => {
-//const test_lib = require('../test_lib')
-//const sequelize = await test_lib.generateDemoData({
-//  clear: commander.clear,
-//  directory: path.dirname(__dirname),
-//  empty: commander.empty,
-//  nArticlesPerUser: commander.articlesPerUser,
-//  nMaxCommentsPerIssue: commander.nMaxCommentsPerIssue,
-//  nMaxIssuesPerArticle: commander.maxIssuesPerArticle,
-//  nLikesPerUser: commander.likesPerUser,
-//  nFollowsPerUser: commander.followsPerUser,
-//  nUsers: commander.users,
-//  verbose: true,
-//})
-//await sequelize.close()
-//})()
-//
-//SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
-//sqlite3 "${SCRIPT_DIR}/../db.sqlite3" "UPDATE \"User\" SET admin = true WHERE username='$1'"
+let args
+const commander = require('commander');
+const program = commander.program
+program.argument('<username>', 'username');
+program.action((..._args) => { args = _args })
+program.parse(process.argv);
+const [username] = args
+
+const models = require('../models')
+const sequelize = models.getSequelize(path.dirname(__dirname));
+(async () => {
+await sequelize.models.User.update(
+  {
+    admin: true
+  },
+  {
+    where: {
+      username,
+    }
+  }
+)
+})().finally(() => { return sequelize.close() });

@@ -7273,7 +7273,6 @@ It can be called from any directory, e.g.:
 cd web
 ./bin/make-admin barack-obama
 ``
-It currently only works on SQLite.
 
 Or e.g. to make `cirosantilli` admin in a <Heroku deployment> you can run:
 ``

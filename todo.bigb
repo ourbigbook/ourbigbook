@@ -3,6 +3,13 @@
 
 == Issues
 
+=== Allow user to edit other user's articles
+{tag=Web}
+
+Curently impossible on the API level: it just takes the logged in user and uses that as the new/edit target.
+
+Current use case: allow admin to edit other user's articles e.g. as part of moderation.
+
 === Add sibling/add child buttons next to toc entries of articles owned by the current user
 {tag=ToC}
 {tag=Web}

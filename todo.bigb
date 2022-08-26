@@ -3,14 +3,6 @@
 
 == Issues
 
-https://github.com/cirosantilli/ourbigbook/issues/277
-
-=== Separate lines with field label for parent and previous sibling on web editor
-{tag=Web}
-{tag=Editor}
-
-Otherwise too confusing what is what when fields are pre-filled, e.g. when editing existing, and in the future when clicking a "add here" button.
-
 === Statically render links to issues and topic under each header for better SEO
 {tag=Web}
 
@@ -147,13 +139,32 @@ Was removed at: <remove word count on web> because would require actually implem
 We should likely not show it on link hover however, only headers, as doing so would mean having to update every single page that links to a header for correctness. If this is ever done, it should be Js runtime stuff only.
 
 === Monaco editor requires web
-{tag=Develop without Internet}
+{tag=Offline development}
 {tag=Editor}
 {tag=Web}
 
 It seems that the third party library we are using is just a hack and doesn't properly provide the thing offline... OMG could it be so crap? https://stackoverflow.com/questions/59773190/monaco-editor-with-nextjs/68611592#68611592
 
 == Closed issues
+
+=== Infinite navbar profile image refresh loop when there is no Internet
+{tag=Offline development}
+
+This might be something to do with us trying to have a dummy fallbak image when the image URL does not exist.
+
+The request is:
+``
+GET https://static.productionready.io/images/smiley-cyrus.jpg net::ERR_INTERNET_DISCONNECTED
+``
+so it appears to be trying to infinitely fetch the default image.
+
+For now we seem to have managed to stop it from going infinite by selecting an image that is stored locally in the website.
+
+=== Separate lines with field label for parent and previous sibling on web editor
+{tag=Web}
+{tag=Editor}
+
+Otherwise too confusing what is what when fields are pre-filled, e.g. when editing existing, and in the future when clicking a "add here" button.
 
 === Allow showing article body on article lists
 {tag=Web}
@@ -345,13 +356,13 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 
 ==== Comment
 
-==== Develop without Internet
-
 ==== Dynamic tree fetch
 
 ==== Editor
 
 ==== Issue
+
+==== Offline development
 
 === CLI
 

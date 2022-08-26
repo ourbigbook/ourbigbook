@@ -1,6 +1,7 @@
 import { defaultProfileImage } from 'front/config'
 
 const handleBrokenImage = e => {
+  console.error(e.target.src);
   e.target.src = defaultProfileImage;
   e.target.onerror = null;
 };

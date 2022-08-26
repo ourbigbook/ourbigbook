@@ -13,7 +13,6 @@ export const UserLinkWithImageInner = ({
       <CustomImage
         src={user.effectiveImage}
         className="profile-thumb"
-        alt="author profile image"
       />
       {' '}
       <DisplayAndUsername {...{

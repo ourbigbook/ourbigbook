@@ -48,6 +48,12 @@ const Navbar = ({ isEditor }) => {
       <CustomLink href={routes.home()} className="navbar-brand" newTab={isEditor}>
         <CustomImage src="/logo.svg" className="logo"/>
         {appName}
+        <span className="beta mobile-hide">
+          {/* TODO this space is not showing up and I can't understand why.
+              Hacking with a margin style instead. Seems to be related to flex. */}
+          {' '}
+          (beta)
+        </span>
       </CustomLink>
       <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }>About us</a>
       <div className="navbar-list">
@@ -64,7 +70,6 @@ const Navbar = ({ isEditor }) => {
             <CustomImage
               className="profile-thumb"
               src={loggedInUser?.effectiveImage}
-              alt="your profile image"
             />
             {loggedInUser?.username}
           </NavLink>

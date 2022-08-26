@@ -59,7 +59,7 @@ module.exports = {
   aboutUrl: `${docsUrl}#ourbigbook-web-user-manual`,
   appName: `OurBigBook.com`,
   buttonActiveClass: 'active',
-  defaultProfileImage: `https://static.productionready.io/images/smiley-cyrus.jpg`,
+  defaultProfileImage: `/default-profile-image.jpg`,
   // Default.
   articleLimit: 20,
   // Max allowed to be set by user.

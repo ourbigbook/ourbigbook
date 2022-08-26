@@ -3,7 +3,7 @@ import * as ReactDOM from 'react-dom'
 import Router from 'next/router'
 
 import { formatDate } from 'front/date'
-import { IssueIcon, EditArticleIcon, NewArticleIcon, SeeIcon, SignupOrLogin, TimeIcon, TopicIcon } from 'front'
+import { DeleteIcon, IssueIcon, EditArticleIcon, NewArticleIcon, SeeIcon, SignupOrLogin, TimeIcon, TopicIcon } from 'front'
 import Comment from 'front/Comment'
 import CommentInput from 'front/CommentInput'
 import LikeArticleButton from 'front/LikeArticleButton'
@@ -56,6 +56,7 @@ const Article = ({
   }
   articlesInSamePageMap[article.slug] = article
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
+  const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
   const renderRefCallback = React.useCallback(
     (elem) => {
       if (elem) {
@@ -187,6 +188,20 @@ const Article = ({
                       </>
                     }
                   </>
+              }
+              {(false && canDelete) &&
+                <>
+                  TODO https://docs.ourbigbook.com/todo/delete-articles
+                  {' '}
+                  <span>
+                    <a
+                      href={isIssue ? routes.issueDelete(issueArticle.slug, curArticle.number) : routes.articleDelete(curArticle.slug)}
+                      className="btn edit"
+                    >
+                      <DeleteIcon /> Delete
+                    </a>
+                  </span>
+                </>
               }
             </>,
             web

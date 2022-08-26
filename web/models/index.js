@@ -104,7 +104,8 @@ function getSequelize(toplevelDir, toplevelBasename) {
     foreignKey: {
       name: 'fileId',
       allowNull: false
-    }
+    },
+    onDelete: 'CASCADE',
   })
   File.hasMany(Article, {
     as: 'file',
@@ -112,7 +113,12 @@ function getSequelize(toplevelDir, toplevelBasename) {
   })
 
   // Article has Issues
-  Article.hasMany(Issue, { foreignKey: 'articleId', as: 'issues' })
+  Article.hasMany(Issue, {
+    foreignKey: 'articleId',
+    as: 'issues',
+    // TODO https://docs.ourbigbook.com/todo/delete-articles
+    //onDelete: 'CASCADE',
+  })
   Issue.belongsTo(Article, {
     as: 'issues',
     foreignKey: {
@@ -122,7 +128,12 @@ function getSequelize(toplevelDir, toplevelBasename) {
   })
 
   // Issue has Comments
-  Issue.hasMany(Comment, { foreignKey: 'issueId', as: 'comments' })
+  Issue.hasMany(Comment, {
+    foreignKey: 'issueId',
+    as: 'comments',
+    // TODO https://docs.ourbigbook.com/todo/delete-articles
+    //onDelete: 'CASCADE',
+  })
   Comment.belongsTo(Issue, {
     as: 'comments',
     foreignKey: {

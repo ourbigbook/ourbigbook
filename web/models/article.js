@@ -129,6 +129,15 @@ module.exports = (sequelize) => {
     }
   )
 
+  //// TODO https://docs.ourbigbook.com/todo/delete-articles
+  //Article.prototype.destroySideEffects = function() {
+  //  sequelize.transaction({ transaction }, async (transaction) => {
+  //    // topic.articleCount--
+  //    // author.score -= article.score
+  //    // TODO delete IDs defined inside article
+  //  })
+  //}
+
   Article.prototype.getAuthor = async function() {
     return (await this.getFileCached()).author
   }

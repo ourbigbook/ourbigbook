@@ -93,6 +93,9 @@ export function CancelIcon(opts) {
   return Icon("ion-close", "Cancel", opts)
 }
 
+export function DeleteIcon(opts) {
+  return Icon("ion-ios-trash", "Delete", opts)
+}
 export function EditArticleIcon(opts) {
   return Icon("ion-edit", "Edit", opts)
 }

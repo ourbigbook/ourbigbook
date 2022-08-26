@@ -595,7 +595,14 @@ $$
 $$
 ]]
 
-You can refer to specific equations like this:
+We also have <Built-in math macros>[a bunch of predefined macros from popular packages], e.g. `\dv` from the https://mirrors.ibiblio.org/CTAN/macros/latex/contrib/physics/physics.pdf[`physics` package] for derivatives:
+\OurBigBookExample[[
+$$
+\dv{x^2}{x} = 2x
+$$
+]]
+
+You can <internal cross references>[refer] to specific equations like this:
 \OurBigBookExample[[
 As shown in <equation Very important equation>, this is true.
 
@@ -605,7 +612,7 @@ $$
 {title=Very important equation}
 ]]
 
-<Images> and <videos> are easy to add and refer to:
+<Images> and <videos> are also easy to add and <internal cross references>[refer] to:
 \OurBigBookExample[[
 As shown at <image Cute chicken chick>, chicks are cute.
 
@@ -3177,7 +3184,7 @@ OurBigBook ships with several commonly used math macros enabled by default.
 
 The full list of built-in macros can be seen at: \a[default.tex].
 
-Here's one example of using `\dv` for derivatives:
+Here's one example of using `\dv` from the http://mirrors.ibiblio.org/CTAN/macros/latex/contrib/physics/physics.pdf[`physics` package] for derivatives:
 \OurBigBookExample[[
 $$
 \dv{x^2}{x} = 2x
@@ -9030,15 +9037,16 @@ Some blobs were unfortunately added to this repository earlier on, but when we s
 {parent=Publicity}
 
 * https://OurBigBook.com (case insensitive)
+* https://github.com/OurBigBook GitHub organization (case insensitive)
 * https://twitter.com/OurBigBook (case insensitive)
-* Discord: OurBigBook#6998 "OurBigBook's Server" invite link: https://discord.gg/A8P5zGcWUh
+* https://www.youtube.com/@OurBigBook (case insensitive)
 * LinkedIn company: https://www.linkedin.com/company/ourbigbook
   * LinkedIn group: https://www.linkedin.com/groups/9164882/ TODO vs the company.
 * Facebook:
   * page: https://www.facebook.com/OurBigBook (case insensitive)
   * group: https://www.facebook.com/groups/OurBigBook (case insensitive)
+* Discord: OurBigBook#6998 "OurBigBook's Server" invite link: https://discord.gg/A8P5zGcWUh
 * https://www.instagram.com/ourbigbook (case insensitive)
-* https://github.com/OurBigBook GitHub organization (case insensitive)
 
 = Merchandise
 {parent=Publicity}
@@ -9211,6 +9219,24 @@ We almost went with `destroyuni.com`!!! But Ciro regained his senses in the end.
 
 But Ciro was very happy with OurBigBook. Some other `<possessive><adjective><noun>` domains:
 * https://www.mysmallcar.com
+
+= Demo videos
+{parent=Publicity}
+
+Demo videos are uploaded to the <official accounts>[official YouTube account]: https://www.youtube.com/@OurBigBook
+
+The video files together with the assets used to make them are also made available in the <OurBigBook media repository> under the https://github.com/cirosantilli/ourbigbook-media/tree/master/video[`video/` directory].
+
+Video guidelines:
+* desktop recording area size: 700x700. This could perhaps be optimized, but this is a reasonable size that works both as an YouTube Short and Twitter post
+
+  We've been happily using vokoscreenNG.
+* use Chromium/Chrome to record
+* resize window to fit recording area horizontally by using the Ctrl + Shift + C debugger view. Make sure to also resize the browser window vertically (cannot be done on debugger, needs resizing actual window) otherwise you won't be able to scroll if the page is not taller than the viewport.
+* music style guidelines: cool, beats, techno, mysterious, upbeat
+
+  Some of the videos contain non-fully free YouTube music added via the YouTube UI. Reupload together with the video files appears however allowed. Ideally we should use fully https://ourbigbook.com/go/topic/cc-by-sa[CC BY-SA] music, but it is quite hard to find good ones. NC is not acceptable.
+* hardcode subs in the video. No voice. We've been happily using Aegisub and ffmpeg
 
 = OurBigBook.com Fellowship
 {parent=Publicity}

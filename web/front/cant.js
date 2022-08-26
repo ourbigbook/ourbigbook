@@ -23,9 +23,11 @@ const permissions = [
       return 'You cannot unlike your own article or issue'
     }
   }],
+  ['deleteArticle', (loggedInUser, article) => true],
 
   // Issues
   ['editIssue', (loggedInUser, issue) => loggedInUser.username !== issue.author.username],
+  ['deleteIssue', (loggedInUser, article) => true],
 
   // Comments
   ['deleteComment', (loggedInUser, comment) => true],

@@ -6121,29 +6121,32 @@ function render_error_x_undefined(ast, context, target_id, options={}) {
   return error_message_in_output(message, context)
 }
 
-function render_toc(context) {
-  if (context.toc_was_rendered || !has_toc(context)) {
-    // Empty ToC. Don't render. Initial common case: leaf split header nodes.
-    return '';
-  }
-  context.toc_was_rendered = true
-  // Not rendering ID here because that function does scope culling. But TOC ID is a fixed value without scope for now.
-  // so that was removing the TOC id in subdirectories.
-  let todo_visit = [];
+/** Render the ToC from a list representation rather than tree.
+ *
+ * This function was introduced to factor out the static CLI ToC and the dynamic one from Web,
+ * the static one had a tree representation, but the dynamic one has a list, so we convert
+ * both to a single list representation and render it here.
+ **/
+function render_toc_from_entry_list({ add_test_instrumentation, entry_list, descendant_count_html }) {
   let top_level = 0;
-  let root_node = context.header_tree;
   let ret = `<div id="${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
-  if (root_node.children.length === 1) {
-    root_node = root_node.children[0];
+  ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${Macro.TOC_ID}">Table of contents</a>`
+  if (descendant_count_html) {
+    ret += `<span class="hover-metadata">${descendant_count_html}</span>`;
   }
-  let descendant_count_html = get_descendant_count_html_sep(context, root_node, { long_style: false, show_descendant_count: true });
-  ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${Macro.TOC_ID}">Table of contents</a><span class="hover-metadata">${descendant_count_html}</span></span></div>\n`;
-  for (let i = root_node.children.length - 1; i >= 0; i--) {
-    todo_visit.push([root_node.children[i], 1]);
-  }
-  let linear_count = 0
-  while (todo_visit.length > 0) {
-    const [tree_node, level] = todo_visit.pop();
+  ret += `</span></div>\n`
+  for (let i = 0; i < entry_list.length; i++) {
+    const entry = entry_list[i]
+    const {
+      content,
+      href,
+      level,
+      has_child,
+      link_to_split,
+      parent_href,
+      parent_content,
+      target_id,
+    } = entry
     if (level > top_level) {
       ret += `<ul>\n`;
     } else if (level < top_level) {
@@ -6152,10 +6155,68 @@ function render_toc(context) {
       ret += `</li>\n`;
     }
     ret += '<li';
-    if (tree_node.children.length > 0) {
+    if (has_child) {
       ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
     }
     ret += '>'
+    const my_toc_id = toc_id(target_id);
+    let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
+    let linear_count_str
+    if (add_test_instrumentation) {
+      linear_count_str = html_attr('data-test', i)
+    } else {
+      linear_count_str = ''
+    }
+    ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
+    let toc_href = html_attr('href', '#' + html_escape_attr(my_toc_id));
+    ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
+    if (link_to_split) {
+      ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
+    }
+    if (parent_href) {
+      ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_content}"</a>`;
+    }
+    if (entry.descendant_count_html) {
+      ret += `${entry.descendant_count_html}`
+    }
+    ret += `</span></span></div>`
+    if (has_child) {
+      ret += `\n`;
+    }
+    top_level = level;
+  }
+  ret += `</li>\n</ul>\n`.repeat(top_level);
+  // Close the table of contents list.
+  ret += `</li>\n</ul>\n`;
+  ret += `</div>\n`
+  return ret
+}
+exports.render_toc_from_entry_list = render_toc_from_entry_list
+
+function render_toc(context) {
+  if (context.toc_was_rendered || !has_toc(context)) {
+    // Empty ToC. Don't render. Initial common case: leaf split header nodes.
+    return '';
+  }
+  context.toc_was_rendered = true
+  let entry_list = []
+  // Not rendering ID here because that function does scope culling. But TOC ID is a fixed value without scope for now.
+  // so that was removing the TOC id in subdirectories.
+  let todo_visit = [];
+  let root_node = context.header_tree;
+  if (root_node.children.length === 1) {
+    root_node = root_node.children[0];
+  }
+  let descendant_count_html = get_descendant_count_html_sep(context, root_node, { long_style: false, show_descendant_count: true });
+  for (let i = root_node.children.length - 1; i >= 0; i--) {
+    todo_visit.push([root_node.children[i], 1]);
+  }
+  while (todo_visit.length > 0) {
+    const entry = {}
+    const [tree_node, level] = todo_visit.pop();
+    entry.level = level
+    const has_child = tree_node.children.length > 0
+    entry.has_child = has_child
     let target_ast = context.db_provider.get(tree_node.ast.id, context);
     if (
       // Can happen in test error cases:
@@ -6175,30 +6236,13 @@ function render_toc(context) {
       //  cur_context = context;
       //}
 
-      let content = x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
-      let href = x_href_attr(target_ast, context);
-      const my_toc_id = toc_id(target_ast, context);
-      let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
-      // The inner <div></div> inside arrow is so that:
-      // - outter div: takes up space to make clicking easy
-      // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-      let descendant_count_html = get_descendant_count_html_sep(context, tree_node, { long_style: false, show_descendant_count: false });
-      let linear_count_str
-      if (context.options.add_test_instrumentation) {
-        linear_count_str = html_attr('data-test', linear_count)
-      } else {
-        linear_count_str = ''
-      }
-      ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
-
-      let toc_href = html_attr('href', '#' + html_escape_attr(my_toc_id));
-      ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${html_attr('title', 'link to this ToC entry')}>${UNICODE_LINK} link</a>`;
+      entry.content = x_text(target_ast, context, {style_full: true, show_caption_prefix: false});
+      entry.href = x_href_attr(target_ast, context);
+      entry.target_id = target_ast.id
       if (context.options.split_headers) {
-        const link_to_split = link_to_split_opposite(target_ast, context)
-        if (link_to_split) {
-          ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
-        }
+        entry.link_to_split = link_to_split_opposite(target_ast, context)
       }
+
       let parent_ast = target_ast.get_header_parent_asts(context)[0];
       if (
         // Possible on broken h1 level.
@@ -6211,28 +6255,28 @@ function render_toc(context) {
         ) {
           parent_href_target = Macro.TOC_ID;
         } else {
-          parent_href_target = toc_id(parent_ast, context);
+          parent_href_target = toc_id(parent_ast.id);
         }
-        let parent_href = html_attr('href', '#' + parent_href_target);
-        let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-        ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${html_attr('title', 'parent ToC entry')}>${PARENT_MARKER} "${parent_body}"</a>`;
+        entry.parent_href = html_attr('href', '#' + parent_href_target);
+        entry.parent_content = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
       }
-      ret += `${descendant_count_html}</span></span></div>`;
-      linear_count++
+      // The inner <div></div> inside arrow is so that:
+      // - outter div: takes up space to make clicking easy
+      // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
+      entry.descendant_count_html = get_descendant_count_html_sep(context, tree_node, { long_style: false, show_descendant_count: false });
     }
-    if (tree_node.children.length > 0) {
+    if (has_child) {
       for (let i = tree_node.children.length - 1; i >= 0; i--) {
         todo_visit.push([tree_node.children[i], level + 1]);
       }
-      ret += `\n`;
     }
-    top_level = level;
+    entry_list.push(entry)
   }
-  ret += `</li>\n</ul>\n`.repeat(top_level);
-  // Close the table of contents list.
-  ret += `</li>\n</ul>\n`;
-  ret += `</div>\n`
-  return ret;
+  return render_toc_from_entry_list({
+    entry_list,
+    descendant_count_html,
+    add_test_instrumentation: context.options.add_test_instrumentation
+  })
 }
 
 function perf_print(context, name) {
@@ -6356,8 +6400,8 @@ exports.title_to_id = title_to_id;
  *
  * For after everything broke down due to toplevel scope.
  */
-function toc_id(target_ast, context) {
-  return Macro.TOC_PREFIX + target_ast.id;
+function toc_id(id) {
+  return Macro.TOC_PREFIX + id;
 }
 
 function unconvertible(ast, context) {
@@ -8295,7 +8339,7 @@ const OUTPUT_FORMATS_LIST = [
             }
             let toc_href;
             if (!is_top_level && has_toc(context)) {
-              toc_href = html_attr('href', '#' + html_escape_attr(toc_id(ast, context)));
+              toc_href = html_attr('href', '#' + html_escape_attr(toc_id(ast.id)));
               items.push(`<a${toc_href} class="toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`);
             }
 
@@ -8304,8 +8348,8 @@ const OUTPUT_FORMATS_LIST = [
             parent_links = [];
             for (const parent_ast of parent_asts) {
               let parent_href = x_href_attr(parent_ast, context);
-              let parent_body = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-              parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} "${parent_body}"</a>`);
+              let parent_content = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+              parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${PARENT_MARKER} "${parent_content}"</a>`);
             }
             parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
             if (parent_links) {

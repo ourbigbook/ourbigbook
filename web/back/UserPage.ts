@@ -25,7 +25,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       }
       const [order, pageNum, err] = getOrderAndPage(req, query.page)
       if (err) { res.statusCode = 422 }
-      let author, likedBy, following, followedBy, itemType
+      let author, articlesFollowedBy, likedBy, following, followedBy, itemType
       switch (what) {
         case 'following':
           following = uid
@@ -42,26 +42,46 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           likedBy = uid
           itemType = 'article'
           break
+        case 'followed-articles':
+          articlesFollowedBy = uid
+          itemType = 'article'
+          break
         case 'user-articles':
           author = uid
           itemType = 'article'
           break
+        case 'user-issues':
+          author = uid
+          itemType = 'discussion'
+          break
         default:
           throw new Error(`Unknown search: ${what}`)
       }
-      const articlesPromise = itemType === 'article' ? sequelize.models.Article.getArticles({
-        sequelize,
-        limit: articleLimit,
-        offset: pageNum * articleLimit,
-        order,
-        author,
-        likedBy,
-      }) : []
+      const offset = pageNum * articleLimit
+      const articlesPromise =
+        itemType === 'article' ? sequelize.models.Article.getArticles({
+          sequelize,
+          limit: articleLimit,
+          offset,
+          order,
+          author,
+          likedBy,
+          followedBy: articlesFollowedBy,
+        }) :
+        itemType === 'discussion' ? sequelize.models.Issue.getIssues({
+          sequelize,
+          limit: articleLimit,
+          offset,
+          order,
+          author,
+          includeArticle: true,
+        }) :
+        []
       const usersPromise = itemType === 'user' ? sequelize.models.User.getUsers({
         followedBy,
         following,
         limit: articleLimit,
-        offset: pageNum * articleLimit,
+        offset,
         order,
         sequelize,
       }) : []
@@ -90,7 +110,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       if (itemType === 'user') {
         props.users = await Promise.all(users.rows.map(user => user.toJson(loggedInUser)))
         props.usersCount = users.count
-      } else if (itemType === 'article') {
+      } else if (itemType === 'article' || itemType === 'discussion') {
         props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))
         props.articlesCount = articles.count
       } else {

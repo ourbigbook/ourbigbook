@@ -1,4 +1,4 @@
-const { escapeUsername } = require('./config');
+const { commentsHeaderId, commentIdPrefix, escapeUsername } = require('./config');
 
 const { encodeGetParams } = require('ourbigbook/web_api');
 
@@ -18,6 +18,10 @@ const encodeGetParamsWithPage = (opts, opts2={}) => {
   return encodeGetParams(opts)
 }
 
+function issue(slug, number) {
+  return `/${escapeUsername}/discussion/${number}/${slug}`
+}
+
 module.exports = {
   home: () => `/`,
   articlesFollowed: (opts={}) => `/${encodeGetParamsWithPage(opts)}`,
@@ -27,10 +31,14 @@ module.exports = {
   articleNew: (opts={}) => `/${escapeUsername}/new${encodeGetParams(opts)}`,
   articleNewFrom: (slug) => `/${escapeUsername}/new/${slug}`,
   article: slug => `/${slug}`,
+  host: req => `${req.protocol}://${req.get('host')}`,
+  issueComment: (slug, issueNumber, commentNumber) => `${issue(slug, issueNumber)}#${commentIdPrefix}${commentNumber}`,
+  issueComments: (slug, number) => `${issue(slug, number)}#${commentsHeaderId}`,
   issueDelete: (slug, number) => `/${escapeUsername}/delete-discussion/${number}/${slug}`,
   issueEdit: (slug, number) => `/${escapeUsername}/edit-discussion/${number}/${slug}`,
   issueNew: (slug) => `/${escapeUsername}/new-discussion/${slug}`,
-  issue: (slug, number) => `/${escapeUsername}/discussion/${number}/${slug}`,
+  issue,
+  issuesAll: (opts={}) => `/${escapeUsername}/discussions${encodeGetParamsWithPage(opts)}`,
   issues: (slug, opts={}) => `/${escapeUsername}/discussions/${slug}${encodeGetParamsWithPage(opts)}`,
   userEdit: (uid) => `/${escapeUsername}/settings/${uid}`,
   userLogin: () => `/${escapeUsername}/login`,
@@ -38,9 +46,11 @@ module.exports = {
   userVerify: (email) => `/${escapeUsername}/verify${encodeGetParams({ email })}`,
   user: (uid) => `/${uid}`,
   userArticles: (uid, opts={}) => `/${escapeUsername}/user/${uid}/articles${encodeGetParamsWithPage(opts)}`,
+  userIssues: (uid, opts={}) => `/${escapeUsername}/user/${uid}/discussions${encodeGetParamsWithPage(opts)}`,
   userFollowing: (uid, opts={}) => `/${escapeUsername}/user/${uid}/following${encodeGetParamsWithPage(opts)}`,
   userFollowed: (uid, opts={}) => `/${escapeUsername}/user/${uid}/followed${encodeGetParamsWithPage(opts)}`,
   userLikes: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes${encodeGetParamsWithPage(opts)}`,
+  userFollowingArticle: (uid, opts={}) => `/${escapeUsername}/user/${uid}/followed-articles${encodeGetParamsWithPage(opts)}`,
   users: (opts={}) => `/${escapeUsername}/users${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`,
   topic: (id, opts={}) => `/${escapeUsername}/topic/${id}${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`,
   topics: (opts={}) => {

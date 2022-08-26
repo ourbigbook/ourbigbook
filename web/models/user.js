@@ -114,6 +114,25 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: config.maxArticleSize,
       },
+
+      // A more general way would be to have a separate limits table.
+      // with custom times KISS this time.
+      maxIssuesPerMinute: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: config.maxIssuesPerMinute,
+      },
+      maxIssuesPerHour: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: config.maxIssuesPerHour,
+      },
+
+      emailNotifications: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
     },
     {
       hooks: {
@@ -133,7 +152,14 @@ module.exports = (sequelize) => {
           })
         }
       },
-      indexes: [{ fields: ['username'] }, { fields: ['email'] }]
+      indexes: [
+        { fields: ['admin'] },
+        { fields: ['createdAt'] },
+        { fields: ['email'] },
+        { fields: ['followerCount'] },
+        { fields: ['score'] },
+        { fields: ['username'] },
+      ]
     }
   )
 
@@ -166,6 +192,8 @@ module.exports = (sequelize) => {
       // a lower bound on their capacities. Let's just make them public for now then.
       maxArticles: this.maxArticles,
       maxArticleSize: this.maxArticleSize,
+      maxIssuesPerMinute: this.maxIssuesPerMinute,
+      maxIssuesPerHour: this.maxIssuesPerHour,
       verified: this.verified,
     }
     if (loggedInUser) {
@@ -174,6 +202,7 @@ module.exports = (sequelize) => {
       if (!cant.viewUserSettings(loggedInUser, this)) {
         ret.ip = this.ip
         ret.email = this.email
+        ret.emailNotifications = this.emailNotifications
         if (loggedInUser.token) {
           ret.token = loggedInUser.token
         }
@@ -241,12 +270,50 @@ module.exports = (sequelize) => {
     }
   }
 
-  User.prototype.addArticleLikeSideEffects = async function(article) {
-    await sequelize.transaction(async transaction => {
-      await Promise.all([
+  User.prototype.addArticleFollowSideEffects = async function(article, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async transaction => {
+      return Promise.all([
+        this.addFollowedArticle(article.id, { transaction }),
+        article.increment('followerCount', { transaction }),
+      ])
+    })
+  }
+
+  User.prototype.removeArticleFollowSideEffects = async function(article, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async transaction => {
+      return Promise.all([
+        this.removeFollowedArticle(article.id, { transaction }),
+        article.decrement('followerCount', { transaction }),
+      ])
+    })
+  }
+
+  /** If already following, do nothing. */
+  User.prototype.addIssueFollowSideEffects = async function(article, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async transaction => {
+      const follow = await this.addFollowedIssue(article.id, { transaction })
+      if (follow) {
+        await article.increment('followerCount', { transaction })
+      }
+    })
+  }
+
+  User.prototype.removeIssueFollowSideEffects = async function(article, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async transaction => {
+      return Promise.all([
+        this.removeFollowedIssue(article.id, { transaction }),
+        article.decrement('followerCount', { transaction }),
+      ])
+    })
+  }
+
+  User.prototype.addArticleLikeSideEffects = async function(article, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async transaction => {
+      return Promise.all([
         this.addLikedArticle(article.id, { transaction }),
         article.getAuthor({ transaction }).then(author => author.increment('score', { transaction })),
         article.increment('score', { transaction }).then(
+          // Update the article topic, possibly updating the preferred title.
           // Needs to come after score has been updated.
           () => sequelize.models.Topic.updateTopics([ article ], { transaction })
         ),
@@ -254,12 +321,13 @@ module.exports = (sequelize) => {
     })
   }
 
-  User.prototype.removeArticleLikeSideEffects = async function(article) {
-    await sequelize.transaction(async transaction => {
-      await Promise.all([
+  User.prototype.removeArticleLikeSideEffects = async function(article, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async transaction => {
+      return Promise.all([
         this.removeLikedArticle(article.id, { transaction }),
         article.getAuthor().then(author => author.decrement('score', { transaction })),
         article.decrement('score', { transaction }).then(
+          // Update the article topic, possibly updating the preferred title.
           // Needs to come after score has been updated.
           () => sequelize.models.Topic.updateTopics([ article ], { transaction })
         ),
@@ -267,46 +335,45 @@ module.exports = (sequelize) => {
     })
   }
 
-  User.prototype.addIssueLikeSideEffects = async function(article) {
-    await sequelize.transaction(async transaction => {
-      await Promise.all([
+  User.prototype.addIssueLikeSideEffects = async function(article, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async transaction => {
+      return Promise.all([
         this.addLikedIssue(article.id, { transaction }),
         article.increment('score', { transaction }),
       ])
     })
   }
 
-  User.prototype.removeIssueLikeSideEffects = async function(article) {
-    await sequelize.transaction(async transaction => {
-      await Promise.all([
+  User.prototype.removeIssueLikeSideEffects = async function(article, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async transaction => {
+      return Promise.all([
         this.removeLikedIssue(article.id, { transaction }),
         article.decrement('score', { transaction }),
       ])
     })
   }
-
-  User.prototype.addFollowSideEffects = async function(otherUser) {
-    await sequelize.transaction(async transaction => {
-      await Promise.all([
+  User.prototype.addFollowSideEffects = async function(otherUser, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async transaction => {
+      return Promise.all([
         this.addFollow(otherUser.id, { transaction }),
         otherUser.increment('followerCount', { transaction }),
       ])
     })
   }
 
-  User.prototype.saveSideEffects = async function(options = {}) {
-    const transaction = options.transaction
-    await sequelize.transaction({ transaction }, async (transaction) => {
-      return this.save({ transaction })
-    })
-  }
-
-  User.prototype.removeFollowSideEffects = async function(otherUser) {
-    await sequelize.transaction(async transaction => {
-      await Promise.all([
+  User.prototype.removeFollowSideEffects = async function(otherUser, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async transaction => {
+      return Promise.all([
         this.removeFollow(otherUser.id, { transaction }),
         otherUser.decrement('followerCount', { transaction }),
       ])
+    })
+  }
+
+  User.prototype.saveSideEffects = async function(options = {}) {
+    const transaction = options.transaction
+    return sequelize.transaction({ transaction }, async (transaction) => {
+      return this.save({ transaction })
     })
   }
 

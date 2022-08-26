@@ -3,15 +3,13 @@ import React from 'react'
 
 import CustomLink from 'front/CustomLink'
 import LikeArticleButton from 'front/LikeArticleButton'
-import LoadingSpinner from 'front/LoadingSpinner'
 import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
-import { AppContext, ArticleIcon, TimeIcon, UserIcon } from 'front'
+import { ArticleIcon, IssueIcon, LikeIcon, TimeIcon, UserIcon } from 'front'
 import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
-import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
@@ -23,7 +21,7 @@ export type ArticleListProps = {
   commentsCount?: number;
   followed?: boolean;
   issueArticle?: ArticleType;
-  itemType?: string;
+  itemType?: 'article' | 'discussion' | 'topic';
   loggedInUser?: UserType,
   page: number;
   paginationUrlFunc?: PaginationPropsUrlFunc;
@@ -80,7 +78,7 @@ const ArticleList = ({
         } else {
           message = (<>
             There are no {isIssue ? 'discussions' : 'articles'} on this {isIssue ? 'article' : 'website'} yet.
-            Why don't you <a href={isIssue ? routes.issueNew(issueArticle.slug) : routes.articleNew()}>create a new one</a>?
+            Why don't you <CustomLink href={isIssue ? routes.issueNew(issueArticle.slug) : routes.articleNew()}>create a new one</CustomLink>?
           </>)
         }
         break
@@ -170,49 +168,68 @@ const ArticleList = ({
           : <table className="list">
               <thead>
                 <tr>
-                  {itemType === 'topic' ?
-                    <th className="shrink right">Articles</th>
-                    :
-                    <th className="shrink center">Score</th>
-                  }
-                  <th className="expand"><ArticleIcon /> Title</th>
-                  {showAuthor &&
-                    <th className="shrink"><UserIcon /> Author</th>
+                  {itemType === 'topic'
+                    ? <th className="shrink right">Articles</th>
+                    : <th className="shrink center"><LikeIcon /> Score</th>
                   }
                   {isIssue &&
                     <th className="shrink">
-                      #
+                      # id
                     </th>
+                  }
+                  <th className="expand">{ itemType === 'discussion' ? <IssueIcon /> : <ArticleIcon /> } Title</th>
+                  {showAuthor &&
+                    <th className="shrink"><UserIcon /> Author</th>
+                  }
+                  {(itemType !== 'topic') &&
+                    <th className="shrink"><IssueIcon /> { isIssue ? 'Comments' : 'Discussions' }</th>
                   }
                   <th className="shrink"><TimeIcon /> Created</th>
                   <th className="shrink"><TimeIcon /> Updated</th>
                 </tr>
               </thead>
               <tbody>
-                {articles?.map((article, i) => (
-                  <tr key={itemType === 'discussion' ? article.number : itemType === 'article' ? article.slug : article.topicId}>
-                    {itemType === 'topic' ?
-                      <td className="shrink right bold">
-                        {article.articleCount}
-                      </td>
-                      :
-                      <td className="shrink center">
-                        <LikeArticleButton {...{
-                          article,
-                          isIssue,
-                          issueArticle,
-                          loggedInUser,
-                          showText: false,
-                        }} />
+                {articles?.map((article, i) => {
+                  let curIssueArticle
+                  if (issueArticle) {
+                    curIssueArticle = issueArticle
+                  } else {
+                    curIssueArticle = article.article
+                  }
+                  const mainHref =
+                        itemType === 'discussion' ? routes.issue(curIssueArticle.slug, article.number) :
+                        itemType === 'article' ? routes.article(article.slug) :
+                        itemType === 'topic' ? routes.topic(article.topicId, { sort: 'score' }) :
+                        null
+                  return <tr
+                    key={
+                      itemType === 'discussion'
+                        ? `${article.number}/${curIssueArticle.slug}` :
+                        itemType === 'article'
+                          ? article.slug :
+                            article.topicId
+                    }>
+                    {(itemType === 'topic')
+                      ? <td className="shrink right bold">
+                          <CustomLink href={mainHref}>{article.articleCount}</CustomLink>
+                        </td>
+                      : <td className="shrink center">
+                          <LikeArticleButton {...{
+                            article,
+                            isIssue,
+                            curIssueArticle,
+                            loggedInUser,
+                            showText: false,
+                          }} />
+                        </td>
+                    }
+                    {isIssue &&
+                      <td className="shrink bold">
+                        <CustomLink href={mainHref}>{issueArticle ? '' : curIssueArticle.slug }#{article.number}</CustomLink>
                       </td>
                     }
                     <td className="expand title">
-                      <CustomLink
-                        href={itemType === 'discussion' ? routes.issue(issueArticle.slug, article.number) :
-                              itemType === 'article' ? routes.article(article.slug) :
-                              routes.topic(article.topicId, { sort: 'score' })
-                        }
-                      >
+                      <CustomLink href={mainHref} >
                         <span
                           className="comment-body ourbigbook-title"
                           dangerouslySetInnerHTML={{ __html: article.titleRender }}
@@ -224,19 +241,17 @@ const ArticleList = ({
                         <UserLinkWithImage showUsername={false} user={article.author} />
                       </td>
                     }
-                    {isIssue &&
-                      <td className="shrink bold">
-                        <CustomLink
-                          href={isIssue ? routes.issue(issueArticle.slug, article.number) : routes.article(article.slug)}
-                        >
-                          #{article.number}
+                    {(itemType !== 'topic') &&
+                      <td className="shrink right bold">
+                        <CustomLink href={isIssue ? routes.issueComments(curIssueArticle.slug, article.number) : routes.issues(article.slug)}>
+                          {isIssue ? article.commentCount : article.issueCount}
                         </CustomLink>
                       </td>
                     }
                     <td className="shrink">{formatDate(article.createdAt)}</td>
                     <td className="shrink">{formatDate(article.updatedAt)}</td>
                   </tr>
-                ))}
+                })}
               </tbody>
             </table>
         }

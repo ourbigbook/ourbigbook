@@ -1,3 +1,5 @@
+const assert = require('assert')
+
 const file = require('./file')
 const id = require('./id')
 const ref = require('./ref')
@@ -32,5 +34,5 @@ function addModels(sequelize, { web, cli }={}) {
 }
 
 module.exports = {
-  addModels
+  addModels,
 }

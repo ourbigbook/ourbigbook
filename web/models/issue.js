@@ -1,7 +1,9 @@
+const assert = require('assert')
+
 const { DataTypes } = require('sequelize')
 
-const api_lib = require('../api/lib')
 const config = require('../front/config')
+const { articleEdit } = require('../front/routes')
 
 module.exports = (sequelize) => {
   const Issue = sequelize.define(
@@ -30,6 +32,16 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      followerCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      commentCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
     },
     {
       indexes: [
@@ -37,6 +49,9 @@ module.exports = (sequelize) => {
           fields: ['articleId', 'number'],
           unique: true,
         },
+        { fields: ['score'], },
+        { fields: ['followerCount'], },
+        { fields: ['commentCount'], },
 
         // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
         { fields: ['authorId'], },
@@ -53,11 +68,26 @@ module.exports = (sequelize) => {
     }
   }
 
+  Issue.createSideEffects = async function(author, article, fields, opts={}) {
+    const { transaction } = opts
+    return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
+      const [issue, newArticle] = await Promise.all([
+        sequelize.models.Issue.create(
+          Object.assign({ articleId: article.id, authorId: author.id }, fields),
+          { transaction }
+        ),
+        article.increment('issueCount', { transaction }),
+      ])
+      await author.addIssueFollowSideEffects(issue, { transaction })
+      return issue
+    })
+  }
+
   Issue.getIssue = async function ({ includeComments, number, sequelize, slug }) {
     const include = [
       {
         model: sequelize.models.Article,
-        as: 'issues',
+        as: 'article',
         where: { slug },
         include: [{
           model: sequelize.models.File,
@@ -87,12 +117,19 @@ module.exports = (sequelize) => {
 
   Issue.getIssues = async ({
     author,
+    includeArticle,
     likedBy,
     limit,
     offset,
     order,
+    orderAscDesc,
     sequelize,
+    transaction,
   }) => {
+    assert.notStrictEqual(sequelize, undefined)
+    if (orderAscDesc === undefined) {
+      orderAscDesc = 'DESC'
+    }
     const authorInclude = {
       model: sequelize.models.User,
       as: 'author',
@@ -102,6 +139,20 @@ module.exports = (sequelize) => {
       authorInclude.where = { username: author }
     }
     const include = [authorInclude]
+    if (includeArticle) {
+      include.push({
+        model: sequelize.models.Article,
+        as: 'article',
+        include: [{
+          model: sequelize.models.File,
+          as: 'file',
+          include: [{
+            model: sequelize.models.User,
+            as: 'author',
+          }]
+        }]
+      })
+    }
     if (likedBy) {
       include.push({
         model: sequelize.models.User,
@@ -109,24 +160,43 @@ module.exports = (sequelize) => {
         where: { username: likedBy },
       })
     }
-    return sequelize.models.Article.findAndCountAll({
-      order: [[order, 'DESC']],
+    const orderList = []
+    if (order !== undefined) {
+      orderList.push([order, orderAscDesc])
+    }
+    if (order !== 'createdAt') {
+      // To make results deterministic.
+      orderList.push(['createdAt', 'DESC'])
+    }
+    return sequelize.models.Issue.findAndCountAll({
+      include,
       limit,
       offset,
-      include,
+      order: orderList,
+      transaction,
     })
   }
 
+  Issue.prototype.getSlug = function() {
+    return `${this.article.getSlug()}#${this.number}`
+  }
+
   Issue.prototype.toJson = async function(loggedInUser) {
-    // TODO do with JOINs on caller, check if it is there and skip this if so.
-    const liked = loggedInUser ? await loggedInUser.hasLikedIssue(this.id) : false
+    // TODO do liked and followed with JOINs on caller, check if it is there and skip this if so.
+    const [followed, liked] = await Promise.all([
+      loggedInUser ? await loggedInUser.hasFollowedIssue(this.id) : false,
+      loggedInUser ? await loggedInUser.hasLikedIssue(this.id) : false,
+    ])
     const ret = {
       id: this.id,
       number: this.number,
-      bodySource: this.bodySource,
-      titleSource: this.titleSource,
-      score: this.score,
+      commentCount: this.commentCount,
+      followerCount: this.followerCount,
+      followed,
       liked,
+      titleSource: this.titleSource,
+      bodySource: this.bodySource,
+      score: this.score,
       titleRender: this.titleRender,
       render: this.render,
       createdAt: this.createdAt.toISOString(),
@@ -136,7 +206,7 @@ module.exports = (sequelize) => {
       ret.author = await this.author.toJson(loggedInUser)
     }
     if (this.article) {
-      ret.article = await this.issues.toJson(loggedInUser)
+      ret.article = await this.article.toJson(loggedInUser)
     }
     return ret
   }

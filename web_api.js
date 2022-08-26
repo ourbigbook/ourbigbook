@@ -134,9 +134,17 @@ class WebApi {
     return this.req('get', `articles/feed${encodeGetParamsWithOffset(opts)}`)
   }
 
+  async articleFollow(slug) {
+    return this.req('post', `articles/follow?id=${slug}`)
+  }
+
   async article(slug) {
     const { data, status } = await this.articles({ id: slug })
     return { data: data.articles[0], status }
+  }
+
+  async articleUnfollow(slug) {
+    return this.req('delete', `articles/follow?id=${slug}`)
   }
 
   async articleUnlike(slug) {
@@ -178,6 +186,11 @@ class WebApi {
     return ret.data.exists
   }
 
+  async issue(slug, number) {
+    const { data, status } = await this.issues({ id: slug, number })
+    return { data: data.issues[0], status }
+  }
+
   async issues(opts) {
     return this.req('get',
       `issues${encodeGetParamsWithOffset(opts)}`,
@@ -204,6 +217,14 @@ class WebApi {
         body: { issue },
       },
     )
+  }
+
+  async issueFollow(slug, issueNumber) {
+    return this.req('post', `issues/${issueNumber}/follow?id=${slug}`)
+  }
+
+  async issueUnfollow(slug, issueNumber) {
+    return this.req('delete', `issues/${issueNumber}/follow?id=${encodeURIComponent(slug)}`)
   }
 
   async issueLike(slug, issueNumber) {

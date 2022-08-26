@@ -524,11 +524,15 @@ async function generateDemoData(params) {
       for (let j = 0; j < nLikesPerUser; j++) {
         const article = articles[(i * j) % nArticles];
         if (
-          article &&
-          article.file.authorId !== user.id &&
-          !await user.hasLikedArticle(article)
+          article
+          && article.file.authorId !== user.id
         ) {
-          await user.addArticleLikeSideEffects(article)
+          if (!await user.hasLikedArticle(article)) {
+            await user.addArticleLikeSideEffects(article)
+          }
+          if (!await user.hasFollowedArticle(article)) {
+            await user.addArticleFollowSideEffects(article)
+          }
         }
       }
     }
@@ -567,7 +571,7 @@ async function generateDemoData(params) {
           titleSource,
           user: users[issueIdx % nUsers],
         })
-        issue.issues = article
+        issue.article = article
         issues.push(issue)
         issueIdx++
         articleIssueIdx++

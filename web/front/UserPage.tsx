@@ -1,8 +1,7 @@
-import Head from 'next/head'
 import { useRouter } from 'next/router'
 import React from 'react'
 
-import { AppContext, ArticleIcon, useEEdit, HomeIcon, UserIcon } from 'front'
+import { AppContext, ArticleIcon, useEEdit, HomeIcon, IssueIcon, UserIcon } from 'front'
 import ArticleList from 'front/ArticleList'
 import { cant  } from 'front/cant'
 import config from 'front/config'
@@ -12,7 +11,6 @@ import LoadingSpinner from 'front/LoadingSpinner'
 import LogoutButton from 'front/LogoutButton'
 import Maybe from 'front/Maybe'
 import FollowUserButton from 'front/FollowUserButton'
-import { webApi } from 'front/api'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import routes from 'front/routes'
 import Article from 'front/Article'
@@ -33,7 +31,7 @@ export interface UserPageProps {
   comments?: CommentType[];
   commentCountByLoggedInUser?: number;
   issuesCount?: number;
-  itemType: string;
+  itemType?: 'article' | 'discussion' | 'topic' | 'user';
   latestIssues?: IssueType[];
   topIssues?: IssueType[];
   loggedInUser?: UserType;
@@ -79,6 +77,9 @@ export default function UserPage({
       break
     case 'likes':
       paginationUrlFunc = page => routes.userLikes(user.username, { page })
+      break
+    case 'user-issues':
+      paginationUrlFunc = page => routes.userIssues(user.username, { page, sort: order })
       break
     case 'user-articles':
       paginationUrlFunc = page => routes.userArticles(user.username, { page, sort: order })
@@ -146,7 +147,7 @@ export default function UserPage({
           </CustomLink>
           <CustomLink
             href={routes.userArticles(username,  { sort: 'created' })}
-            className={`tab-item${what === 'user-articles' && order === 'created' ? ' active' : ''}`}
+            className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
           >
             <ArticleIcon /> Latest
           </CustomLink>
@@ -154,7 +155,7 @@ export default function UserPage({
             href={routes.userLikes(username)}
             className={`tab-item${what === 'likes' ? ' active' : ''}`}
           >
-            Liked
+            <ArticleIcon /> Liked
           </CustomLink>
           <CustomLink
             href={routes.userFollowing(username)}
@@ -167,6 +168,24 @@ export default function UserPage({
             className={`tab-item${what === 'followed' ? ' active' : ''}`}
           >
             <UserIcon /> Followed by
+          </CustomLink>
+          <CustomLink
+            href={routes.userFollowingArticle(username)}
+            className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
+          >
+            <ArticleIcon /> Followed
+          </CustomLink>
+          <CustomLink
+            href={routes.userIssues(user.username, { sort: 'created' })}
+            className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
+          >
+            <IssueIcon /> Latest
+          </CustomLink>
+          <CustomLink
+            href={routes.userIssues(user.username, { sort: 'score' })}
+            className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
+          >
+            <IssueIcon /> Top
           </CustomLink>
         </div>
       </div>
@@ -184,15 +203,16 @@ export default function UserPage({
         }}/>
       }
     </div>
-    {itemType === 'article' &&
+    {(itemType === 'article' || itemType === 'discussion') &&
       <div className="content-not-ourbigbook">
         <ArticleList {...{
           articles,
           articlesCount,
+          itemType,
           loggedInUser,
           page,
           paginationUrlFunc,
-          showAuthor: what === 'likes',
+          showAuthor: what === 'likes' || what === 'followed-articles',
           what,
         }}/>
       </div>

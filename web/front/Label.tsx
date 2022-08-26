@@ -1,6 +1,10 @@
-function Label({ children=undefined, label }) {
+function Label({
+  children=undefined,
+  label,
+  inline=false,
+}) {
   return <label>
-    <div className="label">{label}</div>
+    <div className={`label${inline ? ' inline' : ''}`}>{label}</div>
     {children}
   </label>
 }

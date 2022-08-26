@@ -3,6 +3,10 @@
 
 == Issues
 
+=== Like comments
+{tag=Web}
+{tag=Issue}
+
 === Use same parent title if the current user has a matching article when clicking "Create my own version of article" 
 {tag=Web}
 {tag=Topic}
@@ -229,6 +233,12 @@ We can then think about how the UI would look like, there might be a "Edit artic
 Curently impossible on the API level: it just takes the logged in user and uses that as the new/edit target.
 
 Current use case: allow admin to edit other user's articles e.g. as part of moderation.
+
+=== Make open and close arrows have the same height on ToC
+{tag=ToC}
+{tag=UI}
+
+Otherwise the difference in ToC line entry spacing is very unnerving.
 
 === Add sibling/add child buttons next to toc entries of articles owned by the current user
 {tag=ToC}

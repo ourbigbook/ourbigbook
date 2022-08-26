@@ -31,6 +31,33 @@ module.exports = (sequelize) => {
     },
   )
 
+  Comment.createSideEffects = async function(author, issue, fields, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
+      const [comment, newIssue] = await Promise.all([
+        sequelize.models.Comment.create(
+          Object.assign({ authorId: author.id, issueId: issue.id }, fields),
+          { transaction }
+        ),
+        issue.increment('commentCount', { transaction }),
+        await author.addIssueFollowSideEffects(issue, { transaction }),
+      ])
+      return comment
+    })
+  }
+
+  Comment.prototype.destroySideEffects = async function(fields, opts={}) {
+    return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
+      await Promise.all([
+        this.destroy({ transaction }),
+        this.issue.decrement('commentCount', { transaction }),
+      ])
+    })
+  }
+
+  Comment.prototype.getSlug = function() {
+    return `${this.issue.getSlug()}#${this.number}`
+  }
+
   Comment.prototype.toJson = async function(loggedInUser) {
     return {
       id: this.id,
@@ -43,5 +70,6 @@ module.exports = (sequelize) => {
       score: this.score,
     }
   }
+
   return Comment
 }

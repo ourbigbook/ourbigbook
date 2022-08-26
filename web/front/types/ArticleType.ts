@@ -22,6 +22,8 @@ export type ArticleType = {
   id: number;
   issueCount?: number;
   liked: boolean;
+  followed?: boolean;
+  followerCount?: number;
   render: string;
   score: number;
   slug: string;

@@ -5,6 +5,7 @@ import { webApi } from 'front/api'
 import { cant } from 'front/cant'
 import { buttonActiveClass } from 'front/config'
 import routes from 'front/routes'
+import { LikeIcon } from 'front'
 
 const LikeArticleButton = ({
   article,
@@ -37,25 +38,27 @@ const LikeArticleButton = ({
       Router.push(routes.userNew());
       return;
     }
-    setLiked(!liked)
-    setScore(score + (liked ? - 1 : 1))
-    try {
-      if (liked) {
-        if (isIssue) {
-          await webApi.issueUnlike(issueArticle.slug, article.number)
-        } else {
-          await webApi.articleUnlike(article.slug)
-        }
+    setScore((score) => score + (liked ? - 1 : 1))
+    setLiked((liked) => !liked)
+    let ret
+    if (liked) {
+      if (isIssue) {
+        ret = await webApi.issueUnlike(issueArticle.slug, article.number)
       } else {
-        if (isIssue) {
-          await webApi.issueLike(issueArticle.slug, article.number)
-        } else {
-          await webApi.articleLike(article.slug)
-        }
+        ret = await webApi.articleUnlike(article.slug)
       }
-    } catch (error) {
-      setLiked(!liked)
-      setScore(score + (liked ? 1 : -1))
+    } else {
+      if (isIssue) {
+        ret = await webApi.issueLike(issueArticle.slug, article.number)
+      } else {
+        ret = await webApi.articleLike(article.slug)
+      }
+    }
+    const { data, status } = ret
+    if (status !== 200) {
+      alert(`error: ${status} ${data}`)
+      setLiked((liked) => !liked)
+      setScore((score) => score + (liked ? 1 : -1))
     }
   };
   let count = score;
@@ -69,7 +72,7 @@ const LikeArticleButton = ({
     title = cantLike
   } else {
     buttonClassName = liked ? buttonActiveClass : ''
-    title = buttonTextMaybe + ' this article'
+    title = buttonTextMaybe + ` this ${isIssue ? 'discussion' : 'article' }`
   }
   return (
     <button
@@ -77,7 +80,7 @@ const LikeArticleButton = ({
       onClick={handleClickLike}
       title={title}
     >
-      <i className="ion-heart" />{showText ? ' ' : ''}{buttonText}
+      <LikeIcon />{showText ? ' ' : ''}{buttonText}
       {' '}{count}
     </button>
   )

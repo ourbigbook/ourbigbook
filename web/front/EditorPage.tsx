@@ -12,9 +12,7 @@ import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
 import { convertOptions, docsUrl, forbidMultiheaderMessage, isProduction, read_include_web } from 'front/config';
 
-import { ArticlePageProps } from 'front/ArticlePage'
 import { ArticleBy, capitalize, disableButton, enableButton, CancelIcon, HelpIcon, slugFromArray } from 'front'
-import CustomLink from 'front/CustomLink'
 import ErrorList from 'front/ErrorList'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
@@ -189,6 +187,10 @@ export default function EditorPageHoc({
     const itemType = isIssue ? 'discussion' : 'article'
     const [isLoading, setLoading] = React.useState(false);
     const [editorLoaded, setEditorLoading] = React.useState(false);
+    // TODO titleErrors can be undefined immediately after this call,
+    // if the server gives 500 after update. It is some kind of race condition
+    // and then it blows up at a later titleErrors.length. It is some kind of race
+    // condition that needs debugging at some point.
     const [titleErrors, setTitleErrors] = React.useState([]);
     const [parentErrors, setParentErrors] = React.useState([]);
     const [hasConvertError, setHasConvertError] = React.useState(false);
@@ -261,7 +263,12 @@ export default function EditorPageHoc({
           enableButton(saveButtonElem.current, true)
         }
       }
-    }, [hasConvertError, saveButtonElem.current, titleErrors, parentErrors])
+    }, [
+      hasConvertError,
+      saveButtonElem.current,
+      titleErrors,
+      parentErrors
+    ])
     useEffect(() => {
       if (
         ourbigbookEditorElem &&

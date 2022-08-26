@@ -23,6 +23,8 @@ const permissions = [
       return 'You cannot unlike your own article or issue'
     }
   }],
+  ['followArticle', (loggedInUser, article) => { return false }],
+  ['unfollowArticle', (loggedInUser, article) => { return false }],
   ['deleteArticle', (loggedInUser, article) => true],
 
   // Issues

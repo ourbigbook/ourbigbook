@@ -658,7 +658,7 @@ it('api: create an article and see it on global feed', async () => {
           { path: 'title-0', render: false }
         ))
         assertStatus(status, data)
-        // Maybe we could return the pre-existing aticle here.
+        // Maybe we could return the pre-existing article here.
         assertRows(data.articles, [])
 
         // Also take this chance to check that /sha256 renderOutdated is correct.
@@ -1428,6 +1428,225 @@ it('api: create an article and see it on global feed', async () => {
       test.loginUser(user)
     }
   }, { canTestNext: true })
+})
+
+it('api: article follow', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+
+    // user1 creates another article
+    test.loginUser(user1)
+    article = createArticleArg({ i: 0 })
+    ;({data, status} = await createArticleApi(test, article))
+    assertStatus(status, data)
+    assertRows(data.articles, [{ titleRender: 'Title 0' }])
+    test.loginUser(user0)
+
+    // Users follow their own articles by default.
+
+      ;({data, status} = await test.webApi.article('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, true)
+
+      ;({data, status} = await test.webApi.article('user1'))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, false)
+
+      test.loginUser(user1)
+      ;({data, status} = await test.webApi.article('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, false)
+
+      ;({data, status} = await test.webApi.article('user1'))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, true)
+
+      ;({data, status} = await test.webApi.article('user1/title-0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, true)
+      test.loginUser(user0)
+
+    // Make user0 follow article user1/title-0
+    ;({data, status} = await test.webApi.articleFollow('user1/title-0'))
+    assertStatus(status, data)
+
+    // Follow effects.
+
+      // Article follower count goes up and shows on logged in user as followed.
+      ;({data, status} = await test.webApi.article('user1/title-0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 2)
+      assert.strictEqual(data.followed, true)
+
+      // Shows on user0's followedBy list.
+      ;({data, status} = await test.webApi.articles({ followedBy: 'user0' }))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { slug: 'user1/title-0' },
+        { slug: 'user0' },
+      ])
+
+      // Most followed articles by user
+      ;({data, status} = await test.webApi.articles({ author: 'user1', sort: 'followerCount' }))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { slug: 'user1/title-0', followerCount: 2 },
+        { slug: 'user1', followerCount: 1 },
+      ])
+
+    // Article follow errors.
+
+      // Users cannot follow articles twice.
+      ;({data, status} = await test.webApi.articleFollow('user1/title-0'))
+      assert.strictEqual(status, 403)
+
+      // Trying to follow article that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.articleFollow('user1/dontexist'))
+      assert.strictEqual(status, 404)
+
+    // Make user0 unfollowe article user1/title-0.
+
+      ;({data, status} = await test.webApi.articleUnfollow('user1/title-0'))
+      assertStatus(status, data)
+
+    // Unfollow effects
+
+      // Follower count goes back down.
+      ;({data, status} = await test.webApi.article('user1/title-0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, false)
+
+    // Unfollow errors.
+
+      // Cannot unfollow article twice.
+      ;({data, status} = await test.webApi.articleUnfollow('user1/title-0'))
+      assert.strictEqual(status, 403)
+
+      // Trying to follow article that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.articleUnfollow('user0/dontexist'))
+      assert.strictEqual(status, 404)
+  })
+})
+
+it('api: issue follow', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+
+    // user1 creates issue user0#1
+    test.loginUser(user1)
+    ;({data, status} = await test.webApi.issueCreate('user0', createIssueArg(0, 0, 0)))
+    assertStatus(status, data)
+    assert.strictEqual(data.issue.number, 1)
+    test.loginUser(user0)
+
+    // Users follow their own issues by default
+
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, false)
+
+      test.loginUser(user1)
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, true)
+      test.loginUser(user0)
+
+    // Make user0 follow issue user0#1
+    ;({data, status} = await test.webApi.issueFollow('user0', 1))
+    assertStatus(status, data)
+
+    // Follow effects
+
+      // Issue follower count goes up and shows on logged in user as followed.
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 2)
+      assert.strictEqual(data.followed, true)
+
+      //// TODO Shows on user0's followedBy list.
+      //;({data, status} = await test.webApi.issues({ followedBy: 'user0' }))
+      //assertStatus(status, data)
+      //assertRows(data.issues, [
+      //  { slug: 'user1/title-0' },
+      //  { slug: 'user0' },
+      //])
+
+    // issue follow errors.
+
+      // Users cannot follow issues twice.
+      ;({data, status} = await test.webApi.issueFollow('user0', 1))
+      assert.strictEqual(status, 403)
+
+      // Trying to follow issue on article that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.issueFollow('user0/dontexist', 1))
+      assert.strictEqual(status, 404)
+
+      // Trying to follow issue that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.issueFollow('user0', 2))
+      assert.strictEqual(status, 404)
+
+    // Make user0 unfollowe issue user1/title-0.
+
+      ;({data, status} = await test.webApi.issueUnfollow('user0', 1))
+      assertStatus(status, data)
+
+    // Unfollow effects
+
+      // Follower count goes back down.
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, false)
+
+    // Unfollow errors
+
+      // Cannot unfollow issue twice.
+      ;({data, status} = await test.webApi.issueUnfollow('user0', 1))
+      assert.strictEqual(status, 403)
+
+      // Trying to follow issue on article that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.issueUnfollow('user0/dontexist', 1))
+      assert.strictEqual(status, 404)
+
+      // Trying to follow issue that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.issueUnfollow('user0', 2))
+      assert.strictEqual(status, 404)
+
+    // Commenting on an issue makes you follow it automatically 
+
+      ;({data, status} = await test.webApi.commentCreate('user0', 1, 'The \\i[body] 0 index 0.'))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 2)
+      assert.strictEqual(data.followed, true)
+
+      // Commenting again does not keep increasing the followerCount.
+      ;({data, status} = await test.webApi.commentCreate('user0', 1, 'The \\i[body] 0 index 0.'))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 2)
+      assert.strictEqual(data.followed, true)
+  })
 })
 
 // TODO https://docs.ourbigbook.com/todo/delete-articles

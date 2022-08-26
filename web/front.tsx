@@ -116,6 +116,10 @@ export function IssueIcon(opts) {
   return Icon("ion-ios-chatbubble", "Discussion", opts)
 }
 
+export function LikeIcon(opts) {
+  return Icon("ion-heart", "Like", opts)
+}
+
 export function NewArticleIcon(opts) {
   return Icon("ion-plus", "New", opts)
 }

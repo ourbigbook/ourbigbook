@@ -4,11 +4,8 @@ import React from 'react'
 import { contactUrl } from 'front/config'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
-import LogoutButton from 'front/LogoutButton'
 import { AppContext, setupUserLocalStorage, useCtrlEnterSubmit } from 'front'
 import { webApi } from 'front/api'
-import checkLogin from 'front/checkLogin'
-import storage from 'front/storage'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
 
@@ -26,6 +23,7 @@ const Settings = ({
   const [userInfo, setUserInfo] = React.useState(user0);
   const updateState = (field) => (e) => {
     const state = userInfo;
+    console.error(e.target.value)
     const newState = { ...state, [field]: e.target.value };
     setUserInfo(newState);
   };
@@ -38,31 +36,43 @@ const Settings = ({
     }
     const { data, status } = await webApi.userUpdate(user.username, user)
     setLoading(false);
-    if (status !== 200) {
-      setErrors(data.errors.body);
+    if (status === 200) {
+      if (
+        data.user &&
+        // Possible for admin edits.
+        data.user.username === loggedInUser.username
+      ) {
+        await setupUserLocalStorage(data.user, setErrors)
+      }
+      Router.push(routes.user(data.user.username));
+    } else {
+      setErrors(data.errors);
     }
-    if (
-      data.user &&
-      // Possible for admin edits.
-      data.user.username === loggedInUser.username
-    ) {
-      await setupUserLocalStorage(data.user, setErrors)
-    }
-    Router.push(routes.user(data.user.username));
   };
   useCtrlEnterSubmit(handleSubmit)
   const maxArticleSizeLabel = "Maximum number of articles, issues and comments (maxArticles)"
   const maxArticlesLabel = "Maximum article/issue/comment size (maxArticleSize)"
+  const maxIssuesPerMinuteLabel = "Maximum issues/comments per minute (maxIssuesPerMinute)"
+  const maxIssuesPerHourLabel = "Maximum issues/comments per hour (maxIssuesPerHour)"
   const title = 'Account settings'
   const { setTitle } = React.useContext(AppContext)
   React.useEffect(() => { setTitle(title) }, [])
   return (
     <div className="settings-page content-not-ourbigbook">
       <h1>{title}</h1>
-      <LogoutButton />
       <>
         <MapErrors errors={errors} />
         <form onSubmit={handleSubmit}>
+          <Label label="Email notifications" inline={true}>
+            <input
+              type="checkbox"
+              defaultChecked={userInfo.emailNotifications}
+              onChange={() => setUserInfo((state) => { return {
+                ...state,
+                emailNotifications: !state.emailNotifications
+              }})}
+            />
+          </Label>
           <Label label="Username">
             <input
               type="text"
@@ -82,7 +92,7 @@ const Settings = ({
               onChange={updateState("displayName")}
             />
           </Label>
-          <Label label="UserPage picture">
+          <Label label="Profile picture">
             <input
               type="text"
               placeholder="URL of profile picture"
@@ -125,6 +135,8 @@ const Settings = ({
                 <ul>
                   <li>{maxArticleSizeLabel}: {userInfo.maxArticleSize}</li>
                   <li>{maxArticlesLabel}: {userInfo.maxArticles}</li>
+                  <li>{maxIssuesPerMinuteLabel}: {userInfo.maxIssuesPerMinute}</li>
+                  <li>{maxIssuesPerHourLabel}: {userInfo.maxIssuesPerHour}</li>
                 </ul>
                 <div>You may <a href={contactUrl}>ask an admin</a> to raise any of those limits for you.</div>
               </>
@@ -141,6 +153,20 @@ const Settings = ({
                     type="number"
                     value={userInfo.maxArticles}
                     onChange={updateState("maxArticles")}
+                  />
+                </Label>
+                <Label label={maxIssuesPerMinuteLabel}>
+                  <input
+                    type="number"
+                    value={userInfo.maxIssuesPerMinute}
+                    onChange={updateState("maxIssuesPerMinute")}
+                  />
+                </Label>
+                <Label label={maxIssuesPerHourLabel}>
+                  <input
+                    type="number"
+                    value={userInfo.maxIssuesPerHour}
+                    onChange={updateState("maxIssuesPerHour")}
                   />
                 </Label>
               </>

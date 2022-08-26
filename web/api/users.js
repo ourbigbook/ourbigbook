@@ -89,32 +89,6 @@ router.get('/users', auth.optional, async function(req, res, next) {
   }
 })
 
-async function sendEmail({ subject, html, text, user }) {
-  if (!config.isTest) {
-    if (process.env.OURBIGBOOK_SEND_EMAIL === '1' || config.isProduction) {
-      const sgMail = require('@sendgrid/mail')
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-      const msg = {
-        to: user.email,
-        from: {
-          email: 'notification@ourbigbook.com',
-          name: 'OurBigBook.com',
-        },
-        subject,
-        text,
-        html,
-      }
-      await sgMail.send(msg)
-    } else {
-      console.log(`Email sent:
-to: ${user.email}
-subject: ${subject}
-text: ${text}
-html: ${html}`)
-    }
-  }
-}
-
 // Create a new user.
 router.post('/users', async function(req, res, next) {
   try {
@@ -133,7 +107,7 @@ router.post('/users', async function(req, res, next) {
           hostname: 'www.google.com',
           validateStatus: () => true,
           body: new url.URLSearchParams({
-            secret: process.env.RECAPTCHA_SECRET_KEY,
+            secret: process.env.RECAPTCHA_SECRET_kEY,
             response: req.body.recaptchaToken,
           }).toString(),
         }
@@ -157,19 +131,35 @@ router.post('/users', async function(req, res, next) {
       // Authenticate all users automatically.
       user.verified = true
     }
-    await user.saveSideEffects()
+    const [, admins] = await Promise.all([
+      user.saveSideEffects(),
+      sequelize.models.User.findAll({ where: { admin: true }}),
+    ])
     if (config.isTest) {
       return authenticate(req, res, next, { forceVerify: true })
     }
-    sendEmail({
-      user,
+    const verifyUrl = `${routes.host(req)}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`
+    lib.sendEmail({
+      to: user.email,
       subject: `Verify your new OurBigBook.com account`,
-      html: `<p>Welcome to OurBigBook.com!</p><p>Please <a href="${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}">click this link to verify your account</a>.</p>`,
+      html: `<p>Welcome to OurBigBook.com!</p><p>Please <a href="${verifyUrl}">click this link to verify your account</a>.</p>`,
       text: `Welcome to OurBigBook.com!
 
-Please click this link to verify your account: ${req.protocol}://${req.get('host')}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}
+Please click this link to verify your account: ${verifyUrl}
 `,
     })
+    const profileUrl = `${routes.host(req)}${routes.user(user.username)}`
+    for (const admin of admins) {
+      lib.sendEmail({
+        to: admin.email,
+        subject: `A new user signed up: ${user.displayName} (${user.username})!`,
+        html: `<p><a href="${profileUrl}">${profileUrl}</a></p><p>Another step towards world domination is taken!</p>`,
+        text: `${profileUrl}
+
+Another step towards world domination is taken!
+`,
+      })
+    }
     return res.json({ user: await user.toJson(user) })
   } catch(error) {
     next(error);
@@ -211,6 +201,13 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
       if (typeof userArg.image !== 'undefined') {
         user.image = userArg.image
       }
+      const emailNotifications = lib.validateParam(userArg, 'emailNotifications', {
+        validators: [front.isBoolean],
+        defaultValue: undefined,
+      })
+      if (emailNotifications !== undefined) {
+        user.emailNotifications = userArg.emailNotifications
+      }
       if (!cant.setUserLimits(loggedInUser)) {
         const maxArticles = lib.validateParam(userArg, 'maxArticles', {
           typecast: front.typecastInteger,
@@ -227,6 +224,22 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
         })
         if (maxArticleSize !== undefined) {
           user.maxArticleSize = maxArticleSize
+        }
+        const maxIssuesPerMinute = lib.validateParam(userArg, 'maxIssuesPerMinute', {
+          typecast: front.typecastInteger,
+          validators: [front.isPositiveInteger],
+          defaultValue: undefined,
+        })
+        if (maxIssuesPerMinute !== undefined) {
+          user.maxIssuesPerMinute = maxIssuesPerMinute
+        }
+        const maxIssuesPerHour = lib.validateParam(userArg, 'maxIssuesPerHour', {
+          typecast: front.typecastInteger,
+          validators: [front.isPositiveInteger],
+          defaultValue: undefined,
+        })
+        if (maxIssuesPerHour !== undefined) {
+          user.maxIssuesPerHour = maxIssuesPerHour
         }
       }
       if (typeof userArg.password !== 'undefined') {
@@ -252,6 +265,7 @@ async function validateFollow(req, res, user, isFollow) {
   }
 }
 
+// Follow user.
 router.post('/users/:username/follow', auth.required, async function(req, res, next) {
   try {
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
@@ -265,6 +279,7 @@ router.post('/users/:username/follow', auth.required, async function(req, res, n
   }
 })
 
+// Unfollow user.
 router.delete('/users/:username/follow', auth.required, async function(req, res, next) {
   try {
     const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)

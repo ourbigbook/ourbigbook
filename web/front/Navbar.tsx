@@ -5,7 +5,7 @@ import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import Maybe from 'front/Maybe'
 import { LOGIN_ACTION, REGISTER_ACTION, HelpIcon, HomeIcon, NewArticleIcon } from 'front'
-import { appName, aboutUrl, donateUrl } from 'front/config'
+import { appName, appNameShort, aboutUrl, donateUrl } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 
@@ -47,10 +47,9 @@ const Navbar = ({ isEditor }) => {
     <nav className="navbar">
       <CustomLink href={routes.home()} className="navbar-brand" newTab={isEditor}>
         <CustomImage src="/logo.svg" className="logo"/>
-        {appName}
-        &nbsp;
+        {appNameShort}
         <span className="beta mobile-hide">
-          (beta)
+          .com&nbsp;(beta)
         </span>
       </CustomLink>
       <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }><HelpIcon />&nbsp;About us</a>

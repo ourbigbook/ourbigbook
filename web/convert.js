@@ -709,6 +709,7 @@ WHERE
       }
       await Promise.all([
         sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction }),
+        Promise.all(articles.map(article => author.addArticleFollowSideEffects(article, { transaction }))),
         articleMoved
           // Close up nested set space from which we moved the subtree out.
           ? Promise.all([
@@ -777,31 +778,53 @@ WHERE
   return { articles, extra_returns }
 }
 
-async function convertComment({ issue, number, sequelize, source, user }) {
-  const { extra_returns } = await convert({
-    author: user,
-    bodySource: source,
-    convertOptionsExtra: {
-      fixedScopeRemoval: 0,
-      tocIdPrefix: `${commentIdPrefix}${number}-`,
-    },
-    fakeUsernameDir: `@${user.username}/${commentIdPrefix}${number}`,
-    render: true,
-    sequelize,
-    splitHeaders: false,
-    titleSource: undefined,
-  })
-  const outpath = Object.keys(extra_returns.rendered_outputs)[0]
-  return sequelize.models.Comment.create({
-    issueId: issue.id,
-    number,
-    authorId: user.id,
-    source,
-    render: extra_returns.rendered_outputs[outpath].full,
+async function convertComment({
+  issue,
+  number,
+  sequelize,
+  source,
+  transaction,
+  user,
+}) {
+  return sequelize.transaction({ transaction }, async (transaction) => {
+    const { extra_returns } = await convert({
+      author: user,
+      bodySource: source,
+      convertOptionsExtra: {
+        fixedScopeRemoval: 0,
+        tocIdPrefix: `${commentIdPrefix}${number}-`,
+      },
+      fakeUsernameDir: `@${user.username}/${commentIdPrefix}${number}`,
+      render: true,
+      sequelize,
+      splitHeaders: false,
+      titleSource: undefined,
+      transaction,
+    })
+    const outpath = Object.keys(extra_returns.rendered_outputs)[0]
+    return sequelize.models.Comment.createSideEffects(
+      user,
+      issue,
+      {
+        number,
+        render: extra_returns.rendered_outputs[outpath].full,
+        source,
+      },
+      { transaction }
+    )
   })
 }
 
-async function convertIssue({ article, bodySource, issue, number, sequelize, titleSource, user }) {
+async function convertIssue({
+  article,
+  bodySource,
+  issue,
+  number,
+  sequelize,
+  titleSource,
+  transaction,
+  user,
+}) {
   if (issue) {
     if (bodySource === undefined) {
       bodySource = issue.bodySource
@@ -817,40 +840,48 @@ async function convertIssue({ article, bodySource, issue, number, sequelize, tit
   if (titleSource.length > maxArticleTitleSize) {
     //throw new ValidationError(`Title source too long: ${titleSource.length} bytes, maximum: ${maxArticleTitleSize} bytes, title: ${titleSource}`)
   }
-  // We use routes here to achieve a path that matches the exact length of what the issue will render to,
-  // so that the internal cross references will render with the correct number of ../
-  const { extra_returns } = await convert({
-    author: user,
-    bodySource,
-    convertOptionsExtra: {
-      fixedScopeRemoval: 0,
-      h_web_metadata: true,
-    },
-    fakeUsernameDir: `@${user.username}/_issue-${article.slug}/${number}`,
-    render: true,
-    sequelize,
-    splitHeaders: false,
-    titleSource,
-  })
-  const outpath = Object.keys(extra_returns.rendered_outputs)[0]
-  const renders = extra_returns.rendered_outputs[outpath]
-  const titleRender = renders.title
-  const render = renders.full
-  if (issue === undefined) {
-    return sequelize.models.Issue.create({
-      articleId: article.id,
-      authorId: user.id,
-      titleSource,
+  return sequelize.transaction({ transaction }, async (transaction) => {
+    // We use routes here to achieve a path that matches the exact length of what the issue will render to,
+    // so that the internal cross references will render with the correct number of ../
+    const { extra_returns } = await convert({
+      author: user,
       bodySource,
-      titleRender,
-      render,
-      number,
+      convertOptionsExtra: {
+        fixedScopeRemoval: 0,
+        h_web_metadata: true,
+      },
+      fakeUsernameDir: `@${user.username}/_issue-${article.slug}/${number}`,
+      render: true,
+      sequelize,
+      splitHeaders: false,
+      transaction,
+      titleSource,
     })
-  } else {
-    issue.titleRender = titleRender
-    issue.render = render
-    return issue.save()
-  }
+    const outpath = Object.keys(extra_returns.rendered_outputs)[0]
+    const renders = extra_returns.rendered_outputs[outpath]
+    const titleRender = renders.title
+    const render = renders.full
+    if (issue === undefined) {
+      return sequelize.models.Issue.createSideEffects(
+        user,
+        article,
+        {
+          bodySource,
+          number,
+          render,
+          titleRender,
+          titleSource,
+        },
+        {
+          transaction,
+        },
+      )
+    } else {
+      issue.titleRender = titleRender
+      issue.render = render
+      return issue.save({ transaction })
+    }
+  })
 }
 
 module.exports = {

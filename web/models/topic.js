@@ -22,7 +22,6 @@ module.exports = (sequelize) => {
     articleOrder,
     articleWhere,
     count,
-    likedBy,
     limit,
     offset,
     order,

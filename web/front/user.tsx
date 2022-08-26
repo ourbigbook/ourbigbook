@@ -3,6 +3,7 @@ import React from 'react'
 import { defaultUserScoreTitle } from 'front/config'
 import { UserType } from 'front/types/UserType'
 import CustomLink from 'front/CustomLink'
+import { LikeIcon } from 'front'
 import routes from 'front/routes'
 
 export function displayAndUsernameText(user) {
@@ -27,7 +28,7 @@ export function UserLink({ children, user }) {
 }
 
 export function UserScore({ space=false, user }) {
-  return <span title={defaultUserScoreTitle}>{user.score}{space ? ' ' : ''}<i className="ion-heart"></i></span>
+  return <span title={defaultUserScoreTitle}>{user.score}{space ? ' ' : ''}<LikeIcon /></span>
 }
 
 export type DisplayAndUsernameProps = {

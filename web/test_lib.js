@@ -173,7 +173,11 @@ As an added bonus, a mention of Newton's rule would also be very useful.
 const commentData = [
   'Thanks, you\'re totally right, I\'ll look into it!',
   'Just fixed the issue on a new edit, thanks.',
-  `I don\'t think this is correct.
+  `= Why I think you are stupid
+
+Here's my essay with irrefutable proof, notably: <I don't think this is correct>.
+
+== I don't think this is correct.
 
 Consider what happens when $\\sqrt{a + b} > 0$`,
   `Ah, maybe. But are you sure that the sum of:

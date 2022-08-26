@@ -30,21 +30,11 @@ const docsUrl = `https://docs.${appDomain}`
 
 module.exports = {
   apiPath: '/' + ourbigbook.WEB_API_PATH,
+  commentIdPrefix: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comment-`,
   // Common convert options used by all frontend components: the backend and the editor.
   convertOptions: {
     add_test_instrumentation: isTest,
     body_only: true,
-    // 1 to remove the @ from every single ID, but still keep the `username` prefix.
-    // This is necessary so we can use the same h2 render for articles under a scope for both 
-    // renderings inside and outside of the scope. With dynamic fetch on web, we cannot know if the
-    // page will be visible from inside or outside the toplevel scope, so if we use a cut up version:
-    // `my-scope/section-id` as just `section-id` from something outside of `my-scope`, then there could
-    // be ambiguity with other headeres with ID `section-id`. We could keep multiple h2 renderings around
-    // for different situations, but let's not muck around with that for now. This option will also remove
-    // the @username prefix, which is implemented as a scope. This does have an advantage: we can use the same
-    // rendering on topic pages, and in the future on collections, which require elements by different users
-    // to show fine under a single page.
-    fixedScopeRemoval: ourbigbook.AT_MENTION_CHAR.length,
     forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
     html_x_extension: false,
     renderH2: true,
@@ -56,7 +46,6 @@ module.exports = {
         numbered: false,
       },
     },
-    prefixNonIndexedIdsWithParentId: true,
     render_metadata: false,
     x_leading_at_to_web: false,
     x_remove_leading_at: true,
@@ -81,7 +70,6 @@ module.exports = {
   googleAnalyticsId: 'UA-47867706-4',
   // An ID separator that should be used or all IDs in the website to avoid conflicts with OurBigBook Markup output,
   // of which users can control IDs to some extent. Usage is like: prefix + sep + number.
-  idSep: '_',
   isTest,
   // Default isProduction check. Affetcs all aspects of the application unless
   // they are individually overridden, including:

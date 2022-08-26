@@ -2317,6 +2317,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
 
   let index_id = true;
   let skip_scope = false
+  let id
   if (
     // This can happen be false for included headers, and this is notably important
     // for the toplevel header which gets its ID from the filename.
@@ -2353,12 +2354,12 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
         if (disambiguate_arg !== undefined) {
           id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json['id']);
         }
-        ast.id = id_text;
+        id = id_text;
       } else {
         id_text += '_'
       }
 
-      if (ast.id === undefined) {
+      if (id === undefined) {
         index_id = false;
         if (!macro.options.phrasing) {
           const parent_header_tree_node = ast.header_tree_node.parent_ast
@@ -2368,24 +2369,30 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           }
           id_text += macro_count_global;
           macro_count_global++
-          ast.id = id_text;
+          id = id_text;
           // IDs of type p-1, p-2, q-1, q-2, etc.
           //if (ast.macro_count !== undefined) {
           //  id_text += ast.macro_count;
-          //  ast.id = id_text;
+          //  id = id_text;
           //}
         }
       }
     } else {
-      ast.id = render_arg_noescape(macro_id_arg, new_context);
+      id = render_arg_noescape(macro_id_arg, new_context);
     }
-    if (index_id && ast.id !== undefined && ast.id.startsWith(Macro.RESERVED_ID_PREFIX)) {
-      let message = `IDs that start with "${Macro.RESERVED_ID_PREFIX}" are reserved: "${ast.id}"`;
+    if (index_id && id !== undefined && id.startsWith(Macro.RESERVED_ID_PREFIX)) {
+      let message = `IDs that start with "${Macro.RESERVED_ID_PREFIX}" are reserved: "${id}"`;
       parse_error(state, message, ast.source_location);
     }
-    if (ast.id !== undefined && ast.scope !== undefined && !skip_scope) {
-      ast.id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + ast.id
+    if (id !== undefined && ast.scope !== undefined && !skip_scope) {
+      id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + id
     }
+  }
+  if (id !== undefined) {
+    if (context.options.id_prefix) {
+      id = context.options.id_prefix + id
+    }
+    ast.id = id
   }
   if (ast.id && ast.subdir &&  !skip_scope) {
     ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id

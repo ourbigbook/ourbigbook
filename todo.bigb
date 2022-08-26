@@ -25,13 +25,6 @@
 
 == Issues
 
-=== First on-hover heder self link after table of content activates table of contents instead of header 
-{tag=Web}
-
-E.g.: https://cirosantilli.com/physics#how-to-teach-and-learn-physics
-
-Broken ToC HTML render?
-
 === Add an option to add a prefix to every ID of rendered output to avoid conflicts across comments and issue
 {tag=Comment}
 {tag=Web}
@@ -153,6 +146,17 @@ We should likely not show it on link hover however, only headers, as doing so wo
 It seems that the third party library we are using is just a hack and doesn't properly provide the thing offline... OMG could it be so crap? https://stackoverflow.com/questions/59773190/monaco-editor-with-nextjs/68611592#68611592
 
 == Closed issues
+
+=== First on-hover heder self link after table of content activates table of contents instead of header 
+{tag=Web}
+
+E.g.: https://cirosantilli.com/physics#how-to-teach-and-learn-physics
+
+Broken ToC HTML render?
+
+OK, understood the root cause: we moved to rendering the ToC from inside the H rendering function itself, and as a result there is a single toplevel_child_modifier which acts on that entire output.
+
+We'll need to create something more custom to properly handle this case.
 
 === h2 on hover self links are empty on Web
 {tag=Web}

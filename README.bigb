@@ -8248,6 +8248,16 @@ Output:
 9
 ``
 
+= Pretty print HTML
+{parent=Developing OurBigBook}
+
+We have stopped making any effort to generate nicely indented HTML output as it just felt not worth it.
+
+Instead, if you want to debug some badly formatted HTML you can just use our pre-installed js-beautify dependency, e.g. with:
+``
+npx js-beautify out/html/index.html
+``
+
 = Performance
 {parent=Developing OurBigBook}
 
@@ -8317,7 +8327,7 @@ On Ubuntu 20.04 https://cirosantilli.com/linux-kernel-module-cheat/#p51[Lenovo T
   ``
 
 = Performance log
-{parent=Developing OurBigBook}
+{parent=Performance}
 
 On P51:
 

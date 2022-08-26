@@ -332,8 +332,8 @@ Table with empty cell:
 
 == Dog
 
-\Include[tmp2]{parent=dog}
-\Include[tmp3]{parent=dog}
+\Include[test-bigb-output-2]{parent=dog}
+\Include[test-bigb-output-3]{parent=dog}
 
 <code In OurBigBookExample>
 

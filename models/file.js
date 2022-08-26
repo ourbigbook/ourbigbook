@@ -10,6 +10,7 @@ module.exports = (sequelize, web=false) => {
       type: DataTypes.TEXT,
       allowNull: true,
       // Not unique for the same reason that Id idid is not unique.
+      // see comments under the Id model.
       //unique: true,
     },
     last_parse: {

@@ -1750,7 +1750,8 @@ it('api: article tree', async () => {
         //    * 1 Calculus
         //      * 2 Derivative
 
-        article = createArticleArg({ i: 0, titleSource: 'Integral' })
+        // Also add \\Image here, as we once had a bug where non header children were messing up the header tree
+        article = createArticleArg({ i: 0, titleSource: 'Integral', bodySource: '\\Image[http://example.com]{title=My image}\n' })
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', previousSiblingId: '@user0/derivative' }))
         assertStatus(status, data)
 
@@ -1774,7 +1775,7 @@ it('api: article tree', async () => {
         // Empty goes first.
         ;({data, status} = await createOrUpdateArticleApi(test,
           createArticleArg({ i: 0, titleSource: 'Limit' }),
-          { parentId: '@user0/calculus', previousSiblingId: undefined }
+          { parentId: '@user0/calculus' }
         ))
         assertStatus(status, data)
 
@@ -1837,7 +1838,7 @@ it('api: article tree', async () => {
         // Move back to first by not giving previousSiblingId. previousSiblingId is not maintained like most updated properties.
         ;({data, status} = await createOrUpdateArticleApi(test,
           createArticleArg({ i: 0, titleSource: 'Limit' }),
-          { parentId: undefined, previousSiblingId: undefined }
+          { parentId: undefined }
         ))
         assertStatus(status, data)
 
@@ -1878,6 +1879,13 @@ it('api: article tree', async () => {
         assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='4' and text()='Integral']",   data.articles[0].render)
         assert_xpath("//*[@id='toc']//x:a[@href='user0/measure'    and @data-test='5' and text()='Measure']",    data.articles[0].render)
 
+        // Refresh Mathematics to show the source ToC.
+        // Add a reference to the article self: we once had a bug where this was preventing the ToC from showing.
+        article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: 'I like <mathematics>.' })
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0' }))
+        assertStatus(status, data)
+        assert_xpath("//*[@id='toc']//x:a[@href='../user0/calculus' and @data-test='0' and text()='Calculus']", data.articles[0].render)
+
       // Article.getArticle includeParentAndPreviousSibling argument test.
       // Used on editor only for now, so a bit hard to test on UI. But this tests the crux MEGAJOIN just fine.
 
@@ -1909,14 +1917,32 @@ it('api: article tree', async () => {
         assert.strictEqual(article.previousSiblingId,  undefined)
 
         // Hopefully the above tests would have caught any wrong to_id_index issues, but just in case.
-        const refs = await sequelize.models.Ref.findAll({ order: [['from_id', 'ASC'], ['to_id_index', 'ASC'], ['to_id', 'ASC']] })
+        const refs = await sequelize.models.Ref.findAll({
+          where: {
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          },
+          include: [
+            {
+              model: sequelize.models.Id,
+              as: 'to',
+              where: {
+                macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
+              },
+            },
+          ],
+          order: [
+            ['from_id', 'ASC'],
+            ['to_id_index', 'ASC'],
+            ['to_id', 'ASC'],
+          ],
+        })
         assertRows(refs, [
           { from_id: '@user0',             to_id: '@user0/mathematics', to_id_index: 0, },
           { from_id: '@user0/calculus',    to_id: '@user0/limit',       to_id_index: 0, },
           { from_id: '@user0/calculus',    to_id: '@user0/derivative',  to_id_index: 1, },
           { from_id: '@user0/calculus',    to_id: '@user0/integral',    to_id_index: 2, },
           { from_id: '@user0/calculus',    to_id: '@user0/measure',     to_id_index: 3, },
-          { from_id: '@user0/mathematics', to_id: '@user0/calculus',    to_id_index: 1, },
+          { from_id: '@user0/mathematics', to_id: '@user0/calculus',    to_id_index: 0, },
         ])
 
       // previousSiblingId errors

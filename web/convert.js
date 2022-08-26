@@ -102,13 +102,15 @@ async function convertArticle({
       throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
     }
     const oldRef = await sequelize.models.Ref.findOne({
-      where: { to_id: toplevelId },
-      type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      where: {
+        to_id: toplevelId,
+        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      },
       include: {
         model: sequelize.models.Id,
         as: 'from',
       },
-      transaction
+      transaction,
     })
     const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
     if (toplevelId === idPrefix) {
@@ -221,10 +223,16 @@ async function convertArticle({
         to_id_index,
       }
       if (oldRef) {
-        for (const key of Object.keys(newRefAttrs)) {
-          oldRef[key] = newRefAttrs[key]
-        }
-        await oldRef.save({ transaction })
+        await sequelize.models.Ref.update(
+          newRefAttrs,
+          {
+            where: {
+              to_id: toplevelId,
+              type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+            },
+            transaction,
+          },
+        )
       } else {
         await sequelize.models.Ref.create(
           newRefAttrs,

@@ -3758,7 +3758,7 @@ assert_lib_error('cross reference with parent to undefined ID does not throw',
 );
 
 // Scope.
-assert_lib_stdin("internal cross references work with header scope and don't throw",
+assert_lib_stdin("scope: internal cross references work with header scope and don't throw",
 `= h1
 
 \\x[h2-1/h3-1].
@@ -3789,7 +3789,7 @@ assert_lib_stdin("internal cross references work with header scope and don't thr
 == h2 2
 `
 );
-assert_lib_ast('scope with parent leading slash conflict resolution',
+assert_lib_ast('scope: with parent leading slash conflict resolution',
   `= h1
 
 = h2
@@ -3816,7 +3816,7 @@ assert_lib_ast('scope with parent leading slash conflict resolution',
   a('H', undefined, {level: [t('3')], title: [t('h4')]}, {id: 'h4'}),
 ]
 );
-assert_lib_ast('scope with parent breakout with no leading slash',
+assert_lib_ast('scope: with parent breakout with no leading slash',
   `= h1
 
 = h2
@@ -3840,7 +3840,7 @@ assert_lib_ast('scope with parent breakout with no leading slash',
 ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/120
-assert_lib_ast('nested scope with parent',
+assert_lib_ast('scope: nested with parent',
   `= h1
 {scope}
 
@@ -3878,7 +3878,7 @@ assert_lib_ast('nested scope with parent',
   a('H', undefined, {level: [t('4')], title: [t('h1 2 1 1')]}, {id: 'h1/h1-2/h1-2-1/h1-2-1-1'}),
 ]
 );
-assert_lib_ast('nested scope internal cross references resolves progressively',
+assert_lib_ast('scope: nested internal cross references resolves progressively',
   `= h1
 {scope}
 
@@ -3898,7 +3898,7 @@ assert_lib_ast('nested scope internal cross references resolves progressively',
 ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/100
-assert_lib_error('broken parent still generates a header ID',
+assert_lib_error('scope: broken parent still generates a header ID',
   `= h1
 
 \\x[h2]
@@ -3908,7 +3908,7 @@ assert_lib_error('broken parent still generates a header ID',
 
 `, 6, 1
 );
-assert_lib_ast('cross reference to toplevel scoped split header',
+assert_lib_ast('scope: cross reference to toplevel scoped split header',
   `= Notindex
 {scope}
 
@@ -3960,8 +3960,8 @@ assert_lib_ast('cross reference to toplevel scoped split header',
     filesystem: { 'bb.png': '' },
   },
 );
-// https://github.com/cirosantilli/ourbigbook/issues/173
-assert_lib_ast('cross reference to non-toplevel scoped split header',
+assert_lib_ast('scope: cross reference to non-toplevel scoped split header',
+  // https://github.com/cirosantilli/ourbigbook/issues/173
   `= tmp
 
 == tmp 2
@@ -3996,7 +3996,7 @@ assert_lib_ast('cross reference to non-toplevel scoped split header',
   },
 );
 // https://docs.ourbigbook.com#header-scope-argument-of-toplevel-headers
-assert_lib_ast('cross reference to non-included file with toplevel scope',
+assert_lib_ast('scope: cross reference to non-included file with toplevel scope',
   `\\x[toplevel-scope]
 
 \\x[toplevel-scope/h2]
@@ -4043,7 +4043,7 @@ assert_lib_ast('cross reference to non-included file with toplevel scope',
     }
   }
 );
-assert_lib_ast('toplevel scope gets removed from IDs in the file',
+assert_lib_ast('scope: toplevel scope gets removed from IDs in the file',
   `= Notindex
 {scope}
 
@@ -4198,7 +4198,7 @@ assert_lib(
 );
 assert_lib(
   // We can have confusion between singular and plural here unless proper resolution is done.
-  'lib: cross reference incoming links and other children with magic',
+  'cross reference incoming links and other children with magic',
   {
     convert_opts: {
       split_headers: true,
@@ -4310,7 +4310,7 @@ assert_lib('x leading slash to escape scopes works across files',
 //    }
 //  }
 //);
-assert_lib('scopes hierarchy resolution works across files with directories and not magic',
+assert_lib('scope: hierarchy resolution works across files with directories and not magic',
   // https://github.com/cirosantilli/ourbigbook/issues/229
   {
     convert_dir: true,
@@ -4354,7 +4354,7 @@ assert_lib('scopes hierarchy resolution works across files with directories and 
     },
   }
 );
-assert_lib('scopes hierarchy resolution works across files with directories and magic plural',
+assert_lib('scope: hierarchy resolution works across files with directories and magic plural',
   {
     convert_dir: true,
     convert_opts: {
@@ -4369,6 +4369,31 @@ assert_lib('scopes hierarchy resolution works across files with directories and 
 
 == Dog
 `,
+    },
+  }
+);
+assert_lib('scope: link from non subdir scope to subdir scope works',
+  // https://github.com/cirosantilli/ourbigbook/issues/284
+  {
+    convert_dir: true,
+    filesystem: {
+      'notindex.bigb': `= Notindex
+{scope}
+
+<notindex2>[notindex to notindex2]
+
+== Notindex 2
+
+<notindex2>[notindex 2 to notindex2]
+`,
+     'notindex/notindex2.bigb': `= Notindex2
+`,
+    },
+    assert_xpath: {
+      'notindex.html': [
+        "//x:div[@class='p']//x:a[@href='notindex/notindex2.html' and text()='notindex to notindex2']",
+        "//x:div[@class='p']//x:a[@href='notindex/notindex2.html' and text()='notindex 2 to notindex2']",
+      ]
     },
   }
 );
@@ -5983,7 +6008,7 @@ assert_lib('toc: split header with an include and no headers has a single table 
     },
   },
 );
-assert_lib('toc: lib: toplevel scope gets removed on table of contents of included headers',
+assert_lib('toc: toplevel scope gets removed on table of contents of included headers',
   {
     convert_dir: true,
     convert_opts: { split_headers: true },
@@ -7098,15 +7123,19 @@ it(`api: x does not blow up without ID provider`, async function () {
 
 // TODO
 const bigb_input = fs.readFileSync(path.join(__dirname, 'test_bigb_output.bigb'), ourbigbook_nodejs_webpack_safe.ENCODING)
-assert_lib_ast('bigb output: format is unchanged for the preferred format',
+assert_lib('bigb output: format is unchanged for the preferred format',
   // https://github.com/cirosantilli/ourbigbook/issues/83
-  bigb_input,
-  undefined,
   {
+    stdin: bigb_input,
     assert_bigb_stdout: bigb_input,
+    convert_dir: true,
+    filesystem: {
+      'test-bigb-output-2.bigb': '= Test bigb output 2\n',
+      'test-bigb-output-3.bigb': '= Test bigb output 3\n',
+    }
   },
 );
-assert_lib_ast('bigb output: converts plaintext arguments with escapes to literal arguments when possible',
+assert_lib_stdin('bigb output: converts plaintext arguments with escapes to literal arguments when possible',
   `\\Q[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
 
 \\Q[\\* *]
@@ -7127,7 +7156,6 @@ assert_lib_ast('bigb output: converts plaintext arguments with escapes to litera
 
 \\Q[\\| \\i[asdf]]
 `,
-  undefined,
   {
     assert_bigb_stdout: `\\Q[[\\ [ ] { } < \` $]]
 
@@ -7151,7 +7179,7 @@ assert_lib_ast('bigb output: converts plaintext arguments with escapes to litera
 `
   },
 );
-assert_lib_ast('bigb output: converts sane refs to insane ones',
+assert_lib_stdin('bigb output: converts sane refs to insane ones',
   `= Animal
 
 \\x[black-cat]
@@ -7162,7 +7190,6 @@ assert_lib_ast('bigb output: converts sane refs to insane ones',
 
 == Black cat
 `,
-  undefined,
   {
     assert_bigb_stdout: `= Animal
 
@@ -7176,7 +7203,7 @@ assert_lib_ast('bigb output: converts sane refs to insane ones',
 `
   },
 );
-assert_lib_ast('bigb output: adds newlines to start and end of multiline arguments',
+assert_lib_stdin('bigb output: adds newlines to start and end of multiline arguments',
   `\\Q[Positional oneline first]
 
 \\Q[Positional multiline first
@@ -7191,7 +7218,6 @@ Positional multiline second]
 
 Named multiline second}
 `,
-  undefined,
   {
     assert_bigb_stdout: `\\Q[Positional oneline first]
 
@@ -7216,7 +7242,7 @@ Named multiline second
     }
   },
 );
-assert_lib_ast('bigb output: nested sane list followed by paragraph',
+assert_lib_stdin('bigb output: nested sane list followed by paragraph',
   // This was leading to an AST change because the input has inner list as
   // `ccc\n` but the output only `ccc`. But lazy to fix now, what we want is the
   // input to parse as `ccc` without the `\n`: https://github.com/cirosantilli/ourbigbook/issues/245
@@ -7229,7 +7255,6 @@ assert_lib_ast('bigb output: nested sane list followed by paragraph',
 
 ddd
 `,
-  undefined,
   {
     assert_bigb_stdout: `aaa
 

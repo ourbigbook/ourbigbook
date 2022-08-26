@@ -387,6 +387,56 @@ class AstNode {
     this.setup_argument(argname, arg)
   }
 
+  // Return the full scope of a given node. This includes the concatenation of both:
+  // * any scopes of any parents
+  // * the ID of the node if it has a scope set for itself
+  // If none of those provide scopes, return undefined.
+  calculate_scope() {
+    let parent_scope;
+    if (this.scope !== undefined) {
+      parent_scope = this.scope;
+    }
+    if (this.subdir) {
+      if (parent_scope) {
+        parent_scope += Macro.HEADER_SCOPE_SEPARATOR
+      } else {
+        parent_scope = ''
+      }
+      parent_scope += this.subdir
+    }
+
+    let self_scope;
+    if (
+        this.validation_output.scope !== undefined &&
+        this.validation_output.scope.boolean
+    ) {
+      self_scope = this.id;
+      if (parent_scope !== undefined) {
+        self_scope = self_scope.substr(parent_scope.length + 1);
+      }
+    } else {
+      self_scope = '';
+    }
+
+    let ret = '';
+    if (parent_scope !== undefined) {
+      ret += parent_scope;
+    }
+    if (
+      parent_scope !== undefined &&
+      self_scope !== ''
+    ) {
+      ret += Macro.HEADER_SCOPE_SEPARATOR;
+    }
+    if (self_scope !== '') {
+      ret += self_scope;
+    }
+    if (ret === '') {
+      return undefined;
+    }
+    return ret;
+  }
+
   /* Get parent ID, but only consider IDs that come through header_tree_node. */
   get_local_header_parent_id() {
     if (
@@ -2356,60 +2406,10 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   return { title_text, macro_count_global }
 }
 
-// Return the full scope of a given node. This includes the concatenation of both:
-// * any scopes of any parents
-// * the ID of the node if it has a scope set for itself
-// If none of those provide scopes, return undefined.
-function calculate_scope(ast) {
-  let parent_scope;
-  if (ast.scope !== undefined) {
-    parent_scope = ast.scope;
-  }
-  if (ast.subdir) {
-    if (parent_scope) {
-      parent_scope += Macro.HEADER_SCOPE_SEPARATOR
-    } else {
-      parent_scope = ''
-    }
-    parent_scope += ast.subdir
-  }
-
-  let self_scope;
-  if (
-      ast.validation_output.scope !== undefined &&
-      ast.validation_output.scope.boolean
-  ) {
-    self_scope = ast.id;
-    if (parent_scope !== undefined) {
-      self_scope = self_scope.substr(parent_scope.length + 1);
-    }
-  } else {
-    self_scope = '';
-  }
-
-  let ret = '';
-  if (parent_scope !== undefined) {
-    ret += parent_scope;
-  }
-  if (
-    parent_scope !== undefined &&
-    self_scope !== ''
-  ) {
-    ret += Macro.HEADER_SCOPE_SEPARATOR;
-  }
-  if (self_scope !== '') {
-    ret += self_scope;
-  }
-  if (ret === '') {
-    return undefined;
-  }
-  return ret;
-}
-
 /* Calculate the length of the scope of a child header given its parent ast. */
 function calculate_scope_length(parent_ast) {
   if (parent_ast !== undefined) {
-    let scope = calculate_scope(parent_ast);
+    let scope = parent_ast.calculate_scope();
     if (scope !== undefined) {
       return scope.length + 1;
     }
@@ -3530,7 +3530,7 @@ function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
 
 /** Convert a key value already fully HTML escaped strings
  * to an HTML attribute. The callers MUST escape any untrusted chars.
-  e.g. with html_attr_value.
+ * e.g. with html_attr_value.
  *
  * @param {String} key
  * @param {AstArgument} arg
@@ -4314,188 +4314,188 @@ async function parse(tokens, options, context, extra_returns={}) {
         parent_arg.push(error_ast);
         parse_error(state, options.forbid_include, ast.source_location);
       } else {
-          const href = render_arg_noescape(ast.args.href, context);
-          let input_dir, input_basename
-          if (options.input_path) {
-            ;[input_dir, input_basename] = path_split(options.input_path, options.path_sep)
-          } else {
-            input_dir = '.'
-          }
+        const href = render_arg_noescape(ast.args.href, context);
+        let input_dir, input_basename
+        if (options.input_path) {
+          ;[input_dir, input_basename] = path_split(options.input_path, options.path_sep)
+        } else {
+          input_dir = '.'
+        }
 
-          // \Include parent argument handling.
-          let parent_ast;
-          let parent_id;
-          validate_ast(ast, context);
-          if (ast.validation_output.parent.given) {
-            [parent_id, parent_ast] = get_parent_argument_ast(ast, context, prev_header, options)
-            if (parent_ast === undefined) {
-              const message = Macro.INCLUDE_MACRO_NAME + ' ' + HEADER_PARENT_ERROR_MESSAGE + parent_id;
-              const error_ast = new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location);
-              error_ast.parent_ast = ast.parent_ast;
-              parent_arg.push(error_ast);
-              parse_error(state, message, ast.args.parent.source_location);
-            }
-          }
+        // \Include parent argument handling.
+        let parent_ast;
+        let parent_id;
+        validate_ast(ast, context);
+        if (ast.validation_output.parent.given) {
+          [parent_id, parent_ast] = get_parent_argument_ast(ast, context, prev_header, options)
           if (parent_ast === undefined) {
-            parent_ast = options.cur_header;
+            const message = Macro.INCLUDE_MACRO_NAME + ' ' + HEADER_PARENT_ERROR_MESSAGE + parent_id;
+            const error_ast = new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location);
+            error_ast.parent_ast = ast.parent_ast;
+            parent_arg.push(error_ast);
+            parse_error(state, message, ast.args.parent.source_location);
           }
-          let parent_ast_header_level
-          let parent_ast_header_tree_node
-          let include_id = href
-          if (options.cur_header && options.cur_header.scope) {
-            include_id = options.cur_header.scope + Macro.HEADER_SCOPE_SEPARATOR + include_id
-          }
-          if (parent_ast === undefined) {
-            parent_ast_header_level = 0
-            parent_ast_header_tree_node = context.header_tree
-          } else {
-            // Possible on include without a parent header.
-            parent_ast_header_tree_node = parent_ast.header_tree_node;
-            parent_ast_header_level = parent_ast_header_tree_node.get_level();
+        }
+        if (parent_ast === undefined) {
+          parent_ast = options.cur_header;
+        }
+        let parent_ast_header_level
+        let parent_ast_header_tree_node
+        let include_id = href
+        if (options.cur_header && options.cur_header.scope) {
+          include_id = options.cur_header.scope + Macro.HEADER_SCOPE_SEPARATOR + include_id
+        }
+        if (parent_ast === undefined) {
+          parent_ast_header_level = 0
+          parent_ast_header_tree_node = context.header_tree
+        } else {
+          // Possible on include without a parent header.
+          parent_ast_header_tree_node = parent_ast.header_tree_node;
+          parent_ast_header_level = parent_ast_header_tree_node.get_level();
 
-            add_to_refs_to(
-              include_id,
-              context,
-              parent_ast.id,
-              REFS_TABLE_PARENT,
-              {
-                child_index: parent_ast_header_tree_node.children.length,
-                source_location: ast.source_location,
-              },
+          add_to_refs_to(
+            include_id,
+            context,
+            parent_ast.id,
+            REFS_TABLE_PARENT,
+            {
+              child_index: parent_ast_header_tree_node.children.length,
+              source_location: ast.source_location,
+            },
+          );
+          parent_ast.includes.push(href);
+        }
+        const peek_ast = todo_visit[todo_visit.length - 1][1];
+        if (peek_ast.node_type === AstType.PLAINTEXT && peek_ast.text === '\n') {
+          todo_visit.pop();
+        }
+        // https://github.com/cirosantilli/ourbigbook/issues/215
+        const read_include_ret = await (options.read_include(href, input_dir));
+        if (read_include_ret === undefined) {
+          if (
+            // On the local filesystem, this doesn't matter.
+            // But on the server it does, as we don't know about the other includes
+            // before they are processed.
+            context.options.render
+          ) {
+            let message = `could not find include: "${href}"`;
+            parse_error(
+              state,
+              message,
+              ast.source_location,
             );
-            parent_ast.includes.push(href);
-          }
-        if (options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
-          if (options.render_include) {
-            parent_arg.push(ast)
+            parent_arg.push(new PlaintextAstNode(message, ast.source_location));
           }
         } else {
-          const peek_ast = todo_visit[todo_visit.length - 1][1];
-          if (peek_ast.node_type === AstType.PLAINTEXT && peek_ast.text === '\n') {
-            todo_visit.pop();
-          }
-          // https://github.com/cirosantilli/ourbigbook/issues/215
-          const read_include_ret = await (options.read_include(href, input_dir));
-          if (read_include_ret === undefined) {
-            if (
-              // On the local filesystem, this doesn't matter.
-              // But on the server it does, as we don't know about the other includes
-              // before they are processed.
-              context.options.render
-            ) {
-              let message = `could not find include: "${href}"`;
-              parse_error(
-                state,
-                message,
-                ast.source_location,
-              );
-              parent_arg.push(new PlaintextAstNode(message, ast.source_location));
-            }
+          const [include_path, include_content] = read_include_ret;
+          if (options.include_path_set.has(include_path)) {
+            let message = `circular include detected to: "${include_path}"`;
+            parse_error(
+              state,
+              message,
+              ast.source_location,
+            );
+            parent_arg.push(new PlaintextAstNode(message, ast.source_location));
           } else {
-            const [include_path, include_content] = read_include_ret;
-            if (options.include_path_set.has(include_path)) {
-              let message = `circular include detected to: "${include_path}"`;
-              parse_error(
-                state,
-                message,
-                ast.source_location,
+            let new_child_nodes;
+            if (options.embed_includes) {
+              new_child_nodes = await parse_include(
+                include_content,
+                options,
+                parent_ast_header_level,
+                include_path,
+                href,
+                {
+                  errors: extra_returns.errors,
+                }
               );
-              parent_arg.push(new PlaintextAstNode(message, ast.source_location));
+              options.include_path_set.add(include_path);
             } else {
-              let new_child_nodes;
-              if (options.embed_includes) {
-                new_child_nodes = await parse_include(
-                  include_content,
-                  options,
-                  parent_ast_header_level,
-                  include_path,
-                  href,
-                  {
-                    errors: extra_returns.errors,
-                  }
-                );
-                options.include_path_set.add(include_path);
-              } else {
-                const from_include = true
-                // Don't merge into a single file, render as a dummy header and an xref link instead.
-                const header_ast = new AstNode(
+              const from_include = true
+              // Don't merge into a single file, render as a dummy header and an xref link instead.
+              const header_ast = new AstNode(
+                AstType.MACRO,
+                Macro.HEADER_MACRO_NAME,
+                {
+                  'level': new AstArgument(
+                    [
+                      new PlaintextAstNode(
+                        (parent_ast_header_level + 1).toString(),
+                      )
+                    ],
+                  ),
+                  [Macro.TITLE_ARGUMENT_NAME]: new AstArgument( [
+                      // Will be patched in later in order to group all DB queries at the end of parse,
+                      // as this requires getting an ID from DB.
+                      new PlaintextAstNode('TODO patchme')
+                    ],
+                  ),
+                },
+                undefined,
+                {
+                  force_no_index: true,
+                  from_include,
+                  id: include_id,
+                  level: parent_ast_header_level + 1,
+                },
+              );
+              options.include_hrefs[include_id] = header_ast
+              headers_from_include[include_id] = header_ast
+              if (options.cur_header !== undefined) {
+                header_ast.scope = options.cur_header.scope
+              }
+              header_ast.header_tree_node = new HeaderTreeNode(header_ast, parent_ast_header_tree_node);
+              parent_ast_header_tree_node.add_child(header_ast.header_tree_node);
+              new_child_nodes = [
+                header_ast,
+                new AstNode(
+                  AstType.PARAGRAPH,
+                ),
+                new AstNode(
                   AstType.MACRO,
-                  Macro.HEADER_MACRO_NAME,
+                  Macro.PARAGRAPH_MACRO_NAME,
                   {
-                    'level': new AstArgument(
+                    'content': new AstArgument(
                       [
-                        new PlaintextAstNode(
-                          (parent_ast_header_level + 1).toString(),
-                        )
-                      ],
-                    ),
-                    [Macro.TITLE_ARGUMENT_NAME]: new AstArgument( [
-                        // Will be patched in later in order to group all DB queries at the end of parse,
-                        // as this requires getting an ID from DB.
-                        new PlaintextAstNode('TODO patchme')
+                        new AstNode(
+                          AstType.MACRO,
+                          Macro.X_MACRO_NAME,
+                          {
+                            'href': new AstArgument(
+                              [
+                                new PlaintextAstNode(href)
+                              ],
+                            ),
+                            'content': new AstArgument(
+                              [
+                                new PlaintextAstNode(
+                                  'This section is present in another page, follow this link to view it.',
+                                )
+                              ],
+                            ),
+                          },
+                          undefined,
+                        ),
                       ],
                     ),
                   },
                   undefined,
-                  {
-                    force_no_index: true,
-                    from_include,
-                    id: include_id,
-                    level: parent_ast_header_level + 1,
-                  },
-                );
-                options.include_hrefs[include_id] = header_ast
-                headers_from_include[include_id] = header_ast
-                if (options.cur_header !== undefined) {
-                  header_ast.scope = options.cur_header.scope
-                }
-                header_ast.header_tree_node = new HeaderTreeNode(header_ast, parent_ast_header_tree_node);
-                parent_ast_header_tree_node.add_child(header_ast.header_tree_node);
-                new_child_nodes = [
-                  header_ast,
-                  new AstNode(
-                    AstType.PARAGRAPH,
-                  ),
-                  new AstNode(
-                    AstType.MACRO,
-                    Macro.PARAGRAPH_MACRO_NAME,
-                    {
-                      'content': new AstArgument(
-                        [
-                          new AstNode(
-                            AstType.MACRO,
-                            Macro.X_MACRO_NAME,
-                            {
-                              'href': new AstArgument(
-                                [
-                                  new PlaintextAstNode(href)
-                                ],
-                              ),
-                              'content': new AstArgument(
-                                [
-                                  new PlaintextAstNode(
-                                    'This section is present in another page, follow this link to view it.',
-                                  )
-                                ],
-                              ),
-                            },
-                            undefined,
-                          ),
-                        ],
-                      ),
-                    },
-                    undefined,
-                  ),
-                  new AstNode(AstType.PARAGRAPH),
-                ];
-                for (const child_node of new_child_nodes) {
-                  child_node.set_source_location(ast.source_location)
-                  child_node.set_recursively({
-                    count_words: false,
-                    from_include,
-                  })
-                }
+                ),
+                new AstNode(AstType.PARAGRAPH),
+              ];
+              for (const child_node of new_child_nodes) {
+                child_node.set_source_location(ast.source_location)
+                child_node.set_recursively({
+                  count_words: false,
+                  from_include,
+                })
               }
+            }
+            if (options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
+              if (options.render_include) {
+                parent_arg.push(ast)
+              }
+            } else {
               // Push all included nodes, but don't recurse because:
               // - all child includes will be resolved on the sub-render call
               // - the current header level must not move, so that consecutive \Include
@@ -4753,7 +4753,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             parent_tree_node.add_child(cur_header_tree_node);
             const parent_ast = parent_tree_node.ast;
             if (parent_ast !== undefined) {
-              let scope = calculate_scope(parent_ast);
+              let scope = parent_ast.calculate_scope();
               // The ast might already have a scope here through less common means such as
               // being in a subdirectory.
               if (ast.scope) {
@@ -4898,7 +4898,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           if (tags_or_children !== undefined) {
             for (const tag_or_child of tags_or_children) {
               const target_id = magic_title_to_id(render_arg_noescape(tag_or_child.args.content, context), context)
-              for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.scope, target_id, context)) {
+              for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.calculate_scope(), target_id, context)) {
                 options.refs_to_h.push({
                   ast,
                   child,
@@ -4928,7 +4928,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (fetch_plural) {
           target_id = magic_title_to_id(target_id, context)
         }
-        const cur_scope = options.cur_header ? options.cur_header.scope : ''
+        const cur_scope = options.cur_header ? options.cur_header.calculate_scope() : ''
         for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
           options.refs_to_x.push({
             ast,
@@ -5359,7 +5359,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             children_in_header = false;
           }
           if (cur_header_tree_node !== undefined) {
-            ast.scope = calculate_scope(cur_header_tree_node.ast);
+            ast.scope = cur_header_tree_node.ast.calculate_scope();
           }
 
           // Header IDs already previously calculated for parent= so we don't redo it in that case.
@@ -8672,7 +8672,7 @@ const OUTPUT_FORMATS_LIST = [
             for (const script of context.options.template_scripts_relative) {
               relative_scripts.push(`<script src="${context.options.template_vars.root_relpath}${script}"></script>\n`);
             }
-            const toplevel_scope = context.toplevel_ast ? calculate_scope(context.toplevel_ast) : undefined
+            const toplevel_scope = context.toplevel_ast ? context.toplevel_ast.calculate_scope() : undefined
             const ourbigbook_redirect_prefix_raw = toplevel_scope ? `${toplevel_scope}${URL_SEP}` : ''
             const ourbigbook_redirect_prefix = JSON.stringify(ourbigbook_redirect_prefix_raw).replace(/</g, '\\u003c')
             const data_script = `<script>
@@ -9398,7 +9398,17 @@ OUTPUT_FORMATS_LIST.push(
           //ast.validation_output.level.positive_nonzero_integer
           return `${INSANE_HEADER_CHAR.repeat(output_level)} ${render_arg(ast.args.title, context)}${args_string ? '\n' : '' }${args_string}${newline}`
         },
-        [Macro.INCLUDE_MACRO_NAME]: ourbigbook_convert_simple_elem,
+        [Macro.INCLUDE_MACRO_NAME]: function(ast, context) {
+          let newline
+          if (
+            context.last_render.length &&
+            context.last_render[context.last_render.length - 1] !== '\n') {
+            newline = '\n'
+          } else {
+            newline = ''
+          }
+          return newline + ourbigbook_convert_simple_elem(ast, context)
+        },
         [Macro.LIST_ITEM_MACRO_NAME]: ourbigbook_li(INSANE_LIST_START),
         [Macro.MATH_MACRO_NAME.toUpperCase()]: ourbigbook_code_math_block(INSANE_MATH_CHAR),
         [Macro.MATH_MACRO_NAME]: ourbigbook_code_math_inline(INSANE_MATH_CHAR),

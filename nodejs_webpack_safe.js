@@ -257,8 +257,16 @@ class SqliteDbProvider extends web_api.DbProviderBase {
     return asts
   }
 
-  async fetch_header_tree_ids(starting_ids) {
+  async fetch_header_tree_ids(starting_ids, opts={}) {
     if (starting_ids.length > 0) {
+      const to_id_index_order = opts.to_id_index_order || 'ASC'
+      let definedAtString
+      const definedAt = opts.definedAt
+      if (definedAt) {
+        definedAtString = ' AND "defined_at" = :definedAt'
+      } else {
+        definedAtString = ''
+      }
       // Fetch all data recursively.
       //
       // Going for WITH RECURSIVE:
@@ -282,7 +290,7 @@ WITH RECURSIVE
       from_id,
       to_id_index
     FROM "${this.sequelize.models.Ref.tableName}"
-    WHERE from_id IN (:starting_ids) AND type = :type
+    WHERE from_id IN (:starting_ids) AND type = :type${definedAtString}
 
     UNION ALL
 
@@ -292,18 +300,19 @@ WITH RECURSIVE
       ts.to_id,
       t.to_id_index
     FROM "${this.sequelize.models.Ref.tableName}" t, tree_search ts
-    WHERE t.from_id = ts.to_id AND type = :type
+    WHERE t.from_id = ts.to_id AND type = :type${definedAtString}
   )
   SELECT * FROM tree_search
 ) AS "RecRefs"
 ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
    AND "${this.sequelize.models.Id.tableName}".macro_name = '${ourbigbook.Macro.HEADER_MACRO_NAME}'
-ORDER BY "RecRefs".level, "RecRefs".from_id, "RecRefs".to_id_index
+ORDER BY "RecRefs".level ASC, "RecRefs".from_id ASC, "RecRefs".to_id_index ${to_id_index_order}
 `,
         {
           replacements: {
             starting_ids,
             type: this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+            definedAt,
           }
         }
       )

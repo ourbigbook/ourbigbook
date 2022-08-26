@@ -154,7 +154,20 @@ export default function ArticleEditorPageHoc({
     const saveButtonElem = useRef(null);
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
     let editor
+    const idExistsCache = new Set()
+    function cachedIdExists(idid) {
+      if (idExistsCache.has(idid)) {
+        return true
+      } else {
+        if (webApi.editorIdExists(idid)) {
+          idExistsCache.add(idid)
+          return true
+        }
+        return false
+      }
+    }
     function checkTitle(titleSource) {
+      let titleErrors = []
       if (titleSource) {
         let newTopicId = ourbigbook.title_to_id(titleSource)
         let showToUserNew
@@ -172,14 +185,12 @@ export default function ArticleEditorPageHoc({
           } else {
             showToUserOld = initialArticle?.topicId
           }
-          setTitleErrors([`Topic ID changed from "${showToUserOld}" to "${showToUserNew}", this is not currently allowed`])
-        } else {
-          setTitleErrors([])
+          titleErrors.push(`Topic ID changed from "${showToUserOld}" to "${showToUserNew}", this is not currently allowed`)
         }
       } else {
-        const msg = 'The title cannot be empty'
-        setTitleErrors([msg])
+        titleErrors.push('The title cannot be empty')
       }
+      setTitleErrors(titleErrors)
     }
     useEffect(() => {
       checkTitle(file.titleSource)
@@ -199,7 +210,6 @@ export default function ArticleEditorPageHoc({
       ) {
         let editor
         loader.init().then(monaco => {
-          const idExistsCache = new Set()
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,
             bodySource,
@@ -213,17 +223,7 @@ export default function ArticleEditorPageHoc({
                 ourbigbook_json: {
                   openLinksOnNewTabs: true,
                 },
-                read_include: read_include_web((idid) => {
-                  if (idExistsCache.has(idid)) {
-                    return true
-                  } else {
-                    if (webApi.editorIdExists(idid)) {
-                      idExistsCache.add(idid)
-                      return true
-                    }
-                    return false
-                  }
-                }),
+                read_include: read_include_web(cachedIdExists),
                 ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
                 x_external_prefix: '../'.repeat(window.location.pathname.match(/\//g).length - 1),
               }, convertOptions),

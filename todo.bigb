@@ -9,12 +9,6 @@
 === Photos of the merchandise!
 {tag=Publicity}
 
-=== Skip re-render from API if article was unchanged
-{tag=Web}
-{tag=Web upload}
-
-Would radically speed sync up.
-
 === Start a basic notification system
 {tag=Web}
 
@@ -22,17 +16,17 @@ OK, now afetr the big redirect from cirosantilli.com to ourbigbook.com, this is 
 
 We could start simple without any in-browser things, email only. Though having both would be ideal...
 
-=== Store last modified SHA of each article to skip API re-renders
+=== Store SHA of each article + descendants and skip API re-renders for entire subtrees
 {tag=Web}
 {tag=Web upload}
 
-This is one step above <skip re-render from API if article was unchanged> as it removes the requirement of actually uploading thousands of lines of content.
+This is one step beyond <skip re-render from API if article was unchanged> as it removes the requirement of actually uploading thousands of lines of content.
 
 It requires negotiating with the server instead.
 
 This would be particularly powerful if we included the descendants on the SHA of each parent, much like Git. This way we could skip enter unmodified subtrees, likely like Git.
 
-Yes, we are somewhat re-implementing parts of Git with this. But at least it is simple, and works at a sub-blob level.
+Yes, we are somewhat re-implementing parts of Git with this. But at least it is simple, and works at a sub-blob level given our grater specialization to our specific use case.
 
 === Synonym redirects on web
 {tag=Web}
@@ -188,13 +182,15 @@ dog.bigb
 === Remove the path parameter from the article creation API
 {tag=Web}
 
+Edit: a use case has come up for this: if we can find an existing article that the user is trying to update, we might be able to determine that it does not need to be converted in the first place: <skip re-render from API if article was unchanged>. But then of course we can't render the article to find its ID, as the hole point is to skip that render in the first place.
+
 We likely want to get rid of the `path` parameter, and instead determine IDs fully from more "in-band" things like `{id}` and `{scope}`.
 
 Both `{scope}` for subdirs and `{id}` for custom id basename !== from title should already be working, we just haven't setup ourbigbook CLI to inject `{id}` based on file path I think.
 
 `{scope}` is however not really usable in general on the same source tree of cirosantilli.github.io due to https://github.com/cirosantilli/ourbigbook/issues/284[].
 
-This would forbit some constructs that are currently possible locally, e.g. scopes that are not children such as:
+This would forbid some constructs that are currently possible locally, e.g. scopes that are not children such as:
 
 parent.bigb
 ``
@@ -370,6 +366,12 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Skip re-render from API if article was unchanged
+{tag=Web}
+{tag=Web upload}
+
+Would radically speed sync up.
 
 === Computer sticker
 {tag=Publicity}

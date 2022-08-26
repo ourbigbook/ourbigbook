@@ -1307,6 +1307,23 @@ if (commander.helpMacros) {
       if (commander.render) {
         dorender.push(true)
       }
+      // Paths that we have determined during ID extraction phase are not modified, so no need for a render stage.
+      const unmodifiedPaths = new Set()
+      function printStatus(article, render, t0, t1, unmodified) {
+        let pref
+        if (render) {
+          pref = MESSAGE_PREFIX_RENDER
+        } else {
+          pref = MESSAGE_PREFIX_EXTRACT_IDS
+        }
+        msg = `${pref}: ${article.title} (${article.inpath})`
+        if (unmodified) {
+          msg += ' skipped because unmodified'
+        } else if (t0 !== undefined) {
+          msg += ` finished in ${t1 - t0} ms`
+        }
+        console.error(msg);
+      }
       for (const render of dorender) {
         // This ordering ensures parents come before children.
         for (const header_tree_entry of header_tree) {
@@ -1316,45 +1333,53 @@ if (commander.helpMacros) {
             // Can fail for synonyms.
             article !== null
           ) {
-            let pref
-            if (render) {
-              pref = MESSAGE_PREFIX_RENDER
-            } else {
-              pref = MESSAGE_PREFIX_EXTRACT_IDS
-            }
-            console.error(`${pref}: ${article.title} (${article.inpath})`);
-            let data, status
             const inpathParse = path.parse(article.inpath)
-            try {
-              ;({ data, status } = await webApi.articleCreateOrUpdate(
-                { titleSource: article.title, bodySource: article.body },
-                {
-                  // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
-                  path: path.join(inpathParse.dir, inpathParse.name),
-                  render,
-                  parentId: article.parentId === null ? undefined : article.parentId,
-                }
-              ))
-            } catch(err) {
-              handleWebApiErr(err)
-            }
-            //console.log(require('child_process').execSync(`printf 'count '; sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index" | wc -l`).toString())
-            //console.log(require('child_process').execSync(`sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index"`).toString())
-            if (status !== 200) {
-              console.error(`error status: ${status}`);
-              const errors = data.errors
-              if (errors instanceof Array) {
-                for (const error of data.errors) {
-                  console.error(error);
-                }
-              } else {
-                if (errors === undefined) {
-                  console.error(data);
-                } else {
-                  console.error(errors);
-                }
+            const articlePath = path.join(inpathParse.dir, inpathParse.name)
+            if (!unmodifiedPaths.has(articlePath)) {
+              printStatus(article, render)
+              let data, status
+              const articleArgs = {}
+              if (!render) {
+                articleArgs.titleSource = article.title
+                articleArgs.bodySource = article.body
               }
-              cli_error('conversion error')
+              const t0 = performance.now()
+              try {
+                ;({ data, status } = await webApi.articleCreateOrUpdate(
+                  articleArgs,
+                  {
+                    // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
+                    path: articlePath,
+                    render,
+                    parentId: article.parentId === null ? undefined : article.parentId,
+                  }
+                ))
+              } catch(err) {
+                handleWebApiErr(err)
+              }
+              const t1 = performance.now()
+              if (data.unmodified) {
+                unmodifiedPaths.add(articlePath)
+              }
+              printStatus(article, render, t0, t1, data.unmodified)
+              //console.log(require('child_process').execSync(`printf 'count '; sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index" | wc -l`).toString())
+              //console.log(require('child_process').execSync(`sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index"`).toString())
+              if (status !== 200) {
+                console.error(`error status: ${status}`);
+                const errors = data.errors
+                if (errors instanceof Array) {
+                  for (const error of data.errors) {
+                    console.error(error);
+                  }
+                } else {
+                  if (errors === undefined) {
+                    console.error(data);
+                  } else {
+                    console.error(errors);
+                  }
+                }
+                cli_error('conversion error')
+              }
             }
           }
         }

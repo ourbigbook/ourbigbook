@@ -5762,10 +5762,10 @@ assert_lib_ast('toc: split headers have correct table of contents',
 
       // ToC links have parent toc entry links.
       // Toplevel entries point to the ToC toplevel.
-      `//*[@id='toc']//*[@id='toc-h1-1']//x:a[@href='#toc' and text()=' \"h1\"']`,
-      `//*[@id='toc']//*[@id='toc-h1-2']//x:a[@href='#toc' and text()=' \"h1\"']`,
+      `//*[@id='toc']//*[@id='toc-h1-1']//x:a[@href='#toc' and text()=' h1']`,
+      `//*[@id='toc']//*[@id='toc-h1-2']//x:a[@href='#toc' and text()=' h1']`,
       // Inner entries point to their parent entries.
-      `//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc-h1-2' and text()=' \"h1 2\"']`,
+      `//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc-h1-2' and text()=' h1 2']`,
 
       // The ToC numbers look OK.
       "//*[@id='toc']//x:a[@href='#h1-2' and text()='2. h1 2']",
@@ -5798,8 +5798,8 @@ assert_lib_ast('toc: split headers have correct table of contents',
 
         // We have gone a bit back and forth on split vs nosplit here.
         // Related: https://github.com/cirosantilli/ourbigbook/issues/146
-        `//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc' and text()=' \"h1 2\"']`,
-        `//*[@id='toc']//*[@id='toc-h1-2-1-1']//x:a[@href='#toc-h1-2-1' and text()=' \"h1 2 1\"']`,
+        `//*[@id='toc']//*[@id='toc-h1-2-1']//x:a[@href='#toc' and text()=' h1 2']`,
+        `//*[@id='toc']//*[@id='toc-h1-2-1-1']//x:a[@href='#toc-h1-2-1' and text()=' h1 2 1']`,
 
         // Descendant count.
         "//*[@id='toc']//*[@class='title-div']//*[@class='descendant-count' and text()='2']",

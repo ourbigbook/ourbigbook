@@ -166,6 +166,7 @@ module.exports = (sequelize) => {
       // a lower bound on their capacities. Let's just make them public for now then.
       maxArticles: this.maxArticles,
       maxArticleSize: this.maxArticleSize,
+      verified: this.verified,
     }
     if (loggedInUser) {
       ret.following = await loggedInUser.hasFollow(this.id)

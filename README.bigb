@@ -7020,12 +7020,22 @@ Shortcut:
 ``
 npm run devs
 ``
+The logs also include timing information, which can be invaluable to debug slow database queries.
 
 However, you often want to long only a few selected queries, otherwise it becomes very difficult to determine which query is which, in partciular due asynchronous execution. In this case, use the technique mentioned at: https://stackoverflow.com/questions/21427501/how-can-i-see-the-sql-generated-by-sequelize-js/21431627#21431627 and just add:
 ``
-logging: console.log
+logging: console.log,
 ``
 to the code in the query you want to log.
+
+= Pretty print SQL queries
+{parent=Log database queries done}
+
+Maybe we should do a better integration: https://stackoverflow.com/questions/70948142/how-to-indent-logged-queries-in-sequelize this is something that we do a lot:
+``
+npm install -g sql-formatter
+xsel -b | sql-formatter -l postgresql
+``
 
 = Local optimized frontend
 {parent=OurBigBook Web development}
@@ -7128,11 +7138,11 @@ PGPASSWORD=a pg_restore -U ourbigbook_user -h localhost --clean -d ourbigbook -v
 ``
 https://stackoverflow.com/questions/2732474/restore-a-postgres-backup-file-using-the-command-line
 
-To interactively inspect the local development database use:
+To interactively inspect the local development database use our helper at \a[web/bin/psql]:
 ``
-PGPASSWORD=a psql -U ourbigbook_user -h localhost ourbigbook
+./web/bin/psql
 ``
-`PGPASSWORD` is mentioned at: https://stackoverflow.com/questions/6405127/how-do-i-specify-a-password-to-psql-non-interactively
+It uses `PGPASSWORD` is mentioned at: https://stackoverflow.com/questions/6405127/how-do-i-specify-a-password-to-psql-non-interactively
 
 = OurBigBook Web step debug
 {parent=OurBigBook Web development}

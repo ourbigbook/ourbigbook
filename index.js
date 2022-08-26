@@ -6739,7 +6739,10 @@ function x_get_target_ast_base({
   scope,
   target_id,
 }) {
-  if (context.options.x_leading_at_to_web && target_id[0] === AT_MENTION_CHAR) {
+  if (
+    context.options.x_leading_at_to_web &&
+    target_id[0] === AT_MENTION_CHAR
+  ) {
     return [html_attr('href', WEB_URL + target_id.substr(1)), target_id];
   }
   if (target_id[0] === HASHTAG_CHAR) {

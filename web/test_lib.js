@@ -411,7 +411,7 @@ async function generateDemoData(params) {
         let parentId
         if (parentEntry) {
           ;({ opts: parentOpts } = expandArticleDataEntry(parentEntry))
-          parentId = parentOpts.id
+          parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${parentOpts.topicId}`
         } else {
           parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
         }
@@ -424,7 +424,8 @@ async function generateDemoData(params) {
           titleSource: articleArg.titleSource,
         }
         const { articles: newArticles, extra_returns } = await convert.convertArticle(args)
-        opts.id = extra_returns.context.header_tree.children[0].ast.id
+        opts.topicId = extra_returns.context.header_tree.children[0].ast.id.substr(
+          ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1)
         for (const article of newArticles) {
           articleIdToArticle[article.id] = article
           if (render) {

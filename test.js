@@ -3513,13 +3513,13 @@ assert_lib('x: x_external_prefix option',
     },
   }
 );
-assert_lib('x: ourbigbook.json reroutePrefix',
+assert_lib('x: ourbigbook.json xPrefix',
   {
     convert_dir: true,
     convert_opts: {
       split_headers: true,
       ourbigbook_json: {
-        reroutePrefix: 'asdf/',
+        xPrefix: 'asdf/',
       },
     },
     filesystem: {
@@ -4467,6 +4467,41 @@ assert_lib('x: split renders by default links back to nosplit render of another 
       ],
     },
     convert_opts: { split_headers: true },
+  },
+);
+assert_lib('x: redirect from cirosantilli.com to ourbigbook.com',
+  {
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= tmp
+
+<tmp 2>[tmp to tmp 2]
+
+<tmp2>[tmp to tmp2]
+
+<tmp2 2>[tmp to tmp2 2]
+
+== tmp 2
+`,
+      'tmp2.bigb': `= tmp2
+
+== tmp2 2
+`,
+    },
+    convert_opts: {
+      ourbigbook_json: {
+        toSplitHeaders: true,
+        xPrefix: 'https://ourbigbook.com/cirosantilli/',
+        htmlXExtension: false,
+      },
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:div[@class='p']//x:a[@href='#tmp-2' and text()='tmp to tmp 2']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/cirosantilli/tmp2' and text()='tmp to tmp2']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/cirosantilli/tmp2-2' and text()='tmp to tmp2 2']",
+      ],
+    },
   },
 );
 

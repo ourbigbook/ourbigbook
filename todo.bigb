@@ -3,6 +3,13 @@
 
 == Issues
 
+=== Fragment redirects not working on web
+{tag=Web}
+
+E.g. https://ourbigbook.com/cirosantilli/mathematics#cirosantilli/physics should redirect to https://ourbigbook.com/cirosantilli/physics
+
+Is working on static website: https://cirosantilli.com/mathematics#physics does redirect to https://cirosantilli.com/physics
+
 === Missing fragment redirect not working on web
 {tag=Editor}
 {tag=Web}

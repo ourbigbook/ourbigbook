@@ -669,6 +669,7 @@ class AstNode {
         path_sep: context.options.path_sep,
         splitDefaultNotToplevel: context.options.ourbigbook_json.h.splitDefaultNotToplevel,
         split_suffix,
+        toSplitHeadersOverride: options.toSplitHeadersOverride,
       }
       if (!ast_undefined) {
         args.ast_is_first_header_in_input_file = ast.is_first_header_in_input_file
@@ -3005,6 +3006,7 @@ function convert_init_context(options={}, extra_returns={}) {
         }
       }
       if (!('h' in ourbigbook_json)) { ourbigbook_json.h = {}; }
+      if (!('htmlXExtension' in ourbigbook_json)) { ourbigbook_json.htmlXExtension = undefined; }
       if (!('numbered' in ourbigbook_json.h)) { ourbigbook_json.h.numbered = true; }
       if (!('openLinksOnNewTabs' in ourbigbook_json)) { ourbigbook_json.openLinksOnNewTabs = false; }
       if (!('splitDefault' in ourbigbook_json.h)) { ourbigbook_json.h.splitDefault = false; }
@@ -3023,7 +3025,10 @@ function convert_init_context(options={}, extra_returns={}) {
         if (!('normalize' in id)) { id.normalize = {}; }
         const normalize = id.normalize
       }
-      if (!('reroutePrefix' in ourbigbook_json)) { ourbigbook_json.reroutePrefix = undefined; }
+      if (!('xPrefix' in ourbigbook_json)) { ourbigbook_json.xPrefix = undefined; }
+    }
+    if ('publishOptions' in ourbigbook_json) {
+      lodash.merge(ourbigbook_json, ourbigbook_json.publishOptions)
     }
   if (!('embed_includes' in options)) { options.embed_includes = false; }
   // Check if file exists.
@@ -3040,11 +3045,15 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('from_include' in options)) { options.from_include = false; }
   if (!('from_ourbigbook_example' in options)) { options.from_ourbigbook_example = false; }
   if (!('html_embed' in options)) { options.html_embed = false; }
-  if (!('html_x_extension' in options)) {
+  if (options.html_x_extension === undefined) {
     // Add HTML extension to x links. And therefore also:
     // * output files with the `.html` extension
     // * output `/index.html` vs just `/`
-    options.html_x_extension = true;
+    if (ourbigbook_json.htmlXExtension === undefined) {
+      options.html_x_extension = true;
+    } else {
+      options.html_x_extension = ourbigbook_json.htmlXExtension;
+    }
   }
   if (!('h_parse_level_offset' in options)) {
     // When parsing, start the first header at this offset instead of h1.
@@ -3067,7 +3076,6 @@ function convert_init_context(options={}, extra_returns={}) {
     // This this option it becomes instead `header-id/_1`.
     options.prefixNonIndexedIdsWithParentId = false;
   }
-  if (!('ourbigbook_json' in options)) { options.ourbigbook_json = {}; }
   if (!('log' in options)) { options.log = {}; }
   if (!('outfile' in options)) {
     // Override the default calculated output file for the main input.
@@ -4189,6 +4197,7 @@ function output_path_base(args={}) {
     path_sep,
     splitDefaultNotToplevel,
     split_suffix,
+    toSplitHeadersOverride,
   } = args
   if (ast_input_path === undefined) {
     return undefined
@@ -4203,7 +4212,7 @@ function output_path_base(args={}) {
   // Calculate the base basename_ret and dirname_ret.
   let dirname_ret;
   let basename_ret;
-  const to_split_headers = is_to_split_headers_base(ast_split_default, context_to_split_headers);
+  const to_split_headers = is_to_split_headers_base(ast_split_default, context_to_split_headers, toSplitHeadersOverride);
   if (
     ast_is_first_header_in_input_file ||
     (
@@ -4276,7 +4285,8 @@ function output_path_base(args={}) {
         !to_split_headers &&
         ast_split_default
       )
-    )
+    ) &&
+    !toSplitHeadersOverride
   ) {
     if (basename_ret !== '') {
       basename_ret += '-';
@@ -6787,11 +6797,20 @@ function is_punctuation(c) {
 // id='subdir/notindex'      -> ['subdir', 'notindex']
 // id='subdir/notindex-h2'   -> ['subdir', 'notindex-h2']
 function is_to_split_headers(ast, context) {
-  return is_to_split_headers_base(ast.split_default, context.to_split_headers)
+  return is_to_split_headers_base(
+    ast.split_default,
+    context.to_split_headers,
+    context.options.ourbigbook_json.toSplitHeaders,
+  )
 }
 
-function is_to_split_headers_base(ast_split_default, context_to_split_headers) {
-  return (context_to_split_headers === undefined && ast_split_default) ||
+function is_to_split_headers_base(
+  ast_split_default,
+  context_to_split_headers,
+  to_split_headers_override,
+) {
+  return (to_split_headers_override !== undefined && to_split_headers_override) ||
+         (context_to_split_headers === undefined && ast_split_default) ||
          (context_to_split_headers !== undefined && context_to_split_headers);
 }
 
@@ -6867,6 +6886,7 @@ function x_href_parts(target_ast, context) {
       context,
       {
         effective_id: target_ast_effective_id,
+        toSplitHeadersOverride: context.options.ourbigbook_json.toSplitHeaders,
       }
     ));
     if (context.options.x_remove_leading_at) {
@@ -6918,9 +6938,13 @@ function x_href_parts(target_ast, context) {
   if (!context.options.include_path_set.has(target_input_path)) {
     href_path = context.options.x_external_prefix + href_path
   }
-  if (context.options.ourbigbook_json.reroutePrefix !== undefined && href_path !== '' && split_suffix === undefined) {
-    href_path = context.options.ourbigbook_json.reroutePrefix +
-      path_join(toplevel_output_path_dirname, href_path, context.options.path_sep)
+  if (
+    context.options.ourbigbook_json.xPrefix !== undefined &&
+    href_path !== '' &&
+    split_suffix === undefined
+  ) {
+    href_path = context.options.ourbigbook_json.xPrefix + path_join(
+      toplevel_output_path_dirname, href_path, context.options.path_sep)
   }
   if (href_path && context.options.x_absolute) {
     href_path = '/' + href_path

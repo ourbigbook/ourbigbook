@@ -28,34 +28,19 @@ And therefore lead users to the toplevel page instead of a link to current heade
 
 The links by clicking on the header itself are correct and go to a dedicated page with it on top. The problem is just for the on-hover links on the margin which we'd like to link to self in the current page.
 
-=== Missing header metadata such as like button, same topic and issue link on headers under a scope
-{tag=Scope}
-
-=== Headers under scope don't have scope on ID leads to ID conflicts and a link misses on Web
-{tag=Scope}
+=== Prefix unnumbered IDs with the parent header's ID
+{tag=Dynamic tree fetch}
 {tag=Web}
 
-E.g. in:
-``
-= x86
+=== Remove @ from toc IDs
+{tag=Web}
 
-== Sample code
+E.g. currently have: http://localhost:3000/barack-obama#toc-@barack-obama/mitochondrion It works, but is ugly.
 
-== x86 paging
-{scope}
+=== Statically render links to issues and topic under each header for better SEO
+{tag=Web}
 
-=== Sample code
-``
-
-both `Sample code` headers have `id="sample-code"`, which would lead to ID conflicts on the same page.
-
-Also, as a result, the toc link from `x86` intended to go to `x86-paging/sample-code` misses and opens on a separate page.
-
-I don't know how to solve this besides always including scopes on every ID... This does however lead to ugly local IDs on individual pages which is a bit of a shame... oh cruel life.
-
-We could also have two versions of every page, scoped and non scoped, but things likely go exponential when we start dealing with subscope.
-
-This could mean that a lot of toplevel scope removal work will go to the trash! :-( But what can you do, it is the inevitable outcome of dynamic page fetch?
+The links don't show without JavaScript. The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
 
 === Separate lines with field label for parent and previous sibling on web editor
 {tag=Web}
@@ -87,10 +72,6 @@ npx js-beautify min.html
 ``
 
 Newlines just add complexity to our codebase, and are not even getting removed from final output as things stand to take up a little bit of useless space.
-
-=== Prefix unnumbered IDs with the parent header's ID
-{tag=Dynamic tree fetch}
-{tag=Web}
 
 === ToC link on headers not opening collapsed toc entries
 {c}

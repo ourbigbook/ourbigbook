@@ -2949,6 +2949,12 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }
   if (!('db_provider' in options)) { options.db_provider = undefined; }
+  if (!('fixedScopeRemoval' in options)) {
+    // Rather than removing scopes from children page in a toplevel page that has a scope,
+    // remove fixed n chars from every single ID. This is used on Web to remove @ from links
+    // with dynamic page fetch.
+    options.fixedScopeRemoval = undefined;
+  }
   if (!('renderH2' in options)) { options.renderH2 = false; }
   if (!('ourbigbook_json' in options)) { options.ourbigbook_json = {}; }
     const ourbigbook_json = options.ourbigbook_json;
@@ -6086,6 +6092,10 @@ exports.protocol_is_known = protocol_is_known
 
 // https://docs.ourbigbook.com#scope
 function remove_toplevel_scope(id, toplevel_ast, context) {
+  const fixedScopeRemoval = context.options.fixedScopeRemoval
+  if (fixedScopeRemoval !== undefined) {
+    return id.slice(fixedScopeRemoval)
+  }
   if (
     toplevel_ast !== undefined &&
     id === toplevel_ast.id

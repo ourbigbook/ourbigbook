@@ -508,7 +508,7 @@ SELECT
   "Article"."slug" AS "slug",
   "Article"."topicId" AS "topicId",
   "Article"."titleSource" AS "titleSource",${render ? `\n  "Article"."render" AS "render",` : ''}
-  ${h1 ? '"Article"."h1Render" AS "h1Render"' : '"Article"."h2Render" AS "h2Render"'},${h1 ? '\n  "Id"."ast_json" AS "ast_json",' : ''}
+  ${h1 ? '"Article"."h1Render" AS "h1Render"' : '"Article"."h2Render" AS "h2Render"'},
   "Article"."topicId" AS "topicId",
   "Article"."titleRender" AS "titleRender",
   "Article"."depth" AS "depth",

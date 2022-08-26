@@ -50,10 +50,10 @@ const Article = ({
   const articlesInSamePageMap = {}
   if (!isIssue) {
     for (const article of articlesInSamePage) {
-      articlesInSamePageMap[article.topicId] = article
+      articlesInSamePageMap[article.slug] = article
     }
   }
-  articlesInSamePageMap[article.topicId] = article
+  articlesInSamePageMap[article.slug] = article
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
   const renderRefCallback = React.useCallback(
     (elem) => {
@@ -71,7 +71,7 @@ const Article = ({
             curArticle = article
           } else if (
             // Happens on user index page.
-            id === ''
+            id === loggedInUser.username
           ) {
             curArticle = article
             isIndex = true
@@ -98,7 +98,7 @@ const Article = ({
                 <>
                   {' '}
                   {!isIndex &&
-                    <a className="by-others btn" href={routes.topic(id)} title="Articles by others on the same topic">
+                    <a className="by-others btn" href={routes.topic(curArticle.topicId)} title="Articles by others on the same topic">
                       <TopicIcon title={false} /> {curArticle.topicCount}{toplevel ? <> By Others<span className="mobile-hide"> On Same Topic</span></> : ''}
                     </a>
                   }
@@ -188,14 +188,9 @@ const Article = ({
               if (url.hash) {
                 idNoprefix = url.hash.slice(1)
               } else {
-                // + 4 for the '../' and trailing `/`
-                let sliceLen = article.author.username.length + 4
-                if (article.hasScope) {
-                  // TODO don't add to len, remove prefix + / instead if present,
-                  // otherwise we will have false hits on external pages.
-                  sliceLen += article.topicId.length + 1
-                }
-                idNoprefix = href.slice(sliceLen)
+                // + 3 for the '../'.
+                // https://github.com/cirosantilli/ourbigbook/issues/283
+                idNoprefix = href.slice(3)
               }
               const targetElem = document.getElementById(idNoprefix)
               if (
@@ -222,7 +217,7 @@ const Article = ({
   }
   html += article.render
   if (!isIssue) {
-    // A mega hacky version. Would it significantly improve rendering time?
+    // A mega hacky version. TODO benchmark: would it significantly improve rendering time?
     //const tocHtml = articlesInSamePage.slice(1).map(a => `<div style="padding-left:${30 * (a.depth - firstArticle.depth)}px;"><a href="../${article.author.username}/${a.topicId}">${a.titleRender}</a></div>`).join('') +
     const entry_list = []
     const levelToHeader = { 0: article }
@@ -230,7 +225,7 @@ const Article = ({
       const a = articlesInSamePageForToc[i]
       const authorUsername = article.author.username
       const level = a.depth - article.depth
-      const href = ` href="../${authorUsername}/${a.topicId}"`
+      const href = ` href="../${a.slug}"`
       const content = a.titleRender
       let parent_href, parent_content
       if (level > 1) {

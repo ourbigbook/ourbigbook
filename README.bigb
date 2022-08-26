@@ -7593,7 +7593,27 @@ The following support is provided:
 
   We will attempt to err on the side of "misses some stuff but does not destroy the entire page below" whenever possible.
 * mappings:
-  * `<leader>f`, which usually means `,f` (comma then F): start searching for a header in the current file
+  * `<leader>f`, which usually means `,f` (comma then F): start searching for a header in the current file. Does a regular `/` search without opening any windows, to is it very ligthweight. Mnemonic: "Find".
+  * `<leader>h` (requires https://github.com/tpope/vim-fugitive[Fugitive] to be installed): sets up the `ObbGitGrep` command, which  searches for header across all git tracked files in the current Git repository. After `,g` you are left in the prompt with:
+    ``
+    ObbGitGrep
+    ``
+    so if you complete that by:
+    ``
+    ObbGitGrep animal kingdom
+    ``
+    it will match headers that start with `animal kingdoom` case insentively, e.g.:
+    ``
+    = Animal kingdom tree
+    = Animal kingdom book
+    ``
+    Vim regular expressions are accepted, e.g. if you don't want it to start with the search pattern:
+    ``
+    ObbGitGrep .*animal kingdom
+    ``
+    The command opens a new tab (technically a "Vim error window") containing all matches, where you can click Enter to open one of them.
+
+    Mnemonic: "Header search".
 
 = Browser editor with preview
 {parent=Editor support}

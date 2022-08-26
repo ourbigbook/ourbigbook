@@ -120,6 +120,11 @@ It seems that the third party library we are using is just a hack and doesn't pr
 
 == Closed issues
 
+=== Test scope 2 appears after Test scope 1 on generated data
+{tag=Web}
+
+OK, everything was reversed, I just hadn't noticed before because there was no numbered test data :-)
+
 === Prefix unnumbered IDs with the parent header's ID
 {tag=Dynamic tree fetch}
 {tag=Web}

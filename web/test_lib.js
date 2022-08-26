@@ -53,30 +53,6 @@ const userData = [
 ]
 
 const articleData = [
-  ['Test data', [
-    ['Test scope', [
-      ['Test scope 1', [
-        ['Test scope 1 1', []],
-        ['Test scope 1 1', []],
-      ]],
-      ['Test scope 2', []],
-    ], { headerArgs: '{scope}' }],
-    ['Test tag', [
-      ['Test tagged', [], { headerArgs: '{tag=Test tagger}' }],
-      ['Test tagger', []],
-    ]],
-    ['Test child', [
-      ['Test child 1', [
-        ['Test child 1 1', []],
-      ], { body: `Link to outsider: <test child 2>
-
-Link to parent: <test child>
-
-Link to child: <test child 1 1>
-` }],
-      ['Test child 2', []],
-    ]],
-  ]],
   ['Mathematics', [
     ['Algebra', [
       ['Linear algebra', [
@@ -150,6 +126,30 @@ Link to child: <test child 1 1>
         ]],
       ]],
     ], { toplevel: true }],
+  ]],
+  ['Test data', [
+    ['Test scope', [
+      ['Test scope 1', [
+        ['Test scope 1 1', []],
+        ['Test scope 1 2', []],
+      ]],
+      ['Test scope 2', []],
+    ], { headerArgs: '{scope}' }],
+    ['Test tag', [
+      ['Test tagged', [], { headerArgs: '{tag=Test tagger}' }],
+      ['Test tagger', []],
+    ]],
+    ['Test child', [
+      ['Test child 1', [
+        ['Test child 1 1', []],
+      ], { body: `Link to outsider: <test child 2>
+
+Link to parent: <test child>
+
+Link to child: <test child 1 1>
+` }],
+      ['Test child 2', []],
+    ]],
   ]],
 ]
 const issueData = [
@@ -227,7 +227,7 @@ class ArticleDataProvider {
     //this.todo_visit = todo_visit_top
 
     // These store the current tree transversal state across .get calls.
-    this.todo_visit = articleData.slice().reverse()
+    this.todo_visit = articleData.slice()
     // Set of all entries we visited that don't have a parent.
     // We will want to include those from the toplevel index.
     this.toplevelTitleToEntry = {}
@@ -239,7 +239,7 @@ class ArticleDataProvider {
       let entry = this.todo_visit.pop();
       let title = entry[0]
       let children = entry[1]
-      for (let i = children.length - 1; i >= 0; i--) {
+      for (let i = 0; i < children.length; i++) {
         this.todo_visit.push(children[i]);
       }
       this.toplevelTitleToEntry[title] = entry

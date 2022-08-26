@@ -6,8 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <style>{{ style }}</style>
-<link rel="stylesheet" type="text/css" href="{{ root_relpath }}main.css">
-<link rel="shortcut icon" href="{{ root_relpath }}logo.svg" />
+<link rel="stylesheet" type="text/css" href="{{ raw_relpath }}main.css">
+<link rel="shortcut icon" href="{{ raw_relpath }}logo.svg" />
 {{ head }}</head>
 <body>
 {% comment %}
@@ -26,6 +26,7 @@
 <div>Website Git version: <a href="https://github.com/ourbigbook/ourbigbook/commit/{{ git_sha }}">{{ git_sha }}</a></div>
 <div>Source code for this page: <a href="https://github.com/ourbigbook/ourbigbook/blob/{{ git_sha }}/{{ input_path }}">{{ input_path }}</a></div>
 {% endcomment %}
+<div>Source code for this page: <a href="{{ raw_relpath }}{{ input_path }}">{{ input_path }}</a></div>
 </footer>
 {% comment %}Google Analytics, AKA selling my soul to Google for some backlinks.{% endcomment %}
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>

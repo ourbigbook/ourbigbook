@@ -7540,6 +7540,8 @@ The following support is provided:
   Syntax highlighting can likely never be perfect without a full parser (which is slow), but even the imperfect approximate setup (as provided for most other languages) is already a huge usability improvement.
 
   We will attempt to err on the side of "misses some stuff but does not destroy the entire page below" whenever possible.
+* mappings:
+  * `<leader>f`, which usually means `,f` (comma then F): start searching for a header in the current file
 
 = Browser editor with preview
 {parent=Editor support}

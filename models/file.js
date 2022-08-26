@@ -35,16 +35,21 @@ module.exports = (sequelize, web=false) => {
       allowNull: false,
     }
   }
+  const indexes = [
+    { fields: ['last_parse'], },
+    { fields: ['last_render'], },
+    { fields: ['path'], },
+    { fields: ['toplevel_id'], },
+  ]
+  if (web) {
+    // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
+    indexes.push({ fields: ['authorId'], })
+  }
   return sequelize.define(
     'File',
     cols,
     {
-      indexes: [
-        { fields: ['last_parse'], },
-        { fields: ['last_render'], },
-        { fields: ['path'], },
-        { fields: ['toplevel_id'], },
-      ],
+      indexes,
     }
   )
 }

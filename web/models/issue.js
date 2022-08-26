@@ -36,7 +36,11 @@ module.exports = (sequelize) => {
         {
           fields: ['articleId', 'number'],
           unique: true,
-        }
+        },
+
+        // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
+        { fields: ['authorId'], },
+        { fields: ['articleId'], },
       ],
     },
   )

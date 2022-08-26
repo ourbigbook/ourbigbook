@@ -8741,6 +8741,14 @@ E.g. a website that stores its custom rules under \a[main.scss] can do stuff lik
 
 The main design goal on narrow screens is that there should never be horizontal scrolling enabled for the hole document, only on a per element basis.
 
+= Database guidelines
+{c}
+{parent=Developing OurBigBook}
+
+Every foreign key should have a manually created associated index, this is not done automatically by neither PostgreSQL nor Sequelize:
+* https://stackoverflow.com/questions/970562/postgres-and-indexes-on-foreign-keys-and-primary-keys
+* https://github.com/sequelize/sequelize/issues/5042
+
 = Formal grammar
 {parent=Developing OurBigBook}
 

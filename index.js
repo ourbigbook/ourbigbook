@@ -2853,7 +2853,7 @@ function render_ast_list(opts) {
         options.renderH2 &&
         first_ast.macro_name === Macro.HEADER_MACRO_NAME
       ) {
-        options.split_headers = false
+        options.h_show_split_header_link = false
         const parent_ast = first_ast.get_header_parent_asts(context)[0];
         context.header_tree = new HeaderTreeNode();
         if (parent_ast) {
@@ -3016,6 +3016,9 @@ function convert_init_context(options={}, extra_returns={}) {
     // This is used when doing includes, since the included header is at.
     // an offset relative to where it is included from.
     options.h_parse_level_offset = 0;
+  }
+  if (!('h_show_split_header_link' in options)) {
+    options.h_show_split_header_link = true;
   }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
@@ -8341,7 +8344,10 @@ const OUTPUT_FORMATS_LIST = [
           let parent_links;
           {
             const items = []
-            if (context.options.split_headers) {
+            if (
+              context.options.split_headers &&
+              context.options.h_show_split_header_link
+            ) {
               link_to_split = link_to_split_opposite(ast, context);
               if (link_to_split) {
                 items.push(`${link_to_split}`);

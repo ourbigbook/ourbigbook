@@ -180,8 +180,11 @@ const Article = ({
             // + 4 for the '../' and trailing `/`
             const idNoprefix = e.target.getAttribute('href').slice(article.author.username.length + 4)
             const targetElem = document.getElementById(idNoprefix)
-            if (targetElem) {
-              console.error({idNoprefix});
+            if (
+              targetElem &&
+              // h2 self link, we want those to actually go to the separated page.
+              e.target.parentElement.tagName !== 'H2'
+            ) {
               e.preventDefault()
               window.location.hash = idNoprefix
             }

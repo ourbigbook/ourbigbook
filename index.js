@@ -2972,7 +2972,7 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('fixedScopeRemoval' in options)) {
     // Rather than removing scopes from children page in a toplevel page that has a scope,
     // remove fixed n chars from every single ID. This is used on Web to remove @ from links
-    // with dynamic page fetch.
+    // with dynamic article tree.
     options.fixedScopeRemoval = undefined;
   }
   if (!('renderH2' in options)) { options.renderH2 = false; }

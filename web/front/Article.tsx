@@ -144,7 +144,7 @@ const Article = ({
                     {' '}
                     {!isIssue &&
                       <>
-                        <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is a child of this one">
+                        <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is the first child of this one">
                           {' '}<NewArticleIcon title={false}/>
                           {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
                           <i className="ion-arrow-down-c"/>{toplevel ? ' Create child article' : ''}{' '}

@@ -8165,10 +8165,10 @@ const DEFAULT_MACRO_LIST = [
             }
             let width
             if (ast.validation_output.width.given) {
-              height = ast.validation_output.width.positive_nonzero_integer
+              width = ast.validation_output.width.positive_nonzero_integer
             } else {
               const DEFAULT_VIDEO_WIDTH = 560
-              width = DEFAULT_VIDEO_WIDTH * Math.floor(height / DEFAULT_MEDIA_HEIGHT)
+              width = Math.floor(DEFAULT_VIDEO_WIDTH * height / DEFAULT_MEDIA_HEIGHT)
             }
             return `<iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;

@@ -324,6 +324,11 @@ But aint't nobody got time for that!
 
 == Closed issues
 
+=== Second meta line showing up on index page even if empty
+{tag=Web}
+
+Index has no parent, so the line may be empty in that case.
+
 === Article create and update slow on web
 {tag=Performance}
 {tag=Web}

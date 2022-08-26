@@ -21,7 +21,7 @@ export type ArticleListProps = {
   commentsCount?: number;
   followed?: boolean;
   issueArticle?: ArticleType;
-  itemType?: 'article' | 'discussion' | 'topic';
+  itemType?: 'article' | 'discussion' | 'like' | 'topic';
   loggedInUser?: UserType,
   page: number;
   paginationUrlFunc?: PaginationPropsUrlFunc;
@@ -91,7 +91,7 @@ const ArticleList = ({
   if (paginationUrlFunc) {
     pagination = <Pagination {...{
         currentPage: page,
-        what: isIssue ? 'threads' : 'articles',
+        what: isIssue ? 'threads' : itemType === 'like' ? 'likes' : 'articles',
         itemsCount: articlesCount,
         itemsPerPage: articleLimit,
         urlFunc: paginationUrlFunc,
@@ -166,16 +166,34 @@ const ArticleList = ({
           : <table className="list">
               <thead>
                 <tr>
-                  {itemType === 'topic'
-                    ? <th className="shrink right">Articles</th>
-                    : <th className="shrink center"><LikeIcon /> Score</th>
+                  {itemType === 'like' &&
+                    <>
+                      <th className="shrink"><LikeIcon /><TimeIcon /> Liked</th>
+                      <th className="shrink"><LikeIcon /><UserIcon /> Liked By</th>
+                    </>
                   }
-                  {isIssue &&
-                    <th className="shrink">
-                      # id
-                    </th>
+                  {itemType === 'topic' &&
+                    <th className="shrink right">Articles</th>
                   }
-                  <th className="expand">{ itemType === 'discussion' ? <IssueIcon /> : <ArticleIcon /> } Title</th>
+                  {(() => {
+                      const score = itemType === 'topic'
+                        ? <></>
+                        : <th className="shrink center"><LikeIcon /> Score</th>
+                      const title = <>
+                        {isIssue &&
+                          <th className="shrink">
+                            # id
+                          </th>
+                        }
+                        <th className="expand">{ itemType === 'discussion' ? <IssueIcon /> : <ArticleIcon /> } Title</th>
+                      </>
+                      if (itemType === 'like') {
+                        return <>{title}{score}</>
+                      } else {
+                        return <>{score}{title}</>
+                      }
+                    })()
+                  }
                   {showAuthor &&
                     <th className="shrink"><UserIcon /> Author</th>
                   }
@@ -195,8 +213,8 @@ const ArticleList = ({
                     curIssueArticle = article.article
                   }
                   const mainHref =
+                        itemType === 'article' || itemType === 'like' ? routes.article(article.slug) :
                         itemType === 'discussion' ? routes.issue(curIssueArticle.slug, article.number) :
-                        itemType === 'article' ? routes.article(article.slug) :
                         itemType === 'topic' ? routes.topic(article.topicId, { sort: 'score' }) :
                         null
                   return <tr
@@ -207,33 +225,55 @@ const ArticleList = ({
                           ? article.slug :
                             article.topicId
                     }>
-                    {(itemType === 'topic')
-                      ? <td className="shrink right bold">
-                          <CustomLink href={mainHref}>{article.articleCount}</CustomLink>
+                    {itemType === 'like' &&
+                      <>
+                        <td className="shrink right">{formatDate(article.likedByDate)}</td>
+                        <td className="shrink ">
+                          <UserLinkWithImage showUsername={false} user={article.likedBy} />
                         </td>
-                      : <td className="shrink center">
-                          <LikeArticleButton {...{
-                            article,
-                            isIssue,
-                            issueArticle: curIssueArticle,
-                            loggedInUser,
-                            showText: false,
-                          }} />
-                        </td>
+                      </>
                     }
-                    {isIssue &&
-                      <td className="shrink bold">
-                        <CustomLink href={mainHref}>{issueArticle ? '' : curIssueArticle.slug }#{article.number}</CustomLink>
+                    {(itemType === 'topic') &&
+                      <td className="shrink right bold">
+                        <CustomLink href={mainHref}>{article.articleCount}</CustomLink>
                       </td>
                     }
-                    <td className="expand title">
-                      <CustomLink href={mainHref} >
-                        <span
-                          className="comment-body ourbigbook-title"
-                          dangerouslySetInnerHTML={{ __html: article.titleRender }}
-                        />
-                      </CustomLink>
-                    </td>
+                    {(() => {
+                      const score = <>
+                        {(itemType === 'topic')
+                          ? <></>
+                          : <td className="shrink center">
+                              <LikeArticleButton {...{
+                                article,
+                                isIssue,
+                                issueArticle: curIssueArticle,
+                                loggedInUser,
+                                showText: false,
+                              }} />
+                            </td>
+                        }
+                      </>
+                      const title = <>
+                        {isIssue &&
+                          <td className="shrink bold">
+                            <CustomLink href={mainHref}>{issueArticle ? '' : curIssueArticle.slug }#{article.number}</CustomLink>
+                          </td>
+                        }
+                        <td className="expand title">
+                          <CustomLink href={mainHref} >
+                            <span
+                              className="comment-body ourbigbook-title"
+                              dangerouslySetInnerHTML={{ __html: article.titleRender }}
+                            />
+                          </CustomLink>
+                        </td>
+                      </>
+                      if (itemType === 'like') {
+                        return <>{title}{score}</>
+                      } else {
+                        return <>{score}{title}</>
+                      }
+                    })()}
                     {showAuthor &&
                       <td className="shrink">
                         <UserLinkWithImage showUsername={false} user={article.author} />

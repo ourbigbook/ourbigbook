@@ -84,8 +84,35 @@ function getSequelize(toplevelDir, toplevelBasename) {
   User.hasMany(UserFollowUser, { foreignKey: 'followId' })
 
   // User like Article
-  Article.belongsToMany(User, { through: 'UserLikeArticle', as: 'articleLikedBy', foreignKey: 'articleId', otherKey: 'userId'  });
-  User.belongsToMany(Article, { through: 'UserLikeArticle', as: 'likedArticles',   foreignKey: 'userId', otherKey: 'articleId'  });
+  const UserLikeArticle = sequelize.define('UserLikeArticle',
+    {
+      userId: {
+        type: DataTypes.INTEGER,
+        references: {
+          model: User,
+          key: 'id'
+        }
+      },
+      articleId: {
+        type: DataTypes.INTEGER,
+        references: {
+          model: Article,
+          key: 'id'
+        }
+      },
+    },
+    {
+      indexes: [
+        { fields: ['userId'], },
+        { fields: ['articleId'], },
+        { fields: ['userId', 'articleId'], unique: true, },
+      ],
+    }
+  );
+  Article.belongsToMany(User, { through: UserLikeArticle, as: 'articleLikedBy', foreignKey: 'articleId', otherKey: 'userId'  })
+  User.belongsToMany(Article, { through: UserLikeArticle, as: 'likedArticles',  foreignKey: 'userId', otherKey: 'articleId'  })
+  UserLikeArticle.belongsTo(User, { foreignKey: 'userId', as: 'user' })
+  UserLikeArticle.belongsTo(Article, { foreignKey: 'articleId', as: 'article' })
 
   // User follow article.
   // Initial use case: get notifications when new issues are created.

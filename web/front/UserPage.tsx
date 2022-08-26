@@ -1,7 +1,7 @@
 import { useRouter } from 'next/router'
 import React from 'react'
 
-import { AppContext, ArticleIcon, useEEdit, HomeIcon, IssueIcon, UserIcon } from 'front'
+import { AppContext, ArticleIcon, useEEdit, HomeIcon, IssueIcon, LikeIcon, UserIcon } from 'front'
 import ArticleList from 'front/ArticleList'
 import { cant  } from 'front/cant'
 import config from 'front/config'
@@ -27,11 +27,10 @@ export interface UserPageProps {
   articlesInSamePage?: ArticleType[];
   articlesInSamePageForToc?: ArticleType[];
   articlesCount?: number;
-  authoredArticleCount: number;
   comments?: CommentType[];
   commentCountByLoggedInUser?: number;
   issuesCount?: number;
-  itemType?: 'article' | 'discussion' | 'topic' | 'user';
+  itemType?: 'article' | 'discussion' | 'like'| 'topic' | 'user';
   latestIssues?: IssueType[];
   topIssues?: IssueType[];
   loggedInUser?: UserType;
@@ -49,7 +48,6 @@ export default function UserPage({
   articlesCount,
   articlesInSamePage,
   articlesInSamePageForToc,
-  authoredArticleCount,
   comments,
   commentCountByLoggedInUser,
   issuesCount,
@@ -74,6 +72,9 @@ export default function UserPage({
       break
     case 'followed':
       paginationUrlFunc = page => routes.userFollowed(user.username, { page })
+      break
+    case 'liked':
+      paginationUrlFunc = page => routes.userLiked(user.username, { page })
       break
     case 'likes':
       paginationUrlFunc = page => routes.userLikes(user.username, { page })
@@ -158,6 +159,12 @@ export default function UserPage({
             <ArticleIcon /> Liked
           </CustomLink>
           <CustomLink
+            href={routes.userLiked(username)}
+            className={`tab-item${what === 'liked' ? ' active' : ''}`}
+          >
+            <LikeIcon /> Received likes
+          </CustomLink>
+          <CustomLink
             href={routes.userFollowing(username)}
             className={`tab-item${what === 'following' ? ' active' : ''}`}
           >
@@ -203,7 +210,7 @@ export default function UserPage({
         }}/>
       }
     </div>
-    {(itemType === 'article' || itemType === 'discussion') &&
+    {(itemType === 'article' || itemType === 'discussion' || itemType === 'like') &&
       <div className="content-not-ourbigbook">
         <ArticleList {...{
           articles,

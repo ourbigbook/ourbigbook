@@ -211,10 +211,11 @@ module.exports = (sequelize) => {
   Article.prototype.toJson = async function(loggedInUser) {
     const authorPromise = this.file && this.file.author ? this.file.author : this.getAuthor()
     // TODO do liked and followed with JOINs on caller, check if it is there and skip this if so.
-    const [liked, followed, author] = await Promise.all([
+    const [liked, followed, author, likedBy] = await Promise.all([
       loggedInUser ? loggedInUser.hasLikedArticle(this.id) : false,
       loggedInUser ? loggedInUser.hasFollowedArticle(this.id) : false,
       (await authorPromise).toJson(loggedInUser),
+      this.likedBy ? this.likedBy.toJson(loggedInUser) : undefined,
     ])
     function addToDictWithoutUndefined(target, source, keys) {
       for (const prop of keys) {
@@ -259,6 +260,12 @@ module.exports = (sequelize) => {
     }
     if (this.updatedAt) {
       ret.updatedAt = this.updatedAt.toISOString()
+    }
+    if (likedBy) {
+      ret.likedBy = likedBy
+    }
+    if (this.likedByDate) {
+      ret.likedByDate = this.likedByDate.toISOString()
     }
     return ret
   }

@@ -38,6 +38,10 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         case 'home':
           itemType = null
           break
+        case 'liked':
+          author = uid
+          itemType = 'like'
+          break
         case 'likes':
           likedBy = uid
           itemType = 'article'
@@ -77,6 +81,29 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           includeArticle: true,
         }) :
         []
+      const likesPromise = itemType === 'like' ? sequelize.models.UserLikeArticle.findAndCountAll({
+          include: [
+            {
+              model: sequelize.models.Article,
+              as: 'article',
+              include: [{
+                model: sequelize.models.File,
+                as: 'file',
+                include: [{
+                  model: sequelize.models.User,
+                  as: 'author',
+                  where: { id: user.id },
+                }]
+              }]
+            },
+            {
+              model: sequelize.models.User,
+              as: 'user',
+            },
+          ],
+          order: [[order, 'DESC']],
+          offset,
+        }) : []
       const usersPromise = itemType === 'user' ? sequelize.models.User.getUsers({
         followedBy,
         following,
@@ -88,16 +115,15 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       const [
         articles,
         userJson,
-        authoredArticleCount,
+        likes,
         users,
       ] = await Promise.all([
         articlesPromise,
         user.toJson(loggedInUser),
-        user.countAuthoredArticles(),
+        likesPromise,
         usersPromise,
       ])
       const props: UserPageProps = {
-        authoredArticleCount,
         itemType,
         order,
         page: pageNum,
@@ -113,6 +139,16 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       } else if (itemType === 'article' || itemType === 'discussion') {
         props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))
         props.articlesCount = articles.count
+      } else if (itemType === 'like') {
+        const articles = []
+        for (const like of likes.rows) {
+          const article = like.article
+          article.likedBy = like.user
+          article.likedByDate = like.createdAt
+          articles.push(article)
+        }
+        props.articles = await Promise.all(articles.map(user => user.toJson(loggedInUser)))
+        props.articlesCount = likes.count
       } else {
         const articleContext = Object.assign({}, context, { params: { slug: [ uid ] } })
         const articleProps = await (getServerSidePropsArticleHoc({

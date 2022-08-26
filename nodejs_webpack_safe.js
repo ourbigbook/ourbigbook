@@ -4,6 +4,10 @@
 //   const PACKAGE_PATH = path.dirname(require.resolve(path.join(PACKAGE_NAME, 'package.json')));
 // from nodejs.js. Just splitting this out here until I find the patience to
 // minimize and resolve that bs.
+//
+// Edit: this is a not a webpack issue. Doing:
+//   path.dirname(require.resolve(path.join('ourbigbook', 'package.json'))
+// from web/app.js also blows up.
 
 // We cannot require sequelize here, because otherwise the web/ version blows up due to missing postgres,
 // which is a peer dependency of sequelize that we don't need for the CLI converter, as we use SQLite there.
@@ -790,12 +794,14 @@ async function check_db(sequelize, paths_converted, transaction) {
   return error_messages
 }
 
-function preload_katex_from_file(tex_path) {
-  let katex_macros = {};
-  if (fs.existsSync(tex_path)) {
-    katex_macros = ourbigbook_nodejs_front.preload_katex(
-      fs.readFileSync(tex_path, ENCODING))
+function preload_katex_from_file(tex_path, katex_macros) {
+  if (katex_macros === undefined) {
+    katex_macros = {}
   }
+  katex_macros = ourbigbook_nodejs_front.preload_katex(
+    fs.readFileSync(tex_path, ENCODING),
+    katex_macros,
+  )
   return katex_macros
 }
 

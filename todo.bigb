@@ -3,6 +3,13 @@
 
 == Issues
 
+=== Serialize parsed build-in KaTeX macros
+{tag=Math}
+
+I.e. save the output of `katex.renderToString` to JSON or some other format. This approach would ensure minimal load times no matter what KaTeX is doing, and possibly provide some good portability.
+
+Off the bat `JSON.stringify` doesn't work due to circular references though that can be overcome: https://stackoverflow.com/questions/10392293/stringify-convert-to-json-a-javascript-object-with-circular-reference
+
 === Handle web upload after local article renaming with synonym redirection set
 {tag=Web}
 {tag=Web upload}
@@ -11,34 +18,6 @@ Web upload breaks with duplicate ID if you rename a header and synonym the old o
 
 === Synonym redirects on web
 {tag=Web}
-
-=== Enable web math defines default on non-web
-{tag=Math}
-{tag=Web}
-
-This is the only way to have portable maths across local and server.
-
-The definitions are also useful by default to users, and should just be enabled out-of-box.
-
-=== Subsections missing on web dynamic tree
-{tag=Bug}
-{tag=Dynamic tree fetch}
-
-On web now:
-* https://ourbigbook.com/barack-obama shows Fundamental theorem of calculus under "Integral", correct
-* https://ourbigbook.com/barack-obama/mathematics does not show "Fundamental theorem of calculus", incorrect
-
-We can only reproduce locally by copying the database, we haven't managed to reach such state by a clean sequence of pure API calls, clean naive `web/bin/generate-demo-data -C -u1` didn't reproduce either.
-
-Upon quickly inspectig the DB we see that the nested set indexes are wrong:
-``
-[ 'barack-obama', 0, 36 ],
-[ 'barack-obama/mathematics', 1, 9 ],
-[ 'barack-obama/fundamental-theorem-of-calculus', 9, 11 ],
-``
-`barack-obama/mathematics` should stop something larger than `9` to include `barack-obama/fundamental-theorem-of-calculus` and other children.
-
-The question is now if this is still reachable, of if it was due to a previous bug.
 
 === Photos of the merchandise!
 {tag=Publicity}
@@ -545,6 +524,36 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Subsections missing on web dynamic tree
+{tag=Bug}
+{tag=Dynamic tree fetch}
+
+Going to close it for now as irreproducible. Worked around it by fixing data manualy with the new `nested-set` CLI tool. Will try to debug further if it shows up again in the future.
+
+On web now:
+* https://ourbigbook.com/barack-obama shows Fundamental theorem of calculus under "Integral", correct
+* https://ourbigbook.com/barack-obama/mathematics does not show "Fundamental theorem of calculus", incorrect
+
+We can only reproduce locally by copying the database, we haven't managed to reach such state by a clean sequence of pure API calls, clean naive `web/bin/generate-demo-data -C -u1` didn't reproduce either.
+
+Upon quickly inspectig the DB we see that the nested set indexes are wrong:
+``
+[ 'barack-obama', 0, 36 ],
+[ 'barack-obama/mathematics', 1, 9 ],
+[ 'barack-obama/fundamental-theorem-of-calculus', 9, 11 ],
+``
+`barack-obama/mathematics` should stop something larger than `9` to include `barack-obama/fundamental-theorem-of-calculus` and other children.
+
+The question is now if this is still reachable, of if it was due to a previous bug.
+
+=== Enable web math defines default on non-web
+{tag=Math}
+{tag=Web}
+
+This is the only way to have portable maths across local and server.
+
+The definitions are also useful by default to users, and should just be enabled out-of-box.
 
 === Enable web math defines on web editor
 {tag=Math}

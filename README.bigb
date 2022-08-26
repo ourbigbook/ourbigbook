@@ -3167,14 +3167,63 @@ $$
 \sqrt{1 + 1}
 $$
 
-= Math defines across blocks
+= Math macros
 {parent=Mathematics}
 
-This feature does not work:
+= Built-in math macros
+{parent=Math macros}
+
+OurBigBook ships with several commonly used math macros enabled by default.
+
+The full list of built-in macros can be seen at: \a[default.tex].
+
+Here's one example of using `\dv` for derivatives:
+\OurBigBookExample[[
+$$
+\dv{x^2}{x} = 2x
+$$
+]]
+
+Our goal is to collect the most popular macros from the most popular pre-existing LaTeX packages and make them available with this mechanism.
+
+The built-in macros are currently only available on <OurBigBook CLI> and <OurBigBook Web>, not when using the <JavaScript API> directly. We should likely make that possible as well at some point.
+
+= User-defined macros
+{parent=Math macros}
+
+= `ourbigbook.tex`
+{parent=user defined macros}
+
+If your project has multiple `.bigb` input files, you can share Mathematics definitions across all files by adding them to the `ourbigbook.tex` file on the toplevel directory.
+
+For example, if `ourbigbook.tex` contains:
+``
+\newcommand{\foo}[0]{bar}
+``
+then from any `.bigb` file we in the project can use:
+``
+$$
+\foo
+$$
+``
+
+Note however that this is not portable to <OurBigBook Web> and will likely never be, as we want Web source to be reusable across authors. So the ony way to avoid macro definition conflicts would be to have a namespace system in place, which sounds hard/impossible.
+
+Ideally, you should only use this as a temporary mechanism while you make a pull request to modify the <built-in math macros> :-)
+
+= Inline user-defined macros
+{parent=User-defined macros}
+
+= Math defines across blocks
+{synonym}
+
+Besides using <ourbigbook.tex>, you can also define your own math macros directly in the source code.
+
+This is generally fragile however because it doesn't work:
 * across <headers> on <OurBigBook Web>
 * across different source files on <OurBigBook CLI>. That can be worked around with <ourbigbook.tex> on CLI, but <ourbigbook.tex> does not work on Web either.
 
-First here is an invisible block (with `{show=0}`) defining with a `\newcommand` definition after this paragraph:
+If you still want to do it for some reason, first create an invisible block (with `{show=0}`) defining with a `\newcommand` definition:
 \OurBigBookExample[[
 $$
 \newcommand{\foo}[0]{bar}
@@ -3208,22 +3257,6 @@ $$1 + 1$${show=1}
 $$2 + 2$${show=0}
 $$3 + 3$${show=1}
 ]]
-
-= `ourbigbook.tex`
-{parent=Mathematics}
-
-If your project has multiple `.bigb` input files, you can share Mathematics definitions across all files by adding them to the `ourbigbook.tex` file on the toplevel directory.
-
-For example, if `ourbigbook.tex` contains:
-``
-\newcommand{\foo}[0]{bar}
-``
-then from any `.bigb` file we in the project can use:
-``
-$$
-\foo
-$$
-``
 
 = Paragraph
 {parent=Macro}
@@ -6049,6 +6082,10 @@ TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with
 = `-W`, `--web`
 {id=web}
 {parent=OurBigBook CLI options}
+
+= Web upload
+{synonym}
+{title2}
 
 Sync local directory to <OurBigBook Web> instead of doing anything else.
 

@@ -42,6 +42,9 @@ exports.GITIGNORE_PATH = GITIGNORE_PATH;
 const PACKAGE_SASS_BASENAME = PACKAGE_NAME + '.scss';
 exports.PACKAGE_SASS_BASENAME = PACKAGE_SASS_BASENAME;
 
+const DEFAULT_TEX_PATH = path.join(PACKAGE_PATH, 'default.tex')
+exports.DEFAULT_TEX_PATH = DEFAULT_TEX_PATH 
+
 function cliInt(value, dummyPrevious) {
   const parsedValue = parseInt(value);
   if (isNaN(parsedValue)) {

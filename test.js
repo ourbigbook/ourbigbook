@@ -9441,7 +9441,6 @@ assert_cli(
     },
   }
 );
-
 assert_cli(
   'timestamps are tracked separately for different --output-format',
   {
@@ -9482,7 +9481,6 @@ assert_cli(
     },
   }
 );
-
 assert_cli('bigb output: synonym with split_headers does not produce redirect files',
   {
     args: ['--split-headers', '--output-format', 'bigb', '.'],
@@ -9514,3 +9512,12 @@ assert_cli('bigb output: synonym with split_headers does not produce redirect fi
     ],
   }
 )
+assert_cli(
+  'math: builtin math defines work',
+  {
+    stdin: `$$
+\\dv{x^2}{x}
+$$
+`,
+  }
+);

@@ -5,7 +5,6 @@ import lodash from 'lodash'
 import pluralize from 'pluralize'
 
 import ourbigbook from 'ourbigbook';
-//import ourbigbook_tex from 'ourbigbook/tex';
 import ourbigbook_tex from 'ourbigbook/default.tex';
 import web_api from 'ourbigbook/web_api';
 import { preload_katex } from 'ourbigbook/nodejs_front';

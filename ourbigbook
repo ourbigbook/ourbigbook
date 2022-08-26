@@ -1114,6 +1114,11 @@ if (cli.helpMacros) {
   let subdir_relpath;
   let publish_tmpdir;
 
+  // Load built-in math defines.
+  const katex_macros = {}
+  ourbigbook_nodejs_webpack_safe.preload_katex_from_file(ourbigbook_nodejs.DEFAULT_TEX_PATH, katex_macros)
+  ourbigbook_options.katex_macros = katex_macros
+
   if (inputPath === undefined) {
     // Input from stdin.
     title = 'stdin';
@@ -1148,9 +1153,11 @@ if (cli.helpMacros) {
       publish_tmpdir = tmpdir;
     }
 
-    // OURBIGBOOK_TEX_BASENAME
+    // ourbigbook.tex custom math defines.
     let tex_path = path.join(ourbigbook_json_dir, OURBIGBOOK_TEX_BASENAME);
-    ourbigbook_options.katex_macros = ourbigbook_nodejs_webpack_safe.preload_katex(tex_path)
+    if (fs.existsSync(tex_path)) {
+      ourbigbook_nodejs_webpack_safe.preload_katex_from_file(tex_path, katex_macros)
+    }
 
     // Setup the ID database.
     if (cli.db) {

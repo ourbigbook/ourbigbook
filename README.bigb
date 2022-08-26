@@ -7480,7 +7480,7 @@ heroku pg:backups:download -a ourbigbook
 ``
 Restore it to a local database:
 ``
-pg_restore --verbose --clean --no-acl --no-owner -h localhost -U ourbigbook_user -d ourbigbook latest.dump
+PGPASSWORD=a pg_restore --verbose --clean --no-acl --no-owner -h localhost -U ourbigbook_user -d ourbigbook latest.dump
 ``
 The local password is `a` (single letter). TODO automate login.
 

@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import React from 'react'
 
 import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import Maybe from 'front/Maybe'
-import { LOGIN_ACTION, REGISTER_ACTION, HelpIcon, HomeIcon, NewArticleIcon } from 'front'
-import { appName, appNameShort, aboutUrl, donateUrl } from 'front/config'
+import { LOGIN_ACTION, REGISTER_ACTION, LikeIcon, HelpIcon, HomeIcon, NewArticleIcon, NotificationIcon } from 'front'
+import { appNameShort, aboutUrl, donateUrl } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 
@@ -40,9 +41,13 @@ const NavLink = ({ href, onClick, children, className, newTab=false }: NavLinkPr
   );
 };
 
-const Navbar = ({ isEditor }) => {
+const Navbar = ({ isEditor, scoreDelta }) => {
   const loggedInUser = useLoggedInUser()
   const router = useRouter();
+  const [_scoreDelta, setScoreDelta] = React.useState(scoreDelta)
+  React.useEffect(() => {
+    setScoreDelta(scoreDelta);
+  }, [scoreDelta])
   return (
     <nav className="navbar">
       <CustomLink href={routes.home()} className="navbar-brand" newTab={isEditor}>
@@ -59,6 +64,13 @@ const Navbar = ({ isEditor }) => {
           <NavLink href={routes.articleNew()} newTab={isEditor}>
             <NewArticleIcon />
             &nbsp;New
+          </NavLink>
+          <NavLink
+            href={routes.userLiked(loggedInUser?.username)}
+            className={`score${ _scoreDelta ? ` changed` : '' }`}
+            onClick={() => setScoreDelta(0)}
+          >
+            <LikeIcon /> +{_scoreDelta}
           </NavLink>
           <NavLink
             href={routes.user(loggedInUser?.username)}

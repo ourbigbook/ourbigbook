@@ -242,7 +242,7 @@ class SqliteDbProvider extends web_api.DbProviderBase {
             // I simply cannot understand how it is possible, it has to be a sequelize bug?
             // Can't easily reproduce on a minimal example however...
             // So for now, I'm just going to make a separate query afterwards to get the files...
-            // https://github.com/cirosantilli/ourbigbook/issues/240
+            // https://github.com/ourbigbook/ourbigbook/issues/240
             //required: false,
             //include: [
             //  {
@@ -556,7 +556,7 @@ async function update_database_after_convert({
       'titleSource',
       'bodySource',
       'last_parse',
-      // https://github.com/cirosantilli/ourbigbook/issues/241
+      // https://github.com/ourbigbook/ourbigbook/issues/241
       'toplevel_id',
       'sha256',
     ]
@@ -643,7 +643,7 @@ async function update_database_after_convert({
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
 async function check_db(sequelize, paths_converted, transaction) {
   // * delete unused xrefs in different files to correctly have tags and incoming links in such cases
-  //   https://github.com/cirosantilli/ourbigbook/issues/229
+  //   https://github.com/ourbigbook/ourbigbook/issues/229
   //   These can happen due to:
   //   * directory based scopes
   //   * \x magic pluralization variants

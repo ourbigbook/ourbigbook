@@ -1,5 +1,4 @@
 const router = require('express').Router()
-const { minPath }  = require('../front/js')
 
 // heroku bootstrap
 router.get('/', function(req, res) {
@@ -10,6 +9,6 @@ router.use('/articles', require('./articles'))
 router.use('/editor', require('./editor'))
 router.use('/issues', require('./issues'))
 router.use('/topics', require('./topics'))
-//router.use(`/${minPath}`, require('./min'))
+router.use(`/min`, require('./min'))
 
 module.exports = router

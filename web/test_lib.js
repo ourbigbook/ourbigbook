@@ -1,4 +1,4 @@
-// https://cirosantilli/ourbigbook/demo-data
+// https://ourbigbook/ourbigbook/demo-data
 //
 // Need a separate file from test.js because Mocha automatically defines stuff like it,
 // which would break non-Mocha requirers.

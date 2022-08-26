@@ -7,7 +7,6 @@ import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
 import { webApi } from 'front/api'
-import routes from 'front/routes'
 import MapErrors from 'front/MapErrors'
 
 const CommentInput = ({

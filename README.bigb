@@ -29,9 +29,9 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
   * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
   * https://github.com/cirosantilli/cirosantilli.github.io[] and https://github.com/cirosantilli/cirosantilli.github.io/blob/dev/oxford-nanopore-river-bacteria.bigb[]: source of the above showcase documents
 * <design goals>{full}: <OurBigBook Markup> and <OurBigBook CLI> feature overview
-* https://github.com/cirosantilli/ourbigbook[]: OurBigBook source code
-* https://github.com/cirosantilli/ourbigbook/issues[]: project issue tracker
-* https://github.com/cirosantilli/ourbigbook/blob/master/README.bigb[]: source for this document
+* https://github.com/ourbigbook/ourbigbook[]: OurBigBook source code
+* https://github.com/ourbigbook/ourbigbook/issues[]: project issue tracker
+* https://github.com/ourbigbook/ourbigbook/blob/master/README.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
 * https://docs.ourbigbook.com/editor[]: live in-browser editor demo
 * https://cirosantilli.com/ourbigbook-template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
@@ -866,7 +866,7 @@ and the following are:
 * `../index.js`
 * `path/to/index.js`
 
-Implemented at: https://github.com/cirosantilli/ourbigbook/issues/87[].
+Implemented at: https://github.com/ourbigbook/ourbigbook/issues/87[].
 
 = URL with protocol
 {c}
@@ -1916,7 +1916,7 @@ This way, any links into the smaller tutorial will show the entire page as gener
 
 And any links from the tutorial, back to the main massive README will link back to split versions, leading to fast loads.
 
-This feature was implemented at: https://github.com/cirosantilli/ourbigbook/issues/131
+This feature was implemented at: https://github.com/ourbigbook/ourbigbook/issues/131
 
 Note that this huge README style is not recommended however. Ciro Santilli used to do it, but moved away from it. The currently recommended approach is to manually create not too large subtrees in each page. This way, readers can easily view several nearby sections without having to load a new page every time.
 
@@ -1962,7 +1962,7 @@ This option is useful if the root of your website is written in OurBigBook, and 
 
 For example, https://cirosantilli.com with source at https://github.com/cirosantilli/cirosantilli.github.io has a quick section about OurBigBook: https://cirosantilli.com#ourbigbook[].
 
-Therefore, without a custom suffix, the split header version of that header would go to https://docs.ourbigbook.com[], which would collide with this documentation, that is present in a separate repository: https://github.com/cirosantilli/ourbigbook[].
+Therefore, without a custom suffix, the split header version of that header would go to https://docs.ourbigbook.com[], which would collide with this documentation, that is present in a separate repository: https://github.com/ourbigbook/ourbigbook[].
 
 Therefore a `splitSuffix` property is used, making the split header version fall under `/ourbigbook-split`, and leaving the nicer `/ourbigbook` for the more important project toplevel.
 
@@ -2023,7 +2023,7 @@ gdb.html
 ``
 which contains a redirection from `gdb.html` to `gnu-debugger.html`.
 
-Implemented at: https://github.com/cirosantilli/ourbigbook/issues/114
+Implemented at: https://github.com/ourbigbook/ourbigbook/issues/114
 
 = `\H` `title` argument
 {parent=H synonym argument}
@@ -2550,7 +2550,7 @@ In this approach, you create a separate GitHub repository in addition to the mai
 This approach is more suitable than <store images inside the repository itself> if you are going to have a lot of images.
 
 When using this approach, you could of course just point directly to the final image URL, e.g. as in:
-\OurBigBookExample[[\Image[https://raw.githubusercontent.com/cirosantilli/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png\]]]
+\OurBigBookExample[[\Image[https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png\]]]
 but OurBigBook allows you use configurations that allow you to enter just the image basename: `Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png` which we will cover next.
 
 In order to get this to work, the recommended repository setup is:
@@ -2564,7 +2564,7 @@ In this example, we also needed to set `{provider=github}` explicitly since it w
 
 `provider` must not be given when a full URL is given because we automatically detect providers from URLs, e.g.:
 ``
-\Image[https://raw.githubusercontent.com/cirosantilli/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page.png]{provider=github}
+\Image[https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_topic_page.png]{provider=github}
 ``
 is an error.
 
@@ -2682,7 +2682,7 @@ Then if someone ever has an SVG that needs another background color, we can add 
 
 TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.
 
-https://github.com/cirosantilli/ourbigbook/issues/40
+https://github.com/ourbigbook/ourbigbook/issues/40
 
 = Image argument
 {parent=Image}
@@ -2728,7 +2728,7 @@ In this example, the reference `\x[image-description-argument-test-1]` expands j
 \Q[Tank man standing in front of some tanks]
 and does not include the description, which only shows on the image.
 
-The description can be as large as you like. If it gets really large however, you might want to consider moving the image to its own header to keep things slightly saner. This will be especially true after we eventually do: https://github.com/cirosantilli/ourbigbook/issues/180[].
+The description can be as large as you like. If it gets really large however, you might want to consider moving the image to its own header to keep things slightly saner. This will be especially true after we eventually do: https://github.com/ourbigbook/ourbigbook/issues/180[].
 
 If the description contains any element that would take its own separate line, like multiple paragraphs or a list, we automatically add a line grouping the description with the corresponding image to make that clearer, otherwise it can be hard to know which title corresponds to a far away image. Example with multiple paragraphs:
 \OurBigBookExample[[
@@ -2832,7 +2832,7 @@ subdir/subdir2/notindex.bigb
 = Notindex
 ``
 
-It is not currently possible to include from ancestor directories: https://github.com/cirosantilli/ourbigbook/issues/214[].
+It is not currently possible to include from ancestor directories: https://github.com/ourbigbook/ourbigbook/issues/214[].
 
 = `\Include` `parent` argument
 {parent=Include}
@@ -2875,7 +2875,7 @@ Instead, we want to write:
 ``
 and now Cat will be a child of Animal as desired.
 
-Implemented at: https://github.com/cirosantilli/ourbigbook/issues/127
+Implemented at: https://github.com/ourbigbook/ourbigbook/issues/127
 
 = `\Include` example
 {parent=Include}
@@ -3397,7 +3397,7 @@ To pass further arguments to an implicit table such as `title` or `id`, you need
 | 2 2
 ]
 ]]
-We would like to remove that explicit toplevel requirement as per: https://github.com/cirosantilli/ourbigbook/issues/186[] The rules of when the caption shows up or not similar to those of <images> as mentioned at <image caption>{full}.
+We would like to remove that explicit toplevel requirement as per: https://github.com/ourbigbook/ourbigbook/issues/186[] The rules of when the caption shows up or not similar to those of <images> as mentioned at <image caption>{full}.
 
 Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for <lists>, e.g.:
 \OurBigBookExample[[
@@ -3569,7 +3569,7 @@ Commons is better than YouTube if your content is on-topic there because:
 * it allows download of the videos: https://www.quora.com/Can-I-download-Creative-Commons-licensed-YouTube-videos-to-edit-them-and-use-them[].
 * it makes it easier for other users to find and re-use your videos
 
-If your video does not fit the above Wikimedia Commons requirements, YouTube could be a good bet. OurBigBook https://github.com/cirosantilli/ourbigbook/issues/50[automatically detects YouTube URLs] for you, so the following should just work:
+If your video does not fit the above Wikimedia Commons requirements, YouTube could be a good bet. OurBigBook https://github.com/ourbigbook/ourbigbook/issues/50[automatically detects YouTube URLs] for you, so the following should just work:
 \OurBigBookExample[[
 \Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
 {id=sample-video-from-youtube-implicit-youtube}
@@ -3824,7 +3824,7 @@ The <\x magic argument> was introduced later, and basically became a better alte
   ``
   I like <pythons (animal)>.
   ``
-  https://github.com/cirosantilli/ourbigbook/issues/244
+  https://github.com/ourbigbook/ourbigbook/issues/244
 
 * plural headers. We only attempt to singularize arguments for now, not pluralize them. So if you had:
   ``
@@ -3910,9 +3910,9 @@ To prevent such problems, OurBigBook emits an error if you use an `\x` without c
   {title=my \x[h1]}
   ``
 
-While it is technically possible relax the above limitations and give an error only in case of loops, it would require a bit of extra work which we don't want to put in right now: https://github.com/cirosantilli/ourbigbook/issues/95[].
+While it is technically possible relax the above limitations and give an error only in case of loops, it would require a bit of extra work which we don't want to put in right now: https://github.com/ourbigbook/ourbigbook/issues/95[].
 
-Furthermore, the above rules do not exclude infinite rendering loops, but OurBigBook detects such loops and gives a nice error message, this has been fixed at: https://github.com/cirosantilli/ourbigbook/issues/34
+Furthermore, the above rules do not exclude infinite rendering loops, but OurBigBook detects such loops and gives a nice error message, this has been fixed at: https://github.com/ourbigbook/ourbigbook/issues/34
 
 For example this would contain an infinite loop:
 ``
@@ -4003,7 +4003,7 @@ Reference to a subdirectory:
 
 \x[subdir/notindex-h2]
 ]]
-Implemented at: https://github.com/cirosantilli/ourbigbook/issues/116
+Implemented at: https://github.com/ourbigbook/ourbigbook/issues/116
 
 Reference to an internal header of another file: <h2 in not the README>. By default, That header ID gets prefixed by the ID of the top header.
 
@@ -4339,7 +4339,7 @@ Trump said this and that.\x[donald-trump-access-hollywood-tape][*]
 ``
 but later on we might add more precise reference fields like the page of a book or date fetched as Wikipedia supports.
 
-Implemented at: https://github.com/cirosantilli/ourbigbook/issues/137
+Implemented at: https://github.com/ourbigbook/ourbigbook/issues/137
 
 = OurBigBook Markup syntax
 {c}
@@ -5032,9 +5032,9 @@ printf 'ab\ncd\n' | ourbigbook --body-only
 
 Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/editor[].
 
-Play with https://github.com/cirosantilli/ourbigbook-template[a OurBigBook template] locally:
+Play with https://github.com/ourbigbook/ourbigbook-template[a OurBigBook template] locally:
 ``
-git clone https://github.com/cirosantilli/ourbigbook-template
+git clone https://github.com/ourbigbook/ourbigbook-template
 cd ourbigbook-template
 npm install
 npx ourbigbook .
@@ -5042,7 +5042,7 @@ firefox index.html
 ``
 That template can be seen rendered live at: http://cirosantilli.com/ourbigbook-generate-multifile/ Other templates are documented at: <--generate>.
 
-To <publish to GitHub Pages> on your repository you can just fork the repository https://github.com/cirosantilli/ourbigbook-template to your own https://github.com/johndoe/ourbigbook-template and then:
+To <publish to GitHub Pages> on your repository you can just fork the repository https://github.com/ourbigbook/ourbigbook-template to your own https://github.com/johndoe/ourbigbook-template and then:
 ``
 git remote set-url origin git@github.com:johndoe/ourbigbook-template.git
 npx ourbigbook --publish
@@ -5313,14 +5313,14 @@ Examples of embeddings done:
   The embedded version of the document can be viewed offline however.
 
   There is however a known bug: KaTeX fonts are not currently embedded, so math won't work properly. The situation is similar as for images, but a bit harder because we also need to fetch the blobs from the CSS, which is likely doable from Webpack:
-  * https://github.com/cirosantilli/ourbigbook/issues/157
+  * https://github.com/ourbigbook/ourbigbook/issues/157
   * https://stackoverflow.com/questions/41657087/webpack-inline-font-with-url-loader
   * https://stackoverflow.com/questions/35369419/how-to-use-images-in-css-with-webpack
 
 Examples of embedding that could be implemented in the future:
 * <images> are downloaded if needed and embedded as `data:` URLs.
 
-  Doing this however has a downside: it would slow the page loading down. The root problem is that HTML was not designed to contain assets, and notably it doesn't have byte position indices that can tell it to skip blobs while parsing, and how to refer to them later on when they show up on the screen. This is kind of why EPUB exists: https://github.com/cirosantilli/ourbigbook/issues/158
+  Doing this however has a downside: it would slow the page loading down. The root problem is that HTML was not designed to contain assets, and notably it doesn't have byte position indices that can tell it to skip blobs while parsing, and how to refer to them later on when they show up on the screen. This is kind of why EPUB exists: https://github.com/ourbigbook/ourbigbook/issues/158
 
   Images that are managed by the project itself and already locally present, such as those inside the project itself or due to <ourbigbook json/media-providers> usually don't require download.
 
@@ -5409,7 +5409,7 @@ render file2.bigb skipped by timestamp
 ``
 and because we skipped `file2.bigb` render, it will still have the outdated "File 1 1" instead of "File 1 1 hacked".
 
-We could in principle solve this problem by figuring out exactly which files need to be changed when a given ID changes, and we already <conversion process overview>[have to solve a similar problem due to query bundling]. Also, this will need to be done sonner or later for the <OurBigBook Web>. But lazy now: https://github.com/cirosantilli/ourbigbook/issues/207[], this is hard stuff.
+We could in principle solve this problem by figuring out exactly which files need to be changed when a given ID changes, and we already <conversion process overview>[have to solve a similar problem due to query bundling]. Also, this will need to be done sonner or later for the <OurBigBook Web>. But lazy now: https://github.com/ourbigbook/ourbigbook/issues/207[], this is hard stuff.
 
 = `--format-source`
 {parent=OurBigBook CLI options}
@@ -5456,13 +5456,13 @@ and the second one to uppercasing the reference to the image title:
 
 Generate one of the template repositories locally:
 * `ourbigbook --generate default`: a good starter template that illustrates many key OurBigBook features
-  * https://github.com/cirosantilli/ourbigbook-template
+  * https://github.com/ourbigbook/ourbigbook-template
   * https://cirosantilli.com/ourbigbook-template
 * `ourbigbook --generate min`: a minimal template that is still sane
-  * https://github.com/cirosantilli/ourbigbook-template-min
+  * https://github.com/ourbigbook/ourbigbook-template-min
   * https://cirosantilli.com/ourbigbook-template-min
 * `ourbigbook --generate subdir`: a template in which OurBigBook source is located a subdirectory `docs/`:
-  * https://github.com/cirosantilli/ourbigbook-template-subdir
+  * https://github.com/ourbigbook/ourbigbook-template-subdir
   * https://cirosantilli.com/ourbigbook-template-subdir
   This template illustrates that everything works exactly as if OurBigBook source were in the git repository toplevel.
 
@@ -5689,7 +5689,7 @@ ourbigbook README.bigb &&
 diff -u out/html/old.html out/html/index.html
 ``
 
-This was tracked at: https://github.com/cirosantilli/ourbigbook/issues/83
+This was tracked at: https://github.com/ourbigbook/ourbigbook/issues/83
 
 = `id` output format
 {parent=output format}
@@ -5810,7 +5810,7 @@ This can however be worked around with the <\x magic argument> as in;
 = `latex` output format
 {parent=Unimplemented output formats}
 
-TODO: https://github.com/cirosantilli/ourbigbook/issues/38
+TODO: https://github.com/ourbigbook/ourbigbook/issues/38
 
 One day, one day. Maybe.
 
@@ -6017,7 +6017,7 @@ Defined variables:
   <a href="{{ root_relpath }}myid{{ html_ext }}">
   ``
 
-  This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/cirosantilli/ourbigbook/issues/135
+  This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/ourbigbook/ourbigbook/issues/135
 * `input_path`: path to the <OurBigBook Markup> source file relative to the <project toplevel directory> that generated this output, e.g. `path/to/myfile.bigb`
 * `root_page`: relative path to the toplevel page, e.g. either `index.html`, `../index.html` locally or `./`, `../` on server oriented rendereing
 * `root_replath`: relative path from the rendered output to the toplevel directory.
@@ -6043,7 +6043,7 @@ Defined variables:
   <link rel="stylesheet" type="text/css" href="main.css">
   ``
 
-  This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/cirosantilli/ourbigbook/issues/135
+  This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/ourbigbook/ourbigbook/issues/135
 * `style`: default OurBigBook stylesheets
 * `title`
 
@@ -6271,7 +6271,7 @@ OurBigBook normalization also does other natural transformations that Unicode do
 
 Bibliography:
 * https://stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript
-* https://github.com/cirosantilli/ourbigbook/issues/162
+* https://github.com/ourbigbook/ourbigbook/issues/162
 
 = `id` `normalize` `punctuation`
 {parent=id}
@@ -6329,7 +6329,7 @@ Sets the default <\H numbered argument> argument of the toplevel headers of each
 
 Note that since the option is inherited by descendants, this can also affect the rendering of ancestors.
 
-https://github.com/cirosantilli/ourbigbook/issues/188 contains a proposal to instead inherit this property across <includes>.
+https://github.com/ourbigbook/ourbigbook/issues/188 contains a proposal to instead inherit this property across <includes>.
 
 If you set this ourbigbook.json option:
 ``
@@ -6419,7 +6419,7 @@ The general format of `media-providers` looks like:
   "github": {
     "default-for": ["image"], // "all" to default for both image, video and anything else
     "path": "data/media/",    // data is gitignored, but should not be nuked like out/
-    "remote": "cirosantilli/ourbigbook-media"
+    "remote": "ourbigbook/ourbigbook-media"
   },
   "local": {
     "default-for": ["video"],
@@ -6449,7 +6449,7 @@ Direct children of media-providers and subproperties that are valid only for the
 
     During publishing, the GitHub version is used instead.
 
-    TODO make this even more awesome by finishing to implement https://github.com/cirosantilli/ourbigbook/issues/184[]:
+    TODO make this even more awesome by finishing to implement https://github.com/ourbigbook/ourbigbook/issues/184[]:
     * automatically `git push` this repository during deployment to ensure that any asset changes will be available.
     * ignore the path from OurBigBook conversion as if added to <ignore>, and is not added to the final output, because you are already going to have a copy of it.
 
@@ -6459,7 +6459,7 @@ Direct children of media-providers and subproperties that are valid only for the
   * `remote`: `<github-username>/<repo-name>`
 * `youtube`: YouTube <videos>
 
-See also: https://github.com/cirosantilli/ourbigbook/issues/40
+See also: https://github.com/ourbigbook/ourbigbook/issues/40
 
 = `openLinksOnNewTabs`
 {parent=ourbigbook.json}
@@ -6495,7 +6495,7 @@ Generally we recommend starting out without this option, and enabling it as the 
 
 This option is always forced to `false` when <outdir> is given.
 
-Implemented at: https://github.com/cirosantilli/ourbigbook/issues/163
+Implemented at: https://github.com/ourbigbook/ourbigbook/issues/163
 
 = `prepublish`
 {parent=ourbigbook.json}
@@ -6559,7 +6559,7 @@ When dealing with regular <headers>, you generally don't want to use this option
 
 This JSON option can be useful however for dealing with things that are outside of your OurBigBook project.
 
-For example, at one point, this project renamed the repository https://github.com/cirosantilli/cirodown[] to https://github.com/cirosantilli/ourbigbook[].
+For example, at one point, this project renamed the repository https://github.com/cirosantilli/cirodown[] to https://github.com/ourbigbook/ourbigbook[].
 
 Unfortunately, GitHub Pages does not generate redirects like github.com itself.
 
@@ -6994,7 +6994,7 @@ OurBigBook Web is a regular databased backed dynamic website. This is unlike the
 * static websites are simpler and cheaper to run, but they are harder to setup for non-programmers
 * static websites cannot have multiuser features such as likes, comments, and "view versions of this article by other users", which is are core functionality of the OurBigBook Project
 
-The source for OurBigBook Web, source code is fully contained under https://github.com/cirosantilli/ourbigbook/tree/master/web[the `web/` directory of the OurBigBook Project source code]. OurBigBook Web can be seen as a separate Node.js package which uses the <OurBigBook Library> as a dependency.
+The source for OurBigBook Web, source code is fully contained under https://github.com/ourbigbook/ourbigbook/tree/master/web[the `web/` directory of the OurBigBook Project source code]. OurBigBook Web can be seen as a separate Node.js package which uses the <OurBigBook Library> as a dependency.
 
 OurBigBook Web was originally forked from the following starter boilerplate: https://github.com/cirosantilli/node-express-sequelize-realworld-example-app[]. We are trying to keep tech synced as much as possible between both projects, since the boilerplate is useful as a tech demo to quickly try out new technologies in a more minimal setup, but it has started to lag a bit behind. The web stack of OurBigBook Web is described at: <OurBigBook Web tech stack>.
 
@@ -7812,7 +7812,7 @@ Notably, OurBigBook command line users will want SQLite, and Heroku never, and S
 
 Since we were unable to find any way to make things more flexible on the `package.json` with some kind of optional depenency, for now we are just hacking out any dependencies that we don't want Heroku to install at all from \a[package.json] and \a[web/package.json] with `sed` rom \a[heroku-prebuild].
 
-Further discussion at: https://github.com/cirosantilli/ourbigbook/issues/156
+Further discussion at: https://github.com/ourbigbook/ourbigbook/issues/156
 
 = OurBigBook Web performance benchmarking
 {c}
@@ -8075,7 +8075,7 @@ let g:snipMate.snippet_version = 1
 Plugin 'MarcWeber/vim-addon-mw-utils'
 Plugin 'tomtom/tlib_vim'
 Plugin 'garbas/vim-snipmate'
-Plugin 'cirosantilli/ourbigbook', {'rtp': 'vim'}
+Plugin 'ourbigbook/ourbigbook', {'rtp': 'vim'}
 ``
 or by directly dropping the files named below under your `~/.vim/`, e.g. `vim/syntax/ourbigbook.vim`
 
@@ -8145,7 +8145,7 @@ There are two versions of this editor:
 
   That editor can be viewed directly locally with:
   ``
-  git clone https://github.com/cirosantilli/ourbigbook
+  git clone https://github.com/ourbigbook/ourbigbook
   cd ourbigbook
   npm install
   npm run build-assets
@@ -8157,7 +8157,7 @@ There are two versions of this editor:
 
   That more advanced editor will actually save results back to the database, and show allow preview of features such as linking to headers of other pages.
 
-Issues for the editor are being tracked under: https://github.com/cirosantilli/ourbigbook/labels/editor
+Issues for the editor are being tracked under: https://github.com/ourbigbook/ourbigbook/labels/editor
 
 We must achieve an editor setup with synchronized live side-by-side preview.
 
@@ -8216,7 +8216,7 @@ A lot of effort has been put into making error reporting as good as possible in 
 
 Error reporting is for example tested with `assert_error` tests in \a[test.js].
 
-Please report any error reporting bug you find, as it will be seriously tracked under the: https://github.com/cirosantilli/ourbigbook/issues?q=label%3Aerror-reporting+[`error-reporting` label].
+Please report any error reporting bug you find, as it will be seriously tracked under the: https://github.com/ourbigbook/ourbigbook/issues?q=label%3Aerror-reporting+[`error-reporting` label].
 
 Notably, OurBigBook should never throw an exception due to a syntax error, as that prevents error messages from being output at all.
 
@@ -8306,13 +8306,13 @@ or from the <ourbigbook.json> file with an entry of form:
 = Contact
 {parent=OurBigBook}
 
-* https://github.com/cirosantilli/ourbigbook/issues for any public contact, see also: <OurBigBook issue tracker>{full}
+* https://github.com/ourbigbook/ourbigbook/issues for any public contact, see also: <OurBigBook issue tracker>{full}
 * for private contact email: `admin@ourbigbook.com`
 
 = OurBigBook issue tracker
 {parent=Contact}
 
-https://github.com/cirosantilli/ourbigbook/issues
+https://github.com/ourbigbook/ourbigbook/issues
 
 = Developing OurBigBook
 {parent=OurBigBook}
@@ -8322,7 +8322,7 @@ https://github.com/cirosantilli/ourbigbook/issues
 
 Install master globally on your machine:
 ``
-git clone https://github.com/cirosantilli/ourbigbook
+git clone https://github.com/ourbigbook/ourbigbook
 cd ourbigbook
 npm link
 npm link ourbigbook
@@ -8920,7 +8920,7 @@ On P51:
 
     The question is: is it because we added `async` Everywhere, or is it because of changes in the database queries?
 
-    Answering the question: added old DB at: https://github.com/cirosantilli/ourbigbook/tree/async-slow-old-db and it is fast again. So DB debugging it is, hurray.
+    Answering the question: added old DB at: https://github.com/ourbigbook/ourbigbook/tree/async-slow-old-db and it is fast again. So DB debugging it is, hurray.
 
 = Internals API
 {parent=Developing OurBigBook}
@@ -9054,7 +9054,7 @@ After publishing, a good minimal sanity check is to ensure that you can render t
 cd ~
 # Get rid of the global npm link development version just to make sure it is not being used.
 npm uninstall -g ourbigbook
-git clone https://github.com/cirosantilli/ourbigbook-template
+git clone https://github.com/ourbigbook/ourbigbook-template
 cd ourbigbook-template
 npm install
 npx ourbigbook .
@@ -9321,7 +9321,7 @@ Websites that accept banners:
 
 Demo videos are uploaded to the <official accounts>[official YouTube account]: https://www.youtube.com/@OurBigBook
 
-The video files together with the assets used to make them are also made available in the <OurBigBook media repository> under the https://github.com/cirosantilli/ourbigbook-media/tree/master/video[`video/` directory].
+The video files together with the assets used to make them are also made available in the <OurBigBook media repository> under the https://github.com/ourbigbook/ourbigbook-media/tree/master/video[`video/` directory].
 
 Video guidelines:
 * desktop recording area size: 700x700. This could perhaps be optimized, but this is a reasonable size that works both as an YouTube Short and Twitter post

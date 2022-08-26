@@ -105,7 +105,7 @@ const Settings = ({
               placeholder="Email"
               value={userInfo.email}
               onChange={updateState("email")}
-              // https://github.com/cirosantilli/ourbigbook/issues/268
+              // https://github.com/ourbigbook/ourbigbook/issues/268
               disabled={true}
               title="Cannot be currently modified"
             />

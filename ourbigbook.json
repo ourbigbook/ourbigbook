@@ -16,13 +16,13 @@
   "media-providers": {
     "github": {
       "path": "../ourbigbook-media",
-      "remote": "cirosantilli/ourbigbook-media"
+      "remote": "ourbigbook/ourbigbook-media"
     }
   },
   "outputOutOfTree": true,
   "prepublish": "prepublish",
   "publishCommitDate": "2000-01-01T00:00:00",
-  "publishRemoteUrl": "git@github.com:cirosantilli/ourbigbook.git",
+  "publishRemoteUrl": "git@github.com:ourbigbook/ourbigbook.git",
   "template": "main.liquid.html",
   "unsafe-xss": true
 }

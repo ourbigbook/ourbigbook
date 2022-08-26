@@ -330,7 +330,7 @@ class AstNode {
       // Possible for AstType === PARAGRAPH which can happen for
       // insane paragraph inside header or ID during post processing.
       // Not the nicest solution, but prevents the crash, so so be it.
-      // https://github.com/cirosantilli/ourbigbook/issues/143
+      // https://github.com/ourbigbook/ourbigbook/issues/143
       return ' '
     }
     const macro = context.macros[this.macro_name];
@@ -3108,7 +3108,7 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('ref_prefix' in options)) {
     // TODO implement.
     // This option started as a hack as a easier to implement workaround for:
-    // https://github.com/cirosantilli/ourbigbook/issues/229
+    // https://github.com/ourbigbook/ourbigbook/issues/229
     // to allow tagged and incoming links to work at all on OurBigBook Web.
     // That specific usage should be removed.
     //
@@ -4003,7 +4003,7 @@ function link_to_split_opposite(ast, context) {
     // This is dirty. But I am dirty.
     // But seriously, checking this more cleanly would require
     // unpacking a bunch of stuff down below from the toplevel scope removal.
-    // Related: https://github.com/cirosantilli/ourbigbook/issues/271
+    // Related: https://github.com/ourbigbook/ourbigbook/issues/271
     const other_href_same = x_href_attr(ast, context);
     if (other_href === other_href_same) {
       return undefined
@@ -4516,7 +4516,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (peek_ast.node_type === AstType.PLAINTEXT && peek_ast.text === '\n') {
           todo_visit.pop();
         }
-        // https://github.com/cirosantilli/ourbigbook/issues/215
+        // https://github.com/ourbigbook/ourbigbook/issues/215
         const read_include_ret = await (options.read_include(href, input_dir));
         if (read_include_ret === undefined) {
           if (
@@ -4937,7 +4937,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         header_ids.push(ast.id)
 
-        // https://github.com/cirosantilli/ourbigbook/issues/100
+        // https://github.com/ourbigbook/ourbigbook/issues/100
         if (parent_tree_node_error) {
           const message = HEADER_PARENT_ERROR_MESSAGE + parent_id;
           ast.args[Macro.TITLE_ARGUMENT_NAME].push(
@@ -5703,7 +5703,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           ),
 
           // TODO merge the following two refs fetch into one single DB query. Lazy now.
-          // Started prototype at: https://github.com/cirosantilli/ourbigbook/tree/merge-ref-cache
+          // Started prototype at: https://github.com/ourbigbook/ourbigbook/tree/merge-ref-cache
           // The annoying part is deciding what needs to go in which direction of the cache.
           options.db_provider.get_refs_to_fetch(
             [
@@ -5842,7 +5842,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         // This to ensure that the ast we get from \x will have a consistent
         // numbering with the local parent.
         // This code will likely be removed if we do:
-        // https://github.com/cirosantilli/ourbigbook/issues/188
+        // https://github.com/ourbigbook/ourbigbook/issues/188
         const cached_ast = context.db_provider.get(ast.id, context)
         if (
           // Possible in error cases and TODO apparently some non-error too.
@@ -5982,7 +5982,7 @@ function parse_argument_list(state, macro_name, macro_type) {
       const multiple = macro_arg !== undefined && macro_arg.multiple
       if (arg_name in args) {
         if (!multiple) {
-          // https://github.com/cirosantilli/ourbigbook/issues/101
+          // https://github.com/ourbigbook/ourbigbook/issues/101
           parse_error(state,
             `named argument "${arg_name}" given multiple times`,
             open_token.source_location,
@@ -6344,7 +6344,7 @@ function render_toc(context) {
       // I had this at one point, but it was too confusing that \x links linked to split, and ToC to nonsplit.
       // If we want to keep split self contained, then we have to do it everywhere I think, not just ToC.
       //// ToC entries always link to the same split/nosplit type, except for included sources.
-      //// This might be handled more generally through: https://github.com/cirosantilli/ourbigbook/issues/146
+      //// This might be handled more generally through: https://github.com/ourbigbook/ourbigbook/issues/146
       //// but for now we are just taking care of this specific and important ToC subcase.
       //let cur_context;
       //if (ast.source_location.path === target_ast.source_location.path) {
@@ -6439,7 +6439,7 @@ function propagate_numbered(ast, context) {
     parent_tree_node.ast === undefined
   ) {
     // Try getting parents from \Include.
-    // https://github.com/cirosantilli/ourbigbook/issues/188
+    // https://github.com/ourbigbook/ourbigbook/issues/188
     //const parent_asts = ast.get_header_parent_asts(context)
     //if (parent_asts.length > 0) {
     //  ast.numbered = parent_asts.some(ast => ast.numbered)
@@ -6634,7 +6634,7 @@ function x_child_db_effective_id(target_id, context, ast) {
     // In those cases, the target ID could be on another file, so we would need to
     // read the database to decide. But reading from database during ID extraction
     // is forbidden, so we do that on a separate pass.
-    // Related: https://github.com/cirosantilli/ourbigbook/issues/229
+    // Related: https://github.com/ourbigbook/ourbigbook/issues/229
     if (is_absolute_xref(target_id, context)) {
       target_id = resolve_absolute_xref(target_id, context)
     }
@@ -7225,7 +7225,7 @@ const REFS_TABLE_X = 'X';
 exports.REFS_TABLE_X = REFS_TABLE_X;
 const REFS_TABLE_X_CHILD = 'X_CHILD';
 exports.REFS_TABLE_X_CHILD = REFS_TABLE_X_CHILD;
-// https://github.com/cirosantilli/ourbigbook/issues/198
+// https://github.com/ourbigbook/ourbigbook/issues/198
 const REFS_TABLE_X_TITLE_TITLE = 'X_TITLE_TITLE';
 exports.REFS_TABLE_X_TITLE_TITLE = REFS_TABLE_X_TITLE_TITLE;
 const END_NAMED_ARGUMENT_CHAR = '}';
@@ -8120,7 +8120,7 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
         new MacroArgument({
-          // https://github.com/cirosantilli/ourbigbook/issues/92
+          // https://github.com/ourbigbook/ourbigbook/issues/92
           name: 'child',
           boolean: true,
         }),
@@ -8137,7 +8137,7 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
         new MacroArgument({
-          // https://github.com/cirosantilli/ourbigbook/issues/92
+          // https://github.com/ourbigbook/ourbigbook/issues/92
           name: 'parent',
           boolean: true,
         }),
@@ -8859,7 +8859,7 @@ const OUTPUT_FORMATS_LIST = [
                   break
                 }
                 if (ancestor_id_set.has(cur_ast.id)) {
-                  // This fixes https://github.com/cirosantilli/ourbigbook/issues/204 so long as we are
+                  // This fixes https://github.com/ourbigbook/ourbigbook/issues/204 so long as we are
                   // rendering. Doing something before render would be ideal however, likely on the check_db step.
                   const message = `parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`;
                   render_error(context, message, context.toplevel_ast.source_location);
@@ -9354,7 +9354,7 @@ function ourbigbook_get_x_href({
     } else {
       if (disambiguate_arg) {
         if (was_pluralized) {
-          // TODO https://github.com/cirosantilli/ourbigbook/issues/244
+          // TODO https://github.com/ourbigbook/ourbigbook/issues/244
           return { override_href: ourbigbook_convert_simple_elem(ast, context) }
         }
         href = `${href} (${disambiguate})`;

@@ -3,7 +3,7 @@
 const fs = require('fs')
 const path = require('path')
 
-// Hax: https://github.com/cirosantilli/ourbigbook/issues/156
+// Hax: https://github.com/ourbigbook/ourbigbook/issues/156
 function deleteProps(obj, props) {
   for (const prop of props) {
     if (!(prop in obj)) {

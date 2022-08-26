@@ -1,6 +1,7 @@
 @import '../ourbigbook.common.scss';
 
 $border-radius: 10px;
+$like-button-inactive-color: white;
 $like-button-active-color: #FF1493;
 $nav-background-color: #AA0;
 $tab-bar-active-color: #CC0;
@@ -63,7 +64,7 @@ button, a.btn {
     }
     &:hover, &.active {
       background-color: $like-button-active-color;
-      color: white;
+      color: $like-button-inactive-color;
       i.ion-heart {
         color: white;
       }
@@ -327,9 +328,9 @@ div.tab-list {
   margin: 5px 0 10px;
   overflow: hidden;
   .tab-item {
+    overflow: hidden;
     padding-right: 10px;
     white-space: pre;
-    overflow: hidden;
     &.active {
       color: $tab-bar-active-color;
     }
@@ -498,6 +499,9 @@ span.shortcut {
 .profile-page {
   div.user-actions {
     margin-bottom: 1em;
+    >:not(:last-child) {
+      margin-right: 2px
+    }
   }
   .user-img {
     $size: 256px;
@@ -577,8 +581,16 @@ nav.navbar {
       color: $nav-background-color;
       background-color: $background-color;
     }
+    &.score.changed {
+      //background-color: $like-button-inactive-color;
+      //color: $like-button-active-color;
+      // Need to go a bit custom here because of the golden background.
+      i.ion-heart {
+        color: #ac1968;
+      }
+    }
     &.profile {
-      padding-left: 0px;
+      padding-left: 3px;
     }
     .home {
       padding-left: 3px;

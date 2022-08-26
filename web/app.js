@@ -36,7 +36,7 @@ async function start(port, startNext, cb) {
   app.enable('trust proxy')
 
   // Enforce HTTPS.
-  // https://github.com/cirosantilli/ourbigbook/issues/258
+  // https://github.com/ourbigbook/ourbigbook/issues/258
   app.use(function (req, res, next) {
     if (config.isProduction && req.headers['x-forwarded-proto'] === 'http') {
       res.redirect(301, `https://${req.hostname}${req.url}`);

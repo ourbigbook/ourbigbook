@@ -25,7 +25,7 @@ $toplevel-horizontal-padding-mobile: 5px;
   //
   // So instead we fix the header height for now.
   //
-  // https://github.com/cirosantilli/ourbigbook/issues/98
+  // https://github.com/ourbigbook/ourbigbook/issues/98
   //visibility: hidden;
 }
 
@@ -285,7 +285,7 @@ div.multiline-caption {
 ol, ul {
   padding-left: 30px;
   li {
-    // https://github.com/cirosantilli/ourbigbook/issues/68
+    // https://github.com/ourbigbook/ourbigbook/issues/68
     margin-bottom: $p-margin-vert;
     margin-top: $p-margin-vert;
   }
@@ -323,7 +323,7 @@ ol, ul {
   ul {
     list-style-type: none;
     li {
-      // https://github.com/cirosantilli/ourbigbook/issues/68
+      // https://github.com/ourbigbook/ourbigbook/issues/68
       $toc-sep: 0.3em;
       margin-bottom: $toc-sep;
       margin-top: $toc-sep;

@@ -83,7 +83,8 @@ export function DiscussionAbout(
 
 export function Icon(cls, title, opts) {
   const showTitle = opts.title === undefined ? true : opts.title
-  return <i className={cls} title={showTitle ? title : undefined } />
+  const extraClasses = opts.extraClasses === undefined ? [] : opts.extraClasses
+  return <i className={extraClasses.concat(cls).join(' ')} title={showTitle ? title : undefined } />
 }
 
 export function ArticleIcon(opts) {
@@ -123,6 +124,10 @@ export function LikeIcon(opts) {
 
 export function NewArticleIcon(opts) {
   return Icon("ion-plus", "New", opts)
+}
+
+export function NotificationIcon(opts) {
+  return Icon("i ion-ios-bell", "Notifications", opts)
 }
 
 export function SeeIcon(opts) {

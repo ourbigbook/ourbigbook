@@ -3,6 +3,23 @@
 
 == Issues
 
+=== Firefox tab lists don't wrap
+{tag=Topic}
+{tag=Firefox}
+{tag=Web}
+
+On Firefox 109, tab lists such as those in the home page don't wrap is the screen is narrow.
+
+This is due to:
+``
+.tab-item: { white-space: pre }
+``
+but does not make much sense, as it should only take effect inside `.tab-item`, not on the `.tab-list` itself, feels like a firefox bug.
+
+We want the `white-space: pre` so that tab entries won't be broken up across lines.
+
+Works fine in Chromium 109.
+
 === Follow topic
 {tag=Web}
 {tag=Topic}
@@ -57,7 +74,7 @@ This is a bit hard to to properly as it requires checking that a billion dependa
 Some of those can go on cascades, but others will require side-effects.
 
 Related:
-* https://github.com/cirosantilli/ourbigbook/issues/216
+* https://github.com/ourbigbook/ourbigbook/issues/216
 
 === Serialize parsed build-in KaTeX macros
 {tag=Math}
@@ -253,7 +270,7 @@ Some ideas:
 === Multiheader editing
 {tag=Web}
 
-Maybe we should only do this after: https://github.com/cirosantilli/ourbigbook/issues/248 to prevent data loss.
+Maybe we should only do this after: https://github.com/ourbigbook/ourbigbook/issues/248 to prevent data loss.
 
 One possibility is to prevent deletion/renaming of headers. We could just check the new ID list agains the previous ID list.
 
@@ -399,7 +416,7 @@ We likely want to get rid of the `path` parameter, and instead determine IDs ful
 
 Both `{scope}` for subdirs and `{id}` for custom id basename !== from title should already be working, we just haven't setup ourbigbook CLI to inject `{id}` based on file path I think.
 
-`{scope}` is however not really usable in general on the same source tree of cirosantilli.github.io due to https://github.com/cirosantilli/ourbigbook/issues/284[].
+`{scope}` is however not really usable in general on the same source tree of cirosantilli.github.io due to https://github.com/ourbigbook/ourbigbook/issues/284[].
 
 This would forbid some constructs that are currently possible locally, e.g. scopes that are not children such as:
 
@@ -483,7 +500,7 @@ The ideal fragment setup for both comments and issues would be either:
 {tag=Comment}
 {tag=Web}
 
-https://github.com/cirosantilli/ourbigbook/issues/277
+https://github.com/ourbigbook/ourbigbook/issues/277
 
 As of now, does work with a leading slash: `</test data>`.
 
@@ -691,7 +708,7 @@ Would radically speed sync up.
 === Prevent full page reload on links using our existing link capture
 {tag=Web}
 
-Would be a possibly good solution now to: https://github.com/cirosantilli/ourbigbook/issues/274 now that we already have link click capturing necessarily.
+Would be a possibly good solution now to: https://github.com/ourbigbook/ourbigbook/issues/274 now that we already have link click capturing necessarily.
 
 === Second meta line showing up on index page even if empty
 {tag=Web}
@@ -1059,7 +1076,7 @@ Otherwise too confusing what is what when fields are pre-filled, e.g. when editi
 
 Maybe some will be list by default, but some will definitely be article show by default. Notably topic has to show the rendered body by default.
 
-This is a superset of: https://github.com/cirosantilli/ourbigbook/issues/270
+This is a superset of: https://github.com/ourbigbook/ourbigbook/issues/270
 
 === Comment h1 has empty metadata line where likes would be placed
 {tag=Comment}
@@ -1075,7 +1092,7 @@ Likes will not go under header which does not need to be present, so gonna remov
 {tag=Comment}
 {tag=Web}
 
-https://github.com/cirosantilli/ourbigbook/issues/251
+https://github.com/ourbigbook/ourbigbook/issues/251
 
 We noticed this is hard to implement, because we want internal links to still work, and just adding a prefix to every ID does not take that into account.
 
@@ -1243,6 +1260,8 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 === Math
 
 === UI
+
+==== Firefox
 
 ==== CSS
 

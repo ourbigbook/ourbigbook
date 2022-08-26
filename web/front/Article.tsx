@@ -136,7 +136,7 @@ const Article = ({
                 ? <>
                     {' '}
                     <span>
-                      {false && <>TODO: convert this a and all other injected links to Link. https://github.com/cirosantilli/ourbigbook/issues/274</> }
+                      {false && <>TODO: convert this a and all other injected links to Link. https://github.com/ourbigbook/ourbigbook/issues/274</> }
                       <a
                         href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
                         className="btn edit"
@@ -225,7 +225,7 @@ const Article = ({
                 idNoprefix = url.hash.slice(1)
               } else {
                 // + 1 for the '/' that prefixes every link.
-                // https://github.com/cirosantilli/ourbigbook/issues/283
+                // https://github.com/ourbigbook/ourbigbook/issues/283
                 idNoprefix = href.slice(1)
               }
               const targetElem = document.getElementById(idNoprefix)

@@ -33,7 +33,7 @@ const LOG_OPTIONS = new Set([
 ]);
 const SASS_EXT = '.scss';
 // TODO get rid of this/most of this, and instead use the actual gitignore.
-// https://github.com/cirosantilli/ourbigbook/issues/253
+// https://github.com/ourbigbook/ourbigbook/issues/253
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   '.gitignore',
@@ -87,7 +87,7 @@ async function read(opts) {
 }
 
 // Reconcile the database with information that depends only on existence of Ourbigbook files, notably:
-// - remove any IDs from deleted files https://github.com/cirosantilli/ourbigbook/issues/125
+// - remove any IDs from deleted files https://github.com/ourbigbook/ourbigbook/issues/125
 async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_ourbigbook_options) {
   const sequelize = non_ourbigbook_options.sequelize
   if (sequelize) {
@@ -762,8 +762,8 @@ cli_parser.option('--add-test-instrumentation', 'For testing only', false);
 cli_parser.option('--body-only', 'output only the content inside the HTLM body element', false);
 cli_parser.option('--china', 'https://docs.ourbigbook.com#china', false);
 cli_parser.option('--clear-db', 'clear the database before running', false);
-cli_parser.option('--dry-run', "don't run most external commands https://github.com/cirosantilli/ourbigbook#dry-run", false);
-cli_parser.option('--dry-run-push', "don't run git push commands https://github.com/cirosantilli/ourbigbook#dry-run-push", false);
+cli_parser.option('--dry-run', "don't run most external commands https://github.com/ourbigbook/ourbigbook#dry-run", false);
+cli_parser.option('--dry-run-push', "don't run git push commands https://github.com/ourbigbook/ourbigbook#dry-run-push", false);
 cli_parser.option('--embed-includes', 'https://docs.ourbigbook.com#embed-include', false);
 cli_parser.option('--embed-resources', 'https://docs.ourbigbook.com#embed-resources', false);
 cli_parser.option('--fakeroot <fakeroot>', 'Stop searching for ourbigbook.json at this directory rather than at the filesystem root');
@@ -1611,7 +1611,7 @@ if (cli.helpMacros) {
             publish_remote_url = origin_url
           }
           if (!publish_remote_url) {
-            publish_remote_url = 'git@github.com:cirosantilli/ourbigbook.git';
+            publish_remote_url = 'git@github.com:ourbigbook/ourbigbook.git';
           }
           src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options).slice(0, -1);
           if (cli.dryRun) {

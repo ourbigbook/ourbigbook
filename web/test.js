@@ -536,7 +536,7 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(status, 422)
 
       // Cannot modify email.
-      // TODO https://github.com/cirosantilli/ourbigbook/issues/268
+      // TODO https://github.com/ourbigbook/ourbigbook/issues/268
       // Once the above is fixed, this will likely just be allowed on dev mode and then
       // we will just remove this test.
       ;({data, status} = await test.webApi.userUpdate('user0', { email: 'user0hacked@mail.com' }))
@@ -957,7 +957,7 @@ it('api: create an article and see it on global feed', async () => {
       article = createArticleArg({ titleSource: 'x', bodySource: '<Title 1>' })
       ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
-      // https://github.com/cirosantilli/ourbigbook/issues/283
+      // https://github.com/ourbigbook/ourbigbook/issues/283
       assert_xpath("//x:a[@href='/user0/title-1' and text()='Title 1']", data.articles[0].render)
 
     // Create issues
@@ -1276,7 +1276,7 @@ it('api: create an article and see it on global feed', async () => {
     // No more comment index gets from now on.
 
       //// Link to article by comment author.
-      // TODO https://github.com/cirosantilli/ourbigbook/issues/277
+      // TODO https://github.com/ourbigbook/ourbigbook/issues/277
       // Changing titleSource: undefined, in convertComment to titleSource: 'asdf' makes it not fail,
       // but adds the title to the render.
       //;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, '<Title 1>'))

@@ -263,6 +263,10 @@ class WebApi {
     return this.req('delete', `issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
   }
 
+  async min(opts={}) {
+    return this.req('get', `min${encodeGetParams(opts)}`)
+  }
+
   async users(opts) {
     return this.req('get', `users${encodeGetParamsWithOffset(opts)}`)
   }

@@ -115,6 +115,10 @@ export default function UserPage({
         </h1>
         <div className="user-actions">
           <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
+          {' '}
+          <CustomLink className="btn" href={routes.issueNew(`${user.username}`)}>
+            <IssueIcon /> Message
+          </CustomLink>
           <Maybe test={!cant.viewUserSettings(loggedInUser, user)}>
             <CustomLink
               href={routes.userEdit(user.username)}
@@ -156,7 +160,7 @@ export default function UserPage({
             href={routes.userLikes(username)}
             className={`tab-item${what === 'likes' ? ' active' : ''}`}
           >
-            <ArticleIcon /> Liked
+            <ArticleIcon /> Likes
           </CustomLink>
           <CustomLink
             href={routes.userLiked(username)}
@@ -180,7 +184,7 @@ export default function UserPage({
             href={routes.userFollowingArticle(username)}
             className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
           >
-            <ArticleIcon /> Followed
+            <ArticleIcon /> Follows
           </CustomLink>
           <CustomLink
             href={routes.userIssues(user.username, { sort: 'created' })}

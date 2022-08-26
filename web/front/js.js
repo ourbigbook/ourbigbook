@@ -74,7 +74,7 @@ function hasReachedMaxItemCount(loggedInUser, itemCount, itemType) {
 function modifyEditorInput(title, body) {
   let ret = ''
   if (title !== undefined) {
-    ret += ourbigbook.INSANE_HEADER_CHAR + ' ' + title
+    ret += `${ourbigbook.INSANE_HEADER_CHAR} ${title}\n`
   }
   let offsetOffset = 0
   // Append title to body. Add a newline if the body doesn's start
@@ -83,7 +83,6 @@ function modifyEditorInput(title, body) {
   // = h1
   // {c}
   if (body) {
-    ret += '\n'
     if (body[0] !== ourbigbook.START_NAMED_ARGUMENT_CHAR) {
       ret += '\n'
       offsetOffset = 1

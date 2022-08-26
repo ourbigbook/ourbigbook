@@ -7120,19 +7120,47 @@ TypeScript type checking an also be run in isolation as mentioned at <ourBigBook
 npm run tsc
 ``
 
-= Local run as identical to deployment as possible
+= OurBigBook Web PostgreSQL
 {parent=OurBigBook Web development}
+
+PostgreSQL is the database that we use on production, and sometimes is is necessary to test stuff with it locally.
+
+There are two main types of run with PostgreSQL:
+* <Local run as identical to deployment as possible>: uses PostgreSQL, but also sets as much as possible to match production, including Next.js rendering stuff
+* <Local development run with PostgreSQL>: uses PostgreSQL database, but keeps everything else in development mode
+
+To interactively inspect the local development database use our helper at \a[web/bin/psql]:
+``
+web/bin/psql
+``
+Commands can be run as usual:
+``
+web/bin/psql -c 'SELECT * FROM "Article";'
+``
+It uses `PGPASSWORD` is mentioned at: https://stackoverflow.com/questions/6405127/how-do-i-specify-a-password-to-psql-non-interactively
+
+= OurBigBook Web PostgreSQL setup
+{parent=OurBigBook Web PostgreSQL}
+
+Before running <OurBigBook Web>, the PostgreSQL database should be setup with \a[web/bin/psql-setup]:
+``
+web/bin/psql-setup
+``
+This command:
+* drops the existing database if any
+* creates a test user
+* re-creates the test database
+
+= Local run as identical to deployment as possible
+{parent=OurBigBook Web PostgreSQL}
 
 Here we use PostgreSQL instead of SQLite with the prebuilt static frontend.
 
 For when you really need to debug some deployment stuff locally.
 
-Setup:
+Before the first run the <OurBigBook Web PostgreSQL setup>:
 ``
-createdb ourbigbook
-psql -c "CREATE ROLE ourbigbook_user with login password 'a'"
-psql -c 'GRANT ALL PRIVILEGES ON DATABASE ourbigbook TO ourbigbook_user'
-echo "SECRET=$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)" >> web/.env
+web/bin/psql-setup
 ``
 
 Run after every modification
@@ -7160,7 +7188,7 @@ psql ourbigbook
 and then running SQL commands.
 
 = Local development run with PostgreSQL
-{parent=Local run as identical to deployment as possible}
+{parent=OurBigBook Web PostgreSQL}
 
 If you have determined that a bug is PostgreSQL specific, and it is easier to debug it interactively, first create the database as mentioned at <local run as identical to deployment as possible> and then:
 ``
@@ -7174,25 +7202,19 @@ npm run dev-pg
 
 Note that doing `sync-db` also requires `NODE_ENV=production` as in:
 ``
-NODE_ENV=production OURBIGBOOK_POSTGRES=true ./bin/sync-db.js
+NODE_ENV=production OURBIGBOOK_POSTGRES=true bin/sync-db.js
 ``
 because we have to shell out to the ugly <OurBigBook Web database migration setup>[migration] CLI, and that only understands `NODE_ENV`.
 
-Save the psql database state as per https://stackoverflow.com/questions/37984733/postgresql-database-export-to-sql-file[]:
+Save the psql database state as per https://stackoverflow.com/questions/37984733/postgresql-database-export-to-sql-file[] with our \a[web/bin/pg_dump] helper:
 ``
-PGPASSWORD=a pg_dump -U ourbigbook_user -h localhost ourbigbook -Fc -f tmp.psql
+web/bin/pg_dump -Fc -f tmp.psql
 ``
 Then to restore it later:
 ``
 PGPASSWORD=a pg_restore -U ourbigbook_user -h localhost --clean -d ourbigbook -v tmp.psql
 ``
 https://stackoverflow.com/questions/2732474/restore-a-postgres-backup-file-using-the-command-line
-
-To interactively inspect the local development database use our helper at \a[web/bin/psql]:
-``
-./web/bin/psql
-``
-It uses `PGPASSWORD` is mentioned at: https://stackoverflow.com/questions/6405127/how-do-i-specify-a-password-to-psql-non-interactively
 
 = OurBigBook Web step debug
 {parent=OurBigBook Web development}
@@ -7229,9 +7251,9 @@ To run the tests on PostgreSQL instead of SQLite, first setup as in <local run a
 ``
 npm run test-pg
 ``
-
+Run only matching tests on PostgreSQL:
 ``
-npm run deploy-prod
+npm run test-pg -- -g 'substring of test title'
 ``
 
 Note that this will erase all data present in the database used. In order to point to a custom database use:
@@ -7354,12 +7376,31 @@ In order to test migrations locally interactively, you can:
   ``
   ./bin/sync-db.js
   ``
-This is usually done in a single command \a[web/bin/test-migration]
+
+= test-migration
+{c}
+{parent=OurBigBook Web database migration setup}
+
+Since sequelize migrations are so hard to get right, it is fundamental to test them.
+
+One way to do it is with our \a[web/bin/test-migration] script:
 ``
 cd web
-bin/test-migration -u1 -n5
+bin/test-migration -u1 -a3
 ``
-The arguments are fowarded to \a[web/bin/generate-demo-data.js] from <demo data>, `-u1 -n5` would produce a small ammount of data, suitable for quick iterations.
+For PostgresQL:
+``
+bin/pg bin/test-migration -u1 -a3
+``
+Note that Sequelize SQLite migrations are basically worthless and often incorrectly fail due to foreign key constraints: https://stackoverflow.com/questions/62667269/sequelize-js-how-do-we-change-column-type-in-migration/70486686#70486686[] so you might not care much about making them pass and focus only PostgreSQL.
+
+The `test-migration` script:
+* does a git checkout out to the previous commit
+* regenerates the database
+* checks out to master
+* and then does the migration
+
+The arguments of `test-migration` are fowarded to \a[web/bin/generate-demo-data.js] from <demo data>, `-u1 -a5` would produce a small ammount of data, suitable for quick iteration tests.
 
 Towards the end of that script, we can see lines of type:
 ``
@@ -7370,13 +7411,7 @@ Those are important diffs you might want to look at every time:
 * `tmp.old.sqlite3.schema.sort`: old schema before migration, but with lines sorted alphabetically
 * `tmp.new-clean.sqlite3.schema.sort`: new schema achieved by dropping the database and re creating at once
 * `tmp.new-migration.sqlite3.schema.sort`: new schema achieved migrating from the old state
-Therefore, you really want the `diff tmp.old.sqlite3.schema tmp.new-clean.sqlite3.schema` to be empty. We actually check that and give an error if it is not.
-
-For PostgreSQL: TODO port to make this work:
-``
-cd web
-OURBIGBOOK_POSTGRES=true bin/test-migration -u1 -n5
-``
+Therefore, you really want the `diff tmp.old.sqlite3.schema tmp.new-clean.sqlite3.schema` to be empty. For sqlite3 we actually check that and give an error if they differ, but for PostgreSQL it is a bit harder due to the multiline statements, so just inspect the diffs manually.
 
 = OurBigBook Web nuke DB instead of migrating
 {c}
@@ -7477,13 +7512,9 @@ To finish things off, you must now:
 * setup <OurBigBook Web email sending>, e.g. with <OurBigBook Web email sending with Sendgrid>. We haven't found a free method integrated with Heroku currently, so using this separate Sendgrid setup initially.
 * setup reCAPTCHA: <OurBigBook Web reCAPTCHA setup>
 
-Additionally, you also need to setup the PostgreSQL test database for both OurBigBook CLI and OurBigBook Web as documented at: <test system> and <local run as identical to deployment as possible>, because we will be running tests on PostgreSQL before pushing:
+Additionally, you also need to setup the PostgreSQL test database for both OurBigBook CLI and OurBigBook Web as documented at <OurBigBook Web PostgreSQL setup>{full}:
 ``
-createdb ourbigbook
-createdb ourbigbook_cli
-psql -c "CREATE ROLE ourbigbook_user with login password 'a'"
-psql -c 'GRANT ALL PRIVILEGES ON DATABASE ourbigbook TO ourbigbook_user'
-psql -c 'GRANT ALL PRIVILEGES ON DATABASE ourbigbook_cli TO ourbigbook_user'
+web/bin/psql-setup
 ``
 
 Then deploy with:
@@ -8907,11 +8938,27 @@ This is a reasonable website. It is a shame that you can't easily drag and drop 
 {c}
 {parent=Merchandise}
 
-* https://www.redbubble.com/people/OurBigBook/shop (case insensitive) has a marketplace mechanism 6.64 pound/unit for the recommended 21cm size, which is quite expensive. It is unclear how much they pay the creator.
+\Image[sticker.svg]
+{title=Sticker SVG}
+{border}
+{provider=github}
+{height=200}
 
-  https://www.redbubble.com/i/sticker/OurBigBook-com-sticker-with-URL-logo-and-slogan-by-OurBigBook/133297659.JCQM3
+* https://www.redbubble.com/people/OurBigBook/shop (case insensitive) has a marketplace mechanism 6.64 pound/unit for the 21cm size, which is quite expensive. It is unclear how much they pay the creator.
 
-  Their delivery is a bit slow, 7 business days.
+  TODO: the following links are currently restricted because it is a new account:
+  * https://www.redbubble.com/i/sticker/OurBigBook-com-sticker-with-URL-logo-and-slogan-by-OurBigBook/133297659.JCQM3
+  * https://www.redbubble.com/people/ourbigbook/works/133297659-ourbigbook-com-sticker-with-url-logo-and-slogan?asc=u
+  They said would be unrestricted in five business days, but it was still not true after one month.
+
+  Their delivery is a bit slow, 7 business days in theory, but took at least 21 in reality. They must be streched thin.
+
+  The product quality was good when it finally arrived though.
+
+  \Image[Redbubble_sticker_21cm.jpg]
+  {title=Redbubble 21cm sticker}
+  {provider=github}
+  {height=500}
 * https://stickerapp.co.uk/ does not seem to have a marketplace, 2 pounds/unit on an 11 unit order, so much cheaper. But why would we need 11 is the question. Just going with the marketplace for now.
 
   Standard delivery in a bout 7 business days.

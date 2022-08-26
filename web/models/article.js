@@ -39,6 +39,11 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      // This was stored here as well as in addition to in File because we previously allowed
+      // multiple articles per file, just like is done locally. This was later forbidden on Web.
+      // With multiple articles per file, we may have multiple title sources. And then these can
+      // get used elsewhere, notably they can appears in places where the rendered output cannot
+      // be displayed, e.g. <title> tags.
       titleSource: {
         type: DataTypes.TEXT,
         allowNull: false,
@@ -264,9 +269,9 @@ module.exports = (sequelize) => {
         as: 'author',
       },
       {
-        model: sequelize.models.LastRender,
+        model: sequelize.models.Render,
         where: {
-          type: sequelize.models.LastRender.Types[ourbigbook.OUTPUT_FORMAT_HTML],
+          type: sequelize.models.Render.Types[ourbigbook.OUTPUT_FORMAT_HTML],
         },
         required: false,
       },
@@ -359,7 +364,6 @@ module.exports = (sequelize) => {
     author,
     count,
     // Set<string>
-    fields,
     likedBy,
     limit,
     offset,

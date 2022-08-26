@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+const crypto = require('crypto');
 const { performance } = require('perf_hooks');
 
 const china_dictatorship = require('china-dictatorship');
@@ -54,6 +55,27 @@ class DbProviderDbAdapter {
   }
 }
 
+function assertApiStatus(status, data) {
+  //console.log(require('child_process').execSync(`printf 'count '; sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index" | wc -l`).toString())
+  //console.log(require('child_process').execSync(`sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index"`).toString())
+  if (status !== 200) {
+    console.error(`error status: ${status}`);
+    const errors = data.errors
+    if (errors instanceof Array) {
+      for (const error of data.errors) {
+        console.error(error);
+      }
+    } else {
+      if (errors === undefined) {
+        console.error(data);
+      } else {
+        console.error(errors);
+      }
+    }
+    cli_error('conversion error')
+  }
+}
+
 async function read(opts) {
   return new Promise((resolve, reject) => {
     readCb(opts, (err, line) => {
@@ -64,7 +86,6 @@ async function read(opts) {
 
 // Reconcile the database with information that depends only on existence of Ourbigbook files, notably:
 // - remove any IDs from deleted files https://github.com/cirosantilli/ourbigbook/issues/125
-// - prefetch all last_render timestamps in one go
 async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_ourbigbook_options) {
   const sequelize = non_ourbigbook_options.sequelize
   if (sequelize) {
@@ -84,9 +105,9 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_o
       sequelize.models.File.findAll({
         where: { path: ourbigbook_paths_converted },
         include: [{
-          model: sequelize.models.LastRender,
+          model: sequelize.models.Render,
           where: {
-            type: sequelize.models.LastRender.Types[non_ourbigbook_options.renderType],
+            type: sequelize.models.Render.Types[non_ourbigbook_options.renderType],
           },
           // We still want to get last_parsed from non-rendered files.
           required: false,
@@ -379,21 +400,25 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
           // File has previously been rendered.
           file_row !== undefined
         ) {
-          const mtime = fs.statSync(input_path).mtime
+          const file_row_render = file_row.Render
           if (
             ourbigbook_options.render
           ) {
-            const lastRender = file_row.LastRender
-            if (lastRender) {
+            if (file_row_render) {
               timestamp_skip = non_ourbigbook_options.commander.renderTimestamp &&
-                lastRender.date > mtime &&
-                // TODO add a LastRender magic format for this use case. Or maybe
-                // start tracking output paths as well in LastRender to also cover -o.
+                !file_row_render.outdated &&
+                // TODO add a Render magic format for this use case. Or maybe
+                // start tracking output paths as well in Render to also cover -o.
                 // But lazy now, just never use timestamp for --format-source.
                 !non_ourbigbook_options.commander.formatSource
             }
           } else {
-            timestamp_skip = file_row.last_parse !== null && file_row.last_parse > mtime
+            timestamp_skip = file_row.last_parse !== null && file_row.last_parse > fs.statSync(input_path).mtime
+            if (!timestamp_skip && file_row_render) {
+              // We are going to update the parse, so mark as outdated here.
+              // This way we don't need to fetch from DB again.
+              file_row_render.outdated = true
+            }
           }
         }
       }
@@ -1186,7 +1211,7 @@ if (commander.helpMacros) {
       // straight to upload.
       const sequelizeWeb = new Sequelize({
         dialect: 'sqlite',
-        storage: path.join(non_ourbigbook_options.outdir, 'web.sqlite'),
+        storage: path.join(non_ourbigbook_options.outdir, 'web.sqlite3'),
         logging: false,
       })
       const sequelizeWebArticle = sequelizeWeb.define('Article', {
@@ -1195,6 +1220,7 @@ if (commander.helpMacros) {
         body: { type: DataTypes.TEXT },
         inpath: { type: DataTypes.TEXT },
         parentId: { type: DataTypes.TEXT },
+        sha256: { type: DataTypes.TEXT },
       });
       const sequelizeWebIndexId = sequelizeWeb.define('IndexId', {
         idid: { type: DataTypes.TEXT },
@@ -1221,7 +1247,7 @@ if (commander.helpMacros) {
               // {splitSuffix}
               //
               // otherwise the ID becomes linux-kernel-module-cheat and \x links fail.
-              const source = rendered_outputs_entry.full;
+              let source = rendered_outputs_entry.full;
               const lines = source.split('\n')
               let title = lines[0].match(titleRegex)[1]
               const inpathParse = path.parse(inpath)
@@ -1250,6 +1276,11 @@ if (commander.helpMacros) {
                   }
                 } else {
                   title = 'Index'
+                  // Hack source for subsequent sha256 calculation to match what we have on server, which
+                  // currently forces "Index" (TODO "index" et al. are likely also possible and would break this hack).
+                  // Ideally we should actually alter the file under out/web/index.bigb
+                  // but that would be slightly more involved (a new option to convert?) so lazy.
+                  source = source.replace(titleRegex, `${ourbigbook.INSANE_HEADER_CHAR} ${title}`)
                   await sequelizeWebIndexId.upsert({ idid: header_ast.id, uniqueHack: 0 })
                   isToplevelIndex = true
                 }
@@ -1281,7 +1312,7 @@ if (commander.helpMacros) {
               }
               body += lines.slice(bodyStart).join('\n')
               const parent_ast = rendered_outputs_entry.header_ast.get_header_parent_asts(extra_returns.context)[0]
-              const article = { title, body, inpath }
+              const article = { title, body, inpath, sha256: crypto.createHash('sha256').update(source).digest('hex') }
               if (parent_ast) {
                 let parentId = `${ourbigbook.AT_MENTION_CHAR}${username}`
                 if (
@@ -1362,8 +1393,7 @@ if (commander.helpMacros) {
         dorender.push(true)
       }
       // Paths that we have determined during ID extraction phase are not modified, so no need for a render stage.
-      const skipRenderPaths = new Set()
-      function printStatus(i, article, render, t0, t1, modified) {
+      function printStatus(i, article, render, t0, t1) {
         let pref
         if (render) {
           pref = MESSAGE_PREFIX_RENDER
@@ -1372,18 +1402,21 @@ if (commander.helpMacros) {
         }
         msg = `${pref}: ${i}: ${article.title} (${article.inpath})`
         if (t0 !== undefined) {
-          if (
-            modified ||
-            // Our renders don't whow as modified because we just reuse the sources from database.
-            render
-          ) {
-            msg += ` finished in ${t1 - t0} ms`
-          } else {
-            msg += ` skipped because unmodified in ${t1 - t0} ms`
-          }
+          msg += ` finished in ${t1 - t0} ms`
         }
         console.error(msg);
       }
+      let data, status, i = 0
+      const pathToSha = {}
+      do {
+        ;({ data, status } = await webApi.articlesSha256({ author: username, offset: i }))
+        assertApiStatus(status, data)
+        const articles = data.articles
+        for (const article of articles) {
+          pathToSha[article.path] = { sha256: article.sha256, renderOutdated: article.renderOutdated }
+        }
+        i += articles.length
+      } while (data.articles.length > 0)
       for (const render of dorender) {
         let i = 0
         // This ordering ensures parents come before children.
@@ -1396,7 +1429,12 @@ if (commander.helpMacros) {
           ) {
             const inpathParse = path.parse(article.inpath)
             const articlePath = path.join(inpathParse.dir, inpathParse.name)
-            if (!skipRenderPaths.has(articlePath)) {
+            const pathToShaEntry = pathToSha[`${ourbigbook.AT_MENTION_CHAR}${username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${articlePath}.${ourbigbook.OURBIGBOOK_EXT}`]
+            if (
+              pathToShaEntry === undefined ||
+              pathToShaEntry.sha256 !== article.sha256 ||
+              (render && pathToShaEntry.renderOutdated)
+            ) {
               printStatus(i, article, render)
               let data, status
               const articleArgs = {}
@@ -1418,32 +1456,9 @@ if (commander.helpMacros) {
               } catch(err) {
                 handleWebApiErr(err)
               }
+              assertApiStatus(status, data)
               const t1 = performance.now()
-              let skipped
-              if (
-                !data.modified && !data.sourceNewerThanRender
-              ) {
-                skipRenderPaths.add(articlePath)
-              }
-              printStatus(i, article, render, t0, t1, data.modified)
-              //console.log(require('child_process').execSync(`printf 'count '; sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index" | wc -l`).toString())
-              //console.log(require('child_process').execSync(`sqlite3 /home/ciro/bak/git/ourbigbook/web/db.sqlite3 "select to_id_index,from_id,to_id,defined_at from Ref where from_id = '@barack-obama' and type = 0 order by to_id_index"`).toString())
-              if (status !== 200) {
-                console.error(`error status: ${status}`);
-                const errors = data.errors
-                if (errors instanceof Array) {
-                  for (const error of data.errors) {
-                    console.error(error);
-                  }
-                } else {
-                  if (errors === undefined) {
-                    console.error(data);
-                  } else {
-                    console.error(errors);
-                  }
-                }
-                cli_error('conversion error')
-              }
+              printStatus(i, article, render, t0, t1)
               i++
             }
           }

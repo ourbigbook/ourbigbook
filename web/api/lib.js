@@ -40,7 +40,7 @@ function getOrder(req) {
   return sort
 }
 
-function getLimitAndOffset(req, res, opts) {
+function getLimitAndOffset(req, res, opts={}) {
   return [
     validateParam(req.query, 'limit', {
       typecast: front.typecastInteger,

@@ -14,24 +14,7 @@ router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
 
-    // TODO proper GraphQL one day.
-    let limitAndOffsetOpts
-    let fields = req.query.fields
-    if (typeof fields === 'string') {
-      fields = [fields]
-    }
-    fields = Object.assign({}, fields)
-    fieldsSet = new Set(fields)
-    if (
-      fieldSet.size === 2 &&
-      fieldSet.has('sha256') &&
-      fieldSet.has('path')
-    ) {
-      // TODO increase.
-      limitAndOffsetOpts.defaultLimit = 100
-    }
-
-    const [limit, offset] = lib.getLimitAndOffset(req, res, limitAndOffsetOpts)
+    const [limit, offset] = lib.getLimitAndOffset(req, res)
 
     const [{count: articlesCount, rows: articles}, loggedInUser] = await Promise.all([
       sequelize.models.Article.getArticles({
@@ -39,7 +22,6 @@ router.get('/', auth.optional, async function(req, res, next) {
         limit,
         offset,
         author: req.query.author,
-        fields: fieldSet,
         likedBy: req.query.likedBy,
         topicId: req.query.topicId,
         order: lib.getOrder(req),
@@ -53,6 +35,61 @@ router.get('/', auth.optional, async function(req, res, next) {
       })),
       articlesCount,
     })
+  } catch(error) {
+    next(error);
+  }
+})
+
+// TODO do proper GraphQL one day and get rid of this.
+router.get('/sha256', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const [limit, offset] = lib.getLimitAndOffset(req, res, { defaultLimit: 10000 })
+    const authorInclude = {
+      model: sequelize.models.User,
+      as: 'author',
+      required: true,
+      attributes: [],
+    }
+    const author = req.query.author
+    if (author) {
+      authorInclude.where = { username: author }
+    }
+    const { count: filesCount, rows: files} = await sequelize.models.File.findAndCountAll({
+      include: [
+        authorInclude,
+        {
+          model: sequelize.models.Render,
+          where: {
+            type: sequelize.models.Render.Types[ourbigbook.OUTPUT_FORMAT_HTML],
+          },
+          required: false,
+          attributes: [],
+        },
+      ],
+      attributes: [
+        'path',
+        'sha256',
+        [
+          // NULL: never converted
+          sequelize.literal('"Render"."outdated" IS NULL OR "Render"."outdated"'),
+          // TODO do it like this instead. Patience ran out. Second line ignored in generated query.
+          //sequelize.where(
+          //  sequelize.col('Render.date'), 'IS NULL', Op.OR,
+          //  sequelize.col('Render.outdated')
+          //),
+          'renderOutdated'
+        ],
+      ],
+      limit,
+      offset,
+      order: [['path', 'ASC']],
+    })
+    const articlesJson = []
+    for (const file of files) {
+      articlesJson.push({ path: file.path, sha256: file.sha256, renderOutdated: !!file.get('renderOutdated') })
+    }
+    return res.json({ articles: articlesJson, articlesCount: filesCount })
   } catch(error) {
     next(error);
   }
@@ -146,8 +183,7 @@ async function createOrUpdateArticle(req, res, opts) {
   }
 
   // Skip conversion if unchanged.
-  let articles
-  let modified = true
+  let articles = []
   let sourceNewerThanRender = true
   if (
     path !== undefined
@@ -156,15 +192,6 @@ async function createOrUpdateArticle(req, res, opts) {
       where: {
         path: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${path}.${ourbigbook.OURBIGBOOK_EXT}`
       },
-      include: [
-        {
-          model: sequelize.models.LastRender,
-          where: {
-            type: sequelize.models.LastRender.Types[ourbigbook.OUTPUT_FORMAT_HTML],
-          },
-          required: false,
-        },
-      ],
     })
     if (file) {
       if (render) {
@@ -174,17 +201,6 @@ async function createOrUpdateArticle(req, res, opts) {
         if (titleSource === undefined) {
           titleSource = file.titleSource
         }
-      }
-      if (
-        titleSource === file.titleSource &&
-        bodySource === file.bodySource
-      ) {
-        articles = []
-        modified = false
-      }
-      const lastRender = file.LastRender
-      if (lastRender) {
-        sourceNewerThanRender = lastRender.date < file.updatedAt
       }
     }
   }
@@ -204,7 +220,6 @@ async function createOrUpdateArticle(req, res, opts) {
   // Render.
   if (
     render ||
-    modified ||
     sourceNewerThanRender
   ) {
     const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`
@@ -236,8 +251,6 @@ async function createOrUpdateArticle(req, res, opts) {
   }
   return res.json({
     articles: await Promise.all(articles.map(article => article.toJson(loggedInUser))),
-    // bool: were article contents modified from what we had in the database?
-    modified,
     // bool: is the source newer than the render output? Could happen if we
     // just extracted IDs but didn't render later on for some reason, e.g.
     // ourbigbook --web crashed half way through ID extraction. false means

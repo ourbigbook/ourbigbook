@@ -150,6 +150,7 @@ function IndexPageHoc({
           : <ArticleList {...{
               articles,
               articlesCount,
+              followed,
               issueArticle,
               itemType,
               loggedInUser,

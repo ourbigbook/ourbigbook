@@ -13,13 +13,33 @@ const config = require('../front/config')
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
-    const [limit, offset] = lib.getLimitAndOffset(req, res)
+
+    // TODO proper GraphQL one day.
+    let limitAndOffsetOpts
+    let fields = req.query.fields
+    if (typeof fields === 'string') {
+      fields = [fields]
+    }
+    fields = Object.assign({}, fields)
+    fieldsSet = new Set(fields)
+    if (
+      fieldSet.size === 2 &&
+      fieldSet.has('sha256') &&
+      fieldSet.has('path')
+    ) {
+      // TODO increase.
+      limitAndOffsetOpts.defaultLimit = 100
+    }
+
+    const [limit, offset] = lib.getLimitAndOffset(req, res, limitAndOffsetOpts)
+
     const [{count: articlesCount, rows: articles}, loggedInUser] = await Promise.all([
       sequelize.models.Article.getArticles({
         sequelize,
         limit,
         offset,
         author: req.query.author,
+        fields: fieldSet,
         likedBy: req.query.likedBy,
         topicId: req.query.topicId,
         order: lib.getOrder(req),

@@ -191,7 +191,7 @@ module.exports = (sequelize) => {
       return target
     }
     const file = {}
-    addToDictWithoutUndefined(file, this.file, ['titleSource', 'bodySource', 'path'])
+    addToDictWithoutUndefined(file, this.file, ['titleSource', 'bodySource', 'path', 'sha256'])
     const ret = {
       liked,
       // Putting it here rather than in the more consistent file.author
@@ -210,6 +210,7 @@ module.exports = (sequelize) => {
       'h2Render',
       'id',
       'slug',
+      'sha256',
       'topicId',
       'titleRender',
       'titleSource',
@@ -357,6 +358,8 @@ module.exports = (sequelize) => {
   Article.getArticles = async ({
     author,
     count,
+    // Set<string>
+    fields,
     likedBy,
     limit,
     offset,
@@ -586,6 +589,15 @@ module.exports = (sequelize) => {
 //        }
 //      }
 //    )
+
+    //const allFields = {
+    //  'id'
+    //  'score',
+    //  'slug',
+    //  'topicId',
+    //  'titleSource',
+    //  'render',
+    //}
 
     ;const [rows, meta] = await sequelize.query(`
 SELECT

@@ -33,6 +33,12 @@ module.exports = (sequelize, web=false) => {
       type: DataTypes.TEXT,
       allowNull: false,
     }
+    cols.sha256 = {
+      // hex representation of the sha256 of the full source of the article,
+      // including both title and body.
+      type: DataTypes.STRING(512),
+      allowNull: true,
+    }
   }
   const indexes = [
     { fields: ['last_parse'], },

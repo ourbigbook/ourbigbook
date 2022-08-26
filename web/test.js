@@ -607,6 +607,7 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.article('user0/title-0'))
       assertStatus(status, data)
       assert.strictEqual(data.titleRender, 'title 0')
+      assert.strictEqual(data.titleSource, 'Title 0')
       assert.match(data.render, /Body 0\./)
 
       // See articles on global feed.

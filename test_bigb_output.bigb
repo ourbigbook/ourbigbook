@@ -18,9 +18,9 @@ Same in list indent:
 
 Sane inline element: \i[qwer] after.
 
-Sane inline element with named argument: \a[qwer]{check=0} after.
+Sane inline element with named argument: \a[qwer]{external} after.
 
-Sane inline element with positional and named argument: \a[qwer][zxcv]{check=0} after.
+Sane inline element with positional and named argument: \a[qwer][zxcv]{external} after.
 
 Insane link http://example.com after.
 
@@ -350,7 +350,7 @@ Hello
 {title=In OurBigBookExample}
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{check=0}
+{external}
 {provider=github}
 {titleFromSrc}
 ]]

@@ -23,7 +23,6 @@ const Settings = ({
   const [userInfo, setUserInfo] = React.useState(user0);
   const updateState = (field) => (e) => {
     const state = userInfo;
-    console.error(e.target.value)
     const newState = { ...state, [field]: e.target.value };
     setUserInfo(newState);
   };

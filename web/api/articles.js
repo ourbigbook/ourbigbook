@@ -1,6 +1,8 @@
 const router = require('express').Router()
 const Op = require('sequelize').Op
 
+const ourbigbook = require('ourbigbook')
+
 const auth = require('../auth')
 const { cant } = require('../front/cant')
 const front = require('../front/js')
@@ -102,8 +104,32 @@ async function createOrUpdateArticle(req, res, opts) {
     validators: [front.isString, front.isTruthy]
   })
   const render = lib.validateParam(body, 'render', {
-    validators: [front.isBoolean], defaultValue: true
-  })
+    validators: [front.isBoolean], defaultValue: true})
+  const parentId = lib.validateParam(body,
+    // ID of article that will be the parent of this article, including the @username/ part.
+    // However, at least to start with, @username/ will have to match your own username to
+    // simplify things a bit.
+    'parentId',
+    // If undefined:
+    // - if previousSiblingId is given, deduce parentId from it
+    // - else if article already exists (i.e. this is an update), keep existing parent
+    // - else (article does not already exist and previousSiblingId not given): throw an error
+    { defaultValue: undefined }
+  )
+  const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`
+  if (!(
+    parentId === undefined ||
+    parentId === idPrefix ||
+    parentId.startsWith(`${idPrefix}/`)
+  )) {
+    throw new lib.ValidationError(`parentId cannot belong to another user: "${parentId}"`)
+  }
+  const previousSiblingId = lib.validateParam(body,
+    'previousSiblingId',
+    // If undefined, make it the first child. This happens even on update:
+    // the previous value is not kept, since undefined is the only way to indicate parent.
+    { defaultValue: undefined }
+  )
   const articles = await convert.convertArticle({
     author: loggedInUser,
     bodySource,
@@ -111,6 +137,8 @@ async function createOrUpdateArticle(req, res, opts) {
     sequelize,
     path: lib.validateParam(body, 'path', { validators: [
       front.isString, front.isTruthy ], defaultValue: undefined }),
+    parentId,
+    previousSiblingId,
     render,
     titleSource,
   })

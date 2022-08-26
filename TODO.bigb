@@ -14,6 +14,11 @@
 === Add sibling/add child buttons next to self headers and toc
 {tag=Web}
 
+=== Allow shoging full articles on article lists
+{tag=Web}
+
+Maybe some will be list by default, but some will definitely be article show by default. Notably topic, that one is a must.
+
 === parentId dropdown autocomplete
 {tag=Web}
 
@@ -33,6 +38,14 @@ E.g. https://cirosantilli.com/x86-paging#toc-x86-paging/sample-code should inste
 {tag=Web}
 
 Can start simple with either raw or contained, and then add both some day. GitHub copy.
+
+=== Load more articles
+{tag=Dynamic tree fetch}
+{tag=Web}
+
+Either with scroll or a load more button. Slightly tempted by a load more button?
+
+To implement, we just have to expose the ArticlePage.ts fetch in an API manner. The page then tracks current limit on a state variable, and just requests more from that point onwards.
 
 === Prefix unnumbered IDs with the parent header's ID
 {tag=Dynamic tree fetch}

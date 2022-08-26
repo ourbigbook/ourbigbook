@@ -27,6 +27,7 @@ export interface UserPageProps {
   article?: ArticleType & IssueType;
   articles?: (ArticleType & IssueType & TopicType)[];
   articlesInSamePage?: ArticleType[];
+  articlesInSamePageForToc?: ArticleType[];
   articlesCount?: number;
   authoredArticleCount: number;
   comments?: CommentType[];
@@ -49,6 +50,7 @@ export default function UserPage({
   articles,
   articlesCount,
   articlesInSamePage,
+  articlesInSamePageForToc,
   authoredArticleCount,
   comments,
   commentCountByLoggedInUser,
@@ -172,6 +174,7 @@ export default function UserPage({
         <Article {...{
           article,
           articlesInSamePage,
+          articlesInSamePageForToc,
           comments,
           commentCountByLoggedInUser,
           latestIssues,

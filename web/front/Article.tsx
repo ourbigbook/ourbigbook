@@ -21,6 +21,7 @@ import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js'
 const Article = ({
   article,
   articlesInSamePage,
+  articlesInSamePageForToc,
   comments,
   commentsCount=0,
   commentCountByLoggedInUser=undefined,
@@ -200,8 +201,8 @@ const Article = ({
     //const tocHtml = articlesInSamePage.slice(1).map(a => `<div style="padding-left:${30 * (a.depth - firstArticle.depth)}px;"><a href="../${article.author.username}/${a.topicId}">${a.titleRender}</a></div>`).join('') +
     const entry_list = []
     const levelToHeader = { 0: article }
-    for (let i = 0; i < articlesInSamePage.length; i++) {
-      const a = articlesInSamePage[i]
+    for (let i = 0; i < articlesInSamePageForToc.length; i++) {
+      const a = articlesInSamePageForToc[i]
       const authorUsername = article.author.username
       const level = a.depth - article.depth
       const href = ` href="../${authorUsername}/${a.topicId}"`
@@ -215,7 +216,7 @@ const Article = ({
         content,
         href,
         level,
-        has_child: i < articlesInSamePage.length - 1 && articlesInSamePage[i + 1].depth === a.depth + 1,
+        has_child: i < articlesInSamePageForToc.length - 1 && articlesInSamePageForToc[i + 1].depth === a.depth + 1,
         // A quick hack as it will be easier to do it here than to modify the link generation.
         // We'll later fix both at once to remove the user prefix one day. Maybe.
         // https://docs.ourbigbook.com/TODO/remove-scope-from-toc-entry-ids

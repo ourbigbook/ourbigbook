@@ -21,6 +21,7 @@ import { UserType } from 'front/types/UserType'
 export interface ArticlePageProps {
   article: ArticleType & IssueType;
   articlesInSamePage?: ArticleType[];
+  articlesInSamePageForToc?: ArticleType[];
   comments?: CommentType[];
   commentsCount?: number;
   commentCountByLoggedInUser?: number;
@@ -36,6 +37,7 @@ const ArticlePageHoc = (isIssue=false) => {
   return ({
     article,
     articlesInSamePage,
+    articlesInSamePageForToc,
     commentCountByLoggedInUser,
     comments,
     commentsCount,
@@ -89,6 +91,7 @@ const ArticlePageHoc = (isIssue=false) => {
             <Article {...{
               article,
               articlesInSamePage,
+              articlesInSamePageForToc,
               commentCountByLoggedInUser,
               comments,
               commentsCount,

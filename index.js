@@ -1375,7 +1375,6 @@ Macro.HEADER_CHILD_ARGNAME = 'child';
 Macro.HEADER_TAG_ARGNAME = 'tag';
 Macro.X_MACRO_NAME = 'x';
 Macro.HEADER_SCOPE_SEPARATOR = '/';
-Macro.FILE_ID_PREFIX = 'file' + Macro.HEADER_SCOPE_SEPARATOR
 Macro.INCLUDE_MACRO_NAME = 'Include';
 Macro.LINK_MACRO_NAME = 'a';
 Macro.LIST_ITEM_MACRO_NAME = 'L';
@@ -1396,6 +1395,7 @@ Macro.TITLE2_ARGUMENT_NAME = 'title2';
 // - only a single ToC ever renders per document. So we can just have a fixed
 //   magic one.
 Macro.RESERVED_ID_PREFIX = '_'
+Macro.FILE_ID_PREFIX = Macro.RESERVED_ID_PREFIX + 'file' + Macro.HEADER_SCOPE_SEPARATOR
 Macro.TOC_ID = Macro.RESERVED_ID_PREFIX + 'toc';
 Macro.TOC_PREFIX = Macro.TOC_ID + '/'
 Macro.TOPLEVEL_MACRO_NAME = 'Toplevel';
@@ -2308,8 +2308,17 @@ function binary_search_line_to_id_array_fn(elem0, elem1) {
 }
 
 /** Calculate node ID and add it to the ID index. */
-function calculate_id(ast, context, non_indexed_ids, indexed_ids,
-  macro_counts, macro_count_global, macro_counts_visible, state, is_header, line_to_id_array
+function calculate_id(
+  ast,
+  context,
+  non_indexed_ids,
+  indexed_ids,
+  macro_counts,
+  macro_count_global,
+  macro_counts_visible,
+  state,
+  is_header,
+  line_to_id_array
 ) {
   let title_text
   const macro_name = ast.macro_name;
@@ -2328,6 +2337,8 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   let index_id = true;
   let skip_scope = false
   let id
+  let file_header = ast.macro_name === Macro.HEADER_MACRO_NAME &&
+    ast.validation_output.file.given
   if (
     // This can happen be false for included headers, and this is notably important
     // for the toplevel header which gets its ID from the filename.
@@ -2344,10 +2355,7 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
           id_text += id_prefix + ID_SEPARATOR
         }
         title_text = render_arg_noescape(title_arg, new_context)
-        if (
-          ast.macro_name === Macro.HEADER_MACRO_NAME &&
-          ast.validation_output.file.given
-        ) {
+        if (file_header) {
           let id_text_append
           const file_render = render_arg(ast.args.file, new_context)
           if (file_render) {
@@ -2390,7 +2398,12 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
     } else {
       id = render_arg_noescape(macro_id_arg, new_context);
     }
-    if (index_id && id !== undefined && id.startsWith(Macro.RESERVED_ID_PREFIX)) {
+    if (
+      index_id &&
+      id !== undefined &&
+      id.startsWith(Macro.RESERVED_ID_PREFIX) &&
+      !file_header
+    ) {
       let message = `IDs that start with "${Macro.RESERVED_ID_PREFIX}" are reserved: "${id}"`;
       parse_error(state, message, ast.source_location);
     }
@@ -5068,8 +5081,8 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
 
         // refs database updates.
-        let target_id = convert_id_arg(ast.args.href, context)
         validate_ast(ast, context)
+        let target_id = convert_file_id_arg(ast, ast.args.href, context)
         const fetch_plural = ast.validation_output.magic.boolean ||
           context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK
         if (fetch_plural) {
@@ -6671,9 +6684,19 @@ function x_get_target_ast_base({
   return { target_id: target_id_eff, target_ast }
 }
 
+function convert_file_id_arg(ast, href_arg, context) {
+  let target_id = convert_id_arg(href_arg, context);
+  if (
+    ast.validation_output.file.given
+  ) {
+    target_id = Macro.FILE_ID_PREFIX + target_id
+  }
+  return target_id
+}
+
 function x_get_target_ast(ast, context) {
   const href_arg = ast.args.href
-  const target_id = convert_id_arg(href_arg, context);
+  const target_id = convert_file_id_arg(ast, href_arg, context);
   const ret = x_get_target_ast_base({
     context,
     do_magic_title_to_id: ast.validation_output.magic.boolean,
@@ -8122,6 +8145,10 @@ const DEFAULT_MACRO_LIST = [
         new MacroArgument({
           // https://github.com/ourbigbook/ourbigbook/issues/92
           name: 'child',
+          boolean: true,
+        }),
+        new MacroArgument({
+          name: 'file',
           boolean: true,
         }),
         new MacroArgument({

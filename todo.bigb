@@ -3,6 +3,13 @@
 
 == Issues
 
+=== Put files in a separate namespace
+{tag=File}
+
+We should have:
+* `_file/path/to/main.py`: OurBigBook section showing preview of file + comments/metadata
+* `_raw/path/to/main.py`: raw file
+
 === Show likers list on article page
 {tag=Web}
 
@@ -1263,6 +1270,10 @@ Can be fixed later at: <word count on web>.
 Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 
 == Tags
+
+=== File
+
+This tag is about handling non-OurBigBook files, notably related to using the <`\H` `file` argument>.
 
 === Math
 

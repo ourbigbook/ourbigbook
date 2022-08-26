@@ -1095,6 +1095,8 @@ if (commander.helpMacros) {
       function handleWebApiErr(err) {
         if (err.code === 'ECONNREFUSED') {
           cli_error('could not connect to server');
+        } else {
+          throw err
         }
       }
       let username

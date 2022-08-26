@@ -227,6 +227,9 @@ div.article-page {
       .see-all {
         font-size: 1.2em;
         margin-bottom: 1em;
+        a {
+          white-space: pre;
+        }
       }
     }
     div.article-info {
@@ -361,6 +364,9 @@ span.shortcut {
   .h2 {
     @include h-common;
     margin-bottom: 0.3em;
+    &.inline {
+      display: inline;
+    }
   }
   @media only screen and (max-width: $max-mobile-width) {
     padding-left: $toplevel-padding-mobile;

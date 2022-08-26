@@ -163,15 +163,17 @@ class WebApi {
   }
 
   async editorIdExists(idid) {
-    return this.req('post',
+    const ret = await this.req('post',
       `editor/id-exists`,
       {
         body: {
           idid,
         }
       },
-    ).exists
+    )
+    return ret.data.exists
   }
+
   async issues(opts) {
     return this.req('get',
       `issues${encodeGetParamsWithOffset(opts)}`,

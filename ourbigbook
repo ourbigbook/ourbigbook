@@ -1393,7 +1393,7 @@ if (commander.helpMacros) {
         let publish_branch;
         let publish_out_publish_dir;
         let publish_out_publish_dist_dir;
-        let remote_url;
+        let publish_remote_url;
         let src_branch;
 
         if (publish) {
@@ -1401,19 +1401,20 @@ if (commander.helpMacros) {
           if (!git_is_in_repo(inputPath)) {
             cli_error('--publish must point to a path inside a git repository');
           }
+          const origin_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options).slice(0, -1);
           if (ourbigbook_json.publishRemoteUrl) {
-            remote_url = ourbigbook_json.publishRemoteUrl
+            publish_remote_url = ourbigbook_json.publishRemoteUrl
           } else {
-            remote_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options).slice(0, -1);
+            publish_remote_url = origin_url
           }
-          if (!remote_url) {
-            remote_url = 'git@github.com:cirosantilli/ourbigbook.git';
+          if (!publish_remote_url) {
+            publish_remote_url = 'git@github.com:cirosantilli/ourbigbook.git';
           }
           src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options).slice(0, -1);
           if (commander.dryRun) {
             src_branch = 'master';
           }
-          const parsed_remote_url = require("git-url-parse")(remote_url);
+          const parsed_remote_url = require("git-url-parse")(publish_remote_url);
           if (parsed_remote_url.source !== 'github.com') {
             cli_error('only know how  to publish to origin == github.com currently, please send a patch');
           }
@@ -1423,7 +1424,10 @@ if (commander.helpMacros) {
           } else {
             publish_branch = 'gh-pages';
           }
-          if (src_branch === publish_branch) {
+          if (
+            publish_remote_url === origin_url &&
+            src_branch === publish_branch
+          ) {
             cli_error(`source and publish branches are the same: ${publish_branch}`);
           }
           fs.mkdirSync(publish_dir, {recursive: true});
@@ -1493,9 +1497,9 @@ if (commander.helpMacros) {
           cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'checkout', '-B', publish_branch], cmd_options);
           try {
             // Fails if remote already exists.
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'add', 'origin', remote_url], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'add', 'origin', publish_remote_url], cmd_options);
           } catch(error) {
-            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'set-url', 'origin', remote_url], cmd_options);
+            cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'remote', 'set-url', 'origin', publish_remote_url], cmd_options);
           }
           // Ensure that we are up-to-date with the upstream gh-pages if one exists.
           cmd_get_stdout('git', ['-C', publish_out_publish_dir, 'fetch', 'origin'], cmd_options);

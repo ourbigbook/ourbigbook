@@ -297,7 +297,12 @@ export default function ArticleEditorPageHoc({
                 const target_line_number = visibleRange.startLineNumber
                 if (target_line_number === 1) {
                   ourbigbookHeaderElem.current.classList.remove('hide')
-                  ourbigbookParentIdContainerElem.current.classList.remove('hide')
+                  if (
+                    // Fails for index page.
+                    ourbigbookParentIdContainerElem.current !== null
+                  ) {
+                    ourbigbookParentIdContainerElem.current.classList.remove('hide')
+                  }
                 } else {
                   if (
                     // TODO this is to prevent infinite loop/glitching:

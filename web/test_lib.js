@@ -53,6 +53,16 @@ const userData = [
 ]
 
 const articleData = [
+  ['Test data', [
+    ['Test scope', [
+      ['Test scope 1', [
+        ['Test scope 1 1', []],
+        ['Test scope 1 1', []],
+      ]],
+      ['Test scope 2', []],
+    ], { headerArgs: '{scope}' }],
+    ['Test tag', [], { headerArgs: '{tag=Mathematics}' }],
+  ]],
   ['Mathematics', [
     ['Algebra', [
       ['Linear algebra', [
@@ -80,11 +90,11 @@ const articleData = [
               ['Azimuthal quantum number', []],
               ['Magnetic quantum number', []],
             ]],
-          ], { extra: '{c}' }],
-        ], { extra: '{c}' }],
+          ], { headerArgs: '{c}' }],
+        ], { headerArgs: '{c}' }],
         ['Quantum mechanics experiment', [
           ['Emission spectrum', [
-            ['Rydberg formula', [], { extra: '{c}' }],
+            ['Rydberg formula', [], { headerArgs: '{c}' }],
             ['Fine structure', [
               ['Hyperfine structure', []],
             ]],
@@ -95,7 +105,7 @@ const articleData = [
       ['Special relativity', [
         ['Lorentz transformation', [
           ['Time dilation', []],
-        ], { extra: '{c}' }],
+        ], { headerArgs: '{c}' }],
       ]],
     ], { toplevel: true }],
     ['Chemistry', [
@@ -113,7 +123,7 @@ const articleData = [
     ], { toplevel: true }],
     ['Biology', [
       ['Molecular biology', [
-        ['DNA', [], { extra: '{c}' }],
+        ['DNA', [], { headerArgs: '{c}' }],
         ['Protein', []],
       ]],
       ['Cell biology', [
@@ -318,12 +328,12 @@ async function generateDemoData(params) {
       const date = addDays(date0, dateI)
       dateI++
       articleDataEntry.articleIdx = i
-      let { titleSource, extra, children, opts } = expandArticleDataEntry(articleDataEntry)
-      extra = opts.extra
-      if (extra === undefined) {
-        extra = ''
+      let { titleSource, headerArgs, children, opts } = expandArticleDataEntry(articleDataEntry)
+      headerArgs = opts.headerArgs
+      if (headerArgs === undefined) {
+        headerArgs = ''
       } else {
-        extra += '\n\n'
+        headerArgs += '\n\n'
       }
       const id_noscope = await title_to_id(titleSource)
       toplevelTopicIds.add(id_noscope)
@@ -333,7 +343,7 @@ async function generateDemoData(params) {
         createdAt: date,
         // TODO not taking effect. Appears to be because of the hook.
         updatedAt: date,
-        bodySource: `${extra}${makeBody(titleSource)}`,
+        bodySource: `${headerArgs}${makeBody(titleSource)}`,
         opts,
       }
     }
@@ -366,28 +376,44 @@ async function generateDemoData(params) {
     //  }
     //})
     const articles = []
-    let articleId = 0
-    for (const articleArg of articleArgs) {
-      if (verbose) console.error(`${articleId} author=${userIdToUser[articleArg.authorId].username} title=${articleArg.titleSource}`);
-      const author = userIdToUser[articleArg.authorId]
-      const usernamePref = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
-      const parentEntry = articleArg.opts.parentEntry
-      const previousSiblingEntry = articleArg.opts.previousSiblingEntry
-      const args = {
-        author,
-        bodySource: articleArg.bodySource,
-        parentId: `${usernamePref}${parentEntry ? `/${await title_to_id(parentEntry[0])}` : ''}`,
-        sequelize,
-        titleSource: articleArg.titleSource,
+    for (const render of [false, true]) {
+      let articleId = 0
+      if (verbose) {
+        if (render) {
+          console.error('Render')
+        } else {
+          console.error('Extract ids')
+        }
       }
-      if (previousSiblingEntry) {
-        args.previousSiblingId = `${usernamePref}/${await title_to_id(previousSiblingEntry[0])}`
-      }
-      const newArticles = await convert.convertArticle(args)
-      for (const article of newArticles) {
-        articleIdToArticle[article.id] = article
-        articles.push(article)
-        articleId++
+      for (const articleArg of articleArgs) {
+        if (verbose) console.error(`${render ? `${articleId} ` : ''}${userIdToUser[articleArg.authorId].username}/${articleArg.titleSource}`);
+        const author = userIdToUser[articleArg.authorId]
+        const opts = articleArg.opts
+        const parentEntry = opts.parentEntry
+        let parentId
+        if (parentEntry) {
+          ;({ opts: parentOpts } = expandArticleDataEntry(parentEntry))
+          parentId = parentOpts.id
+        } else {
+          parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+        }
+        const args = {
+          author,
+          bodySource: articleArg.bodySource,
+          parentId,
+          render,
+          sequelize,
+          titleSource: articleArg.titleSource,
+        }
+        const { articles: newArticles, extra_returns } = await convert.convertArticle(args)
+        opts.id = extra_returns.context.header_tree.children[0].ast.id
+        for (const article of newArticles) {
+          articleIdToArticle[article.id] = article
+          if (render) {
+            articles.push(article)
+          }
+          articleId++
+        }
       }
     }
     // TODO This was livelocking (taking a very long time, live querries)

@@ -96,7 +96,6 @@ export const getServerSidePropsArticleHoc = ({
         articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
         // TODO maybe cache this directly to a database column, I'm afraid this operation is slow?
         const h1Ast = ourbigbook.AstNode.fromJSON(h1ArticleInSamePage.ast_json, ourbigbook.convert_init_context())
-        console.error('h1Ast.validation_output.scope: ' + require('util').inspect(h1Ast.validation_output.scope));
         articleJson.hasScope = h1Ast.validation_output.scope.boolean
       }
       const props: ArticlePageProps = {

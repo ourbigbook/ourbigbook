@@ -19,6 +19,7 @@ async function convert({
   author,
   bodySource,
   convertOptionsExtra,
+  parentId,
   path,
   render,
   sequelize,
@@ -33,7 +34,22 @@ async function convert({
   if (path === undefined) {
     path = titleSource ? ourbigbook.title_to_id(titleSource) : 'asdf'
   }
-  const input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
+  let input_path
+  if (parentId) {
+    const parentIdRow = await sequelize.models.Id.findOne({
+      where: { idid: parentId },
+    })
+    const context = ourbigbook.convert_init_context()
+    const parentH1Ast = ourbigbook.AstNode.fromJSON(parentIdRow.ast_json, context)
+    parentH1Ast.id = parentIdRow.idid
+    const parentScope = parentH1Ast.calculate_scope()
+    // Inherit scope from parent. In particular, this forces every article by a
+    // user to be scoped under @username due to this being recursive from the index page.
+    input_path = `${parentScope}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
+  } else {
+    // Index page. Hardcode input path.
+    input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
+  }
   await ourbigbook.convert(
     input,
     lodash.merge({
@@ -45,6 +61,7 @@ async function convert({
           splitDefaultNotToplevel: true,
         },
       },
+      parent_id: parentId,
       read_include: read_include_web(async (idid) => (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0),
       ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${author.username}`,
       render,
@@ -78,25 +95,26 @@ async function convertArticle({
   titleSource,
   transaction,
 }) {
-  let articles
+  let articles, extra_returns
   await sequelize.transaction({ transaction }, async (transaction) => {
     if (render === undefined) {
       render = true
     }
-    const { db_provider, extra_returns, input_path } = await convert({
+    let db_provider, input_path
+    ;({ db_provider, extra_returns, input_path } = await convert({
       author,
       bodySource,
       convertOptionsExtra: {
         forbid_multiheader: forbidMultiheaderMessage,
-        parent_id: parentId,
       },
       forceNew,
+      parentId,
       path,
       render,
       sequelize,
       titleSource,
       transaction,
-    })
+    }))
     const toplevelId = extra_returns.context.header_tree.children[0].ast.id
     if (forceNew && await sequelize.models.File.findOne({ where: { path: input_path }, transaction })) {
       throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
@@ -716,7 +734,7 @@ WHERE
       articles = []
     }
   })
-  return articles
+  return { articles, extra_returns }
 }
 
 async function convertComment({ issue, number, sequelize, source, user }) {

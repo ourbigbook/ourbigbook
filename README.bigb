@@ -5924,7 +5924,7 @@ One day, one day. Maybe.
 
 OurBigBook tooling is so amazing that we also take care of the HTML publishing for you!
 
-Once publish target is properly setup, all you have to do is run:
+Once a publish target is properly setup, all you have to do is run:
 ``
 git add README.bigb
 git commit -m 'more content!'
@@ -5932,7 +5932,7 @@ ourbigbook --publish
 ``
 and your changes will be published to the  default target specified in <ourbigbook.json>.
 
-If not specified, the default target is <publish to GitHub Pages>.
+If not specified, e.g. with the the <--publish-target> option, the default target is to <publish to GitHub Pages>.
 
 Only changes committed to Git are pushed.
 
@@ -5949,8 +5949,43 @@ When `--publish` is given, stdin input is not accepted, and so the current direc
 
 Publishing only happens if the build has no errors.
 
+= `-P, --publish-commit <commit-message>`
+{id=publish-commit}
+{parent=OurBigBook CLI options}
+
+Like <publish>, but also automatically:
+* `git add -u` to automatically add change to any files that have been previously git tracked
+* `git commit -m <commit-message>` to create a new commit with those changes
+
+This allows you to publish your changes live in a single command such as:
+``
+ourbigbook --publish-commit 'my amazing change' .
+``
+
+With great power comes great responsibility of course, but who cares!
+
+= `--publish-target`
+{parent=OurBigBook CLI options}
+
+What type of target to publish for. The generated output of each publish target is stored under:
+``
+out/publish/out/<target>
+``
+e.g.:
+``
+out/publish/out/local
+``
+
+Possible values:
+* `github-pages`: see also <Publish to GitHub Pages>
+* `local`: publish as a local directory that can be zipped and sent to someone else, and then correctly viewed by a browser locally by the receiver. You can then zip it from the Linux command line for example with:
+  ``
+  cd out/publish/out
+  zip -r local.zip local
+  ``
+
 = Publish to GitHub Pages
-{parent=publish}
+{parent=`--publish-target`}
 
 https://pages.github.com/[GitHub pages] is the default OurBigBook publish target.
 
@@ -5981,21 +6016,6 @@ git push --delete origin master
 ``
 
 You then will also want to set your default repository branch to `dev` in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
-
-= `-P, --publish-commit <commit-message>`
-{id=publish-commit}
-{parent=OurBigBook CLI options}
-
-Like <publish>, but also automatically:
-* `git add -u` to automatically add change to any files that have been previously git tracked
-* `git commit -m <commit-message>` to create a new commit with those changes
-
-This allows you to publish your changes live in a single command such as:
-``
-ourbigbook --publish-commit 'my amazing change' .
-``
-
-With great power comes great responsibility of course, but who cares!
 
 = `-S`, `--split-headers`
 {id=split-headers}

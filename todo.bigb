@@ -5,13 +5,6 @@
 
 https://github.com/cirosantilli/ourbigbook/issues/277
 
-=== Allow showing article body on article lists
-{tag=Web}
-
-Maybe some will be list by default, but some will definitely be article show by default. Notably topic has to show the rendered body by default.
-
-This is a superset of: https://github.com/cirosantilli/ourbigbook/issues/270
-
 === Separate lines with field label for parent and previous sibling on web editor
 {tag=Web}
 {tag=Editor}
@@ -161,6 +154,13 @@ We should likely not show it on link hover however, only headers, as doing so wo
 It seems that the third party library we are using is just a hack and doesn't properly provide the thing offline... OMG could it be so crap? https://stackoverflow.com/questions/59773190/monaco-editor-with-nextjs/68611592#68611592
 
 == Closed issues
+
+=== Allow showing article body on article lists
+{tag=Web}
+
+Maybe some will be list by default, but some will definitely be article show by default. Notably topic has to show the rendered body by default.
+
+This is a superset of: https://github.com/cirosantilli/ourbigbook/issues/270
 
 === Comment h1 has empty metadata line where likes would be placed
 {tag=Comment}

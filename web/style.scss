@@ -110,6 +110,9 @@ label {
 div.list-container {
   overflow-x: auto;
   margin-bottom: 20px;
+  .item:not(:last-child) {
+    margin-bottom: 1em;
+  }
   table.list {
     border-collapse: collapse;
     white-space: nowrap;
@@ -132,14 +135,14 @@ div.list-container {
           max-width: 60vw;
           overflow: hidden;
         }
-        &.title {
-          font-weight: bold;
-        }
         &.bold {
           font-weight: bold;
         }
       }
     }
+  }
+  .title {
+    font-weight: bold;
   }
 }
 

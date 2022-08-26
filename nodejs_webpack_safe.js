@@ -790,19 +790,11 @@ async function check_db(sequelize, paths_converted, transaction) {
   return error_messages
 }
 
-function preload_katex(tex_path) {
+function preload_katex_from_file(tex_path) {
   let katex_macros = {};
   if (fs.existsSync(tex_path)) {
-    require('katex').renderToString(
-      fs.readFileSync(tex_path, ENCODING),
-      {
-        globalGroup: true,
-        macros: katex_macros,
-        output: 'html',
-        strict: 'error',
-        throwOnError: true,
-      }
-    );
+    katex_macros = ourbigbook_nodejs_front.preload_katex(
+      fs.readFileSync(tex_path, ENCODING))
   }
   return katex_macros
 }
@@ -820,7 +812,7 @@ module.exports = {
   destroy_sequelize,
   fetch_header_tree_ids,
   get_noscopes_base_fetch_rows,
-  preload_katex,
+  preload_katex_from_file,
   remove_duplicates_sorted_array,
   update_database_after_convert,
   ENCODING,

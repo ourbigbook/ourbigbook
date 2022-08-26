@@ -5,7 +5,10 @@ import lodash from 'lodash'
 import pluralize from 'pluralize'
 
 import ourbigbook from 'ourbigbook';
+//import ourbigbook_tex from 'ourbigbook/tex';
+import ourbigbook_tex from 'ourbigbook/default.tex';
 import web_api from 'ourbigbook/web_api';
+import { preload_katex } from 'ourbigbook/nodejs_front';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
 import { convertOptions, docsUrl, forbidMultiheaderMessage, isProduction, read_include_web } from 'front/config';
@@ -203,6 +206,7 @@ export default function EditorPageHoc({
       db_provider: new RestDbProvider(),
       forbid_multiheader: isIssue ? undefined : forbidMultiheaderMessage,
       input_path: initialFile?.path || titleToPath(loggedInUser, 'asdf'),
+      katex_macros: preload_katex(ourbigbook_tex),
       ourbigbook_json: {
         openLinksOnNewTabs: true,
       },

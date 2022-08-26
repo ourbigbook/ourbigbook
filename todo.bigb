@@ -3,10 +3,32 @@
 
 == Issues
 
+=== Prevent full page reload on links using our existing link capture
+{tag=Web}
+
+Would be a possibly good solution now to: https://github.com/cirosantilli/ourbigbook/issues/274 now that we already have link click capturing necessarily.
+
+=== Inject React header meatadata on each header separately
+{tag=Web}
+
+No more need for:
+``
+for (const h of elem.querySelectorAll('.h')) {
+``
+on `Article.tsx` now that we have separate headers, we can just inject it one by one.
+
+Bibliography:
+
+* https://stackoverflow.com/questions/44643424/how-to-parse-html-to-react-component
+* https://stackoverflow.com/questions/36104302/how-do-i-convert-a-string-to-jsx
+* https://stackoverflow.com/questions/71224517/is-it-possible-to-inject-a-next-js-component-into-an-existing-application-html
+
 === Statically render links to issues and topic under each header for better SEO
 {tag=Web}
 
-The links don't show without JavaScript. The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
+The links don't show without JavaScript, this can be seen by disabling Js.
+
+The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
 
 === Add sibling/add child buttons next to toc entries of articles owned by the current user
 {tag=Web}

@@ -107,7 +107,7 @@ router.post('/users', async function(req, res, next) {
           hostname: 'www.google.com',
           validateStatus: () => true,
           body: new url.URLSearchParams({
-            secret: process.env.RECAPTCHA_SECRET_kEY,
+            secret: process.env.RECAPTCHA_SECRET_KEY,
             response: req.body.recaptchaToken,
           }).toString(),
         }
@@ -116,7 +116,7 @@ router.post('/users', async function(req, res, next) {
         return res.sendStatus(503)
       }
       if (!data.success) {
-        console.error(data);
+        console.error(`recaptcha error: ${data}`);
         throw new lib.ValidationError(['reCAPTCHA failed'])
       }
     }

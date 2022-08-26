@@ -6,6 +6,7 @@
 === Don't use helper synthetic AST nodes, render at render time instead
 {id=remove-synthetic-asts}
 {tag=File}
+{tag=Refactor}
 
 This is a hard refactor that likely will never be done. But so be it.
 
@@ -639,6 +640,13 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Automatically add `source` to archive.org images
+{tag=Image}
+
+E.g. https://web.archive.org/web/20230227073734im_/https://upload.wikimedia.org/wikipedia/commons/2/2b/STED_Mikroskop_PSFs.jpg[] to https://upload.wikimedia.org/wikipedia/commons/2/2b/STED_Mikroskop_PSFs.jpg[].
+
+Edit: OK that is useless. The source needs to be an HTML page, and we can't infer that from the archive links. Manual sources are necessary in that case.
 
 === Put files in a separate namespace
 {tag=File}
@@ -1316,6 +1324,8 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 === File
 
 This tag is about handling non-OurBigBook files, notably related to using the <`\H` `file` argument>.
+
+=== Image
 
 === Math
 

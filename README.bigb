@@ -6598,9 +6598,9 @@ But we can see that there are 3 articles in total about "Fundamental theorem of 
 {description=
 After clicking that button, we reach https://ourbigbook.com/go/topic/fundamental-theorem-of-calculus[the "Fundamental theorem of calculus" topic page].
 
-Here we see that there are 3 articles in total. The one by Mr. Trump has 1 vote, while the others have zero. So maybe it is the best one!
+Here we see that there are 3 articles in total. The one by Mr. Trump has 1 vote, while the others have zero, so Trump's appears on top. So maybe that is the best one!
 
-Let's click on "Read the full article" to see the article and its descendant articles by that author.
+After a quick read, it does look like it might be interesting. Let's click on "Read the full article" to also see the descendant articles by Mr. Trump.
 }
 
 \Image[Fundamental_theorem_of_calculus_by_Donald_Trump.png]

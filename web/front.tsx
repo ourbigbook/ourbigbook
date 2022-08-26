@@ -105,6 +105,10 @@ export function HelpIcon(opts) {
   return Icon("ion-help-circled", "Help", opts)
 }
 
+export function HomeIcon(opts) {
+  return Icon("ion-android-home", "Home", opts)
+}
+
 export function IssueIcon(opts) {
   return Icon("ion-ios-chatbubble", "Discussion", opts)
 }
@@ -143,6 +147,10 @@ export function SignupOrLogin(
     </CustomLink>
     {' '}{to}.
   </>
+}
+
+export function TopicsHelp() {
+  return <div><HelpIcon /> New to topics? <a href="https://docs.ourbigbook.com/#ourbigbook-web-topics">Read the documentation here!</a></div>
 }
 
 export function disableButton(btn, msg) {

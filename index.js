@@ -8085,7 +8085,20 @@ const DEFAULT_MACRO_LIST = [
             } else {
               start = '';
             }
-            return `<iframe width="560" height="${DEFAULT_MEDIA_HEIGHT}" loading="lazy" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
+            let height
+            if (ast.validation_output.height.given) {
+              height = ast.validation_output.height.positive_nonzero_integer
+            } else {
+              height = DEFAULT_MEDIA_HEIGHT
+            }
+            let width
+            if (ast.validation_output.width.given) {
+              height = ast.validation_output.width.positive_nonzero_integer
+            } else {
+              const DEFAULT_VIDEO_WIDTH = 560
+              width = DEFAULT_VIDEO_WIDTH * Math.floor(height / DEFAULT_MEDIA_HEIGHT)
+            }
+            return `<iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${html_escape_attr(video_id)}${start}" ` +
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`;
           } else {
             const check = ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined

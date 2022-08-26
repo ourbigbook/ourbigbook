@@ -6740,6 +6740,9 @@ Topics group articles that have the same title by different users. This feature 
 
 Topics are a bit like Twitter hashtags or Quora questions: their goal is to centralize knowledge about a specific subject by different people at a single location. 
 
+\Video[https://www.youtube.com/watch?v=54nxjC9BWTg]
+{title=<OurBigBook Web topics> demo}
+
 \Image[Integral_by_Barack_showing_fundamental_theorem_of_calculus_child_topic.png]
 {height=600}
 {border}
@@ -6814,8 +6817,8 @@ As an example of dynamic artic tree, note how the article "Special relativity" c
 * https://ourbigbook.com/barack-obama/natural-science as the child of a child
 The only efficient way to do this is to pick which articles will be rendered as soon as the user makes the request, rather than having fully pre-rendered pages, thus the name "dynamic".
 
-\Video[https://www.youtube.com/watch?v=JsxbUkI9B4A]
-{title=<OurBigBook Web> dynamic article tree}
+\Video[https://www.youtube.com/watch?v=sX_D_5tCQgg]
+{title=<OurBigBook Web dynamic article tree> demo}
 {height=700}
 {width=700}
 
@@ -6909,12 +6912,12 @@ Marking a page as the child of another page is easy in <OurBigBook Web>: you can
 
 If you don't want the article to be the first child of a parent, you can also set the "previous sibling" field. This specifies after which article the new article will be inserted.
 
-\Video[https://www.youtube.com/watch?v=Fw_enNJ3uc8]
+\Video[https://www.youtube.com/watch?v=yQRjLyqILl0]
 {title=<OurBigBook Web> parent selection on the web UI}
 {height=700}
 {width=700}
 
-\Video[https://www.youtube.com/watch?v=owmlRh8PD8c]
+\Video[https://www.youtube.com/watch?v=2Ne6AorMbGM]
 {title=<OurBigBook Web> error reporting}
 {height=700}
 {width=1000}
@@ -7698,6 +7701,7 @@ heroku restart -a ourbigbook
 
 = heroku
 {file}
+{parent=Heroku deployment}
 
 The \a[heroku] helper allows us to omit the boring `-a ourbigbook`, e.g. we can just type:
 ``

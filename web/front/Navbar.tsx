@@ -57,7 +57,7 @@ const Navbar = ({ isEditor, scoreDelta }) => {
           .com&nbsp;(beta)
         </span>
       </CustomLink>
-      <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }><HelpIcon />&nbsp;About us</a>
+      <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }><HelpIcon />&nbsp;About</a>
       <a href={donateUrl} className="donate" target={ isEditor ? '_blank' : '_self' }>$ Donate</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>

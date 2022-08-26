@@ -43,6 +43,7 @@ const ArticleList = ({
   page,
   paginationUrlFunc,
   showAuthor,
+  showBody=false,
   what='all',
 }: ArticleListProps) => {
   const router = useRouter();
@@ -89,91 +90,140 @@ const ArticleList = ({
       {message}
     </div>;
   }
+  let pagination
+  if (paginationUrlFunc) {
+    pagination = <Pagination {...{
+      currentPage: page,
+      what: isIssue ? 'threads' : 'articles',
+      itemsCount: articlesCount,
+      itemsPerPage: articleLimit,
+      urlFunc: paginationUrlFunc,
+    }} />
+  } else {
+    pagination = <></>
+  }
   return (
     <div className="list-nav-container">
+      {showBody && pagination}
       <div className="list-container">
-        <table className="list">
-          <thead>
-            <tr>
-              {itemType === 'topic' ?
-                <th className="shrink right">Articles</th>
-                :
-                <th className="shrink center">Score</th>
-              }
-              <th className="expand"><ArticleIcon /> Title</th>
-              {showAuthor &&
-                <th className="shrink"><UserIcon /> Author</th>
-              }
-              {isIssue &&
-                <th className="shrink">
-                  #
-                </th>
-              }
-              <th className="shrink"><TimeIcon /> Created</th>
-              <th className="shrink"><TimeIcon /> Updated</th>
-            </tr>
-          </thead>
-          <tbody>
-            {articles?.map((article, i) => (
-              <tr key={itemType === 'discussion' ? article.number : itemType === 'article' ? article.slug : article.topicId}>
-                {itemType === 'topic' ?
-                  <td className="shrink right bold">
-                    {article.articleCount}
-                  </td>
-                  :
-                  <td className="shrink center">
-                    <LikeArticleButton {...{
-                      article,
-                      isIssue,
-                      issueArticle,
-                      loggedInUser,
-                      showText: false,
-                    }} />
-                  </td>
-                }
-                <td className="expand title">
-                  <CustomLink
-                    href={itemType === 'discussion' ? routes.issue(issueArticle.slug, article.number) :
-                          itemType === 'article' ? routes.article(article.slug) :
-                          routes.topic(article.topicId, { sort: 'score' })
-                    }
-                  >
-                    <div
-                      className="comment-body ourbigbook-title"
-                      dangerouslySetInnerHTML={{ __html: article.titleRender }}
-                    />
-                  </CustomLink>
-                </td>
+        {showBody
+          ? articles?.map((article, i) => (
+              <div key={itemType === 'discussion' ? article.number : itemType === 'article' ? article.slug : article.topicId}>
+                <LikeArticleButton {...{
+                  article,
+                  isIssue,
+                  issueArticle,
+                  loggedInUser,
+                  showText: false,
+                }} />
+                {' '}
                 {showAuthor &&
-                  <td className="shrink">
+                  <>
+                    by
                     <UserLinkWithImage showUsername={false} user={article.author} />
-                  </td>
+                    {' '}
+                  </>
                 }
-                {isIssue &&
-                  <td className="shrink bold">
-                    <CustomLink
-                      href={isIssue ? routes.issue(issueArticle.slug, article.number) : routes.article(article.slug)}
-                    >
-                      #{article.number}
-                    </CustomLink>
-                  </td>
+                <TimeIcon />
+                {' '}
+                {formatDate(article.createdAt)}
+                {(article.createdAt !== article.updatedAt) &&
+                  <>
+                    updated:
+                    {' '}
+                    <TimeIcon />
+                    {formatDate(article.updatedAt)}
+                  </>
                 }
-                <td className="shrink">{formatDate(article.createdAt)}</td>
-                <td className="shrink">{formatDate(article.updatedAt)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                <div
+                  className="ourbigbook"
+                  dangerouslySetInnerHTML={{ __html: article.render }}
+                />
+                <CustomLink
+                  href={itemType === 'discussion' ? routes.issue(issueArticle.slug, article.number) :
+                        itemType === 'article' ? routes.article(article.slug) :
+                        routes.topic(article.topicId, { sort: 'score' })
+                  }
+                >
+                  <ArticleIcon /> Read the full article.
+                </CustomLink>
+              </div>
+            ))
+          : <table className="list">
+              <thead>
+                <tr>
+                  {itemType === 'topic' ?
+                    <th className="shrink right">Articles</th>
+                    :
+                    <th className="shrink center">Score</th>
+                  }
+                  <th className="expand"><ArticleIcon /> Title</th>
+                  {showAuthor &&
+                    <th className="shrink"><UserIcon /> Author</th>
+                  }
+                  {isIssue &&
+                    <th className="shrink">
+                      #
+                    </th>
+                  }
+                  <th className="shrink"><TimeIcon /> Created</th>
+                  <th className="shrink"><TimeIcon /> Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                {articles?.map((article, i) => (
+                  <tr key={itemType === 'discussion' ? article.number : itemType === 'article' ? article.slug : article.topicId}>
+                    {itemType === 'topic' ?
+                      <td className="shrink right bold">
+                        {article.articleCount}
+                      </td>
+                      :
+                      <td className="shrink center">
+                        <LikeArticleButton {...{
+                          article,
+                          isIssue,
+                          issueArticle,
+                          loggedInUser,
+                          showText: false,
+                        }} />
+                      </td>
+                    }
+                    <td className="expand title">
+                      <CustomLink
+                        href={itemType === 'discussion' ? routes.issue(issueArticle.slug, article.number) :
+                              itemType === 'article' ? routes.article(article.slug) :
+                              routes.topic(article.topicId, { sort: 'score' })
+                        }
+                      >
+                        <div
+                          className="comment-body ourbigbook-title"
+                          dangerouslySetInnerHTML={{ __html: article.titleRender }}
+                        />
+                      </CustomLink>
+                    </td>
+                    {showAuthor &&
+                      <td className="shrink">
+                        <UserLinkWithImage showUsername={false} user={article.author} />
+                      </td>
+                    }
+                    {isIssue &&
+                      <td className="shrink bold">
+                        <CustomLink
+                          href={isIssue ? routes.issue(issueArticle.slug, article.number) : routes.article(article.slug)}
+                        >
+                          #{article.number}
+                        </CustomLink>
+                      </td>
+                    }
+                    <td className="shrink">{formatDate(article.createdAt)}</td>
+                    <td className="shrink">{formatDate(article.updatedAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+        }
       </div>
-      {paginationUrlFunc &&
-        <Pagination {...{
-          currentPage: page,
-          what: isIssue ? 'threads' : 'articles',
-          itemsCount: articlesCount,
-          itemsPerPage: articleLimit,
-          urlFunc: paginationUrlFunc,
-        }} />
-      }
+      {pagination}
     </div>
   );
 };

@@ -225,7 +225,7 @@ div.article-page {
       }
     }
     .see-all {
-      font-size: 1.3em;
+      font-size: 1.2em;
       margin-bottom: 1em;
     }
     div.article-info-3 {
@@ -330,6 +330,10 @@ span.shortcut {
     margin-top: 0;
     margin-bottom: 0.2em;
   }
+  .h2 {
+    @include h-common;
+    margin-bottom: 0.3em;
+  }
   @media only screen and (max-width: $max-mobile-width) {
     padding-left: $toplevel-padding-mobile;
     padding-right: $toplevel-padding-mobile;
@@ -433,6 +437,8 @@ span.shortcut {
 }
 
 .pagination {
+  padding: 0;
+  list-style-type: none;
   .page-item {
     &.active {
       a {
@@ -446,7 +452,7 @@ span.shortcut {
       }
     }
     &.total {
-      margin-left: 15px;
+      margin-left: 10px;
     }
   }
 }

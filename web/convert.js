@@ -25,6 +25,7 @@ async function convert({
   author,
   bodySource,
   convertOptionsExtra,
+  fakeUsernameDir,
   parentId,
   path,
   render,
@@ -53,8 +54,14 @@ async function convert({
     // user to be scoped under @username due to this being recursive from the index page.
     input_path = `${parentScope}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
   } else {
+    let usernameDir
+    if (fakeUsernameDir) {
+      usernameDir = fakeUsernameDir
+    } else {
+      usernameDir = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+    }
     // Index page. Hardcode input path.
-    input_path = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
+    input_path = `${usernameDir}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
   }
   await ourbigbook.convert(
     input,
@@ -72,7 +79,6 @@ async function convert({
       ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${author.username}`,
       render,
       split_headers: splitHeaders === undefined ? true : splitHeaders,
-      web: true,
     }, convertOptions, convertOptionsExtra),
     extra_returns,
   )
@@ -123,6 +129,7 @@ async function convertArticle({
         // rendering on topic pages, and in the future on collections, which require elements by different users
         // to show fine under a single page.
         fixedScopeRemoval: ourbigbook.AT_MENTION_CHAR.length,
+        h_web_metadata: true,
         prefixNonIndexedIdsWithParentId: true,
       },
       forceNew,
@@ -760,9 +767,10 @@ async function convertComment({ issue, number, sequelize, source, user }) {
     author: user,
     bodySource: source,
     convertOptionsExtra: {
-      id_prefix: `${commentIdPrefix}${number}-`,
-      x_external_prefix: '../'.repeat((routes.issue(issue.issues.slug, number).match(/\//g) || []).length - 1),
+      fixedScopeRemoval: 0,
+      tocIdPrefix: `${commentIdPrefix}${number}-`,
     },
+    fakeUsernameDir: `@${user.username}/${commentIdPrefix}${number}`,
     render: true,
     sequelize,
     splitHeaders: false,
@@ -800,8 +808,10 @@ async function convertIssue({ article, bodySource, issue, number, sequelize, tit
     author: user,
     bodySource,
     convertOptionsExtra: {
-      x_external_prefix: '../'.repeat((routes.issue(article.slug, number).match(/\//g) || []).length - 1),
+      fixedScopeRemoval: 0,
+      h_web_metadata: true,
     },
+    fakeUsernameDir: `@${user.username}/_issue-${article.slug}/${number}`,
     render: true,
     sequelize,
     splitHeaders: false,

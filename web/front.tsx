@@ -10,6 +10,7 @@ import CustomLink from 'front/CustomLink'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { IssueType } from 'front/types/IssueType'
+import { UserLinkWithImageInner } from 'front/UserLinkWithImage'
 
 export const AUTH_LOCAL_STORAGE_NAME = 'user'
 export const LOGIN_ACTION = 'Sign in'
@@ -31,7 +32,10 @@ export function ArticleBy(
     "<span
       className="comment-body ourbigbook-title"
       dangerouslySetInnerHTML={{ __html: article.titleRender }}
-    />" by { article.author.displayName }
+    />" by <UserLinkWithImageInner {...{
+      user: article.author,
+      showUsername: false,
+    }} />
   </>
   const href = routes.article(article.slug)
   if (newTab) {
@@ -59,13 +63,13 @@ export function DiscussionAbout(
 ) {
   const inner = <>
       <IssueIcon />{' '}
-      Discussion{issue ? ` #${issue.number}` : ''}:{' '}
+      Discussion{issue ? ` #${issue.number}` : ''} on {' '}
       <ArticleBy {...{article, issue}} />
     </>
   if (issue) {
-    return <div className="h1">{ inner }</div>
+    return <div className="h2">{ inner }</div>
   } else {
-    return <h1>{ inner }</h1>
+    return <h1 className="h2">{ inner }</h1>
   }
 }
 

@@ -153,7 +153,22 @@ Link to child: <test child 1 1>
   ]],
 ]
 const issueData = [
-  ['There\'s a typo in this article at "mathmatcs"', ''],
+  ['Test issue', `Link to article: <test data>
+
+Link to ID in this issue: <test issue 2>
+
+== Test issue 2
+
+=== Test issue 3
+
+== Test child
+
+Conflict resolution between issue IDs and article IDs:
+
+* to issue: <test child>
+* to article: </test child>
+`],
+  ['There\'s a typo in this article at "mathmatcs"', ``],
   ['Add mention of the fundamental theorem of calculus', `The fundamental theorem of calculus is very important to understanding this subject.
 
 I would add something like:
@@ -171,6 +186,27 @@ As an added bonus, a mention of Newton's rule would also be very useful.
   ['The code `f(x) + 1` should be `f(x) + 2`', 'Zero indexing always gets me too.'],
 ]
 const commentData = [
+  `= My test comment
+
+Link to ID in comment: <My test comment 2>
+
+Link to article: <test data>
+
+== My test comment 2
+
+=== My test comment 3
+
+== Test child
+
+Conflict resolution between issue IDs and article IDs:
+
+* to issue: <test child>
+* to article: </test child>
+`,
+//  `My test comment without a header
+//
+//Link to article: <test data>
+//`,
   'Thanks, you\'re totally right, I\'ll look into it!',
   'Just fixed the issue on a new edit, thanks.',
   `= Why I think you are stupid

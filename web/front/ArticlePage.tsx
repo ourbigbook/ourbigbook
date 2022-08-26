@@ -82,6 +82,8 @@ const ArticlePageHoc = (isIssue=false) => {
               </nav>
             }
             <div className="article-info">
+              by
+              {' '}
               <UserLinkWithImage user={author} showUsername={true} showUsernameMobile={false} />
               {' '}
               <FollowUserButton {...{ user: author, loggedInUser, showUsername: false }} />

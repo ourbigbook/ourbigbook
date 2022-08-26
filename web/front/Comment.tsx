@@ -1,6 +1,7 @@
 import React from 'react'
 import { useRouter } from 'next/router'
 
+import { TimeIcon } from 'front'
 import Maybe from 'front/Maybe'
 import { webApi } from 'front/api'
 import config from 'front/config'
@@ -27,6 +28,8 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
         {' by '}
         <UserLinkWithImage user={comment.author} showUsernameMobile={false} />
         {' on '}
+        <TimeIcon />
+        {' '}
         {formatDate(comment.createdAt)}
         {' '}
         <Maybe test={!cant.deleteComment(loggedInUser, comment)}>

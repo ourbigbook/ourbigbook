@@ -203,7 +203,7 @@ class OurbigbookEditor {
     let extra_returns = {};
     let ok = true
     try {
-      this.modifyEditorInputRet = this.modifyEditorInput(this.editor.getValue())
+      this.modifyEditorInputRet = this.modifyEditorInput(this.getValue())
       this.output_elem.innerHTML = await this.ourbigbook.convert(
         this.modifyEditorInputRet.new,
         this.options.convertOptions,
@@ -265,7 +265,12 @@ class OurbigbookEditor {
     this.editor.dispose()
   }
 
-  getValue() { return this.editor.getValue() }
+  getValue() {
+    // TODO I don't know how to do this more nicely and reliably e.g. with setEOL:
+    // https://github.com/microsoft/monaco-editor/issues/3440
+    // https://stackoverflow.com/questions/56525822/how-to-set-eol-to-lf-for-windows-so-that-api-gets-value-with-n-not-r-n/74624712#74624712
+    return this.editor.getValue().replaceAll('\r\n', '\n')
+  }
 
   scrollPreviewToSourceLine(line_number, block) {
     const line_number_orig = line_number

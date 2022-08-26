@@ -6192,7 +6192,7 @@ function render_toc_from_entry_list({ add_test_instrumentation, entry_list, desc
       ret += html_class_attr([TOC_HAS_CHILD_CLASS]);
     }
     ret += '>'
-    const my_toc_id = toc_id(id_prefix + target_id);
+    const my_toc_id = toc_id(target_id);
     let id_to_toc = html_attr(Macro.ID_ARGUMENT_NAME, html_escape_attr(my_toc_id));
     let linear_count_str
     if (add_test_instrumentation) {
@@ -8381,7 +8381,14 @@ const OUTPUT_FORMATS_LIST = [
                 has_toc(context)
               )
             ) {
-              toc_href = html_attr('href', '#' + html_escape_attr(toc_id(ast.id)));
+              let id = ast.id
+              const fixedScopeRemoval = context.options.fixedScopeRemoval
+              if (fixedScopeRemoval !== undefined) {
+                // This is hacky, maybe we shouldn't overload fixedScopeRemoval for this...
+                // it is used only on web so... lazy to think now.
+                id = id.slice(fixedScopeRemoval)
+              }
+              toc_href = html_attr('href', '#' + html_escape_attr(toc_id(id)));
               items.push(`<a${toc_href} class="toc"${html_attr('title', 'ToC entry for this header')}>${TOC_MARKER}</a>`);
             }
 

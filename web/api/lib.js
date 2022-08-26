@@ -4,8 +4,75 @@
 // here for now. This type of exception interface is very convenient, as it allows you to stop processing
 // immediately and return an error from subcalls.
 
+const pluralize = require('pluralize')
+
 const config = require('../front/config')
 const front = require('../front/js')
+
+function checkMaxNewPerTimePeriod({
+  errs,
+  loggedInUser,
+  newCountLastHour,
+  newCountLastMinute,
+  objectName,
+}) {
+  if (!config.isTest && !loggedInUser.admin) {
+    if (newCountLastMinute > loggedInUser.maxIssuesPerMinute) {
+      errs.push(`maximum number of new ${pluralize(objectName)} per minute reached: ${loggedInUser.maxIssuesPerMinute}`)
+    }
+    if (newCountLastHour > loggedInUser.maxIssuesPerHour) {
+      errs.push(`maximum number of new ${pluralize(objectName)} per hour reached: ${loggedInUser.maxIssuesPerHour}`)
+    }
+  }
+}
+
+// Make user like an object such as an Article, Issue or Comment
+async function likeObject({
+  req,
+  res,
+  getObject,
+  objectName,
+  joinModel,
+  validateLike,
+}) {
+  const sequelize = req.app.get('sequelize')
+  const [
+    obj,
+    loggedInUser,
+    likeCountByLoggedInUserLastMinute,
+    likeCountByLoggedInUserLastHour,
+  ] = await Promise.all([
+    getObject(req, res),
+    sequelize.models.User.findByPk(req.payload.id),
+    joinModel.count({ where: {
+      userId: req.payload.id,
+      createdAt: { [sequelize.Sequelize.Op.gt]: oneMinuteAgo() }
+    }}),
+    joinModel.count({ where: {
+      userId: req.payload.id,
+      createdAt: { [sequelize.Sequelize.Op.gt]: oneHourAgo() }
+    }}),
+  ])
+  await validateLike(req, res, loggedInUser, obj, true)
+  const errs = []
+  checkMaxNewPerTimePeriod({
+    errs,
+    objectName,
+    loggedInUser,
+    newCountLastHour: likeCountByLoggedInUserLastHour,
+    newCountLastMinute: likeCountByLoggedInUserLastMinute,
+  })
+  if (errs.length) { throw new ValidationError(errs, 403) }
+  if (objectName === 'article') {
+    await loggedInUser.addArticleLikeSideEffects(obj)
+  } else if (objectName === 'issue') {
+    await loggedInUser.addIssueLikeSideEffects(obj)
+  } else {
+    throw new Error(`unknown object name: ${objectName}`)
+  }
+  const newObj = await getObject(req, res)
+  return res.json({ [objectName]: await newObj.toJson(loggedInUser) })
+}
 
 function validateBodySize(loggedInUser, bodySource) {
   if (!loggedInUser.admin && bodySource.length > loggedInUser.maxArticleSize) {
@@ -56,6 +123,14 @@ function getLimitAndOffset(req, res, opts={}) {
       defaultValue: 0
     }),
   ]
+}
+
+function oneMinuteAgo() {
+  return new Date(new Date - 1000 * 60)
+}
+
+function oneHourAgo() {
+  return new Date(new Date - 1000 * 60 * 60)
 }
 
 async function sendEmail({
@@ -163,9 +238,13 @@ function validateParam(obj, prop, opts={}) {
 
 module.exports = {
   ValidationError,
+  checkMaxNewPerTimePeriod,
   getArticle,
   getLimitAndOffset,
   getOrder,
+  likeObject,
+  oneHourAgo,
+  oneMinuteAgo,
   sendEmail,
   validate,
   validateBodySize,

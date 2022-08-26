@@ -9,11 +9,21 @@ const front = require('../front/js')
 const routes = require('../front/routes')
 const { convertIssue, convertComment } = require('../convert')
 const lib = require('./lib')
-const { getArticle, ValidationError, validateParam, isPositiveInteger } = lib
+const {
+  ValidationError,
+  checkMaxNewPerTimePeriod,
+  getArticle,
+  oneMinuteAgo,
+  oneHourAgo,
+  isPositiveInteger,
+  validateParam,
+} = lib
 
 function issueCommentEmailBody({
   body,
   childUrl,
+  oneHourAgo,
+  oneMinuteAgo,
   settingsUrl,
   whatChild,
   whatParent,
@@ -44,14 +54,6 @@ To unsubscribe from this ${whatParent} click the unsubscribe button on the ${wha
 To unsubscribe from all ${config.appName} emails change the email settings on your profile page: ${settingsUrl}
 `,
   }
-}
-
-function oneMinuteAgo() {
-  return new Date(new Date - 1000 * 60)
-}
-
-function oneHourAgo() {
-  return new Date(new Date - 1000 * 60 * 60)
 }
 
 // Get issues for an article.
@@ -150,14 +152,13 @@ router.post('/', auth.required, async function(req, res, next) {
     const errs = []
     let err = front.hasReachedMaxItemCount(loggedInUser, issueCountByLoggedInUser, 'issues')
     if (err) { errs.push(err) }
-    if (!config.isTest && !loggedInUser.admin) {
-      if (issueCountByLoggedInUserLastMinute > loggedInUser.maxIssuesPerMinute) {
-        errs.push(`maximum number of new issues per minute reached: ${loggedInUser.maxIssuesPerMinute}`)
-      }
-      if (issueCountByLoggedInUserLastHour > loggedInUser.maxIssuesPerHour) {
-        errs.push(`maximum number of new issues per hour reached: ${loggedInUser.maxIssuesPerHour}`)
-      }
-    }
+    checkMaxNewPerTimePeriod({
+      errs,
+      loggedInUser,
+      newCountLastHour: issueCountByLoggedInUserLastHour,
+      newCountLastMinute: issueCountByLoggedInUserLastMinute,
+      objectName: 'issue',
+    })
     if (errs.length) { throw new ValidationError(errs, 403) }
     const body = lib.validateParam(req, 'body')
     const issueData = lib.validateParam(body, 'issue')
@@ -334,14 +335,15 @@ async function validateLike(req, res, user, article, isLike) {
 // Like an issue
 router.post('/:number/like', auth.required, async function(req, res, next) {
   try {
-    const [article, loggedInUser] = await Promise.all([
-      getIssue(req, res),
-      req.app.get('sequelize').models.User.findByPk(req.payload.id),
-    ])
-    await validateLike(req, res, loggedInUser, article, true)
-    await loggedInUser.addIssueLikeSideEffects(article)
-    const newArticle = await lib.getArticle(req, res)
-    return res.json({ article: await newArticle.toJson(loggedInUser) })
+    const sequelize = req.app.get('sequelize')
+    await lib.likeObject({
+      getObject: getIssue,
+      joinModel: sequelize.models.UserLikeIssue,
+      objectName: 'issue',
+      req,
+      res,
+      validateLike,
+    })
   } catch(error) {
     next(error);
   }
@@ -416,17 +418,17 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
       }),
       sequelize.models.User.findByPk(req.payload.id),
     ])
+    
     const errs = []
     let err = front.hasReachedMaxItemCount(loggedInUser, commentCountByLoggedInUser, 'comments')
     if (err) { errs.push(err) }
-    if (!config.isTest && !loggedInUser.admin) {
-      if (commentCountByLoggedInUserLastMinute > loggedInUser.maxIssuesPerMinute) {
-        errs.push(`maximum number of new comments per minute reached: ${loggedInUser.maxIssuesPerMinute}`)
-      }
-      if (commentCountByLoggedInUserLastHour > loggedInUser.maxIssuesPerHour) {
-        errs.push(`maximum number of new comments per hour reached: ${loggedInUser.maxIssuesPerHour}`)
-      }
-    }
+    checkMaxNewPerTimePeriod({
+      errs,
+      loggedInUser,
+      newCountLastHour: commentCountByLoggedInUserLastHour,
+      newCountLastMinute: commentCountByLoggedInUserLastMinute,
+      objectName: 'comment',
+    })
     if (errs.length) { throw new ValidationError(errs, 403) }
     const body = lib.validateParam(req, 'body')
     const commentData = lib.validateParam(body, 'comment')

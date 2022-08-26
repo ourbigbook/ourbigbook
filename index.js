@@ -3073,6 +3073,11 @@ function convert_init_context(options={}, extra_returns={}) {
     // Override the default calculated output file for the main input.
     options.outfile = undefined;
   }
+  if (!('outdir' in options)) {
+    // Path of the output directory relative to the toplevel directory.
+    // E.g. out/html
+    options.outdir = undefined;
+  }
   if (!('output_format' in options)) { options.output_format = OUTPUT_FORMAT_HTML; }
   if (!('path_sep' in options)) { options.path_sep = undefined; }
   if (!('parent_id' in options)) {
@@ -3083,6 +3088,11 @@ function convert_init_context(options={}, extra_returns={}) {
     // at initial conversion time. Without this options, we would need a separate
     // conversion to determine the toplevel ID of this file.
     options.parent_id = undefined;
+  }
+  if (!('publish' in options)) {
+    // If true, this means that this is a ourbigbook --publish run rather
+    // than a regular developmt compilation.
+    options.publish = false
   }
   if (!('read_include' in options)) { options.read_include = () => undefined; }
   if (!('read_file' in options)) { options.read_file = () => undefined; }
@@ -3826,9 +3836,19 @@ function html_hide_hover_link(id) {
   }
 }
 
-function html_img({ alt, ast, context, rendered_attrs, src }) {
+function html_img({
+  alt,
+  ast,
+  context,
+  rendered_attrs,
+  relpath_prefix,
+  src,
+}) {
   let error
-  ;({ href: src, error } = check_and_update_local_link({
+  ;({
+    href: src,
+    error
+  } = check_and_update_local_link({
     check: ast.validation_output.check.given ? ast.validation_output.check.boolean : undefined,
     context,
     href: src,
@@ -3840,8 +3860,10 @@ function html_img({ alt, ast, context, rendered_attrs, src }) {
   } else {
     border_attr = ''
   }
-  return `<img${html_attr('src',
-    html_escape_attr(src))
+  if (relpath_prefix !== undefined) {
+    src = path.join(relpath_prefix, src)
+  }
+  return `<img${html_attr('src', html_escape_attr(src))
   }${html_attr('loading', 'lazy')}${rendered_attrs}${alt}${border_attr}>${error}\n`;
 }
 
@@ -4035,8 +4057,14 @@ function macro_image_video_block_convert_function(ast, context) {
   } else {
     href_prefix = undefined;
   }
-  let {error_message, media_provider_type, source, src, is_url}
-    = macro_image_video_resolve_params_with_source(ast, context);
+  let {
+    error_message,
+    media_provider_type,
+    relpath_prefix,
+    source,
+    src,
+    is_url
+  } = macro_image_video_resolve_params_with_source(ast, context);
   if (error_message !== undefined) {
     return error_message;
   }
@@ -4062,7 +4090,17 @@ function macro_image_video_block_convert_function(ast, context) {
     alt = html_attr('alt', html_escape_attr(alt_val));
   }
   ret += context.macros[ast.macro_name].options.image_video_content_func(
-    ast, context, src, rendered_attrs, alt, media_provider_type, is_url);
+    ast,
+    context,
+    src,
+    rendered_attrs,
+    alt,
+    media_provider_type,
+    is_url,
+    {
+      relpath_prefix
+    }
+  );
   if (has_caption) {
     const { full: title, inner } = x_text_base(ast, context, { href_prefix, force_separator })
     const title_and_description = get_title_and_description({ title, description, source, inner })
@@ -7372,19 +7410,33 @@ function macro_image_video_resolve_params(ast, context) {
   }
 
   // Fixup src depending for certain providers.
+  let relpath_prefix
   if (media_provider_type === 'local') {
     const path = context.options.ourbigbook_json['media-providers'].local.path;
     if (path !== '') {
       src = path + URL_SEP + src;
     }
   } else if (media_provider_type === 'github') {
-    src = `https://raw.githubusercontent.com/${context.options.ourbigbook_json['media-providers'].github.remote}/master/${src}`;
+    const github_path = context.options.ourbigbook_json['media-providers'].github.path;
+    if (
+      github_path &&
+      context.options.fs_exists_sync(github_path) &&
+      !context.options.publish
+    ) {
+      // Can't join it in here now or else existence check fails.
+      // But we need to keep this information around to be able to link from inside out/html/... relative path.
+      relpath_prefix = path.relative('.', context.options.outdir)
+      src = `${github_path}/${src}`
+    } else {
+      src = `https://raw.githubusercontent.com/${context.options.ourbigbook_json['media-providers'].github.remote}/master/${src}`;
+    }
   }
 
   return {
     error_message,
-    media_provider_type: media_provider_type,
+    media_provider_type,
     is_url,
+    relpath_prefix,
     src,
   }
 }
@@ -7763,8 +7815,28 @@ const DEFAULT_MACRO_LIST = [
     Object.assign(
       {
         caption_prefix: 'Figure',
-        image_video_content_func: function (ast, context, src, rendered_attrs, alt, media_provider_type, is_url) {
-          const img_html = html_img({ alt, ast, context, rendered_attrs, src })
+        image_video_content_func: function (
+          ast,
+          context,
+          src,
+          rendered_attrs,
+          alt,
+          media_provider_type,
+          is_url,
+          opts={}
+        ) {
+          const relpath_prefix = opts.relpath_prefix
+          const img_html = html_img({
+            alt,
+            ast,
+            context,
+            rendered_attrs,
+            src,
+            relpath_prefix,
+          })
+          if (relpath_prefix !== undefined) {
+            src = path.join(relpath_prefix, src)
+          }
           return `<a${html_attr('href', src)}>${img_html}</a>\n`;
         },
         named_args: MACRO_IMAGE_VIDEO_NAMED_ARGUMENTS,

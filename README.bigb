@@ -6324,15 +6324,19 @@ Direct children of media-providers and subproperties that are valid only for the
 * `github`: tracked in a separate Git repository as mentioned at <store images in a separate media repository>{full}
   * `path`: analogous to `path` for `local`: a local location for this GitHub provider, where the repository can optionally be cloned.
 
-    TODO implement the amazing behaviour described below:
+    When not during a <publish> run, OurBigBook checks if the path exists locally, and if it does, then it uses that local directory as the source intead of the GitHub repository.
 
-    If this directory exists then local renders automatically use it instead of linking to the GitHub resources, therefore allowing you to develop locally without the internet and Still see images.
+    This allows you to develop locally without Internet and see the latest version of the images without pushing them.
 
-    Then, during deployment, the GitHub version is used on the render regardless. Furthermore, we also automatically `git push` this repository during deployment to ensure that any asset changes will be available.
+    During publishing, the GitHub version is used instead.
 
-    This path is ignored from OurBigBook conversion as if added to <ignore>, and is not added to the final output, because you are already going to have a copy of it.
+    TODO make this even more awesome by finishing to implement https://github.com/cirosantilli/ourbigbook/issues/184[]:
+    * automatically `git push` this repository during deployment to ensure that any asset changes will be available.
+    * ignore the path from OurBigBook conversion as if added to <ignore>, and is not added to the final output, because you are already going to have a copy of it.
 
-    The sanest approach is generally to track this directory as a Git submodule as mentioned at: <store images in a separate media repository and track it as a git submodule>
+      This way you can use the sanes approach which is to track the directory as a Git submodule as mentioned at: <store images in a separate media repository and track it as a git submodule>, instead of either:
+      * keeping it outside of the repository
+      * keeping it in the repository but explicitly ignoring it as well, which is a bit redundant
   * `remote`: `<github-username>/<repo-name>`
 * `youtube`: YouTube <videos>
 
@@ -6549,6 +6553,8 @@ More subjective rationale, motivation and planning aspects of the project are do
 
 <OurBigBook Web> is a bit like Wikipedia, but where each user can have their own version of each page, and it <can my OurBigBook.com content be edited or removed by other users?>[cannot be edited by others without permission].
 
+The goal of the <OurBigBook Project> is to make university students write perfect natural sciences books for free as they are trying to learn for their lectures.
+
 Suppose that Mr. Barack Obama is your calculus teacher this semester.
 
 Being an enlightened teacher, Mr. Obama writes everything that he knows on his OurBigBook.com account. His home page look something like the following tree:
@@ -6573,52 +6579,45 @@ This is where OurBigBook comes to your rescue. There are two ways that it can he
 {c}
 {parent=OurBigBook Web user manual}
 
-Topics group articles that have the same title by different users. This feature allows you to find the best article for a given topic.
+Topics group articles that have the same title by different users. This feature allows you to find the best article for a given topic, and it is one of the key innovations of <OurBigBook Web>. 
 
-\Image[Fundamental_theorem_of_calculus_subheader_by_others.png]
-{height=350}
+\Image[Integral_by_Barack_showing_fundamental_theorem_of_calculus_child_topic.png]
+{height=600}
 {border}
 {provider=github}
-{description=Click the "Articles by other on the same topic" button. We can see that there are 3 articles in total by "Fundamental theorem of calculus", so maybe one of the others will help! URL: https://ourbigbook.com/barack-obama/mathematics#fundamental-theorem-of-calculus[]}
+{description=
+https://ourbigbook.com/barack-obama/integral#barack-obama/fundamental-theorem-of-calculus[Mr. Obama's article about the fundamental theorem of calculus] was not very good, and we were left clueless.
 
-\Image[Fundamental_theorem_of_calculus_topic_page.png]
+But we can see that there are 3 articles in total about "Fundamental theorem of calculus", 2 of them by other authors, so maybe one of the others will help!
+}
+
+\Image[Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png]
 {border}
 {provider=github}
-{height=300}
-{description=After clicking that button, we reach the page for the "Fundamental theorem of calculus" topic page. Here we see that there are 3 articles in total. The one by Mr. Donald Trump has 1 vote, while the others have zero. So maybe it is the best one. Let's click it. URL: https://ourbigbook.com/go/topic/fundamental-theorem-of-calculus[]}
+{height=600}
+{description=
+After clicking that button, we reach https://ourbigbook.com/go/topic/fundamental-theorem-of-calculus[the "Fundamental theorem of calculus" topic page].
+
+Here we see that there are 3 articles in total. The one by Mr. Trump has 1 vote, while the others have zero. So maybe it is the best one!
+
+Let's click on "Read the full article" to see the article and its descendant articles by that author.
+}
 
 \Image[Fundamental_theorem_of_calculus_by_Donald_Trump.png]
 {border}
-{provider=github}
-{description=So finally, we are now in Trump's page. Clearly, a superior article, that will enlighten our problem. Donald must either be a very good teacher or a hard working student from some other university. URL: https://ourbigbook.com/donald-trump/fundamental-theorem-of-calculus[]}
-
-= OurBigBook Web discussions
-{c}
-{parent=OurBigBook Web user manual}
-
-Each article has their own discussion section. This way you can easily see if other students have had the same problem as you and asked about it already.
-
-\Image[Fundamental_theorem_of_calculus_subheader_discussion.png]
-{border}
-{height=200}
-{provider=github}
-{description=Click the "Discussions" button to see if other people hit the same problem as you and created a discussion thread for it. We see that there are 3 total discussions about this header, so let's check them out. URL: https://ourbigbook.com/barack-obama/mathematics#fundamental-theorem-of-calculus[]}
-
-\Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussions.png]
-{border}
-{height=300}
-{provider=github}
-{description=From these 3 recent threads, the first one has one like, and it seems that someone found the same difficulty that we did. URL: https://ourbigbook.com/go/issues/barack-obama/fundamental-theorem-of-calculus[]}
-
-\Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png]
-{border}
 {height=600}
 {provider=github}
-{description=So let's inspect that discussion. Ah, clearly, the comments are very illuminating, our problem is solved! URL: https://ourbigbook.com/go/issue/1/barack-obama/fundamental-theorem-of-calculus[]}
+{description=
+This leads us to https://ourbigbook.com/donald-trump/fundamental-theorem-of-calculus[Mr. Trump's version of the fundamental theorem page].
 
-= OurBigBook Web create your article about topic
+That's clearly, a superior article that will enlighten our problem.
+
+Donald must either be a very talented teacher or a hard working student from some other university. Thanks Mr. Trump!
+}
+
+= Create your own article about a topic in OurBigBook Web
 {c}
-{parent=OurBigBook Web user manual}
+{parent=OurBigBook Web topics}
 
 If even existing <OurBigBook Web topics>[topics] and <OurBigBook Web discussions>[discussions] have failed you, and you have finally understood a subject after a few hours of Googling, why not share your knowledge by creating a new article yourself?
 
@@ -6627,7 +6626,7 @@ There are a few ways to do that.
 \Image[Fundamental_theorem_of_calculus_topic_page_new_article.png]
 {border}
 {provider=github}
-{height=300}
+{height=500}
 {description=One easy way to create an article about a given topic is to use the "New Article in Topic" button from the topic page. URL: https://ourbigbook.com/go/topic/fundamental-theorem-of-calculus[]}
 
 \Image[Fundamental_theorem_of_calculus_subheader_create_my.png]
@@ -6655,6 +6654,10 @@ As an example of dynamic artic tree, note how the article "Special relativity" c
 * https://ourbigbook.com/barack-obama/physics as a child
 * https://ourbigbook.com/barack-obama/natural-science as the child of a child
 The only efficient way to do this is to pick which articles will be rendered as soon as the user makes the request, rather than having fully pre-rendered pages, thus the name "dynamic".
+
+\Video[https://www.youtube.com/watch?v=JsxbUkI9B4A]
+{title=<OurBigBook Web> dynamic article tree}
+{height=600}
 
 The design goals of the dynamic article tree are to produce articles such that:
 * each article can appear as the toplevel article of a page to get better SEO opportunities
@@ -6703,6 +6706,57 @@ And all of that is achieved:
 The downside of the feature is slightly slower page loads and a bit more server workload. We have kept it quite efficient server-side by implementing the page fetching with a nested sets implementation: https://stackoverflow.com/questions/4048151/what-are-the-options-for-storing-hierarchical-data-in-a-relational-database
 
 We believe that dynamic article treee offers a very good tradeoff between server load, load speeds, SEO, readability and author friendliness.
+
+= OurBigBook Web discussions
+{c}
+{parent=OurBigBook Web user manual}
+
+Each article has their own discussion section. This way you can easily see if other students have had the same problem as you and asked about it already.
+
+\Image[Fundamental_theorem_of_calculus_subheader_discussion.png]
+{border}
+{height=200}
+{provider=github}
+{description=Click the "Discussions" button to see if other people hit the same problem as you and created a discussion thread for it. We see that there are 3 total discussions about this header, so let's check them out. URL: https://ourbigbook.com/barack-obama/mathematics#fundamental-theorem-of-calculus[]}
+
+\Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussions.png]
+{border}
+{height=300}
+{provider=github}
+{description=From these 3 recent threads, the first one has one like, and it seems that someone found the same difficulty that we did. URL: https://ourbigbook.com/go/issues/barack-obama/fundamental-theorem-of-calculus[]}
+
+\Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png]
+{border}
+{height=600}
+{provider=github}
+{description=So let's inspect that discussion. Ah, clearly, the comments are very illuminating, our problem is solved! URL: https://ourbigbook.com/go/issue/1/barack-obama/fundamental-theorem-of-calculus[]}
+
+= OurBigBook Web editor
+{c}
+{parent=OurBigBook Web user manual}
+
+<OurBigBook Web> comes with a browser text editor where users can create and edit their articles in <OurBigBook Markup>.
+
+This is for example the editor you see when creating a new article at: https://ourbigbook.com/go/new
+
+One day want to add an option to have a visual editor: <todo/WYSIWYG>{full}, but for now we'll try to make the text-editor as awesome as we can.
+
+= Create a child article in OurBigBook Web
+{c}
+{parent=OurBigBook Web editor}
+
+Marking a page as the child of another page is easy in <OurBigBook Web>: you can simply set the parent of the page directly on the editor UI.
+
+If you don't want the article to be the first child of a parent, you can also set the "previous sibling" field. This specifies after which article the new article will be inserted.
+
+\Video[https://www.youtube.com/watch?v=Fw_enNJ3uc8]
+{title=<OurBigBook Web> parent selection on the web UI}
+{height=600}
+
+\Video[https://www.youtube.com/watch?v=owmlRh8PD8c]
+{title=<OurBigBook Web> error reporting}
+{height=600}
+{description=Note that <video OurBigBook Web parent selection on the web UI> is not present on this video as the feature wasn't present when the video was made, but the error reporting remains valid.}
 
 = OurBigBook Web keyboard shortcuts
 {parent=OurBigBook Web user manual}

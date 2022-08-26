@@ -152,7 +152,9 @@ function assert_lib(
         path_sep: PATH_SEP,
       })
     }
-    options.convert_opts.fs_exists_sync = (my_path) => options.filesystem[my_path] !== undefined
+    options.convert_opts.fs_exists_sync = (my_path) => {
+      return options.filesystem[my_path] !== undefined
+    }
     let filesystem = options.filesystem
     if (options.stdin !== undefined) {
       if (!('input_path_noext' in options) && options.convert_opts.split_headers) {
@@ -544,7 +546,7 @@ function assert_cli(
     for (const relpath in options.assert_xpath) {
       const assert_msg_xpath = `path should match xpath: ${relpath}\n\n` + assert_msg;
       const fullpath = path.join(tmpdir, relpath);
-      assert.ok(fs.existsSync(fullpath), assert_msg_xpath);
+      assert.ok(fs.existsSync(fullpath), `path does not exist: ${fullpath}`);
       const html = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING);
       for (const xpath_expr of options.assert_xpath[relpath]) {
         assert_xpath(xpath_expr, html, {message: assert_msg_xpath});
@@ -8596,17 +8598,19 @@ assert_cli(
     ],
   }
 );
+const MAKE_GIT_REPO_PRE_EXEC = [
+  ['git', ['init']],
+  ['git', ['add', '.']],
+  ['git', ['commit', '-m', '0']],
+  ['git', ['remote', 'add', 'origin', 'git@github.com:cirosantilli/ourbigbook-generate.git']],
+]
 assert_cli(
   '--generate min followed by publish conversion does not blow up',
   {
     args: ['--dry-run', '--publish'],
     pre_exec: [
       ['ourbigbook', ['--generate', 'min']],
-      ['git', ['init']],
-      ['git', ['add', '.']],
-      ['git', ['commit', '-m', '0']],
-      ['git', ['remote', 'add', 'origin', 'git@github.com:cirosantilli/ourbigbook-generate.git']],
-    ],
+    ].concat(MAKE_GIT_REPO_PRE_EXEC),
   }
 );
 assert_cli(
@@ -8615,11 +8619,7 @@ assert_cli(
     args: ['--dry-run', '--publish'],
     pre_exec: [
       ['ourbigbook', ['--generate', 'default']],
-      ['git', ['init']],
-      ['git', ['add', '.']],
-      ['git', ['commit', '-m', '0']],
-      ['git', ['remote', 'add', 'origin', 'git@github.com:cirosantilli/ourbigbook-generate.git']],
-    ],
+    ].concat(MAKE_GIT_REPO_PRE_EXEC),
   }
 );
 assert_cli(
@@ -9313,3 +9313,88 @@ assert_cli(
     ],
   }
 );
+assert_cli(
+  // This is a bit annoying to test from _lib because ourbigbook CLI
+  // has to pass several variables for it to work.
+  'link: media-provider github local path with outputOutOfTree',
+  {
+    args: ['myproj'],
+    filesystem: {
+      'myproj/README.bigb': `\\Image[myimg.png]{provider=github}
+`,
+      'myproj/ourbigbook.json': `{
+  "outputOutOfTree": true,
+  "media-providers": {
+    "github": {
+      "path": "../myproj-media",
+      "remote": "cirosantilli/myproj-media"
+    }
+  }
+}
+`,
+      'myproj-media/myimg.png': 'a',
+    },
+    assert_xpath: {
+      'myproj/out/html/index.html': [
+        // Two .. to get out from under out/html, and one from the media-providers ../myproj-media.
+        "//x:a[@href='../../../myproj-media/myimg.png']//x:img[@src='../../../myproj-media/myimg.png']",
+      ],
+    },
+  }
+);
+assert_cli(
+  // This is a bit annoying to test from _lib because ourbigbook CLI
+  // has to pass several variables for it to work.
+  'link: media-provider github local path without outputOutOfTree',
+  {
+    args: ['myproj'],
+    filesystem: {
+      'myproj/README.bigb': `\\Image[myimg.png]{provider=github}
+`,
+      'myproj/ourbigbook.json': `{
+  "media-providers": {
+    "github": {
+      "path": "../myproj-media",
+      "remote": "cirosantilli/myproj-media"
+    }
+  }
+}
+`,
+      'myproj-media/myimg.png': 'a',
+    },
+    assert_xpath: {
+      'myproj/index.html': [
+        "//x:a[@href='../myproj-media/myimg.png']//x:img[@src='../myproj-media/myimg.png']",
+      ],
+    },
+  }
+);
+assert_cli(
+  'link: media-provider github local path is not used when publishing',
+  {
+    args: ['--dry-run', '--publish'],
+    cwd: 'myproj',
+    pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+    filesystem: {
+      'myproj/README.bigb': `\\Image[myimg.png]{provider=github}
+`,
+      'myproj/ourbigbook.json': `{
+  "media-providers": {
+    "github": {
+      "path": "../myproj-media",
+      "remote": "cirosantilli/myproj-media"
+    }
+  }
+}
+`,
+      'myproj-media/myimg.png': 'a',
+    },
+    assert_xpath: {
+      'myproj/out/publish/out/publish/index.html': [
+        "//x:a[@href='https://raw.githubusercontent.com/cirosantilli/myproj-media/master/myimg.png']//x:img[@src='https://raw.githubusercontent.com/cirosantilli/myproj-media/master/myimg.png']",
+
+      ],
+    },
+  }
+);
+

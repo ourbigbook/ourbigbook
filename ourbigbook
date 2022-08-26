@@ -230,11 +230,13 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
   }
   if (non_ourbigbook_options.cli.render) {
     if (!non_ourbigbook_options.had_error) {
+      const new_non_ourbigbook_options = ourbigbook.clone_and_set(non_ourbigbook_options, 'is_render_after_extract', true)
       await convert_directory(
         input_dir,
         ourbigbook_options,
-        ourbigbook.clone_and_set(non_ourbigbook_options, 'is_render_after_extract', true)
+        new_non_ourbigbook_options,
       );
+      non_ourbigbook_options.had_error = new_non_ourbigbook_options.had_error
     }
   }
 }
@@ -436,6 +438,9 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
 
       // Convert.
       output = await convert_input(input, new_options, new_non_ourbigbook_options);
+      if (new_non_ourbigbook_options.had_error) {
+        non_ourbigbook_options.had_error = true;
+      }
       const extra_returns = new_non_ourbigbook_options.extra_returns
       if (
         non_ourbigbook_options.cli.formatSource &&
@@ -481,6 +486,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
           extra_returns,
           db_provider: non_ourbigbook_options.db_provider,
+          had_error: non_ourbigbook_options.had_error,
           is_render_after_extract: non_ourbigbook_options.is_render_after_extract,
           non_ourbigbook_options,
           renderType: non_ourbigbook_options.renderType,
@@ -488,9 +494,6 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
           render: ourbigbook_options.render,
           sequelize: non_ourbigbook_options.sequelize,
         })
-      }
-      if (new_non_ourbigbook_options.had_error) {
-        non_ourbigbook_options.had_error = true;
       }
     }
   }
@@ -1687,6 +1690,9 @@ if (cli.helpMacros) {
 
         // Do the actual conversion.
         await convert_directory_extract_ids_and_render(actual_input_dir, ourbigbook_options, non_ourbigbook_options)
+        if (non_ourbigbook_options.had_error) {
+          process.exit(1);
+        }
 
         // Generate redirects from ourbigbook.json.
         for (let [from, to] of ourbigbook_json.redirects) {

@@ -9651,3 +9651,28 @@ assert_cli(
     ]
   }
 );
+assert_cli(
+  // Due to https://docs.github.com/todo/1 should be 1 triple conversion
+  // stopped failing. But it should fail.
+  'x: to undefined ID fails each time despite timestamp skip',
+  {
+    args: ['.'],
+    expect_exit_status: 1,
+    filesystem: {
+      'README.bigb': `= Index
+
+<asdf>
+`,
+    },
+    pre_exec: [
+      {
+        cmd: ['ourbigbook', ['.']],
+        status: 1,
+      },
+      {
+        cmd: ['ourbigbook', ['.']],
+        status: 1,
+      },
+    ],
+  }
+);

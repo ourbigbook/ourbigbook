@@ -8,8 +8,6 @@
 {tag=Bug}
 {tag=Error checking}
 
-Worse, this can lead to errors escaping!
-
 README.bigb
 ``
 = Index
@@ -40,19 +38,19 @@ error: README.bigb:3:2: cross reference to unknown id: "asdf" at render time
 copy README.bigb -> out/html/_raw/README.bigb
 render: README.bigb -> out/html/index.html finished in 51.55012200027704 ms
 ``
-with an error at render time. And then the third:
+with an error at render time.
+
+This is especially noticeable/confusing when you are converting a large number of files, and the second run will start converting a large number of files instead of failing early, until it eventually reaches the error when rendering the specific file.
+
+The key code point is:
 ``
-ourbigbook .
+async function check_db(sequelize, paths_converted, transaction) {
 ``
-skips by timestamp, and therefore leaves the incorrect `README.bigb` in place:
-``
-extract_ids: README.bigb
-extract_ids: README.bigb skipped by timestamp
-render: README.bigb
-copy README.bigb -> out/html/_raw/README.bigb
-render: README.bigb skipped by timestamp
-copy ourbigbook.json -> out/html/_raw/ourbigbook.json
-``
+We are only checking the DB for the paths converted, but then due to parse skipping we skip the paths and don't check them anymore.
+
+Instead, we should check the entire database.
+
+The question then is: is there a way to do this efficiently with a query, without bringing the entire Refs database into memory, notably conisdering inflections?
 
 === Don't use helper synthetic AST nodes, render at render time instead
 {id=remove-synthetic-asts}

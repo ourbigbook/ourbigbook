@@ -3,6 +3,7 @@
 // Need a separate file from test.js because Mocha automatically defines stuff like it,
 // which would break non-Mocha requirers.
 
+const fs = require('fs')
 const path = require('path')
 const perf_hooks = require('perf_hooks')
 
@@ -297,6 +298,9 @@ async function generateDemoData(params) {
   const sequelize = models.getSequelize(directory, basename);
   await models.sync(sequelize, { force: empty || clear })
   if (!empty) {
+    const sourceRoot = path.join(__dirname, 'tmp')
+    fs.rmSync(sourceRoot, { recursive: true, force: true });
+
     if (verbose) printTimeNow = now()
     if (verbose) console.error('User');
     const userArgs = [];
@@ -398,7 +402,7 @@ async function generateDemoData(params) {
     let i
     for (i = 0; i < nArticlesPerUser; i++) {
       for (let userIdx = 0; userIdx < nUsers; userIdx++) {
-        let authorId = users[userIdx].id
+        const authorId = users[userIdx].id
         const articleDataProvider = articleDataProviders[authorId]
         const articleDataEntry = articleDataProvider.get()
         const articleArg = await makeArticleArg(articleDataEntry, false, i, authorId)
@@ -423,7 +427,6 @@ async function generateDemoData(params) {
     //    return 0;
     //  }
     //})
-    const articles = []
     for (const render of [false, true]) {
       let articleId = 0
       if (verbose) {
@@ -458,13 +461,35 @@ async function generateDemoData(params) {
           ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1)
         for (const article of newArticles) {
           articleIdToArticle[article.id] = article
-          if (render) {
-            articles.push(article)
-          }
           articleId++
         }
       }
     }
+    // Re-find needed (instead e.g. .push on the above creation loop) in order to fetch the correct final nestedSetIndex values.
+    const articles = (await sequelize.models.Article.getArticles({ sequelize, count: false }))
+
+    // Write files to filesystem.
+    // https://docs.ourbigbook.com/demo-data-local-file-output
+    for (const article of articles) {
+      const slugParse = path.parse(article.slug)
+      let outdir, outbase_noext
+      if (slugParse.dir) {
+        outdir = path.join(sourceRoot, slugParse.dir)
+        outbase_noext = slugParse.base
+      } else {
+        // Toplevel README.
+        outdir = path.join(sourceRoot, slugParse.base)
+        outbase_noext = ourbigbook.README_BASENAME_NOEXT
+      }
+      fs.mkdirSync(outdir, { recursive: true })
+      const outpath = path.join(outdir, outbase_noext + '.' + ourbigbook.OURBIGBOOK_EXT)
+      const file = article.file
+      fs.writeFileSync(outpath, await article.getSourceExport());
+    }
+    for (const user of users) {
+      fs.writeFileSync(path.join(sourceRoot, user.username, ourbigbook.OURBIGBOOK_JSON_BASENAME), '{}\n');
+    }
+
     // TODO This was livelocking (taking a very long time, live querries)
     // due to update_database_after_convert on the hook it would be good to investigate it.
     // Just convereted to the regular for loop above instead.

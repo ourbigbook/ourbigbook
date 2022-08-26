@@ -3,6 +3,24 @@
 
 == Issues
 
+=== Skip re-render from API if article was unchanged
+{tag=Web}
+{tag=Web upload}
+
+Would radically speed sync up.
+
+=== Store last modified SHA of each article to skip API re-renders
+{tag=Web}
+{tag=Web upload}
+
+This is one step above <skip re-render from API if article was unchanged> as it removes the requirement of actually uploading thousands of lines of content.
+
+It requires negotiating with the server instead.
+
+This would be particularly powerful if we included the descendants on the SHA of each parent, much like Git. This way we could skip enter unmodified subtrees, likely like Git.
+
+Yes, we are somewhat re-implementing parts of Git with this. But at least it is simple, and works at a sub-blob level.
+
 === Synonym redirects on web
 {tag=Web}
 
@@ -888,6 +906,8 @@ Fixed at: aca09f9485bcbc6c8cd184d61871f02e8a602981
 ==== CSS
 
 === Web
+
+==== Web upload
 
 ==== Comment
 

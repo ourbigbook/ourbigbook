@@ -22,7 +22,6 @@ const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
 const { WebApi, read_include } = require('ourbigbook/web_api')
 
-const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
 const OURBIGBOOK_TEX_BASENAME = 'ourbigbook.tex';
 const LOG_OPTIONS = new Set([
   'ast',
@@ -794,7 +793,7 @@ if (commander.helpMacros) {
     initial_dir = curdir;
     const fakeroot = commander.fakeroot === undefined ? undefined : path.resolve(commander.fakeroot)
     while (true) {
-      const ourbigbook_json_path = path.join(curdir, OURBIGBOOK_JSON_BASENAME);
+      const ourbigbook_json_path = path.join(curdir, ourbigbook.OURBIGBOOK_JSON_BASENAME);
       if (fs.existsSync(ourbigbook_json_path)) {
         Object.assign(ourbigbook_json, JSON.parse(fs.readFileSync(
           ourbigbook_json_path, ourbigbook_nodejs_webpack_safe.ENCODING)));
@@ -986,7 +985,7 @@ if (commander.helpMacros) {
     }
 
     if (new_ourbigbook_json !== {}) {
-      fs.writeFileSync(path.join(outdir, OURBIGBOOK_JSON_BASENAME),
+      fs.writeFileSync(path.join(outdir, ourbigbook.OURBIGBOOK_JSON_BASENAME),
         JSON.stringify(new_ourbigbook_json, null, 2) + '\n');
     }
     process.exit(0);
@@ -1522,12 +1521,12 @@ if (commander.helpMacros) {
             }
             const prepublish_path = ourbigbook_json.prepublish
             if (!fs.existsSync(prepublish_path)) {
-              cli_error(`${OURBIGBOOK_JSON_BASENAME} prepublish file not found: ${prepublish_path}`);
+              cli_error(`${ourbigbook.OURBIGBOOK_JSON_BASENAME} prepublish file not found: ${prepublish_path}`);
             }
             try {
               cmd_get_stdout(path.resolve(prepublish_path), [publish_out_publish_dir]);
             } catch(error) {
-              cli_error(`${OURBIGBOOK_JSON_BASENAME} prepublish command exited non-zero, aborting`);
+              cli_error(`${ourbigbook.OURBIGBOOK_JSON_BASENAME} prepublish command exited non-zero, aborting`);
             }
           }
 

@@ -1,8 +1,12 @@
+const assert = require('assert')
+const path = require('path')
+
 const { DataTypes, Op } = require('sequelize')
 
 const ourbigbook = require('ourbigbook')
 
 const config = require('../front/config')
+const front_js = require('../front/js')
 const convert = require('../convert')
 
 module.exports = (sequelize) => {
@@ -127,6 +131,39 @@ module.exports = (sequelize) => {
     return file
   }
 
+  // Get a version of the source code of this article that would be
+  // written to a local file if we were to export it.
+  Article.prototype.getSourceExport = async function() {
+    const file = await this.getFileCached()
+    let ret = front_js.modifyEditorInput(file.titleSource, file.bodySource).new
+    const children = await this.getChildren()
+    let include_source = ''
+    const isToplevelIndex = this.isToplevelIndex()
+    for (const child of children) {
+      let inc_orig = this.slug
+      if (!isToplevelIndex) {
+        inc_orig = inc_orig.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(0, -1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+      }
+      include_source += `\\Include[${path.relative(inc_orig, child.slug)}]\n`
+    }
+    if (include_source) {
+      ret += '\n' + include_source
+    }
+    return ret
+  }
+
+  Article.prototype.getChildren = async function() {
+    return sequelize.models.Article.findAll({
+      where: {
+        nestedSetIndex: {
+          [sequelize.Sequelize.Op.gt]: this.nestedSetIndex,
+          [sequelize.Sequelize.Op.lt]: this.nestedSetNextSibling,
+        },
+        depth: this.depth + 1,
+      },
+    })
+  }
+
   Article.prototype.toJson = async function(loggedInUser) {
     const authorPromise = this.file && this.file.author ? this.file.author : this.getAuthor()
     const [liked, author] = await Promise.all([
@@ -197,8 +234,8 @@ module.exports = (sequelize) => {
     })
   }
 
-  Article.prototype.isToplevelIndex = function(user) {
-    return this.slug === user.username
+  Article.prototype.isToplevelIndex = function() {
+    return !this.slug.includes(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
   }
 
   Article.getArticle = async function({
@@ -215,7 +252,7 @@ module.exports = (sequelize) => {
     }]
     if (includeParentAndPreviousSibling) {
       // Behold.
-      // TODO reimplement with the nested index information isntead of this megajoin.
+      // TODO reimplement with the nested index information instead of this megajoin.
       fileInclude.push({
         model: sequelize.models.Id,
         subQuery: false,
@@ -225,7 +262,7 @@ module.exports = (sequelize) => {
           where: {
             type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
           },
-        subQuery: false,
+          subQuery: false,
           include: [{
             // Parent ID.
             model: sequelize.models.Id,
@@ -299,14 +336,25 @@ module.exports = (sequelize) => {
   // Helper for common queries.
   Article.getArticles = async ({
     author,
+    count,
     likedBy,
     limit,
     offset,
     order,
+    orderAscDesc,
     sequelize,
     slug,
     topicId,
+    transaction,
   }) => {
+    assert.notStrictEqual(sequelize, undefined)
+    if (orderAscDesc === undefined) {
+      orderAscDesc = 'DESC'
+    }
+    if (count === undefined) {
+      count = true
+    }
+
     let where = {}
     const authorInclude = {
       model: sequelize.models.User,
@@ -335,18 +383,32 @@ module.exports = (sequelize) => {
     if (topicId) {
       where.topicId = topicId
     }
-    const orderList = [[order, 'DESC']]
+    const orderList = []
+    if (order !== undefined) {
+      orderList.push([order, orderAscDesc])
+    }
     if (order !== 'createdAt') {
       // To make results deterministic.
       orderList.push(['createdAt', 'DESC'])
     }
-    return sequelize.models.Article.findAndCountAll({
-      where,
-      order: orderList,
+    if (Object.keys(where).length === 0) {
+      where = undefined;
+    }
+    const findArgs = {
+      include,
       limit,
       offset,
-      include,
-    })
+      order: orderList,
+      transaction,
+      where,
+    }
+    let ret
+    if (count) {
+      ret = sequelize.models.Article.findAndCountAll(findArgs)
+    } else {
+      ret = sequelize.models.Article.findAll(findArgs)
+    }
+    return ret;
   }
 
   // Maybe try to merge into getArticle one day?

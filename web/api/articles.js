@@ -164,7 +164,7 @@ async function createOrUpdateArticle(req, res, opts) {
 //  try {
 //    const article = await lib.getArticle(req, res)
 //    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-//    if (article.isToplevelIndex(user)) {
+//    if (article.isToplevelIndex()) {
 //      throw new lib.ValidationError('Cannot delete the toplevel index')
 //    }
 //    if (article.file.authorId.toString() === req.payload.id.toString()) {

@@ -22,7 +22,7 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
           limit: articleLimit,
           offset: pageNum * articleLimit,
           order,
-          topicId
+          topicId,
         }),
         loggedInUser ? loggedInUser.toJson(loggedInUser) : null,
         sequelize.models.Topic.getTopics({

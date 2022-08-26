@@ -7011,6 +7011,31 @@ To regenerate the PostgreSQL database instead of SQLite as mentioned at <local d
 OURBIGBOOK_POSTGRES=true ./bin/generate-demo-data.js
 ``
 
+= Demo data local file output
+{parent=Demo data}
+
+By default, when you run \a[bin/generate-demo-data], besides inserting the data into the database directly, the command also generates a in-file-system tree that contains equivalent content under:
+``
+web/tmp/<username>/<id>.bigb
+``
+
+Sample paths to some files could be:
+``
+web/tmp/barack-obama/ourbigbook.json
+web/tmp/barack-obama/test-child-1.bigb
+web/tmp/barack-obama/test-scope/test-scope-1.bigb
+``
+
+Because each user has its own `ourbigbook.json` file added to the directory, you can for example build each user directory in isolation with:
+``
+cd web/tmp/barack-obama
+ourbigbook .
+``
+
+This setup can be useful for quickly testing things locally, and in particular to test <--web> upload to a local test server.
+
+These files have nothing to do with <OurBigBook Web> specifically, and would be used from <OurBigBook CLI> itself. It would be nice to bring them up to <OurBigBook CLI> at some point, and only expose the Web-specific database functions from Web.
+
 = Log database queries done
 {parent=OurBigBook Web development}
 

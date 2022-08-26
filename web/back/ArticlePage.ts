@@ -19,22 +19,22 @@ export const getServerSidePropsArticleHoc = ({
       const slugString = slug.join('/')
       const sequelize = req.sequelize
       const loggedInUser = await getLoggedInUser(req, res, loggedInUserCache)
-      const [article, articlesInSamePage, articleTopIssues] = await Promise.all([
+      const [article, articleTopIssues] = await Promise.all([
         sequelize.models.Article.getArticle({
           includeIssues,
           limit: 5,
           sequelize,
           slug: slugString,
         }),
-        // TODO benchmark the effect of this monstrous query on article pages.
-        // If very slow, we could move it to after page load.
-        // TODO don't run this on split pages? But it requires doing a separate query step, which
-        // would possibly slow things down more than this actual query?
-        sequelize.models.Article.getArticlesInSamePage({
-          sequelize,
-          slug: slugString,
-          loggedInUser,
-        }),
+        //// TODO benchmark the effect of this monstrous query on article pages.
+        //// If very slow, we could move it to after page load.
+        //// TODO don't run this on split pages? But it requires doing a separate query step, which
+        //// would possibly slow things down more than this actual query?
+        //sequelize.models.Article.getArticlesInSamePage({
+        //  sequelize,
+        //  slug: slugString,
+        //  loggedInUser,
+        //}),
         sequelize.models.Article.getArticle({
           includeIssues,
           includeIssuesOrder: 'score',
@@ -48,12 +48,51 @@ export const getServerSidePropsArticleHoc = ({
           notFound: true
         }
       }
-      const [articleJson, issuesCount, topicArticleCount] = await Promise.all([
+      const [
+        articleJson,
+        articlesInSamePage,
+        issuesCount,
+        topicArticleCount,
+        latestIssues,
+        topIssues
+      ] = await Promise.all([
         article.toJson(loggedInUser),
+        // TODO do the toJson LIKE fetching on a JOIN.
+        sequelize.models.Article.findAll({
+          where: {
+            nestedSetIndex: {
+              [sequelize.Sequelize.Op.gte]: article.nestedSetIndex,
+              [sequelize.Sequelize.Op.lt]: article.nestedSetNextSibling,
+            },
+          },
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'file',
+            },
+          ],
+        }).then(
+          articles => Promise.all(articles.map(article => article.toJson(loggedInUser))),
+        ),
+        // Keep this around a little longer for the incoming mega JOIN version.
+        //sequelize.query(`
+        //FROM "Article"
+        //WHERE "nestedSetIndex" > :nestedSetIndex AND "nestedSetIndex" < :nestedSetNextSibling
+        //ORDER BY "nestedSetIndex" ASC
+        //     {
+        //       replacements: {
+        //         nestedSetIndex: article.nestedSetIndex,
+        //         nestedSetNextSibling: article.nestedSetNextSibling,
+        //       }
+        //     }
+        //   ),
+        //`)
         includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
         sequelize.models.Article.count({
           where: { topicId: article.topicId },
         }),
+        includeIssues ? Promise.all(article.issues.map(issue => issue.toJson(loggedInUser))) : null,
+        includeIssues ? Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser))) : null,
       ])
       const props: ArticlePageProps = {
         article: articleJson,
@@ -64,8 +103,8 @@ export const getServerSidePropsArticleHoc = ({
         props.loggedInUser = await loggedInUser.toJson(loggedInUser)
       }
       if (includeIssues) {
-        props.latestIssues = await Promise.all(article.issues.map(issue => issue.toJson(loggedInUser)))
-        props.topIssues = await Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser)))
+        props.latestIssues = latestIssues
+        props.topIssues = topIssues
         props.issuesCount = issuesCount
       }
       return { props };

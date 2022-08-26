@@ -379,6 +379,19 @@ class AstNode {
     }
 
     context.last_render = out
+    //console.error('context.toplevel_output_path: ' + require('util').inspect(context.toplevel_output_path));
+    if (
+      context.toplevel_output_path &&
+      this.macro_name === Macro.HEADER_MACRO_NAME &&
+      this.is_first_header_in_input_file &&
+      context.extra_returns.rendered_outputs[context.toplevel_output_path] !== undefined &&
+      context.extra_returns.rendered_outputs[context.toplevel_output_path].h1RenderLength === undefined
+    ) {
+      // TODO This is a bit of a hack used for web where we want separate headers.
+      // Ideally we should just render h1 and body separately neatly before merging the
+      // two sources, e.g. at render_ast_list. But lazy. Let's build on top of some technical debt.
+      context.extra_returns.rendered_outputs[context.toplevel_output_path].h1RenderLength = out.length
+    }
     return out;
   }
 
@@ -2101,6 +2114,8 @@ class HeaderTreeNode {
     }
   }
 
+  // TODO how is this different from passing parent_ast on constructor? Forgot.
+  // Maybe something along the lines of "this allows you to separate creation and chaining".
   add_child(child) {
     child.index = this.children.length;
     this.children.push(child);
@@ -2834,6 +2849,36 @@ function render_ast_list(opts) {
       rendered_outputs_entry.split = split
       rendered_outputs_entry.header_ast = first_ast
       rendered_outputs_entry.split_suffix = split_suffix
+      if (
+        options.renderH2 &&
+        first_ast.macro_name === Macro.HEADER_MACRO_NAME
+      ) {
+        const parent_ast = first_ast.get_header_parent_asts(context)[0];
+        context.header_tree = new HeaderTreeNode();
+        if (parent_ast) {
+          context.toplevel_ast = parent_ast;
+          const output_path_ret = parent_ast.output_path(
+            clone_and_set(context, 'to_split_headers', split)
+          )
+          const { path: output_path, split_suffix } = output_path_ret
+          // Hax. It has to be both undefined, and different than the correct output_path.
+          // I think this is needed because is a slightly different rendering than what
+          // is ever done outside of web (it is an h2, and its h1 is on another page)
+          // so it is likely either this hack or another flag.
+          context.toplevel_output_path = output_path + 'asdf';
+        }
+
+        const header_tree_h1 = new HeaderTreeNode(parent_ast, context.header_tree);
+        context.header_tree.add_child(header_tree_h1);
+
+        first_ast.header_tree_node = clone_object(first_ast.header_tree_node);
+        first_ast.header_tree_node.parent_ast = header_tree_h1
+        //header_tree_h1.add_child(first_ast.header_tree_node)
+
+        rendered_outputs_entry.h2Render = first_ast.render(
+          clone_and_set(context, 'skipOutputEntry', true))
+        //rendered_outputs_entry.h2Render = 'asdf'
+      }
     }
     return ret
   }
@@ -2894,6 +2939,7 @@ function convert_init_context(options={}, extra_returns={}) {
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }
   if (!('db_provider' in options)) { options.db_provider = undefined; }
+  if (!('renderH2' in options)) { options.renderH2 = false; }
   if (!('ourbigbook_json' in options)) { options.ourbigbook_json = {}; }
     const ourbigbook_json = options.ourbigbook_json;
     {
@@ -3017,6 +3063,10 @@ function convert_init_context(options={}, extra_returns={}) {
     // If false, \\Include are removed from the rendered output.
     // Their side effects such as determining the header tree are still used.
     options.render_include = true;
+  }
+  if (!('render_metadata' in options)) {
+    // Render article "metadata" such as: ToC, tagged, incoming links, ancestors.
+    options.render_metadata = true;
   }
   if (!('start_line' in options)) { options.start_line = 1; }
   if (!('split_headers' in options)) {
@@ -3171,6 +3221,7 @@ function convert_init_context(options={}, extra_returns={}) {
     // - subdirectories
     root_relpath_shift,
     perf_prev: 0,
+    skipOutputEntry: false,
     synonym_headers: new Set(),
     toc_was_rendered: false,
     toplevel_id: options.toplevel_id,
@@ -3444,28 +3495,23 @@ function get_link_html({
 }
 
 /** Get the AST from the parent argument of headers or includes. */
-function get_parent_argument_ast(ast, context, prev_header, include_options) {
+function get_parent_argument_ast(ast, context, include_options) {
   let parent_id;
   let parent_ast;
   parent_id = magic_title_to_id(render_arg_noescape(ast.args.parent, context), context);
-  if (
-    // Happens for the first header
-    prev_header !== undefined
-  ) {
-    if (is_absolute_xref(parent_id, context)) {
-      parent_ast = context.db_provider.get_noscope(resolve_absolute_xref(parent_id, context), context);
-    } else {
-      // We can't use context.db_provider.get here because we don't know who
-      // the parent node is, because scope can affect that choice.
-      // https://docs.ourbigbook.com#id-based-header-levels-and-scope-resolution
-      let sorted_keys = [...include_options.header_tree_stack.keys()].sort((a, b) => a - b);
-      let largest_level = sorted_keys[sorted_keys.length - 1];
-      for (let level = largest_level; level > 0; level--) {
-        let ast = include_options.header_tree_stack.get(level).ast;
-        if (id_is_suffix(parent_id, ast.id)) {
-          parent_ast = ast;
-          break;
-        }
+  if (is_absolute_xref(parent_id, context)) {
+    parent_ast = context.db_provider.get_noscope(resolve_absolute_xref(parent_id, context), context);
+  } else {
+    // We can't use context.db_provider.get here because we don't know who
+    // the parent node is, because scope can affect that choice.
+    // https://docs.ourbigbook.com#id-based-header-levels-and-scope-resolution
+    let sorted_keys = [...include_options.header_tree_stack.keys()].sort((a, b) => a - b);
+    let largest_level = sorted_keys[sorted_keys.length - 1];
+    for (let level = largest_level; level > 0; level--) {
+      let ast = include_options.header_tree_stack.get(level).ast;
+      if (id_is_suffix(parent_id, ast.id)) {
+        parent_ast = ast;
+        break;
       }
     }
   }
@@ -4327,7 +4373,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         let parent_id;
         validate_ast(ast, context);
         if (ast.validation_output.parent.given) {
-          [parent_id, parent_ast] = get_parent_argument_ast(ast, context, prev_header, options)
+          [parent_id, parent_ast] = get_parent_argument_ast(ast, context, options)
           if (parent_ast === undefined) {
             const message = Macro.INCLUDE_MACRO_NAME + ' ' + HEADER_PARENT_ERROR_MESSAGE + parent_id;
             const error_ast = new PlaintextAstNode(' ' + error_message_in_output(message), ast.source_location);
@@ -4657,7 +4703,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             );
             parse_error(state, message, ast.args.level.source_location);
           }
-          [parent_id, parent_ast] = get_parent_argument_ast(ast, context, prev_header, options);
+          ;[parent_id, parent_ast] = get_parent_argument_ast(ast, context, options);
           let parent_tree_node;
           if (parent_ast !== undefined) {
             parent_tree_node = options.header_tree_id_stack.get(parent_ast.id);
@@ -8163,7 +8209,8 @@ const OUTPUT_FORMATS_LIST = [
           let hasToc = false
           if (
             level_int !== context.header_tree_top_level ||
-            context.header_tree.children.length > 1
+            context.header_tree.children.length > 1 &&
+            context.options.render_metadata
           ) {
             let render_toc_ret = render_toc(context)
             if (render_toc_ret !== '') {
@@ -8204,7 +8251,10 @@ const OUTPUT_FORMATS_LIST = [
           if (context.toplevel_output_path) {
             const rendered_outputs_entry = context.extra_returns.rendered_outputs[context.toplevel_output_path]
             if (
+              // So that when we are rendering h2Render we don't overwrite the "real" output.
+              !context.skipOutputEntry &&
               // Can fail due to splits, which could overwrite nonsplit values.
+              rendered_outputs_entry !== undefined &&
               rendered_outputs_entry.title === undefined
             ) {
               rendered_outputs_entry.title = x_text_base_ret.inner;
@@ -8519,8 +8569,13 @@ const OUTPUT_FORMATS_LIST = [
           let body = render_arg(ast.args.content, context);
 
           // Footer metadata.
-          body += render_toc(context)
-          if (context.toplevel_ast !== undefined) {
+          if (context.options.render_metadata) {
+            body += render_toc(context)
+          }
+          if (
+            context.toplevel_ast !== undefined &&
+            context.options.render_metadata
+          ) {
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(
                 REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);

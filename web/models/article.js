@@ -29,7 +29,8 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
-      // Rendered title.
+      // Rendered title. Only contains the inner contents of the toplevel h1's title.
+      // not the HTML header itself. Used extensively e.g. in article indexes.
       titleRender: {
         type: DataTypes.TEXT,
         allowNull: false,
@@ -48,10 +49,25 @@ module.exports = (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
-      // Rendered full article.
+      // Full rendered body article excluding toplevel h1 render.
       render: {
         type: DataTypes.TEXT,
         allowNull: false,
+      },
+      // Rendered toplevel h1.
+      h1Render: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      // Rendered toplevel h1 as it would look like if it were an h2.
+      h2Render: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
+      depth: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
       },
       score: {
         type: DataTypes.INTEGER,
@@ -138,6 +154,8 @@ module.exports = (sequelize) => {
     }
     this.topicCount = this.get('topicCount')
     addToDictWithoutUndefined(ret, this, [
+      'h1Render',
+      'h2Render',
       'id',
       'slug',
       'topicId',

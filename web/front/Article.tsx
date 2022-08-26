@@ -176,7 +176,12 @@ const Article = ({
   );
   return <>
     <div
-      dangerouslySetInnerHTML={{ __html: article.render }}
+      dangerouslySetInnerHTML={{
+        __html: articlesInSamePage[0].h1Render + articlesInSamePage[0].render +
+                `<div>THE TOC, YOUR'RE WELCOME</div>` +
+                articlesInSamePage.slice(1).map(a => `<div><a href="${a.topicId}">${a.titleRender}</a></div>`).join('') +
+                articlesInSamePage.slice(1).map(a => a.h2Render + a.render).join('')
+      }}
       className="ourbigbook"
       ref={renderRefCallback}
     />

@@ -247,6 +247,8 @@ async function convertArticle({
     // Where we are going to place the article.
     let nestedSetIndex = 0
     let nestedSetNextSibling = 1
+    let oldDepth
+    let newDepth = 0
     // By how much we are moving an existing article to its new position.
     // We calculate it in terms of deltas because all descendants have to be moved by that as well.
     let oldNestedSetIndex
@@ -266,8 +268,11 @@ async function convertArticle({
         parentArticle = parentIdRow.File.file[0]
       }
     }
-    if (parentArticle && !previousSiblingRef) {
-      nestedSetIndex = parentArticle.nestedSetIndex + 1
+    if (parentArticle) {
+      newDepth = parentArticle.depth + 1
+      if (!previousSiblingRef) {
+        nestedSetIndex = parentArticle.nestedSetIndex + 1
+      }
     }
     if (oldRef) {
       oldArticle = oldRef.to.File.file[0]
@@ -276,11 +281,19 @@ async function convertArticle({
       nestedSetSize = oldArticle.nestedSetNextSibling - oldArticle.nestedSetIndex
       oldParentArticle = oldRef.from.File.file[0]
       oldParentNestedSetIndex = oldParentArticle.nestedSetIndex
+      oldDepth = oldArticle.depth
     } else {
       nestedSetSize = 1
     }
     nestedSetNextSibling = nestedSetIndex + nestedSetSize
 
+    if (
+      oldNestedSetIndex !== undefined &&
+      nestedSetIndex > oldNestedSetIndex &&
+      nestedSetIndex < oldNestedSetNextSibling
+    ) {
+      throw new ValidationError(`the parent choice "${parentId}" would create an infinite loop`)
+    }
     if (!previousSiblingRef && previousSiblingId) {
       throw new ValidationError(`previousSiblingId "${previousSiblingId}" does not exist, is not a header or is not a child of parentId "${parentId}"`)
     }
@@ -429,9 +442,13 @@ async function convertArticle({
       const articleArgs = []
       for (const outpath in extra_returns.rendered_outputs) {
         const rendered_output = extra_returns.rendered_outputs[outpath]
+        const renderFull = rendered_output.full
         articleArgs.push({
+          depth: newDepth,
           fileId: file.id,
-          render: rendered_output.full,
+          h1Render: renderFull.substring(0, rendered_output.h1RenderLength),
+          h2Render: rendered_output.h2Render,
+          render: renderFull.substring(rendered_output.h1RenderLength),
           slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
           titleRender: rendered_output.title,
           titleSource: rendered_output.titleSource,
@@ -458,12 +475,19 @@ async function convertArticle({
         articleArgs,
         {
           updateOnDuplicate: [
+            'h1Render',
+            'h2Render',
             'titleRender',
             'titleSource',
             'titleSourceLine',
             'render',
             'topicId',
             'updatedAt',
+            // We intentionally skip:
+            // * depth
+            // * nestedSetInde
+            // * nestedSetNextSibling
+            // as those will be updated in bulk soon afterwards together with all descendants.
           ],
           transaction,
           // Trying this to validate mas titleSource length here leads to another error.
@@ -475,6 +499,7 @@ async function convertArticle({
       // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
       let articleCountByLoggedInUser
       let nestedSetDelta = nestedSetIndex - oldNestedSetIndex
+      let depthDelta = newDepth - oldDepth
       ;[articleCountByLoggedInUser, articles, _] = await Promise.all([
         sequelize.models.File.count({ where: { authorId: author.id }, transaction }),
         sequelize.models.Article.findAll({
@@ -492,6 +517,7 @@ async function convertArticle({
               {
                 nestedSetIndex: sequelize.where(sequelize.col('nestedSetIndex'), '+', nestedSetDelta),
                 nestedSetNextSibling: sequelize.where(sequelize.col('nestedSetNextSibling'), '+', nestedSetDelta),
+                depth: sequelize.where(sequelize.col('depth'), '+', depthDelta),
               },
               {
                 where: {

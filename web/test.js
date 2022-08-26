@@ -907,9 +907,8 @@ it('api: create an article and see it on global feed', async () => {
       article = createArticleArg({ titleSource: 'x', bodySource: '<Title 1>' })
       ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
-      // TODO title-1 would be better here. Lazy to investigate now though.
       // https://github.com/cirosantilli/ourbigbook/issues/283
-      assert_xpath("//x:a[@href='../user0/title-1' and text()='Title 1']", data.articles[0].render)
+      assert_xpath("//x:a[@href='/user0/title-1' and text()='Title 1']", data.articles[0].render)
 
     // Create issues
 
@@ -1162,7 +1161,7 @@ it('api: create an article and see it on global feed', async () => {
       ))
       assertStatus(status, data)
       // Has to account for go/issues/<number>/<username>, so four levels.
-      assert_xpath("//x:a[@href='../../../../user0/title-1' and text()='Title 1']", data.issue.render)
+      assert_xpath("//x:a[@href='/user0/title-1' and text()='Title 1']", data.issue.render)
 
     // Create comments
 
@@ -1232,7 +1231,7 @@ it('api: create an article and see it on global feed', async () => {
       // but adds the title to the render.
       //;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, '<Title 1>'))
       //assertStatus(status, data)
-      //assert_xpath("//x:a[@href='../../../../user0/title-1' and text()='Title 1']", data.comment.render)
+      //assert_xpath("//x:a[@href='/user0/title-1' and text()='Title 1']", data.comment.render)
 
     if (testNext) {
       // Tests with the same result for logged in or off.
@@ -1744,9 +1743,7 @@ it('api: article tree single user', async () => {
       article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
       ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
-      // ./ would be nicer here, but there is a reason we might not want it:
-      // https://github.com/cirosantilli/ourbigbook/issues/283
-      assert_xpath(xpath_header_parent(1, 'mathematics', '../user0', 'Index'), data.articles[0].h1Render)
+      assert_xpath(xpath_header_parent(1, 'user0/mathematics', '/user0', 'Index'), data.articles[0].h1Render)
 
       await assertNestedSets(sequelize, [
         { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, slug: 'user0' },
@@ -1757,7 +1754,7 @@ it('api: article tree single user', async () => {
       article = createArticleArg({ i: 0, titleSource: 'Calculus' })
       ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics' }))
       assertStatus(status, data)
-      assert_xpath(xpath_header_parent(1, 'calculus', '../user0/mathematics', 'Mathematics'), data.articles[0].h1Render)
+      assert_xpath(xpath_header_parent(1, 'user0/calculus', '/user0/mathematics', 'Mathematics'), data.articles[0].h1Render)
 
       await assertNestedSets(sequelize, [
         { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, slug: 'user0' },
@@ -1772,7 +1769,7 @@ it('api: article tree single user', async () => {
         article = createArticleArg({ i: 0, titleSource: 'Derivative' })
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
         assertStatus(status, data)
-        assert_xpath(xpath_header_parent(1, 'derivative', '../user0/mathematics', 'Mathematics'), data.articles[0].h1Render)
+        assert_xpath(xpath_header_parent(1, 'user0/derivative', '/user0/mathematics', 'Mathematics'), data.articles[0].h1Render)
 
         // Current tree state:
         // * Index
@@ -1791,7 +1788,7 @@ it('api: article tree single user', async () => {
         // Modify its parent.
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
         assertStatus(status, data)
-        assert_xpath(xpath_header_parent(1, 'derivative', '../user0/calculus', 'Calculus'), data.articles[0].h1Render)
+        assert_xpath(xpath_header_parent(1, 'user0/derivative', '/user0/calculus', 'Calculus'), data.articles[0].h1Render)
 
         // Current tree state:
         // * Index
@@ -1868,7 +1865,7 @@ it('api: article tree single user', async () => {
 
         // Refresh the parent index to show this new child.
         // TODO restore toc asserts. Requires next, not currently exposed on the API.
-        //assert_xpath("//*[@id='toc']//x:a[@href='../user0/mathematics' and @data-test='0' and text()='Mathematics']", data.articles[0].render)
+        //assert_xpath("//*[@id='toc']//x:a[@href='/user0/mathematics' and @data-test='0' and text()='Mathematics']", data.articles[0].render)
         //assert_xpath("//*[@id='toc']//x:a[@href='user0/calculus'    and @data-test='1' and text()='Calculus']",    data.articles[0].render)
         //assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative'  and @data-test='2' and text()='Derivative']",  data.articles[0].render)
         //assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'    and @data-test='3' and text()='Integral']",    data.articles[0].render)
@@ -2145,7 +2142,7 @@ it('api: article tree single user', async () => {
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0' }))
         assertStatus(status, data)
         // TODO restore toc asserts.
-        // assert_xpath("//*[@id='toc']//x:a[@href='../user0/calculus' and @data-test='0' and text()='Calculus']", data.articles[0].render)
+        // assert_xpath("//*[@id='toc']//x:a[@href='/user0/calculus' and @data-test='0' and text()='Calculus']", data.articles[0].render)
 
       // Article.getArticle includeParentAndPreviousSibling argument test.
       // Used on editor only for now, so a bit hard to test on UI. But this tests the crux MEGAJOIN just fine.

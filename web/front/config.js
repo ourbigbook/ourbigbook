@@ -89,6 +89,7 @@ module.exports = {
   // https://archive.ph/cH0Rk
   maxArticleSize: 50000,
   maxArticles: 10000,
+  maxArticlesFetch: 100,
   read_include_web: function(id_exists) {
     return read_include({
       exists: async (inpath) => {

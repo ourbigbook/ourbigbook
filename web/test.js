@@ -2328,3 +2328,24 @@ it('api: article tree multiuser', async () => {
     ])
   })
 })
+
+it('api: article tree render=false', async () => {
+  // This is what we have to do on mass upload with ourbigbook --web
+  // in order to handle circular references without having one massive
+  // server-side operation.
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    for (const render of [false, true]) {
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: '<calculus>' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { render }))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: '<mathematics>' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }, { render }))
+      assertStatus(status, data)
+    }
+  })
+})

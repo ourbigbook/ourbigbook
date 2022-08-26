@@ -5,6 +5,8 @@
 
 === Web
 
+==== Develop without Internet
+
 ==== Dynamic tree fetch
 
 === CLI
@@ -14,6 +16,18 @@
 === ToC
 
 == Issues
+
+=== Fix toc links to scope on web
+{tag=Web}
+
+Likely locally too then right. Will also be more uniform with h2 which now has parent link.
+
+=== Wiki link on same line as parent link on web h1
+{tag=Web}
+
+Likely locally too then right. Will also be more uniform with h2 which now has parent link.
+
+Also seems like empty line (no wiki) is showing: http://localhost:3000/barack-obama/x86-paging/sample-code
 
 === Add sibling/add child buttons next to self headers and toc
 {tag=Web}
@@ -69,6 +83,12 @@ Likely would be easy to implement as it would reuse the exact same query that we
 Was removed at: <remove word count on web> because would require actually implementing properly but lazy.
 
 We should likely not show it on link hover however, only headers, as doing so would mean having to update every single page that links to a header for correctness. If this is ever done, it should be Js runtime stuff only.
+
+=== Monaco editor requires web
+{tag=Develop without Internet}
+{tag=Web}
+
+It seems that the third party library we are using is just a hack and doesn't properly provide the thing offline... OMG could it be so crap? https://stackoverflow.com/questions/59773190/monaco-editor-with-nextjs/68611592#68611592
 
 == Closed issues
 

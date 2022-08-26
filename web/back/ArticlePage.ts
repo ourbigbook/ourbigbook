@@ -2,6 +2,7 @@ import ourbigbook from 'ourbigbook'
 
 import { getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
+import { maxArticlesFetch } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
 import { UserType } from 'front/types/UserType'
 
@@ -62,7 +63,7 @@ export const getServerSidePropsArticleHoc = ({
         sequelize.models.Article.getArticlesInSamePage({
           article,
           loggedInUser,
-          limit: 10,
+          limit: maxArticlesFetch,
           sequelize,
         }),
         sequelize.models.Article.getArticlesInSamePage({

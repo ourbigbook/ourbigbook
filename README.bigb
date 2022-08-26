@@ -6015,7 +6015,7 @@ Upload only the selected ID with <--web>.
 
 That ID must belong to a file being converted for everything to work well. e.g.:
 ``
-ourbigbook --web --web-is quantum-mechanics physics.bigb
+ourbigbook --web --web-id quantum-mechanics physics.bigb
 ``
 
 = `--web-url`
@@ -6031,7 +6031,7 @@ ourbigbook --web --web-url http://localhost:3000
 
 Set the username for <web> from the command line, e.g.:
 ``
-ourbigbook --web --web-url http://localhost:3000 --web-user donald-trump
+ourbigbook --web --web-url http://localhost:3000 --web-user barack-obama
 ``
 If not given, you will be prompted for it from the command line.
 

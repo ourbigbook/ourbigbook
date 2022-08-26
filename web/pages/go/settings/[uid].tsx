@@ -51,7 +51,7 @@ const Settings = ({
     Router.push(routes.user(data.user.username));
   };
   useCtrlEnterSubmit(handleSubmit)
-  const maxArticleSizeLabel = "Maximum number of article pages, issues and comments (maxArticles)"
+  const maxArticleSizeLabel = "Maximum number of articles, issues and comments (maxArticles)"
   const maxArticlesLabel = "Maximum article/issue/comment size (maxArticleSize)"
   const title = 'Account settings'
   const { setTitle } = React.useContext(AppContext)

@@ -7179,9 +7179,7 @@ It currently only works on SQLite.
 
 Or e.g. to make `cirosantilli` admin in a <Heroku deployment> you can run:
 ``
-heroku maintenance:on -a ourbigbook
 heroku psql -a ourbigbook -c "UPDATE \"User\" SET admin = true WHERE username='cirosantilli'"
-heroku maintenance:off -a ourbigbook
 ``
 
 = OurBigBook Web database migration setup
@@ -8709,6 +8707,9 @@ Some blobs were unfortunately added to this repository earlier on, but when we s
 = Merchandise
 {parent=Publicity}
 
+Official project merchandise is avaiable at:
+* https://www.tshirtstudio.com/marketplace/ourbigbook-com from <tshirtstudio.com>. Each sale includes a 5 dollar/euro/pound donation to the project.
+
 = T-shirt
 {c}
 {parent=Merchandise}
@@ -8722,10 +8723,10 @@ We are thinking about the following layout:
 
 We are planning on using a clear green on white color scheme to reflect the current website CSS.
 
-= tshirtstudio.com merchandise
+= tshirtstudio.com
 {parent=T-shirt}
 
-https://www.tshirtstudio.com/t-shirt-printing/design-your-own-super-premium-t-shirt 20 pounds.
+This is a reasonable website. It is a shame that you can't easily drag and drop move/resize images on the web UI, which has led us to do that manually on the in the source images. But still, relatively easy to use, and easy to setup a marketplace in.
 
 = Project logo
 {parent=Publicity}
@@ -8741,7 +8742,7 @@ Is file was actually manually created, and therefore counts as code and can be t
 Since it does not contain text, only geometric primitives, it is fully reproducible, the \a[logo.png] export was created purely for convenience.
 }
 
-\Image[logo.svg]
+\Image[logo-transparent.svg]
 {height=150}
 {provider=github}
 {title=logo-transparent.svg}
@@ -8749,6 +8750,16 @@ Since it does not contain text, only geometric primitives, it is fully reproduci
 This is a version of logo.svg with a transparent background instead of the hardcoded black background.
 
 It was useful e.g. for t-shirt merch, where the t-shirt background choices were not perfectly black, and the black square would be visible (and possibly glossy) otherwise, which would not be nice.
+}
+
+\Image[logo-transparent-with-text.svg]
+{height=300}
+{provider=github}
+{title=logo-transparent-with-text.svg}
+{description=
+This version of the logo was useful when designing project <T-shirts> on <tshirtstudio.com>. On that website, you can't easily resize images with drag and drop, so:
+* leaving some extra margin at the top would make the text more likely visible considering the hoodie
+* leaving some extra margin around allows us to make the image a bit less huge and imposing
 }
 
 Some rationale:
@@ -8765,6 +8776,8 @@ A good point of the current design is that it suggests a certain simplicity. We 
 {parent=Project logo}
 
 In addition to the pictorial logo, we have also created a few textual logos which might be useful.
+
+We firsrt designed them as a way to take up upper left chest square space nicely on <tshirtstudio.com> T-shirts, as a long one line version of `ourbigbook.com` would be too small and unreadable.
 
 The main idea of the text logo is to make a letter square with uppercase monospace font letters:
 ``

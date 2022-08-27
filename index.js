@@ -3199,6 +3199,9 @@ function convert_init_context(options={}, extra_returns={}) {
     if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
+  if (!(Macro.TITLE_ARGUMENT_NAME in options)) {
+    //options[Macro.TITLE_ARGUMENT_NAME] = undefined
+  }
   if (!('x_absolute' in options)) {
     // Make all internal links absolute from website root.
     // This is the only way that we can have a single rendering that works on both

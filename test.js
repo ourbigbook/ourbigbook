@@ -10013,7 +10013,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'json: ignore is used in conversion',
+  'json: ignore: is used in conversion',
   {
     args: ['.'],
     filesystem: {
@@ -10124,6 +10124,40 @@ assert_cli(
     ],
     assert_not_exists: [
       `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/ignored.txt`,
+    ],
+  }
+);
+assert_cli(
+  'git: .gitignore ignores files from conversion',
+  {
+    args: ['.'],
+    pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'ignored.txt': ``,
+      'not-ignored.txt': ``,
+      'subdir/ignored.txt': ``,
+      'subdir/not-ignored.txt': ``,
+      'ignored-subdir/1.txt': ``,
+      'ignored-subdir/2.txt': ``,
+      '.gitignore': `ignored.txt
+ignored-subdir
+`,
+      'ourbigbook.json': `{
+  "outputOutOfTree": true
+}
+`,
+    },
+    assert_exists: [
+      `out/html/${ourbigbook.RAW_PREFIX}/not-ignored.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/not-ignored.txt`,
+    ],
+    assert_not_exists: [
+      `out/html/${ourbigbook.RAW_PREFIX}/ignored.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/ignored.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/ignored-subdir/1.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/ignored-subdir/2.txt`,
     ],
   }
 );

@@ -1447,7 +1447,7 @@ Besides disambiguating headers, the `disambiguate` argument has a second related
 ]]
 Note that unlike for headers, `disambiguate` does not appear on the title of images at all. It serves only to create an unique ID that can be later referred to. Headers are actually the only case where `disambiguate` shows up on the visible rendered output. We intend on making this application obsolete however with:
 
-This use case is even more useful when `title-from-src` is enable by default for the <ourbigbook json/media-providers> entry, so you don't have to repeat titles several times over and over.
+This use case is even more useful when `title-from-src` is enable by default for the <ourbigbook.json/media-providers> entry, so you don't have to repeat titles several times over and over.
 
 = `\H` `file` argument
 {parent=H arguments}
@@ -2157,8 +2157,8 @@ The title argument is also notably used for <automatic ID from title>.
 If a <the toplevel header>[non-toplevel] macro has the `title` argument is present but no explicit `id` argument is given, an <element ID> is created automatically from the `title`, by applying the following transformations:
 * do a <id output format> conversion on the title to remove for example any HTML tags that would be present in the conversion output
 * convert all characters to lowercase. This uses <JavaScript case conversion>. Note that this does convert non-ASCII characters to lowercase, e.g. `É` to `é`.
-* if <ourbigbook json/id normalize latin> is `true` (the default) do <ourbigbook json/Latin normalization>. This converts e.g. `é` to `e`.
-* if <ourbigbook json/id normalize punctuation> is `true` (the default) do <ourbigbook json/Punctuation normalization>. This converts e.g. `+` to `plus`.
+* if <ourbigbook.json/id normalize latin> is `true` (the default) do <ourbigbook json/Latin normalization>. This converts e.g. `é` to `e`.
+* if <ourbigbook.json/id normalize punctuation> is `true` (the default) do <ourbigbook.json/Punctuation normalization>. This converts e.g. `+` to `plus`.
 * convert consecutive sequences of all non `a-z0-9` ASCII characters to a single hyphen `-`. Note that this leaves non-ASCII characters untouched.
 * strip leading or trailing hyphens
 Note how those rules leave non-ASCII Unicode characters untouched, except for:
@@ -2194,7 +2194,7 @@ So for example, the following automatic IDs would be generated: <table Examples 
 |
 | The Latin https://en.wikipedia.org/wiki/Acute_accent[acute accented] `e`, `É`, is converted to its lower case form `é` as per the <JavaScript case conversion>.
 
-  Then, due to <ourbigbook json/Latin normalization>, `é` is converted to `e`.
+  Then, due to <ourbigbook.json/Latin normalization>, `é` is converted to `e`.
 
   The Chinese character `你` is left untouched as Chinese characters have no case, and no ASCII analogue.
 
@@ -2202,13 +2202,13 @@ So for example, the following automatic IDs would be generated: <table Examples 
 | é你
 | false
 |
-| Same as the previous, but `é` is not converted to `e` since <ourbigbook json/Latin normalization> is turned off.
+| Same as the previous, but `é` is not converted to `e` since <ourbigbook.json/Latin normalization> is turned off.
 
 | C++ is great
 | c-plus-plus-is-great
 |
 | true
-| This is the effect of <ourbigbook json/Punctuation normalization>.
+| This is the effect of <ourbigbook.json/Punctuation normalization>.
 
 | I \i[love] dogs.
 | i-love-dogs
@@ -2290,7 +2290,7 @@ So `child` vs `tag` it is for now.
 
 You generally want to use `tag` instead of the <\H child argument> because otherwise some very large header categories are going to contain Huge lists of children, which is not very nice when editing.
 
-It is possible to enforce the <\H child argument> or the <\H tag argument> in a given project with the <ourbigbook json/lint h-tag> option.
+It is possible to enforce the <\H child argument> or the <\H tag argument> in a given project with the <ourbigbook.json/lint h-tag> option.
 
 = `\H` `title2` argument
 {parent=H arguments}
@@ -2592,7 +2592,7 @@ Have a look at this amazing image: \x[image-my-test-image-2].
 ]]
 This works because <\x full argument>[`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and OurBigBook would raise an error.
 
-OurBigBook can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` <boolean argument> is given, or if `title-from-src` is set as the default <ourbigbook json/media-providers>[media provider] for the media type:
+OurBigBook can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` <boolean argument> is given, or if `title-from-src` is set as the default <ourbigbook.json/media-providers>[media provider] for the media type:
 \OurBigBookExample[[
 Have a look at this amazing image: \x[image-tank-man-standing-in-front-of-some-tanks].
 
@@ -2669,7 +2669,7 @@ but OurBigBook allows you use configurations that allow you to enter just the im
 In order to get this to work, the recommended repository setup is:
 * `./main-repo/.git`: main repository at https://github.com/username/main-repo
 * `./main-repo/data/media/.git/`: media repository at https://github.com/username/main-repo-media[], and where `data/` is gitignored.
-The directory and repository names are not mandatory, but if you place media in `data/media` and name its repository by adding the `*-media` suffix, then `ourbigbook` will handle everything for you without any further configuration in <ourbigbook json/media-providers>.
+The directory and repository names are not mandatory, but if you place media in `data/media` and name its repository by adding the `*-media` suffix, then `ourbigbook` will handle everything for you without any further configuration in <ourbigbook.json/media-providers>.
 
 This particular documentation repository does have a different setup as can be seen from its \a[ourbigbook.json]. Then, when everything is setup correctly, we can refer to images simply as:
 \OurBigBookExample[[
@@ -2690,7 +2690,7 @@ You should then use the following rules inside `my-tutorial-media`:
 * never ever delete any files, nor change their content, unless it is an improvement in format that does change the information contained of the image TODO link to nice Wikimedia Commons guideline page
 This way, even though the repositories are not fully in sync, anyone who clones the latest version of the `*-media` directory will be able to view any version of the main repository.
 
-Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the <ourbigbook json/media-providers> option.
+Then, if one day the media repository ever blows up GitHub's limit, you can just migrate the images to another image server that allows arbitrary basenames, e.g. AWS, and just configure your project to use that new media base URL with the <ourbigbook.json/media-providers> option.
 
 The reason why images should be kept in a separate repository is that images are hundreds or thousands of times larger than hand written text.
 
@@ -2705,7 +2705,7 @@ This is likely the sanest approach possible, as it clearly specifies which media
 
 Furthermore, it is possible to make the submodule clone completely optional by setting things up as follows. For your OurBigBook project `yourname/myproject` create a  `yourname/myproject-media` with the media, and track it as a submodule under `yourname/myproject/media`.
 
-Then, add to <ourbigbook json/media-providers>:
+Then, add to <ourbigbook.json/media-providers>:
 ``
 "media-providers": {
   "github": {
@@ -2716,7 +2716,7 @@ Then, add to <ourbigbook json/media-providers>:
 }
 ``
 
-Now, as mentioned at <ourbigbook json/media-providers>, everything will work beautifully:
+Now, as mentioned at <ourbigbook.json/media-providers>, everything will work beautifully:
 
 * `ourbigbook .` local conversion will use images from `media/` if it exists, e.g.:
   ``
@@ -2747,7 +2747,7 @@ Wikimedia Commons is another great possibility to upload your images to:
 OurBigBook likes Wikimedia Commons so much that we automatically parse the image URL and if it is from Wikimedia Commons, automatically deduce the `source` for you. So the above image renders the same without the `source` argument:
 \OurBigBookExample[[\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg\]]]
 
-And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` <boolean argument> or if `title-from-src` is set as the default <ourbigbook json/media-providers>[media provider] for the media type:
+And like for non-Wikimedia images, you can automatically generate a `title` from the `src` by setting the `titleFromSrc` <boolean argument> or if `title-from-src` is set as the default <ourbigbook.json/media-providers>[media provider] for the media type:
 \OurBigBookExample[[
 \Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]
 {titleFromSrc}
@@ -5076,6 +5076,12 @@ These conversions are also specified in the Unicode standard.
 
 https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions
 
+= Git tracked project
+{c}
+{parent=OurBigBook Markup concepts}
+
+If the <project toplevel directory> of an OurBigBook project is also a git repository, and if `git` is installed, then the OurBigBook project is said to be a "Git tracked project".
+
 = Element ID
 {c}
 {parent=OurBigBook Markup concepts}
@@ -5475,7 +5481,7 @@ Examples of embedding that could be implemented in the future:
 
   Doing this however has a downside: it would slow the page loading down. The root problem is that HTML was not designed to contain assets, and notably it doesn't have byte position indices that can tell it to skip blobs while parsing, and how to refer to them later on when they show up on the screen. This is kind of why EPUB exists: https://github.com/ourbigbook/ourbigbook/issues/158
 
-  Images that are managed by the project itself and already locally present, such as those inside the project itself or due to <ourbigbook json/media-providers> usually don't require download.
+  Images that are managed by the project itself and already locally present, such as those inside the project itself or due to <ourbigbook.json/media-providers> usually don't require download.
 
   For images linked directly from the web, we maintain a local download cache, and skip downloads if the image is already in the cache.
 
@@ -6250,7 +6256,7 @@ We pick Liquid because it is server-side safe: if we ever some day offer a compi
 {tag=Security}
 
 This option enables actions that would allow <arbitrary code execution>, so you should only pass it if you trust the repository author. Enabled functionality includes:
-* <ourbigbook json/prepublish>
+* <ourbigbook.json/prepublish>
 
 = `-w`, `--watch`
 {id=watch}
@@ -6898,6 +6904,14 @@ as in:
   "xPrefix": "https://ourbigbook.com/cirosantilli/"
 },
 ``
+
+= Ignored flies
+{c}
+{parent=OurBigBook CLI}
+
+The following files are ignored from conversion:
+* <ourbigbook.json/ignore> patterns
+* if the project is a <Git tracked project>, the standard `git` ignore rules are used for ignores. This includes `.git/info/exclude`, `.gitignore` and the user's global gitingnore file if any.
 
 = OurBigBook Library
 {c}
@@ -8536,7 +8550,7 @@ OurBigBook is designed to not allow arbitrary code execution by default on any <
 
 This means that it it should be safe to just download any untrusted OurBigBook repository, and convert it with <OurBigBook CLI>, even if you don't trust its author.
 
-In order to allow code execution for pre/post processing tasks e.g. from <ourbigbook json/prepublish>, use the <--unsafe-ace> option.
+In order to allow code execution for pre/post processing tasks e.g. from <ourbigbook.json/prepublish>, use the <--unsafe-ace> option.
 
 Note however that you have to be careful in general, since e.g. a malicious author could create a package with their own malicious version of the `ourbigbook` executable, that you could unknowingly run with with the standard `npx ourbigbook` execution.
 
@@ -8586,7 +8600,7 @@ so you can now run the `ourbigbook` command from any directory in your computer,
 ``
 ourbigbook .
 ``
-Note that this repository uses <ourbigbook json/outputOutOfTree>, and so the output will be present at `out/html/index.html` rather than `index.html`.
+Note that this repository uses <ourbigbook.json/outputOutOfTree>, and so the output will be present at `out/html/index.html` rather than `index.html`.
 
 We also have a shortcut for `npm link` and `npm link ourbigbook`:
 ``

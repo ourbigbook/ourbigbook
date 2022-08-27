@@ -139,8 +139,8 @@ function assert_lib(
     if (!('invalid_title_titles' in options)) {
       options.invalid_title_titles = []
     }
-    if (!('expect_not_exists' in options)) {
-      options.expect_not_exists = [];
+    if (!('assert_not_exists' in options)) {
+      options.assert_not_exists = [];
     }
     if (!('path_sep' in options.convert_opts)) {
       options.convert_opts.path_sep = PATH_SEP;
@@ -400,7 +400,7 @@ function assert_lib(
           });
         }
       }
-      for (const key of options.expect_not_exists) {
+      for (const key of options.assert_not_exists) {
         assert.ok(!(key in rendered_outputs))
       }
     } catch(e) {
@@ -482,8 +482,17 @@ function assert_cli(
     if (!('assert_bigb' in options)) {
       options.assert_bigb = {};
     }
-    if (!('assert_xpath' in options)) {
-      options.assert_xpath = {};
+    if (!('assert_exists' in options)) {
+      options.assert_exists = [];
+    }
+    if (!('assert_exists_sqlite' in options)) {
+      options.assert_exists_sqlite = [];
+    }
+    if (!('assert_exit_status' in options)) {
+      options.assert_exit_status = 0;
+    }
+    if (!('assert_not_exists' in options)) {
+      options.assert_not_exists = [];
     }
     if (!('assert_not_xpath' in options)) {
       options.assert_not_xpath = {};
@@ -491,23 +500,14 @@ function assert_cli(
     if (!('assert_xpath_stdout' in options)) {
       options.assert_xpath_stdout = [];
     }
+    if (!('assert_xpath' in options)) {
+      options.assert_xpath = {};
+    }
     if (!('cwd' in options)) {
       options.cwd = '.';
     }
     if (!('filesystem' in options)) {
       options.filesystem = {};
-    }
-    if (!('expect_exit_status' in options)) {
-      options.expect_exit_status = 0;
-    }
-    if (!('expect_exists' in options)) {
-      options.expect_exists = [];
-    }
-    if (!('expect_exists_sqlite' in options)) {
-      options.expect_exists_sqlite = [];
-    }
-    if (!('expect_not_exists' in options)) {
-      options.expect_not_exists = [];
     }
     if (!('pre_exec' in options)) {
       options.pre_exec = [];
@@ -568,7 +568,7 @@ function assert_cli(
       input: options.stdin,
     });
     const assert_msg = exec_assert_message(out, cmd, args, cwd);
-    assert.strictEqual(out.status, options.expect_exit_status, assert_msg);
+    assert.strictEqual(out.status, options.assert_exit_status, assert_msg);
     for (const xpath_expr of options.assert_xpath_stdout) {
       assert_xpath(
         xpath_expr,
@@ -594,7 +594,7 @@ function assert_cli(
         assert_xpath(xpath_expr, html, { message: assert_msg_xpath, count: 0 });
       }
     }
-    for (const relpath of options.expect_exists) {
+    for (const relpath of options.assert_exists) {
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), exec_assert_message(
         out, cmd, args, cwd, 'path should exist: ' + relpath));
@@ -607,13 +607,13 @@ function assert_cli(
       assert.strictEqual(options.assert_bigb[relpath], content, assert_msg_bigb);
     }
     if (!ourbigbook_nodejs_front.postgres) {
-      for (const relpath of options.expect_exists_sqlite) {
+      for (const relpath of options.assert_exists_sqlite) {
         const fullpath = path.join(tmpdir, relpath);
         assert.ok(fs.existsSync(fullpath), exec_assert_message(
           out, cmd, args, cwd, 'path should exist: ' + relpath));
       }
     }
-    for (const relpath of options.expect_not_exists) {
+    for (const relpath of options.assert_not_exists) {
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(!fs.existsSync(fullpath), exec_assert_message(
         out, cmd, args, cwd, 'path should not exist: ' + relpath));
@@ -2888,7 +2888,7 @@ assert_lib('x: splitDefault true and splitDefaultNotToplevel true',
         "//x:div[@class='p']//x:a[text()='notindex h3 to index']",
       ],
     },
-    expect_not_exists: [
+    assert_not_exists: [
       'split.html',
       'nosplit.html',
       'notindex-split.html',
@@ -3000,7 +3000,7 @@ assert_lib('x: splitDefault false and splitDefaultNotToplevel true',
         "//x:div[@class='p']//x:a[text()='notindex h3 to index']",
       ],
     },
-    expect_not_exists: [
+    assert_not_exists: [
       'split.html',
       'nosplit.html',
       'notindex-split.html',
@@ -8134,7 +8134,7 @@ assert_cli(
   'input from stdin produces output on stdout',
   {
     stdin: 'aabb',
-    expect_not_exists: ['out'],
+    assert_not_exists: ['out'],
     assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
   }
 );
@@ -8151,7 +8151,7 @@ assert_cli(
   'input from stdin with relative link does not blow up',
   {
     stdin: '\\a[asdf]',
-    expect_not_exists: ['out'],
+    assert_not_exists: ['out'],
     assert_xpath_stdout: [`//x:a[@href='${ourbigbook.RAW_PREFIX}/asdf']`],
     filesystem: { 'asdf': '' },
   }
@@ -8527,7 +8527,7 @@ assert_cli(
       ['git', ['commit', '-m', '0']],
       ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/test.git']],
     ],
-    expect_exists: [
+    assert_exists: [
       'out/publish/out/github-pages/dist/ourbigbook.css',
     ],
     assert_xpath: {
@@ -8565,7 +8565,7 @@ assert_cli(
       ['git', ['commit', '-m', '0']],
       ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/test.git']],
     ],
-    expect_exists: [
+    assert_exists: [
       'out/publish/out/local/dist/ourbigbook.css',
     ],
     assert_xpath: {
@@ -8607,12 +8607,12 @@ assert_cli(
       'subdir/xml.xml': `<?xml version='1.0'?><a/>`,
     },
     // Place out next to ourbigbook.json which should be the toplevel.
-    expect_exists: [
+    assert_exists: [
       'out',
       `${ourbigbook.RAW_PREFIX}/subdir/scss.css`,
       'subdir/xml.xml',
     ],
-    expect_not_exists: [
+    assert_not_exists: [
       'subdir/out',
       'xml.xml',
       `${ourbigbook.RAW_PREFIX}/scss.css`,
@@ -8636,12 +8636,12 @@ assert_cli(
       'subdir/xml.xml': `<?xml version='1.0'?><a/>`,
     },
     // Don't know a better place to place out, so just put it int subdir.
-    expect_exists: [
+    assert_exists: [
       'out',
       `${ourbigbook.RAW_PREFIX}/subdir/scss.css`,
       'subdir/xml.xml',
     ],
-    expect_not_exists: [
+    assert_not_exists: [
       'index.html',
       `${ourbigbook.RAW_PREFIX}/scss.css`,
       'subdir/out',
@@ -8664,8 +8664,8 @@ assert_cli(
       'ourbigbook.json': `{}`,
     },
     // Place out next to ourbigbook.json which should be the toplevel.
-    expect_exists: ['out'],
-    expect_not_exists: ['subdir/out', 'index.html', 'subdir.html'],
+    assert_exists: ['out'],
+    assert_not_exists: ['subdir/out', 'index.html', 'subdir.html'],
     assert_xpath: {
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
@@ -8681,8 +8681,8 @@ assert_cli(
       'subdir/notindex.bigb': `= Subdir notindex`,
     },
     // Don't know a better place to place out, so just put it int subdir.
-    expect_exists: ['out'],
-    expect_not_exists: ['subdir/out', 'index.html', 'subdir.html'],
+    assert_exists: ['out'],
+    assert_not_exists: ['subdir/out', 'index.html', 'subdir.html'],
     assert_xpath: {
       'subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
@@ -8698,11 +8698,11 @@ assert_cli(
       'subdir/notindex.bigb': `= Subdir notindex`,
       'ourbigbook.json': `{}\n`,
     },
-    expect_exists: [
+    assert_exists: [
       'my_outdir/out',
       `my_outdir/${ourbigbook.RAW_PREFIX}/ourbigbook.json`,
     ],
-    expect_not_exists: [
+    assert_not_exists: [
       'out',
       'index.html',
       'subdir.html',
@@ -8798,10 +8798,10 @@ assert_cli(
     pre_exec: [
       ['ourbigbook', ['--generate', 'min']],
     ],
-    expect_exists: [
+    assert_exists: [
       'subdir/README.bigb',
     ],
-    expect_not_exists: [
+    assert_not_exists: [
       'README.bigb',
     ],
   }
@@ -8923,7 +8923,7 @@ assert_cli(
       'myproject/subdir/notindex.bigb': `= Subdir Notindex
 `,
     },
-    expect_exists: [
+    assert_exists: [
       'myproject/out',
       `myproject/${ourbigbook.RAW_PREFIX}/scss.css`,
       'myproject/ourbigbook.json',
@@ -8964,7 +8964,7 @@ assert_cli(
       'myproject/subdir/notindex.bigb': `= Subdir Notindex
 `,
     },
-    expect_exists: [
+    assert_exists: [
       'myproject/out',
       `myproject/${ourbigbook.RAW_PREFIX}/scss.css`,
     ],
@@ -9122,17 +9122,17 @@ assert_cli(
 }
 `,
     },
-    expect_exists: [
+    assert_exists: [
       'out/html/index.html',
       'out/html/split.html',
       'out/html/h2.html',
       'out/html/notindex.html',
       'out/html/notindex-h2.html',
     ],
-    expect_exists_sqlite: [
+    assert_exists_sqlite: [
       'out/db.sqlite3',
     ],
-    expect_not_exists: [
+    assert_not_exists: [
       'index.html',
       'split.html',
       'h2.html',
@@ -9520,7 +9520,7 @@ assert_cli('id conflict with id on another file simple',
 == notindex h2
 `,
     },
-    expect_exit_status: 1,
+    assert_exit_status: 1,
   }
 );
 assert_cli(
@@ -9715,7 +9715,7 @@ assert_cli('bigb output: synonym with split_headers does not produce redirect fi
 {synonym}
 `,
     },
-    expect_not_exists: [
+    assert_not_exists: [
       'notindex-2-2.bigb',
       // The actual test.
       'notindex-2-2.html',
@@ -9742,7 +9742,7 @@ assert_cli(
       'subdir/notreadme.bigb': ``,
       'main.scss': ``,
     },
-    expect_exists: [
+    assert_exists: [
       `${ourbigbook.RAW_PREFIX}/README.bigb`,
       `${ourbigbook.RAW_PREFIX}/notreadme.bigb`,
       `${ourbigbook.RAW_PREFIX}/subdir/README.bigb`,
@@ -9758,7 +9758,7 @@ assert_cli(
   'x: to undefined ID fails each time despite timestamp skip',
   {
     args: ['.'],
-    expect_exit_status: 1,
+    assert_exit_status: 1,
     filesystem: {
       'README.bigb': `= Index
 
@@ -9817,11 +9817,11 @@ assert_cli(
       'subdir/subdir2/myfile-subdir2.txt': `ab`,
       '.git/myfile-git.txt': `ab`,
     },
-    expect_exists: [
+    assert_exists: [
       `${ourbigbook.RAW_PREFIX}/myfile.txt`,
       `${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
     ],
-    expect_not_exists: [
+    assert_not_exists: [
       // Ignored directories are not listed.
       `${ourbigbook.RAW_PREFIX}/.git/index.html`,
     ],
@@ -9913,11 +9913,11 @@ assert_cli(
       'subdir/subdir2/myfile-subdir2.txt': `ab`,
       '.git/myfile-git.txt': `ab`,
     },
-    expect_exists: [
+    assert_exists: [
       `${ourbigbook.RAW_PREFIX}/myfile.txt`,
       `${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
     ],
-    expect_not_exists: [
+    assert_not_exists: [
       // Ignored directories are not listed.
       `${ourbigbook.RAW_PREFIX}/.git/index.html`,
     ],
@@ -9964,5 +9964,98 @@ assert_cli(
         "//x:a[@href='.git/']",
       ],
     },
+  }
+);
+assert_cli(
+  'json: ignore is used in conversion',
+  {
+    args: ['.'],
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'ignored-top.txt': ``,
+      'not-ignored.txt': ``,
+      'a.ignore': ``,
+
+      'subdir/ignored.txt': ``,
+      'subdir/ignored-top.txt': ``,
+      'subdir/not-ignored.txt': ``,
+      'subdir/a.ignore': ``,
+
+      'subdir-dont/a.ignore': ``,
+      'subdir-dont/subdir/a.ignore': ``,
+
+      'subdir-ignored/default.txt': ``,
+
+      // All files of this subdir are ignored, but not the subdir itself.
+      'subdir-ignore-files/a.ignore': ``,
+
+      'ourbigbook.json': `{
+  "ignore": [
+    "ignored-top\\\\.txt",
+    "subdir/ignored\\\\.txt",
+    "subdir-ignored",
+    ".*\\\\.ignore"
+  ],
+  "dontIgnore": [
+    "subdir-dont/.*\\\\.ignore"
+  ],
+  "outputOutOfTree": true
+}
+`,
+    },
+    assert_exists: [
+      `out/html/${ourbigbook.RAW_PREFIX}/index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/not-ignored.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/not-ignored.txt`,
+
+      // Only applies to full matches.
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/ignored-top.txt`,
+
+      // dontIgnore overrides previous ignores.
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir-dont/a.ignore`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir-dont/subdir/a.ignore`,
+
+      // Directory conversion does not blow up when all files in directory are ignored.
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir-ignore-files/index.html`,
+    ],
+    assert_not_exists: [
+      `out/html/${ourbigbook.RAW_PREFIX}/ignored-top.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/ignored.txt`,
+
+      // If a directory is ignored, we don't recurse into it at all.
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir-ignored/index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir-ignored/default.txt`,
+
+      // Ignore by extension.
+      `out/html/${ourbigbook.RAW_PREFIX}/a.ignore`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/a.ignore`,
+    ],
+  }
+);
+assert_cli(
+  'json: ignore is used in publish',
+  {
+    args: ['--dry-run', '--publish'],
+    pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'ignored.txt': ``,
+      'not-ignored.txt': ``,
+      'ourbigbook.json': `{
+  "ignore": [
+    "ignored.txt"
+  ],
+  "outputOutOfTree": true
+}
+`,
+    },
+    assert_exists: [
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/not-ignored.txt`,
+    ],
+    assert_not_exists: [
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/ignored.txt`,
+    ],
   }
 );

@@ -211,7 +211,9 @@ async function convert_directory(input_path, ourbigbook_options, non_ourbigbook_
   for (const one_path of walk_directory_recursively(
     input_path,
     DEFAULT_IGNORE_BASENAMES_SET,
-    non_ourbigbook_options.ignore_path_set,
+    non_ourbigbook_options.ignore_path_regexps,
+    non_ourbigbook_options.dont_ignore_path_regexps,
+    non_ourbigbook_options.ourbigbook_json_dir,
   )) {
     await convert_path_to_file(
       one_path,
@@ -591,7 +593,12 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         const files = []
         for (const dirent of dirents) {
           const name = dirent.name
-          if (!ignore_path(DEFAULT_IGNORE_BASENAMES_SET, non_ourbigbook_options.ignore_path_set, path.join(input_path, name))) {
+          if (!ignore_path(
+            DEFAULT_IGNORE_BASENAMES_SET,
+            non_ourbigbook_options.ignore_path_regexps,
+            non_ourbigbook_options.dont_ignore_path_regexps,
+            path.join(input_path, name)
+          )) {
             if (dirent.isDirectory()) {
               dirs.push(name)
             } else {
@@ -641,7 +648,10 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         }
         // Root.
         dirArr.push(...[...crumbArr].reverse().join(` ${ourbigbook.URL_SEP} `))
-        dirArr.push(` ${ourbigbook.URL_SEP}\n\n`)
+        dirArr.push(` ${ourbigbook.URL_SEP}`)
+        if (files.length || dirs.length) {
+          dirArr.push(`\n\n`)
+        }
         function push_li(name, isdir) {
           const target = `${name}${isdir ? ourbigbook.URL_SEP : ''}`
           dirArr.push(`* \\a[${target + (isdir ? indexHtml : '')}][${target}]{external}\n`)
@@ -896,27 +906,42 @@ function renderTemplate(templateRelpath, outdir, env) {
 }
 
 /** Skip path from ourbigbook conversion. */
-function ignore_path(ignore_basenames, ignore_paths, _path) {
-  return ignore_basenames.has(path.basename(_path)) ||
-    ignore_paths.has(_path)
+function ignore_path(ignore_basenames, ignore_path_regexps, dont_ignore_path_regexps, _path) {
+  for (const re of dont_ignore_path_regexps) {
+    if (re.test(_path)) {
+      return false
+    }
+  }
+  if (ignore_basenames.has(path.basename(_path)))
+    return true
+  for (const re of ignore_path_regexps) {
+    if (re.test(_path)) {
+      return true
+    }
+  }
+  return false
 }
 
-/** https://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search
+/**
+ * Walk directory recursively.
+ *
+ * https://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search
  *
  * @param {Set} skip_basenames
  * @param {Set} ignore_paths
  */
-function* walk_directory_recursively(file_or_dir, ignore_basenames, ignore_path_set) {
+function* walk_directory_recursively(file_or_dir, ignore_basenames, ignore_path_regexps, dont_ignore_path_regexps, ourbigbook_json_dir) {
   yield file_or_dir;
   if (fs.lstatSync(file_or_dir).isDirectory()) {
     const dirents = fs.readdirSync(file_or_dir, {withFileTypes: true});
     for (const dirent of dirents) {
-      const res = path.join(file_or_dir, dirent.name);
-      if (!ignore_path(DEFAULT_IGNORE_BASENAMES_SET, ignore_path_set, res)) {
+      const abs = path.join(file_or_dir, dirent.name)
+      const rel = path.relative(ourbigbook_json_dir, abs);
+      if (!ignore_path(DEFAULT_IGNORE_BASENAMES_SET, ignore_path_regexps, dont_ignore_path_regexps, rel)) {
         if (dirent.isDirectory()) {
-          yield* walk_directory_recursively(res, ignore_basenames, ignore_path_set);
+          yield* walk_directory_recursively(abs, ignore_basenames, ignore_path_regexps, dont_ignore_path_regexps, ourbigbook_json_dir);
         } else {
-          yield res;
+          yield abs;
         }
       }
     }
@@ -1064,6 +1089,9 @@ if (cli.helpMacros) {
   let ignore;
   if (!('ignore' in ourbigbook_json)) {
     ourbigbook_json.ignore = [];
+  }
+  if (!('dontIgnore' in ourbigbook_json)) {
+    ourbigbook_json.dontIgnore = [];
   }
   if (!('redirects' in ourbigbook_json)) {
     ourbigbook_json.redirects = [];
@@ -1296,12 +1324,13 @@ if (cli.helpMacros) {
     ourbigbook_paths_converted_only: false,
     cli,
     db_options: {},
+    dont_ignore_path_regexps: ourbigbook_json.dontIgnore.map(p => RegExp(`^${p}$`)),
     file_rows_dict: {},
     encoding: ourbigbook_nodejs_webpack_safe.ENCODING,
     external_css_and_js: false,
     had_error: false,
     is_render_after_extract: false,
-    ignore_path_set: new Set(ourbigbook_json.ignore),
+    ignore_path_regexps: ourbigbook_json.ignore.map(p => RegExp(`^${p}$`)),
     input_path_is_file,
     log: non_ourbigbook_options_log,
     out_css_path: ourbigbook_nodejs.DIST_CSS_PATH,

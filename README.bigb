@@ -6072,6 +6072,13 @@ git push --delete origin master
 
 You then will also want to set your default repository branch to `dev` in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
 
+= `.github` directory is ignored on GitHub pages
+{parent=Publish to GitHub Pages}
+
+It's a GitHub bug/feature: https://github.com/orgs/community/discussions/52252
+
+Maybe we should just ignore the `.github` directory when publishing, otherwise it leads to a broken link on the <`_dir` directory> listings.
+
 = `-S`, `--split-headers`
 {id=split-headers}
 {parent=OurBigBook CLI options}

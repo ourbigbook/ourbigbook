@@ -8467,11 +8467,42 @@ assert_cli(
     },
   }
 );
+const publish_filesystem = {
+  'ourbigbook.json': `{}\n`,
+  'README.bigb': `= Index
+
+\\x[notindex][link to notindex]
+
+\\x[notindex-h2][link to notindex h2]
+
+== h2
+`,
+  'notindex.bigb': `= Notindex
+
+\\x[index][link to index]
+
+\\x[h2][link to h2]
+
+== notindex h2
+`,
+  'toplevel-scope.bigb': `= Toplevel scope
+{scope}
+
+== Toplevel scope h2
+`,
+  'subdir/index.bigb': `= Subdir index
+`,
+  'scss.scss': `body { color: red }`,
+  'subdir/myfile.txt': `Hello world
+
+Goodbye world.
+`,
+};
 assert_cli(
   '--dry-run --split-headers --publish works',
   {
     args: ['--dry-run', '--split-headers', '--publish', '.'],
-    filesystem: complex_filesystem,
+    filesystem: publish_filesystem,
     pre_exec: [
       ['git', ['init']],
       ['git', ['add', '.']],
@@ -8502,6 +8533,44 @@ assert_cli(
       [`out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/scss.css`]: [],
       [`out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/ourbigbook.json`]: [],
       [`out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/subdir/myfile.txt`]: [],
+    },
+  }
+);
+assert_cli(
+  '--publish-target local works',
+  {
+    args: ['--dry-run', '--split-headers', '--publish', '--publish-target', 'local', '.'],
+    filesystem: publish_filesystem,
+    pre_exec: [
+      ['git', ['init']],
+      ['git', ['add', '.']],
+      ['git', ['commit', '-m', '0']],
+      ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/test.git']],
+    ],
+    expect_exists: [
+      'out/publish/out/local/dist/ourbigbook.css',
+    ],
+    assert_xpath: {
+      'out/publish/out/local/index.html': [
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='link to notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='link to notindex h2']",
+        "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
+      ],
+      'out/publish/out/local/notindex.html': [
+        xpath_header(1, 'notindex'),
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='link to index']",
+        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='link to h2']",
+      ],
+      'out/publish/out/local/toplevel-scope/toplevel-scope-h2.html': [
+        "//x:style[contains(text(),'@import \"../dist/ourbigbook.css\"')]",
+      ],
+      'out/publish/out/local/subdir.html': [
+        "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
+      ],
+      // Non-converted files are copied over.
+      [`out/publish/out/local/${ourbigbook.RAW_PREFIX}/scss.css`]: [],
+      [`out/publish/out/local/${ourbigbook.RAW_PREFIX}/ourbigbook.json`]: [],
+      [`out/publish/out/local/${ourbigbook.RAW_PREFIX}/subdir/myfile.txt`]: [],
     },
   }
 );

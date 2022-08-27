@@ -385,13 +385,13 @@ async function convert_input(input, ourbigbook_options, non_ourbigbook_options={
  * The output file name is derived from the input file name with the output extension.
  */
 async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbook_options={}) {
-  let input_path_parse = path.parse(input_path);
   let msg_ret
   let output, first_output_path;
   let skip = false
   let is_bigb = false
   const is_directory = fs.lstatSync(input_path).isDirectory()
   let full_path = path.resolve(input_path);
+  let input_path_parse = path.parse(input_path);
   let path_relative_to_ourbigbook_json;
   let input_path_relative_to_ourbigbook_json;
   if (non_ourbigbook_options.ourbigbook_json_dir !== undefined) {
@@ -416,7 +416,6 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   if (!is_directory) {
     if (isbigb) {
       showFinish = true
-      let input_path_parse = path.parse(full_path);
       is_bigb = true
       msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
       message_prefix = msg_ret.message_prefix
@@ -530,14 +529,15 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
     }
   }
 
-  let output_name = input_path_parse.name;
   let output_path_noext = path.join(
     ourbigbook.RAW_PREFIX,
     path.relative(
       non_ourbigbook_options.ourbigbook_json_dir,
-      input_path_parse.dir
+      path.join(
+        input_path_parse.dir,
+        input_path_parse.name
+      )
     ),
-    output_name
   )
   if (is_directory) {
     output_path_noext = path.join(output_path_noext, 'index')

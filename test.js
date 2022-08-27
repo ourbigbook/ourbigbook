@@ -8529,6 +8529,14 @@ assert_cli(
     ],
     assert_exists: [
       'out/publish/out/github-pages/dist/ourbigbook.css',
+      // Non-converted files are copied over.
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/scss.css`,
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/ourbigbook.json`,
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/subdir/myfile.txt`,
+
+      // Directories listings are generated.
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/index.html`,
+      `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/subdir/index.html`,
     ],
     assert_xpath: {
       'out/publish/out/github-pages/index.html': [
@@ -8547,10 +8555,6 @@ assert_cli(
       'out/publish/out/github-pages/subdir.html': [
         "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
       ],
-      // Non-converted files are copied over.
-      [`out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/scss.css`]: [],
-      [`out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/ourbigbook.json`]: [],
-      [`out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/subdir/myfile.txt`]: [],
     },
   }
 );

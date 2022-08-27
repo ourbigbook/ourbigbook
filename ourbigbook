@@ -1318,6 +1318,8 @@ if (cli.helpMacros) {
         path.join(outdir, 'main.liquid.html'));
       fs.copyFileSync(path.join(ourbigbook_nodejs.PACKAGE_PATH, 'main.scss'),
         path.join(outdir, 'main.scss'));
+      fs.copyFileSync(path.join(ourbigbook_nodejs.PACKAGE_PATH, 'logo.svg'),
+        path.join(outdir, 'logo.svg'));
       new_ourbigbook_json.template = 'main.liquid.html';
     }
 

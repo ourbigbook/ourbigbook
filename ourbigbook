@@ -178,14 +178,14 @@ function cmd_get_stdout(cmd, args=[], options={}) {
     ret = '';
   } else {
     if (out.status != 0 && options.throw_on_error) {
-      let msg = `cmd: \n${cmd_str}\n`;
+      let msg = `Command failed with status: ${out.status}\ncmd: ${cmd_str}\n`;
       if (out.stdout !== null) {
         msg += `stdout: \n${out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}\n`;
       }
       if (out.stderr !== null) {
         msg += `stderr: \n${out.stderr.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}\n`;
       }
-      throw msg;
+      throw new Error(msg);
     }
     ret = out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING);
   }
@@ -661,7 +661,7 @@ function git_has_commit(input_path) {
 
 function git_is_in_repo(input_path) {
   try {
-    cmd_get_stdout('git', ['-C', input_path, 'status'], {throw_on_error: true})
+    cmd_get_stdout('git', ['-C', input_path, 'status'], { throw_on_error: true, show_cmd: false })
     return true
   } catch(err) {
     return false
@@ -1646,7 +1646,12 @@ if (cli.helpMacros) {
           if (!git_is_in_repo(inputPath)) {
             cli_error('--publish must point to a path inside a git repository');
           }
-          const origin_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options).slice(0, -1);
+          cmd_options_no_dry = Object.assign({}, cmd_options)
+          cmd_options_no_dry.dry_run = false
+          // Commands that retrieve information and don't change state.
+          cmd_options_info = Object.assign({}, cmd_options_no_dry)
+          cmd_options_info.show_cmd = false
+          const origin_url = cmd_get_stdout('git', ['-C', inputPath, 'config', '--get', 'remote.origin.url'], cmd_options_info).slice(0, -1);
           if (ourbigbook_json.publishRemoteUrl) {
             publish_remote_url = ourbigbook_json.publishRemoteUrl
           } else {
@@ -1655,9 +1660,7 @@ if (cli.helpMacros) {
           if (!publish_remote_url) {
             publish_remote_url = 'git@github.com:ourbigbook/ourbigbook.git';
           }
-          cmd_options_no_dry = Object.assign({}, cmd_options)
-          cmd_options_no_dry.dry_run = false
-          src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options_no_dry).slice(0, -1);
+          src_branch = cmd_get_stdout('git', ['-C', inputPath, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options_info).slice(0, -1);
           source_commit = git_sha(inputPath, src_branch);
           const parsed_remote_url = require("git-url-parse")(publish_remote_url);
           if (parsed_remote_url.source !== 'github.com') {

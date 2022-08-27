@@ -576,7 +576,16 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
       if (breadcrumbDir === '.') {
         breadcrumbDir = ''
       }
-      const indexHtml = 'index.html'
+      const new_options_dir = Object.assign({}, new_options);
+      new_options_dir.auto_generated_source = true
+      const new_non_ourbigbook_options = Object.assign({}, non_ourbigbook_options);
+      // Needed the path to be able to find the relatively placed CSS under _raw.
+      // notindex.bigb instead of index.bigb because this will be placed at subdir/index.html, unlike the .bigb
+      // convention that places subdir/index.bigb at subdir.html rather than subdir/index.html so a different
+      // number of up levels is needed.
+      new_non_ourbigbook_options.input_path = path.join(ourbigbook.RAW_PREFIX, input_path_relative_to_ourbigbook_json, 'notindex.bigb');
+      const htmlXExtension = ourbigbook.resolveOption(new_options_dir, 'htmlXExtension')
+      const indexHtml = htmlXExtension ? 'index.html' : ''
       while (true) {
         const breadcrumbParse = path.parse(breadcrumbDir)
         let bname = breadcrumbParse.name
@@ -599,7 +608,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
       dirArr.push(` ${ourbigbook.URL_SEP}\n\n`)
       function push_li(name, isdir) {
         const target = `${name}${isdir ? ourbigbook.URL_SEP : ''}`
-        dirArr.push(`* \\a[${target + (isdir ? 'index.html' : '')}][${target}]{external}\n`)
+        dirArr.push(`* \\a[${target + (isdir ? indexHtml : '')}][${target}]{external}\n`)
       }
       for (const name of [...dirs].sort()) {
         push_li(name, true)
@@ -608,14 +617,6 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         push_li(name, false)
       }
 
-      let new_options_dir = Object.assign({}, new_options);
-      new_options_dir.auto_generated_source = true
-      let new_non_ourbigbook_options = Object.assign({}, non_ourbigbook_options);
-      // Needed the path to be able to find the relatively placed CSS under _raw.
-      // notindex.bigb instead of index.bigb because this will be placed at subdir/index.html, unlike the .bigb
-      // convention that places subdir/index.bigb at subdir.html rather than subdir/index.html so a different
-      // number of up levels is needed.
-      new_non_ourbigbook_options.input_path = path.join(ourbigbook.RAW_PREFIX, input_path_relative_to_ourbigbook_json, 'notindex.bigb');
       output = await convert_input(dirArr.join(''), new_options_dir, new_non_ourbigbook_options);
       fs.writeFileSync(output_path, output)
       !non_ourbigbook_options.had_error
@@ -935,7 +936,7 @@ if (cli.helpMacros) {
   let title;
   let output;
   let publish = cli.publish || cli.publishCommit !== undefined;
-  let html_x_extension;
+  let htmlXExtension;
   let input_dir;
   const web = cli.web || cli.webTest
   if (inputPath === undefined) {
@@ -1029,7 +1030,7 @@ if (cli.helpMacros) {
   if (publish) {
     switch (publish_target) {
       case PUBLISH_TARGETS['github-pages']:
-        html_x_extension = false;
+        htmlXExtension = false;
         split_headers = true;
         publish_uses_git = true;
 
@@ -1042,7 +1043,7 @@ if (cli.helpMacros) {
         }
         break;
       case PUBLISH_TARGETS.local:
-        html_x_extension = true;
+        htmlXExtension = true;
         split_headers = false;
         publish_uses_git = false;
         break;
@@ -1050,7 +1051,7 @@ if (cli.helpMacros) {
         cli_error(`unknown publish target: ${publish_target}`)
     }
   } else {
-    html_x_extension = cli.htmlXExtension === false ? false : undefined;
+    htmlXExtension = cli.htmlXExtension === false ? false : undefined;
   }
   if (cli.splitHeaders === undefined) {
     cli.splitHeaders = false
@@ -1069,7 +1070,7 @@ if (cli.helpMacros) {
     ourbigbook_json,
     embed_includes: cli.embedIncludes,
     fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
-    html_x_extension,
+    htmlXExtension,
     output_format,
     outfile: cli.outfile,
     path_sep: path.sep,
@@ -1856,7 +1857,7 @@ if (cli.helpMacros) {
         for (let [from, to] of ourbigbook_json.redirects) {
           if (
             // TODO https://docs.ourbigbook.com/respect-ourbigbook-json-htmlxextension-on-ourbigbook-json-redirects
-            ourbigbook_options.html_x_extension === false ? false : true &&
+            ourbigbook_options.htmlXExtension === false ? false : true &&
             !ourbigbook.protocol_is_known(to)
           ) {
             to +=  '.' + ourbigbook.HTML_EXT

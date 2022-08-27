@@ -6805,7 +6805,7 @@ assert_lib('include: from parent to subdirectory',
     },
   }
 );
-assert_lib('include: subdir index.bigb outputs to subdir without trailing slash with html_x_extension=true',
+assert_lib('include: subdir index.bigb outputs to subdir without trailing slash with htmlXExtension=true',
   {
     filesystem: {
       'subdir/index.bigb': `= Subdir
@@ -6820,7 +6820,7 @@ assert_lib('include: subdir index.bigb outputs to subdir without trailing slash 
 `,
     },
     convert_dir: true,
-    convert_opts: { html_x_extension: true },
+    convert_opts: { htmlXExtension: true },
     assert_xpath: {
       'subdir.html': [
         "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
@@ -6829,7 +6829,7 @@ assert_lib('include: subdir index.bigb outputs to subdir without trailing slash 
     },
   }
 );
-assert_lib('include: subdir index.bigb outputs to subdir without trailing slash with html_x_extension=false',
+assert_lib('include: subdir index.bigb outputs to subdir without trailing slash with htmlXExtension=false',
   {
     filesystem: {
       'subdir/index.bigb': `= Subdir
@@ -6844,7 +6844,7 @@ assert_lib('include: subdir index.bigb outputs to subdir without trailing slash 
 `,
     },
     convert_dir: true,
-    convert_opts: { html_x_extension: false },
+    convert_opts: { htmlXExtension: false },
     assert_xpath: {
       'subdir.html': [
         "//x:a[@href='subdir/notindex' and text()='link to subdir notindex']",
@@ -9778,7 +9778,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'directory listings',
+  'directory listings simple',
   {
     args: ['.'],
     filesystem: {
@@ -9856,6 +9856,102 @@ assert_cli(
       [`${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html`]: [
         "//x:a[@href='../../index.html' and text()='(root)']",
         "//x:a[@href='../index.html' and text()='subdir']",
+      ],
+    },
+    assert_not_xpath: {
+      [`${ourbigbook.RAW_PREFIX}/index.html`]: [
+        // ../ not added to root listing.
+        "//x:a[text()='(root)']",
+
+        // Ignored files don't show on listing.
+        "//x:a[@href='.git']",
+        "//x:a[@href='.git/']",
+      ],
+    },
+  }
+);
+assert_cli(
+  'directory listings without .html',
+  {
+    args: ['.'],
+    filesystem: {
+      'ourbigbook.json': `{
+  "htmlXExtension": false
+}`,
+      'README.bigb': `= Index
+
+\\a[.][link to root]
+
+\\a[subdir][link to subdir]
+
+\\a[subdir/subdir2][link to subdir2]
+
+== subdir
+{file}
+
+== subdir/subdir2
+{file}
+`,
+      'subdir/index.bigb': `= Subdir
+
+\\a[..][link to root]
+
+\\a[.][link to subdir]
+
+\\a[subdir2][link to subdir2]
+`,
+      'myfile.txt': `ab`,
+      'subdir/myfile-subdir.txt': `ab`,
+      'subdir/subdir2/index.bigb': `= Subdir2
+
+\\a[../..][link to root]
+
+\\a[..][link to subdir]
+
+\\a[.][link to subdir2]
+`,
+      'subdir/subdir2/myfile-subdir2.txt': `ab`,
+      '.git/myfile-git.txt': `ab`,
+    },
+    expect_exists: [
+      `${ourbigbook.RAW_PREFIX}/myfile.txt`,
+      `${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
+    ],
+    expect_not_exists: [
+      // Ignored directories are not listed.
+      `${ourbigbook.RAW_PREFIX}/.git/index.html`,
+    ],
+    assert_xpath: {
+      [`index.html`]: [
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir' and text()='View file']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2' and text()='View file']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}' and text()='link to root']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir' and text()='link to subdir']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
+      ],
+      [`subdir.html`]: [
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}' and text()='link to root']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir' and text()='link to subdir']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
+      ],
+      [`subdir/subdir2.html`]: [
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}' and text()='link to root']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir' and text()='link to subdir']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
+      ],
+      [`${ourbigbook.RAW_PREFIX}/index.html`]: [
+        "//x:a[@href='myfile.txt' and text()='myfile.txt']",
+        "//x:a[@href='README.bigb' and text()='README.bigb']",
+        "//x:a[@href='subdir/' and text()='subdir/']",
+      ],
+      [`${ourbigbook.RAW_PREFIX}/subdir/index.html`]: [
+        "//x:a[@href='myfile-subdir.txt' and text()='myfile-subdir.txt']",
+        "//x:a[@href='subdir2/' and text()='subdir2/']",
+        "//x:a[@href='..' and text()='(root)']",
+      ],
+      [`${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html`]: [
+        "//x:a[@href='../..' and text()='(root)']",
+        "//x:a[@href='..' and text()='subdir']",
       ],
     },
     assert_not_xpath: {

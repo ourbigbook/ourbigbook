@@ -8476,31 +8476,32 @@ assert_cli(
       ['git', ['init']],
       ['git', ['add', '.']],
       ['git', ['commit', '-m', '0']],
+      ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/test.git']],
     ],
     expect_exists: [
-      'out/publish/out/publish/dist/ourbigbook.css',
+      'out/publish/out/github-pages/dist/ourbigbook.css',
     ],
     assert_xpath: {
-      'out/publish/out/publish/index.html': [
+      'out/publish/out/github-pages/index.html': [
         "//x:div[@class='p']//x:a[@href='notindex' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex#notindex-h2' and text()='link to notindex h2']",
         "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
       ],
-      'out/publish/out/publish/notindex.html': [
+      'out/publish/out/github-pages/notindex.html': [
         xpath_header(1, 'notindex'),
         "//x:div[@class='p']//x:a[@href='.' and text()='link to index']",
         "//x:div[@class='p']//x:a[@href='.#h2' and text()='link to h2']",
       ],
-      'out/publish/out/publish/toplevel-scope/toplevel-scope-h2.html': [
+      'out/publish/out/github-pages/toplevel-scope/toplevel-scope-h2.html': [
         "//x:style[contains(text(),'@import \"../dist/ourbigbook.css\"')]",
       ],
-      'out/publish/out/publish/subdir.html': [
+      'out/publish/out/github-pages/subdir.html': [
         "//x:style[contains(text(),'@import \"dist/ourbigbook.css\"')]",
       ],
       // Non-converted files are copied over.
-      [`out/publish/out/publish/${ourbigbook.RAW_PREFIX}/scss.css`]: [],
-      [`out/publish/out/publish/${ourbigbook.RAW_PREFIX}/ourbigbook.json`]: [],
-      [`out/publish/out/publish/${ourbigbook.RAW_PREFIX}/subdir/myfile.txt`]: [],
+      [`out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/scss.css`]: [],
+      [`out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/ourbigbook.json`]: [],
+      [`out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/subdir/myfile.txt`]: [],
     },
   }
 );
@@ -9557,7 +9558,7 @@ assert_cli(
       'myproj-media/myimg.png': 'a',
     },
     assert_xpath: {
-      'myproj/out/publish/out/publish/index.html': [
+      'myproj/out/publish/out/github-pages/index.html': [
         "//x:a[@href='https://raw.githubusercontent.com/cirosantilli/myproj-media/master/myimg.png']//x:img[@src='https://raw.githubusercontent.com/cirosantilli/myproj-media/master/myimg.png']",
       ],
     },

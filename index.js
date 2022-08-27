@@ -1412,6 +1412,8 @@ Macro.RESERVED_ID_PREFIX = '_'
 Macro.FILE_ID_PREFIX = Macro.RESERVED_ID_PREFIX + 'file' + Macro.HEADER_SCOPE_SEPARATOR
 const RAW_PREFIX = Macro.RESERVED_ID_PREFIX + 'raw'
 exports.RAW_PREFIX = RAW_PREFIX
+const DIR_PREFIX = Macro.RESERVED_ID_PREFIX + 'dir'
+exports.DIR_PREFIX = DIR_PREFIX
 Macro.TOC_ID = Macro.RESERVED_ID_PREFIX + 'toc';
 Macro.TOC_PREFIX = Macro.TOC_ID + '/'
 Macro.TOPLEVEL_MACRO_NAME = 'Toplevel';
@@ -2905,6 +2907,7 @@ function render_ast_list(opts) {
       )
       options.template_vars.root_relpath = new_root_relpath
       options.template_vars.raw_relpath = path.join(new_root_relpath, RAW_PREFIX)
+      options.template_vars.dir_relpath = path.join(new_root_relpath, DIR_PREFIX)
       context.extra_returns.rendered_outputs[output_path] = rendered_outputs_entry
     }
     // Do the conversion.
@@ -3404,15 +3407,6 @@ function error_message_in_output(msg, context) {
   return `[OURBIGBOOK_ERROR: ${escaped_msg}]`
 }
 
-const ESCAPE_INDEX_RAW_REGEXP = new RegExp('_*index.html')
-function escapeIndexRaw(output_path) {
-  if (ESCAPE_INDEX_RAW_REGEXP.test(output_path)) {
-    output_path = '_' + output_path
-  }
-  return output_path
-}
-exports.escapeIndexRaw = escapeIndexRaw
-
 // https://stackoverflow.com/questions/9461621/format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900
 const FORMAT_NUMBER_APPROX_MAP = [
   { value: 1, symbol: "" },
@@ -3548,33 +3542,29 @@ function check_and_update_local_link({
       ) {
         error = `link to inexistent local file: ${href}`;
         render_error(context, error, source_location);
+        error = error_message_in_output(error, context)
       } else {
         const { type } = context.options.read_file(check_path, context)
         if (type === 'directory') {
           if (context.options.htmlXExtension) {
             href = path.join(href, 'index.html')
           }
-        } else {
-          if (media_provider_type === 'local') {
-            let [dir, bname] = path_split(href, URL_SEP)
-            href = path.join(dir, escapeIndexRaw(bname))
+        }
+        // Modify external paths to account for scope + --split-headers
+        let pref = context.root_relpath_shift
+        if (media_provider_type === 'local') {
+          if (type === 'directory') {
+            pref = path.join(pref, DIR_PREFIX)
+          } else {
+            pref = path.join(pref, RAW_PREFIX)
           }
         }
+        if (!is_absolute) {
+          pref = path.join(pref, context.input_dir)
+        }
+        href = path.join(pref, href)
       }
     }
-    if (error) {
-      error = error_message_in_output(error, context)
-    }
-
-    // Modify external paths to account for scope + --split-headers
-    let pref = context.root_relpath_shift
-    if (media_provider_type === 'local') {
-      pref = path.join(pref, RAW_PREFIX)
-    }
-    if (!is_absolute) {
-      pref = path.join(pref, context.input_dir)
-    }
-    href = path.join(pref, href)
   }
   return { href, error }
 }

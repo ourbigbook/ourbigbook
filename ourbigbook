@@ -48,6 +48,7 @@ const DEFAULT_IGNORE_BASENAMES = [
   ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
   ourbigbook_nodejs.PACKAGE_SASS_BASENAME,
   ourbigbook.RAW_PREFIX,
+  ourbigbook.DIR_PREFIX,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 const PUBLISH_TARGETS = {
@@ -530,7 +531,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   }
 
   let output_path_noext = path.join(
-    ourbigbook.RAW_PREFIX,
+    is_directory ? ourbigbook.DIR_PREFIX : ourbigbook.RAW_PREFIX,
     path.relative(
       non_ourbigbook_options.ourbigbook_json_dir,
       path.join(
@@ -653,9 +654,17 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
           dirArr.push(`\n\n`)
         }
         function push_li(name, isdir) {
-          const target = `${name}${isdir ? ourbigbook.URL_SEP : ''}`
-          const targetEscape = `${ourbigbook.escapeIndexRaw(name)}${isdir ? ourbigbook.URL_SEP : ''}`
-          dirArr.push(`* \\a[${targetEscape + (isdir ? indexHtml : '')}][${target}]{external}\n`)
+          const target = `${name}`
+          let targetHref
+          if (isdir) {
+            targetHref = target
+            if (indexHtml) {
+              targetHref += ourbigbook.URL_SEP + indexHtml
+            }
+          } else {
+            targetHref = path.join(path.relative(input_path_relative_to_ourbigbook_json, '..'), ourbigbook.RAW_PREFIX, input_path_relative_to_ourbigbook_json, target)
+          }
+          dirArr.push(`* \\a[${targetHref}][${target}${isdir ? ourbigbook.URL_SEP : ''}]{external}\n`)
         }
         for (const name of [...dirs].sort()) {
           push_li(name, true)
@@ -711,8 +720,6 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
     // Copy the raw file over into _raw.
     if (!is_directory && ourbigbook_options.render) {
       let output_path = output_path_noext + input_path_parse.ext;
-      let [output_dir, output_bname] = ourbigbook.path_split(output_path, path.sep)
-      output_path = path.join(output_dir, ourbigbook.escapeIndexRaw(output_bname))
       if (
         output_path !== path.resolve(input_path)
       ) {

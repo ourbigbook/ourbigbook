@@ -871,12 +871,17 @@ A link being internal has the following effects
 
 Implemented at: https://github.com/ourbigbook/ourbigbook/issues/87[] as `relative`, and subsequently modified to the more accurate/useful `external`.
 
+= `_dir` directory
+{parent=a `external` argument}
+
+The `_dir` directory tree contains file listings of files in the `_raw` directory.
+
+We originally wanted to place these listings under `_raw` itself, but this leads to unsolvable conflicts when there are files called `index.html` present vs the index.
+
 = `_raw` directory
 {parent=a `external` argument}
 
 <OurBigBook> places output files that are not the output of `.bigb` to `.html` conversion (i.e. `.html` output files) under the `_raw/` prefix of the output.
-
-Additionally, directory listing as also generated for all directories, allowing users to browse all source files.
 
 <Internal links> then automatically add the `_raw/` prefix to every link.
 
@@ -6176,6 +6181,10 @@ This will get out of sync sooner or later with the code, but this should still s
 
 Defined variables:
 * `body`: the rendered body
+* `dir_replath`: relative path from the rendered output to the <`_dir` directory>. Sample usage to link to the root directory listing:
+  ``
+  <div><a href="{{ dir_relpath }}{{ html_index }}">Website source code</a></div>
+  ``
 * `git_sha`: SHA of the latest git commit of the source code if in a git repository
 * `html_ext`: `.html` for local renders, empty for server renders.
 
@@ -6220,7 +6229,7 @@ Defined variables:
   ``
 
   This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/ourbigbook/ourbigbook/issues/135
-* `raw_replath`: relative path from the rendered output to the <`raw` directory>. Should be used to prefix all non-<OurBigBook Markup> output resources, which is the directory where such files are placed during conversion, e.g.
+* `raw_replath`: relative path from the rendered output to the <`_raw` directory>. Should be used to prefix all non-<OurBigBook Markup> output resources, which is the directory where such files are placed during conversion, e.g.
   ``
   <link rel="shortcut icon" href="{{ raw_relpath }}/logo.svg" />
   ``

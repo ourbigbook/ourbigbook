@@ -174,6 +174,9 @@ function cmd_get_stdout(cmd, args=[], options={}) {
   if (!('env_extra' in options)) {
     options.env_extra = {};
   }
+  if (!('extra_returns' in options)) {
+    options.extra_returns = {};
+  }
   if (!('show_cmd' in options)) {
     options.show_cmd = true;
   }
@@ -201,6 +204,7 @@ function cmd_get_stdout(cmd, args=[], options={}) {
     }
     ret = out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING);
   }
+  options.extra_returns.out = out
   return ret;
 }
 
@@ -831,11 +835,14 @@ function git_has_commit(input_path) {
 }
 
 function git_is_in_repo(ourbigbook_json_dir) {
-  try {
-    return cmd_get_stdout('git', ['-C', ourbigbook_json_dir, 'rev-parse', '--show-toplevel'], { throw_on_error: true, show_cmd: false }).slice(0, -1) === ourbigbook_json_dir
-  } catch(err) {
-    return false
-  }
+  const extra_returns = {}
+  cmd_get_stdout('git', ['-C', ourbigbook_json_dir, 'check-ignore', ourbigbook_json_dir], {
+    throw_on_error: false, show_cmd: false, extra_returns })
+  // Exit statuses:
+  // - 0: is ignored
+  // - 1: is not ignored
+  // - 128: not in git repository
+  return extra_returns.out.status === 1
 }
 
 /**

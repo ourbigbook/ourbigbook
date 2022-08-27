@@ -96,7 +96,7 @@
     "test": "NODE_OPTIONS='--unhandled-rejections=strict' mocha test --ignore-leaks",
     "testi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./node_modules/.bin/mocha test --ignore-leaks",
     "test-pg": "OURBIGBOOK_POSTGRES=1 npm test --",
-    "test-release": "npm test && npm run test-pg -- --timeout 100000",
+    "test-release": "npm test  -- --timeout 10000 && npm run test-pg -- --timeout 100000",
     "webpack": "webpack --",
     "webpack-dev": "webpack -- --mode development --watch",
     "web-setup": "npm run link && npm run build-assets && cd web/ && npm install"

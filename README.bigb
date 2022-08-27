@@ -34,7 +34,9 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
 * https://github.com/ourbigbook/ourbigbook/blob/master/README.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
 * https://docs.ourbigbook.com/editor[]: live in-browser editor demo
-* https://cirosantilli.com/template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
+* https://github.com/ourbigbook/template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
+* https://github.com/ourbigbook/template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
+  * https://ourbigbook.github.io/template[]: the above <published to GitHub Pages>
 * https://cirosantilli.com/ourbigbook-media[]: media for the project such as for documentation and <publicity>, more info: <OurBigBook media repository>{full}
 
 = Donate
@@ -5191,7 +5193,7 @@ printf 'ab\ncd\n' | ourbigbook --body-only
 
 Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/editor[].
 
-Play with https://github.com/ourbigbook/template[a OurBigBook template] locally:
+Play with https://github.com/ourbigbook/template[an OurBigBook template] locally:
 ``
 git clone https://github.com/ourbigbook/template
 cd template
@@ -5616,13 +5618,13 @@ and the second one to uppercasing the reference to the image title:
 Generate one of the template repositories locally:
 * `ourbigbook --generate default`: a good starter template that illustrates many key OurBigBook features
   * https://github.com/ourbigbook/template
-  * https://cirosantilli.com/template
+  * https://ourbigbook.github.io/template
 * `ourbigbook --generate min`: a minimal template that is still sane
   * https://github.com/ourbigbook/template-min
-  * https://cirosantilli.com/template-min
+  * https://ourbigbook.github.io/template-min
 * `ourbigbook --generate subdir`: a template in which OurBigBook source is located a subdirectory `docs/`:
   * https://github.com/ourbigbook/template-subdir
-  * https://cirosantilli.com/template-subdir
+  * https://ourbigbook.github.io/template-subdir
   This template illustrates that everything works exactly as if OurBigBook source were in the git repository toplevel.
 
   This is a convenient setup for programming projects that want to use OurBigBook for their documentation without polluting their toplevel.
@@ -6047,6 +6049,9 @@ Possible values:
 
 = Publish to GitHub Pages
 {parent=`--publish-target`}
+
+= Published to GitHub Pages
+{synonym}
 
 https://pages.github.com/[GitHub pages] is the default OurBigBook publish target.
 

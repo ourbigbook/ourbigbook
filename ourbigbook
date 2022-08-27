@@ -668,7 +668,6 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         !non_ourbigbook_options.had_error
       } else {
         if (isSass) {
-          msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path, 'scss')
           fs.writeFileSync(
             first_output_path,
             require('sass').renderSync({

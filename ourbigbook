@@ -206,14 +206,10 @@ function cmd_get_stdout(cmd, args=[], options={}) {
  */
 async function convert_directory(input_path, ourbigbook_options, non_ourbigbook_options) {
   non_ourbigbook_options.ourbigbook_paths_converted = []
-  const ignore_fullpaths = new Set();
-  for (const ignore of ourbigbook_options.ourbigbook_json.ignore) {
-    ignore_fullpaths.add(path.join(non_ourbigbook_options.ourbigbook_json_dir, ignore));
-  }
-  for (const one_path of walk_files_recursively(
+  for (const one_path of walk_directory_recursively(
     input_path,
     DEFAULT_IGNORE_BASENAMES_SET,
-    ignore_fullpaths,
+    non_ourbigbook_options.ignore_path_set,
   )) {
     await convert_path_to_file(
       one_path,
@@ -389,137 +385,139 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
   let output, first_output_path;
   let skip = false
   let is_bigb = false
-  if (input_path_parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}`) {
-    is_bigb = true
-    let full_path = path.resolve(input_path);
-    let input_path_parse = path.parse(full_path);
-    let path_relative_to_ourbigbook_json;
-    let input_path_relative_to_ourbigbook_json;
-    if (non_ourbigbook_options.ourbigbook_json_dir !== undefined) {
-      path_relative_to_ourbigbook_json = path.relative(non_ourbigbook_options.ourbigbook_json_dir, input_path_parse.dir);
-      input_path_relative_to_ourbigbook_json = path.join(path_relative_to_ourbigbook_json, input_path_parse.base);
+  const is_directory = fs.lstatSync(input_path).isDirectory()
+  let full_path = path.resolve(input_path);
+  let path_relative_to_ourbigbook_json;
+  let input_path_relative_to_ourbigbook_json;
+  if (non_ourbigbook_options.ourbigbook_json_dir !== undefined) {
+    path_relative_to_ourbigbook_json = path.relative(non_ourbigbook_options.ourbigbook_json_dir, input_path_parse.dir);
+    input_path_relative_to_ourbigbook_json = path.join(path_relative_to_ourbigbook_json, input_path_parse.base);
+  }
+  if (!is_directory) {
+    if (input_path_parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}`) {
+      let input_path_parse = path.parse(full_path);
+      is_bigb = true
+      non_ourbigbook_options.ourbigbook_paths_converted.push(input_path_relative_to_ourbigbook_json)
+      if (non_ourbigbook_options.ourbigbook_paths_converted_only) {
+        return
+      }
+      msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
+      let new_options = Object.assign({}, ourbigbook_options);
+      let new_non_ourbigbook_options = Object.assign({}, non_ourbigbook_options);
+      let input = fs.readFileSync(full_path, new_non_ourbigbook_options.encoding);
+      let input_path_basename_noext = input_path_parse.name;
+      const sequelize = non_ourbigbook_options.sequelize
+      if (input_path_relative_to_ourbigbook_json) {
+        const file_row_type = non_ourbigbook_options.file_rows_dict[non_ourbigbook_options.renderType]
+        if (
+          // Can not be present on sigle file (non directory) conversion. In that case we always convert.
+          file_row_type
+        ) {
+          const file_row = file_row_type[input_path_relative_to_ourbigbook_json]
+          if (
+            // File has previously been rendered.
+            file_row !== undefined
+          ) {
+            const file_row_render = file_row.Render
+            if (
+              ourbigbook_options.render
+            ) {
+              if (file_row_render) {
+                skip = !non_ourbigbook_options.cli.forceRender &&
+                  !file_row_render.outdated &&
+                  // TODO add a Render magic format for this use case. Or maybe
+                  // start tracking output paths as well in Render to also cover -o.
+                  // But lazy now, just never use timestamp for --format-source.
+                  !non_ourbigbook_options.cli.formatSource
+              }
+            } else {
+              skip = file_row.last_parse !== null && file_row.last_parse > fs.statSync(input_path).mtime
+              if (!skip && file_row_render) {
+                // We are going to update the parse, so mark as outdated here.
+                // This way we don't need to fetch from DB again.
+                file_row_render.outdated = true
+              }
+            }
+          }
+        }
+      }
+      if (!skip) {
+        new_non_ourbigbook_options.input_path = input_path_relative_to_ourbigbook_json;
+        if (sequelize) {
+          new_options.db_provider = non_ourbigbook_options.db_provider;
+        }
+
+        // Convert.
+        output = await convert_input(input, new_options, new_non_ourbigbook_options);
+        if (new_non_ourbigbook_options.had_error) {
+          non_ourbigbook_options.had_error = true;
+        }
+        const extra_returns = new_non_ourbigbook_options.extra_returns
+        if (
+          non_ourbigbook_options.cli.formatSource &&
+          ourbigbook_options.render
+        ) {
+          if (!new_non_ourbigbook_options.had_error) {
+            fs.writeFileSync(full_path, output);
+          }
+          first_output_path = full_path
+        } else {
+          // Write out the output the output files.
+          for (const outpath in extra_returns.rendered_outputs) {
+            const output_path = path.join(non_ourbigbook_options.outdir, outpath);
+            if (output_path === full_path) {
+              cli_error(`output path equals input path: "${outpath}"`);
+            }
+            if (first_output_path === undefined) {
+              first_output_path = output_path
+            }
+            fs.mkdirSync(path.dirname(output_path), { recursive: true });
+            fs.writeFileSync(output_path, extra_returns.rendered_outputs[outpath].full);
+          }
+        }
+        if (
+          new_options.split_headers &&
+          ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
+        ) {
+          for (const header_ast of extra_returns.context.synonym_headers) {
+            let new_options_redir = Object.assign({}, new_options);
+            new_options_redir.db_provider = extra_returns.context.db_provider;
+            await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, non_ourbigbook_options.outdir);
+          }
+        }
+
+        const context = extra_returns.context;
+        if (non_ourbigbook_options.log.headers) {
+          console.error(context.header_tree.toString());
+        }
+
+        // Update the Sqlite databse with results from the conversion.
+        ourbigbook.perf_print(context, 'convert_path_pre_sqlite')
+        if ('sequelize' in non_ourbigbook_options) {
+          await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
+            extra_returns,
+            db_provider: non_ourbigbook_options.db_provider,
+            had_error: non_ourbigbook_options.had_error,
+            is_render_after_extract: non_ourbigbook_options.is_render_after_extract,
+            non_ourbigbook_options,
+            renderType: non_ourbigbook_options.renderType,
+            path: input_path_relative_to_ourbigbook_json,
+            render: ourbigbook_options.render,
+            sequelize: non_ourbigbook_options.sequelize,
+          })
+        }
+      }
     }
-    non_ourbigbook_options.ourbigbook_paths_converted.push(input_path_relative_to_ourbigbook_json)
-    if (non_ourbigbook_options.ourbigbook_paths_converted_only) {
+    if (
+      non_ourbigbook_options.cli.formatSource ||
+      non_ourbigbook_options.ourbigbook_paths_converted_only
+    ) {
+      // I should use callbacks instead of doing this. But lazy.
       return
     }
-    msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
-    let new_options = Object.assign({}, ourbigbook_options);
-    let new_non_ourbigbook_options = Object.assign({}, non_ourbigbook_options);
-    let input = fs.readFileSync(full_path, new_non_ourbigbook_options.encoding);
-    let input_path_basename_noext = input_path_parse.name;
-    const sequelize = non_ourbigbook_options.sequelize
-    if (input_path_relative_to_ourbigbook_json) {
-      const file_row_type = non_ourbigbook_options.file_rows_dict[non_ourbigbook_options.renderType]
-      if (
-        // Can not be present on sigle file (non directory) conversion. In that case we always convert.
-        file_row_type
-      ) {
-        const file_row = file_row_type[input_path_relative_to_ourbigbook_json]
-        if (
-          // File has previously been rendered.
-          file_row !== undefined
-        ) {
-          const file_row_render = file_row.Render
-          if (
-            ourbigbook_options.render
-          ) {
-            if (file_row_render) {
-              skip = !non_ourbigbook_options.cli.forceRender &&
-                !file_row_render.outdated &&
-                // TODO add a Render magic format for this use case. Or maybe
-                // start tracking output paths as well in Render to also cover -o.
-                // But lazy now, just never use timestamp for --format-source.
-                !non_ourbigbook_options.cli.formatSource
-            }
-          } else {
-            skip = file_row.last_parse !== null && file_row.last_parse > fs.statSync(input_path).mtime
-            if (!skip && file_row_render) {
-              // We are going to update the parse, so mark as outdated here.
-              // This way we don't need to fetch from DB again.
-              file_row_render.outdated = true
-            }
-          }
-        }
-      }
-    }
-    if (!skip) {
-      new_non_ourbigbook_options.input_path = input_path_relative_to_ourbigbook_json;
-      if (sequelize) {
-        new_options.db_provider = non_ourbigbook_options.db_provider;
-      }
-
-      // Convert.
-      output = await convert_input(input, new_options, new_non_ourbigbook_options);
-      if (new_non_ourbigbook_options.had_error) {
-        non_ourbigbook_options.had_error = true;
-      }
-      const extra_returns = new_non_ourbigbook_options.extra_returns
-      if (
-        non_ourbigbook_options.cli.formatSource &&
-        ourbigbook_options.render
-      ) {
-        if (!new_non_ourbigbook_options.had_error) {
-          fs.writeFileSync(full_path, output);
-        }
-        first_output_path = full_path
-      } else {
-        // Write out the output the output files.
-        for (const outpath in extra_returns.rendered_outputs) {
-          const output_path = path.join(non_ourbigbook_options.outdir, outpath);
-          if (output_path === full_path) {
-            cli_error(`output path equals input path: "${outpath}"`);
-          }
-          if (first_output_path === undefined) {
-            first_output_path = output_path
-          }
-          fs.mkdirSync(path.dirname(output_path), { recursive: true });
-          fs.writeFileSync(output_path, extra_returns.rendered_outputs[outpath].full);
-        }
-      }
-      if (
-        new_options.split_headers &&
-        ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
-      ) {
-        for (const header_ast of extra_returns.context.synonym_headers) {
-          let new_options_redir = Object.assign({}, new_options);
-          new_options_redir.db_provider = extra_returns.context.db_provider;
-          await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, non_ourbigbook_options.outdir);
-        }
-      }
-
-      const context = extra_returns.context;
-      if (non_ourbigbook_options.log.headers) {
-        console.error(context.header_tree.toString());
-      }
-
-      // Update the Sqlite databse with results from the conversion.
-      ourbigbook.perf_print(context, 'convert_path_pre_sqlite')
-      if ('sequelize' in non_ourbigbook_options) {
-        await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
-          extra_returns,
-          db_provider: non_ourbigbook_options.db_provider,
-          had_error: non_ourbigbook_options.had_error,
-          is_render_after_extract: non_ourbigbook_options.is_render_after_extract,
-          non_ourbigbook_options,
-          renderType: non_ourbigbook_options.renderType,
-          path: input_path_relative_to_ourbigbook_json,
-          render: ourbigbook_options.render,
-          sequelize: non_ourbigbook_options.sequelize,
-        })
-      }
-    }
   }
-  if (
-    non_ourbigbook_options.cli.formatSource ||
-    non_ourbigbook_options.ourbigbook_paths_converted_only
-  ) {
-    // I should use callbacks instead of doing this. But lazy.
-    return
-  }
+
   let output_name = input_path_parse.name;
-
-  // output_path_noext
   let output_path_noext = path.join(
     ourbigbook.RAW_PREFIX,
     path.relative(
@@ -528,21 +526,55 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
     ),
     output_name
   )
+  if (is_directory) {
+    output_path_noext = path.join(output_path_noext, 'index')
+  }
   if (ourbigbook_options.outfile === undefined) {
     output_path_noext = path.join(non_ourbigbook_options.outdir, output_path_noext);
   } else {
     output_path_noext = ourbigbook_options.outfile;
   }
-
   fs.mkdirSync(path.dirname(output_path_noext), {recursive: true});
   if (ourbigbook_options.render) {
-    if (input_path_parse.ext === SASS_EXT) {
+    if (is_directory) {
+      let output_path = path.join(output_path_noext + '.html')
+      console.log(`dir ${input_path} -> ${output_path}`);
+      const dirents = fs.readdirSync(full_path, { withFileTypes: true });
+      const dirs = []
+      const files = []
+      const title = `Directory: ${input_path_relative_to_ourbigbook_json}`
+      const html_arr = [`<!doctype html><html lang=en><head><meta charset=utf-8><title>${title}</title></head><body><h1>${title}</h1><ul>`]
+      function push_li(name, isdir) {
+        const target = `${name}${isdir ? '/' : ''}`
+        html_arr.push(`<li><a href=${target + (isdir ? 'index.html' : '')}>${target}</a></li>`)
+      }
+      if (input_path_relative_to_ourbigbook_json !== '.') {
+        push_li('..', true)
+      }
+      for (const dirent of dirents) {
+        const name = dirent.name
+        if (!ignore_path(DEFAULT_IGNORE_BASENAMES_SET, non_ourbigbook_options.ignore_path_set, path.join(input_path, name))) {
+          if (dirent.isDirectory()) {
+            dirs.push(name)
+          } else {
+            files.push(name)
+          }
+        }
+      }
+      for (const name of [...dirs].sort()) {
+        push_li(name, true)
+      }
+      for (const name of [...files].sort()) {
+        push_li(name, false)
+      }
+      fs.writeFileSync(output_path, html_arr.join('') + '</ul></body></html>')
+    } else if (input_path_parse.ext === SASS_EXT) {
       first_output_path = output_path_noext + '.css'
       msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
       fs.writeFileSync(
         first_output_path,
         require('sass').renderSync({
-          data: fs.readFileSync(path.join(input_path), non_ourbigbook_options.encoding),
+          data: fs.readFileSync(input_path, non_ourbigbook_options.encoding),
           outputStyle: 'compressed',
           includePaths: [
             path.dirname(ourbigbook_nodejs.PACKAGE_PATH),
@@ -550,16 +582,21 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         }).css
       );
     } else {
-      // Otherwise, just copy the file over if needed.
-      const output_path = output_path_noext + input_path_parse.ext;
-      if (output_path !== path.resolve(input_path)) {
-        console.log(`copy ${input_path} -> ${path.relative(process.cwd(), output_path)}`);
-        fs.copyFileSync(input_path, output_path);
+      if (!non_ourbigbook_options.had_error) {
+        // Otherwise, just copy the file over if needed.
+        const output_path = output_path_noext + input_path_parse.ext;
+        if (output_path !== path.resolve(input_path)) {
+          console.log(`copy ${input_path} -> ${path.relative(process.cwd(), output_path)}`);
+          fs.copyFileSync(input_path, output_path);
+        }
       }
     }
   }
 
-  if (msg_ret !== undefined) {
+  if (
+    !non_ourbigbook_options.had_error &&
+    msg_ret !== undefined
+  ) {
     let t1 = performance.now();
     let output_path_str
     if (
@@ -752,29 +789,30 @@ function renderTemplate(templateRelpath, outdir, env) {
   fs.writeFileSync(path.join(outdir, templateRelpath), out);
 }
 
+/** Skip path from ourbigbook conversion. */
+function ignore_path(ignore_basenames, ignore_paths, _path) {
+  return ignore_basenames.has(path.basename(_path)) ||
+    ignore_paths.has(_path)
+}
+
 /** https://stackoverflow.com/questions/5827612/node-js-fs-readdir-recursive-directory-search
  *
  * @param {Set} skip_basenames
  * @param {Set} ignore_paths
  */
-function* walk_files_recursively(file_or_dir, skip_basenames, ignore_paths) {
+function* walk_directory_recursively(file_or_dir, ignore_basenames, ignore_path_set) {
+  yield file_or_dir;
   if (fs.lstatSync(file_or_dir).isDirectory()) {
     const dirents = fs.readdirSync(file_or_dir, {withFileTypes: true});
     for (const dirent of dirents) {
       const res = path.join(file_or_dir, dirent.name);
-      if (
-        !skip_basenames.has(dirent.name) &&
-        !ignore_paths.has(path.resolve(res))
-      ) {
+      if (!ignore_path(DEFAULT_IGNORE_BASENAMES_SET, ignore_path_set, res)) {
+        yield res;
         if (dirent.isDirectory()) {
-          yield* walk_files_recursively(res, skip_basenames, ignore_paths);
-        } else {
-          yield res;
+          yield* walk_directory_recursively(res, ignore_basenames, ignore_path_set);
         }
       }
     }
-  } else {
-    yield file_or_dir;
   }
 }
 
@@ -987,16 +1025,21 @@ if (cli.helpMacros) {
       path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
     }),
     read_file: (readpath, context) => {
-      readpath = path.join(path.dirname(context.options.input_path), readpath)
+      readpath = path.join(path.join(ourbigbook_json_dir, readpath))
       if (
         // Let's prevent path transversal a bit by default.
         path.resolve(readpath).startsWith(path.resolve(ourbigbook_json_dir)) &&
         fs.existsSync(readpath)
       ) {
         if (fs.lstatSync(readpath).isFile()) {
-          return fs.readFileSync(readpath, ourbigbook_nodejs_webpack_safe.ENCODING);
+          return {
+            type: 'file',
+            content: fs.readFileSync(readpath, ourbigbook_nodejs_webpack_safe.ENCODING),
+          }
         } else {
-          // TODO implement.
+          return {
+            type: 'directory',
+          }
           return undefined
         }
       } else {
@@ -1151,6 +1194,7 @@ if (cli.helpMacros) {
     external_css_and_js: false,
     had_error: false,
     is_render_after_extract: false,
+    ignore_path_set: new Set(ourbigbook_json.ignore),
     log: non_ourbigbook_options_log,
     out_css_path: ourbigbook_nodejs.DIST_CSS_PATH,
     out_js_path: ourbigbook_nodejs.DIST_JS_PATH,

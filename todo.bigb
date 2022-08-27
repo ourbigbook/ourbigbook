@@ -3,6 +3,14 @@
 
 == Issues
 
+=== Find a way to show index.html raw files that get overriden by directory listings
+{id=2}
+{tag=File}
+
+E.g. `subdir/index.html` which would show up under `_raw/subdir/index.html` gets overriden by the directory listing of `subdir/` which goes to the same location.
+
+One possibility would be to add an underscore: `_raw/subdir/_index.html` for the file. And another underscore for `_index.html` and so on.
+
 === Option to add zip of local conversion to converted GitHub pages website
 {tag=Publish}
 

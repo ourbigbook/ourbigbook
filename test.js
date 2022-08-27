@@ -156,13 +156,27 @@ function assert_lib(
       return options.filesystem.hasOwnProperty(my_path)
     }
     options.convert_opts.read_file = (readpath, context) => {
-      // TODO implement directory.
-      return {
-        type: 'file',
-        content: options.filesystem[readpath],
+      if (readpath in filesystem_dirs) {
+        return {
+          type: 'directory',
+        }
+      } else {
+        return {
+          type: 'file',
+          content: options.filesystem[readpath],
+        }
       }
     }
     let filesystem = options.filesystem
+    const filesystem_dirs = {}
+    for (f in filesystem) {
+      do {
+        f = path.dirname(f)
+        if (f === '.')
+          break
+        filesystem_dirs[f] = {}
+      } while (true)
+    }
 
     // Add directory to filesystem so that exist checks won't blow up.
     for (let p in filesystem) {
@@ -736,9 +750,9 @@ ${out.stderr.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}`;
   return ret;
 }
 
-function header_file_about_ast(path) {
+function header_file_about_ast(path, type='file') {
   return a('P', [
-    t('This section is about the file: '),
+    t(`This section is about the ${type}: `),
     a('b', [
       a('a', undefined, {href: [t(path)]})
     ]),
@@ -5165,7 +5179,7 @@ My youtube
     a('H', undefined, {level: [t('1')], title: [t('h1')]}),
 
     a('H', undefined, {level: [t('2')], title: [t('path/to')]}),
-    header_file_about_ast('path/to'),
+    header_file_about_ast('path/to', 'directory'),
     a('P', [t('My directory')]),
 
     a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.txt')]}),
@@ -5189,7 +5203,7 @@ My Line 2
     a('P', [t('My mp4')]),
 
     a('H', undefined, {level: [t('2')], title: [t('Path to YouTube')]}),
-    header_file_about_ast('https://www.youtube.com/watch?v=YeFzeNAHEhU'),
+    header_file_about_ast('https://www.youtube.com/watch?v=YeFzeNAHEhU', 'video'),
     a('Video', undefined, {src: [t('https://www.youtube.com/watch?v=YeFzeNAHEhU')]}),
     a('P', [t('My youtube')]),
   ],
@@ -5224,7 +5238,7 @@ assert_lib_ast('header file argument that is the last header adds the preview',
     },
   },
 );
-assert_lib_error('header: file argument to a file that does not exist give an error',
+assert_lib_error('header: file argument to a file that does not exist gives an error',
   `= h1
 
 == dont-exist

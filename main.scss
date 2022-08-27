@@ -5,7 +5,6 @@ $header-background-color: #AA0;
 body {
 background-color: $color;
 font-family: $font-family;
-padding-top: $header-font-size;
 
 header, footer {
   background-color: $header-background-color;
@@ -15,6 +14,7 @@ header {
   display: flex;
   /* https://stackoverflow.com/questions/5078239/how-do-i-remove-the-space-between-inline-block-elements */
   font-size: 0;
+  margin-bottom: 0.8 * $header-font-size;
   overflow-x: hidden;
   white-space: nowrap;
   a {
@@ -43,10 +43,14 @@ header {
       background-color: $color;
     }
     &.font-awesome-container {
-      font-size: 28px;
       font-weight: normal;
       padding-left: 5px;
       padding-right: 5px;
+    }
+    height: 1.2em;
+    img {
+      height: 100%;
+      margin-right: 0.1em;
     }
   }
 }

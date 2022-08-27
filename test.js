@@ -9740,12 +9740,15 @@ assert_cli(
       'notreadme.bigb': ``,
       'subdir/README.bigb': ``,
       'subdir/notreadme.bigb': ``,
+      'main.scss': ``,
     },
     expect_exists: [
       `${ourbigbook.RAW_PREFIX}/README.bigb`,
       `${ourbigbook.RAW_PREFIX}/notreadme.bigb`,
       `${ourbigbook.RAW_PREFIX}/subdir/README.bigb`,
       `${ourbigbook.RAW_PREFIX}/subdir/notreadme.bigb`,
+      // Also the source of other converted formats like SCSS.
+      `${ourbigbook.RAW_PREFIX}/main.scss`,
     ]
   }
 );
@@ -9848,14 +9851,17 @@ assert_cli(
       [`${ourbigbook.RAW_PREFIX}/subdir/index.html`]: [
         "//x:a[@href='myfile-subdir.txt' and text()='myfile-subdir.txt']",
         "//x:a[@href='subdir2/index.html' and text()='subdir2/']",
-        "//x:a[@href='../index.html' and text()='../']",
+        "//x:a[@href='../index.html' and text()='(root)']",
+      ],
+      [`${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html`]: [
+        "//x:a[@href='../../index.html' and text()='(root)']",
+        "//x:a[@href='../index.html' and text()='subdir']",
       ],
     },
     assert_not_xpath: {
       [`${ourbigbook.RAW_PREFIX}/index.html`]: [
-        // Rood directory does not link to its parent.
-        "//x:a[@href='..']",
-        "//x:a[@href='../']",
+        // ../ not added to root listing.
+        "//x:a[text()='(root)']",
 
         // Ignored files don't show on listing.
         "//x:a[@href='.git']",

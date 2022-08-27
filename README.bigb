@@ -34,7 +34,7 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
 * https://github.com/ourbigbook/ourbigbook/blob/master/README.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
 * https://docs.ourbigbook.com/editor[]: live in-browser editor demo
-* https://cirosantilli.com/ourbigbook-template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
+* https://cirosantilli.com/template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
 * https://cirosantilli.com/ourbigbook-media[]: media for the project such as for documentation and <publicity>, more info: <OurBigBook media repository>{full}
 
 = Donate
@@ -5191,22 +5191,22 @@ printf 'ab\ncd\n' | ourbigbook --body-only
 
 Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/editor[].
 
-Play with https://github.com/ourbigbook/ourbigbook-template[a OurBigBook template] locally:
+Play with https://github.com/ourbigbook/template[a OurBigBook template] locally:
 ``
-git clone https://github.com/ourbigbook/ourbigbook-template
-cd ourbigbook-template
+git clone https://github.com/ourbigbook/template
+cd template
 npm install
 npx ourbigbook .
 firefox index.html
 ``
 That template can be seen rendered live at: http://cirosantilli.com/ourbigbook-generate-multifile/ Other templates are documented at: <--generate>.
 
-To <publish to GitHub Pages> on your repository you can just fork the repository https://github.com/ourbigbook/ourbigbook-template to your own https://github.com/johndoe/ourbigbook-template and then:
+To <publish to GitHub Pages> on your repository you can just fork the repository https://github.com/ourbigbook/template to your own https://github.com/johndoe/template and then:
 ``
-git remote set-url origin git@github.com:johndoe/ourbigbook-template.git
+git remote set-url origin git@github.com:johndoe/template.git
 npx ourbigbook --publish
 ``
-and it should now be visible at: https://johndoe.github.io/ourbigbook-template
+and it should now be visible at: https://johndoe.github.io/template
 
 Then, every time you make a change you can publish the new version with:
 ``
@@ -5219,7 +5219,7 @@ or equivalently with the <publish commit> shortcut:
 ourbigbook --publish-commit 'hacked stuff'
 ``
 
-If you want to publish to your root page https://johndoe.github.io instead of https://johndoe.github.io/ourbigbook-template you need to rename the `master` branch to `dev` as mentioned at <publish to GitHub pages root page>:
+If you want to publish to your root page https://johndoe.github.io instead of https://johndoe.github.io/template you need to rename the `master` branch to `dev` as mentioned at <publish to GitHub pages root page>:
 ``
 git remote set-url origin git@github.com:johndoe/johndoe.github.io.git
 
@@ -5615,14 +5615,14 @@ and the second one to uppercasing the reference to the image title:
 
 Generate one of the template repositories locally:
 * `ourbigbook --generate default`: a good starter template that illustrates many key OurBigBook features
-  * https://github.com/ourbigbook/ourbigbook-template
-  * https://cirosantilli.com/ourbigbook-template
+  * https://github.com/ourbigbook/template
+  * https://cirosantilli.com/template
 * `ourbigbook --generate min`: a minimal template that is still sane
-  * https://github.com/ourbigbook/ourbigbook-template-min
-  * https://cirosantilli.com/ourbigbook-template-min
+  * https://github.com/ourbigbook/template-min
+  * https://cirosantilli.com/template-min
 * `ourbigbook --generate subdir`: a template in which OurBigBook source is located a subdirectory `docs/`:
-  * https://github.com/ourbigbook/ourbigbook-template-subdir
-  * https://cirosantilli.com/ourbigbook-template-subdir
+  * https://github.com/ourbigbook/template-subdir
+  * https://cirosantilli.com/template-subdir
   This template illustrates that everything works exactly as if OurBigBook source were in the git repository toplevel.
 
   This is a convenient setup for programming projects that want to use OurBigBook for their documentation without polluting their toplevel.
@@ -9322,8 +9322,8 @@ After publishing, a good minimal sanity check is to ensure that you can render t
 cd ~
 # Get rid of the global npm link development version just to make sure it is not being used.
 npm uninstall -g ourbigbook
-git clone https://github.com/ourbigbook/ourbigbook-template
-cd ourbigbook-template
+git clone https://github.com/ourbigbook/template
+cd template
 npm install
 npx ourbigbook .
 firefox index.html

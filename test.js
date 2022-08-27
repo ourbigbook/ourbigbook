@@ -9782,7 +9782,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'directory listings simple',
+  'raw: directory listings simple',
   {
     args: ['.'],
     filesystem: {
@@ -9793,6 +9793,12 @@ assert_cli(
 \\a[subdir][link to subdir]
 
 \\a[subdir/subdir2][link to subdir2]
+
+\\a[index.html][index to index.html]
+
+\\a[_index.html][index to _index.html]
+
+\\a[subdir/index.html][index to subdir/index.html]
 
 == subdir
 {file}
@@ -9809,7 +9815,10 @@ assert_cli(
 \\a[subdir2][link to subdir2]
 `,
       'myfile.txt': `ab`,
+      'index.html': '',
+      '_index.html': '',
       'subdir/myfile-subdir.txt': `ab`,
+      'subdir/index.html': '',
       'subdir/subdir2/index.bigb': `= Subdir2
 
 \\a[../..][link to root]
@@ -9824,6 +9833,11 @@ assert_cli(
     assert_exists: [
       `${ourbigbook.RAW_PREFIX}/myfile.txt`,
       `${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
+
+      // index.html escaped as _index.html
+      `${ourbigbook.RAW_PREFIX}/_index.html`,
+      `${ourbigbook.RAW_PREFIX}/__index.html`,
+      `${ourbigbook.RAW_PREFIX}/subdir/_index.html`,
     ],
     assert_not_exists: [
       // Ignored directories are not listed.
@@ -9836,6 +9850,11 @@ assert_cli(
         `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='link to root']`,
         `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='link to subdir']`,
         `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
+
+        // index.html -> _index.html renames
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/_index.html' and text()='index to index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/__index.html' and text()='index to _index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/_index.html' and text()='index to subdir/index.html']`,
       ],
       [`subdir.html`]: [
         `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='link to root']`,
@@ -9851,11 +9870,18 @@ assert_cli(
         "//x:a[@href='myfile.txt' and text()='myfile.txt']",
         "//x:a[@href='README.bigb' and text()='README.bigb']",
         "//x:a[@href='subdir/index.html' and text()='subdir/']",
+
+        // index.html -> _index.html renames
+        "//x:a[@href='_index.html' and text()='index.html']",
+        "//x:a[@href='__index.html' and text()='_index.html']",
       ],
       [`${ourbigbook.RAW_PREFIX}/subdir/index.html`]: [
         "//x:a[@href='myfile-subdir.txt' and text()='myfile-subdir.txt']",
         "//x:a[@href='subdir2/index.html' and text()='subdir2/']",
         "//x:a[@href='../index.html' and text()='(root)']",
+
+        // index.html -> _index.html renames
+        "//x:a[@href='_index.html' and text()='index.html']",
       ],
       [`${ourbigbook.RAW_PREFIX}/subdir/subdir2/index.html`]: [
         "//x:a[@href='../../index.html' and text()='(root)']",
@@ -9875,7 +9901,7 @@ assert_cli(
   }
 );
 assert_cli(
-  'directory listings without .html',
+  'raw: directory listings without .html',
   {
     args: ['.'],
     filesystem: {

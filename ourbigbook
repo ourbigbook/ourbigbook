@@ -654,7 +654,8 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
         }
         function push_li(name, isdir) {
           const target = `${name}${isdir ? ourbigbook.URL_SEP : ''}`
-          dirArr.push(`* \\a[${target + (isdir ? indexHtml : '')}][${target}]{external}\n`)
+          const targetEscape = `${ourbigbook.escapeIndexRaw(name)}${isdir ? ourbigbook.URL_SEP : ''}`
+          dirArr.push(`* \\a[${targetEscape + (isdir ? indexHtml : '')}][${target}]{external}\n`)
         }
         for (const name of [...dirs].sort()) {
           push_li(name, true)
@@ -709,7 +710,9 @@ async function convert_path_to_file(input_path, ourbigbook_options, non_ourbigbo
 
     // Copy the raw file over into _raw.
     if (!is_directory && ourbigbook_options.render) {
-      const output_path = output_path_noext + input_path_parse.ext;
+      let output_path = output_path_noext + input_path_parse.ext;
+      let [output_dir, output_bname] = ourbigbook.path_split(output_path, path.sep)
+      output_path = path.join(output_dir, ourbigbook.escapeIndexRaw(output_bname))
       if (
         output_path !== path.resolve(input_path)
       ) {

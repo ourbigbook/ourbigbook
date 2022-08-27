@@ -91,6 +91,15 @@ async function read(opts) {
   })
 }
 
+// Like read, but:
+// * Ctrl + C works and quits program
+// * no password support
+async function readStdin(opts) {
+  const chunks = [];
+  for await (const chunk of process.stdin) chunks.push(chunk);
+  return Buffer.concat(chunks).toString('utf8');
+}
+
 // Reconcile the database with information that depends only on existence of Ourbigbook files, notably:
 // - remove any IDs from deleted files https://github.com/ourbigbook/ourbigbook/issues/125
 async function reconcile_db_and_filesystem(input_path, ourbigbook_options, non_ourbigbook_options) {
@@ -1164,7 +1173,7 @@ if (cli.helpMacros) {
   if (inputPath === undefined) {
     // Input from stdin.
     title = 'stdin';
-    input = fs.readFileSync(0, ourbigbook_nodejs_webpack_safe.ENCODING);
+    input = await readStdin();
     output = await convert_input(input, ourbigbook_options, non_ourbigbook_options);
   } else {
     if (!fs.existsSync(inputPath)) {
@@ -1838,9 +1847,10 @@ if (cli.helpMacros) {
     }
   }
   if (
-    inputPath === undefined ||
+    // Happens on empty input from stdin (Ctrl + D withotu typing anything)
+    output !== undefined &&
     (
-      output !== undefined &&
+      inputPath === undefined ||
       cli.stdout
     )
   ) {

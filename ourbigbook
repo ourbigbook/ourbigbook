@@ -1047,6 +1047,7 @@ cli_parser.option('--template <template>', 'https://docs.ourbigbook.com#template
 cli_parser.option('-w, --watch', 'https://docs.ourbigbook.com#watch', false);
 cli_parser.option('-W, --web', 'sync to ourbigbook web https://docs.ourbigbook.com#web', false);
 cli_parser.option('--web-dry', 'web dry run, skip any --web operations that would interact with the server https://docs.ourbigbook.com#web-dry', false);
+cli_parser.option('--web-force-id-extraction', "Force ID extraction on Web: https://docs.ourbigbook.com#web-force-id-extraction");
 cli_parser.option('--web-force-render', "same as --force-render but for --web upload: https://docs.ourbigbook.com#web-force-render");
 cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered: https://docs.ourbigbook.com#web-max-renders', ourbigbook_nodejs.cliInt);
 cli_parser.option('--web-test', 'Convenient --web-* defaults local development: https://docs.ourbigbook.com#web-test', false);
@@ -1853,6 +1854,10 @@ if (cli.helpMacros) {
                     webPathToShaEntry.renderOutdated ||
                     cli.webForceRender
                   )
+                ) ||
+                (
+                  !render &&
+                  cli.webForceIdExtraction
                 )
               ) {
                 // OK, we are going to render this article, so fetch it fully now including the source.

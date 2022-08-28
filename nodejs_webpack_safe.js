@@ -716,7 +716,7 @@ async function update_database_after_convert({
   return { file: newFile }
 }
 
-// Do various post conversion checks to verify database integrity:
+// Do various post conversion checks to verify database integrity after the database is updated by the ID extraction step:
 //
 // - refs to IDs that don't exist
 // - duplicate IDs

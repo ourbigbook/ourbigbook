@@ -300,7 +300,10 @@ async function convertArticle({
       let oldParentId
       let old_to_id_index
 
-      let refWhere = { to_id: previousSiblingId }
+      let refWhere = {
+        to_id: previousSiblingId,
+        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      }
       if (newParentId !== undefined) {
         refWhere.from_id = newParentId
       }
@@ -377,7 +380,6 @@ async function convertArticle({
                   ],
                 },
               ],
-              type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
               transaction,
             })
       ])

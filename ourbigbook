@@ -1033,6 +1033,7 @@ cli_parser.option('-l, --log <log...>', 'https://docs.ourbigbook.com#log');
 cli_parser.option('--no-html-x-extension', 'https://docs.ourbigbook.com#no-html-x-extension');
 cli_parser.option('--no-db', 'ignore the ID database, mostly for testing https://docs.ourbigbook.com#internal-cross-file-references-internals');
 cli_parser.option('--no-render', "only extract IDs, don't render: https://docs.ourbigbook.com#no-render");
+cli_parser.option('--no-web-render', "same as --no-render, but for --web upload step: https://docs.ourbigbook.com#no-web-render");
 cli_parser.option('-F, --force-render', "don't skip render by timestamp: https://docs.ourbigbook.com#no-render-timestamp", false);
 cli_parser.option('--outdir <outdir>', 'https://docs.ourbigbook.com#outdir');
 cli_parser.option('-o, --outfile <outfile>', 'https://docs.ourbigbook.com#outfile');
@@ -1791,7 +1792,7 @@ if (cli.helpMacros) {
         ))
       }
       const dorender = [false]
-      if (cli.render) {
+      if (cli.webRender) {
         dorender.push(true)
       }
       // Paths that we have determined during ID extraction phase are not modified, so no need for a render stage.
@@ -1903,14 +1904,6 @@ if (cli.helpMacros) {
                 // you can just turn logs on and off during a large conversion and it will just keep running fine.
                 while (true) {
                   let retry = false
-                  console.error(
-                    {
-                      path: articlePath,
-                      render,
-                      parentId,
-                      previousSiblingId,
-                    }
-                  );
                   try {
                     ;({ data, status } = await webApi.articleCreateOrUpdate(
                       articleArgs,

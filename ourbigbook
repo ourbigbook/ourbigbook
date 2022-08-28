@@ -1044,8 +1044,8 @@ cli_parser.option('--web-id <id>', 'Upload only the selected ID. It must belong 
 cli_parser.option('--web-password <password>', 'Set password from CLI. Really bad idea for non-test users due e.g. to Bash history: https://docs.ourbigbook.com#web-user');
 cli_parser.option('--web-url <url>', 'Set a custom sync URL for --web: https://docs.ourbigbook.com#web-url');
 cli_parser.option('--web-user <username>', 'Set username from CLI: https://docs.ourbigbook.com#web-user');
-cli_parser.option('--unsafe-ace', 'https://docs.ourbigbook.com#unsafe-ace', false);
-cli_parser.option('--unsafe-xss', 'https://docs.ourbigbook.com#unsafe-xss', false);
+cli_parser.option('--unsafe-ace', 'https://docs.ourbigbook.com#unsafe-ace');
+cli_parser.option('--unsafe-xss', 'https://docs.ourbigbook.com#unsafe-xss');
 
 // Positional arguments.
 cli_parser.argument('[input_path]', 'file or directory to convert http://docs.ourbigbook.com#ourbigbook-executable');

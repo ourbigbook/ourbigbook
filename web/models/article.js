@@ -169,6 +169,7 @@ module.exports = (sequelize) => {
     oldNestedSetIndexParent,
     oldParentId,
     old_to_id_index,
+    perf,
     transaction,
     username,
   }) {
@@ -205,6 +206,7 @@ module.exports = (sequelize) => {
           parentNestedSetIndex: newNestedSetIndexParent,
           nestedSetIndex: newNestedSetIndex,
           parentId: newParentId,
+          perf,
           shiftNestedSetBy: nArticles,
           shiftRefBy: nArticlesToplevel,
           to_id_index: new_to_id_index,
@@ -284,8 +286,9 @@ WHERE
         // Close up space where articles were removed from.
         await sequelize.models.Article.treeOpenSpace({
           logging,
-          parentNestedSetIndex: oldNestedSetIndexParent,
           nestedSetIndex: oldNestedSetIndex,
+          parentNestedSetIndex: oldNestedSetIndexParent,
+          perf,
           parentId: oldParentId,
           shiftNestedSetBy: -nArticles,
           shiftRefBy: -nArticlesToplevel,
@@ -507,6 +510,7 @@ WHERE
     nestedSetIndex,
     parentId,
     parentNestedSetIndex,
+    perf,
     shiftNestedSetBy,
     shiftRefBy,
     to_id_index,
@@ -516,6 +520,11 @@ WHERE
     if (logging === undefined) {
       // Log previous nested set state, and the queries done on it.
       logging = false
+    }
+    let t0
+    if (perf) {
+      t0 = performance.now();
+      console.error('perf: treeOpenSpace.start');
     }
     if (
       // Happens for the root node. The root cannot move, so we just skip that case.
@@ -534,7 +543,7 @@ WHERE
         })
         console.log(await Article.treeToString({ transaction }))
       }
-      return sequelize.transaction({ transaction }, async (transaction) => {
+      await sequelize.transaction({ transaction }, async (transaction) => {
         return Promise.all([
           // Increment sibling indexes after point we are inserting from.
           sequelize.models.Ref.increment('to_id_index', {
@@ -605,6 +614,9 @@ WHERE
           ),
         ])
       })
+    }
+    if (perf) {
+      console.error(`treeOpenSpace.finish ${performance.now() - t0} ms`);
     }
   }
 

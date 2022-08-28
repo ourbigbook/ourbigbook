@@ -7742,6 +7742,26 @@ To restore a dump to the secondary database:
 web/bin/pg_restore -d ourbigbook2 latest.dump
 ``
 
+= web/bin/psql
+{parent=OurBigBook Web PostgreSQL}
+{file}
+
+Helper that gives  `psql` PostgreSQL shell on the default database (`ourbigbook`).
+
+To select another database use the `-d` option: E.g. to use the `ourbigbook_test` database from <OurBigBook Web run unit tests in PostgreSQL>:
+``
+bin/psql -d ourbigbook_test
+``
+
+`psql` just forwards everything to the underlying `psql` command, so you can e.g. run a SQL script stored in a file with:
+``
+bin/psql <tmp.sql
+``
+or run an SQL query from CLI with:
+``
+bin/psql -c 'select * from "Id"'
+``
+
 = Save and restore local PostgreSQL development database
 {parent=OurBigBook Web PostgreSQL}
 
@@ -7794,7 +7814,20 @@ or to show database queries being done in the tests:
 DEBUG='*:sql:*' npm test
 ``
 
-To run the tests on PostgreSQL instead of SQLite, first setup as in <local run as identical to deployment as possible>, and then:
+The tests include two broad classes of tests:
+* API tests: launch the server on a random port, and run API commands, thus testing the entire backend
+* smaller unit tests that only call certain functions directly
+* TODO: create frontend tests: https://github.com/cirosantilli/node-express-sequelize-nextjs-realworld-example-app/issues/11
+
+= OurBigBook Web run unit tests in PostgreSQL
+{parent=OurBigBook Web development}
+
+To run the tests on PostgreSQL instead of the default SQLite, first setup the test database analogously to <local run as identical to deployment as possible>:
+``
+cd web
+bin/pg-setup ourbigbook_test
+``
+and then run with:
 ``
 npm run test-pg
 ``
@@ -7803,16 +7836,16 @@ Run only matching tests on PostgreSQL:
 npm run test-pg -- -g 'substring of test title'
 ``
 
-Note that this will erase all data present in the database used. In order to point to a custom database use:
+Running tests erases all data present in the database used. In order to point to a custom database use:
 ``
 DATABASE_URL_TEST=postgres://realworld_next_user:a@localhost:5432/realworld_next_test npm run test-pg
 ``
 We don't use `DATABASE_URL` when running tests as a safeguard to reduce the likelihood of accidentally nuking the production database.
 
-The tests include two broad classes of tests:
-* API tests: launch the server on a random port, and run API commands, thus testing the entire backend
-* smaller unit tests that only call certain functions directly
-* TODO: create frontend tests: https://github.com/cirosantilli/node-express-sequelize-nextjs-realworld-example-app/issues/11
+The test database contains the state of the latest test run at the end of the run. You can inspect it with <web/bin/psql>{full} with:
+``
+bin/psql -d ourbigbook_test
+``
 
 = OurBigBook Web Next.js unit tests
 {parent=OurBigBook Web unit tests}

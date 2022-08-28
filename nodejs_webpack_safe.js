@@ -38,6 +38,7 @@ const db_options = {
 async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
   let rows
   if (ids.length) {
+    console.log(`ids: ${require('util').inspect(ids, { depth: null })}`)
     const where = {
       idid: ids,
     }
@@ -45,7 +46,11 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
       const ignore_paths = Array.from(ignore_paths_set).filter(x => x !== undefined)
       where.path = { [sequelize.Sequelize.Op.not]: ignore_paths }
     }
+    console.log(`ids: ${require('util').inspect(ids, { depth: null })}`)
+    console.log(`ignore_paths_set: ${require('util').inspect(ignore_paths_set, { depth: null })}`)
+    console.log((await sequelize.models.Ref.findAll()).map(r => [r.from_id, r.to_id, r.type]));
     rows = await sequelize.models.Id.findAll({
+      logging: console.log,
       where,
       include: [
         {
@@ -94,6 +99,7 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
         },
       ],
     })
+    console.log(`rows: ${require('util').inspect(rows.map(r => r.idid))}`)
   } else {
     rows = []
   }

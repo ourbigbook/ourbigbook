@@ -52,6 +52,10 @@ module.exports = (sequelize) => {
         { fields: ['from_id', 'type'], },
         { fields: ['to_id', 'type'], },
         { fields: ['from_id', 'defined_at', 'to_id', 'type'], },
+        //{
+        //  fields: ['from_id', 'to_id_index'],
+        //  unique: true,
+        //},
       ],
     }
   )

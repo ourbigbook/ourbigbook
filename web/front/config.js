@@ -68,6 +68,7 @@ module.exports = {
   aboutUrl: `${docsUrl}#ourbigbook-web-user-manual`,
   buttonActiveClass: 'active',
   defaultProfileImage: `/default-profile-image.jpg`,
+  disableFrontend: process.env.OURBIGBOOK_DISABLE_FRONTEND === env_true,
   // Default.
   articleLimit: 20,
   // Max allowed to be set by user.

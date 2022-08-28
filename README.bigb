@@ -5182,7 +5182,7 @@ ourbigbook --stdout README.bigb
 ``
 
 In order to resolve <cross file references>, this actually does two passes:
-* first an ID extraction pass, which parses all inputs and dumps their IDs to the ID database
+* first an <ID extraction> pass, which parses all inputs and dumps their IDs to the ID database
 * then a second render pass, which uses the IDs in the ID database
 
 Convert a `.bigb` file from stdin to HTML and output the contents of `<body>` to stdout:
@@ -5484,7 +5484,7 @@ A paragraph in notindex.
 === Notindex 2
 ``
 
-Note that a prior <conversion process overview>[ID extraction pass] is not required, `--embed-includes` just makes `\Include` read files as they are found in the source.
+Note that a prior <ID extraction> pass is not required, `--embed-includes` just makes `\Include` read files as they are found in the source.
 
 Note that a
 
@@ -5573,9 +5573,9 @@ Keep in mind that certain things can never be embedded, e.g.:
 
 Always render all selected files, irrespectively of if they are known to be outdated or not.
 
-OurBigBook stores the timestamp of the last successful <conversion process overview>[ID extraction step] for each file.
+OurBigBook stores the timestamp of the last successful <ID extraction> step for each file.
 
-For ID extraction, we always skip the extraction if the filesystem timestamp of a source file is older than the last successful extraction.
+For <ID extraction>, we always skip the extraction if the filesystem timestamp of a source file is older than the last successful extraction.
 
 For render:
 * we mark output files as outdated when the corresponding source file is parsed
@@ -6163,6 +6163,15 @@ It's a GitHub bug/feature: https://github.com/orgs/community/discussions/52252
 
 Maybe we should just ignore the `.github` directory when publishing, otherwise it leads to a broken link on the <`_dir` directory> listings.
 
+= `--skip-check-db`
+{parent=OurBigBook CLI options}
+
+Skip the database sanity check that is normally done after the <ID extraction> step.
+
+For development only.
+
+Originally added to speed up, originally added to speed up the <web upload> development loop, when we knew that there were no errors in the database after a local conversion, and wanted to get to the upload phase faster, but the DB check can take several seconds for a large input.
+
 = `-S`, `--split-headers`
 {id=split-headers}
 {parent=OurBigBook CLI options}
@@ -6348,7 +6357,7 @@ Watch every `.bigb` file in an entire directory:
 ``
 ourbigbook --watch .
 ``
-When a directory is given as the input path, this automatically first does an ID extraction pass on all files to support <cross file references>.
+When a directory is given as the input path, this automatically first does an <ID extraction> pass on all files to support <cross file references>.
 
 Now you can just edit any OurBigBook file such has `README.bigb`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `ourbigbook` command explicitly every time.
 
@@ -6397,6 +6406,13 @@ Some important known limitations:
 * if there's an error in a later file, the database is still modified by the previous files, i.e. there is no atomicity. A way to improve that would be to upload all files to the server in one go, and let the server convert everything in one transaction. However, this would lead to a very long server action, which would block any other incoming request (I tested, everything is single threaded)
 
 However, all of those are fixable, and in an ideal world, will be fixed. Patches welcome.
+
+= `--web-ask-password`
+{parent=OurBigBook CLI options}
+
+Ask for the password in an interactive terminal in case there was a default password that would have otherwise been chosen.
+
+Currently the only case where this happens is <`--web-test`> which automatically sets a default `--web-password asdf`.
 
 = `--web-dry`
 {parent=OurBigBook CLI options}
@@ -7625,6 +7641,14 @@ Commands can be run as usual:
 web/bin/psql -c 'SELECT * FROM "Article";'
 ``
 It uses `PGPASSWORD` is mentioned at: https://stackoverflow.com/questions/6405127/how-do-i-specify-a-password-to-psql-non-interactively
+
+= OurBigBook Web without Next.js
+{parent=OurBigBook Web development}
+
+When developing the backend only, Next.js adds several seconds to the debug loop. This is a life saver in that case:
+``
+npm run dev-pg-back
+``
 
 = OurBigBook Web PostgreSQL setup
 {parent=OurBigBook Web PostgreSQL}
@@ -9008,7 +9032,7 @@ A conversion follows the following steps done for each file to be converted:
 * ast post process pass 3: this does some minimal tree hierarchy linking between parents and children. TODO could it be merged into 2? Feels likely
 * render, which converts our AST tree into a output string. This is run once for the toplevel, and once for every header of the document if <split headers> are enabled. We need to do this because header renders are different from their toplevel counterparts, e.g. their first paragraph has id `p-1` and not `p-283`. All of those renders are done from the same parsed tree however, parsing happens only once.
 
-  This step is skipped when using the <--no-render> option, or during ID extraction.
+  This step is skipped when using the <--no-render> option, or during <ID extraction>.
 
   TODO it is intended that it should not be possible for there to be rendering errors once the previous steps have concluded successfully. This is currently not the case for at least one known scenario however: <cross references> that are not defined.
 
@@ -9040,18 +9064,24 @@ A conversion follows the following steps done for each file to be converted:
   Just like for the SELECT, we do a single large INSERT/UPDATE query per database to reduce the round trips.
 
 Conversion of a directory with multiple input files works as follows:
-* do one conversion pass without render
+* do one <ID extraction> pass without render
 * do a global database check/fixup for all files that have been parsed which checks in one go for:
   * check that all <cross reference> targets exist.
 
     When using the <\x magic argument>:
     * only one of the plural/singular needs to exist
-    * we then decide which one to use and delete the other one. Both are initially placed in the database during the ID extraction phase.
+    * we then decide which one to use and delete the other one. Both are initially placed in the database during the <ID extraction> phase.
   * duplicate IDs
   * references from one non-header title to another non-header title as mentioned at <\x within title restrictions>
   Ideally, failure of any of the above checks should lead to the database not being updated with new values, but that is not the case as of writing.
 * do one conversion pass with render. To speed up conversion, we might at some point start storing a parsed JSON after the first conversion pass, and then just deserialize it and convert the deserialized output directly without re-parsing.
 The two pass approach is required to resolve <cross references>
+
+= ID extraction
+{c}
+{parent=Conversion process overview}
+
+One of the main two passes done during conversion, where the files are parsed and all references stored in the database.
 
 = Abstract syntax tree
 {parent=Conversion process overview}

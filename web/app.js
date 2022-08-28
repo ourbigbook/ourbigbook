@@ -173,7 +173,7 @@ async function start(port, startNext, cb) {
 }
 
 if (require.main === module) {
-  start(config.port, true, (server) => {
+  start(config.port, !config.disableFrontend, (server) => {
     console.log('Listening on: http://localhost:' + server.address().port)
   })
 }

@@ -108,7 +108,7 @@ This is especially noticeable/confusing when you are converting a large number o
 
 The key code point is:
 ``
-async function check_db(sequelize, paths_converted, transaction) {
+async function check_db(sequelize, paths_converted, { transaction }) {
 ``
 We are only checking the DB for the paths converted, but then due to parse skipping we skip the paths and don't check them anymore.
 

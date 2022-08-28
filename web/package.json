@@ -15,6 +15,7 @@
     "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon --ignore tmp --ignore test.js -w . -w ../index.js -w ./app.js -w ../nodejs.js -w ../nodejs_webpack_safe.js -w ../web_api.js",
     "devi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./app.js",
     "dev-pg": "OURBIGBOOK_POSTGRES=1 npm run dev",
+    "dev-pg-back": "OURBIGBOOK_DISABLE_FRONTEND=1 npm run dev-pg",
     "devs": "DEBUG='sequelize:sql:*' npm run dev",
     "migrate": "sequelize-cli db:migrate --debug",
     "seed-prod": "./prod.sh bin/generate-demo-data.js --force-production",

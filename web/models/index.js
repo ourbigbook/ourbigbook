@@ -262,9 +262,9 @@ function getSequelize(toplevelDir, toplevelBasename) {
   User.hasMany(Comment, { foreignKey: 'authorId' });
 
   Topic.belongsTo(Article, { as: 'article' })
-  Article.hasOne(Topic, { as: 'topic', constraints: false })
+  Article.hasOne(Topic, { as: 'topic', foreignKey: 'articleId', constraints: false })
 
-  Article.hasMany(Article, { as: 'sameTopic', foreignKey: 'topicId', sourceKey: 'topicId', constraints: false })
+  //Article.hasMany(Article, { as: 'sameTopic', foreignKey: 'topicId', sourceKey: 'topicId', constraints: false })
 
   return sequelize;
 }

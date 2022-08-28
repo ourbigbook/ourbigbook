@@ -7767,7 +7767,7 @@ bin/psql -c 'select * from "Id"'
 
 Save the psql database state as per https://stackoverflow.com/questions/37984733/postgresql-database-export-to-sql-file[] with our \a[web/bin/pg_dump] helper:
 ``
-web/bin/pg_dump -Fc -f tmp.dump
+web/bin/pg_dump tmp.dump
 ``
 Then to restore it later with \a[web/bin/pg_restore]:
 ``

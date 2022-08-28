@@ -3720,5 +3720,20 @@ it('api: synonym rename', async () => {
       //    * 8 Algebra
       //    * 9 Geometry (Geometry 2)
       //    * 10 Number theory (Number theory 2)
+
+      // Creating a new article with id and a synonym does not blow up.
+      article = createArticleArg({
+        i: 0,
+        titleSource: 'Ł',
+        bodySource: `{id=Ł}
+{parent=Polish letter}
+{title2=wa}
+{title2=wo}
+
+= L with a stroke
+{synonym}
+`,
+      })
+      assertStatus(status, data)
   })
 })

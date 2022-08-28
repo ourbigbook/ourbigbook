@@ -143,7 +143,7 @@ async function convertArticle({
   let t0
   if (perf) {
     t0 = performance.now();
-    console.error('perf: convertArticle.start');
+    console.error(`perf: convertArticle.start titleSource="${titleSource}"`);
   }
   let articles, extra_returns
   if (enforceMaxArticles === undefined) {
@@ -559,7 +559,7 @@ async function convertArticle({
         order: 'slug',
         orderAscDesc: 'ASC',
         sequelize,
-        slug: articleArgs.map(arg => arg.slug),
+        slug: articleArgs.map(arg => sequelize.models.Article.slugTransform(arg.slug)),
         transaction,
       })
 

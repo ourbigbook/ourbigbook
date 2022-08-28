@@ -13,6 +13,10 @@ const e = require('cors')
 const { execPath } = require('process')
 
 module.exports = (sequelize) => {
+  function slugTransform(v) {
+    return v.toLowerCase()
+  }
+
   // Each Article contains rendered HTML output, analogous to a .html output file in OurBigBook CLI.
   // The input source is stored in the File model. A single file can then generate
   // multiple Article if it has multiple headers.
@@ -26,7 +30,7 @@ module.exports = (sequelize) => {
           message: 'The article ID must be unique.'
         },
         set(v) {
-          this.setDataValue('slug', v.toLowerCase())
+          this.setDataValue('slug', slugTransform(v))
         },
         allowNull: false,
       },
@@ -616,7 +620,7 @@ WHERE
       })
     }
     if (perf) {
-      console.error(`treeOpenSpace.finish ${performance.now() - t0} ms`);
+      console.error(`perf: treeOpenSpace.finish ${performance.now() - t0} ms`);
     }
   }
 
@@ -1527,5 +1531,6 @@ LIMIT ${limit}` : ''}
     //)
   }
 
+  Article.slugTransform = slugTransform
   return Article
 }

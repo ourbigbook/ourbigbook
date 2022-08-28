@@ -2087,6 +2087,11 @@ it('api: article tree single user', async () => {
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
         assert.strictEqual(status, 422)
 
+        // Also doesn't work with render: false
+        article = createArticleArg({ i: 0, titleSource: 'Index' })
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render: false }))
+        assert.strictEqual(status, 422)
+
         // It it not possible to set the parentId to an article of another user.
         article = createArticleArg({ i: 0, titleSource: 'Physics' })
         ;({data, status} = await createArticleApi(test, article, { parentId: '@user1' }))
@@ -2663,21 +2668,162 @@ it('api: synonym rename', async () => {
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assertStatus(status, data)
 
-    article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+    // Has Calculus as previous sibling.
+    article = createArticleArg({ i: 0, titleSource: 'Algebra' })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
     assertStatus(status, data)
 
-    article = createArticleArg({ i: 0, titleSource: 'Derivative' })
+    article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: '\\Image[http://jpg]{title=My image}\n' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+    assertStatus(status, data)
+
+    article = createArticleArg({ i: 0, titleSource: 'Derivative', bodySource: '<Calculus>\n' })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
     assertStatus(status, data)
 
     article = createArticleArg({ i: 0, titleSource: 'Physics' })
     assertStatus(status, data)
 
-    // Rename Calculus to Calculus 2
+    // Add some metadata to our article of interest.
 
-    article = createArticleArg({ i: 0, titleSource: 'Calculus 2', bodySource: '= Calculus\n{synonym}\n' })
+    ;({data, status} = await test.webApi.issueCreate('user0/calculus',
+      { titleSource: 'Calculus issue 0' }
+    ))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.issue('user0/calculus', 1))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Calculus issue 0')
+
+    // Sanity check that the parent and previous sibling are correct.
+
+    ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': true }))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Derivative')
+    assert.strictEqual(data.parentId, '@user0/calculus')
+
+    ;({data, status} = await test.webApi.article('user0/algebra', { 'include-parent': true }))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Algebra')
+    assert.strictEqual(data.previousSiblingId, '@user0/calculus')
+
+    // Add synonym without changing title.
+
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'Calculus',
+      bodySource: '= Calculus 2\n{synonym}\n\n\\Image[http://jpg]{title=My image}\n'
+    })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
     assertStatus(status, data)
+
+    // Check that the synonym exists as a redirect.
+
+    ;({data, status} = await test.webApi.articleRedirects({ id: 'user0/calculus-2' }))
+    assertStatus(status, data)
+    assert.strictEqual(data.redirects['user0/calculus-2'], 'user0/calculus')
+
+    // synonym does not break parentId and previousSibling
+
+    ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': true }))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Derivative')
+    assert.strictEqual(data.parentId, '@user0/calculus')
+
+    ;({data, status} = await test.webApi.article('user0/algebra', { 'include-parent': true }))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Algebra')
+    assert.strictEqual(data.previousSiblingId, '@user0/calculus')
+
+    // webApi.article( uses Article.getArticles, just double check
+    // with the Article.getARticle (singular) version.
+    const algebra = await test.sequelize.models.Article.getArticle({
+      includeParentAndPreviousSibling: true,
+      sequelize,
+      slug: 'user0/algebra',
+    })
+    assert.strictEqual(algebra.parentId.idid, '@user0/mathematics')
+    assert.strictEqual(algebra.previousSiblingId.idid, '@user0/calculus')
+
+    // Rename Calculus to Calculus 3
+
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'Calculus 3',
+      bodySource: '= Calculus\n{synonym}\n\n= Calculus 2\n{synonym}\n\n\\Image[http://jpg]{title=My image}\n'
+    })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+    assertStatus(status, data)
+
+    // Check that the latest name exists as the main one.
+
+    ;({data, status} = await test.webApi.article('user0/calculus-3'))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Calculus 3')
+    assert.strictEqual(data.file.bodySource, '= Calculus\n{synonym}\n\n= Calculus 2\n{synonym}\n\n\\Image[http://jpg]{title=My image}\n')
+
+    // Check that the metadata is now associated to the article with the new main title.
+
+    ;({data, status} = await test.webApi.issue('user0/calculus-3', 1))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Calculus issue 0')
+
+    // Check that the previous name now exists as a redirect.
+
+    ;({data, status} = await test.webApi.articleRedirects({ id: 'user0/calculus' }))
+    assertStatus(status, data)
+    assert.strictEqual(data.redirects['user0/calculus'], 'user0/calculus-3')
+
+    ;({data, status} = await test.webApi.articleRedirects({ id: 'user0/calculus-2' }))
+    assertStatus(status, data)
+    assert.strictEqual(data.redirects['user0/calculus-2'], 'user0/calculus-3')
+
+    // Children of the renamed article now point to the new parent,
+    // Previous sibling is also updated.
+
+    ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': true }))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Derivative')
+    assert.strictEqual(data.parentId, '@user0/calculus-3')
+
+    ;({data, status} = await test.webApi.article('user0/algebra'))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Algebra')
+    // TODO https://docs.ourbigbook.com/todo/fix-parentid-and-previoussiblingid-on-articles-api
+    //assert.strictEqual(data.previousSiblingId, '@user0/calculus-3')
+
+    {
+      const algebra = await sequelize.models.Article.getArticle({
+        includeParentAndPreviousSibling: true,
+        slug: 'user0/algebra',
+        sequelize
+      })
+      assert.strictEqual(algebra.parentId.idid, '@user0/mathematics')
+      assert.strictEqual(algebra.previousSiblingId.idid, '@user0/calculus-3')
+    }
+
+    // Only the main Article retains a File object.
+
+    assert.notStrictEqual(await sequelize.models.File.findOne({ where: { path: '@user0/calculus-3.bigb' } }), null)
+    assert.strictEqual(await sequelize.models.File.findOne({ where: { path: '@user0/calculus.bigb' } }), null)
+    assert.strictEqual(await sequelize.models.File.findOne({ where: { path: '@user0/calculus-2.bigb' } }), null)
+
+    // extract_ids without render of header with synonym does not blow up.
+    // Yes, everything breaks everything.
+
+    article = createArticleArg({ i: 0, titleSource: 'Calculus 3', bodySource: '= Calculus\n{synonym}\n\n= Calculus 2\n{synonym}\n' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render: false }))
+    assertStatus(status, data)
+
+    // Adding synonym to index is fine.
+
+    article = createArticleArg({ i: 0, titleSource: 'Index', bodySource: '= Index 2\n{synonym}' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+
+    // Renaming index via synonyms is not allowed.
+
+    article = createArticleArg({ i: 0, titleSource: 'Index 3', bodySource: '= Index\n{synonym}\n\n= Index 2\n{synonym}\n' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assert.strictEqual(status, 422)
   })
 })

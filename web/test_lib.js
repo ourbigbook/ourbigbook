@@ -151,7 +151,12 @@ Link to child: <test child 1 1>
 
 Link to external: http://example.com
 ` }],
-      ['Test child 2', []],
+      ['Test child 2', [], { body: `Link to synonym: <Test child with synonym 2>
+` }],
+      ['Test child with synonym', [], {
+        body: `= Test child with synonym 2
+{synonym}
+`     }],
     ]],
   ]],
 ]

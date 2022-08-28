@@ -24,6 +24,9 @@ module.exports = (sequelize) => {
       // @username/dog.bigb
       // It would likely have been nicer if we had just not kept the extension in there,
       // but lazy to change now.
+      //
+      // TODO maybe this should point to File instead? Also, idid already points to File.toplevel_id.
+      // https://docs.ourbigbook.com/todo#ref-file-normalization
       path: {
         type: DataTypes.TEXT,
         allowNull: false,

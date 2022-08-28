@@ -267,6 +267,12 @@ module.exports = (sequelize) => {
     if (this.likedByDate) {
       ret.likedByDate = this.likedByDate.toISOString()
     }
+    if (this.parentId) {
+      ret.parentId = this.parentId.idid
+    }
+    if (this.previousSiblingId) {
+      ret.previousSiblingId = this.previousSiblingId.idid
+    }
     return ret
   }
 
@@ -326,12 +332,75 @@ module.exports = (sequelize) => {
     })
   }
 
+  Article.getArticleIncludeParentAndPreviousSiblingFileInclude = function(
+    sequelize,
+  ) {
+    // Behold.
+    // TODO reimplement with the nested index information instead of this megajoin.
+    return {
+      model: sequelize.models.Id,
+      subQuery: false,
+      include: [{
+        model: sequelize.models.Ref,
+        as: 'to',
+        where: {
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+        },
+        subQuery: false,
+        include: [{
+          // Parent ID.
+          model: sequelize.models.Id,
+          as: 'from',
+          subQuery: false,
+          include: [
+            {
+              model: sequelize.models.File,
+            },
+            {
+              model: sequelize.models.Ref,
+              as: 'from',
+              subQuery: false,
+              on: {
+                '$file->Id->to->from->from.from_id$': {[Op.eq]: sequelize.col('file->Id->to->from.idid')},
+                '$file->Id->to->from->from.to_id_index$': {[Op.eq]: sequelize.where(sequelize.col('file->Id->to.to_id_index'), '-', 1)},
+              },
+              include: [{
+                // Previous sibling ID.
+                model: sequelize.models.Id,
+                as: 'to',
+                include: [
+                  {
+                    model: sequelize.models.File,
+                  },
+                ],
+              }],
+            }
+          ],
+        }],
+      }],
+    }
+  }
+
+  Article.getArticleIncludeParentAndPreviousSiblingAddShortcuts = function(
+    article,
+  ) {
+    // Some access helpers, otherwise too convoluted!.
+    const articleId = article.file.Id
+    if (articleId) {
+      const parentId = articleId.to[0].from
+      article.parentId = parentId
+      const previousSiblingRef = parentId.from[0]
+      if (previousSiblingRef) {
+        article.previousSiblingId = previousSiblingRef.to
+      }
+    }
+  }
+
   Article.getArticle = async function({
     includeIssues,
     includeIssueNumber,
     includeIssuesOrder,
     includeParentAndPreviousSibling,
-    limit,
     sequelize,
     slug,
   }) {
@@ -349,50 +418,7 @@ module.exports = (sequelize) => {
       },
     ]
     if (includeParentAndPreviousSibling) {
-      // Behold.
-      // TODO reimplement with the nested index information instead of this megajoin.
-      fileInclude.push({
-        model: sequelize.models.Id,
-        subQuery: false,
-        include: [{
-          model: sequelize.models.Ref,
-          as: 'to',
-          where: {
-            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-          },
-          subQuery: false,
-          include: [{
-            // Parent ID.
-            model: sequelize.models.Id,
-            as: 'from',
-            subQuery: false,
-            include: [
-              {
-                model: sequelize.models.File,
-              },
-              {
-                model: sequelize.models.Ref,
-                as: 'from',
-                subQuery: false,
-                on: {
-                  '$file->Id->to->from->from.from_id$': {[Op.eq]: sequelize.col('file->Id->to->from.idid')},
-                  '$file->Id->to->from->from.to_id_index$': {[Op.eq]: sequelize.where(sequelize.col('file->Id->to.to_id_index'), '-', 1)},
-                },
-                include: [{
-                  // Previous sibling ID.
-                  model: sequelize.models.Id,
-                  as: 'to',
-                  include: [
-                    {
-                      model: sequelize.models.File,
-                    },
-                  ],
-                }],
-              }
-            ],
-          }],
-        }],
-      })
+      fileInclude.push(Article.getArticleIncludeParentAndPreviousSiblingFileInclude(sequelize))
     }
     const include = [{
       model: sequelize.models.File,
@@ -422,16 +448,7 @@ module.exports = (sequelize) => {
       subQuery: false,
     })
     if (includeParentAndPreviousSibling && article !== null) {
-      // Some access helpers, otherwise too convoluted!.
-      const articleId = article.file.Id
-      if (articleId) {
-        const parentId = articleId.to[0].from
-        article.parentId = parentId
-        const previousSiblingRef = parentId.from[0]
-        if (previousSiblingRef) {
-          article.previousSiblingId = previousSiblingRef.to
-        }
-      }
+      Article.getArticleIncludeParentAndPreviousSiblingAddShortcuts(article)
     }
     return article
   }
@@ -441,6 +458,9 @@ module.exports = (sequelize) => {
     author,
     count,
     followedBy,
+    // TODO this is quite broken on true:
+    // https://docs.ourbigbook.com/todo/fix-parentid-and-previoussiblingid-on-articles-api
+    includeParentAndPreviousSibling,
     likedBy,
     limit,
     offset,
@@ -460,6 +480,7 @@ module.exports = (sequelize) => {
     }
 
     let where = {}
+    const fileInclude = []
     const authorInclude = {
       model: sequelize.models.User,
       as: 'author',
@@ -468,10 +489,14 @@ module.exports = (sequelize) => {
     if (author) {
       authorInclude.where = { username: author }
     }
+    fileInclude.push(authorInclude)
+    if (includeParentAndPreviousSibling) {
+      fileInclude.push(Article.getArticleIncludeParentAndPreviousSiblingFileInclude(sequelize))
+    }
     const include = [{
       model: sequelize.models.File,
       as: 'file',
-      include: [authorInclude],
+      include: fileInclude,
       required: true,
     }]
     if (followedBy) {
@@ -513,11 +538,18 @@ module.exports = (sequelize) => {
       transaction,
       where,
     }
-    let ret
+    let ret, articles
     if (count) {
-      ret = sequelize.models.Article.findAndCountAll(findArgs)
+      ret = await sequelize.models.Article.findAndCountAll(findArgs)
+      articles = ret.rows
     } else {
-      ret = sequelize.models.Article.findAll(findArgs)
+      ret = await sequelize.models.Article.findAll(findArgs)
+      articles = ret
+    }
+    if (includeParentAndPreviousSibling) {
+      for (const article of articles) {
+        Article.getArticleIncludeParentAndPreviousSiblingAddShortcuts(article)
+      }
     }
     return ret;
   }
@@ -864,6 +896,22 @@ LIMIT ${limit}` : ''}
     return nestedSet
   }
 
+  Article.findRedirects = async (fromSlugs, { limit, offset } = {}) => {
+    const refs = await sequelize.models.Ref.findAll({
+      where: {
+        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
+        from_id: fromSlugs.map(s => `${ourbigbook.AT_MENTION_CHAR}${s}`),
+      },
+      limit,
+      offset,
+    })
+    const ret = {}
+    for (const ref of refs) {
+      ret[ref.from_id.slice(ourbigbook.AT_MENTION_CHAR.length)] = ref.to_id.slice(ourbigbook.AT_MENTION_CHAR.length)
+    }
+    return ret
+  }
+
   Article.rerender = async (opts={}) => {
     if (opts.log === undefined) {
       opts.log = false
@@ -885,7 +933,7 @@ LIMIT ${limit}` : ''}
 
   /**
    * Calculate nested sets from Ref information update database with those values.
-   * 
+   *
    * @param {string} username
    */
   Article.updateNestedSets = async function(username, opts={}) {

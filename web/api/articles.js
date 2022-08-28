@@ -11,31 +11,70 @@ const lib = require('./lib')
 const { checkMaxNewPerTimePeriod } = lib
 const config = require('../front/config')
 
+// Get multiple articles at once. If ?id= is specified once however, the returned
+// list will necessarily contain at most one item as id is unique (or zero, not an error
+// if the id does not exist), so this function can also
+// be used to get just one article. Epxress.js also allows parameters to be specified
+// multiple times, which generate arrays, so if ?id= is given multiple times, it
+// specifies a precies list of multiple articles to fetch.
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
-
     const [limit, offset] = lib.getLimitAndOffset(req, res)
-
-    const [{count: articlesCount, rows: articles}, loggedInUser] = await Promise.all([
+    // TODO Make it optional because it is generally very broken now.
+    // There could however be performance advantages to this as well.
+    // https://docs.ourbigbook.com/todo/fix-parentid-and-previoussiblingid-on-articles-api
+    const includeParentAndPreviousSibling = lib.validateParam(req.query, 'include-parent', {
+      typecast: front.typecastBoolean,
+      defaultValue: false,
+    })
+    const slug = req.query.id
+    const [
+      {
+        count: articlesCount,
+        rows: articles
+      },
+      loggedInUser,
+      redirects,
+    ] = await Promise.all([
       sequelize.models.Article.getArticles({
         sequelize,
         limit,
         offset,
         author: req.query.author,
         followedBy: req.query.followedBy,
+        includeParentAndPreviousSibling,
         likedBy: req.query.likedBy,
         topicId: req.query.topicId,
         order: lib.getOrder(req),
-        slug: req.query.id,
+        slug,
       }),
-      req.payload ? sequelize.models.User.findByPk(req.payload.id) : null
+      req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
     ])
     return res.json({
       articles: await Promise.all(articles.map(function(article) {
         return article.toJson(loggedInUser)
       })),
       articlesCount,
+    })
+  } catch(error) {
+    next(error);
+  }
+})
+
+router.get('/redirects', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const [limit, offset] = lib.getLimitAndOffset(req, res)
+    let slugs = lib.validateParam(req.query, 'id', {
+      validators: [front.isTypeOrArrayOf(front.isString)],
+    })
+    if (typeof slugs === 'string') {
+      slugs = [slugs]
+    }
+    const redirects = await sequelize.models.Article.findRedirects(slugs, { limit, offset })
+    return res.json({
+      redirects,
     })
   } catch(error) {
     next(error);

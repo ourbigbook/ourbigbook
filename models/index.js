@@ -26,6 +26,9 @@ function addModels(sequelize, { web, cli }={}) {
   Id.hasOne(File, { foreignKey: 'toplevel_id', sourceKey: 'idid', constraints: false })
   File.belongsTo(Id, { foreignKey: 'toplevel_id', targetKey: 'idid', constraints: false })
 
+  Ref.belongsTo(File, { as: 'definedAt', foreignKey: 'defined_at', onDelete: 'CASCADE' })
+  File.hasMany(Ref, { as: 'definedAt', foreignKey: 'defined_at', onDelete: 'CASCADE' })
+
   Render.belongsTo(File, { foreignKey: { name: 'fileId', allowNull: false }, onDelete: 'CASCADE' })
   File.hasOne(Render, { foreignKey: { name: 'fileId', allowNull: false }, onDelete: 'CASCADE' })
 

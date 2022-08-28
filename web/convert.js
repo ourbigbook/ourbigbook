@@ -66,7 +66,7 @@ async function convert({
       // user to be scoped under @username due to this being recursive from the index page.
       scope = parentScope
     }
-    input_path = `${scope}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
+    input_path = scopeIdToPath(scope, path)
   } else {
     let usernameDir
     if (fakeUsernameDir) {
@@ -75,7 +75,7 @@ async function convert({
       usernameDir = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
     }
     // Index page. Hardcode input path.
-    input_path = `${usernameDir}/${path}.${ourbigbook.OURBIGBOOK_EXT}`
+    input_path = scopeIdToPath(usernameDir, path)
   }
   await ourbigbook.convert(
     source,
@@ -167,31 +167,60 @@ async function convertArticle({
     if (forceNew && await sequelize.models.File.findOne({ where: { path: input_path }, transaction })) {
       throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
     }
-    await update_database_after_convert({
-      authorId: author.id,
-      bodySource,
-      extra_returns,
-      db_provider,
-      sequelize,
-      path: input_path,
-      render,
-      sha256,
-      titleSource,
-      transaction,
-    })
 
-    // Update nestedSetIndex and other things that can only be updated after the initial non-render pass.
-    //
-    // nestedSetIndex requires the initial non-render pass because it can only be calculated correctly
-    //
-    // Note however that nestedSetIndex is also calculated incrementally on the render pass, and as a result,
-    // article instances returned by this function do not have the correct final value for it.
-    if (
-      render
-    ) {
-      const oldRef = await sequelize.models.Ref.findOne({
+    // Index conversion check.
+    const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+    const isIndex = toplevelId === idPrefix
+    if (isIndex && parentId !== undefined) {
+      // As of writing, this will be caught and thrown on the ancestors part of conversion:
+      // as changing the Index to anything else always leads to infinite loop.
+      throw new ValidationError(`cannot give parentId for index conversion, received "${toplevelId}"`)
+    }
+
+    // Update any existing renamed synonym headers to the new main name.
+    // https://docs.ourbigbook.com/todo#web-create-multiple-headers
+    const synonymHeadersArr = Array.from(extra_returns.context.synonym_headers)
+    const synonymIds = []
+    if (synonymHeadersArr.length) {
+      const newSlug = idToSlug(toplevelId)
+      synonymIds.push(...synonymHeadersArr.map(h => h.id))
+      const synonymArticle = await sequelize.models.Article.findOne({
         where: {
-          to_id: toplevelId,
+          slug: synonymIds.map(id => idToSlug(id))
+        },
+        include: {
+          model: sequelize.models.File,
+          as: 'file',
+        },
+        transaction,
+      })
+      // https://docs.ourbigbook.com/todo#web-create-multiple-headers
+      if (synonymArticle) {
+        // https://docs.ourbigbook.com/todo#web-create-multiple-headers
+        await Promise.all([
+          synonymArticle.update({ slug: newSlug }, { transaction }),
+          synonymArticle.file.update({ path: input_path }, { transaction }),
+          sequelize.models.Ref.update(
+            { from_id: toplevelId },
+            {
+              where: {
+                from_id: synonymHeadersArr.map(h => h.id),
+                type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+              },
+              transaction,
+            },
+          ),
+        ])
+      }
+    }
+
+    // Has to be before update_database_after_convert because that will delete the oldRef,
+    // as we mark references to be defined in the file they are created at (not parent).
+    let oldRef
+    if (render) {
+      oldRef = await sequelize.models.Ref.findOne({
+        where: {
+          to_id: [toplevelId].concat(synonymIds),
           type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
         },
         include: [
@@ -228,18 +257,33 @@ async function convertArticle({
         ],
         transaction,
       })
-      const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+    }
+    const { file: newFile } = await update_database_after_convert({
+      authorId: author.id,
+      bodySource,
+      extra_returns,
+      db_provider,
+      sequelize,
+      synonymHeaderPaths: Array.from(extra_returns.context.synonym_headers).map(h => `${h.id}.${ourbigbook.OURBIGBOOK_EXT}`),
+      path: input_path,
+      render,
+      sha256,
+      titleSource,
+      transaction,
+    })
+
+    // Update nestedSetIndex and other things that can only be updated after the initial non-render pass.
+    //
+    // nestedSetIndex requires the initial non-render pass because it can only be calculated correctly
+    //
+    // Note however that nestedSetIndex is also calculated incrementally on the render pass, and as a result,
+    // article instances returned by this function do not have the correct final value for it.
+    if (render) {
       let refWhere = { to_id: previousSiblingId }
       if (parentId !== undefined) {
         refWhere.from_id = parentId
       }
-      if (toplevelId === idPrefix) {
-        // Index conversion.
-        if (parentId !== undefined) {
-          // As of writing, this will be caught and thrown on the ancestors part of conversion:
-          // as changing the Index to anything else always leads to infinite loop.
-          throw new ValidationError(`cannot give parentId for index conversion, received "${toplevelId}"`)
-        }
+      if (isIndex) {
       } else {
         // Non-index conversion.
         if (parentId === undefined) {
@@ -546,26 +590,12 @@ WHERE
           from_id: parentId,
           inflected: false,
           to_id_index,
+          defined_at: newFile.id,
         }
-        if (oldRef) {
-          if (articleMoved) {
-            await sequelize.models.Ref.update(
-              newRefAttrs,
-              {
-                where: {
-                  to_id: toplevelId,
-                  type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-                },
-                transaction,
-              },
-            )
-          }
-        } else {
-          await sequelize.models.Ref.create(
-            newRefAttrs,
-            { transaction }
-          )
-        }
+        await sequelize.models.Ref.create(
+          newRefAttrs,
+          { transaction }
+        )
       }
       const [check_db_errors, file] = await Promise.all([
         ourbigbook_nodejs_webpack_safe.check_db(
@@ -606,6 +636,7 @@ WHERE
         }
       }
       // Due to this limited setup, nested set ordering currently only works on one article per source setups.
+      // https://docs.ourbigbook.com/todo#web-create-multiple-headers
       const articleArgs0 = articleArgs[0]
       articleArgs0.nestedSetIndex = nestedSetIndex
       articleArgs0.nestedSetNextSibling = nestedSetNextSibling
@@ -882,6 +913,14 @@ async function convertIssue({
       return issue.save({ transaction })
     }
   })
+}
+
+function idToSlug(id) {
+  return id.slice(ourbigbook.AT_MENTION_CHAR.length)
+}
+
+function scopeIdToPath(scope, id) {
+  return `${scope}/${id}.${ourbigbook.OURBIGBOOK_EXT}`
 }
 
 module.exports = {

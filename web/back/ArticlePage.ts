@@ -6,6 +6,7 @@ import { maxArticlesFetch } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
 import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
+import routes from 'front/routes'
 
 export const getServerSidePropsArticleHoc = ({
   includeIssues=false,
@@ -21,10 +22,11 @@ export const getServerSidePropsArticleHoc = ({
       const slugString = slug.join('/')
       const sequelize = req.sequelize
       const loggedInUser = await getLoggedInUser(req, res, loggedInUserCache)
+      const limit = 5;
       const [article, articleTopIssues] = await Promise.all([
         sequelize.models.Article.getArticle({
           includeIssues,
-          limit: 5,
+          limit,
           sequelize,
           slug: slugString,
         }),
@@ -40,14 +42,25 @@ export const getServerSidePropsArticleHoc = ({
         sequelize.models.Article.getArticle({
           includeIssues,
           includeIssuesOrder: 'score',
-          limit: 5,
+          limit,
           sequelize,
           slug: slugString,
         }),
       ])
       if (!article) {
-        return {
-          notFound: true
+        const redirects = await sequelize.models.Article.findRedirects([slugString], { limit: 1 })
+        const newSlug = redirects[slugString]
+        if (newSlug) {
+          return {
+            redirect: {
+              destination: routes.article(newSlug),
+              permanent: false,
+            },
+          }
+        } else {
+          return {
+            notFound: true
+          }
         }
       }
       const [

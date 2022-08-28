@@ -259,7 +259,7 @@ div.editor-page {
       margin-bottom: 0.7em;
     }
   }
-  div.title-and-actions {
+  div.title-and-actions, div.parent-id-container {
     display: flex;
     flex-direction: row;
     flex-grow: 0;
@@ -278,6 +278,9 @@ div.editor-page {
         height: 100%;
         margin-left: 5px;
       }
+    }
+    .spacer {
+      width: 15px;
     }
   }
   div.ourbigbook-editor {
@@ -396,7 +399,7 @@ span.shortcut {
 }
 
 .hide {
-  display: none;
+  display: none !important;
 }
 
 .loading-spinner {

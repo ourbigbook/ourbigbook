@@ -103,18 +103,18 @@ class WebApi {
   }
 
   async articleCreate(article, opts={}) {
-    const { path, render } = opts
+    const { path, parentId, previousSiblingId, render } = opts
     return this.req('post',
       `articles`,
-      { body: { article, path, render } },
+      { body: { article, path, parentId, previousSiblingId, render } },
     );
   }
 
   async articleCreateOrUpdate(article, opts={}) {
-    const { path, render } = opts
+    const { path, parentId, previousSiblingId, render } = opts
     return this.req('put',
       `articles`,
-      { body: { article, path, render } },
+      { body: { article, path, parentId, previousSiblingId, render } },
     );
   }
 
@@ -323,7 +323,7 @@ async function sendJsonHttp(method, path, opts={}) {
 // Non-API stuff.
 
 class DbProviderBase extends ourbigbook.DbProvider {
-  constructor() {
+  constructor(opts={}) {
     super()
     this.id_cache = {}
     this.ref_cache = {
@@ -346,6 +346,21 @@ class DbProviderBase extends ourbigbook.DbProvider {
     ) {
       this.add_row_to_id_cache(row.Id, context)
     }
+  }
+
+  add_ref_row_to_cache(row, to_id_key, include_key, context) {
+    let to_id_key_dict = this.ref_cache[to_id_key][row[to_id_key]]
+    if (to_id_key_dict === undefined) {
+      to_id_key_dict = {}
+      this.ref_cache[to_id_key][row[to_id_key]] = to_id_key_dict
+    }
+    let to_id_key_dict_type = to_id_key_dict[row.type]
+    if (to_id_key_dict_type === undefined) {
+      to_id_key_dict_type = []
+      to_id_key_dict[row.type] = to_id_key_dict_type
+    }
+    to_id_key_dict_type.push(row)
+    this.add_row_to_id_cache(row[include_key], context)
   }
 
   add_row_to_id_cache(row, context) {

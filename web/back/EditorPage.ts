@@ -18,6 +18,7 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
       const existingIssue = isIssue && number
       const [article, issue, [loggedInUser, articleCountByLoggedInUser]] = await Promise.all([
         slugString ? sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
           sequelize,
           slug: slugString,
         }) : null,
@@ -69,6 +70,13 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
       }
       if (isIssue) {
         props.issueArticle = issueArticleJson
+      } else if (article) {
+        if (article.parentId) {
+          props.parentTitle = article.parentId.File.titleSource
+        }
+        if (article.previousSiblingId) {
+          props.previousSiblingTitle = article.previousSiblingId.File.titleSource
+        }
       }
       if (title) {
         props.titleSource = title || ""

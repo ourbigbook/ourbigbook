@@ -167,17 +167,64 @@ module.exports = (sequelize) => {
   Article.getArticle = async function({
     includeIssues,
     includeIssuesOrder,
+    includeParentAndPreviousSibling,
     limit,
     sequelize,
     slug,
   }) {
+    const fileInclude = [{
+      model: sequelize.models.User,
+      as: 'author',
+    }]
+    if (includeParentAndPreviousSibling) {
+      // Behold.
+      fileInclude.push({
+        model: sequelize.models.Id,
+        subQuery: false,
+        include: [{
+          model: sequelize.models.Ref,
+          as: 'to',
+          where: {
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          },
+        subQuery: false,
+          include: [{
+            // Parent ID.
+            model: sequelize.models.Id,
+            as: 'from',
+            subQuery: false,
+            include: [
+              {
+                model: sequelize.models.File,
+              },
+              {
+                model: sequelize.models.Ref,
+                as: 'from',
+                subQuery: false,
+                on: {
+                  '$file->Id->to->from->from.from_id$': {[Op.eq]: sequelize.col('file->Id->to->from.idid')},
+                  '$file->Id->to->from->from.to_id_index$': {[Op.eq]: sequelize.where(sequelize.col('file->Id->to.to_id_index'), '-', 1)},
+                },
+                include: [{
+                  // Previous sibling ID.
+                  model: sequelize.models.Id,
+                  as: 'to',
+                  include: [
+                    {
+                      model: sequelize.models.File,
+                    },
+                  ],
+                }],
+              }
+            ],
+          }],
+        }],
+      })
+    }
     const include = [{
       model: sequelize.models.File,
       as: 'file',
-      include: [{
-        model: sequelize.models.User,
-        as: 'author',
-      }]
+      include: fileInclude,
     }]
     let order
     if (includeIssues) {
@@ -190,12 +237,25 @@ module.exports = (sequelize) => {
         'issues', includeIssuesOrder === undefined ? 'createdAt' : includeIssuesOrder, 'DESC'
       ]]
     }
-    return sequelize.models.Article.findOne({
+    const article = await sequelize.models.Article.findOne({
       where: { slug },
       include,
       order,
       subQuery: false,
     })
+    if (includeParentAndPreviousSibling && article !== null) {
+      // Some access helpers, otherwise too convoluted!.
+      const articleId = article.file.Id
+      if (articleId) {
+        const parentId = articleId.to[0].from
+        article.parentId = parentId
+        const previousSiblingRef = parentId.from[0]
+        if (previousSiblingRef) {
+          article.previousSiblingId = previousSiblingRef.to
+        }
+      }
+    }
+    return article
   }
 
   // Helper for common queries.

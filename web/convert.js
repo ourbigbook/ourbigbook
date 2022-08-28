@@ -9,7 +9,7 @@ const {
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 const { ValidationError } = require('./api/lib')
-const { convertOptions, maxArticleTitleSize, read_include_web } = require('./front/config')
+const { convertOptions, forbidMultiheaderMessage, maxArticleTitleSize, read_include_web } = require('./front/config')
 const { modifyEditorInput } = require('./front/js')
 const routes = require('./front/routes')
 
@@ -71,6 +71,8 @@ async function convertArticle({
   bodySource,
   forceNew,
   path,
+  parentId,
+  previousSiblingId,
   render,
   sequelize,
   titleSource,
@@ -84,6 +86,10 @@ async function convertArticle({
     const { db_provider, extra_returns, input_path } = await convert({
       author,
       bodySource,
+      convertOptionsExtra: {
+        forbid_multiheader: forbidMultiheaderMessage,
+        parent_id: parentId,
+      },
       forceNew,
       path,
       render,
@@ -91,9 +97,37 @@ async function convertArticle({
       titleSource,
       transaction,
     })
-    const idid = extra_returns.context.header_tree.children[0].ast.id
+    const toplevelId = extra_returns.context.header_tree.children[0].ast.id
     if (forceNew && await sequelize.models.File.findOne({ where: { path: input_path }, transaction })) {
-      throw new ValidationError(`Article already exists: ${idid}`)
+      throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
+    }
+    const oldRef = await sequelize.models.Ref.findOne({
+      where: { to_id: toplevelId },
+      type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      include: {
+        model: sequelize.models.Id,
+        as: 'from',
+      },
+      transaction
+    })
+    const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+    if (toplevelId === idPrefix) {
+      // Index conversion.
+      if (parentId !== undefined) {
+        // As of writing, this will be caught and thrown on the ancestors part of conversion:
+        // as changing the Index to anything else always leads to infinite loop.
+        throw new ValidationError(`cannot give parentId for index conversion, received "${toplevelId}"`)
+      }
+    } else {
+      // Non-index conversion.
+      if (parentId === undefined) {
+        if (oldRef) {
+          // Happens when updating a page.
+          parentId = oldRef.from.idid
+        } else if (previousSiblingId === undefined) {
+          throw new ValidationError(`parentId argument is mandatory for new articles, but article ID "${toplevelId}" does not exist yet`)
+        }
+      }
     }
     await update_database_after_convert({
       authorId: author.id,
@@ -106,16 +140,110 @@ async function convertArticle({
       titleSource,
       transaction,
     })
+    let parentIdRow, previousSiblingRef
+    let refWhere = { to_id: previousSiblingId }
+    if (parentId !== undefined) {
+      refWhere.from_id = parentId
+    }
+    ;[parentIdRow, previousSiblingRef] = await Promise.all([
+      parentId !== undefined ? sequelize.models.Id.findOne({ where: { idid: parentId }, transaction }) : null,
+      previousSiblingId === undefined
+        ? null
+        : sequelize.models.Ref.findOne({
+            where: refWhere,
+            include: [
+              {
+                model: sequelize.models.Id,
+                as: 'to',
+                where: {
+                  macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
+                },
+              },
+              {
+                model: sequelize.models.Id,
+                as: 'from',
+              },
+            ],
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+            transaction,
+          })
+    ])
+
+    if (previousSiblingRef) {
+      // Deduce parent from given sibling.
+      parentIdRow = previousSiblingRef.from
+      parentId = parentIdRow.idid
+    } else if (previousSiblingId) {
+      throw new ValidationError(`previousSiblingId "${previousSiblingId}" does not exist, is not a header or is not a child of parentId "${parentId}"`)
+    }
+    if (
+      // Fails only for the index page which has no parent.
+      parentId !== undefined
+    ) {
+      // Calculate to_id_index, i.e. where to insert the new header.
+      let to_id_index
+      if (!parentIdRow) {
+        throw new ValidationError(`parentId does not exist: "${parentId}"`)
+      }
+      if (parentIdRow.macro_name !== ourbigbook.Macro.HEADER_MACRO_NAME) {
+        throw new ValidationError(`parentId is not a header: "${parentI}"`)
+      }
+      if (previousSiblingRef) {
+        to_id_index = previousSiblingRef.to_id_index + 1
+      } else {
+        to_id_index = 0
+      }
+      if (oldRef) {
+        // Decrement sibling indexes after point we are removing from.
+        await sequelize.models.Ref.decrement('to_id_index', {
+          where: {
+            from_id: oldRef.from_id,
+            to_id_index: { [sequelize.Sequelize.Op.gt]: oldRef.to_id_index },
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          },
+          transaction,
+        })
+      }
+      // Increment sibling indexes after point we are inserting from.
+      await sequelize.models.Ref.increment('to_id_index', {
+        where: {
+          from_id: parentId,
+          to_id_index: { [sequelize.Sequelize.Op.gte]: to_id_index },
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+        },
+        transaction,
+      })
+      const newRefAttrs = {
+        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+        to_id: toplevelId,
+        from_id: parentId,
+        inflected: false,
+        to_id_index,
+      }
+      if (oldRef) {
+        for (const key of Object.keys(newRefAttrs)) {
+          oldRef[key] = newRefAttrs[key]
+        }
+        await oldRef.save({ transaction })
+      } else {
+        await sequelize.models.Ref.create(
+          newRefAttrs,
+          { transaction }
+        )
+      }
+    }
     if (render) {
-      const check_db_errors = await ourbigbook_nodejs_webpack_safe.check_db(
-        sequelize,
-        [input_path],
-        transaction
-      )
+      const [check_db_errors, file] = await Promise.all([
+        ourbigbook_nodejs_webpack_safe.check_db(
+          sequelize,
+          [input_path],
+          transaction
+        ),
+        sequelize.models.File.findOne({ where: { path: input_path }, transaction }),
+      ])
       if (check_db_errors.length > 0) {
         throw new ValidationError(check_db_errors)
       }
-      const file = await sequelize.models.File.findOne({ where: { path: input_path }, transaction })
       const articleArgs = []
       for (const outpath in extra_returns.rendered_outputs) {
         const rendered_output = extra_returns.rendered_outputs[outpath]
@@ -166,7 +294,7 @@ async function convertArticle({
         },
         order: [['slug', 'ASC']],
         transaction,
-      })
+      }),
       await sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction })
     } else {
       articles = []

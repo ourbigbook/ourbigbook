@@ -1,7 +1,11 @@
 const assert = require('assert');
 
 const { WebApi } = require('ourbigbook/web_api')
-const { assert_xpath } = require('ourbigbook/test_lib')
+const {
+  assert_xpath,
+  xpath_header_parent,
+} = require('ourbigbook/test_lib')
+const ourbigbook = require('ourbigbook')
 
 const app = require('./app')
 const config = require('./front/config')
@@ -60,12 +64,27 @@ function assertStatus(status, data) {
   }
 }
 
+async function createArticleApi(test, article, opts={}) {
+  if (opts.parentId === undefined && test.user) {
+    opts = Object.assign({ parentId: `${ourbigbook.AT_MENTION_CHAR}${test.user.username}` }, opts)
+  }
+  return test.webApi.articleCreate(article, opts)
+}
+
+async function createOrUpdateArticleApi(test, article, opts={}) {
+  if (opts.parentId === undefined && test.user && article.titleSource.toLowerCase() !== ourbigbook.INDEX_BASENAME_NOEXT) {
+    opts = Object.assign({ parentId: `${ourbigbook.AT_MENTION_CHAR}${test.user.username}` }, opts)
+  }
+  return test.webApi.articleCreateOrUpdate(article, opts)
+}
+
 async function createArticles(sequelize, author, opts) {
   const articleArg = createArticleArg(opts, author)
   return convert.convertArticle({
     author,
     bodySource: articleArg.bodySource,
     path: opts.path,
+    parentId: `${ourbigbook.AT_MENTION_CHAR}${author.username}`,
     sequelize,
     titleSource: articleArg.titleSource,
   })
@@ -154,21 +173,21 @@ function testApp(cb, opts={}) {
     const test = {
       sequelize
     }
-    test.token = undefined
-    test.tokenSave = undefined
-    test.enableToken = function(newToken) {
-      if (newToken) {
-        test.token = newToken
-        test.tokenSave = newToken
+    test.user = undefined
+    test.userSave = undefined
+    test.loginUser = function(newUser) {
+      if (newUser) {
+        test.user = newUser
+        test.userSave = newUser
       } else {
-        test.token = test.tokenSave
+        test.user = test.userSave
       }
     }
     test.disableToken = function() {
-      test.token = undefined
+      test.user = undefined
     }
     const jsonHttpOpts = {
-      getToken: function () { return test.token },
+      getToken: function () { return test.user ? test.user.token : undefined },
       https: false,
       port: server.address().port,
       hostname: 'localhost',
@@ -178,7 +197,7 @@ function testApp(cb, opts={}) {
       const { body, useToken } = opts
       let token, headers = {}
       if (useToken === undefined || useToken) {
-        token = test.token
+        token = test.user ? test.user.token : undefined
         if (token) {
           // So we can test logged-in Next.js GET requests.
           // This is never done on the actual website from js (cookies are sent by browser automatically only).
@@ -197,7 +216,7 @@ function testApp(cb, opts={}) {
     test.createUserApi = async function(i, opts) {
       const { data, status } = await test.webApi.userCreate(createUserArg(i, opts))
       test.tokenSave = data.user.token
-      test.enableToken()
+      test.loginUser()
       assertStatus(status, data)
       assert.strictEqual(data.user.username, `user${i}`)
       return data.user
@@ -248,87 +267,88 @@ it('User.findAndCountArticlesByFollowed', async function() {
   assert.strictEqual(count, 8)
 })
 
-it('Article.getArticlesInSamePage', async function() {
-  const sequelize = this.test.sequelize
-  const user0 = await createUser(sequelize, 0)
-  const user1 = await createUser(sequelize, 1)
-
-  // Create one article by each user.
-  const articles0_0 = await createArticles(sequelize, user0, { i: 0, bodySource: `== Title 0 0
-
-=== Title 0 0 0
-
-== Title 0 1
-`
-})
-  const articles1_0 = await createArticle(sequelize, user1, { i: 0, bodySource: `== Title 0 0
-
-== Title 0 1
-
-== Title 0 1 0
-`
-})
-
-  // User1 likes user0/title-0
-  await user1.addArticleLikeSideEffects(articles0_0[0])
-
-  // Add an issue to Title 0 0.
-  await convert.convertIssue({
-    article: articles0_0[1],
-    bodySource: '',
-    number: 1,
-    sequelize,
-    titleSource: 'a',
-    user: user0
-  })
-
-  // Check the data each user gets for each article.
-  let rows
-  rows = await sequelize.models.Article.getArticlesInSamePage({
-    sequelize,
-    slug: 'user0/title-0',
-    loggedInUser: user0,
-  })
-  assertRows(rows, [
-    { slug: 'user0/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
-    { slug: 'user0/title-0-0',   topicCount: 2, issueCount: 1, hasSameTopic: true, liked: false },
-    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
-    { slug: 'user0/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
-  ])
-  rows = await sequelize.models.Article.getArticlesInSamePage({
-    sequelize,
-    slug: 'user0/title-0',
-    loggedInUser: user1,
-  })
-  assertRows(rows, [
-    { slug: 'user0/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: true  },
-    { slug: 'user0/title-0-0',   topicCount: 2, issueCount: 1, hasSameTopic: true,  liked: false },
-    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: false, liked: false },
-    { slug: 'user0/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
-  ])
-  rows = await sequelize.models.Article.getArticlesInSamePage({
-    sequelize,
-    slug: 'user1/title-0',
-    loggedInUser: user0,
-  })
-  assertRows(rows, [
-    { slug: 'user1/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
-    { slug: 'user1/title-0-0',   topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
-    { slug: 'user1/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
-    { slug: 'user1/title-0-1-0', topicCount: 1, issueCount: 0, hasSameTopic: false, liked: false },
-  ])
-  rows = await sequelize.models.Article.getArticlesInSamePage({
-    sequelize,
-    slug: 'user1/title-0',
-    loggedInUser: user1,
-  })
-  assertRows(rows, [
-    { slug: 'user1/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
-    { slug: 'user1/title-0-0',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
-    { slug: 'user1/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
-    { slug: 'user1/title-0-1-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
-  ])
-})
+// TODO this is in a bit of flow, as we possibly move from predefined descendant contents, to on-the-fly calculated ones.
+//it('Article.getArticlesInSamePage', async function() {
+//  const sequelize = this.test.sequelize
+//  const user0 = await createUser(sequelize, 0)
+//  const user1 = await createUser(sequelize, 1)
+//
+//  // Create one article by each user.
+//  const articles0_0 = await createArticles(sequelize, user0, { i: 0, bodySource: `== Title 0 0
+//
+//=== Title 0 0 0
+//
+//== Title 0 1
+//`
+//})
+//  const articles1_0 = await createArticle(sequelize, user1, { i: 0, bodySource: `== Title 0 0
+//
+//== Title 0 1
+//
+//== Title 0 1 0
+//`
+//})
+//
+//  // User1 likes user0/title-0
+//  await user1.addArticleLikeSideEffects(articles0_0[0])
+//
+//  // Add an issue to Title 0 0.
+//  await convert.convertIssue({
+//    article: articles0_0[1],
+//    bodySource: '',
+//    number: 1,
+//    sequelize,
+//    titleSource: 'a',
+//    user: user0
+//  })
+//
+//  // Check the data each user gets for each article.
+//  let rows
+//  rows = await sequelize.models.Article.getArticlesInSamePage({
+//    sequelize,
+//    slug: 'user0/title-0',
+//    loggedInUser: user0,
+//  })
+//  assertRows(rows, [
+//    { slug: 'user0/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
+//    { slug: 'user0/title-0-0',   topicCount: 2, issueCount: 1, hasSameTopic: true, liked: false },
+//    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+//    { slug: 'user0/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
+//  ])
+//  rows = await sequelize.models.Article.getArticlesInSamePage({
+//    sequelize,
+//    slug: 'user0/title-0',
+//    loggedInUser: user1,
+//  })
+//  assertRows(rows, [
+//    { slug: 'user0/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: true  },
+//    { slug: 'user0/title-0-0',   topicCount: 2, issueCount: 1, hasSameTopic: true,  liked: false },
+//    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: false, liked: false },
+//    { slug: 'user0/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
+//  ])
+//  rows = await sequelize.models.Article.getArticlesInSamePage({
+//    sequelize,
+//    slug: 'user1/title-0',
+//    loggedInUser: user0,
+//  })
+//  assertRows(rows, [
+//    { slug: 'user1/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
+//    { slug: 'user1/title-0-0',   topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
+//    { slug: 'user1/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true,  liked: false },
+//    { slug: 'user1/title-0-1-0', topicCount: 1, issueCount: 0, hasSameTopic: false, liked: false },
+//  ])
+//  rows = await sequelize.models.Article.getArticlesInSamePage({
+//    sequelize,
+//    slug: 'user1/title-0',
+//    loggedInUser: user1,
+//  })
+//  assertRows(rows, [
+//    { slug: 'user1/title-0',     topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
+//    { slug: 'user1/title-0-0',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
+//    { slug: 'user1/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
+//    { slug: 'user1/title-0-1-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+//  ])
+//})
 
 it('Article.updateTopicsNewArticles', async function() {
   const sequelize = this.test.sequelize
@@ -442,7 +462,7 @@ it('api: create an article and see it on global feed', async () => {
       const user2 = await test.createUserApi(2)
       // Make user2 admin via direct DB access (the only way).
       await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user2' } })
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // User GET
       ;({data, status} = await test.webApi.user('user0'))
@@ -458,16 +478,16 @@ it('api: create an article and see it on global feed', async () => {
         assertRows([data], [{ username: 'user0', displayName: 'User 0 hacked' }])
 
         // Non-admin users cannot edit other users.
-        test.enableToken(user1.token)
+        test.loginUser(user1)
         ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked 2' }))
         assert.strictEqual(status, 403)
-        test.enableToken(user.token)
+        test.loginUser(user)
 
         // Admin users can edit other users.
-        test.enableToken(user2.token)
+        test.loginUser(user2)
         ;({data, status} = await test.webApi.userUpdate('user0', { displayName: 'User 0 hacked 3' }))
         assertStatus(status, data)
-        test.enableToken(user.token)
+        test.loginUser(user)
         ;({data, status} = await test.webApi.user('user0'))
         assertStatus(status, data)
         assertRows([data], [{ username: 'user0', displayName: 'User 0 hacked 3' }])
@@ -483,11 +503,11 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(data.email, undefined)
 
       // Admin users see other users emails on GET.
-      test.enableToken(user2.token)
+      test.loginUser(user2)
       ;({data, status} = await test.webApi.user('user1'))
       assertStatus(status, data)
       assertRows([data], [{ email: 'user1@mail.com' }])
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // Cannot modify username.
       ;({data, status} = await test.webApi.userUpdate('user0', { username: 'user0hacked' }))
@@ -503,7 +523,7 @@ it('api: create an article and see it on global feed', async () => {
     // Create article
 
       article = createArticleArg({ i: 0 })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
       assertRows(data.articles, [{ titleRender: 'title 0' }])
 
@@ -512,45 +532,45 @@ it('api: create an article and see it on global feed', async () => {
       // Cannot create article if logged out.
       test.disableToken()
       article = createArticleArg({ i: 1 })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assert.strictEqual(status, 401)
-      test.enableToken()
+      test.loginUser()
 
       // Cannot create article if token is given but wrong.
-      test.enableToken('asdfqwer')
+      test.loginUser('asdfqwer')
       article = createArticleArg({ i: 1 })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assert.strictEqual(status, 401)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // Recreating an article with POST is not allowed.
       article = createArticleArg({ i: 0, bodySource: 'Body 1' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assert.strictEqual(status, 422)
 
       // Wrong field type.
-      ;({data, status} = await test.webApi.articleCreate({ titleSource: 1, bodySource: 'Body 1' }))
+      ;({data, status} = await createArticleApi(test, { titleSource: 1, bodySource: 'Body 1' }))
       assert.strictEqual(status, 422)
 
       // Empty path.
-      ;({data, status} = await test.webApi.articleCreateOrUpdate({
+      ;({data, status} = await createOrUpdateArticleApi(test, {
         titleSource: 'Empty path attempt', bodySource: 'Body 1' }, { path: '' }
       ))
       assert.strictEqual(status, 422)
 
       // Missing title
-      ;({data, status} = await test.webApi.articleCreate({ bodySource: 'Body 1' }))
+      ;({data, status} = await createArticleApi(test, { bodySource: 'Body 1' }))
       assert.strictEqual(status, 422)
 
       // Missing all data.
-      ;({data, status} = await test.webApi.articleCreate({}))
+      ;({data, status} = await createArticleApi(test, {}))
       assert.strictEqual(status, 422)
 
       // Markup errors.
-      ;({data, status} = await test.webApi.articleCreate({
+      ;({data, status} = await createArticleApi(test, {
         titleSource: 'The \\notdefined', bodySource: 'The \\i[body]' }))
       assert.strictEqual(status, 422)
-      ;({data, status} = await test.webApi.articleCreate(
+      ;({data, status} = await createArticleApi(test,
         { titleSource: 'Error', bodySource: 'The \\notdefined' }))
       assert.strictEqual(status, 422)
 
@@ -585,7 +605,7 @@ it('api: create an article and see it on global feed', async () => {
     // Edit article.
 
       article = createArticleArg({ i: 0, bodySource: 'Body 0 hacked.' })
-      ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
+      ;({data, status} = await createOrUpdateArticleApi(test, article))
       assertStatus(status, data)
       assertRows(data.articles, [{ render: /Body 0 hacked\./ }])
 
@@ -596,13 +616,13 @@ it('api: create an article and see it on global feed', async () => {
 
       // Undo it for sanity.
       article = createArticleArg({ i: 0, bodySource: 'Body 0.' })
-      ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
+      ;({data, status} = await createOrUpdateArticleApi(test, article))
       assertStatus(status, data)
       assertRows(data.articles, [{ render: /Body 0\./ }])
 
     // Edit index article.
 
-      ;({data, status} = await test.webApi.articleCreateOrUpdate({
+      ;({data, status} = await createOrUpdateArticleApi(test, {
         titleSource: 'Index',
         bodySource: 'Welcome to my home page hacked!'
       }))
@@ -617,10 +637,10 @@ it('api: create an article and see it on global feed', async () => {
     // Article like
 
       // Make user1 like one of the articles.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.articleLike('user0'))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
     // Like effects.
 
@@ -665,29 +685,29 @@ it('api: create an article and see it on global feed', async () => {
     // Article like errors.
 
       // Users cannot like articles twice.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.articleLike('user0'))
       assert.strictEqual(status, 403)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // Users cannot like their own article.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.articleLike('user1'))
       assert.strictEqual(status, 403)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // Trying to like article that does not exist fails gracefully.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.articleLike('user0/dontexist'))
       assert.strictEqual(status, 404)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
     // Make user1 unlike one of the articles.
 
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.articleUnlike('user0'))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
     // Unlike effects
 
@@ -708,16 +728,16 @@ it('api: create an article and see it on global feed', async () => {
     // Unlike errors.
 
       // Cannot unlike article twice.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.articleUnlike('user0'))
       assert.strictEqual(status, 403)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // Trying to like article that does not exist fails gracefully.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.articleUnlike('user0/dontexist'))
       assert.strictEqual(status, 404)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
     // View articles
 
@@ -748,7 +768,7 @@ it('api: create an article and see it on global feed', async () => {
 
       // Create article with PUT.
       article = createArticleArg({ i: 1 })
-      ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
+      ;({data, status} = await createOrUpdateArticleApi(test, article))
       assertStatus(status, data)
       articles = data.articles
       assert.strictEqual(articles[0].titleRender, 'title 1')
@@ -762,7 +782,7 @@ it('api: create an article and see it on global feed', async () => {
 
       // Update article with PUT.
       article = createArticleArg({ i: 1, bodySource: 'Body 2' })
-      ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
+      ;({data, status} = await createOrUpdateArticleApi(test, article))
       assertStatus(status, data)
 
       // Access the article directly
@@ -774,12 +794,12 @@ it('api: create an article and see it on global feed', async () => {
     // User following.
 
       // user2 follows user0 and user2
-      test.enableToken(user2.token)
+      test.loginUser(user2)
       ;({data, status} = await test.webApi.userFollow('user0'))
       assertStatus(status, data)
       ;({data, status} = await test.webApi.userFollow('user2'))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // user0 follows user1
       ;({data, status} = await test.webApi.userFollow('user1'))
@@ -843,12 +863,12 @@ it('api: create an article and see it on global feed', async () => {
     // User unfollowing.
 
       // Unfollow everyone.
-      test.enableToken(user2.token)
+      test.loginUser(user2)
       ;({data, status} = await test.webApi.userUnfollow('user0'))
       assertStatus(status, data)
       ;({data, status} = await test.webApi.userUnfollow('user2'))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
       ;({data, status} = await test.webApi.userUnfollow('user1'))
 
       // Users cannot unfollow another user twice.
@@ -863,9 +883,10 @@ it('api: create an article and see it on global feed', async () => {
 
       // Link to another article.
       article = createArticleArg({ titleSource: 'x', bodySource: '<Title 1>' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
       // TODO title-1 would be better here. Lazy to investigate now though.
+      // https://github.com/cirosantilli/ourbigbook/issues/283
       assert_xpath("//x:a[@href='../user0/title-1' and text()='Title 1']", data.articles[0].render)
 
     // Create issues
@@ -900,13 +921,13 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(data.issue.number, 3)
 
       // Users can create issues on other users articles.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 3)))
       assertStatus(status, data)
       assert.match(data.issue.titleRender, /The <i>title<\/i> 0 0 3\./)
       assert.match(data.issue.render, /The <i>body<\/i> 0 0 3\./)
       assert.strictEqual(data.issue.number, 4)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       ;({data, status} = await test.webApi.issueCreate('user0/title-1', createIssueArg(0, 1, 0)))
       assertStatus(status, data)
@@ -1027,11 +1048,11 @@ it('api: create an article and see it on global feed', async () => {
 
     // Trying to edit someone else's issue fails.
 
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.issueEdit('user1', 1,
         { bodySource: 'The \\i[body] 1 index 0 hacked by user1.' }))
       assert.strictEqual(status, 403)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // The issue didn't change.
       ;({data, status} = await test.webApi.issues({ id: 'user1' }))
@@ -1046,10 +1067,10 @@ it('api: create an article and see it on global feed', async () => {
     // Issue likes.
 
       // Make user1 like one of the issues.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.issueLike('user0/title-1', 1))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // Score goes up.
       ;({data, status} = await test.webApi.issues({ id: 'user0/title-1', sort: 'score' } ))
@@ -1060,31 +1081,31 @@ it('api: create an article and see it on global feed', async () => {
       ])
 
       // Users cannot like issue twice.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.issueLike('user0/title-1', 1))
       assert.strictEqual(status, 403)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // Users cannot like their own issue.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.issueLike('user0/title-0', 4))
       assert.strictEqual(status, 403)
-      test.enableToken(user1.token)
+      test.loginUser(user1)
 
       // Trying to like issue that does not exist fails gracefully.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.issueLike('user0/dontexist', 1))
       assert.strictEqual(status, 404)
       ;({data, status} = await test.webApi.issueLike('user0/title-1', 999))
       assert.strictEqual(status, 404)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
     // Make user1 unlike one of an issues.
 
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.issueUnlike('user0/title-1', 1))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // Score goes up.
       ;({data, status} = await test.webApi.issues({ id: 'user0/title-1' }))
@@ -1095,18 +1116,18 @@ it('api: create an article and see it on global feed', async () => {
       ])
 
       // Cannot unlike issue twice.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.issueUnlike('user0/title-1', 1))
       assert.strictEqual(status, 403)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // Trying to like article that does not exist fails gracefully.
-      test.enableToken(user1.token)
+      test.loginUser(user1)
       ;({data, status} = await test.webApi.issueUnlike('user0/dontexist', 1))
       assert.strictEqual(status, 404)
       ;({data, status} = await test.webApi.issueUnlike('user0/title-1', 999))
       assert.strictEqual(status, 404)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
     // No more issue indexes after this point.
 
@@ -1184,7 +1205,7 @@ it('api: create an article and see it on global feed', async () => {
     // No more comment index gets from now on.
 
       //// Link to article by comment author.
-      // TODO https://github.com/cirosantilli/ourbigbook/issues/277.
+      // TODO https://github.com/cirosantilli/ourbigbook/issues/277
       // Changing titleSource: undefined, in convertComment to titleSource: 'asdf' makes it not fail,
       // but adds the title to the render.
       //;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, '<Title 1>'))
@@ -1286,14 +1307,14 @@ it('api: create an article and see it on global feed', async () => {
       // Logged out.
       test.disableToken()
       await testNextLoggedInOrOff()
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // Cases where logged out access leads to redirect to signup page.
       async function testRedirIfLoggedOff(cb) {
         test.disableToken()
         let {data, status} = await cb()
         assert.strictEqual(status, 307)
-        test.enableToken(user.token)
+        test.loginUser(user)
         ;({data, status} = await cb())
         assertStatus(status, data)
       }
@@ -1319,7 +1340,7 @@ it('api: create an article and see it on global feed', async () => {
       ))
 
       // Non admins cannot see the settings page of other users.
-      test.enableToken(user.token)
+      test.loginUser(user)
       ;({data, status} = await test.sendJsonHttp(
         'GET',
         routes.userEdit('user1'),
@@ -1327,113 +1348,115 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(status, 404)
 
       // Admins can see the settings page of other users.
-      test.enableToken(user2.token)
+      test.loginUser(user2)
       ;({data, status} = await test.sendJsonHttp(
         'GET',
         routes.userEdit('user1'),
       ))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
     }
   }, { canTestNext: true })
 })
 
-it('api: multiheader file creates multiple articles', async () => {
-  await testApp(async (test) => {
-    let res,
-      data,
-      article
-
-    // Create user.
-    const user = await test.createUserApi(0)
-
-    // Create article.
-    article = createArticleArg({ i: 0, bodySource: `Body 0.
-
-== title 0 0
-
-Body 0 0.
-
-== title 0 1
-
-Body 0 1.
-`})
-    ;({data, status} = await test.webApi.articleCreate(article))
-    assertStatus(status, data)
-    assertRows(data.articles, [
-      { titleRender: 'title 0', slug: 'user0/title-0' },
-      { titleRender: 'title 0 0', slug: 'user0/title-0-0' },
-      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
-    ])
-    assert.match(data.articles[0].render, /Body 0\./)
-    assert.match(data.articles[0].render, /Body 0 0\./)
-    assert.match(data.articles[0].render, /Body 0 1\./)
-    assert.match(data.articles[1].render, /Body 0 0\./)
-    assert.match(data.articles[2].render, /Body 0 1\./)
-
-    // See them on global feed.
-    ;({data, status} = await test.webApi.articles())
-    assertStatus(status, data)
-    sortByKey(data.articles, 'slug')
-    assertRows(data.articles, [
-      { titleRender: 'Index', slug: 'user0' },
-      { titleRender: 'title 0', slug: 'user0/title-0' },
-      { titleRender: 'title 0 0', slug: 'user0/title-0-0' },
-      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
-    ])
-
-    // Access one of the articles directly.
-    ;({data, status} = await test.webApi.article('user0/title-0-0'))
-    assertStatus(status, data)
-    assert.strictEqual(data.titleRender, 'title 0 0')
-    assert.match(data.render, /Body 0 0\./)
-    assert.doesNotMatch(data.render, /Body 0 1\./)
-
-    // Modify the file.
-    article = createArticleArg({ i: 0, bodySource: `Body 0.
-
-== title 0 0 hacked
-
-Body 0 0 hacked.
-
-== title 0 1
-
-Body 0 1.
-`})
-    ;({data, status} = await test.webApi.articleCreateOrUpdate(article))
-    assertStatus(status, data)
-    assertRows(data.articles, [
-      { titleRender: 'title 0', slug: 'user0/title-0' },
-      { titleRender: 'title 0 0 hacked', slug: 'user0/title-0-0-hacked' },
-      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
-    ])
-    assert.match(data.articles[0].render, /Body 0\./)
-    assert.match(data.articles[0].render, /Body 0 0 hacked\./)
-    assert.match(data.articles[0].render, /Body 0 1\./)
-    assert.match(data.articles[1].render, /Body 0 0 hacked\./)
-    assert.match(data.articles[2].render, /Body 0 1\./)
-
-    // See them on global feed.
-    ;({data, status} = await test.webApi.articles())
-    assertStatus(status, data)
-    sortByKey(data.articles, 'slug')
-    assertRows(data.articles, [
-      { titleRender: 'Index',     slug: 'user0', },
-      { titleRender: 'title 0',   slug: 'user0/title-0',  render: /Body 0 0 hacked\./ },
-      { titleRender: 'title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
-      { titleRender: 'title 0 0 hacked', slug: 'user0/title-0-0-hacked', render: /Body 0 0 hacked\./ },
-      { titleRender: 'title 0 1', slug: 'user0/title-0-1', render: /Body 0 1\./ },
-    ])
-
-    // Topic shows only one subarticle.
-    ;({data, status} = await test.webApi.articles({ topicId: 'title-0-0' }))
-    assertStatus(status, data)
-    sortByKey(data.articles, 'slug')
-    assertRows(data.articles, [
-      { titleRender: 'title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
-    ])
-  })
-})
+// TODO. Either forbid or allow multiheader. This was working, but
+// changed when we started exposing the parentId via API.
+//it('api: multiheader file creates multiple articles', async () => {
+//  await testApp(async (test) => {
+//    let res,
+//      data,
+//      article
+//
+//    // Create user.
+//    const user = await test.createUserApi(0)
+//
+//    // Create article.
+//    article = createArticleArg({ i: 0, bodySource: `Body 0.
+//
+//== title 0 0
+//
+//Body 0 0.
+//
+//== title 0 1
+//
+//Body 0 1.
+//`})
+//    ;({data, status} = await createArticleApi(test, article))
+//    assertStatus(status, data)
+//    assertRows(data.articles, [
+//      { titleRender: 'title 0', slug: 'user0/title-0' },
+//      { titleRender: 'title 0 0', slug: 'user0/title-0-0' },
+//      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
+//    ])
+//    assert.match(data.articles[0].render, /Body 0\./)
+//    assert.match(data.articles[0].render, /Body 0 0\./)
+//    assert.match(data.articles[0].render, /Body 0 1\./)
+//    assert.match(data.articles[1].render, /Body 0 0\./)
+//    assert.match(data.articles[2].render, /Body 0 1\./)
+//
+//    // See them on global feed.
+//    ;({data, status} = await test.webApi.articles())
+//    assertStatus(status, data)
+//    sortByKey(data.articles, 'slug')
+//    assertRows(data.articles, [
+//      { titleRender: 'Index', slug: 'user0' },
+//      { titleRender: 'title 0', slug: 'user0/title-0' },
+//      { titleRender: 'title 0 0', slug: 'user0/title-0-0' },
+//      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
+//    ])
+//
+//    // Access one of the articles directly.
+//    ;({data, status} = await test.webApi.article('user0/title-0-0'))
+//    assertStatus(status, data)
+//    assert.strictEqual(data.titleRender, 'title 0 0')
+//    assert.match(data.render, /Body 0 0\./)
+//    assert.doesNotMatch(data.render, /Body 0 1\./)
+//
+//    // Modify the file.
+//    article = createArticleArg({ i: 0, bodySource: `Body 0.
+//
+//== title 0 0 hacked
+//
+//Body 0 0 hacked.
+//
+//== title 0 1
+//
+//Body 0 1.
+//`})
+//    ;({data, status} = await createOrUpdateArticleApi(test, article))
+//    assertStatus(status, data)
+//    assertRows(data.articles, [
+//      { titleRender: 'title 0', slug: 'user0/title-0' },
+//      { titleRender: 'title 0 0 hacked', slug: 'user0/title-0-0-hacked' },
+//      { titleRender: 'title 0 1', slug: 'user0/title-0-1' },
+//    ])
+//    assert.match(data.articles[0].render, /Body 0\./)
+//    assert.match(data.articles[0].render, /Body 0 0 hacked\./)
+//    assert.match(data.articles[0].render, /Body 0 1\./)
+//    assert.match(data.articles[1].render, /Body 0 0 hacked\./)
+//    assert.match(data.articles[2].render, /Body 0 1\./)
+//
+//    // See them on global feed.
+//    ;({data, status} = await test.webApi.articles())
+//    assertStatus(status, data)
+//    sortByKey(data.articles, 'slug')
+//    assertRows(data.articles, [
+//      { titleRender: 'Index',     slug: 'user0', },
+//      { titleRender: 'title 0',   slug: 'user0/title-0',  render: /Body 0 0 hacked\./ },
+//      { titleRender: 'title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
+//      { titleRender: 'title 0 0 hacked', slug: 'user0/title-0-0-hacked', render: /Body 0 0 hacked\./ },
+//      { titleRender: 'title 0 1', slug: 'user0/title-0-1', render: /Body 0 1\./ },
+//    ])
+//
+//    // Topic shows only one subarticle.
+//    ;({data, status} = await test.webApi.articles({ topicId: 'title-0-0' }))
+//    assertStatus(status, data)
+//    sortByKey(data.articles, 'slug')
+//    assertRows(data.articles, [
+//      { titleRender: 'title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
+//    ])
+//  })
+//})
 
 it('api: resource limits', async () => {
   await testApp(async (test) => {
@@ -1442,7 +1465,7 @@ it('api: resource limits', async () => {
     const user = await test.createUserApi(0)
     const admin = await test.createUserApi(1)
     await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user1' } })
-    test.enableToken(user.token)
+    test.loginUser(user)
 
     // Non-admin users cannot edit their own resource limits.
     ;({data, status} = await test.webApi.userUpdate('user0', {
@@ -1457,7 +1480,7 @@ it('api: resource limits', async () => {
     }])
 
     // Admin users can edit other users' resource limits.
-    test.enableToken(admin.token)
+    test.loginUser(admin)
     ;({data, status} = await test.webApi.userUpdate('user0', {
       maxArticles: 3,
       maxArticleSize: 3,
@@ -1468,106 +1491,106 @@ it('api: resource limits', async () => {
       maxArticles: 3,
       maxArticleSize: 3,
     }])
-    test.enableToken(user.token)
+    test.loginUser(user)
 
     // Article.
 
       // maxArticleSize resource limit is enforced for non-admins.
       article = createArticleArg({ i: 0, bodySource: 'abcd' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assert.strictEqual(status, 403)
 
       // maxArticleSize resource limit is not enforced for admins.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       article = createArticleArg({ i: 0, bodySource: 'abcd' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // OK, second article including Index.
       article = createArticleArg({ i: 0, bodySource: 'abc' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
 
       // maxArticleSize resource limit is enforced for all users.
       article = createArticleArg({ titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assert.strictEqual(status, 422)
 
       // Even admin.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       article = createArticleArg({ titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assert.strictEqual(status, 422)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // OK 2, third article including Index.
       article = createArticleArg({ titleSource: '0'.repeat(config.maxArticleTitleSize), bodySource: 'abc' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
 
       // maxArticles resource limit is enforced for non-admins.
       article = createArticleArg({ i: 2, bodySource: 'abcd' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assert.strictEqual(status, 403)
 
       // OK 2 for admin.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       article = createArticleArg({ i: 1, bodySource: 'abc' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // maxArticles resource limit is not enforced for admins.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       article = createArticleArg({ i: 2, bodySource: 'abcd' })
-      ;({data, status} = await test.webApi.articleCreate(article))
+      ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
     // Multiheader articles count as just one article.
-
-      // Increment article limit by two from 3 to 5. User had 3, so now there are two left.
-      // Also increment article size so we can fit the header in.
-      test.enableToken(admin.token)
-      ;({data, status} = await test.webApi.userUpdate('user0', {
-        maxArticles: 5,
-        maxArticleSize: 100,
-      }))
-      assertStatus(status, data)
-      test.enableToken(user.token)
-
-      // This should count as just one, totalling 4.
-      article = createArticleArg({ i: 2, bodySource: `== Title 2 1
-` })
-      ;({data, status} = await test.webApi.articleCreate(article))
-      assertStatus(status, data)
-
-      // So now we can still do one more, totalling 5.
-      article = createArticleArg({ i: 3, bodySource: `abc`})
-      ;({data, status} = await test.webApi.articleCreate(article))
-      assertStatus(status, data)
+    // We forbade multiheader articles at one point. Might be reallowed later on.
+//      // Increment article limit by two from 3 to 5. User had 3, so now there are two left.
+//      // Also increment article size so we can fit the header in.
+//      test.loginUser(admin)
+//      ;({data, status} = await test.webApi.userUpdate('user0', {
+//        maxArticles: 5,
+//        maxArticleSize: 100,
+//      }))
+//      assertStatus(status, data)
+//      test.loginUser(user)
+//
+//      // This should count as just one, totalling 4.
+//      article = createArticleArg({ i: 2, bodySource: `== Title 2 1
+//` })
+//      ;({data, status} = await createArticleApi(test, article))
+//      assertStatus(status, data)
+//
+//      // So now we can still do one more, totalling 5.
+//      article = createArticleArg({ i: 3, bodySource: `abc`})
+//      ;({data, status} = await createArticleApi(test, article))
+//      assertStatus(status, data)
 
     // Issue.
 
       // Change limit to 2 now that we don't have Index.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       ;({data, status} = await test.webApi.userUpdate('user0', {
         maxArticles: 2,
         maxArticleSize: 3,
       }))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // maxArticleSize resource limit is enforced for non-admins.
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abcd' })))
       assert.strictEqual(status, 403)
 
       // maxArticleSize resource limit is not enforced for admins.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abcd' })))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // OK.
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
@@ -1579,11 +1602,11 @@ it('api: resource limits', async () => {
       assert.strictEqual(status, 422)
 
       // Even admin.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(
         0, 0, 0, { titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })))
       assert.strictEqual(status, 422)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // OK 2.
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(
@@ -1595,16 +1618,16 @@ it('api: resource limits', async () => {
       assert.strictEqual(status, 403)
 
       // OK 2 for admin.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // maxArticles resource limit is not enforced for admins.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
     // Comment.
 
@@ -1613,10 +1636,10 @@ it('api: resource limits', async () => {
       assert.strictEqual(status, 403)
 
       // maxArticleSize resource limit is not enforced for admins.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abcd'))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // OK.
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
@@ -1631,15 +1654,299 @@ it('api: resource limits', async () => {
       assert.strictEqual(status, 403)
 
       // OK 2 for admin.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
 
       // maxArticles resource limit is not enforced for admins.
-      test.enableToken(admin.token)
+      test.loginUser(admin)
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
       assertStatus(status, data)
-      test.enableToken(user.token)
+      test.loginUser(user)
+  })
+})
+
+it('api: article tree', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    const user2 = await test.createUserApi(1)
+    test.loginUser(user)
+
+    // Article.
+
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+      ;({data, status} = await createArticleApi(test, article))
+      assertStatus(status, data)
+      // TODO ./ would be better here: https://github.com/cirosantilli/ourbigbook/issues/283
+      assert_xpath(xpath_header_parent(1, 'mathematics', '../user0', 'Index'), data.articles[0].render)
+
+      article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+      ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics' }))
+      assertStatus(status, data)
+      assert_xpath(xpath_header_parent(1, 'calculus', '../user0/mathematics', 'Mathematics'), data.articles[0].render)
+
+      // It is possible to change a parent ID.
+
+        // Create a new test ID.
+        article = createArticleArg({ i: 0, titleSource: 'Derivative' })
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+        assertStatus(status, data)
+        assert_xpath(xpath_header_parent(1, 'derivative', '../user0/mathematics', 'Mathematics'), data.articles[0].render)
+
+        // Modify its parent.
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
+        assertStatus(status, data)
+        assert_xpath(xpath_header_parent(1, 'derivative', '../user0/calculus', 'Calculus'), data.articles[0].render)
+
+      // parentId errors
+
+        // Parent ID that doesn't exist gives an error on new article.
+        article = createArticleArg({ i: 0, titleSource: 'Physics' })
+        ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/dontexist' }))
+        assert.strictEqual(status, 422)
+
+        // Parent ID that doesn't exist gives an error on existing article.
+        article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/dontexist' }))
+        assert.strictEqual(status, 422)
+
+        // It is not possible to change the index parentId.
+        article = createArticleArg({ i: 0, titleSource: 'Index' })
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+        assert.strictEqual(status, 422)
+
+        // It it not possible to set the parentId to an article of another user.
+        article = createArticleArg({ i: 0, titleSource: 'Physics' })
+        ;({data, status} = await createArticleApi(test, article, { parentId: '@user1' }))
+        assert.strictEqual(status, 422)
+
+        // Circular parent loops fail gracefully.
+        article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
+        assert.strictEqual(status, 422)
+        // This is where it might go infinite if it hadn't been prevented above.
+        article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+        assertStatus(status, data)
+
+        // Circular parent loops to self fail gracefully.
+        article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+        ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics' }))
+        assert.strictEqual(status, 422)
+
+      // previousSiblingId
+
+        // Current tree status:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Calculus
+        //      * 2 Derivative
+
+        article = createArticleArg({ i: 0, titleSource: 'Integral' })
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', previousSiblingId: '@user0/derivative' }))
+        assertStatus(status, data)
+
+        // Current tree status:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Calculus
+        //      * 2 Derivative
+        //      * 3 Integral
+
+        // Refresh the parent index to show this new child.
+        // TODO do this on the fly during GET.
+        ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
+        assertStatus(status, data)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/mathematics' and @data-test='0' and text()='Mathematics']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/calculus'    and @data-test='1' and text()='Calculus']",    data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative'  and @data-test='2' and text()='Derivative']",  data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'    and @data-test='3' and text()='Integral']",    data.articles[0].render)
+
+        // Add another one, and update it a few times.
+        // Empty goes first.
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit' }),
+          { parentId: '@user0/calculus', previousSiblingId: undefined }
+        ))
+        assertStatus(status, data)
+
+        // Current tree status:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Calculus
+        //      * 2 Limit
+        //      * 3 Derivative
+        //      * 4 Integral
+
+        ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
+        assertStatus(status, data)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='2' and text()='Limit']",      data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='3' and text()='Derivative']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='4' and text()='Integral']",   data.articles[0].render)
+
+        // Move up. Give a parentId as well as sibling. This is not necessary.
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit' }),
+          { parentId: '@user0/calculus', previousSiblingId: '@user0/integral' }
+        ))
+        assertStatus(status, data)
+
+        // Current tree status:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Calculus
+        //      * 2 Derivative
+        //      * 3 Integral
+        //      * 4 Limit
+
+        ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
+        assertStatus(status, data)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='2' and text()='Derivative']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='3' and text()='Integral']",   data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='4' and text()='Limit']",      data.articles[0].render)
+
+        // Move down. Don't give parentId on an update. Parent will be derived from sibling.
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit' }),
+          { parentId: undefined, previousSiblingId: '@user0/derivative' }
+        ))
+        assertStatus(status, data)
+
+        // Current tree status:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Calculus
+        //      * 2 Derivative
+        //      * 3 Limit
+        //      * 4 Integral
+
+        ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
+        assertStatus(status, data)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='2' and text()='Derivative']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='3' and text()='Limit']",      data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='4' and text()='Integral']",   data.articles[0].render)
+
+        // Move back to first by not giving previousSiblingId. previousSiblingId is not maintained like most updated properties.
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit' }),
+          { parentId: undefined, previousSiblingId: undefined }
+        ))
+        assertStatus(status, data)
+
+        // Current tree status:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Calculus
+        //      * 2 Limit
+        //      * 3 Derivative
+        //      * 4 Integral
+
+        ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
+        assertStatus(status, data)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='2' and text()='Limit']",      data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='3' and text()='Derivative']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='4' and text()='Integral']",   data.articles[0].render)
+
+        // Deduce parentId from previousSiblingid on new article.
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Measure' }),
+          { parentId: undefined, previousSiblingId: '@user0/integral' }
+        ))
+        assertStatus(status, data)
+
+        // Current tree status:
+        // * Index
+        //  * 0 Mathematics
+        //    * 1 Calculus
+        //      * 2 Limit
+        //      * 3 Derivative
+        //      * 4 Integral
+        //      * 5 Measure
+
+        ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Index' })))
+        assertStatus(status, data)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/limit'      and @data-test='2' and text()='Limit']",      data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/derivative' and @data-test='3' and text()='Derivative']", data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/integral'   and @data-test='4' and text()='Integral']",   data.articles[0].render)
+        assert_xpath("//*[@id='toc']//x:a[@href='user0/measure'    and @data-test='5' and text()='Measure']",    data.articles[0].render)
+
+      // Article.getArticle includeParentAndPreviousSibling argument test.
+      // Used on editor only for now, so a bit hard to test on UI. But this tests the crux MEGAJOIN just fine.
+
+        // First sibling.
+        article = await sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          sequelize,
+          slug: 'user0/limit',
+        })
+        assert.strictEqual(article.parentId.idid, '@user0/calculus')
+        assert.strictEqual(article.previousSiblingId, undefined)
+
+        // Not first sibling.
+        article = await sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          sequelize,
+          slug: 'user0/derivative',
+        })
+        assert.strictEqual(article.parentId.idid, '@user0/calculus')
+        assert.strictEqual(article.previousSiblingId.idid,  '@user0/limit')
+
+        // Index.
+        article = await sequelize.models.Article.getArticle({
+          includeParentAndPreviousSibling: true,
+          sequelize,
+          slug: 'user0',
+        })
+        assert.strictEqual(article.parentId, undefined)
+        assert.strictEqual(article.previousSiblingId,  undefined)
+
+        // Hopefully the above tests would have caught any wrong to_id_index issues, but just in case.
+        const refs = await sequelize.models.Ref.findAll({ order: [['from_id', 'ASC'], ['to_id_index', 'ASC'], ['to_id', 'ASC']] })
+        assertRows(refs, [
+          { from_id: '@user0',             to_id: '@user0/mathematics', to_id_index: 0, },
+          { from_id: '@user0/calculus',    to_id: '@user0/limit',       to_id_index: 0, },
+          { from_id: '@user0/calculus',    to_id: '@user0/derivative',  to_id_index: 1, },
+          { from_id: '@user0/calculus',    to_id: '@user0/integral',    to_id_index: 2, },
+          { from_id: '@user0/calculus',    to_id: '@user0/measure',     to_id_index: 3, },
+          { from_id: '@user0/mathematics', to_id: '@user0/calculus',    to_id_index: 1, },
+        ])
+
+      // previousSiblingId errors
+
+        // previousSiblingId that does not exist fails
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit' }),
+          { parentId: undefined, previousSiblingId: '@user0/dontexist' }
+        ))
+        assert.strictEqual(status, 422)
+
+        // previousSiblingId empty string fails
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit' }),
+          { parentId: undefined, previousSiblingId: '' }
+        ))
+        assert.strictEqual(status, 422)
+
+        // previousSiblingId that is not a child of parentId fails
+        ;({data, status} = await createOrUpdateArticleApi(test,
+          createArticleArg({ i: 0, titleSource: 'Limit' }),
+          { parentId: '@user0/mathematics', previousSiblingId: '@user0/derivative' }
+        ))
+        assert.strictEqual(status, 422)
+
+      // Forbidden elements
+
+        // Cannot use Include on web.
+        article = createArticleArg({ i: 0, titleSource: 'Physics', bodySource: `\\Include[mathematics]` })
+        ;({data, status} = await createArticleApi(test, article))
+        assert.strictEqual(status, 422)
+
+        // Cannot have multiple headers per article on web.
+        article = createArticleArg({ i: 0, titleSource: 'Physics', bodySource: `== Mechanics` })
+        ;({data, status} = await createArticleApi(test, article))
+        assert.strictEqual(status, 422)
   })
 })

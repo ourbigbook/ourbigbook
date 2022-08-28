@@ -8,7 +8,7 @@ import ourbigbook from 'ourbigbook';
 import web_api from 'ourbigbook/web_api';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
 import { OurbigbookEditor } from 'ourbigbook/editor.js';
-import { convertOptions, docsUrl, isProduction, read_include_web } from 'front/config';
+import { convertOptions, docsUrl, forbidMultiheaderMessage, isProduction, read_include_web } from 'front/config';
 
 import { ArticlePageProps } from 'front/ArticlePage'
 import { ArticleBy, capitalize, disableButton, enableButton, CancelIcon, HelpIcon, slugFromArray } from 'front'
@@ -101,12 +101,23 @@ export interface EditorPageProps {
   articleCountByLoggedInUser: number;
   issueArticle?: ArticleType;
   loggedInUser: UserType;
+  parentTitle?: string,
+  previousSiblingTtitle?: string,
   titleSource?: string;
   titleSourceLine?: number;
 }
 
-function titleToPath(loggedInUser, topicId) {
-  return `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${topicId}.${ourbigbook.OURBIGBOOK_EXT}`
+function titleToId(loggedInUser, title) {
+  let ret = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`
+  const topicId = ourbigbook.title_to_id(title)
+  if (topicId !== ourbigbook.INDEX_BASENAME_NOEXT) {
+    ret += `/${topicId}`
+  }
+  return ret
+}
+
+function titleToPath(loggedInUser, title) {
+  return `${titleToId(loggedInUser, title)}.${ourbigbook.OURBIGBOOK_EXT}`
 }
 
 const idExistsCache = {}
@@ -120,6 +131,9 @@ async function cachedIdExists(idid) {
   }
 }
 
+const parentTitleDisplay = 'Parent Title'
+const previousSiblingTitleDisplay = 'Insert After'
+
 export default function ArticleEditorPageHoc({
   isIssue=false,
   isNew=false,
@@ -129,6 +143,8 @@ export default function ArticleEditorPageHoc({
     articleCountByLoggedInUser,
     issueArticle,
     loggedInUser,
+    parentTitle: initialParentTitle,
+    previousSiblingTitle: initialPreviousSiblingTitle,
     titleSource,
   }: EditorPageProps) => {
     const router = useRouter();
@@ -159,19 +175,30 @@ export default function ArticleEditorPageHoc({
         titleSource: titleSource || '',
       }
     }
+    let isIndex
+    if (!isNew && !isIssue) {
+      isIndex = initialArticle.topicId === ''
+    } else {
+      isIndex = false
+    }
     const itemType = isIssue ? 'discussion' : 'article'
     const [isLoading, setLoading] = React.useState(false);
     const [editorLoaded, setEditorLoading] = React.useState(false);
     const [titleErrors, setTitleErrors] = React.useState([]);
+    const [parentErrors, setParentErrors] = React.useState([]);
     const [hasConvertError, setHasConvertError] = React.useState(false);
     const [file, setFile] = React.useState(initialFileState);
+    const [parentTitle, setParentTitle] = React.useState(initialParentTitle || 'Index');
+    const [previousSiblingTitle, setPreviousSiblingTitle] = React.useState(initialPreviousSiblingTitle || '');
     const ourbigbookEditorElem = useRef(null);
     const ourbigbookHeaderElem = useRef(null);
+    const ourbigbookParentIdContainerElem = useRef(null);
     const saveButtonElem = useRef(null);
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
     let editor
     const finalConvertOptions = lodash.merge({
       db_provider: new RestDbProvider(),
+      forbid_multiheader: isIssue ? undefined : forbidMultiheaderMessage,
       input_path: initialFile?.path || titleToPath(loggedInUser, 'asdf'),
       ourbigbook_json: {
         openLinksOnNewTabs: true,
@@ -182,32 +209,34 @@ export default function ArticleEditorPageHoc({
     async function checkTitle(titleSource) {
       let titleErrors = []
       if (titleSource) {
-        let newTopicId = ourbigbook.title_to_id(titleSource)
-        let showToUserNew
-        if (newTopicId === ourbigbook.INDEX_BASENAME_NOEXT) {
-          // Maybe there is a more factored out way of dealing with this edge case.
-          newTopicId = ''
-          showToUserNew = ourbigbook.INDEX_BASENAME_NOEXT
-        } else {
-          showToUserNew = newTopicId
-        }
-        if (isNew) {
-          // finalConvertOptions.input_path
-          const id = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${newTopicId}`
-          if (await cachedIdExists(id)) {
-            titleErrors.push(`Article ID already taken: "${id}" `)
-          }
-        } else if (!isIssue && initialArticle.topicId !== newTopicId) {
-          let showToUserOld
-          if (initialArticle?.topicId === '') {
-            showToUserOld = ourbigbook.INDEX_BASENAME_NOEXT
+        if (!isIssue) {
+          let newTopicId = ourbigbook.title_to_id(titleSource)
+          let showToUserNew
+          if (newTopicId === ourbigbook.INDEX_BASENAME_NOEXT) {
+            // Maybe there is a more factored out way of dealing with this edge case.
+            newTopicId = ''
+            showToUserNew = ourbigbook.INDEX_BASENAME_NOEXT
           } else {
-            showToUserOld = initialArticle?.topicId
+            showToUserNew = newTopicId
           }
-          titleErrors.push(`Topic ID changed from "${showToUserOld}" to "${showToUserNew}", this is not currently allowed`)
+          if (isNew) {
+            // finalConvertOptions.input_path
+            const id = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${newTopicId}`
+            if (await cachedIdExists(id)) {
+              titleErrors.push(`Article ID already taken: "${id}" `)
+            }
+          } else if (!isIssue && initialArticle.topicId !== newTopicId) {
+            let showToUserOld
+            if (initialArticle?.topicId === '') {
+              showToUserOld = ourbigbook.INDEX_BASENAME_NOEXT
+            } else {
+              showToUserOld = initialArticle?.topicId
+            }
+            titleErrors.push(`Topic ID changed from "${showToUserOld}" to "${showToUserNew}", this is not currently allowed`)
+          }
         }
       } else {
-        titleErrors.push('The title cannot be empty')
+        titleErrors.push('Article Title cannot be empty')
       }
       setTitleErrors(titleErrors)
     }
@@ -216,12 +245,12 @@ export default function ArticleEditorPageHoc({
       await checkTitle(file.titleSource)
     }, [])
     useEffect(() => {
-      if (hasConvertError || titleErrors.length) {
+      if (hasConvertError || titleErrors.length || parentErrors.length) {
         disableButton(saveButtonElem.current, 'Cannot submit due to errors')
       } else {
         enableButton(saveButtonElem.current, true)
       }
-    }, [hasConvertError, titleErrors])
+    }, [hasConvertError, titleErrors, parentErrors])
     useEffect(() => {
       if (
         ourbigbookEditorElem &&
@@ -263,6 +292,7 @@ export default function ArticleEditorPageHoc({
                 const target_line_number = visibleRange.startLineNumber
                 if (target_line_number === 1) {
                   ourbigbookHeaderElem.current.classList.remove('hide')
+                  ourbigbookParentIdContainerElem.current.classList.remove('hide')
                 } else {
                   if (
                     // TODO this is to prevent infinite loop/glitching:
@@ -276,6 +306,7 @@ export default function ArticleEditorPageHoc({
                     editor.getModel().getLineCount() - (visibleRange.endLineNumber - visibleRange.startLineNumber) > 10
                   ) {
                     ourbigbookHeaderElem.current.classList.add('hide')
+                    ourbigbookParentIdContainerElem.current.classList.add('hide')
                   }
                 }
               },
@@ -301,6 +332,28 @@ export default function ArticleEditorPageHoc({
         };
       }
     }, [loggedInUser?.username])
+    async function checkParent(loggedInUser, title, otherTitle, display) {
+      const parentErrors = []
+      if (title) {
+        const id = titleToId(loggedInUser, title)
+        if (!(await cachedIdExists(id))) {
+          parentErrors.push(`${display} ID "${id}" does not exist`)
+        }
+      } else if (!otherTitle) {
+        parentErrors.push(`${parentTitleDisplay} and ${previousSiblingTitleDisplay} can't both be empty`)
+      }
+      setParentErrors(parentErrors)
+    }
+    const handleParentTitle = async (e) => {
+      const title = e.target.value
+      setParentTitle(title)
+      await checkParent(loggedInUser, title, previousSiblingTitle, parentTitleDisplay)
+    }
+    const handlePreviousSiblingTitle = async (e) => {
+      const title = e.target.value
+      setPreviousSiblingTitle(title)
+      await checkParent(loggedInUser, title, parentTitle, previousSiblingTitleDisplay)
+    }
     const handleTitle = async (e) => {
       const titleSource = e.target.value
       setFile(file => { return {
@@ -311,7 +364,7 @@ export default function ArticleEditorPageHoc({
       // TODO this would be slighty better, but not taking effect, I simply can't understand why,
       // there appear to be no copies of convertOptions under editor...
       //if (titleSource) {
-      //  finalConvertOptions.input_path = titleToPath(loggedInUser, ourbigbook.title_to_id(titleSource))
+      //  finalConvertOptions.input_path = titleToPath(loggedInUser, titleSource)
       //}
     }
     useEffect(() => {
@@ -335,18 +388,24 @@ export default function ArticleEditorPageHoc({
       setLoading(true);
       let data, status;
       file.bodySource = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
-      if (isNew) {
-        if (isIssue) {
-          ;({ data, status } = await webApi.issueCreate(slugString, file));
+      if (isIssue) {
+        if (isNew) {
+          ;({ data, status } = await webApi.issueCreate(slugString, file))
         } else {
-          ;({ data, status } = await webApi.articleCreate(file));
+          ;({ data, status } = await webApi.issueEdit(slugString, router.query.number, file))
         }
       } else {
-        if (isIssue) {
-          ;({ data, status } = await webApi.issueEdit(slugString, router.query.number, file))
+        const opts: { path?: string, parentId?: string, previousSiblingId?: string } = {}
+        if (!isIndex) {
+          opts.parentId = titleToId(loggedInUser, parentTitle)
+          if (previousSiblingTitle) {
+            opts.previousSiblingId = titleToId(loggedInUser, previousSiblingTitle)
+          }
+        }
+        if (isNew) {
+          ;({ data, status } = await webApi.articleCreate(file, opts));
         } else {
           const path = slugFromArray(ourbigbook.path_splitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false })
-          const opts: { path?: string } = {}
           if (path) {
             opts.path = path
           }
@@ -431,6 +490,7 @@ export default function ArticleEditorPageHoc({
                     disabled={isLoading}
                     onClick={handleSubmit}
                     ref={saveButtonElem}
+                    tabIndex="-1"
                   >
                     <i className="ion-checkmark" />&nbsp;{isNew ? `Publish ${capitalize(itemType)}` : 'Save Changes'}
                   </button>
@@ -438,12 +498,33 @@ export default function ArticleEditorPageHoc({
                     className="btn"
                     type="button"
                     onClick={handleCancel}
+                    tabIndex="-1"
                   >
                     <CancelIcon />&nbsp;Cancel
                   </button>
                 </div>
               </div>
               <ErrorList errors={titleErrors}/>
+              {(!isIssue && !isIndex) &&
+                <div className="parent-id-container" ref={ourbigbookParentIdContainerElem}>
+                  <input
+                    type="text"
+                    className="title"
+                    placeholder={parentTitleDisplay}
+                    value={parentTitle}
+                    onChange={handleParentTitle}
+                  />
+                  <div className="spacer" />
+                  <input
+                    type="text"
+                    className="title"
+                    placeholder={`${previousSiblingTitleDisplay}. Empty means first child of parent.`}
+                    value={previousSiblingTitle}
+                    onChange={handlePreviousSiblingTitle}
+                  />
+                </div>
+              }
+              <ErrorList errors={parentErrors}/>
               <div
                 className="ourbigbook-editor"
                 ref={ourbigbookEditorElem}

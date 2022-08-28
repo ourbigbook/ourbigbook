@@ -2296,7 +2296,7 @@ It is possible to enforce the <\H child argument> or the <\H tag argument> in a 
 
 = `\H` `title2` argument
 {parent=H arguments}
-{tag=`multiple` argument}
+{tag=multiple argument}
 
 The `title2` argument can be given to any element that has the `title` argument.
 
@@ -6485,11 +6485,6 @@ Examples:
 
 TODO: also ignore during <watch>.
 
-= Ignore from `.gitignore`
-{parent=ignore}
-
-TODO implement: automatically ignore all gitignored paths.
-
 = `ourbigbook.json` `id`
 {id=id}
 {parent=ourbigbook.json}
@@ -6918,13 +6913,24 @@ as in:
 },
 ``
 
-= Ignored flies
+= Ignored files
 {c}
 {parent=OurBigBook CLI}
 
 The following files are ignored from conversion:
 * <ourbigbook.json/ignore> patterns
-* if the project is a <Git tracked project>, the standard `git` ignore rules are used for ignores. This includes `.git/info/exclude`, `.gitignore` and the user's global gitingnore file if any.
+* gitignored files: <Ignore from `.gitignore`>{full}
+* a few hardcoded basenames, such as `.git` and <the `out` directory>, see `DEFAULT_IGNORE_BASENAMES` in \a[ourbigbook]
+Note that this applies even if you try to convert a single ignored file such as:
+``
+ourbigbook ignored.bigb
+``
+We are strict about this in order to prevent accidentally polluting the database with temporary data.
+
+= Ignore from `.gitignore`
+{parent=Ignored files}
+
+If the project is a <Git tracked project>, the standard `git` ignore rules are used for ignores. This includes `.git/info/exclude`, `.gitignore` and the user's global gitingnore file if any.
 
 = OurBigBook Library
 {c}

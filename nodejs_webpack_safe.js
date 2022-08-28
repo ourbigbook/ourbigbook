@@ -53,7 +53,6 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
     //   - title-title dependencies
     //     - from those, also fetch the main synonym
     rows = await sequelize.models.Id.findAll({
-      //logging: console.log,
       where,
       include: [
         {
@@ -97,25 +96,27 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
                   sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
                 ],
               },
-              //include: [
-              //  {
-              //    model: sequelize.models.Ref,
-              //    as: 'from',
-              //    where: {
-              //      type: { [sequelize.Sequelize.Op.or]: [
-              //        sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
-              //      ]},
-              //    },
-              //    required: false,
-              //    include: [
-              //      {
-              //        model: sequelize.models.Id,
-              //        as: 'to',
-              //        required: false,
-              //      },
-              //    ],
-              //  },
-              //],
+              // Also get the synonyms of title-title.
+              // Also tries to get synonyms of the other synonym and parent, but those never have them.
+              include: [
+                {
+                  model: sequelize.models.Ref,
+                  as: 'from',
+                  where: {
+                    type: { [sequelize.Sequelize.Op.or]: [
+                      sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
+                    ]},
+                  },
+                  required: false,
+                  include: [
+                    {
+                      model: sequelize.models.Id,
+                      as: 'to',
+                      required: false,
+                    },
+                  ],
+                },
+              ],
             },
           ],
         },

@@ -6994,7 +6994,6 @@ function x_href_parts(target_ast, context) {
     target_ast_effective_id = target_ast.id
     first_toplevel_child_effective = target_ast.first_toplevel_child
   } else {
-    console.error('target_ast.synonym: ' + require('util').inspect(target_ast.synonym));
     const synonym_target_ast = context.db_provider.get(target_ast.synonym, context);
     target_ast_effective_id = synonym_target_ast.id
     first_toplevel_child_effective = synonym_target_ast.first_toplevel_child

@@ -52,8 +52,11 @@ module.exports = (sequelize) => {
         { fields: ['from_id', 'type'], },
         { fields: ['to_id', 'type'], },
         { fields: ['from_id', 'defined_at', 'to_id', 'type'], },
+        //// This would be a good sanity check.
+        //// But it fails for synonyms, which currently have the same parent and index.
+        //// Maybe we should ust leave the synonym NULL?
         //{
-        //  fields: ['from_id', 'to_id_index'],
+        //  fields: ['from_id', 'to_id_index', 'type'],
         //  unique: true,
         //},
       ],

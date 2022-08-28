@@ -478,10 +478,19 @@ class DbProviderBase extends ourbigbook.DbProvider {
           // so it could override one that did have the .to, and then other things could blow up.
           !(row_title_title.to && row_title_title.to.idid in this.id_cache)
         ) {
-          console.error('row_title_title.to.idid: ' + require('util').inspect(row_title_title.to.idid));
-          const ret = this.add_row_to_id_cache(row_title_title.to, context)
-          if (ret !== undefined) {
-            asts.push(ret)
+          const id2 = row_title_title.to
+          if (id2) {
+            const ret = this.add_row_to_id_cache(id2, context)
+            if (ret !== undefined) {
+              asts.push(ret)
+            }
+            // Get synonym of title title.
+            for (const synonymRef of id2.from) {
+              const ret = this.add_row_to_id_cache(synonymRef.to, context)
+              if (ret !== undefined) {
+                asts.push(ret)
+              }
+            }
           }
         }
       }

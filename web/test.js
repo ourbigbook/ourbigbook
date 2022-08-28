@@ -3722,27 +3722,3 @@ it('api: synonym rename', async () => {
       //    * 10 Number theory (Number theory 2)
   })
 })
-
-it('api: link to title to synonym title', async () => {
-  await testApp(async (test) => {
-    let data, status, article
-
-    const sequelize = test.sequelize
-
-    // Create users
-    const user = await test.createUserApi(0)
-    test.loginUser(user)
-
-    article = createArticleArg({ titleSource: 'Algebra', bodySource: '= Algebra 2\n{synonym}\n' })
-    ;({data, status} = await createOrUpdateArticleApi(test, article))
-    assertStatus(status, data)
-
-    article = createArticleArg({ titleSource: 'Calculus', bodySource: '\\Image[http://jpg]{title=My calculus image about <algebra 2>}\n' })
-    ;({data, status} = await createOrUpdateArticleApi(test, article))
-    assertStatus(status, data)
-
-    article = createArticleArg({ titleSource: 'Geometry', bodySource: '<image my calculus image about algebra 2>\n' })
-    ;({data, status} = await createOrUpdateArticleApi(test, article))
-    assertStatus(status, data)
-  })
-})

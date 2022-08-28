@@ -7333,6 +7333,12 @@ This is not super user friendly, and could be made better by:
     * E: edit the page
     * L: like or unlike the page. This would require moving like state out of the Like button, which is a bit annoying.
 
+= OurBigBook Web restrictions compared to CLI
+{parent=OurBigBook Web user manual}
+
+There are currently a few constructs that are legal in <OurBigBook CLI> but forbidden in Web and will lead to upload errors. TODO we should just make those forbidden on CLI by default with a flag to re-enable if users really want to make their source incompatible with web:
+* IDs with uppercase characters as per <JavaScript case conversion>
+
 = OurBigBook.com
 {c}
 {parent=OurBigBook Web user manual}
@@ -8476,6 +8482,21 @@ Types:
 = web/bin/normalize
 {file}
 {parent=OurBigBook Web directory structure}
+
+Check the counts of issues per article for user `barack-obama` only with `-c`, but don't fix anything:
+``
+web/bin/normalize -c -u barack-obama article-issue-count
+``
+
+Print the full correct normalized state with `-p`:
+``
+web/bin/normalize -f -u issue-follower-count
+``
+
+Fix the counts of issue follower if any are wrong with `-f`, thus potentially altering the database:
+``
+web/bin/normalize -f -u issue-follower-count
+``
 
 = web/bin/rerender-articles.js
 {file}

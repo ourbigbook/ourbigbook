@@ -201,7 +201,10 @@ function cmd_get_stdout(cmd, args=[], options={}) {
     console.log(cmd_str);
   }
   if (!options.dry_run) {
-    out = child_process.spawnSync(cmd, args, { env: { ...process.env, ...options.env_extra } });
+    out = child_process.spawnSync(cmd, args, {
+      cwd: options.cwd,
+      env: { ...process.env, ...options.env_extra },
+    });
   }
   let ret;
   if (options.dry_run) {
@@ -1934,6 +1937,12 @@ if (cli.helpMacros) {
                   tries++
                 }
                 assertApiStatus(status, data)
+                //if (render && i % 100 == 0) {
+                //  cmd_get_stdout('bin/pg', ['bin/normalize', '-c', '-u', 'cirosantilli', 'nested-set'], {
+                //    cwd: path.join(__dirname, 'web'),
+                //    throw_on_error: true,
+                //  })
+                //}
               }
               const t1 = performance.now()
               printStatus(i, article, render, { t0, t1 })

@@ -169,6 +169,14 @@ function isTruthy(s) {
   return !!s
 }
 
+function idToSlug(id) {
+  return id.slice(ourbigbook.AT_MENTION_CHAR.length)
+}
+
+function slugToId(slug) {
+  return ourbigbook.AT_MENTION_CHAR + slug
+}
+
 module.exports = {
   AUTH_COOKIE_NAME: 'auth',
   getClientIp,
@@ -176,6 +184,8 @@ module.exports = {
   getOrderAndPage,
   getPage,
   hasReachedMaxItemCount,
+  idToSlug,
+  slugToId,
   isArrayOf,
   isBoolean,
   isLengthSmallerOrEqualTo,

@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import useSWR from 'swr'
 import useLoggedInUser from 'front/useLoggedInUser'
 
-import { aboutUrl, appName, contactUrl, donateUrl, googleAnalyticsId, isProduction } from 'front/config';
+import { aboutUrl, appName, contactUrl, docsUrl, donateUrl, googleAnalyticsId, isProduction } from 'front/config';
 import Navbar from 'front/Navbar'
 import { AppContext, AppContextProvider, HelpIcon } from 'front'
 import { webApi } from 'front/api'
@@ -81,7 +81,7 @@ const MyApp = ({ Component, pageProps }) => {
           <footer>
             <a href={aboutUrl}><HelpIcon /> About</a>
             <a href={donateUrl}>$ Donate</a>
-            <a href="https://cirosantilli.com/ourbigbook-com/content-license"><i className="ion-document-text" /> Content license: CC BY-SA 4.0 unless noted</a>
+            <a href={`${docsUrl}#ourbigbook-com-content-license`}><i className="ion-document-text" /> Content license: CC BY-SA 4.0 unless noted</a>
             <a href="https://github.com/ourbigbook/ourbigbook/tree/master/web"><i className="ion-social-github" /> Website source code</a>
             <a href={contactUrl}><i className="ion-ios-chatbubble" /> Contact, bugs, suggestions, abuse reports</a>
             <a href="https://twitter.com/OurBigBook"><i className="ion-social-twitter" /> @OurBigBook</a>

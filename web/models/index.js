@@ -380,6 +380,7 @@ async function normalize({
           }
         }
         if (print) {
+          throw new Error('-p is broken for nested-set, does not show new would-be updated value as desired');
           for (const article of articles) {
             console.log(`${what} ${article.nestedSetIndex} ${article.nestedSetNextSibling} ${article.slug}`)
           }

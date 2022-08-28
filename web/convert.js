@@ -17,7 +17,7 @@ const {
   maxArticleTitleSize,
   read_include_web
 } = require('./front/config')
-const { hasReachedMaxItemCount, modifyEditorInput } = require('./front/js')
+const { hasReachedMaxItemCount, idToSlug, slugToId, modifyEditorInput } = require('./front/js')
 const routes = require('./front/routes');
 const e = require('cors');
 
@@ -183,6 +183,9 @@ async function convertArticle({
       transaction,
     }))
     const toplevelId = extra_returns.context.header_tree.children[0].ast.id
+    if (toplevelId !== toplevelId.toLowerCase()) {
+      throw new ValidationError(`Article ID cannot contain uppercase characters: "${toplevelId}"`)
+    }
     if (forceNew && await sequelize.models.File.findOne({ where: { path: input_path }, transaction })) {
       throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
     }
@@ -820,14 +823,6 @@ async function convertIssue({
       return issue.save({ transaction })
     }
   })
-}
-
-function idToSlug(id) {
-  return id.slice(ourbigbook.AT_MENTION_CHAR.length)
-}
-
-function slugToId(slug) {
-  return ourbigbook.AT_MENTION_CHAR + slug
 }
 
 function scopeIdToPath(scope, id) {

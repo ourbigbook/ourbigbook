@@ -3,6 +3,30 @@
 
 == Issues
 
+=== Don't skip parent/previous sibling updates on --web uploads
+{tag=Web}
+{tag=Web upload}
+
+We have recently implemented SHA-256 skips when article content hasn't changed.
+
+But we also need to check if the parent or previous sibling has changed, and if it has then update that.
+
+We could just return parent and previous sibling on the /sha256 endpoint.
+
+Or we need to add that information to the SHA.
+
+Ideally we should also have a way to change the tree without re-render, though we could start with re-render for simplicity.
+
+This actually breaks uploads because it leads to inconsistencies when finding previousSiblingId.
+
+=== Remove synonym from JSON, use Ref.type = synonym instead
+{tag=web}
+
+When hydrating JSON asts from server we just need to do that extra join.
+
+=== Forbid uppercase IDs on web and CLI by default
+{tag=web}
+
 === Option to add view on ourbigbook link on header metadata of CLI static renders
 {tag=web}
 
@@ -274,20 +298,6 @@ Web upload breaks with duplicate ID if you rename a header and synonym the old o
 {tag=Bug}
 
 Working on static.
-
-=== Don't skip parent/previous sibling updates on --web uploads
-{tag=Web}
-{tag=Web upload}
-
-We have recently implemented SHA-256 skips when article content hasn't changed.
-
-But we also need to check if the parent or previous sibling has changed, and if it has then update that.
-
-We could just return parent and previous sibling on the /sha256 endpoint.
-
-Or we need to add that information to the SHA.
-
-Ideally we should also have a way to change the tree without re-render, though we could start with re-render for simplicity.
 
 === ourbigbook.com --web uploads sometimes fail with ETIMEDOUT or ECONNRESET
 {tag=Bug}

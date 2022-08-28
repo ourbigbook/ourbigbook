@@ -962,30 +962,25 @@ function* walk_directory_recursively(
   dont_ignore_path_regexps,
   ourbigbook_json_dir
 ) {
-  yield file_or_dir;
-  if (fs.lstatSync(file_or_dir).isDirectory()) {
-    const dirents = fs.readdirSync(file_or_dir, {withFileTypes: true});
-    for (const dirent of dirents) {
-      const abs = path.join(file_or_dir, dirent.name)
-      if (!ignore_path(
-        ignore_basenames,
-        ignore_paths,
-        ignore_path_regexps,
-        dont_ignore_path_regexps,
-        path.relative(ourbigbook_json_dir, abs),
-      )) {
-        if (dirent.isDirectory()) {
-          yield* walk_directory_recursively(
-            abs,
-            ignore_basenames,
-            ignore_paths,
-            ignore_path_regexps,
-            dont_ignore_path_regexps,
-            ourbigbook_json_dir,
-          )
-        } else {
-          yield abs;
-        }
+  if (!ignore_path(
+    ignore_basenames,
+    ignore_paths,
+    ignore_path_regexps,
+    dont_ignore_path_regexps,
+    path.relative(ourbigbook_json_dir, file_or_dir),
+  )) {
+    yield file_or_dir;
+    if (fs.lstatSync(file_or_dir).isDirectory()) {
+      const dirents = fs.readdirSync(file_or_dir, {withFileTypes: true});
+      for (const dirent of dirents) {
+        yield* walk_directory_recursively(
+          path.join(file_or_dir, dirent.name),
+          ignore_basenames,
+          ignore_paths,
+          ignore_path_regexps,
+          dont_ignore_path_regexps,
+          ourbigbook_json_dir,
+        )
       }
     }
   }
@@ -1375,7 +1370,7 @@ if (cli.helpMacros) {
     external_css_and_js: false,
     had_error: false,
     is_render_after_extract: false,
-    ignore_path_regexps: ourbigbook_json.ignore.map(p => RegExp(`^${p}$`)),
+    ignore_path_regexps: ourbigbook_json.ignore.map(p => RegExp(`^${p}($|${path.sep})`)),
     ignore_paths: new Set(),
     input_path_is_file,
     log: non_ourbigbook_options_log,

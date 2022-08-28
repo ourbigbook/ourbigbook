@@ -6466,8 +6466,6 @@ ourbigbook web/myfile.bigb
 ``
 converts it because it was explicitly requested.
 
-TODO: also ignore during <watch>.
-
 Examples:
 * ignore all files with a given extension;
   ``
@@ -6476,6 +6474,8 @@ Examples:
   ]
   ``
   Yes, it is a bit obnoxious to have to escape `.` and the backslash. We should use some proper globbing library like: https://github.com/isaacs/node-glob[]. But on the other hand <ignore from `.gitignore`> makes this mostly useless, as `.gitignore` will be used most of the time.
+
+TODO: also ignore during <watch>.
 
 = Ignore from `.gitignore`
 {parent=ignore}

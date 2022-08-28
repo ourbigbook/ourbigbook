@@ -68,11 +68,8 @@ module.exports = (sequelize) => {
     // https://github.com/sequelize/sequelize/issues/11096
     let paths_str
     if (paths.length) {
-      paths_str = `(
-    "idDefinedAt"."path" IN (:paths)
-    OR "duplicate->idDefinedAt"."path" IN (:paths)
-)
-AND `
+      paths_str = `
+  AND "File"."path" IN (:paths)`
     } else {
       paths_str = ''
     }
@@ -87,14 +84,13 @@ SELECT
   "Id"."updatedAt",
   "Id"."defined_at"
 FROM
-  "Id" AS "Id"
+  "Id"
   INNER JOIN "Id" AS "duplicate" ON "Id"."idid" = "duplicate"."idid"
-  INNER JOIN "File" AS "duplicate->idDefinedAt" ON "duplicate"."defined_at" = "duplicate->idDefinedAt"."id"
-  INNER JOIN "File" AS "idDefinedAt" ON ${paths_str}"Id"."idid" = "duplicate"."idid"
-  AND "Id"."id" != "duplicate"."id"
+    AND "Id"."id" != "duplicate"."id"
+  INNER JOIN "File" ON "Id"."defined_at" = "File"."id"${paths_str}
 ORDER BY
   "Id"."idid" ASC,
-  "idDefinedAt"."path" ASC;
+  "File"."path" ASC;
 `,
       {
         replacements: {

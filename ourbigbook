@@ -1544,21 +1544,17 @@ if (cli.helpMacros) {
           }
 
           let data, status
-          if (!cli.webDry) {
-            try {
-              ;({ data, status } = await webApi.userLogin({ username, password }))
-            } catch(err) {
-              handleWebApiErr(err)
-            }
-            if (status === 422) {
-              cli_error('invalid username or password');
-            } else if (status !== 200) {
-              cli_error(`error status: ${status}`);
-            }
-            token = data.user.token
-          } else {
-            token = 'deadbeef'
+          try {
+            ;({ data, status } = await webApi.userLogin({ username, password }))
+          } catch(err) {
+            handleWebApiErr(err)
           }
+          if (status === 422) {
+            cli_error('invalid username or password');
+          } else if (status !== 200) {
+            cli_error(`error status: ${status}`);
+          }
+          token = data.user.token
 
           await non_ourbigbook_options.sequelize.transaction(async (transaction) => {
             await non_ourbigbook_options.sequelize.models.Cli.update(
@@ -1794,28 +1790,28 @@ if (cli.helpMacros) {
           }
         ))
       }
+      const dorender = [false]
+      if (cli.render) {
+        dorender.push(true)
+      }
+      // Paths that we have determined during ID extraction phase are not modified, so no need for a render stage.
+      function printStatus(i, article, render, opts={}) {
+        const { t0, t1 } = opts
+        let pref
+        if (render) {
+          pref = MESSAGE_PREFIX_RENDER
+        } else {
+          pref = MESSAGE_PREFIX_EXTRACT_IDS
+        }
+        msg = `web_${pref}: ${i}: ${article.title} (${article.inpath})`
+        if (t0 !== undefined) {
+          msg += ` finished in ${t1 - t0} ms`
+        }
+        console.error(msg);
+      }
+      let data, status, i = 0
+      const webPathToSha = {}
       if (!cli.webDry) {
-        console.error('\nUpload');
-        const dorender = [false]
-        if (cli.render) {
-          dorender.push(true)
-        }
-        // Paths that we have determined during ID extraction phase are not modified, so no need for a render stage.
-        function printStatus(i, article, render, t0, t1) {
-          let pref
-          if (render) {
-            pref = MESSAGE_PREFIX_RENDER
-          } else {
-            pref = MESSAGE_PREFIX_EXTRACT_IDS
-          }
-          msg = `${pref}: ${i}: ${article.title} (${article.inpath})`
-          if (t0 !== undefined) {
-            msg += ` finished in ${t1 - t0} ms`
-          }
-          console.error(msg);
-        }
-        let data, status, i = 0
-        const webPathToSha = {}
         do {
           ;({ data, status } = await webApi.articlesSha256({ author: username, offset: i }))
           assertApiStatus(status, data)
@@ -1825,68 +1821,70 @@ if (cli.helpMacros) {
           }
           i += articles.length
         } while (data.articles.length > 0)
-        const idToArticleMeta = {}
-        const localArticles = await sequelizeWebArticle.findAll({ attributes: ['sha256', 'title', 'idid', 'inpath'] })
-        for (const article of localArticles) {
-          idToArticleMeta[article.idid] = article
-        }
-        for (const render of dorender) {
-          let i = 0
-          // This ordering ensures parents come before children.
-          for (const header_tree_entry of header_tree) {
-            const id = header_tree_entry.to_id
-            let article = idToArticleMeta[id]
+      }
+      const idToArticleMeta = {}
+      const localArticles = await sequelizeWebArticle.findAll({ attributes: ['sha256', 'title', 'idid', 'inpath'] })
+      for (const article of localArticles) {
+        idToArticleMeta[article.idid] = article
+      }
+      for (const render of dorender) {
+        let i = 0
+        // This ordering ensures parents come before children.
+        for (const header_tree_entry of header_tree) {
+          const id = header_tree_entry.to_id
+          let article = idToArticleMeta[id]
+          if (
+            // Can fail for synonyms.
+            article
+          ) {
+            const inpathParse = path.parse(article.inpath)
+            const articlePath = path.join(inpathParse.dir, inpathParse.name)
+            const webPathToShaEntry = webPathToSha[`${ourbigbook.AT_MENTION_CHAR}${username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${articlePath}.${ourbigbook.OURBIGBOOK_EXT}`]
+            if (webPathToShaEntry === undefined ) {
+              webPathToShaEntry
+            }
             if (
-              // Can fail for synonyms.
-              article
-            ) {
-              const inpathParse = path.parse(article.inpath)
-              const articlePath = path.join(inpathParse.dir, inpathParse.name)
-              const webPathToShaEntry = webPathToSha[`${ourbigbook.AT_MENTION_CHAR}${username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${articlePath}.${ourbigbook.OURBIGBOOK_EXT}`]
-              if (webPathToShaEntry === undefined ) {
-                webPathToShaEntry
-              }
-              if (
-                webPathToShaEntry === undefined ||
-                webPathToShaEntry.sha256 !== article.sha256 ||
+              webPathToShaEntry === undefined ||
+              webPathToShaEntry.sha256 !== article.sha256 ||
+              (
+                render &&
                 (
-                  render &&
-                  (
-                    webPathToShaEntry.renderOutdated ||
-                    cli.webForceRender
-                  )
-                ) ||
-                (
-                  !render &&
-                  cli.webForceIdExtraction
+                  webPathToShaEntry.renderOutdated ||
+                  cli.webForceRender
                 )
-              ) {
-                // OK, we are going to render this article, so fetch it fully now including the source.
-                article = await sequelizeWebArticle.findOne({ where: { idid: id } })
-                printStatus(i, article, render)
-                let data, status
-                const articleArgs = {}
-                if (!render) {
-                  articleArgs.titleSource = article.title
-                  articleArgs.bodySource = article.body
+              ) ||
+              (
+                !render &&
+                cli.webForceIdExtraction
+              )
+            ) {
+              // OK, we are going to render this article, so fetch it fully now including the source.
+              article = await sequelizeWebArticle.findOne({ where: { idid: id } })
+              printStatus(i, article, render)
+              let data, status
+              const articleArgs = {}
+              if (!render) {
+                articleArgs.titleSource = article.title
+                articleArgs.bodySource = article.body
+              }
+              const t0 = performance.now()
+              let parentIdNoUsername = article.parentId
+              let parentId
+              if (parentIdNoUsername !== null) {
+                if (parentIdNoUsername === '') {
+                  parentId = `${ourbigbook.AT_MENTION_CHAR}${username}`
+                } else {
+                  parentId = `${ourbigbook.AT_MENTION_CHAR}${username}/${parentIdNoUsername}`
                 }
-                const t0 = performance.now()
-                let parentIdNoUsername = article.parentId
-                let parentId
-                if (parentIdNoUsername !== null) {
-                  if (parentIdNoUsername === '') {
-                    parentId = `${ourbigbook.AT_MENTION_CHAR}${username}`
-                  } else {
-                    parentId = `${ourbigbook.AT_MENTION_CHAR}${username}/${parentIdNoUsername}`
-                  }
-                }
-                let previousSiblingId
-                if (!render) {
-                  const parentArticle = idToArticleMeta[article.parentId]
-                  if (parentArticle.lastChildProcessed) {
-                    previousSiblingId
-                  }
-                }
+              }
+              //let previousSiblingId
+              //if (!render) {
+              //  const parentArticle = idToArticleMeta[article.parentId]
+              //  if (parentArticle.lastChildProcessed) {
+              //    previousSiblingId
+              //  }
+              //}
+              if (!cli.webDry) {
                 let tries = 0
                 // Retry the transaction a few times. This designed to work well during development when nodemon
                 // restarts the server after a file update that adds some logging, often for perf. This way
@@ -1923,16 +1921,16 @@ if (cli.helpMacros) {
                   tries++
                 }
                 assertApiStatus(status, data)
-                const t1 = performance.now()
-                printStatus(i, article, render, t0, t1)
-                i++
-                if (
-                  render &&
-                  cli.webMaxRenders !== undefined &&
-                  i === cli.webMaxRenders
-                ) {
-                  break
-                }
+              }
+              const t1 = performance.now()
+              printStatus(i, article, render, { t0, t1 })
+              i++
+              if (
+                render &&
+                cli.webMaxRenders !== undefined &&
+                i === cli.webMaxRenders
+              ) {
+                break
               }
             }
           }

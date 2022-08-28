@@ -10304,7 +10304,8 @@ assert_cli(
   }
 );
 assert_cli(
-  'git: .gitignore ignores files from conversion',
+  // https://github.com/ourbigbook/ourbigbook/issues/253
+  'git: .gitignore ignores files from toplevel directory conversion',
   {
     args: ['.'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
@@ -10338,6 +10339,38 @@ ignored-subdir
   }
 );
 assert_cli(
+  // https://github.com/ourbigbook/ourbigbook/issues/253
+  'git: .gitignore ignores files from subdirectory conversion',
+  {
+    args: ['subdir'],
+    pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'ignored.txt': ``,
+      'not-ignored.txt': ``,
+      'subdir/ignored.txt': ``,
+      'subdir/not-ignored.txt': ``,
+      '.gitignore': `ignored.txt
+ignored-subdir
+`,
+      'ourbigbook.json': `{
+  "outputOutOfTree": true
+}
+`,
+    },
+    assert_exists: [
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/not-ignored.txt`,
+    ],
+    assert_not_exists: [
+      `out/html/${ourbigbook.RAW_PREFIX}/not-ignored.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/ignored.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/ignored.txt`,
+    ],
+  }
+);
+assert_cli(
+  // https://github.com/ourbigbook/ourbigbook/issues/253
   'git: .gitignore ignores individual files from conversion',
   {
     args: ['tmp.bigb'],

@@ -34,8 +34,6 @@ const LOG_OPTIONS = new Set([
   'tokens',
 ]);
 const SASS_EXT = '.scss';
-// TODO get rid of this/most of this, and instead use the actual gitignore.
-// https://github.com/ourbigbook/ourbigbook/issues/253
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
@@ -841,6 +839,10 @@ function git_has_commit(input_path) {
   }
 }
 
+/**
+ * Check if path ourbigbook_json_dir is in a git repository and not ignored.
+ * @return boolean
+ */
 function git_is_in_repo(ourbigbook_json_dir) {
   const extra_returns = {}
   cmd_get_stdout('git', ['-C', ourbigbook_json_dir, 'check-ignore', ourbigbook_json_dir], {
@@ -853,7 +855,7 @@ function git_is_in_repo(ourbigbook_json_dir) {
 }
 
 /**
- * @return {String} full Git SHA of the source.
+ * @return Array[String] list of all non gitignored files and directories
  */
 function git_ls_files(input_path) {
   const ret = cmd_get_stdout(
@@ -1402,9 +1404,12 @@ if (cli.helpMacros) {
 
   const isInGitRepo = git_is_in_repo(ourbigbook_json_dir)
   if (isInGitRepo && inputPath !== undefined) {
+    const inputRelpath  = path.relative(ourbigbook_json_dir, input_dir)
     non_ourbigbook_options.ignore_paths = new Set([
       ...non_ourbigbook_options.ignore_paths,
-      ...cmd_get_stdout('git', ['-C', input_dir, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory'], cmd_options_info).split('\n').slice(0, -1).map(s => s.replace(/\/$/, ''))
+      ...cmd_get_stdout(
+        'git', ['-C', input_dir, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory'], cmd_options_info
+        ).split('\n').slice(0, -1).map(s => s.replace(/\/$/, '')).map(s => path.join(inputRelpath, s))
     ])
   }
   ourbigbook_options.outdir = path.relative(outdir, ourbigbook_json_dir)

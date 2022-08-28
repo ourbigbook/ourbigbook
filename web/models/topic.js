@@ -76,7 +76,11 @@ module.exports = (sequelize) => {
     }
   }
 
-  Topic.updateTopics = async function(articles, { newArticles=false, transaction }={}) {
+  Topic.updateTopics = async function(articles, {
+    newArticles=false,
+    deleteArticle=false,
+    transaction,
+  }={}) {
     const topicIds = articles.map(article => article.topicId).filter(topicId => topicId)
     if (
       // Happens for Index pages, which have empty string topicId.
@@ -122,7 +126,8 @@ WHERE "rnk" = 1
           transaction,
         }
 )
-
+      }
+      if (newArticles || deleteArticle) {
         // Update article count of the topics.
         await sequelize.query(`
 UPDATE "${sequelize.models.Topic.tableName}"

@@ -12,15 +12,20 @@ router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
     const [limit, offset] = lib.getLimitAndOffset(req, res)
+    const articleWhere = {}
+    const topicId = req.query.id
+    if (topicId) {
+      articleWhere.topicId = topicId
+    }
     const [{count: topicsCount, rows: topics}, loggedInUser] = await Promise.all([
       sequelize.models.Topic.getTopics({
-        sequelize,
+        articleWhere,
+        author: req.query.author,
         limit,
         offset,
-        author: req.query.author,
-        topicId: req.query.topicId,
         order: lib.getOrder(req),
-        slug: req.query.id,
+        sequelize,
+        topicId: req.query.topicId,
       }),
       req.payload ? sequelize.models.User.findByPk(req.payload.id) : null
     ])

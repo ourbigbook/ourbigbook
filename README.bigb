@@ -35,7 +35,6 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
 * https://docs.ourbigbook.com[]: rendered version of this document
 * https://docs.ourbigbook.com/editor[]: live in-browser editor demo
 * https://github.com/ourbigbook/template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
-* https://github.com/ourbigbook/template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
   * https://ourbigbook.github.io/template[]: the above <published to GitHub Pages>
 * https://cirosantilli.com/ourbigbook-media[]: media for the project such as for documentation and <publicity>, more info: <OurBigBook media repository>{full}
 
@@ -50,9 +49,14 @@ We are happy to discuss paid contracts to implement specific features, to get in
 = Quick start
 {parent=OurBigBook}
 
-See the relevant specific section:
-* <OurBigBook Markup quick start>
-* <OurBigBook CLI quick start>
+The following sections cover different ways to use tools from the OurBigBook:
+* <OurBigBook Web user manual>: manual for <OurBigBook Web>, the dynamic website. This is what most users will use by default when it is matured;.
+* <OurBigBook CLI quick start>: allows you to convert local `.bigb` files from the command line to either:
+  * a static website. This is already very usable.
+  * upload to <OurBigBook Web>. Almost very usable, we're getting there.
+* <OurBigBook Markup quick start>: covers specifically <OurBigBook Markup>, which is the markup language you use to write content in OurBigBook, both <OurBigBook Web> and <OurBigBook CLI>.
+
+  This is currently the only way to write OurBigBook content, but we would really like to add <todo/WYSIWYG>[WYSIWYG] editor support one day!
 
 = OurBigBook Markup and CLI overview
 {parent=OurBigBook}
@@ -5267,11 +5271,11 @@ If one of the input files starts getting too large, usually the toplevel `README
 npx ourbigbook README.bigb
 npx ourbigbook not-readme.bigb
 ``
-Note however that when those individual files have a <cross file reference> to something defined in `not-readme.bigb`, e.g. via `\x[h2-in-not-the-readme]`, then you must first do a first pass once with:
+Note however that when those individual files have a <cross file reference> to something defined in `not-readme.bigb`, e.g. via `\x[h2-in-not-the-readme]`, then you must have first previously done pass once with:
 ``
 npx ourbigbook .
 ``
-to parse all files and extract all necessary IDs to the <ID database>. That would be optimized slightly wit the <--no-render> command line option:
+to parse all files and extract all necessary IDs to the <ID database>. That would be optimized slightly with the <--no-render> command line option:
 ``
 npx ourbigbook --no-render .
 ``
@@ -5281,12 +5285,14 @@ When dealing with large files, you might also be interested in the following ama
 * <split headers>
 * <\H splitDefault argument>
 
-To produce a single standalone output file that contains everything in a directory run:
+= Produce a standalone HTML file
+{parent=Important command line options}
+
+To produce a single standalone output file that contains everything the viewer needs to correctly see the page do:
 ``
 npx ourbigbook --embed-resources --embed-includes README.bigb
-xdg-open index.html
 ``
-You can now just give `index.html` to any reader and they should be able to view it offline without installing anything. The flags are:
+You can now just give the generated `index.html` to any reader and they should be able to view it offline without installing anything. The flags are:
 * <--embed-includes>: without this, `\Include[not-readme]` shows as a link to the file `not-readme.html` which comes from `not-readme.bigb` With the flag, `not-readme.bigb` output gets embedded into the output `index.html` directly
 * <--embed-resources>: by default, we link to CSS and JavaScript that lives inside `node_modules`. With this flag, that CSS and JavaScript is copied inline into the document instead. One day we will try to handle <images> that way as well
 
@@ -5445,6 +5451,43 @@ Similar to <--dry-run>, but it runs all git commands except for `git push`, whic
 
 Makes <includes> render the included content in the same output file as the include is located, instead of the default behaviour of creating links.
 
+For example given:
+
+README.bigb
+``
+= Index
+
+\Include[notindex]
+``
+
+notindex.bigb
+``
+= Notindex
+
+A paragraph in notindex.
+
+== Notindex 2
+``
+
+then for conversion with:
+``
+ourbigbook --embed-includes README.bigb
+``
+then the output `index.html` contains an output equivalent to if your input file were:
+``
+= Index
+
+== Notindex
+
+A paragraph in notindex.
+
+=== Notindex 2
+``
+
+Note that a prior <conversion process overview>[ID extraction pass] is not required, `--embed-includes` just makes `\Include` read files as they are found in the source.
+
+Note that a
+
 In addition to this:
 * <cross file references> are disabled, and the cross file ID database does not get updated.
 
@@ -5452,7 +5495,7 @@ In addition to this:
 
   The problem those cause is that the IDs of included headers show as duplicate IDs of those in the ID database.
 
-  This should be OK to start with because the more common use case with `--html-sinle-page` is that of including all headers in a single document.
+  This should be OK to start with because the more common use case with `--html-single-page` is that of including all headers in a single document. TODO: this option is gone.
 
 Otherwise, `include` only adds the headers of the other file to the table of contents of the current one, but not the body of the other file. The ToC entries then point to the headers of the included external files.
 
@@ -5462,6 +5505,35 @@ You may want to use this option together with <--embed-resources> to produce ful
 {parent=OurBigBook CLI options}
 
 Embed as many external resources such as images and CSS as possible into the HTML output files, rather than linking to external resources.
+
+For example, when converting a simple document to HTML:
+
+index.bigb
+``
+= Index
+
+My paragraph.
+``
+
+with:
+``
+ourbigbook index.bigb
+``
+the output contains references to where OurBigBook is installed in our local filesystem:
+``
+<style>
+@import "/home/ciro/bak/git/ourbigbook/dist/ourbigbook.css";
+</style>
+<script src="/home/ciro/bak/git/ourbigbook/dist/ourbigbook_runtime.js"></script>
+``
+The advantage of this is that we don't have to duplicate this for every single file. But if you are giving this file to someone else, they would likely not have those files at those exact locations, which would break the HTML page.
+
+With `--embed-resources`, the output contains instead something like:
+``
+<style>/*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */html{ [[ ... A LOT MORE CSS ... ]]</style>
+<script>/*! For license information please see ourbigbook_runtime.js.LICENSE.txt */ !function(t,e){"object"==typeof exports&&"object"==typeof module?module.exports=e() [[ ... A LOT MORE JAVASCRIPT ... ]]</script>
+``
+This way, all the required CSS and JavaScript will be present in the HTML file itself, and so readers will be able to view the file correctly without needing to install any missing dependencies.
 
 The use case for this option is to produce a single HTML file for an entire build that is fully self contained, and can therefore be given to consumers and viewed offline, much like a PDF.
 
@@ -6948,7 +7020,7 @@ An example can be seen under \a[lib_hello.js].
 Note that while doing a simple conversion is easy, things get harder if you want to take multi-file features in consideration, notably <cross file reference internals>.
 
 This is because these features require interacting with the <ID database>, and we don't do that from the default `ourbigbook.convert` API because different deployments will have very different implementations, notably:
-* local Node.js run uses SQLite, an implementation can be seen in the \a[ourbigbook] file class `SqliteDbProvider`
+* local Node.js run uses SQLite, an implementation can be seen in the \a[ourbigbook] file class `SqlDbProvider`
 * the in-browser version that runs in the browser editor of the <OurBigBook Web> makes API calls to the server
 
 = OurBigBook Web
@@ -7436,7 +7508,10 @@ These files have nothing to do with <OurBigBook Web> specifically, and would be 
 = Log all database queries
 {parent=Log database queries}
 
-There are two methods.
+There are a few methods available.
+
+= DEBUG sql
+{parent=Log database queries}
 
 One option is to use the standard Express.js logging mechanism:
 ``
@@ -7456,7 +7531,10 @@ The meaning of `+0ms` and `+1ms` appears to be the timing since last the last me
 
 This is a bit messy however, as we often want to find the largest numbers for profiling, and there could be a large time delta during inactivity.
 
-A better method for benchmarking is to use intead:
+= OURBIGBOOK_LOG_DB
+{parent=Log database queries}
+
+This tends to be better for benchmarking than <DEBUG sql>:
 ``
 OURBIGBOOK_LOG_DB=1 npm run dev
 ``
@@ -7464,12 +7542,24 @@ which produces output of type:
 ``
 Executed (default): SELECT 1+1 AS result Elapsed time: 0ms
 ``
-without the corresponding `Executing` marker. This methos uses Sequelize's `benchamrk: true` option as per: https://stackoverflow.com/questions/52260934/how-to-measure-query-execution-time-in-seqilize[].
+so we get explicit elapsed time measurements rather than deltas, and without the corresponding `Executing` marker.
+
+This method uses Sequelize's `benchamrk: true` option as per: https://stackoverflow.com/questions/52260934/how-to-measure-query-execution-time-in-seqilize[].
+
+= PostgreSQL log
+{c}
+{parent=Log database queries}
+
+It might be wise to enable PostgreSQL query logging by default with: `log_statement` for development. TODO does it noticeably affect performance?
+
+See: https://stackoverflow.com/questions/722221/how-to-log-postgresql-queries
+
+One major advantage of this method is that Sequelize's error logging is a bit crap, and sometimes the error appears much much more clearly in the PostgreSQL logs.
 
 = Log specific database queries
 {parent=Log database queries}
 
-However, you often want to long only a few selected queries, otherwise it becomes very difficult to determine which query is which, in partciular due asynchronous execution. In this case, use the technique mentioned at: https://stackoverflow.com/questions/21427501/how-can-i-see-the-sql-generated-by-sequelize-js/21431627#21431627 and just add:
+However, you often want to long only a few selected queries, otherwise it becomes very difficult to determine which query is which, in particular due asynchronous execution. In this case, use the technique mentioned at: https://stackoverflow.com/questions/21427501/how-can-i-see-the-sql-generated-by-sequelize-js/21431627#21431627 and just add:
 ``
 logging: console.log,
 ``
@@ -8734,13 +8824,19 @@ Run just one test by name:
 ``
 npm test -- -g 'one paragraph'
 ``
-as per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha todo: what if the test name is a substring? You will want this Bash alias:
+or on PostgreSQL:
+``
+npm run test-pg -- -g 'one paragraph'
+``
+As per: https://stackoverflow.com/questions/10832031/how-to-run-a-single-test-with-mocha todo: what if the test name is a substring? You will want these Bash aliases:
 ``
 npmtg() ( npm test -- -g "$*" )
+npmtpg() ( npm run test-pg -- -g "$*" )
 ``
 which allos you to just:
 ``
 npmtg one paragraph
+npmtpg one paragraph
 ``
 
 Run all tests that don't start with `cli:`:
@@ -8749,33 +8845,25 @@ npm test -- -g '^(?!cli:)'
 ``
 This works because `-g` takes JavaScript regular expressions, so we can use negative lookahead, see also: https://stackoverflow.com/questions/26908288/with-mocha-how-do-i-run-all-tests-that-dont-have-slow-in-the-name
 
-There are two types of test in our test suite:
-* tests that call the `ourbigbook.convert` <JavaScript API> directly.
+= Inspect the database after a test
+{parent=Test system}
 
-  These tests don't actually create files in the filesystem, and just mock the filesystem instead with a dictionary.
+Suppose you selected a single test:
+``
+npm test -- -g 'cli: empty document'
+``
+and want to inspect the <ID database> database status.
 
-  Database access is not mocked however, we just use Sqlite's fantastic in-memory mode.
+On SQLite it is not currently possible as tests run on a temporary in-memory database. TODO create a way.
 
-  Whenever possible, these tests check their results just from the <abstract syntax tree> tree returned by the API, which is cleaner than parsing the HTML. But sometimes HTML parsing is inevitable.
-* tests that call the <ourbigbook executable> itself:
-  * their titles are prefixed with `cli: `
-  * they tend to be a lot slower than the API test
-  * can test functionality that is done outside of the `ourbigbook.convert` JavaScript API, notably stuff prevent in ourbigbook, so they are more end to end
-  * don't do any mocking, and could therefore be more representative.
+On PostgreSQL, you can just inspect the `ourbigbook_cli` table with the `psql` command line executable, e.g..
+``
+psql ourbigbook_cli -c 'select * from "Id"'
+``
+That table is used to run each test, and will contain the contents of the last test executed.
 
-    However, as of 2022, we have basically eliminated all the hard database access mocking and are using the main database methods directly.
-
-    So all that has to be mocked is basically stuff done in the ourbigbook executable itself.
-
-    This means that except for more specific options, the key functionality of ourbigbook, which is to convert multiple paths, can be done very well in a non executable test.
-
-    The only major difference is that instead of passing command line arguments like in `ourbigbook .` to convert multiple files in a directory, you have to use `convert_before` and `convert_before_norender` and specify conversion order one by one.
-
-    This test robustness is new as of 2022, and many tests were previously written with executable that would now also work as unit tests, and we generally want that to be the case to make the tests go faster.
-  * work by creating an actual physical filesystem under `out/test/<normalized-test-title>` with the OurBigBook files and other files like `ourbigbook.json`, and then running the executable on that directory.
-
-    `npm test` first deletes the `out/test` directory before running the tests. After running, the generated files are kept so you can inspect them to help debug any issues.
-  * all these tests check their results by parsing the HTML and searching for elements, since here we don't have access to the <abstract syntax tree>. It wouldn't be impossible to obtain it however, as it is likely already JSON serializable.
+= Step debug when running a test
+{parent=Test system}
 
 Step debug during a test run. Add the statement:
 ``
@@ -8807,6 +8895,38 @@ so you can just re-run it manually with `node inspect` as in:
 cd out/test/executable-ourbigbook.json-outputoutoftree && node inspect "../../../ourbigbook" --split-headers .
 ``
 This works since the `tmp` directory is not deleted in case of failure.
+
+= `lib:` vs `cli:` tests
+{parent=Test system}
+
+There are two types of test in our test suite:
+* tests that call the `ourbigbook.convert` <JavaScript API> directly.
+  These tests are prefixed with `lib: `
+
+  These tests don't actually create files in the filesystem, and just mock the filesystem instead with a dictionary.
+
+  Database access is not mocked however, we just use Sqlite's fantastic in-memory mode.
+
+  Whenever possible, these tests check their results just from the <abstract syntax tree> tree returned by the API, which is cleaner than parsing the HTML. But sometimes HTML parsing is inevitable.
+* tests that call the <ourbigbook executable> itself:
+  * their titles are prefixed with `cli: `
+  * they tend to be a lot slower than the API test
+  * can test functionality that is done outside of the `ourbigbook.convert` JavaScript API, notably stuff prevent in ourbigbook, so they are more end to end
+  * don't do any mocking, and could therefore be more representative.
+
+    However, as of 2022, we have basically eliminated all the hard database access mocking and are using the main database methods directly.
+
+    So all that has to be mocked is basically stuff done in the ourbigbook executable itself.
+
+    This means that except for more specific options, the key functionality of ourbigbook, which is to convert multiple paths, can be done very well in a non executable test.
+
+    The only major difference is that instead of passing command line arguments like in `ourbigbook .` to convert multiple files in a directory, you have to use `convert_before` and `convert_before_norender` and specify conversion order one by one.
+
+    This test robustness is new as of 2022, and many tests were previously written with executable that would now also work as unit tests, and we generally want that to be the case to make the tests go faster.
+  * work by creating an actual physical filesystem under `out/test/<normalized-test-title>` with the OurBigBook files and other files like `ourbigbook.json`, and then running the executable on that directory.
+
+    `npm test` first deletes the `out/test` directory before running the tests. After running, the generated files are kept so you can inspect them to help debug any issues.
+  * all these tests check their results by parsing the HTML and searching for elements, since here we don't have access to the <abstract syntax tree>. It wouldn't be impossible to obtain it however, as it is likely already JSON serializable.
 
 = Overview of files in this repository
 {parent=Developing OurBigBook}

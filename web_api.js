@@ -211,7 +211,7 @@ class WebApi {
   }
 
   async issueDelete(slug, issueNumber) {
-    return this.req('delete', `issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
+    return this.req('delete', `issues/${issueNumber}?id=${encodeURIComponent(slug)}`)
   }
 
   async issueEdit(slug, issueNumber, issue) {
@@ -245,6 +245,12 @@ class WebApi {
     )
   }
 
+  async comment(slug, issueNumber, commentNumber) {
+    return this.req('get',
+      `issues/${issueNumber}/comment/${commentNumber}?id=${encodeURIComponent(slug)}`,
+    )
+  }
+
   async commentCreate(slug, issueNumber, source) {
     return this.req('post',
       `issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
@@ -269,6 +275,10 @@ class WebApi {
 
   async min(opts={}) {
     return this.req('get', `min${encodeGetParams(opts)}`)
+  }
+
+  async topics(opts={}) {
+    return this.req('get', `topics${encodeGetParamsWithOffset(opts)}`)
   }
 
   async users(opts) {
@@ -368,16 +378,20 @@ class DbProviderBase extends ourbigbook.DbProvider {
 
   add_file_row_to_cache(row, context) {
     this.path_to_file_cache[row.path] = row
+    const toplevelId = row.toplevelId
     if (
       // Happens on some unminimized condition when converting
       // cirosantilli.github.io @ 04f0f5bc03b9071f82b706b3481c09d616d44d7b + 1
       // twice with ourbigbook -S ., no patience to minimize and test now.
-      row.Id !== null &&
-      // We have to do this if here because otherwise it would overwrite the reconciled header
-      // we have stiched into the tree with Include.
-      !this.id_cache[row.Id.idid]
+      toplevelId !== null
     ) {
-      this.add_row_to_id_cache(row.Id, context)
+      if (
+        // We have to do this if here because otherwise it would overwrite the reconciled header
+        // we have stiched into the tree with Include.
+        !this.id_cache[toplevelId.idid]
+      ) {
+        this.add_row_to_id_cache(toplevelId, context)
+      }
     }
   }
 
@@ -473,7 +487,6 @@ class DbProviderBase extends ourbigbook.DbProvider {
     }
     return asts
   }
-
 }
 
 module.exports = {

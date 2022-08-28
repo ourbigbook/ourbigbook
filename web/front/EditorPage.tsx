@@ -23,7 +23,7 @@ import { IssueType } from 'front/types/IssueType'
 import Label from 'front/Label'
 import { UserType } from 'front/types/UserType'
 
-/** Fetchs ID and other DB elements via our REST API. */
+/** DbProvider that fetchs data via the OurBigBook Web REST API. */
 class RestDbProvider extends web_api.DbProviderBase {
   fetched_ids: Set<string>;
   fetched_files: Set<string>;
@@ -92,6 +92,8 @@ class RestDbProvider extends web_api.DbProviderBase {
     if (unfetched_files.length) {
       const { data: { rows }, status } = await webApi.editorFetchFiles(unfetched_files)
       for (const row of rows) {
+        // This was likely not fixed for the editor case: https://github.com/ourbigbook/ourbigbook/issues/240
+        // But I'll just pretend it's fine for now until this gets digged up a few years later.
         // @ts-ignore: Property 'add_file_row_to_cache' does not exist on type 'RestDbProvider'.
         this.add_file_row_to_cache(row, context)
       }

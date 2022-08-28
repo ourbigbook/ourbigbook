@@ -15,15 +15,12 @@ const {
   getArticle,
   oneMinuteAgo,
   oneHourAgo,
-  isPositiveInteger,
   validateParam,
 } = lib
 
 function issueCommentEmailBody({
   body,
   childUrl,
-  oneHourAgo,
-  oneMinuteAgo,
   settingsUrl,
   whatChild,
   whatParent,
@@ -65,13 +62,13 @@ router.get('/', auth.optional, async function(req, res, next) {
       includeIssues: true,
       includeIssuesOrder: lib.getOrder(req),
     }
-    const number = lib.validateParam(req.params, 'number', {
+    const number = lib.validateParam(req.query, 'number', {
       typecast: front.typecastInteger,
       validators: [front.isPositiveInteger],
       defaultValue: undefined,
     })
     if (number !== undefined) {
-      opts.includeIssuesNumber = number
+      opts.includeIssueNumber = number
     }
     const [article, loggedInUser] = await Promise.all([
       getArticle(req, res, opts),
@@ -418,7 +415,7 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
       }),
       sequelize.models.User.findByPk(req.payload.id),
     ])
-    
+
     const errs = []
     let err = front.hasReachedMaxItemCount(loggedInUser, commentCountByLoggedInUser, 'comments')
     if (err) { errs.push(err) }
@@ -479,55 +476,78 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
   }
 })
 
+async function getComment(req, res, options={}) {
+  const sequelize = req.app.get('sequelize')
+  const commentNumber = lib.validateParam(req.params, 'commentNumber', {
+    typecast: front.typecastInteger,
+    validators: [front.isPositiveInteger],
+  })
+  const issueNumber = lib.validateParam(req.params, 'issueNumber', {
+    typecast: front.typecastInteger,
+    validators: [front.isPositiveInteger],
+  })
+  const slug = validateParam(req.query, 'id')
+  const comment = await sequelize.models.Comment.findOne({
+    where: {
+      number: commentNumber,
+    },
+    include: [
+      {
+        model: sequelize.models.Issue,
+        as: 'issue',
+        where: { number: issueNumber },
+        required: true,
+        include: [
+          {
+            model: sequelize.models.Article,
+            as: 'article',
+            where: { slug },
+            required: true,
+          }
+        ],
+      },
+      {
+        model: sequelize.models.User,
+        as: 'author',
+      },
+    ],
+  })
+  if (!comment) {
+    throw new ValidationError(
+      [`comment not found: article slug: "${slug}" issue number: ${issueNumber} comment number: ${commentNumber}`],
+      404,
+    )
+  }
+  return comment
+}
+
+// Get a comment
+router.get('/:issueNumber/comment/:commentNumber', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const [comment, loggedInUser] = await Promise.all([
+      getComment(req, res, next),
+      sequelize.models.User.findByPk(req.payload.id),
+    ])
+    return res.json(await comment.toJson(loggedInUser))
+  } catch(error) {
+    next(error);
+  }
+})
+
 // Delete a comment
 router.delete('/:issueNumber/comments/:commentNumber', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
-    const commentNumber = lib.validateParam(req.params, 'commentNumber', {
-      typecast: front.typecastInteger,
-      validators: [front.isPositiveInteger],
-    })
-    const issueNumber = lib.validateParam(req.params, 'issueNumber', {
-      typecast: front.typecastInteger,
-      validators: [front.isPositiveInteger],
-    })
     const [comment, loggedInUser] = await Promise.all([
-      sequelize.models.Comment.findOne({
-        where: {
-          number: commentNumber,
-        },
-        include: [
-          {
-            model: sequelize.models.Issue,
-            as: 'issue',
-            where: { number: issueNumber },
-            required: true,
-            include: [
-              {
-                model: sequelize.models.Article,
-                as: 'article',
-                where: { slug: validateParam(req.query, 'id') },
-                required: true,
-              }
-            ],
-          },
-          {
-            model: sequelize.models.User,
-            as: 'author',
-          },
-        ],
-      }),
+      getComment(req, res, next),
       sequelize.models.User.findByPk(req.payload.id),
     ])
-    if (!comment) {
-      res.sendStatus(404)
+    if (cant.deleteComment(loggedInUser, comment)) {
+      res.sendStatus(403)
     } else {
-      if (cant.deleteComment(loggedInUser, comment)) {
-        res.sendStatus(403)
-      } else {
-        await comment.destroySideEffects()
-        res.sendStatus(204)
-      }
+      await comment.destroySideEffects()
+      res.sendStatus(204)
     }
   } catch(error) {
     next(error);

@@ -88,9 +88,10 @@ module.exports = {
   // * print emails to stdout or actually try to send them
   isProduction,
   // Overrides isProduction for the "is Next.js server dev or prod?" only.
-  isProductionNext: process.env.NODE_ENV_NEXT_SERVER_ONLY === undefined ?
-    (isProduction) :
-    (process.env.NODE_ENV_NEXT_SERVER_ONLY === 'production'),
+  isProductionNext: process.env.NODE_ENV_NEXT_SERVER_ONLY === undefined
+    ? (isProduction)
+    : (process.env.NODE_ENV_NEXT_SERVER_ONLY === 'production')
+  ,
   log: {
     db: process.env.OURBIGBOOK_LOG_DB === ourbigbook_nodejs_front.env_true,
   },

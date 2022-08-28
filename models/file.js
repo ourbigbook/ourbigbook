@@ -4,6 +4,12 @@ const render = require('./render')
 module.exports = (sequelize, web=false) => {
   const { DataTypes } = sequelize.Sequelize
   const cols = {
+    // Path of the file relative to project toplevel. E.g.:
+    // animal/dog.bigb
+    // or on web:
+    // @username/dog.bigb
+    // It would likely have been nicer if we had just not kept the extension in there,
+    // but lazy to change now.
     path: {
       type: DataTypes.TEXT,
       allowNull: false,

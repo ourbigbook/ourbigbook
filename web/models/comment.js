@@ -38,7 +38,6 @@ module.exports = (sequelize) => {
           Object.assign({ authorId: author.id, issueId: issue.id }, fields),
           { transaction }
         ),
-        issue.increment('commentCount', { transaction }),
         await author.addIssueFollowSideEffects(issue, { transaction }),
       ])
       return comment
@@ -46,12 +45,7 @@ module.exports = (sequelize) => {
   }
 
   Comment.prototype.destroySideEffects = async function(fields, opts={}) {
-    return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
-      await Promise.all([
-        this.destroy({ transaction }),
-        this.issue.decrement('commentCount', { transaction }),
-      ])
-    })
+    return this.destroy({ transaction: opts.transaction })
   }
 
   Comment.prototype.getSlug = function() {

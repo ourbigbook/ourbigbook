@@ -5056,6 +5056,31 @@ assert_lib('header: synonym in splitDefault',
     }
   }
 );
+assert_lib('header: link to synonym toplevel does not have fragment',
+  // https://docs.ourbigbook.com/todo/links-to-synonym-header-have-fragment
+  {
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= Index
+
+<notindex>
+
+<notindex 2>
+`,
+      'notindex.bigb': `= Notindex
+
+= Notindex 2
+{synonym}
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='notindex 2']",
+      ],
+    }
+  }
+);
 const header_id_new_line_expect =
   [a('H', undefined, {level: [t('1')], title: [t('aa')], id: [t('bb')]})];
 assert_lib_ast('header id new line sane',
@@ -8214,8 +8239,17 @@ Paragraph in notindex 3.
 
 // ourbigbook executable tests.
 assert_cli(
-  'input from stdin produces output on stdout',
+  'input from stdin produces output on stdout simple',
   {
+    stdin: 'aabb',
+    assert_not_exists: ['out'],
+    assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
+  }
+);
+assert_cli(
+  'input from stdin produces output on stdout when in git repository',
+  {
+    pre_exec: [['git', ['init']]],
     stdin: 'aabb',
     assert_not_exists: ['out'],
     assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],

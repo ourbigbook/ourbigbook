@@ -8091,7 +8091,7 @@ heroku config:unset -a ourbigbook DEBUG
 = Download Heroku database and restore it locally
 {parent=Heroku debugging}
 
-First download a dump of the database as per https://devcenter.heroku.com/articles/heroku-postgres-import-export[] with :
+First download a dump of the database as per https://devcenter.heroku.com/articles/heroku-postgres-import-export[] with \a[web/bin/pg_dump_heroku]:
 ``
 web/bin/pg_dump_heroku
 ``
@@ -8102,7 +8102,7 @@ Then restore it to a local database like in <Save and restore local PostgreSQL d
 web/bin/pg-setup
 web/bin/pg_restore --no-acl --no-owner latest.dump
 ``
-We also add some extra flags to reduce the ammount of warnings due to database differences. https://devcenter.heroku.com/articles/heroku-postgres-import-export says some of those warnings are normal and can be ignored.
+We also add some extra flags to reduce the ammount of warnings and errors due to database differences. The command does not exit with status 0. https://devcenter.heroku.com/articles/heroku-postgres-import-export says some of those warnings are normal and can be ignored.
 
 = Dependency organization
 {parent=Heroku deployment}

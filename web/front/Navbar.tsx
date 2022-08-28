@@ -77,11 +77,11 @@ const Navbar = ({ isEditor, scoreDelta }) => {
             className="profile"
             newTab={isEditor}
           >
-            <HomeIcon /><span className="home">Home</span>
             <CustomImage
               className="profile-thumb"
               src={loggedInUser?.effectiveImage}
             />
+            {loggedInUser?.score}<LikeIcon />
           </NavLink>
         </Maybe>
         <Maybe test={!loggedInUser}>

@@ -3547,25 +3547,31 @@ function check_and_update_local_link({
         render_error(context, error, source_location);
         error = error_message_in_output(error, context)
       } else {
-        const { type } = context.options.read_file(check_path, context)
-        if (type === 'directory') {
-          if (context.options.htmlXExtension) {
-            href = path.join(href, 'index.html')
-          }
-        }
-        // Modify external paths to account for scope + --split-headers
-        let pref = context.root_relpath_shift
-        if (media_provider_type === 'local') {
+        const readFileRet = context.options.read_file(check_path, context)
+        if (
+          // Fails on web before we implement files on web.
+          readFileRet !== undefined
+        ) {
+          const { type } = context.options.read_file(check_path, context)
           if (type === 'directory') {
-            pref = path.join(pref, DIR_PREFIX)
-          } else {
-            pref = path.join(pref, RAW_PREFIX)
+            if (context.options.htmlXExtension) {
+              href = path.join(href, 'index.html')
+            }
           }
+          // Modify external paths to account for scope + --split-headers
+          let pref = context.root_relpath_shift
+          if (media_provider_type === 'local') {
+            if (type === 'directory') {
+              pref = path.join(pref, DIR_PREFIX)
+            } else {
+              pref = path.join(pref, RAW_PREFIX)
+            }
+          }
+          if (!is_absolute) {
+            pref = path.join(pref, context.input_dir)
+          }
+          href = path.join(pref, href)
         }
-        if (!is_absolute) {
-          pref = path.join(pref, context.input_dir)
-        }
-        href = path.join(pref, href)
       }
     }
   }
@@ -5206,8 +5212,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         // refs database updates.
         validate_ast(ast, context)
         let target_id = convert_file_id_arg(ast, ast.args.href, context)
-        const fetch_plural = ast.validation_output.magic.boolean ||
-          context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK
+        const fetch_plural = ast.validation_output.magic.boolean
         if (fetch_plural) {
           target_id = magic_title_to_id(target_id, context)
         }
@@ -6983,11 +6988,15 @@ function is_to_split_headers_base(
  * @param {AstNode} target_ast
  */
 function x_href_parts(target_ast, context) {
-  let target_ast_effective_id
-  if (target_ast.synonym !== undefined) {
-    target_ast_effective_id = target_ast.synonym
-  } else {
+  // Synonym handling.
+  let target_ast_effective_id, first_toplevel_child_effective
+  if (target_ast.synonym === undefined) {
     target_ast_effective_id = target_ast.id
+    first_toplevel_child_effective = target_ast.first_toplevel_child
+  } else {
+    const synonym_target_ast = context.db_provider.get(target_ast.synonym, context);
+    target_ast_effective_id = synonym_target_ast.id
+    first_toplevel_child_effective = synonym_target_ast.first_toplevel_child
   }
   let to_split_headers = is_to_split_headers(target_ast, context);
   let to_current_toplevel =
@@ -7126,12 +7135,10 @@ function x_href_parts(target_ast, context) {
     (
       target_ast.macro_name === Macro.HEADER_MACRO_NAME &&
       (
-        (
-          // Linking to a toplevel ID.
-          target_ast.first_toplevel_child ||
-          // Linking towards a split header not included in the current output.
-          to_split_headers
-        ) ||
+        // Linking to a toplevel ID.
+        first_toplevel_child_effective ||
+        // Linking towards a split header not included in the current output.
+        to_split_headers ||
         to_current_toplevel ||
         target_ast.id === target_ast.toplevel_id
       )

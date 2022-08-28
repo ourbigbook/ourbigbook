@@ -3,6 +3,29 @@
 
 == Issues
 
+=== Links to synonym header have fragment
+{tag=Bug}
+{tag=Web}
+
+E.g. from https://ourbigbook.com/cirosantilli/ciro-santilli[]:
+``
+<Python>
+``
+renders as:
+``
+/cirosantilli/python-programming-language#cirosantilli/python-programming-language
+``
+instead of the desired:
+``
+/cirosantilli/python-programming-language
+``
+
+However the link to the non-synonym header:
+``
+<Python (programming language)>
+``
+renders correctly without the fragment
+
 === Move all header metadata from source to HTML in Web
 {tag=Web}
 {id=web-header-metadata-to-widgets}
@@ -131,19 +154,6 @@ Currently there is some confusion in the code on treating the `<>{file}` like th
 
 Same for `tag` and `tagFile`.
 
-=== Put raw files in a separate magic prefix
-{tag=File}
-
-We should have:
-* `_raw/path/to/main.py`: raw file
-for every file `path/to/main.py` in the repo to avoid URL clashes, e.g. between:
-``
-configure
-configure.bigb
-``
-
-Will also serve as a mechanism to view .bigb source without GitHub.
-
 === Show likers list on article page
 {tag=Web}
 
@@ -258,18 +268,8 @@ Off the bat `JSON.stringify` doesn't work due to circular references though that
 
 Web upload breaks with duplicate ID if you rename a header and synonym the old one.
 
-=== Synonym redirects on web
-{tag=Web}
-
 === Photos of the merchandise!
 {tag=Publicity}
-
-=== Start a basic notification system
-{tag=Web}
-
-OK, now afetr the big redirect from cirosantilli.com to ourbigbook.com, this is becoming more pressing.
-
-We could start simple without any in-browser things, email only. Though having both would be ideal...
 
 === Flyers
 {tag=Publicity}
@@ -764,6 +764,29 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Put raw files in a separate magic prefix
+{tag=File}
+
+We should have:
+* `_raw/path/to/main.py`: raw file
+for every file `path/to/main.py` in the repo to avoid URL clashes, e.g. between:
+``
+configure
+configure.bigb
+``
+
+Will also serve as a mechanism to view .bigb source without GitHub.
+
+=== Synonym redirects on web
+{tag=Web}
+
+=== Start a basic notification system
+{tag=Web}
+
+OK, now afetr the big redirect from cirosantilli.com to ourbigbook.com, this is becoming more pressing.
+
+We could start simple without any in-browser things, email only. Though having both would be ideal...
 
 === Find a way to show index.html raw files that get overriden by directory listings
 {id=2}

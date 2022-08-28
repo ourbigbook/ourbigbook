@@ -1221,7 +1221,6 @@ if (cli.helpMacros) {
           return {
             type: 'directory',
           }
-          return undefined
         }
       } else {
         return undefined
@@ -1402,7 +1401,7 @@ if (cli.helpMacros) {
   cmd_options_info.show_cmd = false
 
   const isInGitRepo = git_is_in_repo(ourbigbook_json_dir)
-  if (isInGitRepo) {
+  if (isInGitRepo && inputPath !== undefined) {
     non_ourbigbook_options.ignore_paths = new Set([
       ...non_ourbigbook_options.ignore_paths,
       ...cmd_get_stdout('git', ['-C', input_dir, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory'], cmd_options_info).split('\n').slice(0, -1).map(s => s.replace(/\/$/, ''))

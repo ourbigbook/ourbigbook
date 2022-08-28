@@ -733,6 +733,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
   //   * directory based scopes
   //   * \x magic pluralization variants
   // * ensure that all \x targets exist
+  opts.perf= true
   const { perf, transaction } = opts
   let t0
   if (perf) {

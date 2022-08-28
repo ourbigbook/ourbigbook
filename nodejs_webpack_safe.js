@@ -618,7 +618,7 @@ async function update_database_after_convert({
     // Create a rendering for the current type if one does not exist.
     await sequelize.models.Render.upsert(
       {
-        outdated: !render || had_error,
+        outdated: !render || !!had_error,
         type: sequelize.models.Render.Types[renderType],
         fileId: file.id,
       },

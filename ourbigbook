@@ -1497,52 +1497,52 @@ if (cli.helpMacros) {
 
       // Get username, password and attempt login before anything else.
       let username, webApi
-      if (!cli.webDry) {
-        if (cli.webUser) {
-          username = cli.webUser
-        } else {
-          if (cli.webTest) {
-            username = 'barack-obama'
-          }
+      if (cli.webUser) {
+        username = cli.webUser
+      } else {
+        if (cli.webTest) {
+          username = 'barack-obama'
         }
-        const cliWhere = { host }
-        if (username) {
-          cliWhere.username = username
-        } else {
-          cliWhere.defaultUsernameForHost = true
+      }
+      const cliWhere = { host }
+      if (username) {
+        cliWhere.username = username
+      } else {
+        cliWhere.defaultUsernameForHost = true
+      }
+      const host_row = await non_ourbigbook_options.sequelize.models.Cli.findOne({ where: cliWhere })
+      if (username === undefined) {
+        if (host_row === null) {
+          ;[err, username] = await read({ prompt: 'Username: ' })
+        } else  {
+          username = host_row.username
+          console.log(`Using previous username: ${username}\n`);
         }
-        const host_row = await non_ourbigbook_options.sequelize.models.Cli.findOne({ where: cliWhere })
-        if (username === undefined) {
-          if (host_row === null) {
-            ;[err, username] = await read({ prompt: 'Username: ' })
-          } else  {
-            username = host_row.username
-            console.log(`Using previous username: ${username}\n`);
-          }
-        }
-        webApi = new WebApi({
-          getToken: () => token,
-          https: url.protocol === 'https:',
-          port: url.port,
-          hostname: url.hostname,
-          validateStatus: () => true,
-        })
-        if (host_row) {
-          token = host_row.token
-        } else {
-          let err, password
+      }
+      webApi = new WebApi({
+        getToken: () => token,
+        https: url.protocol === 'https:',
+        port: url.port,
+        hostname: url.hostname,
+        validateStatus: () => true,
+      })
+      if (host_row) {
+        token = host_row.token
+      } else {
+        let err, password
 
-          // Password
-          if (cli.webPassword) {
-            password = cli.webPassword
+        // Password
+        if (cli.webPassword) {
+          password = cli.webPassword
+        } else {
+          if (cli.webTest && !cli.webAskPassword) {
+            password = 'asdf'
           } else {
-            if (cli.webTest && !cli.webAskPassword) {
-              password = 'asdf'
-            } else {
-              ;[err, password] = await read({ prompt: 'Password: ', silent: true })
-            }
+            ;[err, password] = await read({ prompt: 'Password: ', silent: true })
           }
+        }
 
+        if (!cli.webDry) {
           let data, status
           try {
             ;({ data, status } = await webApi.userLogin({ username, password }))
@@ -1555,31 +1555,31 @@ if (cli.helpMacros) {
             cli_error(`error status: ${status}`);
           }
           token = data.user.token
-
-          await non_ourbigbook_options.sequelize.transaction(async (transaction) => {
-            await non_ourbigbook_options.sequelize.models.Cli.update(
-              {
-                defaultUsernameForHost: false
-              },
-              {
-                where: {
-                  host,
-                },
-                transaction,
-              }
-            )
-            await non_ourbigbook_options.sequelize.models.Cli.upsert(
-              {
-                host,
-                username,
-                token,
-                // Use the latest one by default.
-                defaultUsernameForHost: true
-              },
-              { transaction }
-            )
-          })
         }
+
+        await non_ourbigbook_options.sequelize.transaction(async (transaction) => {
+          await non_ourbigbook_options.sequelize.models.Cli.update(
+            {
+              defaultUsernameForHost: false
+            },
+            {
+              where: {
+                host,
+              },
+              transaction,
+            }
+          )
+          await non_ourbigbook_options.sequelize.models.Cli.upsert(
+            {
+              host,
+              username,
+              token,
+              // Use the latest one by default.
+              defaultUsernameForHost: true
+            },
+            { transaction }
+          )
+        })
       }
 
       // Do a local conversion that splits mutiheader files into single header files for upload.
@@ -1708,7 +1708,12 @@ if (cli.helpMacros) {
               }
               body += lines.slice(bodyStart).join('\n')
               const parent_ast = rendered_outputs_entry.header_ast.get_header_parent_asts(extra_returns.context)[0]
-              const article = { title, body, inpath, sha256: crypto.createHash('sha256').update(source).digest('hex') }
+              const article = {
+                body,
+                inpath,
+                sha256: crypto.createHash('sha256').update(source).digest('hex'),
+                title,
+              }
               if (parent_ast) {
                 if (
                   parent_ast.id !== ourbigbook.INDEX_BASENAME_NOEXT &&
@@ -1739,7 +1744,6 @@ if (cli.helpMacros) {
         }
       }
       let treeToplevelId, treeToplevelFileId
-      console.error('Prepare source');
       if (input_path_is_file) {
         await convert_path_to_file(inputPath, ourbigbook_options, non_ourbigbook_options);
         treeToplevelFile = await non_ourbigbook_options.sequelize.models.File.findOne({
@@ -1781,11 +1785,7 @@ if (cli.helpMacros) {
         header_tree = header_tree.concat(await non_ourbigbook_options.db_provider.fetch_header_tree_ids(
           [treeToplevelId],
           {
-            // By following reverse order we don't have to worry about setting up previousSiblingId:
-            // we just use the fact that the API automatically inserts as first sibling when not given.
-            // TODO actually add siblings later on, as that will allow updating the page tree.
-            // https://docs.ourbigbook.com/todo/pass-previoussiblingid-on-web-upload
-            to_id_index_order: 'DESC',
+            to_id_index_order: 'ASC',
             definedAtFileId: treeToplevelFileId,
           }
         ))
@@ -1823,7 +1823,7 @@ if (cli.helpMacros) {
         } while (data.articles.length > 0)
       }
       const idToArticleMeta = {}
-      const localArticles = await sequelizeWebArticle.findAll({ attributes: ['sha256', 'title', 'idid', 'inpath'] })
+      const localArticles = await sequelizeWebArticle.findAll({ attributes: ['sha256', 'title', 'idid', 'inpath', 'parentId'] })
       for (const article of localArticles) {
         idToArticleMeta[article.idid] = article
       }
@@ -1832,12 +1832,26 @@ if (cli.helpMacros) {
         // This ordering ensures parents come before children.
         for (const header_tree_entry of header_tree) {
           const id = header_tree_entry.to_id
-          let article = idToArticleMeta[id]
+          const articleMeta = idToArticleMeta[id]
           if (
             // Can fail for synonyms.
-            article
+            articleMeta
           ) {
-            const inpathParse = path.parse(article.inpath)
+            if (
+              // Do only once no norender pass or else lastChildArticleProcessed loops around and goes wrong on the render pass.
+              !render
+            ){
+              // Calculate previousSiblingId. This works because header_tree is guaranteed to be in-order transversed.
+              const parentArticle = idToArticleMeta[articleMeta.parentId]
+              if (parentArticle) {
+                const lastChildArticleProcessed = parentArticle.lastChildArticleProcessed
+                if (lastChildArticleProcessed) {
+                  articleMeta.previousSiblingId = lastChildArticleProcessed.idid
+                }
+                parentArticle.lastChildArticleProcessed = articleMeta
+              }
+            }
+            const inpathParse = path.parse(articleMeta.inpath)
             const articlePath = path.join(inpathParse.dir, inpathParse.name)
             const webPathToShaEntry = webPathToSha[`${ourbigbook.AT_MENTION_CHAR}${username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${articlePath}.${ourbigbook.OURBIGBOOK_EXT}`]
             if (webPathToShaEntry === undefined ) {
@@ -1845,7 +1859,7 @@ if (cli.helpMacros) {
             }
             if (
               webPathToShaEntry === undefined ||
-              webPathToShaEntry.sha256 !== article.sha256 ||
+              webPathToShaEntry.sha256 !== articleMeta.sha256 ||
               (
                 render &&
                 (
@@ -1859,7 +1873,7 @@ if (cli.helpMacros) {
               )
             ) {
               // OK, we are going to render this article, so fetch it fully now including the source.
-              article = await sequelizeWebArticle.findOne({ where: { idid: id } })
+              const article = await sequelizeWebArticle.findOne({ where: { idid: id } })
               printStatus(i, article, render)
               let data, status
               const articleArgs = {}
@@ -1870,20 +1884,18 @@ if (cli.helpMacros) {
               const t0 = performance.now()
               let parentIdNoUsername = article.parentId
               let parentId
-              if (parentIdNoUsername !== null) {
+              if (parentIdNoUsername) {
                 if (parentIdNoUsername === '') {
                   parentId = `${ourbigbook.AT_MENTION_CHAR}${username}`
                 } else {
                   parentId = `${ourbigbook.AT_MENTION_CHAR}${username}/${parentIdNoUsername}`
                 }
               }
-              //let previousSiblingId
-              //if (!render) {
-              //  const parentArticle = idToArticleMeta[article.parentId]
-              //  if (parentArticle.lastChildProcessed) {
-              //    previousSiblingId
-              //  }
-              //}
+              let previousSiblingIdNoUsername = articleMeta.previousSiblingId
+              let previousSiblingId
+              if (previousSiblingIdNoUsername) {
+                previousSiblingId = `${ourbigbook.AT_MENTION_CHAR}${username}/${previousSiblingIdNoUsername}`
+              }
               if (!cli.webDry) {
                 let tries = 0
                 // Retry the transaction a few times. This designed to work well during development when nodemon
@@ -1891,14 +1903,22 @@ if (cli.helpMacros) {
                 // you can just turn logs on and off during a large conversion and it will just keep running fine.
                 while (true) {
                   let retry = false
+                  console.error(
+                    {
+                      path: articlePath,
+                      render,
+                      parentId,
+                      previousSiblingId,
+                    }
+                  );
                   try {
                     ;({ data, status } = await webApi.articleCreateOrUpdate(
                       articleArgs,
                       {
                         path: articlePath,
                         render,
-                        parentId
-                        // TODO pass previousSiblingid here as well: https://docs.ourbigbook.com/toto/pass-previoussiblingid-on-web-upload
+                        parentId,
+                        previousSiblingId,
                       }
                     ))
                   } catch(err) {

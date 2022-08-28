@@ -3,12 +3,6 @@
 
 == Issues
 
-=== Pass previousSiblingId on web upload
-{tag=Web}
-{tag=Web upload}
-
-Otherwise uploads become irreproducible if you stop half way. Unacceptable.
-
 === Reorder convert to move Article.destroySideEffect before File.destroy
 {id=4}
 {tag=web}
@@ -759,6 +753,12 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Pass previousSiblingId on web upload
+{tag=Web}
+{tag=Web upload}
+
+Otherwise uploads become irreproducible if you stop half way. Unacceptable.
 
 === Links to synonym header have fragment
 {tag=Bug}

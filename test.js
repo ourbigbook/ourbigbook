@@ -10225,3 +10225,17 @@ ignored-subdir
     ],
   }
 );
+
+assert_cli(
+  '--web-dry on simple repository',
+  {
+    args: ['--web', '--web-dry', '.'],
+    filesystem: {
+      'README.bigb': `= Index
+`,
+      'ourbigbook.json': `{
+}
+`,
+    },
+  }
+);

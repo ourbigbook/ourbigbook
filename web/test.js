@@ -2646,3 +2646,38 @@ it('api: child articles inherit scope from parent', async () => {
     assert_xpath("//x:a[@href='/user0/mathematics/calculus/derivative' and text()='derivative']", data.articles[0].render)
   })
 })
+
+it('api: synonym rename', async () => {
+  // This is what we have to do on mass upload with ourbigbook --web
+  // in order to handle circular references without having one massive
+  // server-side operation.
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    // Create a basic hierarchy.
+
+    article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+
+    article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+    assertStatus(status, data)
+
+    article = createArticleArg({ i: 0, titleSource: 'Derivative' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
+    assertStatus(status, data)
+
+    article = createArticleArg({ i: 0, titleSource: 'Physics' })
+    assertStatus(status, data)
+
+    // Rename Calculus to Calculus 2
+
+    article = createArticleArg({ i: 0, titleSource: 'Calculus 2', bodySource: '= Calculus\n{synonym}\n' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+    assertStatus(status, data)
+  })
+})

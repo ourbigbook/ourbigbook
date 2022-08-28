@@ -6325,6 +6325,13 @@ Some important known limitations:
 
 However, all of those are fixable, and in an ideal world, will be fixed. Patches welcome.
 
+= `--web-dry`
+{parent=OurBigBook CLI options}
+
+<--web> dry run, skip any operations that would interact with the <OurBigBook Web> server, doing only all the local preparation required for upload.
+
+This is mostly useful for testing the <OurBigBook CLI>.
+
 = `--web-id`
 {parent=OurBigBook CLI options}
 

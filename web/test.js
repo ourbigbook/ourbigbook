@@ -2,8 +2,7 @@ const assert = require('assert');
 
 const { WebApi } = require('ourbigbook/web_api')
 const {
-  assert_xpath,
-  xpath_header_parent,
+  assert_xpath
 } = require('ourbigbook/test_lib')
 const ourbigbook = require('ourbigbook')
 
@@ -710,7 +709,7 @@ it('api: create an article and see it on global feed', async () => {
         assertRows(data.articles, [])
 
         // Also take this chance to check that /sha256 renderOutdated is correct.
-        ;({data, status} = await test.webApi.articlesSha256({ author: 'user0' }))
+        ;({data, status} = await test.webApi.articlesHash({ author: 'user0' }))
         assertStatus(status, data)
         assertRows(data.articles, [
           { path: '@user0/index.bigb',   renderOutdated: false, },
@@ -727,7 +726,7 @@ it('api: create an article and see it on global feed', async () => {
         assertRows(data.articles, [{ render: /Body 0 hacked\./ }])
 
         // And now not outdated after render.
-        ;({data, status} = await test.webApi.articlesSha256({ author: 'user0' }))
+        ;({data, status} = await test.webApi.articlesHash({ author: 'user0' }))
         assertStatus(status, data)
         assertRows(data.articles, [
           { path: '@user0/index.bigb',   renderOutdated: false, },
@@ -2440,7 +2439,7 @@ it('api: resource limits', async () => {
   })
 })
 
-it('api: article tree single user', async () => {
+it('api: article tree: single user', async () => {
   await testApp(async (test) => {
     let data, status, article
     const sequelize = test.sequelize
@@ -2460,7 +2459,6 @@ it('api: article tree single user', async () => {
       article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
       ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
-      assert_xpath(xpath_header_parent(1, 'user0/mathematics', '/user0', 'Index'), data.articles[0].h1Render)
 
       await assertNestedSets(sequelize, [
         { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, to_id_index: null, slug: 'user0' },
@@ -2471,7 +2469,6 @@ it('api: article tree single user', async () => {
       article = createArticleArg({ i: 0, titleSource: 'Calculus' })
       ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics' }))
       assertStatus(status, data)
-      assert_xpath(xpath_header_parent(1, 'user0/calculus', '/user0/mathematics', 'Mathematics'), data.articles[0].h1Render)
 
       await assertNestedSets(sequelize, [
         { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
@@ -2486,7 +2483,6 @@ it('api: article tree single user', async () => {
         article = createArticleArg({ i: 0, titleSource: 'Derivative' })
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
         assertStatus(status, data)
-        assert_xpath(xpath_header_parent(1, 'user0/derivative', '/user0/mathematics', 'Mathematics'), data.articles[0].h1Render)
 
         // Current tree state:
         // * 0 Index
@@ -2505,7 +2501,6 @@ it('api: article tree single user', async () => {
         // Modify the parent of derivative from Mathematics to its next sibling Calculus.
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
         assertStatus(status, data)
-        assert_xpath(xpath_header_parent(1, 'user0/derivative', '/user0/calculus', 'Calculus'), data.articles[0].h1Render)
 
         // Current tree state:
         // * 0 Index
@@ -3002,6 +2997,50 @@ it('api: article tree single user', async () => {
   })
 })
 
+it('api: article tree: update first sibling to become a child', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    // Create a second user and index to ensure that the nested set indexes are independent for each user.
+    // Because of course we didn't do this when originally implementing.
+    test.loginUser(user)
+
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
+    ])
+
+    article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+    ;({data, status} = await createArticleApi(test, article))
+    assertStatus(status, data)
+
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+    ])
+
+    article = createArticleArg({ i: 0, titleSource: 'Physics' })
+    ;({data, status} = await createArticleApi(test, article))
+    assertStatus(status, data)
+
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/physics' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/mathematics' },
+    ])
+
+    article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/physics' }))
+    assertStatus(status, data)
+
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0, slug: 'user0/physics' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/mathematics' },
+    ])
+  })
+})
+
 async function createArticleApiMultiuser(test, users, articleArg, meta={}) {
   for (const user of users) {
     test.loginUser(user)
@@ -3034,7 +3073,7 @@ async function assertNestedSetsMultiuser(sequelize, users, rows) {
   return assertNestedSets(sequelize, newRows)
 }
 
-it('api: article tree multiuser', async () => {
+it('api: article tree: multiuser', async () => {
   await testApp(async (test) => {
     let article, data, status
     const sequelize = test.sequelize

@@ -1,6 +1,5 @@
 #!/usr/bin/env node
 
-const crypto = require('crypto');
 const { performance } = require('perf_hooks');
 
 const china_dictatorship = require('china-dictatorship');
@@ -21,7 +20,7 @@ const { DataTypes, Op, Sequelize } = require('sequelize')
 const ourbigbook = require('ourbigbook');
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
-const { WebApi, read_include } = require('ourbigbook/web_api');
+const { articleHash, WebApi, read_include } = require('ourbigbook/web_api');
 const { trace } = require('console');
 const { execPath } = require('process');
 
@@ -52,6 +51,17 @@ const WEB_MAX_RETRIES = 5
 class DbProviderDbAdapter {
   constructor(non_ourbigbook_options) {
   }
+}
+
+function addUsername(idNoUsername, username) {
+  if (idNoUsername !== null && idNoUsername !== undefined) {
+    if (idNoUsername === '') {
+      return  `${ourbigbook.AT_MENTION_CHAR}${username}`
+    } else {
+      return `${ourbigbook.AT_MENTION_CHAR}${username}/${idNoUsername}`
+    }
+  }
+  return null
 }
 
 function assertApiStatus(status, data) {
@@ -1617,14 +1627,14 @@ if (cli.helpMacros) {
         body: { type: DataTypes.TEXT },
         inpath: { type: DataTypes.TEXT },
         parentId: { type: DataTypes.TEXT },
-        sha256: { type: DataTypes.TEXT },
-      });
+        source: { type: DataTypes.TEXT },
+      })
       // Just to store the ID of the index.
       const sequelizeWebIndexId = sequelizeWeb.define('IndexId', {
         idid: { type: DataTypes.TEXT },
         // upsert helper.
         uniqueHack: { type: DataTypes.INTEGER, unique: true },
-      });
+      })
       await sequelizeWeb.sync()
       non_ourbigbook_options.post_convert_callback = async (inpath, extra_returns) => {
         if (extra_returns.errors.length === 0) {
@@ -1685,7 +1695,7 @@ if (cli.helpMacros) {
                   }
                 } else {
                   title = 'Index'
-                  // Hack source for subsequent sha256 calculation to match what we have on server, which
+                  // Hack source for subsequent hash calculation to match what we have on server, which
                   // currently forces "Index" (TODO "index" et al. are likely also possible and would break this hack).
                   // Ideally we should actually alter the file under out/web/index.bigb
                   // but that would be slightly more involved (a new option to convert?) so lazy.
@@ -1724,7 +1734,7 @@ if (cli.helpMacros) {
               const article = {
                 body,
                 inpath,
-                sha256: crypto.createHash('sha256').update(source).digest('hex'),
+                source,
                 title,
               }
               if (parent_ast) {
@@ -1758,7 +1768,7 @@ if (cli.helpMacros) {
       }
       let treeToplevelId, treeToplevelFileId
       if (input_path_is_file) {
-        await convert_path_to_file(inputPath, ourbigbook_options, non_ourbigbook_options);
+        await convert_path_to_file(inputPath, ourbigbook_options, non_ourbigbook_options)
         treeToplevelFile = await non_ourbigbook_options.sequelize.models.File.findOne({
           where: { path: inputPath } })
         treeToplevelFileId = treeToplevelFile.id
@@ -1769,7 +1779,7 @@ if (cli.helpMacros) {
           inputPath,
           ourbigbook_options,
           non_ourbigbook_options,
-        );
+        )
         const index = (await sequelizeWebIndexId.findAll())[0]
         if (index === undefined) {
           cli_error('a toplevel index is mandatory for web uploads')
@@ -1777,7 +1787,7 @@ if (cli.helpMacros) {
         treeToplevelId = index.idid
       }
       if (non_ourbigbook_options.had_error) {
-        process.exit(1);
+        process.exit(1)
       }
 
       let header_tree = []
@@ -1820,23 +1830,23 @@ if (cli.helpMacros) {
         if (t0 !== undefined) {
           msg += ` finished in ${t1 - t0} ms`
         }
-        console.error(msg);
+        console.error(msg)
       }
       let data, status, i = 0
       const webPathToSha = {}
       if (!cli.webDry) {
         do {
-          ;({ data, status } = await webApi.articlesSha256({ author: username, offset: i }))
+          ;({ data, status } = await webApi.articlesHash({ author: username, offset: i }))
           assertApiStatus(status, data)
           const articles = data.articles
           for (const article of articles) {
-            webPathToSha[article.path] = { sha256: article.sha256, renderOutdated: article.renderOutdated }
+            webPathToSha[article.path] = { hash: article.hash, renderOutdated: article.renderOutdated }
           }
           i += articles.length
         } while (data.articles.length > 0)
       }
       const idToArticleMeta = {}
-      const localArticles = await sequelizeWebArticle.findAll({ attributes: ['sha256', 'title', 'idid', 'inpath', 'parentId'] })
+      const localArticles = await sequelizeWebArticle.findAll({ attributes: ['source', 'title', 'idid', 'inpath', 'parentId'] })
       for (const article of localArticles) {
         idToArticleMeta[article.idid] = article
       }
@@ -1866,17 +1876,28 @@ if (cli.helpMacros) {
             }
             const inpathParse = path.parse(articleMeta.inpath)
             const articlePath = path.join(inpathParse.dir, inpathParse.name)
-            const webPathToShaEntry = webPathToSha[`${ourbigbook.AT_MENTION_CHAR}${username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${articlePath}.${ourbigbook.OURBIGBOOK_EXT}`]
-            if (webPathToShaEntry === undefined ) {
-              webPathToShaEntry
+            const webPathToHashEntry = webPathToSha[`${ourbigbook.AT_MENTION_CHAR}${username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${articlePath}.${ourbigbook.OURBIGBOOK_EXT}`]
+            if (webPathToHashEntry === undefined ) {
+              webPathToHashEntry
+            }
+            const articleHashProps = {
+              source: articleMeta.source,
+            }
+            const parentId = addUsername(articleMeta.parentId, username)
+            if (parentId !== null) {
+              articleHashProps.parentId = parentId
+            }
+            const previousSiblingId = addUsername(articleMeta.previousSiblingId, username)
+            if (previousSiblingId !== null) {
+              articleHashProps.previousSiblingId = previousSiblingId
             }
             if (
-              webPathToShaEntry === undefined ||
-              webPathToShaEntry.sha256 !== articleMeta.sha256 ||
+              webPathToHashEntry === undefined ||
+              webPathToHashEntry.hash !== articleHash(articleHashProps) ||
               (
                 render &&
                 (
-                  webPathToShaEntry.renderOutdated ||
+                  webPathToHashEntry.renderOutdated ||
                   cli.webForceRender
                 )
               ) ||
@@ -1895,20 +1916,6 @@ if (cli.helpMacros) {
                 articleArgs.bodySource = article.body
               }
               const t0 = performance.now()
-              let parentIdNoUsername = article.parentId
-              let parentId
-              if (parentIdNoUsername) {
-                if (parentIdNoUsername === '') {
-                  parentId = `${ourbigbook.AT_MENTION_CHAR}${username}`
-                } else {
-                  parentId = `${ourbigbook.AT_MENTION_CHAR}${username}/${parentIdNoUsername}`
-                }
-              }
-              let previousSiblingIdNoUsername = articleMeta.previousSiblingId
-              let previousSiblingId
-              if (previousSiblingIdNoUsername) {
-                previousSiblingId = `${ourbigbook.AT_MENTION_CHAR}${username}/${previousSiblingIdNoUsername}`
-              }
               if (!cli.webDry) {
                 let tries = 0
                 // Retry the transaction a few times. This designed to work well during development when nodemon
@@ -1917,14 +1924,19 @@ if (cli.helpMacros) {
                 while (true) {
                   let retry = false
                   try {
+                    const extraArgs = {
+                      path: articlePath,
+                      render,
+                    }
+                    if (parentId) {
+                      extraArgs.parentId = parentId
+                    }
+                    if (previousSiblingId) {
+                      extraArgs.previousSiblingId = previousSiblingId
+                    }
                     ;({ data, status } = await webApi.articleCreateOrUpdate(
                       articleArgs,
-                      {
-                        path: articlePath,
-                        render,
-                        parentId,
-                        previousSiblingId,
-                      }
+                      extraArgs,
                     ))
                   } catch(err) {
                     if (tries < WEB_MAX_RETRIES || (

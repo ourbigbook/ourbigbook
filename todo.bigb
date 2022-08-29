@@ -9,22 +9,6 @@
 
 Maybe there is a valid use case for rows with different number of columns. But likely by default we should error unless the use explicitly allows this.
 
-=== Don't skip parent/previous sibling updates on --web uploads
-{tag=Web}
-{tag=Web upload}
-
-We have recently implemented SHA-256 skips when article content hasn't changed.
-
-But we also need to check if the parent or previous sibling has changed, and if it has then update that.
-
-We could just return parent and previous sibling on the /sha256 endpoint.
-
-Or we need to add that information to the SHA.
-
-Ideally we should also have a way to change the tree without re-render, though we could start with re-render for simplicity.
-
-This actually breaks uploads because it leads to inconsistencies when finding previousSiblingId.
-
 === Remove synonym from JSON, use Ref.type = synonym instead
 {tag=web}
 {tag=refactor}
@@ -773,6 +757,22 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== Don't skip parent/previous sibling updates on --web uploads
+{tag=Web}
+{tag=Web upload}
+
+We have recently implemented SHA-256 skips when article content hasn't changed.
+
+But we also need to check if the parent or previous sibling has changed, and if it has then update that.
+
+We could just return parent and previous sibling on the /sha256 endpoint.
+
+Or we need to add that information to the SHA.
+
+Ideally we should also have a way to change the tree without re-render, though we could start with re-render for simplicity.
+
+This actually breaks uploads because it leads to inconsistencies when finding previousSiblingId.
 
 === CLI nosplit points to self
 {tag=CLI}

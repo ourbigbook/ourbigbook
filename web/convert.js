@@ -1,5 +1,4 @@
 const lodash = require('lodash')
-const crypto = require('crypto');
 
 const ourbigbook = require('ourbigbook')
 const {
@@ -8,6 +7,7 @@ const {
   SqlDbProvider,
 } = require('ourbigbook/nodejs_webpack_safe')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
+const { articleHash } = require('ourbigbook/web_api')
 
 const { ValidationError } = require('./api/lib')
 const {
@@ -118,7 +118,7 @@ async function convert({
     db_provider,
     extra_returns,
     input_path,
-    sha256: crypto.createHash('sha256').update(source).digest('hex'),
+    source,
   }
 }
 
@@ -155,7 +155,7 @@ async function convertArticle({
       render = true
     }
     let db_provider, input_path
-    ;({ db_provider, extra_returns, input_path, sha256 } = await convert({
+    ;({ db_provider, extra_returns, input_path, source } = await convert({
       author,
       bodySource,
       convertOptionsExtra: {
@@ -183,6 +183,7 @@ async function convertArticle({
       titleSource,
       transaction,
     }))
+    const sha256 = articleHash({ parentId, previousSiblingId, source })
     const toplevelId = extra_returns.context.header_tree.children[0].ast.id
     if (toplevelId !== toplevelId.toLowerCase()) {
       throw new ValidationError(`Article ID cannot contain uppercase characters: "${toplevelId}"`)

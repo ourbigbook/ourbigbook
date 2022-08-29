@@ -84,7 +84,7 @@ router.get('/redirects', auth.optional, async function(req, res, next) {
 // TODO do proper GraphQL one day and get rid of this.
 // TODO also return parentId and previousSiblingId here:
 // https://docs.ourbigbook.com/don-t-skip-parent-previous-sibling-updates-on-web-uploads
-router.get('/sha256', auth.optional, async function(req, res, next) {
+router.get('/hash', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
     const [limit, offset] = lib.getLimitAndOffset(req, res, { defaultLimit: 10000 })
@@ -130,7 +130,7 @@ router.get('/sha256', auth.optional, async function(req, res, next) {
     })
     const articlesJson = []
     for (const file of files) {
-      articlesJson.push({ path: file.path, sha256: file.sha256, renderOutdated: !!file.get('renderOutdated') })
+      articlesJson.push({ path: file.path, hash: file.sha256, renderOutdated: !!file.get('renderOutdated') })
     }
     return res.json({ articles: articlesJson, articlesCount: filesCount })
   } catch(error) {

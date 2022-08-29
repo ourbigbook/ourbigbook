@@ -5120,6 +5120,9 @@ animal.html#big-dog
 = Reserved IDs
 {parent=element-id}
 
+= Reserved ID
+{synonym}
+
 IDs that start with an underscore `_` are reserved for OurBigBook usage, and will give an error if you try to use them, in order to prevent ID conflicts.
 
 For example:
@@ -5308,7 +5311,7 @@ printf 'ab\ncd\n' | ourbigbook > tmp.html
 ``
 You almost never want to do this except when <developing OurBigBook>, as it won't be clear what version of `ourbigbook` the document should be compiled with. Just be a good infant and use OurBigBook <play with the template>[with the template] that contains a `package.json` via `npx`, OK?
 
-Furthermore, the default install of Chromium on Ubuntu 21.04 uses Snap and blocks access to dotfiles. For example, in a sane NVM install, our global CSS would live under `/home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/ourbigbook/dist/ourbigbook.css`, which gets blocked because of the `.nvm` part:
+Furthermore, the default install of Chromium on Ubuntu 21.04 uses Snap and blocks access to dotfiles. For example, in a sane NVM install, our global CSS would live under `/home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/ourbigbook/_obb/ourbigbook.css`, which gets blocked because of the `.nvm` part:
 * https://forum.snapcraft.io/t/dot-files/7062
 * https://bugs.launchpad.net/snapd/+bug/1607067
 * https://superuser.com/questions/1546550/chromium-81-wont-display-dotfiles-anymore
@@ -5520,9 +5523,9 @@ ourbigbook index.bigb
 the output contains references to where OurBigBook is installed in our local filesystem:
 ``
 <style>
-@import "/home/ciro/bak/git/ourbigbook/dist/ourbigbook.css";
+@import "/home/ciro/bak/git/ourbigbook/_obb/ourbigbook.css";
 </style>
-<script src="/home/ciro/bak/git/ourbigbook/dist/ourbigbook_runtime.js"></script>
+<script src="/home/ciro/bak/git/ourbigbook/_obb/ourbigbook_runtime.js"></script>
 ``
 The advantage of this is that we don't have to duplicate this for every single file. But if you are giving this file to someone else, they would likely not have those files at those exact locations, which would break the HTML page.
 
@@ -6944,6 +6947,52 @@ The initial application of this option was to <redirect from a static website to
 
 If this option is set, then nosplit/split header metadata links are removed, since it was hard to come up with a sensible behaviour to them, and it won't matter on web redirection where every page is nonsplit anyways.
 
+= `web`
+{parent=ourbigbook.json}
+{scope}
+
+This dict contains options related to interaction between <OurBigBook CLI> and <OurBigBook Web> deployments.
+
+= `username`
+{parent=ourbigbook.json}
+
+Type: string.
+
+Sets your <OurBigBook.com> username. This is used e.g. by <linkFromHeaderMeta>.
+
+= `linkFromHeaderMeta`
+{parent=ourbigbook.json}
+
+Type: boolean. Default: `false`.
+
+If `true`, adds a link under the metadata section of every header of a <OurBigBook CLI> static website pointing to the corresponding article on <OurBigBook.com>. It also sends you to Heaven for supporting the project.
+
+This option requires <`username`> to be set.
+
+For example, if you set:
+``
+"web": {
+  "username": "myusername",
+  "linkFromHeaderMeta": true
+}
+``
+then in the rendering of a README.bigb:
+``
+= Index
+
+== My h2
+{scope}
+
+=== My h2 2
+{scope}
+``
+those headers would have a metadata entry pointing respectively to:
+* `https://ourbigbook.com/myusername`
+* `https://ourbigbook.com/myusername/my-h2`
+* `https://ourbigbook.com/myusername/my-h2/my-h2-2`
+
+In order for such links not to be broken, you should always first do a <Web upload> to ensure that the articles are present on <OurBigBook.com>.
+
 = `xPrefix`
 {parent=ourbigbook.json}
 
@@ -7088,13 +7137,12 @@ Every other value is considered false, including e.g. `true`.
 = OurBigBook Web
 {c}
 {parent=OurBigBook}
-{title2=OurBigBook.com}
 
 = Dynamic website
 {synonym}
 {title2}
 
-OurBigBook Web is the software program that powers https://OurBigBook.com[], its official flagship instance. <OurBigBook Web> is currently the main tool developed by the <OurBigBook Project>.
+OurBigBook Web is the software program that powers https://OurBigBook.com[], its official flagship instance, see also: <OurBigBook.com>{full}. <OurBigBook Web> is currently the main tool developed by the <OurBigBook Project>.
 
 This section contains both <OurBigBook Web user manual>[end user documentation] and <OurBigBook Web development>[developer documentation].
 
@@ -7463,7 +7511,7 @@ where:
   ``
   npm run webpack-dev
   ``
-  as mentioned at: <`dist` directory>.
+  as mentioned at: <`_obb` directory>.
 * \a[web/bin/generate-demo-data.js] also creates the database and is not optional. If you want to start with an empty database instead of the demo one, you can run instead \a[web/bin/sync-db.js]:
   ``
   ./bin/sync-db
@@ -8569,7 +8617,7 @@ This section describes features present in \a[ourbigbook_runtime.js]
 
 That file contains JavaScript functionality to be included in the final documents to enable interactive document features such as the <table of contents>.
 
-You should use the packaged `dist/ourbigbook_runtime.js` instead of this file directly however.
+You should use the packaged `_obb/ourbigbook_runtime.js` instead of this file directly however.
 
 = JavaScript redirect to split on missing ID
 {c}
@@ -9095,7 +9143,7 @@ There are two types of test in our test suite:
 {parent=Developing OurBigBook}
 
 Source files:
-* \a[index.js]: main code. Must be able to run in the browser, so no Node.js specifics. Exposes the central `convert` function. You should normally use the packaged `dist/ourbigbook.js` when using ourbigbook as an external dependency.
+* \a[index.js]: main code. Must be able to run in the browser, so no Node.js specifics. Exposes the central `convert` function. You should normally use the packaged `_obb/ourbigbook.js` when using ourbigbook as an external dependency.
 * \a[ourbigbook]: CLI executable. Is basically just a CLI interface frontend to `convert`
 * \a[test.js]: contains all the Mocha tests, see also: <test system>
 * \a[README.md]: minimal Markdown README until GitHub / NPM support OurBigBook :-)
@@ -9105,7 +9153,7 @@ Source files:
 = Generated files
 {parent=Overview of files in this repository}
 
-= `dist/` directory
+= `dist` directory
 {parent=Generated files}
 
 `dist/` contains fully embedded packaged versions that work on browsers as per common JavaScript package naming convention. All the following files are generated with Webpack with:
@@ -9113,6 +9161,8 @@ Source files:
 npm run webpack
 ``
 which is called from `npm run build-assets`.
+
+When publishing with <OurBigBook CLI>, `dist` is placed under the <`_obb` directory>.
 
 The files in that directory are:
 * `dist/ourbigbook.js`: OurBigBook <JavaScript API> converter for browser usage. The source entry point for it is located at \a[index.js]. Contains the code of every single dependency used from `node_modules` used by `index.js`. This is notably used for the live-preview of a <browser editor with preview>.
@@ -9130,6 +9180,13 @@ This runs Webpack in development mode, which has two huge advantages:
 `npm run webpack-dev` also enables watch mode, so it keeps running until you turn it off.
 
 This setup also works seamlessly when <OurBigBook Web development>[developing OurBigBook Web], just let the watch process run in a separate terminal.
+
+= `_obb` directory
+{parent=Generated files}
+
+When publishing with <OurBigBook CLI>, certain files such as the <`dist` directory> are placed under the <`_obb` directory> on the final output.
+
+Being a <reserved ID>, we can safely dump any autogenerated files under `_obb` without fear of name conflicts with other files.
 
 = The `out` directory
 {parent=Overview of files in this repository}
@@ -9721,7 +9778,7 @@ TODO ideas: understand what students wear, and the copy it with our logo. E.g. f
 = tshirtstudio.com
 {parent=Clothing}
 
-All items available at: https://www.tshirtstudio.com/marketplace/ourbigbook-com from <tshirtstudio.com>. Each sale includes a 5 dollar/euro/pound donation to the project. TODO: no items are showing, the site is bugged... they do seem configured to be on the marketpalce from my side however.
+All items are available at: https://www.tshirtstudio.com/marketplace/ourbigbook-com from <tshirtstudio.com>. Each sale includes a 5 dollar/euro/pound donation to the project.
 
 This is a reasonable website.
 

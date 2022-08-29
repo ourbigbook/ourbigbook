@@ -964,6 +964,9 @@ function resolve_absolute_xref(id, context) {
   }
 }
 
+/** Set a context.option that may come from ourbigbook.json.
+ * This method can also be used from ourbigbook to resolve the values of options,
+ * in the case of options that have effects on both Library and CLI. */
 function resolveOption(options, opt) {
   let ret = options[opt]
   if (ret !== undefined) {
@@ -1735,27 +1738,32 @@ class Tokenizer {
         this.push_token(TokenType.NAMED_ARGUMENT_START,
           START_NAMED_ARGUMENT_CHAR.repeat(open_length), source_location);
         source_location = this.source_location.clone();
-        let arg_name = this.tokenize_func(char_is_identifier);
-        this.push_token(TokenType.NAMED_ARGUMENT_NAME, arg_name, source_location);
-        if (this.cur_c === NAMED_ARGUMENT_EQUAL_CHAR) {
-          // Consume the = sign.
-          this.consume();
-        } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
-          // Boolean argument.
+        if (this.cur_c === undefined) {
+          // { at the end of file. Test: "named argument: open bracket at end of file fails gracefully".
+          unterminated_literal = true;
         } else {
-          this.error(`expected character: '${NAMED_ARGUMENT_EQUAL_CHAR}' or '${END_NAMED_ARGUMENT_CHAR}', got '${this.cur_c}'`);
-        }
-        if (open_length === 1) {
-          this.consume_optional_newline();
-        } else {
-          // Literal argument.
-          let close_string = closing_char(
-            START_NAMED_ARGUMENT_CHAR).repeat(open_length);
-          if (!this.tokenize_literal(START_NAMED_ARGUMENT_CHAR, close_string)) {
-            unterminated_literal = true;
+          let arg_name = this.tokenize_func(char_is_identifier);
+          this.push_token(TokenType.NAMED_ARGUMENT_NAME, arg_name, source_location);
+          if (this.cur_c === NAMED_ARGUMENT_EQUAL_CHAR) {
+            // Consume the = sign.
+            this.consume();
+          } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
+            // Boolean argument.
+          } else {
+            this.error(`expected character: '${NAMED_ARGUMENT_EQUAL_CHAR}' or '${END_NAMED_ARGUMENT_CHAR}', got '${this.cur_c}'`);
           }
-          this.push_token(TokenType.NAMED_ARGUMENT_END, close_string);
-          this.consume_optional_newline_after_argument()
+          if (open_length === 1) {
+            this.consume_optional_newline();
+          } else {
+            // Literal argument.
+            let close_string = closing_char(
+              START_NAMED_ARGUMENT_CHAR).repeat(open_length);
+            if (!this.tokenize_literal(START_NAMED_ARGUMENT_CHAR, close_string)) {
+              unterminated_literal = true;
+            }
+            this.push_token(TokenType.NAMED_ARGUMENT_END, close_string);
+            this.consume_optional_newline_after_argument()
+          }
         }
       } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
         this.consume_optional_newline_before_close();
@@ -3071,6 +3079,15 @@ function convert_init_context(options={}, extra_returns={}) {
         if (!('normalize' in id)) { id.normalize = {}; }
         const normalize = id.normalize
       }
+      if (!('web' in ourbigbook_json)) { ourbigbook_json.web = {}; }
+      {
+        const web = ourbigbook_json.web
+        if (!('linkFromHeaderMeta' in web)) { web.linkFromHeaderMeta = false; }
+        if (!('username' in web)) { web.username = undefined; }
+        if (web.linkFromHeaderMeta && web.username === undefined) {
+          throw new Error(`web.username must be given when web.linkFromHeaderMeta = true"`)
+        }
+      }
       if (!('xPrefix' in ourbigbook_json)) { ourbigbook_json.xPrefix = undefined; }
     }
   if (!('embed_includes' in options)) { options.embed_includes = false; }
@@ -3121,6 +3138,7 @@ function convert_init_context(options={}, extra_returns={}) {
   }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
+  if (!('logoPath' in options)) { options.logoPath = undefined; }
   if (!('prefixNonIndexedIdsWithParentId' in options)) {
     // E.g. the first paragraph of a header would have ID `_1` without this.
     // This this option it becomes instead `header-id/_1`.
@@ -7445,6 +7463,10 @@ const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
 exports.OURBIGBOOK_JSON_BASENAME = OURBIGBOOK_JSON_BASENAME
 const OURBIGBOOK_JSON_DEFAULT = {
   htmlXExtension: true,
+  web: {
+    link: false,
+    username: undefined,
+  }
 }
 const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
 exports.OUTPUT_FORMAT_OURBIGBOOK = OUTPUT_FORMAT_OURBIGBOOK
@@ -8769,6 +8791,34 @@ const OUTPUT_FORMATS_LIST = [
             wiki_link = `<a href="https://en.wikipedia.org/wiki/${html_escape_attr(wiki)}"><span class="fa-brands-400" title="Wikipedia">\u{f266}</span> wiki</a>`;
           }
 
+          let ourbigbookLink
+          if (context.options.ourbigbook_json.web.linkFromHeaderMeta) {
+            // Same procedure that can be done from ourbigbook.json to redirect every link out.
+            const newContext = Object.assign({}, context);
+            const newOptions = Object.assign({}, context.options);
+            const newOurbigbookJson = Object.assign({}, context.options.ourbigbook_json);
+            newContext.options = newOptions
+            newOptions.ourbigbook_json = newOurbigbookJson
+            newContext.to_split_headers = true
+            newOptions.htmlXExtension = false
+            newOurbigbookJson.xPrefix = ``
+            let logoPath
+            if (newContext.options.publish) {
+              // Relative path.
+              logoPath = `${newContext.options.template_vars.root_relpath}${newContext.options.logoPath}`
+            } else {
+              // Absolute path to local resource.
+              logoPath = newContext.options.logoPath
+            }
+            let p
+            if (context.options.isindex && ast.is_first_header_in_input_file) {
+              p = ''
+            } else {
+              p = `${URL_SEP}${ast.id}`
+            }
+            ourbigbookLink = `<a href="${WEB_URL}${context.options.ourbigbook_json.web.username}${p}"><img src="${logoPath}" class="logo" /> OurBigBook.com</a>`;
+          }
+
           // Calculate file_link_html
           let file_link_html
           if (ast.file) {
@@ -8851,9 +8901,6 @@ const OUTPUT_FORMATS_LIST = [
           if (file_link_html !== undefined) {
             header_meta.push(file_link_html);
           }
-          if (wiki_link !== undefined) {
-            header_meta.push(wiki_link);
-          }
           if (parent_links) {
             header_meta.push(parent_links);
           }
@@ -8865,6 +8912,12 @@ const OUTPUT_FORMATS_LIST = [
             if (toc_link_html) {
               header_meta.push(toc_link_html);
             }
+          }
+          if (wiki_link !== undefined) {
+            header_meta.push(wiki_link);
+          }
+          if (ourbigbookLink !== undefined) {
+            header_meta.push(ourbigbookLink);
           }
           if (tag_ids_html_array.length) {
             header_meta.push(tag_ids_html);

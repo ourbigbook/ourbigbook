@@ -893,6 +893,12 @@ WHERE
         nestedSetIndex: { [sequelize.Sequelize.Op.lt]: this.nestedSetIndex },
         nestedSetNextSibling: { [sequelize.Sequelize.Op.gt]: this.nestedSetIndex },
       },
+      include: [{
+        model: sequelize.models.File,
+        as: 'file',
+        required: true,
+        where: { authorId: this.file.authorId },
+      }],
       order: [['nestedSetIndex', 'ASC']],
     })
   }

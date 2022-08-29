@@ -8328,7 +8328,7 @@ npm run deploy-prod
 
 Get an interactive shell on the production server:
 ``
-heroku run -a ourbigbook bash
+./heroku run bash
 ``
 From there you could then for example update the <demo data> with:
 ``
@@ -8339,23 +8339,23 @@ This should in theory not affect any real user data, only the demo articles and 
 
 Alternatively, we could do this at once with;
 ``
-heroku run -a ourbigbook web/bin/generate-demo-data.js --force-production
+./heroku run web/bin/generate-demo-data.js --force-production
 ``
 
 Drop into a PostgreSQL shell on production:
 ``
-heroku psql -a ourbigbook
+./heroku psql
 ``
 Of course, any writes could mean loss of user data!
 
 Run a query directly from your terminal:
 ``
-heroku psql -a ourbigbook -c 'SELECT username,email FROM "User" ORDER BY "createdAt" DESC LIMIT 50'
+./heroku psql -c 'SELECT username,email FROM "User" ORDER BY "createdAt" DESC LIMIT 50'
 ``
 
 If some spurious bugs crashes the server, you might want to restart it with:
 ``
-heroku restart -a ourbigbook
+./heroku restart
 ``
 
 = heroku
@@ -8437,12 +8437,12 @@ To <log database queries> you can run:
 
 You then then see them with other logs at:
 ``
-heroku logs -a ourbigbook -t
+./heroku logs -t
 ``
 
 Disable these verbose logs once you're done:
 ``
-heroku config:unset -a ourbigbook DEBUG
+./heroku config:unset DEBUG
 ``
 
 = Download Heroku database and restore it locally

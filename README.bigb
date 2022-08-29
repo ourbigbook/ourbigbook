@@ -8079,6 +8079,16 @@ This breaks the website, because the DB is out of sync. So then you go and manua
 # heroku run -a ourbigbook web/bin/generate-demo-data.js --force-production --clear
 ``
 
+= OurBigBook Web useful queries
+{parent=OurBigBook Web database}
+
+Some hacks for those that have DB access.
+
+Change dates of all articles by a given user to a specific date:
+``
+select "Article"."updatedAt" from "Article" inner join "File" on "Article"."fileId" = "File".id inner join "User" on "File"."authorId" = "User"."id" and "User".username = 'barack-obama';
+``
+
 = OurBigBook Web email sending
 {parent=OurBigBook Web deployment}
 
@@ -8288,7 +8298,7 @@ heroku run -a ourbigbook-staging bash
 
 To <log database queries> you can run:
 ``
-heroku config:set -a ourbigbook DEBUG='*:sql:*'
+./heroku config:set DEBUG='*:sql:*'
 ``
 
 You then then see them with other logs at:

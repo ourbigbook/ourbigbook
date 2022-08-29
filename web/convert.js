@@ -714,7 +714,7 @@ async function convertArticle({
     }
   })
   if (perf) {
-    console.error(`perf: convertArticle finished in ${performance.now() - t0} ms`);
+    console.error(`perf: convertArticle.finish: ${performance.now() - t0} ms`);
   }
   return { articles, extra_returns }
 }

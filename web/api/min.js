@@ -23,14 +23,20 @@ router.get('/', auth.optional, async function(req, res, next) {
       query = {}
     }
     const sequelize = req.app.get('sequelize')
-    const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
+    let loggedInUser
+    if (req.payload && req.payload.id) {
+      loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
+    }
     const [ scoreDelta ] = await Promise.all([
       loggedInUser
         ? sequelize.models.User.countArticleLikesReceived(
             loggedInUser.id, { since: loggedInUser.newScoreLastCheck })
         : undefined
     ])
-    let ret = {}
+    let ret = {
+      // Inform the UI that the user's login failed.
+      loggedIn: !!loggedInUser,
+    }
     if (scoreDelta !== undefined) {
       ret.scoreDelta = scoreDelta
     }

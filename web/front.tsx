@@ -180,6 +180,13 @@ export function enableButton(btn, msgGiven) {
   btn.classList.remove('disabled')
 }
 
+/// Logout the current user on web UI.
+export function logout() {
+  window.localStorage.removeItem(AUTH_LOCAL_STORAGE_NAME);
+  deleteCookie(AUTH_COOKIE_NAME)
+  mutate('user', null);
+}
+
 export function slugFromArray(arr, { username }: { username?: boolean } = {}) {
   if (username === undefined) {
     username = true

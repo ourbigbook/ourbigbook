@@ -288,6 +288,7 @@ async function createOrUpdateArticle(req, res, opts) {
       path,
       parentId,
       previousSiblingId,
+      perf: config.log.perf,
       render,
       titleSource,
     })).articles

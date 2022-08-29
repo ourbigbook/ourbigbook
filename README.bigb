@@ -7055,6 +7055,21 @@ This is because these features require interacting with the <ID database>, and w
 * local Node.js run uses SQLite, an implementation can be seen in the \a[ourbigbook] file class `SqlDbProvider`
 * the in-browser version that runs in the browser editor of the <OurBigBook Web> makes API calls to the server
 
+= OurBigBook Library environemnt variable
+{c}
+{parent=OurBigBook Library}
+
+These are variables that affect the <OurBigBook Library> itself, and therefore also get picked up by <OurBigBook CLI> and <OurBigBook Web>.
+
+= OurBigBook environment variable true
+{parent=OurBigBook Library environemnt variable}
+
+For boolean environment variables, the value of "true" should use be `1`, e.g. as in:
+``
+OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js
+``
+Every other value is considered false, including e.g. `true`.
+
 = OurBigBook Web
 {c}
 {parent=OurBigBook}
@@ -7569,8 +7584,9 @@ The meaning of `+0ms` and `+1ms` appears to be the timing since last the last me
 
 This is a bit messy however, as we often want to find the largest numbers for profiling, and there could be a large time delta during inactivity.
 
-= OURBIGBOOK_LOG_DB
+= `OURBIGBOOK_LOG_DB`
 {parent=Log database queries}
+{tag=OurBigBook Web environemnt variable}
 
 This tends to be better for benchmarking than <DEBUG sql>:
 ``
@@ -7930,6 +7946,15 @@ cd web
 nmp run typecheck
 ``
 The output format is also a bit nicer that what is shown in `npm run build-dev`.
+
+= OurBigBook Web environment variable
+{c}
+{parent=OurBigBook Web development}
+
+= `OURBIGBOOK_LOG_PERF`
+{parent=OurBigBook Web environment variable}
+
+If set to <OurBigBook environment variable true> enables somewhat verbose logs of several key performance points, notably in conversion.
 
 = OurBigBook Web deployment
 {c}

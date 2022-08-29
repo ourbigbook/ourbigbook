@@ -635,7 +635,7 @@ async function update_database_after_convert({
   render, // boolean
   sequelize,
   synonymHeaderPaths,
-  sha256,
+  hash,
   transaction,
   titleSource,
 }) {
@@ -667,7 +667,7 @@ async function update_database_after_convert({
       'last_parse',
       // https://github.com/ourbigbook/ourbigbook/issues/241
       'toplevel_id',
-      'sha256',
+      'hash',
     ]
     file_bulk_create_last_parse = Date.now()
   }
@@ -687,7 +687,7 @@ async function update_database_after_convert({
           bodySource,
           last_parse: file_bulk_create_last_parse,
           path,
-          sha256,
+          hash,
           titleSource,
           toplevel_id,
         },

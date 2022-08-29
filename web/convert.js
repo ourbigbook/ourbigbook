@@ -183,7 +183,6 @@ async function convertArticle({
       titleSource,
       transaction,
     }))
-    const sha256 = articleHash({ parentId, previousSiblingId, source })
     const toplevelId = extra_returns.context.header_tree.children[0].ast.id
     if (toplevelId !== toplevelId.toLowerCase()) {
       throw new ValidationError(`Article ID cannot contain uppercase characters: "${toplevelId}"`)
@@ -275,7 +274,7 @@ async function convertArticle({
       synonymHeaderPaths: Array.from(extra_returns.context.synonym_headers).map(h => `${h.id}.${ourbigbook.OURBIGBOOK_EXT}`),
       path: input_path,
       render,
-      sha256,
+      hash: articleHash({ parentId, previousSiblingId, source }),
       titleSource,
       transaction,
     })

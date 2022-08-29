@@ -30,8 +30,6 @@ const NOSPLIT_MARKER = `<span class="fa-solid-900">\u{f111}</span> ${NOSPLIT_MAR
 const SPLIT_MARKER_TEXT = 'split'
 exports.SPLIT_MARKER_TEXT = SPLIT_MARKER_TEXT;
 const SPLIT_MARKER = `<span class="fa-solid-900">\u{f042}</span> ${SPLIT_MARKER_TEXT}`;
-const PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
-exports.PARENT_MARKER = PARENT_MARKER;
 const NEXT_ANCESTOR_MARKER = '<span class="fa-solid-900">\u{f061}</span>';
 const TOC_MARKER_SYMBOL = '<span class="fa-solid-900">\u{f03a}</span>'
 const TOC_MARKER = `${TOC_MARKER_SYMBOL} toc`
@@ -3769,6 +3767,28 @@ function header_check_child_tag_exists(ast, context, childrenOrTags, type) {
   return ret
 }
 
+/** Make ancestor links for HTML heaader breadcrumb metadata line.
+ *
+ * @param {{href: string, content: string}[]} entries
+ * @return {string}
+ * */
+function htmlAncestorLinks(entries, nAncestors) {
+  const ret = []
+  let i = 0
+  if (nAncestors > ANCESTORS_MAX) {
+    ret.push(`<a ${html_attr('href', `#${ANCESTORS_ID}`)}}>${PARENT_MARKER} &nbsp;...</a>`)
+    i++
+  }
+  for (const entry of entries) {
+    const marker = i == 0 ? PARENT_MARKER : NEXT_ANCESTOR_MARKER
+    ret.push(`<a${entry.href}>${marker} ${entry.content}</a>`)
+    i++
+  }
+  const ret2 = ret.join(HEADER_MENU_ITEM_SEP)
+  return ret2
+}
+exports.htmlAncestorLinks = htmlAncestorLinks
+
 /** Convert a key value already fully HTML escaped strings
  * to an HTML attribute. The callers MUST escape any untrusted chars.
  * e.g. with html_attr_value.
@@ -7421,7 +7441,9 @@ function x_text(ast, context, options={}) {
 // Dynamic website stuff.
 const ANCESTORS_ID_UNRESERVED = 'ancestors'
 const ANCESTORS_ID = `${Macro.RESERVED_ID_PREFIX}${ANCESTORS_ID_UNRESERVED}`
+exports.ANCESTORS_ID = ANCESTORS_ID
 const ANCESTORS_MAX = 6
+exports.ANCESTORS_MAX = ANCESTORS_MAX
 const AT_MENTION_CHAR = '@';
 exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
 const HASHTAG_CHAR = '#';
@@ -7460,6 +7482,10 @@ const HEADER_PARENT_ERROR_MESSAGE = 'header parent either is a previous ID of a 
 const HTML_ASCII_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
 const HTML_EXT = 'html';
 exports.HTML_EXT = HTML_EXT;
+const INCOMING_LINKS_MARKER = '<span title="Incoming links" class="fa-solid-900">\u{f060}</span>'
+exports.INCOMING_LINKS_MARKER = INCOMING_LINKS_MARKER
+const INCOMING_LINKS_ID_UNRESERVED = 'incoming-links'
+exports.INCOMING_LINKS_ID_UNRESERVED = INCOMING_LINKS_ID_UNRESERVED
 const ID_SEPARATOR = '-';
 exports.ID_SEPARATOR = ID_SEPARATOR
 const INSANE_LIST_START = '* ';
@@ -7500,6 +7526,8 @@ const OURBIGBOOK_JSON_DEFAULT = {
 }
 const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
 exports.OUTPUT_FORMAT_OURBIGBOOK = OUTPUT_FORMAT_OURBIGBOOK
+const PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
+exports.PARENT_MARKER = PARENT_MARKER;
 const RENDER_TYPE_WEB = 'web'
 exports.RENDER_TYPE_WEB = RENDER_TYPE_WEB
 const OUTPUT_FORMAT_HTML = 'html';
@@ -7514,7 +7542,10 @@ const VIDEO_EXTENSIONS = new Set([
   'ogv',
   'webm',
 ])
-
+const TAGGED_ID_UNRESERVED = 'tagged'
+exports.TAGGED_ID_UNRESERVED = TAGGED_ID_UNRESERVED
+const TAGS_MARKER = '<span title="Tags" class="fa-solid-900">\u{f02c}</span>'
+exports.TAGS_MARKER = TAGS_MARKER
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
 const TOC_HAS_CHILD_CLASS = 'has-child';
 const UL_OL_OPTS = {
@@ -8901,7 +8932,7 @@ const OUTPUT_FORMATS_LIST = [
             if (context.options.add_test_instrumentation) {
               tag_ids_html += '<span class="test-tags">'
             }
-            tag_ids_html += `<span title="tags" class="fa-solid-900">\u{f02c}</span> tags: ` + tag_ids_html_array.join(', ');
+            tag_ids_html += `${TAGS_MARKER} tags: ` + tag_ids_html_array.join(', ');
             if (context.options.add_test_instrumentation) {
               tag_ids_html += '</span>'
             }
@@ -8936,25 +8967,19 @@ const OUTPUT_FORMATS_LIST = [
             header_meta.push(file_link_html);
           }
           if (first_header) {
-            const ancestors = ast.ancestors(context)
-            const nAncestor = ancestors.length
-            const parent_asts = ancestors.slice(0, ANCESTORS_MAX).reverse()
-            parent_links = [];
-            let i = 0
-            if (nAncestor > ANCESTORS_MAX) {
-              parent_links.push(`<a ${html_attr('href', `#${ANCESTORS_ID}`)} ${html_attr('title', 'parent header')}>${PARENT_MARKER} &nbsp;...</a>`);
-              i++
-            }
-            for (const parent_ast of parent_asts) {
-              const parent_href = x_href_attr(parent_ast, context);
-              const parent_content = render_arg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-              let marker = i == 0 ? PARENT_MARKER : NEXT_ANCESTOR_MARKER
-              parent_links.push(`<a${parent_href}${html_attr('title', 'parent header')}>${marker} ${parent_content}</a>`);
-              i++
-            }
-            parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
-            if (parent_links) {
-              header_meta_ancestors.push(parent_links);
+            if (!context.options.h_web_metadata) {
+              const ancestors = ast.ancestors(context)
+              const nAncestors = ancestors.length
+              if (nAncestors) {
+                const nearestAncestors = ancestors.slice(0, ANCESTORS_MAX).reverse()
+                const entries = []
+                for (const ancestor of nearestAncestors) {
+                  const href = x_href_attr(ancestor, context)
+                  const content = render_arg(ancestor.args[Macro.TITLE_ARGUMENT_NAME], context)
+                  entries.push({ href, content })
+                }
+                header_meta_ancestors.push(htmlAncestorLinks(entries, nAncestors));
+              }
             }
           } else {
             const parent_asts = ast.get_header_parent_asts(context)
@@ -9001,13 +9026,16 @@ const OUTPUT_FORMATS_LIST = [
           if (header_has_meta) {
             ret += `<nav class="h-nav h-nav-toplevel">`;
           }
+          if (context.options.h_web_metadata) {
+            ret += `<div class="nav ancestors"></div>`
+          }
           for (const meta of [web_meta, header_meta_ancestors, header_meta, header_meta2]) {
             if (meta.length > 0) {
               ret += `<div class="nav"> ${meta.join(HEADER_MENU_ITEM_SEP)}</div>`;
             }
           }
           if (header_has_meta) {
-            ret += `</nav>\n`;
+            ret += `</nav>`;
           }
           ret += `</div>`;
           if (showTags) {
@@ -9153,7 +9181,7 @@ const OUTPUT_FORMATS_LIST = [
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(
                 REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
-              body += create_link_list(context, ast, `tagged`, 'Tagged', target_ids)
+              body += create_link_list(context, ast, TAGGED_ID_UNRESERVED, `${TAGS_MARKER} Tagged`, target_ids)
             }
 
             // Ancestors
@@ -9161,7 +9189,7 @@ const OUTPUT_FORMATS_LIST = [
               const ancestors = context.toplevel_ast.ancestors(context)
               if (ancestors.length !== 0) {
                 // TODO factor this out more with real headers.
-                body += `<div>${html_hide_hover_link(`#${ANCESTORS_ID}`)}<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">Ancestors</a></h2></div>\n`;
+                body += `<div>${html_hide_hover_link(`#${ANCESTORS_ID}`)}<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${PARENT_MARKER} Ancestors</a></h2></div>\n`;
                 const ancestor_id_asts = [];
                 for (const ancestor of ancestors) {
                   //let counts_str;
@@ -9227,7 +9255,7 @@ const OUTPUT_FORMATS_LIST = [
 
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
-              body += create_link_list(context, ast, `incoming-links`, 'Incoming links', target_ids)
+              body += create_link_list(context, ast, INCOMING_LINKS_ID_UNRESERVED, `${INCOMING_LINKS_MARKER} Incoming links`, target_ids)
             }
           }
 

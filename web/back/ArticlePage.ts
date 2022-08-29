@@ -64,15 +64,19 @@ export const getServerSidePropsArticleHoc = ({
         }
       }
       const [
+        ancestors,
         articleJson,
         articlesInSamePage,
         articlesInSamePageForToc,
         h1ArticlesInSamePage,
+        incomingLinks,
         issuesCount,
         topicArticleCount,
         latestIssues,
+        tagged,
         topIssues
       ] = await Promise.all([
+        article.treeFindAncestors({ attributes: ['slug', 'titleRender'] }),
         article.toJson(loggedInUser),
         sequelize.models.Article.getArticlesInSamePage({
           article,
@@ -93,11 +97,95 @@ export const getServerSidePropsArticleHoc = ({
           h1: true,
           sequelize,
         }),
+        sequelize.models.Article.findAll({
+          attributes: ['slug', 'titleRender'],
+          order: [['slug', 'ASC']],
+          include: [{
+            model: sequelize.models.File,
+            as: 'file',
+            required: true,
+            attributes: [],
+            include: [{
+              model: sequelize.models.Id,
+              as: 'toplevelId',
+              required: true,
+              attributes: [],
+              include: [{
+                model: sequelize.models.Ref,
+                as: 'from',
+                required: true,
+                where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X] },
+                attributes: [],
+                include: [{
+                  model: sequelize.models.Id,
+                  as: 'to',
+                  required: true,
+                  attributes: [],
+                  include: [{
+                    model: sequelize.models.File,
+                    as: 'toplevelId',
+                    required: true,
+                    attributes: [],
+                    include: [{
+                      model: sequelize.models.Article,
+                      as: 'file',
+                      required: true,
+                      attributes: [],
+                      where: { slug: article.slug },
+                    }],
+                  }],
+                }],
+              }],
+            }]
+          }]
+        }),
         includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
         sequelize.models.Article.count({
           where: { topicId: article.topicId },
         }),
         includeIssues ? Promise.all(article.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
+        sequelize.models.Article.findAll({
+          attributes: ['slug', 'titleRender'],
+          order: [['slug', 'ASC']],
+          include: [{
+            model: sequelize.models.File,
+            as: 'file',
+            required: true,
+            attributes: [],
+            include: [{
+              model: sequelize.models.Id,
+              as: 'toplevelId',
+              required: true,
+              attributes: [],
+              include: [{
+                model: sequelize.models.Ref,
+                as: 'to',
+                required: true,
+                where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] },
+                attributes: [],
+                include: [{
+                  model: sequelize.models.Id,
+                  as: 'from',
+                  required: true,
+                  attributes: [],
+                  include: [{
+                    model: sequelize.models.File,
+                    as: 'toplevelId',
+                    required: true,
+                    attributes: [],
+                    include: [{
+                      model: sequelize.models.Article,
+                      as: 'file',
+                      required: true,
+                      attributes: [],
+                      where: { slug: article.slug },
+                    }],
+                  }],
+                }],
+              }],
+            }]
+          }]
+        }),
         includeIssues ? Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
       ])
       const h1ArticleInSamePage = h1ArticlesInSamePage[0]
@@ -110,9 +198,12 @@ export const getServerSidePropsArticleHoc = ({
         articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
       }
       const props: ArticlePageProps = {
+        ancestors: ancestors.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
+        incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
         article: articleJson,
         articlesInSamePage,
         articlesInSamePageForToc,
+        tagged: tagged.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
         topicArticleCount,
       }
       if (loggedInUser) {

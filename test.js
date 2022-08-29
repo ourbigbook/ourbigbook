@@ -10538,3 +10538,26 @@ assert_cli(
     },
   }
 );
+// This doesn't really test anything as options are not doing anything to ourbigbook, only lib.
+//assert_cli(
+//  "ourbigbook.json: publishOptions are not active when not publishing",
+//  {
+//    args: ['.'],
+//    filesystem: {
+//      'README.bigb': `= Index
+//`,
+//      'ourbigbook.json': `{
+//  "publishOptions": {
+//    "ignore": [
+//      "README.bigb"
+//    ]
+//  },
+//  "outputOutOfTree": true
+//}
+//`,
+//    },
+//    assert_exists: [
+//      `out/html/index.html`,
+//    ],
+//  }
+//);

@@ -6293,7 +6293,7 @@ Defined variables:
   <div><a href="{{ dir_relpath }}{{ html_index }}">Website source code</a></div>
   ``
 * `git_sha`: SHA of the latest git commit of the source code if in a git repository
-* `github_prefix`: this variable is set only if if the "github" <media provider>. It points to the URL prefix of the provider, e.g. if you have in your <ourbigbook.json>:
+* `github_prefix`: this variable is set only if if the "github" <ourbigbook.json/media-providers>[media provider]. It points to the URL prefix of the provider, e.g. if you have in your <ourbigbook.json>:
   ``
   "media-providers": {
     "github": {
@@ -6769,9 +6769,6 @@ The initial application of this option was to <redirect from a static website to
 = `media-providers`
 {parent=ourbigbook.json}
 
-= Media provider
-{synonym}
-
 The `media-providers` entry of `ourbigbook.json` specifies properties of how media such as <images> and <videos> are retrieved and rendered.
 
 The general format of `media-providers` looks like:
@@ -6884,9 +6881,11 @@ All Git date formats are accepted as documented in `man git-commit`, e.g. `2005-
 = `publishOptions`
 {parent=ourbigbook.json}
 
-<ourbigbook.json> options that should be used only when <publishing>.
+<ourbigbook.json> options that should be used only on the published output when <publishing>.
 
-If given these options override pre-existing ones when publishing.
+If given these options override pre-existing options on the published output.
+
+Only options that get passed to <OurBigBook Library> currently take effect, options that affect e.g. only the <`ourbigbook` executable> don't work currently. Lazy.
 
 = `publishRemoteUrl`
 {parent=ourbigbook.json}
@@ -7600,7 +7599,7 @@ This is a bit messy however, as we often want to find the largest numbers for pr
 
 = `OURBIGBOOK_LOG_DB`
 {parent=Log database queries}
-{tag=OurBigBook Web environemnt variable}
+{tag=OurBigBook Web environment variable}
 
 This tends to be better for benchmarking than <DEBUG sql>:
 ``
@@ -9720,7 +9719,7 @@ TODO ideas: understand what students wear, and the copy it with our logo. E.g. f
 = tshirtstudio.com
 {parent=Clothing}
 
-All items available at: https://www.tshirtstudio.com/marketplace/ourbigbook-com from <tshirtstudio.com>. Each sale includes a 5 dollar/euro/pound donation to the project.
+All items available at: https://www.tshirtstudio.com/marketplace/ourbigbook-com from <tshirtstudio.com>. Each sale includes a 5 dollar/euro/pound donation to the project. TODO: no items are showing, the site is bugged... they do seem configured to be on the marketpalce from my side however.
 
 This is a reasonable website.
 

@@ -9327,7 +9327,7 @@ assert_cli(
 );
 
 assert_cli(
-  'root_relpath and root_path in main.liquid.html work',
+  'template: root_relpath and root_path in main.liquid.html work',
   {
     args: ['-S', '.'],
     filesystem: {
@@ -9350,8 +9350,8 @@ assert_cli(
 <html lang=en>
 <head>
 <meta charset=utf-8>
+</head>
 <body>
-<header>
 <a id="root-relpath" href="{{ root_relpath }}">Root relpath</a>
 <a id="root-page" href="{{ root_page }}">Root page</a>
 {{ post_body }}
@@ -9392,7 +9392,75 @@ assert_cli(
   }
 );
 assert_cli(
-  'root_relpath and root_page work from subdirs',
+  'template: is_index_article',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'README.bigb': `= Index
+
+== h2
+`,
+      'notindex.bigb': `= Notindex
+
+== Notindex h2
+{scope}
+
+=== h3
+`,
+      'subdir/index.bigb': `= Subdir
+
+== h2
+`,
+      'ourbigbook.json': `{
+  "template": "main.liquid.html"
+}
+`,
+      'main.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+</head>
+<body>
+{% if is_index_article %}<div id="is-index-article"></div>{% endif %}
+</body>
+</html>
+`
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:div[@id='is-index-article']",
+      ],
+      'split.html': [
+        "//x:div[@id='is-index-article']",
+      ],
+    },
+    assert_not_xpath: {
+      'h2.html': [
+        "//x:div[@id='is-index-article']",
+      ],
+      'notindex.html': [
+        "//x:div[@id='is-index-article']",
+      ],
+      'notindex-split.html': [
+        "//x:div[@id='is-index-article']",
+      ],
+      'notindex-h2.html': [
+        "//x:div[@id='is-index-article']",
+      ],
+      'notindex-h2/h3.html': [
+        "//x:div[@id='is-index-article']",
+      ],
+      'subdir.html': [
+        "//x:div[@id='is-index-article']",
+      ],
+      'subdir/h2.html': [
+        "//x:div[@id='is-index-article']",
+      ],
+    },
+  }
+);
+assert_cli(
+  'template: root_relpath and root_page work from subdirs',
   {
     args: ['-S', '.'],
     filesystem: {
@@ -9406,8 +9474,8 @@ assert_cli(
 <html lang=en>
 <head>
 <meta charset=utf-8>
+</head>
 <body>
-<header>
 <a id="root-relpath" href="{{ root_relpath }}">Root relpath</a>
 <a id="root-page" href="{{ root_page }}">Root page</a>
 </body>
@@ -9426,6 +9494,7 @@ assert_cli(
     }
   }
 );
+
 assert_cli(
   "multiple incoming child and parent links don't blow up",
   {

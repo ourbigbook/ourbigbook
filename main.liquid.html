@@ -2,8 +2,9 @@
 <html lang=en>
 <head>
 <meta charset=utf-8>
-<title>{{ title }}</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{ title }}{% unless is_index_article %} - OurBigBook Docs{% endunless %}</title>
+{% if is_index_article %}<script type="application/ld+json">{"name":"OurBigBook Docs","url":"https://docs.ourbigbook.com"}</script>
+{% endif %}<meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 <style>{{ style }}</style>
 <link rel="stylesheet" type="text/css" href="{{ raw_relpath }}/main.css">

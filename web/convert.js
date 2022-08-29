@@ -14,6 +14,7 @@ const {
   commentIdPrefix,
   convertOptions,
   forbidMultiheaderMessage,
+  hideArticleDatesDate,
   maxArticleTitleSize,
   read_include_web
 } = require('./front/config')
@@ -503,7 +504,7 @@ async function convertArticle({
       for (const outpath in extra_returns.rendered_outputs) {
         const rendered_output = extra_returns.rendered_outputs[outpath]
         const renderFull = rendered_output.full
-        articleArgs.push({
+        const articleArg = {
           depth: newDepth,
           fileId: file.id,
           h1Render: renderFull.substring(0, rendered_output.h1RenderLength),
@@ -521,7 +522,12 @@ async function convertArticle({
             ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
             -ourbigbook.HTML_EXT.length - 1
           ),
-        })
+        }
+        if (author.hideArticleDates) {
+          articleArg.createdAt = hideArticleDatesDate
+          articleArg.updatedAt = hideArticleDatesDate
+        }
+        articleArgs.push(articleArg)
         if (titleSource.length > maxArticleTitleSize) {
           throw new ValidationError(`Title source too long: ${titleSource.length} bytes, maximum: ${maxArticleTitleSize} bytes, title: ${titleSource}`)
         }
@@ -532,24 +538,28 @@ async function convertArticle({
       articleArgs0.nestedSetIndex = newNestedSetIndex
       articleArgs0.nestedSetNextSibling = newNestedSetNextSibling
 
+      const updateOnDuplicate = [
+        'h1Render',
+        'h2Render',
+        'titleRender',
+        'titleSource',
+        'titleSourceLine',
+        'render',
+        'topicId',
+        'updatedAt',
+        // We intentionally skip:
+        // * depth
+        // * nestedSetInde
+        // * nestedSetNextSibling
+        // as those will be updated in bulk soon afterwards together with all descendants.
+      ]
+      if (author.hideArticleDates) {
+        updateOnDuplicate.push('createdAt')
+      }
       await sequelize.models.Article.bulkCreate(
         articleArgs,
         {
-          updateOnDuplicate: [
-            'h1Render',
-            'h2Render',
-            'titleRender',
-            'titleSource',
-            'titleSourceLine',
-            'render',
-            'topicId',
-            'updatedAt',
-            // We intentionally skip:
-            // * depth
-            // * nestedSetInde
-            // * nestedSetNextSibling
-            // as those will be updated in bulk soon afterwards together with all descendants.
-          ],
+          updateOnDuplicate,
           transaction,
           // Trying this to validate mas titleSource length here leads to another error.
           // validate: true,

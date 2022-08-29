@@ -117,6 +117,7 @@ input[type=checkbox] {
 }
 label {
   font-weight: bold;
+  display: block;
   div.label {
     margin-bottom: 5px;
     &.inline {

@@ -114,6 +114,11 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: config.maxArticleSize,
       },
+      hideArticleDates: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
 
       // A more general way would be to have a separate limits table.
       // with custom times KISS this time.
@@ -208,6 +213,7 @@ module.exports = (sequelize) => {
         ret.ip = this.ip
         ret.email = this.email
         ret.emailNotifications = this.emailNotifications
+        ret.hideArticleDates = this.hideArticleDates
         if (loggedInUser.token) {
           ret.token = loggedInUser.token
         }

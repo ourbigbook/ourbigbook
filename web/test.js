@@ -3788,3 +3788,41 @@ it('api: uppercase article IDs are forbidden', async () => {
     //assert.strictEqual(status, 422)
   })
 })
+
+it('api: hideArticleDates', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    // New articles created with hideArticleDates=false don't have the dummy date.
+    article = createArticleArg({ i: 0, titleSource: 'Before' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+    assert.notStrictEqual(data.articles[0].createdAt, config.hideArticleDatesDate)
+    assert.notStrictEqual(data.articles[0].updatedAt, config.hideArticleDatesDate)
+
+    // Set hideArticleDates to true.
+    ;({data, status} = await test.webApi.userUpdate('user0', {
+      hideArticleDates: true,
+    }))
+
+    // New articles created after hideArticleDates=true have the dummy date.
+    article = createArticleArg({ i: 0, titleSource: 'After' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+    assert.strictEqual(data.articles[0].createdAt, config.hideArticleDatesDate)
+    assert.strictEqual(data.articles[0].updatedAt, config.hideArticleDatesDate)
+
+    // Updates change the createdAt and updatedAt dates of existing articles.
+    article = createArticleArg({ i: 0, titleSource: 'Before' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+    // TODO would be slightly better if this were also reset. However it appears 
+    // that bulkCreate doesn't set createdAt even if if is passed explicitly on
+    // updateOnDuplicate.
+    assert.notStrictEqual(data.articles[0].createdAt, config.hideArticleDatesDate)
+    assert.strictEqual(data.articles[0].updatedAt, config.hideArticleDatesDate)
+  })
+})

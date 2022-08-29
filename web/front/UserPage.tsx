@@ -14,7 +14,7 @@ import FollowUserButton from 'front/FollowUserButton'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import routes from 'front/routes'
 import Article from 'front/Article'
-import { ArticleType } from 'front/types/ArticleType'
+import { ArticleType, ArticleLinkType  } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
@@ -22,6 +22,7 @@ import { UserType } from 'front/types/UserType'
 import UserList from 'front/UserList'
 
 export interface UserPageProps {
+  ancestors?: ArticleLinkType[];
   article?: ArticleType & IssueType;
   articles?: (ArticleType & IssueType & TopicType)[];
   articlesInSamePage?: ArticleType[];
@@ -29,6 +30,7 @@ export interface UserPageProps {
   articlesCount?: number;
   comments?: CommentType[];
   commentCountByLoggedInUser?: number;
+  incomingLinks?: ArticleLinkType[];
   issuesCount?: number;
   itemType?: 'article' | 'discussion' | 'like'| 'topic' | 'user';
   latestIssues?: IssueType[];
@@ -36,6 +38,7 @@ export interface UserPageProps {
   loggedInUser?: UserType;
   order: string;
   page: number;
+  tagged?: ArticleLinkType[];
   user: UserType;
   users?: UserType[];
   usersCount?: number;

@@ -3,6 +3,12 @@
 
 == Issues
 
+=== Lint tables for correct number of columns
+{tag=Lib}
+{tag=Table}
+
+Maybe there is a valid use case for rows with different number of columns. But likely by default we should error unless the use explicitly allows this.
+
 === Don't skip parent/previous sibling updates on --web uploads
 {tag=Web}
 {tag=Web upload}
@@ -1539,9 +1545,13 @@ Database specific tasks, usually refactoring.
 
 This tag is about handling non-OurBigBook files, notably related to using the <`\H` `file` argument>.
 
-=== Image
+=== Elements
 
-=== Math
+==== Image
+
+==== Math
+
+==== Table
 
 === UI
 

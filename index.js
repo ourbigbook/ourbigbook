@@ -4066,35 +4066,39 @@ function link_get_href_content(ast, context) {
 // If in split header mode, link to the nosplit version.
 // If in the nosplit mode, link to the split version.
 function link_to_split_opposite(ast, context) {
-  let content;
-  let title;
-  if (context.in_split_headers) {
-    content = NOSPLIT_MARKER;
-    title = 'view all headers in a single page';
+  if (context.options.ourbigbook_json.toSplitHeaders) {
+    return undefined
   } else {
-    content = SPLIT_MARKER;
-    title = 'view one header per page';
-  }
-  let other_context = clone_and_set(context, 'to_split_headers', !context.in_split_headers);
-  let other_href = x_href_attr(ast, other_context);
-  if (
-    // I'm not going to lie, I bruteforced this. Sue me.
-    context.options.ourbigbook_json.h.splitDefaultNotToplevel &&
-    (
-      context.options.ourbigbook_json.h.splitDefault ||
-      !context.in_split_headers
-    )
-  ) {
-    // This is dirty. But I am dirty.
-    // But seriously, checking this more cleanly would require
-    // unpacking a bunch of stuff down below from the toplevel scope removal.
-    // Related: https://github.com/ourbigbook/ourbigbook/issues/271
-    const other_href_same = x_href_attr(ast, context);
-    if (other_href === other_href_same) {
-      return undefined
+    let content;
+    let title;
+    if (context.in_split_headers) {
+      content = NOSPLIT_MARKER;
+      title = 'view all headers in a single page';
+    } else {
+      content = SPLIT_MARKER;
+      title = 'view one header per page';
     }
+    let other_context = clone_and_set(context, 'to_split_headers', !context.in_split_headers);
+    let other_href = x_href_attr(ast, other_context);
+    if (
+      // I'm not going to lie, I bruteforced this. Sue me.
+      context.options.ourbigbook_json.h.splitDefaultNotToplevel &&
+      (
+        context.options.ourbigbook_json.h.splitDefault ||
+        !context.in_split_headers
+      )
+    ) {
+      // This is dirty. But I am dirty.
+      // But seriously, checking this more cleanly would require
+      // unpacking a bunch of stuff down below from the toplevel scope removal.
+      // Related: https://github.com/ourbigbook/ourbigbook/issues/271
+      const other_href_same = x_href_attr(ast, context);
+      if (other_href === other_href_same) {
+        return undefined
+      }
+    }
+    return `<a${html_attr('title', title)}${other_href}>${content}</a>`;
   }
-  return `<a${html_attr('title', title)}${other_href}>${content}</a>`;
 }
 
 /**

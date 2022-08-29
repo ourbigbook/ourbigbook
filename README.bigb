@@ -6942,6 +6942,8 @@ Make every <internal cross reference> point to the <split header> version of the
 
 The initial application of this option was to <redirect from a static website to a dynamic website>{full}.
 
+If this option is set, then nosplit/split header metadata links are removed, since it was hard to come up with a sensible behaviour to them, and it won't matter on web redirection where every page is nonsplit anyways.
+
 = `xPrefix`
 {parent=ourbigbook.json}
 

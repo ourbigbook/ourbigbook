@@ -4674,6 +4674,7 @@ assert_lib('x: redirect from cirosantilli.com to ourbigbook.com',
 `,
     },
     convert_opts: {
+      split_headers: true,
       ourbigbook_json: {
         toSplitHeaders: true,
         xPrefix: 'https://ourbigbook.com/cirosantilli/',
@@ -4685,6 +4686,14 @@ assert_lib('x: redirect from cirosantilli.com to ourbigbook.com',
         "//x:div[@class='p']//x:a[@href='#tmp-2' and text()='tmp to tmp 2']",
         "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/cirosantilli/tmp2' and text()='tmp to tmp2']",
         "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/cirosantilli/tmp2-2' and text()='tmp to tmp2 2']",
+      ],
+    },
+    assert_not_xpath: {
+      'index.html': [
+        xpath_header_split(1, 'tmp', 'tmp.html', ourbigbook.SPLIT_MARKER_TEXT),
+      ],
+      'split.html': [
+        xpath_header_split(1, 'tmp', 'index.html', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
     },
   },

@@ -19,22 +19,6 @@ Ideally we should also have a way to change the tree without re-render, though w
 
 This actually breaks uploads because it leads to inconsistencies when finding previousSiblingId.
 
-=== CLI nosplit points to self
-{tag=CLI}
-{tag=Web upload}
-
-E.g.: https://cirosantilli.com/education-level nosplit points to the page itself. Should instead point to https://cirosantilli.com/education#education-level
-
-Possiby happens only with:
-``
-  "publishOptions": {
-    "toSplitHeaders": true,
-    "htmlXExtension": false,
-    "xPrefix": "https://ourbigbook.com/cirosantilli/"
-  },
-``
-redirects enabled.
-
 === Remove synonym from JSON, use Ref.type = synonym instead
 {tag=web}
 {tag=refactor}
@@ -783,6 +767,24 @@ Would require either moving `htmlXExtension` vs `--no-html-x-extension` processi
 But aint't nobody got time for that!
 
 == Closed issues
+
+=== CLI nosplit points to self
+{tag=CLI}
+{tag=Web upload}
+
+E.g.: https://cirosantilli.com/education-level nosplit points to the page itself. Should instead point to https://cirosantilli.com/education#education-level
+
+Possiby happens only with:
+``
+  "publishOptions": {
+    "toSplitHeaders": true,
+    "htmlXExtension": false,
+    "xPrefix": "https://ourbigbook.com/cirosantilli/"
+  },
+``
+redirects enabled.
+
+Further investigation shows that `"toSplitHeaders": true,` is the issue. Fixing this for now bu ust removing the split/nosplit in that case.
 
 === Pass previousSiblingId on web upload
 {tag=Web}

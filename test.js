@@ -1592,7 +1592,7 @@ assert_lib_ast('table without id, title, nor description does not increment the 
 );
 
 // Images.
-assert_lib_ast('block image simple',
+assert_lib_ast('image: block simple',
   `ab
 
 \\Image[cd]
@@ -1611,7 +1611,7 @@ gh
     ],
   },
 );
-assert_lib_ast('inline image simple',
+assert_lib_ast('image: inline simple',
   `ab
 
 \\image[cd]
@@ -1630,7 +1630,26 @@ gh
     ],
   },
 );
-assert_lib_ast('video simple',
+assert_lib_ast('image: link argument',
+  `ab
+
+\\Image[cd]{link=http://example.com}
+
+gh
+`,
+[
+  a('P', [t('ab')]),
+  a('Image', undefined, {src: [t('cd')]}),
+  a('P', [t('gh')]),
+],
+  {
+    filesystem: { cd: '' },
+    assert_xpath_stdout: [
+      `//x:a[@href='http://example.com']//x:img[@src='${ourbigbook.RAW_PREFIX}/cd']`,
+    ],
+  },
+);
+assert_lib_ast('video: simple',
   `ab
 
 \\Video[cd]
@@ -1649,7 +1668,7 @@ gh
     ],
   },
 );
-assert_lib_ast('image title',
+assert_lib_ast('image: title',
   `\\Image[ab]{title=c d}`,
 [
   a('Image', undefined, {
@@ -1659,18 +1678,18 @@ assert_lib_ast('image title',
 ],
   { filesystem: { ab: '' } },
 );
-assert_lib_error('image with unknown provider',
+assert_lib_error('image: unknown provider',
   `\\Image[ab]{provider=reserved_undefined}`,
   1, 11
 );
-assert_lib_error('image provider that does not match actual source',
+assert_lib_error('image: provider that does not match actual source',
   `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=local}`,
   1, 96
 );
-assert_lib_stdin('image provider that does match actual source',
+assert_lib_stdin('image: provider that does match actual source',
   `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=wikimedia}`,
 );
-assert_lib_ast('image with id has caption',
+assert_lib_ast('image: image with id has caption',
   `\\Image[aa]{id=bb}{external}\n`,
   [
     a('Image', undefined, {
@@ -1684,7 +1703,7 @@ assert_lib_ast('image with id has caption',
     ]
   }
 );
-assert_lib_ast('image with title has caption',
+assert_lib_ast('image: image with title has caption',
   `\\Image[aa]{title=b b}{external}\n`,
   [
     a('Image', undefined, {
@@ -1698,7 +1717,7 @@ assert_lib_ast('image with title has caption',
     ]
   }
 );
-assert_lib_ast('image with description has caption',
+assert_lib_ast('image: image with description has caption',
   `\\Image[aa]{description=b b}{external}\n`,
   [
     a('Image', undefined, {
@@ -1712,7 +1731,7 @@ assert_lib_ast('image with description has caption',
     ]
   }
 );
-assert_lib_ast('image with source has caption',
+assert_lib_ast('image: image with source has caption',
   `\\Image[aa]{source=b b}{external}\n`,
   [
     a('Image', undefined, {
@@ -1726,7 +1745,7 @@ assert_lib_ast('image with source has caption',
     ]
   }
 );
-assert_lib_ast('image without id, title, description nor source does not have caption',
+assert_lib_ast('image: image without id, title, description nor source does not have caption',
   `\\Image[aa]{external}
 `,
   [
@@ -1740,7 +1759,7 @@ assert_lib_ast('image without id, title, description nor source does not have ca
     ]
   }
 )
-assert_lib_ast('image without id, title, description nor source does not increment the image count',
+assert_lib_ast('image: image without id, title, description nor source does not increment the image count',
   `\\Image[aa]{id=aa}{external}
 
 \\Image[bb]{external}
@@ -1762,7 +1781,7 @@ assert_lib_ast('image without id, title, description nor source does not increme
     ],
   },
 )
-assert_lib_ast('image title with x to header in another file',
+assert_lib_ast('image: image title with x to header in another file',
   `\\Image[aa]{title=My \\x[notindex]}{external}`,
   [
     a('Image', undefined, { src: [t('aa')], }, {}, { id: 'my-notindex-h1' }),

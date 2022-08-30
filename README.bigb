@@ -8949,6 +8949,8 @@ Historically, <Vim> support came first and was better developed. But that was ju
 
 Our syntax highlighting attempts mostly to follow the official HTML style, which is perhaps the best maintained data-language. We have also had a look at the LaTeX, Markdown and Asciidoctor ones for refernce.
 
+One current fundamental limitation of VS Code is that there is no way to preview images and mathematics inline with text: https://stackoverflow.com/questions/52709966/vscode-is-it-possible-to-show-an-image-inside-a-text-buffer If only it were able to do that, it would go a long way to being as good as a WYSIWYG interface.
+
 = Vim
 {parent=Editor support}
 

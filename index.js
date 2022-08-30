@@ -1419,6 +1419,7 @@ Macro.COMMON_ARGNAMES = [
 ];
 Macro.COMMON_ARGNAMES_SET = new Set(Macro.COMMON_ARGNAMES)
 Macro.CONTENT_ARGUMENT_NAME = 'content';
+Macro.DESCRIPTION_ARGUMENT_NAME = 'description';
 Macro.HEADER_MACRO_NAME = 'H';
 Macro.HEADER_CHILD_ARGNAME = 'child';
 Macro.HEADER_TAG_ARGNAME = 'tag';
@@ -4080,6 +4081,19 @@ function html_self_link(ast, context) {
     ast,
     clone_and_set(context, 'to_split_headers', context.in_split_headers)
   );
+}
+
+function html_title_and_description(ast, context) {
+  let title_and_description = ``
+  let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
+  if (ast.index_id || ast.validation_output.description.given) {
+    const { full: title, inner } = x_text_base(ast, context, {
+      href_prefix: html_self_link(ast, context),
+      force_separator
+    })
+    title_and_description += `<div class="caption">${get_title_and_description({ title, description, inner })}</div>`
+  }
+  return { title_and_description, multiline_caption }
 }
 
 /** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
@@ -7660,7 +7674,7 @@ const IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS = IMAGE_VIDEO_INLINE_BLOCK_NAMED_ARGUMEN
     count_words: true,
   }),
   new MacroArgument({
-    name: 'description',
+    name: Macro.DESCRIPTION_ARGUMENT_NAME,
     count_words: true,
   }),
   new MacroArgument({
@@ -7771,7 +7785,7 @@ function macro_image_video_resolve_params_with_source(ast, context) {
 
 const MACRO_IMAGE_VIDEO_OPTIONS = {
   caption_number_visible: function (ast, context) {
-    return 'description' in ast.args ||
+    return Macro.DESCRIPTION_ARGUMENT_NAME in ast.args ||
       macro_image_video_resolve_params_with_source(ast, context).source !== '';
   },
   get_title_arg: function(ast, context) {
@@ -7886,7 +7900,7 @@ const DEFAULT_MACRO_LIST = [
     ],
     {
       caption_number_visible: function (ast, context) {
-        return 'description' in ast.args
+        return Macro.DESCRIPTION_ARGUMENT_NAME in ast.args
       },
       caption_prefix: 'Code',
       id_prefix: 'code',
@@ -7896,7 +7910,7 @@ const DEFAULT_MACRO_LIST = [
           count_words: true,
         }),
         new MacroArgument({
-          name: 'description',
+          name: Macro.DESCRIPTION_ARGUMENT_NAME,
           count_words: true,
         }),
       ],
@@ -8093,6 +8107,9 @@ const DEFAULT_MACRO_LIST = [
           name: Macro.TITLE_ARGUMENT_NAME,
         }),
         new MacroArgument({
+          name: Macro.DESCRIPTION_ARGUMENT_NAME,
+        }),
+        new MacroArgument({
           boolean: true,
           default: '1',
           name: 'show',
@@ -8258,7 +8275,7 @@ const DEFAULT_MACRO_LIST = [
           count_words: true,
         }),
         new MacroArgument({
-          name: 'description',
+          name: Macro.DESCRIPTION_ARGUMENT_NAME,
           count_words: true,
         }),
       ],
@@ -8297,11 +8314,11 @@ const DEFAULT_MACRO_LIST = [
     ],
     {
       caption_number_visible: function (ast, context) {
-        return 'description' in ast.args
+        return Macro.DESCRIPTION_ARGUMENT_NAME in ast.args
       },
       named_args: [
         new MacroArgument({
-          name: 'description',
+          name: Macro.DESCRIPTION_ARGUMENT_NAME,
           count_words: true,
         }),
         new MacroArgument({
@@ -8664,21 +8681,12 @@ const OUTPUT_FORMATS_LIST = [
         'b': html_render_simple_elem('b'),
         'br': function(ast, context) { return '<br>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
-          let attrs = html_render_attrs_id(ast, context);
-          let content = render_arg(ast.args.content, context);
-          let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
-          let ret = `<div class="code${multiline_caption}"${attrs}>\n`;
-          if (ast.index_id || ast.validation_output.description.given) {
-            const { full: title, inner } = x_text_base(ast, context, {
-              href_prefix: html_self_link(ast, context),
-              force_separator
-            })
-            const title_and_description = get_title_and_description({ title, description, inner })
-            ret += `\n<div class="caption">${title_and_description}</div>\n`;
-          }
-          ret += html_code(content);
-          ret += `</div>`;
-          return ret;
+          const { title_and_description, multiline_caption } = html_title_and_description(ast, context)
+          let ret = `<div class="code${multiline_caption}"${html_render_attrs_id(ast, context)}>`
+          ret += title_and_description
+          ret += html_code(render_arg(ast.args.content, context))
+          ret += `</div>`
+          return ret
         },
         [Macro.CODE_MACRO_NAME]: html_render_simple_elem('code', { newline_after_close: false }),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
@@ -9050,24 +9058,19 @@ const OUTPUT_FORMATS_LIST = [
         [Macro.INCLUDE_MACRO_NAME]: unconvertible,
         [Macro.LIST_ITEM_MACRO_NAME]: html_render_simple_elem('li', { newline_after_close: true }),
         [Macro.MATH_MACRO_NAME.toUpperCase()]: function(ast, context) {
-          let attrs = html_render_attrs_id(ast, context);
-          let katex_output = html_katex_convert(ast, context);
-          let ret = ``;
+          let katex_output = html_katex_convert(ast, context)
+          let ret = ``
           if (ast.validation_output.show.boolean) {
-            let href = html_attr('href', '#' + html_escape_attr(ast.id));
-            ret += `<div class="math-container"${attrs}>`;
-            if (Macro.TITLE_ARGUMENT_NAME in ast.args) {
-              ret += `<div class="math-caption-container">\n`;
-              ret += `<span class="math-caption">${x_text(ast, context, {href_prefix: href})}</span>`;
-              ret += `</div>\n`;
-            }
-            ret += `<div class="math-equation">\n`
-            ret += `<div>${katex_output}</div>\n`;
-            ret += `<div><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`;
-            ret += `</div>\n`;
-            ret += `</div>\n`;
+            const { title_and_description, multiline_caption } = html_title_and_description(ast, context)
+            ret += `<div class="math${multiline_caption}"${html_render_attrs_id(ast, context)}>`
+            ret += title_and_description
+            ret += `<div class="equation">`
+            ret += `<div>${katex_output}</div>`
+            ret += `<div><a${html_attr('href', '#' + html_escape_attr(ast.id))}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`
+            ret += `</div>`
+            ret += `</div>`
           }
-          return ret;
+          return ret
         },
         [Macro.MATH_MACRO_NAME]: function(ast, context) {
           // KaTeX already adds a <span> for us.

@@ -5130,6 +5130,12 @@ Examples:
 * <headers>: `= My header` is equivalent to `\H[1][My header]`, and `My header` is the <`title` argument>, which is a <positional argument> in this case
 * <images>: in `\Image[flower.jpg]{title=My header}` and `My header` is the <`title` argument>, which is a <named argument> in this case
 
+= `description` argument
+{c}
+{parent=Pseudo-macro argument property}
+
+The <`description` argument> is similar to the <`title` argument> in that it adds information about some block such as an <image> or <code block>. The difference from the title is that it does not count toward <automatic ID from title> calculations.
+
 = OurBigBook Markup concepts
 {parent=OurBigBook Markup}
 

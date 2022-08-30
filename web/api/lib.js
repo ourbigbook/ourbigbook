@@ -169,8 +169,9 @@ html: ${html}`)
 // When this class is thrown and would blows up on toplevel, we catch it instead
 // and gracefully return the specified error to the client instead of doing a 500.
 class ValidationError extends Error {
-  constructor(errors, status) {
-    super();
+  constructor(errors, status, opts={}) {
+    super()
+    this.info = opts.info
     this.errors = errors
     if (status === undefined) {
       status = 422

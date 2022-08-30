@@ -109,7 +109,7 @@ async function convert({
   if (extra_returns.errors.length > 0) {
     const errsNoDupes = remove_duplicates_sorted_array(
       extra_returns.errors.map(e => e.toString()))
-    throw new ValidationError(errsNoDupes)
+    throw new ValidationError(errsNoDupes, 422, { info: { source } })
   }
   if (perf) {
     console.error(`perf: convert.finish: ${performance.now() - t0} ms`);
@@ -130,6 +130,7 @@ async function convert({
 async function convertArticle({
   author,
   bodySource,
+  convertOptionsExtra,
   enforceMaxArticles,
   forceNew,
   path,
@@ -154,6 +155,9 @@ async function convertArticle({
   if (enforceMaxArticles === undefined) {
     enforceMaxArticles = true
   }
+  if (convertOptionsExtra === undefined) {
+    convertOptionsExtra = {}
+  }
   await sequelize.transaction({ transaction }, async (transaction) => {
     if (render === undefined) {
       render = true
@@ -162,7 +166,7 @@ async function convertArticle({
     ;({ db_provider, extra_returns, input_path, source } = await convert({
       author,
       bodySource,
-      convertOptionsExtra: {
+      convertOptionsExtra: Object.assign({
         forbid_multiheader: forbidMultiheaderMessage,
         // 1 to remove the @ from every single ID, but still keep the `username` prefix.
         // This is necessary so we can use the same h2 render for articles under a scope for both
@@ -177,7 +181,7 @@ async function convertArticle({
         fixedScopeRemoval: ourbigbook.AT_MENTION_CHAR.length,
         h_web_metadata: true,
         prefixNonIndexedIdsWithParentId: true,
-      },
+      }, convertOptionsExtra),
       forceNew,
       parentId,
       path,

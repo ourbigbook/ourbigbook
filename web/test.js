@@ -10,6 +10,7 @@ const app = require('./app')
 const config = require('./front/config')
 const routes = require('./front/routes')
 const convert = require('./convert')
+const models = require('./models')
 const test_lib = require('./test_lib')
 const { AUTH_COOKIE_NAME } = require('./front/js')
 
@@ -458,6 +459,36 @@ it('Article.rerender', async function() {
       { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
       { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/physics' },
     ])
+  })
+})
+
+it('normalize nested-set', async function() {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    // Create articles
+
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+      ;({data, status} = await createArticleApi(test, article))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Physics' })
+      ;({data, status} = await createArticleApi(test, article, { previousSiblingId: '@user0/mathematics' }))
+      assertStatus(status, data)
+
+    // The nested-set for the API is correctly normalized.
+    await models.normalize({
+      check: true,
+      sequelize,
+      whats: ['nested-set'],
+    })
   })
 })
 

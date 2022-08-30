@@ -133,6 +133,9 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
  * @return {Object[]} Id-like objects sorted in breadth first order representing the
  *                    entire subtree of IDs under starting_ids, considering only
  *                    ourbigbook.REFS_TABLE_PARENT type refs.
+ *
+ *                    The IDs for the starting_ids are not present, only its children.
+ *                    These children start at depth 0.
  */
 async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
   if (starting_ids.length > 0) {
@@ -159,27 +162,26 @@ async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
     ;const [rows, meta] = await sequelize.query(`
 SELECT * FROM "${sequelize.models.Id.tableName}"
 INNER JOIN (
-WITH RECURSIVE
-tree_search (to_id, level, from_id, to_id_index) AS (
-  SELECT
-    to_id,
-    0,
-    from_id,
-    to_id_index
-  FROM "${sequelize.models.Ref.tableName}"
-  WHERE from_id IN (:starting_ids) AND type = :type${definedAtString}
+  WITH RECURSIVE tree_search (to_id, level, from_id, to_id_index) AS (
+    SELECT
+      to_id,
+      0,
+      from_id,
+      to_id_index
+    FROM "${sequelize.models.Ref.tableName}"
+    WHERE from_id IN (:starting_ids) AND type = :type${definedAtString}
 
-  UNION ALL
+    UNION ALL
 
-  SELECT
-    t.to_id,
-    ts.level + 1,
-    ts.to_id,
-    t.to_id_index
-  FROM "${sequelize.models.Ref.tableName}" t, tree_search ts
-  WHERE t.from_id = ts.to_id AND type = :type${definedAtString}
-)
-SELECT * FROM tree_search
+    SELECT
+      t.to_id,
+      ts.level + 1,
+      ts.to_id,
+      t.to_id_index
+    FROM "${sequelize.models.Ref.tableName}" t, tree_search ts
+    WHERE t.from_id = ts.to_id AND type = :type${definedAtString}
+  )
+  SELECT * FROM tree_search
 ) AS "RecRefs"
 ON "${sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
   AND "${sequelize.models.Id.tableName}".macro_name = '${ourbigbook.Macro.HEADER_MACRO_NAME}'

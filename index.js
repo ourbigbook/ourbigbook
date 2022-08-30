@@ -4086,14 +4086,15 @@ function html_self_link(ast, context) {
 function html_title_and_description(ast, context) {
   let title_and_description = ``
   let { description, force_separator, multiline_caption } = get_description(ast.args.description, context)
+  const href = html_self_link(ast, context)
   if (ast.index_id || ast.validation_output.description.given) {
     const { full: title, inner } = x_text_base(ast, context, {
-      href_prefix: html_self_link(ast, context),
+      href_prefix: href,
       force_separator
     })
     title_and_description += `<div class="caption">${get_title_and_description({ title, description, inner })}</div>`
   }
-  return { title_and_description, multiline_caption }
+  return { title_and_description, multiline_caption, href }
 }
 
 /** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
@@ -7283,6 +7284,8 @@ function x_href_attr(target_ast, context) {
  * @param {Object} href_prefix rendered string containing the href="..."
  *   part of a link to self to be applied e.g. to <>Figure 1<>, of undefined
  *   if this link should not be given.
+ * @return {string} full: '<a href="#barack-obama/equation-my-favorite-equation"><span class="caption-prefix">Equation 1</span></a>. My favorite equation'
+ *         {string} inner: 'My favorite equation'
  */
 function x_text_base(ast, context, options={}) {
   context = clone_and_set(context, 'in_x_text', true)
@@ -9061,12 +9064,12 @@ const OUTPUT_FORMATS_LIST = [
           let katex_output = html_katex_convert(ast, context)
           let ret = ``
           if (ast.validation_output.show.boolean) {
-            const { title_and_description, multiline_caption } = html_title_and_description(ast, context)
+            const { href, multiline_caption, title_and_description } = html_title_and_description(ast, context)
             ret += `<div class="math${multiline_caption}"${html_render_attrs_id(ast, context)}>`
             ret += title_and_description
             ret += `<div class="equation">`
             ret += `<div>${katex_output}</div>`
-            ret += `<div><a${html_attr('href', '#' + html_escape_attr(ast.id))}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`
+            ret += `<div><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`
             ret += `</div>`
             ret += `</div>`
           }

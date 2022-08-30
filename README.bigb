@@ -816,8 +816,12 @@ Common use cases for the `external` argument is to link to non OurBigBook conten
 * <link to the domain root path> for <Subdirectory deployments>
 * link non OurBigBook subdirectories. E.g., https://github.com/cirosantilli/cirosantilli.github.io/blob/master/README.bigb was rendered at https://cirosantilli.com[], and contains links `\a[markdown-style-guide]{external}` to https://cirosantilli.com/markdown-style-guide[], whose source lives in a separate non-OurBigBook repository: https://github.com/cirosantilli/markdown-style-guide/
 
-= Link to the domain root path
+= Internal links are smart
 {parent=`\a` `external` argument}
+
+= Link to the domain root path
+{synonym}
+{title2}
 
 The <`\a` `external` argument> can be used to refer to the root of the domain. E.g. suppose that we have a <subdirectory deployment> under `https://mydomain.com/subdir/`. Then:
 * `\a[/somepath]` refers to the directory `/subdir/somepath`
@@ -4080,7 +4084,7 @@ Reference to the first header of another file:
 Reference to a non-first header of another file:
 \OurBigBookExample[[\x[h2-in-not-the-readme\]]]
 
-To make toplevel links cleaner,if target header is the very first element of the other page, then the link does not get a fragment, e.g.: `\x[not-readme]` rendered as:
+To make toplevel links cleaner, if the target header is the very first element of the other page, then the link does not get a fragment, e.g.: `\x[not-readme]` rendered as:
 ``
 <a href="not-readme"
 ``
@@ -4172,6 +4176,33 @@ sqlite3 out/db.sqlite3 'select id from ids'
 ``
 
 You can force `ourbigbook` to not use the ID database with the <--no-db> command line option
+
+= Link to IDs, not URL path
+{parent=Cross file reference}
+
+This section describes the philosophy of <internal cross references>.
+
+In many static website generators, you just link to URL specific paths of internal headers.
+
+In OurBigBook, <internal cross references> point to IDs, not paths.
+
+For example, suppose "Superconductivity" is a descendant of "Condensed Matter Physics", and that the source for both is located at `condensed-matter-physics.bigb`, so that both appear on the same .html page `condensed-matter-physics.html`.
+
+When linking to Superconductivity from an external page such as `statistical-physics.bigb` you write just `<superconductivity>` and NOT `<condensed-matter-physics#superconductivity>`. OurBigBook then automatically trakcs where superconductivity is located and produces `href="condensed-matter-physics#superconductivity"` for you.
+
+This is important because on a static website, the location of headers might change. E.g. if you start writing a lot about superconductivity you would eventually want to split it to its own page, `superconductivity.html` otherwise page loads for `condensed-matter-physics.html` would become too slow as that file would become too large.
+
+But if your links read `<condensed-matter-physics#superconductivity>`, and all links would break when you move things around.
+
+So instead, you simply link to the ID `<superconductivity>`, and ourbigbook renders links correctly for you wherever the output lands.
+
+When moving headers to separate pages, it is true that existing links to subheaders will break, but that simply cannot be helped. Large pages must be split into smaller ones. The issue can be mitigated in the following ways:
+* <split headers>, which readers will eventually understand are better permalinks
+* <JavaScript redirect to split on missing ID>, which automatically redirect `condensed-matter-physics#superconductivity` to `superconductivity`, potentially hitting a <split header> if the current page does not contain the HTML ID `superconductivity`.
+
+For <OurBigBook Web>, this is even more important, as we have <dynamic article trees>, so every header can appear on top.
+
+If you really want to to use scopes, e.g. enforce the ID of "superconductivity" to be "condensed-matter-physics/superconductivity", then you can use the <scope> feature. However, this particular case would likely be a bad use case for that feature. You want your IDs to be as short as possible, which causes less need for refactoring, and makes <topics> on <OurBigBook Web> more likely to have matches from other users.
 
 = Cross reference title link removal
 {parent=Cross file reference}
@@ -5444,13 +5475,26 @@ There are two ways to publish your <OurBigBook> content:
   * uploading <OurBigBook Markup> files from your computer with the <--web> option
 A fundamental design choice of the <OurBigBook Project> is that, except for bugs, a single <OurBigBook Markup> source tree can be published in both of those ways without any changes.
 
-The trade-offs between the two options are:
+The trade-offs between the two options are highlighted at: <OurBigBook Web vs static website publishing>.
+
+\Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
+{title=Edit locally and publish demo}
+{height=720}
+{width=720}
+
+= OurBigBook Web vs static website publishing
+{parent=Publish your content}
+
 * <static websites> are cheaper to host, including many free options such as <GitHub Pages>.
 
   This means that you are likely to always have several free or cheap choices of where to upload your content to, making it essentially all but https://en.wiktionary.org/wiki/TEOTWAWKI[TEOTWAWKI]-proof
 
   Pages will also load slightly fatser.
 * <OurBigBook Web> has killer multi-user features: <OurBigBook Web Topics>, article upvotes and <OurBigBook Web discussions>
+
+  Furthermore, it also has some non multi-user features which cannot be feasibly implemented in a static website because they would require too much storage, on the fly generation is the only feasible way to deal with them:
+  * <OurBigBook Web dynamic article tree>
+  * article history. Unimplemented as of writing: https://github.com/ourbigbook/ourbigbook/issues/248
 
   Its main downside is that it is more expensive to host.
 
@@ -7337,6 +7381,9 @@ This is where OurBigBook comes to your rescue. There are two ways that it can he
 {c}
 {parent=OurBigBook Web user manual}
 
+= Topic
+{synonym}
+
 Topics group articles that have the same title by different users. This feature allows you to find the best article for a given topic, and it is one of the key innovations of <OurBigBook Web>. 
 
 Topics are a bit like Twitter hashtags or Quora questions: their goal is to centralize knowledge about a specific subject by different people at a single location. 
@@ -7409,6 +7456,9 @@ There are a few ways to do that.
 = OurBigBook Web dynamic article tree
 {c}
 {parent=OurBigBook Web user manual}
+
+= Dynamic article tree
+{synonym}
 
 <OurBigBook Web> implements what we call "dynamic article tree".
 
@@ -10268,21 +10318,28 @@ Demo videos are uploaded to the <official accounts>[official YouTube account]: h
 The video files together with the assets used to make them are also made available in the <OurBigBook media repository> under the https://github.com/ourbigbook/ourbigbook-media/tree/master/video[`video/` directory].
 
 Video guidelines:
-* desktop recording area size: 700x700. This could perhaps be optimized, but this is a reasonable size that works both as an YouTube Short and Twitter post
+* desktop recording area size: 720x720. This could perhaps be optimized, but this is a reasonable size that works both as an YouTube Short and Twitter post.
+
+  Previously we had been using 700x700, but at some point YouTube appears to have stopped generating 720p resolution for those, and 480p is just too bad.
 
   We've been happily using vokoscreenNG.
 
   A good technique is to move the recording window to the lower left bottom of the screen, which stops things from floating around too much.
 * use Chromium/Chrome to record
 * resize window to fit recording area horizontally by using the Ctrl + Shift + C debugger view. Make sure to also resize the browser window vertically (cannot be done on debugger, needs resizing actual window) otherwise you won't be able to scroll if the page is not taller than the viewport.
+* be careful about single pixel black border lines straying in the recording area, they are mega visible against the clear chrome browser bar on the finished output!
 * music style guidelines: cool, beats, techno, mysterious, upbeat
 
   Some of the videos contain non-fully free YouTube music added via the YouTube UI. Reupload together with the video files appears however allowed. Ideally we should use fully https://ourbigbook.com/go/topic/cc-by-sa[CC BY-SA] music, but it is quite hard to find good ones. NC is not acceptable.
-* hardcode subs in the video. No voice. We've been happily using Aegisub to create the subtitles in `.ass` format and ffmpeg to hardcode:
+* hardcode subtitles in the video. No voice. Previously we were using Aegisub to create the subtitles in `.ass` format and ffmpeg to hardcode:
   ``
   ffmpeg -i raw.mkv -vf subtitles=sub.ass out.mkv
   ``
-* add the video as the first video of the "Videos" playlist: https://www.youtube.com/playlist?list=PLshTOzrBHLkZlpvTuBdphKLWwU7xBV6VF This list is needed because otherwise YouTube's stupid "Shorts" features produces two separate timelines by default, one for shorts and one for non-shorts. With this list, all videos can be seen easily as non-shorts.
+  but later we https://www.youtube.com/watch?v=1yuc60lz2Us[learnt about KDenlive support for subtitles] and moved to that instead as it is even more convenient to have it all in one place. Use:
+  * 22pt white font with black background to improve readability
+  * aim to have 3/4 lines of subtitle maximum per frame
+  When recording, make sure that all key mouse action happens on the top half of the viewport, otherwise it will get covered by the subtitles in downstream editing.
+* on YouTube, add the video as the first video of the "Videos" playlist: https://www.youtube.com/playlist?list=PLshTOzrBHLkZlpvTuBdphKLWwU7xBV6VF This list is needed because otherwise YouTube's stupid "Shorts" features produces two separate timelines by default, one for shorts and one for non-shorts. With this list, all videos can be seen easily as non-shorts.
 
 = OurBigBook.com Fellowship
 {parent=Publicity}

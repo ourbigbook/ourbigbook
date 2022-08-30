@@ -5,20 +5,30 @@ Welcome to Ourbigbook version {{version}}! Here's the table of contents:
 {% if multifile -%}
 == Internal cross file references
 
-Here is a link to a header present in another file: \x[h2-not-in-the-readme]
+Here is a link to a header present in another file: <h2 not in the readme>.
+
+Explicit macro equivalent, but with a "Section" prefix: \x[h2-not-in-the-readme]{full}.
 
 And below this line, we actually include the toplevel header of the other file.
 
 \Include[not-readme]
 
 {% endif -%}
-== Paragraphs, code, math
+== Paragraphs, links, code, math
 
 My first paragraph is amazing!
 
+Implicit link with body equals URL: https://examle.com This works because we automatically recognize the `https://` prefix.
+
+Implicit link with custom body: https://examle.com[example website]
+
+Implicit link immediately followed by a period by using an empty argument: https://examle.com[].  After period.
+
+Explicit link with `\a[]`: \a[https://examle.com][example website]
+
 And the second one with inline code `f(){}` and inline server-side rendered maths with KaTeX: $\sqrt{1+1}$.
 
-But if we want block code here it is:
+But if we want block code here it is
 ``
 f() {
   return 1;
@@ -50,12 +60,18 @@ Here  are three backticks:
 ```
 Nice!
 ````
-or you can also use the equivalent sane literals:
+or you can also use the equivalent sane macro literals. When you open and close a macro argument with more than one square bracket `[` or curly brackets `{`, it becomes a literal string and does not get parsed further:
 \C[[
 Here  are three backticks:
 ```
 Nice!
 ]]
+
+And here's an example of named `title=` argument with multiple curly brackets `{` which makes its content literal:
+$$
+x = \frac{1}{\sqrt{2}}
+$$
+{{title=My \notAMacro is nice.}}
 
 == Lists, tables, quotations
 
@@ -71,7 +87,7 @@ Sane list with explicit `Ul`:
 \L[second item]
 ]
 
-And now for tables, see this one: \x[table-my-table-title]. Try clicking next to the headers sort the columns!
+And now for tables, see this one: \x[table-my-table-title]. Try clicking next to the headers to sort the columns!
 \Table
 {title=My table title}
 [
@@ -95,6 +111,12 @@ And now for tables, see this one: \x[table-my-table-title]. Try clicking next to
 | 3
 | 3.3
 ]
+
+To escape the insane lists and tables just backslash them as usual:
+
+\* not a list
+
+\| not a table
 
 And a quotation:
 \Q[To be or not to be!

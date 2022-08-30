@@ -90,12 +90,12 @@ class RestDbProvider extends web_api.DbProviderBase {
       }
     }
     if (unfetched_files.length) {
-      const { data: { rows }, status } = await webApi.editorFetchFiles(unfetched_files)
-      for (const row of rows) {
+      const { data: { files }, status } = await webApi.editorFetchFiles(unfetched_files)
+      for (const file of files) {
         // This was likely not fixed for the editor case: https://github.com/ourbigbook/ourbigbook/issues/240
         // But I'll just pretend it's fine for now until this gets digged up a few years later.
         // @ts-ignore: Property 'add_file_row_to_cache' does not exist on type 'RestDbProvider'.
-        this.add_file_row_to_cache(row, context)
+        this.add_file_row_to_cache(file, context)
       }
     }
   }

@@ -20,12 +20,15 @@ router.post('/fetch-files', auth.optional, async function(req, res, next) {
     })
     const rows = await sequelize.models.File.findAll({
       where: { path: paths },
-      include: [{
-        model: sequelize.models.Id,
-        as: 'toplevel_id',
-      }]
+      include: [
+        {
+          model: sequelize.models.Id,
+          as: 'toplevelId',
+        }
+      ],
+      order: [[ 'path', 'ASC' ]]
     })
-    return res.json({ rows })
+    return res.json({ files: rows })
   } catch(error) { next(error); }
 })
 

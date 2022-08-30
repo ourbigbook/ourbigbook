@@ -826,6 +826,9 @@ WHERE
         sequelize,
         titleSource: file.titleSource,
         transaction,
+        // Originally added because we had/have crazy semantics where previousSiblingId=undefined
+        // moves the article as the first sibling necessarily. But also this is a useful performance optimization.
+        updateNestedSetIndex: false,
       })
     })
   }
@@ -1497,6 +1500,7 @@ LIMIT ${limit}` : ''}
     return ret
   }
 
+  /** Re-render multiple articles. */
   Article.rerender = async (opts={}) => {
     if (opts.log === undefined) {
       opts.log = false

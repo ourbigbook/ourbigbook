@@ -160,7 +160,7 @@
 					"contentName": "string.quoted.bigb"
 				}
 			]
-		,
+		},
 		"positionalLiteral2": {
 			"patterns": [
 				{

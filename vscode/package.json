@@ -1,10 +1,11 @@
 {
   "name": "ourbigbook-vscode",
-  "displayName": "OurBigBook VS Code",
-  "description": "OurBigBook markup support",
+  "displayName": "OurBigBook",
+  "publisher": "ourbigbook",
+  "description": "OurBigBook markup and publishing",
   "icon": "logo.png",
   "repository": "https://docs.ourbigbook.com/_dir/vscode",
-  "version": "0.0.1",
+  "version": "0.0.4",
   "engines": {
     "vscode": "^1.81.0"
   },

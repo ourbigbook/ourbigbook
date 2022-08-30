@@ -3,6 +3,13 @@
 
 == Issues
 
+=== Image title with x to image with content incorrectly disallowed
+{tag=Lib}
+
+Should only blow up if the `\\x` does not have a content explicitly set. See broken test `cross reference from image title to previous non-header with content is allowed`.
+
+To fix we need to store some extra data on the Ref or Id table that determines if the reference needs the title or not to determine its own ID.
+
 === Lint tables for correct number of columns
 {tag=Lib}
 {tag=Table}

@@ -3766,7 +3766,7 @@ assert_lib_error('cross reference from header title to previous header is not al
 
 == \\x[h1] aa
 `, 3, 4);
-assert_lib_ast('cross reference from image title to previous non-header is not allowed',
+assert_lib_ast('cross reference from image title to previous non-header without content is not allowed',
   `\\Image[ab]{title=cd}{external}
 
 \\Image[ef]{title=gh \\x[image-cd]}{external}
@@ -3779,6 +3779,45 @@ assert_lib_ast('cross reference from image title to previous non-header is not a
     ],
   }
 );
+//// TODO https://docs.ourbigbook.com/todo/image-title-with-x-to-image-with-content-incorrectly-disallowed
+//assert_lib(
+//  'cross reference from image title to previous non-header with content is allowed',
+//  {
+//    convert_dir: true,
+//    filesystem: {
+//      'README.bigb': `= Index
+//
+//\\Image[ab]{title=cd}{external}
+//
+//\\Image[ef]{title=gh \\x[image-cd][asdf]}{external}
+//`,
+//    },
+//    assert_xpath: {
+//      'index.html': [
+//        `//x:figure[@id='image-gh-asdf']`,
+//      ],
+//    },
+//  }
+//);
+//assert_lib(
+//  'cross reference from image title to previous non-header with id is allowed',
+//  {
+//    convert_dir: true,
+//    filesystem: {
+//      'README.bigb': `= Index
+//
+//\\Image[ab]{title=cd}{external}
+//
+//\\Image[ef]{title=gh \\x[image-cd]}{id=image-gh-asdf}{external}
+//`,
+//    },
+//    assert_xpath: {
+//      'index.html': [
+//        `//x:figure[@id='image-gh-asdf']`,
+//      ],
+//    },
+//  }
+//);
 assert_lib_ast('cross reference from image title to following non-header is not allowed',
   `\\Image[ef]{title=gh \\x[image-cd]}{external}
 

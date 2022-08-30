@@ -1129,19 +1129,20 @@ cd
 {title=My nice code block}
 ]]
 
-= `\OurBigBookExample`
-{parent=Macro}
+= `\C` argument
+{parent=Code block}
 
-Shows both the OurBigBook code and its rendered output, e.g.:
-\OurBigBookExample[[[
-\OurBigBookExample[[
-Some `ineline` code.
-]]
-]]]
+= `\C` `description` argument
+{parent=`\C` argument}
+{tag=`description` argument}
 
-Its input should be thought of as a literal code string, and it then injects the rendered output in the document.
+See: <`description` argument>{full}.
 
-This macro is used extensively in the OurBigBook documentation.
+= `\C` `title` argument
+{parent=`\C` argument}
+{tag=`title` argument}
+
+See: <`title` argument>{full}.
 
 = Comment
 {parent=Macro}
@@ -2525,7 +2526,7 @@ Have a look at this amazing image: \x[image-my-test-image].
 ]]
 This exemplifies the following parameters:
 * `title`: analogous to the <\H title argument>. Shows up preeminently, and sets a default ID if one is not given. It is recommended that you don't add a period `.` to it, as that would show in <cross references>
-* <image `description` argument>[`description`]: similar to `title`, but allow for further explanations without them appearing in <cross reference>[cross references] to the image
+* <image `description` argument>
 * <image `source` argument>[`source`]: a standardized way to credit an image by linking to a URL that contains further image metadata
 For further discussion on the effects of ID see: <image ID>{full}.
 
@@ -2783,6 +2784,7 @@ Adds a border around the image. This can be useful to make it clearer where imag
 
 = Image `description` argument
 {parent=Image argument}
+{tag=`description` argument}
 {tag=Named argument}
 
 The `description` argument similar to the <image title argument> argument, but allows allowing longer explanations without them appearing in <cross references> to the image.
@@ -3297,11 +3299,34 @@ $$
 \sqrt{1 + 1}
 $$
 
-= Math macros
+= `\M` argument
+{c}
 {parent=Mathematics}
 
+= `\M` `description` argument
+{parent=`\M` argument}
+{tag=`description` argument}
+
+See: <`description` argument>{full}.
+
+= `\M` `title` argument
+{parent=`\M` argument}
+{tag=`title` argument}
+
+See: <`title` argument>{full}.
+
+= LaTeX macros
+{c}
+{parent=Mathematics}
+
+= Math macros
+{synonym}
+
+= Built-in LaTeX macros
+{parent=LaTeX macros}
+
 = Built-in math macros
-{parent=Math macros}
+{synonym}
 
 OurBigBook ships with several commonly used math macros enabled by default.
 
@@ -3318,11 +3343,14 @@ Our goal is to collect the most popular macros from the most popular pre-existin
 
 The built-in macros are currently only available on <OurBigBook CLI> and <OurBigBook Web>, not when using the <JavaScript API> directly. We should likely make that possible as well at some point.
 
+= User-defined LaTeX macros
+{parent=LaTeX macros}
+
 = User-defined macros
-{parent=Math macros}
+{synonym}
 
 = `ourbigbook.tex`
-{parent=user defined macros}
+{parent=User defined LaTeX macros}
 
 If your project has multiple `.bigb` input files, you can share Mathematics definitions across all files by adding them to the `ourbigbook.tex` file on the toplevel directory.
 
@@ -3341,8 +3369,8 @@ Note however that this is not portable to <OurBigBook Web> and will likely never
 
 Ideally, you should only use this as a temporary mechanism while you make a pull request to modify the <built-in math macros> :-)
 
-= Inline user-defined macros
-{parent=User-defined macros}
+= Inline user-defined LaTeX macros
+{parent=User-defined LaTeX macros}
 
 = Math defines across blocks
 {synonym}
@@ -3387,6 +3415,20 @@ $$1 + 1$${show=1}
 $$2 + 2$${show=0}
 $$3 + 3$${show=1}
 ]]
+
+= `\OurBigBookExample`
+{parent=Macro}
+
+Shows both the OurBigBook code and its rendered output, e.g.:
+\OurBigBookExample[[[
+\OurBigBookExample[[
+Some `ineline` code.
+]]
+]]]
+
+Its input should be thought of as a literal code string, and it then injects the rendered output in the document.
+
+This macro is used extensively in the OurBigBook documentation.
 
 = Paragraph
 {parent=Macro}
@@ -3454,6 +3496,21 @@ And with multiple paragraphs.
 
 and it was great.
 ]]
+
+= `\Q` argument
+{parent=Quotation}
+
+= `\Q` `description` argument
+{parent=`\Q` argument}
+{tag=`description` argument}
+
+See: <`description` argument>{full}.
+
+= `\Q` `title` argument
+{parent=`\Q` argument}
+{tag=`title` argument}
+
+See: <`title` argument>{full}.
 
 = Table
 {parent=Macro}
@@ -3606,6 +3663,21 @@ JavaScript interactive on-click table sorting is enabled by default, try it out 
 ]]
 Powered by: https://github.com/tristen/tablesort
 
+= `\Table` argument
+{parent=Table}
+
+= `\Table` `description` argument
+{parent=`\Table` argument}
+{tag=`description` argument}
+
+See: <`description` argument>{full}.
+
+= `\Table` `title` argument
+{parent=`\Table` argument}
+{tag=`title` argument}
+
+See: <`title` argument>{full}.
+
 = Table of contents
 {parent=Macro}
 {title2=ToC}
@@ -3751,8 +3823,23 @@ Both of this cases could be worked around with JavaScript:
   But this breaks page semantics however, we don't know how to work around that
 * `youtube` videos: same as above for the `iframe`, but this should be less problematic since YouTube videos are not viewable without JavaScript anyways, and who cares about `iframe` semantics?
 
-= `\Video` `start` argument
+= `\Video` argument
 {parent=Video}
+
+= `\Video` `description` argument
+{parent=`\Video` argument}
+{tag=`description` argument}
+
+See: <`description` argument>{full}.
+
+= `\Video` `title` argument
+{parent=`\Video` argument}
+{tag=`title` argument}
+
+See: <`title` argument>{full}.
+
+= `\Video` `start` argument
+{parent=`\Video` argument}
 
 The time to start playing the video at in seconds. Works for both `youtube` and non-YouTube videos.
 

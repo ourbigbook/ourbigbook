@@ -913,8 +913,10 @@ async function check_db(sequelize, paths_converted, opts={}) {
     for (const duplicate_row of duplicate_rows) {
       const ast = ourbigbook.AstNode.fromJSON(duplicate_row.ast_json)
       const source_location = ast.source_location
+      const other_ast = ourbigbook.AstNode.fromJSON(duplicate_row.duplicate[0].ast_json)
+      const other_source_location = other_ast.source_location
       error_messages.push(
-        `${source_location.path}:${source_location.line}:${source_location.column}: ID duplicate: "${duplicate_row.idid}"`
+        `${source_location.path}:${source_location.line}:${source_location.column}: duplicated ID: "${duplicate_row.idid}". Previous definition at: ${other_source_location.path}:${other_source_location.line}:${other_source_location.column}`
       )
     }
   }

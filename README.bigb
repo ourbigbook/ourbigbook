@@ -1119,16 +1119,6 @@ cd
 ]]]
 ]]]]
 
-Block code can have a title, e.g. see this one: <code my nice code>{full}:
-\OurBigBookExample[[
-``
-ab
-cd
-``
-{id=code-my-nice-code}
-{title=My nice code block}
-]]
-
 = `\C` argument
 {parent=Code block}
 
@@ -1138,11 +1128,38 @@ cd
 
 See: <`description` argument>{full}.
 
+Example:
+
+\OurBigBookExample[[
+See the: <code Python hello world>.
+
+``
+print("Hello wrold")
+``
+{title=Python hello world}
+{description=Note thow this is super short unlike the C hello world!}
+]]
+
 = `\C` `title` argument
 {parent=`\C` argument}
 {tag=`title` argument}
 
 See: <`title` argument>{full}.
+
+Example:
+
+\OurBigBookExample[[
+See the: <code C hello world>.
+
+``
+#include <stdio.h>
+
+int main(void) {
+    puts("hello, world");
+}
+``
+{title=C hello world}
+]]
 
 = Comment
 {parent=Macro}
@@ -3506,11 +3523,30 @@ and it was great.
 
 See: <`description` argument>{full}.
 
+Example:
+
+\OurBigBookExample[[
+See the: <quote Hamlet what we are>.
+
+\Q[We know what we are, but not what we may be.]
+{title=Hamlet what we are}
+{description=This quote refers to human's inability to know their own potential, despite understanding their current abilities.}
+]]
+
 = `\Q` `title` argument
 {parent=`\Q` argument}
 {tag=`title` argument}
 
 See: <`title` argument>{full}.
+
+Example:
+
+\OurBigBookExample[[
+See the: <quote Julius Caesar star>.
+
+\Q[The fault, dear Brutus, is not in our stars, but in ourselves.]
+{title=Julius Caesar star}
+]]
 
 = Table
 {parent=Macro}

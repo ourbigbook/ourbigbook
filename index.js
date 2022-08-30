@@ -4954,7 +4954,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             ast.synonym = options.cur_header.id;
             if (ast.args[Macro.TITLE2_ARGUMENT_NAME] !== undefined) {
               if (ast.args[Macro.TITLE2_ARGUMENT_NAME].asts.length > 1) {
-                parse_error(state, `synonym headeres can have at most one ${Macro.TITLE2_ARGUMENT_NAME} argument`, ast.args[Macro.TITLE2_ARGUMENT_NAME].source_location);
+                parse_error(state, `synonym headers can have at most one ${Macro.TITLE2_ARGUMENT_NAME} argument`, ast.args[Macro.TITLE2_ARGUMENT_NAME].source_location);
               }
               if (ast.args[Macro.TITLE2_ARGUMENT_NAME].asts[0].args[Macro.CONTENT_ARGUMENT_NAME].asts.length > 0) {
                 parse_error(state, `the ${Macro.TITLE2_ARGUMENT_NAME} of synonym headers must be empty`, ast.args[Macro.TITLE2_ARGUMENT_NAME].source_location);

@@ -424,6 +424,12 @@ async function convertArticle({
         nestedSetSize = 1
       }
       newNestedSetNextSibling = newNestedSetIndex + nestedSetSize
+      if (isIndex) {
+        // It would be better to handle this by oldArticle to the old article. But we don't have it in this case becausethere is no oldRef. So let's fake it until things blow up somehow.
+        oldNestedSetIndex = newNestedSetIndex
+        oldNestedSetNextSibling = newNestedSetNextSibling
+        oldDepth = newDepth
+      }
       if (
         oldNestedSetIndex !== undefined &&
         newNestedSetIndex > oldNestedSetIndex &&

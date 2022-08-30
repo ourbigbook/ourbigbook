@@ -7311,6 +7311,37 @@ assert_lib('OurBigBookExample that links to id in another file',
   },
 );
 
+// passthrough
+assert_lib('passthrough: basic',
+  {
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `\\passthrough[[<div id="my-passthrough"></div>]]
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:div[@id='my-passthrough']",
+      ],
+    },
+  }
+);
+assert_lib('passthrough: xss_safe',
+  {
+    convert_dir: true,
+    convert_opts: { xss_safe: true },
+    filesystem: {
+      'index.bigb': `\\passthrough[[<div id="my-passthrough"></div>]]
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        `//x:pre//x:code[text()='<div id="my-passthrough"></div>']`,
+      ],
+    },
+  }
+);
+
 // ID auto-generation.
 // https://docs.ourbigbook.com/automatic-id-from-title
 assert_lib_ast('id autogeneration without title',

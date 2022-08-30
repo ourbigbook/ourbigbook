@@ -56,6 +56,7 @@ module.exports = {
     x_absolute: true,
     x_leading_at_to_web: false,
     x_remove_leading_at: true,
+    xss_safe: true,
   },
   contactUrl: `${docsUrl}/contact`,
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.

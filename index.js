@@ -342,7 +342,7 @@ class AstNode {
         output_format = context.options.output_format;
       }
       let convert_function
-      if (context.options.xss_safe) {
+      if (!macro.options.xss_safe && (this.xss_safe || context.options.xss_safe)) {
         convert_function = macro.options.xss_safe_alt[output_format];
       } else {
         convert_function = macro.convert_funcs[output_format];

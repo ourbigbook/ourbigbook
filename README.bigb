@@ -2450,7 +2450,7 @@ which looks like:
 = Header metadata section
 {parent=Header}
 
-OurBigBook adds some header metadata to the toplevel header at the bottom of each page. this section describes this metadata.
+OurBigBook adds some header metadata to the toplevel header at the bottom of each page. This section describes this metadata.
 
 Although the <table of contents>{child} has a macro to specify its placement, it is also automatically placed at the bottom of the page, and could be considered a header metadata section.
 
@@ -6569,7 +6569,12 @@ Originally added to speed up, originally added to speed up the <web upload> deve
 
 Split each header into its own separate HTML output file.
 
-This option allows you to keep all headers in a single file, which is much more convenient than working with a billion separate source files, and let them grow naturally as new information is added, but still be able to get a small output page on the rendered website that contains just the content of the given header. Such split pages load faster on the browser, and might get better Google PageRank.
+This option allows you to keep all headers in a single source file, which is much more convenient than working with a billion separate source files, and let them grow naturally as new information is added, but still be able to get a small output page on the rendered website that contains just the content of the given header. Such split pages:
+* load faster on the browser
+* get way better Google PageRank for title hits
+* allow for full metadata display, e.g.:
+  * <Header metadata section>
+  * https://en.wikipedia.org/wiki/Disqus[Disqus]/https://github.com/giscus/giscus[Gisqus] comments
 
 For example given an input file called `hello.bigb` and containing:
 ``

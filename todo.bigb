@@ -5,7 +5,7 @@
 == Issues
 
 === Incoming links and tagged metadata does not show synoyms
-{tag=Metadata sectoin}
+{tag=Metadata section}
 {tag=Synonym}
 
 Both CLI and web. E.g.:
@@ -29,7 +29,7 @@ then:
 ``
 ourbigbook .
 ``
-the output notindex.html does not have an incoming links metadata section. With <notindex> it does have a metadata section. The outcome metadata section should be identical on both.
+the output notindex.html does not have an incoming links metadata section. With `<notindex>` it does have a metadata section. The outcome metadata section should be identical on both.
 
 Same for tags that use the synonym.
 

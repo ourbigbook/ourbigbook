@@ -7260,7 +7260,7 @@ assert_cli('include: tags show on embed include',
     //  embed_includes: true,
     //},
     assert_xpath: {
-      'index.html': [
+      'out/html/index.html': [
         "//*[contains(@class, 'h-nav')]//x:span[@class='test-tags']//x:a[@href='notindex2.html']",
       ],
     },
@@ -8509,7 +8509,7 @@ assert_cli(
       'notindex.bigb': `= Notindex\n`,
     },
     assert_xpath: {
-      'notindex.html': [xpath_header(1, 'notindex')],
+      'out/html/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
 );
@@ -8667,30 +8667,30 @@ assert_cli(
     args: ['--split-headers', '.'],
     filesystem: complex_filesystem,
     assert_xpath: {
-      'h2-2.html': [
+      'out/html/h2-2.html': [
         // These headers are not children of the current toplevel header.
         // Therefore, they do not get a number like "Section 2.".
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section \"h2\"']",
         "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section \"h4 3 2 1\"']",
       ],
-      'h3-2-1.html': [
+      'out/html/h3-2-1.html': [
         // Not a child of the current toplevel either.
         "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section \"h4 3 2 1\"']",
       ],
-      'h2-3.html': [
+      'out/html/h2-3.html': [
         // This one is under the current tree, so it shows fully.
         "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section 2.1. \"h4 3 2 1\"']",
       ],
-      'notindex.html': [
+      'out/html/notindex.html': [
         xpath_header(1, 'notindex'),
         "//x:div[@class='p']//x:a[@href='index.html' and text()='link to index']",
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='link to h2']",
       ],
-      'has-split-suffix-split.html': [
+      'out/html/has-split-suffix-split.html': [
         xpath_header(1, 'has-split-suffix'),
       ],
       // Custom splitSuffix `-asdf` instead of the default `-split`.
-      'index.html': [
+      'out/html/index.html': [
         xpath_header(1, 'index'),
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='link to notindex h2']",
@@ -8710,23 +8710,23 @@ assert_cli(
         xpath_header_split(2, 'index-scope', 'index-scope.html', ourbigbook.SPLIT_MARKER_TEXT),
         xpath_header_split(3, 'index-scope/index-scope-2', 'index-scope/index-scope-2.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
-      'included-by-index.html': [
+      'out/html/included-by-index.html': [
         // Cross input file header.
         xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
       ],
-      'included-by-index-split.html': [
+      'out/html/included-by-index-split.html': [
         // Cross input file header on split header.
         xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
       ],
-      'included-by-h2-in-index.html': [
+      'out/html/included-by-h2-in-index.html': [
         xpath_header_parent(1, 'included-by-h2-in-index', 'index.html#h2', 'h2'),
       ],
-      'included-by-h2-in-index-split.html': [
+      'out/html/included-by-h2-in-index-split.html': [
         xpath_header_parent(1, 'included-by-h2-in-index', 'index.html#h2', 'h2'),
       ],
-      'notindex-splitsuffix-asdf.html': [
+      'out/html/notindex-splitsuffix-asdf.html': [
       ],
-      'split.html': [
+      'out/html/split.html': [
         // Full links between split header pages have correct numbering.
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section 2. \"h2\"']",
 
@@ -8742,7 +8742,7 @@ assert_cli(
         // to make sure we don't have to rewrite everything.
         //"//*[@id='_toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
       ],
-      'subdir.html': [
+      'out/html/subdir.html': [
         xpath_header(1),
         xpath_header_split(1, '', 'subdir/split.html', ourbigbook.SPLIT_MARKER_TEXT),
         xpath_header(2, 'index-h2'),
@@ -8755,82 +8755,82 @@ assert_cli(
         "//x:a[@href='index.html#h2' and text()='link to toplevel subheader']",
         "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
       ],
-      'subdir/split.html': [
+      'out/html/subdir/split.html': [
         xpath_header(1, ''),
         xpath_header_split(1, '', '../subdir.html', ourbigbook.NOSPLIT_MARKER_TEXT),
         // Check that split suffix works. Should be has-split-suffix-split.html,
         // not has-split-suffix.html.
         "//x:div[@class='p']//x:a[@href='../index.html#has-split-suffix' and text()='link to has split suffix']",
       ],
-      'subdir/scope/h3.html': [
+      'out/html/subdir/scope/h3.html': [
         xpath_header(1, 'h3'),
         xpath_header_split(1, 'h3', '../../subdir.html#scope/h3', ourbigbook.NOSPLIT_MARKER_TEXT),
         "//x:div[@class='p']//x:a[@href='../../subdir.html#scope' and text()='scope/h3 to scope']",
         "//x:div[@class='p']//x:a[@href='../../subdir.html#scope/h3' and text()='scope/h3 to scope/h3']",
       ],
-      'subdir/notindex.html': [
+      'out/html/subdir/notindex.html': [
         xpath_header(1, 'notindex'),
         xpath_header(2, 'notindex-h2'),
         xpath_header_split(2, 'notindex-h2', 'notindex-h2.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
-      'subdir/notindex-scope/h3.html': [
+      'out/html/subdir/notindex-scope/h3.html': [
         xpath_header(1, 'h3'),
         xpath_header_split(1, 'h3', '../notindex.html#notindex-scope/h3', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'subdir/index-h2.html': [
+      'out/html/subdir/index-h2.html': [
         xpath_header(1, 'index-h2'),
       ],
-      'subdir/notindex-h2.html': [
+      'out/html/subdir/notindex-h2.html': [
         xpath_header(1, 'notindex-h2'),
       ],
-      'subdir/notindex-split.html': [
+      'out/html/subdir/notindex-split.html': [
         xpath_header(1, 'notindex'),
       ],
-      'subdir/notindex-h2.html': [
+      'out/html/subdir/notindex-h2.html': [
         xpath_header(1, 'notindex-h2'),
       ],
-      'index-scope.html': [
+      'out/html/index-scope.html': [
         xpath_header_split(1, 'index-scope', 'index.html#index-scope', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'index-scope/index-scope-child.html': [
+      'out/html/index-scope/index-scope-child.html': [
         // https://github.com/ourbigbook/ourbigbook/issues/159
         xpath_header_split(1, 'index-scope-child', '../index.html#index-scope/index-scope-child', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'index-scope/index-scope-2.html': [
+      'out/html/index-scope/index-scope-2.html': [
         // https://github.com/ourbigbook/ourbigbook/issues/159
         xpath_header_split(1, 'index-scope-2', '../index.html#index-scope/index-scope-2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'toplevel-scope.html': [
+      'out/html/toplevel-scope.html': [
         xpath_header_split(2, 'nested-scope', 'toplevel-scope/nested-scope.html', ourbigbook.SPLIT_MARKER_TEXT),
         xpath_header_split(3, 'nested-scope/nested-scope-2', 'toplevel-scope/nested-scope/nested-scope-2.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
-      'toplevel-scope-split.html': [
+      'out/html/toplevel-scope-split.html': [
         xpath_header_split(1, 'toplevel-scope', 'toplevel-scope.html', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'toplevel-scope/toplevel-scope-h2.html': [
+      'out/html/toplevel-scope/toplevel-scope-h2.html': [
         xpath_header_split(1, 'toplevel-scope-h2', '../toplevel-scope.html#toplevel-scope-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'toplevel-scope/nested-scope.html': [
+      'out/html/toplevel-scope/nested-scope.html': [
         xpath_header_split(1, 'nested-scope', '../toplevel-scope.html#nested-scope', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'toplevel-scope/nested-scope/nested-scope-2.html': [
+      'out/html/toplevel-scope/nested-scope/nested-scope-2.html': [
         // https://github.com/ourbigbook/ourbigbook/issues/159
         xpath_header_split(1, 'nested-scope-2', '../../toplevel-scope.html#nested-scope/nested-scope-2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
 
       // Non converted paths.
-      [`${ourbigbook.RAW_PREFIX}/scss.css`]: [],
-      [`${ourbigbook.RAW_PREFIX}/ourbigbook.json`]: [],
+      [`out/html/${ourbigbook.RAW_PREFIX}/scss.css`]: [],
+      [`out/html/${ourbigbook.RAW_PREFIX}/ourbigbook.json`]: [],
     },
     assert_not_xpath: {
-      'split.html': [
+      'out/html/split.html': [
         // Included header placeholders are removed from split headers.
         xpath_header(1, 'included-by-index'),
         xpath_header(2, 'included-by-index'),
       ],
     },
   }
-);
+)
 const publish_filesystem = {
   'ourbigbook.json': `{}\n`,
   'README.bigb': `= Index
@@ -8985,7 +8985,6 @@ assert_cli(
     args: ['--split-headers', '.'],
     filesystem: {
       'ourbigbook.json': `{
-  "outputOutOfTree": true,
   "web": {
     "linkFromHeaderMeta": true,
     "username": "myusername"
@@ -9032,18 +9031,19 @@ assert_cli(
     // Place out next to ourbigbook.json which should be the toplevel.
     assert_exists: [
       'out',
-      `${ourbigbook.RAW_PREFIX}/subdir/scss.css`,
-      'subdir/xml.xml',
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/scss.css`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/xml.xml`,
     ],
     assert_not_exists: [
-      'subdir/out',
-      'xml.xml',
-      `${ourbigbook.RAW_PREFIX}/scss.css`,
-      'index.html',
+      'out/html/subdir/out',
+      `out/html/xml.xml`,
+      `out/html/${ourbigbook.RAW_PREFIX}/scss.css`,
+      `out/html/${ourbigbook.RAW_PREFIX}/scss.css`,
+      'out/html/index.html',
     ],
     assert_xpath: {
-      'subdir.html': [xpath_header(1)],
-      'subdir/notindex.html': [xpath_header(1, 'notindex')],
+      'out/html/subdir.html': [xpath_header(1)],
+      'out/html/subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
 );
@@ -9061,18 +9061,18 @@ assert_cli(
     // Don't know a better place to place out, so just put it int subdir.
     assert_exists: [
       'out',
-      `${ourbigbook.RAW_PREFIX}/subdir/scss.css`,
-      'subdir/xml.xml',
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/scss.css`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/xml.xml`,
     ],
     assert_not_exists: [
-      'index.html',
-      `${ourbigbook.RAW_PREFIX}/scss.css`,
-      'subdir/out',
-      'xml.xml',
+      'out/html/index.html',
+      `out/html/${ourbigbook.RAW_PREFIX}/scss.css`,
+      'out/html/subdir/out',
+      'out/html/xml.xml',
     ],
     assert_xpath: {
-      'subdir.html': [xpath_header(1, '')],
-      'subdir/notindex.html': [xpath_header(1, 'notindex')],
+      'out/html/subdir.html': [xpath_header(1, '')],
+      'out/html/subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
 );
@@ -9088,9 +9088,9 @@ assert_cli(
     },
     // Place out next to ourbigbook.json which should be the toplevel.
     assert_exists: ['out'],
-    assert_not_exists: ['subdir/out', 'index.html', 'subdir.html'],
+    assert_not_exists: ['out/html/subdir/out', 'out/html/index.html', 'out/html/subdir.html'],
     assert_xpath: {
-      'subdir/notindex.html': [xpath_header(1, 'notindex')],
+      'out/html/subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
   }
 );
@@ -9105,9 +9105,9 @@ assert_cli(
     },
     // Don't know a better place to place out, so just put it int subdir.
     assert_exists: ['out'],
-    assert_not_exists: ['subdir/out', 'index.html', 'subdir.html'],
+    assert_not_exists: ['out/html/subdir/out', 'out/html/index.html', 'out/html/subdir.html'],
     assert_xpath: {
-      'subdir/notindex.html': [xpath_header(1, 'notindex')],
+      'out/html/subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
   }
 );
@@ -9192,10 +9192,10 @@ assert_cli(
 `,
     },
     assert_xpath: {
-      'my-h2-synonym.html': [
+      'out/html/my-h2-synonym.html': [
         "//x:script[text()=\"location='index.html#h2'\"]",
       ],
-      'my-notindex-h2-synonym.html': [
+      'out/html/my-notindex-h2-synonym.html': [
         "//x:script[text()=\"location='notindex.html#notindex-h2'\"]",
       ],
     }
@@ -9296,13 +9296,13 @@ assert_cli(
 `,
     },
     assert_xpath: {
-      'index.html': [
+      'out/html/index.html': [
         // The start of a minified CSS rule from ourbigbook.scss.
         "//x:style[contains(text(),'.ourbigbook{')]",
       ],
     },
     assert_not_xpath: {
-      'index.html': [
+      'out/html/index.html': [
         // The way that we import other sheets.
         "//x:style[contains(text(),'@import ')]",
       ],
@@ -9369,15 +9369,15 @@ assert_cli(
 `,
     },
     assert_exists: [
-      'myproject/out',
-      `myproject/${ourbigbook.RAW_PREFIX}/scss.css`,
-      'myproject/ourbigbook.json',
+      'myproject/out/html',
+      `myproject/out/html/${ourbigbook.RAW_PREFIX}/scss.css`,
+      `myproject/out/html/${ourbigbook.RAW_PREFIX}/ourbigbook.json`,
     ],
     assert_xpath: {
-      'myproject/index.html': [
+      'myproject/out/html/index.html': [
           xpath_header(1, ''),
       ],
-      'myproject/subdir.html': [
+      'myproject/out/html/subdir.html': [
           xpath_header(1, ''),
       ]
     }
@@ -9411,13 +9411,13 @@ assert_cli(
     },
     assert_exists: [
       'myproject/out',
-      `myproject/${ourbigbook.RAW_PREFIX}/scss.css`,
+      `myproject/out/html/${ourbigbook.RAW_PREFIX}/scss.css`,
     ],
     assert_xpath: {
-      'myproject/index.html': [
+      'myproject/out/html/index.html': [
           xpath_header(1, ''),
       ],
-      'myproject/subdir.html': [
+      'myproject/out/html/subdir.html': [
           xpath_header(1, ''),
       ]
     }
@@ -9458,31 +9458,31 @@ assert_cli(
 `
     },
     assert_xpath: {
-      'index.html': [
+      'out/html/index.html': [
         "//x:a[@id='root-relpath' and @href='']",
         "//x:a[@id='root-page' and @href='']",
       ],
-      'split.html': [
+      'out/html/split.html': [
         "//x:a[@id='root-relpath' and @href='']",
         "//x:a[@id='root-page' and @href='index.html']",
       ],
-      'h2.html': [
+      'out/html/h2.html': [
         "//x:a[@id='root-relpath' and @href='']",
         "//x:a[@id='root-page' and @href='index.html']",
       ],
-      'notindex.html': [
+      'out/html/notindex.html': [
         "//x:a[@id='root-relpath' and @href='']",
         "//x:a[@id='root-page' and @href='index.html']",
       ],
-      'notindex-split.html': [
+      'out/html/notindex-split.html': [
         "//x:a[@id='root-relpath' and @href='']",
         "//x:a[@id='root-page' and @href='index.html']",
       ],
-      'notindex-h2.html': [
+      'out/html/notindex-h2.html': [
         "//x:a[@id='root-relpath' and @href='']",
         "//x:a[@id='root-page' and @href='index.html']",
       ],
-      'notindex-h2/h3.html': [
+      'out/html/notindex-h2/h3.html': [
         "//x:a[@id='root-relpath' and @href='../']",
         "//x:a[@id='root-page' and @href='../index.html']",
       ],
@@ -9525,33 +9525,33 @@ assert_cli(
 `
     },
     assert_xpath: {
-      'index.html': [
+      'out/html/index.html': [
         "//x:div[@id='is-index-article']",
       ],
-      'split.html': [
+      'out/html/split.html': [
         "//x:div[@id='is-index-article']",
       ],
     },
     assert_not_xpath: {
-      'h2.html': [
+      'out/html/h2.html': [
         "//x:div[@id='is-index-article']",
       ],
-      'notindex.html': [
+      'out/html/notindex.html': [
         "//x:div[@id='is-index-article']",
       ],
-      'notindex-split.html': [
+      'out/html/notindex-split.html': [
         "//x:div[@id='is-index-article']",
       ],
-      'notindex-h2.html': [
+      'out/html/notindex-h2.html': [
         "//x:div[@id='is-index-article']",
       ],
-      'notindex-h2/h3.html': [
+      'out/html/notindex-h2/h3.html': [
         "//x:div[@id='is-index-article']",
       ],
-      'subdir.html': [
+      'out/html/subdir.html': [
         "//x:div[@id='is-index-article']",
       ],
-      'subdir/h2.html': [
+      'out/html/subdir/h2.html': [
         "//x:div[@id='is-index-article']",
       ],
     },
@@ -9581,11 +9581,11 @@ assert_cli(
 `
     },
     assert_xpath: {
-      'subdir/notindex.html': [
+      'out/html/subdir/notindex.html': [
         "//x:a[@id='root-relpath' and @href='../']",
         "//x:a[@id='root-page' and @href='../index.html']",
       ],
-      'subdir/notindex-split.html': [
+      'out/html/subdir/notindex-split.html': [
         "//x:a[@id='root-relpath' and @href='../']",
         "//x:a[@id='root-page' and @href='../index.html']",
       ],
@@ -9612,14 +9612,14 @@ assert_cli(
 `,
     },
     assert_xpath: {
-      'index.html': [
+      'out/html/index.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html']`,
       ],
     },
   }
 );
 assert_cli(
-  'ourbigbook.json: outputOutOfTree',
+  'ourbigbook.json: outputOutOfTree=true',
   {
     args: ['-S', '.'],
     filesystem: {
@@ -9652,6 +9652,44 @@ assert_cli(
       'h2.html',
       'notindex.html',
       'notindex-h2.html',
+      'out/html/out',
+    ]
+  }
+)
+assert_cli(
+  'ourbigbook.json: outputOutOfTree=false',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'README.bigb': `= Index
+
+== h2
+`,
+      'notindex.bigb': `= Notindex
+
+== Notindex h2
+`,
+      'ourbigbook.json': `{
+  "outputOutOfTree": false
+}
+`,
+    },
+    assert_exists: [
+      'index.html',
+      'split.html',
+      'h2.html',
+      'notindex.html',
+      'notindex-h2.html',
+    ],
+    assert_exists_sqlite: [
+      'out/db.sqlite3',
+    ],
+    assert_not_exists: [
+      'out/index.html',
+      'out/split.html',
+      'out/h2.html',
+      'out/notindex.html',
+      'out/notindex-h2.html',
       'out/html/out',
     ]
   }
@@ -9766,7 +9804,7 @@ assert_cli(
   {
     args: ['notindex.bigb'],
     assert_xpath: {
-      'notindex.html': [
+      'out/html/notindex.html': [
         `//x:a[@href='index.html#h2' and text()='h2 hacked']`,
       ],
     },
@@ -9805,7 +9843,7 @@ assert_cli(
 `,
     },
     assert_xpath: {
-      'index.html': [
+      'out/html/index.html': [
         "//x:div[@class='p' and text()='asdf']",
       ],
     },
@@ -9837,21 +9875,21 @@ assert_cli('cross file ancestors work on single file conversions at toplevel',
       ['ourbigbook', ['.']],
     ],
     assert_xpath: {
-      'notindex.html': [
+      'out/html/notindex.html': [
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
       ],
-      'notindex2.html': [
+      'out/html/notindex2.html': [
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
       ],
-      'notindex3.html': [
+      'out/html/notindex3.html': [
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
       ],
     },
     assert_not_xpath: {
-      'index.html': [
+      'out/html/index.html': [
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
       ],
     },
@@ -9883,21 +9921,21 @@ assert_cli('cross file ancestors work on single file conversions in subdir',
       ['ourbigbook', ['.']],
     ],
     assert_xpath: {
-      'subdir/notindex.html': [
+      'out/html/subdir/notindex.html': [
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
       ],
-      'subdir/notindex2.html': [
+      'out/html/subdir/notindex2.html': [
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
       ],
-      'subdir/notindex3.html': [
+      'out/html/subdir/notindex3.html': [
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
       ],
     },
     assert_not_xpath: {
-      'subdir.html': [
+      'out/html/subdir.html': [
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']`,
       ],
     },
@@ -9943,26 +9981,26 @@ assert_cli(
 `,
     },
     assert_xpath: {
-      'dog.html': [
+      'out/html/dog.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dog']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='subdir/notindex.html#to-dog']`,
       ],
-      'dogs.html': [
+      'out/html/dogs.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dogs']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='subdir/notindex.html#to-dogs']`,
       ],
-      'subdir/cat.html': [
+      'out/html/subdir/cat.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
       ],
     },
     assert_not_xpath: {
-      'dog.html': [
+      'out/html/dog.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dogs']`,
       ],
-      'dogs.html': [
+      'out/html/dogs.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#to-dog']`,
       ],
-      'cat.html': [
+      'out/html/cat.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']`,
       ],
     },
@@ -9984,10 +10022,10 @@ assert_cli('ourbigbook.json redirects',
 `,
     },
     assert_xpath: {
-      'from.html': [
+      'out/html/from.html': [
         "//x:script[text()=\"location='tourl.html'\"]",
       ],
-      'from2.html': [
+      'out/html/from2.html': [
         // .html not added because it is an absolute URL.
         "//x:script[text()=\"location='https://tourl.com'\"]",
       ],
@@ -10010,11 +10048,11 @@ assert_cli('toplevel scope gets removed on table of contents of included headers
 `,
     },
     assert_xpath: {
-      'index.html': [
+      'out/html/index.html': [
         "//*[@id='_toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
         "//*[@id='_toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
       ],
-      'split.html': [
+      'out/html/split.html': [
         "//*[@id='_toc']//x:a[@href='notindex.html' and text()='1. Notindex']",
         "//*[@id='_toc']//x:a[@href='notindex.html#notindex-h2' and text()='1.1. Notindex h2']",
       ],
@@ -10092,7 +10130,6 @@ assert_cli(
       'myproj/README.bigb': `\\Image[myimg.png]{provider=github}
 `,
       'myproj/ourbigbook.json': `{
-  "outputOutOfTree": true,
   "media-providers": {
     "github": {
       "path": "../myproj-media",
@@ -10114,7 +10151,7 @@ assert_cli(
 assert_cli(
   // This is a bit annoying to test from _lib because ourbigbook CLI
   // has to pass several variables for it to work.
-  'link: media-provider github local path without outputOutOfTree',
+  'link: media-provider github local path with outputOutOfTree=false',
   {
     args: ['myproj'],
     filesystem: {
@@ -10126,7 +10163,8 @@ assert_cli(
       "path": "../myproj-media",
       "remote": "cirosantilli/myproj-media"
     }
-  }
+  },
+  "outputOutOfTree": false
 }
 `,
       'myproj-media/myimg.png': 'a',
@@ -10173,7 +10211,6 @@ assert_cli(
       'notindex.bigb': `Hello \\i[world]!
 `,
       'ourbigbook.json': `{
-  "outputOutOfTree": true
 }
 `,
     },
@@ -10221,18 +10258,20 @@ assert_cli('bigb output: synonym with split_headers does not produce redirect fi
     },
     // Just for sanity, not the actual test.
     assert_bigb: {
-      'notindex-split.bigb': `= Notindex
+      'out/bigb/notindex-split.bigb': `= Notindex
 `,
-      'notindex-2.bigb': `= Notindex 2
+      'out/bigb/notindex-2.bigb': `= Notindex 2
 
 = Notindex 2 2
 {synonym}
 `,
     },
     assert_not_exists: [
-      'notindex-2-2.bigb',
+      'out/bigb/notindex-2-2.bigb',
       // The actual test.
-      'notindex-2-2.html',
+      'out/bigb/notindex-2-2.html',
+      'out/html/notindex-2-2.bigb',
+      'out/html/notindex-2-2.html',
     ],
   }
 )
@@ -10257,12 +10296,12 @@ assert_cli(
       'main.scss': ``,
     },
     assert_exists: [
-      `${ourbigbook.RAW_PREFIX}/README.bigb`,
-      `${ourbigbook.RAW_PREFIX}/notreadme.bigb`,
-      `${ourbigbook.RAW_PREFIX}/subdir/README.bigb`,
-      `${ourbigbook.RAW_PREFIX}/subdir/notreadme.bigb`,
+      `out/html/${ourbigbook.RAW_PREFIX}/README.bigb`,
+      `out/html/${ourbigbook.RAW_PREFIX}/notreadme.bigb`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/README.bigb`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/notreadme.bigb`,
       // Also the source of other converted formats like SCSS.
-      `${ourbigbook.RAW_PREFIX}/main.scss`,
+      `out/html/${ourbigbook.RAW_PREFIX}/main.scss`,
     ]
   }
 );
@@ -10341,18 +10380,18 @@ assert_cli(
       '.git/myfile-git.txt': `ab`,
     },
     assert_exists: [
-      `${ourbigbook.RAW_PREFIX}/myfile.txt`,
-      `${ourbigbook.RAW_PREFIX}/index.html`,
-      `${ourbigbook.RAW_PREFIX}/_index.html`,
-      `${ourbigbook.RAW_PREFIX}/subdir/index.html`,
-      `${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/myfile.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/_index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
     ],
     assert_not_exists: [
       // Ignored directories are not listed.
-      `${ourbigbook.RAW_PREFIX}/.git/index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/.git/index.html`,
     ],
     assert_xpath: {
-      [`index.html`]: [
+      [`out/html/index.html`]: [
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='View file']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='View file']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root']`,
@@ -10363,17 +10402,17 @@ assert_cli(
         `//x:a[@href='${ourbigbook.RAW_PREFIX}/_index.html' and text()='index to _index.html']`,
         `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index to subdir/index.html']`,
       ],
-      [`subdir.html`]: [
+      [`out/html/subdir.html`]: [
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='link to subdir']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
       ],
-      [`subdir/subdir2.html`]: [
+      [`out/html/subdir/subdir2.html`]: [
         `//x:a[@href='../${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root']`,
         `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='link to subdir']`,
         `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
       ],
-      [`${ourbigbook.DIR_PREFIX}/index.html`]: [
+      [`out/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
         `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt']`,
         `//x:a[@href='../${ourbigbook.RAW_PREFIX}/README.bigb' and text()='README.bigb']`,
         `//x:a[@href='../${ourbigbook.RAW_PREFIX}/index.html' and text()='index.html']`,
@@ -10381,20 +10420,20 @@ assert_cli(
 
         `//x:a[@href='subdir/index.html' and text()='subdir/']`,
       ],
-      [`${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
+      [`out/html/${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
         `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt']`,
         `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index.html']`,
 
         `//x:a[@href='subdir2/index.html' and text()='subdir2/']`,
         `//x:a[@href='../index.html' and text()='(root)']`,
       ],
-      [`${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html`]: [
+      [`out/html/${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html`]: [
         `//x:a[@href='../../index.html' and text()='(root)']`,
         `//x:a[@href='../index.html' and text()='subdir']`,
       ],
     },
     assert_not_xpath: {
-      [`${ourbigbook.DIR_PREFIX}/index.html`]: [
+      [`out/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
         // ../ not added to root listing.
         "//x:a[text()='(root)']",
 
@@ -10458,18 +10497,18 @@ assert_cli(
       '.git/myfile-git.txt': `ab`,
     },
     assert_exists: [
-      `${ourbigbook.RAW_PREFIX}/myfile.txt`,
-      `${ourbigbook.RAW_PREFIX}/index.html`,
-      `${ourbigbook.RAW_PREFIX}/_index.html`,
-      `${ourbigbook.RAW_PREFIX}/subdir/index.html`,
-      `${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/myfile.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/_index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
     ],
     assert_not_exists: [
       // Ignored directories are not listed.
-      `${ourbigbook.RAW_PREFIX}/.git/index.html`,
+      `out/html/${ourbigbook.RAW_PREFIX}/.git/index.html`,
     ],
     assert_xpath: {
-      [`index.html`]: [
+      [`out/html/index.html`]: [
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir' and text()='View file']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='View file']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}' and text()='link to root']`,
@@ -10480,17 +10519,17 @@ assert_cli(
         `//x:a[@href='${ourbigbook.RAW_PREFIX}/_index.html' and text()='index to _index.html']`,
         `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index to subdir/index.html']`,
       ],
-      [`subdir.html`]: [
+      [`out/html/subdir.html`]: [
         `//x:a[@href='${ourbigbook.DIR_PREFIX}' and text()='link to root']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir' and text()='link to subdir']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
       ],
-      [`subdir/subdir2.html`]: [
+      [`out/html/subdir/subdir2.html`]: [
         `//x:a[@href='../${ourbigbook.DIR_PREFIX}' and text()='link to root']`,
         `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir' and text()='link to subdir']`,
         `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
       ],
-      [`${ourbigbook.DIR_PREFIX}/index.html`]: [
+      [`out/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
         `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt']`,
         `//x:a[@href='../${ourbigbook.RAW_PREFIX}/README.bigb' and text()='README.bigb']`,
         `//x:a[@href='../${ourbigbook.RAW_PREFIX}/index.html' and text()='index.html']`,
@@ -10498,20 +10537,20 @@ assert_cli(
 
         `//x:a[@href='subdir' and text()='subdir/']`,
       ],
-      [`${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
+      [`out/html/${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
         `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt']`,
         `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index.html']`,
 
         `//x:a[@href='subdir2' and text()='subdir2/']`,
         `//x:a[@href='..' and text()='(root)']`,
       ],
-      [`${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html`]: [
+      [`out/html/${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html`]: [
         `//x:a[@href='../..' and text()='(root)']`,
         `//x:a[@href='..' and text()='subdir']`,
       ],
     },
     assert_not_xpath: {
-      [`${ourbigbook.DIR_PREFIX}/index.html`]: [
+      [`out/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
         // ../ not added to root listing.
         "//x:a[text()='(root)']",
 
@@ -10532,7 +10571,6 @@ assert_cli(
 `,
       'not-ignored.txt': ``,
       'ourbigbook.json': `{
-  "outputOutOfTree": true
 }
 `,
     },
@@ -10579,8 +10617,7 @@ assert_cli(
   ],
   "dontIgnore": [
     "subdir-dont/.*\\\\.ignore"
-  ],
-  "outputOutOfTree": true
+  ]
 }
 `,
     },
@@ -10626,8 +10663,7 @@ assert_cli(
       'ourbigbook.json': `{
   "ignore": [
     "ignored.txt"
-  ],
-  "outputOutOfTree": true
+  ]
 }
 `,
     },
@@ -10649,8 +10685,7 @@ assert_cli(
       'ourbigbook.json': `{
   "ignore": [
     "ignored"
-  ],
-  "outputOutOfTree": true
+  ]
 }
 `,
     },
@@ -10666,8 +10701,7 @@ assert_cli(
       'ourbigbook.json': `{
   "ignore": [
     "ignored"
-  ],
-  "outputOutOfTree": true
+  ]
 }
 `,
     },
@@ -10691,10 +10725,7 @@ assert_cli(
       '.gitignore': `ignored.txt
 ignored-subdir
 `,
-      'ourbigbook.json': `{
-  "outputOutOfTree": true
-}
-`,
+      'ourbigbook.json': `{}`,
     },
     assert_exists: [
       `out/html/${ourbigbook.RAW_PREFIX}/not-ignored.txt`,
@@ -10725,7 +10756,6 @@ assert_cli(
 ignored-subdir
 `,
       'ourbigbook.json': `{
-  "outputOutOfTree": true
 }
 `,
     },
@@ -10755,7 +10785,6 @@ assert_cli(
       '.gitignore': `tmp.bigb
 `,
       'ourbigbook.json': `{
-  "outputOutOfTree": true
 }
 `,
     },
@@ -10776,7 +10805,6 @@ assert_cli(
       '.gitignore': `tmp.bigb
 `,
       'ourbigbook.json': `{
-  "outputOutOfTree": true
 }
 `,
     },
@@ -10793,7 +10821,6 @@ assert_cli(
       '.gitignore': `tmp.bigb
 `,
       'ourbigbook.json': `{
-  "outputOutOfTree": true
 }
 `,
     },
@@ -10843,7 +10870,6 @@ assert_cli(
 //      "README.bigb"
 //    ]
 //  },
-//  "outputOutOfTree": true
 //}
 //`,
 //    },

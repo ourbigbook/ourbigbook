@@ -1259,7 +1259,7 @@ if (cli.helpMacros) {
       const ourbigbook_json_path = path.join(curdir, ourbigbook.OURBIGBOOK_JSON_BASENAME);
       if (fs.existsSync(ourbigbook_json_path)) {
         Object.assign(ourbigbook_json, JSON.parse(fs.readFileSync(
-          ourbigbook_json_path, ourbigbook_nodejs_webpack_safe.ENCODING)));
+          ourbigbook_json_path, ourbigbook_nodejs_webpack_safe.ENCODING)))
         ourbigbook_json_dir = curdir;
         break;
       }
@@ -1491,7 +1491,7 @@ if (cli.helpMacros) {
     process.exit(0);
   }
   let tmpdir, renderType
-  const outputOutOfTree = ourbigbook_json.outputOutOfTree || web
+  const outputOutOfTree = ourbigbook_json.outputOutOfTree !== false || web
   if (
     // Possible on intput from stdin.
     outdir !== undefined

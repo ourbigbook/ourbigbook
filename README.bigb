@@ -5477,16 +5477,16 @@ The OurBigBook CLI calls the <OurBigBook Library> to convert each input file.
 Convert a `.bigb` file to HTML and output the HTML to a file with the same basename without extension, e.g.:
 ``
 ourbigbook hello.bigb
-firefox hello.html
+firefox out/html/hello.html
 ``
 
 Files named `README.bigb` are automatically converted to `index.html` so that they will show on both GitHub READMEs and at the website's base address:
 ``
 ourbigbook README.bigb
-firefox hello.html
+firefox out/html/index.html
 ``
 
-Convert all `.bigb` files in a directory to HTML files next to each corresponding `.bigb` file, e.g. `somefile.bigb` to `somefile.html`:
+Convert all `.bigb` files in a directory to HTML files, e.g. `somefile.bigb` to `out/html/somefile.html`:
 ``
 ourbigbook .
 ``
@@ -5522,7 +5522,7 @@ git clone https://github.com/ourbigbook/template
 cd template
 npm install
 npx ourbigbook .
-firefox index.html
+firefox out/html/index.html
 ``
 That template can be seen rendered live at: http://cirosantilli.com/ourbigbook-generate-multifile/ Other templates are documented at: <--generate>.
 
@@ -5580,8 +5580,8 @@ When you run:
 npx ourbigbook .
 ``
 it converts all files in the current directory separately, e.g.:
-* `README.bigb` to `index.html`, since `README` is a magic name that we want to show on the root URL
-* `not-readme.bigb` to `not-readme.html`, as this one is a regular name unlike `README`
+* `README.bigb` to `out/html/index.html`, since `README` is a magic name that we want to show on the root URL
+* `not-readme.bigb` to `out/html/not-readme.html`, as this one is a regular name unlike `README`
 * `main.scss` to `main.css`
 
 If one of the input files starts getting too large, usually the toplevel `README.bigb` in which you dump everything by default like Ciro does, you can speed up development and just compile files individually with either:
@@ -5610,8 +5610,8 @@ To produce a single standalone output file that contains everything the viewer n
 ``
 npx ourbigbook --embed-resources --embed-includes README.bigb
 ``
-You can now just give the generated `index.html` to any reader and they should be able to view it offline without installing anything. The flags are:
-* <--embed-includes>: without this, `\Include[not-readme]` shows as a link to the file `not-readme.html` which comes from `not-readme.bigb` With the flag, `not-readme.bigb` output gets embedded into the output `index.html` directly
+You can now just give the generated `out/html/index.html` to any reader and they should be able to view it offline without installing anything. The flags are:
+* <--embed-includes>: without this, `\Include[not-readme]` shows as a link to the file `out/html/not-readme.html` which comes from `not-readme.bigb` With the flag, `not-readme.bigb` output gets embedded into the output `out/html/index.html` directly
 * <--embed-resources>: by default, we link to CSS and JavaScript that lives inside `node_modules`. With this flag, that CSS and JavaScript is copied inline into the document instead. One day we will try to handle <images> that way as well
 
 = Useless knowledge
@@ -6228,7 +6228,7 @@ Web upload consists of two stages:
 {id=outdir}
 {parent=OurBigBook CLI options}
 
-Set a custom output directory for the conversion
+Set a custom output directory for the conversion.
 
 If not given, the <project toplevel directory> is used.
 
@@ -7230,21 +7230,27 @@ See also: https://github.com/ourbigbook/ourbigbook/issues/40
 = `outputOutOfTree`
 {parent=ourbigbook.json}
 
-Default: `false`
+Default: `true`
 
 If `true` place the HTML output under <the out directory> at `out/html`.
 
-For example:
+For example with:
+``
+{
+  "outputOutOfTree": false
+}
+``
+then
 ``
 ourbigbook hello.bigb
 ``
-would be placed under:
+would be place its output under:
 ``
-out/html/hello.html
+hello.html
 ``
-instead of `./hello.html`.
+instead of `out/html/hello.html`.
 
-Advantages:
+Advantages of `outputOutOfTree=true`:
 * the source tree becomes cleaner, especially when using <split headers> which can produce hundreds of output files from a single input file
 * if you want to track several `.html` source files in-tree, you don't need to add an exception to each of of them on the `.gitignore` as:
   ``
@@ -7253,8 +7259,6 @@ Advantages:
   ``
 Disadvantages:
 * you have to type more to open each output file on the terminal
-
-Generally we recommend starting out without this option, and enabling it as the project grows and you feel like the `.html` floating around in-tree are starting to annoy you too much.
 
 This option is always forced to `false` when <outdir> is given.
 

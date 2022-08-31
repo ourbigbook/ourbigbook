@@ -5787,6 +5787,59 @@ assert_lib_stdin('header: forbid_multiheader option allows synonyms',
     },
   }
 );
+assert_lib_error('header: forbid_multi_h1 option forbids multiple h1 headers',
+  `= h1
+
+= h1 1
+`,
+  3, 1, 'tmp.bigb',
+  {
+    convert_opts: { forbid_multi_h1: true },
+    input_path_noext: 'tmp',
+  }
+)
+assert_lib('header: forbid_multi_h1 option does not forbid multiple non-h1 headers',
+  {
+    convert_opts: { forbid_multi_h1: true },
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= h1
+
+== h2
+
+== h2 2
+
+=== h3
+`,
+    },
+  }
+)
+assert_lib('header: forbid_multi_h1 option does not forbid synonym headers',
+  {
+    convert_opts: { forbid_multi_h1: true },
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= h1
+
+= h1 2
+{synonym}
+`,
+    },
+  }
+)
+assert_lib('header: forbid_multi_h1 option does not forbid h1 headers with parent',
+  {
+    convert_opts: { forbid_multi_h1: true },
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= h1
+
+= h2
+{parent=h1}
+`,
+    },
+  }
+)
 assert_lib_stdin('header: wiki argument without value adds a link to wikipedia based on the title',
   `= My topic
 {wiki}

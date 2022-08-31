@@ -143,6 +143,7 @@ async function convertArticle({
   forceNew,
   path,
   perf,
+  // Required for h2Render to render correctly. Otherwise it looks like an h1Render.
   parentId,
   previousSiblingId,
   render,

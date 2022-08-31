@@ -244,7 +244,7 @@ iframe {
 
 // Math.
 // https://stackoverflow.com/questions/50896041/katex-font-size/57355836#57355836
-.katex { font-size: 1.2em; }
+.katex { font-size: 1.5em; }
 .math {
   align-items: center;
   overflow-x: auto;
@@ -265,9 +265,6 @@ iframe {
       text-align: right;
     }
   }
-  // Make block math larger than inline, otherwise fractions and other tall constructs become tiny.
-  // Users should avoid tall constructs inline.
-  .katex { font-size: 1.5em; }
   div.number {
     margin-left: 1.5em;
   }

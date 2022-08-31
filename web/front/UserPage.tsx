@@ -25,24 +25,25 @@ export interface UserPageProps {
   ancestors?: ArticleLinkType[];
   article?: ArticleType & IssueType;
   articles?: (ArticleType & IssueType & TopicType)[];
+  articlesCount?: number;
   articlesInSamePage?: ArticleType[];
   articlesInSamePageForToc?: ArticleType[];
-  articlesCount?: number;
-  comments?: CommentType[];
   commentCountByLoggedInUser?: number;
+  comments?: CommentType[];
   incomingLinks?: ArticleLinkType[];
   issuesCount?: number;
   itemType?: 'article' | 'discussion' | 'like'| 'topic' | 'user';
   latestIssues?: IssueType[];
-  topIssues?: IssueType[];
   loggedInUser?: UserType;
   order: string;
   page: number;
+  synonymLinks?: ArticleLinkType[];
   tagged?: ArticleLinkType[];
+  topIssues?: IssueType[];
   user: UserType;
   users?: UserType[];
   usersCount?: number;
-  what: 'follows' | 'followed' | 'followed-articles' | 'home' | 'liked' | 'likes' | 'user-issues' | 'user-articles'
+  what: 'follows' | 'followed' | 'followed-articles' | 'home' | 'liked' | 'likes' | 'user-issues' | 'user-articles';
 }
 
 export default function UserPage({
@@ -61,6 +62,7 @@ export default function UserPage({
   loggedInUser,
   order,
   page,
+  synonymLinks,
   tagged,
   topIssues,
   user,
@@ -222,6 +224,7 @@ export default function UserPage({
           incomingLinks,
           issuesCount,
           loggedInUser,
+          synonymLinks,
           tagged,
           topIssues,
         }}/>

@@ -1,12 +1,59 @@
 import ourbigbook from 'ourbigbook'
 
 import { getLoggedInUser } from 'back'
+import { getConvertOpts } from 'convert'
 import { ArticlePageProps } from 'front/ArticlePage'
 import { maxArticlesFetch } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
+import { idToSlug } from 'front/js'
 import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 import routes from 'front/routes'
+
+async function getIncomingLinks(sequelize, article, { type, from, to }) {
+  return sequelize.models.Article.findAll({
+    attributes: ['slug', 'titleRender'],
+    order: [['slug', 'ASC']],
+    include: [{
+      model: sequelize.models.File,
+      as: 'file',
+      required: true,
+      attributes: [],
+      include: [{
+        model: sequelize.models.Id,
+        as: 'toplevelId',
+        required: true,
+        attributes: [],
+        include: [{
+          model: sequelize.models.Ref,
+          as: from,
+          required: true,
+          where: { type: sequelize.models.Ref.Types[type] },
+          attributes: [],
+          include: [{
+            model: sequelize.models.Id,
+            as: to,
+            required: true,
+            attributes: [],
+            include: [{
+              model: sequelize.models.File,
+              as: 'toplevelId',
+              required: true,
+              attributes: [],
+              include: [{
+                model: sequelize.models.Article,
+                as: 'file',
+                required: true,
+                attributes: [],
+                where: { slug: article.slug },
+              }],
+            }],
+          }],
+        }],
+      }]
+    }]
+  })
+}
 
 export const getServerSidePropsArticleHoc = ({
   includeIssues=false,
@@ -71,6 +118,7 @@ export const getServerSidePropsArticleHoc = ({
         h1ArticlesInSamePage,
         incomingLinks,
         issuesCount,
+        synonymIds,
         topicArticleCount,
         latestIssues,
         tagged,
@@ -97,97 +145,31 @@ export const getServerSidePropsArticleHoc = ({
           h1: true,
           sequelize,
         }),
-        sequelize.models.Article.findAll({
-          attributes: ['slug', 'titleRender'],
-          order: [['slug', 'ASC']],
+        getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X, from: 'from', to: 'to' }),
+        includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
+        sequelize.models.Id.findAll({
           include: [{
-            model: sequelize.models.File,
-            as: 'file',
+            model: sequelize.models.Ref,
+            as: 'from',
             required: true,
+            where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM] },
             attributes: [],
             include: [{
               model: sequelize.models.Id,
-              as: 'toplevelId',
+              as: 'to',
               required: true,
               attributes: [],
-              include: [{
-                model: sequelize.models.Ref,
-                as: 'from',
-                required: true,
-                where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X] },
-                attributes: [],
-                include: [{
-                  model: sequelize.models.Id,
-                  as: 'to',
-                  required: true,
-                  attributes: [],
-                  include: [{
-                    model: sequelize.models.File,
-                    as: 'toplevelId',
-                    required: true,
-                    attributes: [],
-                    include: [{
-                      model: sequelize.models.Article,
-                      as: 'file',
-                      required: true,
-                      attributes: [],
-                      where: { slug: article.slug },
-                    }],
-                  }],
-                }],
-              }],
             }]
           }]
         }),
-        includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
         sequelize.models.Article.count({
           where: { topicId: article.topicId },
         }),
         includeIssues ? Promise.all(article.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
-        sequelize.models.Article.findAll({
-          attributes: ['slug', 'titleRender'],
-          order: [['slug', 'ASC']],
-          include: [{
-            model: sequelize.models.File,
-            as: 'file',
-            required: true,
-            attributes: [],
-            include: [{
-              model: sequelize.models.Id,
-              as: 'toplevelId',
-              required: true,
-              attributes: [],
-              include: [{
-                model: sequelize.models.Ref,
-                as: 'to',
-                required: true,
-                where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] },
-                attributes: [],
-                include: [{
-                  model: sequelize.models.Id,
-                  as: 'from',
-                  required: true,
-                  attributes: [],
-                  include: [{
-                    model: sequelize.models.File,
-                    as: 'toplevelId',
-                    required: true,
-                    attributes: [],
-                    include: [{
-                      model: sequelize.models.Article,
-                      as: 'file',
-                      required: true,
-                      attributes: [],
-                      where: { slug: article.slug },
-                    }],
-                  }],
-                }],
-              }],
-            }]
-          }]
-        }),
+        getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X_CHILD, from: 'to', to: 'from' }),
         includeIssues ? Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
       ])
+      const synonymLinks = []
       const h1ArticleInSamePage = h1ArticlesInSamePage[0]
       if (
         // False for Index pages, I think because they have no associated topic.
@@ -199,10 +181,17 @@ export const getServerSidePropsArticleHoc = ({
       }
       const props: ArticlePageProps = {
         ancestors: ancestors.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
-        incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
         article: articleJson,
         articlesInSamePage,
         articlesInSamePageForToc,
+        incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
+        synonymLinks: synonymIds.map(i => { return {
+          slug: idToSlug(i.idid),
+          titleRender: idToSlug(i.idid),
+          // TODO does not blow up, but returns empty.
+          // https://docs.ourbigbook.com/todo/list-synonyms-on-metadata-section
+          //titleRender: ourbigbook.renderAstFromOpts(i.ast_json, getConvertOpts({ render: true, sequelize })),
+        }}),
         tagged: tagged.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
         topicArticleCount,
       }

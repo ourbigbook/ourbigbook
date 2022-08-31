@@ -272,7 +272,7 @@ async function convert_directory_extract_ids(input_path, ourbigbook_options, non
     input_path,
     ourbigbook.clone_and_set(ourbigbook_options, 'render', false),
     nonOurbigbookOptions
-  );
+  )
 }
 
 async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_options, nonOurbigbookOptions) {

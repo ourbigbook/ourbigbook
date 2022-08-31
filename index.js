@@ -2881,8 +2881,7 @@ function render_arg_noescape(arg, context={}) {
  * - --split-headers
  * - \H toplevel argument
  */
-function render_ast_list(opts) {
-  let { asts, context, first_toplevel, header_count, split } = opts
+function render_ast_list({ asts, context, first_toplevel, header_count, split }) {
   if (
     // Can fail if:
     // * the first thing in the document is a header
@@ -3416,22 +3415,31 @@ function convert_init_context(options={}, extra_returns={}) {
 }
 exports.convert_init_context = convert_init_context
 
+/** Similar to convert_x_href, used for external callers that don't have the context.
+ * TODO: possibly broken, was returning empty at some point. */
+function renderAstFromOpts(astJson, options) {
+  const context = convert_init_context(options);
+  context.db_provider = options.db_provider;
+  return AstNode.fromJSON(astJson, context).render(context)
+}
+exports.renderAstFromOpts = renderAstFromOpts
+
 /* Like x_href, but called with options as convert,
  * so that we don't have to fake a complex context. */
 function convert_x_href(target_id, options) {
-  const context = convert_init_context(options);
-  context.db_provider = options.db_provider;
-  const target_ast = context.db_provider.get(target_id, context);
+  const context = convert_init_context(options)
+  context.db_provider = options.db_provider
+  const target_ast = context.db_provider.get(target_id, context)
   if (target_ast === undefined) {
     return undefined
   } else {
-    return x_href(target_ast, context);
+    return x_href(target_ast, context)
   }
 }
-exports.convert_x_href = convert_x_href;
+exports.convert_x_href = convert_x_href
 
 function dirname(str, sep) {
-  return path_split(str, sep)[0];
+  return path_split(str, sep)[0]
 }
 
 function duplicate_id_error_message(id, path, line, column) {
@@ -7503,8 +7511,12 @@ const HTML_EXT = 'html';
 exports.HTML_EXT = HTML_EXT;
 const INCOMING_LINKS_MARKER = '<span title="Incoming links" class="fa-solid-900">\u{f060}</span>'
 exports.INCOMING_LINKS_MARKER = INCOMING_LINKS_MARKER
+const SYNONYM_LINKS_MARKER = '<span title="Synonyms" class="fa-solid-900">\u{f07e}</span>'
+exports.SYNONYM_LINKS_MARKER = SYNONYM_LINKS_MARKER
 const INCOMING_LINKS_ID_UNRESERVED = 'incoming-links'
 exports.INCOMING_LINKS_ID_UNRESERVED = INCOMING_LINKS_ID_UNRESERVED
+const SYNONYM_LINKS_ID_UNRESERVED = 'synonyms'
+exports.SYNONYM_LINKS_ID_UNRESERVED = SYNONYM_LINKS_ID_UNRESERVED
 const ID_SEPARATOR = '-';
 exports.ID_SEPARATOR = ID_SEPARATOR
 const INSANE_LIST_START = '* ';
@@ -9259,6 +9271,10 @@ const OUTPUT_FORMATS_LIST = [
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
               body += create_link_list(context, ast, INCOMING_LINKS_ID_UNRESERVED, `${INCOMING_LINKS_MARKER} Incoming links`, target_ids)
+            }
+            {
+              const target_ids = context.db_provider.get_refs_to_as_ids(REFS_TABLE_SYNONYM, context.toplevel_ast.id);
+              body += create_link_list(context, ast, SYNONYM_LINKS_ID_UNRESERVED, `${SYNONYM_LINKS_MARKER} Synonyms`, target_ids)
             }
           }
 

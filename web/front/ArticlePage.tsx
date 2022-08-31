@@ -27,6 +27,7 @@ export interface ArticlePageProps {
   issuesCount?: number;
   latestIssues?: IssueType[];
   loggedInUser?: UserType;
+  synonymLinks?: ArticleLinkType[];
   tagged?: ArticleLinkType[];
   topIssues?: IssueType[];
   topicArticleCount?: number;
@@ -47,6 +48,7 @@ const ArticlePageHoc = (isIssue=false) => {
     topIssues,
     issuesCount,
     loggedInUser,
+    synonymLinks,
     tagged,
     topicArticleCount,
   }: ArticlePageProps) => {
@@ -112,6 +114,7 @@ const ArticlePageHoc = (isIssue=false) => {
               isIssue,
               issuesCount,
               latestIssues,
+              synonymLinks,
               loggedInUser,
               tagged,
               topIssues,

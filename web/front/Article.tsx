@@ -19,13 +19,15 @@ import {
   ANCESTORS_ID,
   ANCESTORS_MAX,
   AT_MENTION_CHAR,
-  htmlAncestorLinks,
   INCOMING_LINKS_ID_UNRESERVED,
   INCOMING_LINKS_MARKER,
   Macro,
   PARENT_MARKER,
+  SYNONYM_LINKS_ID_UNRESERVED,
+  SYNONYM_LINKS_MARKER,
   TAGGED_ID_UNRESERVED,
   TAGS_MARKER,
+  htmlAncestorLinks,
   render_toc_from_entry_list,
 } from 'ourbigbook'
 // This also worked. But using the packaged one reduces the need to replicate
@@ -65,6 +67,7 @@ const Article = ({
   issueArticle=undefined,
   latestIssues,
   loggedInUser,
+  synonymLinks,
   tagged,
   topIssues,
 }) => {
@@ -401,6 +404,7 @@ const Article = ({
                 </ol>
               </>}
             {linkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
+            {linkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
             </div>
             <h2>
               <CustomLink href={routes.issues(article.slug)}>

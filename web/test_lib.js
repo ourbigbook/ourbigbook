@@ -475,13 +475,16 @@ async function generateDemoData(params) {
         if (verbose) console.error(msg);
         const author = userIdToUser[articleArg.authorId]
         const opts = articleArg.opts
-        const parentEntry = opts.parentEntry
+
         let parentId
-        if (parentEntry) {
-          ;({ opts: parentOpts } = expandArticleDataEntry(parentEntry))
-          parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${parentOpts.topicId}`
-        } else {
-          parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+        {
+          const parentEntry = opts.parentEntry
+          if (parentEntry) {
+            ;({ opts: parentOpts } = expandArticleDataEntry(parentEntry))
+            parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${parentOpts.topicId}`
+          } else {
+            parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+          }
         }
         const before = now();
         const { articles: newArticles, extra_returns } = await convert.convertArticle({

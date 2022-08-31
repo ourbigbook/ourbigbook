@@ -6758,6 +6758,17 @@ Some important known limitations:
 
 However, all of those are fixable, and in an ideal world, will be fixed. Patches welcome.
 
+= Local header deletion on web upload
+{parent=web}
+
+If you delete a <header> locally and then do <--web> upload, the article is currently not removed from web.
+
+Instead, we simply make its content become empty.
+
+The reason for this is that the article may have metadata created by other users such as <OurBigBook Web discussions>, which we don't want to delete remove.
+
+In order to actually remove the header you should follow the procedure from <OurBigBook Web page renaming>{full}, which instead first moves all discussions over to a new article before deleting.
+
 = `--web-ask-password`
 {parent=OurBigBook CLI options}
 
@@ -8747,7 +8758,12 @@ web/bin/pg_dump_heroku
 ``
 This produces a file `latest.dump` with the database dump. If that already exists, it gets overwritten.
 
-Then restore it to a local database like in <Save and restore local PostgreSQL development database>{full}. First we nuke the database completely with \a[web/bin/pg-setup] to increase accuracy:
+Restoring can be done with the helper \a[web/bin/pg_restore_heroku]:
+``
+web/bin/pg_restore_heroku
+``
+
+That helper restore the local `latest.dump` database file like in <Save and restore local PostgreSQL development database>{full}. First we nuke the database completely with \a[web/bin/pg-setup] to increase accuracy:
 ``
 web/bin/pg-setup
 web/bin/pg_restore --no-acl --no-owner latest.dump

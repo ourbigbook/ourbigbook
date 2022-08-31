@@ -7501,14 +7501,14 @@ assert_lib_ast('id autogeneration nested',
   ],
 );
 assert_lib_ast('id autogeneration unicode normalize',
-  `= 0A.你ÉŁŒy++z
+  `= 0\u{2013}A.你É\u{2014}ŁŒy++z
 
-\\x[0a-你eloey-plus-plus-z]
+\\x[0-a-你e-loey-plus-plus-z]
 `,
   [
-    a('H', undefined, {title: [t('0A.你ÉŁŒy++z')]}, {id: '0a-你eloey-plus-plus-z'}),
+    a('H', undefined, {title: [t('0\u{2013}A.你É\u{2014}ŁŒy++z')]}, {id: '0-a-你e-loey-plus-plus-z'}),
     a('P', [
-      a('x', undefined, {href: [t('0a-你eloey-plus-plus-z')]})
+      a('x', undefined, {href: [t('0-a-你e-loey-plus-plus-z')]})
     ])
   ],
 );

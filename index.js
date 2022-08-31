@@ -4348,6 +4348,10 @@ function noext(str) {
 // https://docs.ourbigbook.com#ascii-normalization
 function normalize_latin_character(c) {
   return lodash.deburr(c)
+    // en-dash
+    .replaceAll('\u{2013}', ID_SEPARATOR)
+    // em-dash
+    .replaceAll('\u{2014}', ID_SEPARATOR)
 }
 
 const NORMALIZE_PUNCTUATION_CHARACTER_MAP = {

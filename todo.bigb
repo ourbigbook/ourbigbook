@@ -4,6 +4,11 @@
 
 == Issues
 
+=== Show tagged list of non toplevel pages
+{tag=Tag}
+
+Both web and CLI.
+
 === Incoming links and tagged metadata does not show synoyms
 {tag=Metadata section}
 {tag=Synonym}
@@ -518,11 +523,6 @@ E.g. https://ourbigbook.com/cirosantilli/mathematics#cirosantilli/physics should
 
 Is working on static website: https://cirosantilli.com/mathematics#physics does redirect to https://cirosantilli.com/physics
 
-=== Render ancestors, incoming links and tagged on web
-{tag=Web}
-
-All dynamic.
-
 === WYSIWYG
 {tag=Editor}
 {tag=Web}
@@ -807,6 +807,53 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== Web upload fails when renaming a header to a synonym
+{tag=Web upload}
+
+First:
+
+test-data.bigb
+``
+= Test data
+
+== Tmp
+``
+then:
+``
+ourbigbook --web-test
+``
+
+Then modify to:
+``
+= Test data
+
+== Tmp2
+
+= Tmp
+``
+and rerun:
+``
+ourbigbook --web-test
+``
+
+Error message:
+``
+param "bodySource" is mandatory when not rendering or when "path" to an existing article is not given. path="tmp"
+``
+
+Can be worked around by:
+``
+rm -rf out
+``
+therefore it is just a case of some outdated local state, thank God for that, should be simple to fix.
+
+The root problem seems to be that `sqlite3 out/web/web.sqlite3 .dump` still contains `tmp`, we have to get rid of any synonym headers during ID extraction.
+
+=== Render ancestors, incoming links and tagged on web
+{tag=Web}
+
+All dynamic.
 
 === Vertical scrollbar when image title contains math underscore
 {tag=CSS}

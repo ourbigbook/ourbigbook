@@ -1745,6 +1745,7 @@ if (cli.helpMacros) {
         inpath: { type: DataTypes.TEXT },
         parentId: { type: DataTypes.TEXT },
         source: { type: DataTypes.TEXT },
+        definedAt: { type: DataTypes.TEXT },
       })
       // Just to store the ID of the index.
       const sequelizeWebIndexId = sequelizeWeb.define('IndexId', {
@@ -1753,8 +1754,9 @@ if (cli.helpMacros) {
         uniqueHack: { type: DataTypes.INTEGER, unique: true },
       })
       await sequelizeWeb.sync()
-      nonOurbigbookOptions.post_convert_callback = async (inpath, extra_returns) => {
+      nonOurbigbookOptions.post_convert_callback = async (definedAt, extra_returns) => {
         if (extra_returns.errors.length === 0) {
+          await sequelizeWebArticle.destroy({ where: { definedAt }})
           const rendered_outputs = extra_returns.rendered_outputs
           for (let inpath in rendered_outputs) {
             const rendered_outputs_entry = rendered_outputs[inpath]
@@ -1851,6 +1853,7 @@ if (cli.helpMacros) {
               const article = {
                 body,
                 inpath,
+                definedAt,
                 source,
                 title,
               }

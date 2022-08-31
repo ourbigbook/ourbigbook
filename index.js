@@ -4345,13 +4345,71 @@ function noext(str) {
   return str.substring(0, str.lastIndexOf('.'));
 }
 
+const GREEK_MAP = {
+  '\u{03b1}': 'alpha',
+  '\u{0391}': 'Alpha',
+  '\u{03b2}': 'beta',
+  '\u{0392}': 'Beta',
+  '\u{03b3}': 'gamma',
+  '\u{0393}': 'Gamma',
+  '\u{03b4}': 'delta',
+  '\u{0394}': 'Delta',
+  '\u{03b5}': 'epsilon',
+  '\u{0395}': 'Epsilon',
+  '\u{03b6}': 'zeta',
+  '\u{0396}': 'Zeta',
+  '\u{03b7}': 'eta',
+  '\u{0397}': 'Eta',
+  '\u{03b8}': 'theta',
+  '\u{0398}': 'Theta',
+  '\u{03b9}': 'iota',
+  '\u{0399}': 'Iota',
+  '\u{03ba}': 'kappa',
+  '\u{039a}': 'Kappa',
+  '\u{03bb}': 'lambda',
+  '\u{039b}': 'Lambda',
+  '\u{03bc}': 'mu',
+  '\u{039c}': 'Mu',
+  '\u{03bd}': 'nu',
+  '\u{039d}': 'Nu',
+  '\u{03be}': 'xi',
+  '\u{039e}': 'Xi',
+  '\u{03bf}': 'omicron',
+  '\u{039f}': 'Omicron',
+  '\u{03c0}': 'pi',
+  '\u{03a0}': 'Pi',
+  '\u{03c1}': 'rho',
+  '\u{03a1}': 'Rho',
+  '\u{03c3}': 'sigma',
+  '\u{03a3}': 'Sigma',
+  '\u{03c4}': 'tau',
+  '\u{03a4}': 'Tau',
+  '\u{03c5}': 'upsilon',
+  '\u{03a5}': 'Upsilon',
+  '\u{03c6}': 'phi',
+  '\u{03a6}': 'Phi',
+  '\u{03c7}': 'chi',
+  '\u{03a7}': 'Chi',
+  '\u{03c8}': 'psi',
+  '\u{03a8}': 'Psi',
+  '\u{03c9}': 'omega',
+  '\u{03a9}': 'Omega',
+}
+
 // https://docs.ourbigbook.com#ascii-normalization
 function normalize_latin_character(c) {
-  return lodash.deburr(c)
+  c = lodash.deburr(c)
+  if (c in GREEK_MAP) {
+    return ID_SEPARATOR + GREEK_MAP[c] + ID_SEPARATOR
+  }
+  switch(c) {
     // en-dash
-    .replaceAll('\u{2013}', ID_SEPARATOR)
+    case '\u{2013}':
     // em-dash
-    .replaceAll('\u{2014}', ID_SEPARATOR)
+    case '\u{2014}':
+      return ID_SEPARATOR
+  }
+  return c
 }
 
 const NORMALIZE_PUNCTUATION_CHARACTER_MAP = {
@@ -4359,6 +4417,7 @@ const NORMALIZE_PUNCTUATION_CHARACTER_MAP = {
   '&': 'and',
   '+': 'plus',
   '@': 'at',
+  '\u{2212}': 'minus',
 }
 function normalize_punctuation_character(c) {
   if (c in NORMALIZE_PUNCTUATION_CHARACTER_MAP) {

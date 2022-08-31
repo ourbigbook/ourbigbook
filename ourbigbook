@@ -1956,7 +1956,12 @@ if (cli.helpMacros) {
       for (const article of localArticles) {
         idToArticleMeta[article.idid] = article
       }
-      {
+      if (
+        // These are needed otherwise we were deleting every header that was not selected when doing
+        // ourbigbook --web myinput.bigb or ourbigbook --web-id myid
+        inputPath === '.' &&
+        !cli.webId
+      ) {
         // https://docs.ourbigbook.com/todo/make-articles-removed-locally-empty-on-web-upload
         const serverOnlyPaths = new Set(Object.keys(webPathToArticle))
         for (const header_tree_entry of header_tree) {

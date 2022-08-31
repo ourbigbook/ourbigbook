@@ -37,7 +37,8 @@ module.exports = {
   apiPath: '/' + ourbigbook.WEB_API_PATH,
   commentsHeaderId: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comments`,
   commentIdPrefix: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comment-`,
-  // Common convert options used by all frontend components: the backend and the editor.
+  // Common convert options used by all frontend components: the backend and the editor,
+  // for both issues and articles.
   convertOptions: {
     add_test_instrumentation: isTest,
     body_only: true,

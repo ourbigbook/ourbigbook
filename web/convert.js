@@ -19,10 +19,8 @@ const {
   read_include_web
 } = require('./front/config')
 const { hasReachedMaxItemCount, idToSlug, slugToId, modifyEditorInput } = require('./front/js')
-const routes = require('./front/routes');
-const e = require('cors');
 
-function getConvertOpts({ authorUsername, input_path, sequelize, parentId, render, splitHeaders, transaction, }) {
+function getConvertOpts({ authorUsername, input_path, sequelize, parentId, render, splitHeaders, type, transaction, }) {
   const db_provider = new SqlDbProvider(sequelize)
   return {
     db_provider,
@@ -40,6 +38,7 @@ function getConvertOpts({ authorUsername, input_path, sequelize, parentId, rende
       ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${authorUsername}`,
       render,
       split_headers: splitHeaders === undefined ? true : splitHeaders,
+      h_web_ancestors: type === 'article',
     }, convertOptions)
   }
 }
@@ -58,6 +57,7 @@ async function convert({
   sequelize,
   splitHeaders,
   titleSource,
+  type,
   transaction,
 }) {
   let t0
@@ -105,7 +105,7 @@ async function convert({
     // Index page. Hardcode input path.
     input_path = scopeIdToPath(usernameDir, path)
   }
-  const { db_provider, convertOptions } = getConvertOpts({ authorUsername: author.username, input_path, sequelize, parentId, render, splitHeaders, transaction })
+  const { db_provider, convertOptions } = getConvertOpts({ authorUsername: author.username, input_path, sequelize, parentId, render, splitHeaders, type, transaction })
   await ourbigbook.convert(
     source,
     lodash.merge(convertOptions, convertOptionsExtra),
@@ -198,6 +198,7 @@ async function convertArticle({
       sequelize,
       titleSource,
       transaction,
+      type: 'article',
     }))
     const toplevelId = extra_returns.context.header_tree.children[0].ast.id
     if (toplevelId !== toplevelId.toLowerCase()) {
@@ -785,6 +786,7 @@ async function convertComment({
       splitHeaders: false,
       titleSource: undefined,
       transaction,
+      type: 'comment',
     })
     const outpath = Object.keys(extra_returns.rendered_outputs)[0]
     return sequelize.models.Comment.createSideEffects(
@@ -821,6 +823,12 @@ async function convertIssue({
     } else {
       issue.titleSource = titleSource
     }
+    if (number === undefined) {
+      number = issue.number
+    }
+    if (article === undefined) {
+      article = issue.article
+    }
   }
   if (titleSource.length > maxArticleTitleSize) {
     //throw new ValidationError(`Title source too long: ${titleSource.length} bytes, maximum: ${maxArticleTitleSize} bytes, title: ${titleSource}`)
@@ -841,6 +849,7 @@ async function convertIssue({
       splitHeaders: false,
       transaction,
       titleSource,
+      type: 'issue',
     })
     const outpath = Object.keys(extra_returns.rendered_outputs)[0]
     const renders = extra_returns.rendered_outputs[outpath]

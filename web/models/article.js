@@ -1511,12 +1511,22 @@ LIMIT ${limit}` : ''}
   }
 
   /** Re-render multiple articles. */
-  Article.rerender = async ({ convertOptionsExtra, ignoreErrors, log, slugs }={}) => {
+  Article.rerender = async ({
+    author,
+    convertOptionsExtra,
+    ignoreErrors,
+    log,
+    slugs
+  }={}) => {
     if (log === undefined)
       log = false
     const where = {}
     if (slugs.length) {
       where.slug = slugs
+    }
+    const authorWhere = {}
+    if (author) {
+      authorWhere.username = author
     }
     let offset = 0
     while (true) {
@@ -1525,6 +1535,13 @@ LIMIT ${limit}` : ''}
         include: [{
           model: sequelize.models.File,
           as: 'file',
+          required: true,
+          include: [{
+            required: true,
+            model: sequelize.models.User,
+            as: 'author',
+            where: authorWhere,
+          }]
         }],
         order: [['slug', 'ASC']],
         offset,

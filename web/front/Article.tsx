@@ -87,9 +87,10 @@ const Article = ({
       }
     </>
   }
-  const linkPref = '../'.repeat(article.slug.split('/').length - 1)
+  let linkPref: string
   const articlesInSamePageMap = {}
   if (!isIssue) {
+    linkPref = '../'.repeat(article.slug.split('/').length - 1)
     for (const article of articlesInSamePage) {
       articlesInSamePageMap[article.slug] = article
     }
@@ -128,7 +129,7 @@ const Article = ({
           if (loggedInUser) {
             mySlug = `${loggedInUser.username}/${curArticle.topicId}`
           }
-          if (ancestorsElem) {
+          if (ancestorsElem && ancestors) {
             ReactDOM.render(
               <span dangerouslySetInnerHTML={{
                 __html: ' ' + htmlAncestorLinks(
@@ -289,13 +290,24 @@ const Article = ({
               ) {
                 e.preventDefault()
                 if (
-                  targetElem &&
-                  // h2 self link, we want those to actually go to the separated page.
-                  target.parentElement.tagName !== 'H2'
+                  // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
+                  // For artiles all works fine because each section is rendered separately and thus has a non empty href.
+                  // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
+                  // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
+                  // But lazy now.
+                  !href
                 ) {
-                  window.location.hash = idNoprefix
+                  window.location.hash = ''
                 } else {
-                  Router.push(href)
+                  if (
+                    targetElem &&
+                    // h2 self link, we want those to actually go to the separated page.
+                    target.parentElement.tagName !== 'H2'
+                  ) {
+                    window.location.hash = idNoprefix
+                  } else {
+                    Router.push(href)
+                  }
                 }
               }
             }

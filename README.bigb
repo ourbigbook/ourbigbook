@@ -9071,6 +9071,12 @@ As the website grows, we will likely need to do a lazy version of this that mark
 
 The functionality of this script should be called from a <OurBigBook Web database migration setup>[migration] whenever such HTML changes are required. TODO link to an example. We had one at `web/migrations/20220321000000-output-update-ancestor.js` that seemed to work, but lost it. It was simple though. Just you have to instantiate your own Sequelize instance after making the model change to move any data.
 
+= web/bin/rerender-issues.js
+{file}
+{parent=Web CLI utils}
+
+Analogous to <web/bin/rerender-articles.js>{file} but for issues.
+
 = Runtime feature
 {parent=OurBigBook}
 

@@ -4,6 +4,18 @@
 
 == Issues
 
+=== Blowup with unclosed image followed by math
+
+``
+= Index
+
+\Image[qwer
+
+$$
+asdf
+$$
+``
+
 === Show tagged list of non toplevel pages
 {tag=Tag}
 

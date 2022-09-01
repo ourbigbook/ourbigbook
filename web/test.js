@@ -4179,3 +4179,31 @@ $$
     assertStatus(status, data)
   })
 })
+
+it(`api: topic links dont have the domain name`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'Mathematics',
+      bodySource: `<#My Topic>
+`,
+    })
+    ;({data, status} = await createArticleApi(test, article))
+    assertStatus(status, data)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='/go/topic/my-topic' and text()='My Topic']`, data.articles[0].render)
+
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'Index',
+      bodySource: `<#My Topic>
+`,
+    })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='/go/topic/my-topic' and text()='My Topic']`, data.articles[0].render)
+  })
+})

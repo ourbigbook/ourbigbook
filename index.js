@@ -1896,19 +1896,45 @@ class Tokenizer {
           if (is_insane_link) {
             this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME);
             this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
-            let link_text = '';
             while (this.consume_plaintext_char()) {
               if (INSANE_LINK_END_CHARS.has(this.cur_c)) {
-                break;
+                break
               }
               if (this.cur_c === ESCAPE_CHAR) {
-                this.consume();
+                this.consume()
               }
             }
-            this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
-            this.consume_optional_newline_after_argument();
+            this.push_token(TokenType.POSITIONAL_ARGUMENT_END)
+            this.consume_optional_newline_after_argument()
             done = true;
           }
+        }
+
+        // Insane topic link.
+        let is_insane_topic_link = false;
+        if (
+          this.cur_c === TOPIC_CHAR && !(
+            this.tokens[this.tokens.length - 1].type === TokenType.POSITIONAL_ARGUMENT_START &&
+            this.tokens[this.tokens.length - 2].type === TokenType.MACRO_NAME &&
+            this.tokens[this.tokens.length - 2].value === Macro.X_MACRO_NAME
+          )
+        ) {
+          const source_location = this.source_location.clone()
+          this.push_token(TokenType.MACRO_NAME, Macro.X_MACRO_NAME, source_location)
+          this.push_token(TokenType.POSITIONAL_ARGUMENT_START, START_POSITIONAL_ARGUMENT_CHAR, source_location)
+          while (this.consume_plaintext_char()) {
+            if (INSANE_LINK_END_CHARS.has(this.cur_c)) {
+              break
+            }
+            if (this.cur_c === ESCAPE_CHAR) {
+              this.consume()
+            }
+          }
+          this.push_token(TokenType.POSITIONAL_ARGUMENT_END, END_POSITIONAL_ARGUMENT_CHAR, source_location)
+          this.push_token(TokenType.NAMED_ARGUMENT_START, START_NAMED_ARGUMENT_CHAR, source_location)
+          this.push_token(TokenType.NAMED_ARGUMENT_NAME, 'magic', source_location)
+          this.push_token(TokenType.NAMED_ARGUMENT_END, END_NAMED_ARGUMENT_CHAR, source_location)
+          done = true
         }
 
         // Insane lists and tables.
@@ -2425,11 +2451,11 @@ function calculate_id(
           ast.file = id_text_append
           id_text = Macro.FILE_ID_PREFIX + id_text + id_text_append
         } else {
-          id_text += title_to_id(title_text, new_context.options.ourbigbook_json['id'], new_context);
+          id_text += title_to_id(title_text, new_context.options.ourbigbook_json.id, new_context);
         }
         const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
         if (disambiguate_arg !== undefined) {
-          id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json['id']);
+          id_text += ID_SEPARATOR + title_to_id(render_arg_noescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json.id);
         }
         id = id_text;
       } else {
@@ -3107,10 +3133,23 @@ function convert_init_context(options={}, extra_returns={}) {
         const id = ourbigbook_json.id
         if (!('normalize' in id)) { id.normalize = {}; }
         const normalize = id.normalize
+        if (!('latin' in normalize)) {
+          normalize.latin = OURBIGBOOK_JSON_DEFAULT.id.normalize.latin
+        }
+        if (!('punctuation' in normalize)) {
+          normalize.punctuation = OURBIGBOOK_JSON_DEFAULT.id.normalize.punctuation
+        }
       }
       if (!('web' in ourbigbook_json)) { ourbigbook_json.web = {}; }
       {
         const web = ourbigbook_json.web
+        if (!('hostCapitalized' in web)) {
+          if (!('host' in web)) {
+            web.hostCapitalized = OURBIGBOOK_JSON_DEFAULT.web.hostCapitalized
+          } else {
+            web.hostCapitalized = OURBIGBOOK_JSON_DEFAULT.web.host
+          }
+        }
         if (!('host' in web)) {
           web.host = OURBIGBOOK_JSON_DEFAULT.web.host
         }
@@ -3275,6 +3314,17 @@ function convert_init_context(options={}, extra_returns={}) {
     options.x_absolute = false;
   }
   if (!('tocIdPrefix' in options)) { options.tocIdPrefix = ''; }
+  if (!('webMode' in options)) {
+    // Previously we put some changes under more specific options, e.g.
+    // h_web_ancestors and h_web_metadata, but that was likely overgeneralization,
+    // let's just dump every web variant under here from now on unless there is a
+    // specific reason not to!
+    //
+    // This option is not named just "web" because of the future desire to merge
+    // ourbigbook.json directly into options, and we would like a web sub-Object
+    // which would conflict with this boolean.
+    options.webMode = false
+  }
   if (!('x_external_prefix' in options)) {
     // Used in web to offset the relative paths of issues and editor preview, e.g.
     // go/issues/1/username/article
@@ -5416,42 +5466,50 @@ async function parse(tokens, options, context, extra_returns={}) {
         // refs database updates.
         validate_ast(ast, context)
         let target_id = convert_file_id_arg(ast, ast.args.href, context)
-        const fetch_plural = ast.validation_output.magic.boolean
-        if (fetch_plural) {
-          target_id = magic_title_to_id(target_id, context)
-        }
-        const cur_scope = options.cur_header ? options.cur_header.calculate_scope() : ''
-        for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
-          options.refs_to_x.push({
-            ast,
-            title_ast_ancestors: Object.assign([], title_ast_ancestors),
-            target_id: target_id_with_scope,
-            inflected: false,
-          })
-        }
-        if (fetch_plural) {
-          // In the case of magic, also fetch a singularized version from DB. We don't know
-          // which one is the correct one, so just fetch both and decide at render time.
-          const href_arg = ast.args.href
-          const last_ast = href_arg.get(href_arg.length() - 1);
-          if (
-            // Possible for unterminated insane link.
-            last_ast &&
-            last_ast.node_type === AstType.PLAINTEXT
-          ) {
-            const old_text = last_ast.text
-            const new_text = pluralize_wrap(old_text, 1)
-            if (new_text !== old_text) {
-              last_ast.text = new_text
-              const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context), context)
-              last_ast.text = old_text
-              for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
-                options.refs_to_x.push({
-                  ast,
-                  title_ast_ancestors: Object.assign([], title_ast_ancestors),
-                  target_id: target_id_with_scope,
-                  inflected: true,
-                })
+        if (
+          // Otherwise the ref would be added to the DB and DB checks would fail.
+          !(
+            ast.validation_output.magic.boolean &&
+            target_id[0] === TOPIC_CHAR
+          )
+        ) {
+          const fetch_plural = ast.validation_output.magic.boolean
+          if (fetch_plural) {
+            target_id = magic_title_to_id(target_id, context)
+          }
+          const cur_scope = options.cur_header ? options.cur_header.calculate_scope() : ''
+          for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
+            options.refs_to_x.push({
+              ast,
+              title_ast_ancestors: Object.assign([], title_ast_ancestors),
+              target_id: target_id_with_scope,
+              inflected: false,
+            })
+          }
+          if (fetch_plural) {
+            // In the case of magic, also fetch a singularized version from DB. We don't know
+            // which one is the correct one, so just fetch both and decide at render time.
+            const href_arg = ast.args.href
+            const last_ast = href_arg.get(href_arg.length() - 1);
+            if (
+              // Possible for unterminated insane link.
+              last_ast &&
+              last_ast.node_type === AstType.PLAINTEXT
+            ) {
+              const old_text = last_ast.text
+              const new_text = pluralize_wrap(old_text, 1)
+              if (new_text !== old_text) {
+                last_ast.text = new_text
+                const target_id = magic_title_to_id(convert_id_arg(ast.args.href, context), context)
+                last_ast.text = old_text
+                for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
+                  options.refs_to_x.push({
+                    ast,
+                    title_ast_ancestors: Object.assign([], title_ast_ancestors),
+                    target_id: target_id_with_scope,
+                    inflected: true,
+                  })
+                }
               }
             }
           }
@@ -5941,7 +5999,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               source_location: ast.source_location,
               inflected: ref.inflected,
             }
-          );
+          )
         }
 
         // Update xref database for child/parent relationships.
@@ -6808,7 +6866,7 @@ function symbol_to_string(symbol) {
   return symbol.toString().slice(7, -1);
 }
 
-function title_to_id(title, options={}, context={}) {
+function title_to_id(title, options={}, context) {
   if (options.normalize === undefined) {
     options.normalize = {}
   }
@@ -6816,24 +6874,39 @@ function title_to_id(title, options={}, context={}) {
   let first = true
   for (let c of title) {
     if (
-      options.normalize === undefined ||
-      options.normalize.latin === undefined ||
-      options.normalize.latin
+      (
+        options.normalize !== undefined &&
+        options.normalize.latin !== undefined &&
+        options.normalize.latin
+      ) ||
+      (
+        context !== undefined &&
+        context.options.ourbigbook_json.id.normalize.latin
+      )
     ) {
       c = normalize_latin_character(c)
     }
     if (
       (
-        options.normalize === undefined ||
-        options.normalize.punctuation === undefined ||
-        options.normalize.punctuation
+        (
+          options.normalize !== undefined &&
+          options.normalize.punctuation !== undefined &&
+          options.normalize.punctuation
+        ) ||
+        (
+          context !== undefined &&
+          context.options.ourbigbook_json.id.normalize.punctuation
+        )
       )
       &&
       !(
         first &&
         c === AT_MENTION_CHAR &&
         options.magic &&
-        context.options.x_remove_leading_at
+        (
+          context !== undefined &&
+          context.options.x_remove_leading_at
+        )
       )
     ) {
       c = normalize_punctuation_character(c)
@@ -6991,9 +7064,6 @@ function x_get_target_ast_base({
   ) {
     return [html_attr('href', context.webUrl + target_id.substr(1)), target_id];
   }
-  if (target_id[0] === TOPIC_CHAR) {
-    return [html_attr('href', context.webUrl + 'go/topic/' + target_id.substr(1)), target_id];
-  }
   let target_id_eff
   if (do_magic_title_to_id) {
     target_id_eff = magic_title_to_id(target_id, context)
@@ -7029,14 +7099,29 @@ function x_get_target_ast(ast, context) {
     target_id,
   })
   ret.href_arg = href_arg
+  ret.target_id_raw = target_id
   return ret
 }
 
 /**
+ * @param {AstNode} ast \x ast node
  * @return {[String, String]} [href, content] pair for the x node.
  */
 function x_get_href_content(ast, context) {
-  const { href_arg, target_id, target_ast } = x_get_target_ast(ast, context)
+  const { href_arg, target_id, target_id_raw, target_ast } = x_get_target_ast(ast, context)
+  const content_arg = ast.args.content;
+  if (ast.validation_output.magic.boolean && target_id_raw[0] === TOPIC_CHAR) {
+    let topicTitle = target_id_raw.substr(1)
+    let topicTitleSingular = topicTitle
+    if (!ast.validation_output.p.boolean) {
+      topicTitleSingular = pluralize_wrap(topicTitleSingular, 1)
+    }
+    const topicId = title_to_id(topicTitleSingular, undefined, context)
+    if (content_arg !== undefined) {
+      topicTitle = render_arg(content_arg, context)
+    }
+    return [html_attr('href', `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${topicId}`), topicTitle, undefined];
+  }
 
   // href
   let href;
@@ -7048,7 +7133,6 @@ function x_get_href_content(ast, context) {
   }
 
   // content
-  const content_arg = ast.args.content;
   let content;
   if (content_arg === undefined) {
     // No explicit content given, deduce content from target ID title.
@@ -7564,9 +7648,9 @@ exports.ANCESTORS_MAX = ANCESTORS_MAX
 const AT_MENTION_CHAR = '@';
 exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
 const TOPIC_CHAR = '#';
-const WEB_HOST_DEFAULT = 'ourbigbook.com';
 const WEB_API_PATH = 'api';
 exports.WEB_API_PATH = WEB_API_PATH;
+const WEB_TOPIC_PATH = 'go/topic';
 const PARAGRAPH_SEP = '\n\n';
 exports.PARAGRAPH_SEP = PARAGRAPH_SEP;
 const REFS_TABLE_PARENT = 'PARENT';
@@ -7636,8 +7720,15 @@ const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
 exports.OURBIGBOOK_JSON_BASENAME = OURBIGBOOK_JSON_BASENAME
 const OURBIGBOOK_JSON_DEFAULT = {
   htmlXExtension: true,
+  id: {
+    normalize: {
+      latin: true,
+      punctuation: true,
+    },
+  },
   web: {
-    domain: 'ourbigbook.com',
+    host: 'ourbigbook.com',
+    hostCapitalized: 'OurBigBook.com',
     link: false,
     username: undefined,
   }
@@ -7706,6 +7797,7 @@ const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS = [
   INSANE_X_START,
   INSANE_CODE_CHAR,
   INSANE_MATH_CHAR,
+  TOPIC_CHAR,
 ].join('')
 const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX = new RegExp(`([${MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS}])`, 'g')
 const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS = [
@@ -8988,7 +9080,7 @@ const OUTPUT_FORMATS_LIST = [
             } else {
               p = `${URL_SEP}${ast.id}`
             }
-            ourbigbookLink = `<a href="${context.webUrl}${context.options.ourbigbook_json.web.username}${p}"><img src="${logoPath}" class="logo" /> OurBigBook.com</a>`;
+            ourbigbookLink = `<a href="${context.webUrl}${context.options.ourbigbook_json.web.username}${p}"><img src="${logoPath}" class="logo" /> ${newContext.options.ourbigbook_json.web.hostCapitalized}</a>`;
           }
 
           // Calculate file_link_html

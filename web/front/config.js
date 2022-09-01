@@ -54,6 +54,7 @@ module.exports = {
       },
     },
     render_metadata: false,
+    webMode: true,
     x_absolute: true,
     x_leading_at_to_web: false,
     x_remove_leading_at: true,

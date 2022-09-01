@@ -3144,10 +3144,10 @@ function convert_init_context(options={}, extra_returns={}) {
       {
         const web = ourbigbook_json.web
         if (!('hostCapitalized' in web)) {
-          if (!('host' in web)) {
-            web.hostCapitalized = OURBIGBOOK_JSON_DEFAULT.web.hostCapitalized
+          if ('host' in web) {
+            web.hostCapitalized = web.host
           } else {
-            web.hostCapitalized = OURBIGBOOK_JSON_DEFAULT.web.host
+            web.hostCapitalized = OURBIGBOOK_JSON_DEFAULT.web.hostCapitalized
           }
         }
         if (!('host' in web)) {

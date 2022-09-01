@@ -9224,7 +9224,32 @@ assert_cli(
     pre_exec: publish_pre_exec,
     assert_xpath: {
       'out/html/index.html': [
-        "//x:div[contains(@class, \"h \") and @id='index']//x:a[@href='https://asdf.com/myusername' and text()=' OurBigBook.com']",
+        "//x:div[contains(@class, \"h \") and @id='index']//x:a[@href='https://asdf.com/myusername' and text()=' asdf.com']",
+      ],
+    },
+  }
+)
+assert_cli(
+  'json: web.hostCapitalized takes precedence over web.host with web.linkFromHeaderMeta',
+  {
+    args: ['.'],
+    filesystem: {
+      'ourbigbook.json': `{
+  "web": {
+    "linkFromHeaderMeta": true,
+    "host": "asdf.com",
+    "hostCapitalized": "AsDf.com",
+    "username": "myusername"
+  }
+}
+`,
+      'README.bigb': `= Index
+`,
+    },
+    pre_exec: publish_pre_exec,
+    assert_xpath: {
+      'out/html/index.html': [
+        "//x:div[contains(@class, \"h \") and @id='index']//x:a[@href='https://asdf.com/myusername' and text()=' AsDf.com']",
       ],
     },
   }

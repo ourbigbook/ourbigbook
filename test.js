@@ -8576,7 +8576,21 @@ assert_cli(
       'out/html/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
-);
+)
+assert_cli(
+  'input from two files produces two output files',
+  {
+    args: ['notindex.bigb', 'notindex2.bigb'],
+    filesystem: {
+      'notindex.bigb': `= Notindex\n`,
+      'notindex2.bigb': `= Notindex2\n`,
+    },
+    assert_xpath: {
+      'out/html/notindex.html': [xpath_header(1, 'notindex')],
+      'out/html/notindex2.html': [xpath_header(1, 'notindex2')],
+    }
+  }
+)
 const complex_filesystem = {
   'README.bigb': `= Index
 

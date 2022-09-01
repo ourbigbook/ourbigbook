@@ -6932,6 +6932,12 @@ function title_to_id(title, options={}, context) {
 }
 exports.title_to_id = title_to_id;
 
+/** Heuristic only. */
+function id_to_title(id) {
+  return capitalize_first_letter(id).replace('-')
+}
+exports.id_to_title = id_to_title
+
 /** Factored out calculations of the ID that is given to each TOC entry.
  *
  * For after everything broke down due to toplevel scope.

@@ -176,7 +176,7 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, nonOu
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
 async function check_db(nonOurbigbookOptions) {
-  if (!nonOurbigbookOptions.cli.noCheckDb) {
+  if (nonOurbigbookOptions.cli.checkDb) {
     const t1 = performance.now();
     console.log(`check_db`)
     const sequelize = nonOurbigbookOptions.sequelize
@@ -1083,6 +1083,13 @@ async function tryCreateOrUpdate(webApi, articleArgs, extraArgs) {
   }
 }
 
+async function updateNestedSet(webApi, username) {
+  const t1 = performance.now()
+  console.log(`nested_set`)
+  await webApi.articleUpdatedNestedSet(username)
+  console.log(`nested_set: ${finished_in_ms(performance.now() - t1)}`)
+}
+
 /**
  * Walk directory recursively.
  *
@@ -1130,6 +1137,7 @@ async function webCreateOrUpdate({
   extraArgs,
   inpath,
   i,
+  updateNestedSetIndex,
   webApi,
   webDry,
 }) {
@@ -1140,7 +1148,7 @@ async function webCreateOrUpdate({
     // Retry the transaction a few times. This designed to work well during development when nodemon
     // restarts the server after a file update that adds some logging, often for perf. This way
     // you can just turn logs on and off during a large conversion and it will just keep running fine.
-    ;({ data, status } = await tryCreateOrUpdate(webApi, articleArgs, ourbigbook.clone_and_set(extraArgs, 'updateNestedSetIndex', false)))
+    ;({ data, status } = await tryCreateOrUpdate(webApi, articleArgs, ourbigbook.clone_and_set(extraArgs, 'updateNestedSetIndex', updateNestedSetIndex)))
     assertApiStatus(status, data)
     //if (render && i % 100 == 0) {
     //  runCmd('bin/pg', ['bin/normalize', '-c', '-u', 'cirosantilli', 'nested-set'], {
@@ -1161,7 +1169,7 @@ cli_parser.allowExcessArguments(false);
 // Optional arguments.
 cli_parser.option('--add-test-instrumentation', 'For testing only', false);
 cli_parser.option('--body-only', 'output only the content inside the HTLM body element', false);
-cli_parser.option('--check-db', `only check the database, don't do anything else: https://docs.ourbigbook.com#check-db`, false);
+cli_parser.option('--check-db-only', `only check the database, don't do anything else: https://docs.ourbigbook.com#check-db`, false);
 cli_parser.option('--china', 'https://docs.ourbigbook.com#china', false);
 cli_parser.option('--clear-db', 'clear the database before running', false);
 cli_parser.option('--dry-run', "don't run most external commands https://github.com/ourbigbook/ourbigbook#dry-run", false);
@@ -1174,7 +1182,7 @@ cli_parser.option('--fakeroot <fakeroot>', 'Stop searching for ourbigbook.json a
 cli_parser.option('--generate <name>', 'https://docs.ourbigbook.com#generate', false);
 cli_parser.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://docs.ourbigbook.com#help-macros', false);
 cli_parser.option('-l, --log <log...>', 'https://docs.ourbigbook.com#log');
-cli_parser.option('--no-check-db', 'Skip the database sanity check that is normally done after conversions https://docs.ourbigbook.com#no-check-db', false);
+cli_parser.option('--no-check-db', 'Skip the database sanity check that is normally done after conversions https://docs.ourbigbook.com#no-check-db');
 cli_parser.option('--no-html-x-extension', 'https://docs.ourbigbook.com#no-html-x-extension');
 cli_parser.option('--no-db', 'ignore the ID database, mostly for testing https://docs.ourbigbook.com#internal-cross-file-references-internals');
 cli_parser.option('--no-render', "only extract IDs, don't render: https://docs.ourbigbook.com#no-render");
@@ -1194,14 +1202,16 @@ cli_parser.option('--template <template>', 'https://docs.ourbigbook.com#template
 cli_parser.option('--title-to-id', `read tiles from stdin line by line, output IDs to stdout only, don't do anything else: https://docs.ourbigbook.com#title-to-id`, false);
 cli_parser.option('-w, --watch', 'https://docs.ourbigbook.com#watch', false);
 cli_parser.option('-W, --web', 'sync to ourbigbook web https://docs.ourbigbook.com#web', false);
+cli_parser.option('--web-ask-password', 'Ask the password in case it had some default https://docs.ourbigbook.com#web-ask-password');
 cli_parser.option('--web-dry', 'web dry run, skip any --web operations that would interact with the server https://docs.ourbigbook.com#web-dry', false);
 cli_parser.option('--web-force-id-extraction', "Force ID extraction on Web: https://docs.ourbigbook.com#web-force-id-extraction");
 cli_parser.option('--web-force-render', "same as --force-render but for --web upload: https://docs.ourbigbook.com#web-force-render");
-cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered: https://docs.ourbigbook.com#web-max-renders', ourbigbook_nodejs.cliInt);
-cli_parser.option('--web-test', 'Convenient --web-* defaults local development: https://docs.ourbigbook.com#web-test', false);
 cli_parser.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id');
-cli_parser.option('--web-ask-password', 'Ask the password in case it had some default https://docs.ourbigbook.com#web-ask-password');
+cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered: https://docs.ourbigbook.com#web-max-renders', ourbigbook_nodejs.cliInt);
+cli_parser.option('--web-nested-set', `only update the nested set index, don't do anything else. Implies --web: https://docs.ourbigbook.com#web-nested-set-option`, false);
+cli_parser.option('--web-nested-set-bulk', `only update the nested set index after all articles have been uploaded: https://docs.ourbigbook.com#web-nested-set-bulk`, false);
 cli_parser.option('--web-password <password>', 'Set password from CLI. Really bad idea for non-test users due e.g. to Bash history: https://docs.ourbigbook.com#web-user');
+cli_parser.option('--web-test', 'Convenient --web-* defaults local development: https://docs.ourbigbook.com#web-test', false);
 cli_parser.option('--web-url <url>', 'Set a custom sync URL for --web: https://docs.ourbigbook.com#web-url');
 cli_parser.option('--web-user <username>', 'Set username from CLI: https://docs.ourbigbook.com#web-user');
 cli_parser.option('--unsafe-ace', 'https://docs.ourbigbook.com#unsafe-ace');
@@ -1228,9 +1238,9 @@ if (cli.helpMacros) {
   let publish = cli.publish || cli.publishCommit !== undefined || cli.publishNoConvert
   let htmlXExtension;
   let input_dir;
-  const web = cli.web || cli.webTest
+  const web = cli.web || cli.webTest || cli.nestedSet
   if (inputPaths.length === 0) {
-    if (web || publish || cli.watch || cli.generate || cli.checkDb) {
+    if (web || publish || cli.watch || cli.generate || cli.checkDbOnly || cli.webNestedSet) {
       inputPaths = ['.'];
     }
   } else {
@@ -1516,7 +1526,7 @@ if (cli.helpMacros) {
       fs.writeFileSync(path.join(outdir, ourbigbook.OURBIGBOOK_JSON_BASENAME),
         JSON.stringify(new_ourbigbook_json, null, 2) + '\n');
     }
-    process.exit(0);
+    process.exit(0)
   }
   let tmpdir, renderType
   const outputOutOfTree = ourbigbook_json.outputOutOfTree !== false || web
@@ -1670,7 +1680,7 @@ if (cli.helpMacros) {
     } else {
       nonOurbigbookOptions.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
     }
-    if (cli.checkDb) {
+    if (cli.checkDbOnly) {
       await create_db(ourbigbook_options, nonOurbigbookOptions);
       await check_db(nonOurbigbookOptions)
     } else if (web) {
@@ -1765,6 +1775,11 @@ if (cli.helpMacros) {
             { transaction }
           )
         })
+      }
+
+      if (cli.webNestedSet) {
+        await updateNestedSet(webApi, username)
+        process.exit(0)
       }
 
       // Do a local conversion that splits mutiheader files into single header files for upload.
@@ -2028,6 +2043,7 @@ if (cli.helpMacros) {
                 render: true,
               },
               i: i++,
+              updateNestedSetIndex: !cli.webNestedSetBulk,
               webApi,
               webDry: cli.webDry,
             })
@@ -2117,6 +2133,7 @@ if (cli.helpMacros) {
                 articleArgs,
                 extraArgs,
                 i: i++,
+                updateNestedSetIndex: !cli.webNestedSetBulk,
                 webApi,
                 webDry: cli.webDry,
               })
@@ -2134,18 +2151,17 @@ if (cli.helpMacros) {
           }
         }
       }
-      if (!nestedSetNeedsUpdate) {
-        ;({ data, status } = await webApi.user(username))
-        assertApiStatus(status, data)
-        if (data.nestedSetNeedsUpdate) {
-          nestedSetNeedsUpdate = true
+      if (cli.webNestedSetBulk) {
+        if (!nestedSetNeedsUpdate) {
+          ;({ data, status } = await webApi.user(username))
+          assertApiStatus(status, data)
+          if (data.nestedSetNeedsUpdate) {
+            nestedSetNeedsUpdate = true
+          }
         }
-      }
-      if (nestedSetNeedsUpdate) {
-        const t1 = performance.now()
-        console.log(`nested_set`)
-        await webApi.articleUpdatedNestedSet(username)
-        console.log(`nested_set: ${finished_in_ms(performance.now() - t1)}`)
+        if (nestedSetNeedsUpdate) {
+          updateNestedSet(webApi, username)
+        }
       }
     } else if (cli.watch) {
       if (cli.stdout) {

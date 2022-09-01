@@ -140,8 +140,11 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
 async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
   if (starting_ids.length > 0) {
     const to_id_index_order = opts.to_id_index_order || 'ASC'
+    let { idAttrs, definedAtFileId, transaction } = opts
+    if (idAttrs === undefined) {
+      idAttrs = '*'
+    }
     let definedAtString
-    const { definedAtFileId } = opts
     if (definedAtFileId) {
       definedAtString = ' AND "defined_at" = :definedAtFileId'
     } else {
@@ -160,7 +163,7 @@ async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
     // but it would likely be less efficient and harder to implement. So just going
     // with this for now.
     ;const [rows, meta] = await sequelize.query(`
-SELECT * FROM "${sequelize.models.Id.tableName}"
+SELECT ${idAttrs} FROM "${sequelize.models.Id.tableName}"
 INNER JOIN (
   WITH RECURSIVE tree_search (to_id, level, from_id, to_id_index) AS (
     SELECT
@@ -193,7 +196,7 @@ ORDER BY "RecRefs".level ASC, "RecRefs".from_id ASC, "RecRefs".to_id_index ${to_
           type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
           definedAtFileId,
         },
-        transaction: opts.transaction,
+        transaction,
       }
     )
     return rows

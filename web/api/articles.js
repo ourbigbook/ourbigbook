@@ -466,15 +466,17 @@ router.put('/update-nested-set/:user', auth.required, async function(req, res, n
   try {
     const username = req.params.user
     const sequelize = req.app.get('sequelize')
-    const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
-    const msg = cant.updateNestedSet(loggedInUser, username)
-    if (msg) {
-      throw new lib.ValidationError([msg], 403)
-    }
-    await Promise.all([
-      sequelize.models.Article.updateNestedSets(username),
-      sequelize.models.User.update({ nestedSetNeedsUpdate: false }, { where: { username }}),
-    ])
+    await sequelize.transaction(async (transaction) => {
+      const loggedInUser = await sequelize.models.User.findByPk(req.payload.id, { transaction })
+      const msg = cant.updateNestedSet(loggedInUser, username)
+      if (msg) {
+        throw new lib.ValidationError([msg], 403)
+      }
+      await Promise.all([
+        sequelize.models.Article.updateNestedSets(username, { transaction }),
+        sequelize.models.User.update({ nestedSetNeedsUpdate: false }, { where: { username }, transaction }),
+      ])
+    })
     return res.json({})
   } catch(error) {
     next(error);

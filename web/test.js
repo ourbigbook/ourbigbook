@@ -3313,9 +3313,6 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
       // user.nestedSetNeedsUpdate becomes true after the nested set is updated
       ;({data, status} = await test.webApi.user('user0'))
       assertStatus(status, data)
-      assert.strictEqual(data.nestedSetNeedsUpdate, false)
-      ;({data, status} = await test.webApi.user('user0'))
-      assertStatus(status, data)
       assert.strictEqual(data.nestedSetNeedsUpdate, true)
 
       await assertNestedSets(sequelize, [

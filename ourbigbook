@@ -1439,17 +1439,19 @@ if (cli.helpMacros) {
       }
     }
   }
-  let template_path;
 
-  if (cli.template !== undefined) {
-    template_path = cli.template;
-  } else if ('template' in ourbigbook_json && ourbigbook_json.template !== null) {
-    template_path = path.join(ourbigbook_json_dir, ourbigbook_json.template);
-  }
-  if (template_path === undefined) {
-    ourbigbook_options.template = undefined;
-  } else {
-    ourbigbook_options.template = fs.readFileSync(template_path).toString();
+  if (inputPath !== undefined) {
+    let template_path;
+    if (cli.template !== undefined) {
+      template_path = cli.template;
+    } else if ('template' in ourbigbook_json && ourbigbook_json.template !== null) {
+      template_path = path.join(ourbigbook_json_dir, ourbigbook_json.template);
+    }
+    if (template_path === undefined) {
+      ourbigbook_options.template = undefined;
+    } else {
+      ourbigbook_options.template = fs.readFileSync(template_path).toString();
+    }
   }
 
   if (inputPath !== undefined) {

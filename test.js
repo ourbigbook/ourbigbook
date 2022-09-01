@@ -805,16 +805,16 @@ assert_lib_ast('empty document', '', []);
 // Paragraphs.
 assert_lib_ast('one paragraph implicit no split headers', 'ab\n',
   [a('P', [t('ab')])],
-);
+)
 assert_lib_ast('one paragraph explicit', '\\P[ab]\n',
   [a('P', [t('ab')])],
-);
+)
 assert_lib_ast('two paragraphs', 'p1\n\np2\n',
   [
     a('P', [t('p1')]),
     a('P', [t('p2')]),
   ]
-);
+)
 assert_lib_ast('three paragraphs',
   'p1\n\np2\n\np3\n',
   [
@@ -822,7 +822,7 @@ assert_lib_ast('three paragraphs',
     a('P', [t('p2')]),
     a('P', [t('p3')]),
   ]
-);
+)
 assert_lib_ast('insane paragraph at start of sane quote',
   '\\Q[\n\naa]\n',
   [
@@ -830,11 +830,11 @@ assert_lib_ast('insane paragraph at start of sane quote',
       a('P', [t('aa')])]
     ),
   ]
-);
+)
 assert_lib_ast('sane quote without inner paragraph',
   '\\Q[aa]\n',
   [a('Q', [t('aa')])],
-);
+)
 assert_lib_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
 assert_lib_ast('both quotes and paragraphs get the on-hover link',
   `= tmp
@@ -857,7 +857,7 @@ aa
       "//x:span[@class='hide-hover']//x:a[@href='#_2']",
     ],
   }
-);
+)
 assert_lib_ast('a non-header first element has a on-hover link with its id',
   `aa`,
   [
@@ -868,7 +868,7 @@ assert_lib_ast('a non-header first element has a on-hover link with its id',
       "//x:span[@class='hide-hover']//x:a[@href='#_1']",
     ],
   }
-);
+)
 assert_lib_ast('a header first element has an empty on-hover link',
   `= tmp`,
   [
@@ -885,7 +885,7 @@ assert_lib_ast('a header first element has an empty on-hover link',
       "//x:span[@class='hide-hover']//x:a[@href='#tmp']",
     ],
   }
-);
+)
 assert_lib_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
 assert_lib_ast('one newline at the end of document is ignored', 'p1\n', [a('P', [t('p1')])]);
 assert_lib_error('two newlines at the end of document are an error', 'p1\n\n', 1, 3);
@@ -908,7 +908,7 @@ assert_lib_ast('l with explicit ul and no extra spaces',
 gh
 `,
   l_with_explicit_ul_expect
-);
+)
 assert_lib_ast('l with implicit ul sane',
   `ab
 
@@ -918,7 +918,7 @@ assert_lib_ast('l with implicit ul sane',
 gh
 `,
   l_with_explicit_ul_expect
-);
+)
 assert_lib_ast('l with implicit ul insane',
   `ab
 
@@ -928,7 +928,7 @@ assert_lib_ast('l with implicit ul insane',
 gh
 `,
   l_with_explicit_ul_expect
-);
+)
 assert_lib_ast('empty insane list item without a space',
   `* ab
 *
@@ -941,7 +941,7 @@ assert_lib_ast('empty insane list item without a space',
     a('L', [t('cd')]),
   ]),
 ]
-);
+)
 assert_lib_ast('l with explicit ul and extra spaces',
   `ab
 
@@ -954,7 +954,7 @@ assert_lib_ast('l with explicit ul and extra spaces',
 gh
 `,
   l_with_explicit_ul_expect
-);
+)
 assert_lib_ast('ordered list',
   `ab
 
@@ -973,7 +973,7 @@ gh
   ]),
   a('P', [t('gh')]),
 ]
-);
+)
 assert_lib_ast('list with paragraph sane',
   `\\L[
 aa
@@ -1003,7 +1003,7 @@ assert_lib_ast('list with paragraph insane',
       ]),
     ]),
   ]
-);
+)
 assert_lib_ast('list with multiline paragraph insane',
   `* aa
 
@@ -1018,7 +1018,7 @@ assert_lib_ast('list with multiline paragraph insane',
       ]),
     ]),
   ]
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/54
 assert_lib_ast('insane list with literal no error',
   `* aa
@@ -1036,7 +1036,7 @@ assert_lib_ast('insane list with literal no error',
       ]),
     ]),
   ]
-);
+)
 assert_lib_error('insane list with literal with error',
   `* aa
 
@@ -1046,7 +1046,7 @@ cc
   \`\`
 `,
   4, 1
-);
+)
 assert_lib_ast('insane list with literal with double newline is not an error',
   `* aa
 
@@ -1064,7 +1064,7 @@ assert_lib_ast('insane list with literal with double newline is not an error',
       ]),
     ]),
   ]
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/53
 assert_lib_ast('insane list with element with newline separated arguments',
   `* aa
@@ -1082,7 +1082,7 @@ assert_lib_ast('insane list with element with newline separated arguments',
       ]),
     ]),
   ]
-);
+)
 assert_lib_ast('insane list inside paragraph',
   `aa
 * bb
@@ -1099,7 +1099,7 @@ dd
       t('dd'),
     ]),
   ]
-);
+)
 assert_lib_ast('insane list at start of positional argument with newline',
   `\\Q[
 * bb
@@ -1116,7 +1116,7 @@ assert_lib_ast('insane list at start of positional argument with newline',
       ]),
     ]),
   ]
-);
+)
 assert_lib_ast('insane list at start of positional argument without newline',
   `\\Q[* bb
 * cc
@@ -1130,7 +1130,7 @@ assert_lib_ast('insane list at start of positional argument without newline',
       ]),
     ]),
   ]
-);
+)
 assert_lib_ast('insane list at end of positional argument without newline',
   `\\Q[
 * bb
@@ -1144,7 +1144,7 @@ assert_lib_ast('insane list at end of positional argument without newline',
       ]),
     ]),
   ]
-);
+)
 assert_lib_ast('insane list at start of named argument with newline',
   `\\Image[http://example.com]
 {description=
@@ -1162,7 +1162,7 @@ assert_lib_ast('insane list at start of named argument with newline',
       ],
     }),
   ]
-);
+)
 assert_lib_ast('insane list at start of named argument without newline',
   `\\Image[http://example.com]
 {description=* bb
@@ -1179,7 +1179,7 @@ assert_lib_ast('insane list at start of named argument without newline',
       ],
     }),
   ]
-);
+)
 //assert_lib_ast('insane list at end of named argument without newline',
 //  // TODO https://github.com/ourbigbook/ourbigbook/issues/246
 //  `\\Image[http://example.com]
@@ -1214,16 +1214,16 @@ assert_lib_ast('nested list insane',
       ]),
     ]),
   ]
-);
+)
 assert_lib_ast('escape insane list at start of document',
   '\\* a',
   [a('P', [t('* a')])],
-);
+)
 assert_lib_ast('escape insane list after a newline',
   `a
 \\* b`,
   [a('P', [t('a\n* b')])],
-);
+)
 assert_lib_ast('escape insane list inside list indent',
   `* a
   \\* b`,
@@ -1234,11 +1234,11 @@ assert_lib_ast('escape insane list inside list indent',
       ]),
     ]),
   ]
-);
+)
 assert_lib_ast('asterisk in the middle of line does not need to be escaped',
   'a * b',
   [a('P', [t('a * b')])],
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/81
 assert_lib_ast('insane list immediately inside insane list',
   `* * aa
@@ -1256,7 +1256,7 @@ assert_lib_ast('insane list immediately inside insane list',
       ]),
     ]),
   ]
-);
+)
 
 // Table.
 const tr_with_explicit_table_expect = [
@@ -1298,7 +1298,7 @@ assert_lib_ast('tr with explicit table',
 gh
 `,
   tr_with_explicit_table_expect
-);
+)
 assert_lib_ast('tr with implicit table',
   `ab
 
@@ -1318,7 +1318,7 @@ assert_lib_ast('tr with implicit table',
 gh
 `,
   tr_with_explicit_table_expect
-);
+)
 assert_lib_ast('fully implicit table',
   `ab
 
@@ -1334,7 +1334,7 @@ assert_lib_ast('fully implicit table',
 gh
 `,
   tr_with_explicit_table_expect
-);
+)
 assert_lib_ast('insane table inside insane list inside insane table',
   `| 00
 | 01
@@ -1381,7 +1381,7 @@ assert_lib_ast('insane table inside insane list inside insane table',
       ]),
     ]),
   ]
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/81
 assert_lib_ast('insane table immediately inside insane list',
   `* | 00
@@ -1406,7 +1406,7 @@ assert_lib_ast('insane table immediately inside insane list',
       ]),
     ])
   ]
-);
+)
 assert_lib_ast('insane table body with empty cell and no space',
   `| 00
 |
@@ -1420,7 +1420,7 @@ assert_lib_ast('insane table body with empty cell and no space',
     ]),
   ]),
 ],
-);
+)
 assert_lib_ast('insane table head with empty cell and no space',
   `|| 00
 ||
@@ -1434,13 +1434,13 @@ assert_lib_ast('insane table head with empty cell and no space',
     ]),
   ]),
 ],
-);
+)
 assert_lib_ast('implicit table escape', '\\| a\n',
   [a('P', [t('| a')])],
-);
+)
 assert_lib_ast("pipe space in middle of line don't need escape", 'a | b\n',
   [a('P', [t('a | b')])],
-);
+)
 assert_lib_ast('auto_parent consecutive implicit tr and l',
   `\\Tr[\\Td[ab]]
 \\L[cd]
@@ -1457,7 +1457,7 @@ assert_lib_ast('auto_parent consecutive implicit tr and l',
     ]),
   ]),
 ]
-);
+)
 assert_lib_ast('table with id has caption',
   `\\Table{id=ab}
 [
@@ -1479,7 +1479,7 @@ assert_lib_ast('table with id has caption',
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
-);
+)
 assert_lib_ast('table with title has caption',
   `\\Table{title=a b}
 [
@@ -1501,7 +1501,7 @@ assert_lib_ast('table with title has caption',
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
-);
+)
 assert_lib_ast('table with description has caption',
   `\\Table{description=a b}
 [
@@ -1523,7 +1523,7 @@ assert_lib_ast('table with description has caption',
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
-);
+)
 assert_lib_ast('table without id, title, nor description does not have caption',
   `\\Table[
 | 00
@@ -1543,7 +1543,7 @@ assert_lib_ast('table without id, title, nor description does not have caption',
       "//x:span[@class='caption-prefix' and text()='Table 1']",
     ]
   }
-);
+)
 assert_lib_ast('table without id, title, nor description does not increment the table count',
   `\\Table{id=0}[
 | 00
@@ -1589,7 +1589,7 @@ assert_lib_ast('table without id, title, nor description does not increment the 
       "//x:span[@class='caption-prefix' and text()='Table 3']",
     ],
   },
-);
+)
 
 // Images.
 assert_lib_ast('image: block simple',
@@ -1610,7 +1610,7 @@ gh
       `//x:a[@href='${ourbigbook.RAW_PREFIX}/cd']//x:img[@src='${ourbigbook.RAW_PREFIX}/cd']`,
     ],
   },
-);
+)
 assert_lib_ast('image: inline simple',
   `ab
 
@@ -1629,7 +1629,7 @@ gh
       `//x:img[@src='${ourbigbook.RAW_PREFIX}/cd']`,
     ],
   },
-);
+)
 assert_lib_ast('image: link argument',
   `ab
 
@@ -1648,7 +1648,7 @@ gh
       `//x:a[@href='http://example.com']//x:img[@src='${ourbigbook.RAW_PREFIX}/cd']`,
     ],
   },
-);
+)
 assert_lib_ast('video: simple',
   `ab
 
@@ -1667,7 +1667,7 @@ gh
       `//x:video[@src='${ourbigbook.RAW_PREFIX}/cd']`,
     ],
   },
-);
+)
 assert_lib_ast('image: title',
   `\\Image[ab]{title=c d}`,
 [
@@ -1677,18 +1677,18 @@ assert_lib_ast('image: title',
   }),
 ],
   { filesystem: { ab: '' } },
-);
+)
 assert_lib_error('image: unknown provider',
   `\\Image[ab]{provider=reserved_undefined}`,
   1, 11
-);
+)
 assert_lib_error('image: provider that does not match actual source',
   `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=local}`,
   1, 96
-);
+)
 assert_lib_stdin('image: provider that does match actual source',
   `\\Image[https://upload.wikimedia.org/wikipedia/commons/5/5b/Gel_electrophoresis_insert_comb.jpg]{provider=wikimedia}`,
-);
+)
 assert_lib_ast('image: image with id has caption',
   `\\Image[aa]{id=bb}{external}\n`,
   [
@@ -1702,7 +1702,7 @@ assert_lib_ast('image: image with id has caption',
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
-);
+)
 assert_lib_ast('image: image with title has caption',
   `\\Image[aa]{title=b b}{external}\n`,
   [
@@ -1716,7 +1716,7 @@ assert_lib_ast('image: image with title has caption',
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
-);
+)
 assert_lib_ast('image: image with description has caption',
   `\\Image[aa]{description=b b}{external}\n`,
   [
@@ -1730,7 +1730,7 @@ assert_lib_ast('image: image with description has caption',
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
-);
+)
 assert_lib_ast('image: image with source has caption',
   `\\Image[aa]{source=b b}{external}\n`,
   [
@@ -1744,7 +1744,7 @@ assert_lib_ast('image: image with source has caption',
       "//x:span[@class='caption-prefix' and text()='Figure 1']",
     ]
   }
-);
+)
 assert_lib_ast('image: image without id, title, description nor source does not have caption',
   `\\Image[aa]{external}
 `,
@@ -1793,7 +1793,7 @@ assert_lib_ast('image: image title with x to header in another file',
 `,
     },
   }
-);
+)
 assert_lib('link to image in other files that has title with x to header in another file',
   {
     convert_dir: true,
@@ -1815,7 +1815,7 @@ assert_lib('link to image in other files that has title with x to header in anot
       ],
     },
   }
-);
+)
 assert_lib('link to image in other files that has title with x to synonym header in another file',
   {
     convert_dir: true,
@@ -1840,7 +1840,7 @@ assert_lib('link to image in other files that has title with x to synonym header
       ],
     },
   }
-);
+)
 assert_lib('link to image in other files that has title with two x to other headers',
   // check_db extra ID removal was removing the first ID because the link line/columns were the same for both,
   // fixed at title= argument position, and not at the \x position.
@@ -1866,7 +1866,7 @@ assert_lib('link to image in other files that has title with two x to other head
       ],
     },
   }
-);
+)
 assert_lib('image: dot added automatically between title and description if title does not end in punctuation',
   {
     convert_dir: true,
@@ -1976,7 +1976,7 @@ f()
       ],
     },
   }
-);
+)
 
 // Escapes.
 assert_lib_ast('escape backslash',            'a\\\\b\n', [a('P', [t('a\\b')])]);
@@ -1997,7 +1997,7 @@ assert_lib_ast('escape header id', `= tmp
       "//*[@id=concat('\"', \"'<>&\")]",
     ],
   }
-);
+)
 
 // Positional arguments.
 // Has no content argument.
@@ -2021,7 +2021,7 @@ assert_lib_error(
   {
     input_path_noext: 'notindex',
   }
-);
+)
 assert_lib_error(
   'named argument: open bracket at end of file fails gracefully',
   '\\P[ab]{',
@@ -2036,7 +2036,7 @@ assert_lib_ast('empty named argument without = is allowed',
     src: [t('img.png')],
     description: [],
   })]
-);
+)
 
 // Newline after close.
 assert_lib_ast('text after block element',
@@ -2058,7 +2058,7 @@ e
   ]),
   a('P', [t('e')]),
 ]
-);
+)
 assert_lib_ast('macro after block element',
   `a
 
@@ -2079,13 +2079,13 @@ e
   ]),
   a('P', [t('e')]),
 ]
-);
+)
 
 // Literal arguments.
 assert_lib_ast('literal argument code inline',
   '\\c[[\\ab[cd]{ef}]]\n',
   [a('P', [a('c', [t('\\ab[cd]{ef}')])])],
-);
+)
 assert_lib_ast('literal argument code block',
   `a
 
@@ -2101,7 +2101,7 @@ d
   a('C', [t('\\[]{}\n\\[]{}')]),
   a('P', [t('d')]),
 ],
-);
+)
 assert_lib_ast('non-literal argument leading and trailing newline get removed',
   `\\P[
 a
@@ -2109,7 +2109,7 @@ b
 ]
 `,
   [a('P', [t('a\nb')])],
-);
+)
 assert_lib_ast('literal argument leading and trailing newlines get removed',
   `\\P[[
 a
@@ -2117,7 +2117,7 @@ b
 ]]
 `,
   [a('P', [t('a\nb')])],
-);
+)
 assert_lib_ast('literal argument leading and trailing newlines get removed but not the second one',
   `\\P[[
 
@@ -2127,31 +2127,31 @@ b
 ]]
 `,
   [a('P', [t('\na\nb\n')])],
-);
+)
 assert_lib_ast('literal agument escape leading open no escape',
   '\\c[[\\ab]]\n',
   [a('P', [a('c', [t('\\ab')])])],
-);
+)
 assert_lib_ast('literal agument escape leading open one backslash',
   '\\c[[\\[ab]]\n',
   [a('P', [a('c', [t('[ab')])])],
-);
+)
 assert_lib_ast('literal agument escape leading open two backslashes',
   '\\c[[\\\\[ab]]\n',
   [a('P', [a('c', [t('\\[ab')])])],
-);
+)
 assert_lib_ast('literal agument escape trailing close no escape',
   '\\c[[\\]]\n',
   [a('P', [a('c', [t('\\')])])],
-);
+)
 assert_lib_ast('literal agument escape trailing one backslash',
   '\\c[[\\]]]\n',
   [a('P', [a('c', [t(']')])])],
-);
+)
 assert_lib_ast('literal agument escape trailing two backslashes',
   '\\c[[\\\\]]]\n',
   [a('P', [a('c', [t('\\]')])])],
-);
+)
 
 // Newline between arguments.
 const newline_between_arguments_expect = [
@@ -2164,7 +2164,7 @@ ab
 {id=cd}
 `,
   newline_between_arguments_expect
-);
+)
 assert_lib_ast('yes literal argument with argument after newline',
   `\\C[[
 ab
@@ -2172,7 +2172,7 @@ ab
 {id=cd}
 `,
   newline_between_arguments_expect
-);
+)
 assert_lib_ast('yes insane literal argument with argument after newline',
   `\`\`
 ab
@@ -2180,7 +2180,7 @@ ab
 {id=cd}
 `,
   newline_between_arguments_expect
-);
+)
 
 // Links.
 // \a
@@ -2193,7 +2193,7 @@ assert_lib_ast('link: simple to external URL',
       t(' b'),
     ]),
   ]
-);
+)
 assert_lib_ast('link: auto sane',
   'a \\a[http://example.com] b\n',
   [
@@ -2203,7 +2203,7 @@ assert_lib_ast('link: auto sane',
       t(' b'),
     ]),
   ]
-);
+)
 assert_lib_ast('link: auto insane space start and end',
   'a http://example.com b\n',
   [
@@ -2224,48 +2224,48 @@ assert_lib_ast('link: simple to local file that exists',
     ]),
   ],
   { filesystem: { 'local-path.txt': '' } }
-);
+)
 assert_lib_error('link: simple to local file that does not exist give an error without external',
   'a \\a[local-path.txt] b\n',
   1, 5,
-);
+)
 assert_lib_stdin('link: simple to local file that does not exist does not give an error with external',
   'a \\a[local-path.txt]{external} b\n',
-);
+)
 assert_lib_ast('link: auto insane start end document',
   'http://example.com',
   [a('P', [a('a', undefined, {'href': [t('http://example.com')]})])],
-);
+)
 assert_lib_ast('link: auto insane start end square brackets',
   '\\P[http://example.com]\n',
   [a('P', [a('a', undefined, {'href': [t('http://example.com')]})])],
-);
+)
 assert_lib_ast('link: auto insane with alpha character before it',
   'ahttp://example.com',
   [a('P', [
     t('a'),
     a('a', undefined, {'href': [t('http://example.com')]})
   ])]
-);
+)
 assert_lib_ast('link: auto insane with literal square brackets around it',
   '\\[http://example.com\\]\n',
   [a('P', [
     t('['),
     a('a', undefined, {'href': [t('http://example.com]')]})
   ])]
-);
+)
 assert_lib_ast('link: auto insane can be escaped with a backslash',
   '\\http://example.com\n',
   [a('P', [t('http://example.com')])],
-);
+)
 assert_lib_ast('link: auto insane is not a link if the domain is empty at eof',
   'http://\n',
   [a('P', [t('http://')])],
-);
+)
 assert_lib_ast('link: auto insane is not a link if the domain is empty at space',
   'http:// a\n',
   [a('P', [t('http:// a')])],
-);
+)
 assert_lib_ast('link: auto insane start end named argument',
   '\\Image[aaa.jpg]{description=http://example.com}\n',
   [a('Image', undefined, {
@@ -2273,7 +2273,7 @@ assert_lib_ast('link: auto insane start end named argument',
     src: [t('aaa.jpg')],
   })],
   { filesystem: { 'aaa.jpg': '' } }
-);
+)
 assert_lib_ast('link: auto insane start end named argument',
   '\\Image[aaa.jpg]{source=http://example.com}\n',
   [a('Image', undefined, {
@@ -2281,7 +2281,7 @@ assert_lib_ast('link: auto insane start end named argument',
     src: [t('aaa.jpg')],
   })],
   { filesystem: { 'aaa.jpg': '' } }
-);
+)
 assert_lib_ast('link: auto insane newline',
   `a
 
@@ -2294,7 +2294,7 @@ b
     a('P', [a('a', undefined, {'href': [t('http://example.com')]})]),
     a('P', [t('b')]),
   ]
-);
+)
 assert_lib_ast('link: insane with custom body no newline',
   'http://example.com[aa]',
   [
@@ -2302,7 +2302,7 @@ assert_lib_ast('link: insane with custom body no newline',
       a('a', [t('aa')], {'href': [t('http://example.com')]}),
     ]),
   ]
-);
+)
 assert_lib_ast('link: insane with custom body with newline',
   'http://example.com\n[aa]',
   [
@@ -2310,7 +2310,7 @@ assert_lib_ast('link: insane with custom body with newline',
       a('a', [t('aa')], {'href': [t('http://example.com')]}),
     ]),
   ]
-);
+)
 assert_lib_ast('link: auto end in space',
   `a http://example.com b`,
   [
@@ -2320,7 +2320,7 @@ assert_lib_ast('link: auto end in space',
       t(' b'),
     ])
   ]
-);
+)
 assert_lib_ast('link: auto end in square bracket',
   `\\P[a http://example.com]`,
   [
@@ -2329,7 +2329,7 @@ assert_lib_ast('link: auto end in square bracket',
       a('a', undefined, {'href': [t('http://example.com')]}),
     ])
   ]
-);
+)
 assert_lib_ast('link: auto containing escapes',
   `\\P[a http://example.com\\]a\\}b\\\\c\\ d]`,
   [
@@ -2338,7 +2338,7 @@ assert_lib_ast('link: auto containing escapes',
       a('a', undefined, {'href': [t('http://example.com]a}b\\c d')]}),
     ])
   ]
-);
+)
 assert_lib_ast('link: auto sane http https removal',
   '\\a[http://example.com] \\a[https://example.com] \\a[ftp://example.com]',
   [
@@ -2357,7 +2357,7 @@ assert_lib_ast('link: auto sane http https removal',
       "//x:a[@href='ftp://example.com' and text()='ftp://example.com']",
     ]
   }
-);
+)
 assert_lib_ast('link: auto insane http https removal',
   'http://example.com https://example.com',
   [
@@ -2373,7 +2373,7 @@ assert_lib_ast('link: auto insane http https removal',
       "//x:a[@href='https://example.com' and text()='example.com']",
     ]
   }
-);
+)
 assert_lib_ast('link: with multiple paragraphs',
   '\\a[http://example.com][aaa\n\nbbb]\n',
   [
@@ -2388,7 +2388,7 @@ assert_lib_ast('link: with multiple paragraphs',
       ),
     ]),
   ]
-);
+)
 assert_lib_ast('xss: content and href',
   '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{external}\n',
   undefined,
@@ -2397,7 +2397,7 @@ assert_lib_ast('xss: content and href',
       `//x:a[@href=concat('ab&<>"', "'", 'cd') and text()=concat('ef&<>"', "'", 'gh')]`,
     ]
   }
-);
+)
 assert_lib_error(
   // {check} local file existence of \a and \Image and local link automodifications.
   'link: relative reference to nonexistent file leads to failure in link',
@@ -2406,7 +2406,7 @@ assert_lib_error(
   {
     input_path_noext: 'README',
   }
-);
+)
 assert_lib_error(
   'link: relative reference to nonexistent file leads to failure in image',
   `\\Image[i-dont-exist]
@@ -2414,7 +2414,7 @@ assert_lib_error(
   {
     input_path_noext: 'README',
   }
-);
+)
 assert_lib_ast(
   'link: relative reference to existent file does not lead to failure in link',
   `\\a[i-exist]
@@ -2426,7 +2426,7 @@ assert_lib_ast(
       'i-exist': '',
     }
   }
-);
+)
 assert_lib_ast(
   'link: relative reference to existent file does not lead to failure in image',
   `\\Image[i-exist]
@@ -2438,7 +2438,7 @@ assert_lib_ast(
       'i-exist': '',
     }
   }
-);
+)
 assert_lib_ast(
   'link: external prevents existence checks in link',
   `\\a[i-dont-exist]{external}
@@ -2447,7 +2447,7 @@ assert_lib_ast(
   {
     input_path_noext: 'README',
   }
-);
+)
 assert_lib_ast(
   'link: external prevents existence checks in block image',
   `\\Image[i-dont-exist]{external}
@@ -2456,7 +2456,7 @@ assert_lib_ast(
   {
     input_path_noext: 'README',
   }
-);
+)
 assert_lib_ast(
   'link: external prevents existence checks in inline image',
   `\\image[i-dont-exist]{external}
@@ -2465,7 +2465,7 @@ assert_lib_ast(
   {
     input_path_noext: 'README',
   }
-);
+)
 assert_lib_ast(
   'link: existence checks are skipped when media provider converts them to absolute url',
   `\\Image[i-dont-exist]
@@ -2484,7 +2484,7 @@ assert_lib_ast(
       },
     }
   }
-);
+)
 assert_lib(
   'link: relative links and images are corrected for different output paths with scope and split-headers',
   {
@@ -2580,7 +2580,7 @@ assert_lib(
       ],
     },
   }
-);
+)
 
 // Internal cross references
 // \x
@@ -2601,7 +2601,7 @@ assert_lib_ast('x: cross reference simple',
       }),
     ]),
   ],
-);
+)
 assert_lib_ast('x: cross reference full boolean style without value',
   `= My header
 
@@ -2619,7 +2619,7 @@ assert_lib_ast('x: cross reference full boolean style without value',
       }),
     ]),
   ]
-);
+)
 assert_lib_ast('x: cross reference full boolean style with value 0',
   `= abc
 
@@ -2637,7 +2637,7 @@ assert_lib_ast('x: cross reference full boolean style with value 0',
       }),
     ]),
   ]
-);
+)
 assert_lib_ast('x: cross reference full boolean style with value 1',
   `= abc
 
@@ -2655,7 +2655,7 @@ assert_lib_ast('x: cross reference full boolean style with value 1',
       }),
     ]),
   ]
-);
+)
 assert_lib_error('x: cross reference full boolean style with invalid value 2',
   `= abc
 
@@ -2729,7 +2729,7 @@ assert_lib('x: cross reference to non-included toplevel header in another file',
       ]
     },
   },
-);
+)
 assert_lib('x: cross reference to non-included non-toplevel header in another file',
   {
     convert_dir: true,
@@ -2746,7 +2746,7 @@ assert_lib('x: cross reference to non-included non-toplevel header in another fi
       ]
     },
   },
-);
+)
 assert_lib('x: cross reference to included header in another file',
   // I kid you not. Everything breaks everything.
   {
@@ -2772,7 +2772,7 @@ assert_lib('x: cross reference to included header in another file',
       ]
     }
   },
-);
+)
 assert_lib_ast('x: cross reference to ids in the current file with split',
   // TODO this test is ridiculously overbloated and is likely covered in other tests already.
   `= Notindex
@@ -2856,7 +2856,7 @@ assert_lib_ast('x: cross reference to ids in the current file with split',
     }),
     input_path_noext: 'notindex',
   },
-);
+)
 assert_lib('x: splitDefault true and splitDefaultNotToplevel true',
   {
     convert_dir: true,
@@ -2959,7 +2959,7 @@ assert_lib('x: splitDefault true and splitDefaultNotToplevel true',
       'notindex-nosplit.html',
     ],
   },
-);
+)
 assert_lib('x: splitDefault false and splitDefaultNotToplevel true',
   {
     convert_dir: true,
@@ -3071,7 +3071,7 @@ assert_lib('x: splitDefault false and splitDefaultNotToplevel true',
       'notindex-nosplit.html',
     ],
   },
-);
+)
 assert_lib(
   'x: header splitDefault argument',
   // https://github.com/ourbigbook/ourbigbook/issues/131
@@ -3271,7 +3271,7 @@ assert_lib(
       ],
     }
   }
-);
+)
 assert_lib('x: cross reference to non-included image in another file',
   // https://github.com/ourbigbook/ourbigbook/issues/199
   {
@@ -3295,7 +3295,7 @@ assert_lib('x: cross reference to non-included image in another file',
       ],
     }
   },
-);
+)
 assert_lib_ast('x: cross reference with link inside it does not blow up',
   `= asdf
 {id=http://example.com}
@@ -3320,7 +3320,7 @@ assert_lib_ast('x: cross reference with link inside it does not blow up',
       }),
     ]),
   ],
-);
+)
 assert_lib('x: to image in another file that has x title in another file',
   // https://github.com/ourbigbook/ourbigbook/issues/198
   {
@@ -3339,7 +3339,7 @@ assert_lib('x: to image in another file that has x title in another file',
 `,
     },
   }
-);
+)
 // TODO
 //it('output_path_base', () => {
 //  function assert(args, dirname, basename) {
@@ -3401,7 +3401,7 @@ assert_lib_ast('x: cross reference magic simple sane',
       "//x:div[@class='p']//x:a[@href='#my-header' and text()='My headers']",
     ],
   }
-);
+)
 assert_lib_ast('x: cross reference magic simple insane',
   `= Notindex
 
@@ -3415,7 +3415,7 @@ assert_lib_ast('x: cross reference magic simple insane',
       "//x:div[@class='p']//x:a[@href='#my-header' and text()='My headers']",
     ],
   }
-);
+)
 assert_lib_ast('x: cross reference magic in title',
   `= Notindex
 
@@ -3432,7 +3432,7 @@ assert_lib_ast('x: cross reference magic in title',
       "//x:div[@class='p']//x:a[@href='#image-my-headers-are-amazing' and text()='Figure 1. \"My headers are amazing\"']",
     ],
   }
-);
+)
 assert_lib_ast('x: cross reference magic insane escape',
   `a\\<>b`,
   undefined,
@@ -3441,7 +3441,7 @@ assert_lib_ast('x: cross reference magic insane escape',
       "//x:div[@class='p' and text()='a<>b']",
     ],
   }
-);
+)
 assert_lib_ast('x: cross reference magic with full uses full content',
   `= Notindex
 
@@ -3455,7 +3455,7 @@ assert_lib_ast('x: cross reference magic with full uses full content',
       "//x:div[@class='p']//x:a[@href='#my-header' and text()='Section 1. \"My header\"']",
     ],
   }
-);
+)
 assert_lib('x: cross reference magic cross file plural resolution',
   {
     convert_dir: true,
@@ -3488,7 +3488,7 @@ assert_lib('x: cross reference magic cross file plural resolution',
       ],
     },
   },
-);
+)
 assert_lib('x: cross reference magic detects capitalization and plural on output',
   {
     convert_dir: true,
@@ -3524,7 +3524,7 @@ assert_lib('x: cross reference magic detects capitalization and plural on output
       ],
     },
   },
-);
+)
 assert_lib_ast('x: cross reference magic insane to scope',
   `= Notindex
 
@@ -3545,7 +3545,7 @@ assert_lib_ast('x: cross reference magic insane to scope',
       "//x:div[@id='lower']//x:blockquote//x:a[@href='#my-scope/in-scope' and text()='in scope']",
     ],
   }
-);
+)
 assert_lib_ast('x: cross reference magic insane to header file argument',
   `= Notindex
 
@@ -3563,7 +3563,7 @@ assert_lib_ast('x: cross reference magic insane to header file argument',
       'path/to/my_file.jpg': '',
     },
   }
-);
+)
 assert_lib_ast('x: topic link: basic insane',
   `a #Dogs b\n`,
   [
@@ -3717,7 +3717,7 @@ assert_lib('x: x_external_prefix option',
       ],
     },
   }
-);
+)
 assert_lib('x: ourbigbook.json xPrefix',
   {
     convert_dir: true,
@@ -3789,7 +3789,7 @@ assert_lib('x: ourbigbook.json xPrefix',
       ],
     },
   },
-);
+)
 assert_lib(
   'x: directory name is removed from link to subdir h2',
   {
@@ -3812,7 +3812,7 @@ assert_lib(
       ]
     },
   }
-);
+)
 
 // Infinite recursion.
 // failing https://github.com/ourbigbook/ourbigbook/issues/34
@@ -3838,7 +3838,7 @@ assert_lib_ast('cross reference from image title to previous non-header without 
       ['image-gh-image-cd', 'tmp.bigb', 3, 1],
     ],
   }
-);
+)
 //// TODO https://docs.ourbigbook.com/todo/image-title-with-x-to-image-with-content-incorrectly-disallowed
 //assert_lib(
 //  'cross reference from image title to previous non-header with content is allowed',
@@ -3890,7 +3890,7 @@ assert_lib_ast('cross reference from image title to following non-header is not 
       ['image-gh-image-cd', 'tmp.bigb', 1, 1],
     ],
   }
-);
+)
 assert_lib_error('cross reference infinite recursion with explicit IDs fails gracefully',
   `= \\x[h2]
 {id=h1}
@@ -3904,7 +3904,7 @@ assert_lib_error('cross reference infinite recursion to self IDs fails gracefull
   {
     input_path_noext: 'tmp',
   }
-);
+)
 assert_lib_ast('cross reference from image to previous header with x content without image ID works',
   `= ab
 
@@ -3925,7 +3925,7 @@ assert_lib_ast('cross reference from image to previous header with x content wit
     ),
   ],
   { filesystem: { cd: '' } },
-);
+)
 assert_lib_ast('cross reference from image to previous header without x content with image ID works',
   `= ab
 
@@ -3943,7 +3943,7 @@ assert_lib_ast('cross reference from image to previous header without x content 
     }),
   ],
   { filesystem: { cd: '' } },
-);
+)
 assert_lib_ast('cross reference from image to previous header without x content without image ID works',
   `= ab
 
@@ -3970,7 +3970,7 @@ assert_lib_ast('cross reference from image to previous header without x content 
     ),
   ],
   { filesystem: { cd: '' } },
-);
+)
 assert_lib_ast('cross reference from image to following header without x content without image id works',
   `= ab
 
@@ -4003,14 +4003,14 @@ assert_lib_ast('cross reference from image to following header without x content
     }),
   ],
   { filesystem: { cd: '' } },
-);
+)
 assert_lib_error('cross reference with parent to undefined ID does not throw',
   `= aa
 
 \\x[bb]{parent}
 `,
   3, 3
-);
+)
 
 // Scope.
 assert_lib_stdin("scope: internal cross references work with header scope and don't throw",
@@ -4043,7 +4043,7 @@ assert_lib_stdin("scope: internal cross references work with header scope and do
 
 == h2 2
 `
-);
+)
 assert_lib_ast('scope: with parent leading slash conflict resolution',
   `= h1
 
@@ -4070,7 +4070,7 @@ assert_lib_ast('scope: with parent leading slash conflict resolution',
   a('H', undefined, {level: [t('5')], title: [t('h4')]}, {id: 'h3/h4'}),
   a('H', undefined, {level: [t('3')], title: [t('h4')]}, {id: 'h4'}),
 ]
-);
+)
 assert_lib_ast('scope: with parent breakout with no leading slash',
   `= h1
 
@@ -4093,7 +4093,7 @@ assert_lib_ast('scope: with parent breakout with no leading slash',
   a('H', undefined, {level: [t('4')], title: [t('h4')]}, {id: 'h3/h4'}),
   a('H', undefined, {level: [t('3')], title: [t('h5')]}, {id: 'h5'}),
 ]
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/120
 assert_lib_ast('scope: nested with parent',
   `= h1
@@ -4132,7 +4132,7 @@ assert_lib_ast('scope: nested with parent',
   a('H', undefined, {level: [t('3')], title: [t('h1 2 1')]}, {id: 'h1/h1-2/h1-2-1'}),
   a('H', undefined, {level: [t('4')], title: [t('h1 2 1 1')]}, {id: 'h1/h1-2/h1-2-1/h1-2-1-1'}),
 ]
-);
+)
 assert_lib_ast('scope: nested internal cross references resolves progressively',
   `= h1
 {scope}
@@ -4151,7 +4151,7 @@ assert_lib_ast('scope: nested internal cross references resolves progressively',
   a('H', undefined, {level: [t('3')], title: [t('h1 1 1')]}, {id: 'h1/h1-1/h1-1-1'}),
   a('P', [a('x', undefined, {href: [t('h1-1')]})]),
 ]
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/100
 assert_lib_error('scope: broken parent still generates a header ID',
   `= h1
@@ -4162,7 +4162,7 @@ assert_lib_error('scope: broken parent still generates a header ID',
 {parent=reserved-undefined}
 
 `, 6, 1
-);
+)
 assert_lib_ast('scope: cross reference to toplevel scoped split header',
   `= Notindex
 {scope}
@@ -4214,7 +4214,7 @@ assert_lib_ast('scope: cross reference to toplevel scoped split header',
     convert_opts: { split_headers: true },
     filesystem: { 'bb.png': '' },
   },
-);
+)
 assert_lib_ast('scope: cross reference to non-toplevel scoped split header',
   // https://github.com/ourbigbook/ourbigbook/issues/173
   `= tmp
@@ -4249,7 +4249,7 @@ assert_lib_ast('scope: cross reference to non-toplevel scoped split header',
     convert_opts: { split_headers: true },
     input_path_noext: 'tmp',
   },
-);
+)
 // https://docs.ourbigbook.com#header-scope-argument-of-toplevel-headers
 assert_lib_ast('scope: cross reference to non-included file with toplevel scope',
   `\\x[toplevel-scope]
@@ -4297,7 +4297,7 @@ assert_lib_ast('scope: cross reference to non-included file with toplevel scope'
       'h2.png': '',
     }
   }
-);
+)
 assert_lib_ast('scope: toplevel scope gets removed from IDs in the file',
   `= Notindex
 {scope}
@@ -4322,7 +4322,7 @@ assert_lib_ast('scope: toplevel scope gets removed from IDs in the file',
       xpath_header(2, 'h2'),
     ],
   }
-);
+)
 assert_lib(
   'incoming links: cross reference incoming links and other children simple',
   {
@@ -4450,7 +4450,7 @@ assert_lib(
       ],
     },
   }
-);
+)
 assert_lib(
   'incoming links: cross reference incoming links from other file min notindex to index',
   {
@@ -4472,7 +4472,7 @@ assert_lib(
       ],
     },
   }
-);
+)
 assert_lib(
   'incoming links: cross reference incoming links from other file min index to notindex',
   {
@@ -4494,7 +4494,7 @@ assert_lib(
       ],
     },
   }
-);
+)
 assert_lib(
   // We can have confusion between singular and plural here unless proper resolution is done.
   'incoming links: cross reference incoming links and other children with magic',
@@ -4538,7 +4538,7 @@ assert_lib(
       ],
     },
   }
-);
+)
 assert_lib(
   'incoming links: from another source file to split header simple',
   {
@@ -4562,7 +4562,7 @@ assert_lib(
       ],
     },
   }
-);
+)
 assert_lib(
   'incoming links: from subdir without direct link to it resolves correctly',
   // Hit a bug where the incoming link was resolving wrongly to subdir/notindex.html#subdir/to-dog
@@ -4589,7 +4589,7 @@ assert_lib(
       ],
     },
   }
-);
+)
 assert_lib('x leading slash to escape scopes works across files',
   {
     convert_dir: true,
@@ -4599,7 +4599,7 @@ assert_lib('x leading slash to escape scopes works across files',
 `,
     },
   }
-);
+)
 // TODO This test can only work after:
 // https://github.com/ourbigbook/ourbigbook/issues/188
 // There is no other way to test this currently, as we can't have scopes
@@ -4678,7 +4678,7 @@ assert_lib('scope: hierarchy resolution works across files with directories and 
       ],
     },
   }
-);
+)
 assert_lib('scope: hierarchy resolution works across files with directories and magic plural',
   {
     convert_dir: true,
@@ -4696,7 +4696,7 @@ assert_lib('scope: hierarchy resolution works across files with directories and 
 `,
     },
   }
-);
+)
 assert_lib('scope: link from non subdir scope to subdir scope works',
   // https://github.com/ourbigbook/ourbigbook/issues/284
   {
@@ -4721,7 +4721,7 @@ assert_lib('scope: link from non subdir scope to subdir scope works',
       ]
     },
   }
-);
+)
 assert_lib('x: ref_prefix gets appeneded to absolute targets',
   {
     convert_dir: true,
@@ -4751,7 +4751,7 @@ assert_lib('x: ref_prefix gets appeneded to absolute targets',
       ],
     },
   }
-);
+)
 assert_lib(
   'x: link to image in another file after link to the toplevel header of that file does not blow up',
   {
@@ -4789,7 +4789,7 @@ assert_lib('x: split renders by default links back to nosplit render of another 
     },
     convert_opts: { split_headers: true },
   },
-);
+)
 assert_lib('x: redirect from cirosantilli.com to ourbigbook.com',
   {
     convert_dir: true,
@@ -4833,7 +4833,7 @@ assert_lib('x: redirect from cirosantilli.com to ourbigbook.com',
       ],
     },
   },
-);
+)
 
 // Subdir.
 assert_lib('header: subdir argument basic',
@@ -4861,7 +4861,7 @@ assert_lib('header: subdir argument basic',
       ]
     },
   }
-);
+)
 
 // Headers.
 // \H
@@ -4900,7 +4900,7 @@ assert_lib_ast('header: simple',
     convert_opts: { split_headers: true },
     input_path_noext: 'notindex',
   },
-);
+)
 assert_lib_ast('header: and implicit paragraphs',
   `\\H[1][My header 1]
 
@@ -4916,7 +4916,7 @@ My paragraph 2.
     a('H', undefined, {level: [t('2')], title: [t('My header 2')]}),
     a('P', [t('My paragraph 2.')]),
   ]
-);
+)
 const header_7_expect = [
   a('H', undefined, {level: [t('1')], title: [t('1')]}),
   a('H', undefined, {level: [t('2')], title: [t('2')]}),
@@ -4942,7 +4942,7 @@ assert_lib_ast('header: 7 sane',
 \\H[7][7]
 `,
   header_7_expect
-);
+)
 assert_lib_ast('header: 7 insane',
   // https://github.com/ourbigbook/ourbigbook/issues/32
   `= 1
@@ -4960,7 +4960,7 @@ assert_lib_ast('header: 7 insane',
 ======= 7
 `,
   header_7_expect
-);
+)
 assert_lib_ast('header: 7 parent',
   `= 1
 
@@ -4983,7 +4983,7 @@ assert_lib_ast('header: 7 parent',
 {parent=6}
 `,
   header_7_expect
-);
+)
 assert_lib_ast('header: parent does title to ID conversion',
   `= 1
 
@@ -5011,7 +5011,7 @@ assert_lib_ast('header: parent does title to ID conversion',
     ),
     a('H', undefined, {level: [t('3')], title: [t('3')]}),
   ],
-);
+)
 assert_lib_error('header: with parent argument must have level equal 1',
   `= 1
 
@@ -5019,7 +5019,7 @@ assert_lib_error('header: with parent argument must have level equal 1',
 {parent=1}
 `,
   3, 1
-);
+)
 assert_lib_error('header: parent cannot be an older id of a level',
   `= 1
 
@@ -5031,7 +5031,7 @@ assert_lib_error('header: parent cannot be an older id of a level',
 {parent=2}
 `,
   8, 1
-);
+)
 assert_lib_error('header: header inside parent',
   `= 1
 
@@ -5042,7 +5042,7 @@ assert_lib_error('header: header inside parent',
 }
 `,
   3, 1
-);
+)
 assert_lib_error('header: child argument to id that does not exist gives an error',
   `= 1
 {child=2}
@@ -5051,7 +5051,7 @@ assert_lib_error('header: child argument to id that does not exist gives an erro
 == 2
 `,
   3, 1
-);
+)
 assert_lib_error('header: tag argument to id that does not exist gives an error',
   `= 1
 {tag=2}
@@ -5060,7 +5060,7 @@ assert_lib_error('header: tag argument to id that does not exist gives an error'
 == 2
 `,
   3, 1
-);
+)
 assert_lib('header: tag and child argument does title to ID conversion',
   {
     convert_dir: true,
@@ -5077,7 +5077,7 @@ assert_lib('header: tag and child argument does title to ID conversion',
 `,
     },
   }
-);
+)
 assert_lib_error('header: child and synonym arguments are incompatible',
   // This almost worked, but "Other children" links were not showing.
   // Either we support it fully, or it blows up clearly, this immediately
@@ -5091,7 +5091,7 @@ assert_lib_error('header: child and synonym arguments are incompatible',
 == 2
 `,
   5, 1
-);
+)
 assert_lib_error('header: tag and synonym arguments are incompatible',
   `= 1
 
@@ -5102,7 +5102,7 @@ assert_lib_error('header: tag and synonym arguments are incompatible',
 == 2
 `,
   5, 1
-);
+)
 assert_lib_error('header: synonym without preceeding header fails gracefully',
   `asdf
 
@@ -5110,7 +5110,7 @@ assert_lib_error('header: synonym without preceeding header fails gracefully',
 {synonym}
 `,
   4, 1
-);
+)
 //// This would be the ideal behaviour, but I'm lazy now.
 //// https://github.com/ourbigbook/ourbigbook/issues/200
 //assert_lib_ast('full link to synonym renders the same as full link to the main header',
@@ -5150,7 +5150,7 @@ assert_lib_ast('header: title2 full link to synonym with title2 does not get dum
       "//x:blockquote//x:a[@href='#1-2' and text()='Section 1. \"1 3\"']",
     ],
   }
-);
+)
 assert_lib_ast('header: title2 shows next to title',
   `= Asdf
 {title2=qwer}
@@ -5162,7 +5162,7 @@ assert_lib_ast('header: title2 shows next to title',
       xpath_header(1, 'asdf', "x:a[@href='' and text()='Asdf (qwer, zxcv)']"),
     ],
   }
-);
+)
 assert_lib_error('header: title2 of synonym must be empty',
   `= 1
 
@@ -5172,7 +5172,7 @@ assert_lib_error('header: title2 of synonym must be empty',
 `,
   // 5, 9 would be better, pointing to the start of asdf
   5, 1
-);
+)
 assert_lib_error('header: title2 of synonym cannot be given multiple times',
   `= 1
 
@@ -5183,7 +5183,7 @@ assert_lib_error('header: title2 of synonym cannot be given multiple times',
 `,
   // 6, 1 would be better, pointing to second title2
   5, 1
-);
+)
 assert_lib('header: synonym basic',
   // https://github.com/ourbigbook/ourbigbook/issues/114
   {
@@ -5238,7 +5238,7 @@ assert_lib('header: synonym basic',
       //],
     }
   }
-);
+)
 assert_lib('header: synonym in splitDefault',
   // https://github.com/ourbigbook/ourbigbook/issues/225
   {
@@ -5267,7 +5267,7 @@ assert_lib('header: synonym in splitDefault',
       ],
     }
   }
-);
+)
 assert_lib('header: link to synonym toplevel does not have fragment',
   // https://docs.ourbigbook.com/todo/links-to-synonym-header-have-fragment
   {
@@ -5292,17 +5292,17 @@ assert_lib('header: link to synonym toplevel does not have fragment',
       ],
     }
   }
-);
+)
 const header_id_new_line_expect =
   [a('H', undefined, {level: [t('1')], title: [t('aa')], id: [t('bb')]})];
 assert_lib_ast('header id new line sane',
   '\\H[1][aa]\n{id=bb}',
   header_id_new_line_expect,
-);
+)
 assert_lib_ast('header id new line insane no trailing elment',
   '= aa\n{id=bb}',
   header_id_new_line_expect,
-);
+)
 assert_lib_ast('header id new line insane trailing element',
   '= aa \\c[bb]\n{id=cc}',
   [a('H', undefined, {
@@ -5313,7 +5313,7 @@ assert_lib_ast('header id new line insane trailing element',
       ],
       id: [t('cc')],
   })],
-);
+)
 assert_lib_error('header: level must be an integer', '\\H[a][b]\n', 1, 3);
 assert_lib_error('header: non integer h2 header level does not throw',
   `\\H[1][h1]
@@ -5401,7 +5401,7 @@ assert_lib('header: numbered argument',
     },
     convert_opts: { split_headers: true },
   },
-);
+)
 assert_lib('header: numbered ourbigbook.json',
   {
     convert_dir: true,
@@ -5436,7 +5436,7 @@ assert_lib('header: numbered ourbigbook.json',
       ourbigbook_json: { h: { numbered: false } }
     }
   },
-);
+)
 assert_lib('header: splitDefault on ourbigbook.json',
   {
     convert_dir: true,
@@ -5466,7 +5466,7 @@ assert_lib('header: splitDefault on ourbigbook.json',
       ],
     },
   },
-);
+)
 assert_lib_ast('header: file argument works',
   `= h1
 
@@ -5537,7 +5537,7 @@ My Line 2
       'path/to/my-file.mp4': '',
     },
   },
-);
+)
 assert_lib_ast('header file argument that is the last header adds the preview',
   `= h1
 
@@ -5557,7 +5557,7 @@ assert_lib_ast('header file argument that is the last header adds the preview',
       'path/to/my-file.mp4': '',
     },
   },
-);
+)
 assert_lib_error('header: file argument to a file that does not exist gives an error',
   `= h1
 
@@ -5567,7 +5567,7 @@ assert_lib_error('header: file argument to a file that does not exist gives an e
 assert_lib_ast('header: escape insane header at start of document',
   '\\= a',
   [a('P', [t('= a')])],
-);
+)
 assert_lib('header: toplevel argument',
   {
     convert_dir: true,
@@ -5743,7 +5743,7 @@ assert_lib('header: toplevel argument',
       ],
     }
   },
-);
+)
 assert_lib_ast('header: id of first header comes from the file name if not index',
   // https://docs.ourbigbook.com#the-id-of-the-first-header-is-derived-from-the-filename
   `= abc
@@ -5770,7 +5770,7 @@ assert_lib_ast('header: id of first header comes from the file name if not index
   {
     input_path_noext: 'notindex'
   },
-);
+)
 assert_lib_ast('header: id of first header comes from header title if index',
   `= abc
 
@@ -5798,7 +5798,7 @@ assert_lib_ast('header: id of first header comes from header title if index',
       input_path: ourbigbook.INDEX_BASENAME_NOEXT + '.' + ourbigbook.OURBIGBOOK_EXT
     }
   },
-);
+)
 assert_lib_error('header: empty include in header title fails gracefully',
   // https://github.com/ourbigbook/ourbigbook/issues/195
   `= tmp
@@ -5806,14 +5806,14 @@ assert_lib_error('header: empty include in header title fails gracefully',
 == \\Include
 `,
   3, 4
-);
+)
 assert_lib_error('header: empty x in header title fails gracefully',
   `= tmp
 
 == a \\x
 `,
   3, 6
-);
+)
 assert_lib_error('header: inside header fails gracefully',
   `= \\H[2]
 `,
@@ -5821,7 +5821,7 @@ assert_lib_error('header: inside header fails gracefully',
   {
     input_path_noext: 'tmp',
   }
-);
+)
 assert_lib_error('header: forbid_multiheader option forbids multiple headers',
   `= h1
 
@@ -5834,7 +5834,7 @@ assert_lib_error('header: forbid_multiheader option forbids multiple headers',
     },
     input_path_noext: 'tmp',
   }
-);
+)
 assert_lib_stdin('header: forbid_multiheader option allows synonyms',
   `= h1
 
@@ -5846,7 +5846,7 @@ assert_lib_stdin('header: forbid_multiheader option allows synonyms',
       forbid_multiheader: 'denied',
     },
   }
-);
+)
 assert_lib_error('header: forbid_multi_h1 option forbids multiple h1 headers',
   `= h1
 
@@ -5909,7 +5909,7 @@ assert_lib_stdin('header: wiki argument without value adds a link to wikipedia b
       "//x:a[@href='https://en.wikipedia.org/wiki/My_topic']",
     ]
   }
-);
+)
 assert_lib_stdin('header: wiki argument with a value adds a link to wikipedia with that value',
   `= My topic
 {wiki=Another_one}
@@ -5919,7 +5919,7 @@ assert_lib_stdin('header: wiki argument with a value adds a link to wikipedia wi
       "//x:a[@href='https://en.wikipedia.org/wiki/Another_one']",
     ]
   }
-);
+)
 
 // Code.
 assert_lib_ast('code: inline sane',
@@ -5931,7 +5931,7 @@ assert_lib_ast('code: inline sane',
       t(' d'),
     ]),
   ],
-);
+)
 assert_lib_ast('code: inline insane simple',
   'a `b c` d\n',
   [
@@ -5941,7 +5941,7 @@ assert_lib_ast('code: inline insane simple',
       t(' d'),
     ]),
   ]
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/171
 assert_lib_ast('code: inline insane with only a backslash',
   'a `\\` d\n',
@@ -5952,11 +5952,11 @@ assert_lib_ast('code: inline insane with only a backslash',
       t(' d'),
     ]),
   ]
-);
+)
 assert_lib_ast('code: inline insane escape backtick',
   'a \\`b c\n',
   [a('P', [t('a `b c')])]
-);
+)
 assert_lib_ast('code: block literal sane',
   `a
 
@@ -5972,7 +5972,7 @@ d
     a('C', [t('b\nc')]),
     a('P', [t('d')]),
   ]
-);
+)
 assert_lib_ast('code: block insane',
   `a
 
@@ -5988,7 +5988,7 @@ d
     a('C', [t('b\nc')]),
     a('P', [t('d')]),
   ]
-);
+)
 assert_lib_ast('code: with id has caption',
   `\`\`
 aa
@@ -6003,7 +6003,7 @@ aa
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
-);
+)
 assert_lib_ast('code: with title has caption',
   `\`\`
 aa
@@ -6018,7 +6018,7 @@ aa
       "//x:span[@class='caption-prefix' and text()='Code 1']",
     ]
   }
-);
+)
 assert_lib_ast('code: with description has caption',
   `\`\`
 aa
@@ -6087,7 +6087,7 @@ assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal p
 {parent=1}
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
-);
+)
 assert_lib_error('header number fails with ourbigbook.json lint h-parent = parent',
   `= 1
 
@@ -6095,14 +6095,14 @@ assert_lib_error('header number fails with ourbigbook.json lint h-parent = paren
 `,
   3, 1, undefined,
   { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
-);
+)
 assert_lib_stdin('header number works with ourbigbook.json lint h-parent = number',
   `= 1
 
 == 2
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
-);
+)
 assert_lib_error('header parent fails with ourbigbook.json lint h-parent = number',
   `= 1
 
@@ -6111,7 +6111,7 @@ assert_lib_error('header parent fails with ourbigbook.json lint h-parent = numbe
 `,
   3, 1, undefined,
   { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
-);
+)
 assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal parent and includes with parent',
   `= 1
 
@@ -6126,7 +6126,7 @@ assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal p
       embed_includes: true,
     }
   }
-);
+)
 assert_lib_error('header parent fails with ourbigbook.json lint h-parent equal parent and includes with number',
   `= 1
 
@@ -6142,7 +6142,7 @@ assert_lib_error('header parent fails with ourbigbook.json lint h-parent equal p
       embed_includes: true,
     }
   }
-);
+)
 // lint h-tag
 assert_lib_error('lint h-tag child failure',
   `= 1
@@ -6152,7 +6152,7 @@ assert_lib_error('lint h-tag child failure',
 `,
   2, 1, undefined,
   { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'child', } } } }
-);
+)
 assert_lib_stdin('lint h-tag child pass',
   `= 1
 {child=2}
@@ -6160,7 +6160,7 @@ assert_lib_stdin('lint h-tag child pass',
 == 2
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'child', } } } }
-);
+)
 assert_lib_error('lint h-tag tag failure',
   `= 1
 {child=2}
@@ -6169,7 +6169,7 @@ assert_lib_error('lint h-tag tag failure',
 `,
   2, 1, undefined,
   { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
-);
+)
 assert_lib_stdin('lint h-tag tag pass',
   `= 1
 {tag=2}
@@ -6177,7 +6177,7 @@ assert_lib_stdin('lint h-tag tag pass',
 == 2
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
-);
+)
 
 // Word counts.
 assert_lib_ast('word count simple',
@@ -6191,7 +6191,7 @@ assert_lib_ast('word count simple',
       "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='3']",
     ],
   }
-);
+)
 assert_lib_ast('word count x',
   `= h1
 
@@ -6206,7 +6206,7 @@ I like \\x[my-h2]
       "//*[contains(@class, 'h-nav')]//*[@class='word-count' and text()='2']",
     ],
   }
-);
+)
 assert_lib_ast('word count descendant in source',
   `= h1
 
@@ -6229,7 +6229,7 @@ assert_lib_ast('word count descendant in source',
     },
     convert_opts: { split_headers: true },
   }
-);
+)
 assert_lib('word count descendant from include without embed includes',
   {
     convert_dir: true,
@@ -6252,7 +6252,7 @@ assert_lib('word count descendant from include without embed includes',
       ]
     },
   }
-);
+)
 
 // Toc
 // https://github.com/ourbigbook/ourbigbook/issues/143
@@ -6272,7 +6272,7 @@ b]
       { id: 'a-b' }
     )
   ]
-);
+)
 assert_lib_ast('xss: H id',
   `= tmp
 {id=&\\<>"'}
@@ -6283,7 +6283,7 @@ assert_lib_ast('xss: H id',
       "//x:div[contains(@class, \"h \") and @id=concat('&<>\"', \"'\")]",
     ]
   }
-);
+)
 
 // Table of contents
 assert_lib_ast('toc: split headers have correct table of contents',
@@ -6364,7 +6364,7 @@ assert_lib_ast('toc: split headers have correct table of contents',
     convert_opts: { split_headers: true },
     input_path_noext: 'notindex',
   },
-);
+)
 assert_lib_error('toc: _toc is a reserved id',
   `= h1
 
@@ -6419,7 +6419,7 @@ assert_lib('toc: table of contents contains included headers numbered without em
       ],
     },
   },
-);
+)
 assert_lib('toc: table of contents respects numbered=0 of included headers',
   {
     convert_dir: true,
@@ -6444,7 +6444,7 @@ assert_lib('toc: table of contents respects numbered=0 of included headers',
       ],
     },
   },
-);
+)
 if (false) {
 // Not implemented yet.
 assert_lib('toc: json: table of contents respects tocMaxCrossSource',
@@ -6510,7 +6510,7 @@ assert_lib('toc: table of contents include placeholder header has no number when
       ],
     },
   },
-);
+)
 assert_lib('toc: table of contents does not show synonyms of included headers',
   {
     convert_dir: true,
@@ -6542,7 +6542,7 @@ assert_lib('toc: table of contents does not show synonyms of included headers',
     //  ],
     //},
   },
-);
+)
 assert_lib('toc: header numbered=0 in ourbigbook.json works across source files and on table of contents',
   {
     convert_dir: true,
@@ -6573,7 +6573,7 @@ assert_lib('toc: header numbered=0 in ourbigbook.json works across source files 
       ],
     },
   },
-);
+)
 assert_lib('toc: split header with an include and no headers has a single table of contents',
   // At 074bacbdd3dc9d3fa8dafec74200043f42779bec was getting two.
   {
@@ -6596,7 +6596,7 @@ assert_lib('toc: split header with an include and no headers has a single table 
       ],
     },
   },
-);
+)
 assert_lib('toc: toplevel scope gets removed on table of contents of included headers',
   {
     convert_dir: true,
@@ -6626,7 +6626,7 @@ assert_lib('toc: toplevel scope gets removed on table of contents of included he
       ],
     },
   },
-);
+)
 
 assert_lib_ast('toc: the toc is added before the first h1 when there are multiple toplevel h1',
   `aa
@@ -6738,7 +6738,7 @@ assert_lib('toc: ancestors list shows after toc on toplevel',
       ],
     },
   }
-);
+)
 
 // Math.
 // \M
@@ -6746,23 +6746,23 @@ assert_lib('toc: ancestors list shows after toc on toplevel',
 assert_lib_ast('math: inline sane',
   '\\m[[\\sqrt{1 + 1}]]\n',
   [a('P', [a('m', [t('\\sqrt{1 + 1}')])])],
-);
+)
 assert_lib_ast('math: inline insane simple',
   '$\\sqrt{1 + 1}$\n',
   [a('P', [a('m', [t('\\sqrt{1 + 1}')])])],
-);
+)
 assert_lib_ast('math: inline escape dollar',
   'a \\$b c\n',
   [a('P', [t('a $b c')])],
-);
+)
 assert_lib_ast('math: block sane',
   '\\M[[\\sqrt{1 + 1}]]',
   [a('M', [t('\\sqrt{1 + 1}')])],
-);
+)
 assert_lib_ast('math: block insane',
   '$$\\sqrt{1 + 1}$$',
   [a('M', [t('\\sqrt{1 + 1}')])],
-);
+)
 assert_lib_stdin('math: define and use in another block with split headers',
   // Can lead to double redefinition errors if we are not careful on implementation.
   `$$
@@ -6783,7 +6783,7 @@ assert_lib_stdin('math block with comment on last line',
 % my comment
 $$
 `,
-);
+)
 assert_lib_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 assert_lib_ast('math: with description has caption',
   `$$
@@ -6851,7 +6851,7 @@ Index paragraph.
         "//x:div[@class='p' and text()='Include one level 1 paragraph.']",
     ],
   },
-);
+)
 assert_lib_ast('include: parent argument with embed includes',
   `= h1
 
@@ -6867,7 +6867,7 @@ assert_lib_ast('include: parent argument with embed includes',
     a('P', [t('dd')]),
   ],
   include_opts
-);
+)
 assert_lib_error('include: parent argument to old ID fails gracefully',
   `= h1
 
@@ -6878,7 +6878,7 @@ assert_lib_error('include: parent argument to old ID fails gracefully',
 \\Include[include-one-level-1]{parent=h2}
 `,
   7, 30, undefined, include_opts,
-);
+)
 assert_lib_ast('include: simple without parent in the include with embed includes',
   `= aa
 
@@ -6895,7 +6895,7 @@ bb
     a('P', [t('hh')]),
   ],
   include_opts
-);
+)
 assert_lib_ast('include: simple with parent in the include with embed includes',
   `= aa
 
@@ -6912,7 +6912,7 @@ bb
     a('P', [t('h2 content')]),
   ],
   include_opts
-);
+)
 assert_lib_ast('include: simple with paragraph with no embed includes',
   `= Notindex
 
@@ -6945,7 +6945,7 @@ bb
     ],
     input_path_noext: 'notindex',
   },
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/74
 assert_lib_ast('include: cross reference to embed include header',
   `= aa
@@ -6974,7 +6974,7 @@ assert_lib_ast('include: cross reference to embed include header',
     },
     include_opts
   ),
-);
+)
 assert_lib_ast('include: multilevel with paragraph',
   `= aa
 
@@ -6993,7 +6993,7 @@ bb
     a('P', [t('dd')]),
   ]),
   include_opts
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/35
 assert_lib_ast('include: simple no paragraph',
   `= aa
@@ -7012,7 +7012,7 @@ bb
     a('P', [t('ff')]),
   ],
   include_opts
-);
+)
 assert_lib_ast('include: multilevel no paragraph',
   `= aa
 
@@ -7030,7 +7030,7 @@ bb
     a('P', [t('dd')]),
   ]),
   include_opts
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/23
 assert_lib_error('include: with error reports error on the include source',
   `= aa
@@ -7041,7 +7041,7 @@ bb
 `,
   3, 1, 'include-with-error.bigb',
   include_opts
-);
+)
 const circular_entry = `= notindex
 
 \\Include[include-circular]
@@ -7066,7 +7066,7 @@ assert_lib_error('include: circular dependency 1 <-> 2',
 `
     }
   }
-);
+)
 // TODO error this is legitimately failing on CLI, bad error messages show
 // up on CLI reproduction.
 // The root problem is that include_path_set does not contain
@@ -7082,7 +7082,7 @@ assert_lib_error('include: circular dependency 1 -> 2 <-> 3',
   // 3, 1, 'include-circular-2.bigb',
   undefined, undefined, undefined,
   ourbigbook.clone_and_set(include_opts, 'has_error', true)
-);
+)
 assert_lib_ast('include without parent header with embed includes',
   // https://github.com/ourbigbook/ourbigbook/issues/73
   `\\Include[include-one-level-1]
@@ -7106,7 +7106,7 @@ assert_lib_ast('include without parent header with embed includes',
       embed_includes: true,
     }
   },
-);
+)
 assert_lib_ast('include: without parent header without embed includes',
   // https://github.com/ourbigbook/ourbigbook/issues/73
   `aa
@@ -7144,7 +7144,7 @@ assert_lib_ast('include: without parent header without embed includes',
       //xpath_header(1, 'include-one-level-2'),
     ],
   },
-);
+)
 assert_lib_error('include: to file that exists in header title fails gracefully',
   // https://github.com/ourbigbook/ourbigbook/issues/195
   `= tmp
@@ -7160,14 +7160,14 @@ assert_lib_error('include: to file that exists in header title fails gracefully'
     convert_before: ['tmp2.bigb'],
     input_path_noext: 'tmp',
   }
-);
+)
 assert_lib_error('include: to file that does not exist fails gracefully',
   `= h1
 
 \\Include[asdf]
 `,
   3, 1
-);
+)
 assert_lib_error('include: to file that does exists without embed includes before extracting IDs fails gracefully',
   `= h1
 
@@ -7180,7 +7180,7 @@ assert_lib_error('include: to file that does exists without embed includes befor
       'asdf.bigb': '= asdf'
     }
   }
-);
+)
 assert_lib('include: relative include in subdirectory',
   {
     filesystem: {
@@ -7210,7 +7210,7 @@ assert_lib('include: relative include in subdirectory',
       ],
     },
   }
-);
+)
 assert_lib('include: from parent to subdirectory',
   // https://github.com/ourbigbook/ourbigbook/issues/116
   {
@@ -7241,7 +7241,7 @@ assert_lib('include: from parent to subdirectory',
       ],
     },
   }
-);
+)
 assert_lib('include: subdir index.bigb outputs to subdir without trailing slash with htmlXExtension=true',
   {
     filesystem: {
@@ -7265,7 +7265,7 @@ assert_lib('include: subdir index.bigb outputs to subdir without trailing slash 
       ],
     },
   }
-);
+)
 assert_lib('include: subdir index.bigb outputs to subdir without trailing slash with htmlXExtension=false',
   {
     filesystem: {
@@ -7289,7 +7289,7 @@ assert_lib('include: subdir index.bigb outputs to subdir without trailing slash 
       ],
     },
   }
-);
+)
 assert_lib('include: subdir index.bigb removes leading @ from links with the x_remove_leading_at option',
   {
     filesystem: {
@@ -7330,7 +7330,7 @@ assert_lib('include: subdir index.bigb removes leading @ from links with the x_r
       ],
     },
   }
-);
+)
 assert_lib('include: subdir index.bigb outputs to subdir.html when there is a toplevel header',
   {
     filesystem: {
@@ -7346,7 +7346,7 @@ Hello world
       ],
     },
   }
-);
+)
 assert_lib('include: subdir index.bigb outputs to subdir.html when there is no toplevel header',
   // https://github.com/ourbigbook/ourbigbook/issues/247
   {
@@ -7361,7 +7361,7 @@ assert_lib('include: subdir index.bigb outputs to subdir.html when there is no t
       ],
     },
   }
-);
+)
 assert_lib('include: include of a header with a tag or child in a third file does not blow up',
   {
     filesystem: {
@@ -7378,7 +7378,7 @@ assert_lib('include: include of a header with a tag or child in a third file doe
     },
     convert_dir: true,
   }
-);
+)
 assert_cli('include: tags show on embed include',
   {
     args: ['--embed-includes', 'index.bigb'],
@@ -7414,7 +7414,7 @@ assert_cli('include: tags show on embed include',
       ],
     },
   }
-);
+)
 assert_lib(
   // https://github.com/ourbigbook/ourbigbook/issues/123
   'include: includers should show as a parents of the includee',
@@ -7444,7 +7444,7 @@ assert_lib(
       ],
     }
   }
-);
+)
 assert_lib(
   'include: incoming links: does not generate an incoming links entry',
   {
@@ -7466,7 +7466,7 @@ assert_lib(
       ],
     }
   }
-);
+)
 assert_lib('include: parent_id option',
   {
     filesystem: {
@@ -7489,7 +7489,7 @@ assert_lib('include: parent_id option',
       ],
     },
   }
-);
+)
 
 // OurBigBookExample
 assert_lib_ast('OurBigBookExample basic',
@@ -7509,7 +7509,7 @@ assert_lib_ast('OurBigBookExample basic',
       ]),
     ])
   ],
-);
+)
 assert_lib('OurBigBookExample that links to id in another file',
   {
     filesystem: {
@@ -7525,7 +7525,7 @@ assert_lib('OurBigBookExample that links to id in another file',
       ],
     },
   },
-);
+)
 
 // passthrough
 assert_lib('passthrough: basic',
@@ -7541,7 +7541,7 @@ assert_lib('passthrough: basic',
       ],
     },
   }
-);
+)
 assert_lib('passthrough: xss_safe',
   {
     convert_dir: true,
@@ -7556,33 +7556,33 @@ assert_lib('passthrough: xss_safe',
       ],
     },
   }
-);
+)
 
 // ID auto-generation.
 // https://docs.ourbigbook.com/automatic-id-from-title
 assert_lib_ast('id autogeneration without title',
   '\\P[aa]\n',
   [a('P', [t('aa')], {}, {id: '_1'})],
-);
+)
 assert_lib_error('id conflict with previous autogenerated id',
   `\\P[aa]
 
 \\P[bb]{id=_1}`,
   3, 1
-);
+)
 assert_lib_error('id conflict with later autogenerated id',
   `\\P[aa]{id=_1}
 
 \\P[bb]`,
   1, 1
-);
+)
 assert_lib_error('id cannot be empty',
   `= Index
 
 == 
 `,
   3, 1
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/4
 assert_lib_ast('id autogeneration nested',
   '\\Q[\\P[aa]]\n\n\\P[bb]\n',
@@ -7595,7 +7595,7 @@ assert_lib_ast('id autogeneration nested',
     ),
     a('P', [t('bb')], {}, {id: '_3'}),
   ],
-);
+)
 assert_lib_ast('id autogeneration unicode normalize',
   // 00C9: Latin capital letter E with acute
   // 00DE: capital Thorn: https://en.wikipedia.org/wiki/Thorn_(letter)
@@ -7618,7 +7618,7 @@ assert_lib_ast('id autogeneration unicode normalize',
       a('x', undefined, {href: [t('0-a-\u{4F60}e-loey-plus-plus-zth-alpha-minus')]})
     ])
   ],
-);
+)
 assert_lib_ast('id autogeneration unicode no normalize',
   `= 0A.你ÉŁŒy++z
 
@@ -7631,7 +7631,7 @@ assert_lib_ast('id autogeneration unicode no normalize',
     ])
   ],
   { convert_opts: { ourbigbook_json: { id: { normalize: { latin: false, punctuation: false } } } } }
-);
+)
 assert_lib_ast('id autogeneration with disambiguate',
   `= ab
 {disambiguate=cd}
@@ -7644,7 +7644,7 @@ assert_lib_ast('id autogeneration with disambiguate',
       a('x', undefined, {href: [t('ab-cd')]})
     ])
   ],
-);
+)
 assert_lib_error('id autogeneration with undefined reference in title fails gracefully',
   `= \\x[reserved_undefined]
 `, 1, 3);
@@ -7674,7 +7674,7 @@ assert_lib_ast('id autogeneration with nested elements does an id conversion and
       a('x', undefined, { href: [t('ab-cd-ef')]}),
     ]),
   ]
-);
+)
 
 // ID conflicts.
 assert_lib_error('id conflict with previous id on the same file',
@@ -7688,7 +7688,7 @@ assert_lib_error('id conflict with previous id on the same file',
     error_message: ourbigbook.duplicate_id_error_message('tmp', 'index.bigb', 1, 1),
     input_path_noext: 'index',
   },
-);
+)
 assert_lib_ast('id conflict with id on another file simple',
   // https://github.com/ourbigbook/ourbigbook/issues/201
   `= index
@@ -7710,7 +7710,7 @@ assert_lib_ast('id conflict with id on another file simple',
     },
     input_path_noext: 'index'
   }
-);
+)
 assert_lib_ast('id conflict with id on another file where conflict header has a child header',
   // Bug introduced at ef9e2445654300c4ac41e1d06d3d2a1889dd0554
   `= tmp
@@ -7748,7 +7748,7 @@ assert_lib_error('id conflict on file with the same toplevel_id as another',
 `,
     },
   }
-);
+)
 
 // title_to_id
 assert_equal('title_to_id with hyphen', ourbigbook.title_to_id('.0A. - z.a Z..'), '0a-z-a-z');
@@ -7762,14 +7762,14 @@ bbb
 `,
   a('Toplevel', [a('P', [t('bbb')])], {'title': [t('aaa')]}),
   {toplevel: true}
-);
+)
 assert_lib_error('toplevel explicit content',
   `[]`, 1, 1,
-);
+)
 // https://github.com/ourbigbook/ourbigbook/issues/10
 assert_lib_error('explicit toplevel macro',
   `\\toplevel`, 1, 1,
-);
+)
 
 // split_headers
 // A split headers hello world.
@@ -7780,7 +7780,7 @@ assert_lib_ast('one paragraph implicit split headers',
     convert_opts: { split_headers: true },
     input_path_noext: 'notindex',
   }
-);
+)
 
 // Errors. Check that they return gracefully with the error line number,
 // rather than blowing up an exception, or worse, not blowing up at all!
@@ -7827,7 +7827,7 @@ assert_lib('bigb output: format is unchanged for the preferred format',
       'test-bigb-output-3.bigb': '= Test bigb output 3\n',
     }
   },
-);
+)
 assert_lib_stdin('bigb output: converts plaintext arguments with escapes to literal arguments when possible',
   `\\Q[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
 
@@ -7871,7 +7871,7 @@ assert_lib_stdin('bigb output: converts plaintext arguments with escapes to lite
 \\Q[\\| \\i[asdf]]
 `
   },
-);
+)
 assert_lib_stdin('bigb output: converts sane refs to insane ones',
   `= Animal
 
@@ -7895,7 +7895,7 @@ assert_lib_stdin('bigb output: converts sane refs to insane ones',
 == Black cat
 `
   },
-);
+)
 assert_lib_stdin('bigb output: adds newlines to start and end of multiline arguments',
   `\\Q[Positional oneline first]
 
@@ -7934,7 +7934,7 @@ Named multiline second
       'a.png': '',
     }
   },
-);
+)
 assert_lib_stdin('bigb output: nested sane list followed by paragraph',
   // This was leading to an AST change because the input has inner list as
   // `ccc\n` but the output only `ccc`. But lazy to fix now, what we want is the
@@ -7957,7 +7957,7 @@ ddd
 ddd
 `
   },
-);
+)
 assert_lib('bigb output: checks target IDs to decide between plural or not on converting non magic to magic links',
   {
     filesystem: {
@@ -7984,7 +7984,7 @@ assert_lib('bigb output: checks target IDs to decide between plural or not on co
 `,
     }
   }
-);
+)
 assert_lib('bigb output: unused ID check does not blow up across files with magic plural',
   {
     filesystem: {
@@ -8000,7 +8000,7 @@ assert_lib('bigb output: unused ID check does not blow up across files with magi
     convert_dir: true,
     convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
   }
-);
+)
 assert_lib('bigb output: x uses text conversion as the target link',
   {
     filesystem: {
@@ -8052,7 +8052,7 @@ assert_lib('bigb output: x uses text conversion as the target link',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: x magic input across files',
   {
     filesystem: {
@@ -8105,7 +8105,7 @@ assert_lib('bigb output: x magic input across files',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: x to disambiguate',
   {
     filesystem: {
@@ -8140,7 +8140,7 @@ assert_lib('bigb output: x to disambiguate',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: x to plural disambiguate',
   // Happens notably with pluralize false plural bugs such as "Mathematics".
   {
@@ -8164,7 +8164,7 @@ assert_lib('bigb output: x to plural disambiguate',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: x to scope',
   {
     filesystem: {
@@ -8242,7 +8242,7 @@ assert_lib('bigb output: x to scope',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: x with leading slash to escape scope',
   {
     filesystem: {
@@ -8275,7 +8275,7 @@ assert_lib('bigb output: x with leading slash to escape scope',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: magic x in subdir scope',
   {
     filesystem: {
@@ -8296,7 +8296,7 @@ assert_lib('bigb output: magic x in subdir scope',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: magic x to image',
   {
     filesystem: {
@@ -8330,7 +8330,7 @@ assert_lib('bigb output: magic x to image',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: x to slash in title',
   // We have to remove slashes, otherwise it searches for scopes instead.
   // Don't have a solution for that now.
@@ -8353,7 +8353,7 @@ assert_lib('bigb output: x to slash in title',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: id from filename',
   // We have to remove slashes, otherwise it searches for scopes instead.
   // Don't have a solution for that now.
@@ -8374,7 +8374,7 @@ assert_lib('bigb output: id from filename',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: pluralize fail',
   // Was blowing up on pluralize failures. Notably, pluralize is wrong for every -osis suffix,
   // common in scientific literature. This is the current buggy behaviour of pluralize:
@@ -8416,7 +8416,7 @@ assert_lib('bigb output: pluralize fail',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: acronym plural',
   // https://github.com/plurals/pluralize/issues/127
   {
@@ -8438,7 +8438,7 @@ assert_lib('bigb output: acronym plural',
 `,
     }
   }
-);
+)
 assert_lib('bigb output: to file',
   {
     filesystem: {
@@ -8633,7 +8633,7 @@ assert_cli(
     assert_not_exists: ['out'],
     assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
   }
-);
+)
 assert_cli(
   'input from stdin produces output on stdout when in git repository',
   {
@@ -8642,15 +8642,7 @@ assert_cli(
     assert_not_exists: ['out'],
     assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
   }
-);
-assert_cli(
-  'input from file and --stdout produces output on stdout',
-  {
-    args: ['--stdout', 'notindex.bigb'],
-    assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
-    filesystem: { 'notindex.bigb': 'aabb' },
-  }
-);
+)
 assert_cli(
   // Was blowing up on file existence check.
   'input from stdin with relative link does not blow up',
@@ -8660,7 +8652,25 @@ assert_cli(
     assert_xpath_stdout: [`//x:a[@href='${ourbigbook.RAW_PREFIX}/asdf']`],
     filesystem: { 'asdf': '' },
   }
-);
+)
+assert_cli(
+  'input from stdin ignores ourbigbook.liquid.html',
+  {
+    stdin: 'qwer',
+    assert_xpath_stdout: [`//x:div[@class='p' and text()='qwer']`],
+    filesystem: {
+      'ourbigbook.liquid.html': 'asdf'
+    },
+  }
+)
+assert_cli(
+  'input from file and --stdout produces output on stdout',
+  {
+    args: ['--stdout', 'notindex.bigb'],
+    assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
+    filesystem: { 'notindex.bigb': 'aabb' },
+  }
+)
 assert_cli(
   'input from file produces an output file',
   {
@@ -9134,7 +9144,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 assert_cli(
   'publish: --publish-target local works',
   {
@@ -9167,7 +9177,7 @@ assert_cli(
       [`out/publish/out/local/${ourbigbook.RAW_PREFIX}/subdir/myfile.txt`]: [],
     },
   }
-);
+)
 assert_cli(
   'json: web.linkFromHeaderMeta = true with publish',
   {
@@ -9321,7 +9331,7 @@ assert_cli(
       'out/html/subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
-);
+)
 assert_cli(
   'convert subdirectory only without ourbigbook.json',
   {
@@ -9350,7 +9360,7 @@ assert_cli(
       'out/html/subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
-);
+)
 assert_cli(
   'convert a subdirectory file only with ourbigbook.json',
   {
@@ -9368,7 +9378,7 @@ assert_cli(
       'out/html/subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
   }
-);
+)
 assert_cli(
   'convert a subdirectory file only without ourbigbook.json',
   {
@@ -9385,7 +9395,7 @@ assert_cli(
       'out/html/subdir/notindex.html': [xpath_header(1, 'notindex')],
     },
   }
-);
+)
 assert_cli(
   'convert with --outdir',
   {
@@ -9412,7 +9422,7 @@ assert_cli(
       'my_outdir/subdir/notindex.html': [xpath_header(1, 'notindex')],
     }
   }
-);
+)
 assert_cli(
   'ourbigbook.tex does not blow up',
   {
@@ -9422,7 +9432,7 @@ assert_cli(
       'ourbigbook.tex': `\\newcommand{\\mycmd}[0]{hello}`,
     },
   }
-);
+)
 assert_cli(
   'synonym to outdir generates correct redirct with outdir',
   {
@@ -9443,7 +9453,7 @@ assert_cli(
       ],
     }
   }
-);
+)
 assert_cli(
   // https://github.com/ourbigbook/ourbigbook/issues/114
   'synonym to outdir generates correct redirct without outdir',
@@ -9475,7 +9485,7 @@ assert_cli(
       ],
     }
   }
-);
+)
 assert_cli(
   '--generate min followed by conversion does not blow up',
   {
@@ -9484,7 +9494,7 @@ assert_cli(
       ['ourbigbook', ['--generate', 'min']],
     ],
   }
-);
+)
 assert_cli(
   '--generate min followed by publish does not blow up',
   {
@@ -9493,7 +9503,7 @@ assert_cli(
       ['ourbigbook', ['--generate', 'subdir']],
     ].concat(MAKE_GIT_REPO_PRE_EXEC),
   }
-);
+)
 assert_cli(
   '--generate min in subdir does not alter toplevel',
   {
@@ -9512,7 +9522,7 @@ assert_cli(
       'README.bigb',
     ],
   }
-);
+)
 assert_cli(
   '--generate default followed by conversion does not blow up',
   {
@@ -9524,7 +9534,7 @@ assert_cli(
       ['git', ['commit', '-m', '0']],
     ],
   }
-);
+)
 assert_cli(
   '--generate subdir followed by conversion does not blow up',
   {
@@ -9533,7 +9543,7 @@ assert_cli(
       ['ourbigbook', ['--generate', 'subdir']],
     ],
   }
-);
+)
 assert_cli(
   '--generate min followed by publish conversion does not blow up',
   {
@@ -9542,7 +9552,7 @@ assert_cli(
       ['ourbigbook', ['--generate', 'min']],
     ].concat(MAKE_GIT_REPO_PRE_EXEC),
   }
-);
+)
 assert_cli(
   '--generate default followed by publish conversion does not blow up',
   {
@@ -9551,7 +9561,7 @@ assert_cli(
       ['ourbigbook', ['--generate', 'default']],
     ].concat(MAKE_GIT_REPO_PRE_EXEC),
   }
-);
+)
 assert_cli(
   '--generate subdir followed by publish conversion does not blow up',
   {
@@ -9561,7 +9571,7 @@ assert_cli(
       ['ourbigbook', ['--generate', 'subdir']],
     ].concat(MAKE_GIT_REPO_PRE_EXEC),
   }
-);
+)
 assert_cli(
   '--embed-resources actually embeds resources',
   {
@@ -9583,7 +9593,7 @@ assert_cli(
       ],
     }
   }
-);
+)
 assert_cli(
   'reference to subdir with --embed-includes',
   {
@@ -9613,7 +9623,7 @@ assert_cli(
 `,
     },
   }
-);
+)
 
 // executable cwd tests
 assert_cli(
@@ -9657,7 +9667,7 @@ assert_cli(
       ]
     }
   }
-);
+)
 assert_cli(
   "if there is no ourbigbook.json and the input is not under cwd then the project dir is the input dir",
   {
@@ -9697,7 +9707,7 @@ assert_cli(
       ]
     }
   }
-);
+)
 
 assert_cli(
   'template: root_relpath and root_path in ourbigbook.liquid.html work',
@@ -9761,7 +9771,7 @@ assert_cli(
       ],
     }
   }
-);
+)
 assert_cli(
   'template: is_index_article',
   {
@@ -9827,7 +9837,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 assert_cli(
   'template: root_relpath and root_page work from subdirs',
   {
@@ -9937,7 +9947,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 assert_cli(
   'ourbigbook.json: outputOutOfTree=true',
   {
@@ -10013,7 +10023,7 @@ assert_cli(
       'out/html/out',
     ]
   }
-);
+)
 assert_cli(
   'IDs are removed from the database after you removed them from the source file and convert the file',
   {
@@ -10040,7 +10050,7 @@ assert_cli(
       ['ourbigbook', ['README.bigb']],
     ],
   }
-);
+)
 assert_cli(
   'IDs are removed from the database after you removed them from the source file and convert the directory one way',
   {
@@ -10066,7 +10076,7 @@ assert_cli(
       },
     ],
   }
-);
+)
 assert_cli(
   'IDs are removed from the database after you removed them from the source file and convert the directory reverse',
   {
@@ -10092,7 +10102,7 @@ assert_cli(
       },
     ],
   }
-);
+)
 assert_cli(
   'IDs are removed from the database after you delete the source file they were present in and convert the directory',
   {
@@ -10118,7 +10128,7 @@ assert_cli(
       },
     ],
   }
-);
+)
 assert_cli(
   'when invoking with a single file timestamps are automatically ignored and render is forced',
   {
@@ -10152,7 +10162,7 @@ assert_cli(
       ['ourbigbook', ['README.bigb']],
     ],
   }
-);
+)
 
 assert_cli(
   "toplevel index file without a header produces output to index.html",
@@ -10168,7 +10178,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 assert_cli('cross file ancestors work on single file conversions at toplevel',
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
@@ -10214,7 +10224,7 @@ assert_cli('cross file ancestors work on single file conversions at toplevel',
       ],
     },
   }
-);
+)
 assert_cli('cross file ancestors work on single file conversions in subdir',
   {
     // After we pre-convert everything, we convert just one file to ensure that the ancestors are coming
@@ -10260,7 +10270,7 @@ assert_cli('cross file ancestors work on single file conversions in subdir',
       ],
     },
   }
-);
+)
 assert_cli(
   // See also corresponding lib:.
   'incoming links: cross reference incoming links and other children with magic',
@@ -10325,7 +10335,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 
 // JSON
 // ourbigbook.json
@@ -10351,7 +10361,7 @@ assert_cli('ourbigbook.json redirects',
       ],
     },
   }
-);
+)
 
 assert_cli('toplevel scope gets removed on table of contents of included headers',
   {
@@ -10378,7 +10388,7 @@ assert_cli('toplevel scope gets removed on table of contents of included headers
       ],
     },
   },
-);
+)
 assert_cli('id conflict with id on another file simple',
   {
     args: ['.'],
@@ -10394,7 +10404,7 @@ assert_cli('id conflict with id on another file simple',
     },
     assert_exit_status: 1,
   }
-);
+)
 assert_cli(
   // https://github.com/ourbigbook/ourbigbook/issues/241
   'fixing a header parent bug on a file in the include chain does not blow up afterwards',
@@ -10439,7 +10449,7 @@ assert_cli(
       },
     ],
   }
-);
+)
 assert_cli(
   // This is a bit annoying to test from _lib because ourbigbook CLI
   // has to pass several variables for it to work.
@@ -10467,7 +10477,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 assert_cli(
   // This is a bit annoying to test from _lib because ourbigbook CLI
   // has to pass several variables for it to work.
@@ -10495,7 +10505,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 assert_cli(
   'link: media-provider github local path is not used when publishing',
   {
@@ -10522,7 +10532,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 assert_cli(
   'timestamps are tracked separately for different --output-format',
   {
@@ -10561,7 +10571,7 @@ assert_cli(
 `,
     },
   }
-);
+)
 assert_cli('bigb output: synonym with split_headers does not produce redirect files',
   {
     args: ['--split-headers', '--output-format', 'bigb', '.'],
@@ -10603,7 +10613,7 @@ assert_cli(
 $$
 `,
   }
-);
+)
 assert_cli(
   'raw: bigb source files are copied into raw',
   {
@@ -10624,7 +10634,7 @@ assert_cli(
       `out/html/${ourbigbook.RAW_PREFIX}/main.scss`,
     ]
   }
-);
+)
 assert_cli(
   // Due to https://docs.github.com/todo/1 should be 1 triple conversion
   // stopped failing. But it should fail.
@@ -10649,7 +10659,7 @@ assert_cli(
       },
     ],
   }
-);
+)
 assert_cli(
   'raw: directory listings simple',
   {
@@ -10763,7 +10773,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 assert_cli(
   'raw: directory listings without .html',
   {
@@ -10880,7 +10890,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 assert_cli(
   'raw: root directory listing in publish does not show publish',
   {
@@ -10901,7 +10911,7 @@ assert_cli(
       ],
     },
   }
-);
+)
 
 // ignores
 assert_cli(
@@ -10969,7 +10979,7 @@ assert_cli(
       `out/html/${ourbigbook.RAW_PREFIX}/subdir/a.ignore`,
     ],
   }
-);
+)
 assert_cli(
   'json: ignore is used in publish',
   {
@@ -10994,7 +11004,7 @@ assert_cli(
       `out/publish/out/github-pages/${ourbigbook.RAW_PREFIX}/ignored.txt`,
     ],
   }
-);
+)
 assert_cli(
   'json: ignore: works if pointing to ignored directory',
   {
@@ -11010,7 +11020,7 @@ assert_cli(
 `,
     },
   }
-);
+)
 assert_cli(
   'json: ignore: works if pointing inside ignored directory',
   {
@@ -11026,7 +11036,7 @@ assert_cli(
 `,
     },
   }
-);
+)
 assert_cli(
   // https://github.com/ourbigbook/ourbigbook/issues/253
   'git: .gitignore ignores files from toplevel directory conversion',
@@ -11058,7 +11068,7 @@ ignored-subdir
       `out/html/${ourbigbook.RAW_PREFIX}/ignored-subdir/2.txt`,
     ],
   }
-);
+)
 assert_cli(
   // https://github.com/ourbigbook/ourbigbook/issues/253
   'git: .gitignore ignores files from subdirectory conversion',
@@ -11088,7 +11098,7 @@ ignored-subdir
       `out/html/${ourbigbook.RAW_PREFIX}/subdir/ignored.txt`,
     ],
   }
-);
+)
 assert_cli(
   // https://github.com/ourbigbook/ourbigbook/issues/253
   'git: .gitignore ignores individual files from conversion',
@@ -11109,7 +11119,7 @@ assert_cli(
 `,
     },
   }
-);
+)
 assert_cli(
   'git: .gitignore is used in --web conversion',
   {
@@ -11129,7 +11139,7 @@ assert_cli(
 `,
     },
   }
-);
+)
 assert_cli(
   'git: conversion of single file in git directory works',
   {
@@ -11148,7 +11158,7 @@ assert_cli(
       `out/html/index.html`,
     ],
   }
-);
+)
 
 assert_cli(
   '--web-dry on simple repository',
@@ -11162,7 +11172,7 @@ assert_cli(
 `,
     },
   }
-);
+)
 assert_cli(
   '--web-dry on single file',
   {
@@ -11175,7 +11185,7 @@ assert_cli(
 `,
     },
   }
-);
+)
 // This doesn't really test anything as options are not doing anything to ourbigbook, only lib.
 //assert_cli(
 //  "ourbigbook.json: publishOptions are not active when not publishing",

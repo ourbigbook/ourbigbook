@@ -752,7 +752,7 @@ async function convertArticle({
             }
           })(),
           sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction }),
-          Promise.all(articles.map(article => author.addArticleFollowSideEffects(article, { transaction }))),
+          !oldRef && Promise.all(articles.map(article => author.addArticleFollowSideEffects(article, { transaction }))),
         ])
       }
     } else {

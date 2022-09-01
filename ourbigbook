@@ -1176,6 +1176,7 @@ cli_parser.option('--format-source', 'https://docs.ourbigbook.com#format-source'
 cli_parser.option('-S, --split-headers', 'https://docs.ourbigbook.com#split-headers', undefined);
 cli_parser.option('--stdout', 'also print output to stdout in addition to saving to a file https://docs.ourbigbook.com#stdout', false);
 cli_parser.option('--template <template>', 'https://docs.ourbigbook.com#template');
+cli_parser.option('--title-to-id', `read tiles from stdin line by line, output IDs to stdout only, don't do anything else: https://docs.ourbigbook.com#title-to-id`, false);
 cli_parser.option('-w, --watch', 'https://docs.ourbigbook.com#watch', false);
 cli_parser.option('-W, --web', 'sync to ourbigbook web https://docs.ourbigbook.com#web', false);
 cli_parser.option('--web-dry', 'web dry run, skip any --web operations that would interact with the server https://docs.ourbigbook.com#web-dry', false);
@@ -1596,6 +1597,13 @@ if (cli.helpMacros) {
   ourbigbook_nodejs_webpack_safe.preload_katex_from_file(ourbigbook_nodejs.DEFAULT_TEX_PATH, katex_macros)
   ourbigbook_options.katex_macros = katex_macros
 
+  if (cli.titleToId) {
+    const readline = require('readline');
+    for await (const line of readline.createInterface({ input: process.stdin })) {
+      console.log(ourbigbook.title_to_id(line))
+    }
+    process.exit(0)
+  }
   if (inputPath === undefined) {
     // Input from stdin.
     title = 'stdin';

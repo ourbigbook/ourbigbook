@@ -175,11 +175,11 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, nonOu
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
 async function check_db(nonOurbigbookOptions) {
-  if (!nonOurbigbookOptions.cli.skipCheckDb) {
+  if (!nonOurbigbookOptions.cli.noCheckDb) {
     const t1 = performance.now();
     console.log(`check_db`);
     const sequelize = nonOurbigbookOptions.sequelize
-    if (sequelize && nonOurbigbookOptions.cli.render) {
+    if (sequelize && (nonOurbigbookOptions.cli.render || nonOurbigbookOptions.cli.checkDb)) {
       const error_messages = await ourbigbook_nodejs_webpack_safe.check_db(
         sequelize, nonOurbigbookOptions.ourbigbook_paths_converted, { perf: false })
       if (error_messages.length > 0) {
@@ -1146,6 +1146,7 @@ cli_parser.allowExcessArguments(false);
 // Optional arguments.
 cli_parser.option('--add-test-instrumentation', 'For testing only', false);
 cli_parser.option('--body-only', 'output only the content inside the HTLM body element', false);
+cli_parser.option('--check-db', `only check the database, don't do anything else: https://docs.ourbigbook.com#check-db`, false);
 cli_parser.option('--china', 'https://docs.ourbigbook.com#china', false);
 cli_parser.option('--clear-db', 'clear the database before running', false);
 cli_parser.option('--dry-run', "don't run most external commands https://github.com/ourbigbook/ourbigbook#dry-run", false);
@@ -1158,6 +1159,7 @@ cli_parser.option('--fakeroot <fakeroot>', 'Stop searching for ourbigbook.json a
 cli_parser.option('--generate <name>', 'https://docs.ourbigbook.com#generate', false);
 cli_parser.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://docs.ourbigbook.com#help-macros', false);
 cli_parser.option('-l, --log <log...>', 'https://docs.ourbigbook.com#log');
+cli_parser.option('--no-check-db', 'Skip the database sanity check that is normally done after conversions https://docs.ourbigbook.com#no-check-db', false);
 cli_parser.option('--no-html-x-extension', 'https://docs.ourbigbook.com#no-html-x-extension');
 cli_parser.option('--no-db', 'ignore the ID database, mostly for testing https://docs.ourbigbook.com#internal-cross-file-references-internals');
 cli_parser.option('--no-render', "only extract IDs, don't render: https://docs.ourbigbook.com#no-render");
@@ -1171,7 +1173,6 @@ cli_parser.option('-P, --publish-commit <commit-message>', 'https://docs.ourbigb
 cli_parser.option('--publish-target <target>', 'https://docs.ourbigbook.com#publish-target', PUBLISH_TARGETS['github-pages']);
 cli_parser.option('--format-source', 'https://docs.ourbigbook.com#format-source');
 cli_parser.option('-S, --split-headers', 'https://docs.ourbigbook.com#split-headers', undefined);
-cli_parser.option('--skip-check-db', 'Skip the database sanity check that is normally done after conversions https://docs.ourbigbook.com#skip-check-db', false);
 cli_parser.option('--stdout', 'also print output to stdout in addition to saving to a file https://docs.ourbigbook.com#stdout', false);
 cli_parser.option('--template <template>', 'https://docs.ourbigbook.com#template');
 cli_parser.option('-w, --watch', 'https://docs.ourbigbook.com#watch', false);
@@ -1212,7 +1213,7 @@ if (cli.helpMacros) {
   let input_dir;
   const web = cli.web || cli.webTest
   if (inputPaths.length === 0) {
-    if (web || publish || cli.watch || cli.generate) {
+    if (web || publish || cli.watch || cli.generate || cli.checkDb) {
       inputPaths = ['.'];
     }
   } else {
@@ -1633,7 +1634,10 @@ if (cli.helpMacros) {
     } else {
       nonOurbigbookOptions.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
     }
-    if (web) {
+    if (cli.checkDb) {
+      await create_db(ourbigbook_options, nonOurbigbookOptions);
+      await check_db(nonOurbigbookOptions)
+    } else if (web) {
       let token
       const web_url = cli.webUrl ? cli.webUrl : cli.webTest ? 'http://localhost:3000' : ourbigbook.WEB_URL
       const url = new URL(web_url)

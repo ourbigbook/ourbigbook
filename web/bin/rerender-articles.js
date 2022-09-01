@@ -13,7 +13,6 @@ program.option('-a, --author <username>', 'only convert articles by this authoru
 program.option('-i, --ignore-errors', 'ignore errors', false);
 program.parse(process.argv);
 const opts = program.opts()
-const author = program.args
 const slugs = program.args
 const sequelize = models.getSequelize(path.dirname(__dirname));
 (async () => {

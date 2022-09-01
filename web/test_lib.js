@@ -14,7 +14,8 @@ const back_js = require('./back/js')
 const convert = require('./convert')
 const models = require('./models')
 
-const now = perf_hooks.performance.now
+const { performance } = require('perf_hooks')
+const now = performance.now.bind(performance)
 
 let printTimeNow;
 function printTime() {

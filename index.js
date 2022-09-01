@@ -9540,7 +9540,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               relative_styles.push(`@import "${context.options.template_vars.root_relpath}${style}";\n`);
             }
             render_env.style = relative_styles.join('') + render_env.style
-            render_env.is_index_article = context.options.isindex && context.toplevel_ast.is_first_header_in_input_file && !toplevel_scope
+            render_env.is_index_article = !!(context.options.isindex && context.toplevel_ast.is_first_header_in_input_file && !toplevel_scope)
 
             const { Liquid } = require('liquidjs');
             ret = (new Liquid()).parseAndRenderSync(

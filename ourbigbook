@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-const { performance } = require('perf_hooks');
+const now = performance.now.bind(performance)
 
 const china_dictatorship = require('china-dictatorship');
 if (!china_dictatorship.get_data().includes("Tiannmen Square protests")) throw 0;
@@ -177,7 +177,7 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, nonOu
 // Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
 async function check_db(nonOurbigbookOptions) {
   if (nonOurbigbookOptions.cli.checkDb) {
-    const t1 = performance.now();
+    const t1 = now();
     console.log(`check_db`)
     const sequelize = nonOurbigbookOptions.sequelize
     if (sequelize && (nonOurbigbookOptions.cli.render || nonOurbigbookOptions.cli.checkDb)) {
@@ -187,7 +187,7 @@ async function check_db(nonOurbigbookOptions) {
         cli_error('\n' + error_messages.join('\n'))
       }
     }
-    console.log(`check_db: ${finished_in_ms(performance.now() - t1)}`)
+    console.log(`check_db: ${finished_in_ms(now() - t1)}`)
   }
 }
 
@@ -692,7 +692,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
     if (!nonOurbigbookOptions.had_error) {
       if (showFinish) {
         // Print conversion finished successfully info.
-        let t1 = performance.now();
+        let t1 = now();
         let output_path_str
         if (
           ourbigbook_options.render &&
@@ -741,7 +741,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   }
 
   if (ourbigbook_options.perf) {
-    console.error(`perf convert_path_to_file_end ${performance.now()}`);
+    console.error(`perf convert_path_to_file_end ${now()}`);
   }
   return output;
 }
@@ -755,7 +755,7 @@ function convert_path_to_file_print_starting(ourbigbook_options, input_path, mes
     }
   }
   const message = `${message_prefix}: ${path.relative(process.cwd(), input_path)}`;
-  const t0 = performance.now()
+  const t0 = now()
   console.log(message);
   return { message_prefix, t0 };
 }
@@ -899,7 +899,7 @@ function is_subpath(parent, child) {
 
 function perf_print(name, ourbigbook_options) {
   if (ourbigbook_options === undefined || ourbigbook_options.log.perf) {
-    console.error(`perf ${name} t=${performance.now()}`);
+    console.error(`perf ${name} t=${now()}`);
   }
 }
 
@@ -1084,10 +1084,10 @@ async function tryCreateOrUpdate(webApi, articleArgs, extraArgs) {
 }
 
 async function updateNestedSet(webApi, username) {
-  const t1 = performance.now()
+  const t1 = now()
   console.log(`nested_set`)
   await webApi.articleUpdatedNestedSet(username)
-  console.log(`nested_set: ${finished_in_ms(performance.now() - t1)}`)
+  console.log(`nested_set: ${finished_in_ms(now() - t1)}`)
 }
 
 /**
@@ -1143,7 +1143,7 @@ async function webCreateOrUpdate({
 }) {
   const render = extraArgs.render
   printStatus({ i, cleanupDeleted, inpath, render })
-  const t0 = performance.now()
+  const t0 = now()
   if (!webDry) {
     // Retry the transaction a few times. This designed to work well during development when nodemon
     // restarts the server after a file update that adds some logging, often for perf. This way
@@ -1157,7 +1157,7 @@ async function webCreateOrUpdate({
     //  })
     //}
   }
-  const t1 = performance.now()
+  const t1 = now()
   printStatus({ i, title, inpath, render, cleanupDeleted, t0, t1 })
   return { nestedSetNeedsUpdate: data. nestedSetNeedsUpdate}
 }
@@ -2476,7 +2476,7 @@ if (cli.helpMacros) {
   }
   perf_print('exit', ourbigbook_options)
   if (!cli.watch) {
-    process.exit(nonOurbigbookOptions.had_error);
+    process.exit(nonOurbigbookOptions.had_error ? 1 : 0)
   }
 }
 })().catch((e) => {

@@ -117,15 +117,14 @@ class WebApi {
     const { path, parentId, previousSiblingId, render } = opts
     return this.req('post',
       `articles`,
-      { body: { article, path, parentId, previousSiblingId, render } },
+      { body: Object.assign({ article }, opts)},
     );
   }
 
   async articleCreateOrUpdate(article, opts={}) {
-    const { path, parentId, previousSiblingId, render } = opts
     return this.req('put',
       `articles`,
-      { body: { article, path, parentId, previousSiblingId, render } },
+      { body: Object.assign({ article }, opts)},
     );
   }
 
@@ -160,6 +159,10 @@ class WebApi {
 
   async articleUnlike(slug) {
     return this.req('delete', `articles/like?id=${encodeURIComponent(slug)}`)
+  }
+
+  async articleUpdatedNestedSet(user) {
+    return this.req('put', `articles/update-nested-set/${encodeURIComponent(user)}`)
   }
 
   async editorFetchFiles(paths) {

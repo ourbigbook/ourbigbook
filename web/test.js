@@ -20,7 +20,10 @@ const { execPath } = require('process');
 const testNext = process.env.OURBIGBOOK_TEST_NEXT === 'true'
 
 async function assertNestedSets(sequelize, expects) {
-  const articles = await sequelize.models.Article.treeFindInOrder({ refs: true })
+  const articles = await sequelize.models.Article.treeFindInOrder({
+    includeNulls: true,
+    refs: true
+  })
   let i = 0
   const articleObjs = []
   for (const article of articles) {
@@ -1783,9 +1786,8 @@ it('api: article follow', async () => {
       assert.strictEqual(status, 404)
 
     // Make user0 unfollowe article user1/title-0.
-
-      ;({data, status} = await test.webApi.articleUnfollow('user1/title-0'))
-      assertStatus(status, data)
+    ;({data, status} = await test.webApi.articleUnfollow('user1/title-0'))
+    assertStatus(status, data)
 
     // Unfollow effects
 
@@ -3282,6 +3284,71 @@ it('api: article tree render=false', async () => {
       ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }, { render }))
       assertStatus(status, data)
     }
+  })
+})
+
+it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    // New articles with updateNestedSetIndex=false
+
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
+      ])
+
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { updateNestedSetIndex: false }))
+      assertStatus(status, data)
+
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/mathematics' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
+      ])
+
+      article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+      ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics', updateNestedSetIndex: false }))
+      assertStatus(status, data)
+
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/calculus' },
+        { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/mathematics' },
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
+      ])
+
+      ;({data, status} = await test.webApi.articleUpdatedNestedSet('user0'))
+      assertStatus(status, data)
+
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/calculus' },
+      ])
+
+    // Update existing articles with updateNestedSetIndex=false
+
+      article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { updateNestedSetIndex: false }))
+      //;({data, status} = await createOrUpdateArticleApi(test, article))
+      assertStatus(status, data)
+
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/mathematics' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/calculus' },
+      ])
+
+      ;({data, status} = await test.webApi.articleUpdatedNestedSet('user0'))
+      assertStatus(status, data)
+
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+        { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/calculus' },
+        { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/mathematics' },
+      ])
   })
 })
 

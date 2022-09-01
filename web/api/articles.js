@@ -215,6 +215,8 @@ async function createOrUpdateArticle(req, res, opts) {
     front.isString, front.isTruthy ], defaultValue: undefined })
   const render = lib.validateParam(body, 'render', {
     validators: [front.isBoolean], defaultValue: true})
+  const updateNestedSetIndex = lib.validateParam(body, 'updateNestedSetIndex', {
+    validators: [front.isBoolean], defaultValue: true})
   const parentId = lib.validateParam(body,
     // ID of article that will be the parent of this article, including the @username/ part.
     // However, at least to start with, @username/ will have to match your own username to
@@ -300,6 +302,7 @@ async function createOrUpdateArticle(req, res, opts) {
       perf: config.log.perf,
       render,
       titleSource,
+      updateNestedSetIndex,
     })).articles
   }
   return res.json({
@@ -450,6 +453,22 @@ router.delete('/follow', auth.required, async function(req, res, next) {
     await loggedInUser.removeArticleFollowSideEffects(article)
     const newArticle = await lib.getArticle(req, res)
     return res.json({ article: await newArticle.toJson(loggedInUser) })
+  } catch(error) {
+    next(error);
+  }
+})
+
+router.put('/update-nested-set/:user', auth.required, async function(req, res, next) {
+  try {
+    const username = req.params.user
+    const sequelize = req.app.get('sequelize')
+    const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
+    const msg = cant.updateNestedSet(loggedInUser, username)
+    if (msg) {
+      throw new lib.ValidationError([msg], 403)
+    }
+    await sequelize.models.Article.updateNestedSets(username)
+    return res.json({})
   } catch(error) {
     next(error);
   }

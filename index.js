@@ -3546,16 +3546,16 @@ function get_descendant_count_html(context, tree_node, options) {
   const [descendant_count, word_count, descendant_word_count] = get_descendant_count(tree_node);
   let ret;
   let word_count_html = ''
-  const icon = '<span class="fa-regular-400">\u{f075}</span>'
+  const wordIcon = '<span class="fa-regular-400">\u{f075}</span>'
   const words_str = options.long_style ? `words: ` : ''
   if (descendant_word_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
-    word_count_html += `<span title="word count for this node + all descendants">${icon} ${words_str}<span class="word-count-descendant">${format_number_approx(descendant_word_count)}</span></span>`
+    word_count_html += `<span title="word count for this article + all descendants">${wordIcon} ${words_str}<span class="word-count-descendant">${format_number_approx(descendant_word_count)}</span></span>`
   }
   if (tree_node.word_count > 0 && context.options.add_test_instrumentation || !options.show_descendant_count) {
-    word_count_html += `<span title="word count for this node">${icon} ${words_str}<span class="word-count">${format_number_approx(word_count)}</span></span>`;
+    word_count_html += `<span title="word count for this article">${wordIcon} ${words_str}<span class="word-count">${format_number_approx(word_count)}</span></span>`;
   }
-  if (descendant_count > 0 && context.options.add_test_instrumentation) {
-    word_count_html += `<span class="descendant-count">${format_number_approx(descendant_count)}</span>`
+  if (descendant_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
+    word_count_html += `<span title="descendant article count"><span class="fa-solid-900">\u{f02d}</span> ${options.long_style ? 'articles: ' : ''}<span class="descendant-count">${format_number_approx(descendant_count)}</span></span>`
   }
   if (word_count_html !== '') {
     ret = `<span class="metrics">${word_count_html}</span>`;
@@ -6577,16 +6577,16 @@ function render_error_x_undefined(ast, context, target_id, options={}) {
  * This function was introduced to factor out the static CLI ToC and the dynamic one from Web,
  * the static one had a tree representation, but the dynamic one has a list, so we convert
  * both to a single list representation and render it here.
- **/
+ */
 function render_toc_from_entry_list({ add_test_instrumentation, entry_list, descendant_count_html, tocIdPrefix }) {
   let top_level = 0;
   if (tocIdPrefix === undefined) {
     tocIdPrefix = ''
   }
-  let ret = `<div id="${tocIdPrefix}${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`;
+  let ret = `<div id="${tocIdPrefix}${Macro.TOC_ID}"class="toc-container">\n<ul>\n<li${html_class_attr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`
   ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}">${TOC_MARKER_SYMBOL} Table of contents</a>`
   if (descendant_count_html) {
-    ret += `<span class="hover-metadata">${descendant_count_html}</span>`;
+    ret += `<span class="hover-metadata">${descendant_count_html}</span>`
   }
   ret += `</span></div>\n`
   for (let i = 0; i < entry_list.length; i++) {
@@ -6721,7 +6721,7 @@ function render_toc(context) {
       // The inner <div></div> inside arrow is so that:
       // - outter div: takes up space to make clicking easy
       // - inner div: minimal size to make the CSS arrow work, but too small for confortable clicking
-      entry.descendant_count_html = get_descendant_count_html_sep(context, tree_node, { long_style: false, show_descendant_count: false });
+      entry.descendant_count_html = get_descendant_count_html_sep(context, tree_node, { long_style: false, show_descendant_count: true });
     }
     if (has_child) {
       for (let i = tree_node.children.length - 1; i >= 0; i--) {
@@ -7663,8 +7663,8 @@ const TAGGED_ID_UNRESERVED = 'tagged'
 exports.TAGGED_ID_UNRESERVED = TAGGED_ID_UNRESERVED
 const TAGS_MARKER = '<span title="Tags" class="fa-solid-900">\u{f02c}</span>'
 exports.TAGS_MARKER = TAGS_MARKER
-const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>';
-const TOC_HAS_CHILD_CLASS = 'has-child';
+const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>'
+const TOC_HAS_CHILD_CLASS = 'has-child'
 const UL_OL_OPTS = {
   newline_after_open: true,
   wrap: true,

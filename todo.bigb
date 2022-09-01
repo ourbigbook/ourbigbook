@@ -16,6 +16,12 @@ asdf
 $$
 ``
 
+=== Like and unlike requests are very slow
+{tag=Performance}
+{tag=Web}
+
+On ourbigbook.com like and unlike takes 4s-10s! Something is wrong. It must be because of the complex side effects like topic updating? Maybe those should be deferred? This only appears noticeable on a larger database.
+
 === Show tagged list of non toplevel pages
 {tag=Tag}
 

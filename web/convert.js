@@ -465,7 +465,10 @@ async function convertArticle({
       } else {
         new_to_id_index = 0
       }
-      nestedSetNeedsUpdate = newParentId !== oldParentId || new_to_id_index !== old_to_id_index
+      nestedSetNeedsUpdate = !updateNestedSetIndex && (newParentId !== oldParentId || new_to_id_index !== old_to_id_index)
+      if (nestedSetNeedsUpdate) {
+        author.update({ nestedSetNeedsUpdate: true })
+      }
 
       //const whereAuthorInclude = {
       //  model: sequelize.models.File,

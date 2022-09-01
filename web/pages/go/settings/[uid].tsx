@@ -139,6 +139,7 @@ const Settings = ({
           </button>
           <h2>Extra information</h2>
           <p>Signup IP: {userInfo.ip || 'not set'}</p>
+          <p>nestedSetNeedsUpdate: {userInfo.nestedSetNeedsUpdate.toString()}</p>
           {cant.setUserLimits(loggedInUser)
             ? <>
                 <p>Limits:</p>

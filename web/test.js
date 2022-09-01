@@ -3300,8 +3300,21 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
         { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
       ])
 
+      // user.nestedSetNeedsUpdate starts off as false.
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.nestedSetNeedsUpdate, false)
+
       article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
       ;({data, status} = await createOrUpdateArticleApi(test, article, { updateNestedSetIndex: false }))
+      assertStatus(status, data)
+      assert.strictEqual(data.nestedSetNeedsUpdate, true)
+
+      // user.nestedSetNeedsUpdate becomes true after the nested set is updated
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.nestedSetNeedsUpdate, false)
+      ;({data, status} = await test.webApi.user('user0'))
       assertStatus(status, data)
       assert.strictEqual(data.nestedSetNeedsUpdate, true)
 
@@ -3329,6 +3342,11 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
         { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
         { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/calculus' },
       ])
+
+      // user.nestedSetNeedsUpdate becomes false after the nested se is updated
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.nestedSetNeedsUpdate, false)
 
     // Update existing articles with updateNestedSetIndex=false
 
@@ -3371,6 +3389,25 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
     ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
     assertStatus(status, data)
     assert.strictEqual(data.nestedSetNeedsUpdate, true)
+
+    // Move math up with a full render.
+    article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: 'Hacked 2' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.articleUpdatedNestedSet('user0'))
+    assertStatus(status, data)
+
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/calculus' },
+    ])
+
+    // nestedSetNeedsUpdate is false when there are tree changes, but we are updating the index;
+    article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: 'Hacked 2' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+    assert.strictEqual(data.nestedSetNeedsUpdate, false)
   })
 })
 

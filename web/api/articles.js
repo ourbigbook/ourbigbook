@@ -471,7 +471,10 @@ router.put('/update-nested-set/:user', auth.required, async function(req, res, n
     if (msg) {
       throw new lib.ValidationError([msg], 403)
     }
-    await sequelize.models.Article.updateNestedSets(username)
+    await Promise.all([
+      sequelize.models.Article.updateNestedSets(username),
+      sequelize.models.User.update({ nestedSetNeedsUpdate: false }, { where: { username }}),
+    ])
     return res.json({})
   } catch(error) {
     next(error);

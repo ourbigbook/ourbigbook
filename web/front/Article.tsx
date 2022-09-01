@@ -1,10 +1,21 @@
 import React from 'react'
 import * as ReactDOM from 'react-dom'
+import ReactDomServer from 'react-dom/server'
 import Router from 'next/router'
 
 import { commentsHeaderId } from 'front/config'
 import { formatDate } from 'front/date'
-import { DeleteIcon, IssueIcon, EditArticleIcon, NewArticleIcon, SeeIcon, SignupOrLogin, TimeIcon, TopicIcon } from 'front'
+import {
+  DeleteIcon,
+  EditArticleIcon,
+  HelpIcon,
+  IssueIcon,
+  NewArticleIcon,
+  SeeIcon,
+  SignupOrLogin,
+  TimeIcon,
+  TopicIcon,
+} from 'front'
 import Comment from 'front/Comment'
 import CommentInput from 'front/CommentInput'
 import LikeArticleButton from 'front/LikeArticleButton'
@@ -129,19 +140,28 @@ const Article = ({
           if (loggedInUser) {
             mySlug = `${loggedInUser.username}/${curArticle.topicId}`
           }
-          if (ancestorsElem && ancestors) {
-            ReactDOM.render(
-              <span dangerouslySetInnerHTML={{
-                __html: ' ' + htmlAncestorLinks(
-                  ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
-                    href: ` href="${linkPref}${a.slug}"`,
-                    content: a.titleRender,
-                  }}),
-                  ancestors.length,
-                )
-              }} ></span>,
-              ancestorsElem
-            )
+          if (ancestorsElem) {
+            if (ancestors.length) {
+              ReactDOM.render(
+                <span dangerouslySetInnerHTML={{
+                  __html: ' ' + htmlAncestorLinks(
+                    ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
+                      href: ` href="${linkPref}${a.slug}"`,
+                      content: a.titleRender,
+                    }}),
+                    ancestors.length,
+                  )
+                }} ></span>,
+                ancestorsElem
+              )
+            } else {
+              ReactDOM.render(
+                <span dangerouslySetInnerHTML={{
+                  __html: `<span> ${ReactDomServer.renderToString(<HelpIcon />)} Ancestors will show here when the tree index is updated</span>`
+                }} ></span>,
+                ancestorsElem
+              )
+            }
           }
           ReactDOM.render(
             <>

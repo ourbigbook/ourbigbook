@@ -387,7 +387,7 @@ async function generateDemoData(params) {
       for (var j = 0; j < nFollowsPerUserEffective; j++) {
         const follower = users[i]
         const followed = users[(i + 1 + j) % nUsers]
-        if (!await follower.hasFollow(followed)) {
+        if (!(await follower.hasFollow(followed))) {
           await follower.addFollowSideEffects(followed)
         }
       }
@@ -564,10 +564,10 @@ async function generateDemoData(params) {
           article
           && article.file.authorId !== user.id
         ) {
-          if (!await user.hasLikedArticle(article)) {
+          if (!(await user.hasLikedArticle(article))) {
             await user.addArticleLikeSideEffects(article)
           }
-          if (!await user.hasFollowedArticle(article)) {
+          if (!(await user.hasFollowedArticle(article))) {
             await user.addArticleFollowSideEffects(article)
           }
         }

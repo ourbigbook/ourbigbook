@@ -9,7 +9,7 @@ interface IProps {
 class MyDocument extends Document<IProps> {
   static async getInitialProps(ctx) {
     const initialProps = await Document.getInitialProps(ctx);
-    const { html, head } = ctx.renderPage();
+    const { html, head } = await ctx.renderPage();
     return { ...initialProps, html, head };
   }
 

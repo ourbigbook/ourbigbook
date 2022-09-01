@@ -265,7 +265,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
 // Follow
 
 async function validateFollow(req, res, user, isFollow) {
-  if (await user.hasFollow(req.user) === isFollow) {
+  if ((await user.hasFollow(req.user)) === isFollow) {
     throw new lib.ValidationError(
       [`User '${user.username}' ${isFollow ? 'already follows' : 'does not follow'} user '${req.user.username}'`],
       403,

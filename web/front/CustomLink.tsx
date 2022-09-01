@@ -37,9 +37,11 @@ const CustomLink = ({
   if (newTab) {
     return inner
   } else {
-    return <Link href={href} passHref shallow={shallow}>
-      {inner}
-    </Link>
+    return (
+      <Link href={href} passHref shallow={shallow} legacyBehavior>
+        {inner}
+      </Link>
+    );
   }
 }
 

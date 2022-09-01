@@ -2228,9 +2228,13 @@ if (cli.helpMacros) {
           // Remove all files from the publish diretory in case some were removed from the original source.
           if (publish_uses_git) {
             if (fs.existsSync(path.join(publishOutPublishDir, '.git'))) {
-              if (git_ls_files(publishOutPublishDir).length > 0) {
-                cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'rm', '-r', '-f', '.'], cmdOptions);
-              }
+              // git rm -rf . blows up on an empty directory.
+              // This check blows up for a very large directory. We could instead just get one line,
+              // but requires modifying the cmdGetStdout function: https://stackoverflow.com/questions/63796633/spawnsync-bin-sh-enobufs/77420941#77420941
+              //if (git_ls_files(publishOutPublishDir).length > 0) {
+              // So instead I'm lazy and just throwOnError false here.
+              cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'rm', '-r', '-f', '.'],
+                ourbigbook.clone_and_set(cmdOptions, 'throwOnError', false))
             }
           } else {
             fs.rmSync(publishOutPublishDir, { recursive: true, force: true })

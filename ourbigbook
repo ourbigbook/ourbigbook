@@ -199,50 +199,6 @@ function cli_error(message) {
   process.exit(1);
 }
 
-function cmdGetStdout(cmd, args=[], options={}) {
-  if (!('dry_run' in options)) {
-    options.dry_run = false;
-  }
-  if (!('env_extra' in options)) {
-    options.env_extra = {};
-  }
-  if (!('extra_returns' in options)) {
-    options.extra_returns = {};
-  }
-  if (!('showCmd' in options)) {
-    options.showCmd = true;
-  }
-  let out;
-  const cmd_str = ([cmd].concat(args)).join(' ');
-  if (options.showCmd) {
-    console.log(cmd_str);
-  }
-  if (!options.dry_run) {
-    out = child_process.spawnSync(cmd, args, {
-      cwd: options.cwd,
-      env: { ...process.env, ...options.env_extra },
-    });
-  }
-  let ret;
-  if (options.dry_run) {
-    ret = '';
-  } else {
-    if (out.status != 0 && options.throwOnError) {
-      let msg = `Command failed with status: ${out.status}\ncmd: ${cmd_str}\n`;
-      if (out.stdout !== null) {
-        msg += `stdout: \n${out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}\n`;
-      }
-      if (out.stderr !== null) {
-        msg += `stderr: \n${out.stderr.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}\n`;
-      }
-      throw new Error(msg);
-    }
-    ret = out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING);
-  }
-  options.extra_returns.out = out
-  return ret;
-}
-
 /**
  * @param {String} input_path - path to a directory to convert files in
  */
@@ -309,7 +265,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
  * @return {String}
  */
 async function convert_input(input, ourbigbook_options, nonOurbigbookOptions={}) {
-  const new_options = Object.assign({}, ourbigbook_options);
+  const new_options = { ...ourbigbook_options }
   if ('input_path' in nonOurbigbookOptions) {
     new_options.input_path = nonOurbigbookOptions.input_path;
   }
@@ -445,7 +401,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
     if (nonOurbigbookOptions.ourbigbook_paths_converted_only) {
       return
     }
-    new_options = Object.assign({}, ourbigbook_options);
+    new_options = { ...ourbigbook_options }
     if (sequelize) {
       new_options.db_provider = nonOurbigbookOptions.db_provider;
     }
@@ -457,7 +413,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
     is_bigb = true
     msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
     message_prefix = msg_ret.message_prefix
-    let newNonOurbigbookOptions = Object.assign({}, nonOurbigbookOptions);
+    let newNonOurbigbookOptions = { ...nonOurbigbookOptions }
     let input = fs.readFileSync(full_path, newNonOurbigbookOptions.encoding);
     let input_path_basename_noext = input_path_parse.name;
     if (input_path_relative_to_ourbigbook_json) {
@@ -530,7 +486,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
         ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
       ) {
         for (const header_ast of extra_returns.context.synonym_headers) {
-          const new_options_redir = Object.assign({}, new_options);
+          const new_options_redir = { ...new_options }
           new_options_redir.db_provider = extra_returns.context.db_provider;
           await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, nonOurbigbookOptions.outdir);
         }
@@ -654,7 +610,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
           if (breadcrumbDir === '.') {
             breadcrumbDir = ''
           }
-          const new_options_dir = Object.assign({}, new_options);
+          const new_options_dir = { ...new_options }
           new_options_dir.auto_generated_source = true
           const ROOT_PLACEHOLDER = '(root)'
           if (input_path_relative_to_ourbigbook_json === '.') {
@@ -662,7 +618,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
           } else {
             new_options_dir.title = input_path_relative_to_ourbigbook_json
           }
-          const newNonOurbigbookOptions = Object.assign({}, nonOurbigbookOptions);
+          const newNonOurbigbookOptions = { ...nonOurbigbookOptions }
           // Needed the path to be able to find the relatively placed CSS under _raw.
           // notindex.bigb instead of index.bigb because this will be placed at subdir/index.html, unlike the .bigb
           // convention that places subdir/index.bigb at subdir.html rather than subdir/index.html so a different
@@ -826,7 +782,7 @@ function finished_in_ms(ms) {
 }
 
 async function generate_redirect(ourbigbook_options, redirect_src_id, redirect_target_id, outdir) {
-  ourbigbook_options = Object.assign({}, ourbigbook_options);
+  ourbigbook_options = { ...ourbigbook_options }
   ourbigbook_options.input_path = redirect_src_id;
   const outpath_basename = redirect_src_id + '.' + ourbigbook.HTML_EXT
   const outpath = path.join(outdir, outpath_basename);
@@ -861,14 +817,14 @@ function generate_redirect_base(outpath, redirect_href) {
 
 /** Return Set of branches in the repository. Hax. */
 function git_branches(input_path) {
-  const str = cmdGetStdout('git', ['branch', '-a']).replace(/\n$/, '')
+  const str = runCmd('git', ['branch', '-a']).replace(/\n$/, '')
   const arr = (str === '') ? [] : str.split('\n');
   return new Set(arr.map(s => s.substring(2)));
 }
 
 function git_has_commit(input_path) {
   try {
-    cmdGetStdout('git', ['-C', input_path, 'log'], { showCmd: false, throwOnError: true })
+    runCmd('git', ['-C', input_path, 'log'], { showCmd: false, throwOnError: true })
     return true
   } catch(err) {
     return false
@@ -881,7 +837,7 @@ function git_has_commit(input_path) {
  */
 function git_is_in_repo(ourbigbook_json_dir) {
   const extra_returns = {}
-  cmdGetStdout('git', ['-C', ourbigbook_json_dir, 'check-ignore', ourbigbook_json_dir], {
+  runCmd('git', ['-C', ourbigbook_json_dir, 'check-ignore', ourbigbook_json_dir], {
     throwOnError: false, showCmd: false, extra_returns })
   // Exit statuses:
   // - 0: is ignored
@@ -894,7 +850,7 @@ function git_is_in_repo(ourbigbook_json_dir) {
  * @return Array[String] list of all non gitignored files and directories
  */
 function git_ls_files(input_path) {
-  const ret = cmdGetStdout(
+  const ret = runCmd(
     'git',
     ['-C', input_path, 'ls-files'],
     {
@@ -918,11 +874,11 @@ function gitSha(input_path, srcBranch) {
   if (srcBranch !== undefined) {
     args.push(srcBranch);
   }
-  return cmdGetStdout('git', args, {showCmd: false, throwOnError: true}).slice(0, -1);
+  return runCmd('git', args, {showCmd: false, throwOnError: true}).slice(0, -1);
 }
 
 function git_toplevel(input_path) {
-  return cmdGetStdout('git', ['rev-parse', '--show-toplevel'], {
+  return runCmd('git', ['rev-parse', '--show-toplevel'], {
     showCmd: false,
     throwOnError: true
   }).slice(0, -1);
@@ -970,6 +926,62 @@ function renderTemplate(templateRelpath, outdir, env) {
     }
   );
   fs.writeFileSync(path.join(outdir, templateRelpath), out);
+}
+
+function runCmd(cmd, args=[], options={}) {
+  if (!('dry_run' in options)) {
+    options.dry_run = false
+  }
+  if (!('env_extra' in options)) {
+    options.env_extra = {}
+  }
+  if (!('extra_returns' in options)) {
+    options.extra_returns = {}
+  }
+  if (!('showCmd' in options)) {
+    options.showCmd = true
+  }
+  let { ignoreStdout } = options
+  if (ignoreStdout === undefined) {
+    ignoreStdout = false
+  }
+  let out
+  const cmd_str = ([cmd].concat(args)).join(' ')
+  if (options.showCmd) {
+    console.log(cmd_str)
+  }
+  if (!options.dry_run) {
+    const spawnOpts = {
+      cwd: options.cwd,
+      env: { ...process.env, ...options.env_extra },
+    }
+    if (ignoreStdout) {
+      spawnOpts.stdio = 'ignore'
+    }
+    out = child_process.spawnSync(cmd, args, spawnOpts)
+  }
+  let ret
+  if (options.dry_run) {
+    ret = ''
+  } else {
+    if (out.status != 0 && options.throwOnError) {
+      let msg = `Command failed with status: ${out.status}\ncmd: ${cmd_str}\n`
+      if (!ignoreStdout) {
+        if (out.stdout !== null) {
+          msg += `stdout: \n${out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}\n`
+        }
+        if (out.stderr !== null) {
+          msg += `stderr: \n${out.stderr.toString(ourbigbook_nodejs_webpack_safe.ENCODING)}\n`
+        }
+      }
+      throw new Error(msg)
+    }
+    if (!ignoreStdout) {
+      ret = out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING)
+    }
+  }
+  options.extra_returns.out = out
+  return ret
 }
 
 /** Skip path from ourbigbook conversion. */
@@ -1127,10 +1139,10 @@ async function webCreateOrUpdate({
     // Retry the transaction a few times. This designed to work well during development when nodemon
     // restarts the server after a file update that adds some logging, often for perf. This way
     // you can just turn logs on and off during a large conversion and it will just keep running fine.
-    ;({ data, status } = await tryCreateOrUpdate(webApi, articleArgs, extraArgs))
+    ;({ data, status } = await tryCreateOrUpdate(webApi, articleArgs, ourbigbook.clone_and_set(extraArgs, 'updateNestedSetIndex', false)))
     assertApiStatus(status, data)
     //if (render && i % 100 == 0) {
-    //  cmdGetStdout('bin/pg', ['bin/normalize', '-c', '-u', 'cirosantilli', 'nested-set'], {
+    //  runCmd('bin/pg', ['bin/normalize', '-c', '-u', 'cirosantilli', 'nested-set'], {
     //    cwd: path.join(__dirname, 'web'),
     //    throwOnError: true,
     //  })
@@ -1170,6 +1182,7 @@ cli_parser.option('--outdir <outdir>', 'https://docs.ourbigbook.com#outdir');
 cli_parser.option('-o, --outfile <outfile>', 'https://docs.ourbigbook.com#outfile');
 cli_parser.option('-O, --output-format <output-format>', 'https://docs.ourbigbook.com#output-format', 'html');
 cli_parser.option('-p --publish', 'https://docs.ourbigbook.com#publish', false);
+cli_parser.option('--publish-no-convert', 'Attempt to publish without converting. Implies --publish: conversion https://docs.ourbigbook.com#publish-no-convert', false);
 cli_parser.option('-P, --publish-commit <commit-message>', 'https://docs.ourbigbook.com#publish-commit');
 cli_parser.option('--publish-target <target>', 'https://docs.ourbigbook.com#publish-target', PUBLISH_TARGETS['github-pages']);
 cli_parser.option('--format-source', 'https://docs.ourbigbook.com#format-source');
@@ -1210,7 +1223,7 @@ if (cli.helpMacros) {
   let input;
   let title;
   let output;
-  let publish = cli.publish || cli.publishCommit !== undefined;
+  let publish = cli.publish || cli.publishCommit !== undefined || cli.publishNoConvert
   let htmlXExtension;
   let input_dir;
   const web = cli.web || cli.webTest
@@ -1560,26 +1573,32 @@ if (cli.helpMacros) {
   }
 
   // CLI options
-  const cmdOptions = {
+  const cmdOpts = {
     dry_run: cli.dryRun,
     env_extra: {},
     throwOnError: true,
   }
-  const cmd_options_no_dry = Object.assign({}, cmdOptions)
-  cmd_options_no_dry.dry_run = false
+  const cmdOptsNoDry = { ...cmdOpts }
+  cmdOptsNoDry.dry_run = false
   // Commands that retrieve information and don't change state.
-  const cmd_options_info = Object.assign({}, cmd_options_no_dry)
-  cmd_options_info.showCmd = false
-  const cmd_options_info_nothrow = Object.assign({}, cmd_options_info)
-  cmd_options_info_nothrow.throwOnError = false
+  const cmdOptsInfo = { ...cmdOptsNoDry }
+  cmdOptsInfo.showCmd = false
+  const cmdOptsInfoNothrow = { ...cmdOptsInfo }
+  cmdOptsInfoNothrow.throwOnError = false
+  // We've started using this variatnt for commands that might blow spawnSync stdout buffer size.
+  // This is not ideal as it prevents obtaining the error messages from stdout/stderr for debug purposes.
+  // A better solution might instead be to have an async readline variant:
+  // https://stackoverflow.com/questions/63796633/spawnsync-bin-sh-enobufs/77420941#77420941
+  const cmdOptsNoStdout = { ...cmdOptsInfo }
+  cmdOptsNoStdout.ignoreStdout = true
 
   const isInGitRepo = git_is_in_repo(ourbigbook_json_dir)
   if (isInGitRepo && inputPath !== undefined) {
     const inputRelpath  = path.relative(ourbigbook_json_dir, input_dir)
     nonOurbigbookOptions.ignore_paths = new Set([
       ...nonOurbigbookOptions.ignore_paths,
-      ...cmdGetStdout(
-        'git', ['-C', input_dir, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory'], cmd_options_info
+      ...runCmd(
+        'git', ['-C', input_dir, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory'], cmdOptsInfo
         ).split('\n').slice(0, -1).map(s => s.replace(/\/$/, '')).map(s => path.join(inputRelpath, s))
     ])
   }
@@ -1628,7 +1647,7 @@ if (cli.helpMacros) {
         publish_git_dir = path.join(publishDir, '.git');
         if (fs.existsSync(publish_git_dir)) {
           // This cleanup has to be done before the database initialization.
-          cmdGetStdout('git', ['-C', publishDirCwd, 'clean', '-x', '-d', '-f'], cmdOptions);
+          runCmd('git', ['-C', publishDirCwd, 'clean', '-x', '-d', '-f'], cmdOpts);
         }
         publish_tmpdir = path.join(publishDir, subdir_relpath, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME);
       }
@@ -2106,6 +2125,7 @@ if (cli.helpMacros) {
           }
         }
       }
+      await webApi.articleUpdatedNestedSet(username)
     } else if (cli.watch) {
       if (cli.stdout) {
         cli_error('--stdout and --watch are incompatible');
@@ -2167,8 +2187,8 @@ if (cli.helpMacros) {
             // to be a super easy way for now, so we just hardcode origin to start with.
             // https://stackoverflow.com/questions/171550/find-out-which-remote-branch-a-local-branch-is-tracking
             const opts = {}
-            const originUrl = cmdGetStdout('git', ['-C', inputPathCwd, 'config', '--get', 'remote.origin.url'], cmd_options_info_nothrow).slice(0, -1);
-            if (cmd_options_info_nothrow.extra_returns.out.status != 0) {
+            const originUrl = runCmd('git', ['-C', inputPathCwd, 'config', '--get', 'remote.origin.url'], cmdOptsInfoNothrow).slice(0, -1);
+            if (cmdOptsInfoNothrow.extra_returns.out.status != 0) {
               cli_error('a "origin" git remote repository is required to publish, configure it with something like "git remote add origin git@github.com:username/reponame.git"')
             }
             if (ourbigbook_json.publishRemoteUrl) {
@@ -2179,7 +2199,7 @@ if (cli.helpMacros) {
             if (!publishRemoteUrl) {
               publishRemoteUrl = 'git@github.com:ourbigbook/ourbigbook.git';
             }
-            srcBranch = cmdGetStdout('git', ['-C', inputPathCwd, 'rev-parse', '--abbrev-ref', 'HEAD'], cmd_options_info).slice(0, -1);
+            srcBranch = runCmd('git', ['-C', inputPathCwd, 'rev-parse', '--abbrev-ref', 'HEAD'], cmdOptsInfo).slice(0, -1);
             const parsed_remote_url = require("git-url-parse")(publishRemoteUrl);
             if (parsed_remote_url.source !== 'github.com') {
               cli_error('only know how  to publish to origin == github.com currently, please send a patch');
@@ -2199,19 +2219,19 @@ if (cli.helpMacros) {
           }
           fs.mkdirSync(publishDir, { recursive: true });
           if (cli.publishCommit !== undefined) {
-            cmdGetStdout('git', ['-C', inputPathCwd, 'add', '-u'], cmdOptions);
-            cmdGetStdout( 'git', ['-C', inputPathCwd, 'commit', '-m', cli.publishCommit], cmdOptions);
+            runCmd('git', ['-C', inputPathCwd, 'add', '-u'], cmdOpts);
+            runCmd( 'git', ['-C', inputPathCwd, 'commit', '-m', cli.publishCommit], cmdOpts);
           }
           sourceCommit = gitSha(inputPath, srcBranch);
           if (fs.existsSync(publish_git_dir)) {
-            cmdGetStdout('git', ['-C', publishDirCwd, 'checkout', '--', '.'], cmd_options_no_dry);
-            cmdGetStdout('git', ['-C', publishDirCwd, 'fetch'], cmd_options_no_dry);
-            cmdGetStdout('git', ['-C', publishDirCwd, 'checkout', sourceCommit], cmd_options_no_dry);
-            cmdGetStdout('git', ['-C', publishDirCwd, 'submodule', 'update', '--init'], cmd_options_no_dry);
-            cmdGetStdout('git', ['-C', publishDirCwd, 'clean', '-xdf'], cmd_options_no_dry);
+            runCmd('git', ['-C', publishDirCwd, 'checkout', '--', '.'], cmdOptsNoDry);
+            runCmd('git', ['-C', publishDirCwd, 'fetch'], cmdOptsNoDry);
+            runCmd('git', ['-C', publishDirCwd, 'checkout', sourceCommit], cmdOptsNoDry);
+            runCmd('git', ['-C', publishDirCwd, 'submodule', 'update', '--init'], cmdOptsNoDry);
+            runCmd('git', ['-C', publishDirCwd, 'clean', '-xdf'], cmdOptsNoDry);
           } else {
-            cmdGetStdout('git', ['clone', '--recursive', '--depth', '1', input_git_toplevel, publishDirCwd],
-              ourbigbook.clone_and_set(cmdOptions, 'dry_run', false));
+            runCmd('git', ['clone', '--recursive', '--depth', '1', input_git_toplevel, publishDirCwd],
+              ourbigbook.clone_and_set(cmdOpts, 'dry_run', false));
           }
 
           // Set some variables especially for publishing.
@@ -2226,55 +2246,60 @@ if (cli.helpMacros) {
           nonOurbigbookOptions.external_css_and_js = true;
 
           // Remove all files from the publish diretory in case some were removed from the original source.
-          if (publish_uses_git) {
-            if (fs.existsSync(path.join(publishOutPublishDir, '.git'))) {
-              // git rm -rf . blows up on an empty directory.
-              // This check blows up for a very large directory. We could instead just get one line,
-              // but requires modifying the cmdGetStdout function: https://stackoverflow.com/questions/63796633/spawnsync-bin-sh-enobufs/77420941#77420941
-              //if (git_ls_files(publishOutPublishDir).length > 0) {
-              // So instead I'm lazy and just throwOnError false here.
-              cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'rm', '-r', '-f', '.'],
-                ourbigbook.clone_and_set(cmdOptions, 'throwOnError', false))
+          if (!cli.publishNoConvert) {
+            if (publish_uses_git) {
+              if (fs.existsSync(path.join(publishOutPublishDir, '.git'))) {
+                // git rm -rf . blows up on an empty directory.
+                // This check blows up for a very large directory. We could instead just get one line,
+                // but requires modifying the runCmd function: https://stackoverflow.com/questions/63796633/spawnsync-bin-sh-enobufs/77420941#77420941
+                //if (git_ls_files(publishOutPublishDir).length > 0) {
+                // So instead I'm lazy and just throwOnError false here.
+                runCmd('git', ['-C', publishOutPublishDirCwd, 'rm', '-r', '-f', '.'],
+                  ourbigbook.clone_and_set(cmdOpts, 'throwOnError', false))
+              }
+            } else {
+              fs.rmSync(publishOutPublishDir, { recursive: true, force: true })
             }
-          } else {
-            fs.rmSync(publishOutPublishDir, { recursive: true, force: true })
+
+            // Clean database to ensure a clean conversion. TODO: this is dangerous, if some day we
+            // start adding more conversion state outside of db.sqlite3. Better would be to remove the
+            // entire out/publish/out. Te slight downside of that is that:
+            // - it deletes other publish targets
+            // - it forces re-fetch of git history on the gh-pages branch
+            fs.rmSync(path.join(publish_tmpdir, 'db.sqlite3'), { force: true })
+
+            fs.mkdirSync(publishOutPublishDir, { recursive: true })
           }
-
-          // Clean database to ensure a clean conversion. TODO: this is dangerous, if some day we
-          // start adding more conversion state outside of db.sqlite3. Better would be to remove the
-          // entire out/publish/out. Te slight downside of that is that:
-          // - it deletes other publish targets
-          // - it forces re-fetch of git history on the gh-pages branch
-          fs.rmSync(path.join(publish_tmpdir, 'db.sqlite3'), { force: true })
-
-          fs.mkdirSync(publishOutPublishDir, { recursive: true })
         } else {
           actualInputDir = inputPath;
           publishOutPublishDir = outdir;
           publishOutPublishDirCwd = relpathCwd(publishOutPublishDir)
         }
         nonOurbigbookOptions.outdir = publishOutPublishDir;
-        await create_db(ourbigbook_options, nonOurbigbookOptions);
 
-        // Do the actual conversion.
-        await convert_directory_extract_ids_and_render(actualInputDir, ourbigbook_options, nonOurbigbookOptions)
-        if (nonOurbigbookOptions.had_error) {
-          process.exit(1);
-        }
+        if (!cli.publishNoConvert) {
+          await create_db(ourbigbook_options, nonOurbigbookOptions);
 
-        // Generate redirects from ourbigbook.json.
-        for (let [from, to] of ourbigbook_json.redirects) {
-          if (
-            // TODO https://docs.ourbigbook.com/respect-ourbigbook-json-htmlxextension-on-ourbigbook-json-redirects
-            ourbigbook_options.htmlXExtension === false ? false : true &&
-            !ourbigbook.protocol_is_known(to)
-          ) {
-            to +=  '.' + ourbigbook.HTML_EXT
+          // Do the actual conversion.
+          await convert_directory_extract_ids_and_render(actualInputDir, ourbigbook_options, nonOurbigbookOptions)
+          if (nonOurbigbookOptions.had_error) {
+            process.exit(1);
           }
-          generate_redirect_base(
-            path.join(nonOurbigbookOptions.outdir, from + '.' + ourbigbook.HTML_EXT),
-            to
-          )
+
+          // Generate redirects from ourbigbook.json.
+          for (let [from, to] of ourbigbook_json.redirects) {
+            if (
+              // TODO https://docs.ourbigbook.com/respect-ourbigbook-json-htmlxextension-on-ourbigbook-json-redirects
+              ourbigbook_options.htmlXExtension === false ? false : true &&
+              !ourbigbook.protocol_is_known(to)
+            ) {
+              to +=  '.' + ourbigbook.HTML_EXT
+            }
+            generate_redirect_base(
+              path.join(nonOurbigbookOptions.outdir, from + '.' + ourbigbook.HTML_EXT),
+              to
+            )
+          }
         }
 
         // Publish the converted output if build succeeded.
@@ -2282,26 +2307,26 @@ if (cli.helpMacros) {
 
           // Push the original source.
           if (!cli.dryRunPush) {
-            cmdGetStdout('git', ['-C', inputPathCwd, 'push'], cmdOptions);
+            runCmd('git', ['-C', inputPathCwd, 'push'], cmdOpts);
           }
 
           if (publish_uses_git) {
-            cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'init'], cmdOptions);
+            runCmd('git', ['-C', publishOutPublishDirCwd, 'init'], cmdOpts);
             // https://stackoverflow.com/questions/42871542/how-to-create-a-git-repository-with-the-default-branch-name-other-than-master
-            cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'checkout', '-B', publishBranch], cmdOptions);
+            runCmd('git', ['-C', publishOutPublishDirCwd, 'checkout', '-B', publishBranch], cmdOptsNoStdout);
             try {
               // Fails if remote already exists.
-              cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'remote', 'add', 'origin', publishRemoteUrl], cmdOptions);
+              runCmd('git', ['-C', publishOutPublishDirCwd, 'remote', 'add', 'origin', publishRemoteUrl], cmdOpts);
             } catch(error) {
-              cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'remote', 'set-url', 'origin', publishRemoteUrl], cmdOptions);
+              runCmd('git', ['-C', publishOutPublishDirCwd, 'remote', 'set-url', 'origin', publishRemoteUrl], cmdOpts);
             }
             // Ensure that we are up-to-date with the upstream gh-pages if one exists.
-            cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'fetch', 'origin'], cmdOptions);
-            cmdGetStdout(
+            runCmd('git', ['-C', publishOutPublishDirCwd, 'fetch', 'origin'], cmdOpts);
+            runCmd(
               'git',
               ['-C', publishOutPublishDirCwd, 'reset', `origin/${publishBranch}`],
               // Fails on the first commit in an empty repository.
-              ourbigbook.clone_and_set(cmdOptions, 'throwOnError', false)
+              ourbigbook.clone_and_set(cmdOpts, 'throwOnError', false)
             );
           }
 
@@ -2321,7 +2346,7 @@ if (cli.helpMacros) {
               cli_error(`${ourbigbook.OURBIGBOOK_JSON_BASENAME} prepublish file not found: ${prepublish_path}`);
             }
             try {
-              cmdGetStdout('./' + path.relative(process.cwd(), path.resolve(prepublish_path)), [relpathCwd(publishOutPublishDir)]);
+              runCmd('./' + path.relative(process.cwd(), path.resolve(prepublish_path)), [relpathCwd(publishOutPublishDir)]);
             } catch(error) {
               cli_error(`${ourbigbook.OURBIGBOOK_JSON_BASENAME} prepublish command exited non-zero, aborting`);
             }
@@ -2347,14 +2372,14 @@ if (cli.helpMacros) {
 
           if (publish_uses_git) {
             // Commit and push.
-            cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'add', '.'], cmdOptions);
+            runCmd('git', ['-C', publishOutPublishDirCwd, 'add', '.'], cmdOpts);
             const args = ['-C', publishOutPublishDirCwd, 'commit', '-m', sourceCommit]
             if (git_has_commit(publishOutPublishDir)) {
               args.push('--amend')
             }
-            const commitCmdOptions = Object.assign({}, cmdOptions)
-            const name = cmdGetStdout('git', ['-C', inputPath, 'config', '--get', 'user.name'], cmdOptions)
-            const email = cmdGetStdout('git', ['-C', inputPath, 'config', '--get', 'user.email'], cmdOptions)
+            const commitCmdOptions = { ...cmdOptsNoStdout }
+            const name = runCmd('git', ['-C', inputPath, 'config', '--get', 'user.name'], cmdOpts)
+            const email = runCmd('git', ['-C', inputPath, 'config', '--get', 'user.email'], cmdOpts)
             commitCmdOptions.env_extra = Object.assign(
               {},
               commitCmdOptions.env_extra,
@@ -2370,13 +2395,13 @@ if (cli.helpMacros) {
               args.push(...['--date', ourbigbook_json.publishCommitDate])
               Object.assign(commitCmdOptions.env_extra, { GIT_COMMITTER_DATE: ourbigbook_json.publishCommitDate })
             }
-            cmdGetStdout('git', args, commitCmdOptions);
+            runCmd('git', args, commitCmdOptions);
             if (!cli.dryRunPush) {
-              cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'push', '-f', 'origin', `${publishBranch}:${publishBranch}`], cmdOptions);
+              runCmd('git', ['-C', publishOutPublishDirCwd, 'push', '-f', 'origin', `${publishBranch}:${publishBranch}`], cmdOpts);
               // Mark the commit with the `published` branch to make it easier to find what was last published.
-              cmdGetStdout('git', ['-C', inputPathCwd, 'checkout', '-B', 'published'], cmdOptions);
-              cmdGetStdout('git', ['-C', inputPathCwd, 'push', '-f', '--follow-tags'], cmdOptions);
-              cmdGetStdout('git', ['-C', inputPathCwd, 'checkout', '-'], cmdOptions);
+              runCmd('git', ['-C', inputPathCwd, 'checkout', '-B', 'published'], cmdOpts);
+              runCmd('git', ['-C', inputPathCwd, 'push', '-f', '--follow-tags'], cmdOpts);
+              runCmd('git', ['-C', inputPathCwd, 'checkout', '-'], cmdOpts);
             }
           }
         }

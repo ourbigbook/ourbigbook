@@ -913,7 +913,7 @@ function git_ls_files(input_path) {
 /**
  * @return {String} full Git SHA of the source.
  */
-function git_sha(input_path, srcBranch) {
+function gitSha(input_path, srcBranch) {
   const args = ['-C', input_path, 'log', '-n1', '--pretty=%H'];
   if (srcBranch !== undefined) {
     args.push(srcBranch);
@@ -1427,7 +1427,7 @@ if (cli.helpMacros) {
 
   if (inputPath !== undefined) {
     try {
-      ourbigbook_options.template_vars.git_sha = git_sha(input_dir);
+      ourbigbook_options.template_vars.git_sha = gitSha(input_dir);
     } catch(error) {
       // Not in a git repo.
     }
@@ -1562,6 +1562,7 @@ if (cli.helpMacros) {
   // CLI options
   const cmdOptions = {
     dry_run: cli.dryRun,
+    env_extra: {},
     throwOnError: true,
   }
   const cmd_options_no_dry = Object.assign({}, cmdOptions)
@@ -2199,13 +2200,13 @@ if (cli.helpMacros) {
           fs.mkdirSync(publishDir, { recursive: true });
           if (cli.publishCommit !== undefined) {
             cmdGetStdout('git', ['-C', inputPathCwd, 'add', '-u'], cmdOptions);
-            cmdGetStdout( 'git', [ '-C', inputPathCwd, 'commit', '-m', cli.publishCommit ], cmdOptions);
+            cmdGetStdout( 'git', ['-C', inputPathCwd, 'commit', '-m', cli.publishCommit], cmdOptions);
           }
-          source_commit = git_sha(inputPath, srcBranch);
+          sourceCommit = gitSha(inputPath, srcBranch);
           if (fs.existsSync(publish_git_dir)) {
             cmdGetStdout('git', ['-C', publishDirCwd, 'checkout', '--', '.'], cmd_options_no_dry);
             cmdGetStdout('git', ['-C', publishDirCwd, 'fetch'], cmd_options_no_dry);
-            cmdGetStdout('git', ['-C', publishDirCwd, 'checkout', source_commit], cmd_options_no_dry);
+            cmdGetStdout('git', ['-C', publishDirCwd, 'checkout', sourceCommit], cmd_options_no_dry);
             cmdGetStdout('git', ['-C', publishDirCwd, 'submodule', 'update', '--init'], cmd_options_no_dry);
             cmdGetStdout('git', ['-C', publishDirCwd, 'clean', '-xdf'], cmd_options_no_dry);
           } else {
@@ -2343,17 +2344,29 @@ if (cli.helpMacros) {
           if (publish_uses_git) {
             // Commit and push.
             cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'add', '.'], cmdOptions);
-            const args = ['-C', publishOutPublishDirCwd, 'commit', '-m', source_commit]
+            const args = ['-C', publishOutPublishDirCwd, 'commit', '-m', sourceCommit]
             if (git_has_commit(publishOutPublishDir)) {
               args.push('--amend')
             }
-            let commit_cmd_options = cmdOptions
+            const commitCmdOptions = Object.assign({}, cmdOptions)
+            const name = cmdGetStdout('git', ['-C', inputPath, 'config', '--get', 'user.name'], cmdOptions)
+            const email = cmdGetStdout('git', ['-C', inputPath, 'config', '--get', 'user.email'], cmdOptions)
+            commitCmdOptions.env_extra = Object.assign(
+              {},
+              commitCmdOptions.env_extra,
+              {
+                GIT_COMMITTER_EMAIL: email,
+                GIT_COMMITTER_NAME: name,
+                GIT_AUTHOR_EMAIL: email,
+                GIT_AUTHOR_NAME: name,
+              },
+            )
+            args.push(...['--author', `${name} <${email}>`])
             if (ourbigbook_json.publishCommitDate) {
               args.push(...['--date', ourbigbook_json.publishCommitDate])
-              commit_cmd_options = Object.assign({}, cmdOptions)
-              commit_cmd_options.env_extra = { GIT_COMMITTER_DATE: ourbigbook_json.publishCommitDate }
+              Object.assign(commitCmdOptions.env_extra, { GIT_COMMITTER_DATE: ourbigbook_json.publishCommitDate })
             }
-            cmdGetStdout('git', args, commit_cmd_options);
+            cmdGetStdout('git', args, commitCmdOptions);
             if (!cli.dryRunPush) {
               cmdGetStdout('git', ['-C', publishOutPublishDirCwd, 'push', '-f', 'origin', `${publishBranch}:${publishBranch}`], cmdOptions);
               // Mark the commit with the `published` branch to make it easier to find what was last published.

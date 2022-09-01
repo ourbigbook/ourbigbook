@@ -2217,6 +2217,9 @@ So for example, the following automatic IDs would be generated: <table Examples 
 
 For <the toplevel header>[the toplevel header], its ID is derived from the basename of the OurBigBook file without extension instead of from the `title` argument.
 
+TODO:
+* maybe we should also remove some or all non-ASCII punctuation. All can be done with `\\p{IsPunctuation}`: https://stackoverflow.com/questions/13925454/check-if-string-is-a-punctuation-character but we need to check that we really want to remove all of them.
+
 = ID target from title
 {c}
 {parent=H synonym argument}
@@ -7087,6 +7090,14 @@ One notable effect is that it converts variants of ASCII letters to ASCII letter
 This operation is kind of a superset of Unicode normalization acting only on Latin-like characters, where Unicode basically only removes things like diacritics.
 
 OurBigBook normalization on the other also does other natural transformations that Unicode does not do, e.g. `æ` to `ae` as encoded by `deburr` and further custom replacements.
+
+TODO `lodash.deburr`:
+* only deals with Unicode blocks "https://en.wikipedia.org/wiki/Latin-1_Supplement[Latin-1 Supplement]" and "https://en.wikipedia.org/wiki/Latin_Extended-B[Latin Extended-A]", notably missing https://en.wikipedia.org/wiki/Latin_Extended-B[Latin Extended-B], https://en.wikipedia.org/wiki/Latin_Extended-C[C] and https://en.wikipedia.org/wiki/Latin_Extended-D[D], which contain some important characters. Pull requests have been ignored:
+  * https://github.com/lodash/lodash/issues/4530
+  * https://github.com/lodash/lodash/pull/5491
+  so maybe we should just code our own on top.
+* misses some candidates in https://en.wikipedia.org/wiki/Letterlike_Symbols[letterlike symbols]
+* https://en.wikipedia.org/wiki/Mathematical_operators_and_symbols_in_Unicode#Mathematical_Operators_block[mathematical operators block]
 
 Bibliography:
 * https://stackoverflow.com/questions/990904/remove-accents-diacritics-in-a-string-in-javascript

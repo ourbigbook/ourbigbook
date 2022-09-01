@@ -150,7 +150,7 @@ The following sections cover different ways to use tools from the OurBigBook:
       * locally, a link `\x[not-readme]` would render as `<a href="not-readme.html">` and `not-readme.bigb` produces `not-readme.html`
       * when publishing, `\x[not-readme]` would render as `<a  href="not-readme">` and `not-readme.bigb` also produces `not-readme.html`, which the server converts to just `http://my-website.com/not-readme`
   * cross file configuration files to factor out common page parts like headers, footers and other metadata, e.g.:
-    * `main.liquid.html`: https://github.com/Shopify/liquid[Liquid template] used for all pages, see example at: <play with the template>{full}
+    * `ourbigbook.liquid.html`: https://github.com/Shopify/liquid[Liquid template] used for all pages, see example at: <play with the template>{full}
     * `main.scss`: CSS stylesheet generated from https://sass-lang.com/[SASS] input, see example at: <play with the template>{full}
     * `ourbigbook.tex`: global LaTeX math definitions, e.g.:
       ``
@@ -5559,16 +5559,12 @@ npx ourbigbook --publish
 ``
 
 The following files of the template control the global style of the output, and you are free to edit them:
-* `main.liquid.html`: global HTML template in https://shopify.github.io/liquid/[Liquid format]. Available variables are documented at <--template>, and it is being selected in that repository with :
-  ``
-  "template": "main.liquid.html"
-  ``
-  in the <ourbigbook.json> configuration file.
+* `ourbigbook.liquid.html`: global HTML template in https://shopify.github.io/liquid/[Liquid format]. Available variables are documented at <--template>{full}
 * `main.scss`: https://sass-lang.com/[Sass] file that gets converted to raw CSS `main.css` by `npx ourbigbook .`.
 
   Sass is just much more convenient to write than raw CSS.
 
-  That file gets included into the global HTML template inside `main.liquid.html` at:
+  That file gets included into the global HTML template inside `ourbigbook.liquid.html` at:
   ``
   <link rel="stylesheet" href="{{ root_relpath }}main.css">
   ``
@@ -6658,15 +6654,11 @@ Cannot be used when converting a directory.
 
 Select a custom https://github.com/harttle/liquidjs[Liquid template] file for the output.
 
-The recommended file name for this file is:
-``
-main.liquid.html
-``
-which is already ignored by default from the published output.
+If not given, this option defaults to the value of <ourbigbook.json/template>, which if not given defaults to `ourbigbook.liquid.html`.
 
-This repository has a sample `main.liquid.html` at: \a[main.liquid.html].
+The repository of this documentation for example has a sample `ourbigbook.liquid.html` at: \a[ourbigbook.liquid.html].
 
-If not given, the default template at one point was:
+If no template is present, the default template at one point was:
 ``
 <!doctype html>
 <html lang=en>
@@ -7276,7 +7268,7 @@ Advantages of `outputOutOfTree=true`:
 * if you want to track several `.html` source files in-tree, you don't need to add an exception to each of of them on the `.gitignore` as:
   ``
   *.html
-  !/main.liquid.html
+  !/ourbigbook.liquid.html
   ``
 Disadvantages:
 * you have to type more to open each output file on the terminal
@@ -7364,6 +7356,17 @@ which produces a file in the output called `cirodown.html` that redirects to `ou
 In this case, `cirodown` and `ourbigbook` don't have to be any regular IDs present in the database, those strings are just used directly.
 
 TODO ideally we should check for conflicts with regular output from split headers IDs or their synonyms. But lazy.
+
+= `template`
+{parent=ourbigbook.json}
+
+Select the template Liquid file to use.
+
+Serves as the default for the <--template>.
+
+If this option is not given, and if a file `ourbigbook.liquid.html` exists in the project, then that file is used.
+
+If `ourbigbook.liquid.html` exists but you don't want to use it, set the option to `null` and it won't be used.
 
 = `toSplitHeaders`
 {parent=ourbigbook.json}
@@ -10252,7 +10255,7 @@ which generates the final CSS file:
 main.css
 ``
 
-You then need to explicitly include that `main.css` file in your <--template>. For example, our \a[main.liquid.html] contains a line:
+You then need to explicitly include that `main.css` file in your <--template>. For example, our \a[ourbigbook.liquid.html] contains a line:
 ``
 <link rel="stylesheet" type="text/css" href="{{ root_relpath }}main.css">
 ``

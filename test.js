@@ -6385,6 +6385,41 @@ assert_lib('toc: table of contents respects numbered=0 of included headers',
     },
   },
 );
+assert_lib('toc: json: table of contents respects tocMaxCrossSource',
+  {
+    convert_dir: true,
+    filesystem: {
+      'notindex.bigb': `= Notindex h1
+
+== Notindex h2
+
+\\Include[notindex2]
+
+=== Notindex h3
+
+`,
+      'notindex2.bigb': `= Notindex2
+{numbered=0}
+
+== Notindex2 h2
+
+=== Notindex2 h3
+
+==== Notindex2 h4
+
+===== Notindex2 h5
+`,
+    },
+    assert_xpath: {
+      'notindex.html': [
+        "//*[@id='_toc']//x:a[@href='#notindex-h2' and text()='1. Notindex h2']",
+        //"//*[@id='_toc']//x:a[@href='#notindex-h2' and text()='2. Notindex h2']",
+        //"//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
+        //"//*[@id='_toc']//x:a[@href='notindex2.html' and text()='1.1. Notindex h3']",
+      ],//
+    },
+  },
+);
 assert_lib('toc: table of contents include placeholder header has no number when under numbered=0',
   {
     convert_dir: true,
@@ -9536,7 +9571,7 @@ assert_cli(
 );
 
 assert_cli(
-  'template: root_relpath and root_path in main.liquid.html work',
+  'template: root_relpath and root_path in ourbigbook.liquid.html work',
   {
     args: ['-S', '.'],
     filesystem: {
@@ -9551,11 +9586,9 @@ assert_cli(
 
 === h3
 `,
-      'ourbigbook.json': `{
-  "template": "main.liquid.html"
-}
+      'ourbigbook.json': `{}
 `,
-      'main.liquid.html': `<!doctype html>
+      'ourbigbook.liquid.html': `<!doctype html>
 <html lang=en>
 <head>
 <meta charset=utf-8>
@@ -9620,11 +9653,9 @@ assert_cli(
 
 == h2
 `,
-      'ourbigbook.json': `{
-  "template": "main.liquid.html"
-}
+      'ourbigbook.json': `{}
 `,
-      'main.liquid.html': `<!doctype html>
+      'ourbigbook.liquid.html': `<!doctype html>
 <html lang=en>
 <head>
 <meta charset=utf-8>
@@ -9675,11 +9706,9 @@ assert_cli(
     filesystem: {
       'subdir/notindex.bigb': `= Notindex
 `,
-      'ourbigbook.json': `{
-  "template": "main.liquid.html"
-}
+      'ourbigbook.json': `{}
 `,
-      'main.liquid.html': `<!doctype html>
+      'ourbigbook.liquid.html': `<!doctype html>
 <html lang=en>
 <head>
 <meta charset=utf-8>
@@ -9702,7 +9731,58 @@ assert_cli(
       ],
     }
   }
-);
+)
+assert_cli(
+  'template: a custom template can be selected from ourbigbook.json',
+  {
+    args: ['.'],
+    filesystem: {
+      'subdir/notindex.bigb': `= Notindex
+`,
+      'ourbigbook.json': `{
+  "template": "custom.liquid.html"
+}
+`,
+      'custom.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+</head>
+<body>
+<p>asdf</p>
+</body>
+</html>
+`
+    },
+    assert_xpath: {
+      'out/html/subdir/notindex.html': [
+        "//x:p[text()='asdf']",
+      ],
+    }
+  }
+)
+assert_cli(
+  'template: null ignores template file',
+  {
+    args: ['.'],
+    filesystem: {
+      'notindex.bigb': `= Notindex
+
+asdf
+`,
+      'ourbigbook.json': `{
+  "template": null
+}
+`,
+      'ourbigbook.liquid.html': `asdf`
+    },
+    assert_xpath: {
+      'out/html/notindex.html': [
+        "//x:div[@class='p' and text()='asdf']",
+      ],
+    }
+  }
+)
 
 assert_cli(
   "multiple incoming child and parent links don't blow up",

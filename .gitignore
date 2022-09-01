@@ -1,6 +1,6 @@
 *.css
 *.html
-!/main.liquid.html
+!/ourbigbook.liquid.html
 .sass-cache
 node_modules
 /out

@@ -24,6 +24,7 @@ const { articleHash, WebApi, read_include } = require('ourbigbook/web_api');
 const { trace } = require('console');
 const { execPath } = require('process');
 
+const DEFAULT_TEMPLATE_BASENAME = 'ourbigbook.liquid.html';
 const OURBIGBOOK_TEX_BASENAME = 'ourbigbook.tex';
 const LOG_OPTIONS = new Set([
   'ast',
@@ -619,7 +620,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
         if (is_directory) {
           // TODO move to render https://docs.ourbigbook.com/todo/remove-synthetic-asts
           // Not asts, but source code generation here. Even worse! We did it like this to be
-          // able to more easily reuse the main.liquid.html template and style.
+          // able to more easily reuse the ourbigbook.liquid.html template and style.
           //const title = `Directory: ${input_path_relative_to_ourbigbook_json}`
           //const arr = [`<!doctype html><html lang=en><head><meta charset=utf-8><title>${title}</title></head><body><h1>${title}</h1><ul>`]
           //function push_li(name, isdir) {
@@ -1307,6 +1308,12 @@ if (cli.helpMacros) {
     }
     ourbigbook_json.h.splitDefault = true
   }
+  if (
+    fs.existsSync(DEFAULT_TEMPLATE_BASENAME) &&
+    !('template' in ourbigbook_json)
+  ) {
+    ourbigbook_json.template = DEFAULT_TEMPLATE_BASENAME
+  }
 
   let split_headers, publish_uses_git;
   const publish_create_files = {}
@@ -1408,7 +1415,7 @@ if (cli.helpMacros) {
 
   if (cli.template !== undefined) {
     template_path = cli.template;
-  } else if ('template' in ourbigbook_json) {
+  } else if ('template' in ourbigbook_json && ourbigbook_json.template !== null) {
     template_path = path.join(ourbigbook_json_dir, ourbigbook_json.template);
   }
   if (template_path === undefined) {
@@ -1482,12 +1489,11 @@ if (cli.helpMacros) {
       version: package_json.version,
     });
     if (multifile) {
-      fs.copyFileSync(path.join(ourbigbook_nodejs.PACKAGE_PATH, 'main.liquid.html'),
-        path.join(outdir, 'main.liquid.html'));
+      fs.copyFileSync(path.join(ourbigbook_nodejs.PACKAGE_PATH, DEFAULT_TEMPLATE_BASENAME),
+        path.join(outdir, DEFAULT_TEMPLATE_BASENAME));
       fs.copyFileSync(path.join(ourbigbook_nodejs.PACKAGE_PATH, 'main.scss'),
         path.join(outdir, 'main.scss'));
       fs.copyFileSync(ourbigbook_nodejs.LOGO_PATH, path.join(outdir, ourbigbook_nodejs.LOGO_BASENAME));
-      new_ourbigbook_json.template = 'main.liquid.html';
     }
 
     if (new_ourbigbook_json !== {}) {

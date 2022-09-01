@@ -3303,6 +3303,7 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
       article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
       ;({data, status} = await createOrUpdateArticleApi(test, article, { updateNestedSetIndex: false }))
       assertStatus(status, data)
+      assert.strictEqual(data.nestedSetNeedsUpdate, true)
 
       await assertNestedSets(sequelize, [
         { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/mathematics' },
@@ -3312,6 +3313,7 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
       article = createArticleArg({ i: 0, titleSource: 'Calculus' })
       ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics', updateNestedSetIndex: false }))
       assertStatus(status, data)
+      assert.strictEqual(data.nestedSetNeedsUpdate, true)
 
       await assertNestedSets(sequelize, [
         { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/calculus' },
@@ -3332,8 +3334,8 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
 
       article = createArticleArg({ i: 0, titleSource: 'Calculus' })
       ;({data, status} = await createOrUpdateArticleApi(test, article, { updateNestedSetIndex: false }))
-      //;({data, status} = await createOrUpdateArticleApi(test, article))
       assertStatus(status, data)
+      assert.strictEqual(data.nestedSetNeedsUpdate, true)
 
       await assertNestedSets(sequelize, [
         { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
@@ -3349,6 +3351,26 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
         { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/calculus' },
         { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/mathematics' },
       ])
+
+    // nestedSetNeedsUpdate is false when there are no tree changes.
+    article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: 'Hacked' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+    assert.strictEqual(data.nestedSetNeedsUpdate, false)
+
+    // nestedSetNeedsUpdate is true when there are tree changes and render=false.
+    article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: 'Hacked' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
+    assertStatus(status, data)
+    assert.strictEqual(data.nestedSetNeedsUpdate, true)
+
+    // nestedSetNeedsUpdate is false when there are no tree changes and render=false.
+    // TODO: false would be better here. But would require a bit of refactoring, and wouldn't
+    // help much on the CLI, so lazy now. For now it always returns "true" when render=false.
+    article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: 'Hacked 2' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
+    assertStatus(status, data)
+    assert.strictEqual(data.nestedSetNeedsUpdate, true)
   })
 })
 

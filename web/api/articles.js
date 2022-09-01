@@ -272,6 +272,7 @@ async function createOrUpdateArticle(req, res, opts) {
   }
 
   // Render.
+  let nestedSetNeedsUpdate
   if (
     render ||
     sourceNewerThanRender
@@ -290,7 +291,7 @@ async function createOrUpdateArticle(req, res, opts) {
       // the previous value is not kept, since undefined is the only way to indicate parent.
       { defaultValue: undefined }
     )
-    articles = (await convert.convertArticle({
+    const ret = await convert.convertArticle({
       author: loggedInUser,
       bodySource,
       forceNew,
@@ -303,10 +304,13 @@ async function createOrUpdateArticle(req, res, opts) {
       render,
       titleSource,
       updateNestedSetIndex,
-    })).articles
+    })
+    articles = ret.articles
+    nestedSetNeedsUpdate = ret.nestedSetNeedsUpdate
   }
   return res.json({
     articles: await Promise.all(articles.map(article => article.toJson(loggedInUser))),
+    nestedSetNeedsUpdate,
     // bool: is the source newer than the render output? Could happen if we
     // just extracted IDs but didn't render later on for some reason, e.g.
     // ourbigbook --web crashed half way through ID extraction. false means

@@ -3111,6 +3111,9 @@ function convert_init_context(options={}, extra_returns={}) {
       if (!('web' in ourbigbook_json)) { ourbigbook_json.web = {}; }
       {
         const web = ourbigbook_json.web
+        if (!('host' in web)) {
+          web.host = OURBIGBOOK_JSON_DEFAULT.web.host
+        }
         if (!('linkFromHeaderMeta' in web)) { web.linkFromHeaderMeta = false; }
         if (!('username' in web)) { web.username = undefined; }
         if (web.linkFromHeaderMeta && web.username === undefined) {
@@ -3417,7 +3420,8 @@ function convert_init_context(options={}, extra_returns={}) {
     // true: force to split headers, e.g. split links
     // false: force to nosplit headers, e.g. nosplit links
     to_split_headers: undefined,
-  };
+    webUrl: `https://${ourbigbook_json.web.host}/`,
+  }
   perf_print(context, 'start_convert')
   return context;
 }
@@ -6985,10 +6989,10 @@ function x_get_target_ast_base({
     context.options.x_leading_at_to_web &&
     target_id[0] === AT_MENTION_CHAR
   ) {
-    return [html_attr('href', WEB_URL + target_id.substr(1)), target_id];
+    return [html_attr('href', context.webUrl + target_id.substr(1)), target_id];
   }
-  if (target_id[0] === HASHTAG_CHAR) {
-    return [html_attr('href', WEB_URL + 'go/topic/' + target_id.substr(1)), target_id];
+  if (target_id[0] === TOPIC_CHAR) {
+    return [html_attr('href', context.webUrl + 'go/topic/' + target_id.substr(1)), target_id];
   }
   let target_id_eff
   if (do_magic_title_to_id) {
@@ -7559,14 +7563,10 @@ const ANCESTORS_MAX = 6
 exports.ANCESTORS_MAX = ANCESTORS_MAX
 const AT_MENTION_CHAR = '@';
 exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
-const HASHTAG_CHAR = '#';
-const WEB_HOST = 'ourbigbook.com';
-exports.WEB_HOST = WEB_HOST
-const WEB_URL = `https://${WEB_HOST}/`;
-exports.WEB_URL = WEB_URL;
+const TOPIC_CHAR = '#';
+const WEB_HOST_DEFAULT = 'ourbigbook.com';
 const WEB_API_PATH = 'api';
 exports.WEB_API_PATH = WEB_API_PATH;
-const WEB_API_URL = `${WEB_URL}${WEB_API_PATH}`
 const PARAGRAPH_SEP = '\n\n';
 exports.PARAGRAPH_SEP = PARAGRAPH_SEP;
 const REFS_TABLE_PARENT = 'PARENT';
@@ -7637,10 +7637,12 @@ exports.OURBIGBOOK_JSON_BASENAME = OURBIGBOOK_JSON_BASENAME
 const OURBIGBOOK_JSON_DEFAULT = {
   htmlXExtension: true,
   web: {
+    domain: 'ourbigbook.com',
     link: false,
     username: undefined,
   }
 }
+exports.OURBIGBOOK_JSON_DEFAULT = OURBIGBOOK_JSON_DEFAULT
 const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
 exports.OUTPUT_FORMAT_OURBIGBOOK = OUTPUT_FORMAT_OURBIGBOOK
 const PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
@@ -8986,7 +8988,7 @@ const OUTPUT_FORMATS_LIST = [
             } else {
               p = `${URL_SEP}${ast.id}`
             }
-            ourbigbookLink = `<a href="${WEB_URL}${context.options.ourbigbook_json.web.username}${p}"><img src="${logoPath}" class="logo" /> OurBigBook.com</a>`;
+            ourbigbookLink = `<a href="${context.webUrl}${context.options.ourbigbook_json.web.username}${p}"><img src="${logoPath}" class="logo" /> OurBigBook.com</a>`;
           }
 
           // Calculate file_link_html

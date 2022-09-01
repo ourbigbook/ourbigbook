@@ -7509,6 +7509,14 @@ If this option is set, then nosplit/split header metadata links are removed, sin
 
 This dict contains options related to interaction between <OurBigBook CLI> and <OurBigBook Web> deployments.
 
+= `host`
+{parent=`web`}
+
+Select the default host used for
+* <web> publishing. Serves as the default domain for <--web-url>
+* <static website> where it is used, e.g. <linkFromHeaderMeta>
+Defaults to `ourbigbook.com`, the <OurBigBook.com>[reference Web instance].
+
 = `linkFromHeaderMeta`
 {parent=`web`}
 

@@ -9146,6 +9146,30 @@ assert_cli(
   }
 )
 assert_cli(
+  'json: web.host changes web.linkFromHeaderMeta host',
+  {
+    args: ['.'],
+    filesystem: {
+      'ourbigbook.json': `{
+  "web": {
+    "linkFromHeaderMeta": true,
+    "host": "asdf.com",
+    "username": "myusername"
+  }
+}
+`,
+      'README.bigb': `= Index
+`,
+    },
+    pre_exec: publish_pre_exec,
+    assert_xpath: {
+      'out/html/index.html': [
+        "//x:div[contains(@class, \"h \") and @id='index']//x:a[@href='https://asdf.com/myusername' and text()=' OurBigBook.com']",
+      ],
+    },
+  }
+)
+assert_cli(
   'json: web.linkFromHeaderMeta = true without publish',
   {
     args: ['--split-headers', '.'],

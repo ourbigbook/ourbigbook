@@ -16,6 +16,7 @@ $toplevel-horizontal-padding-mobile: 5px;
 // Without this, hover on ToC makes ToC move around. Maybe we should scope to ToC only?
 // TODO find proper way to do it without this random value.
 $icon-font-size: .95em;
+$sep-width: 1ch;
 
 // Wraps "floating elements" such as images, so ensure they will not create a global scrollbar.
 // Related issue: https://docs.ourbigbook.com/todo/vertical-scrollbar-when-image-title-contains-math-underscore
@@ -428,6 +429,9 @@ ol, ul {
         span.not-arrow {
           span.hover-metadata {
             @include hidden;
+            > a {
+              margin-left: $sep-width;
+            }
           }
         }
         // Take up space on LIs that don't have an arrow.
@@ -485,8 +489,11 @@ ol, ul {
     font-size: $header-font-size;
     font-weight: bold;
   }
+  .metrics {
+    padding-left: $sep-width;
+  }
   @media only screen and (max-width: $max-mobile-width) {
-    .metrics-sep {
+    .metrics {
       display: none;
     }
   }
@@ -511,7 +518,7 @@ ol, ul {
 
 span.sep {
   display: inline-block;
-  width: 1ch;
+  width: $sep-width;
 }
 
 sup.ref {

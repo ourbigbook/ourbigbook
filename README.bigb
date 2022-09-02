@@ -1020,11 +1020,7 @@ don't becomes links however. But this one does:
 http://a
 ``
 
-Insane links end when either the end of the document or one of the following characters is found:
-* space ` `
-* newline `\n`
-* open or close square bracket `[` or `]`
-* open or close curly braces `{` or `}`
+Insane links end when any <insane link termination character> is found.
 
 As a consequence, to have an insane link followed immediately by a punctuation like a period you should use an empty argument as in:
 \OurBigBookExample[[Check out this website: http://example.com[].]]
@@ -1044,6 +1040,16 @@ This magic can be observed with <--help-macros> by seeing that the `href` argume
 ``
 "elide_link_only": true,
 ``
+
+= Insane link termination character
+{parent=Insane link parsing rules}
+
+The following characters are the "insane link termination characters":
+* space ` `
+* newline `\n`
+* open or close square bracket `[` or `]`
+* open or close curly braces `{` or `}`
+<Insane cross references> and <insane topic links with a single word> terminate if any of these characters are found, see also: <insane link parsing rules>{full}.
 
 = Bold
 {parent=Macro}
@@ -2464,7 +2470,7 @@ You can only link to subsections of wiki pages with explicit links as in:
 
 ``
 = History of Tiananmen Square
-{wiki=Tiananmen_Square#History}
+{{wiki=Tiananmen_Square#History}}
 ``
 
 which looks like:
@@ -2472,7 +2478,21 @@ which looks like:
 = History of Tiananmen Square
 {id=wiki-explicit-subsection}
 {parent=H wiki argument}
-{wiki=Tiananmen_Square#History}
+{{wiki=Tiananmen_Square#History}}
+
+Note that in this case, you either need a <literal argument> `{{}}` or to explicitly escape the `#` character as in:
+``
+= History of Tiananmen Square
+{wiki=Tiananmen_Square\#History}
+``
+to avoid the creation of an <insane topic link with a single word>.
+
+Also note that Wikipedia subsections are not completely stable, so generally you would rather want to link to a permalink with a full URL as in:
+``
+= Artificial general intelligence
+{wiki=https://en.wikipedia.org/w/index.php?title=Artificial_general_intelligence&oldid=1192191193#Tests_for_human-level_AGI}
+``
+Note that in this case escaping the `#` is not necessary because it is part of the <insane> <link> that starts at `https://`.
 
 = Header metadata section
 {parent=Header}
@@ -4682,26 +4702,69 @@ the link treated magically as follows:
 
 There may be some cases where you might still want to use <cross reference title inflection> however, see: <inflection vs magic>{full}.
 
-= Topic link
-{parent=x `magic` argument}
-{title2=`<#Black holes>`}
+= Insane magic link
+{parent=`\x` `magic` argument}
+{tag=Insane macro shortcut}
 
-If the target of a <magic link> starts with a hash sign `#`, then it is called a "topic link" and gets treated specially, pointing to a <OurBigBook Web topic>.
+A <magic link> can be created more succinctly by surrounding the link with "angle brackets" (`<>`), e.g.:
+``
+<Partial derivative>
+``
+is equivalent to:
+``
+\x[Partial derivative]{magic}
+``
+
+= `\x` `parent` argument
+{parent=x arguments}
+
+The `parent` argument is exactly like the <\x child argument>, but it reverses the direction of the parent/child relation.
+
+= `\x` `ref` argument
+{parent=x arguments}
+
+The `ref` argument of `\x` marks the link as reference, e.g.:
+``
+Trump said this and that.\x[donald-trump-access-hollywood-tape]{ref}
+
+= Donald Trump Access Hollywood tape
+``
+renders something like:
+``
+Trump said this and that.<a href="donald-trump-access-hollywood-tape">*</a>
+``
+
+This could currently be replicated without `ref` by just using:
+``
+Trump said this and that.\x[donald-trump-access-hollywood-tape][*]
+``
+but later on we might add more precise reference fields like the page of a book or date fetched as Wikipedia supports.
+
+Implemented at: https://github.com/ourbigbook/ourbigbook/issues/137
+
+= `\x` `topic` argument
+{parent=x arguments}
+{title2=`<#Black holes>`}
+{tag=Boolean argument}
+
+= Topic link
+{synonym}
+{title2}
+
+If true, then the target of a this link is called a "topic link" and gets treated specially, pointing to an external <OurBigBook Web topic> rather than a header defined in the current project.
 
 For example, when rendering a <static website>, a link such as:
 ``
-<#Albert Einstein>
-``
-which is equivalent to:
-``
-\x[#Albert Einstein]{magic}
+\x[Albert Einstein]{topic}
 ``
 would produce output similar to:
 ``
 \a[https://ourbigbook.com/go/topic/john-smith][John Smith]
 ``
 e.g.:
-\OurBigBookExample[[<#Albert Einstein>]]
+\OurBigBookExample[[
+\x[Albert Einstein]{topic}
+]]
 
 This allows static website creators to easily link to topics they might not have already written about which others may have covered.
 
@@ -4710,41 +4773,57 @@ The <OurBigBook Web> instance linked to can be configured with <ourbigbook.json/
 Those links also work on <OurBigBook Web> rendering of course, and point to the current Web instance.
 
 = Insane topic link
-{parnt=Ropic link}
+{parent=`\x` `topic` argument}
+{tag=Insane macro shortcut}
+{title2=`<#Albert Einstein>`}
+
+If an <insane magic link> starts with a hash sign (`#`), then it is converted to a <topic link> instead of a <magic link>.
+
+For example:
+\OurBigBookExample[[
+<#Albert Einstein>
+]]
+is equivalent to:
+``
+\x[Albert Einstein]{topic}
+``
+
+= Insane topic link with a single word
+{parent=Insane topic link}
+{tag=Insane macro shortcut}
 {title2=`#star`}
 
-If the topic contains just a single word without spaces, you can also just use the insane hash-only shortcut without the angle brackets `<>`, e.g.:
-``
+= Insane topic links with a single word
+{synonym}
+
+If an <insane topic link> is made up of a single word then it can be written in the following even succincter notation, without the need for angle brackets:
+\OurBigBookExample[[
 I like #dogs
-``
+]]
 is equivalent to:
 ``
 I like <#dogs>
 ``
-e.g.:
-\OurBigBookExample[[I like #dogs]]
 
-Word separation is similar to <Insane link parsing rules>, i.e.:
+Word separation is defined analogously to <Insane link parsing rules>, i.e.:
 * `#` can start from anywhere, including the middle of words, e.g.:
   \OurBigBookExample[[
   abc#mytopic
   ]]
-  would produce a link immediately preceeded by the characters `abc`.
-* `#` ends at spaces, newlines, or at the end of <macro arguments>. Anything else gets included in the link, e.g. punctuation characters, etc.
-
-  Topic is `mytopic`:
-  \OurBigBookExample[[
-  #mytopic is cool
-  ]]
-
-  Topic is `mytopic,` with the comma:
-  \OurBigBookExample[[
-  #mytopic, is cool
-  ]]
-  So you likely would have had instead used the sane syntax in this case with `<#mytopic>,` to avoid that.
+  would produce a link immediately preceded by the characters `abc`.
+* `#` ends at any <insane link termination character>, e.g.:
+  * Topic is `mytopic`:
+    \OurBigBookExample[[
+    #mytopic is cool
+    ]]
+  * Topic is `mytopic,` with the comma:
+    \OurBigBookExample[[
+    #mytopic, is cool
+    ]]
+    So you likely would have had instead used the sane syntax in this case with `<#mytopic>, is cool` to avoid that.
 
 = Topic link pluralization
-{parent=Topic link}
+{parent=`\x` `topic` argument}
 
 Unlike local links, it is not possible to automatically determine the exact pluralization of a <topic link> because:
 * it would require communicating with the <OurBigBook Web> API, which we could in principle do, but we would rather not have static builds depend on Web instances
@@ -4774,33 +4853,6 @@ Therefore, it is up to authors to specifically specify the desired pluralization
 Pluralizes or singularizes the last word of the target title.
 
 For more details, see: <cross reference title inflection>{full}.
-
-= `\x` `parent` argument
-{parent=x arguments}
-
-The `parent` argument is exactly like the <\x child argument>, but it reverses the direction of the parent/child relation.
-
-= `\x` `ref` argument
-{parent=x arguments}
-
-The `ref` argument of `\x` marks the link as reference, e.g.:
-``
-Trump said this and that.\x[donald-trump-access-hollywood-tape]{ref}
-
-= Donald Trump Access Hollywood tape
-``
-renders something like:
-``
-Trump said this and that.<a href="donald-trump-access-hollywood-tape">*</a>
-``
-
-This could currently be replicated without `ref` by just using:
-``
-Trump said this and that.\x[donald-trump-access-hollywood-tape][*]
-``
-but later on we might add more precise reference fields like the page of a book or date fetched as Wikipedia supports.
-
-Implemented at: https://github.com/ourbigbook/ourbigbook/issues/137
 
 = OurBigBook Markup syntax
 {c}
@@ -7873,6 +7925,10 @@ This is where OurBigBook comes to your rescue. There are two ways that it can he
 {c}
 {parent=OurBigBook Web user manual}
 
+= OurBigBook Web topic
+{c}
+{synonym}
+
 = Topic
 {synonym}
 
@@ -10798,11 +10854,11 @@ The logo can be seen at: <image Logo of the OurBigBook Project>.
 
 \Image[logo.svg]
 {height=150}
-{title=logo.svg canonical source of the projct logo}
+{title=logo.svg canonical source of the project logo}
 {description=
-Is file was actually manually created, and therefore counts as code and can be tracked on this git repository.
+This file was actually manually created, and therefore counts as code and can be tracked on this git repository.
 
-Since it does not contain text, only geometric primitives, it is fully reproducible, the \a[logo.png] export was created purely for convenience.
+Since it does not contain text, only geometric primitives, this SVG file does not rely on any external system fonts and is fully reproducible.
 }
 
 \Image[logo-transparent.svg]

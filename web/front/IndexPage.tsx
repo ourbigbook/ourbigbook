@@ -153,6 +153,7 @@ function IndexPageHoc({
           <CustomLink
             className="tab-item btn small"
             href={(isIssue && !isHomepage) ? routes.issueNew(issueArticle.slug) : routes.articleNew()}
+            updatePreviousPage={true}
           >
             <NewArticleIcon /> New {pageType === 'articleIssues' ? 'Discussion' : 'Article'}
           </CustomLink>

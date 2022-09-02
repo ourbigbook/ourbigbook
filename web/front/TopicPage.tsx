@@ -65,6 +65,7 @@ export const TopicPage = ({
                 <CustomLink
                   className={`tab-item`}
                   href={routes.articleNew({ title: topic.titleSource })}
+                  updatePreviousPage={true}
                 >
                   <NewArticleIcon /> New Article in Topic
                 </CustomLink>
@@ -88,6 +89,7 @@ export const TopicPage = ({
                 <CustomLink
                   className="btn new"
                   href={routes.articleNew({ 'title': idToTitle(topicId) })}
+                  updatePreviousPage={true}
                 >
                   <NewArticleIcon title={false}/>{' '}Create an article for this topic
                 </CustomLink>

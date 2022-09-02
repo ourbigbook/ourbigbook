@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import { useRouter } from 'next/router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import useSWR from 'swr'
 import useLoggedInUser from 'front/useLoggedInUser'
 
@@ -8,6 +8,7 @@ import { aboutUrl, appName, contactUrl, docsUrl, donateUrl, googleAnalyticsId, i
 import Navbar from 'front/Navbar'
 import { AppContext, AppContextProvider, HelpIcon, logout } from 'front'
 import { webApi } from 'front/api'
+import routes from 'front/routes'
 
 // Css
 // migrating the local ourbigbook to webpack: https://github.com/ourbigbook/ourbigbook/issues/157
@@ -42,6 +43,22 @@ function handleRouteChange(url) {
 }
 
 const MyApp = ({ Component, pageProps }) => {
+  const router = useRouter()
+  const [prevPageNoSignup, setPrevPageNoSignup] = useState({ prev: null, cur: null });
+  function updatePrevPageNoSignup(newCur) {
+    if (newCur !== routes.userNew()) {
+      const newVal = {
+        prev: prevPageNoSignup.cur,
+        cur: newCur,
+      }
+      setPrevPageNoSignup(newVal)
+    }
+  }
+  useEffect(() => {
+      updatePrevPageNoSignup(router?.asPath)
+    },
+    [router?.asPath, setPrevPageNoSignup]
+  )
   if (isProduction) {
     // Google Analytics page switches:
     // https://stackoverflow.com/questions/60411351/how-to-use-google-analytics-with-next-js-app/62552263#62552263
@@ -75,7 +92,7 @@ const MyApp = ({ Component, pageProps }) => {
 
   const isEditor = !!Component.isEditor
   return (
-    <AppContextProvider>
+    <AppContextProvider vals={{ prevPageNoSignup: prevPageNoSignup.prev, updatePrevPageNoSignup }} >
       <MyHead />
       <div className={`toplevel${isEditor ? ' editor' : ''}`}>
         <Navbar {...{ isEditor, scoreDelta }} />

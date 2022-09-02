@@ -93,7 +93,13 @@ const Article = ({
         </>
       }
       {loggedInUser
-        ? <CustomLink className="btn small" href={routes.issueNew(article.slug)}><NewArticleIcon /> New Discussion</CustomLink>
+        ? <CustomLink
+            className="btn small"
+            href={routes.issueNew(article.slug)}
+            updatePreviousPage={true}
+          >
+            <NewArticleIcon /> New Discussion
+          </CustomLink>
         : <SignupOrLogin to="create discussions"/>
       }
     </>

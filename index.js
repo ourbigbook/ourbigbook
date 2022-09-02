@@ -23,13 +23,13 @@ const pluralize = require('pluralize');
 
 // consts used by classes.
 const HEADER_MENU_ITEM_SEP = '<span class="sep"></span>';
-const UNICODE_LINK = '<span class="fa-solid-900">\u{f0c1}</span>';
+const HTML_LINK_MARKER = '<span class="fa-solid-900">\u{f0c1}</span>';
+const HTML_PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
+exports.HTML_PARENT_MARKER = HTML_PARENT_MARKER;
 const NOSPLIT_MARKER_TEXT = 'nosplit'
 exports.NOSPLIT_MARKER_TEXT = NOSPLIT_MARKER_TEXT;
-const NOSPLIT_MARKER = `<span class="fa-solid-900">\u{f111}</span> ${NOSPLIT_MARKER_TEXT}`;
 const SPLIT_MARKER_TEXT = 'split'
 exports.SPLIT_MARKER_TEXT = SPLIT_MARKER_TEXT;
-const SPLIT_MARKER = `<span class="fa-solid-900">\u{f042}</span> ${SPLIT_MARKER_TEXT}`;
 const NEXT_ANCESTOR_MARKER = '<span class="fa-solid-900">\u{f061}</span>';
 const TOC_MARKER_SYMBOL = '<span class="fa-solid-900">\u{f03a}</span>'
 const TOC_MARKER = `${TOC_MARKER_SYMBOL} toc`
@@ -3601,16 +3601,18 @@ function getDescendantCountHtml(context, tree_node, options) {
   const [descendant_count, word_count, descendant_word_count] = getDescendantCount(tree_node);
   let ret;
   let word_count_html = ''
-  const wordIcon = '<span class="fa-regular-400">\u{f075}</span>'
   const words_str = options.long_style ? `words: ` : ''
   if (descendant_word_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
-    word_count_html += `<span title="word count for this article + all descendants">${wordIcon} ${words_str}<span class="word-count-descendant">${formatNumberApprox(descendant_word_count)}</span></span>`
+    // Word Count Recursive
+    word_count_html += `<span class="wcntr" title="word count for this article + all descendants"> ${words_str}<span class="word-count-descendant">${formatNumberApprox(descendant_word_count)}</span></span>`
   }
   if (tree_node.word_count > 0 && context.options.add_test_instrumentation || !options.show_descendant_count) {
-    word_count_html += `<span title="word count for this article">${wordIcon} ${words_str}<span class="word-count">${formatNumberApprox(word_count)}</span></span>`;
+    // Word Count
+    word_count_html += `<span class="wcnt" title="word count for this article">${wordIcon} ${words_str}<span class="word-count">${formatNumberApprox(word_count)}</span></span>`;
   }
   if (descendant_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
-    word_count_html += `<span title="descendant article count"><span class="fa-solid-900">\u{f02d}</span> ${options.long_style ? 'articles: ' : ''}<span class="descendant-count">${formatNumberApprox(descendant_count)}</span></span>`
+    // descendant count
+    word_count_html += `<span class="dcnt" title="descendant article count"> ${options.long_style ? 'articles: ' : ''}<span class="descendant-count">${formatNumberApprox(descendant_count)}</span></span>`
   }
   if (word_count_html !== '') {
     ret = `<span class="metrics">${word_count_html}</span>`;
@@ -3852,11 +3854,11 @@ function htmlAncestorLinks(entries, nAncestors) {
   const ret = []
   let i = 0
   if (nAncestors > ANCESTORS_MAX) {
-    ret.push(`<a ${htmlAttr('href', `#${ANCESTORS_ID}`)}}>${PARENT_MARKER} &nbsp;...</a>`)
+    ret.push(`<a ${htmlAttr('href', `#${ANCESTORS_ID}`)}}>${HTML_PARENT_MARKER} &nbsp;...</a>`)
     i++
   }
   for (const entry of entries) {
-    const marker = i == 0 ? PARENT_MARKER : NEXT_ANCESTOR_MARKER
+    const marker = i == 0 ? HTML_PARENT_MARKER : NEXT_ANCESTOR_MARKER
     ret.push(`<a${entry.href}>${marker} ${entry.content}</a>`)
     i++
   }
@@ -4045,7 +4047,7 @@ function htmlHideHoverLink(id) {
     return '';
   } else {
     let href = htmlAttr('href', htmlEscapeAttr(id));
-    return `<span class="hide-hover"><a${href}>${UNICODE_LINK}</a></span>`;
+    return `<span class="hide-hover"><a${href}>${HTML_LINK_MARKER}</a></span>`;
   }
 }
 
@@ -4211,14 +4213,17 @@ function linkToSplitOpposite(ast, context) {
   if (context.options.ourbigbook_json.toSplitHeaders) {
     return undefined
   } else {
-    let content;
-    let title;
+    let content
+    let title
+    let class_
     if (context.in_split_headers) {
-      content = NOSPLIT_MARKER;
       title = 'view all headers in a single page';
+      content = NOSPLIT_MARKER_TEXT
+      class_ = 'nosplit'
     } else {
-      content = SPLIT_MARKER;
       title = 'view one header per page';
+      class_ = 'split'
+      content = SPLIT_MARKER_TEXT
     }
     let other_context = cloneAndSet(context, 'to_split_headers', !context.in_split_headers);
     let other_href = xHrefAttr(ast, other_context);
@@ -4239,7 +4244,7 @@ function linkToSplitOpposite(ast, context) {
         return undefined
       }
     }
-    return `<a${htmlAttr('title', title)}${other_href}>${content}</a>`;
+    return `<a${htmlAttr('class', class_)}${htmlAttr('title', title)}${other_href}> ${content}</a>`;
   }
 }
 
@@ -6670,13 +6675,13 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
     ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
     let toc_href = htmlAttr('href', '#' + htmlEscapeAttr(my_toc_id));
     // c for current
-    ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('class', 'c')}>${UNICODE_LINK} link</a>`;
+    ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('class', 'c')}> link</a>`;
     if (link_to_split) {
       ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
     }
     if (parent_href) {
       // p for parent
-      ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${htmlAttr('class', 'p')}>${PARENT_MARKER} ${parent_content}</a>`;
+      ret += `${HEADER_MENU_ITEM_SEP}<a${parent_href}${htmlAttr('class', 'p')}> ${parent_content}</a>`;
     }
     if (entry.descendant_count_html) {
       ret += `${entry.descendant_count_html}`
@@ -7723,8 +7728,6 @@ const OURBIGBOOK_JSON_DEFAULT = {
 exports.OURBIGBOOK_JSON_DEFAULT = OURBIGBOOK_JSON_DEFAULT
 const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
 exports.OUTPUT_FORMAT_OURBIGBOOK = OUTPUT_FORMAT_OURBIGBOOK
-const PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
-exports.PARENT_MARKER = PARENT_MARKER;
 const RENDER_TYPE_WEB = 'web'
 exports.RENDER_TYPE_WEB = RENDER_TYPE_WEB
 const OUTPUT_FORMAT_HTML = 'html';
@@ -9174,7 +9177,7 @@ const OUTPUT_FORMATS_LIST = [
             for (const parent_ast of parent_asts) {
               const parent_href = xHrefAttr(parent_ast, context);
               const parent_content = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
-              parent_links.push(`<a${parent_href}${htmlAttr('title', 'parent header')}>${PARENT_MARKER} ${parent_content}</a>`);
+              parent_links.push(`<a${parent_href}${htmlAttr('title', 'parent header')}>${HTML_PARENT_MARKER} ${parent_content}</a>`);
             }
             parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
             if (parent_links) {
@@ -9371,7 +9374,7 @@ const OUTPUT_FORMATS_LIST = [
               const ancestors = context.toplevel_ast.ancestors(context)
               if (ancestors.length !== 0) {
                 // TODO factor this out more with real headers.
-                body += `<div>${htmlHideHoverLink(`#${ANCESTORS_ID}`)}<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${PARENT_MARKER} Ancestors</a></h2></div>`;
+                body += `<div>${htmlHideHoverLink(`#${ANCESTORS_ID}`)}<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${HTML_PARENT_MARKER} Ancestors</a></h2></div>`;
                 const ancestor_id_asts = [];
                 for (const ancestor of ancestors) {
                   //let counts_str;

@@ -5995,6 +5995,8 @@ Some important known limitations:
 * everything file is rebuilt every time, even if it was not modified. To avoid this, we would need to use or reimplement parts of Git, this is the kind of stuff that Git does very well.
 * if there's an error in a later file, the database is still modified by the previous files, i.e. there is no atomicity. A way to improve that would be to upload all files to the server in one go, and let the server convert everything in one transaction. However, this would lead to a very long server action, which would block any other incoming request (I tested, everything is single threaded)
 
+However, all of those are fixable, and in an ideal world, will be fixed. Patches welcome.
+
 = `--web-url`
 {parent=OurBigBook CLI options}
 

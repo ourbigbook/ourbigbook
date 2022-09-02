@@ -67,12 +67,7 @@ router.get('/feed', auth.required, async function(req, res, next) {
 router.post('/', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
-    const [articleCountByLoggedInUser, loggedInUser] = await Promise.all([
-      sequelize.models.File.count({ where: { authorId: req.payload.id } }),
-      sequelize.models.User.findByPk(req.payload.id),
-    ])
-    const err = front.hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, 'articles')
-    if (err) { throw new lib.ValidationError(err, 403) }
+    const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
     return await createOrUpdateArticle(req, res, { forceNew: true })
   } catch(error) {
     next(error);

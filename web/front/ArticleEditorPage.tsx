@@ -245,12 +245,17 @@ export default function ArticleEditorPageHoc({
       await checkTitle(file.titleSource)
     }, [])
     useEffect(() => {
-      if (hasConvertError || titleErrors.length || parentErrors.length) {
-        disableButton(saveButtonElem.current, 'Cannot submit due to errors')
-      } else {
-        enableButton(saveButtonElem.current, true)
+      if (
+        // Can fail on maximum number of articles reached.
+        saveButtonElem.current
+      ) {
+        if (hasConvertError || titleErrors.length || parentErrors.length) {
+          disableButton(saveButtonElem.current, 'Cannot submit due to errors')
+        } else {
+          enableButton(saveButtonElem.current, true)
+        }
       }
-    }, [hasConvertError, titleErrors, parentErrors])
+    }, [hasConvertError, saveButtonElem.current, titleErrors, parentErrors])
     useEffect(() => {
       if (
         ourbigbookEditorElem &&
@@ -369,13 +374,15 @@ export default function ArticleEditorPageHoc({
     }
     useEffect(() => {
       if (
+        // Can fail on maximum number of articles reached.
+        ourbigbookEditorElem.current &&
         // Can fail is user starts editing title quickly after page load before editor had time to load.
         ourbigbookEditorElem.current.ourbigbookEditor
       ) {
         ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
           oldInput => modifyEditorInput(file.titleSource, oldInput))
       }
-    }, [file, editorLoaded])
+    }, [file, editorLoaded, ourbigbookEditorElem.current])
     const handleSubmit = async (e) => {
       if (e) {
         e.preventDefault();

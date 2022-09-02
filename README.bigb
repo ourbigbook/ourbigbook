@@ -9972,8 +9972,11 @@ To run all tests on PostgreSQL as in the <OurBigBook Web>, first setup the Postg
 createdb ourbigbook_cli
 psql -c "CREATE ROLE ourbigbook_user with login password 'a'"
 psql -c 'GRANT ALL PRIVILEGES ON DATABASE ourbigbook_cli TO ourbigbook_user'
+psql -c 'GRANT ALL ON SCHEMA public TO ourbigbook_user'
+psql -c 'GRANT USAGE ON SCHEMA public TO ourbigbook_user'
+psql -c 'ALTER DATABASE ourbigbook_cli OWNER TO ourbigbook_user'
 ``
-and then run with:
+This got really annoying with PostgreSQL 15: https://stackoverflow.com/questions/67276391/why-am-i-getting-a-permission-denied-error-for-schema-public-on-pgadmin-4 And then run with:
 ``
 npm run test-pg
 ``

@@ -288,6 +288,7 @@ nav.h-nav {
     &:before {
       // Downwards Arrow with Tip Rightwards: https://www.compart.com/en/unicode/U+21B3
       content: "\21b3";
+      padding-right: 0.5ch;
     }
     img.logo {
       height: 1em;
@@ -317,7 +318,7 @@ nav.h-nav {
     &.wiki {
       &::before {
         font-family: "fa-brands-400";
-        font-weight: 400;
+        font-weight: bold;
         font-size: $icon-font-size;
         // Wikipedia w https://fontawesome.com/v5/icons/wikipedia-w?f=brands&s=solid
         content: "\f266";
@@ -634,6 +635,9 @@ video {
         @include hide-hover;
         &::before {
           @include link-icon;
+        }
+        @media only screen and (max-width: $max-mobile-width) {
+          visibility: hidden;
         }
       }
       &:hover > :first-child {

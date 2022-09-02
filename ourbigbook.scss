@@ -13,6 +13,9 @@
 $caption-margin-bottom: 7px;
 $p-margin-vert: 14px;
 $toplevel-horizontal-padding-mobile: 5px;
+// Without this, hover on ToC makes ToC move around. Maybe we should scope to ToC only?
+// TODO find proper way to do it without this random value.
+$icon-font-size: .95em;
 
 // Wraps "floating elements" such as images, so ensure they will not create a global scrollbar.
 // Related issue: https://docs.ourbigbook.com/todo/vertical-scrollbar-when-image-title-contains-math-underscore
@@ -98,6 +101,7 @@ a {
     &::before {
       font-family: "fa-solid-900";
       font-weight: 900;
+      font-size: $icon-font-size;
       // adjust https://fontawesome.com/v5/icons/adjust?f=classic&s=solid
       content: "\f042";
     }
@@ -109,6 +113,7 @@ a {
     &::before {
       font-family: "fa-solid-900";
       font-weight: 900;
+      font-size: $icon-font-size;
       // circle https://fontawesome.com/v5/icons/circle?f=classic&s=solid
       content: "\f111";
     }
@@ -125,12 +130,14 @@ span {
   &.wcnt::before, &.wcntr::before {
     font-family: "fa-regular-400";
     font-weight: 400;
+    font-size: $icon-font-size;
     // comment https://fontawesome.com/v5/icons/comment?f=classic&s=solid
     content: "\f075";
   }
   &.dcnt::before {
     font-family: "fa-solid-900";
     font-weight: 900;
+    font-size: $icon-font-size;
     // book https://fontawesome.com/v5/icons/book?f=classic&s=solid
     content: "\f02d";
   }
@@ -142,9 +149,7 @@ padding-left: 0;
 }
 
 .fa-regular-400, .fa-brands-400, .fa-solid-900 {
-  // Otherwise ToC hover leads to height changes and reflow.
-  // TODO find proper way to do it without this random value.
-  font-size: 0.95em;
+  font-size: $icon-font-size;
 }
 .fa-regular-400 {
   font-family: fa-regular-400;
@@ -402,6 +407,7 @@ ol, ul {
       .c::before {
         font-family: "fa-solid-900";
         font-weight: 900;
+        font-size: $icon-font-size;
         // link https://fontawesome.com/v5/icons/link?f=classic&s=solid
         content: "\f0c1";
       }
@@ -412,6 +418,7 @@ ol, ul {
       .p::before {
         font-family: "fa-solid-900";
         font-weight: 900;
+        font-size: $icon-font-size;
         // up arrow https://fontawesome.com/v5/icons/arrow-up?f=classic&s=solid
         content: "\f062";
       }

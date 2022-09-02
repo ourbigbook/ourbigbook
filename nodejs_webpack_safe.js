@@ -428,7 +428,7 @@ class SqlDbProvider extends web_api.DbProviderBase {
         ) {
           parent_ast_header_tree_node.add_child(ast.header_tree_node);
         }
-        ourbigbook.propagate_numbered(ast, context)
+        ourbigbook.propagateNumbered(ast, context)
         this.id_cache[ast.id] = ast
         asts.push(ast)
       }
@@ -497,7 +497,7 @@ ORDER BY "RecRefs".level DESC
         if (parent_ast) {
           parent_ast_header_tree_node.add_child(ast.header_tree_node);
         }
-        ourbigbook.propagate_numbered(ast, context)
+        ourbigbook.propagateNumbered(ast, context)
         parent_ast = ast
       }
     }
@@ -654,7 +654,7 @@ async function update_database_after_convert({
   if (renderType === undefined) {
     renderType = ourbigbook.OUTPUT_FORMAT_HTML
   }
-  ourbigbook.perf_print(context, 'convert_path_pre_sqlite_transaction')
+  ourbigbook.perfPrint(context, 'convert_path_pre_sqlite_transaction')
   let toplevel_id;
   if (context.toplevel_ast !== undefined) {
     toplevel_id = context.toplevel_ast.id;
@@ -745,7 +745,7 @@ async function update_database_after_convert({
       }
     )
   });
-  ourbigbook.perf_print(context, 'convert_path_post_sqlite_transaction')
+  ourbigbook.perfPrint(context, 'convert_path_post_sqlite_transaction')
   return { file: newFile }
 }
 

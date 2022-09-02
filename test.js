@@ -3341,11 +3341,11 @@ assert_lib('x: to image in another file that has x title in another file',
   }
 )
 // TODO
-//it('output_path_base', () => {
+//it('outputPathBase', () => {
 //  function assert(args, dirname, basename) {
 //    args.path_sep = '/'
 //    if (args.ast_undefined === undefined ) { args.ast_undefined = false }
-//    const ret = ourbigbook.output_path_base(args)
+//    const ret = ourbigbook.outputPathBase(args)
 //    assert.strictEqual(ret.dirname, dirname)
 //    assert.strictEqual(ret.basename, basename)
 //  }
@@ -7091,7 +7091,7 @@ assert_lib_error('include: circular dependency 1 -> 2 <-> 3',
 `,
   // 3, 1, 'include-circular-2.bigb',
   undefined, undefined, undefined,
-  ourbigbook.clone_and_set(include_opts, 'has_error', true)
+  ourbigbook.cloneAndSet(include_opts, 'has_error', true)
 )
 assert_lib_ast('include without parent header with embed includes',
   // https://github.com/ourbigbook/ourbigbook/issues/73
@@ -7695,7 +7695,7 @@ assert_lib_error('id conflict with previous id on the same file',
 `,
   4, 1, 'index.bigb',
   {
-    error_message: ourbigbook.duplicate_id_error_message('tmp', 'index.bigb', 1, 1),
+    error_message: ourbigbook.duplicateIdErrorMessage('tmp', 'index.bigb', 1, 1),
     input_path_noext: 'index',
   },
 )
@@ -7760,9 +7760,9 @@ assert_lib_error('id conflict on file with the same toplevel_id as another',
   }
 )
 
-// title_to_id
-assert_equal('title_to_id with hyphen', ourbigbook.title_to_id('.0A. - z.a Z..'), '0a-z-a-z');
-assert_equal('title_to_id with unicode chars', ourbigbook.title_to_id('0A.你好z'), '0a-你好z');
+// titleToId
+assert_equal('titleToId with hyphen', ourbigbook.titleToId('.0A. - z.a Z..'), '0a-z-a-z');
+assert_equal('titleToId with unicode chars', ourbigbook.titleToId('0A.你好z'), '0a-你好z');
 
 // Toplevel.
 assert_lib_ast('toplevel: arguments',

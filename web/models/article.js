@@ -846,7 +846,7 @@ WHERE
           bodySource: file.bodySource,
           convertOptionsExtra,
           forceNew: false,
-          path: ourbigbook.path_splitext(file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR))[0],
+          path: ourbigbook.pathSplitext(file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR))[0],
           parentId: this.file.toplevelId.to[0].from.idid,
           render: true,
           sequelize,

@@ -30,7 +30,7 @@ function issueCommentEmailBody({
   const htmlArr = [`<p><a href="${childUrl}">${childUrl}</a></p>`]
   let textBody
   if (body) {
-    htmlArr.push(`<p><pre>${ourbigbook.html_escape_content(body)}<pre></p>`)
+    htmlArr.push(`<p><pre>${ourbigbook.htmlEscapeContent(body)}<pre></p>`)
     textBody = `\n${body}`
   } else {
     textBody = ''

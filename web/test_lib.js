@@ -340,7 +340,7 @@ async function generateDemoData(params) {
     const userArgs = [];
     for (let i = 0; i < nUsers; i++) {
       let [displayName, image] = userData[i % userData.length]
-      let username = ourbigbook.title_to_id(displayName)
+      let username = ourbigbook.titleToId(displayName)
       if (i >= userData.length) {
         username = `user${i}`
         displayName = `User${i}`
@@ -421,7 +421,7 @@ async function generateDemoData(params) {
       if (body === undefined) {
         body = makeBody(titleSource)
       }
-      const id_noscope = await title_to_id(titleSource)
+      const id_noscope = await titleToId(titleSource)
       toplevelTopicIds.add(id_noscope)
       return {
         titleSource,
@@ -738,8 +738,8 @@ An YouTube video: \\x[video-sample-youtube-video-in-${id_noscope}].
 */
 }
 
-async function title_to_id(titleSource) {
-  return ourbigbook.title_to_id(
+async function titleToId(titleSource) {
+  return ourbigbook.titleToId(
     await ourbigbook.convert(
       titleSource,
       { output_format: ourbigbook.OUTPUT_FORMAT_ID }

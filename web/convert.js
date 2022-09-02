@@ -69,7 +69,7 @@ async function convert({
   const source = modifyEditorInput(titleSource, bodySource).new
   let input_path_given
   if (path === undefined) {
-    path = titleSource ? ourbigbook.title_to_id(titleSource) : 'asdf'
+    path = titleSource ? ourbigbook.titleToId(titleSource) : 'asdf'
     input_path_given = false
   } else {
     path = path
@@ -86,7 +86,7 @@ async function convert({
     if (input_path_given) {
       scope = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
     } else {
-      const context = ourbigbook.convert_init_context()
+      const context = ourbigbook.convertInitContext()
       const parentH1Ast = ourbigbook.AstNode.fromJSON(parentIdRow.ast_json, context)
       parentH1Ast.id = parentIdRow.idid
       const parentScope = parentH1Ast.calculate_scope()

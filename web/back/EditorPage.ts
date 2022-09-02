@@ -80,7 +80,7 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
         previousSiblingTitle ? sequelize.models.Article.getArticle({
           includeParentAndPreviousSibling: true,
           sequelize,
-          slug: `${loggedInUser.username}/${ourbigbook.title_to_id(previousSiblingTitle)}`,
+          slug: `${loggedInUser.username}/${ourbigbook.titleToId(previousSiblingTitle)}`,
         }) : null,
       ])
       const props: EditorPageProps = {

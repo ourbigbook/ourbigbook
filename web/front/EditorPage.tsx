@@ -114,7 +114,7 @@ export interface EditorPageProps {
 
 function titleToId(loggedInUser, title) {
   let ret = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`
-  const topicId = ourbigbook.title_to_id(title)
+  const topicId = ourbigbook.titleToId(title)
   if (topicId !== ourbigbook.INDEX_BASENAME_NOEXT) {
     ret += `/${topicId}`
   }
@@ -220,7 +220,7 @@ export default function EditorPageHoc({
       let titleErrors = []
       if (titleSource) {
         if (!isIssue) {
-          let newTopicId = ourbigbook.title_to_id(titleSource)
+          let newTopicId = ourbigbook.titleToId(titleSource)
           let showToUserNew
           if (newTopicId === ourbigbook.INDEX_BASENAME_NOEXT) {
             // Maybe there is a more factored out way of dealing with this edge case.
@@ -438,7 +438,7 @@ export default function EditorPageHoc({
         if (isNew) {
           ;({ data, status } = await webApi.articleCreate(file, opts));
         } else {
-          const path = slugFromArray(ourbigbook.path_splitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false })
+          const path = slugFromArray(ourbigbook.pathSplitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false })
           if (path) {
             opts.path = path
           }

@@ -6,7 +6,7 @@
 {c}
 {synonym}
 
-The OurBigBook Project aims to create the ultimate tool to publish textbooks/<#personal knowledge bases>/<#Zettelkasten>/<#digital gardens> in the <#learn in public> philosophy.
+The OurBigBook Project aims to create the ultimate tool to publish textbooks/<#personal knowledge bases>/<#Zettelkasten>/<#digital gardens> in the <#learn in public> philosophy, and to be our best shot yet at the final real-world <#Encyclopedia Galactica> by allowing effective <#mindmeld>[mind melding]/<#collective intelligence>.
 
 \Image[logo.svg]
 {height=150}
@@ -14,12 +14,14 @@ The OurBigBook Project aims to create the ultimate tool to publish textbooks/<#p
 
 Mission: to live in a world where you can learn university-level <#mathematics>, <#physics>, <#chemistry>, #biology and #engineering from perfect free open source books that anyone can write to get famous.
 
+Ultimate goal: destroy the currently grossly inefficient education system and replace it with a much more inspiring system where people learn what they want as fast as possible to reach their goals faster without so much useless pain.
+
 How to get there: <OurBigBook Web>[create a website] that incentivizes learners (notably university students taking courses) to write freely licensed university-level natural science books in their own words for free. Their motivation for doing that are:
 * getting their knowledge globally recognized and thus better jobs
 * improving the world
 * learning by teaching
 
-Notable features include:
+Notable features:
 * focus on <#mindmeld>[mind melding]/<#collective intelligence> via the <topics>[topics feature], which makes your articles easier for others to find with a sort-by upvote <#Stack Overflow>-like view of multiple users articles on the same topic
 
   \Video[https://www.youtube.com/watch?v=54nxjC9BWTg]

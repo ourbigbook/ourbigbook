@@ -7650,6 +7650,7 @@ const ANCESTORS_MAX = 6
 exports.ANCESTORS_MAX = ANCESTORS_MAX
 const AT_MENTION_CHAR = '@';
 exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
+const HTML_REF_MARKER = '<sup class="ref">[ref]</sup>'
 const INSANE_TOPIC_CHAR = '#';
 const WEB_API_PATH = 'api';
 exports.WEB_API_PATH = WEB_API_PATH;
@@ -8864,7 +8865,7 @@ const OUTPUT_FORMATS_LIST = [
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
           let [href, content] = linkGetHrefContent(ast, context);
           if (ast.validation_output.ref.boolean) {
-            content = '<sup class="ref">[ref]</sup>';
+            content = `${HTML_REF_MARKER}`;
           }
           const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
           let attrs = htmlRenderAttrsId(ast, context);
@@ -9635,7 +9636,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
             renderError(context, message, ast.source_location);
             content = errorMessageInOutput(message, context);
           } else if (ast.validation_output.ref.boolean) {
-            content = '*';
+            content = HTML_REF_MARKER;
           }
           if (context.x_parents.size === 0) {
             // Counts.

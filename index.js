@@ -3216,6 +3216,7 @@ function convertInitContext(options={}, extra_returns={}) {
     options.h_web_metadata = false;
   }
   if (!('input_path' in options)) { options.input_path = undefined; }
+  if (!('internalLinkMetadata' in options)) { options.internalLinkMetadata = false }
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
   if (!('logoPath' in options)) { options.logoPath = undefined; }
   if (!('prefixNonIndexedIdsWithParentId' in options)) {
@@ -9674,7 +9675,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               }
             }
 
-            return `<a${href}${attrs}${htmlAttr('title', 'internal link' + counts_str)}${target}>${content}</a>`;
+            return `<a${href}${attrs}${context.options.internalLinkMetadata ? htmlAttr('title', 'internal link' + counts_str) : ''}${target}>${content}</a>`;
           } else {
             return content;
           }

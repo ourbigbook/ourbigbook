@@ -295,6 +295,20 @@ nav.h-nav {
     > :not(:last-child) {
       margin-right: $sep-width
     }
+    &.ancestors {
+      // First ancestors.
+      > :first-child::before {
+        @include up-arrow-icon;
+      }
+      // Other ancestors.
+      > :not(:first-child)::before {
+        font-family: "fa-solid-900";
+        font-weight: 900;
+        font-size: $icon-font-size;
+        // right arrow https://fontawesome.com/v5/icons/arrow-right?f=classic&s=solid
+        content: "\f061";
+      }
+    }
   }
   a {
     &.u::before {

@@ -73,7 +73,6 @@ export const getServerSidePropsArticleHoc = ({
       const [article, articleTopIssues] = await Promise.all([
         sequelize.models.Article.getArticle({
           includeIssues,
-          limit,
           sequelize,
           slug: slugString,
         }),

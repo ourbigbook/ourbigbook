@@ -785,11 +785,6 @@ On web will require extra caution after we decided to initially stop culling sco
 * web descendants
 * all article lists
 
-=== View article source
-{tag=Web}
-
-Can start simple with either raw or contained, and then add both some day. GitHub copy.
-
 === Load more articles
 {tag=Dynamic tree fetch}
 {tag=Web}
@@ -840,6 +835,11 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== View article source on web
+{tag=Web}
+
+Can start simple with either raw or contained, and then add both some day. GitHub copy.
 
 === Benchmark and optimize disk usage
 

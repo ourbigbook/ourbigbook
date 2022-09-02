@@ -134,6 +134,10 @@ export function SeeIcon(opts) {
   return Icon("ion-eye", "View", opts)
 }
 
+export function SourceIcon(opts) {
+  return Icon("ion-document-text", "View", opts)
+}
+
 export function TimeIcon(opts) {
   return Icon("ion-android-time", undefined, opts)
 }

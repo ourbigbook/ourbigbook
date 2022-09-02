@@ -30,6 +30,7 @@ module.exports = {
   articleEdit: slug => `/${escapeUsername}/edit/${slug}`,
   articleNew: (opts={}) => `/${escapeUsername}/new${encodeGetParams(opts)}`,
   articleNewFrom: (slug) => `/${escapeUsername}/new/${slug}`,
+  articleSource: (slug) => `/${escapeUsername}/source/${slug}`,
   article: slug => `/${slug}`,
   host: req => `${req.protocol}://${req.get('host')}`,
   issueComment: (slug, issueNumber, commentNumber) => `${issue(slug, issueNumber)}#${commentIdPrefix}${commentNumber}`,

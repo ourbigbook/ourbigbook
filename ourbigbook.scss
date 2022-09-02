@@ -192,8 +192,11 @@ padding-left: 0;
 }
 
 // Hide by default, show if first child of hovered element.
-.hide-hover:first-child {
-  @include hidden;
+.hide-hover {
+  @include hide-hover;
+  &:first-child {
+    @include hidden;
+  }
 }
 // We remove margins on narrow screens, so there's no space for the link.
 @media only screen and (min-width: $max-mobile-width + 1) {
@@ -202,9 +205,6 @@ padding-left: 0;
       @include visible;
     }
   }
-}
-.hide-hover {
-  @include hide-hover;
 }
 
 // Highlight the element referred by the current hash
@@ -618,38 +618,22 @@ video {
   > * {
     @media only screen and (max-width: $max-mobile-width) {
       padding-left: $toplevel-horizontal-padding-mobile;
+      padding-right: $toplevel-horizontal-padding-mobile;
     }
     @media only screen and (min-width: $max-mobile-width + 1) {
       padding-left: $toplevel-horizontal-padding-left;
+      padding-right: $toplevel-horizontal-padding-right;
     }
-    // Makes the absolute on hover link be absolute relative to this element.
-    // This makes it show up inside the padding-left of this element.
+    // For on-hover links.
     // https://stackoverflow.com/questions/10487292/position-absolute-but-relative-to-parent
     position: relative;
-
-    // On hover links on left margin.
-    &:not(.nolink) {
-      > :first-child {
-        @include hidden;
-        @include hide-hover;
-        &::before {
-          @include link-icon;
-        }
-        @media only screen and (max-width: $max-mobile-width) {
-          visibility: hidden;
-        }
-      }
-      &:hover > :first-child {
-        @include visible;
-      }
-    }
   }
-  @media only screen and (max-width: $max-mobile-width) {
-    padding-right: $toplevel-horizontal-padding-mobile;
-  }
-  @media only screen and (min-width: $max-mobile-width + 1) {
-    padding-right: $toplevel-horizontal-padding-right;
-  }
+}
+a.selflink::before {
+  @include link-icon;
+  font-size: $font-size;
+  position: absolute;
+  left: -0.1em;
 }
 
 // A subset of .ourbigbook used for titles-only renders as appear or article lists on OurBigBook Web.

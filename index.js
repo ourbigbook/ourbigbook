@@ -6617,7 +6617,7 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
   if (tocIdPrefix === undefined) {
     tocIdPrefix = ''
   }
-  let ret = `<div id="${tocIdPrefix}${Macro.TOC_ID}" class="toc-container"><ul><li${htmlClassAttr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`
+  let ret = `<div class="toc-container" id="${tocIdPrefix}${Macro.TOC_ID}"><ul><li${htmlClassAttr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`
   ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}"> Table of contents</a>`
   if (descendant_count_html) {
     ret += `<span class="hover-metadata">${descendant_count_html}</span>`
@@ -8818,7 +8818,8 @@ function htmlToplevelChildModifierByHref(out, href) {
     linkToSelf = ''
     cls = ' class="nolink"'
   }
-  return `<div${cls}>${linkToSelf}${out}</div>`
+  return out
+  //return `<div${cls}>${linkToSelf}${out}</div>`
 }
 
 function htmlToplevelChildModifierById(out, id) {

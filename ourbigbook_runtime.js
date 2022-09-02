@@ -19,6 +19,11 @@ if (typeof window !== 'undefined') {
 }
 
 let myDocument
+const SELFLINK_CLASS = 'selflink'
+
+// TODO CSS variable duplication.
+// max-mobile-width
+const CSS_MAX_MOBILE_WIDTH = 635
 
 // toplevel: if given, is an Element (not document) under which OurBigBook Marktup runtime will take effect.
 export function ourbigbook_runtime(toplevel) {
@@ -161,6 +166,28 @@ export function ourbigbook_runtime(toplevel) {
     e.title = 'tags this header is tagged with'
   }
 
+  // On-hover links.
+  for (const elem of toplevel.querySelectorAll('.ourbigbook > *')) {
+    if (elem.id) {
+      elem.addEventListener('mouseenter', (e) => {
+        if (CSS_MAX_MOBILE_WIDTH < window.innerWidth) {
+          const a = myDocument.createElement('a')
+          a.href = `#${e.target.id}`
+          a.className = SELFLINK_CLASS
+          e.target.prepend(a)
+        }
+      })
+      elem.addEventListener('mouseleave', (e) => {
+        const t = e.target
+        const firstChild = t.children[0]
+        if (firstChild.className === SELFLINK_CLASS) {
+          t.removeChild(firstChild)
+        }
+      })
+    }
+  }
+
+  // JsCanvasDemo
   const ourbigbook_canvas_demo_elems = toplevel.getElementsByClassName('ourbigbook-js-canvas-demo');
   const ourbigbook_canvas_demo_weakmap = new WeakMap();
   for (const ourbigbook_canvas_demo_elem of ourbigbook_canvas_demo_elems) {

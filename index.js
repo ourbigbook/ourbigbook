@@ -22,7 +22,6 @@ const path = require('path');
 const pluralize = require('pluralize');
 
 // consts used by classes.
-const HEADER_MENU_ITEM_SEP = '<span class="sep"></span>';
 const HTML_PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
 exports.HTML_PARENT_MARKER = HTML_PARENT_MARKER;
 const NOSPLIT_MARKER_TEXT = 'nosplit'
@@ -3866,8 +3865,7 @@ function htmlAncestorLinks(entries, nAncestors) {
     ret.push(`<a${entry.href}>${marker} ${entry.content}</a>`)
     i++
   }
-  const ret2 = ret.join(HEADER_MENU_ITEM_SEP)
-  return ret2
+  return ret.join('')
 }
 exports.htmlAncestorLinks = htmlAncestorLinks
 
@@ -9034,12 +9032,7 @@ const OUTPUT_FORMATS_LIST = [
             }
 
             if (!first_header) {
-              ret += `<span class="hover-meta"> `;
-              if (!context.options.web) {
-                ret += HEADER_MENU_ITEM_SEP
-              }
-              ret += items.join(HEADER_MENU_ITEM_SEP)
-              ret += `</span>`;
+              ret += `<span class="hover-meta"> ${items.join('')}</span>`
             }
           }
           // .notnav
@@ -9186,7 +9179,7 @@ const OUTPUT_FORMATS_LIST = [
               // .u for Up
               parent_links.push(`<a${parent_href} class="u"> ${parent_content}</a>`);
             }
-            parent_links = parent_links.join(HEADER_MENU_ITEM_SEP);
+            parent_links = parent_links.join('');
             if (parent_links) {
               header_meta.push(parent_links);
             }
@@ -9228,7 +9221,7 @@ const OUTPUT_FORMATS_LIST = [
           }
           for (const meta of [web_meta, header_meta_ancestors, header_meta, header_meta2]) {
             if (meta.length > 0) {
-              ret += `<div class="nav"> ${meta.join(HEADER_MENU_ITEM_SEP)}</div>`;
+              ret += `<div class="nav"> ${meta.join('')}</div>`;
             }
           }
           if (header_has_meta) {

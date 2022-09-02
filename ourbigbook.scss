@@ -210,6 +210,7 @@ nav.h-nav {
     font-weight: bold;
 		margin-bottom: math.div($p-margin-vert, 2);
     &:before {
+      // Downwards Arrow with Tip Rightwards: https://www.compart.com/en/unicode/U+21B3
       content: "\21b3";
     }
     img.logo {

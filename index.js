@@ -7679,6 +7679,7 @@ const ESCAPE_CHAR = '\\';
 // not work well, e.g. files that would be downloaded like .yml are also
 // downloaded from the iframe
 const FILE_PREVIEW_MAX_SIZE = 2000;
+exports.FILE_PREVIEW_MAX_SIZE = FILE_PREVIEW_MAX_SIZE
 const HEADER_PARENT_ERROR_MESSAGE = 'header parent either is a previous ID of a level, a future ID, or an invalid ID: '
 const HTML_ASCII_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
 const HTML_EXT = 'html';

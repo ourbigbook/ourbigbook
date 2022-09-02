@@ -6682,7 +6682,7 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
     }
     if (parent_href) {
       // p for parent
-      ret += `<a${parent_href}${htmlAttr('class', 'p')}> ${parent_content}</a>`;
+      ret += `<a${parent_href}${htmlAttr('class', 'u')}> ${parent_content}</a>`;
     }
     if (entry.descendant_count_html) {
       ret += `${entry.descendant_count_html}`

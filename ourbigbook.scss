@@ -196,6 +196,7 @@ code {
   background-color: $code-background-color;
 }
 
+// Paragraph.
 div.p {
   margin-bottom: $p-margin-vert;
   margin-top: $p-margin-vert;
@@ -415,8 +416,8 @@ ol, ul {
       .c::after {
         content: " link";
       }
-      // parent
-      .p::before {
+      // Up
+      .u::before {
         font-family: "fa-solid-900";
         font-weight: 900;
         font-size: $icon-font-size;

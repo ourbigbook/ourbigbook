@@ -131,7 +131,7 @@ export function ourbigbook_runtime(toplevel) {
     }
   }
   setTitles('.c', 'link to this ToC entry')
-  setTitles('.p', 'parent ToC entry')
+  setTitles('.u', 'parent ToC entry')
   for (const e of toplevel.querySelectorAll('span.wcntr')) {
     e.title = 'word count for this article + all descendants'
   }

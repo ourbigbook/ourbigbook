@@ -3956,26 +3956,8 @@ function htmlRenderSimpleElem(elem_name, options={}) {
   if (!('attrs' in options)) {
     options.attrs = {};
   }
-  if (!('newline_after_open' in options)) {
-    options.newline_after_open = false;
-  }
-  if (!('newline_after_close' in options)) {
-    options.newline_after_close = false;
-  }
   if (!('wrap' in options)) {
     options.wrap = false;
-  }
-  let newline_after_open_str;
-  if (options.newline_after_open) {
-    newline_after_open_str = '\n';
-  } else {
-    newline_after_open_str = '';
-  }
-  let newline_after_close_str;
-  if (options.newline_after_close) {
-    newline_after_close_str = '\n';
-  } else {
-    newline_after_close_str = '';
   }
   return function(ast, context) {
     let attrs = htmlRenderAttrsId(ast, context);
@@ -4010,7 +3992,7 @@ function htmlRenderSimpleElem(elem_name, options={}) {
     } else {
       elem_attrs = `${extra_attrs_string}${attrs}`
     }
-    res += `<${elem_name}${elem_attrs}${test_data_attr}>${newline_after_open_str}${content}</${elem_name}>${newline_after_close_str}`;
+    res += `<${elem_name}${elem_attrs}${test_data_attr}>${content}</${elem_name}>`;
     if (show_caption) {
       res += `</div>`;
     }
@@ -4362,7 +4344,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
   if (has_caption) {
     const { full: title, inner } = xTextBase(ast, context, { href_prefix, force_separator })
     const title_and_description = getTitleAndDescription({ title, description, source, inner })
-    ret += `<figcaption>${title_and_description}</figcaption>\n`;
+    ret += `<figcaption>${title_and_description}</figcaption>`;
   }
   ret += '</figure>';
   return ret;
@@ -7766,7 +7748,6 @@ exports.TAGS_MARKER = TAGS_MARKER
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>'
 const TOC_HAS_CHILD_CLASS = 'has-child'
 const UL_OL_OPTS = {
-  newline_after_open: true,
   wrap: true,
 }
 const INSANE_X_START = '<';
@@ -8537,10 +8518,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'content',
         count_words: true,
       }),
-    ],
-    {
-      newline_after_close: true,
-    }
+    ]
   ),
   new Macro(
     Macro.TOPLEVEL_MACRO_NAME,
@@ -8734,7 +8712,7 @@ const DEFAULT_MACRO_LIST = [
             } else {
               start = '';
             }
-            return `<video${htmlAttr('src', src + start)}${rendered_attrs} preload="none" controls${alt}></video>${error}\n`;
+            return `<video${htmlAttr('src', src + start)}${rendered_attrs} preload="none" controls${alt}></video>${error}`;
           }
         },
         named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(
@@ -8894,7 +8872,7 @@ const OUTPUT_FORMATS_LIST = [
           ret += `</div>`
           return ret
         },
-        [Macro.CODE_MACRO_NAME]: htmlRenderSimpleElem('code', { newline_after_close: false }),
+        [Macro.CODE_MACRO_NAME]: htmlRenderSimpleElem('code'),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
         'Comment': function(ast, context) { return ''; },
         'comment': function(ast, context) { return ''; },
@@ -9010,7 +8988,7 @@ const OUTPUT_FORMATS_LIST = [
           }
           ret += x_text_base_ret.full;
           ret += `</a>`;
-          ret += `</h${level_int_capped}>\n`;
+          ret += `</h${level_int_capped}>`;
 
           const web_meta = []
           if (context.options.h_web_metadata) {
@@ -9262,7 +9240,7 @@ const OUTPUT_FORMATS_LIST = [
           return ret;
         },
         [Macro.INCLUDE_MACRO_NAME]: unconvertible,
-        [Macro.LIST_ITEM_MACRO_NAME]: htmlRenderSimpleElem('li', { newline_after_close: true }),
+        [Macro.LIST_ITEM_MACRO_NAME]: htmlRenderSimpleElem('li'),
         [Macro.MATH_MACRO_NAME.toUpperCase()]: function(ast, context) {
           let katex_output = htmlKatexConvert(ast, context)
           let ret = ``
@@ -9328,7 +9306,7 @@ const OUTPUT_FORMATS_LIST = [
           let content = renderArg(ast.args.content, context);
           let ret = ``;
           let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
-          ret += `<div class="table${multiline_caption}"${attrs}>\n`;
+          ret += `<div class="table${multiline_caption}"${attrs}>`;
           // TODO not using caption because I don't know how to allow the caption to be wider than the table.
           // I don't want the caption to wrap to a small table size.
           //
@@ -9349,11 +9327,11 @@ const OUTPUT_FORMATS_LIST = [
             const title_and_description = getTitleAndDescription({ title, description, inner })
             ret += `<div class="caption">${title_and_description}</div>`;
           }
-          ret += `<table>\n${content}</table>\n`;
-          ret += `</div>\n`;
+          ret += `<table>${content}</table>`;
+          ret += `</div>`;
           return ret;
         },
-        [Macro.TD_MACRO_NAME]: htmlRenderSimpleElem('td', { newline_after_close: true }),
+        [Macro.TD_MACRO_NAME]: htmlRenderSimpleElem('td'),
         [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) {
           let title = ast.args[Macro.TITLE_ARGUMENT_NAME];
           if (title === undefined) {
@@ -9395,7 +9373,7 @@ const OUTPUT_FORMATS_LIST = [
               const ancestors = context.toplevel_ast.ancestors(context)
               if (ancestors.length !== 0) {
                 // TODO factor this out more with real headers.
-                body += `<div>${htmlHideHoverLink(`#${ANCESTORS_ID}`)}<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${PARENT_MARKER} Ancestors</a></h2></div>\n`;
+                body += `<div>${htmlHideHoverLink(`#${ANCESTORS_ID}`)}<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${PARENT_MARKER} Ancestors</a></h2></div>`;
                 const ancestor_id_asts = [];
                 for (const ancestor of ancestors) {
                   //let counts_str;
@@ -9528,7 +9506,7 @@ const OUTPUT_FORMATS_LIST = [
             // Resolve relative styles and scripts.
             let relative_scripts = [];
             for (const script of context.options.template_scripts_relative) {
-              relative_scripts.push(`<script src="${context.options.template_vars.root_relpath}${script}"></script>\n`);
+              relative_scripts.push(`<script src="${context.options.template_vars.root_relpath}${script}"></script>`);
             }
             const toplevel_scope = context.toplevel_ast ? context.toplevel_ast.calculate_scope() : undefined
             const ourbigbook_redirect_prefix_raw = toplevel_scope ? `${toplevel_scope}${URL_SEP}` : ''
@@ -9539,7 +9517,7 @@ window.ourbigbook_html_x_extension = ${context.options.htmlXExtension};
 window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
 </script>
 `
-            render_env.post_body = data_script + relative_scripts.join('') + render_env.post_body + "<script>ourbigbook_runtime.ourbigbook_runtime()</script>\n";
+            render_env.post_body = data_script + relative_scripts.join('') + render_env.post_body + "<script>ourbigbook_runtime.ourbigbook_runtime()</script>";
             let relative_styles = [];
             for (const style of context.options.template_styles_relative) {
               relative_styles.push(`@import "${context.options.template_vars.root_relpath}${style}";\n`);
@@ -9559,7 +9537,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           }
           return ret;
         },
-        [Macro.TH_MACRO_NAME]: htmlRenderSimpleElem('th', { newline_after_close: true }),
+        [Macro.TH_MACRO_NAME]: htmlRenderSimpleElem('th'),
         [Macro.TR_MACRO_NAME]: function(ast, context) {
           let content_ast = ast.args.content;
           let content = renderArg(content_ast, context);
@@ -9569,7 +9547,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               ast.parent_argument_index === 0 ||
               ast.parent_argument.get(ast.parent_argument_index - 1).args.content.get(0).macro_name !== Macro.TH_MACRO_NAME
             ) {
-              res += `<thead>\n`;
+              res += `<thead>`;
             }
           }
           if (ast.args.content.get(0).macro_name === Macro.TD_MACRO_NAME) {
@@ -9577,16 +9555,16 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               ast.parent_argument_index === 0 ||
               ast.parent_argument.get(ast.parent_argument_index - 1).args.content.get(0).macro_name !== Macro.TD_MACRO_NAME
             ) {
-              res += `<tbody>\n`;
+              res += `<tbody>`;
             }
           }
-          res += `<tr${htmlRenderAttrsId(ast, context)}>\n${content}</tr>\n`;
+          res += `<tr${htmlRenderAttrsId(ast, context)}>${content}</tr>`;
           if (ast.args.content.get(0).macro_name === Macro.TH_MACRO_NAME) {
             if (
               ast.parent_argument_index === ast.parent_argument.length() - 1 ||
               ast.parent_argument.get(ast.parent_argument_index + 1).args.content.get(0).macro_name !== Macro.TH_MACRO_NAME
             ) {
-              res += `</thead>\n`;
+              res += `</thead>`;
             }
           }
           if (ast.args.content.get(0).macro_name === Macro.TD_MACRO_NAME) {
@@ -9594,7 +9572,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               ast.parent_argument_index === ast.parent_argument.length() - 1 ||
               ast.parent_argument.get(ast.parent_argument_index + 1).args.content.get(0).macro_name !== Macro.TD_MACRO_NAME
             ) {
-              res += `</tbody>\n`;
+              res += `</tbody>`;
             }
           }
           return res;

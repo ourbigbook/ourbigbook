@@ -44,14 +44,6 @@ export function ourbigbook_runtime(toplevel) {
   // ToC interaction.
   const CLOSE_CLASS = 'close';
   const TOC_CONTAINER_CLASS = 'toc-container';
-  function setTitles(selector, title) {
-    const elems = toplevel.querySelectorAll(`.${TOC_CONTAINER_CLASS} ${selector}`);
-    for (const elem of elems) {
-      elem.title = title
-    }
-  }
-  setTitles('.c', 'link to this ToC entry')
-  setTitles('.p', 'parent ToC entry')
   const toc_arrows = toplevel.querySelectorAll(`.${TOC_CONTAINER_CLASS} div.arrow`);
   for (const toc_arrow of toc_arrows) {
     toc_arrow.addEventListener('click', () => {
@@ -127,6 +119,33 @@ export function ourbigbook_runtime(toplevel) {
   const tables = toplevel.getElementsByTagName('table');
   for(const table of tables) {
     new Tablesort(table);
+  }
+
+  // Set repetitive titles from Js to save HTML space.
+  // On hover things make 0 difference to user experience basically, so it is a no brainer,
+  // the only concern is slowing down Js.
+  function setTitles(selector, title) {
+    const elems = toplevel.querySelectorAll(`.${TOC_CONTAINER_CLASS} ${selector}`);
+    for (const elem of elems) {
+      elem.title = title
+    }
+  }
+  setTitles('.c', 'link to this ToC entry')
+  setTitles('.p', 'parent ToC entry')
+  for (const e of toplevel.querySelectorAll('span.wcntr')) {
+    e.title = 'word count for this article + all descendants'
+  }
+  for (const e of toplevel.querySelectorAll('span.wcnt')) {
+    e.title = 'word count for this article'
+  }
+  for (const e of toplevel.querySelectorAll('span.dcnt')) {
+    e.title = 'descendant article count'
+  }
+  for (const e of toplevel.querySelectorAll('a.split')) {
+    e.title = 'view one header per page'
+  }
+  for (const e of toplevel.querySelectorAll('a.nosplit')) {
+    e.title = 'view all headers in a single page'
   }
 
   const ourbigbook_canvas_demo_elems = toplevel.getElementsByClassName('ourbigbook-js-canvas-demo');

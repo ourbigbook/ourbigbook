@@ -91,17 +91,27 @@ $toc-arrow-width: 0.7em;
 word-wrap: break-word;
 
 a {
-  &.split::before {
-    font-family: "fa-solid-900";
-    font-weight: 900;
-    // adjust https://fontawesome.com/v5/icons/adjust?f=classic&s=solid
-    content: "\f042";
+  &.split {
+    &::after {
+      content: " split";
+    }
+    &::before {
+      font-family: "fa-solid-900";
+      font-weight: 900;
+      // adjust https://fontawesome.com/v5/icons/adjust?f=classic&s=solid
+      content: "\f042";
+    }
   }
-  &.nosplit::before {
-    font-family: "fa-solid-900";
-    font-weight: 900;
-    // circle https://fontawesome.com/v5/icons/circle?f=classic&s=solid
-    content: "\f111";
+  &.nosplit {
+    &::after {
+      content: " nosplit";
+    }
+    &::before {
+      font-family: "fa-solid-900";
+      font-weight: 900;
+      // circle https://fontawesome.com/v5/icons/circle?f=classic&s=solid
+      content: "\f111";
+    }
   }
   &:visited {
     color: $a-color-visited;
@@ -394,6 +404,9 @@ ol, ul {
         font-weight: 900;
         // link https://fontawesome.com/v5/icons/link?f=classic&s=solid
         content: "\f0c1";
+      }
+      .c::after {
+        content: " link";
       }
       // parent
       .p::before {

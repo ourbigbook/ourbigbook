@@ -3604,15 +3604,15 @@ function getDescendantCountHtml(context, tree_node, options) {
   const words_str = options.long_style ? `words: ` : ''
   if (descendant_word_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
     // Word Count Recursive
-    word_count_html += `<span class="wcntr" title="word count for this article + all descendants"> ${words_str}<span class="word-count-descendant">${formatNumberApprox(descendant_word_count)}</span></span>`
+    word_count_html += `<span class="wcntr"> ${words_str}<span class="word-count-descendant">${formatNumberApprox(descendant_word_count)}</span></span>`
   }
   if (tree_node.word_count > 0 && context.options.add_test_instrumentation || !options.show_descendant_count) {
     // Word Count
-    word_count_html += `<span class="wcnt" title="word count for this article">${wordIcon} ${words_str}<span class="word-count">${formatNumberApprox(word_count)}</span></span>`;
+    word_count_html += `<span class="wcnt">${wordIcon} ${words_str}<span class="word-count">${formatNumberApprox(word_count)}</span></span>`;
   }
   if (descendant_count > 0 && (context.options.add_test_instrumentation || options.show_descendant_count)) {
     // descendant count
-    word_count_html += `<span class="dcnt" title="descendant article count"> ${options.long_style ? 'articles: ' : ''}<span class="descendant-count">${formatNumberApprox(descendant_count)}</span></span>`
+    word_count_html += `<span class="dcnt"> ${options.long_style ? 'articles: ' : ''}<span class="descendant-count">${formatNumberApprox(descendant_count)}</span></span>`
   }
   if (word_count_html !== '') {
     ret = `<span class="metrics">${word_count_html}</span>`;
@@ -4217,13 +4217,9 @@ function linkToSplitOpposite(ast, context) {
     let title
     let class_
     if (context.in_split_headers) {
-      title = 'view all headers in a single page';
-      content = NOSPLIT_MARKER_TEXT
       class_ = 'nosplit'
     } else {
-      title = 'view one header per page';
       class_ = 'split'
-      content = SPLIT_MARKER_TEXT
     }
     let other_context = cloneAndSet(context, 'to_split_headers', !context.in_split_headers);
     let other_href = xHrefAttr(ast, other_context);
@@ -4244,7 +4240,7 @@ function linkToSplitOpposite(ast, context) {
         return undefined
       }
     }
-    return `<a${htmlAttr('class', class_)}${htmlAttr('title', title)}${other_href}> ${content}</a>`;
+    return `<a${htmlAttr('class', class_)}${other_href}></a>`;
   }
 }
 
@@ -6675,7 +6671,7 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
     ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
     let toc_href = htmlAttr('href', '#' + htmlEscapeAttr(my_toc_id));
     // c for current
-    ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('class', 'c')}> link</a>`;
+    ret += `${HEADER_MENU_ITEM_SEP}<a${toc_href}${htmlAttr('class', 'c')}></a>`;
     if (link_to_split) {
       ret += `${HEADER_MENU_ITEM_SEP}${link_to_split}`;
     }

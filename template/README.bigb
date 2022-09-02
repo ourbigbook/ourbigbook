@@ -13,6 +13,10 @@ And below this line, we actually include the toplevel header of the other file.
 
 \Include[not-readme]
 
+== Topic links
+
+In mathematics #mathematics I really like the <#fundamental theorem of calculus>.
+
 {% endif -%}
 == Paragraphs, links, code, math
 

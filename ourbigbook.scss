@@ -66,6 +66,14 @@ div.float-wrap {
   }
 }
 
+@mixin up-arrow-icon {
+  font-family: "fa-solid-900";
+  font-weight: 900;
+  font-size: $icon-font-size;
+  // up arrow https://fontawesome.com/v5/icons/arrow-up?f=classic&s=solid
+  content: "\f062";
+}
+
 @mixin visible {
   display: inline;
   //visibility: visible;
@@ -137,6 +145,14 @@ a {
   }
   &.toc {
     color: $a-color;
+    &::before {
+      font-family: "fa-solid-900";
+      font-weight: 900;
+      font-size: $icon-font-size;
+      // TOC_MARKER_SYMBOL
+      // list https://fontawesome.com/v5/icons/list?f=classic&s=solid
+      content: "\f03a";
+    }
   }
 }
 
@@ -272,6 +288,37 @@ nav.h-nav {
     img.logo {
       height: 1em;
     }
+    // TODO to get rid of sep
+    //> *:not(:last) {
+    //  margin-right: $sep-width
+    //}
+  }
+  a {
+    &.u::before {
+      @include up-arrow-icon;
+    }
+    &.wiki {
+      &::before {
+        font-family: "fa-brands-400";
+        font-weight: 400;
+        font-size: $icon-font-size;
+        // Wikipedia w https://fontawesome.com/v5/icons/wikipedia-w?f=brands&s=solid
+        content: "\f266";
+      }
+      &::after {
+        content: " wiki"
+      }
+    }
+  }
+  span.tags::before {
+    font-family: "fa-solid-900";
+    font-weight: 900;
+    font-size: $icon-font-size;
+    // tags https://fontawesome.com/v5/icons/tags?f=classic&s=solid
+    content: "\f02c";
+  }
+  .toc::after {
+    content: " toc";
   }
 }
 
@@ -426,11 +473,7 @@ ol, ul {
       }
       // Up
       .u::before {
-        font-family: "fa-solid-900";
-        font-weight: 900;
-        font-size: $icon-font-size;
-        // up arrow https://fontawesome.com/v5/icons/arrow-up?f=classic&s=solid
-        content: "\f062";
+        @include up-arrow-icon;
       }
 
       div {

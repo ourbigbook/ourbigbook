@@ -407,9 +407,20 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   }
   let showFinish = false
   let message_prefix
-  if (isbigb) {
+  function do_ignore_convert_path(p, ignore_convert_path_regexps) {
+    for (const re of ignore_convert_path_regexps) {
+      if (re.test(p)) {
+        return true
+      }
+    }
+    return false
+  }
+  const ignore_convert_path = do_ignore_convert_path(input_path, nonOurbigbookOptions.ignore_convert_path_regexps)
+  if (
+    isbigb &&
+    !ignore_convert_path
+  ) {
     showFinish = true
-    is_bigb = true
     msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
     message_prefix = msg_ret.message_prefix
     let newNonOurbigbookOptions = { ...nonOurbigbookOptions }
@@ -541,10 +552,10 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   const forceRender = nonOurbigbookOptions.input_path_is_file || nonOurbigbookOptions.cli.forceRender
 
   const convertNonBigb = ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
-  if (convertNonBigb) {
-    // Convert non-OurBigBook files and directories.
-    if (ourbigbook_options.render) {
-      fs.mkdirSync(path.dirname(output_path_noext), { recursive: true });
+  if (ourbigbook_options.render) {
+    fs.mkdirSync(path.dirname(output_path_noext), { recursive: true });
+    if (convertNonBigb && !ignore_convert_path) {
+      // Convert non-OurBigBook files and directories.
       let isSass = false
       let knownType = true
       if (is_directory) {
@@ -688,7 +699,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
       }
     }
   }
-  if (is_bigb || convertNonBigb) {
+  if (isbigb || convertNonBigb) {
     if (!nonOurbigbookOptions.had_error) {
       if (showFinish) {
         // Print conversion finished successfully info.
@@ -1322,6 +1333,9 @@ if (cli.helpMacros) {
   if (!('ignore' in ourbigbook_json)) {
     ourbigbook_json.ignore = [];
   }
+  if (!('ignoreConvert' in ourbigbook_json)) {
+    ourbigbook_json.ignoreConvert = [];
+  }
   if (!('dontIgnore' in ourbigbook_json)) {
     ourbigbook_json.dontIgnore = [];
   }
@@ -1572,6 +1586,7 @@ if (cli.helpMacros) {
     had_error: false,
     is_render_after_extract: false,
     ignore_path_regexps: ourbigbook_json.ignore.map(p => RegExp(`^${p}($|${path.sep})`)),
+    ignore_convert_path_regexps: ourbigbook_json.ignoreConvert.map(p => RegExp(`^${p}($|${path.sep})`)),
     ignore_paths: new Set(),
     input_path_is_file,
     log: nonOurbigbookOptions_log,

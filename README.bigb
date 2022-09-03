@@ -7311,6 +7311,15 @@ Examples:
 
 TODO: also ignore during <watch>.
 
+= `ignoreRender`
+{parent=ourbigbook.json}
+
+Similar to <ignore>, but only ignore the files from rendering converesions such as bigb -> html, scss -> css.
+
+Unlike <ignore>, matching files are still placed under the <`_raw` directory> and can be publicly viewed.
+
+You almost always want this option over <ignore>, with files that should not be in the repository being just ignored with your `.gitignore` instead: <ignore from `.gitignore`>{full}.
+
 = `ourbigbook.json` `id`
 {id=id}
 {parent=ourbigbook.json}

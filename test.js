@@ -160,7 +160,7 @@ function assert_lib(
       })
     }
     options.convert_opts.fs_exists_sync = (my_path) => {
-      return options.filesystem.hasOwnProperty(my_path)
+      return options.filesystem.hasOwnProperty(my_path) || filesystem_dirs.hasOwnProperty(my_path)
     }
     options.convert_opts.read_file = (readpath, context) => {
       if (readpath in filesystem_dirs) {
@@ -175,7 +175,7 @@ function assert_lib(
       }
     }
     let filesystem = options.filesystem
-    const filesystem_dirs = {}
+    const filesystem_dirs = {'': {}}
     for (f in filesystem) {
       do {
         f = path.dirname(f)

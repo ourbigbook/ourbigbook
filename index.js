@@ -9177,26 +9177,21 @@ const OUTPUT_FORMATS_LIST = [
             } else {
               let curp = ''
               // Show (root) or not. It is a bit ugly, so going for not right now...
-              const showRoot = false
-              if (showRoot) {
-                pathArg.push(
-                  new AstNode(AstType.MACRO,
-                    Macro.LINK_MACRO_NAME,
-                    {
-                      content: new AstArgument([
-                        new PlaintextAstNode(FILE_ROOT_PLACEHOLDER)
-                      ]),
-                      href: new AstArgument([
-                        new PlaintextAstNode(URL_SEP)
-                      ]),
-                    }
-                  ),
-                )
-              }
+              pathArg.push(
+                new AstNode(AstType.MACRO,
+                  Macro.LINK_MACRO_NAME,
+                  {
+                    content: new AstArgument([
+                      new PlaintextAstNode(FILE_ROOT_PLACEHOLDER + ' ')
+                    ]),
+                    href: new AstArgument([
+                      new PlaintextAstNode(URL_SEP)
+                    ]),
+                  }
+                ),
+              )
               for (const p of ast.file.split(URL_SEP)) {
-                if (!(!showRoot && curp === '')) {
-                  pathArg.push(new PlaintextAstNode(URL_SEP))
-                }
+                pathArg.push(new PlaintextAstNode(' ' + URL_SEP + ' '))
                 curp += `${URL_SEP}${p}`
                 const astNodeArgs = {
                   content: new AstArgument([

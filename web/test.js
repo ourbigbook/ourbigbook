@@ -4215,3 +4215,74 @@ it(`api: topic links dont have the domain name`, async () => {
     assert_xpath(`//x:div[@class='p']//x:a[@href='/go/topic/my-topic' and text()='My Topic']`, data.articles[0].render)
   })
 })
+
+it('api: parent and child to unrelated synonyms with updateNestedSetIndex', async () => {
+  // Attempt to reproduce: https://docs.ourbigbook.com/todo/5
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    // Create a second user and index to ensure that the nested set indexes are independent for each user.
+    // Because of course we didn't do this when originally implementing.
+    test.loginUser(user)
+
+    article = createArticleArg({ i: 0, titleSource: 'h2' })
+    ;({data, status} = await createArticleApi(test, article))
+    assertStatus(status, data)
+    article = createArticleArg({ i: 0, titleSource: 'h2-2' })
+    ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/h2' }))
+    assertStatus(status, data)
+    article = createArticleArg({ i: 0, titleSource: 'h1' })
+    ;({data, status} = await createArticleApi(test, article))
+    assertStatus(status, data)
+    article = createArticleArg({ i: 0, titleSource: 'h1-2' })
+    ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/h1' }))
+    assertStatus(status, data)
+    article = createArticleArg({ i: 0, titleSource: 'h1-1' })
+    ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/h1' }))
+    assertStatus(status, data)
+    article = createArticleArg({ i: 0, titleSource: 'h1-1-1' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/h1-1' }))
+    assertStatus(status, data)
+    article = createArticleArg({ i: 0, titleSource: 'h1-2-1' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/h1-2' }))
+    assertStatus(status, data)
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 8, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 6, depth: 1, to_id_index: 0,    slug: 'user0/h1' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 4, depth: 2, to_id_index: 0,    slug: 'user0/h1-1' },
+      { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, to_id_index: 0,    slug: 'user0/h1-1-1' },
+      { nestedSetIndex: 4, nestedSetNextSibling: 6, depth: 2, to_id_index: 1,    slug: 'user0/h1-2' },
+      { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 3, to_id_index: 0,    slug: 'user0/h1-2-1' },
+      { nestedSetIndex: 6, nestedSetNextSibling: 8, depth: 1, to_id_index: 1,    slug: 'user0/h2' },
+      { nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 2, to_id_index: 0,    slug: 'user0/h2-2' },
+    ])
+
+    article = createArticleArg({ i: 0, titleSource: 'h1-2', bodySource: '= h2-2\n{synonym}' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 7, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0,    slug: 'user0/h1' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 4, depth: 2, to_id_index: 0,    slug: 'user0/h1-1' },
+      { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, to_id_index: 0,    slug: 'user0/h1-1-1' },
+      { nestedSetIndex: 4, nestedSetNextSibling: 6, depth: 2, to_id_index: 1,    slug: 'user0/h1-2' },
+      { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 3, to_id_index: 0,    slug: 'user0/h1-2-1' },
+      { nestedSetIndex: 6, nestedSetNextSibling: 8, depth: 1, to_id_index: 1,    slug: 'user0/h2' },
+    ])
+
+    //article = createArticleArg({ i: 0, titleSource: 'h1-1', bodySource: '= h2\n{synonym}' })
+    //;({data, status} = await createOrUpdateArticleApi(test, article))
+    //assertStatus(status, data)
+
+    //await assertNestedSets(sequelize, [
+    //  { nestedSetIndex: 0, nestedSetNextSibling: 6, depth: 0, to_id_index: null, slug: 'user0' },
+    //  { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0,    slug: 'user0/h1' },
+    //  { nestedSetIndex: 2, nestedSetNextSibling: 4, depth: 2, to_id_index: 0,    slug: 'user0/h1-1' },
+    //  { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 3, to_id_index: 0,    slug: 'user0/h1-1-1' },
+    //  { nestedSetIndex: 4, nestedSetNextSibling: 6, depth: 2, to_id_index: 1,    slug: 'user0/h1-2' },
+    //  { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 3, to_id_index: 0,    slug: 'user0/h1-2-1' },
+    //])
+  })
+})

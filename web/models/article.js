@@ -14,7 +14,7 @@ const { execPath } = require('process')
 
 module.exports = (sequelize) => {
   function slugTransform(v) {
-    return v.toLowerCase()
+    return v
   }
 
   // Each Article contains rendered HTML output, analogous to a .html output file in OurBigBook CLI.

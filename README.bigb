@@ -7273,6 +7273,11 @@ List of <JavaScript regular expression>. If a file path matches any of them, the
 
 Note however that if an upper directory is ignored, then we don't recurse into it, and `dontIgnore` will have no effect.
 
+= `dontIgnoreConvert`
+{parent=ourbigbook.json}
+
+Analogous to <dontIgnore> but acts on <<ignoreConvert> rather than <ignore>.
+
 = `ignore`
 {parent=ourbigbook.json}
 

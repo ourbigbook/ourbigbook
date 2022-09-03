@@ -3560,6 +3560,13 @@ function errorMessageInOutput(msg, context) {
   return `[OURBIGBOOK_ERROR: ${escaped_msg}]`
 }
 
+/** Escape all ourbigbook constructs that must be escaped, except
+ * for those that only need to be escaped if they are at the start of a line. */
+function escapeNotStart(text) {
+  return text.replace(MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX, `${ESCAPE_CHAR}$1`)
+}
+exports.escapeNotStart = escapeNotStart
+
 // https://stackoverflow.com/questions/9461621/format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900
 const FORMAT_NUMBER_APPROX_MAP = [
   { value: 1, symbol: "" },
@@ -10354,7 +10361,7 @@ OUTPUT_FORMATS_LIST.push(
           if (context.in_literal) {
             return text
           } else {
-            return text.replace(MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX, '\\$1').replace(MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX, '$1\\$2')
+            return escapeNotStart(text).replace(MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX, '$1\\$2')
           }
         },
         'passthrough': ourbigbookConvertSimpleElem,

@@ -10759,6 +10759,12 @@ myfile.txt line2
       'myfile-autogen.png': `aaa`,
       'myfile-autogen.mp4': `aaa`,
 
+      // File and dir autogen escaping of magic OBB characters. Everything breaks everything.
+      // Directory.
+      '[/hello.txt': `aaa`,
+      // File.
+      '[.txt': `aaa`,
+
       'index.html': '',
       '_index.html': '',
       'subdir/myfile-subdir.txt': `myfile-subdir.txt line1

@@ -1346,6 +1346,9 @@ After the initial header however, you must not skip a header level, e.g. the fol
 = The toplevel header
 {parent=Header}
 
+= Toplevel header
+{synonym}
+
 The toplevel header of a OurBigBook file is its first header and the one with the lowest level, e.g. in a document with recommended syntax:
 ``
 = Animal

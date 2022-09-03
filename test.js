@@ -5427,8 +5427,14 @@ assert_lib('header: splitDefault on ourbigbook.json',
     },
   },
 )
-assert_lib_ast('header: file argument works',
-  `= h1
+assert_lib('header: file argument works',
+  {
+    convert_dir: true,
+    convert_opts: {
+      split_headers: true,
+    },
+    filesystem: {
+      'README.bigb': `= Index
 
 == path/to
 {file}
@@ -5455,40 +5461,6 @@ My mp4
 
 My youtube
 `,
-  [
-    a('H', undefined, {level: [t('1')], title: [t('h1')]}),
-
-    a('H', undefined, {level: [t('2')], title: [t('path/to')]}),
-    header_file_about_ast('path/to', 'directory'),
-    a('P', [t('My directory')]),
-
-    a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.txt')]}),
-    header_file_about_ast('path/to/my-file.txt'),
-    a('P', [t('My txt')]),
-    a('P', [a('b', [t('path/to/my-file.txt')])]),
-    a('C', [t(`My Line 1
-
-My Line 2
-`
-    )]),
-
-    a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.png')]}),
-    header_file_about_ast('path/to/my-file.png'),
-    a('Image', undefined, {src: [t('path/to/my-file.png')]}),
-    a('P', [t('My png')]),
-
-    a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.mp4')]}),
-    header_file_about_ast('path/to/my-file.mp4'),
-    a('Video', undefined, {src: [t('path/to/my-file.mp4')]}),
-    a('P', [t('My mp4')]),
-
-    a('H', undefined, {level: [t('2')], title: [t('Path to YouTube')]}),
-    header_file_about_ast('https://www.youtube.com/watch?v=YeFzeNAHEhU', 'video'),
-    a('Video', undefined, {src: [t('https://www.youtube.com/watch?v=YeFzeNAHEhU')]}),
-    a('P', [t('My youtube')]),
-  ],
-  {
-    filesystem: {
       'path/to/my-file.txt': `My Line 1
 
 My Line 2
@@ -5496,26 +5468,48 @@ My Line 2
       'path/to/my-file.png': '',
       'path/to/my-file.mp4': '',
     },
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@href='_dir/path/to/index.html' and text()='path/to']",
+        "//x:div[@class='p' and text()='My directory']",
+
+        "//x:a[@href='_raw/path/to/my-file.txt' and text()='path/to/my-file.txt']",
+        "//x:div[@class='p' and text()='My txt']",
+        // Don't know how to include newlines!
+        "//x:code[starts-with(text(), 'My Line 1')]",
+
+        "//x:a[@href='_raw/path/to/my-file.png' and text()='path/to/my-file.png']",
+        "//x:img[@src='_raw/path/to/my-file.png']",
+        "//x:div[@class='p' and text()='My png']",
+
+        "//x:a[@href='_raw/path/to/my-file.mp4' and text()='path/to/my-file.mp4']",
+        "//x:video[@src='_raw/path/to/my-file.mp4']",
+        "//x:div[@class='p' and text()='My mp4']",
+
+        "//x:a[@href='https://www.youtube.com/watch?v=YeFzeNAHEhU' and text()='www.youtube.com/watch?v=YeFzeNAHEhU']",
+        "//x:iframe[@src='https://www.youtube.com/embed/YeFzeNAHEhU']",
+        "//x:div[@class='p' and text()='My youtube']",
+      ]
+    },
   },
 )
-assert_lib_ast('header: file argument that is the last header adds the preview',
-  `= h1
+assert_lib('header: file argument that is the last header adds the preview',
+  {
+    convert_dir: true,
+    filesystem: {
+      'README.bigb': `= h1
 
 == path/to/my-file.png
 {file}
 `,
-  [
-    a('H', undefined, {level: [t('1')], title: [t('h1')]}),
-    a('H', undefined, {level: [t('2')], title: [t('path/to/my-file.png')]}),
-    header_file_about_ast('path/to/my-file.png'),
-    a('Image', undefined, {src: [t('path/to/my-file.png')]}),
-  ],
-  {
-    filesystem: {
-      'path/to/my-file.txt': '',
       'path/to/my-file.png': '',
-      'path/to/my-file.mp4': '',
     },
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@href='_raw/path/to/my-file.png' and text()='path/to/my-file.png']",
+        "//x:img[@src='_raw/path/to/my-file.png']",
+      ]
+    }
   },
 )
 assert_lib('header: file argument ignores text files on nosplit if they are too large',

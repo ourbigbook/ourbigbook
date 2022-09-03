@@ -401,9 +401,6 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
       return
     }
     new_options = { ...ourbigbook_options }
-    if (sequelize) {
-      new_options.db_provider = nonOurbigbookOptions.db_provider;
-    }
   }
   let showFinish = false
   let message_prefix
@@ -504,7 +501,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
       if ('sequelize' in nonOurbigbookOptions) {
         await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
           extra_returns,
-          db_provider: nonOurbigbookOptions.db_provider,
+          db_provider: new_options.db_provider,
           had_error: nonOurbigbookOptions.had_error,
           is_render_after_extract: nonOurbigbookOptions.is_render_after_extract,
           nonOurbigbookOptions,
@@ -772,7 +769,7 @@ async function create_db(ourbigbook_options, nonOurbigbookOptions) {
     { force: cli.clearDb },
   )
   nonOurbigbookOptions.sequelize = sequelize;
-  nonOurbigbookOptions.db_provider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize);
+  ourbigbook_options.db_provider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize);
   perfPrint('create_db_end', ourbigbook_options)
 }
 
@@ -2025,7 +2022,7 @@ if (cli.helpMacros) {
         header_tree.push({ to_id: '' })
       }
       if (!cli.webId) {
-        header_tree = header_tree.concat(await nonOurbigbookOptions.db_provider.fetch_header_tree_ids(
+        header_tree = header_tree.concat(await ourbigbook_options.db_provider.fetch_header_tree_ids(
           [treeToplevelId],
           {
             to_id_index_order: 'ASC',

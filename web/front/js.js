@@ -1,5 +1,6 @@
 // Random stuff shared between front and backend.
 // Has to be .js until we port backend to TypeScript..
+// Maybe this should just be merged with ./config.js
 
 const ourbigbook = require('ourbigbook')
 

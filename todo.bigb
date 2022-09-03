@@ -4,6 +4,35 @@
 
 == Issues
 
+=== Allow linking to auto-generated files
+{tag=File autogen}
+
+=== Link to _file rather than _raw if there's split pages
+{tag=File autogen}
+
+E.g.:
+``
+= path/to/myfile.txt
+{file}
+``
+whould generate a breadcrumb like:
+``
+(root)/path/to/<myfile.txt>{file}{split}
+``
+where `{split}` is a possibly new argument that ensures it links to split if there are split pages, and not the current:
+``
+(root)/path/to/\a[myfile.txt]
+``
+This would make <file autogen> much more useful and visible. The general premise is that we should link to split `{file}` preferentially always.
+
+Pre-requisite: <Allow linking to auto-generated files>
+
+=== Show directory listings on `{file}` headers
+
+Like big files, only show on split pages.
+
+Once this is done, we can entirely replace the custom directory listing generated in the `ourbigbook` executable by it, which will be the exact same code path as `{file}` generation.
+
 === Nested set index corruption
 {tag=Web}
 {tag=Bug}
@@ -1980,6 +2009,8 @@ Database specific tasks, usually refactoring.
 === File
 
 This tag is about handling non-OurBigBook files, notably related to using the <`\H` `file` argument>.
+
+==== File autogen
 
 === Metadata section
 

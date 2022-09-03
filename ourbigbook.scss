@@ -26,6 +26,14 @@ div.float-wrap {
   width: 100%;
 }
 
+@mixin file-icon {
+  font-family: "fa-solid-900";
+  font-weight: 900;
+  font-size: $icon-font-size;
+  // up arrow https://fontawesome.com/v5/icons/file?f=classic&s=solid
+  content: "\f15b";
+}
+
 @mixin hidden {
   display: none;
   // The advantage of this is that when you hover, the height can increase a bit
@@ -298,6 +306,11 @@ nav.h-nav {
     > :not(:last-child) {
       margin-right: $sep-width
     }
+    &.file {
+      > :first-child::before {
+        @include file-icon;
+      }
+    }
     &.ancestors {
       // First ancestors.
       > :first-child::before {
@@ -314,6 +327,7 @@ nav.h-nav {
     }
   }
   a {
+    // u for Up
     &.u::before {
       @include up-arrow-icon;
     }

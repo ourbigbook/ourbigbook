@@ -9310,10 +9310,16 @@ web/bin/pg_dump_heroku
 ``
 This produces a file `latest.dump` with the database dump. If that already exists, it gets overwritten.
 
-Restoring can be done with the helper \a[web/bin/pg_restore_heroku]:
+Restoring that database locally to reproduce bugs can be done with the helper \a[web/bin/pg_restore_heroku_local]:
 ``
-web/bin/pg_restore_heroku
+web/bin/pg_restore_heroku_local
 ``
+
+Restoring that local database dump to Heroku when reverting back isuses can be done with the helper \a[web/bin/pg_restore_heroku_remote]:
+``
+web/bin/pg_restore_heroku_remote
+``
+This will then ask you to type an interactive confirmation which we have not disabled by default.
 
 That helper restore the local `latest.dump` database file like in <Save and restore local PostgreSQL development database>{full}. First we nuke the database completely with \a[web/bin/pg-setup] to increase accuracy:
 ``

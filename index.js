@@ -9155,8 +9155,10 @@ const OUTPUT_FORMATS_LIST = [
               type = 'video'
             } else {
               const indir = context.options.input_path === undefined ? '.' : path.dirname(context.options.input_path)
-              ;({ type, content } = context.options.read_file(
-                path.join(indir, ast.file), context))
+              const readFileRet = context.options.read_file(path.join(indir, ast.file), context)
+              if (readFileRet) {
+                ;({ type, content } = readFileRet)
+              }
             }
 
             // This section is about.

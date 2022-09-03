@@ -3856,7 +3856,7 @@ function htmlAncestorLinks(entries, nAncestors) {
   const ret = []
   let i = 0
   if (nAncestors > ANCESTORS_MAX) {
-    ret.push(`<a ${htmlAttr('href', `#${ANCESTORS_ID}`)}}>${HTML_PARENT_MARKER} &nbsp;...</a>`)
+    ret.push(`<a ${htmlAttr('href', `#${ANCESTORS_ID}`)}}>&nbsp;...</a>`)
     i++
   }
   for (const entry of entries) {

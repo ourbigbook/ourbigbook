@@ -5470,19 +5470,22 @@ My Line 2
     },
     assert_xpath: {
       'index.html': [
-        "//x:a[@href='_dir/path/to/index.html' and text()='path/to']",
+        `//x:a[@href='_dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='_file/path/to-/path']`,
+        `//x:a[@href='_dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='_file/path/to-/path/to']`,
         "//x:div[@class='p' and text()='My directory']",
 
-        "//x:a[@href='_raw/path/to/my-file.txt' and text()='path/to/my-file.txt']",
+        "//x:a[@href='_raw/path/to/my-file.txt' and text()='my-file.txt']",
         "//x:div[@class='p' and text()='My txt']",
-        // Don't know how to include newlines!
+        // Don't know how to include newlines in xPath!
         "//x:code[starts-with(text(), 'My Line 1')]",
+        `//x:a[@href='_dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='_file/path/to/my-file.txt-/path']`,
+        `//x:a[@href='_dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='_file/path/to/my-file.txt-/path/to']`,
 
-        "//x:a[@href='_raw/path/to/my-file.png' and text()='path/to/my-file.png']",
+        "//x:a[@href='_raw/path/to/my-file.png' and text()='my-file.png']",
         "//x:img[@src='_raw/path/to/my-file.png']",
         "//x:div[@class='p' and text()='My png']",
 
-        "//x:a[@href='_raw/path/to/my-file.mp4' and text()='path/to/my-file.mp4']",
+        "//x:a[@href='_raw/path/to/my-file.mp4' and text()='my-file.mp4']",
         "//x:video[@src='_raw/path/to/my-file.mp4']",
         "//x:div[@class='p' and text()='My mp4']",
 
@@ -5506,7 +5509,7 @@ assert_lib('header: file argument that is the last header adds the preview',
     },
     assert_xpath: {
       'index.html': [
-        "//x:a[@href='_raw/path/to/my-file.png' and text()='path/to/my-file.png']",
+        "//x:a[@href='_raw/path/to/my-file.png' and text()='my-file.png']",
         "//x:img[@src='_raw/path/to/my-file.png']",
       ]
     }

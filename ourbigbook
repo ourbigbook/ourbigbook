@@ -614,9 +614,8 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
           }
           const new_options_dir = { ...new_options }
           new_options_dir.auto_generated_source = true
-          const ROOT_PLACEHOLDER = '(root)'
           if (input_path_relative_to_ourbigbook_json === '') {
-            new_options_dir.title = ROOT_PLACEHOLDER
+            new_options_dir.title = ourbigbook.FILE_ROOT_PLACEHOLDER
           } else {
             new_options_dir.title = input_path_relative_to_ourbigbook_json
           }
@@ -632,7 +631,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
             const breadcrumbParse = path.parse(breadcrumbDir)
             let bname = breadcrumbParse.name
             if (breadcrumbDir === '') {
-              bname = ROOT_PLACEHOLDER
+              bname = ourbigbook.FILE_ROOT_PLACEHOLDER
             }
             if (upcount === 0) {
               crumbArr.push(bname)

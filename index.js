@@ -10346,7 +10346,7 @@ OUTPUT_FORMATS_LIST.push(
         'Image': ourbigbookConvertSimpleElem,
         'image': ourbigbookConvertSimpleElem,
         'JsCanvasDemo': ourbigbookConvertSimpleElem,
-        'Ol': ourbigbookUl,
+        'Ol': ourbigbookConvertSimpleElem,
         [Macro.PARAGRAPH_MACRO_NAME]: function(ast, context) {
           if (!ast.args.content || Object.keys(ast.args).length !== 1) {
             return ourbigbookConvertSimpleElem(ast, context)

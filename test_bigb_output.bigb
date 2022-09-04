@@ -230,6 +230,13 @@ List with ID:
 ]
 {id=my-list}
 
+Insane ordered list:
+
+\Ol[
+* p1
+* p2
+]
+
 Thight list:
 * aaa
 * bbb

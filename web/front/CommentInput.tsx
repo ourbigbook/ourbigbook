@@ -38,9 +38,7 @@ const CommentInput = ({
   }, [])
   useEffect(() => {
     window.onbeforeunload = function(){
-      if (body) {
-        return sureLeaveMessage
-      }
+      if (body) { return sureLeaveMessage }
     }
   }, [body])
   const handleChange = e => {

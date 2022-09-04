@@ -1,5 +1,5 @@
 import Router from 'next/router'
-import React, { useRef } from 'react'
+import React, { useEffect, useRef } from 'react'
 
 import { cant } from 'front/cant'
 import config from 'front/config'
@@ -13,6 +13,7 @@ import {
   useCtrlEnterSubmit ,
 } from 'front'
 import { webApi } from 'front/api'
+import { sureLeaveMessage } from 'front/config'
 import routes from 'front/routes'
 import { SiteType } from 'front/types/SiteType'
 import { UserType } from 'front/types/UserType'
@@ -28,6 +29,9 @@ const SiteSettings = ({
 }) => {
   const [isLoading, setLoading] = React.useState(false)
   const [errors, setErrors] = React.useState([])
+  if (site.pinnedArticle === undefined) {
+    site.pinnedArticle = ''
+  }
   const [siteInfo, setSiteInfo] = React.useState(site)
   const [pinnedArticleErrors, setPinnedArticleErrors] = React.useState([]);
   const [formChanged, setFormChanged] = React.useState(false)
@@ -51,8 +55,8 @@ const SiteSettings = ({
       } else {
         disableButton(submitElem.current)
       }
+      setFormChanged(site.pinnedArticle !== val)
     }
-    setFormChanged(true)
   }
   const handleSubmit = async (e) => {
     if (pinnedArticleErrors.length !== 0) {
@@ -70,6 +74,11 @@ const SiteSettings = ({
     setFormChanged(false)
   }
   useCtrlEnterSubmit(handleSubmit)
+  useEffect(() => {
+    window.onbeforeunload = function(){
+      if (formChanged) { return sureLeaveMessage }
+    }
+  }, [formChanged])
   const title = 'Site settings'
   const { setTitle } = React.useContext(AppContext)
   const canUpdate = !cant.updateSiteSettings(loggedInUser)
@@ -86,7 +95,7 @@ const SiteSettings = ({
             <input
               type="text"
               placeholder="(empty) Sample value: user0/article0. Empty for don't pin any."
-              value={siteInfo.pinnedArticle === undefined ? '' : siteInfo.pinnedArticle}
+              value={siteInfo.pinnedArticle}
               onChange={updateState("pinnedArticle")}
               disabled={!canUpdate}
             />

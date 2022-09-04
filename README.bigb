@@ -7783,7 +7783,7 @@ This dict contains options related to interaction between <OurBigBook CLI> and <
 
 Select the default host used for
 * <web> publishing. Serves as the default domain for <--web-url>
-* <static website> where it is used, e.g. <linkFromHeaderMeta>
+* <static website> where it is used, e.g. <linkFromStaticHeaderMetaToWeb>
 Defaults to `ourbigbook.com`, the <OurBigBook.com>[reference Web instance].
 
 = `hostCapitalized`
@@ -7795,14 +7795,19 @@ Default:
 * if <`host`> is given, use it
 * otherwise, `OurBigBook.com`
 
-Shows up on <linkFromHeaderMeta> as a potentially more human readable version of the hostname.
+Shows up on <linkFromStaticHeaderMetaToWeb> as a potentially more human readable version of the hostname.
 
-= `linkFromHeaderMeta`
+= `linkFromStaticHeaderMetaToWeb`
 {parent=`web`}
+
+= `linkFromStaticHeaderMetaToWeb`
+{synonym}
 
 Type: boolean. Default: `false`.
 
-If `true`, adds a link under the metadata section of every header of a <OurBigBook CLI> static website pointing to the corresponding article on <OurBigBook.com>. It also sends you to Heaven for supporting the project.
+If `true`, adds a link under the metadata section of every header of a <OurBigBook CLI> static website pointing to the corresponding article on <OurBigBook.com>, or another <OurBigBook Web> instance specified by the <`host`> option.
+
+It also sends you to Heaven for supporting the project.
 
 This option requires <`username`> to be set.
 
@@ -7810,7 +7815,7 @@ For example, if you set:
 ``
 "web": {
   "username": "myusername",
-  "linkFromHeaderMeta": true
+  "linkFromStaticHeaderMetaToWeb": true
 }
 ``
 then in the rendering of a README.bigb:
@@ -7835,7 +7840,7 @@ In order for such links not to be broken, you should always first do a <Web uplo
 
 Type: string.
 
-Sets your <OurBigBook.com> username. This is used e.g. by <linkFromHeaderMeta>.
+Sets your <OurBigBook.com> username. This is used e.g. by <linkFromStaticHeaderMetaToWeb>.
 
 = `xPrefix`
 {parent=ourbigbook.json}
@@ -8018,7 +8023,7 @@ More subjective rationale, motivation and planning aspects of the project are do
 
 <OurBigBook Web> is a bit like <#Wikipedia>, but where each user can have their own version of each page, and it <can my OurBigBook.com content be edited or removed by other users?>[cannot be edited by others without permission].
 
-And it is also a bit like <#Obsidian>: you can optionally keep all your notes in plaintext markup files in your computer and publish either on OurBigBook.com or as a static HTML website on your own domain.
+And it is also a bit like <#Obsidian> (a personal knowledge base): you can optionally keep all your notes in plaintext markup files in your computer and publish either on OurBigBook.com or as a static HTML website on your own domain.
 
 The goal of the <OurBigBook Project> is to make university students write perfect natural sciences books for free as they are trying to learn for their lectures.
 

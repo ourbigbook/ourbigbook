@@ -3175,10 +3175,10 @@ function convertInitContext(options={}, extra_returns={}) {
         if (!('host' in web)) {
           web.host = OURBIGBOOK_JSON_DEFAULT.web.host
         }
-        if (!('linkFromHeaderMeta' in web)) { web.linkFromHeaderMeta = false; }
+        if (!('linkFromStaticHeaderMetaToWeb' in web)) { web.linkFromStaticHeaderMetaToWeb = false; }
         if (!('username' in web)) { web.username = undefined; }
-        if (web.linkFromHeaderMeta && web.username === undefined) {
-          throw new Error(`web.username must be given when web.linkFromHeaderMeta = true"`)
+        if (web.linkFromStaticHeaderMetaToWeb && web.username === undefined) {
+          throw new Error(`web.username must be given when web.linkFromStaticHeaderMetaToWeb = true"`)
         }
       }
       if (!('xPrefix' in ourbigbook_json)) { ourbigbook_json.xPrefix = undefined; }
@@ -8997,7 +8997,7 @@ const OUTPUT_FORMATS_LIST = [
           }
 
           let ourbigbookLink
-          if (context.options.ourbigbook_json.web.linkFromHeaderMeta) {
+          if (context.options.ourbigbook_json.web.linkFromStaticHeaderMetaToWeb) {
             // Same procedure that can be done from ourbigbook.json to redirect every link out.
             const newContext = { ...context }
             const newOptions = { ...context.options }

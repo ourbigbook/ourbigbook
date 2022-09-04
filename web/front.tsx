@@ -5,6 +5,7 @@ import { mutate } from 'swr'
 import ourbigbook from 'ourbigbook';
 
 import { webApi } from 'front/api'
+import { docsUrl } from 'front/config'
 import { AUTH_COOKIE_NAME } from 'front/js'
 import CustomLink from 'front/CustomLink'
 import routes from 'front/routes'
@@ -130,6 +131,10 @@ export function NotificationIcon(opts) {
   return Icon("i ion-ios-bell", "Notifications", opts)
 }
 
+export function PinnedArticleIcon(opts) {
+  return Icon("ion-pin", "Pinned Article", opts)
+}
+
 export function SeeIcon(opts) {
   return Icon("ion-eye", "View", opts)
 }
@@ -171,7 +176,7 @@ export function SignupOrLogin(
 }
 
 export function TopicsHelp() {
-  return <div><HelpIcon /> New to topics? <a href="https://docs.ourbigbook.com/#ourbigbook-web-topics">Read the documentation here!</a></div>
+  return <div><HelpIcon /> New to topics? <a href={`${docsUrl}/ourbigbook-web-topics`}>Read the documentation here!</a></div>
 }
 
 export function disableButton(btn, msg='Cannot submit due to errors') {

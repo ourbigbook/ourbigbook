@@ -134,6 +134,10 @@ export function SeeIcon(opts) {
   return Icon("ion-eye", "View", opts)
 }
 
+export function SettingsIcon(opts) {
+  return Icon("ion-gear-a", "Settings", opts)
+}
+
 export function SourceIcon(opts) {
   return Icon("ion-document-text", "View", opts)
 }
@@ -170,18 +174,14 @@ export function TopicsHelp() {
   return <div><HelpIcon /> New to topics? <a href="https://docs.ourbigbook.com/#ourbigbook-web-topics">Read the documentation here!</a></div>
 }
 
-export function disableButton(btn, msg) {
+export function disableButton(btn, msg='Cannot submit due to errors') {
   btn.setAttribute('disabled', '')
   btn.setAttribute('title', msg)
-  btn.classList.add('disabled')
 }
 
-export function enableButton(btn, msgGiven) {
+export function enableButton(btn) {
   btn.removeAttribute('disabled')
-  if (msgGiven) {
-    btn.removeAttribute('title')
-  }
-  btn.classList.remove('disabled')
+  btn.removeAttribute('title')
 }
 
 /// Logout the current user on web UI.

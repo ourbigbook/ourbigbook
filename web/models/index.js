@@ -44,6 +44,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   const Comment = require('./comment')(sequelize)
   const Issue = require('./issue')(sequelize)
   const SequelizeMeta = require('./sequelize_meta')(sequelize)
+  const Site = require('./site')(sequelize)
   const User = require('./user')(sequelize)
   const Topic = require('./topic')(sequelize)
   ourbigbook_models.addModels(sequelize, { web: true })
@@ -277,6 +278,8 @@ function getSequelize(toplevelDir, toplevelBasename) {
   Topic.belongsTo(Article, { as: 'article' })
   Article.hasOne(Topic, { as: 'topic', foreignKey: 'articleId', constraints: false })
 
+  Site.belongsTo(Article, { as: 'pinnedArticle', foreignKey: 'pinnedArticleId', allowNull: true })
+
   //Article.hasMany(Article, { as: 'sameTopic', foreignKey: 'topicId', sourceKey: 'topicId', constraints: false })
 
   return sequelize;
@@ -336,11 +339,14 @@ async function sync(sequelize, opts={}) {
       }
     )
   if (!dbExists || opts.force) {
-    await sequelize.models.SequelizeMeta.bulkCreate(
-      fs.readdirSync(path.join(path.dirname(__dirname), 'migrations')).map(
-        basename => { return { name: basename } }
-      )
-    )
+    await Promise.all([
+      sequelize.models.SequelizeMeta.bulkCreate(
+        fs.readdirSync(path.join(path.dirname(__dirname), 'migrations')).map(
+          basename => { return { name: basename } }
+        )
+      ),
+      //sequelize.models.Site.create(),
+    ])
   }
   return dbExists
 }

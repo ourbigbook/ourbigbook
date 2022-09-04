@@ -38,6 +38,9 @@ const permissions = [
 
   // Comments
   ['deleteComment', (loggedInUser, comment) => true],
+
+  // SiteSettings
+  ['updateSiteSettings', (loggedInUser, comment) => true],
 ]
 permissions.forEach((permission, i, permissions) => {
   permissions[i] = [

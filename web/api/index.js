@@ -8,7 +8,8 @@ router.use('/', require('./users'))
 router.use('/articles', require('./articles'))
 router.use('/editor', require('./editor'))
 router.use('/issues', require('./issues'))
-router.use('/topics', require('./topics'))
 router.use(`/min`, require('./min'))
+router.use(`/site`, require('./site'))
+router.use('/topics', require('./topics'))
 
 module.exports = router

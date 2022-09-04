@@ -105,6 +105,11 @@ class WebApi {
     return sendJsonHttp(method, `/${ourbigbook.WEB_API_PATH}/${path}`, newopts)
   }
 
+  async article(slug, opts={}) {
+    const { data, status } = await this.articles(Object.assign({ id: slug }, opts))
+    return { data: data.articles[0], status }
+  }
+
   async articles(opts={}) {
     return this.req('get', `articles${encodeGetParamsWithOffset(opts)}`)
   }
@@ -146,11 +151,6 @@ class WebApi {
 
   async articleRedirects(opts={}) {
     return this.req('get', `articles/redirects${encodeGetParamsWithOffset(opts)}`)
-  }
-
-  async article(slug, opts={}) {
-    const { data, status } = await this.articles(Object.assign({ id: slug }, opts))
-    return { data: data.articles[0], status }
   }
 
   async articleUnfollow(slug) {
@@ -285,6 +285,15 @@ class WebApi {
 
   async min(opts={}) {
     return this.req('get', `min${encodeGetParams(opts)}`)
+  }
+
+  async siteSettingsUpdate(opts={}) {
+    return this.req('put',
+      `site`,
+      {
+        body: opts,
+      },
+    )
   }
 
   async topics(opts={}) {

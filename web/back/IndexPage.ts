@@ -36,59 +36,77 @@ export const getServerSidePropsIndexHoc = ({
     }
     const [order, pageNum, err] = getOrderAndPage(req, query.page, getOrderAndPageOpts)
     if (err) { res.statusCode = 422 }
-    let articles
-    let articlesCount
-    let articlesAndCounts
     const offset = pageNum * articleLimit
     const limit = articleLimit
     const sequelize = req.sequelize
-    switch (itemTypeEff) {
-      case 'article':
-        if (followedEff) {
-          articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(
-            offset, limit, order)
-          articles = articlesAndCounts.articles
-          articlesCount = articlesAndCounts.articlesCount
-        } else {
-          articlesAndCounts = await sequelize.models.Article.getArticles({
-            sequelize,
-            offset,
-            order,
-            limit,
-          })
-          articles = await Promise.all(articlesAndCounts.rows.map(
-            (article) => {return article.toJson(loggedInUser) }))
-          articlesCount = articlesAndCounts.count
+    const [[articles, articlesCount], pinnedArticle] = await Promise.all([
+      (async () => {
+        let articles
+        let articlesCount
+        let articlesAndCounts
+        switch (itemTypeEff) {
+          case 'article':
+            if (followedEff) {
+              articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(
+                offset, limit, order)
+              articles = articlesAndCounts.articles
+              articlesCount = articlesAndCounts.articlesCount
+            } else {
+              articlesAndCounts = await sequelize.models.Article.getArticles({
+                sequelize,
+                offset,
+                order,
+                limit,
+              })
+              articles = await Promise.all(articlesAndCounts.rows.map(
+                (article) => {return article.toJson(loggedInUser) }))
+              articlesCount = articlesAndCounts.count
+            }
+            break
+          case 'discussion':
+              articlesAndCounts = await sequelize.models.Issue.getIssues({
+                sequelize,
+                includeArticle: true,
+                offset,
+                order,
+                limit,
+              })
+              articles = await Promise.all(articlesAndCounts.rows.map(
+                (article) => {
+                  return article.toJson(loggedInUser)
+                }))
+              articlesCount = articlesAndCounts.count
+            break
+          case 'topic':
+              articlesAndCounts = await sequelize.models.Topic.getTopics({
+                sequelize,
+                offset,
+                order,
+                limit,
+              })
+              articles = await Promise.all(articlesAndCounts.rows.map(
+                (article) => {return article.toJson(loggedInUser) }))
+              articlesCount = articlesAndCounts.count
+            break
+          default:
+            throw new Error(`unknown itemType: ${itemTypeEff}`)
         }
-        break
-      case 'discussion':
-          articlesAndCounts = await sequelize.models.Issue.getIssues({
-            sequelize,
-            includeArticle: true,
-            offset,
-            order,
-            limit,
-          })
-          articles = await Promise.all(articlesAndCounts.rows.map(
-            (article) => {
-              return article.toJson(loggedInUser)
-            }))
-          articlesCount = articlesAndCounts.count
-        break
-      case 'topic':
-          articlesAndCounts = await sequelize.models.Topic.getTopics({
-            sequelize,
-            offset,
-            order,
-            limit,
-          })
-          articles = await Promise.all(articlesAndCounts.rows.map(
-            (article) => {return article.toJson(loggedInUser) }))
-          articlesCount = articlesAndCounts.count
-        break
-      default:
-        throw new Error(`unknown itemType: ${itemTypeEff}`)
-    }
+        return [articles, articlesCount]
+      })(),
+      sequelize.models.Site.findOne({ include:
+        [{
+          model: sequelize.models.Article,
+          as: 'pinnedArticle',
+        }]
+      }).then(site => {
+        const pinnedArticle = site.pinnedArticle
+        if (pinnedArticle) {
+          return pinnedArticle.toJson(loggedInUser)
+        } else {
+          return null
+        }
+      }),
+    ])
     const props: IndexPageProps = {
       articles,
       articlesCount,
@@ -96,6 +114,7 @@ export const getServerSidePropsIndexHoc = ({
       itemType: itemTypeEff,
       order,
       page: pageNum,
+      pinnedArticle,
     }
     if (loggedInUser) {
       props.loggedInUser = await loggedInUser.toJson()

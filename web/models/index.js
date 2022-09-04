@@ -345,7 +345,7 @@ async function sync(sequelize, opts={}) {
           basename => { return { name: basename } }
         )
       ),
-      //sequelize.models.Site.create(),
+      sequelize.models.Site.create(),
     ])
   }
   return dbExists

@@ -10,6 +10,19 @@ module.exports = {
       queryInterface.createTable(
         'Site',
         {
+          id: {
+            type: Sequelize.INTEGER,
+            primaryKey: true,
+            autoIncrement: true,
+          },
+          createdAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+          },
+          updatedAt: {
+            type: DataTypes.DATE,
+            allowNull: false,
+          },
           pinnedArticleId: {
             type: DataTypes.INTEGER,
             references: {
@@ -27,7 +40,11 @@ module.exports = {
       ),
     ])
     // Create the singleton.
-    await queryInterface.bulkInsert('Site', [{ pinnedArticleId: null }], { transaction })
+    await queryInterface.bulkInsert('Site', [{
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      pinnedArticleId: null,
+    }], { transaction })
   }),
   down: async (queryInterface, Sequelize) => queryInterface.sequelize.transaction(async transaction => {
     return Promise.all([

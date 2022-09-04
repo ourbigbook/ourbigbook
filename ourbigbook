@@ -1687,7 +1687,7 @@ if (cli.helpMacros) {
   // This is not ideal as it prevents obtaining the error messages from stdout/stderr for debug purposes.
   // A better solution might instead be to have an async readline variant:
   // https://stackoverflow.com/questions/63796633/spawnsync-bin-sh-enobufs/77420941#77420941
-  const cmdOptsNoStdout = { ...cmdOptsInfo }
+  const cmdOptsNoStdout = { ...cmdOpts }
   cmdOptsNoStdout.ignoreStdout = true
 
   const isInGitRepo = git_is_in_repo(ourbigbook_json_dir)

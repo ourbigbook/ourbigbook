@@ -29,9 +29,10 @@ Notable features:
   {disambiguate=intro}
   {height=700}
   {width=700}
-* you can store all your data locally in a <OurBigBook Markup>[plaintext markup format] that can be edited locally and published either:
+* you can store all your <#personal knowledge base> content locally in a <OurBigBook Markup>[plaintext markup format] that can be edited locally and published either:
   * to <OurBigBook.com> to get awesome multi-user features like <OurBigBook Web topics>
-  * as a <static website>, which you can host yourself for free on many external providers like GitHub Pages, and remain in full control
+  * as HTML files to a <static website>, which you can host yourself for free on many external providers like <GitHub Pages>, and remain in full control
+  This way you can be sure that even if <ourbigbook.com> were to go down one day (which we have no plans to as it is quite cheap to host!), your content will still be perfectly readable as a static site.
 
   \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
   {title=Edit locally and publish demo}
@@ -7800,7 +7801,7 @@ Shows up on <linkFromStaticHeaderMetaToWeb> as a potentially more human readable
 = `linkFromStaticHeaderMetaToWeb`
 {parent=`web`}
 
-= `linkFromStaticHeaderMetaToWeb`
+= `linkFromHeaderMeta`
 {synonym}
 
 Type: boolean. Default: `false`.
@@ -7834,6 +7835,8 @@ those headers would have a metadata entry pointing respectively to:
 * `https://ourbigbook.com/myusername/my-h2/my-h2-2`
 
 In order for such links not to be broken, you should always first do a <Web upload> to ensure that the articles are present on <OurBigBook.com>.
+
+Previously named `linkFromHeaderMeta`.
 
 = `username`
 {parent=`web`}
@@ -9754,7 +9757,7 @@ Historically, <Vim> support came first and was better developed. But that was ju
 
 Our syntax highlighting attempts mostly to follow the official HTML style, which is perhaps the best maintained data-language. We have also had a look at the LaTeX, Markdown and Asciidoctor ones for refernce.
 
-One current fundamental limitation of VS Code is that there is no way to preview images and mathematics inline with text: https://stackoverflow.com/questions/52709966/vscode-is-it-possible-to-show-an-image-inside-a-text-buffer If only it were able to do that, it would go a long way to being as good as a WYSIWYG interface.
+One current fundamental limitation of <VS Code> is that there is no way to preview images and mathematics inline with text: https://stackoverflow.com/questions/52709966/vscode-is-it-possible-to-show-an-image-inside-a-text-buffer If only it were able to do that, it would go a long way to being as good as a WYSIWYG interface.
 
 \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
 {title=Edit locally and publish demo}
@@ -10875,6 +10878,32 @@ Toplevel executive of the <OurBigBook Project>, who has ultimate power over the 
 OurBigBook.com account: https://ourbigbook.com/ourbigbook
 
 GitHub account: https://github.com/ourbigbook-admin
+
+= Pinned article
+{parent=OurBigBook Admin}
+
+<OurBigBook Admins> can select one article from any user to be pinned to the website's "front index pages" such as the global article, <topics> or user indexes.
+
+The typical use case of this feature is to facilitate user onboarding, and it could also be used for general server announcemnets.
+
+To modify the pinned article, admins must visit the "Site Settings" page under: https://ourbigbook.com/go/site-settings[]. That page can be accessed via the "Site Settings" button at the bottom of each index page.
+
+\Image[feature/pinned-article/site-settings-button-on-topics-page-arrow.png]
+{title=Site Settings link under the <topics> page.}
+{provider=github}
+{height=800}
+{border}
+
+\Image[feature/pinned-article/site-settings-pinned-article-filled-arrow.png]
+{title=Edit the pinned article setting in the site settings page.}
+{provider=github}
+{border}
+
+\Image[feature/pinned-article/pinned-article-on-topics-page-arrow.png]
+{title=The selected article now shows on the homepage for all users to see.}
+{provider=github}
+{height=1200}
+{border}
 
 = Publicity
 {parent=Developing OurBigBook}

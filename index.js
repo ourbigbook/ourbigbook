@@ -9252,32 +9252,34 @@ const OUTPUT_FORMATS_LIST = [
           const renderPostAsts = []
           if (ast.file) {
             const absPref = fileProtocolIsGiven ? '' : URL_SEP
+            const hasVideoExt = VIDEO_EXTENSIONS.has(pathSplitext(ast.file)[1])
             if (IMAGE_EXTENSIONS.has(pathSplitext(ast.file)[1])) {
               renderPostAsts.push(new AstNode(
                 AstType.MACRO,
                 'Image',
                 {
-                  'src': new AstArgument(
-                    [
-                      new PlaintextAstNode(absPref + ast.file)
-                    ],
-                  ),
+                  'src': new AstArgument([ new PlaintextAstNode(absPref + ast.file) ]),
+                  // For now we force provider to be local, thus preventing {file} to be about a provider
+                  // which feels like a reasonable restriction. If we wanted to remove this, we'd need to add
+                  // a provider argument to \H, which falls into the wider question of allowing every \Image
+                  // option to also be forwrded through \H.
+                  'provider': new AstArgument([ new PlaintextAstNode('local') ]),
                 },
               ))
             } else if (
-              VIDEO_EXTENSIONS.has(pathSplitext(ast.file)[1]) ||
+              hasVideoExt ||
               ast.file.match(media_provider_type_youtube_re)
             ) {
+              const args = {
+                'src': new AstArgument([ new PlaintextAstNode(absPref +  ast.file) ]),
+              }
+              if (hasVideoExt) {
+                args.provider = new AstArgument([ new PlaintextAstNode('local') ])
+              }
               renderPostAsts.push(new AstNode(
                 AstType.MACRO,
                 'Video',
-                {
-                  'src': new AstArgument(
-                    [
-                      new PlaintextAstNode(absPref +  ast.file)
-                    ],
-                  ),
-                },
+                args
               ))
             } else {
               // Plaintext file. Possibly embed into HTML.

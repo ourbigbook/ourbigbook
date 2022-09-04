@@ -44,7 +44,9 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
 
 * https://OurBigBook.com[]: reference <OurBigBook Web> instance
 * donate to the OurBigBook Project: <donate>
-* https://twitter.com/OurBigBook[]: announcements. Other official accounts at: <official accounts>{full}
+* project announcements:
+  * <news>{full}: long form
+  * https://twitter.com/OurBigBook[]: short form. Other official accounts at: <official accounts>{full}
 * https://cirosantilli.com/ourbigbook-com[]: further rationale behind the project by the founder <Ciro Santilli> 
 * https://cirosantilli.com[]: showcase static demo document with interesting content, published with <OurBigBook CLI>. Primary inspiration for OurBigBook development.
   * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
@@ -6841,12 +6843,18 @@ git push --delete origin master
 
 You then will also want to set your default repository branch to `dev` in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
 
-= `.github` directory is ignored on GitHub pages
+= `.github` directory is ignored on GitHub Pages
 {parent=Publish to GitHub Pages}
 
 It's a GitHub bug/feature: https://github.com/orgs/community/discussions/52252
 
 Maybe we should just ignore the `.github` directory when publishing, otherwise it leads to a broken link on the <`_dir` directory> listings.
+
+= `_raw` files are downloaded rather than displayed in browser for certain file extensions on GitHub Pages
+{parent=Publish to GitHub Pages}
+{tag=`_raw` directory}
+
+TODO find some upstream discussion.
 
 = `-S`, `--split-headers`
 {id=split-headers}
@@ -7039,6 +7047,12 @@ Defined variables:
 * `title`
 
 We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
+
+= ourbigbook.liquid.html
+{c}
+{parent=--template}
+
+`ourbigbook.liquid.html` is the default template file name used for <--template> as mentioned at <ourbigbook.json/template>.
 
 = Template variable
 {parent=--template}
@@ -7745,9 +7759,9 @@ Select the template Liquid file to use.
 
 Serves as the default for the <--template>.
 
-If this option is not given, and if a file `ourbigbook.liquid.html` exists in the project, then that file is used.
+If this option is not given, and if a file <ourbigbook.liquid.html> exists in the project, then that file is used.
 
-If `ourbigbook.liquid.html` exists but you don't want to use it, set the option to `null` and it won't be used.
+If <ourbigbook.liquid.html> exists but you don't want to use it, set the option to `null` and it won't be used.
 
 = `toSplitHeaders`
 {parent=ourbigbook.json}
@@ -10864,8 +10878,9 @@ GitHub account: https://github.com/ourbigbook-admin
 {parent=Publicity}
 
 * https://OurBigBook.com (case insensitive)
+* <twitter.com OurBigBook>
+* <mastodon.social @OurBigBook>: Twitter posts are mirrored there, as Twitter had become too restrictive towards 2024, e.g. with mandatory login
 * https://github.com/OurBigBook GitHub organization (case insensitive)
-* https://twitter.com/OurBigBook (case insensitive)
 * https://www.youtube.com/@OurBigBook (case insensitive)
 * LinkedIn company: https://www.linkedin.com/company/ourbigbook
   * LinkedIn group: https://www.linkedin.com/groups/9164882/ TODO vs the company.
@@ -10874,6 +10889,14 @@ GitHub account: https://github.com/ourbigbook-admin
   * group: https://www.facebook.com/groups/OurBigBook (case insensitive)
 * Discord: OurBigBook#6998 "OurBigBook's Server" invite link: https://discord.gg/A8P5zGcWUh
 * https://www.instagram.com/ourbigbook (case insensitive)
+
+= twitter.com/OurBigBook
+{parent=Official accounts}
+
+https://twitter.com/OurBigBook (case insensitive)
+
+= mastodon.social/@OurBigBook
+{parent=Official accounts}
 
 = Merchandise
 {parent=Publicity}
@@ -11197,6 +11220,8 @@ Video guidelines:
   * aim to have 3/4 lines of subtitle maximum per frame
   When recording, make sure that all key mouse action happens on the top half of the viewport, otherwise it will get covered by the subtitles in downstream editing.
 * on YouTube, add the video as the first video of the "Videos" playlist: https://www.youtube.com/playlist?list=PLshTOzrBHLkZlpvTuBdphKLWwU7xBV6VF This list is needed because otherwise YouTube's stupid "Shorts" features produces two separate timelines by default, one for shorts and one for non-shorts. With this list, all videos can be seen easily as non-shorts.
+
+\Include[news]{parent=Publicity}
 
 = OurBigBook.com Fellowship
 {parent=Publicity}

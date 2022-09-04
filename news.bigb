@@ -1,0 +1,105 @@
+= News
+{scope}
+
+This is a list of project announcements such as new features sorted in cronological order, from the newest to oldest.
+
+Significant entries will have a corresponding announcement on the following <official accounts>:
+* <twitter.com OurBigBook>
+* <mastodon.social @OurBigBook>
+
+= Automatically create `_file` pages for every file
+{parent=News}
+{tag=Static website}
+
+Previously we would only create an entry in the <`_file` output directory> for <headers> marked wiht the <`\H` `file` argument>.
+
+For example the file \a[file_demo/hello_world.js] in this repository has an associated header with the `file` argument in our \a[README.bigb] :
+``
+= file_demo/hello_world.js
+{file}
+
+An explanation of what this text file is about.
+
+Another line.
+``
+
+As a result, when doing a <split header> conversion, it would get both:
+* a <`_file` output directory> page at path `_file/file_demo/hello_world.js` <file_demo/hello_world.js>{file}
+* a <`_raw` directory> page at path `_raw/file_demo/hello_world.js` \a[file_demo/hello_world.js]
+
+On the other hand, the test file \a[file_demo/nofile.js] has no such associated header in the source code.
+
+Before this change, \a[file_demo/nofile.js] would only get an <`_raw` directory> entry under `_raw/file_demo/nofile.js` and not `_file` entry. But now it also gets both.
+
+The advantages of a `_file` entries over `_raw` entries are as follows:
+* `_file` entries can have metadata such as:
+  * OurBigBook content associated to them when they have an associated `_file` header. For example at <file_demo/hello_world.js>{file} we can see the rendered text:
+    \Q[
+    An explanation of what this text file is about.
+
+    Another line.
+    ]
+    Of course, in that case, they would also get the `_file` entry even before this update. However, this update does allow for a smooth update path where you can first link to the `_file` entry from external websites, and then add comments as needed later on without changing URLs.
+  * Google Analytics and other features via <ourbigbook.liquid.html>
+* `_file` always shows on static website hosts like GitHub Pages, since they are just HTML pages. This is unlike `raw` files which may just get downloaded for unknown extensions like `.bigb` rather than displayed on the browser: <`_raw` files are downloaded rather than displayed in browser for certain file extensions on GitHub Pages>
+
+This change is especially powerful following <Always show large text files on `_file` split headers>.
+
+Because we now have `_file` entries for every single file, we have also modified <`_dir` directory> directory listing pages to link to `_file` entries as those are generally more useful than `_raw` which is what they previously linked to. And you can always reach `_reaw_` from the corresponding `_file` is needed. Example: https://docs.ourbigbook.com/_dir
+
+= Always show large text files on `_file` split headers
+{parent=News}
+{tag=Static website}
+
+Previously, large files with an <`\H` `file` argument> associated to them would show a message
+``
+index.js was not rendered because it is too large (> 2000 bytes)
+``
+rather than the file contents both on their split and non-split versions, e.g.:
+* https://docs.ourbigbook.com/#_file/index.js
+* https://docs.ourbigbook.com/_file/index.js
+
+Now, the split version https://docs.ourbigbook.com/_file/index.js alwayws shows the full text file.
+
+When not in split mode, limiting preview sizes is important otherwise multi-header pages might become far too big. Ideally we would have found a way to reliably use `iframe` + `loading="lazy"` to refer to the file without actually embedding it into the page as we do for images, but we haven't managed to do that so far.
+
+This allows us to now see files that were previously not visible anywhere on the rendered HTML without download due to <`_raw` files are downloaded rather than displayed in browser for certain file extensions on GitHub Pages>.
+
+\Image[feature/always-show-large-files-on-split-headers.png]
+{provider=github}
+{height=700}
+{border}
+
+= Optimize generated HTML size by adding on-the-fly elements
+{parent=News}
+
+The main focus was the <Table of contents> rendering, which had a lot of redundant stuff. Headers were the next largest gain.
+
+The main techniques used to reduce size were:
+* auto-generate a few elements on-the-fly with JavaScript for on-hover effects, but only if it doesn't affect SEO and readability when JS is turned off
+* use a lot more CSS `::after` and `::before` to avoid embedding repetitive icons multiple times on the HTML
+
+After this changes, the rendered size of cirosantilli.com fell from 216 MiB to 156.5 MiB, which is kind of cool!
+
+= Suggest article creation for topics that don't exist
+{parent=News}
+{tag=OurBigBook Web}
+
+In previous updates we added <insane topic links> which allow you to write `#mathematics` to link to <OurBigBook Web topics> such as: https://ourbigbook.com/go/topic/mathematics
+
+The outcome of that however is that it is also easy and correct to create links to topics that don't yet exist on the <OurBigBook Web> instance.
+
+To make this nicer, we've unconsciously copied Wikipedia once again, and added a "Create an article for this topic" link
+
+For example, currently <ourbigbook.com> the topic "Endoplasmatic Reticulum" does not have any articles on it. So if you created a link `<#endoplasmatic reticulum>`, it would redirect you to: https://ourbigbook.com/go/topic/endoplasmic-reticulum
+
+Previously, this would show "Topic does not exist". But now it shows a button that opens the new article editor with pre-filled title "Endoplasmatic reticulum". The title choice is only a heuristic as it can't know the correct capitalization, but it covers most cases corectly by default and can be modified manually as needed.
+
+\Image[feature/suggest-new-article-for-empty-topic/topic-page-arrow.png]
+{provider=github}
+{border}
+
+\Image[feature/suggest-new-article-for-empty-topic/new-article-page.png]
+{provider=github}
+{height=700}
+{border}

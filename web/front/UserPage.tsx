@@ -202,13 +202,13 @@ export default function UserPage({
             href={routes.userIssues(user.username, { sort: 'created' })}
             className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
           >
-            <IssueIcon /> Latest
+            <IssueIcon /> Latest discussions
           </CustomLink>
           <CustomLink
             href={routes.userIssues(user.username, { sort: 'score' })}
             className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
           >
-            <IssueIcon /> Top
+            <IssueIcon /> Top discussions
           </CustomLink>
         </div>
       </div>

@@ -457,7 +457,7 @@ const Article = ({
             { seeAllCreateNew }
             { latestIssues.length > 0 ?
                 <>
-                  <h3>Latest threads</h3>
+                  <h3>Latest discussions</h3>
                   <ArticleList {...{
                     articles: latestIssues,
                     articlesCount: article.issueCount,
@@ -470,7 +470,7 @@ const Article = ({
                     showAuthor: true,
                     what: 'discussion',
                   }}/>
-                  <h3>Top threads</h3>
+                  <h3>Top discussions</h3>
                   <ArticleList {...{
                     articles: topIssues,
                     articlesCount: article.issueCount,

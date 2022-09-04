@@ -387,6 +387,56 @@ class AstNode {
     this.setup_argument(argname, arg)
   }
 
+  // Return the full scope of a given node. This includes the concatenation of both:
+  // * any scopes of any parents
+  // * the ID of the node if it has a scope set for itself
+  // If none of those provide scopes, return undefined.
+  calculate_scope() {
+    let parent_scope;
+    if (this.scope !== undefined) {
+      parent_scope = this.scope;
+    }
+    if (this.subdir) {
+      if (parent_scope) {
+        parent_scope += Macro.HEADER_SCOPE_SEPARATOR
+      } else {
+        parent_scope = ''
+      }
+      parent_scope += this.subdir
+    }
+
+    let self_scope;
+    if (
+        this.validation_output.scope !== undefined &&
+        this.validation_output.scope.boolean
+    ) {
+      self_scope = this.id;
+      if (parent_scope !== undefined) {
+        self_scope = self_scope.substr(parent_scope.length + 1);
+      }
+    } else {
+      self_scope = '';
+    }
+
+    let ret = '';
+    if (parent_scope !== undefined) {
+      ret += parent_scope;
+    }
+    if (
+      parent_scope !== undefined &&
+      self_scope !== ''
+    ) {
+      ret += Macro.HEADER_SCOPE_SEPARATOR;
+    }
+    if (self_scope !== '') {
+      ret += self_scope;
+    }
+    if (ret === '') {
+      return undefined;
+    }
+    return ret;
+  }
+
   /* Get parent ID, but only consider IDs that come through header_tree_node. */
   get_local_header_parent_id() {
     if (
@@ -2356,60 +2406,10 @@ function calculate_id(ast, context, non_indexed_ids, indexed_ids,
   return { title_text, macro_count_global }
 }
 
-// Return the full scope of a given node. This includes the concatenation of both:
-// * any scopes of any parents
-// * the ID of the node if it has a scope set for itself
-// If none of those provide scopes, return undefined.
-function calculate_scope(ast) {
-  let parent_scope;
-  if (ast.scope !== undefined) {
-    parent_scope = ast.scope;
-  }
-  if (ast.subdir) {
-    if (parent_scope) {
-      parent_scope += Macro.HEADER_SCOPE_SEPARATOR
-    } else {
-      parent_scope = ''
-    }
-    parent_scope += ast.subdir
-  }
-
-  let self_scope;
-  if (
-      ast.validation_output.scope !== undefined &&
-      ast.validation_output.scope.boolean
-  ) {
-    self_scope = ast.id;
-    if (parent_scope !== undefined) {
-      self_scope = self_scope.substr(parent_scope.length + 1);
-    }
-  } else {
-    self_scope = '';
-  }
-
-  let ret = '';
-  if (parent_scope !== undefined) {
-    ret += parent_scope;
-  }
-  if (
-    parent_scope !== undefined &&
-    self_scope !== ''
-  ) {
-    ret += Macro.HEADER_SCOPE_SEPARATOR;
-  }
-  if (self_scope !== '') {
-    ret += self_scope;
-  }
-  if (ret === '') {
-    return undefined;
-  }
-  return ret;
-}
-
 /* Calculate the length of the scope of a child header given its parent ast. */
 function calculate_scope_length(parent_ast) {
   if (parent_ast !== undefined) {
-    let scope = calculate_scope(parent_ast);
+    let scope = parent_ast.calculate_scope();
     if (scope !== undefined) {
       return scope.length + 1;
     }
@@ -4753,7 +4753,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             parent_tree_node.add_child(cur_header_tree_node);
             const parent_ast = parent_tree_node.ast;
             if (parent_ast !== undefined) {
-              let scope = calculate_scope(parent_ast);
+              let scope = parent_ast.calculate_scope();
               // The ast might already have a scope here through less common means such as
               // being in a subdirectory.
               if (ast.scope) {
@@ -4898,7 +4898,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           if (tags_or_children !== undefined) {
             for (const tag_or_child of tags_or_children) {
               const target_id = magic_title_to_id(render_arg_noescape(tag_or_child.args.content, context), context)
-              for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.scope, target_id, context)) {
+              for (const target_id_with_scope of get_all_possible_scope_resolutions(ast.calculate_scope(), target_id, context)) {
                 options.refs_to_h.push({
                   ast,
                   child,
@@ -4928,7 +4928,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (fetch_plural) {
           target_id = magic_title_to_id(target_id, context)
         }
-        const cur_scope = options.cur_header ? options.cur_header.scope : ''
+        const cur_scope = options.cur_header ? options.cur_header.calculate_scope() : ''
         for (const target_id_with_scope of get_all_possible_scope_resolutions(cur_scope, target_id, context)) {
           options.refs_to_x.push({
             ast,
@@ -5359,7 +5359,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             children_in_header = false;
           }
           if (cur_header_tree_node !== undefined) {
-            ast.scope = calculate_scope(cur_header_tree_node.ast);
+            ast.scope = cur_header_tree_node.ast.calculate_scope();
           }
 
           // Header IDs already previously calculated for parent= so we don't redo it in that case.
@@ -8672,7 +8672,7 @@ const OUTPUT_FORMATS_LIST = [
             for (const script of context.options.template_scripts_relative) {
               relative_scripts.push(`<script src="${context.options.template_vars.root_relpath}${script}"></script>\n`);
             }
-            const toplevel_scope = context.toplevel_ast ? calculate_scope(context.toplevel_ast) : undefined
+            const toplevel_scope = context.toplevel_ast ? context.toplevel_ast.calculate_scope() : undefined
             const ourbigbook_redirect_prefix_raw = toplevel_scope ? `${toplevel_scope}${URL_SEP}` : ''
             const ourbigbook_redirect_prefix = JSON.stringify(ourbigbook_redirect_prefix_raw).replace(/</g, '\\u003c')
             const data_script = `<script>

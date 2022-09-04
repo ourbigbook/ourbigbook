@@ -3789,7 +3789,7 @@ assert_lib_stdin("internal cross references work with header scope and don't thr
 == h2 2
 `
 );
-assert_lib_ast('scope with parent leading slash conflict resolution',
+assert_lib_ast('scope: with parent leading slash conflict resolution',
   `= h1
 
 = h2
@@ -3816,7 +3816,7 @@ assert_lib_ast('scope with parent leading slash conflict resolution',
   a('H', undefined, {level: [t('3')], title: [t('h4')]}, {id: 'h4'}),
 ]
 );
-assert_lib_ast('scope with parent breakout with no leading slash',
+assert_lib_ast('scope: with parent breakout with no leading slash',
   `= h1
 
 = h2
@@ -3840,7 +3840,7 @@ assert_lib_ast('scope with parent breakout with no leading slash',
 ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/120
-assert_lib_ast('nested scope with parent',
+assert_lib_ast('scope: nested with parent',
   `= h1
 {scope}
 
@@ -3878,7 +3878,7 @@ assert_lib_ast('nested scope with parent',
   a('H', undefined, {level: [t('4')], title: [t('h1 2 1 1')]}, {id: 'h1/h1-2/h1-2-1/h1-2-1-1'}),
 ]
 );
-assert_lib_ast('nested scope internal cross references resolves progressively',
+assert_lib_ast('scope: nested internal cross references resolves progressively',
   `= h1
 {scope}
 
@@ -3898,7 +3898,7 @@ assert_lib_ast('nested scope internal cross references resolves progressively',
 ]
 );
 // https://github.com/cirosantilli/ourbigbook/issues/100
-assert_lib_error('broken parent still generates a header ID',
+assert_lib_error('scope: broken parent still generates a header ID',
   `= h1
 
 \\x[h2]
@@ -3908,7 +3908,7 @@ assert_lib_error('broken parent still generates a header ID',
 
 `, 6, 1
 );
-assert_lib_ast('cross reference to toplevel scoped split header',
+assert_lib_ast('scope: cross reference to toplevel scoped split header',
   `= Notindex
 {scope}
 
@@ -3960,8 +3960,8 @@ assert_lib_ast('cross reference to toplevel scoped split header',
     filesystem: { 'bb.png': '' },
   },
 );
-// https://github.com/cirosantilli/ourbigbook/issues/173
-assert_lib_ast('cross reference to non-toplevel scoped split header',
+assert_lib_ast('scope: cross reference to non-toplevel scoped split header',
+  // https://github.com/cirosantilli/ourbigbook/issues/173
   `= tmp
 
 == tmp 2
@@ -3996,7 +3996,7 @@ assert_lib_ast('cross reference to non-toplevel scoped split header',
   },
 );
 // https://docs.ourbigbook.com#header-scope-argument-of-toplevel-headers
-assert_lib_ast('cross reference to non-included file with toplevel scope',
+assert_lib_ast('scope: cross reference to non-included file with toplevel scope',
   `\\x[toplevel-scope]
 
 \\x[toplevel-scope/h2]
@@ -4043,7 +4043,7 @@ assert_lib_ast('cross reference to non-included file with toplevel scope',
     }
   }
 );
-assert_lib_ast('toplevel scope gets removed from IDs in the file',
+assert_lib_ast('scope: toplevel scope gets removed from IDs in the file',
   `= Notindex
 {scope}
 
@@ -4069,7 +4069,7 @@ assert_lib_ast('toplevel scope gets removed from IDs in the file',
   }
 );
 assert_lib(
-  'cross reference incoming links and other children simple',
+  'scope: cross reference incoming links and other children simple',
   {
     convert_opts: {
       split_headers: true,
@@ -4198,7 +4198,7 @@ assert_lib(
 );
 assert_lib(
   // We can have confusion between singular and plural here unless proper resolution is done.
-  'lib: cross reference incoming links and other children with magic',
+  'cross reference incoming links and other children with magic',
   {
     convert_opts: {
       split_headers: true,
@@ -5983,7 +5983,7 @@ assert_lib('toc: split header with an include and no headers has a single table 
     },
   },
 );
-assert_lib('toc: lib: toplevel scope gets removed on table of contents of included headers',
+assert_lib('toc: toplevel scope gets removed on table of contents of included headers',
   {
     convert_dir: true,
     convert_opts: { split_headers: true },

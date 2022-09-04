@@ -10755,11 +10755,13 @@ TODO. Describe OurBigBook's formal grammar, and classify it in the grammar hiera
 = Do the release
 {parent=Release procedure}
 
-Before the first time you release, you need to login to NPM with:
+Before the first time you release, make sure that you can login to NPM with:
 ``
 npm login
 ``
-Releases should always be made with the official https://www.npmjs.com/~ourbigbook-admin user.
+This prompts you to login via the browser with 2FA. Currently you can also tick a box to not ask again for the next 5 minutes, which should be enough for the following \a[release] command. If you don't select this option, you will be prompted midway through the release command for login.
+
+Releases should always be made with the official https://www.npmjs.com/~ourbigbook-admin NPM user.
 
 Then, every new release can be done automatically with the \a[release] script, e.g. to release a version 0.7.2:
 ``

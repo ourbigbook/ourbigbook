@@ -339,7 +339,11 @@ div.tab-list {
   .tab-item {
     overflow: hidden;
     padding-right: 10px;
-    white-space: pre;
+    // TODO https://docs.ourbigbook.com/todo/firefox-tab-lists-don-t-wrap
+    // we want "pre" here to prevent individual items from breaking up.
+    // But bloody Firefox then prevent the entire line from breaking up and hides items!
+    // So we keep the less broken but not ideal option.
+    white-space: pre-line;
     &.active {
       color: $tab-bar-active-color;
     }

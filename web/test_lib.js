@@ -138,6 +138,14 @@ const articleData = [
           ['Test scope 1 2', []],
         ]],
         ['Test scope 2', []],
+        ['Test subscope 1', [
+          ['Test subscope 1 1', []],
+          ['Test subscope 1 2', []],
+        ], { headerArgs: '{scope}' }],
+        ['Test subscope 2', [
+          ['Test subscope 2 1', []],
+          ['Test subscope 2 2', []],
+        ], { headerArgs: '{scope}' }],
       ], { headerArgs: '{scope}' }],
       ['Test tag', [
         ['Test tagged', [], { headerArgs: '{tag=Test tagger}' }],

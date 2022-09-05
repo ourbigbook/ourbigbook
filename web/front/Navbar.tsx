@@ -53,9 +53,6 @@ const Navbar = ({ isEditor, scoreDelta }) => {
       <CustomLink href={routes.home()} className="navbar-brand" newTab={isEditor}>
         <CustomImage src="/logo.svg" className="logo"/>
         {appNameShort}
-        <span className="beta mobile-hide">
-          .com&nbsp;(beta)
-        </span>
       </CustomLink>
       <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }><HelpIcon />&nbsp;About</a>
       <a href={donateUrl} className="donate" target={ isEditor ? '_blank' : '_self' }>$ Donate</a>

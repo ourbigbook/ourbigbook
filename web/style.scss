@@ -626,24 +626,7 @@ nav.navbar {
     @media only screen and (max-width: $max-mobile-width) {
       // TODO don't hardcode this width, autohide when there is no more room:
       // https://stackoverflow.com/questions/43547430/how-can-i-completely-hide-elements-that-overflow-their-container-vertically
-      &.about {
-        display: none;
-      }
-    }
-    @media only screen and (max-width: 780px) {
-      &.donate {
-        display: none;
-      }
-    }
-    .beta {
-      // Otherwise flex ignores the space.
-      // https://stackoverflow.com/questions/39325039/css-flex-box-last-space-removed
-      white-space: pre-wrap;
-    }
-    @media only screen and (max-width: $max-mobile-width) {
-      // TODO don't hardcode this width, autohide when there is no more room:
-      // https://stackoverflow.com/questions/43547430/how-can-i-completely-hide-elements-that-overflow-their-container-vertically
-      .beta {
+      &.about, &.donate {
         display: none;
       }
     }

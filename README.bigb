@@ -8383,14 +8383,15 @@ There are currently a few constructs that are legal in <OurBigBook CLI> but forb
 = OurBigBook.com
 {c}
 {parent=OurBigBook Web user manual}
+{tag=Custom domain name setup}
 
 https://OurBigBook.com is the reference public instance of <OurBigBook Web>!
 
-This section describes policies specific to that instance, and which don't necessarily apply to other instances people may host elsewhere.
+This section describes setup and policies specific to that instance, and which don't necessarily apply to other instances people may host elsewhere.
 
 = OurBigBook.com policies
 {c}
-{parent=OurBigBook Web user manual}
+{parent=OurBigBook.com}
 
 This session describes policies specific to the OurBigBook.com instance of <OurBigBook Web>.
 
@@ -9269,6 +9270,17 @@ This can be used to test the email integration locally.
 
 Some research of different methods is shown at: https://cirosantilli.com/send-free-emails-from-heroku
 
+Related configurations:
+* after reports that useres had received a "Suspicions link" when clicking the signup link on Gmail, we've tried to follow
+  * https://stackoverflow.com/questions/63716879/how-to-prevent-suspicious-link-message-in-gmail/63716961#63716961
+  * https://support.google.com/mail/thread/4242603?hl=en&msgid=8208054
+  * https://postmaster.google.com/
+  and add a TXT record of:
+  ``
+  google-site-verification=gctCPztssfR8A-fQ_5298gSee_DfFjBj8v9PqAxuhgU
+  ``
+  to the domain, which Google marked as verified. Let's see if helps.
+
 = OurBigBook Web email sending with Sendgrid
 {parent=OurBigBook Web email sending}
 
@@ -9415,7 +9427,7 @@ The 10k rows of the free plan are easy to reach, this procedure can be used to u
 = Custom domain name setup
 {parent=Heroku deployment}
 
-The domain `ourbigbook.com` was leased from: https://porkbun.com/[]. Unfortunately, HTTPS on Heroku with a custom domain requires using a paying tier, so we upgraded from the free tier to the cheapest paid tier, "Hobby Project", to start with: https://stackoverflow.com/questions/52185560/heroku-set-ssl-certificates-on-free-plan
+The domain <ourbigbook.com> was leased from: https://porkbun.com/[]. Unfortunately, HTTPS on Heroku with a custom domain requires using a paying tier, so we upgraded from the free tier to the cheapest paid tier, "Hobby Project", to start with: https://stackoverflow.com/questions/52185560/heroku-set-ssl-certificates-on-free-plan
 
 On the Porkbun web UI, we added a DNS record of type :
 ``

@@ -1,7 +1,9 @@
 // Contains exports that should only be visible from Node.js but not browser.
 
 const path = require('path')
-const ourbigbook = require('ourbigbook')
+
+const ourbigbook = require('./index.js')
+const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe.js')
 
 const commander = require('commander')
 
@@ -13,16 +15,13 @@ exports.PACKAGE_NAME = PACKAGE_NAME
 const PACKAGE_PATH = path.dirname(require.resolve(path.join(PACKAGE_NAME, 'package.json')))
 exports.PACKAGE_PATH = PACKAGE_PATH
 
-const DIST_BASENAME = 'dist'
-exports.DIST_BASENAME = DIST_BASENAME
-
 const PUBLISH_OBB_PREFIX = `${ourbigbook.Macro.RESERVED_ID_PREFIX}obb`
 exports.PUBLISH_OBB_PREFIX = PUBLISH_OBB_PREFIX
 
-const PUBLISH_ASSET_DIST_PREFIX = `${PUBLISH_OBB_PREFIX}/${DIST_BASENAME}`
+const PUBLISH_ASSET_DIST_PREFIX = `${PUBLISH_OBB_PREFIX}/${ourbigbook_nodejs_webpack_safe.DIST_BASENAME}`
 exports.PUBLISH_ASSET_DIST_PREFIX = PUBLISH_ASSET_DIST_PREFIX
 
-const DIST_PATH = path.join(PACKAGE_PATH, DIST_BASENAME)
+const DIST_PATH = path.join(PACKAGE_PATH, ourbigbook_nodejs_webpack_safe.DIST_BASENAME)
 exports.DIST_PATH = DIST_PATH
 
 const DIST_CSS_BASENAME = PACKAGE_NAME + '.css'

@@ -435,7 +435,7 @@ div.multiline-caption {
     tr {
       th, td {
         border: $table_border;
-        padding: 5px 5px;
+        padding: $table-padding-top $table-padding-sides;
       }
       th {
         color: $h-color;

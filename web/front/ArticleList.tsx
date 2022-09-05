@@ -242,7 +242,7 @@ const ArticleList = ({
                       const score = <>
                         {(itemType === 'topic')
                           ? <></>
-                          : <td className="shrink center">
+                          : <td className="shrink center like">
                               <LikeArticleButton {...{
                                 article,
                                 isIssue,

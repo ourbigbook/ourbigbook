@@ -10108,6 +10108,27 @@ https://github.com/ourbigbook/ourbigbook/issues
 = Developing OurBigBook
 {parent=OurBigBook}
 
+= License
+{parent=Developing OurBigBook}
+
+All our software is licensed by under the GNU Affero General Public License (AGPL): \a[LICENSE.txt] unless otherwise noted. This license basically means that if you use this software then you must publish any changes you make to it, even if you use it only in your own servers that serve external requests without publishing the software.
+
+= Contributor License Agreement
+{parent=License}
+{title2=CLA}
+
+We require all contributions to give the OurBigBook Project non-exclusive rights to their contributions.
+
+This means that contributors retain their copyright, and may reuse their part of the code as they see fit under additional licenses beyond AGPL, but so can the OurBigBook Project.
+
+The AGPL can of course cannot never be revoked once it has been applied. This only means that copyright owners may at any point also release their IP under another license.
+
+The main rationale for this right now is to allow the OurBigBook Project the flexibility to one day allow someone to pay for a license that doesn't require releasing their source code under the AGPL without having to get all contributors ever to agree. This scenario is very unlikely to ever happen.
+
+The <OurBigBook Projects>'s commitment is and always will be to provide free education for all, and we have no plans to ever make anything closed source. But if it ever happens that we absolutely run out of the only way to achieve the goals of free education is to make concessions and allow enterprise users to pay for using the site for their purposes, which is not the case at this point, we would like to keep that door open.
+
+Such CLA would also make it easier for the OurBigBook Project to be able to fight in court to enforce the AGPL's term's should that need ever arise.
+
 = Run OurBigBook master
 {parent=Developing OurBigBook}
 
@@ -11444,9 +11465,9 @@ Publicly known updates on related to their fellowship projects may also be added
 
 = Letícia Maria Paz De Lima
 {parent=2022}
-{title2=1929 USD}
+{title2=\$1,929}
 
-2022-12: https://bv.fapesp.br/en/pesquisador/717847/leticia-maria-paz-de-lima[Letícia Maria Paz De Lima] is awarded 10,000 Brazilian Real (~1929 USD) to help her:
+2022-12: https://bv.fapesp.br/en/pesquisador/717847/leticia-maria-paz-de-lima[Letícia Maria Paz De Lima] is awarded 10,000 Brazilian Real (~1,929 USD) to help her:
 \Q[Focus on her https://ourbigbook.com/go/topic/quantum-computing[quantum computing] studies and research until 2023-06-30 (end of her third year), with the future intention of pursuing a https://ourbigbook.com/cirosantilli/doctor-of-philosophy[PhD] abroad in that area.]
 
 At the time of award, Letícia was a 3rd year student at the https://ourbigbook.com/go/topic/molecular-sciences-course-of-the-university-of-sao-paulo[Molecular Sciences Course of the University of São Paulo] and held a https://fapesp.br/bolsas/ic[FAPESP Scientific Initiation Scholarship]. She had become interested in Quantum Computing in the past year, and is passionate about working on that promising area of technology.

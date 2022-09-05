@@ -2689,7 +2689,9 @@ so we see that this basically provides a type of breadcrumb navigation.
 Used to represent a thematic break between paragraph-level elements:
 \OurBigBookExample[[
 She pressed the button. Just like that, everything was over.
+
 \Hr
+
 The next morning was a gloomy one. Nobody said a word.
 ]]
 

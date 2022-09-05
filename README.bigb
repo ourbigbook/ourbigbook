@@ -12,7 +12,7 @@ The \b[OurBigBook Project] is creating the ultimate tool to <publish> \b[textboo
 {height=150}
 {title=<project logo>[Logo of] the <OurBigBook Project>}
 
-\b[Mission]: to live in a world where you can learn university-level <#mathematics>, <#physics>, <#chemistry>, #biology and #engineering from perfect free open source books that anyone can write to get famous.
+\b[Mission]: to live in a world where you can learn university-level #mathematics{p=1}, #physics{p=1}, <#chemistry>, #biology and #engineering from perfect free open source books that anyone can write to get famous.
 
 \b[Ultimate goal]: destroy the currently grossly inefficient education system and replace it with a much more inspiring system where people learn what they want as fast as possible to reach their goals faster without so much useless pain.
 
@@ -4240,7 +4240,7 @@ For capitalization, both headers and cross reference macros have the `c` <boolea
 Capitalization is handled by a <JavaScript case conversion>.
 
 For pluralization, cross reference macros have the `p` <boolean argument> which stands for "pluralize":
-* if given and true, this automatically pluralizes the last word of the target title by using the https://github.com/blakeembrey/pluralize library
+* if given and true, this automatically pluralizes the last word of the target title by using the <blakeembrey pluralize> library.
 * if given and false, automatically singularize
 * if not given, don't change the number of elements
 If your desired pluralization is any more complex than modifying the last word of the title, you must do it manually however.
@@ -4322,6 +4322,15 @@ Now for a live example for quick and dirty interactive testing.
 
 = Inflection plural examples
 {parent=Cross reference title inflection example}
+
+= blakeembrey/pluralize
+{parent=Cross reference title inflection}
+
+https://github.com/blakeembrey/pluralize
+
+This is the default automatic pluralization/singularization library used by OurBigBook <cross reference title inflection>.
+
+That library handles most cases well, but note that English language perfection is never possible with it as it would likely require having word databases which the authors do not wish to support, e.g. to deal with uncountable nouns such as "mathematics" correctly: https://github.com/plurals/pluralize/issues/60#issuecomment-310740594
 
 = Inflection vs magic
 {parent=Cross reference}
@@ -5037,6 +5046,11 @@ Therefore, it is up to authors to specifically specify the desired pluralization
   ``
   \a[https://ourbigbook.com/go/topic/many-dogs][Many Dogs]
   ``
+  This is unfortunately always necessary for uncountable nouns such as "mathematics":
+  \OurBigBookExample[[
+  I like #mathematics{p=1}
+  ]]
+  since our underlying pluralization library <blakeembrey pluralize> cannot handle uncountable nouns reliably.
 
 = `\x` `p` argument
 {parent=x arguments}

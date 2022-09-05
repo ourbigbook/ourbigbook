@@ -11,10 +11,10 @@ import {
   disableButton,
   enableButton,
   SettingsIcon,
-  useCtrlEnterSubmit ,
+  useCtrlEnterSubmit,
+  useConfirmExitPage,
 } from 'front'
 import { webApi } from 'front/api'
-import { sureLeaveMessage } from 'front/config'
 import routes from 'front/routes'
 import { SiteType } from 'front/types/SiteType'
 import { UserType } from 'front/types/UserType'
@@ -75,11 +75,7 @@ const SiteSettings = ({
     setFormChanged(false)
   }
   useCtrlEnterSubmit(handleSubmit)
-  useEffect(() => {
-    window.onbeforeunload = function(){
-      if (formChanged) { return sureLeaveMessage }
-    }
-  }, [formChanged])
+  useConfirmExitPage(!formChanged)
   const title = 'Site settings'
   const { setTitle } = React.useContext(AppContext)
   const canUpdate = !cant.updateSiteSettings(loggedInUser)

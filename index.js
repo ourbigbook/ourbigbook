@@ -7467,14 +7467,13 @@ function xTextBase(ast, context, options={}) {
             options.force_separator
           )
         ) {
-          number += '.'
+          number += '. '
         }
         if (options.addNumberDiv) {
           const addNumberElem = options.addNumberElem ? options.addNumberElem : 'div'
           const addNumberClass = options.addNumberClass ? options.addNumberClass : 'number'
           number = `<${addNumberElem} class="${addNumberClass}">${number}</${addNumberElem}>`
         }
-        number += ' '
         ret += number;
       }
     }

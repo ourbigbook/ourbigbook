@@ -65,18 +65,20 @@ const LikeArticleButton = ({
   if (showText) {
     count = (<span className="counter">({count})</span>)
   }
-  let buttonClassName;
+  let buttonClassNames = ['modal']
   let title;
   if (loggedInUser && cantLike) {
-    buttonClassName = 'disabled'
+    buttonClassNames.push('disabled')
     title = cantLike
   } else {
-    buttonClassName = liked ? buttonActiveClass : ''
+    if (liked) {
+      buttonClassNames.push(buttonActiveClass)
+    }
     title = buttonTextMaybe + ` this ${isIssue ? 'discussion' : 'article' }`
   }
   return (
     <button
-      className={buttonClassName}
+      className={buttonClassNames.join(' ')}
       onClick={handleClickLike}
       title={title}
     >

@@ -457,9 +457,6 @@ div.multiline-caption {
         border: $table_border;
         padding: $table-padding-top $table-padding-sides;
       }
-      th {
-        color: $h-color;
-      }
       &:nth-child(even) {
         background-color: $table-even-background-color;
       }

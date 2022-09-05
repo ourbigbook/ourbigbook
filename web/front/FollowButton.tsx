@@ -39,7 +39,7 @@ const FollowButton = ({
       setFollowerCount((_followerCount) => _followerCount + (_following ? 1 : -1))
     }
   };
-  const _classNames = []
+  const _classNames = ['modal']
   if (_following) {
     _classNames.push(buttonActiveClass)
   }

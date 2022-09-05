@@ -4040,6 +4040,7 @@ function htmlRenderSimpleElem(elem_name, options={}) {
     if (show_caption) {
       const { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
       const { full: title, inner } = xTextBase(ast, context, {
+        add_title_div: true,
         href_prefix: htmlSelfLink(ast, context),
         force_separator
       })
@@ -4190,7 +4191,7 @@ function htmlSelfLink(ast, context) {
   );
 }
 
-function htmlTitleAndDescription(ast, context) {
+function htmlTitleAndDescription(ast, context, opts={}) {
   let title_and_description = ``
   let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
   let href
@@ -4201,8 +4202,9 @@ function htmlTitleAndDescription(ast, context) {
   }
   if (ast.index_id || ast.validation_output.description.given) {
     const { full: title, inner } = xTextBase(ast, context, {
+      add_title_div: opts.add_title_div,
+      force_separator,
       href_prefix: href,
-      force_separator
     })
     title_and_description += `<div class="caption">${getTitleAndDescription({ title, description, inner })}</div>`
   }
@@ -4395,7 +4397,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
     src,
   });
   if (has_caption) {
-    const { full: title, inner } = xTextBase(ast, context, { href_prefix, force_separator })
+    const { full: title, inner } = xTextBase(ast, context, { add_title_div: true, href_prefix, force_separator })
     const title_and_description = getTitleAndDescription({ title, description, source, inner })
     ret += `<figcaption>${title_and_description}</figcaption>`;
   }
@@ -7402,6 +7404,9 @@ function xTextBase(ast, context, options={}) {
   if (!('from_x' in options)) {
     options.from_x = false;
   }
+  if  (!('add_title_div' in options)) {
+    options.add_title_div = false;
+  }
   if (!('pluralize' in options)) {
     // true: make plural
     // false: make singular
@@ -7519,6 +7524,9 @@ function xTextBase(ast, context, options={}) {
       inner = ast.file
     } else {
       inner = renderArg(title_arg, context);
+    }
+    if (options.add_title_div) {
+      inner = `<div class="title">${inner}</div>`
     }
     ret += inner
     if (style_full) {
@@ -8820,7 +8828,7 @@ const OUTPUT_FORMATS_LIST = [
         'b': htmlRenderSimpleElem('b'),
         'br': function(ast, context) { return '<br>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
-          const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context)
+          const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context, { add_title_div: true })
           let ret = `<div class="code${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
           ret += htmlCode(renderArg(ast.args.content, context))
           ret += title_and_description
@@ -9339,7 +9347,7 @@ const OUTPUT_FORMATS_LIST = [
           let katex_output = htmlKatexConvert(ast, context)
           let ret = ``
           if (ast.validation_output.show.boolean) {
-            const { href, multiline_caption, title_and_description } = htmlTitleAndDescription(ast, context)
+            const { href, multiline_caption, title_and_description } = htmlTitleAndDescription(ast, context, { add_title_div: true })
             ret += `<div class="math${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
             ret += `<div class="equation">`
             ret += `<div>${katex_output}</div>`
@@ -9415,6 +9423,7 @@ const OUTPUT_FORMATS_LIST = [
           let href = htmlAttr('href', '#' + htmlEscapeAttr(ast.id));
           if (ast.index_id || ast.validation_output.description.given) {
             const { full: title, inner } = xTextBase(ast, context, {
+              add_title_div: true,
               href_prefix: href,
               force_separator,
             })

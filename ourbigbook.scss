@@ -619,6 +619,11 @@ ol, ul {
   }
 }
 
+div.title {
+  display: inline-block;
+  font-weight: bold;
+}
+
 span.sep {
   display: inline-block;
   width: $sep-width;

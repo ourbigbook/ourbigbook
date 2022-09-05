@@ -30,7 +30,7 @@ The \b[OurBigBook Project] is creating the ultimate tool to <publish> \b[textboo
 * \b[<topics>]: groups the articles of different users about the same topic, sorted by upvote to achieve <#mindmeld>[mind melding]/<#collective intelligence>. This makes your articles easier for others to find.
 
   \Image[feature/topics/derivative.png]
-  {title=The <topics feature> allows you to find the best version of a subject written by other users user.}
+  {title=The <topics feature> allows you to find the best version of a subject written by other users user}
   {description=Live demo: <#derivative>.}
   {provider=github}
   {height=800}
@@ -2935,7 +2935,7 @@ Adds a border around the image. This can be useful to make it clearer where imag
 \Image[logo.svg]
 {border}
 {height=150}
-{title=Logo of the OurBigBook Project with a border around it.}
+{title=Logo of the OurBigBook Project with a border around it}
 ]]
 
 = Image `description` argument
@@ -3009,7 +3009,7 @@ When the <Mobile guidelines>[viewport is narrow enough], mobile CSS takes over a
 Here's a very long test image:
 
 \Image[https://upload.wikimedia.org/wikipedia/commons/4/45/Qian_Xuan_-_Early_Autumn.jpg]
-{title=Very long test image.}
+{title=Very long test image}
 {description=And some tall inline maths: $a_b$.}
 {height=600}
 
@@ -10978,18 +10978,18 @@ The typical use case of this feature is to facilitate user onboarding, and it co
 To modify the pinned article, admins must visit the "Site Settings" page under: https://ourbigbook.com/go/site-settings[]. That page can be accessed via the "Site Settings" button at the bottom of each index page.
 
 \Image[feature/pinned-article/site-settings-button-on-topics-page-arrow.png]
-{title=Site Settings link under the <topics> page.}
+{title=Site Settings link under the <topics> page}
 {provider=github}
 {height=800}
 {border}
 
 \Image[feature/pinned-article/site-settings-pinned-article-filled-arrow.png]
-{title=Edit the pinned article setting in the site settings page.}
+{title=Edit the pinned article setting in the site settings page}
 {provider=github}
 {border}
 
 \Image[feature/pinned-article/pinned-article-on-topics-page-arrow.png]
-{title=The selected article now shows on the homepage for all users to see.}
+{title=The selected article now shows on the homepage for all users to see}
 {provider=github}
 {height=1200}
 {border}

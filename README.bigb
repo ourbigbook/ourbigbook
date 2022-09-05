@@ -1642,8 +1642,21 @@ Going deeper.
 = index.js
 {file}
 {parent=H file argument demo}
+{tag=Overview of files in this repository}
 
-Large text files are not previewed, as they would take up too much useless vertical space and disk memory/bandwidth.
+This is a central source file that basically contains all the functionality of the <OurBigBook Library>, so basically the <OurBigBook markup>-to-<Output format>[whatever] (e.g. <html output format>[HTML]) conversion code, including parsing and rendering.
+
+Things that are not there are things that only use markup conversion, e.g.:
+* <OurBigBook CLI>: does conversion from command line
+* <OurBigBook Web>
+
+This file must be able to run in the browser, so it must not contain any Node.js specifics.
+
+It exposes the central `convert` function for markup conversion.
+
+You should normally use the packaged `_obb/ourbigbook.js` version of this file when using ourbigbook as an external dependency.
+
+This file is large, and large text files are not previewed, as they would take up too much useless vertical space and disk memory/bandwidth.
 
 = file_demo/my.bin
 {file}
@@ -10366,7 +10379,7 @@ There are two types of test in our test suite:
 {parent=Developing OurBigBook}
 
 Source files:
-* \a[index.js]: main code. Must be able to run in the browser, so no Node.js specifics. Exposes the central `convert` function. You should normally use the packaged `_obb/ourbigbook.js` when using ourbigbook as an external dependency.
+* <index.js>{file}: main <OurBigBook Markup> conversion code
 * \a[ourbigbook]: CLI executable. Is basically just a CLI interface frontend to `convert`
 * \a[test.js]: contains all the Mocha tests, see also: <test system>
 * \a[README.md]: minimal Markdown README until GitHub / NPM support OurBigBook :-)
@@ -10856,6 +10869,66 @@ Trying to use the `\Toplevel` macro explicitly in a document leads to an error.
 * if the `title` argument of `toplevel` is given, use that
 * otherwise, if the document has a `\H[1]`, use the title of the first such header
 * otherwise use a dummy value
+
+= Adding your first macro
+{parent=Internals API}
+
+To add your own macro, try to copy from another existing macro that feels the closest in functionality.
+
+For example, suppose we want something similar to <line break>. So let's grep:
+
+``
+git grep '\bbr\b'
+``
+
+Grep currently gives:
+
+``
+index.js:8018:    'br',
+index.js:8841:        'br': function(ast, context) { return '<br>' },
+index.js:9792:        'br': function(ast, context) { return '\n'; },
+index.js:10289:        'br': ourbigbookConvertSimpleElem,
+test_bigb_output.bigb:71:br:
+test_bigb_output.bigb:74:aa\br
+test_bigb_output.bigb:75:bb\br
+test_bigb_output.bigb:79:asdf\br
+test_bigb_output.bigb:98:Non-br macro without arguments\i
+``
+
+All functionality is contained in <index.js>{file} as expected. Expanding the hits a but further we see:
+
+``
+const DEFAULT_MACRO_LIST = [
+  new Macro(
+    'br',
+    [],
+    {
+      phrasing: true,
+    }
+  ),
+
+const OUTPUT_FORMATS_LIST = [
+
+  new OutputFormat(
+    OUTPUT_FORMAT_HTML,
+      ext: HTML_EXT,
+      convert_funcs: {
+        'br': function(ast, context) { return '<br>' },
+
+    OUTPUT_FORMAT_ID,
+    {
+      ext: 'id',
+      convert_funcs: {
+        'br': function(ast, context) { return '\n'; },
+
+  new OutputFormat(
+    OUTPUT_FORMAT_OURBIGBOOK,
+    {
+      ext: OURBIGBOOK_EXT,
+      convert_funcs: {
+        'br': ourbigbookConvertSimpleElem,
+``
+so it should be quick direct to see what is going on from this.
 
 = CSS
 {c}

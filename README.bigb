@@ -6,43 +6,61 @@
 {c}
 {synonym}
 
-The OurBigBook Project is creating the ultimate tool to publish textbooks/<#personal knowledge bases>/<#Zettelkasten>/<#digital gardens> in the <#learn in public> philosophy, and to be our best shot yet at the final real-world <#Encyclopedia Galactica> by allowing effective <#mindmeld>[mind melding]/<#collective intelligence>.
+The \b[OurBigBook Project] is creating the ultimate tool to <publish> \b[textbooks]/\b[<#personal knowledge bases>]/\b[<#Zettelkasten>]/\b[<#digital gardens>] in the <#learn in public> philosophy. It is our best shot yet at the final \b[real-world <#Encyclopedia Galactica>] by allowing effective \b[<#mindmeld>[mind melding]]/\b[<#collective intelligence>] via the \b[<topics feature>].
 
 \Image[logo.svg]
 {height=150}
-{title=<project logo>[Logo of] the OurBigBook Project}
+{title=<project logo>[Logo of] the <OurBigBook Project>}
 
-Mission: to live in a world where you can learn university-level <#mathematics>, <#physics>, <#chemistry>, #biology and #engineering from perfect free open source books that anyone can write to get famous.
+\b[Mission]: to live in a world where you can learn university-level <#mathematics>, <#physics>, <#chemistry>, #biology and #engineering from perfect free open source books that anyone can write to get famous.
 
-Ultimate goal: destroy the currently grossly inefficient education system and replace it with a much more inspiring system where people learn what they want as fast as possible to reach their goals faster without so much useless pain.
+\b[Ultimate goal]: destroy the currently grossly inefficient education system and replace it with a much more inspiring system where people learn what they want as fast as possible to reach their goals faster without so much useless pain.
 
-How to get there: <OurBigBook Web>[create a website] that incentivizes learners (notably university students taking courses) to write freely licensed university-level natural science books in their own words for free. Their motivation for doing that are:
+\b[How to get there]: <OurBigBook Web>[create a website] that incentivizes learners (notably university students taking courses) to write freely licensed university-level natural science books in their own words for free. Their motivation for doing that are:
 * getting their knowledge globally recognized and thus better jobs
 * improving the world
 * learning by teaching
 
-Notable features:
-* focus on <#mindmeld>[mind melding]/<#collective intelligence> via the <topics>[topics feature], which makes your articles easier for others to find with a sort-by upvote <#Stack Overflow>-like view of multiple users articles on the same topic
+\Video[https://www.youtube.com/watch?v=BR2dXeR5jt8]
+{title=Introduction to the <OurBigBook Project>}
+{height=500}
+
+\b[Notable features]:
+\Ol[
+* \b[<topics>]: groups the articles of different users about the same topic, sorted by upvote to achieve <#mindmeld>[mind melding]/<#collective intelligence>. This makes your articles easier for others to find.
+
+  \Image[feature/topics/derivative.png]
+  {title=The <topics feature> allows you to find the best version of a subject written by other users user.}
+  {description=Live demo: <#derivative>.}
+  {provider=github}
+  {height=800}
+  {border}
 
   \Video[https://www.youtube.com/watch?v=54nxjC9BWTg]
   {title=<OurBigBook Web topics> demo}
   {disambiguate=intro}
   {height=700}
   {width=700}
-* you can store all your <#personal knowledge base> content locally in a <OurBigBook Markup>[plaintext markup format] that can be edited locally and published either:
-  * to <OurBigBook.com> to get awesome multi-user features like <OurBigBook Web topics>
-  * as HTML files to a <static website>, which you can host yourself for free on many external providers like <GitHub Pages>, and remain in full control
+* \b[local editing]: you can store all your <#personal knowledge base> content locally in a <OurBigBook Markup>[plaintext markup format] that can be edited locally and <published> with <OurBigBook CLI> to either:
+  * \b[to <OurBigBook.com>]: to get awesome multi-user features like <OurBigBook Web topics>
+  * \b[as HTML files to a <static website>]: you can host yourself for free on many external providers like <GitHub Pages>, and remain in full control
   This way you can be sure that even if <ourbigbook.com> were to go down one day (which we have no plans to as it is quite cheap to host!), your content will still be perfectly readable as a static site.
 
+  \Image[feature/local-editing/bigb-publish-to-web-or-static.png]
+  {title=With OurBigBook you can <publish> local <OurBigBook markup>[lightweight markup files] to either <OurBigBook Web> or as a <static website>}
+  {provider=github}
+  {height=600}
+  {disambiguate=intro}
+
   \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
-  {title=Edit locally and publish demo}
+  {title=Edit locally and <publish> demo}
   {disambiguate=intro}
   {description=This shows editing <OurBigBook Markup> and <publishing> it using the <VS Code> extension.}
   {height=720}
   {width=720}
+]
 
-The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> is another complementary tool.
-
+\b[Key links]:
 * https://OurBigBook.com[]: reference <OurBigBook Web> instance
 * donate to the OurBigBook Project: <donate>
 * project announcements: <news>{full}. Also posted in shorter form to <official accounts>{full} such as:
@@ -5938,6 +5956,11 @@ A fundamental design choice of the <OurBigBook Project> is that, except for bugs
 
 The trade-offs between the two options are highlighted at: <OurBigBook Web vs static website publishing>.
 
+\Image[feature/local-editing/bigb-publish-to-web-or-static.png]
+{title=You can <publish> local lightweight markup files to either <OurBigBook Web> or as a <static website>}
+{provider=github}
+{height=600}
+
 \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
 {title=Edit locally and publish demo}
 {height=720}
@@ -8064,6 +8087,9 @@ This is where OurBigBook comes to your rescue. There are two ways that it can he
 {synonym}
 
 = Topic
+{synonym}
+
+= Topics feature
 {synonym}
 
 Topics group articles that have the same title by different users. This feature allows you to find the best article for a given topic, and it is one of the key innovations of <OurBigBook Web>. 

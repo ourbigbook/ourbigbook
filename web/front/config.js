@@ -74,7 +74,7 @@ module.exports = {
   docsUrl,
   docsAdminUrl: `${docsUrl}/ourbigbook-web-admin`,
   donateUrl: `${docsUrl}#donate`,
-  aboutUrl: `${docsUrl}#ourbigbook-web-user-manual`,
+  aboutUrl: `${docsUrl}`,
   buttonActiveClass: 'active',
   defaultProfileImage: `/default-profile-image.svg`,
   disableFrontend: process.env.OURBIGBOOK_DISABLE_FRONTEND === env_true,

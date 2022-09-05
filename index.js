@@ -9358,7 +9358,7 @@ const OUTPUT_FORMATS_LIST = [
 
           return ret;
         },
-        'Hr': function(ast, context) { return '<hr>' },
+        'Hr': function(ast, context) { return '<div><hr></div>' },
         'i': htmlRenderSimpleElem('i'),
         'Image': macroImageVideoBlockConvertFunction,
         'image': function(ast, context) {

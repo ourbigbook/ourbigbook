@@ -17,10 +17,11 @@
 // Dark.
 $a-color: #88CCFF;
 $a-color-visited: #FFAAFF;
-$background-color: black;
+$background-color: #000000;
 $code-background-color: #333333;
 $color: #00FF00;
 $color-discreet: #00BB00;
+$h-color: #DDDDDD;
 $target-background-color: #442222;
 $toplevel-horizontal-padding-left: 20px;
 $toplevel-horizontal-padding-right: 15px;
@@ -28,6 +29,8 @@ $toplevel-horizontal-padding-right: 15px;
 $font-family: Arial, Helvetica, sans-serif;
 $header-font-size: 24px;
 $h1-font-size: $header-font-size * 1.5;
+// Optimal font size:
+// https://ux.stackexchange.com/questions/211/is-there-an-optimal-font-size
 $font-size: 16px;
 $max-mobile-width: 635px;
 
@@ -53,9 +56,9 @@ $max-mobile-width: 635px;
   box-sizing: border-box;
   h1, h2, h3, h4, h5, h6 {
     > a:first-child {
-      color: $color;
+      color: $h-color;
       &:visited {
-        color: $color;
+        color: $h-color;
       }
     }
     display: inline;

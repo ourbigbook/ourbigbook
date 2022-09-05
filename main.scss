@@ -1,9 +1,8 @@
 @import 'ourbigbook/ourbigbook.common.scss';
 
-$color: black;
-$header-background-color: #AA0;
+$header-background-color: #222222;
 body {
-background-color: $color;
+background-color: $background-color;
 font-family: $font-family;
 
 header, footer {
@@ -24,7 +23,7 @@ header {
     align-self: stretch;
     display: flex;
 
-    color: $color;
+    color: $h-color;
     font-size: 32px;
     font-weight: bold;
     margin-left: 0;
@@ -36,11 +35,11 @@ header {
     padding-right: 10px;
     text-decoration: none;
     &:visited {
-      color: $color;
+      color: $h-color;
     }
     &:hover {
       color: $header-background-color;
-      background-color: $color;
+      background-color: $h-color;
     }
     &.font-awesome-container {
       font-weight: normal;
@@ -55,15 +54,14 @@ header {
   }
 }
 footer {
-  font-weight: bold;
   word-wrap: break-word;
   font-size: 1.2em;
+  color: $h-color;
   a {
-    $color: #008;
-    color: $color;
+    color: $a-color;
     //text-decoration: none;
     &:visited {
-      color: $color;
+      color: $a-color;
     }
     &:hover {
       text-decoration: underline;

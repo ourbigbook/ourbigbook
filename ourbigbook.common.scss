@@ -44,7 +44,7 @@ $a-color-visited: $a-color;
 $brandname-color: $color;
 $h1-font-size: $header-font-size * 1.5;
 $navbar-color-discrete: $color-discreet;
-$navbar-non-brandname-color: $color;
+$navbar-non-brandname-color: $color-discreet;
 $footer-color: $color;
 
 @mixin body {

@@ -2684,6 +2684,7 @@ so we see that this basically provides a type of breadcrumb navigation.
 = Horizontal rule
 {parent=Macro}
 {title2=`\Hr`}
+{tag=Implemented by sidstuff}
 
 Used to represent a thematic break between paragraph-level elements:
 \OurBigBookExample[[
@@ -2691,6 +2692,10 @@ She pressed the button. Just like that, everything was over.
 \Hr
 The next morning was a gloomy one. Nobody said a word.
 ]]
+
+This macro corresponds to a misfeature of HTML/Markdown, and is not encouraged. We instead recommend creating smaller more specific <headers> instead to split sections, as this has all the usual advantages of allowing metadata to be associated to the header, such as <split headers>, <topic>, liked and discussions.
+
+But they people asked, and they got it.
 
 = Image
 {parent=Macro}
@@ -11134,12 +11139,17 @@ To modify the pinned article, admins must visit the "Site Settings" page under: 
 
 Contributors who have made any non-trivial contribution to the project will be listed here with their consent!
 
+Contributors are encouraged to add an intro about themselves and some profile links if they wish to their own section, but this is entirely optional.
+
 = sidstuff
 {parent=Contributors}
 
 https://github.com/sidstuff
 
 \Image[https://avatars.githubusercontent.com/u/160637304?v=4]
+
+= Implemented by sidstuff
+{parent=sidstuff}
 
 = Publicity
 {parent=Developing OurBigBook}

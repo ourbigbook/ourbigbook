@@ -9390,7 +9390,7 @@ const OUTPUT_FORMATS_LIST = [
           return htmlEscapeContext(context, ast.text);
         },
         'passthrough': function(ast, context) {
-          return renderArgNoescape(ast.args.content, context);
+          return `<div class="float-wrap">${renderArgNoescape(ast.args.content, context)}</div>`
         },
         'Q': htmlRenderSimpleElem('blockquote'),
         'sub': htmlRenderSimpleElem('sub'),

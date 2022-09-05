@@ -11118,6 +11118,18 @@ To modify the pinned article, admins must visit the "Site Settings" page under: 
 {height=1200}
 {border}
 
+= Contributors
+{parent=Project governance}
+
+Contributors who have made any non-trivial contribution to the project will be listed here with their consent!
+
+= sidstuff
+{parent=Contributors}
+
+https://github.com/sidstuff
+
+\Image[https://avatars.githubusercontent.com/u/160637304?v=4]
+
 = Publicity
 {parent=Developing OurBigBook}
 

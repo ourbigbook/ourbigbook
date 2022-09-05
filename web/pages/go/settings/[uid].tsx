@@ -4,7 +4,12 @@ import React from 'react'
 import { contactUrl } from 'front/config'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
-import { AppContext, setupUserLocalStorage, useCtrlEnterSubmit } from 'front'
+import {
+  AppContext,
+  SettingsIcon,
+  setupUserLocalStorage,
+  useCtrlEnterSubmit
+} from 'front'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
@@ -58,7 +63,7 @@ const Settings = ({
   React.useEffect(() => { setTitle(title) }, [])
   return (
     <div className="settings-page content-not-ourbigbook">
-      <h1>{title}</h1>
+      <h1><SettingsIcon /> {title}</h1>
       <>
         <MapErrors errors={errors} />
         <form onSubmit={handleSubmit}>

@@ -7,10 +7,10 @@ $like-button-active-color: #BB1070;
 $like-button-hover-color: #FF1493;
 
 $border-radius: 10px;
-$toplevel-padding: 20px;
-$toplevel-padding-mobile: 5px;
+$toplevel-padding: $toplevel-horizontal-padding-left;
 
 // Derived parameters
+$button-hover-background-color: $code-background-color;
 $heart-background-hover-color: #FF1493;
 $icon-color: $color;
 $tab-bar-active-color: $color;
@@ -74,6 +74,7 @@ button, a.btn {
       }
     }
     &:hover, &.active {
+      background-color: $button-hover-background-color;
       i.ion-heart {
         color: white;
       }
@@ -399,7 +400,7 @@ div.tab-list {
     }
     &:hover {
       color: $tab-bar-active-color;
-      background-color: $code-background-color;
+      background-color: $button-hover-background-color;
     }
   }
 }
@@ -434,8 +435,8 @@ span.shortcut {
     }
   }
   @media only screen and (max-width: $max-mobile-width) {
-    padding-left: $toplevel-padding-mobile;
-    padding-right: $toplevel-padding-mobile;
+    padding-left: $toplevel-horizontal-padding-mobile;
+    padding-right: $toplevel-horizontal-padding-mobile;
   }
   @media only screen and (min-width: $max-mobile-width + 1) {
     padding-left: $toplevel-padding;
@@ -551,6 +552,9 @@ span.shortcut {
   .pages {
     margin-right: 10px;
     .page-item {
+      a {
+        text-decoration: none;
+      }
       &.active {
         a {
           color: $tab-bar-active-color;
@@ -559,8 +563,9 @@ span.shortcut {
       }
       &:hover {
         a {
-          font-weight: bold;
+          background-color: $button-hover-background-color;
           color: $tab-bar-active-color;
+          font-weight: bold;
         }
       }
       &.total {
@@ -639,7 +644,7 @@ nav.navbar {
   display: flex;
   height: $font-size * 1.8;
   @media only screen and (max-width: $max-mobile-width) {
-    height: $font-size * 1.2;
+    height: $font-size * 1.5;
   }
   flex: 0 0 auto;
   margin-bottom: 0.6em;
@@ -647,11 +652,17 @@ nav.navbar {
     margin-bottom: 1em;
   }
   .brand-group {
-    display: flex;
+    display: inline-block;
   }
   .navbar-list {
     display: flex;
     margin-left: auto;
+    @media only screen and (max-width: $max-mobile-width) {
+      padding-right: $toplevel-horizontal-padding-mobile;
+    }
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      padding-right: $toplevel-padding;
+    }
   }
   white-space: nowrap;
   a {
@@ -702,12 +713,17 @@ nav.navbar {
         background-color: $navbar-non-brandname-color;
       }
     }
-    @media only screen and (max-width: $max-mobile-width + 40px) {
+    @media only screen and (max-width: $max-mobile-width + 55px) {
       // TODO don't hardcode this width, autohide when there is no more room:
       // https://stackoverflow.com/questions/43547430/how-can-i-completely-hide-elements-that-overflow-their-container-vertically
       &.about, &.donate {
         display: none;
       }
+    }
+    @media only screen and (max-width: 450px) {
+      &.login {
+          display: none;
+        }
     }
     .icon {
       color: $icon-color;
@@ -718,7 +734,8 @@ nav.navbar {
       }
     }
   }
-  &>:first-child {
+  .brand-group {
+    display: flex;
     @media only screen and (max-width: $max-mobile-width) {
       padding-left: 0px;
     }

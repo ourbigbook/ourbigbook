@@ -5,7 +5,16 @@ import React from 'react'
 import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import Maybe from 'front/Maybe'
-import { LOGIN_ACTION, REGISTER_ACTION, LikeIcon, HelpIcon, HomeIcon, NewArticleIcon, NotificationIcon } from 'front'
+import {
+  HelpIcon,
+  HomeIcon,
+  LOGIN_ACTION,
+  LikeIcon,
+  NewArticleIcon,
+  NotificationIcon,
+  REGISTER_ACTION,
+  UserIcon,
+} from 'front'
 import { appNameShort, aboutUrl, donateUrl } from 'front/config'
 import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
@@ -50,12 +59,14 @@ const Navbar = ({ isEditor, scoreDelta }) => {
   }, [scoreDelta])
   return (
     <nav className="navbar">
-      <CustomLink href={routes.home()} className="brand" newTab={isEditor}>
-        <CustomImage src="/logo.svg" className="logo"/>
-        {appNameShort}
-      </CustomLink>
-      <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }><HelpIcon />&nbsp;About</a>
-      <a href={donateUrl} className="donate" target={ isEditor ? '_blank' : '_self' }><span className="icon">$</span>&nbsp;Donate</a>
+      <div className="brand-group">
+        <CustomLink href={routes.home()} className="brand" newTab={isEditor}>
+          <CustomImage src="/logo.svg" className="logo"/>
+          {appNameShort}
+        </CustomLink>
+        <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }><HelpIcon />&nbsp;About</a>
+        <a href={donateUrl} className="donate" target={ isEditor ? '_blank' : '_self' }><span className="icon">$</span>&nbsp;Donate</a>
+      </div>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
           <NavLink href={routes.articleNew()} newTab={isEditor}>
@@ -83,10 +94,10 @@ const Navbar = ({ isEditor, scoreDelta }) => {
         </Maybe>
         <Maybe test={!loggedInUser}>
           <NavLink href={routes.userLogin()} className="login" newTab={isEditor}>
-            {LOGIN_ACTION}
+            <UserIcon />&nbsp;{LOGIN_ACTION}
           </NavLink>
           <NavLink href={routes.userNew()} className="signup" newTab={isEditor}>
-            {REGISTER_ACTION}
+            <NewArticleIcon />&nbsp;{REGISTER_ACTION}
           </NavLink>
         </Maybe>
       </div>

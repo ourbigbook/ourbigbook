@@ -9709,7 +9709,7 @@ Types:
 
 = web/bin
 {synonym}
-{title}
+{title2}
 
 This setion is about <OurBigBook Web> administration utilities that live under the directory \a[web/bin].
 

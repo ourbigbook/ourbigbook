@@ -3,8 +3,7 @@
 $border-radius: 10px;
 $like-button-inactive-color: white;
 $like-button-active-color: #FF1493;
-$nav-background-color: #AA0;
-$tab-bar-active-color: #CC0;
+$tab-bar-active-color: $h-color;
 $toplevel-padding: 20px;
 $toplevel-padding-mobile: 5px;
 
@@ -192,6 +191,13 @@ div.list-container {
 div.source {
   margin-top: 1em;
   font-weight: bold;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: $h-color;
+  a {
+    color: $h-color;
+  }
 }
 
 // For elements that are injected into the rendered OurBigBook HTML.
@@ -467,6 +473,7 @@ span.shortcut {
 
 .home-page {
   .pinned-article {
+    color: $h-color;
     font-weight: bold;
   }
   .site-settings {
@@ -557,17 +564,16 @@ img.profile-thumb {
 } // div.main
 
 footer {
-  font-weight: bold;
   margin-top: 10px;
   padding: 10px $toplevel-padding;
   a {
     &:not(:last-child) {
       margin-right: 10px;
     }
-    color: $background-color;
+    color: $h-color;
     text-decoration: none;
     &:visited {
-      color: $background-color;
+      color: $h-color;
     }
     &:hover {
       text-decoration: underline;
@@ -576,8 +582,8 @@ footer {
 }
 
 footer, nav.navbar {
-  background-color: $nav-background-color;
-  color: $background-color;
+  background-color: $navbar-background-color;
+  color: $h-color;
 }
 
 nav.navbar {
@@ -598,7 +604,7 @@ nav.navbar {
     align-items: center;
     align-self: stretch;
 
-    color: $background-color;
+    color: $h-color;
     display: flex;
     font-size: 24px;
     font-weight: bold;
@@ -608,11 +614,11 @@ nav.navbar {
     padding-right: 5px;
     text-decoration: none;
     &:visited {
-      color: $background-color;
+      color: $h-color;
     }
     &:hover, &.active {
-      color: $nav-background-color;
-      background-color: $background-color;
+      color: $navbar-background-color;
+      background-color: $h-color;
     }
     &.score.changed {
       //background-color: $like-button-inactive-color;

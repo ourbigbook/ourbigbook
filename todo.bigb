@@ -4,6 +4,35 @@
 
 == Issues
 
+=== Encrypted client hello
+{tag=Web}
+
+One day we'll enable it, e.g. with Cloudfare:
+* https://developers.cloudflare.com/support/third-party-software/others/configure-cloudflare-and-heroku-over-https/
+* https://developers.cloudflare.com/ssl/edge-certificates/ech/
+
+=== Move articles deleted locally to under a trash article on web
+{tag=Web}
+
+During `--web` upload.
+
+The exact name of that article is a somewhat difficult question, if we go non-magical then:
+\Q[My deleted articles]
+will do. But we could go more magical:
+``
+_my/trash
+``
+or polluting a bit without `_`:
+``
+my/trash
+``
+Perhaps such a namespace would be useful for stuff like `my/contact`, `my/body`, `my/hardware` and so on.
+
+=== Add button on web to move article to trash on web
+{tag=Web}
+
+Having the same effect as whatever we decide to make <Move articles deleted locally to under a trash article on web>{full} do.
+
 === Convert ordered list Ol to a boolean argument of unordered lists Ul
 {tag=File autogen}
 
@@ -1280,7 +1309,7 @@ But still, if the user deletes a header, it becomes very difficult to know it la
 * have a non-empty hash
 and then procede to make any such headers empty to avoid ID duplication.
 
-Aditionally, it would also be good to move the deleted articles to some predefined header to avoid cluttering the headers. E.g. we could start with a dummy "My deleted articles".
+Aditionally, it would also be good to move the deleted articles to some predefined header to avoid cluttering the headers. E.g. we could start with a dummy "My deleted articles". Dedicated section: <Move articles deleted locally to under a trash article on web>{full}.
 
 === Don't skip parent/previous sibling updates on --web uploads
 {tag=Web}

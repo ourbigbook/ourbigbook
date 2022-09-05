@@ -87,7 +87,7 @@ To donate:
 * https://cirosantilli.com/sponsor[]: give money directly to <Ciro Santilli> 
 * buy project merchandise, see: <merchandise>{full}
 
-All donated money currently just goes directly to <Ciro Santilli>'s account, the project founder and current lead. If things ever take off we will set up a legal entity to make things cleaner. One may dream. But for now, it would just add unnecessary overhead. Related: <Project governance>{full}.
+All donated money currently just goes directly to <Ciro Santilli>'s personal bank account, the project founder and current lead. If things ever take off we will set up a legal entity to make things cleaner. One may dream. But for now, it would just add unnecessary overhead. Related: <Project governance>{full}.
 
 Ciro announces funding milestones and transparently accounts for all donations at: https://cirosantilli.com/sponsor[]. When milestones are reached, he quits his day job and works full time on the project for a given ammount of time.
 
@@ -11120,8 +11120,9 @@ Only has rectangle of width 11.43 cm, price £5.70. Also does t-shirts and hoodi
 The logo can be seen at: <image Logo of the OurBigBook Project>.
 
 \Image[logo.svg]
-{height=150}
 {title=logo.svg}
+{height=150}
+{border}
 {description=
 Canonical project logo.
 
@@ -11131,8 +11132,9 @@ Since it does not contain text, only geometric primitives, this SVG file does no
 }
 
 \Image[logo-256.png]
-{height=150}
 {title=logo-256.png}
+{height=150}
+{border}
 {provider=github}
 {description=
 256x256 PNG version of <image logo.svg>, ideal for profile pictures that don't support SVG. Generated with:
@@ -11142,9 +11144,10 @@ convert logo.svg -resize 256x logo-256.png
 }
 
 \Image[logo-transparent.svg]
-{height=150}
-{provider=github}
 {title=logo-transparent.svg}
+{height=150}
+{border}
+{provider=github}
 {description=
 This is a version of logo.svg with a transparent background instead of the hardcoded black background.
 
@@ -11152,9 +11155,10 @@ It was useful e.g. for t-shirt merch, where the t-shirt background choices were 
 }
 
 \Image[logo-transparent-with-text.svg]
-{height=300}
-{provider=github}
 {title=logo-transparent-with-text.svg}
+{height=300}
+{border}
+{provider=github}
 {description=
 This version of the logo was useful when designing project <T-shirts> on <tshirtstudio.com>. On that website, you can't easily resize images with drag and drop, so:
 * leaving some extra margin at the top would make the text more likely visible considering the hoodie
@@ -11162,15 +11166,17 @@ This version of the logo was useful when designing project <T-shirts> on <tshirt
 }
 
 \Image[logo-transparent-with-text-and-slogan-2000.png]
-{height=300}
-{provider=github}
 {title=logo-transparent-with-text-and-slogan-2000.png}
+{height=300}
+{border}
+{provider=github}
 {description=This is perhaps a superior alternative to <Image logo-transparent-with-text.svg> for <merchandise>, as the <project slogan> could clarify further what the merchandise is all about.}
 
 \Image[logo-transparent-with-text-and-slogan-2000-2150.png]
-{height=300}
-{provider=github}
 {title=logo-transparent-with-text-and-slogan-2000-2150.png}
+{height=300}
+{border}
+{provider=github}
 {description=
 This is the same as `logo-transparent-with-text-and-slogan-2000.png` but with a 150 px border added to the top to ensure that the <tshirtstudio.com> hoodie hood won't hide the URL.
 
@@ -11215,31 +11221,37 @@ obb
 
 \Image[text-logo/3x3.svg]
 {title=3x4.svg text logo}
+{border}
 {description=This one was done without scaling. The font is a slightly tall rectangle, leading to a natural 3x4 aspect ratio.}
 {provider=github}
 
 \Image[text-logo/3x3-1000.png]
 {title=3x4-1000.png text logo}
+{border}
 {description=This is a rasterization of 3x4.png to 1000x1000 px. Since SVG does not contain the actual font, we always need PNG exports for reproducibility.}
 {provider=github}
 
 \Image[text-logo/3x3.svg]
 {title=3x3.svg text logo}
+{border}
 {description=This was made by scaling down a version of the 3x4.svg logo. We had to add some extra space between lines before however, otherwise it would feel too cramped after scaling.}
 {provider=github}
 
 \Image[text-logo/3x3-1000.png]
 {title=3x3-1000.png text logo}
+{border}
 {provider=github}
 
 \Image[text-logo/circle-1000.png]
 {title=circle-1000.png text logo}
 {description=Useful for circular profile pictures.}
+{border}
 {provider=github}
 
 \Image[text-logo/square-1000.png]
 {title=square-1000.png text logo}
 {description=Useful for square profile pictures.}
+{border}
 {provider=github}
 
 = Project slogan

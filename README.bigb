@@ -2681,6 +2681,17 @@ the ancestor lists would be for:
 * China: Asia
 so we see that this basically provides a type of breadcrumb navigation.
 
+= Horizontal rule
+{parent=Macro}
+{title2=`\Hr`}
+
+Used to represent a thematic break between paragraph-level elements:
+\OurBigBookExample[[
+She pressed the button. Just like that, everything was over.
+\Hr
+The next morning was a gloomy one. Nobody said a word.
+]]
+
 = Image
 {parent=Macro}
 {title2=`\Image` and `\image`}

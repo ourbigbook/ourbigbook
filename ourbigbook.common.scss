@@ -16,7 +16,6 @@
 
 // Dark.
 $a-color: #88CCFF;
-$a-color-visited: #FFAAFF;
 $background-color: #181818;
 $code-background-color: #333333;
 $color: #EEEEEE;
@@ -40,6 +39,8 @@ $toplevel-horizontal-padding-left: 20px;
 $toplevel-horizontal-padding-right: 15px;
 
 // Derived parameters.
+// #FFAAFF was a reasonable value. But modern websites don't do this anymore.
+$a-color-visited: $a-color;
 $brandname-color: $color;
 $h1-font-size: $header-font-size * 1.5;
 $navbar-color-discrete: $color-discreet;

@@ -12,19 +12,39 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
 ) => {
   const loggedInUser = await getLoggedInUser(req, res)
   const [order, pageNum, err] = getOrderAndPage(req, query.page, { defaultOrder: 'score' })
+  const sequelize = req.sequelize
   if (err) { res.statusCode = 422 }
   const offset = pageNum * articleLimit
-  const { count: usersCount, rows: userRows } = await req.sequelize.models.User.findAndCountAll({
-    offset,
-    order: [[order, 'DESC']],
-    limit: articleLimit,
-  })
-  const users: UserType[] = await Promise.all(userRows.map(
-    (user) => { return user.toJson(loggedInUser) }))
+  const [{ count: usersCount, rows: userRows }, site] = await Promise.all([
+    await sequelize.models.User.findAndCountAll({
+      offset,
+      order: [[order, 'DESC']],
+      limit: articleLimit,
+    }),
+    sequelize.models.Site.findOne({ include:
+      [{
+        model: sequelize.models.Article,
+        as: 'pinnedArticle',
+      }]
+    }),
+  ])
+  const [users, pinnedArticle] = await Promise.all([
+    Promise.all(userRows.map(
+      (user) => { return user.toJson(loggedInUser) })),
+    (async () => {
+      const pinnedArticle = site.pinnedArticle
+      if (pinnedArticle) {
+        return pinnedArticle.toJson(loggedInUser)
+      } else {
+        return null
+      }
+    })(),
+  ])
   const props: IndexPageProps = {
     itemType: 'user',
     order,
     page: pageNum,
+    pinnedArticle,
     users,
     usersCount,
   }

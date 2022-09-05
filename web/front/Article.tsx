@@ -41,6 +41,7 @@ import {
   SYNONYM_LINKS_MARKER,
   TAGGED_ID_UNRESERVED,
   TAGS_MARKER,
+  tocId,
   htmlAncestorLinks,
   htmlToplevelChildModifierById,
   renderTocFromEntryList,
@@ -400,23 +401,25 @@ const Article = ({
       const a = articlesInSamePageForToc[i]
       const authorUsername = article.author.username
       const level = a.depth - article.depth
-      const href = ` href="/${a.slug}"`
+      const href = a.slug
       const content = a.titleRender
       let parent_href, parent_content
       if (level > 1) {
         ;({ href: parent_href, content: parent_content } = levelToHeader[level - 1])
+      } else {
+        parent_content = article.titleRender
       }
       levelToHeader[level] = { href, content }
       entry_list.push({
         content,
-        href,
+        href: ` href="/${href}"`,
         level,
         has_child: i < articlesInSamePageForToc.length - 1 && articlesInSamePageForToc[i + 1].depth === a.depth + 1,
         // A quick hack as it will be easier to do it here than to modify the link generation.
         // We'll later fix both at once to remove the user prefix one day. Maybe.
         // https://docs.ourbigbook.com/TODO/remove-scope-from-toc-entry-ids
         id_prefix: AT_MENTION_CHAR + authorUsername + '/',
-        parent_href,
+        parent_href: ` href="#${parent_href ? tocId(parent_href) : Macro.TOC_ID}"`,
         parent_content,
         target_id: a.slug,
       })

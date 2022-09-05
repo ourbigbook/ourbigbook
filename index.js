@@ -9042,6 +9042,7 @@ const OUTPUT_FORMATS_LIST = [
             const pathArg = []
             if (fileProtocolIsGiven) {
               pathArg.push(
+                new PlaintextAstNode(' '),
                 new AstNode(AstType.MACRO,
                   Macro.LINK_MACRO_NAME,
                   {

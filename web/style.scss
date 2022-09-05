@@ -56,6 +56,8 @@ button, a.btn {
   text-decoration: none;
   vertical-align: middle;
   &:not(.disabled):not(:disabled) {
+    // We make hover more visible than active because it glares too much
+    // when you have an article list with lost of like buttons.
     &, &:hover.active {
       background-color: #181818;
       color: $button-fg-color;
@@ -70,6 +72,10 @@ button, a.btn {
         color: white;
       }
       //border-color: $button-bg-color;
+    }
+    &:hover:not(.active) {
+      border-color: white;
+      background-color: #FF1493;
     }
   }
   &.disabled, &:disabled {

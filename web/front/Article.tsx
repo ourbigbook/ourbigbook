@@ -70,6 +70,61 @@ function linkList(articles, idUnreserved, marker, title, linkPref) {
   </>
 }
 
+async function redirectToShortFragment() {
+  // #algebra
+  const frag = window.location.hash
+  // algebra
+  const fragNoHash = frag.substring(1)
+  // mathematics
+  const pathNoSlash = window.location.pathname.substring(1)
+  // mathematics/
+  const path = pathNoSlash + '/'
+  if (frag) {
+    if (document.getElementById(fragNoHash)) {
+      // Long URL and present in page. Let's shorten it without triggering
+      // another onhashchange and we are done.
+      let shortFrag
+      if (fragNoHash.startsWith(path)) {
+        // Toplevel "mathematics" has scope, e.g. /username/mathematics.
+        // So we convert #username/mathematics/algebra to #algebra
+        shortFrag = frag.replace(path, '')
+      } else {
+        // Toplevel "mathematics" does not have scope, e.g. /username/mathematics.
+        // So we convert #username/algebra to #algebra
+        shortFrag = frag.replace(path.split('/').slice(0, -2).join('/') + '/', '')
+      }
+      //history.replaceState(undefined, undefined, shortFrag)
+      // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
+      // However makes: user/mathematics -> user/mathematics#algebra -> user/mathematics#linear-algebra -> browser back history button work
+      // give "Error: Cancel rendering route"
+      await Router.replace(shortFrag)
+    } else {
+      // Either short given ID, or an ID that is not in current page because there are too many articles before it.
+      // TODO For now assume short ID and don't handle ID not in page.
+      let fullid = path + fragNoHash
+      let found = false
+      if (document.getElementById(fullid)) {
+        // Toplevel "mathematics" has scope, e.g. /username/mathematics.
+        // So we've found /username/mathematics/algebra
+        found = true
+      } else {
+        // Toplevel does not have scope. So e.g. we will look for /username/algebra.
+        fullid = path.split('/').slice(0, -2).join('/') + '/' + fragNoHash
+        if (document.getElementById(fullid)) {
+          found = true
+        }
+      }
+      if (found) {
+        // We've found the full URL from the short one. Redirect to full URL to
+        // jump to the ID and highlight it.. This triggers a onhashchange event
+        // which will call this function once again. The next call will then immediately
+        // convert long ID to short ID.
+        window.location.replace('#' + fullid)
+      }
+    }
+  }
+}
+
 const Article = ({
   ancestors,
   article,
@@ -120,6 +175,18 @@ const Article = ({
   articlesInSamePageMap[article.slug] = article
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
   const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
+
+  React.useEffect(() => {
+    await redirectToShortFragment()
+    // Redirect e.g. from /username/mathematics#username/algebra to /username/mathematics#algebra
+    // The actual IDs on HTML are fully scoped like "username/algebra", but using Js hacks
+    // we always manipulate the browse to show and use the shortest fragments possible.
+    // Things you have to test:
+    // /barack-obama#barack-obama-mathematics
+    window.addEventListener('hashchange', redirectToShortFragment)
+    return () => { window.removeEventListener('hashchange', redirectToShortFragment) }
+  }, [])
+
   const renderRefCallback = React.useCallback(
     (elem) => {
       if (elem) {
@@ -287,46 +354,6 @@ const Article = ({
           )
         }
         ourbigbook_runtime(elem);
-
-        // Redirect e.g. from /username/mathematics#algebra to /username/mathematics#username/algebra
-        // The actual IDs on HTML are fully scoped like "username/algebra". This allows us to post shorter URLs.
-        // on external websites.
-        {
-          const frag = window.location.hash
-          // algebra
-          const fragNoHash = frag.substring(1)
-          // mathematics
-          const pathNoSlash = window.location.pathname.substring(1)
-          // mathematics/
-          const path = pathNoSlash + '/'
-          if (frag) {
-            if (!document.getElementById(fragNoHash)) {
-              // Either short given ID, or an ID that is not in current page because there are too many articles before it.
-              // TODO For now assume short ID and don't handle ID not in page. That would require a bit of DB info telling
-              // us is "mathematics" has scope or not.
-              let fullid = path + fragNoHash
-              let found = false
-              if (document.getElementById(fullid)) {
-                // Toplevel "mathematics" has scope, e.g. /username/mathematics.
-                // So we've found /username/mathematics/algebra
-                found = true
-              } else {
-                // Toplevel does not have scope. So e.g. we will look for /username/algebra.
-                fullid = path.split('/').slice(0, -2).join('/') + '/' + fragNoHash
-                if (document.getElementById(fullid)) {
-                  found = true
-                }
-              }
-              if (found) {
-                // We've found the full URL from the short one. Redirect to full URL to
-                // jump to the ID and highlight it.. This triggers a onhashchange event
-                // which will call this function once again. The next call will then immediately
-                // convert long ID to short ID.
-                window.location.replace('#' + fullid)
-              }
-            }
-          }
-        }
 
         // Capture link clicks, use ID on current page if one is present.
         // Only go to another page if the ID is not already present on the page.

@@ -55,7 +55,7 @@ const Navbar = ({ isEditor, scoreDelta }) => {
         {appNameShort}
       </CustomLink>
       <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }><HelpIcon />&nbsp;About</a>
-      <a href={donateUrl} className="donate" target={ isEditor ? '_blank' : '_self' }>$ Donate</a>
+      <a href={donateUrl} className="donate" target={ isEditor ? '_blank' : '_self' }><span class="icon">$</span>&nbsp;Donate</a>
       <div className="navbar-list">
         <Maybe test={loggedInUser}>
           <NavLink href={routes.articleNew()} newTab={isEditor}>

@@ -9707,6 +9707,14 @@ Types:
 = Web CLI utils
 {parent=OurBigBook Web directory structure}
 
+= web/bin
+{synonym}
+{title}
+
+This setion is about <OurBigBook Web> administration utilities that live under the directory \a[web/bin].
+
+These can be mostly used to conveniently manipulate the database to perform some routine adminstartive tasks from the command line.
+
 = web/bin/normalize
 {file}
 {parent=Web CLI utils}
@@ -9753,6 +9761,16 @@ The functionality of this script should be called from a <OurBigBook Web databas
 {parent=Web CLI utils}
 
 Analogous to <web/bin/rerender-articles.js>{file} but for issues.
+
+= web/bin/set-password
+{file}
+{parent=Web CLI utils}
+
+Change password for a given user. Usage:
+``
+set-password <username> <new-password>
+``
+Note that this can also be achieved on the web interface by visiting the settings page of a target user with an <OurBigBook Admin> account.
 
 = Runtime feature
 {parent=OurBigBook}

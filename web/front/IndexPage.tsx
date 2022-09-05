@@ -71,7 +71,7 @@ function IndexPageHoc({
         isIssue = true
         break
       case 'topic':
-        paginationUrlFunc = (page) => routes.topics({ page, sort: order })
+        paginationUrlFunc = (page) => routes.topics({ page, sort: order, loggedInUser })
         break
       case 'user':
         paginationUrlFunc = (page) => routes.users({ page, sort: order })

@@ -337,6 +337,9 @@ div.editor-page {
     div.help {
       margin-bottom: 0.7em;
     }
+    a {
+      color: $a-color;
+    }
   }
   div.title-and-actions, div.parent-id-container {
     display: flex;

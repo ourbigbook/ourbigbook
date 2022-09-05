@@ -255,6 +255,9 @@ pre {
 div.article-page {
   div.article-meta {
     nav.issue-nav {
+      a {
+        color: $a-color;
+      }
       font-weight: bold;
       .see-all {
         font-size: 1.2em;

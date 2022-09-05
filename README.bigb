@@ -2723,9 +2723,9 @@ This exemplifies the following parameters:
 * <image `source` argument>[`source`]: a standardized way to credit an image by linking to a URL that contains further image metadata
 For further discussion on the effects of ID see: <image ID>{full}.
 
-And this is how you make an inline image inline one with lower case `i`:
+And this is how you make an <inline image> inline one with lower case `i`:
 \OurBigBookExample[[My inline \image[Tank_man_standing_in_front_of_some_tanks.jpg][test image] is awesome.]]
-Inline images can't have captions.
+<Inline images> can't have captions.
 
 And now for an image outside of <\OurBigBookExample> to test how it looks directly under <toplevel>: <image my test image toplevel>{full}.
 
@@ -2940,9 +2940,11 @@ For the love of God, there is no standardized for SVG to set its background colo
 
 And as a result, many many many SVG online images that you might want to reuse just rely on white pages and don't add that background rectangle.
 
-Therefore for now we just force white background on <overview of files in this repository>[our default CSS], which is what most SVGs will work with. Otherwise, you can lose the entire image to our default black background.
+Therefore for now we just force white background on <overview of files in this repository>[our default CSS] of block images, which is what most SVGs will work with. Otherwise, you can lose the entire image to our default black background.
 
-Then if someone ever has an SVG that needs another background color, we can add an image attribute to set that color as a local style.
+For <inline images> however, a white background would also be very distracting compared to the nearby inline text, and it would prevent the use case of making rounded smileys, so for now we are just not forcing the background color in that case.
+
+At some point we might just add a `color` argument to set the background color to an arbitrary value so that authors can decide what is better for each image.
 
 = Image generators
 {parent=Image}
@@ -2950,6 +2952,17 @@ Then if someone ever has an SVG that needs another background color, we can add 
 TODO implement: mechanism where you enter a textual description of the image inside the code body, and it then converts to an image, adds to the `-media` repo and pushes all automatically. Start with dot.
 
 https://github.com/ourbigbook/ourbigbook/issues/40
+
+= Block and inline images
+{parent=Image}
+{tag=Block vs inline macros}
+
+Many <image arguments> arguments are shared between both block and inline images, but not all.
+
+= Inline image
+{parent=Block and inline images}
+{tag=Inline macro}
+{title2=`\image`}
 
 = Image argument
 {parent=Image}
@@ -3024,7 +3037,11 @@ Analogous to the <\a external argument> when checking if the <image src argument
 By default, we fix image heights to `height=315`, and let the `width` be calculated proportionally once the image loads. We therefore ignore the actual image size. This is done to:
 * prevent reflows as the page loads images and can determine their actual sizes, especially is the user opens the page at a given ID in the middle of the page
 * create a more uniform media experience by default, unless a custom image size is actually needed e.g. if the image needs to be larger
-When the <Mobile guidelines>[viewport is narrow enough], mobile CSS takes over and forces images to fill 100% of the page width instead.
+When the <Mobile guidelines>[viewport is narrow enough], mobile CSS takes over and forces block images to fill 100% of the page width instead, removing the scrollbar.
+
+<Inline images> on the other hand never get a horizontal scrollbar, they are just always capped at viewport width.
+
+When the `height` argument is given, it changes that default height. Width is still just calculated proportionally to this new custom height.
 
 \OurBigBookExample[[
 \Image[logo.svg]
@@ -3042,6 +3059,8 @@ Here's a very long test image:
 {title=Very long test image}
 {description=And some tall inline maths: $a_b$.}
 {height=600}
+
+Here's a very long inline \image[https://upload.wikimedia.org/wikipedia/commons/4/45/Qian_Xuan_-_Early_Autumn.jpg] test image:
 
 = Image `link` argument
 {parent=Image argument}
@@ -3099,6 +3118,23 @@ Analogous to the <\a href argument>.
 {tag=`title` argument}
 
 Analogous to the <\H title argument>.
+
+= Image `width` argument
+{parent=Image argument}
+
+This argument is meant to be analogous to the <Image height argument> but for images.
+
+Usage of this argument is generally discouraged, as we always set the default image height by default, so that also passing a width is either unnecessary or may lead to changes in the image's correct aspect ratio.
+
+\OurBigBookExample[[
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{width=150}
+]]
+
+\OurBigBookExample[[
+\Image[Tank_man_standing_in_front_of_some_tanks.jpg]
+{width=550}
+]]
 
 = Include
 {parent=Macro}
@@ -5724,6 +5760,12 @@ If present, the `auto_parent` macro property determines which auto-parent gets a
 
 = Block vs inline macros
 {parent=OurBigBook Markup concepts}
+
+= Block macro
+{synonym}
+
+= Inline macro
+{synonym}
 
 Every OurBigBook macro is either block or inline:
 * a block macro is one that takes up the entire line when rendered

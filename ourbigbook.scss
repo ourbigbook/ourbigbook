@@ -94,7 +94,7 @@ div.float-wrap {
 
 // CSS border triangles.
 // https://css-tricks.com/snippets/css/css-triangle/
-$toc-arrow-color: #009900;
+$toc-arrow-color: $color-discreet;
 $toc-arrow-width: 0.7em;
 @mixin toc-arrow {
   color: blue;
@@ -154,6 +154,7 @@ a {
   &.toc {
     color: $a-color;
     &::before {
+      color: $color;
       font-family: "fa-solid-900";
       font-weight: 900;
       font-size: $icon-font-size;
@@ -337,9 +338,11 @@ nav.h-nav {
     // u for Up
     &.u::before {
       @include up-arrow-icon;
+      color: $color;
     }
     &.wiki {
       &::before {
+        color: $color;
         font-family: "fa-brands-400";
         font-weight: bold;
         font-size: $icon-font-size;
@@ -466,11 +469,6 @@ ol, ul {
   }
 }
 
-// Shows on ToC and on metadata at the end like the ancestor list.
-.metrics {
-  color: $color-discreet;
-}
-
 // Table of contents.
 .toc-container {
   margin-bottom: $p-margin-vert;
@@ -512,6 +510,7 @@ ol, ul {
       }
       // Current
       .c::before {
+        color: $color;
         @include link-icon;
       }
       .c::after {
@@ -519,6 +518,7 @@ ol, ul {
       }
       // Up
       .u::before {
+        color: $color;
         @include up-arrow-icon;
       }
 
@@ -636,6 +636,9 @@ video {
   &.border {
     @include img-border;
   }
+}
+.icon:not(.ion-heart) {
+  color: $color;
 }
 }
 

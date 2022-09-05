@@ -22,13 +22,13 @@ const path = require('path');
 const pluralize = require('pluralize');
 
 // consts used by classes.
-const HTML_PARENT_MARKER = '<span class="fa-solid-900">\u{f062}</span>';
+const HTML_PARENT_MARKER = '<span class="fa-solid-900 icon">\u{f062}</span>';
 exports.HTML_PARENT_MARKER = HTML_PARENT_MARKER;
 const NOSPLIT_MARKER_TEXT = 'nosplit'
 exports.NOSPLIT_MARKER_TEXT = NOSPLIT_MARKER_TEXT;
 const SPLIT_MARKER_TEXT = 'split'
 exports.SPLIT_MARKER_TEXT = SPLIT_MARKER_TEXT;
-const TOC_MARKER_SYMBOL = '<span class="fa-solid-900">\u{f03a}</span>'
+const TOC_MARKER_SYMBOL = '<span class="fa-solid-900 icon">\u{f03a}</span>'
 const TOC_MARKER = `${TOC_MARKER_SYMBOL} toc`
 
 class AstNode {
@@ -7600,9 +7600,9 @@ const HEADER_PARENT_ERROR_MESSAGE = 'header parent either is a previous ID of a 
 const HTML_ASCII_WHITESPACE = new Set([' ', '\r', '\n', '\f', '\t']);
 const HTML_EXT = 'html';
 exports.HTML_EXT = HTML_EXT;
-const INCOMING_LINKS_MARKER = '<span title="Incoming links" class="fa-solid-900">\u{f060}</span>'
+const INCOMING_LINKS_MARKER = '<span title="Incoming links" class="fa-solid-900 icon">\u{f060}</span>'
 exports.INCOMING_LINKS_MARKER = INCOMING_LINKS_MARKER
-const SYNONYM_LINKS_MARKER = '<span title="Synonyms" class="fa-solid-900">\u{f07e}</span>'
+const SYNONYM_LINKS_MARKER = '<span title="Synonyms" class="fa-solid-900 icon">\u{f07e}</span>'
 exports.SYNONYM_LINKS_MARKER = SYNONYM_LINKS_MARKER
 const INCOMING_LINKS_ID_UNRESERVED = 'incoming-links'
 exports.INCOMING_LINKS_ID_UNRESERVED = INCOMING_LINKS_ID_UNRESERVED
@@ -7673,7 +7673,7 @@ const VIDEO_EXTENSIONS = new Set([
 ])
 const TAGGED_ID_UNRESERVED = 'tagged'
 exports.TAGGED_ID_UNRESERVED = TAGGED_ID_UNRESERVED
-const TAGS_MARKER = '<span title="Tags" class="fa-solid-900">\u{f02c}</span>'
+const TAGS_MARKER = '<span title="Tags" class="fa-solid-900 icon">\u{f02c}</span>'
 exports.TAGS_MARKER = TAGS_MARKER
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>'
 const TOC_HAS_CHILD_CLASS = 'has-child'

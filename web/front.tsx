@@ -85,11 +85,15 @@ export function DiscussionAbout(
 export function Icon(cls, title, opts) {
   const showTitle = opts.title === undefined ? true : opts.title
   const extraClasses = opts.extraClasses === undefined ? [] : opts.extraClasses
-  return <i className={extraClasses.concat(cls).join(' ')} title={showTitle ? title : undefined } />
+  return <i className={extraClasses.concat([cls, 'icon']).join(' ')} title={showTitle ? title : undefined } />
 }
 
 export function ArticleIcon(opts) {
   return Icon("ion-ios-book", "Article", opts)
+}
+
+export function ArrowUpIcon(opts) {
+  return Icon("ion-arrow-up-c", undefined, opts)
 }
 
 export function CancelIcon(opts) {
@@ -158,6 +162,7 @@ export function TopicIcon(opts) {
 export function UserIcon(opts) {
   return Icon("ion-ios-person", "User", opts)
 }
+
 
 export function SignupOrLogin(
   { to }:

@@ -6,6 +6,7 @@ import Router from 'next/router'
 import { commentsHeaderId } from 'front/config'
 import { formatDate } from 'front/date'
 import {
+  ArrowUpIcon,
   DeleteIcon,
   EditArticleIcon,
   HelpIcon,
@@ -457,7 +458,7 @@ const Article = ({
             { seeAllCreateNew }
             { latestIssues.length > 0 ?
                 <>
-                  <h3>Latest discussions</h3>
+                  <h3><IssueIcon /> <TimeIcon /> Latest discussions</h3>
                   <ArticleList {...{
                     articles: latestIssues,
                     articlesCount: article.issueCount,
@@ -470,7 +471,7 @@ const Article = ({
                     showAuthor: true,
                     what: 'discussion',
                   }}/>
-                  <h3>Top discussions</h3>
+                  <h3><IssueIcon /> <ArrowUpIcon /> Top discussions</h3>
                   <ArticleList {...{
                     articles: topIssues,
                     articlesCount: article.issueCount,

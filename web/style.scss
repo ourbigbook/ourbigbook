@@ -3,7 +3,7 @@
 $border-radius: 10px;
 $like-button-inactive-color: white;
 $like-button-active-color: #FF1493;
-$tab-bar-active-color: $h-color;
+$tab-bar-active-color: $color;
 $toplevel-padding: 20px;
 $toplevel-padding-mobile: 5px;
 
@@ -175,6 +175,10 @@ div.list-container {
   .title {
     font-weight: bold;
   }
+}
+
+.icon:not(.ion-heart) {
+  color: $color;
 }
 
 /*
@@ -350,6 +354,15 @@ div.editor-page {
   }
 }
 
+div.topic-page {
+  .list-container {
+    .ourbigbook-title {
+      color: $h-color;
+      font-size: $header-font-size;
+    }
+  }
+}
+
 div.tab-list {
   font-weight: bold;
   margin: 5px 0 10px;
@@ -415,15 +428,16 @@ span.shortcut {
   border-radius: $border-radius;
   margin-bottom: 10px;
   &:target .comment-header {
-    background-color: #552222;
+    background-color: $target-background-color;
   }
   .comment-header {
     border-bottom: 1px solid $color;
     border-radius: $border-radius $border-radius 0 0;
-    background-color: #003300;
+    background-color: $navbar-background-color;
     margin-bottom: 10px;
     padding: 10px 10px;
     .number {
+      color: $h-color;
       font-weight: bold;
       font-size: 1.2em;
     }
@@ -572,10 +586,10 @@ footer {
     &:not(:last-child) {
       margin-right: 0.8em;
     }
-    color: $h-color;
+    color: $color;
     text-decoration: none;
     &:visited {
-      color: $h-color;
+      color: $color;
     }
     &:hover {
       text-decoration: underline;
@@ -606,11 +620,6 @@ nav.navbar {
     align-items: center;
     align-self: stretch;
 
-    $non-brand-color: $navbar-color-discrete;
-    color: $non-brand-color;
-    &:visited {
-      color: $non-brand-color;
-    }
     display: flex;
     font-size: 24px;
     font-weight: bold;
@@ -619,9 +628,13 @@ nav.navbar {
     padding-left: 5px;
     padding-right: 5px;
     text-decoration: none;
+    color: $navbar-non-brandname-color;
+    &:visited {
+      color: $navbar-non-brandname-color;
+    }
     &:hover, &.active {
       color: $navbar-background-color;
-      background-color: $h-color;
+      background-color: $navbar-non-brandname-color;
     }
     &.score.changed {
       //background-color: $like-button-inactive-color;

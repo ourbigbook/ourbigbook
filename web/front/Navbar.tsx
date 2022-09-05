@@ -50,7 +50,7 @@ const Navbar = ({ isEditor, scoreDelta }) => {
   }, [scoreDelta])
   return (
     <nav className="navbar">
-      <CustomLink href={routes.home()} className="navbar-brand" newTab={isEditor}>
+      <CustomLink href={routes.home()} className="brand" newTab={isEditor}>
         <CustomImage src="/logo.svg" className="logo"/>
         {appNameShort}
       </CustomLink>

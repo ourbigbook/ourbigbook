@@ -23,21 +23,26 @@ $color: #00FF00;
 $color-discreet: #00BB00;
 $h-color: #DDDDDD;
 $navbar-background-color: #222222;
+// To make non-brand items a bit less visible than the brand.
 $table-border-color: #444444;
-$table-padding-top: 10px;
-$table-padding-sides: 10px;
 $table-even-background-color: #181818;
 $target-background-color: #442222;
-$toplevel-horizontal-padding-left: 20px;
-$toplevel-horizontal-padding-right: 15px;
 
 $font-family: Arial, Helvetica, sans-serif;
-$header-font-size: 24px;
-$h1-font-size: $header-font-size * 1.5;
 // Optimal font size:
 // https://ux.stackexchange.com/questions/211/is-there-an-optimal-font-size
 $font-size: 16px;
+$header-font-size: 24px;
 $max-mobile-width: 635px;
+$table-padding-sides: 10px;
+$table-padding-top: 10px;
+$toplevel-horizontal-padding-left: 20px;
+$toplevel-horizontal-padding-right: 15px;
+
+// Derived parameters.
+$brandname-color: $h-color;
+$h1-font-size: $header-font-size * 1.5;
+$navbar-color-discrete: #BBBBBB;
 
 @mixin body {
   background-color: $background-color;

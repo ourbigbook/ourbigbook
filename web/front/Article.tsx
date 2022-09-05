@@ -1,5 +1,6 @@
 import React from 'react'
 import * as ReactDOM from 'react-dom'
+import { createRoot } from 'react-dom/client'
 import ReactDomServer from 'react-dom/server'
 import Router from 'next/router'
 
@@ -159,15 +160,14 @@ const Article = ({
                 ancestors.length,
               )
             } else {
-              ReactDOM.render(
+              createRoot(ancestorsElem).render(
                 <span dangerouslySetInnerHTML={{
                   __html: `<span> ${ReactDomServer.renderToString(<HelpIcon />)} Ancestors will show here when the tree index is updated</span>`
                 }} ></span>,
-                ancestorsElem
               )
             }
           }
-          ReactDOM.render(
+          createRoot(webElem).render(
             <>
               <LikeArticleButton {...{
                 article: curArticle,
@@ -282,9 +282,8 @@ const Article = ({
                   </span>
                 </>
               }
-            </>,
-            webElem
-          );
+            </>
+          )
         }
         ourbigbook_runtime(elem);
         // Capture link clicks, use ID on current page if one is present.
@@ -340,7 +339,7 @@ const Article = ({
       }
     },
     [ancestors, articlesInSamePageMap]
-  );
+  )
   let html = ''
   if (!isIssue) {
      html += article.h1Render

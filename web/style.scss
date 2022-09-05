@@ -138,7 +138,7 @@ div.list-container {
     white-space: nowrap;
     tr {
       td, th {
-        border: 1px solid $color;
+        border: 1px solid $table-border-color;
         padding: 5px 10px;
         &.center {
           text-align: center;
@@ -158,6 +158,12 @@ div.list-container {
         &.bold {
           font-weight: bold;
         }
+      }
+      th {
+        color: $h-color;
+      }
+      &:nth-child(even) {
+        background-color: $table-even-background-color;
       }
     }
   }

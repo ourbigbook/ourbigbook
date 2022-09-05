@@ -8022,10 +8022,6 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'Hr',
-    []
-  ),
-  new Macro(
     // Block code.
     Macro.CODE_MACRO_NAME.toUpperCase(),
     [
@@ -8188,85 +8184,8 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    Macro.INCLUDE_MACRO_NAME,
-    [
-      new MacroArgument({
-        name: 'href',
-        mandatory: true,
-      }),
-    ],
-    {
-      macro_counts_ignore: function(ast) { return true; },
-      named_args: [
-        new MacroArgument({
-          name: 'parent',
-        }),
-      ],
-      phrasing: true,
-    }
-  ),
-  new Macro(
-    Macro.LIST_ITEM_MACRO_NAME,
-    [
-      new MacroArgument({
-        name: 'content',
-        count_words: true,
-      }),
-    ],
-    {
-      auto_parent: 'Ul',
-      auto_parent_skip: new Set(['Ol']),
-    }
-  ),
-  new Macro(
-    // Block math.
-    Macro.MATH_MACRO_NAME.toUpperCase(),
-    [
-      new MacroArgument({
-        name: 'content',
-        count_words: true,
-        ourbigbook_output_prefer_literal: true,
-      }),
-    ],
-    {
-      caption_prefix: 'Equation',
-      id_prefix: 'equation',
-      get_number: function(ast, context) {
-        // Override because unlike other elements such as images, equations
-        // always get numbers even if not indexed.
-        return ast.macro_count;
-      },
-      macro_counts_ignore: function(ast) {
-        return !ast.validation_output.show.boolean;
-      },
-      named_args: [
-        new MacroArgument({
-          name: Macro.TITLE_ARGUMENT_NAME,
-        }),
-        new MacroArgument({
-          name: Macro.DESCRIPTION_ARGUMENT_NAME,
-        }),
-        new MacroArgument({
-          boolean: true,
-          default: '1',
-          name: 'show',
-        }),
-      ],
-    }
-  ),
-  new Macro(
-    // Inline math.
-    Macro.MATH_MACRO_NAME,
-    [
-      new MacroArgument({
-        name: 'content',
-        count_words: true,
-        ourbigbook_output_prefer_literal: true,
-      }),
-    ],
-    {
-      phrasing: true,
-    }
+    'Hr',
+    []
   ),
   new Macro(
     'i',
@@ -8341,6 +8260,24 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
+    Macro.INCLUDE_MACRO_NAME,
+    [
+      new MacroArgument({
+        name: 'href',
+        mandatory: true,
+      }),
+    ],
+    {
+      macro_counts_ignore: function(ast) { return true; },
+      named_args: [
+        new MacroArgument({
+          name: 'parent',
+        }),
+      ],
+      phrasing: true,
+    }
+  ),
+  new Macro(
     'JsCanvasDemo',
     [
       new MacroArgument({
@@ -8350,6 +8287,69 @@ const DEFAULT_MACRO_LIST = [
     ],
     {
       xss_safe: false,
+    }
+  ),
+  new Macro(
+    Macro.LIST_ITEM_MACRO_NAME,
+    [
+      new MacroArgument({
+        name: 'content',
+        count_words: true,
+      }),
+    ],
+    {
+      auto_parent: 'Ul',
+      auto_parent_skip: new Set(['Ol']),
+    }
+  ),
+  new Macro(
+    // Block math.
+    Macro.MATH_MACRO_NAME.toUpperCase(),
+    [
+      new MacroArgument({
+        name: 'content',
+        count_words: true,
+        ourbigbook_output_prefer_literal: true,
+      }),
+    ],
+    {
+      caption_prefix: 'Equation',
+      id_prefix: 'equation',
+      get_number: function(ast, context) {
+        // Override because unlike other elements such as images, equations
+        // always get numbers even if not indexed.
+        return ast.macro_count;
+      },
+      macro_counts_ignore: function(ast) {
+        return !ast.validation_output.show.boolean;
+      },
+      named_args: [
+        new MacroArgument({
+          name: Macro.TITLE_ARGUMENT_NAME,
+        }),
+        new MacroArgument({
+          name: Macro.DESCRIPTION_ARGUMENT_NAME,
+        }),
+        new MacroArgument({
+          boolean: true,
+          default: '1',
+          name: 'show',
+        }),
+      ],
+    }
+  ),
+  new Macro(
+    // Inline math.
+    Macro.MATH_MACRO_NAME,
+    [
+      new MacroArgument({
+        name: 'content',
+        count_words: true,
+        ourbigbook_output_prefer_literal: true,
+      }),
+    ],
+    {
+      phrasing: true,
     }
   ),
   new Macro(
@@ -8843,7 +8843,6 @@ const OUTPUT_FORMATS_LIST = [
         },
         'b': htmlRenderSimpleElem('b'),
         'br': function(ast, context) { return '<br>' },
-        'Hr': function(ast, context) { return '<hr>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
           const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
           let ret = `<div class="code${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
@@ -9359,27 +9358,7 @@ const OUTPUT_FORMATS_LIST = [
 
           return ret;
         },
-        [Macro.INCLUDE_MACRO_NAME]: unconvertible,
-        [Macro.LIST_ITEM_MACRO_NAME]: htmlRenderSimpleElem('li'),
-        [Macro.MATH_MACRO_NAME.toUpperCase()]: function(ast, context) {
-          let katex_output = htmlKatexConvert(ast, context)
-          let ret = ``
-          if (ast.validation_output.show.boolean) {
-            const { href, multiline_caption, title_and_description } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
-            ret += `<div class="math${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
-            ret += `<div class="equation">`
-            ret += `<div>${katex_output}</div>`
-            ret += `<div class="number"><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`
-            ret += `</div>`
-            ret += title_and_description
-            ret += `</div>`
-          }
-          return ret
-        },
-        [Macro.MATH_MACRO_NAME]: function(ast, context) {
-          // KaTeX already adds a <span> for us.
-          return htmlKatexConvert(ast, context);
-        },
+        'Hr': function(ast, context) { return '<hr>' },
         'i': htmlRenderSimpleElem('i'),
         'Image': macroImageVideoBlockConvertFunction,
         'image': function(ast, context) {
@@ -9399,11 +9378,32 @@ const OUTPUT_FORMATS_LIST = [
           }
           return imgHtml
         },
+        [Macro.INCLUDE_MACRO_NAME]: unconvertible,
         'JsCanvasDemo': function(ast, context) {
           return htmlCode(
             renderArg(ast.args.content, context),
             { 'class': 'ourbigbook-js-canvas-demo' }
           );
+        },
+        [Macro.LIST_ITEM_MACRO_NAME]: htmlRenderSimpleElem('li'),
+        [Macro.MATH_MACRO_NAME.toUpperCase()]: function(ast, context) {
+          let katex_output = htmlKatexConvert(ast, context)
+          let ret = ``
+          if (ast.validation_output.show.boolean) {
+            const { href, multiline_caption, title_and_description } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
+            ret += `<div class="math${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
+            ret += `<div class="equation">`
+            ret += `<div>${katex_output}</div>`
+            ret += `<div class="number"><a${href}>(${context.macros[ast.macro_name].options.get_number(ast, context)})</a></div>`
+            ret += `</div>`
+            ret += title_and_description
+            ret += `</div>`
+          }
+          return ret
+        },
+        [Macro.MATH_MACRO_NAME]: function(ast, context) {
+          // KaTeX already adds a <span> for us.
+          return htmlKatexConvert(ast, context);
         },
         'Ol': htmlRenderSimpleElem('ol', UL_OL_OPTS),
         [Macro.PARAGRAPH_MACRO_NAME]: htmlRenderSimpleElem(
@@ -9795,21 +9795,21 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
         },
         'b': idConvertSimpleElem(),
         'br': function(ast, context) { return '\n'; },
-        'Hr': function(ast, context) { return '\n'; },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: idConvertSimpleElem(),
         [Macro.CODE_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
         'Comment': function(ast, context) { return ''; },
         'comment': function(ast, context) { return ''; },
         [Macro.HEADER_MACRO_NAME]: idConvertSimpleElem(),
-        [Macro.INCLUDE_MACRO_NAME]: unconvertible,
-        [Macro.LIST_ITEM_MACRO_NAME]: idConvertSimpleElem(),
-        [Macro.MATH_MACRO_NAME.toUpperCase()]: idConvertSimpleElem(),
-        [Macro.MATH_MACRO_NAME]: idConvertSimpleElem(),
+        'Hr': function(ast, context) { return '\n'; },
         'i': idConvertSimpleElem(),
         'Image': function(ast, context) { return ''; },
         'image': function(ast, context) { return ''; },
+        [Macro.INCLUDE_MACRO_NAME]: unconvertible,
         'JsCanvasDemo': idConvertSimpleElem(),
+        [Macro.LIST_ITEM_MACRO_NAME]: idConvertSimpleElem(),
+        [Macro.MATH_MACRO_NAME.toUpperCase()]: idConvertSimpleElem(),
+        [Macro.MATH_MACRO_NAME]: idConvertSimpleElem(),
         'Ol': idConvertSimpleElem(),
         [Macro.PARAGRAPH_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) { return ast.text },
@@ -10293,7 +10293,6 @@ OUTPUT_FORMATS_LIST.push(
         },
         'b': ourbigbookConvertSimpleElem,
         'br': ourbigbookConvertSimpleElem,
-        'Hr': ourbigbookConvertSimpleElem,
         [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbookCodeMathBlock(INSANE_CODE_CHAR),
         [Macro.CODE_MACRO_NAME]: ourbigbookCodeMathInline(INSANE_CODE_CHAR),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: ourbigbookConvertSimpleElem,
@@ -10360,6 +10359,10 @@ OUTPUT_FORMATS_LIST.push(
           //ast.validation_output.level.positive_nonzero_integer
           return `${INSANE_HEADER_CHAR.repeat(output_level)} ${renderArg(ast.args.title, context)}${args_string ? '\n' : '' }${args_string}${newline}`
         },
+        'Hr': ourbigbookConvertSimpleElem,
+        'i': ourbigbookConvertSimpleElem,
+        'Image': ourbigbookConvertSimpleElem,
+        'image': ourbigbookConvertSimpleElem,
         [Macro.INCLUDE_MACRO_NAME]: function(ast, context) {
           let newline
           if (
@@ -10371,13 +10374,10 @@ OUTPUT_FORMATS_LIST.push(
           }
           return newline + ourbigbookConvertSimpleElem(ast, context)
         },
+        'JsCanvasDemo': ourbigbookConvertSimpleElem,
         [Macro.LIST_ITEM_MACRO_NAME]: ourbigbookLi(INSANE_LIST_START),
         [Macro.MATH_MACRO_NAME.toUpperCase()]: ourbigbookCodeMathBlock(INSANE_MATH_CHAR),
         [Macro.MATH_MACRO_NAME]: ourbigbookCodeMathInline(INSANE_MATH_CHAR),
-        'i': ourbigbookConvertSimpleElem,
-        'Image': ourbigbookConvertSimpleElem,
-        'image': ourbigbookConvertSimpleElem,
-        'JsCanvasDemo': ourbigbookConvertSimpleElem,
         'Ol': ourbigbookConvertSimpleElem,
         [Macro.PARAGRAPH_MACRO_NAME]: function(ast, context) {
           if (!ast.args.content || Object.keys(ast.args).length !== 1) {

@@ -65,10 +65,15 @@ The <OurBigBook Web> website is the main tool of the project. <OurBigBook CLI> i
 = Donate
 {parent=OurBigBook}
 
-You can donate to the <OurBigBook Project> to sponsor its development in the following ways:
-* https://cirosantilli.com/sponsor[]: give money directly to <Ciro Santilli>, who is the project founder and current lead. If things ever take off we will set up a legal entity to make things cleaner. One may dream. Related: <Project governance>{full}.
+To donate:
+* https://cirosantilli.com/sponsor[]: give money directly to <Ciro Santilli> 
 * buy project merchandise, see: <merchandise>{full}
-We are happy to discuss paid contracts to implement specific features, to get in touch see: <contact>.
+
+All donated money currently just goes directly to <Ciro Santilli>'s account, the project founder and current lead. If things ever take off we will set up a legal entity to make things cleaner. One may dream. But for now, it would just add unnecessary overhead. Related: <Project governance>{full}.
+
+Ciro announces funding milestones and transparently accounts for all donations at: https://cirosantilli.com/sponsor[]. When milestones are reached, he quits his day job and works full time on the project for a given ammount of time.
+
+We are also happy to discuss paid contracts to implement specific features, to get in touch see: <contact>.
 
 = Quick start
 {parent=OurBigBook}
@@ -9766,6 +9771,11 @@ One current fundamental limitation of <VS Code> is that there is no way to previ
 {height=720}
 {width=720}
 
+\Image[feature/local-editing/vscode-mathematics-calculus-derivative.png]
+{title=Screenshot of a sample OurBigBook project in VS Code}
+{provider=github}
+{height=800}
+
 = Vim
 {parent=Editor support}
 
@@ -10857,7 +10867,13 @@ These will likely change if the project ever gets any traction, but for now thin
 
 <Ciro Santilli> is the founder and Absolute Magnanimous All Powerful Eternal Ruler (AMAPER) of the OurBigBook Project.
 
-Ciro is a passionate about free education that allows learners to progress as fast as they want and of <#User Generated Content>, which allows anyone to be the teacher.
+Ciro is a passionate about
+* free education that allows learners to progress as fast as they want
+* <#User Generated Content>, which allows anyone to be the teacher
+
+His motivations for starting the OurBigBook Project can be seen at: https://ourbigbook.com/cirosantilli/ourbigbook-com/philosophy
+
+Ciro is a big Stack Overflow contributor, having reached top 50 yearly reputation leagues for several consecutive years in the early 2020's: https://ourbigbook.com/cirosantilli/ciro-santilli-s-stack-overflow-contributions and he has a few 1k+ star educational GitHub repositories: https://github.com/search?o=desc&q=user%3Acirosantilli&s=stars&type=Repositories[].
 
 * Homepage: https://cirosantilli.com
 * LinkedIn: https://www.linkedin.com/in/cirosantilli

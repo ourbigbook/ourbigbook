@@ -286,8 +286,54 @@ const Article = ({
           )
         }
         ourbigbook_runtime(elem);
+
+        // Redirect e.g. from /username/mathematics#algebra to /username/mathematics#username/algebra
+        // The actual IDs on HTML are fully scoped like "username/algebra". This allows us to post shorter URLs.
+        // on external websites.
+        {
+          const frag = window.location.hash
+          // algebra
+          const fragNoHash = frag.substring(1)
+          // mathematics
+          const pathNoSlash = window.location.pathname.substring(1)
+          // mathematics/
+          const path = pathNoSlash + '/'
+          if (frag) {
+            if (!document.getElementById(fragNoHash)) {
+              // Either short given ID, or an ID that is not in current page because there are too many articles before it.
+              // TODO For now assume short ID and don't handle ID not in page. That would require a bit of DB info telling
+              // us is "mathematics" has scope or not.
+              let fullid = path + fragNoHash
+              let found = false
+              if (document.getElementById(fullid)) {
+                // Toplevel "mathematics" has scope, e.g. /username/mathematics.
+                // So we've found /username/mathematics/algebra
+                found = true
+              } else {
+                // Toplevel does not have scope. So e.g. we will look for /username/algebra.
+                fullid = path.split('/').slice(0, -2).join('/') + '/' + fragNoHash
+                if (document.getElementById(fullid)) {
+                  found = true
+                }
+              }
+              if (found) {
+                // We've found the full URL from the short one. Redirect to full URL to
+                // jump to the ID and highlight it.. This triggers a onhashchange event
+                // which will call this function once again. The next call will then immediately
+                // convert long ID to short ID.
+                window.location.replace('#' + fullid)
+              }
+            }
+          }
+        }
+
         // Capture link clicks, use ID on current page if one is present.
         // Only go to another page if the ID is not already present on the page.
+        //
+        // All HTML href links are full as in /username/scope/articleid
+        //
+        // If we are e.g. under /username/scope and articleid is present, no need
+        // for changing the page at all, just jump inside page.
         for (const a of elem.getElementsByTagName('a')) {
           a.addEventListener(`click`, e => {
             const target = e.currentTarget

@@ -108,7 +108,7 @@ const Pagination = ({
           </span>
         </Maybe>
         <span className="total">
-          Total {what}: {itemsCount}
+          Total {what}: <b>{itemsCount}</b>
         </span>
       </div>
     </nav>

@@ -8022,6 +8022,10 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
+    'hr',
+    []
+  ),
+  new Macro(
     // Block code.
     Macro.CODE_MACRO_NAME.toUpperCase(),
     [
@@ -8839,6 +8843,7 @@ const OUTPUT_FORMATS_LIST = [
         },
         'b': htmlRenderSimpleElem('b'),
         'br': function(ast, context) { return '<br>' },
+        'hr': function(ast, context) { return '<hr>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
           const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
           let ret = `<div class="code${multiline_caption}"${htmlRenderAttrsId(ast, context)}>`
@@ -9790,6 +9795,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
         },
         'b': idConvertSimpleElem(),
         'br': function(ast, context) { return '\n'; },
+        'hr': function(ast, context) { return '\n'; },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: idConvertSimpleElem(),
         [Macro.CODE_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
@@ -10287,6 +10293,7 @@ OUTPUT_FORMATS_LIST.push(
         },
         'b': ourbigbookConvertSimpleElem,
         'br': ourbigbookConvertSimpleElem,
+        'hr': ourbigbookConvertSimpleElem,
         [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbookCodeMathBlock(INSANE_CODE_CHAR),
         [Macro.CODE_MACRO_NAME]: ourbigbookCodeMathInline(INSANE_CODE_CHAR),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: ourbigbookConvertSimpleElem,

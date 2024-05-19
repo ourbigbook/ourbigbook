@@ -6563,10 +6563,21 @@ function renderErrorXUndefined(ast, context, target_id, options={}) {
  * the static one had a tree representation, but the dynamic one has a list, so we convert
  * both to a single list representation and render it here.
  */
-function renderTocFromEntryList({ add_test_instrumentation, entry_list, descendant_count_html, tocIdPrefix }) {
+function renderTocFromEntryList({
+  add_test_instrumentation,
+  entry_list,
+  descendant_count_html,
+  tocHasSelflinks,
+  tocIdPrefix,
+}) {
   let top_level = 0;
   if (tocIdPrefix === undefined) {
     tocIdPrefix = ''
+  }
+  if (tocHasSelflinks === undefined) {
+    // There is currently no code that sets this to true. Previously it was fixed at true,
+    // and we decided to drop it by default, but keep the code around just in case.
+    tocHasSelflinks = false
   }
   let ret = `<div class="toc-container" id="${tocIdPrefix}${Macro.TOC_ID}"><ul><li${htmlClassAttr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`
   ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}"> Table of contents</a>`
@@ -6612,8 +6623,10 @@ function renderTocFromEntryList({ add_test_instrumentation, entry_list, descenda
     }
     ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
     let toc_href = htmlAttr('href', '#' + htmlEscapeAttr(my_toc_id));
-    // c for current
-    ret += `<a${toc_href}${htmlAttr('class', 'c')}></a>`;
+    if (tocHasSelflinks) {
+      // c for current
+      ret += `<a${toc_href}${htmlAttr('class', 'c')}></a>`
+    }
     if (link_to_split) {
       ret += `${link_to_split}`;
     }

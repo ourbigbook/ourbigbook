@@ -267,6 +267,9 @@ div.h {
   }
   div.notnav {
     @include h-common;
+    @media only screen and (max-width: $max-mobile-width) {
+      margin-left: 16px;
+    }
     h1 {
       @include h1-only;
     }

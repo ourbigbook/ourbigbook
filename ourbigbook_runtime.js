@@ -167,32 +167,64 @@ export function ourbigbook_runtime(toplevel) {
   }
 
   // On-hover links.
-  for (const elem of toplevel.querySelectorAll('.ourbigbook > *')) {
-    if (elem.id) {
-      elem.addEventListener('mouseenter', (e) => {
-        if (CSS_MAX_MOBILE_WIDTH < window.innerWidth) {
-          const a = myDocument.createElement('a')
-          a.href = `#${e.target.id}`
-          a.className = SELFLINK_CLASS
-          e.target.prepend(a)
-        }
-      })
-      elem.addEventListener('mouseleave', (e) => {
-        const t = e.target
-        const firstChild = t.children[0]
-        if (
-          // Not sure why but this could be undefined on OurBigBook Web
-          // when clicking from e.g. /go/articles to an article and hovering
-          // off from the element that you were hoevered on to by the page change.
-          // Would be good to understand better, but no patiecnse now.
-          firstChild !== undefined &&
-          firstChild.className === SELFLINK_CLASS
-        ) {
-          t.removeChild(firstChild)
-        }
-      })
+  function addLink(myElem) {
+    const a = myDocument.createElement('a');
+
+    const myID = myElem.id
+    let myLink = '#' + myID;
+    const path = window.location.pathname.substring(1);
+    const myPaths = [path + '/', path.split('/').slice(0, -1).join('/') + '/'];
+    for (const myPath of myPaths) {
+      if (myID.startsWith(myPath)) {
+        myLink = '#' + myID.replace(myPath, '');
+        break;
+      }
+    }
+    a.href = myLink;
+    
+    a.className = SELFLINK_CLASS;
+    myElem.prepend(a);
+  }
+  function delLink(myElem) {
+    const firstChild = myElem.children[0];
+    if (
+      // Not sure why but this could be undefined on OurBigBook Web
+      // when clicking from e.g. /go/articles to an article and hovering
+      // off from the element that you were hoevered on to by the page change.
+      // Would be good to understand better, but no patience now.
+      firstChild !== undefined &&
+      firstChild.className === SELFLINK_CLASS
+    ) {
+      myElem.removeChild(firstChild);
     }
   }
+  
+  for (const elem of toplevel.querySelectorAll('.ourbigbook > *')) {
+    if (elem.id) {
+      elem.addEventListener('mouseenter', (e) => {if (CSS_MAX_MOBILE_WIDTH < window.innerWidth) {addLink(e.target)}});
+      elem.addEventListener('mouseleave', (e) => {if (CSS_MAX_MOBILE_WIDTH < window.innerWidth) {delLink(e.target)}});
+    }
+  }
+  
+  let mobile0, mobile1 = false;
+  
+  // true denotes mobile, false denotes desktop
+  // mobile0 will denote the previous status
+  // mobile1 will denote the current status
+  
+  function check() {
+    mobile0 = mobile1;
+    mobile1 = CSS_MAX_MOBILE_WIDTH > window.innerWidth;
+    if (mobile0 !== mobile1) {
+      for (const elem of document.getElementsByClassName('h')) {
+        if (mobile1) {addLink(elem)} else {delLink(elem)}
+      }
+    }
+  }
+  
+  check();
+  
+  window.onresize = check;
 
   // JsCanvasDemo
   const ourbigbook_canvas_demo_elems = toplevel.getElementsByClassName('ourbigbook-js-canvas-demo');

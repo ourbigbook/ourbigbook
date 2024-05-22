@@ -70,65 +70,6 @@ function linkList(articles, idUnreserved, marker, title, linkPref) {
   </>
 }
 
-function redirectToShortFragment() {
-  // #algebra
-  const frag = window.location.hash
-  // algebra
-  const fragNoHash = frag.substring(1)
-  // mathematics
-  const pathNoSlash = window.location.pathname.substring(1)
-  // mathematics/
-  const path = pathNoSlash + '/'
-  if (frag) {
-    if (document.getElementById(fragNoHash)) {
-      // Long URL and present in page. Let's shorten it without triggering
-      // another onhashchange and we are done.
-      let shortFrag
-      if (fragNoHash.startsWith(path)) {
-        // Toplevel "mathematics" has scope, e.g. /username/mathematics.
-        // So we convert #username/mathematics/algebra to #algebra
-        shortFrag = frag.replace(path, '')
-      } else {
-        // Toplevel "mathematics" does not have scope, e.g. /username/mathematics.
-        // So we convert #username/algebra to #algebra
-        shortFrag = frag.replace(path.split('/').slice(0, -2).join('/') + '/', '')
-      }
-      // Using this internal-looking API works. Not amazing, bu we can't find a better way.
-      // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
-      // https://github.com/vercel/next.js/discussions/18072
-      const newUrl = window.location.pathname + shortFrag
-      window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
-      // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
-      // However makes: user/mathematics -> user/mathematics#algebra -> user/mathematics#linear-algebra -> browser back history button work
-      // give "Error: Cancel rendering route"
-      //await Router.replace(shortFrag)
-    } else {
-      // Either short given ID, or an ID that is not in current page because there are too many articles before it.
-      // TODO For now assume short ID and don't handle ID not in page.
-      let fullid = path + fragNoHash
-      let found = false
-      if (document.getElementById(fullid)) {
-        // Toplevel "mathematics" has scope, e.g. /username/mathematics.
-        // So we've found /username/mathematics/algebra
-        found = true
-      } else {
-        // Toplevel does not have scope. So e.g. we will look for /username/algebra.
-        fullid = path.split('/').slice(0, -2).join('/') + '/' + fragNoHash
-        if (document.getElementById(fullid)) {
-          found = true
-        }
-      }
-      if (found) {
-        // We've found the full URL from the short one. Redirect to full URL to
-        // jump to the ID and highlight it.. This triggers a onhashchange event
-        // which will call this function once again. The next call will then immediately
-        // convert long ID to short ID.
-        window.location.replace('#' + fullid)
-      }
-    }
-  }
-}
-
 const Article = ({
   ancestors,
   article,
@@ -182,17 +123,6 @@ const Article = ({
   const webElemToRootMap = React.useRef(new Map())
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
   const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
-
-  React.useEffect(() => {
-    redirectToShortFragment()
-    // Redirect e.g. from /username/mathematics#username/algebra to /username/mathematics#algebra
-    // The actual IDs on HTML are fully scoped like "username/algebra", but using Js hacks
-    // we always manipulate the browse to show and use the shortest fragments possible.
-    // Things you have to test:
-    // /barack-obama#barack-obama-mathematics
-    window.addEventListener('hashchange', redirectToShortFragment)
-    return () => { window.removeEventListener('hashchange', redirectToShortFragment) }
-  }, [])
 
   const renderRefCallback = React.useCallback(
     (elem) => {
@@ -374,7 +304,27 @@ const Article = ({
         }
         ourbigbook_runtime(elem);
 
-        // Capture link clicks, use ID on current page if one is present.
+        function myRedirect() {
+            const frag = window.location.hash.substring(1);
+            const path = window.location.pathname.substring(1);
+            if (frag && !document.getElementById(frag)) {
+                const ids = [path + '/' + frag, path.split('/').slice(0, -1).join('/') + '/' + frag];
+                for (const id of ids) {
+                    if (document.getElementById(id)) {
+                        window.location.replace('#' + id);
+                        const myUrl = '/' + path + '#' + frag;
+                        setTimeout(() => window.history.replaceState({...window.history.state, as: myUrl, url: myUrl}, '', myUrl), 0);
+                        break;
+                    }
+                }
+            }
+        }
+
+        myRedirect();
+
+        window.onhashchange = myRedirect;
+
+        // Change link destinations, use ID on current page if one is present.
         // Only go to another page if the ID is not already present on the page.
         //
         // All HTML href links are full as in /username/scope/articleid
@@ -382,52 +332,41 @@ const Article = ({
         // If we are e.g. under /username/scope and articleid is present, no need
         // for changing the page at all, just jump inside page.
         for (const a of elem.getElementsByTagName('a')) {
-          a.addEventListener(`click`, e => {
-            const target = e.currentTarget
-            const href = target.getAttribute('href')
-            const url = new URL(href, document.baseURI)
+          const href = a.getAttribute('href');
+          const url = new URL(href, document.baseURI);
+          if (!href) {
+            a.href = '#';
+          } else if (
+            // Don't do processing for external links.
+            url.origin === new URL(document.baseURI).origin
+          ) {
+            let idNoprefix;
+            if (url.hash) {
+              idNoprefix = url.hash.slice(1)
+            } else {
+              // + 1 for the '/' that prefixes every link.
+              // https://github.com/ourbigbook/ourbigbook/issues/283
+              idNoprefix = href.slice(1)
+            }
+            const targetElem = document.getElementById(idNoprefix);
             if (
-              // Don't do processing for external links.
-              url.origin === new URL(document.baseURI).origin
+              targetElem &&
+              // h2 self link, we want those to actually go to the separated page.
+              a.parentElement.tagName !== 'H2'
             ) {
-              let idNoprefix
-              if (url.hash) {
-                idNoprefix = url.hash.slice(1)
-              } else {
-                // + 1 for the '/' that prefixes every link.
-                // https://github.com/ourbigbook/ourbigbook/issues/283
-                idNoprefix = href.slice(1)
-              }
-              const targetElem = document.getElementById(idNoprefix)
-              if (
-                // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
-                // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
-                !e.ctrlKey
-              ) {
-                e.preventDefault()
-                if (
-                  // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
-                  // For artiles all works fine because each section is rendered separately and thus has a non empty href.
-                  // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
-                  // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
-                  // But lazy now.
-                  !href
-                ) {
-                  window.location.hash = ''
-                } else {
-                  if (
-                    targetElem &&
-                    // h2 self link, we want those to actually go to the separated page.
-                    target.parentElement.tagName !== 'H2'
-                  ) {
-                    window.location.hash = idNoprefix
-                  } else {
-                    Router.push(href)
-                  }
+              let myLink = '#' + idNoprefix;
+              const path = window.location.pathname.substring(1);
+              const myPaths = [path + '/', path.split('/').slice(0, -1).join('/') + '/'];
+              for (const myPath of myPaths) {
+                let newFrag = idNoprefix.replace(myPath, '');
+                if (idNoprefix.startsWith(myPath) && !document.getElementById(newFrag)) {
+                  myLink = '#' + newFrag;
+                  break;
                 }
               }
+              a.href = myLink;
             }
-          });
+          }
         }
       }
     },

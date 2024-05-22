@@ -172,7 +172,20 @@ export function ourbigbook_runtime(toplevel) {
       elem.addEventListener('mouseenter', (e) => {
         if (CSS_MAX_MOBILE_WIDTH < window.innerWidth) {
           const a = myDocument.createElement('a')
-          a.href = `#${e.target.id}`
+
+          const myID = e.target.id
+          let myLink = '#' + myID;
+          const path = window.location.pathname.substring(1);
+          const myPaths = [path + '/', path.split('/').slice(0, -1).join('/') + '/'];
+          for (const myPath of myPaths) {
+            let newFrag = myID.replace(myPath, '');
+            if (myID.startsWith(myPath) && !document.getElementById(newFrag)) {
+              myLink = '#' + newFrag;
+              break;
+            }
+          }
+          a.href = myLink;
+          
           a.className = SELFLINK_CLASS
           e.target.prepend(a)
         }

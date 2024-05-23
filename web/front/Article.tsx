@@ -374,7 +374,7 @@ const Article = ({
         }
         ourbigbook_runtime(elem);
 
-        // Capture link clicks, use ID on current page if one is present.
+        // Change link destinations, use ID on current page if one is present.
         // Only go to another page if the ID is not already present on the page.
         //
         // All HTML href links are full as in /username/scope/articleid
@@ -382,52 +382,43 @@ const Article = ({
         // If we are e.g. under /username/scope and articleid is present, no need
         // for changing the page at all, just jump inside page.
         for (const a of elem.getElementsByTagName('a')) {
-          a.addEventListener(`click`, e => {
-            const target = e.currentTarget
-            const href = target.getAttribute('href')
-            const url = new URL(href, document.baseURI)
+          const href = a.getAttribute('href');
+          const url = new URL(href, document.baseURI);
+          if (!href) {
+            a.href = '#';
+          } else if (
+            // Don't do processing for external links.
+            url.origin === new URL(document.baseURI).origin
+          ) {
+            let idNoprefix;
+            if (url.hash) {
+              idNoprefix = url.hash.slice(1)
+            } else {
+              // + 1 for the '/' that prefixes every link.
+              // https://github.com/ourbigbook/ourbigbook/issues/283
+              idNoprefix = href.slice(1)
+            }
+            const targetElem = document.getElementById(idNoprefix);
             if (
-              // Don't do processing for external links.
-              url.origin === new URL(document.baseURI).origin
+              targetElem &&
+              // h2 self link, we want those to actually go to the separated page.
+              a.parentElement.tagName !== 'H2'
             ) {
-              let idNoprefix
-              if (url.hash) {
-                idNoprefix = url.hash.slice(1)
-              } else {
-                // + 1 for the '/' that prefixes every link.
-                // https://github.com/ourbigbook/ourbigbook/issues/283
-                idNoprefix = href.slice(1)
-              }
-              const targetElem = document.getElementById(idNoprefix)
-              if (
-                // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
-                // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
-                !e.ctrlKey
-              ) {
-                e.preventDefault()
-                if (
-                  // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
-                  // For artiles all works fine because each section is rendered separately and thus has a non empty href.
-                  // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
-                  // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
-                  // But lazy now.
-                  !href
-                ) {
-                  window.location.hash = ''
-                } else {
-                  if (
-                    targetElem &&
-                    // h2 self link, we want those to actually go to the separated page.
-                    target.parentElement.tagName !== 'H2'
-                  ) {
-                    window.location.hash = idNoprefix
-                  } else {
-                    Router.push(href)
-                  }
+              let myLink = '#' + idNoprefix;
+              const path = window.location.pathname.substring(1);
+              const myPaths = [path + '/', path.split('/').slice(0, -1).join('/') + '/'];
+              for (const myPath of myPaths) {
+                let newFrag = idNoprefix.replace(myPath, '');
+                if (idNoprefix.startsWith(myPath)
+                && !newFrag.startsWith(myPaths[0])
+                && !newFrag.startsWith(myPaths[1])) {
+                  myLink = '#' + newFrag;
+                  break;
                 }
               }
+              a.href = myLink;
             }
-          });
+          }
         }
       }
     },

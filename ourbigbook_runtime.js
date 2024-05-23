@@ -175,16 +175,31 @@ export function ourbigbook_runtime(toplevel, opts={}) {
     if (elem.id) {
       elem.addEventListener('mouseenter', (e) => {
         if (CSS_MAX_MOBILE_WIDTH < window.innerWidth) {
-          const a = myDocument.createElement('a')
-          a.href = `#${e.target.id}`
-          a.className = SELFLINK_CLASS
-          e.target.prepend(a)
-          hoverSelfLinkCallback(a)
+          const a = myDocument.createElement('a');
+
+          const myID = e.target.id;
+          let myLink = '#' + myID;
+          const path = window.location.pathname.substring(1);
+          const myPaths = [path + '/', path.split('/').slice(0, -1).join('/') + '/'];
+          for (const myPath of myPaths) {
+            let newFrag = myID.replace(myPath, '');
+            if (myID.startsWith(myPath)
+            && !newFrag.startsWith(myPaths[0])
+            && !newFrag.startsWith(myPaths[1])) {
+              myLink = '#' + newFrag;
+              break;
+            }
+          }
+          a.href = myLink;
+          
+          a.className = SELFLINK_CLASS;
+          e.target.prepend(a);
+          hoverSelfLinkCallback(a);
         }
       })
       elem.addEventListener('mouseleave', (e) => {
-        const t = e.target
-        const firstChild = t.children[0]
+        const t = e.target;
+        const firstChild = t.children[0];
         if (
           // Not sure why but this could be undefined on OurBigBook Web
           // when clicking from e.g. /go/articles to an article and hovering
@@ -193,7 +208,7 @@ export function ourbigbook_runtime(toplevel, opts={}) {
           firstChild !== undefined &&
           firstChild.className === SELFLINK_CLASS
         ) {
-          t.removeChild(firstChild)
+          t.removeChild(firstChild);
         }
       })
     }

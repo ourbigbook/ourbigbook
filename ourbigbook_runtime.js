@@ -179,7 +179,9 @@ export function ourbigbook_runtime(toplevel) {
           const myPaths = [path + '/', path.split('/').slice(0, -1).join('/') + '/'];
           for (const myPath of myPaths) {
             let newFrag = myID.replace(myPath, '');
-            if (myID.startsWith(myPath) && !document.getElementById(newFrag)) {
+            if (myID.startsWith(myPath)
+            && !newFrag.startsWith(myPaths[0])
+            && !newFrag.startsWith(myPaths[1])) {
               myLink = '#' + newFrag;
               break;
             }

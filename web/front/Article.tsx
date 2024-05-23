@@ -359,7 +359,9 @@ const Article = ({
               const myPaths = [path + '/', path.split('/').slice(0, -1).join('/') + '/'];
               for (const myPath of myPaths) {
                 let newFrag = idNoprefix.replace(myPath, '');
-                if (idNoprefix.startsWith(myPath) && !document.getElementById(newFrag)) {
+                if (idNoprefix.startsWith(myPath)
+                && !newFrag.startsWith(myPaths[0])
+                && !newFrag.startsWith(myPaths[1])) {
                   myLink = '#' + newFrag;
                   break;
                 }

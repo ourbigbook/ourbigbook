@@ -2,7 +2,9 @@ import React from 'react'
 import Router from 'next/router'
 import { mutate } from 'swr'
 
-import ourbigbook from 'ourbigbook';
+import ourbigbook, {
+  Macro,
+} from 'ourbigbook';
 
 import { webApi } from 'front/api'
 import { docsUrl, sureLeaveMessage } from 'front/config'
@@ -379,4 +381,60 @@ export async function setupUserLocalStorage(user, setErrors?) {
   setCookie(AUTH_COOKIE_NAME, user.token)
   mutate(AUTH_COOKIE_NAME, user.token)
   mutate(AUTH_LOCAL_STORAGE_NAME, user);
+}
+
+// URL Fragment handling
+
+/**
+ * Based on the given URL path, decide the short version of a given long fragment:
+ * on /user: user/mathematics -> mathematics
+ * on /user: _toc/user/mathematics -> _toc/mathematics
+ * on /user/mathematics: user/algebra -> algebra
+ * on /user/has-scope: user/has-scope/no-scope -> no-scope
+ */
+export function getShortFragFromLongForPath(fragNoHash, pathNoSlash) {
+  // e.g. mathematics/
+  const path = pathNoSlash + '/'
+  let prefix
+  if (fragNoHash.startsWith(Macro.TOC_PREFIX)) {
+    prefix = Macro.TOC_PREFIX
+    fragNoHash = fragNoHash.replace(prefix, '')
+  } else {
+    prefix = ''
+  }
+  let removePrefix
+  if (fragNoHash === pathNoSlash) {
+    // Toplevel element '#mathematics' -> '#'
+    removePrefix = pathNoSlash
+  } else if (fragNoHash.startsWith(path)) {
+    // Toplevel "mathematics" has scope, e.g. /username/mathematics.
+    // So we convert #username/mathematics/algebra to #algebra
+    removePrefix = path
+  } else {
+    removePrefix = pathNoSlash.split('/').slice(0, -1).join('/') + '/'
+  }
+  return prefix + fragNoHash.replace(removePrefix, '')
+}
+
+export function getShortFragFromLong(fragNoHash) {
+  return getShortFragFromLongForPath(fragNoHash, window.location.pathname.substr(1))
+}
+
+/** Modify the current URL to have this hash. Do not add alter browser history. */
+export function replaceFrag(fragNoHash) {
+  const newUrl = window.location.pathname + '#' + fragNoHash
+  // Using this internal-looking API works. Not amazing, bu we can't find a better way.
+  // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
+  // https://github.com/vercel/next.js/discussions/18072
+  window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
+  // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
+  // However makes: user/mathematics -> user/mathematics#algebra -> user/mathematics#linear-algebra -> browser back history button work
+  // give "Error: Cancel rendering route"
+  //await Router.replace(shortFrag)
+}
+
+/** Input: we are in an url with long fragment such as #barack-obama/mathematics
+ * Outcome: replace the URL fragment with the corresponding short one without altering browser history. */
+export function replaceShortFrag() {
+  replaceFrag(getShortFragFromLong(window.location.hash.substr(1)))
 }

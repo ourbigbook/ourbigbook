@@ -1,11 +1,21 @@
-import { useRouter } from 'next/router'
+import Router, { useRouter } from 'next/router'
 import React from 'react'
 
 import CustomLink from 'front/CustomLink'
 import LikeArticleButton from 'front/LikeArticleButton'
 import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
-import { ArticleIcon, IssueIcon, LikeIcon, TimeIcon, UserIcon } from 'front'
+import {
+  ArticleIcon,
+  IssueIcon,
+  LikeIcon,
+  TimeIcon,
+  UserIcon,
+  getShortFragFromLong,
+  getShortFragFromLongForPath,
+  replaceFrag,
+  replaceShortFrag,
+} from 'front'
 import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
@@ -14,16 +24,22 @@ import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 
+import {
+  AT_MENTION_CHAR,
+} from 'ourbigbook'
+
 export type ArticleListProps = {
+  // TODO not ideal. Only Articles are really possible. This is to appease ArticleList.
   articles: (ArticleType & IssueType & TopicType)[];
   articlesCount: number;
   comments?: Comment[];
   commentsCount?: number;
   followed?: boolean;
+  handleShortFragmentSkipOnce?: React.MutableRefObject<boolean>;
   issueArticle?: ArticleType;
   itemType?: 'article' | 'discussion' | 'like' | 'topic';
   loggedInUser?: UserType,
-  page: number;
+  page?: number;
   paginationUrlFunc?: PaginationPropsUrlFunc;
   showAuthor: boolean;
   showBody?: boolean,
@@ -35,6 +51,7 @@ const ArticleList = ({
   articlesCount,
   followed=false,
   itemType='article',
+  handleShortFragmentSkipOnce,
   issueArticle,
   loggedInUser,
   page,
@@ -102,6 +119,7 @@ const ArticleList = ({
   } else {
     pagination = <></>
   }
+  const aElemToMetaMap = React.useRef(new Set())
   return (
     <div className="list-nav-container">
       {showBody && pagination}
@@ -150,6 +168,67 @@ const ArticleList = ({
                 <div
                   className="ourbigbook"
                   dangerouslySetInnerHTML={{ __html: article.render }}
+                  ref={(elem) => {
+                    if (elem) {
+                      const as = elem.getElementsByTagName('a')
+                      for (let i = 0; i < as.length; i++) {
+                        const a = as[i]
+                        if (!aElemToMetaMap.current.has(a)) {
+                          const href = a.href
+                          aElemToMetaMap.current.add(a)
+                          const url = new URL(href, document.baseURI)
+                          if (
+                            // Don't do processing for external links.
+                            url.origin === new URL(document.baseURI).origin
+                          ) {
+                            let frag
+                            let longFrag
+                            let goToTargetInPage = false
+                            if (url.hash) {
+                              frag = url.hash.slice(1)
+                              const targetElem = document.getElementById(frag)
+                              longFrag = AT_MENTION_CHAR + frag
+                              if (targetElem) {
+                                goToTargetInPage = true
+                                a.href = '#' + longFrag
+                              }
+                            }
+                            if (!goToTargetInPage) {
+                              const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
+                              a.href = url.pathname + (frag ? ('#' + frag) : '')
+                            }
+                            a.addEventListener('click', e => {
+                              if (
+                                // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
+                                // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
+                                !e.ctrlKey
+                              ) {
+                                e.preventDefault()
+                                if (
+                                  // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
+                                  // For artiles all works fine because each section is rendered separately and thus has a non empty href.
+                                  // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
+                                  // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
+                                  // But lazy now.
+                                  !href
+                                ) {
+                                  window.location.hash = ''
+                                } else {
+                                  if (goToTargetInPage) {
+                                    handleShortFragmentSkipOnce.current = true
+                                    window.location.hash = frag
+                                    replaceFrag(longFrag)
+                                  } else {
+                                    Router.push(a.href)
+                                  }
+                                }
+                              }
+                            })
+                          }
+                        }
+                      }
+                    }
+                  }}
                 />
                 <div className="content-not-ourbigbook read-full">
                   <CustomLink

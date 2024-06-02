@@ -1088,6 +1088,7 @@ WHERE
   Article.getArticles = async ({
     author,
     count,
+    excludeIds,
     followedBy,
     // TODO this is quite broken on true:
     // https://docs.ourbigbook.com/todo/fix-parentid-and-previoussiblingid-on-articles-api
@@ -1109,8 +1110,14 @@ WHERE
     if (count === undefined) {
       count = true
     }
+    if (excludeIds === undefined) {
+      excludeIds  = []
+    }
 
     let where = {}
+    if (excludeIds.length) {
+      where.id = { [sequelize.Sequelize.Op.notIn]: excludeIds }
+    }
     const fileInclude = []
     const authorInclude = {
       model: sequelize.models.User,

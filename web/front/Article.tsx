@@ -18,6 +18,10 @@ import {
   SourceIcon,
   TimeIcon,
   TopicIcon,
+  getShortFragFromLong,
+  getShortFragFromLongForPath,
+  replaceFrag,
+  replaceShortFrag,
 } from 'front'
 import Comment from 'front/Comment'
 import CommentInput from 'front/CommentInput'
@@ -70,60 +74,6 @@ function linkList(articles, idUnreserved, marker, title, linkPref) {
   </>
 }
 
-/**
- * Based on the given URL path, decide the short version of a given long fragment:
- * on /user: user/mathematics -> mathematics
- * on /user: _toc/user/mathematics -> _toc/mathematics
- * on /user/mathematics: user/algebra -> algebra
- * on /user/has-scope: user/has-scope/no-scope -> no-scope
- */
-function getShortFragFromLongForPath(fragNoHash, pathNoSlash) {
-  // e.g. mathematics/
-  const path = pathNoSlash + '/'
-  let prefix
-  if (fragNoHash.startsWith(Macro.TOC_PREFIX)) {
-    prefix = Macro.TOC_PREFIX
-    fragNoHash = fragNoHash.replace(prefix, '')
-  } else {
-    prefix = ''
-  }
-  let removePrefix
-  if (fragNoHash === pathNoSlash) {
-    // Toplevel element '#mathematics' -> '#'
-    removePrefix = pathNoSlash
-  } else if (fragNoHash.startsWith(path)) {
-    // Toplevel "mathematics" has scope, e.g. /username/mathematics.
-    // So we convert #username/mathematics/algebra to #algebra
-    removePrefix = path
-  } else {
-    removePrefix = pathNoSlash.split('/').slice(0, -1).join('/') + '/'
-  }
-  return prefix + fragNoHash.replace(removePrefix, '')
-}
-
-function getShortFragFromLong(fragNoHash) {
-  return getShortFragFromLongForPath(fragNoHash, window.location.pathname.substr(1))
-}
-
-/** Modify the current URL to have this hash. Do not add alter browser history. */
-function replaceFrag(fragNoHash) {
-  const newUrl = window.location.pathname + '#' + fragNoHash
-  // Using this internal-looking API works. Not amazing, bu we can't find a better way.
-  // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
-  // https://github.com/vercel/next.js/discussions/18072
-  window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
-  // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
-  // However makes: user/mathematics -> user/mathematics#algebra -> user/mathematics#linear-algebra -> browser back history button work
-  // give "Error: Cancel rendering route"
-  //await Router.replace(shortFrag)
-}
-
-/** Input: we are in an url with long fragment such as #barack-obama/mathematics
- * Outcome: replace the URL fragment with the corresponding short one without altering browser history. */
-function replaceShortFrag() {
-  replaceFrag(getShortFragFromLong(window.location.hash.substr(1)))
-}
-
 /** The name of this element is not very accurate, it should likely be ArticleDescendantsAndMeta or something like that. */
 const Article = ({
   ancestors,
@@ -133,6 +83,7 @@ const Article = ({
   comments,
   commentsCount=0,
   commentCountByLoggedInUser=undefined,
+  handleShortFragmentSkipOnce,
   incomingLinks,
   isIssue=false,
   issueArticle=undefined,
@@ -216,9 +167,16 @@ const Article = ({
   //   * http://localhost:3000/barack-obama/mathematics and click "Ancestors" header
   //   * http://localhost:3000/barack-obama#_1 highlights the first paragraph. Does not get overridden by _ancestors handling even though it starts with _
   // * subelement in another page: http://localhost:3000/barack-obama/test-child-1 click Equation "Test data long before ID"
-  let handleShortFragmentSkipOnce = React.useRef(false)
+  // * other articles in topic on the same page:
+  //   * http://localhost:3000/barack-obama/test-data then at the bottom click "Equation 1. My favorite equation."
+  //
+  //     It should move URL to http://localhost:3000/barack-obama/test-data#@donald-trump/equation-my-favorite-equation hover and highlight.
+  //
+  //     The @ is added to make sure an absolute path is used and remove otherwise inevitable anbiguity with short frags.
+  //   * http://localhost:3000/barack-obama/test-data#@donald-trump/equation-my-favorite-equation should scroll to and highlight the correct header
+  //   * http://localhost:3000/barack-obama/mathematics@donald-trump/physics should redirect to http://localhost:3000/donald-trump/physics because that abs id is not in page
   // We are not in the intermediate point where the URL is momentarily long.
-  let handleShortFragmentCurrentFragIsLong = false
+  let handleShortFragmentCurrentFragType = 'short'
   function handleShortFragment(ev=null) {
     if (handleShortFragmentSkipOnce.current) {
       handleShortFragmentSkipOnce.current = false
@@ -239,21 +197,7 @@ const Article = ({
     // mathematics/
     const path = pathNoSlash + '/'
     if (frag) {
-      if (handleShortFragmentCurrentFragIsLong) {
-        // Long URL and present in page. Let's shorten it without triggering
-        // another onhashchange and we are done.
-        //
-        // Using this internal-looking API works. Not amazing, bu we can't find a better way.
-        // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
-        // https://github.com/vercel/next.js/discussions/18072
-        const newUrl = window.location.pathname + '#' + getShortFragFromLong(fragNoHash)
-        window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
-        // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
-        // However makes: user/mathematics -> user/mathematics#algebra -> user/mathematics#linear-algebra -> browser back history button work
-        // give "Error: Cancel rendering route"
-        //await Router.replace(shortFrag)
-        handleShortFragmentCurrentFragIsLong = false
-      } else {
+      if (handleShortFragmentCurrentFragType === 'short') {
         // Either short given ID, or an ID that is not in current page because there are too many articles before it.
         let found = false
         let fullid
@@ -267,46 +211,75 @@ const Article = ({
             prefix = Macro.TOC_PREFIX
             fragNoHashNoPrefix = fragNoHash.replace(prefix, '')
           } else {
-            if (
-              fragNoHash[0] === Macro.RESERVED_ID_PREFIX &&
-              !(
-                // Unnamed IDs like _1, _2, _3
-                fragNoHash.length > 1 &&
-                fragNoHash[1] >= '0' && fragNoHash[1] <= '9'
-              )
-            ) {
-              // For metadata headers like _ancestors
-              return
-            }
-            prefix = ''
-            fragNoHashNoPrefix = fragNoHash
-          }
-          fullid = prefix + path + fragNoHashNoPrefix
-          if (document.getElementById(fullid)) {
-            // Toplevel "mathematics" has scope, e.g. /username/mathematics.
-            // So we've found /username/mathematics/algebra
-            found = true
-          } else {
-            // Toplevel does not have scope. So e.g. we will look for /username/algebra.
-            fullid = prefix + path.split('/').slice(0, -2).join('/') + '/' + fragNoHashNoPrefix
-            if (document.getElementById(fullid)) {
-              found = true
+            if (fragNoHash[0] === AT_MENTION_CHAR) {
+              fullid = fragNoHash.slice(1)
+              if (document.getElementById(fullid)) {
+                handleShortFragmentCurrentFragType = 'abs'
+              }
+            } else {
+              if (
+                fragNoHash[0] === Macro.RESERVED_ID_PREFIX &&
+                !(
+                  // Unnamed IDs like _1, _2, _3
+                  fragNoHash.length > 1 &&
+                  fragNoHash[1] >= '0' && fragNoHash[1] <= '9'
+                )
+              ) {
+                // For metadata headers like _ancestors
+                return
+              }
+              prefix = ''
+              fragNoHashNoPrefix = fragNoHash
+              fullid = prefix + path + fragNoHashNoPrefix
+              let found = false
+              if (document.getElementById(fullid)) {
+                // Toplevel "mathematics" has scope, e.g. /username/mathematics.
+                // So we've found /username/mathematics/algebra
+                found = true
+              } else {
+                // Toplevel does not have scope. So e.g. we will look for /username/algebra.
+                fullid = prefix + path.split('/').slice(0, -2).join('/') + '/' + fragNoHashNoPrefix
+                if (document.getElementById(fullid)) {
+                  found = true
+                }
+              }
+              if (found) {
+                handleShortFragmentCurrentFragType = 'long'
+              }
             }
           }
         }
-        if (found) {
+        if (handleShortFragmentCurrentFragType !== 'short') {
           // We've found the full URL from the short one. Redirect to full URL to
           // jump to the ID and highlight it.. This triggers a onhashchange event
           // which will call this function once again. The next call will then immediately
           // convert long ID to short ID.
           window.location.replace('#' + fullid)
-          handleShortFragmentCurrentFragIsLong = true
         } else {
           // ID is not on page anymore because too many articles were added before it on the same page,
           // assume toplevel does not have scope for now. TODO get that information from DB and make the
           // correct assumption here instead.
           Router.replace('/' + fullid)
         }
+      } else {
+        // Long URL and present in page. Let's shorten it without triggering
+        // another onhashchange and we are done.
+        //
+        // Using this internal-looking API works. Not amazing, bu we can't find a better way.
+        // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
+        // https://github.com/vercel/next.js/discussions/18072
+        let newUrl
+        if (handleShortFragmentCurrentFragType === 'long') {
+          newUrl = window.location.pathname + '#' + getShortFragFromLong(fragNoHash)
+        } else if (handleShortFragmentCurrentFragType === 'abs') {
+          newUrl = window.location.pathname + '#' + AT_MENTION_CHAR + fragNoHash
+        }
+        window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
+        // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
+        // However makes: user/mathematics -> user/mathematics#algebra -> user/mathematics#linear-algebra -> browser back history button work
+        // give "Error: Cancel rendering route"
+        //await Router.replace(shortFrag)
+        handleShortFragmentCurrentFragType = 'short'
       }
     }
   }
@@ -566,7 +539,9 @@ const Article = ({
               if (
                 targetElem &&
                 // h2 self link, we want those to actually go to the separated page.
-                a.parentElement.tagName !== 'H2'
+                a.parentElement.tagName !== 'H2' &&
+                // Because otherwise a matching ID of an article in the same topic could confuse us, search only under our known toplevel.
+                elem.contains(targetElem)
               ) {
                 goToTargetInPage = true
                 a.href = '#' + shortFrag
@@ -574,9 +549,7 @@ const Article = ({
                 goToTargetInPage = false
                 const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
                 a.href = url.pathname + (frag ? ('#' + frag) : '')
-                console.log('a.href: ' + require('util').inspect(a.href));
               }
-              //a.onclick =  e => {
               a.addEventListener('click', e => {
                 if (
                   // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
@@ -712,6 +685,7 @@ const Article = ({
               </>}
             {linkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
             {linkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
+            <p><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></p>
             </div>
             <h2>
               <CustomLink href={routes.issues(article.slug)}>
@@ -759,7 +733,6 @@ const Article = ({
                 </>
               : <p>There are no discussions about this article yet.</p>
             }
-            <div className="source"><a href={routes.articleSource(article.slug)}><SourceIcon /> View article source</a></div>
           </>
       }
     </div>

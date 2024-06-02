@@ -125,6 +125,7 @@ export default function UserPage({
     setTitle(displayAndUsernameText(user))
   }, [user?.displayName, user?.username])
 
+  const handleShortFragmentSkipOnce = React.useRef(false)
   if (router.isFallback) { return <LoadingSpinner />; }
   return (<>
     <div className="profile-page">
@@ -228,9 +229,10 @@ export default function UserPage({
           articlesInSamePageForToc,
           comments,
           commentCountByLoggedInUser,
-          latestIssues,
+          handleShortFragmentSkipOnce,
           incomingLinks,
           issuesCount,
+          latestIssues,
           loggedInUser,
           synonymLinks,
           tagged,
@@ -243,6 +245,7 @@ export default function UserPage({
         <ArticleList {...{
           articles,
           articlesCount,
+          handleShortFragmentSkipOnce,
           itemType,
           loggedInUser,
           page,

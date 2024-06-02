@@ -5,13 +5,23 @@ import CustomLink from 'front/CustomLink'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import { displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
-import { AppContext, DiscussionAbout, NewArticleIcon, IssueIcon, useEEdit } from 'front'
+import ArticleList from 'front/ArticleList'
+import {
+  AppContext,
+  DiscussionAbout,
+  IssueIcon,
+  NewArticleIcon,
+  SeeIcon,
+  TopicIcon,
+  useEEdit,
+} from 'front'
 import { webApi } from 'front/api'
 import { cant } from 'front/cant'
 import routes from 'front/routes'
 import { ArticleType, ArticleLinkType  } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
+import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 
 export interface ArticlePageProps {
@@ -27,6 +37,7 @@ export interface ArticlePageProps {
   issuesCount?: number;
   latestIssues?: IssueType[];
   loggedInUser?: UserType;
+  otherArticlesInTopic?: (ArticleType & IssueType & TopicType)[];
   synonymLinks?: ArticleLinkType[];
   tagged?: ArticleLinkType[];
   topIssues?: IssueType[];
@@ -39,6 +50,7 @@ const ArticlePageHoc = (isIssue=false) => {
     article,
     articlesInSamePage,
     articlesInSamePageForToc,
+    otherArticlesInTopic,
     commentCountByLoggedInUser,
     comments,
     commentsCount,
@@ -71,6 +83,7 @@ const ArticlePageHoc = (isIssue=false) => {
       Router.push(`/`);
     };
     useEEdit(canEdit, article.slug)
+    const handleShortFragmentSkipOnce = React.useRef(false)
     return (
       <>
         <div className="article-page">
@@ -115,6 +128,7 @@ const ArticlePageHoc = (isIssue=false) => {
               commentCountByLoggedInUser,
               comments,
               commentsCount,
+              handleShortFragmentSkipOnce,
               incomingLinks,
               issueArticle,
               isIssue,
@@ -126,6 +140,25 @@ const ArticlePageHoc = (isIssue=false) => {
               topIssues,
             }} />
           </div>
+          {!isIssue &&
+            <>
+              <h2 className="content-not-ourbigbook">
+                <CustomLink href={routes.topic(article.topicId)}>
+                  <TopicIcon /> Articles by others on the same topic ({ article.topicCount - 1 })
+                </CustomLink>
+              </h2>
+              <ArticleList {...{
+                articles: otherArticlesInTopic,
+                articlesCount: article.topicCount,
+                handleShortFragmentSkipOnce,
+                loggedInUser,
+                showAuthor: true,
+                showBody: true,
+                what: 'articles',
+              }}/>
+              <p className="content-not-ourbigbook"><CustomLink href={routes.topic(article.topicId)}><SeeIcon /> <TopicIcon /> See all articles in the same topic</CustomLink></p>
+            </>
+          }
         </div>
       </>
     );

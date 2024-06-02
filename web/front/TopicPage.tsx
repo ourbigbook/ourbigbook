@@ -16,6 +16,7 @@ import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 
 export interface TopicPageProps {
+  // TODO not ideal. Only Articles are really possible. This is to appease ArticleList.
   articles: (ArticleType & IssueType & TopicType)[];
   articlesCount: number;
   loggedInUser?: UserType;

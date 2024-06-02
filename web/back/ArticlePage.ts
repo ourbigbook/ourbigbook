@@ -117,6 +117,7 @@ export const getServerSidePropsArticleHoc = ({
         h1ArticlesInSamePage,
         incomingLinks,
         issuesCount,
+        otherArticlesInTopic,
         synonymIds,
         topicArticleCount,
         latestIssues,
@@ -146,6 +147,14 @@ export const getServerSidePropsArticleHoc = ({
         }),
         getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X, from: 'from', to: 'to' }),
         includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
+        sequelize.models.Article.getArticles({
+          excludeIds: [article.id],
+          limit: 5,
+          offset: 0,
+          order: 'score',
+          sequelize,
+          topicId: article.topicId,
+        }),
         sequelize.models.Id.findAll({
           include: [{
             model: sequelize.models.Ref,
@@ -197,6 +206,7 @@ export const getServerSidePropsArticleHoc = ({
         articlesInSamePage,
         articlesInSamePageForToc,
         incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
+        otherArticlesInTopic: await Promise.all(otherArticlesInTopic.rows.map(article => article.toJson(loggedInUser))),
         synonymLinks: synonymIds.map(i => { return {
           slug: idToSlug(i.idid),
           titleRender: idToSlug(i.idid),

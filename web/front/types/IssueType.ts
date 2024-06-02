@@ -8,7 +8,7 @@ export interface Issues {
 export type IssueType = {
   article?: ArticleType;
   author: UserType;
-  botySource: string;
+  bodySource: string;
   commentCount: number;
   createdAt: number;
   followerCount: number;

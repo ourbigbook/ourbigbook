@@ -7,6 +7,51 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= A few articles in same topic are shown at the bottom of every article page
+{parent=News}
+{tag=Topic}
+{tag=OurBigBook Web}
+
+In order to give more immediate <topic> value to readers, and to better highlight the <topics> feature, we now show a few articles on the same topic at the bottom of every article page, essentially acting as a preview of the corresponding topic page.
+
+For example, if you visit the "Calculus" article by user Barack Obama: https://ourbigbook.com/barack-obama/calculus[] then at the bottom of the page you can see a section "Articles by others on the same topic (3)" which displays up to the 5 most highly upvoted articles in the same topic written by other users, much like the topic page for the "Calculus" topic: https://ourbigbook.com/go/topic/calculus[].
+
+By comparison, the topic page shows more articles by default (20), supports pagination, and allows for other forms of sorting such as viewing the latest articles in a topic. We are initially not adding those options to the article page itself as there is already enough stuff going on there.
+
+\Image[feature/topics-on-every-article-page.png]
+{provider=github}
+{border}
+{height=1532}
+
+= Short URL fragments on OurBigBook Web
+{parent=News}
+{tag=Implemented by sidstuff}
+{tag=Dynamic article tree}
+{tag=OurBigBook Web}
+
+Previously, when clicking a link to an element that is present in the curent page, the URL fragment would contain the full ID that element.
+
+Now, only the ID relative to URL path shows.
+
+A very common use case for this is when clicking table of content items.
+
+For exmple, from https://ourbigbook.com/barack-obama/mathematics[], clicking the ToC item for "Calculus" would previously lead to https://ourbigbook.com/barack-obama/mathematics#barack-obama/calculus
+
+After this change it leads just to: https://ourbigbook.com/barack-obama/mathematics#calculus[], without repeating the "`#barack-obama` part as it already appears in the URL path `/barack-obama/mathematics`.
+
+\Image[feature/short-fragment.png]
+{provider=github}
+{border}
+{height=800}
+
+Short URLs were already used on <Static website> publishes, and weren't implemented on <OurBigBook Web> yet simply because this is hard. The reason this was much harder to implement on Web is that due to <Dynamic article trees> we can't know at render-time what the correct fragment will be, as it depends on what shows on the page or not.
+
+And furthermore, articles by different users can appear on the same page due to <topics>.
+
+The simple but not ideal solution that we were using up to now was to just have full IDs on every HTML element, make every a point to an absolute ID like `/barack-obama/mathematics`, and then use JS effect to hack that to `#barack-obama/mathematics` if the element is in the page.
+
+What we did now is to take the Js hacks one step further, and actually replace the "long URLs" with short ones. This was not easy, partly because the browser interfaces are not amazing in that area, partly due to fighting with React. But we manage to get it working mostly well.
+
 = `\Hr` horizontal rule macro created
 {parent=News}
 {tag=Implemented by sidstuff}

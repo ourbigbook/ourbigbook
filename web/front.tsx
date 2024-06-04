@@ -438,3 +438,26 @@ export function replaceFrag(fragNoHash) {
 export function replaceShortFrag() {
   replaceFrag(getShortFragFromLong(window.location.hash.substr(1)))
 }
+
+/** Use explicit .target class to overcome https://github.com/ourbigbook/ourbigbook/issues/302 */
+export function fragSetTarget(elem: HTMLElement) {
+  const es = window.document.getElementsByClassName('target')
+  for (let i = 0; i < es.length; i++) {
+    es[i].classList.remove('target')
+  }
+  elem.classList.add('target')
+}
+
+/** Does everything we want to do on our short fragment redirection hacks, e.g. when you click
+  * a link to an element that is in the current page. Supposes that the element is for sure in page.  */
+export function shortFragGoTo(
+  handleShortFragmentSkipOnce: React.MutableRefObject<boolean>,
+  shortFrag: string,
+  longFrag: string,
+  targetElem: HTMLElement
+) {
+  handleShortFragmentSkipOnce.current = true
+  window.location.hash = longFrag
+  replaceFrag(shortFrag)
+  fragSetTarget(targetElem)
+}

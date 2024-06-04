@@ -18,10 +18,12 @@ import {
   SourceIcon,
   TimeIcon,
   TopicIcon,
+  fragSetTarget,
   getShortFragFromLong,
   getShortFragFromLongForPath,
   replaceFrag,
   replaceShortFrag,
+  shortFragGoTo,
 } from 'front'
 import Comment from 'front/Comment'
 import CommentInput from 'front/CommentInput'
@@ -199,23 +201,23 @@ const Article = ({
     if (frag) {
       if (handleShortFragmentCurrentFragType === 'short') {
         // Either short given ID, or an ID that is not in current page because there are too many articles before it.
-        let found = false
         let fullid
+        let elem
         if (fragNoHash === '') {
-          found = true
           fullid = pathNoSlash
         } else {
-          let prefix
-          let fragNoHashNoPrefix
-          if (fragNoHash.startsWith(Macro.TOC_PREFIX)) {
-            prefix = Macro.TOC_PREFIX
-            fragNoHashNoPrefix = fragNoHash.replace(prefix, '')
+          if (fragNoHash[0] === AT_MENTION_CHAR) {
+            fullid = fragNoHash.slice(1)
+            elem = document.getElementById(fullid)
+            if (elem) {
+              handleShortFragmentCurrentFragType = 'abs'
+            }
           } else {
-            if (fragNoHash[0] === AT_MENTION_CHAR) {
-              fullid = fragNoHash.slice(1)
-              if (document.getElementById(fullid)) {
-                handleShortFragmentCurrentFragType = 'abs'
-              }
+            let prefix
+            let fragNoHashNoPrefix
+            if (fragNoHash.startsWith(Macro.TOC_PREFIX)) {
+              prefix = Macro.TOC_PREFIX
+              fragNoHashNoPrefix = fragNoHash.replace(prefix, '')
             } else {
               if (
                 fragNoHash[0] === Macro.RESERVED_ID_PREFIX &&
@@ -230,24 +232,21 @@ const Article = ({
               }
               prefix = ''
               fragNoHashNoPrefix = fragNoHash
-              fullid = prefix + path + fragNoHashNoPrefix
-              let found = false
-              if (document.getElementById(fullid)) {
-                // Toplevel "mathematics" has scope, e.g. /username/mathematics.
-                // So we've found /username/mathematics/algebra
-                found = true
-              } else {
-                // Toplevel does not have scope. So e.g. we will look for /username/algebra.
-                fullid = prefix + path.split('/').slice(0, -2).join('/') + '/' + fragNoHashNoPrefix
-                if (document.getElementById(fullid)) {
-                  found = true
-                }
-              }
-              if (found) {
-                handleShortFragmentCurrentFragType = 'long'
-              }
+            }
+            fullid = prefix + path + fragNoHashNoPrefix
+            elem = document.getElementById(fullid)
+            if (!elem) {
+              // Toplevel does not have scope. So e.g. we will look for /username/algebra.
+              fullid = prefix + path.split('/').slice(0, -2).join('/') + '/' + fragNoHashNoPrefix
+              elem = document.getElementById(fullid)
+            }
+            if (elem) {
+              handleShortFragmentCurrentFragType = 'long'
             }
           }
+        }
+        if (elem) {
+          fragSetTarget(elem)
         }
         if (handleShortFragmentCurrentFragType !== 'short') {
           // We've found the full URL from the short one. Redirect to full URL to
@@ -492,10 +491,7 @@ const Article = ({
                 'click',
                 (ev) => {
                   if (!ev.ctrlKey) {
-                    ev.preventDefault()
-                    handleShortFragmentSkipOnce.current = true
-                    window.location.hash = frag
-                    replaceFrag(shortFrag)
+                    shortFragGoTo(handleShortFragmentSkipOnce, shortFrag, frag, document.getElementById(frag))
                   }
                 }
               )
@@ -568,9 +564,7 @@ const Article = ({
                     window.location.hash = ''
                   } else {
                     if (goToTargetInPage) {
-                      handleShortFragmentSkipOnce.current = true
-                      window.location.hash = frag
-                      replaceFrag(shortFrag)
+                      shortFragGoTo(handleShortFragmentSkipOnce, shortFrag, frag, targetElem)
                     } else {
                       Router.push(a.href)
                     }

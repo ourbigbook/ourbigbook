@@ -11,10 +11,12 @@ import {
   LikeIcon,
   TimeIcon,
   UserIcon,
+  fragSetTarget,
   getShortFragFromLong,
   getShortFragFromLongForPath,
   replaceFrag,
   replaceShortFrag,
+  shortFragGoTo,
 } from 'front'
 import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
@@ -184,9 +186,10 @@ const ArticleList = ({
                             let frag
                             let longFrag
                             let goToTargetInPage = false
+                            let targetElem
                             if (url.hash) {
                               frag = url.hash.slice(1)
-                              const targetElem = document.getElementById(frag)
+                              targetElem = document.getElementById(frag)
                               longFrag = AT_MENTION_CHAR + frag
                               if (targetElem) {
                                 goToTargetInPage = true
@@ -215,9 +218,7 @@ const ArticleList = ({
                                   window.location.hash = ''
                                 } else {
                                   if (goToTargetInPage) {
-                                    handleShortFragmentSkipOnce.current = true
-                                    window.location.hash = frag
-                                    replaceFrag(longFrag)
+                                    shortFragGoTo(handleShortFragmentSkipOnce, frag, longFrag, targetElem)
                                   } else {
                                     Router.push(a.href)
                                   }

@@ -219,7 +219,7 @@ padding-left: 0;
 
 // Highlight the element referred by the current hash
 // so that the user can easily know which one it is.
-:target {
+:target, .target {
   background-color: $target-background-color;
 }
 

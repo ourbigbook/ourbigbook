@@ -125,6 +125,12 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      // If false, the article is "unlisted", i.e. it doesn't show on article lists and on the index of a parent article by default.
+      list: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
     },
     {
       // TODO updatedAt lazy to create migration now.
@@ -428,7 +434,7 @@ WHERE
     }
     const parentRef = await this.findParentRef({ transaction })
     const parentArticleToplevelId = parentRef.from
-    const parentArticle = parentArticleToplevelId.toplevelId.file[0]
+    const parentArticle = parentArticleToplevelId.toplevelId.articles[0]
     return Article.treeRemove({
       idid: parentRef.to_id,
       logging,
@@ -469,7 +475,7 @@ WHERE
               include: [
                 {
                   model: sequelize.models.Article,
-                  as: 'file',
+                  as: 'articles',
                   subQuery: false,
                   required: true,
                   where: { slug: this.slug }
@@ -492,7 +498,7 @@ WHERE
               include: [
                 {
                   model: sequelize.models.Article,
-                  as: 'file',
+                  as: 'articles',
                   subQuery: false,
                   required: true,
                 }
@@ -806,6 +812,7 @@ WHERE
       'h2Render',
       'id',
       'issueCount',
+      'list',
       'slug',
       'hash',
       'topicId',
@@ -978,7 +985,7 @@ WHERE
               include: [
                 {
                   model: sequelize.models.Article,
-                  as: 'file',
+                  as: 'articles',
                 },
               ]
             },
@@ -1019,7 +1026,7 @@ WHERE
       article.parentRef = parentRef
       article.parentId = parentId
       article.idid = articleId.idid
-      article.parentArticle = parentId.toplevelId.file[0]
+      article.parentArticle = parentId.toplevelId.articles[0]
       const previousSiblingRef = parentId.from[0]
       if (previousSiblingRef) {
         article.previousSiblingRef = previousSiblingRef
@@ -1096,6 +1103,7 @@ WHERE
     includeParentAndPreviousSibling,
     likedBy,
     limit,
+    list,
     offset,
     order,
     orderAscDesc,
@@ -1118,6 +1126,9 @@ WHERE
     let where = {}
     if (excludeIds.length) {
       where.id = { [sequelize.Sequelize.Op.notIn]: excludeIds }
+    }
+    if (list !== undefined) {
+      where.list = list
     }
     const fileInclude = []
     const authorInclude = {
@@ -1205,6 +1216,7 @@ WHERE
     // both h1 and h2 renders which we don't need. Talk about premature optimization!
     h1,
     limit,
+    list,
     render,
     sequelize,
   }) => {
@@ -1361,6 +1373,7 @@ WHERE
     ;const [rows, meta] = await sequelize.query(`
 SELECT
   "Article"."id" AS "id",
+  "Article"."list" AS "list",
   "Article"."score" AS "score",
   "Article"."slug" AS "slug",
   "Article"."topicId" AS "topicId",
@@ -1400,6 +1413,7 @@ FROM
     : `WHERE "Article"."nestedSetIndex" > :nestedSetIndex AND
     "Article"."nestedSetIndex" < :nestedSetNextSibling`
   }
+  ${list === undefined ? '' : `AND "Article"."list" = :list`}
 GROUP BY
   "Article"."id",
   "Article"."score",
@@ -1418,6 +1432,7 @@ LIMIT ${limit}` : ''}
         replacements: {
           authorUsername: article.author.username,
           loggedInUserId: loggedInUser ? loggedInUser.id : null,
+          list,
           nestedSetIndex: article.nestedSetIndex,
           nestedSetNextSibling: article.nestedSetNextSibling,
         }

@@ -203,6 +203,7 @@ Link to topic: <#mathematics>
         }
       ],
       ['Test data disambiguate next sibling', []],
+      ['Test data unlisted', [], { body: `This article is unlisted.\n\nIt shouldn't appear on ToCs, topics and most other listings by default.`, list: false }],
     ],
     {
       body: `Block math: <equation My favorite equation>
@@ -510,7 +511,7 @@ async function generateDemoData(params) {
         }
       }
       for (const articleArg of articleArgs) {
-        const msg = `${pref}: ${i}/${articleArgs.length}: ${userIdToUser[articleArg.authorId].username}/${articleArg.titleSource}`
+        const msg = `${pref}: ${i + 1}/${articleArgs.length}: ${userIdToUser[articleArg.authorId].username}/${articleArg.titleSource}`
         if (verbose) console.error(msg);
         const author = userIdToUser[articleArg.authorId]
         const opts = articleArg.opts
@@ -531,6 +532,7 @@ async function generateDemoData(params) {
           bodySource: articleArg.bodySource,
           convertOptionsExtra: { katex_macros },
           enforceMaxArticles: false,
+          list: opts.list,
           parentId,
           path: opts.path,
           render,
@@ -549,15 +551,17 @@ async function generateDemoData(params) {
         i++
       }
     }
+    console.log('articles.length: ' + require('util').inspect(articles.length));
 
     // Write files to filesystem.
     // https://docs.ourbigbook.com/demo-data-local-file-output
     for (const user of users) {
+      console.error('here');
       const articles = (await sequelize.models.Article.getArticles({
-        sequelize,
-        count: false,
         author: user.username,
+        count: false,
         limit: nArticlesPerUser + 1,
+        sequelize,
       }))
       for (const article of articles) {
         const slugParse = path.parse(article.slug)
@@ -631,6 +635,8 @@ async function generateDemoData(params) {
     const issues = [];
     let issueIdx = 0;
     await sequelize.models.Issue.destroy({ where: { authorId: users.map(user => user.id) } })
+    console.log('nArticles: ' + require('util').inspect(nArticles));
+    console.log('articles.length: ' + require('util').inspect(articles.length));
     for (let i = 0; i < nArticles; i++) {
       let articleIssueIdx = 0;
       const article = articles[i]

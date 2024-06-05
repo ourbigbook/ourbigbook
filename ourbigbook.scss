@@ -674,6 +674,7 @@ video {
 }
 }
 
+// Main class that contains full ourbigbook content.
 .ourbigbook {
   @include body;
   @include ourbigbook-title;
@@ -701,7 +702,11 @@ a.selflink::before {
   left: -0.1em;
 }
 
-// A subset of .ourbigbook used for titles-only renders as appear or article lists on OurBigBook Web.
+.ourbigbook-body {
+  @include body;
+}
+
+// A subset of .ourbigbook used for titles-only renders which appear often on article lists on OurBigBook Web.
 .ourbigbook-title {
   @include ourbigbook-title;
 }

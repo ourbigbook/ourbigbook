@@ -19,6 +19,8 @@ export interface TopicPageProps {
   // TODO not ideal. Only Articles are really possible. This is to appease ArticleList.
   articles: (ArticleType & IssueType & TopicType)[];
   articlesCount: number;
+  hasUnlisted: boolean;
+  list: boolean;
   loggedInUser?: UserType;
   order: string;
   topic: TopicType;
@@ -29,6 +31,8 @@ export interface TopicPageProps {
 export const TopicPage = ({
   articles,
   articlesCount,
+  hasUnlisted,
+  list,
   loggedInUser,
   order,
   page,
@@ -64,7 +68,7 @@ export const TopicPage = ({
                   <ArticleIcon /> Latest Articles
                 </CustomLink>
                 <CustomLink
-                  className={`tab-item`}
+                  className="tab-item btn small"
                   href={routes.articleNew({ title: topic.titleSource })}
                   updatePreviousPage={true}
                 >
@@ -75,6 +79,8 @@ export const TopicPage = ({
             <ArticleList {...{
               articles,
               articlesCount,
+              hasUnlisted,
+              list,
               loggedInUser,
               page,
               paginationUrlFunc,

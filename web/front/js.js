@@ -6,6 +6,9 @@ const ourbigbook = require('ourbigbook')
 
 const config = require('./config')
 
+const web_api = require('ourbigbook/web_api');
+const { QUERY_FALSE_VAL, QUERY_TRUE_VAL } = web_api
+
 // https://stackoverflow.com/questions/14382725/how-to-get-the-correct-ip-address-of-a-client-into-a-node-socket-io-app-hosted-o/14382990#14382990
 // Works on Heroku 2021.
 function getClientIp(req) {
@@ -26,7 +29,7 @@ function getOrderAndPage(req, page, opts={}) {
 }
 
 function getOrder(req, opts={}) {
-  let sort = req.query.sort;
+  let sort = req.query.sort
   const default_ = opts.defaultOrder || 'createdAt'
   const urlToDbSort = opts.urlToDbSort || {}
   if (sort) {
@@ -90,15 +93,15 @@ function modifyEditorInput(title, body) {
     }
     ret += body
   }
-  return { offset: 1 + offsetOffset, new: ret };
+  return { offset: 1 + offsetOffset, new: ret }
 }
 
 function typecastBoolean(s) {
   let b
   let ok = true
-  if (s === 'true') {
+  if (s === QUERY_TRUE_VAL) {
     b = true
-  } else if (s === 'false') {
+  } else if (s === QUERY_FALSE_VAL) {
     b = true
   } else {
     ok = false

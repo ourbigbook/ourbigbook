@@ -68,6 +68,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         itemType === 'article' ? sequelize.models.Article.getArticles({
           sequelize,
           limit: articleLimit,
+          list: true,
           offset,
           order,
           author,

@@ -210,6 +210,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   File.hasMany(Article, {
     // This name is a bad idea as it breaks SQLite case insensitive madness due to conflice with File...
     // https://stackoverflow.com/questions/50926312/how-to-make-column-names-case-sensitive-of-sqlite3-in-python
+    //
     // const rows = await File.findAll(
     //   {
     //     include: [
@@ -220,8 +221,29 @@ function getSequelize(toplevelDir, toplevelBasename) {
     //     ],
     //   }
     // )
+    //
+    // which generates queries of type:
+    //
+    // SELECT
+    //   count(`File`.`id`) AS `count`
+    // FROM
+    //   `File` AS `File`
+    //   LEFT OUTER JOIN `Article` AS `file` ON `File`.`id` = `file`.`fileId`
+    //
+    // which blowup as:
+    //
+    // Parse error near line 1: ambiguous column name: File.id
+    //   SELECT   count(`File`.`id`) AS `count` FROM   `File` AS `File`   LEFT OUTER JO
+    //                  ^--- error here
+    //
+    // That could be solved e.g. by renaming file to 'files':
+    //
+    // LEFT OUTER JOIN `Article` AS `file` ON `File`.`id` = `file`.`fileId`
+    //
+    // It is all so ugly and buggy it makes us want to cry.
+    //
     // More complex further nested queries may survive because they have more prefixes that differentiate between them.
-    as: 'file',
+    as: 'articles',
     foreignKey: 'fileId'
   })
 

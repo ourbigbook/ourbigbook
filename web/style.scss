@@ -32,13 +32,10 @@ height: 100%;
 display: flex;
 flex-direction: column;
 &.editor {
-  display: flex;
-  flex-direction: column;
-  div.main {
-    height: 100%;
-  }
+  height: 100%;
 }
 
+// Everything outside of navbar.
 div.main {
 flex: 1 0 auto;
 overflow: auto;
@@ -129,7 +126,6 @@ input, textarea.not-monaco {
   // https://stackoverflow.com/questions/55131944/how-to-remove-blue-background-on-chrome-autocomplete
 }
 input[type=checkbox] {
-  margin-left: 10px;
   width: auto;
 }
 label {
@@ -137,8 +133,19 @@ label {
   display: block;
   div.label {
     margin-bottom: 5px;
-    &.inline {
+  }
+  &.inline {
+    display: flex;
+    justify-content: flex-start;
+    div.label.inline {
+      align-self: center;
       display: inline;
+      margin-right: 1ch;
+    }
+    input {
+      &[type="text"] {
+        flex-grow: 1;
+      }
     }
   }
 }
@@ -192,8 +199,16 @@ div.list-container {
   }
 }
 
-.icon:not(.ion-heart) {
-  color: $icon-color;
+.icon {
+  &:not(.ion-heart) {
+    color: $icon-color;
+  }
+  &.ion-close {
+    color: $ourbigbook-error-color;
+  }
+  &.ion-checkmark {
+    color: $ourbigbook-ok-color;
+  }
 }
 
 /*
@@ -216,12 +231,26 @@ h1, h2, h3, h4, h5, h6 {
   }
 }
 
+span.pill {
+  background-color: $button-hover-background-color;
+  border-radius: 0.8em;
+  border: 1px solid $color;
+  font-weight: bold;
+  padding: 0.2em 0.5em;
+  white-space: pre;
+}
+
 // For elements that are injected into the rendered OurBigBook HTML.
 .ourbigbook {
   .web {
     display: inline;
     &.top {
       font-size: 18px;
+      // Gives a small vertical margin between buttons on narrow screens.
+      // TODO derive from other params rather than this hardcode.
+      // This does lead to a slight increase in distance to the above ancestors metadata line which is not ideal,
+      // but it is not very noticeable on the h1.
+      line-height: 2.0em;
     }
     &:not(.top) {
       margin-left: 0.5ch;
@@ -329,44 +358,34 @@ div.editor-page {
       font-size: 1.8em;
       margin-bottom: 0.5em;
     }
-    div.help {
-      margin-bottom: 0.7em;
-    }
     a {
       color: $a-color;
     }
   }
-  div.title-and-actions, div.parent-id-container {
-    display: flex;
-    flex-direction: row;
-    flex-grow: 0;
-    flex-shrink: 0;
-    font-size: $title-font-size * 0.75;
-    margin-bottom: 10px;
-    input.title {
-      flex: 1 1 auto;
-      margin-bottom: 0;
-    }
-    div.actions {
-      flex: 0 0 auto;
-      margin-left: auto;
-      button {
-        font-size: $title-font-size * 0.75;
-        height: 100%;
-        margin-left: 5px;
+  div.tabs {
+    flex-grow: 1;
+    div.editor-tab {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      div.help {
+        margin-bottom: 0.7em;
+      }
+      div.ourbigbook-editor {
+        overflow-y: auto;
+        flex-grow: 1;
+        flex-shrink: 1;
+        // Crucial here so that the scrollbar appears on this internal element and not outside.
+        // https://stackoverflow.com/questions/45551624/flexbox-overflow-scrollbar-displaying-on-body-instead-of-inner-elements
+        flex-basis: 0;
       }
     }
-    .spacer {
-      width: 15px;
-    }
+  }
+  input.title {
+    font-size: $title-font-size * 0.75;
   }
   label: {
     font-size: $title-font-size;
-  }
-  div.ourbigbook-editor {
-    overflow-y: auto;
-    flex-grow: 1;
-    flex-shrink: 1;
   }
 }
 
@@ -390,7 +409,7 @@ div.tab-list {
     padding: 5px;
     // TODO https://docs.ourbigbook.com/todo/firefox-tab-lists-don-t-wrap
     // we want "pre" here to prevent individual items from breaking up.
-    // But bloody Firefox then prevent the entire line from breaking up and hides items!
+    // But bloody Firefox then prevents the entire line from breaking up and hides items!
     // So we keep the less broken but not ideal option.
     white-space: pre-line;
     &.active {
@@ -487,7 +506,7 @@ span.shortcut {
 }
 
 .error-messages {
-  color: #F55;
+  color: $ourbigbook-error-color;
   font-weight: bold;
   margin-top: 0;
   margin-bottom: 0.5em;

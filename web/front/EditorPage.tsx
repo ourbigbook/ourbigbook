@@ -1,26 +1,29 @@
 import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react'
-import React, { useRef, useEffect } from 'react'
+import React, { useEffect, useRef, useState, } from 'react'
 import Router, { useRouter } from 'next/router'
+import Link from 'next/link'
+
 import lodash from 'lodash'
 import pluralize from 'pluralize'
 
-import ourbigbook from 'ourbigbook';
-import ourbigbook_tex from 'ourbigbook/default.tex';
-import web_api from 'ourbigbook/web_api';
-import { preload_katex } from 'ourbigbook/nodejs_front';
-import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js';
-import { OurbigbookEditor } from 'ourbigbook/editor.js';
-import { convertOptions, docsUrl, forbidMultiheaderMessage, sureLeaveMessage, isProduction, read_include_web } from 'front/config';
+import ourbigbook from 'ourbigbook'
+import ourbigbook_tex from 'ourbigbook/default.tex'
+import web_api from 'ourbigbook/web_api'
+import { preload_katex } from 'ourbigbook/nodejs_front'
+import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js'
+import { OurbigbookEditor } from 'ourbigbook/editor.js'
+import { convertOptions, docsUrl, forbidMultiheaderMessage, sureLeaveMessage, isProduction, read_include_web } from 'front/config'
 
 import {
-  ArticleIcon,
   ArticleBy,
   capitalize,
   disableButton,
   enableButton,
   CancelIcon,
+  EditArticleIcon,
   HelpIcon,
-  IssueIcon,
+  MoreIcon,
+  OkIcon,
   slugFromArray,
   useWindowEventListener,
 } from 'front'
@@ -28,7 +31,7 @@ import ErrorList from 'front/ErrorList'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { AppContext, useCtrlEnterSubmit } from 'front'
-import { hasReachedMaxItemCount, modifyEditorInput } from 'front/js';
+import { hasReachedMaxItemCount, modifyEditorInput } from 'front/js'
 import { ArticleType } from 'front/types/ArticleType'
 import { IssueType } from 'front/types/IssueType'
 import Label from 'front/Label'
@@ -149,6 +152,7 @@ async function cachedIdExists(idid) {
 
 const parentTitleDisplay = 'Parent article'
 const previousSiblingTitleDisplay = 'Previous sibling'
+const metadataTabId = `${ourbigbook.Macro.RESERVED_ID_PREFIX}metadata`
 
 export default function EditorPageHoc({
   isIssue=false,
@@ -163,18 +167,18 @@ export default function EditorPageHoc({
     previousSiblingTitle: initialPreviousSiblingTitle,
     titleSource,
   }: EditorPageProps) => {
-    const router = useRouter();
+    const router = useRouter()
     const {
       query: { slug },
-    } = router;
-    let bodySource;
+    } = router
+    let bodySource
     let slugString
     if (Array.isArray(slug)) {
       slugString = slug.join('/')
     } else {
       slugString = slug
     }
-    let initialFileState;
+    let initialFileState
     let initialFile
     if (initialArticle && !(isNew && isIssue)) {
       initialFile = isIssue ? initialArticle : initialArticle.file
@@ -198,22 +202,27 @@ export default function EditorPageHoc({
       isIndex = false
     }
     const itemType = isIssue ? 'discussion' : 'article'
-    const [isLoading, setLoading] = React.useState(false);
-    const [editorLoaded, setEditorLoading] = React.useState(false);
+
+    // State
+    const [isLoading, setLoading] = useState(false)
+    const [editorLoaded, setEditorLoading] = useState(false)
     // TODO titleErrors can be undefined immediately after this call,
     // if the server gives 500 after update. It is some kind of race condition
     // and then it blows up at a later titleErrors.length. It is some kind of race
     // condition that needs debugging at some point.
-    const [titleErrors, setTitleErrors] = React.useState([]);
-    const [parentErrors, setParentErrors] = React.useState([]);
-    const [hasConvertError, setHasConvertError] = React.useState(false);
-    const [file, setFile] = React.useState(initialFileState);
-    const [parentTitle, setParentTitle] = React.useState(initialParentTitle || 'Index');
-    const [previousSiblingTitle, setPreviousSiblingTitle] = React.useState(initialPreviousSiblingTitle || '');
-    const ourbigbookEditorElem = useRef(null);
-    const ourbigbookHeaderElem = useRef(null);
-    const ourbigbookParentIdContainerElem = useRef(null);
-    const saveButtonElem = useRef(null);
+    const [titleErrors, setTitleErrors] = useState([])
+    const [parentErrors, setParentErrors] = useState([])
+    const [hasConvertError, setHasConvertError] = useState(false)
+    const [file, setFile] = useState(initialFileState)
+    const [parentTitle, setParentTitle] = useState(initialParentTitle || 'Index')
+    const [previousSiblingTitle, setPreviousSiblingTitle] = useState(initialPreviousSiblingTitle || '')
+    const [tab, setTab] = useState('editor')
+    const [list, setList] = useState(initialArticle === null ? false : initialArticle.list)
+    const ourbigbookEditorElem = useRef(null)
+    const ourbigbookHeaderElem = useRef(null)
+    const ourbigbookParentIdContainerElem = useRef(null)
+    const saveButtonElem = useRef(null)
+
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
     let editor
     const finalConvertOptions = lodash.merge({
@@ -253,7 +262,7 @@ export default function EditorPageHoc({
             } else {
               showToUserOld = initialArticle?.topicId
             }
-            titleErrors.push(`Topic ID changed from "${showToUserOld}" to "${showToUserNew}", this is not currently allowed`)
+            titleErrors.push(`ID changed from "${showToUserOld}" to "${showToUserNew}", this is not currently allowed`)
           }
         }
       } else {
@@ -322,6 +331,7 @@ export default function EditorPageHoc({
               modifyEditorInput: (oldInput) => modifyEditorInput(file.titleSource, oldInput),
               postBuildCallback: (extra_returns) => {
                 setHasConvertError(extra_returns.errors.length > 0)
+                console.log('extra_returns.errors.length: ' + require('util').inspect(extra_returns.errors.length));
                 const first_header = extra_returns.context.header_tree.children[0]
                 if (isNew && first_header) {
                   const id = first_header.ast.id
@@ -389,7 +399,7 @@ export default function EditorPageHoc({
           if (editor) {
             editor.dispose()
           }
-        };
+        }
       }
     }, [loggedInUser?.username])
     async function checkParent(loggedInUser, title, otherTitle, display) {
@@ -440,15 +450,15 @@ export default function EditorPageHoc({
     }, [file, editorLoaded, ourbigbookEditorElem.current])
     const handleSubmit = async (e) => {
       if (e) {
-        e.preventDefault();
+        e.preventDefault()
       }
       if (hasConvertError || titleErrors.length) {
         // Although the button should be disabled from clicks,
         // this could still be reached via the Ctrl shortcut.
         return
       }
-      setLoading(true);
-      let data, status;
+      setLoading(true)
+      let data, status
       file.bodySource = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
       if (isIssue) {
         if (isNew) {
@@ -457,7 +467,14 @@ export default function EditorPageHoc({
           ;({ data, status } = await webApi.issueEdit(slugString, router.query.number, file))
         }
       } else {
-        const opts: { path?: string, parentId?: string, previousSiblingId?: string } = {}
+        const opts: {
+          list: boolean;
+          path?: string;
+          parentId?: string;
+          previousSiblingId?: string;
+        } = {
+          list
+        }
         if (!isIndex) {
           opts.parentId = titleToId(loggedInUser, parentTitle)
           if (previousSiblingTitle) {
@@ -465,7 +482,7 @@ export default function EditorPageHoc({
           }
         }
         if (isNew) {
-          ;({ data, status } = await webApi.articleCreate(file, opts));
+          ;({ data, status } = await webApi.articleCreate(file, opts))
         } else {
           const path = slugFromArray(ourbigbook.pathSplitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false })
           if (path) {
@@ -474,7 +491,7 @@ export default function EditorPageHoc({
           ;({ data, status } = await webApi.articleCreateOrUpdate(file, opts))
         }
       }
-      setLoading(false);
+      setLoading(false)
       if (status === 200) {
         // This is a hack for the useEffect cleanup callback issue.
         ourbigbookEditorElem.current.ourbigbookEditor.dispose()
@@ -489,20 +506,20 @@ export default function EditorPageHoc({
             redirTarget = routes.article(slugString)
           }
         }
-        Router.push(redirTarget, null, { scroll: true });
+        Router.push(redirTarget, null, { scroll: true })
       } else {
-        setTitleErrors(data.errors);
+        setTitleErrors(data.errors)
       }
-    };
+    }
     useCtrlEnterSubmit(handleSubmit)
     const handleCancel = async (e) => {
       if (!ourbigbookEditorElem.current.ourbigbookEditor.modified || confirm('Are you sure you want to abandon your changes?')) {
         if (isNew) {
-          Router.push(`/`);
+          Router.push(`/`)
         } else {
           // This is a hack for the useEffect cleanup callback issue.
           ourbigbookEditorElem.current.ourbigbookEditor.dispose()
-          Router.push(routes.article(initialArticle.slug));
+          Router.push(routes.article(initialArticle.slug))
         }
       }
     }
@@ -513,6 +530,27 @@ export default function EditorPageHoc({
         : `"${initialFile.titleSource}" by ${initialArticle.author.displayName}`
       }`)
     }, [isNew, initialFile?.titleSource])
+
+    // Tabs
+    function goToTab() {
+      const hash = window.location.hash
+      let tab
+      if (hash === '#_metadata') {
+        tab = 'metadata'
+      } else {
+        tab = 'editor'
+      }
+      setTab(tab)
+    }
+    useEffect(() => {
+      const onHashChange = () => {
+        goToTab()
+      }
+      goToTab()
+      window.addEventListener('hashchange', onHashChange)
+      return () => window.removeEventListener('hashchange', onHashChange)
+    })
+
     return (
       <div className="editor-page content-not-ourbigbook">
         { maxReached
@@ -522,14 +560,10 @@ export default function EditorPageHoc({
                 <h1>
                   {isNew
                     ? <>
-                        {isIssue ? <IssueIcon /> : <ArticleIcon />}
-                        {' '}
-                        New {itemType}
+                        <EditArticleIcon /> New {itemType}
                       </>
                     : <>
-                        {isIssue ? <IssueIcon /> : <ArticleIcon />}
-                        {' '}
-                        Editing
+                        <EditArticleIcon /> Editing
                         {' '}
                         {isIssue
                           ? <a href={isIssue ? routes.issue(issueArticle.slug, initialArticle.number) : routes.article(initialArticle.slug)} target="_blank">
@@ -541,17 +575,37 @@ export default function EditorPageHoc({
                   }
                   {isIssue && <> on <ArticleBy article={issueArticle} newTab={true}/></>}
                 </h1>
-                <div className="help"><a href={`${docsUrl}#ourbigbook-markup-quick-start`} target="_blank"><HelpIcon /> Learn how to write with our OurBigBook Markup format here!</a></div>
-              </div>
-              <div className="title-and-actions">
-                <input
-                  type="text"
-                  className="title"
-                  placeholder={`${capitalize(itemType)} Title`}
-                  value={file.titleSource}
-                  onChange={handleTitle}
-                />
-                <div className="actions">
+                <Label label="Title" inline={true}>
+                  <input
+                    type="text"
+                    className="title"
+                    placeholder={`${capitalize(itemType)} Title`}
+                    value={file.titleSource}
+                    onChange={handleTitle}
+                  />
+                </Label>
+                <ErrorList errors={titleErrors}/>
+                <div className="tab-list">
+                  <Link
+                    className={`tab-item${tab === 'editor' ? ' active' : ''}`}
+                    href={'#'}
+                    onClick={(ev) => {
+                      ev.preventDefault()
+                      window.location.hash = '' }}
+                  >
+                    <EditArticleIcon /> Editor
+                  </Link>
+                  <Link
+                    className={`tab-item${tab === 'metadata' ? ' active' : ''}`}
+                    href={`#${metadataTabId}`}
+                    onClick={(ev) => {
+                      ev.preventDefault()
+                      window.location.hash = `#${metadataTabId}`
+                    }}
+                  >
+                    <MoreIcon /> Metadata
+                  </Link>
+                  {' '}
                   <button
                     className="btn"
                     type="button"
@@ -560,8 +614,9 @@ export default function EditorPageHoc({
                     ref={saveButtonElem}
                     tabIndex={-1}
                   >
-                    <i className="ion-checkmark" />&nbsp;{isNew ? `Publish ${capitalize(itemType)}` : 'Save Changes'}
+                    <OkIcon />&nbsp;{isNew ? `Publish ${capitalize(itemType)}` : 'Save Changes'}
                   </button>
+                  {' '}
                   <button
                     className="btn"
                     type="button"
@@ -572,42 +627,53 @@ export default function EditorPageHoc({
                   </button>
                 </div>
               </div>
-              <ErrorList errors={titleErrors}/>
-              {(!isIssue && !isIndex) &&
-                <div ref={ourbigbookParentIdContainerElem}>
-                  <Label label="Parent" />
-                  <div className="parent-id-container">
-                    <input
-                      type="text"
-                      className="title"
-                      placeholder={parentTitleDisplay}
-                      value={parentTitle}
-                      onChange={handleParentTitle}
-                    />
-                  </div>
-                  <Label label={previousSiblingTitleDisplay} />
-                  <div className="parent-id-container">
-                    <input
-                      type="text"
-                      className="title"
-                      placeholder={`Article with same parent that comes before this one. Empty means first child.`}
-                      value={previousSiblingTitle}
-                      onChange={handlePreviousSiblingTitle}
-                    />
+              <div className="tabs">
+                <div className={`editor-tab${tab === 'editor' ? '' : ' hide'}`}>
+                  <div className="help"><a href={`${docsUrl}#ourbigbook-markup-quick-start`} target="_blank"><HelpIcon /> Learn how to write with our OurBigBook Markup format here!</a></div>
+                  <div
+                    className="ourbigbook-editor"
+                    ref={ourbigbookEditorElem}
+                  >
                   </div>
                 </div>
-              }
-              <ErrorList errors={parentErrors}/>
-              <div
-                className="ourbigbook-editor"
-                ref={ourbigbookEditorElem}
-              >
+                <div className={`metadata-tab${tab === 'metadata' ? '' : ' hide'}`}>
+                  {(!isIssue && !isIndex) &&
+                    <div ref={ourbigbookParentIdContainerElem}>
+                      <Label label="Parent" >
+                        <input
+                          type="text"
+                          className="title"
+                          placeholder={parentTitleDisplay}
+                          value={parentTitle}
+                          onChange={handleParentTitle}
+                        />
+                      </Label>
+                      <Label label={previousSiblingTitleDisplay} >
+                        <input
+                          type="text"
+                          className="title"
+                          placeholder={`Article with same parent that comes before this one. Empty means first child.`}
+                          value={previousSiblingTitle}
+                          onChange={handlePreviousSiblingTitle}
+                        />
+                      </Label>
+                      <ErrorList errors={parentErrors}/>
+                      <Label label="Unlisted" inline={true}>
+                        <input
+                          type="checkbox"
+                          defaultChecked={!list}
+                          onChange={(e) => { setList(!e.target.checked) }}
+                        />
+                      </Label>
+                    </div>
+                  }
+                </div>
               </div>
             </>
         }
       </div>
-    );
-  };
-  editor.isEditor = true;
-  return editor;
+    )
+  }
+  editor.isEditor = true
+  return editor
 }

@@ -520,6 +520,8 @@ class DbProviderBase extends ourbigbook.DbProvider {
 
 module.exports = {
   articleHash,
+  QUERY_TRUE_VAL: 'true',
+  QUERY_FALSE_VAL: 'false',
   WebApi,
   DbProviderBase,
   encodeGetParams,

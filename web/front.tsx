@@ -23,6 +23,12 @@ export function capitalize(s) {
   return s[0].toUpperCase() + s.slice(1)
 }
 
+export function CreateMyOnVersionOfThisTopic({ titleSource, toplevel } : { titleSource: string, toplevel: boolean}) {
+  return <a href={routes.articleNew({ title: titleSource })} className="btn new" title="Create my version of this topic">
+    {' '}<NewArticleIcon title={false}/>{toplevel ? ' Create my own version' : ''}{' '}
+  </a>
+}
+
 export function decapitalize(s) {
   return s[0].toLowerCase() + s.slice(1)
 }
@@ -129,12 +135,20 @@ export function LikeIcon(opts) {
   return Icon("ion-heart", "Like", opts)
 }
 
+export function MoreIcon(opts) {
+  return Icon("ion-information-circled", "More", opts)
+}
+
 export function NewArticleIcon(opts) {
   return Icon("ion-plus", "New", opts)
 }
 
 export function NotificationIcon(opts) {
   return Icon("i ion-ios-bell", "Notifications", opts)
+}
+
+export function OkIcon(opts) {
+  return Icon("ion-checkmark", "Cancel", opts)
 }
 
 export function PinnedArticleIcon(opts) {
@@ -165,6 +179,9 @@ export function UserIcon(opts) {
   return Icon("ion-ios-person", "User", opts)
 }
 
+export function UnlistedIcon(opts) {
+  return Icon("ion-eye-disabled", "Unlisted", opts)
+}
 
 export function SignupOrLogin(
   { to }:

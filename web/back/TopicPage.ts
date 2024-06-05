@@ -4,26 +4,42 @@ import { getLoggedInUser } from 'back'
 import { articleLimit  } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
 import { TopicPageProps } from 'front/TopicPage'
-import { getOrderAndPage } from 'front/js'
+import {
+  getOrderAndPage,
+  typecastBoolean,
+} from 'front/js'
 
 export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
   return async ({ params: { id }, query, req, res }) => {
     const [order, pageNum, err] = getOrderAndPage(req, query.page, { defaultOrder: 'score' })
-    if (err) { res.statusCode = 422 }
+    let showUnlisted, ok
+    ;[showUnlisted, ok] = typecastBoolean(query['show-unlisted'])
+    if (!ok) {
+      showUnlisted = false
+    }
+    if (err || !ok) { res.statusCode = 422 }
+    const list = showUnlisted ? undefined : true
     const loggedInUser = await getLoggedInUser(req, res)
     const sequelize = req.sequelize
     if (
       id instanceof Array
     ) {
       const topicId = id.join('/')
-      const [articles, loggedInUserJson, topicJson] = await Promise.all([
-        sequelize.models.Article.getArticles({
-          sequelize,
-          limit: articleLimit,
-          offset: pageNum * articleLimit,
-          order,
-          topicId,
-        }),
+      const getArticlesOpts = {
+        sequelize,
+        limit: articleLimit,
+        list,
+        offset: pageNum * articleLimit,
+        order,
+        topicId,
+      }
+      const [
+        articles,
+        loggedInUserJson,
+        topicJson,
+        unlistedArticles,
+      ] = await Promise.all([
+        sequelize.models.Article.getArticles(getArticlesOpts),
         loggedInUser ? loggedInUser.toJson(loggedInUser) : null,
         sequelize.models.Topic.getTopics({
           count: false,
@@ -36,6 +52,7 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
             return null;
           }
         }),
+        sequelize.models.Article.getArticles(Object.assign({}, getArticlesOpts, { list: false })),
         //sequelize.models.Topic.findOne({
         //  include: [{
         //    model: sequelize.models.Article,
@@ -55,6 +72,8 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
       const props: TopicPageProps = {
         articles: await Promise.all(articles.rows.map(article => article.toJson(loggedInUser))),
         articlesCount: articles.count,
+        hasUnlisted: !!unlistedArticles.count,
+        list: list === undefined ? null : list,
         topic: topicJson,
         order,
         page: pageNum,

@@ -53,10 +53,11 @@ export const getServerSidePropsIndexHoc = ({
               articlesCount = articlesAndCounts.articlesCount
             } else {
               articlesAndCounts = await sequelize.models.Article.getArticles({
-                sequelize,
+                limit,
+                list: true,
                 offset,
                 order,
-                limit,
+                sequelize,
               })
               articles = await Promise.all(articlesAndCounts.rows.map(
                 (article) => {return article.toJson(loggedInUser) }))

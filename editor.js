@@ -42,6 +42,7 @@ class OurbigbookEditor {
     const errors_elem = document.createElement('div');
     this.errors_elem = errors_elem
     errors_elem.classList.add('errors');
+    errors_elem.classList.add('ourbigbook-body');
     root_elem.innerHTML = '';
     root_elem.appendChild(input_elem);
     root_elem.appendChild(output_elem);
@@ -188,6 +189,7 @@ class OurbigbookEditor {
     this.convertInput();
     this.ourbigbook_runtime(this.output_elem)
 
+    // https://stackoverflow.com/questions/7317273/warn-user-before-leaving-web-page-with-unsaved-changes
     this.beforeunload = (e) => {
       if (this.modified) {
         e.preventDefault()
@@ -196,8 +198,6 @@ class OurbigbookEditor {
     }
     window.addEventListener('beforeunload', this.beforeunload)
   }
-
-  // https://stackoverflow.com/questions/7317273/warn-user-before-leaving-web-page-with-unsaved-changes
 
   async convertInput() {
     let extra_returns = {};
@@ -229,6 +229,12 @@ class OurbigbookEditor {
         this.errors_elem.classList.add('has-error')
       } else {
         this.errors_elem.classList.remove('has-error')
+      }
+      if (extra_returns.errors.length) {
+        const title = document.createElement('p');
+        title.classList.add('title');
+        title.innerHTML = '\u2718 Errors';
+        this.errors_elem.appendChild(title)
       }
       for (const e of extra_returns.errors) {
         const error_elem = document.createElement('div');

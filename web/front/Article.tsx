@@ -8,6 +8,7 @@ import { commentsHeaderId } from 'front/config'
 import { formatDate } from 'front/date'
 import {
   ArrowUpIcon,
+  CreateMyOnVersionOfThisTopic,
   DeleteIcon,
   EditArticleIcon,
   HelpIcon,
@@ -18,6 +19,7 @@ import {
   SourceIcon,
   TimeIcon,
   TopicIcon,
+  UnlistedIcon,
   fragSetTarget,
   getShortFragFromLong,
   getShortFragFromLongForPath,
@@ -383,22 +385,30 @@ const Article = ({
             {toplevel &&
               <>
                 {' '}
-                <span title="Last updated">
+                <span className="pill" title="Last updated">
                   <TimeIcon />{' '}
                   <span className="article-dates">
                     {formatDate(article.updatedAt)}
                   </span>
                 </span>
-              </>
-            }
-            {false && article.createdAt !== article.updatedAt &&
-              <>
-                <span className="mobile-hide">
-                  {' Updated: '}
-                </span>
-                <span className="article-dates">
-                  {formatDate(article.updatedAt)}
-                </span>
+                {/*
+                {false && article.createdAt !== article.updatedAt &&
+                  <>
+                    <span className="mobile-hide">
+                      {' Updated: '}
+                    </span>
+                    <span className="article-dates">
+                      {formatDate(article.updatedAt)}
+                    </span>
+                  </>
+                }
+                */}
+                {!article.list &&
+                  <>
+                    {' '}
+                    <span className="pill"><UnlistedIcon /> unlisted</span>
+                  </>
+                }
               </>
             }
             {canEdit
@@ -419,7 +429,7 @@ const Article = ({
                       <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is the first child of this one">
                         {' '}<NewArticleIcon title={false}/>
                         {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
-                        <i className="ion-arrow-down-c"/>{toplevel ? ' Create child article' : ''}{' '}
+                        <i className="ion-arrow-down-c"/>{toplevel ? <> Create child<span className="mobile-hide"> article</span></> : ''}{' '}
                       </a>
                       {' '}
                       {!isIndex &&
@@ -428,7 +438,7 @@ const Article = ({
                           className="btn new"
                           title="Create a new article that is the next sibling of this one"
                         >
-                          {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? ' Create sibling article' : ''}{' '}
+                          {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? <> Create sibling<span className="mobile-hide"> article</span></> : ''}{' '}
                         </a>
                       }
                     </>
@@ -450,9 +460,7 @@ const Article = ({
                           </>
                         : <>
                             {' '}
-                            <a href={routes.articleNew({ title: curArticle.titleSource })} className="btn new" title="Create my version of this topic">
-                              {' '}<NewArticleIcon title={false}/>{toplevel ? ' Create my own version' : ''}{' '}
-                            </a>
+                            <CreateMyOnVersionOfThisTopic titleSource={curArticle.titleSource} toplevel={toplevel} />
                           </>
                       }
                     </>
@@ -579,7 +587,7 @@ const Article = ({
   }
   let html = ''
   if (!isIssue) {
-     html += article.h1Render
+    html += article.h1Render
   }
   html += article.render
   if (!isIssue) {

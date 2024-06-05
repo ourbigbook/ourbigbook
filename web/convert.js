@@ -72,7 +72,6 @@ async function convert({
     path = titleSource ? ourbigbook.titleToId(titleSource) : 'asdf'
     input_path_given = false
   } else {
-    path = path
     input_path_given = true
   }
   if (parentId) {
@@ -141,6 +140,7 @@ async function convertArticle({
   convertOptionsExtra,
   enforceMaxArticles,
   forceNew,
+  list,
   path,
   perf,
   // Required for h2Render to render correctly. Otherwise it looks like an h1Render.
@@ -246,7 +246,7 @@ async function convertArticle({
                 include: [
                   {
                     model: sequelize.models.Article,
-                    as: 'file',
+                    as: 'articles',
                   }
                 ],
               }
@@ -262,7 +262,7 @@ async function convertArticle({
                 include: [
                   {
                     model: sequelize.models.Article,
-                    as: 'file',
+                    as: 'articles',
                   }
                 ],
               }
@@ -360,7 +360,7 @@ async function convertArticle({
                   include: [
                     {
                       model: sequelize.models.Article,
-                      as: 'file',
+                      as: 'articles',
                     }
                   ],
                 }
@@ -386,7 +386,7 @@ async function convertArticle({
                       include: [
                         {
                           model: sequelize.models.Article,
-                          as: 'file',
+                          as: 'articles',
                         }
                       ],
                     }
@@ -402,7 +402,7 @@ async function convertArticle({
                       include: [
                         {
                           model: sequelize.models.Article,
-                          as: 'file',
+                          as: 'articles',
                         }
                       ],
                     }
@@ -413,15 +413,15 @@ async function convertArticle({
             })
       ])
       if (previousSiblingRef) {
-        newNestedSetIndex = previousSiblingRef.to.toplevelId.file[0].nestedSetNextSibling
+        newNestedSetIndex = previousSiblingRef.to.toplevelId.articles[0].nestedSetNextSibling
         // Deduce parent from given sibling.
         parentIdRow = previousSiblingRef.from
         newParentId = parentIdRow.idid
-        newParentArticle = parentIdRow.toplevelId.file[0]
+        newParentArticle = parentIdRow.toplevelId.articles[0]
       }
       if (parentIdRow) {
         if (!previousSiblingRef) {
-          newParentArticle = parentIdRow.toplevelId.file[0]
+          newParentArticle = parentIdRow.toplevelId.articles[0]
         }
       }
       if (newParentArticle) {
@@ -432,11 +432,11 @@ async function convertArticle({
         newNestedSetIndexParent = newParentArticle.nestedSetIndex
       }
       if (oldRef) {
-        oldArticle = oldRef.to.toplevelId.file[0]
+        oldArticle = oldRef.to.toplevelId.articles[0]
         oldNestedSetIndex = oldArticle.nestedSetIndex
         oldNestedSetNextSibling = oldArticle.nestedSetNextSibling
         nestedSetSize = oldArticle.nestedSetNextSibling - oldArticle.nestedSetIndex
-        oldParentArticle = oldRef.from.toplevelId.file[0]
+        oldParentArticle = oldRef.from.toplevelId.articles[0]
         oldParentId = oldRef.from_id
         old_to_id_index = oldRef.to_id_index,
         oldNestedSetIndexParent = oldParentArticle.nestedSetIndex
@@ -559,6 +559,9 @@ async function convertArticle({
             -ourbigbook.HTML_EXT.length - 1
           ),
         }
+        if (list !== undefined) {
+          articleArg.list = list
+        }
         if (updateNestedSetIndex) {
           articleArg.depth = newDepth
         } else {
@@ -601,6 +604,9 @@ async function convertArticle({
       ]
       if (author.hideArticleDates) {
         updateOnDuplicate.push('createdAt')
+      }
+      if (list !== undefined) {
+        updateOnDuplicate.push('list')
       }
       await sequelize.models.Article.bulkCreate(
         articleArgs,

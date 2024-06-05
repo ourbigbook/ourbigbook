@@ -156,7 +156,9 @@ const ArticlePageHoc = (isIssue=false) => {
                 showBody: true,
                 what: 'articles',
               }}/>
-              <p className="content-not-ourbigbook"><CustomLink href={routes.topic(article.topicId)}><SeeIcon /> <TopicIcon /> See all articles in the same topic</CustomLink></p>
+              <p className="content-not-ourbigbook">
+                <CustomLink href={routes.topic(article.topicId)}> <TopicIcon /> <SeeIcon /> See all articles in the same topic</CustomLink>
+              </p>
             </>
           }
         </div>

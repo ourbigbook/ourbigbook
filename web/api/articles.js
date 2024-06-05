@@ -99,6 +99,7 @@ router.get('/hash', auth.optional, async function(req, res, next) {
       authorInclude.where = { username: author }
     }
     const { count: filesCount, rows: files} = await sequelize.models.File.findAndCountAll({
+      subQuery: false,
       include: [
         authorInclude,
         {
@@ -108,6 +109,11 @@ router.get('/hash', auth.optional, async function(req, res, next) {
           },
           required: false,
           attributes: [],
+        },
+        {
+          model: sequelize.models.Article,
+          as: 'articles',
+          attributes: ['list'],
         },
       ],
       attributes: [
@@ -135,7 +141,7 @@ router.get('/hash', auth.optional, async function(req, res, next) {
     const articlesJson = []
     for (const file of files) {
       articlesJson.push({
-        cleanupIfDeleted: file.get('bodySourceLen') !== 0,
+        cleanupIfDeleted: file.get('bodySourceLen') !== 0 || file.articles[0].list,
         hash: file.hash,
         path: file.path,
         renderOutdated: !!file.get('renderOutdated'),
@@ -215,6 +221,8 @@ async function createOrUpdateArticle(req, res, opts) {
     front.isString, front.isTruthy ], defaultValue: undefined })
   const render = lib.validateParam(body, 'render', {
     validators: [front.isBoolean], defaultValue: true})
+  const list = lib.validateParam(body, 'list', {
+    validators: [front.isBoolean], defaultValue: undefined})
   const updateNestedSetIndex = lib.validateParam(body, 'updateNestedSetIndex', {
     validators: [front.isBoolean], defaultValue: true})
   const parentId = lib.validateParam(body,
@@ -295,6 +303,7 @@ async function createOrUpdateArticle(req, res, opts) {
       author: loggedInUser,
       bodySource,
       forceNew,
+      list,
       sequelize,
       // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
       path,

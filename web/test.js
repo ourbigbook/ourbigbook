@@ -346,7 +346,7 @@ it('Article.getArticlesInSamePage', async function() {
   // Hidden articles don't show by default.
   await sequelize.models.Article.update({ list: false }, { where: { slug: 'user0/title-0-0' } })
   article = await sequelize.models.Article.getArticle({ sequelize, slug: 'user0/title-0' })
-  rows = await sequelize.models.Article.getArticlesInSamePage({ sequelize, article, loggedInUser: user0 })
+  rows = await sequelize.models.Article.getArticlesInSamePage({ sequelize, article, loggedInUser: user0, list: true })
   assertRows(rows, [
     { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
     { slug: 'user0/title-0-1',   topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
@@ -4322,5 +4322,61 @@ it('api: article create with synonym parent fails gracefully', async () => {
     article = createArticleArg({ i: 0, titleSource: 'h3' })
     ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/h2-2' }))
     assertStatus(status, data)
+  })
+})
+
+it(`api: /hash: cleanupIfDeleted is correct`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    // Empty non-hidden article needs to be cleaned.
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'Mathematics',
+      bodySource: '',
+    })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assert.strictEqual(data.articles[0].list, true)
+    ;({data, status} = await test.webApi.articlesHash({ author: 'user0' }))
+    assertStatus(status, data)
+    assertRows(data.articles, [
+      { path: '@user0/index.bigb', cleanupIfDeleted: true, },
+      { path: '@user0/mathematics.bigb', cleanupIfDeleted: true, },
+    ])
+
+    // Empty hidden article does not need to be cleaned.
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'Mathematics',
+      bodySource: '',
+    })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { list: false, } ))
+    assertStatus(status, data)
+    assert.strictEqual(data.articles[0].list, false)
+    ;({data, status} = await test.webApi.articlesHash({ author: 'user0' }))
+    assertStatus(status, data)
+    assertRows(data.articles, [
+      { path: '@user0/index.bigb', cleanupIfDeleted: true, },
+      { path: '@user0/mathematics.bigb', cleanupIfDeleted: false, },
+    ])
+
+    // Non-empty hidden article needs to be cleaned.
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'Mathematics',
+      bodySource: 'blabla',
+    })
+    ;({data, status} = await createOrUpdateArticleApi(test, article ))
+    assertStatus(status, data)
+    assert.strictEqual(data.articles[0].list, false)
+    ;({data, status} = await test.webApi.articlesHash({ author: 'user0' }))
+    assertStatus(status, data)
+    assertRows(data.articles, [
+      { path: '@user0/index.bigb', cleanupIfDeleted: true, },
+      { path: '@user0/mathematics.bigb', cleanupIfDeleted: true, },
+    ])
   })
 })

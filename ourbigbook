@@ -20,7 +20,7 @@ const { DataTypes, Op, Sequelize } = require('sequelize')
 const ourbigbook = require('ourbigbook');
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
-const { articleHash, WebApi, read_include } = require('ourbigbook/web_api');
+const { ARTICLE_HASH_MAX, articleHash, WebApi, read_include } = require('ourbigbook/web_api');
 const { trace } = require('console');
 const { execPath } = require('process');
 
@@ -2123,7 +2123,7 @@ if (cli.helpMacros) {
             webPathToArticle[article.path] = article
           }
           i += articles.length
-        } while (data.articles.length > 0)
+        } while (data.articles.length === ARTICLE_HASH_MAX)
       }
       const idToArticleMeta = {}
       const localArticles = await sequelizeWebArticle.findAll({ attributes: ['source', 'title', 'idid', 'inpath', 'parentId'] })
@@ -2140,8 +2140,7 @@ if (cli.helpMacros) {
         // https://docs.ourbigbook.com/todo/make-articles-removed-locally-empty-on-web-upload
         const serverOnlyPaths = new Set(Object.keys(webPathToArticle))
         for (const header_tree_entry of header_tree) {
-          const id = header_tree_entry.to_id
-          serverOnlyPaths.delete(pathUsernameAndExt(username, id))
+          serverOnlyPaths.delete(pathUsernameAndExt(username, header_tree_entry.to_id))
         }
         let i = 0
         for (const path of serverOnlyPaths) {
@@ -2155,6 +2154,7 @@ if (cli.helpMacros) {
               extraArgs: {
                 path: pathNoUsernameNoext(path),
                 render: true,
+                list: false,
               },
               i: i++,
               updateNestedSetIndex: !cli.webNestedSetBulk,

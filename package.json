@@ -82,7 +82,7 @@
   ],
   "scripts": {
     "build": "cd web && npm run build",
-    "build-assets": "cp .gitignore gitignore && npm run webpack",
+    "build-assets": "cp .gitignore gitignore && mkdir -p _obb && ln -sf _obb/dist ../dist && npm run webpack",
     "build-dev": "cd web && npm run build-dev",
     "deploy": "cd web && npm run deploy",
     "dev": "cd web && npm run dev",

@@ -1,5 +1,6 @@
-/out
 .sass-cache
+/_obb
+/out
 node_modules
 
 # Custom ignores. Everything above this section, gets automatically parsed

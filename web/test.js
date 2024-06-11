@@ -15,6 +15,7 @@ const test_lib = require('./test_lib')
 const { AUTH_COOKIE_NAME } = require('./front/js')
 
 const web_api = require('ourbigbook/web_api');
+const { QUERY_TRUE_VAL } = web_api
 const { execPath } = require('process');
 
 const testNext = process.env.OURBIGBOOK_TEST_NEXT === 'true'
@@ -341,6 +342,17 @@ it('Article.getArticlesInSamePage', async function() {
     { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
     { slug: 'user0/title-0-1',   topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
   ])
+
+  // Hidden articles don't show by default.
+  await sequelize.models.Article.update({ list: false }, { where: { slug: 'user0/title-0-0' } })
+  article = await sequelize.models.Article.getArticle({ sequelize, slug: 'user0/title-0' })
+  rows = await sequelize.models.Article.getArticlesInSamePage({ sequelize, article, loggedInUser: user0 })
+  assertRows(rows, [
+    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+    { slug: 'user0/title-0-1',   topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+  ])
+  await sequelize.models.Article.update({ list: true }, { where: { slug: 'user0/title-0-0' } })
+  article = await sequelize.models.Article.getArticle({ sequelize, slug: 'user0/title-0' })
 
   rows = await sequelize.models.Article.getArticlesInSamePage({ sequelize, article, loggedInUser: user0, h1: true })
   assertRows(rows, [
@@ -3536,12 +3548,12 @@ it('api: synonym rename', async () => {
 
       // Sanity check that the parent and previous sibling are correct.
 
-      ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': true }))
+      ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': QUERY_TRUE_VAL }))
       assertStatus(status, data)
       assert.strictEqual(data.titleRender, 'Derivative')
       assert.strictEqual(data.parentId, '@user0/calculus')
 
-      ;({data, status} = await test.webApi.article('user0/algebra', { 'include-parent': true }))
+      ;({data, status} = await test.webApi.article('user0/algebra', { 'include-parent': QUERY_TRUE_VAL }))
       assertStatus(status, data)
       assert.strictEqual(data.titleRender, 'Algebra')
       assert.strictEqual(data.previousSiblingId, '@user0/calculus')
@@ -3604,12 +3616,12 @@ it('api: synonym rename', async () => {
 
       // synonym does not break parentId and previousSibling
 
-      ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': true }))
+      ;({data, status} = await test.webApi.article('user0/derivative', { 'include-parent': QUERY_TRUE_VAL }))
       assertStatus(status, data)
       assert.strictEqual(data.titleRender, 'Derivative')
       assert.strictEqual(data.parentId, '@user0/calculus')
 
-      ;({data, status} = await test.webApi.article('user0/algebra', { 'include-parent': true }))
+      ;({data, status} = await test.webApi.article('user0/algebra', { 'include-parent': QUERY_TRUE_VAL }))
       assertStatus(status, data)
       assert.strictEqual(data.titleRender, 'Algebra')
       assert.strictEqual(data.previousSiblingId, '@user0/calculus')
@@ -4290,5 +4302,25 @@ it('api: parent and child to unrelated synonyms with updateNestedSetIndex', asyn
     //  { nestedSetIndex: 4, nestedSetNextSibling: 6, depth: 2, to_id_index: 1,    slug: 'user0/h1-2' },
     //  { nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 3, to_id_index: 0,    slug: 'user0/h1-2-1' },
     //])
+  })
+})
+
+// https://github.com/ourbigbook/ourbigbook/issues/306
+it('api: article create with synonym parent fails gracefully', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    // Create a second user and index to ensure that the nested set indexes are independent for each user.
+    // Because of course we didn't do this when originally implementing.
+    test.loginUser(user)
+
+    article = createArticleArg({ i: 0, titleSource: 'h2', bodySource: '= h2 2\n{synonym}' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+
+    article = createArticleArg({ i: 0, titleSource: 'h3' })
+    ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/h2-2' }))
+    assertStatus(status, data)
   })
 })

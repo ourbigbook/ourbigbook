@@ -971,6 +971,14 @@ We likely just have to set the `path:` API argument based on the has scope statu
 
 As of the commit that adds this line, it should likely be possible to do it on the backend. On the frontend however we convert `/` to `-` so it doesn't work on the existence checks. We need a more accurate ID conversion there.
 
+=== Allow disambiguate and id header arguments on web
+{tag=Scope}
+{tag=Web}
+
+Currently these do not affect the article's ID as there is a fundamental limitation of the `convert` function, which determines the "file path" based solely on the title content, and ignores the title arguments such as `disambiguate`. The ID of the first header, the toplevel ID, then just gets fixed to that (as is meant to happen, first toplevel gets Id fixed), ignoring `disambiguate`.
+
+This is worked around on web upload by passing the `id` as the `path` explicitly as an argument. But this argument is not available on web UI, and it would be ugly anyways, what we want is for it to "just work" by default without the user having to explicitly set an ID on web UI.
+
 == Make rendered issue and comment fragments as short as possible
 {tag=Comment}
 {tag=Web}

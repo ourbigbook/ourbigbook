@@ -194,7 +194,15 @@ Link to topic: <#mathematics>
       ]],
       // This is used to check if we are jumping to an ID at the bottom of the page correctly.
       ['Test data long before ID', [], { body: 'spacer\n\n'.repeat(50) + `$$\\frac{1}{\\sqrt{2}}$\${title=Test data long before ID}` }],
-
+      ['Test data disambiguate', [
+        ['Test data disambiguate child', []],
+        ],
+        {
+          headerArgs: '{disambiguate=specific type}',
+          path: 'test-data-disambiguate-specific-type',
+        }
+      ],
+      ['Test data disambiguate next sibling', []],
     ],
     {
       body: `Block math: <equation My favorite equation>
@@ -524,6 +532,7 @@ async function generateDemoData(params) {
           convertOptionsExtra: { katex_macros },
           enforceMaxArticles: false,
           parentId,
+          path: opts.path,
           render,
           sequelize,
           titleSource: articleArg.titleSource,

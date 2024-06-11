@@ -753,6 +753,7 @@ WHERE
         },
         depth: this.depth + 1,
       },
+      order: [['nestedSetIndex', 'ASC']],
       include: [{
         model: sequelize.models.File,
         as: 'file',

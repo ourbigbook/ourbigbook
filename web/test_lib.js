@@ -203,7 +203,10 @@ Link to topic: <#mathematics>
         }
       ],
       ['Test data disambiguate next sibling', []],
-      ['Test data unlisted', [], { body: `This article is unlisted.\n\nIt shouldn't appear on ToCs, topics and most other listings by default.`, list: false }],
+      ['Test data unlisted', [
+        ['Test data unlisted listed child', []],
+        ['Test data unlisted unlisted child', [], { list: false }],
+      ], { body: `This article is unlisted.\n\nIt shouldn't appear on ToCs, topics and most other listings by default.`, list: false }],
     ],
     {
       body: `Block math: <equation My favorite equation>
@@ -576,7 +579,6 @@ async function generateDemoData(params) {
         }
         fs.mkdirSync(outdir, { recursive: true })
         const outpath = path.join(outdir, outbase_noext + '.' + ourbigbook.OURBIGBOOK_EXT)
-        const file = article.file
         fs.writeFileSync(outpath, await article.getSourceExport());
       }
       fs.writeFileSync(path.join(sourceRoot, user.username, ourbigbook.OURBIGBOOK_JSON_BASENAME), '{}\n');

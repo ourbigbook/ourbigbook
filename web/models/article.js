@@ -745,6 +745,9 @@ WHERE
       include_source += `\\Include[${path.relative(inc_orig, child.slug)}]\n`
     }
     if (include_source) {
+      if (ret[ret.length - 1] !== '\n') {
+        ret += '\n'
+      }
       ret += '\n' + include_source
     }
     return ret

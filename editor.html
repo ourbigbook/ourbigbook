@@ -3,8 +3,8 @@
 <head>
 <meta charset=utf-8>
 <title>Ourbigbook editor demo</title>
-<link rel="stylesheet" href="_obb/dist/ourbigbook.css">
-<link rel="stylesheet" href="_obb/dist/editor.css">
+<link rel="stylesheet" href="ourbigbook.css">
+<link rel="stylesheet" href="editor_css.css">
 <style>
 html, body {
   height: 100%;
@@ -19,7 +19,7 @@ html, body {
 </head>
 <body>
 <div class="ourbigbook-editor"></div>
-<div id="example">= Ourbigbook hello world
+<pre id="example">= Ourbigbook hello world
 
 Welcome to Ourbigbook! Here's the table of contents:
 
@@ -217,17 +217,17 @@ Literal named argument:
 my nice code
 ``
 {{title=Nice code}}
-</div>
+</pre>
 <script src="editor.js"></script>
-<script src="_obb/dist/ourbigbook.js"></script>
-<script src="_obb/dist/ourbigbook_runtime.js"></script>
+<script src="ourbigbook.js"></script>
+<script src="ourbigbook_runtime.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs/loader.min.js" integrity="sha512-SExj71Cw3B9C9EE8BC/ad3AKia5zQXDj/2SM4THgkeKh5GIFZhKM/R3uclUG8YZwJrjcVhydAlIHmfNvsBCKZA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script>
 const example_elem = document.getElementById('example');
 const root_elem = document.getElementsByClassName('ourbigbook-editor')[0];
 require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.26.1/min/vs' }});
 require(["vs/editor/editor.main"], () => {
-  new OurbigbookEditor(root_elem, example_elem.textContent, monaco, ourbigbook, ourbigbook_runtime.ourbigbook_runtime)
+  new editor.OurbigbookEditor(root_elem, example_elem.textContent, monaco, ourbigbook, ourbigbook_runtime.ourbigbook_runtime)
 })
 </script>
 </body>

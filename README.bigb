@@ -75,7 +75,7 @@ The \b[OurBigBook Project] is creating the ultimate tool to <publish> \b[textboo
 * https://github.com/ourbigbook/ourbigbook/issues[]: project issue tracker
 * https://github.com/ourbigbook/ourbigbook/blob/master/README.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
-* https://docs.ourbigbook.com/editor[]: live in-browser editor demo
+* https://docs.ourbigbook.com/_obb/dist/editor[]: live in-browser editor demo
 * https://github.com/ourbigbook/template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
   * https://ourbigbook.github.io/template[]: the above <published to GitHub Pages>
 * https://cirosantilli.com/ourbigbook-media[]: media for the project such as for documentation and <publicity>, more info: <OurBigBook media repository>{full}
@@ -381,7 +381,7 @@ The following sections cover different ways to use tools from the OurBigBook:
     \OurBigBookExample[[
     The directory \a[file_demo] is cooler.
     ]]
-* is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: https://docs.ourbigbook.com/editor[]
+* is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: https://docs.ourbigbook.com/_obb/dist/editor[]
 * helps you with the publishing:
   * <ourbigbook --publish> publishes in a single command to the configured target (default <GitHub Pages>)
   * OurBigBook tries to deal with media such as images and video intelligently for you, e.g.: <where to store images>{full}. E.g. you can keep media in a separate media repository, `my-media-repository`, and then by configuring on <ourbigbook.json>:
@@ -5940,7 +5940,7 @@ Stdin converion is a bit different from conversion from a file in that it ignore
 = Play with the template
 {parent=OurBigBook CLI quick start}
 
-Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/editor[].
+Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/_obb/dist/editor[].
 
 Play with https://github.com/ourbigbook/template[an OurBigBook template] locally:
 ``
@@ -6950,7 +6950,6 @@ e.g.:
 ``
 out/publish/out/local
 ``
-This option implies the <--publish> option.
 
 = `--publish-target github-pages`
 {parent=`--publish-target`}
@@ -6962,7 +6961,7 @@ Publish to <#GitHub Pages>. See also: <Publish to GitHub Pages>{full}.
 
 Publish as a local directory that can be zipped and sent to someone else, and then correctly viewed by a browser locally by the receiver. You can then zip it from the Linux command line for example with:
 ``
-ourbigbook --publish-target local
+ourbigbook --publish --publish-target local
 cd out/publish/out
 zip -r local.zip local
 ``
@@ -7316,6 +7315,9 @@ TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with
 = Web upload
 {synonym}
 {title2}
+
+= Local to Web upload
+{synonym}
 
 Sync local directory to <OurBigBook Web> instead of doing anything else.
 
@@ -10133,7 +10135,7 @@ Possibilities we could reuse:
 
 The "static editor" is the <Browser editor with preview>.
 
-It can be viewed live at: https://docs.ourbigbook.com/editor[] and its main source code is located at: \a[editor.html].
+It can be viewed live at: https://docs.ourbigbook.com/_obb/dist/editor[] and its main source code is located at: \a[editor.html].
 
 The static editor is a browser-only toy/demo with no persistent storage. We call it "static" because it is able to run on a <static website>, as opposed to the more advanced editor present in <OurBigBook Web>, which interacts fully with a dynamic database. Both static and dynamic editor codebases are highly factored however, which is why they look identical.
 
@@ -10143,8 +10145,14 @@ git clone https://github.com/ourbigbook/ourbigbook
 cd ourbigbook
 npm install
 npm run build-assets
-chrome editor.html
+firefox dist/editor.html
 ``
+
+You can also speed up the interactive development loop of editor.html with:
+``
+npm run webpack-dev
+``
+as usual when dealing with the <`dist` directory>.
 
 = Error reporting
 {parent=Tooling}
@@ -10507,7 +10515,7 @@ The files in that directory are:
 * `dist/ourbigbook.js`: OurBigBook <JavaScript API> converter for browser usage. The source entry point for it is located at \a[index.js]. Contains the code of every single dependency used from `node_modules` used by `index.js`. This is notably used for the live-preview of a <browser editor with preview>.
 * `dist/ourbigbook_runtime.js`: similar `dist/ourbigbook.js`, but contains the converted output of \a[ourbigbook_runtime.js]. You should include this in every OurBigBook HTML output.
 * `dist/ourbigbook.css`: minimized CSS needed to view OurBigBook output as intended. Embeds all OurBigBook CSS dependencies, notably the KaTeX CSS without which <mathematics> displays as garbage. The Sass entry point for it is: \a[ourbigbook.scss].
-* `dist/editor.css`: the CSS of the editor, rendered from \a[editor.scss].
+* `dist/editor_css.css`: the CSS of the editor, rendered from \a[editor.scss].
 
 To develop these files, you absolutely want to use:
 ``

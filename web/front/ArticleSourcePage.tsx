@@ -28,7 +28,7 @@ const ArticleSourcePageHoc = (isIssue=false) => {
     React.useEffect(() =>
       setTitle(`Source: /${article.slug}`)
     )
-    const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
+    const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
     useEEdit(canEdit, article.slug)
     return (
       <div className="article-source-page content-not-ourbigbook">

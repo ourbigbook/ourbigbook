@@ -219,6 +219,8 @@ async function createOrUpdateArticle(req, res, opts) {
   })
   const path = lib.validateParam(body, 'path', { validators: [
     front.isString, front.isTruthy ], defaultValue: undefined })
+  const owner = lib.validateParam(body, 'owner', { validators: [
+    front.isString ], defaultValue: undefined })
   const render = lib.validateParam(body, 'render', {
     validators: [front.isBoolean], defaultValue: true})
   const list = lib.validateParam(body, 'list', {
@@ -244,6 +246,21 @@ async function createOrUpdateArticle(req, res, opts) {
     throw new lib.ValidationError(`titleSource param is mandatory when not rendering`)
   }
 
+  let author
+  if (owner === undefined) {
+    author = loggedInUser
+  } else {
+    const  msg = cant.editArticle(loggedInUser, owner)
+    if (msg) {
+      throw new lib.ValidationError([msg], 403)
+    }
+    author = await sequelize.models.User.findOne({ where: { username: owner } })
+    if (!author) {
+      throw new lib.ValidationError(`owner: there is no user with username owner="${owner}"`)
+    }
+  }
+  console.log('owner: ' + require('util').inspect(owner));
+
   // Skip conversion if unchanged.
   let articles = []
   let sourceNewerThanRender = true
@@ -252,7 +269,7 @@ async function createOrUpdateArticle(req, res, opts) {
   ) {
     const file = await sequelize.models.File.findOne({
       where: {
-        path: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${path}.${ourbigbook.OURBIGBOOK_EXT}`
+        path: `${ourbigbook.AT_MENTION_CHAR}${author.username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${path}.${ourbigbook.OURBIGBOOK_EXT}`
       },
     })
     if (file) {
@@ -285,13 +302,13 @@ async function createOrUpdateArticle(req, res, opts) {
     render ||
     sourceNewerThanRender
   ) {
-    const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`
+    const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
     if (!(
       parentId === undefined ||
       parentId === idPrefix ||
       parentId.startsWith(`${idPrefix}/`)
     )) {
-      throw new lib.ValidationError(`parentId cannot belong to another user: "${parentId}"`)
+      throw new lib.ValidationError(`parentId="${parentId}" cannot belong to another user: "${parentId}"`)
     }
     const previousSiblingId = lib.validateParam(body,
       'previousSiblingId',
@@ -300,7 +317,7 @@ async function createOrUpdateArticle(req, res, opts) {
       { defaultValue: undefined }
     )
     const ret = await convert.convertArticle({
-      author: loggedInUser,
+      author,
       bodySource,
       forceNew,
       list,

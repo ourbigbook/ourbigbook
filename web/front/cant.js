@@ -10,8 +10,8 @@ const permissions = [
   ['viewUserSettings', (loggedInUser, user) => loggedInUser.id !== user.id],
 
   // Articles
-  ['editArticle', (loggedInUser, article) => {
-    return loggedInUser.username !== article.author.username
+  ['editArticle', (loggedInUser, articleUsername) => {
+    return loggedInUser.username !== articleUsername
   }],
   ['likeArticle', (loggedInUser, article) => {
     if (loggedInUser.id === article.author.id) {
@@ -33,7 +33,7 @@ const permissions = [
   ['deleteArticle', (loggedInUser, article) => true],
 
   // Issues
-  ['editIssue', (loggedInUser, issue) => loggedInUser.username !== issue.author.username],
+  ['editIssue', (loggedInUser, issueUsername) => loggedInUser.username !== issueUsername],
   ['deleteIssue', (loggedInUser, article) => true],
 
   // Comments

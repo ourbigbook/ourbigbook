@@ -126,8 +126,8 @@ export interface EditorPageProps {
   titleSourceLine?: number;
 }
 
-function titleToId(loggedInUser, title) {
-  let ret = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`
+function titleToId(username, title) {
+  let ret = `${ourbigbook.AT_MENTION_CHAR}${username}`
   const topicId = ourbigbook.titleToId(title)
   if (topicId !== ourbigbook.INDEX_BASENAME_NOEXT) {
     ret += `/${topicId}`
@@ -135,8 +135,8 @@ function titleToId(loggedInUser, title) {
   return ret
 }
 
-function titleToPath(loggedInUser, title) {
-  return `${titleToId(loggedInUser, title)}.${ourbigbook.OURBIGBOOK_EXT}`
+function titleToPath(username, title) {
+  return `${titleToId(username, title)}.${ourbigbook.OURBIGBOOK_EXT}`
 }
 
 const idExistsCache = {}
@@ -225,16 +225,22 @@ export default function EditorPageHoc({
 
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
     let editor
+    let ownerUsername: string
+    if (isNew) {
+      ownerUsername = loggedInUser?.username
+    } else {
+      ownerUsername = initialArticle.author.username
+    }
     const finalConvertOptions = lodash.merge({
       db_provider: new RestDbProvider(),
       forbid_multiheader: isIssue ? undefined : forbidMultiheaderMessage,
-      input_path: initialFile?.path || titleToPath(loggedInUser, 'asdf'),
+      input_path: initialFile?.path || titleToPath(ownerUsername, 'asdf'),
       katex_macros: preload_katex(ourbigbook_tex),
       ourbigbook_json: {
         openLinksOnNewTabs: true,
       },
       read_include: read_include_web(cachedIdExists),
-      ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}`,
+      ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${ownerUsername}`,
     }, convertOptions)
     async function checkTitle(titleSource) {
       let titleErrors = []
@@ -251,7 +257,7 @@ export default function EditorPageHoc({
           }
           if (isNew) {
             // finalConvertOptions.input_path
-            const id = `${ourbigbook.AT_MENTION_CHAR}${loggedInUser.username}/${newTopicId}`
+            const id = `${ourbigbook.AT_MENTION_CHAR}${ownerUsername}/${newTopicId}`
             if (await cachedIdExists(id)) {
               titleErrors.push(`Article ID already taken: "${id}" `)
             }
@@ -401,11 +407,11 @@ export default function EditorPageHoc({
           }
         }
       }
-    }, [loggedInUser?.username])
-    async function checkParent(loggedInUser, title, otherTitle, display) {
+    })
+    async function checkParent(title, otherTitle, display) {
       const parentErrors = []
       if (title) {
-        const id = titleToId(loggedInUser, title)
+        const id = titleToId(ownerUsername, title)
         if (!(await cachedIdExists(id))) {
           parentErrors.push(`${display} ID "${id}" does not exist`)
         }
@@ -417,12 +423,12 @@ export default function EditorPageHoc({
     const handleParentTitle = async (e) => {
       const title = e.target.value
       setParentTitle(title)
-      await checkParent(loggedInUser, title, previousSiblingTitle, parentTitleDisplay)
+      await checkParent(title, previousSiblingTitle, parentTitleDisplay)
     }
     const handlePreviousSiblingTitle = async (e) => {
       const title = e.target.value
       setPreviousSiblingTitle(title)
-      await checkParent(loggedInUser, title, parentTitle, previousSiblingTitleDisplay)
+      await checkParent(title, parentTitle, previousSiblingTitleDisplay)
     }
     const handleTitle = async (e) => {
       const titleSource = e.target.value
@@ -469,16 +475,18 @@ export default function EditorPageHoc({
       } else {
         const opts: {
           list: boolean;
+          owner: string;
           path?: string;
           parentId?: string;
           previousSiblingId?: string;
         } = {
-          list
+          list,
+          owner: ownerUsername,
         }
         if (!isIndex) {
-          opts.parentId = titleToId(loggedInUser, parentTitle)
+          opts.parentId = titleToId(ownerUsername, parentTitle)
           if (previousSiblingTitle) {
-            opts.previousSiblingId = titleToId(loggedInUser, previousSiblingTitle)
+            opts.previousSiblingId = titleToId(ownerUsername, previousSiblingTitle)
           }
         }
         if (isNew) {

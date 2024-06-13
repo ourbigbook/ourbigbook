@@ -132,7 +132,7 @@ const Article = ({
     articlesInSamePageMap[article.slug] = article
   }
   const webElemToRootMap = React.useRef(new Map())
-  const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
+  const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
   const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
   const aElemToMetaMap = React.useRef(new Map())
 
@@ -411,61 +411,59 @@ const Article = ({
                 }
               </>
             }
-            {canEdit
-              ? <>
-                  {' '}
-                  <span>
-                    {false && <>TODO: convert this a and all other injected links to Link. https://github.com/ourbigbook/ourbigbook/issues/274</> }
-                    <a
-                      href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
-                      className="btn edit"
-                    >
-                      <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
+            {canEdit &&
+              <>
+                {' '}
+                <span>
+                  {false && <>TODO: convert this a and all other injected links to Link. https://github.com/ourbigbook/ourbigbook/issues/274</> }
+                  <a
+                    href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
+                    className="btn edit"
+                  >
+                    <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
+                  </a>
+                </span>
+                {' '}
+                {!isIssue &&
+                  <>
+                    <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is the first child of this one">
+                      {' '}<NewArticleIcon title={false}/>
+                      {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
+                      <i className="ion-arrow-down-c"/>{toplevel ? <> Create child<span className="mobile-hide"> article</span></> : ''}{' '}
                     </a>
-                  </span>
-                  {' '}
-                  {!isIssue &&
-                    <>
-                      <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is the first child of this one">
-                        {' '}<NewArticleIcon title={false}/>
-                        {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
-                        <i className="ion-arrow-down-c"/>{toplevel ? <> Create child<span className="mobile-hide"> article</span></> : ''}{' '}
+                    {' '}
+                    {!isIndex &&
+                      <a
+                        href={routes.articleNew({ 'parent-title': curArticle.parentTitle, 'previous-sibling': curArticle.titleSource })}
+                        className="btn new"
+                        title="Create a new article that is the next sibling of this one"
+                      >
+                        {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? <> Create sibling<span className="mobile-hide"> article</span></> : ''}{' '}
                       </a>
+                    }
+                  </>
+                }
+              </>
+            }
+            {!(isIssue || isIndex) &&
+              <>
+                {(curArticle.hasSameTopic)
+                  ? <>
+                      {article.slug !== mySlug &&
+                        <>
+                          {' '}
+                          <a href={routes.article(mySlug)} className="btn see" title="See my version of this topic">
+                              {' '}<SeeIcon title={false}/>{toplevel ? ' See My Version' : ''}{' '}
+                          </a>
+                        </>
+                      }
+                    </>
+                  : <>
                       {' '}
-                      {!isIndex &&
-                        <a
-                          href={routes.articleNew({ 'parent-title': curArticle.parentTitle, 'previous-sibling': curArticle.titleSource })}
-                          className="btn new"
-                          title="Create a new article that is the next sibling of this one"
-                        >
-                          {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? <> Create sibling<span className="mobile-hide"> article</span></> : ''}{' '}
-                        </a>
-                      }
+                      <CreateMyOnVersionOfThisTopic titleSource={curArticle.titleSource} toplevel={toplevel} />
                     </>
-                  }
-                </>
-              : <>
-                  {!(isIssue || isIndex) &&
-                    <>
-                      {(curArticle.hasSameTopic)
-                        ? <>
-                            {article.slug !== mySlug &&
-                              <>
-                                {' '}
-                                <a href={routes.article(mySlug)} className="btn see" title="See my version of this topic">
-                                    {' '}<SeeIcon title={false}/>{toplevel ? ' See My Version' : ''}{' '}
-                                </a>
-                              </>
-                            }
-                          </>
-                        : <>
-                            {' '}
-                            <CreateMyOnVersionOfThisTopic titleSource={curArticle.titleSource} toplevel={toplevel} />
-                          </>
-                      }
-                    </>
-                  }
-                </>
+                }
+              </>
             }
             {(false && canDelete) &&
               <>

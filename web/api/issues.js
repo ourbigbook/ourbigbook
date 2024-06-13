@@ -218,7 +218,7 @@ router.put('/:number', auth.required, async function(req, res, next) {
       sequelize.models.User.findByPk(req.payload.id),
     ])
     const article = issue.article
-    if (cant.editIssue(loggedInUser, issue)) {
+    if (cant.editIssue(loggedInUser, issue.author.username)) {
       return res.sendStatus(403)
     }
     const body = lib.validateParam(req, 'body')

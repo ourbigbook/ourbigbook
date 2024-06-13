@@ -74,7 +74,7 @@ const ArticlePageHoc = (isIssue=false) => {
     )
     const showOthers = topicArticleCount !== undefined && topicArticleCount > 1
     const showCreateMyOwn = !loggedInUser || author.username !== loggedInUser.username
-    const canEdit = isIssue ? !cant.editIssue(loggedInUser, article) : !cant.editArticle(loggedInUser, article)
+    const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
     const handleDelete = async () => {
       if (!loggedInUser) return;
       const result = window.confirm("Do you really want to delete this article?");

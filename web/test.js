@@ -117,7 +117,7 @@ function assertStatus(status, data) {
 }
 
 async function createArticleApi(test, article, opts={}) {
-  if (opts.parentId === undefined && test.user) {
+  if (!opts.hasOwnProperty('parentId') && test.user) {
     opts = Object.assign({ parentId: `${ourbigbook.AT_MENTION_CHAR}${test.user.username}` }, opts)
   }
   return test.webApi.articleCreate(article, opts)
@@ -4378,5 +4378,58 @@ it(`api: /hash: cleanupIfDeleted is correct`, async () => {
       { path: '@user0/index.bigb', cleanupIfDeleted: true, },
       { path: '@user0/mathematics.bigb', cleanupIfDeleted: true, },
     ])
+  })
+})
+
+it(`api: admin can edit other user's articles`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    const user2 = await test.createUserApi(2)
+    await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user2' } })
+    test.loginUser(user0)
+
+    // Create article as user0
+    article = createArticleArg({ i: 0 })
+    ;({data, status} = await createArticleApi(test, article))
+    assertStatus(status, data)
+    assertRows(data.articles, [{ titleRender: 'Title 0' }])
+
+    // Sanity check.
+    ;({data, status} = await test.webApi.article('user0/title-0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.file.bodySource, 'Body 0.')
+
+    // owner that does not exist fails gracefully
+    test.loginUser(user1)
+    article = createArticleArg({ i: 0, bodySource: 'hacked' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { owner: 'idontexist', parentId: undefined }))
+    assert.strictEqual(status, 403)
+
+    // Non-admin cannot edit other users' articles
+    test.loginUser(user1)
+    article = createArticleArg({ i: 0, bodySource: 'hacked' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { owner: 'user0', parentId: undefined }))
+    assert.strictEqual(status, 403)
+
+    // Article unchanged.
+    ;({data, status} = await test.webApi.article('user0/title-0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.file.bodySource, 'Body 0.')
+
+    // Admin can edit other users' articles
+    test.loginUser(user2)
+    article = createArticleArg({ i: 0, bodySource: 'hacked' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { owner: 'user0', parentId: undefined }))
+    assertStatus(status, data)
+    test.loginUser(user0)
+
+    // Article changed.
+    ;({data, status} = await test.webApi.article('user0/title-0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.file.bodySource, 'hacked')
   })
 })

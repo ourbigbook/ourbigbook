@@ -6950,6 +6950,7 @@ e.g.:
 ``
 out/publish/out/local
 ``
+This option implies the <--publish> option.
 
 = `--publish-target github-pages`
 {parent=`--publish-target`}
@@ -6961,6 +6962,7 @@ Publish to <#GitHub Pages>. See also: <Publish to GitHub Pages>{full}.
 
 Publish as a local directory that can be zipped and sent to someone else, and then correctly viewed by a browser locally by the receiver. You can then zip it from the Linux command line for example with:
 ``
+ourbigbook --publish-target local
 cd out/publish/out
 zip -r local.zip local
 ``

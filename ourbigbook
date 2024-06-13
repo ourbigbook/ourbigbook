@@ -1324,7 +1324,7 @@ if (cli.helpMacros) {
   let input;
   let title;
   let output;
-  let publish = cli.publish || cli.publishCommit !== undefined || cli.publishNoConvert
+  let publish = cli.publish || cli.publishCommit !== undefined || cli.publishNoConvert || cli.publishTarget !== undefined
   let htmlXExtension;
   let input_dir;
   const web = cli.web || cli.webTest || cli.nestedSet

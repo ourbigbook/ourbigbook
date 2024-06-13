@@ -7,6 +7,18 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= Unlisted articles on web
+{parent=News}
+{tag=OurBigBook Web}
+
+It is now possible to mark articles as unlisted on <OurBigBook Web>: </OurBigBook Web unlisted articles>{full}.
+
+The most important effect of this is that unlisted articles don't show on the table of contents of its ancestors. They also don't show on many article listing by default, e.g. on the list of user's latest articles.
+
+The main use case we have for this feature right now is to stop polluting the table of contents with articles a user does not wish to show, and especially when doing <local to Web upload>, where Web articles are marked as unlisted by default if they are deleted locally.
+
+We offer unlisted as an alternative to deletion for now because of the general philosophy what "permalinks should never break". This is currently not true as we don't have article history and therefore no permalinks. However, once history is implemented, we want to make it so links to specific versions will never ever break by forbidding article and history deletion entirely. Marking articles as unlisted will then allows to prevent deletion, while still keeping table of contents tidy.
+
 = A few articles in same topic are shown at the bottom of every article page
 {parent=News}
 {tag=Topic}

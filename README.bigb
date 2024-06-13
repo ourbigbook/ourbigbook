@@ -10070,9 +10070,7 @@ A simple way to develop is to edit the Vundle repository directly under `~/.vim/
 
 There are two versions of this editor:
 * <static editor>: a browser-only toy/demo with no persistent storage
-* a similar looking editor will also appear on the <OurBigBook Web>, but this time linked to the database.
-
-  That more advanced editor will actually save results back to the database, and show allow preview of features such as linking to headers of other pages.
+* <web editor>: this is editor present in <OurBigBook Web>. It is linked to the database, and has further features added on top of the <static editor>.
 
 Issues for the editor are being tracked under: https://github.com/ourbigbook/ourbigbook/labels/editor
 
@@ -10153,6 +10151,11 @@ You can also speed up the interactive development loop of editor.html with:
 npm run webpack-dev
 ``
 as usual when dealing with the <`dist` directory>.
+
+= Web editor
+{parent=Browser editor with preview}
+
+This is editor present in <OurBigBook Web>. It is linked to the database, and has further features added on top of the <static editor>.
 
 = Error reporting
 {parent=Tooling}

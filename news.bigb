@@ -19,6 +19,36 @@ The main use case we have for this feature right now is to stop polluting the ta
 
 We offer unlisted as an alternative to deletion for now because of the general philosophy what "permalinks should never break". This is currently not true as we don't have article history and therefore no permalinks. However, once history is implemented, we want to make it so links to specific versions will never ever break by forbidding article and history deletion entirely. Marking articles as unlisted will then allows to prevent deletion, while still keeping table of contents tidy.
 
+\Image[feature/unlisted-articles/article-page.png]
+{provider=github}
+{border}
+{height=612}
+{description=The unlisted status is shown as a pill on the article metadata.}
+
+\Image[feature/unlisted-articles/topic.png]
+{provider=github}
+{border}
+{height=276}
+{description=Unlisted articles don't show by default on the topics page, but it is possible to show them by clicking the link at the bottom of the page.}
+
+\Image[feature/unlisted-articles/topic-show.png]
+{provider=github}
+{border}
+{height=621}
+{description=After that, unlisted articles are also shown.}
+
+\Image[feature/unlisted-articles/editor.png]
+{provider=github}
+{border}
+{height=425}
+{description=A new metadata tab was added to the <web editor>.}
+
+\Image[feature/unlisted-articles/editor-metadata.png]
+{provider=github}
+{border}
+{height=398}
+{description=The unlisted status can be seen and edited from the newly added metadata tab of the web editor.}
+
 = A few articles in same topic are shown at the bottom of every article page
 {parent=News}
 {tag=Topic}

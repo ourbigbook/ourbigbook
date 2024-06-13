@@ -14,6 +14,7 @@ import {
   SeeIcon,
   TopicIcon,
   useEEdit,
+  useEEditIssue,
 } from 'front'
 import { webApi } from 'front/api'
 import { cant } from 'front/cant'
@@ -82,7 +83,11 @@ const ArticlePageHoc = (isIssue=false) => {
       await webApi.articleDelete(article.slug);
       Router.push(`/`);
     };
-    useEEdit(canEdit, article.slug)
+    if (isIssue) {
+      useEEditIssue(canEdit, issueArticle.slug, article.number)
+    } else {
+      useEEdit(canEdit, article.slug)
+    }
     const handleShortFragmentSkipOnce = React.useRef(false)
     return (
       <>

@@ -274,7 +274,10 @@ export function useCtrlEnterSubmit(handleSubmit) {
   }, [handleSubmit]);
 }
 
-export function useEEdit(canEdit, slug) {
+export function useEEdit(
+  canEdit: boolean,
+  slug: string,
+) {
   React.useEffect(() => {
     function listener(e) {
       if (e.code === 'KeyE') {
@@ -290,6 +293,26 @@ export function useEEdit(canEdit, slug) {
       }
     }
   }, [canEdit, slug]);
+}
+
+export function useEEditIssue(
+  canEdit: boolean,
+  slug: string,
+  number: number,
+) {
+  React.useEffect(() => {
+    function listener(e) {
+      if (e.code === 'KeyE') {
+        if (canEdit) {
+          Router.push(routes.issueEdit(slug, number))
+        }
+      }
+    }
+    document.addEventListener('keydown', listener);
+    return () => {
+      document.removeEventListener('keydown', listener);
+    }
+  }, [canEdit, slug, number]);
 }
 
 /** Add a window event listener but only for the current page.

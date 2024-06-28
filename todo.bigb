@@ -4,6 +4,15 @@
 
 == Issues
 
+=== Vs Code symbol provider
+{tag=Visual Studio Code}
+
+Allow you to Ctrl + Click on any internal link such as `\x[]` and jump to the corresponding header.
+
+https://code.visualstudio.com/api/language-extensions/programmatic-language-feature
+
+We'd just use the SQLite database with some exiting wrapper function most likely. Hardest part is likely calculating the target ID.
+
 === Encrypted client hello
 {tag=Web}
 

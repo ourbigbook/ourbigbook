@@ -181,8 +181,6 @@ This is why when creating large documents, you should use `parent` exclusively.
 == Tags
 {title2=child and parent arguments}
 
-You can use the `{child}` or `{parent}` arguments of a link to tags headers with the current header.
-
 These will show up on the metadata of a given header.
 
 Note that metadata is only visible when the header is the toplevel header of a page, otherwise it would clutter your headers too much, so it is not very easy to see in this single page example.
@@ -194,12 +192,13 @@ But all headers get their own toplevel pages when using split headers: https://d
 ==== Ant
 
 ==== Cow
+{tag=Mammal}
 
 Oh, and cows are also \x[mammal]{parent}{p}.
 
 ==== Flying animal
 
-\x[bat]{child}{c}{p} can fly.
+\x[bat]{c}{p} can fly.
 
 But \x[cat]{p} can't.
 
@@ -208,6 +207,7 @@ But \x[cat]{p} can't.
 ===== Cat
 
 ===== Bat
+{tag=Flying animal}
 
 == Mostly testing now I confess
 

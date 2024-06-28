@@ -2,8 +2,6 @@
 
 This file is, surprisingly, not the README. It is used for multifile tests. It is also smaller and therefore compiles faster.
 
-A test child link to another section: <not readme 2>{child}.
-
 == h2 in not the README
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]

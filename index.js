@@ -1221,6 +1221,10 @@ class MacroArgument {
       // https://docs.ourbigbook.com#boolean-named-arguments
       options.default = undefined;
     }
+    if (!('disabled' in options)) {
+      // https://docs.ourbigbook.com/disabled-macro-argument
+      options.disabled = false;
+    }
     if (!('mandatory' in options)) {
       // https://docs.ourbigbook.com#mandatory-positional-arguments
       options.mandatory = false;
@@ -1241,6 +1245,7 @@ class MacroArgument {
     }
     this.boolean = options.boolean;
     this.count_words = options.count_words;
+    this.disabled = options.disabled;
     this.multiple = options.multiple;
     this.default = options.default;
     this.elide_link_only = options.elide_link_only;
@@ -3136,6 +3141,7 @@ function convertInitContext(options={}, extra_returns={}) {
           }
         }
       }
+      if (!('enableArg' in ourbigbook_json)) { ourbigbook_json.enableArg = {}; }
       if (!('h' in ourbigbook_json)) { ourbigbook_json.h = {}; }
       if (!('htmlXExtension' in ourbigbook_json)) { ourbigbook_json.htmlXExtension = undefined; }
       if (!('numbered' in ourbigbook_json.h)) { ourbigbook_json.h.numbered = true; }
@@ -5384,7 +5390,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       } else if (macro_name === Macro.X_MACRO_NAME) {
         if (header_title_ast_ancestors.length > 0 && ast.args.content === undefined) {
-          const message = 'x without content inside title of a header: https://docs.ourbigbook.com#x-within-title-restrictions'
+          const message = `x without content inside title of a header: ${OURBIGBOOK_DEFAULT_DOCS_URL}/x-within-title-restrictions`
           ast.args.content = new AstArgument(
             [ new PlaintextAstNode(' ' + errorMessageInOutput(message), ast.source_location) ],
             ast.source_location
@@ -6921,6 +6927,20 @@ ${ast.toString()}`)
     const macro_arg = name_to_arg[argname];
     if (argname in ast.args) {
       ast.validation_output[argname].given = true;
+      if (
+        macro_arg.disabled &&
+        !(
+          context.options.ourbigbook_json.enableArg &&
+          context.options.ourbigbook_json.enableArg[macro_name] &&
+          context.options.ourbigbook_json.enableArg[macro_name][argname]
+        )
+      ) {
+        const arg = ast.args[argname]
+        ast.validation_error = [
+          `disabled argument "${argname}" of macro "${macro_name}": ${OURBIGBOOK_DEFAULT_DOCS_URL}/disabled-macro-argument`,
+          arg.source_location,
+        ];
+      }
     } else {
       ast.validation_output[argname].given = false;
       if (macro_arg.mandatory) {
@@ -7687,6 +7707,8 @@ const IMAGE_EXTENSIONS = new Set([
 const MULTILINE_CAPTION_CLASS = 'multiline'
 const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
 exports.OURBIGBOOK_JSON_BASENAME = OURBIGBOOK_JSON_BASENAME
+const OURBIGBOOK_DEFAULT_HOST = 'ourbigbook.com'
+const OURBIGBOOK_DEFAULT_DOCS_URL = `https://docs.${OURBIGBOOK_DEFAULT_HOST}`
 const OURBIGBOOK_JSON_DEFAULT = {
   htmlXExtension: true,
   id: {
@@ -7696,7 +7718,7 @@ const OURBIGBOOK_JSON_DEFAULT = {
     },
   },
   web: {
-    host: 'ourbigbook.com',
+    host: OURBIGBOOK_DEFAULT_HOST,
     hostCapitalized: 'OurBigBook.com',
     link: false,
     username: undefined,
@@ -8160,6 +8182,7 @@ const DEFAULT_MACRO_LIST = [
         new MacroArgument({
           name: Macro.HEADER_CHILD_ARGNAME,
           multiple: true,
+          disabled: true,
         }),
         new MacroArgument({
           name: 'file',
@@ -8574,6 +8597,7 @@ const DEFAULT_MACRO_LIST = [
           // https://github.com/ourbigbook/ourbigbook/issues/92
           name: 'child',
           boolean: true,
+          disabled: true,
         }),
         new MacroArgument({
           name: 'file',
@@ -8595,6 +8619,7 @@ const DEFAULT_MACRO_LIST = [
           // https://github.com/ourbigbook/ourbigbook/issues/92
           name: 'parent',
           boolean: true,
+          disabled: true,
         }),
         new MacroArgument({
           name: 'ref',

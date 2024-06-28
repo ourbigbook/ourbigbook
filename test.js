@@ -2630,8 +2630,13 @@ assert_lib_error('x: cross reference undefined fails gracefully', '\\x[ab]', 1, 
 assert_lib_error('x: cross reference with child to undefined id fails gracefully',
   `= h1
 
-\\x[ab]{child}
+\\x[ab]
 `, 3, 3, undefined, {toplevel: true});
+assert_lib_error('x: using a disabled macro argument fails gracefully',
+  `= h1
+
+\\x[h1]{child}
+`, 3, 7, undefined, {toplevel: true});
 // https://docs.ourbigbook.com#order-of-reported-errors
 assert_lib_error('x: cross reference undefined errors show after other errors',
   `= a
@@ -3969,7 +3974,8 @@ assert_lib_error('cross reference with parent to undefined ID does not throw',
 
 \\x[bb]{parent}
 `,
-  3, 3
+  3, 3, undefined,
+  { convert_opts: { ourbigbook_json: { enableArg: { 'x': { 'parent': true } } } } },
 )
 
 // Scope.
@@ -4288,6 +4294,10 @@ assert_lib(
   {
     convert_opts: {
       split_headers: true,
+      ourbigbook_json: { enableArg: {
+        'H': { 'child': true },
+        'x': { 'child': true },
+      } },
     },
     convert_dir: true,
     filesystem: {
@@ -5010,7 +5020,8 @@ assert_lib_error('header: child argument to id that does not exist gives an erro
 
 == 2
 `,
-  3, 1
+  3, 1, undefined,
+  { convert_opts: { ourbigbook_json: { enableArg: { 'H': { 'child': true } } } } },
 )
 assert_lib_error('header: tag argument to id that does not exist gives an error',
   `= 1
@@ -5024,6 +5035,7 @@ assert_lib_error('header: tag argument to id that does not exist gives an error'
 assert_lib('header: tag and child argument does title to ID conversion',
   {
     convert_dir: true,
+    convert_opts: { ourbigbook_json: { enableArg: { 'H': { 'child': true } } } },
     filesystem: {
       'notindex.bigb': `= 1
 
@@ -6254,7 +6266,10 @@ assert_lib_stdin('lint h-tag child pass',
 
 == 2
 `,
-  { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'child', } } } }
+  { convert_opts: { ourbigbook_json: {
+    lint: { 'h-tag': 'child' },
+    enableArg: { 'H': { 'child': true } },
+  } } }
 )
 assert_lib_error('lint h-tag tag failure',
   `= 1
@@ -7496,6 +7511,7 @@ assert_lib('include: include of a header with a tag or child in a third file doe
 `,
     },
     convert_dir: true,
+    convert_opts: { ourbigbook_json: { enableArg: { 'H': { 'child': true } } } },
   }
 )
 assert_cli('include: tags show on embed include',
@@ -8669,6 +8685,7 @@ assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
 `,
     },
     convert_dir: true,
+    convert_opts: { ourbigbook_json: { enableArg: { 'H': { 'child': true } } } },
     assert_bigb: {
       'notindex.bigb': `= Notindex
 
@@ -10060,6 +10077,10 @@ assert_cli(
 
 \\x[index]{parent}
 `,
+      'ourbigbook.json': `{ "enableArg": { "x": {
+  "child": true,
+  "parent": true
+} } }`,
     },
     assert_xpath: {
       'out/html/index.html': [

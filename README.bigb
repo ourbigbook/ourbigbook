@@ -6,7 +6,7 @@
 {c}
 {synonym}
 
-The \b[OurBigBook Project] is creating the ultimate tool to <publish> \b[textbooks]/\b[<#personal knowledge bases>]/\b[<#Zettelkasten>]/\b[<#digital gardens>] in the <#learn in public> philosophy. It is our best shot yet at the final \b[real-world <#Encyclopedia Galactica>] by allowing effective \b[<#mindmeld>[mind melding]]/\b[<#collective intelligence>] via the \b[<topics feature>].
+\b[https://OurBigBook.com[]]: The \b[OurBigBook Project] is creating the ultimate tools to <publish> \b[textbooks]/\b[<#personal knowledge bases>]/\b[<#Zettelkasten>]/\b[<#digital gardens>] in the <#learn in public> philosophy. It is our best shot yet at the final \b[real-world <#Encyclopedia Galactica>] by allowing effective \b[<#mindmeld>[mind melding]]/\b[<#collective intelligence>] via the \b[<topics feature>].
 
 \Image[logo.svg]
 {height=150}
@@ -16,7 +16,7 @@ The \b[OurBigBook Project] is creating the ultimate tool to <publish> \b[textboo
 
 \b[Ultimate goal]: destroy the currently grossly inefficient education system and replace it with a much more inspiring system where people learn what they want as fast as possible to reach their goals faster without so much useless pain.
 
-\b[How to get there]: <OurBigBook Web>[create a website] that incentivizes learners (notably university students taking courses) to write freely licensed university-level natural science books in their own words for free. Their motivation for doing that are:
+\b[How to get there]: <OurBigBook Web>[create a website] (live at \b[https://OurBigBook.com[]]) that incentivizes learners (notably university students taking courses) to write freely licensed university-level natural science books in their own words for free. Their motivation for doing that are:
 * getting their knowledge globally recognized and thus better jobs
 * improving the world
 * learning by teaching

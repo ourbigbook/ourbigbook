@@ -27,11 +27,11 @@ header {
     margin-left: 0;
     margin-right: 0;
     padding-left: 10px;
+    padding-right: 10px;
+    text-decoration: none;
     &:first-child {
       padding-left: 0;
     }
-    padding-right: 10px;
-    text-decoration: none;
     &.font-awesome-container {
       font-weight: normal;
       padding-left: 5px;
@@ -40,6 +40,16 @@ header {
     img {
       height: 100%;
       margin-right: 0.1em;
+    }
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      .mobile-show {
+        display: none;
+      }
+    }
+    @media only screen and (max-width: $max-mobile-width) {
+      .mobile-hide {
+        display: none;
+      }
     }
 
     // Color

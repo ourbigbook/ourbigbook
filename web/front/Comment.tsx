@@ -16,8 +16,10 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
     query: { number: issueNumber, slug },
   } = router;
   const handleDelete = async (commentId) => {
-    await webApi.commentDelete((slug as string[]).join('/'), issueNumber, comment.number)
-    setComments(comments => comments.filter(comment => comment.id !== id))
+    if (confirm('Are you sure you want to delete this comment?')) {
+      await webApi.commentDelete((slug as string[]).join('/'), issueNumber, comment.number)
+      setComments(comments => comments.filter(comment => comment.id !== id))
+    }
   };
   const targetId = `${config.commentIdPrefix}${comment.number}`
   return (

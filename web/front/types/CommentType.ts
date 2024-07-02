@@ -6,12 +6,12 @@ export interface Comments {
 }
 
 export type CommentType = {
-  issue?: IssueType;
-  createdAt: number;
-  number: number;
-  id: string;
-  source: string;
-  render: string;
   author?: UserType;
+  createdAt: number;
+  id: string;
+  issue?: IssueType;
+  number: number;
+  render: string;
+  source: string;
   updatedAt: number;
 };

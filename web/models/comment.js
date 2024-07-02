@@ -59,14 +59,20 @@ module.exports = (sequelize) => {
       order = [['createdAt', 'DESC']]
     }
     return sequelize.models.Comment.findAndCountAll({
-      include: [{
-        model: sequelize.models.Issue,
-        as: 'issue',
-        include: [{
-          model: sequelize.models.Article,
-          as: 'article',
-        }],
-      }],
+      include: [
+        {
+          model: sequelize.models.User,
+          as: 'author',
+        },
+        {
+          model: sequelize.models.Issue,
+          as: 'issue',
+          include: [{
+            model: sequelize.models.Article,
+            as: 'article',
+          }],
+        },
+      ],
       limit,
       offset,
       order,

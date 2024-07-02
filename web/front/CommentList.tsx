@@ -55,7 +55,7 @@ const CommentList = ({
                       key={slug}>
                       {showAuthor &&
                         <td className="shrink">
-                          <UserLinkWithImage showUsername={false} user={article.author} />
+                          <UserLinkWithImage showUsername={false} user={comment.author} />
                         </td>
                       }
                       <td className="shrink bold">

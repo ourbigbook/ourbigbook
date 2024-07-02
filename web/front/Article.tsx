@@ -404,7 +404,7 @@ const Article = ({
                   </>
                 }
                 */}
-                {!article.list &&
+                {article.list === false &&
                   <>
                     {' '}
                     <span className="pill"><UnlistedIcon /> unlisted</span>

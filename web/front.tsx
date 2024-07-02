@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import Router from 'next/router'
 import { mutate } from 'swr'
 
@@ -24,10 +25,10 @@ export function capitalize(s) {
   return s[0].toUpperCase() + s.slice(1)
 }
 
-export function CreateMyOnVersionOfThisTopic({ titleSource, toplevel } : { titleSource: string, toplevel: boolean}) {
-  return <a href={routes.articleNew({ title: titleSource })} className="btn new" title="Create my version of this topic">
+export function CreateMyOwnVersionOfThisTopic({ titleSource, toplevel } : { titleSource: string, toplevel: boolean}) {
+  return <Link href={routes.articleNew({ title: titleSource })} className="btn new" title="Create my version of this topic">
     {' '}<NewArticleIcon title={false}/>{toplevel ? ' Create my own version' : ''}{' '}
-  </a>
+  </Link>
 }
 
 export function decapitalize(s) {

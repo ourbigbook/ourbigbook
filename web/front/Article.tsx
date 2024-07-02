@@ -8,7 +8,7 @@ import { commentsHeaderId } from 'front/config'
 import { formatDate } from 'front/date'
 import {
   ArrowUpIcon,
-  CreateMyOnVersionOfThisTopic,
+  CreateMyOwnVersionOfThisTopic,
   CommentIcon,
   DeleteIcon,
   EditArticleIcon,
@@ -461,7 +461,7 @@ const Article = ({
                     </>
                   : <>
                       {' '}
-                      <CreateMyOnVersionOfThisTopic titleSource={curArticle.titleSource} toplevel={toplevel} />
+                      <CreateMyOwnVersionOfThisTopic titleSource={curArticle.titleSource} toplevel={toplevel} />
                     </>
                 }
               </>
@@ -551,7 +551,7 @@ const Article = ({
               } else {
                 goToTargetInPage = false
                 const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
-                a.href = url.pathname + (frag ? ('#' + frag) : '')
+                a.href = url.pathname + url.search + (frag ? ('#' + frag) : '')
               }
               a.addEventListener('click', e => {
                 if (

@@ -3,6 +3,7 @@ import React from 'react'
 import {
   AppContext,
   ArticleIcon,
+  CommentIcon,
   DiscussionAbout,
   IssueIcon,
   NewArticleIcon,
@@ -12,21 +13,26 @@ import {
   UserIcon,
 } from 'front'
 import ArticleList from 'front/ArticleList'
+import CommentList from 'front/CommentList'
 import UserList from 'front/UserList'
 import CustomLink from 'front/CustomLink'
 import routes from 'front/routes'
-import { ArticleType } from 'front/types/ArticleType'
-import { IssueType } from 'front/types/IssueType'
 import FollowArticleButton from 'front/FollowArticleButton'
+
+import { ArticleType } from 'front/types/ArticleType'
+import { CommentType } from 'front/types/CommentType'
+import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 import { TopicType } from 'front/types/TopicType'
 
 export interface IndexPageProps {
   articles?: (ArticleType & IssueType & TopicType)[];
   articlesCount?: number;
+  comments?: CommentType[];
+  commentsCount?: number;
   issueArticle?: ArticleType;
   followed?: boolean;
-  itemType?: 'article' | 'discussion' | 'topic' | 'user';
+  itemType?: 'article' | 'comment' | 'discussion' | 'topic' | 'user';
   loggedInUser?: UserType;
   order: string;
   page: number;
@@ -42,6 +48,8 @@ function IndexPageHoc({
   return ({
     articles,
     articlesCount,
+    comments,
+    commentsCount,
     followed=false,
     issueArticle,
     itemType,
@@ -104,7 +112,7 @@ function IndexPageHoc({
                       className={`tab-item${itemType === 'article' && order === 'createdAt' && followed ? ' active' : ''}`}
                       href={routes.articlesFollowed()}
                     >
-                      <ArticleIcon /> Latest Followed
+                      <ArticleIcon /> New Followed
                     </CustomLink>
                     <CustomLink
                       className={`tab-item${itemType === 'article' && order === 'score' && followed ? ' active' : ''}`}
@@ -118,7 +126,7 @@ function IndexPageHoc({
                   className={`tab-item${itemType === 'article' && order === 'createdAt' && !followed ? ' active' : ''}`}
                   href={(isIssue && !isHomepage) ? routes.issues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
                 >
-                  <ArticleIcon /> Latest<span className="mobile-hide"> Articles</span>
+                  <ArticleIcon /> New<span className="mobile-hide"> Articles</span>
                 </CustomLink>
                 <CustomLink
                   className={`tab-item${(itemType === 'article' || itemType === 'discussion') && order === 'score' && !followed ? ' active' : ''}`}
@@ -144,13 +152,19 @@ function IndexPageHoc({
               className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
               href={isHomepage ? routes.issuesAll() : routes.issues(issueArticle.slug)}
             >
-              <IssueIcon /> Latest<span className="mobile-hide"> Discussions</span>
+              <IssueIcon /> New<span className="mobile-hide"> Discussions</span>
             </CustomLink>
             <CustomLink
               className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
               href={isHomepage ? routes.issuesAll({ sort: 'score' }) : routes.issues(issueArticle.slug, { sort: 'score' })}
             >
               <IssueIcon /> Top<span className="mobile-hide"> Discussions</span>
+            </CustomLink>
+            <CustomLink
+              className={`tab-item${itemType === 'comment' ? ' active' : ''}`}
+              href={routes.comments({ sort: 'created' })}
+            >
+              <CommentIcon /> New Comments
             </CustomLink>
             {!isHomepage &&
               <span className='tab-item'>
@@ -179,7 +193,14 @@ function IndexPageHoc({
                 users,
                 usersCount,
               }}/>
-            : <ArticleList {...{
+            : itemType === 'comment'
+              ? <CommentList {...{
+                  comments,
+                  commentsCount,
+                  page,
+                  showAuthor: true,
+                }}/>
+              : <ArticleList {...{
                 articles,
                 articlesCount,
                 followed,

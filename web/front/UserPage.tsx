@@ -4,6 +4,7 @@ import React from 'react'
 import {
   AppContext,
   ArticleIcon,
+  CommentIcon,
   useEEdit,
   HomeIcon,
   IssueIcon,
@@ -11,6 +12,7 @@ import {
   UserIcon,
 } from 'front'
 import ArticleList from 'front/ArticleList'
+import CommentList from 'front/CommentList'
 import { cant  } from 'front/cant'
 import config from 'front/config'
 import CustomLink from 'front/CustomLink'
@@ -38,9 +40,10 @@ export interface UserPageProps {
   articlesInSamePageForToc?: ArticleType[];
   commentCountByLoggedInUser?: number;
   comments?: CommentType[];
+  commentsCount?: number;
   incomingLinks?: ArticleLinkType[];
   issuesCount?: number;
-  itemType?: 'article' | 'discussion' | 'like'| 'topic' | 'user';
+  itemType?: 'article' | 'comment' | 'discussion' | 'like'| 'topic' | 'user';
   latestIssues?: IssueType[];
   loggedInUser?: UserType;
   order: string;
@@ -51,7 +54,17 @@ export interface UserPageProps {
   user: UserType;
   users?: UserType[];
   usersCount?: number;
-  what: 'follows' | 'followed' | 'followed-articles' | 'home' | 'liked' | 'likes' | 'user-issues' | 'user-articles';
+  what:
+    'followed' |
+    'followed-articles' |
+    'follows' |
+    'home' |
+    'liked' |
+    'likes' |
+    'user-articles' |
+    'user-comments' |
+    'user-issues'
+  ;
 }
 
 export default function UserPage({
@@ -62,6 +75,7 @@ export default function UserPage({
   articlesInSamePageForToc,
   ancestors,
   comments,
+  commentsCount,
   commentCountByLoggedInUser,
   incomingLinks,
   issuesCount,
@@ -97,6 +111,9 @@ export default function UserPage({
       break
     case 'likes':
       paginationUrlFunc = page => routes.userLikes(user.username, { page })
+      break
+    case 'user-comments':
+      paginationUrlFunc = page => routes.userComments(user.username, { page })
       break
     case 'user-issues':
       paginationUrlFunc = page => routes.userIssues(user.username, { page, sort: order })
@@ -175,7 +192,7 @@ export default function UserPage({
             href={routes.userArticles(username,  { sort: 'created' })}
             className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
           >
-            <ArticleIcon /> Latest
+            <ArticleIcon /> New
           </CustomLink>
           <CustomLink
             href={routes.userLikes(username)}
@@ -211,13 +228,19 @@ export default function UserPage({
             href={routes.userIssues(user.username, { sort: 'created' })}
             className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
           >
-            <IssueIcon /> Latest<span className="mobile-hide"> Discussions</span>
+            <IssueIcon /> New<span className="mobile-hide"> Discussions</span>
           </CustomLink>
           <CustomLink
             href={routes.userIssues(user.username, { sort: 'score' })}
             className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
           >
             <IssueIcon /> Top<span className="mobile-hide"> Discussions</span>
+          </CustomLink>
+          <CustomLink
+            href={routes.userComments(user.username, { sort: 'created' })}
+            className={`tab-item${itemType === 'comment' && order === 'createdAt' ? ' active' : ''}`}
+          >
+            <CommentIcon /> New<span className="mobile-hide"> Comments</span>
           </CustomLink>
         </div>
       </div>
@@ -252,6 +275,16 @@ export default function UserPage({
           paginationUrlFunc,
           showAuthor: what === 'likes' || what === 'followed-articles',
           what,
+        }}/>
+      </div>
+    }
+    {itemType === 'comment' &&
+      <div className="content-not-ourbigbook">
+        <CommentList {...{
+          comments,
+          commentsCount,
+          page,
+          showAuthor: false,
         }}/>
       </div>
     }

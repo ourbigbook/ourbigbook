@@ -44,25 +44,59 @@ module.exports = (sequelize) => {
     })
   }
 
+  Comment.getComments = async function({
+    authorId,
+    limit,
+    offset,
+    order,
+    transaction,
+  }) {
+    const where = {}
+    if (authorId !== undefined) {
+      where.authorId = authorId
+    }
+    if (order === undefined) {
+      order = [['createdAt', 'DESC']]
+    }
+    return sequelize.models.Comment.findAndCountAll({
+      include: [{
+        model: sequelize.models.Issue,
+        as: 'issue',
+        include: [{
+          model: sequelize.models.Article,
+          as: 'article',
+        }],
+      }],
+      limit,
+      offset,
+      order,
+      transaction,
+    })
+  }
+
   Comment.prototype.destroySideEffects = async function(fields, opts={}) {
     return this.destroy({ transaction: opts.transaction })
   }
 
-  Comment.prototype.getSlug = function() {
-    return `${this.issue.getSlug()}#${this.number}`
-  }
-
   Comment.prototype.toJson = async function(loggedInUser) {
-    return {
+    const ret = {
       id: this.id,
       number: this.number,
       source: this.source,
       render: this.render,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),
-      author: (await this.author.toJson(loggedInUser)),
       score: this.score,
     }
+    const author = this.author
+    if (author) {
+      ret.author = await author.toJson(loggedInUser)
+    }
+    const issue = this.issue
+    if (issue) {
+      ret.issue = await issue.toJson(loggedInUser)
+    }
+    return ret
   }
 
   return Comment

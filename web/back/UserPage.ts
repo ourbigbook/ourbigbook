@@ -56,6 +56,10 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           author = uid
           itemType = 'article'
           break
+        case 'user-comments':
+          author = uid
+          itemType = 'comment'
+          break
         case 'user-issues':
           author = uid
           itemType = 'discussion'
@@ -98,12 +102,17 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         user.update({ newScoreLastCheck: Date.now() }) : null
       const [
         articles,
+        comments,
         userJson,
         loggedInUserJson,
         likes,
         users,
       ] = await Promise.all([
         articlesPromise,
+        itemType === 'comment'
+          ? sequelize.models.Comment.getComments({ authorId: user.id, limit: articleLimit, offset })
+          : {}
+        ,
         user.toJson(loggedInUser),
         loggedInUser ? loggedInUser.toJson() : undefined,
         likesPromise,
@@ -136,6 +145,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         }
         props.articles = await Promise.all(articles.map(article => article.toJson(loggedInUser)))
         props.articlesCount = likes.count
+      } else if (itemType === 'comment') {
+        props.comments = await Promise.all(comments.rows.map(comment => comment.toJson(loggedInUser)))
+        props.commentsCount = comments.count
       } else {
         const articleContext = Object.assign({}, context, { params: { slug: [ uid ] } })
         const articleProps = await (getServerSidePropsArticleHoc({

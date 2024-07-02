@@ -9,6 +9,7 @@ import { formatDate } from 'front/date'
 import {
   ArrowUpIcon,
   CreateMyOnVersionOfThisTopic,
+  CommentIcon,
   DeleteIcon,
   EditArticleIcon,
   HelpIcon,
@@ -635,7 +636,7 @@ const Article = ({
       {isIssue
         ? <>
             <h2 id={commentsHeaderId}>
-              <a href={`#${commentsHeaderId}`}><IssueIcon /> Comments ({ commentsCount })</a>
+              <a href={`#${commentsHeaderId}`}><CommentIcon /> Comments ({ commentsCount })</a>
               {' '}
               <FollowArticleButton {...{
                 article,

@@ -9744,6 +9744,15 @@ instead of:
 * `discussion-edit`
 The latter is tempting to group all "Discussion" actions under a prefix, but let's use the nice grammar instead.
 
+GET parameters should always be alphabetically ordered by key, e.g.:
+``
+?ab=1&cd=2
+``
+rather than:
+``
+?cd=2&ab=1
+``
+
 = OurBigBook Web URL standards: GET param vs url component
 {c}
 {parent=OurBigBook Web URL standards}

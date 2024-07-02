@@ -1,8 +1,12 @@
 import React from 'react'
+import { useRouter } from 'next/router'
+
+import { encodeGetParams } from 'ourbigbook/web_api'
 
 import Maybe from 'front/Maybe'
 import CustomLink from 'front/CustomLink'
 
+// number: 1-indexed page number
 export type PaginationPropsUrlFunc = (number) => string;
 
 export interface PaginationProps {
@@ -10,7 +14,7 @@ export interface PaginationProps {
   itemsPerPage: number;
   showPagesMax?: number;
   currentPage: number;
-  urlFunc: PaginationPropsUrlFunc;
+  urlFunc?: PaginationPropsUrlFunc;
   what: string;
 }
 
@@ -38,6 +42,7 @@ export const getRange = (start, end) => {
 
 
 const Pagination = ({
+  // 0-indexed
   currentPage,
   itemsCount,
   itemsPerPage,
@@ -45,8 +50,23 @@ const Pagination = ({
   urlFunc,
   what,
 }: PaginationProps) => {
+  const router = useRouter()
   if (showPagesMax === undefined) {
     showPagesMax = 10
+  }
+  if (urlFunc === undefined) {
+    // By default, base pagination on the current URL.
+    // Works well if there is just one pagination per page about the current item,
+    // which is always true as of writing.
+    urlFunc = page => {
+      const query = Object.assign({}, router.query)
+      if (page === 1) {
+        delete query.page
+      } else {
+        query.page = page
+      }
+      return `${router.pathname}${encodeGetParams(query)}`
+    }
   }
   // - totalPages
   // - firstPage: 0-indexed

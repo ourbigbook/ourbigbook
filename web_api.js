@@ -15,7 +15,14 @@ function articleHash(opts={}) {
 
 // https://stackoverflow.com/questions/8135132/how-to-encode-url-parameters/50288717#50288717
 function encodeGetParams(p) {
-  let ret = Object.entries(p).filter(kv => kv[1] !== undefined).map(kv => kv.map(encodeURIComponent).join("=")).join("&");
+  const params = []
+  for (const key of Object.keys(p).sort()) {
+    const val = p[key]
+    if (val !== undefined) {
+      params.push(`${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
+    }
+  }
+  let ret = params.join('&');
   if (ret) {
     ret = '?' + ret
   }

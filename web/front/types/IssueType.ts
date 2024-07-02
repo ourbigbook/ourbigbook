@@ -16,6 +16,7 @@ export type IssueType = {
   number: number;
   render: string;
   score: number;
+  titleRender: string;
   titleSource: string;
   updatedAt: number;
 };

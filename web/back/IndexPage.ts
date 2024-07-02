@@ -39,7 +39,11 @@ export const getServerSidePropsIndexHoc = ({
     const offset = pageNum * articleLimit
     const limit = articleLimit
     const sequelize = req.sequelize
-    const [[articles, articlesCount], pinnedArticle] = await Promise.all([
+    const [
+      [articles, articlesCount],
+      commentsAndCount,
+      pinnedArticle
+    ] = await Promise.all([
       (async () => {
         let articles
         let articlesCount
@@ -64,36 +68,43 @@ export const getServerSidePropsIndexHoc = ({
               articlesCount = articlesAndCounts.count
             }
             break
+          case 'comment':
+            articles = null
+            articlesCount = null
           case 'discussion':
-              articlesAndCounts = await sequelize.models.Issue.getIssues({
-                sequelize,
-                includeArticle: true,
-                offset,
-                order,
-                limit,
-              })
-              articles = await Promise.all(articlesAndCounts.rows.map(
-                (article) => {
-                  return article.toJson(loggedInUser)
-                }))
-              articlesCount = articlesAndCounts.count
+            articlesAndCounts = await sequelize.models.Issue.getIssues({
+              sequelize,
+              includeArticle: true,
+              offset,
+              order,
+              limit,
+            })
+            articles = await Promise.all(articlesAndCounts.rows.map(
+              (article) => {
+                return article.toJson(loggedInUser)
+              }))
+            articlesCount = articlesAndCounts.count
             break
           case 'topic':
-              articlesAndCounts = await sequelize.models.Topic.getTopics({
-                sequelize,
-                offset,
-                order,
-                limit,
-              })
-              articles = await Promise.all(articlesAndCounts.rows.map(
-                (article) => {return article.toJson(loggedInUser) }))
-              articlesCount = articlesAndCounts.count
+            articlesAndCounts = await sequelize.models.Topic.getTopics({
+              sequelize,
+              offset,
+              order,
+              limit,
+            })
+            articles = await Promise.all(articlesAndCounts.rows.map(
+              (article) => {return article.toJson(loggedInUser) }))
+            articlesCount = articlesAndCounts.count
             break
           default:
             throw new Error(`unknown itemType: ${itemTypeEff}`)
         }
         return [articles, articlesCount]
       })(),
+      itemType === 'comment'
+        ? sequelize.models.Comment.getComments({ limit, offset })
+        : {}
+      ,
       sequelize.models.Site.findOne({ include:
         [{
           model: sequelize.models.Article,
@@ -109,13 +120,20 @@ export const getServerSidePropsIndexHoc = ({
       }),
     ])
     const props: IndexPageProps = {
-      articles,
-      articlesCount,
       followed: followedEff,
       itemType: itemTypeEff,
       order,
       page: pageNum,
       pinnedArticle,
+    }
+    if (itemType === 'comment') {
+      props.comments = await Promise.all(commentsAndCount.rows.map(comment => comment.toJson(loggedInUser)))
+      props.commentsCount = commentsAndCount.count
+    } else {
+      if (articles) {
+        props.articles = articles
+        props.articlesCount = articlesCount
+      }
     }
     if (loggedInUser) {
       props.loggedInUser = await loggedInUser.toJson()

@@ -39,13 +39,11 @@ export type ArticleListProps = {
   // TODO not ideal. Only Articles are really possible. This is to appease ArticleList.
   articles: (ArticleType & IssueType & TopicType)[];
   articlesCount: number;
-  comments?: Comment[];
-  commentsCount?: number;
   followed?: boolean;
   handleShortFragmentSkipOnce?: React.MutableRefObject<boolean>;
   hasUnlisted?: boolean;
   issueArticle?: ArticleType;
-  itemType?: 'article' | 'discussion' | 'like' | 'topic';
+  itemType?: 'article' | 'comment' | 'discussion' | 'like' | 'topic';
   list?: boolean;
   loggedInUser?: UserType,
   page?: number;
@@ -293,11 +291,13 @@ const ArticleList = ({
                           <th className="shrink"><IssueIcon /> { isIssue ? 'Comments' : 'Discussions' }</th>
                         }
                         <th className="shrink"><TimeIcon /> Created</th>
-                        <th className="shrink"><TimeIcon /> Updated</th>
+                        {(itemType !== 'comment') &&
+                          <th className="shrink"><TimeIcon /> Updated</th>
+                        }
                       </tr>
                     </thead>
                     <tbody>
-                      {articles?.map((article, i) => {
+                      {articles?.map(article => {
                         let curIssueArticle
                         if (issueArticle) {
                           curIssueArticle = issueArticle

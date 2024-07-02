@@ -13,7 +13,7 @@ import {
 } from 'front'
 import ArticleList from 'front/ArticleList'
 import CommentList from 'front/CommentList'
-import { cant  } from 'front/cant'
+import { cant } from 'front/cant'
 import config from 'front/config'
 import CustomLink from 'front/CustomLink'
 import CustomImage from 'front/CustomImage'
@@ -24,7 +24,7 @@ import FollowUserButton from 'front/FollowUserButton'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import routes from 'front/routes'
 import Article from 'front/Article'
-import { ArticleType, ArticleLinkType  } from 'front/types/ArticleType'
+import { ArticleType, ArticleLinkType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
@@ -186,25 +186,31 @@ export default function UserPage({
             href={routes.userArticles(username, { sort: 'score' })}
             className={`tab-item${what === 'user-articles' && order === 'score' ? ' active' : ''}`}
           >
-            <ArticleIcon /> Top
+            <ArticleIcon /> Top<span className="mobile-hide"> articles</span>
           </CustomLink>
           <CustomLink
-            href={routes.userArticles(username,  { sort: 'created' })}
+            href={routes.userArticles(username, { sort: 'created' })}
             className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
           >
-            <ArticleIcon /> New
+            <ArticleIcon /> New<span className="mobile-hide"> articles</span>
           </CustomLink>
           <CustomLink
-            href={routes.userLikes(username)}
-            className={`tab-item${what === 'likes' ? ' active' : ''}`}
+            href={routes.userIssues(user.username, { sort: 'created' })}
+            className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
           >
-            <ArticleIcon /> Likes
+            <IssueIcon /> New<span className="mobile-hide"> discussions</span>
           </CustomLink>
           <CustomLink
-            href={routes.userLiked(username)}
-            className={`tab-item${what === 'liked' ? ' active' : ''}`}
+            href={routes.userIssues(user.username, { sort: 'score' })}
+            className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
           >
-            <LikeIcon /> Received likes
+            <IssueIcon /> Top<span className="mobile-hide"> discussions</span>
+          </CustomLink>
+          <CustomLink
+            href={routes.userComments(user.username, { sort: 'created' })}
+            className={`tab-item${itemType === 'comment' && order === 'createdAt' ? ' active' : ''}`}
+          >
+            <CommentIcon /> New<span className="mobile-hide"> comments</span>
           </CustomLink>
           <CustomLink
             href={routes.userFollows(username)}
@@ -219,28 +225,22 @@ export default function UserPage({
             <UserIcon /> Followed by
           </CustomLink>
           <CustomLink
+            href={routes.userLikes(username)}
+            className={`tab-item${what === 'likes' ? ' active' : ''}`}
+          >
+            <ArticleIcon /> Liked<span className="mobile-hide"> articles</span>
+          </CustomLink>
+          <CustomLink
+            href={routes.userLiked(username)}
+            className={`tab-item${what === 'liked' ? ' active' : ''}`}
+          >
+            <LikeIcon /> Received likes
+          </CustomLink>
+          <CustomLink
             href={routes.userFollowsArticles(username)}
             className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
           >
-            <ArticleIcon /> Follows
-          </CustomLink>
-          <CustomLink
-            href={routes.userIssues(user.username, { sort: 'created' })}
-            className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
-          >
-            <IssueIcon /> New<span className="mobile-hide"> Discussions</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userIssues(user.username, { sort: 'score' })}
-            className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
-          >
-            <IssueIcon /> Top<span className="mobile-hide"> Discussions</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userComments(user.username, { sort: 'created' })}
-            className={`tab-item${itemType === 'comment' && order === 'createdAt' ? ' active' : ''}`}
-          >
-            <CommentIcon /> New<span className="mobile-hide"> Comments</span>
+            <ArticleIcon /> Followed<span className="mobile-hide"> articles</span>
           </CustomLink>
         </div>
       </div>

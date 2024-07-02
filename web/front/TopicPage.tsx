@@ -2,7 +2,15 @@ import Head from 'next/head'
 import React from 'react'
 import { useRouter } from 'next/router'
 
-import { AppContext, ArticleIcon, NewArticleIcon, TopicIcon, TopicsHelp, slugFromArray} from 'front'
+import {
+  AppContext,
+  ArticleIcon,
+  NewArticleIcon,
+  SeeIcon,
+  TopicIcon,
+  TopicsHelp,
+  slugFromArray
+} from 'front'
 import { idToTitle } from 'ourbigbook'
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
@@ -16,6 +24,7 @@ import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 
 export interface TopicPageProps {
+  articleInTopicByLoggedInUser: ArticleType,
   // TODO not ideal. Only Articles are really possible. This is to appease ArticleList.
   articles: (ArticleType & IssueType & TopicType)[];
   articlesCount: number;
@@ -29,6 +38,7 @@ export interface TopicPageProps {
 }
 
 export const TopicPage = ({
+  articleInTopicByLoggedInUser,
   articles,
   articlesCount,
   hasUnlisted,
@@ -59,21 +69,29 @@ export const TopicPage = ({
                   className={`tab-item${order === 'score' ? ' active' : ''}`}
                   href={routes.topic(topicId, { sort: 'score' })}
                 >
-                  <ArticleIcon /> Top Articles
+                  <ArticleIcon /> Top articles
                 </CustomLink>
                 <CustomLink
                   className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
                   href={routes.topic(topicId, { sort: 'created' })}
                 >
-                  <ArticleIcon /> Latest Articles
+                  <ArticleIcon /> Latest articles
                 </CustomLink>
-                <CustomLink
-                  className="tab-item btn small"
-                  href={routes.articleNew({ title: topic.titleSource })}
-                  updatePreviousPage={true}
-                >
-                  <NewArticleIcon /> New Article in Topic
-                </CustomLink>
+                {articleInTopicByLoggedInUser
+                  ? <CustomLink
+                      className="tab-item btn small"
+                      href={routes.article(articleInTopicByLoggedInUser.slug)}
+                    >
+                      <SeeIcon /> View your article in topic
+                    </CustomLink>
+                  : <CustomLink
+                      className="tab-item btn small"
+                      href={routes.articleNew({ title: topic.titleSource })}
+                      updatePreviousPage={true}
+                    >
+                      <NewArticleIcon /> New article in topic
+                    </CustomLink>
+                }
               </div>
             </div>
             <ArticleList {...{
@@ -98,7 +116,7 @@ export const TopicPage = ({
                   href={routes.articleNew({ 'title': idToTitle(topicId) })}
                   updatePreviousPage={true}
                 >
-                  <NewArticleIcon title={false}/>{' '}Create an article for this topic
+                  <NewArticleIcon title={false}/>{' '}Create the first article for this topic
                 </CustomLink>
               </div>
             </div>

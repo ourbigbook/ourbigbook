@@ -112,13 +112,13 @@ function IndexPageHoc({
                       className={`tab-item${itemType === 'article' && order === 'createdAt' && followed ? ' active' : ''}`}
                       href={routes.articlesFollowed()}
                     >
-                      <ArticleIcon /> New Followed
+                      <ArticleIcon /> New followed
                     </CustomLink>
                     <CustomLink
                       className={`tab-item${itemType === 'article' && order === 'score' && followed ? ' active' : ''}`}
                       href={routes.articlesFollowed({ sort: 'score' })}
                     >
-                      <ArticleIcon /> Top Followed
+                      <ArticleIcon /> Top followed
                     </CustomLink>
                   </>
                 }
@@ -126,25 +126,25 @@ function IndexPageHoc({
                   className={`tab-item${itemType === 'article' && order === 'createdAt' && !followed ? ' active' : ''}`}
                   href={(isIssue && !isHomepage) ? routes.issues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
                 >
-                  <ArticleIcon /> New<span className="mobile-hide"> Articles</span>
+                  <ArticleIcon /> New<span className="mobile-hide"> articles</span>
                 </CustomLink>
                 <CustomLink
                   className={`tab-item${(itemType === 'article' || itemType === 'discussion') && order === 'score' && !followed ? ' active' : ''}`}
                   href={(isIssue && !isHomepage) ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
                 >
-                  <ArticleIcon /> Top<span className="mobile-hide"> Articles</span>
+                  <ArticleIcon /> Top<span className="mobile-hide"> articles</span>
                 </CustomLink>
                 <CustomLink
                   className={`tab-item${itemType === 'user' && order === 'score' ? ' active' : ''}`}
                   href={routes.users({ sort: 'score' })}
                 >
-                  <UserIcon /> Top Users
+                  <UserIcon /> Top users
                 </CustomLink>
                 <CustomLink
                   className={`tab-item${itemType === 'user' && order === 'createdAt' ? ' active' : ''}`}
                   href={routes.users({ sort: 'created' })}
                 >
-                  <UserIcon /> New Users
+                  <UserIcon /> New users
                 </CustomLink>
               </>
             }
@@ -152,19 +152,19 @@ function IndexPageHoc({
               className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
               href={isHomepage ? routes.issuesAll() : routes.issues(issueArticle.slug)}
             >
-              <IssueIcon /> New<span className="mobile-hide"> Discussions</span>
+              <IssueIcon /> New<span className="mobile-hide"> discussions</span>
             </CustomLink>
             <CustomLink
               className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
               href={isHomepage ? routes.issuesAll({ sort: 'score' }) : routes.issues(issueArticle.slug, { sort: 'score' })}
             >
-              <IssueIcon /> Top<span className="mobile-hide"> Discussions</span>
+              <IssueIcon /> Top<span className="mobile-hide"> discussions</span>
             </CustomLink>
             <CustomLink
               className={`tab-item${itemType === 'comment' ? ' active' : ''}`}
               href={routes.comments({ sort: 'created' })}
             >
-              <CommentIcon /> New Comments
+              <CommentIcon /> New<span className="mobile-hide"> comments</span>
             </CustomLink>
             {!isHomepage &&
               <span className='tab-item'>

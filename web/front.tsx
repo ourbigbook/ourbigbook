@@ -26,7 +26,7 @@ export function capitalize(s) {
 }
 
 export function CreateMyOwnVersionOfThisTopic({ titleSource, toplevel } : { titleSource: string, toplevel: boolean}) {
-  return <Link href={routes.articleNew({ title: titleSource })} className="btn new" title="Create my version of this topic">
+  return <Link href={routes.articleNew({ title: titleSource })} className="btn new" title="Create my own version of this topic">
     {' '}<NewArticleIcon title={false}/>{toplevel ? ' Create my own version' : ''}{' '}
   </Link>
 }

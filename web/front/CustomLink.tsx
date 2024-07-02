@@ -24,7 +24,10 @@ const CustomLink = ({
   newTab=false,
   onClick,
   shallow,
-  updatePreviousPage
+  // This should be === true on buttons such as "create new article". These pages would 300 redirect the user,
+  // so there would be no time for Js to update the next page. So we do it here on click instead upon request.
+  // For regular pages that don't 300, that is not needed, as we set the previous page on Js.
+  updatePreviousPage,
 }: CustomLinkProps) => {
   if (shallow === undefined) {
     shallow = false;

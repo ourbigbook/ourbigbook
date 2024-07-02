@@ -26,19 +26,43 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
     ) {
       const topicId = id.join('/')
       const getArticlesOpts = {
-        sequelize,
         limit: articleLimit,
         list,
         offset: pageNum * articleLimit,
         order,
+        sequelize,
         topicId,
       }
       const [
+        articleInTopicByLoggedInUser,
         articles,
         loggedInUserJson,
         topicJson,
         unlistedArticles,
       ] = await Promise.all([
+        loggedInUser
+          ? sequelize.models.Article.findOne({
+              where: {
+                topicId,
+              },
+              include: [
+                {
+                  model: sequelize.models.File,
+                  as: 'file',
+                  where: {
+                    authorId: loggedInUser.id,
+                  }
+                }
+              ]
+            }).then(article => {
+              if (article) {
+                return article?.toJson(loggedInUser)
+              } else {
+                return null
+              }
+            })
+          : null
+        ,
         sequelize.models.Article.getArticles(getArticlesOpts),
         loggedInUser ? loggedInUser.toJson(loggedInUser) : null,
         sequelize.models.Topic.getTopics({
@@ -70,6 +94,7 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
         //}),
       ])
       const props: TopicPageProps = {
+        articleInTopicByLoggedInUser,
         articles: await Promise.all(articles.rows.map(article => article.toJson(loggedInUser))),
         articlesCount: articles.count,
         hasUnlisted: !!unlistedArticles.count,

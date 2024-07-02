@@ -115,7 +115,7 @@ const Article = ({
             href={routes.issueNew(article.slug)}
             updatePreviousPage={true}
           >
-            <NewArticleIcon /> New Discussion
+            <NewArticleIcon /> New discussion
           </CustomLink>
         : <SignupOrLogin to="create discussions"/>
       }
@@ -375,7 +375,7 @@ const Article = ({
                 {' '}
                 {!isIndex &&
                   <a className="by-others btn" href={routes.topic(curArticle.topicId)} title="Articles by others on the same topic">
-                    <TopicIcon title={false} /> {curArticle.topicCount - 1}{toplevel ? <> By Others<span className="mobile-hide"> On Same Topic</span></> : ''}
+                    <TopicIcon title={false} /> {curArticle.topicCount - 1}{toplevel ? <> By others<span className="mobile-hide"> on same topic</span></> : ''}
                   </a>
                 }
                 {' '}

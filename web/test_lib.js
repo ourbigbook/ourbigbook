@@ -556,6 +556,18 @@ async function generateDemoData(params) {
     }
     console.log('articles.length: ' + require('util').inspect(articles.length));
 
+    // Create an article in a topic that exists only for user0. All other articles exist for all users.
+    // This is useful to test that case which hsa UI imlications such as "show create new vs view mine".
+    await convert.convertArticle({
+      author: users[0],
+      bodySource: 'This topic only exists for the first user.',
+      convertOptionsExtra: { katex_macros },
+      parentId: `${ourbigbook.AT_MENTION_CHAR}${users[0].username}`,
+      render: true,
+      sequelize,
+      titleSource: 'user0 only',
+    })
+
     // Write files to filesystem.
     // https://docs.ourbigbook.com/demo-data-local-file-output
     for (const user of users) {

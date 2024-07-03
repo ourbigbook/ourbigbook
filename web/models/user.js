@@ -234,7 +234,10 @@ module.exports = (sequelize) => {
   }
 
   User.findArticleLikesReceivedArgs = function(uid, opts={}) {
-    let { order, offset, since } = opts
+    let { limit, order, offset, since } = opts
+    if (limit === undefined) {
+      limit = config.articleLimit
+    }
     if (offset === undefined) {
       offset = 0
     }
@@ -269,6 +272,7 @@ module.exports = (sequelize) => {
           subQuery: false,
         },
       ],
+      limit,
       order: [[order, 'DESC']],
       offset,
     }
@@ -290,7 +294,10 @@ module.exports = (sequelize) => {
   // EagerLoadingError [SequelizeEagerLoadingError]: Issue is not associated to UserLikeIssue
   // and no patience to fix it now.
   User.findAndCountDiscussionLikesReceived = async function(uid, opts={}) {
-    let { order, offset, since } = opts
+    let { limit, order, offset, since } = opts
+    if (limit === undefined) {
+      limit = config.articleLimit
+    }
     if (offset === undefined) {
       offset = 0
     }
@@ -319,6 +326,7 @@ module.exports = (sequelize) => {
           subQuery: false,
         },
       ],
+      limit,
       order: [[order, 'DESC']],
       offset,
     }

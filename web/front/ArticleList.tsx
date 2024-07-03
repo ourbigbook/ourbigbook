@@ -31,6 +31,22 @@ import {
   AT_MENTION_CHAR,
 } from 'ourbigbook'
 
+function getKey(itemType, article, issueArticle) {
+  if (itemType === 'discussion') {
+    let curIssueArticle
+    if (issueArticle) {
+      curIssueArticle = issueArticle
+    } else {
+      curIssueArticle = article.article
+    }
+    return `${article.number}/${curIssueArticle.slug}`
+  } else {
+    return itemType === 'article' ? article.slug :
+           itemType === 'like' ? `${article.likedBy.username}/${article.slug}` :
+           article.topicId
+  }
+}
+
 export type ArticleListProps = {
   // TODO not ideal. Only Articles are really possible. This is to appease ArticleList.
   articles: (ArticleType & IssueType & TopicType)[];
@@ -39,7 +55,7 @@ export type ArticleListProps = {
   handleShortFragmentSkipOnce?: React.MutableRefObject<boolean>;
   hasUnlisted?: boolean;
   issueArticle?: ArticleType;
-  itemType?: 'article' | 'comment' | 'discussion' | 'like' | 'topic';
+  itemType?: 'article' | 'discussion' | 'like' | 'topic';
   list?: boolean;
   loggedInUser?: UserType,
   page?: number;
@@ -135,7 +151,7 @@ const ArticleList = ({
               {showBody
                 ? articles?.map((article, i) => (
                     <div
-                      key={itemType === 'discussion' ? article.number : itemType === 'article' ? article.slug : article.topicId}
+                      key={getKey(itemType, article, curIssueArticle) }
                       className="item"
                     >
                       <div className="content-not-ourbigbook title-container">
@@ -288,9 +304,7 @@ const ArticleList = ({
                             <th className="shrink"><IssueIcon /> { isIssue ? 'Comments' : 'Discussions' }</th>
                           }
                           <th className="shrink"><TimeIcon /> Created</th>
-                          {(itemType !== 'comment') &&
-                            <th className="shrink"><TimeIcon /> Updated</th>
-                          }
+                          <th className="shrink"><TimeIcon /> Updated</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -307,13 +321,8 @@ const ArticleList = ({
                                 itemType === 'topic' ? routes.topic(article.topicId, { sort: 'score' }) :
                                 null
                           return <tr
-                            key={
-                              itemType === 'discussion'
-                                ? `${article.number}/${curIssueArticle.slug}` :
-                                itemType === 'article'
-                                  ? article.slug :
-                                    article.topicId
-                            }>
+                            key={getKey(itemType, article, issueArticle) }
+                          >
                             {itemType === 'like' &&
                               <>
                                 <td className="shrink right">{formatDate(article.likedByDate)}</td>

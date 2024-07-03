@@ -30,7 +30,7 @@ const CommentList = ({
   return (
     <>
       { commentsCount === 0
-        ? <div className="content-not-ourbigbook article-preview">
+        ? <div className="article-preview">
             There are currently no matching comments.
           </div>
         : <div className="list-nav-container">

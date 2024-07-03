@@ -46,6 +46,8 @@ const MyApp = ({ Component, pageProps }) => {
   const router = useRouter()
   const [prevPageNoSignup, setPrevPageNoSignup] = useState({ prev: null, cur: null });
   function updatePrevPageNoSignup(newCur) {
+    // This is so that for logged off user the sequence:
+    // - Create new article button
     if (newCur !== routes.userNew()) {
       const newVal = {
         prev: prevPageNoSignup.cur,

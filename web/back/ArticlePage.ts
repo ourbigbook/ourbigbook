@@ -1,7 +1,6 @@
 import ourbigbook from 'ourbigbook'
 
 import { getLoggedInUser } from 'back'
-import { getConvertOpts } from 'convert'
 import { ArticlePageProps } from 'front/ArticlePage'
 import { maxArticlesFetch } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
@@ -114,12 +113,12 @@ export const getServerSidePropsArticleHoc = ({
         articleJson,
         articlesInSamePage,
         articlesInSamePageForToc,
+        articleInTopicByLoggedInUser,
         h1ArticlesInSamePage,
         incomingLinks,
         issuesCount,
         otherArticlesInTopic,
         synonymIds,
-        topicArticleCount,
         latestIssues,
         tagged,
         topIssues
@@ -141,6 +140,7 @@ export const getServerSidePropsArticleHoc = ({
           render: false,
           sequelize,
         }),
+        sequelize.models.Article.getArticleJsonInTopicBy(loggedInUser, article.topicId),
         sequelize.models.Article.getArticlesInSamePage({
           article,
           loggedInUser,
@@ -186,14 +186,10 @@ export const getServerSidePropsArticleHoc = ({
             }]
           }]
         }),
-        sequelize.models.Article.count({
-          where: { topicId: article.topicId },
-        }),
         includeIssues ? Promise.all(article.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
         getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X_CHILD, from: 'to', to: 'from' }),
         includeIssues ? Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
       ])
-      const synonymLinks = []
       const h1ArticleInSamePage = h1ArticlesInSamePage[0]
       if (
         // False for Index pages, I think because they have no associated topic.
@@ -206,6 +202,7 @@ export const getServerSidePropsArticleHoc = ({
       const props: ArticlePageProps = {
         ancestors: ancestors.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
         article: articleJson,
+        articleInTopicByLoggedInUser,
         articlesInSamePage,
         articlesInSamePageForToc,
         incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
@@ -218,7 +215,6 @@ export const getServerSidePropsArticleHoc = ({
           //titleRender: ourbigbook.renderAstFromOpts(i.ast_json, getConvertOpts({ render: true, sequelize })),
         }}),
         tagged: tagged.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
-        topicArticleCount,
       }
       if (loggedInUser) {
         props.loggedInUser = await loggedInUser.toJson(loggedInUser)

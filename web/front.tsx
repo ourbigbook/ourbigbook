@@ -31,6 +31,12 @@ export function CreateMyOwnVersionOfThisTopic({ titleSource, toplevel } : { titl
   </Link>
 }
 
+export function SeeMyOwnVersionOfThisTopic({ slug, toplevel } : { slug: string, toplevel: boolean}) {
+  return <Link href={routes.article(slug)} className="btn see" title="See my version of this topic">
+    {' '}<SeeIcon title={false}/>{toplevel ? ' See my version' : ''}{' '}
+  </Link>
+}
+
 export function decapitalize(s) {
   return s[0].toLowerCase() + s.slice(1)
 }

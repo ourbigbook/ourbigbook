@@ -16,6 +16,7 @@ import {
   IssueIcon,
   NewArticleIcon,
   SeeIcon,
+  SeeMyOwnVersionOfThisTopic,
   SignupOrLogin,
   SourceIcon,
   TimeIcon,
@@ -24,8 +25,6 @@ import {
   fragSetTarget,
   getShortFragFromLong,
   getShortFragFromLongForPath,
-  replaceFrag,
-  replaceShortFrag,
   shortFragGoTo,
 } from 'front'
 import Comment from 'front/Comment'
@@ -105,7 +104,7 @@ const Article = ({
     seeAllCreateNew = <>
       {latestIssues.length > 0 &&
         <>
-          <CustomLink href={routes.issues(article.slug)} className="btn small"><SeeIcon /> See All ({ article.issueCount })</CustomLink>
+          <CustomLink href={routes.issues(article.slug)} className="btn small"><SeeIcon /> See all ({ article.issueCount })</CustomLink>
           {' '}
         </>
       }
@@ -453,9 +452,7 @@ const Article = ({
                       {article.slug !== mySlug &&
                         <>
                           {' '}
-                          <a href={routes.article(mySlug)} className="btn see" title="See my version of this topic">
-                              {' '}<SeeIcon title={false}/>{toplevel ? ' See My Version' : ''}{' '}
-                          </a>
+                          <SeeMyOwnVersionOfThisTopic slug={mySlug} toplevel={toplevel} />
                         </>
                       }
                     </>

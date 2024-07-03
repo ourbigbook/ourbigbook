@@ -1207,6 +1207,31 @@ WHERE
     return ret;
   }
 
+  Article.getArticleJsonInTopicBy = async (user, topicId) => {
+    return user
+      ? sequelize.models.Article.findOne({
+          where: {
+            topicId,
+          },
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'file',
+              where: {
+                authorId: user.id,
+              }
+            }
+          ]
+        }).then(article => {
+          if (article) {
+            return article?.toJson(user)
+          } else {
+            return null
+          }
+        })
+      : null
+  }
+
   // Maybe try to merge into getArticle one day?
   Article.getArticlesInSamePage = async ({
     article,

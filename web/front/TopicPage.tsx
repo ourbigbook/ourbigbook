@@ -1,4 +1,3 @@
-import Head from 'next/head'
 import React from 'react'
 import { useRouter } from 'next/router'
 
@@ -15,8 +14,6 @@ import { idToTitle } from 'ourbigbook'
 import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
-import LogoutButton from 'front/LogoutButton'
-import Maybe from 'front/Maybe'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { IssueType } from 'front/types/IssueType'

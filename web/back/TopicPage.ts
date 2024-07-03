@@ -40,29 +40,7 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
         topicJson,
         unlistedArticles,
       ] = await Promise.all([
-        loggedInUser
-          ? sequelize.models.Article.findOne({
-              where: {
-                topicId,
-              },
-              include: [
-                {
-                  model: sequelize.models.File,
-                  as: 'file',
-                  where: {
-                    authorId: loggedInUser.id,
-                  }
-                }
-              ]
-            }).then(article => {
-              if (article) {
-                return article?.toJson(loggedInUser)
-              } else {
-                return null
-              }
-            })
-          : null
-        ,
+        sequelize.models.Article.getArticleJsonInTopicBy(loggedInUser, topicId),
         sequelize.models.Article.getArticles(getArticlesOpts),
         loggedInUser ? loggedInUser.toJson(loggedInUser) : null,
         sequelize.models.Topic.getTopics({

@@ -8,10 +8,12 @@ import Article from 'front/Article'
 import ArticleList from 'front/ArticleList'
 import {
   AppContext,
+  CreateMyOwnVersionOfThisTopic,
   DiscussionAbout,
   IssueIcon,
   NewArticleIcon,
   SeeIcon,
+  SeeMyOwnVersionOfThisTopic,
   TopicIcon,
   useEEdit,
   useEEditIssue,
@@ -28,6 +30,7 @@ import { UserType } from 'front/types/UserType'
 export interface ArticlePageProps {
   ancestors?: ArticleLinkType[];
   article: ArticleType & IssueType;
+  articleInTopicByLoggedInUser?: ArticleType,
   articlesInSamePage?: ArticleType[];
   articlesInSamePageForToc?: ArticleType[];
   comments?: CommentType[];
@@ -42,13 +45,13 @@ export interface ArticlePageProps {
   synonymLinks?: ArticleLinkType[];
   tagged?: ArticleLinkType[];
   topIssues?: IssueType[];
-  topicArticleCount?: number;
 }
 
 const ArticlePageHoc = (isIssue=false) => {
   return ({
     ancestors,
     article,
+    articleInTopicByLoggedInUser,
     articlesInSamePage,
     articlesInSamePageForToc,
     otherArticlesInTopic,
@@ -63,9 +66,7 @@ const ArticlePageHoc = (isIssue=false) => {
     loggedInUser,
     synonymLinks,
     tagged,
-    topicArticleCount,
   }: ArticlePageProps) => {
-    const router = useRouter();
     const author = article.author
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(() =>
@@ -73,8 +74,6 @@ const ArticlePageHoc = (isIssue=false) => {
       // https://github.com/ourbigbook/ourbigbook/issues/250
       setTitle(`${article.titleSource} by ${displayAndUsernameText(author)}`)
     )
-    const showOthers = topicArticleCount !== undefined && topicArticleCount > 1
-    const showCreateMyOwn = !loggedInUser || author.username !== loggedInUser.username
     const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
     const handleDelete = async () => {
       if (!loggedInUser) return;
@@ -111,14 +110,14 @@ const ArticlePageHoc = (isIssue=false) => {
               {isIssue &&
                 <>
                   {' '}
-                  <CustomLink href={routes.issues(issueArticle.slug)} className="btn"><IssueIcon /> See All ({issuesCount})</CustomLink>
+                  <CustomLink href={routes.issues(issueArticle.slug)} className="btn"><IssueIcon /> See all ({issuesCount})</CustomLink>
                   {' '}
                   <CustomLink
                     className="btn"
                     href={routes.issueNew(issueArticle.slug)}
                     updatePreviousPage={true}
                   >
-                    <NewArticleIcon /> New Discussion
+                    <NewArticleIcon /> New discussion
                   </CustomLink>
                 </>
               }
@@ -163,6 +162,14 @@ const ArticlePageHoc = (isIssue=false) => {
               }}/>
               <p className="content-not-ourbigbook">
                 <CustomLink href={routes.topic(article.topicId)}> <TopicIcon /> <SeeIcon /> See all articles in the same topic</CustomLink>
+                {articleInTopicByLoggedInUser
+                  ? <>
+                      {articleInTopicByLoggedInUser.slug !== article.slug &&
+                        <>{' '}<SeeMyOwnVersionOfThisTopic slug={articleInTopicByLoggedInUser.slug} toplevel={true} /></>
+                      }
+                    </>
+                  : <>{' '}<CreateMyOwnVersionOfThisTopic titleSource={article.titleSource} toplevel={true} /></>
+                }
               </p>
             </>
           }

@@ -264,6 +264,7 @@ export default function UserPage({
             <LikeIcon /> Received<span className="mobile-hide"> likes</span>
           </CustomLink>
           {false &&
+            // TODO https://github.com/ourbigbook/ourbigbook/issues/313
             <CustomLink
               href={routes.userLikedDiscussions(username)}
               className={`tab-item${what === 'liked-discussions' ? ' active' : ''}`}

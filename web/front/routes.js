@@ -56,6 +56,7 @@ module.exports = {
   userLiked: (uid, opts={}) => `/${escapeUsername}/user/${uid}/liked${encodeGetParamsWithPage(opts)}`,
   userLikedDiscussions: (uid, opts={}) => `/${escapeUsername}/user/${uid}/liked-discussions${encodeGetParamsWithPage(opts)}`,
   userLikes: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes${encodeGetParamsWithPage(opts)}`,
+  // TODO https://github.com/ourbigbook/ourbigbook/issues/313
   userLikesDiscussions: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes-discussions${encodeGetParamsWithPage(opts)}`,
   userFollowsArticles: (uid, opts={}) => `/${escapeUsername}/user/${uid}/follows-articles${encodeGetParamsWithPage(opts)}`,
   userFollowsDiscussions: (uid, opts={}) => `/${escapeUsername}/user/${uid}/follows-discussions${encodeGetParamsWithPage(opts)}`,

@@ -45,6 +45,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           itemType = 'like'
           break
         case 'liked-discussions':
+          // TODO https://github.com/ourbigbook/ourbigbook/issues/313
           author = uid
           itemType = 'discussion-like'
           break

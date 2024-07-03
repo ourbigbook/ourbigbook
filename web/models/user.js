@@ -286,6 +286,48 @@ module.exports = (sequelize) => {
     return sequelize.models.UserLikeArticle.count(this.findArticleLikesReceivedArgs(uid, opts))
   }
 
+  // TODO broken with:
+  // EagerLoadingError [SequelizeEagerLoadingError]: Issue is not associated to UserLikeIssue
+  // and no patience to fix it now.
+  User.findAndCountDiscussionLikesReceived = async function(uid, opts={}) {
+    let { order, offset, since } = opts
+    if (offset === undefined) {
+      offset = 0
+    }
+    if (order === undefined) {
+      order = 'createdAt'
+    }
+    const args = {
+      include: [
+        {
+          model: sequelize.models.Issue,
+          as: 'article',
+          required: true,
+          subQuery: false,
+          include: [{
+            model: sequelize.models.User,
+            as: 'author',
+            where: { id: uid },
+            required: true,
+            subQuery: false,
+          }]
+        },
+        {
+          model: sequelize.models.User,
+          as: 'user',
+          required: true,
+          subQuery: false,
+        },
+      ],
+      order: [[order, 'DESC']],
+      offset,
+    }
+    if (since) {
+      args.where = { createdAt: { [Op.gt]: since } }
+    }
+    return sequelize.models.UserLikeIssue.findAndCountAll(args)
+  }
+
   User.prototype.findAndCountArticlesByFollowed = async function(offset, limit, order) {
     if (!order) {
       order = 'createdAt'

@@ -168,6 +168,7 @@ module.exports = (sequelize) => {
 
   Issue.getIssues = async ({
     author,
+    followedBy,
     includeArticle,
     likedBy,
     limit,
@@ -202,6 +203,20 @@ module.exports = (sequelize) => {
             as: 'author',
           }]
         }]
+      })
+    }
+    if (followedBy) {
+      include.push({
+        model: sequelize.models.User,
+        as: 'followers',
+        where: { username: followedBy },
+      })
+    }
+    if (likedBy) {
+      include.push({
+        model: sequelize.models.User,
+        as: 'issueLikedBy',
+        where: { username: likedBy },
       })
     }
     if (likedBy) {

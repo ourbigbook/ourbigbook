@@ -97,7 +97,7 @@ const Pagination = ({
 
   const pages = itemsCount > 0 ? getRange(firstPage, lastPage) : [];
   return (
-    <nav>
+    <nav className="content-not-ourbigbook">
       <div className="pagination">
         <Maybe test={totalPages > 1}>
           <span className="pages">

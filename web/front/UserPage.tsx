@@ -57,10 +57,13 @@ export interface UserPageProps {
   what:
     'followed' |
     'followed-articles' |
+    'followed-discussions' |
     'follows' |
     'home' |
     'liked' |
+    'liked-discussions' |
     'likes' |
+    'likes-discussions' |
     'user-articles' |
     'user-comments' |
     'user-issues'
@@ -106,11 +109,17 @@ export default function UserPage({
     case 'followed-articles':
       paginationUrlFunc = page => routes.userFollowsArticles(user.username, { page })
       break
+    case 'followed-discussions':
+      paginationUrlFunc = page => routes.userFollowsDiscussions(user.username, { page })
+      break
     case 'liked':
       paginationUrlFunc = page => routes.userLiked(user.username, { page })
       break
     case 'likes':
       paginationUrlFunc = page => routes.userLikes(user.username, { page })
+      break
+    case 'likes-discussions':
+      paginationUrlFunc = page => routes.userLikesDiscussions(user.username, { page })
       break
     case 'user-comments':
       paginationUrlFunc = page => routes.userComments(user.username, { page })
@@ -231,17 +240,37 @@ export default function UserPage({
             <ArticleIcon /> Liked<span className="mobile-hide"> articles</span>
           </CustomLink>
           <CustomLink
-            href={routes.userLiked(username)}
-            className={`tab-item${what === 'liked' ? ' active' : ''}`}
-          >
-            <LikeIcon /> Received likes
-          </CustomLink>
-          <CustomLink
             href={routes.userFollowsArticles(username)}
             className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
           >
             <ArticleIcon /> Followed<span className="mobile-hide"> articles</span>
           </CustomLink>
+          <CustomLink
+            href={routes.userLikesDiscussions(username)}
+            className={`tab-item${what === 'likes-discussions' ? ' active' : ''}`}
+          >
+            <IssueIcon /> Liked<span className="mobile-hide"> discussions</span>
+          </CustomLink>
+          <CustomLink
+            href={routes.userFollowsDiscussions(username)}
+            className={`tab-item${what === 'followed-discussions' ? ' active' : ''}`}
+          >
+            <IssueIcon /> Followed<span className="mobile-hide"> discussions</span>
+          </CustomLink>
+          <CustomLink
+            href={routes.userLiked(username)}
+            className={`tab-item${what === 'liked' ? ' active' : ''}`}
+          >
+            <LikeIcon /> Received<span className="mobile-hide"> likes</span>
+          </CustomLink>
+          {false &&
+            <CustomLink
+              href={routes.userLikedDiscussions(username)}
+              className={`tab-item${what === 'liked-discussions' ? ' active' : ''}`}
+            >
+              <LikeIcon /><IssueIcon /> Received<span className="mobile-hide"> discussion likes</span>
+            </CustomLink>
+          }
         </div>
       </div>
       {what === 'home' &&
@@ -264,19 +293,17 @@ export default function UserPage({
       }
     </div>
     {(itemType === 'article' || itemType === 'discussion' || itemType === 'like') &&
-      <div className="content-not-ourbigbook">
-        <ArticleList {...{
-          articles,
-          articlesCount,
-          handleShortFragmentSkipOnce,
-          itemType,
-          loggedInUser,
-          page,
-          paginationUrlFunc,
-          showAuthor: what === 'likes' || what === 'followed-articles',
-          what,
-        }}/>
-      </div>
+      <ArticleList {...{
+        articles,
+        articlesCount,
+        handleShortFragmentSkipOnce,
+        itemType,
+        loggedInUser,
+        page,
+        paginationUrlFunc,
+        showAuthor: what === 'likes' || what === 'followed-articles',
+        what,
+      }}/>
     }
     {itemType === 'comment' &&
       <div className="content-not-ourbigbook">

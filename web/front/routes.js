@@ -54,8 +54,11 @@ module.exports = {
   userFollows: (uid, opts={}) => `/${escapeUsername}/user/${uid}/follows${encodeGetParamsWithPage(opts)}`,
   userFollowed: (uid, opts={}) => `/${escapeUsername}/user/${uid}/followed${encodeGetParamsWithPage(opts)}`,
   userLiked: (uid, opts={}) => `/${escapeUsername}/user/${uid}/liked${encodeGetParamsWithPage(opts)}`,
+  userLikedDiscussions: (uid, opts={}) => `/${escapeUsername}/user/${uid}/liked-discussions${encodeGetParamsWithPage(opts)}`,
   userLikes: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes${encodeGetParamsWithPage(opts)}`,
+  userLikesDiscussions: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes-discussions${encodeGetParamsWithPage(opts)}`,
   userFollowsArticles: (uid, opts={}) => `/${escapeUsername}/user/${uid}/follows-articles${encodeGetParamsWithPage(opts)}`,
+  userFollowsDiscussions: (uid, opts={}) => `/${escapeUsername}/user/${uid}/follows-discussions${encodeGetParamsWithPage(opts)}`,
   users: (opts={}) => `/${escapeUsername}/users${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`,
   topic: (id, opts={}) => `/${escapeUsername}/topic/${id}${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`,
   topics: (opts={}) => {

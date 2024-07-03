@@ -15,11 +15,7 @@ import {
   TimeIcon,
   UnlistedIcon,
   UserIcon,
-  fragSetTarget,
-  getShortFragFromLong,
   getShortFragFromLongForPath,
-  replaceFrag,
-  replaceShortFrag,
   shortFragGoTo,
 } from 'front'
 import { articleLimit } from 'front/config'
@@ -108,17 +104,17 @@ const ArticleList = ({
         }
         break
       default:
-        emptyMessage = `There are currently no matching ${isIssue ? 'discussions' : 'articles'}`
+        emptyMessage = `There are currently no matching ${isIssue ? 'discussions' : 'articles'}.`
     }
   } else {
     if (paginationUrlFunc) {
       pagination = <Pagination {...{
-          currentPage: page,
-          what: isIssue ? 'discussions' : itemType === 'like' ? 'likes' : 'articles',
-          itemsCount: articlesCount,
-          itemsPerPage: articleLimit,
-          urlFunc: paginationUrlFunc,
-        }} />
+        currentPage: page,
+        what: isIssue ? 'discussions' : itemType === 'like' ? 'likes' : itemType === 'topic' ? 'topics' : 'articles',
+        itemsCount: articlesCount,
+        itemsPerPage: articleLimit,
+        urlFunc: paginationUrlFunc,
+      }} />
       if (showBody) {
         pagination = <div className="content-not-ourbigbook">{pagination}</div>
       }
@@ -130,7 +126,7 @@ const ArticleList = ({
   return (
     <>
       { articles.length === 0
-        ? <div className="content-not-ourbigbook article-preview">
+        ? <div className="article-preview content-not-ourbigbook">
             {emptyMessage}
           </div>
         : <div className="list-nav-container">
@@ -253,137 +249,139 @@ const ArticleList = ({
                       </div>
                     </div>
                   ))
-                : <table className="list">
-                    <thead>
-                      <tr>
-                        {itemType === 'like' &&
-                          <>
-                            <th className="shrink"><LikeIcon /><TimeIcon /> Liked</th>
-                            <th className="shrink"><LikeIcon /><UserIcon /> Liked By</th>
-                          </>
-                        }
-                        {itemType === 'topic' &&
-                          <th className="shrink right">Articles</th>
-                        }
-                        {(() => {
-                            const score = itemType === 'topic'
-                              ? <></>
-                              : <th className="shrink center"><LikeIcon /> Score</th>
-                            const title = <>
-                              {isIssue &&
-                                <th className="shrink">
-                                  <span className="icon">#</span> id
-                                </th>
-                              }
-                              <th className="expand">{ itemType === 'discussion' ? <IssueIcon /> : <ArticleIcon /> } Title</th>
-                            </>
-                            if (itemType === 'like') {
-                              return <>{title}{score}</>
-                            } else {
-                              return <>{score}{title}</>
-                            }
-                          })()
-                        }
-                        {showAuthor &&
-                          <th className="shrink"><UserIcon /> Author</th>
-                        }
-                        {(itemType !== 'topic') &&
-                          <th className="shrink"><IssueIcon /> { isIssue ? 'Comments' : 'Discussions' }</th>
-                        }
-                        <th className="shrink"><TimeIcon /> Created</th>
-                        {(itemType !== 'comment') &&
-                          <th className="shrink"><TimeIcon /> Updated</th>
-                        }
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {articles?.map(article => {
-                        let curIssueArticle
-                        if (issueArticle) {
-                          curIssueArticle = issueArticle
-                        } else {
-                          curIssueArticle = article.article
-                        }
-                        const mainHref =
-                              itemType === 'article' || itemType === 'like' ? routes.article(article.slug) :
-                              itemType === 'discussion' ? routes.issue(curIssueArticle.slug, article.number) :
-                              itemType === 'topic' ? routes.topic(article.topicId, { sort: 'score' }) :
-                              null
-                        return <tr
-                          key={
-                            itemType === 'discussion'
-                              ? `${article.number}/${curIssueArticle.slug}` :
-                              itemType === 'article'
-                                ? article.slug :
-                                  article.topicId
-                          }>
+                : <div className="content-not-ourbigbook">
+                    <table className="list">
+                      <thead>
+                        <tr>
                           {itemType === 'like' &&
                             <>
-                              <td className="shrink right">{formatDate(article.likedByDate)}</td>
-                              <td className="shrink ">
-                                <UserLinkWithImage showUsername={false} user={article.likedBy} />
-                              </td>
+                              <th className="shrink"><LikeIcon /><TimeIcon /> Liked</th>
+                              <th className="shrink"><LikeIcon /><UserIcon /> Liked By</th>
                             </>
                           }
-                          {(itemType === 'topic') &&
-                            <td className="shrink right bold">
-                              <CustomLink href={mainHref}>{article.articleCount}</CustomLink>
-                            </td>
+                          {itemType === 'topic' &&
+                            <th className="shrink right">Articles</th>
                           }
                           {(() => {
-                            const score = <>
-                              {(itemType === 'topic')
+                              const score = itemType === 'topic'
                                 ? <></>
-                                : <td className="shrink center like">
-                                    <LikeArticleButton {...{
-                                      article,
-                                      isIssue,
-                                      issueArticle: curIssueArticle,
-                                      loggedInUser,
-                                      showText: false,
-                                    }} />
-                                  </td>
+                                : <th className="shrink center"><LikeIcon /> Score</th>
+                              const title = <>
+                                {isIssue &&
+                                  <th className="shrink">
+                                    <span className="icon">#</span> id
+                                  </th>
+                                }
+                                <th className="expand">{ itemType === 'discussion' ? <IssueIcon /> : <ArticleIcon /> } Title</th>
+                              </>
+                              if (itemType === 'like') {
+                                return <>{title}{score}</>
+                              } else {
+                                return <>{score}{title}</>
                               }
-                            </>
-                            const title = <>
-                              {isIssue &&
-                                <td className="shrink bold">
-                                  <CustomLink href={mainHref}>{issueArticle ? '' : curIssueArticle.slug }#{article.number}</CustomLink>
-                                </td>
-                              }
-                              <td className="expand title">
-                                <CustomLink href={mainHref} >
-                                  <span
-                                    className="comment-body ourbigbook-title"
-                                    dangerouslySetInnerHTML={{ __html: article.titleRender }}
-                                  />
-                                </CustomLink>
-                              </td>
-                            </>
-                            if (itemType === 'like') {
-                              return <>{title}{score}</>
-                            } else {
-                              return <>{score}{title}</>
-                            }
-                          })()}
+                            })()
+                          }
                           {showAuthor &&
-                            <td className="shrink">
-                              <UserLinkWithImage showUsername={false} user={article.author} />
-                            </td>
+                            <th className="shrink"><UserIcon /> Author</th>
                           }
                           {(itemType !== 'topic') &&
-                            <td className="shrink right bold">
-                              <CustomLink href={isIssue ? routes.issueComments(curIssueArticle.slug, article.number) : routes.issues(article.slug)}>
-                                {isIssue ? article.commentCount : article.issueCount}
-                              </CustomLink>
-                            </td>
+                            <th className="shrink"><IssueIcon /> { isIssue ? 'Comments' : 'Discussions' }</th>
                           }
-                          <td className="shrink">{formatDate(article.createdAt)}</td>
-                          <td className="shrink">{formatDate(article.updatedAt)}</td>
+                          <th className="shrink"><TimeIcon /> Created</th>
+                          {(itemType !== 'comment') &&
+                            <th className="shrink"><TimeIcon /> Updated</th>
+                          }
                         </tr>
-                      })}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {articles?.map(article => {
+                          let curIssueArticle
+                          if (issueArticle) {
+                            curIssueArticle = issueArticle
+                          } else {
+                            curIssueArticle = article.article
+                          }
+                          const mainHref =
+                                itemType === 'article' || itemType === 'like' ? routes.article(article.slug) :
+                                itemType === 'discussion' ? routes.issue(curIssueArticle.slug, article.number) :
+                                itemType === 'topic' ? routes.topic(article.topicId, { sort: 'score' }) :
+                                null
+                          return <tr
+                            key={
+                              itemType === 'discussion'
+                                ? `${article.number}/${curIssueArticle.slug}` :
+                                itemType === 'article'
+                                  ? article.slug :
+                                    article.topicId
+                            }>
+                            {itemType === 'like' &&
+                              <>
+                                <td className="shrink right">{formatDate(article.likedByDate)}</td>
+                                <td className="shrink ">
+                                  <UserLinkWithImage showUsername={false} user={article.likedBy} />
+                                </td>
+                              </>
+                            }
+                            {(itemType === 'topic') &&
+                              <td className="shrink right bold">
+                                <CustomLink href={mainHref}>{article.articleCount}</CustomLink>
+                              </td>
+                            }
+                            {(() => {
+                              const score = <>
+                                {(itemType === 'topic')
+                                  ? <></>
+                                  : <td className="shrink center like">
+                                      <LikeArticleButton {...{
+                                        article,
+                                        isIssue,
+                                        issueArticle: curIssueArticle,
+                                        loggedInUser,
+                                        showText: false,
+                                      }} />
+                                    </td>
+                                }
+                              </>
+                              const title = <>
+                                {isIssue &&
+                                  <td className="shrink bold">
+                                    <CustomLink href={mainHref}>{issueArticle ? '' : curIssueArticle.slug }#{article.number}</CustomLink>
+                                  </td>
+                                }
+                                <td className="expand title">
+                                  <CustomLink href={mainHref} >
+                                    <span
+                                      className="comment-body ourbigbook-title"
+                                      dangerouslySetInnerHTML={{ __html: article.titleRender }}
+                                    />
+                                  </CustomLink>
+                                </td>
+                              </>
+                              if (itemType === 'like') {
+                                return <>{title}{score}</>
+                              } else {
+                                return <>{score}{title}</>
+                              }
+                            })()}
+                            {showAuthor &&
+                              <td className="shrink">
+                                <UserLinkWithImage showUsername={false} user={article.author} />
+                              </td>
+                            }
+                            {(itemType !== 'topic') &&
+                              <td className="shrink right bold">
+                                <CustomLink href={isIssue ? routes.issueComments(curIssueArticle.slug, article.number) : routes.issues(article.slug)}>
+                                  {isIssue ? article.commentCount : article.issueCount}
+                                </CustomLink>
+                              </td>
+                            }
+                            <td className="shrink">{formatDate(article.createdAt)}</td>
+                            <td className="shrink">{formatDate(article.updatedAt)}</td>
+                          </tr>
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
               }
             </div>
             {pagination}

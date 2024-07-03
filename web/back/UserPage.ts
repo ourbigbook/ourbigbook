@@ -44,13 +44,25 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           author = uid
           itemType = 'like'
           break
+        case 'liked-discussions':
+          author = uid
+          itemType = 'discussion-like'
+          break
         case 'likes':
           likedBy = uid
           itemType = 'article'
           break
+        case 'likes-discussions':
+          likedBy = uid
+          itemType = 'discussion'
+          break
         case 'followed-articles':
           articlesFollowedBy = uid
           itemType = 'article'
+          break
+        case 'followed-discussions':
+          articlesFollowedBy = uid
+          itemType = 'discussion'
           break
         case 'user-articles':
           author = uid
@@ -70,26 +82,30 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       const offset = pageNum * articleLimit
       const articlesPromise =
         itemType === 'article' ? sequelize.models.Article.getArticles({
-          sequelize,
+          author,
+          followedBy: articlesFollowedBy,
+          likedBy,
           limit: articleLimit,
           list: true,
           offset,
           order,
+          sequelize,
+        }) :
+        itemType === 'discussion' ? sequelize.models.Issue.getIssues({
           author,
           likedBy,
           followedBy: articlesFollowedBy,
-        }) :
-        itemType === 'discussion' ? sequelize.models.Issue.getIssues({
-          sequelize,
+          includeArticle: true,
           limit: articleLimit,
           offset,
           order,
-          author,
-          includeArticle: true,
+          sequelize,
         }) :
         []
-      const likesPromise = itemType === 'like' ? sequelize.models.User.findAndCountArticleLikesReceived(
-        user.id, { offset, order }) : []
+      const likesPromise =
+        itemType === 'like' ? sequelize.models.User.findAndCountArticleLikesReceived(user.id, { offset, order }) :
+        itemType === 'discussion-like' ? sequelize.models.User.findAndCountDiscussionLikesReceived(user.id, { offset, order }) :
+        []
       const usersPromise = itemType === 'user' ? sequelize.models.User.getUsers({
         following,
         followedBy,
@@ -135,7 +151,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       } else if (itemType === 'article' || itemType === 'discussion') {
         props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))
         props.articlesCount = articles.count
-      } else if (itemType === 'like') {
+      } else if (itemType === 'like' || itemType === 'discussion-like') {
         const articles = []
         for (const like of likes.rows) {
           const article = like.article

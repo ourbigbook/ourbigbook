@@ -135,9 +135,6 @@ const ArticleList = ({
         itemsPerPage: articleLimit,
         urlFunc: paginationUrlFunc,
       }} />
-      if (showBody) {
-        pagination = <div className="content-not-ourbigbook">{pagination}</div>
-      }
     } else {
       pagination = <></>
     }

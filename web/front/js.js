@@ -37,6 +37,10 @@ function getOrder(req, opts={}) {
       sort === 'created'
     ) {
       return ['createdAt']
+    } else if (
+      sort === 'updated'
+    ) {
+      return ['updatedAt']
     } else if (sort === 'score' || sort === 'followerCount') {
       return [sort]
     } else {

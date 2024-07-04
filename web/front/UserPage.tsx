@@ -204,6 +204,12 @@ export default function UserPage({
             <ArticleIcon /> New<span className="mobile-hide"> articles</span>
           </CustomLink>
           <CustomLink
+            href={routes.userArticles(username, { sort: 'updated' })}
+            className={`tab-item${what === 'user-articles' && order === 'updatedAt' ? ' active' : ''}`}
+          >
+            <ArticleIcon /> Updated<span className="mobile-hide"> articles</span>
+          </CustomLink>
+          <CustomLink
             href={routes.userIssues(user.username, { sort: 'created' })}
             className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
           >

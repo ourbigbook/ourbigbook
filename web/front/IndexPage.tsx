@@ -122,16 +122,22 @@ function IndexPageHoc({
                 </>
               }
               <CustomLink
+                className={`tab-item${(itemType === 'article' || itemType === 'discussion') && order === 'score' && !followed ? ' active' : ''}`}
+                href={(isIssue && !isHomepage) ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
+              >
+                <ArticleIcon /> Top<span className="mobile-hide"> articles</span>
+              </CustomLink>
+              <CustomLink
                 className={`tab-item${itemType === 'article' && order === 'createdAt' && !followed ? ' active' : ''}`}
                 href={(isIssue && !isHomepage) ? routes.issues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
               >
                 <ArticleIcon /> New<span className="mobile-hide"> articles</span>
               </CustomLink>
               <CustomLink
-                className={`tab-item${(itemType === 'article' || itemType === 'discussion') && order === 'score' && !followed ? ' active' : ''}`}
-                href={(isIssue && !isHomepage) ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
+                className={`tab-item${itemType === 'article' && order === 'updatedAt' && !followed ? ' active' : ''}`}
+                href={(isIssue && !isHomepage) ? routes.issues(issueArticle.slug, { sort: 'updated' }) : routes.articles({ sort: 'updated' })}
               >
-                <ArticleIcon /> Top<span className="mobile-hide"> articles</span>
+                <ArticleIcon /> Updated<span className="mobile-hide"> articles</span>
               </CustomLink>
               <CustomLink
                 className={`tab-item${itemType === 'user' && order === 'score' ? ' active' : ''}`}

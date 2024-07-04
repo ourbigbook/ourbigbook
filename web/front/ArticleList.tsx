@@ -31,7 +31,11 @@ import {
   AT_MENTION_CHAR,
 } from 'ourbigbook'
 
-function getKey(itemType, article, issueArticle) {
+function getKey(
+  itemType: string,
+  article,
+  issueArticle=undefined
+) {
   if (itemType === 'discussion') {
     let curIssueArticle
     if (issueArticle) {
@@ -151,7 +155,7 @@ const ArticleList = ({
               {showBody
                 ? articles?.map((article, i) => (
                     <div
-                      key={getKey(itemType, article, curIssueArticle) }
+                      key={getKey(itemType, article) }
                       className="item"
                     >
                       <div className="content-not-ourbigbook title-container">

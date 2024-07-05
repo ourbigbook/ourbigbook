@@ -525,10 +525,18 @@ class DbProviderBase extends ourbigbook.DbProvider {
   }
 }
 
+const QUERY_TRUE_VAL = 'true'
+const QUERY_FALSE_VAL = 'false'
+
+function boolToQueryVal(b) {
+  return b ? QUERY_TRUE_VAL : QUERY_FALSE_VAL
+}
+
 module.exports = {
   articleHash,
-  QUERY_TRUE_VAL: 'true',
-  QUERY_FALSE_VAL: 'false',
+  boolToQueryVal,
+  QUERY_TRUE_VAL,
+  QUERY_FALSE_VAL,
   WebApi,
   DbProviderBase,
   encodeGetParams,

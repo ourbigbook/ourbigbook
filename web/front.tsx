@@ -52,7 +52,7 @@ export function ArticleBy(
 ) {
   const inner = <>
     "<span
-      className="comment-body ourbigbook-title"
+      className="ourbigbook-title"
       dangerouslySetInnerHTML={{ __html: article.titleRender }}
     />" by <UserLinkWithImageInner {...{
       user: article.author,
@@ -73,7 +73,7 @@ export function IssueBy(
 ) {
   return <CustomLink href={routes.article(article.slug)}>
     "<span
-      className="comment-body ourbigbook-title"
+      className="ourbigbook-title"
       dangerouslySetInnerHTML={{ __html: article.titleRender }}
     />" by { article.author.displayName }
   </CustomLink>
@@ -207,7 +207,7 @@ export function SignupOrLogin(
     <CustomLink href={routes.userLogin()}>
       {decapitalize(LOGIN_ACTION)}
     </CustomLink>
-    {' '}{to}.
+    {' '}to {to}.
   </>
 }
 

@@ -1110,12 +1110,12 @@ WHERE
     offset,
     order,
     orderAscDesc,
+    rows=true,
     sequelize,
     slug,
     topicId,
     transaction,
   }) => {
-    assert.notStrictEqual(sequelize, undefined)
     if (orderAscDesc === undefined) {
       orderAscDesc = 'DESC'
     }
@@ -1123,7 +1123,7 @@ WHERE
       count = true
     }
     if (excludeIds === undefined) {
-      excludeIds  = []
+      excludeIds = []
     }
 
     let where = {}
@@ -1193,8 +1193,12 @@ WHERE
     }
     let ret, articles
     if (count) {
-      ret = await sequelize.models.Article.findAndCountAll(findArgs)
-      articles = ret.rows
+      if (rows) {
+        ret = await sequelize.models.Article.findAndCountAll(findArgs)
+        articles = ret.rows
+      } else {
+        ret = { count: await sequelize.models.Article.count(findArgs) }
+      }
     } else {
       ret = await sequelize.models.Article.findAll(findArgs)
       articles = ret

@@ -13,7 +13,7 @@ import { UserType } from 'front/types/UserType'
 export type UserListProps = {
   loggedInUser?: UserType;
   page: number;
-  paginationUrlFunc: PaginationPropsUrlFunc;
+  paginationUrlFunc?: PaginationPropsUrlFunc;
   users: UserType[];
   usersCount: number;
 }
@@ -61,15 +61,13 @@ const UserList = ({
           </tbody>
         </table>
       </div>
-      {paginationUrlFunc &&
-        <Pagination {...{
-          currentPage: page,
-          itemsCount: usersCount,
-          itemsPerPage: articleLimit,
-          urlFunc: paginationUrlFunc,
-          what: 'users',
-        }} />
-      }
+      <Pagination {...{
+        currentPage: page,
+        itemsCount: usersCount,
+        itemsPerPage: articleLimit,
+        urlFunc: paginationUrlFunc,
+        what: 'users',
+      }} />
     </div>
   );
 };

@@ -158,6 +158,7 @@ const ArticlePageHoc = (isIssue=false) => {
                 loggedInUser,
                 showAuthor: true,
                 showBody: true,
+                showControls: false,
                 what: 'articles',
               }}/>
               <p className="content-not-ourbigbook">

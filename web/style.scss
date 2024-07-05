@@ -134,10 +134,10 @@ label {
   div.label {
     margin-bottom: 5px;
   }
-  &.inline {
+  &.flex {
     display: flex;
     justify-content: flex-start;
-    div.label.inline {
+    div.label.flex {
       align-self: center;
       display: inline;
       margin-right: 1ch;
@@ -146,6 +146,12 @@ label {
       &[type="text"] {
         flex-grow: 1;
       }
+    }
+  }
+  &.inline {
+    display: inline-block;
+    div.label.inline {
+      display: inline;
     }
   }
 }
@@ -389,11 +395,37 @@ div.editor-page {
   }
 }
 
-div.topic-page {
-  .list-container {
-    .ourbigbook-title {
-      color: $h-color;
-      font-size: $header-font-size;
+div.article-list {
+  &.show-body {
+    .read-full {
+      font-weight: bold;
+    }
+    .render {
+      // TODO limit render height. Difficulties:
+      // - avoid double margins on rendered content. Margin collapse is disabled if we set overflow:
+      //   - https://gist.github.com/gokulkrishh/1c197d0369c45a8153d327b11d1626ca
+      //   - https://stackoverflow.com/questions/47958007/why-does-overflow-hidden-add-padding-margin
+      // - show indicator if there is overflow:
+      //   - https://stackoverflow.com/questions/70131020/how-to-display-scroll-down-if-and-only-if-content-overflows-in-pure-css
+      //   - https://stackoverflow.com/questions/45105611/css-only-solution-for-overflow-scroll-indicators
+      //max-height: 500px;
+      //margin-bottom: 1em;
+      //overflow-y: hidden;
+    }
+    .title-container {
+      // TODO this makes everything look verticaly centered nicelly.
+      // But it breaks down if the page becomes narrow and title goes in different
+      // line than the other elements. Related:
+      // https://stackoverflow.com/questions/44707141/how-to-force-flex-columns-to-stay-on-the-same-line-if-container-flex-wrap-is-s
+      //align-items:center;  
+      //display: flex;
+      //flex-wrap: wrap;
+      //column-gap: 7px;
+
+      .ourbigbook-title {
+        color: $h-color;
+        font-size: $header-font-size;
+      }
     }
   }
 }
@@ -534,6 +566,12 @@ span.shortcut {
   .site-settings {
     font-weight: bold;
     margin-top: 10px;
+  }
+}
+
+.list-nav-container {
+  .controls {
+    padding-bottom: 0.5em;
   }
 }
 

@@ -6,19 +6,15 @@ import { MyGetServerSideProps } from 'front/types'
 import { TopicPageProps } from 'front/TopicPage'
 import {
   getOrderAndPage,
+  getList,
   typecastBoolean,
 } from 'front/js'
 
 export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
   return async ({ params: { id }, query, req, res }) => {
     const [order, pageNum, err] = getOrderAndPage(req, query.page, { defaultOrder: 'score' })
-    let showUnlisted, ok
-    ;[showUnlisted, ok] = typecastBoolean(query['show-unlisted'])
-    if (!ok) {
-      showUnlisted = false
-    }
-    if (err || !ok) { res.statusCode = 422 }
-    const list = showUnlisted ? undefined : true
+    const list = getList(req, res)
+    if (err) { res.statusCode = 422 }
     const loggedInUser = await getLoggedInUser(req, res)
     const sequelize = req.sequelize
     if (
@@ -54,7 +50,7 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
             return null;
           }
         }),
-        sequelize.models.Article.getArticles(Object.assign({}, getArticlesOpts, { list: false })),
+        sequelize.models.Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false })),
         //sequelize.models.Topic.findOne({
         //  include: [{
         //    model: sequelize.models.Article,

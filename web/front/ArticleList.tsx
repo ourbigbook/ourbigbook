@@ -5,6 +5,7 @@ import Link from 'next/link'
 import lodash from 'lodash'
 
 import CustomLink from 'front/CustomLink'
+import Label from 'front/Label'
 import LikeArticleButton from 'front/LikeArticleButton'
 import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
@@ -26,7 +27,7 @@ import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 
-import { QUERY_TRUE_VAL } from 'ourbigbook/web_api'
+import { boolToQueryVal, encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
 import {
   AT_MENTION_CHAR,
 } from 'ourbigbook'
@@ -66,6 +67,7 @@ export type ArticleListProps = {
   paginationUrlFunc?: PaginationPropsUrlFunc;
   showAuthor: boolean;
   showBody?: boolean,
+  showControls?: boolean;
   what?: string;
 }
 
@@ -83,11 +85,39 @@ const ArticleList = ({
   paginationUrlFunc,
   showAuthor,
   showBody=false,
+  showControls=true,
   what='all',
 }: ArticleListProps) => {
   const router = useRouter();
-  const { asPath, pathname, query } = router
-  const { like, follow, tag, uid } = query;
+  const { pathname, query } = router
+  const { uid } = query;
+  const itemTypeHasShowBody = itemType === 'article'
+    // This almost works to have discussion body previews. The only missing problem is that
+    // "render" contains full body including h1 which we don't want. We'd need to convert
+    // render to be body without h1 like in Article for it to work well.
+    // || itemType === 'discussion'
+  let showBodyInit
+  if (itemTypeHasShowBody) {
+    if (query.body === QUERY_TRUE_VAL) {
+      showBodyInit = true
+    } else if (query.body === QUERY_FALSE_VAL) {
+      showBodyInit = false
+    } else {
+      showBodyInit = showBody
+    }
+  } else {
+    showBodyInit = false
+  }
+  const showBodyElem = React.useRef(null)
+  const [showBodyState, setShowBodyState] = React.useState(showBodyInit)
+  React.useEffect(() => {
+    // Reset on tab change.
+    setShowBodyState(showBodyInit)
+    if (showBodyElem.current) {
+      showBodyElem.current.checked = showBodyInit
+    }
+  }, [pathname, encodeGetParams(lodash.omit(query, 'body'))])
+
   let isIssue
   switch (itemType) {
     case 'discussion':
@@ -127,7 +157,7 @@ const ArticleList = ({
         emptyMessage = `There are currently no matching ${isIssue ? 'discussions' : 'articles'}.`
     }
   } else {
-    if (paginationUrlFunc) {
+    if (showControls) {
       pagination = <Pagination {...{
         currentPage: page,
         what: isIssue ? 'discussions' : itemType === 'like' ? 'likes' : itemType === 'topic' ? 'topics' : 'articles',
@@ -141,131 +171,167 @@ const ArticleList = ({
   }
   const aElemToMetaMap = React.useRef(new Set())
   return (
-    <>
+    <div className={`article-list${showBodyState ? ' show-body' : '' }`}>
       { articles.length === 0
         ? <div className="article-preview content-not-ourbigbook">
             {emptyMessage}
           </div>
         : <div className="list-nav-container">
-            {showBody && pagination}
-            <div className="list-container">
-              {showBody
-                ? articles?.map((article, i) => (
-                    <div
-                      key={getKey(itemType, article) }
-                      className="item"
-                    >
-                      <div className="content-not-ourbigbook title-container">
-                        <LikeArticleButton {...{
-                          article,
-                          isIssue,
-                          issueArticle,
-                          loggedInUser,
-                          showText: false,
-                        }} />
-                        {' '}
-                        <CustomLink
-                          href={itemType === 'discussion' ? routes.issue(issueArticle.slug, article.number) :
-                                itemType === 'article' ? routes.article(article.slug) :
-                                routes.topic(article.topicId, { sort: 'score' })
-                          }
-                        >
-                          <span
-                            className="comment-body ourbigbook-title title"
-                            dangerouslySetInnerHTML={{ __html: article.titleRender }}
-                          />
-                        </CustomLink>
-                        {' '}
-                        {showAuthor &&
-                          <>
-                            by
-                            {' '}
-                            <UserLinkWithImage showUsername={false} user={article.author} />
-                            {' '}
-                          </>
+            {showControls &&
+              <div className="content-not-ourbigbook controls">
+                {itemTypeHasShowBody &&
+                  <Label label="Show body" inline={true}>
+                    <input
+                      type="checkbox"
+                      ref={showBodyElem}
+                      defaultChecked={showBodyState}
+                      onChange={(e) => {
+                        const showBodyState = e.target.checked
+                        setShowBodyState(showBodyState)
+                        const url = new URL(window.location.href)
+                        const query = Object.fromEntries(url.searchParams)
+                        if (showBodyState === showBody) {
+                          delete query.body
+                        } else {
+                          query.body = boolToQueryVal(showBodyState)
                         }
-                        <span title="Last updated">
-                          <TimeIcon />
-                          {' '}
-                          {formatDate(article.updatedAt)}
-                        </span>
-                      </div>
+                        Router.push(
+                          `${url.pathname}${encodeGetParams(query)}`,
+                          undefined,
+                          { shallow: true }
+                        )
+                      }}
+                    />
+                  </Label>
+                }
+              </div>
+            }
+            {showBodyState && pagination}
+            <div className="list-container">
+              {showBodyState
+                ? articles?.map((article, i) => {
+                    let curIssueArticle
+                    if (issueArticle) {
+                      curIssueArticle = issueArticle
+                    } else {
+                      curIssueArticle = article.article
+                    }
+                    return (
                       <div
-                        className="ourbigbook"
-                        dangerouslySetInnerHTML={{ __html: article.render }}
-                        ref={(elem) => {
-                          if (elem) {
-                            const as = elem.getElementsByTagName('a')
-                            for (let i = 0; i < as.length; i++) {
-                              const a = as[i]
-                              if (!aElemToMetaMap.current.has(a)) {
-                                const href = a.href
-                                aElemToMetaMap.current.add(a)
-                                const url = new URL(href, document.baseURI)
-                                if (
-                                  // Don't do processing for external links.
-                                  url.origin === new URL(document.baseURI).origin
-                                ) {
-                                  let frag
-                                  let longFrag
-                                  let goToTargetInPage = false
-                                  let targetElem
-                                  if (url.hash) {
-                                    frag = url.hash.slice(1)
-                                    targetElem = document.getElementById(frag)
-                                    longFrag = AT_MENTION_CHAR + frag
-                                    if (targetElem) {
-                                      goToTargetInPage = true
-                                      a.href = '#' + longFrag
-                                    }
-                                  }
-                                  if (!goToTargetInPage) {
-                                    const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
-                                    a.href = url.pathname + (frag ? ('#' + frag) : '')
-                                  }
-                                  a.addEventListener('click', e => {
-                                    if (
-                                      // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
-                                      // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
-                                      !e.ctrlKey
-                                    ) {
-                                      e.preventDefault()
-                                      if (
-                                        // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
-                                        // For artiles all works fine because each section is rendered separately and thus has a non empty href.
-                                        // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
-                                        // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
-                                        // But lazy now.
-                                        !href
-                                      ) {
-                                        window.location.hash = ''
-                                      } else {
-                                        if (goToTargetInPage) {
-                                          shortFragGoTo(handleShortFragmentSkipOnce, frag, longFrag, targetElem)
-                                        } else {
-                                          Router.push(a.href)
-                                        }
+                        key={getKey(itemType, article) }
+                        className="item"
+                      >
+                        <div className="content-not-ourbigbook title-container">
+                          <LikeArticleButton {...{
+                            article,
+                            isIssue,
+                            issueArticle,
+                            loggedInUser,
+                            showText: false,
+                          }} />
+                          {' '}
+                          <CustomLink
+                            href={itemType === 'discussion' ? routes.issue(curIssueArticle.slug, article.number) :
+                                  itemType === 'article' ? routes.article(article.slug) :
+                                  routes.topic(article.topicId, { sort: 'score' })
+                            }
+                          >
+                            <span
+                              className="ourbigbook-title title"
+                              dangerouslySetInnerHTML={{ __html: article.titleRender }}
+                            />
+                          </CustomLink>
+                          {' '}
+                          {showAuthor &&
+                            <>
+                              by
+                              {' '}
+                              <UserLinkWithImage showUsername={false} user={article.author} />
+                              {' '}
+                            </>
+                          }
+                          <span title="Last updated">
+                            <TimeIcon />
+                            {' '}
+                            {formatDate(article.updatedAt)}
+                          </span>
+                        </div>
+                        <div
+                          className="render ourbigbook"
+                          dangerouslySetInnerHTML={{ __html: article.render }}
+                          ref={(elem) => {
+                            if (elem) {
+                              const as = elem.getElementsByTagName('a')
+                              for (let i = 0; i < as.length; i++) {
+                                const a = as[i]
+                                if (!aElemToMetaMap.current.has(a)) {
+                                  const href = a.href
+                                  aElemToMetaMap.current.add(a)
+                                  const url = new URL(href, document.baseURI)
+                                  if (
+                                    // Don't do processing for external links.
+                                    url.origin === new URL(document.baseURI).origin
+                                  ) {
+                                    let frag
+                                    let longFrag
+                                    let goToTargetInPage = false
+                                    let targetElem
+                                    if (url.hash) {
+                                      frag = url.hash.slice(1)
+                                      targetElem = document.getElementById(frag)
+                                      longFrag = AT_MENTION_CHAR + frag
+                                      if (targetElem) {
+                                        goToTargetInPage = true
+                                        a.href = '#' + longFrag
                                       }
                                     }
-                                  })
+                                    if (!goToTargetInPage) {
+                                      const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
+                                      a.href = url.pathname + (frag ? ('#' + frag) : '')
+                                    }
+                                    a.addEventListener('click', e => {
+                                      if (
+                                        // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
+                                        // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
+                                        !e.ctrlKey
+                                      ) {
+                                        e.preventDefault()
+                                        if (
+                                          // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
+                                          // For artiles all works fine because each section is rendered separately and thus has a non empty href.
+                                          // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
+                                          // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
+                                          // But lazy now.
+                                          !href
+                                        ) {
+                                          window.location.hash = ''
+                                        } else {
+                                          if (goToTargetInPage) {
+                                            shortFragGoTo(handleShortFragmentSkipOnce, frag, longFrag, targetElem)
+                                          } else {
+                                            Router.push(a.href)
+                                          }
+                                        }
+                                      }
+                                    })
+                                  }
                                 }
                               }
                             }
-                          }
-                        }}
-                      />
-                      <div className="content-not-ourbigbook read-full">
-                        <CustomLink
-                          href={itemType === 'discussion' ? routes.issue(issueArticle.slug, article.number) :
-                                itemType === 'article' ? routes.article(article.slug) :
-                                routes.topic(article.topicId, { sort: 'score' })
-                          }
-                        >
-                          <ArticleIcon /> Read the full article
-                        </CustomLink>
+                          }}
+                        />
+                        <div className="content-not-ourbigbook read-full">
+                          <CustomLink
+                            href={itemType === 'discussion' ? routes.issue(curIssueArticle.slug, article.number) :
+                                  itemType === 'article' ? routes.article(article.slug) :
+                                  routes.topic(article.topicId, { sort: 'score' })
+                            }
+                          >
+                            <ArticleIcon /> Read the full article
+                          </CustomLink>
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    )})
                 : <div className="content-not-ourbigbook">
                     <table className="list">
                       <thead>
@@ -361,7 +427,7 @@ const ArticleList = ({
                                 <td className="expand title">
                                   <CustomLink href={mainHref} >
                                     <span
-                                      className="comment-body ourbigbook-title"
+                                      className="ourbigbook-title"
                                       dangerouslySetInnerHTML={{ __html: article.titleRender }}
                                     />
                                   </CustomLink>
@@ -399,9 +465,10 @@ const ArticleList = ({
       }
       {(itemType === 'article' && hasUnlisted === true) &&
         <p className="content-not-ourbigbook">
+          <UnlistedIcon />{' '}
           {list === true
             ? <>
-                <UnlistedIcon /> There are unlisted articles,
+                There are unlisted articles,
                 {' '}
                 <Link
                   href={{
@@ -409,25 +476,34 @@ const ArticleList = ({
                       query: { ...router.query, 'show-unlisted': QUERY_TRUE_VAL },
                   }}
                 >
-                  click here to also show them
+                  also show them
+                </Link>
+                {' '}or{' '}
+                <Link
+                  href={{
+                      pathname: router.pathname,
+                      query: { ...router.query, 'show-unlisted': QUERY_TRUE_VAL, 'show-listed': QUERY_FALSE_VAL },
+                  }}
+                >
+                  only show them
                 </Link>.
               </>
             : <>
-                <UnlistedIcon /> Unlisted articles are being shown,
+                {list === false ? 'Only unlisted articles are being shown' : 'Unlisted articles are being shown'},
                 {' '}
                 <Link
                   href={{
                       pathname: router.pathname,
-                      query: lodash.omit(router.query, 'show-unlisted'),
+                      query: lodash.omit(router.query, 'show-unlisted', 'show-listed'),
                   }}
                 >
-                  click here to hide them
+                  click here to show only listed articles
                 </Link>.
               </>
           }
         </p>
       }
-    </>
+    </div>
   )
 }
 

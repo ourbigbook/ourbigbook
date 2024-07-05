@@ -22,7 +22,7 @@ module.exports = (sequelize) => {
       bodySource: DataTypes.TEXT,
       // Rendered toplevel header title.
       titleRender: DataTypes.TEXT,
-      // Full rendered output.
+      // Full rendered output including toplevel h1.
       render: DataTypes.TEXT,
       // User-visible numeric identifier for the issue. 1-based.
       number: DataTypes.INTEGER,

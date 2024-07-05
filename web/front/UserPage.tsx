@@ -41,10 +41,12 @@ export interface UserPageProps {
   commentCountByLoggedInUser?: number;
   comments?: CommentType[];
   commentsCount?: number;
+  hasUnlisted?: boolean;
   incomingLinks?: ArticleLinkType[];
   issuesCount?: number;
   itemType?: 'article' | 'comment' | 'discussion' | 'like'| 'topic' | 'user';
   latestIssues?: IssueType[];
+  list: boolean,
   loggedInUser?: UserType;
   order: string;
   page: number;
@@ -80,10 +82,12 @@ export default function UserPage({
   comments,
   commentsCount,
   commentCountByLoggedInUser,
+  hasUnlisted,
   incomingLinks,
   issuesCount,
   itemType,
   latestIssues,
+  list,
   loggedInUser,
   order,
   page,
@@ -98,39 +102,6 @@ export default function UserPage({
   const router = useRouter();
   const username = user?.username
   const isCurrentUser = loggedInUser && username === loggedInUser?.username
-  let paginationUrlFunc
-  switch (what) {
-    case 'follows':
-      paginationUrlFunc = page => routes.userFollows(user.username, { page })
-      break
-    case 'followed':
-      paginationUrlFunc = page => routes.userFollowed(user.username, { page })
-      break
-    case 'followed-articles':
-      paginationUrlFunc = page => routes.userFollowsArticles(user.username, { page })
-      break
-    case 'followed-discussions':
-      paginationUrlFunc = page => routes.userFollowsDiscussions(user.username, { page })
-      break
-    case 'liked':
-      paginationUrlFunc = page => routes.userLiked(user.username, { page })
-      break
-    case 'likes':
-      paginationUrlFunc = page => routes.userLikes(user.username, { page })
-      break
-    case 'likes-discussions':
-      paginationUrlFunc = page => routes.userLikesDiscussions(user.username, { page })
-      break
-    case 'user-comments':
-      paginationUrlFunc = page => routes.userComments(user.username, { page })
-      break
-    case 'user-issues':
-      paginationUrlFunc = page => routes.userIssues(user.username, { page, sort: order })
-      break
-    case 'user-articles':
-      paginationUrlFunc = page => routes.userArticles(user.username, { page, sort: order })
-      break
-  }
   const canEdit = loggedInUser && loggedInUser?.username === username
   useEEdit(canEdit, article?.slug)
 
@@ -304,10 +275,11 @@ export default function UserPage({
         articles,
         articlesCount,
         handleShortFragmentSkipOnce,
+        hasUnlisted,
         itemType,
+        list,
         loggedInUser,
         page,
-        paginationUrlFunc,
         showAuthor: what === 'likes' || what === 'followed-articles',
         what,
       }}/>
@@ -327,7 +299,6 @@ export default function UserPage({
         <UserList {...{
           loggedInUser,
           page,
-          paginationUrlFunc,
           users,
           usersCount,
         }}/>

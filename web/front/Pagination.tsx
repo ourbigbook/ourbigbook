@@ -1,10 +1,11 @@
 import React from 'react'
-import { useRouter } from 'next/router'
+import Router, { useRouter } from 'next/router'
 
 import { encodeGetParams } from 'ourbigbook/web_api'
 
 import Maybe from 'front/Maybe'
 import CustomLink from 'front/CustomLink'
+import { loadProjectInfo } from 'next/dist/build/webpack-config'
 
 // number: 1-indexed page number
 export type PaginationPropsUrlFunc = (number) => string;
@@ -22,6 +23,8 @@ function PaginationItem(props) {
   const newProps = Object.assign({}, props)
   delete newProps.children
   delete newProps.className
+  delete newProps.page
+  delete newProps.urlFunc
   let className;
   if (props.className) {
     className = ' ' + props.className
@@ -30,20 +33,45 @@ function PaginationItem(props) {
   }
   return <>
     <span className={`page-item${className}`} {...newProps}>
-      <CustomLink href={props.href} className="page-link">{props.children}</CustomLink>
+      <CustomLink
+        className="page-link"
+        href={props.urlFunc(props.href)}
+        onClick={(ev) => {
+          // This is to maintain display-only query parameteres which
+          // are added with shallow routing, this was the case for body= as
+          // of writing. Ideally we should also hack the href to reflect the correct
+          // location, but lazy.
+          ev.preventDefault()
+          Router.push(makeUrlFunc(window.location.href)(props.page))
+        }}
+      >
+        {props.children}
+      </CustomLink>
     </span>
     {' '}
   </>
 }
 
-export const getRange = (start, end) => {
+export const getRange = (start: number, end: number) => {
   return [...Array(end - start + 1)].map((_, i) => start + i);
 };
 
+function makeUrlFunc(urlString) {
+  return page => {
+    const url = new URL(urlString)
+    const query = Object.fromEntries(url.searchParams)
+    if (page === 1) {
+      delete query.page
+    } else {
+      query.page = page
+    }
+    return `${url.pathname}${encodeGetParams(query)}`
+  }
+}
 
 const Pagination = ({
   // 0-indexed
-  currentPage,
+  currentPage=1,
   itemsCount,
   itemsPerPage,
   showPagesMax,
@@ -55,18 +83,9 @@ const Pagination = ({
     showPagesMax = 10
   }
   if (urlFunc === undefined) {
-    // By default, base pagination on the current URL.
-    // Works well if there is just one pagination per page about the current item,
-    // which is always true as of writing.
-    urlFunc = page => {
-      const query = Object.assign({}, router.query)
-      if (page === 1) {
-        delete query.page
-      } else {
-        query.page = page
-      }
-      return `${router.pathname}${encodeGetParams(query)}`
-    }
+    // Take over this on browser, as there may be other query parameters set
+    // that we want to keep as the page changes.
+    urlFunc = makeUrlFunc('http://example.com' + router.asPath)
   }
   // - totalPages
   // - firstPage: 0-indexed
@@ -102,28 +121,31 @@ const Pagination = ({
         <Maybe test={totalPages > 1}>
           <span className="pages">
             <Maybe test={firstPage > 0}>
-              <PaginationItem href={urlFunc(0)}>{`<<`}</PaginationItem>
+              <PaginationItem {...{ page: 0, urlFunc }}>{`<<`}</PaginationItem>
             </Maybe>
             <Maybe test={currentPage > 0}>
-              <PaginationItem href={urlFunc(currentPage)}>{`<`}</PaginationItem>
+              <PaginationItem {...{ page: currentPage, urlFunc }}>{`<`}</PaginationItem>
             </Maybe>
             {pages.map(page => {
               const isCurrent = page === currentPage;
               return (
                 <PaginationItem
-                  key={page.toString()}
-                  className={isCurrent && "active"}
-                  href={urlFunc(page + 1)}
+                  {...{
+                    key: page.toString(),
+                    className: isCurrent && "active",
+                    page: page + 1,
+                    urlFunc,
+                  }}
                 >
                   {page + 1}
                 </PaginationItem>
               );
             })}
             <Maybe test={currentPage < totalPages - 1}>
-              <PaginationItem  href={urlFunc(currentPage + 2)}>{`>`}</PaginationItem>
+              <PaginationItem {...{ page: currentPage + 2, urlFunc }}>{`>`}</PaginationItem>
             </Maybe>
             <Maybe test={lastPage < totalPages - 1}>
-              <PaginationItem href={urlFunc(totalPages)}>{`>>`}</PaginationItem>
+              <PaginationItem  {...{ page: totalPages, urlFunc }}>{`>>`}</PaginationItem>
             </Maybe>
           </span>
         </Maybe>

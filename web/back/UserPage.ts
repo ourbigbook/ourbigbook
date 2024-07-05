@@ -3,7 +3,7 @@ import ourbigbook from 'ourbigbook'
 import { getLoggedInUser } from 'back'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { articleLimit  } from 'front/config'
-import { getOrderAndPage } from 'front/js'
+import { getList, getOrderAndPage } from 'front/js'
 import { MyGetServerSideProps } from 'front/types'
 import { UserPageProps } from 'front/UserPage'
 
@@ -26,6 +26,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         }
       }
       const [order, pageNum, err] = getOrderAndPage(req, query.page)
+      const list = getList(req, res)
       if (err) { res.statusCode = 422 }
       let author, articlesFollowedBy, likedBy, following, followedBy, itemType
       switch (what) {
@@ -81,17 +82,18 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           throw new Error(`Unknown search: ${what}`)
       }
       const offset = pageNum * articleLimit
+      const getArticlesOpts = {
+        author,
+        followedBy: articlesFollowedBy,
+        likedBy,
+        limit: articleLimit,
+        list,
+        offset,
+        order,
+        sequelize,
+      }
       const articlesPromise =
-        itemType === 'article' ? sequelize.models.Article.getArticles({
-          author,
-          followedBy: articlesFollowedBy,
-          likedBy,
-          limit: articleLimit,
-          list: true,
-          offset,
-          order,
-          sequelize,
-        }) :
+        itemType === 'article' ? sequelize.models.Article.getArticles(getArticlesOpts) :
         itemType === 'discussion' ? sequelize.models.Issue.getIssues({
           author,
           likedBy,
@@ -123,6 +125,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         userJson,
         loggedInUserJson,
         likes,
+        unlistedArticles,
         users,
       ] = await Promise.all([
         articlesPromise,
@@ -133,11 +136,17 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         user.toJson(loggedInUser),
         loggedInUser ? loggedInUser.toJson() : undefined,
         likesPromise,
+        itemType === 'article'
+          ? sequelize.models.Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false }))
+          : {}
+        ,
         usersPromise,
         updateNewScoreLastCheckPromise,
       ])
       const props: UserPageProps = {
+        hasUnlisted: !!unlistedArticles.count,
         itemType,
+        list: list === undefined ? null : list,
         order,
         page: pageNum,
         user: userJson,

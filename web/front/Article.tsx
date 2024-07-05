@@ -108,16 +108,13 @@ const Article = ({
           {' '}
         </>
       }
-      {loggedInUser
-        ? <CustomLink
-            className="btn small"
-            href={routes.issueNew(article.slug)}
-            updatePreviousPage={true}
-          >
-            <NewArticleIcon /> New discussion
-          </CustomLink>
-        : <SignupOrLogin to="create discussions"/>
-      }
+      <CustomLink
+        className="btn small"
+        href={routes.issueNew(article.slug)}
+        updatePreviousPage={true}
+      >
+        <NewArticleIcon /> New discussion
+      </CustomLink>
     </>
   }
   let linkPref: string|undefined
@@ -386,23 +383,22 @@ const Article = ({
               <>
                 {' '}
                 <span className="pill" title="Last updated">
-                  <TimeIcon />{' '}
+                  <TimeIcon />{article.createdAt === article.updatedAt ? '' : ' Updated '}
                   <span className="article-dates">
                     {formatDate(article.updatedAt)}
                   </span>
                 </span>
-                {/*
-                {false && article.createdAt !== article.updatedAt &&
+                {article.createdAt !== article.updatedAt &&
                   <>
-                    <span className="mobile-hide">
-                      {' Updated: '}
-                    </span>
-                    <span className="article-dates">
-                      {formatDate(article.updatedAt)}
+                    {' '}
+                    <span className="pill" title="Last updated">
+                      <TimeIcon /> Created{' '}
+                      <span className="article-dates">
+                        {formatDate(article.createdAt)}
+                      </span>
                     </span>
                   </>
                 }
-                */}
                 {article.list === false &&
                   <>
                     {' '}
@@ -629,9 +625,9 @@ const Article = ({
       className="ourbigbook"
       ref={renderRefCallback}
     />
-    <div className="meta content-not-ourbigbook">
+    <div className="meta">
       {isIssue
-        ? <>
+        ? <div className="content-not-ourbigbook">
             <h2 id={commentsHeaderId}>
               <a href={`#${commentsHeaderId}`}><CommentIcon /> Comments ({ commentsCount })</a>
               {' '}
@@ -662,75 +658,85 @@ const Article = ({
                 setComments,
               }} />
             )}
-          </>
+          </div>
         : <>
-            <div className="ourbigbook-title">
-              {linkList(tagged, TAGGED_ID_UNRESERVED, TAGS_MARKER, 'Tagged', linkPref)}
-              {(ancestors.length !== 0) && <>
-                <h2 id={ANCESTORS_ID}><a
-                  href={`#${ANCESTORS_ID}`} dangerouslySetInnerHTML={{ __html: HTML_PARENT_MARKER + ' Ancestors' }}
-                  className="ourbigbook-title">
-                </a></h2>
-                <ol>
-                  {ancestors.slice().reverse().map(a =>
-                    // Don't need href=../a.slug because this section cannot appear on the index page.
-                    <li key={a.slug}><a
-                      href={`${linkPref}${a.slug}`}
-                      dangerouslySetInnerHTML={{ __html: a.titleRender}}
-                    ></a></li>
-                  )}
-                </ol>
-              </>}
-            {linkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
-            {linkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
-            <p><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></p>
+            <div className="content-not-ourbigbook">
+              <div className="ourbigbook-title">
+                {linkList(tagged, TAGGED_ID_UNRESERVED, TAGS_MARKER, 'Tagged', linkPref)}
+                {(ancestors.length !== 0) && <>
+                  <h2 id={ANCESTORS_ID}><a
+                    href={`#${ANCESTORS_ID}`} dangerouslySetInnerHTML={{ __html: HTML_PARENT_MARKER + ' Ancestors' }}
+                    className="ourbigbook-title">
+                  </a></h2>
+                  <ol>
+                    {ancestors.slice().reverse().map(a =>
+                      // Don't need href=../a.slug because this section cannot appear on the index page.
+                      <li key={a.slug}><a
+                        href={`${linkPref}${a.slug}`}
+                        dangerouslySetInnerHTML={{ __html: a.titleRender}}
+                      ></a></li>
+                    )}
+                  </ol>
+                </>}
+              {linkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
+              {linkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
+              <p><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></p>
+              </div>
+              <h2>
+                <CustomLink href={routes.issues(article.slug)}>
+                  <IssueIcon /> Discussion ({ article.issueCount })
+                </CustomLink>
+                {' '}
+                <FollowArticleButton {...{
+                  article,
+                  classNames: ['btn', 'small'],
+                  isIssue: false,
+                  loggedInUser,
+                  showText: false,
+                }} />
+              </h2>
+              { seeAllCreateNew }
             </div>
-            <h2>
-              <CustomLink href={routes.issues(article.slug)}>
-                <IssueIcon /> Discussion ({ article.issueCount })
-              </CustomLink>
-              {' '}
-              <FollowArticleButton {...{
-                article,
-                classNames: ['btn', 'small'],
-                isIssue: false,
-                loggedInUser,
-                showText: false,
-              }} />
-            </h2>
-            { seeAllCreateNew }
-            { latestIssues.length > 0 ?
-                <>
-                  <h3><IssueIcon /> <TimeIcon /> Latest discussions</h3>
-                  <ArticleList {...{
-                    articles: latestIssues,
-                    articlesCount: article.issueCount,
-                    comments,
-                    commentsCount,
-                    issueArticle: article,
-                    itemType: 'discussion',
-                    loggedInUser,
-                    page: 0,
-                    showAuthor: true,
-                    what: 'discussion',
-                  }}/>
-                  <h3><IssueIcon /> <ArrowUpIcon /> Top discussions</h3>
-                  <ArticleList {...{
-                    articles: topIssues,
-                    articlesCount: article.issueCount,
-                    comments,
-                    commentsCount,
-                    issueArticle: article,
-                    itemType: 'discussion',
-                    loggedInUser,
-                    page: 0,
-                    showAuthor: true,
-                    what: 'issues',
-                  }}/>
-                  { seeAllCreateNew }
-                </>
-              : <p>There are no discussions about this article yet.</p>
-            }
+            <div>
+              { latestIssues.length > 0 ?
+                  <>
+                    <h3 className="content-not-ourbigbook"><IssueIcon /> <TimeIcon /> Latest discussions</h3>
+                    <ArticleList {...{
+                      articles: latestIssues,
+                      articlesCount: article.issueCount,
+                      comments,
+                      commentsCount,
+                      issueArticle: article,
+                      itemType: 'discussion',
+                      loggedInUser,
+                      page: 0,
+                      showAuthor: true,
+                      showControls: false,
+                      what: 'discussion',
+                    }}/>
+                    <h3 className="content-not-ourbigbook"><IssueIcon /> <ArrowUpIcon /> Top discussions</h3>
+                    <ArticleList {...{
+                      articles: topIssues,
+                      articlesCount: article.issueCount,
+                      comments,
+                      commentsCount,
+                      issueArticle: article,
+                      itemType: 'discussion',
+                      loggedInUser,
+                      page: 0,
+                      showAuthor: true,
+                      showControls: false,
+                      what: 'issues',
+                    }}/>
+                    {seeAllCreateNew &&
+                      <div className="content-not-ourbigbook">
+                        { seeAllCreateNew }
+                      </div>
+                    }
+                  </>
+                : <p>There are no discussions about this article yet.</p>
+              }
+            </div>
           </>
       }
     </div>

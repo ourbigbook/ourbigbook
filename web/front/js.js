@@ -15,6 +15,26 @@ function getClientIp(req) {
   return req.header('x-forwarded-for')
 }
 
+function getList(req, res) {
+  let ok, showUnlisted, showListed
+  const showUnlistedStr = req.query['show-unlisted']
+  const showListedStr = req.query['show-listed']
+  if (showUnlistedStr ===  undefined) {
+    showUnlisted = false
+    ok = true
+  } else {
+    ;[showUnlisted, ok] = typecastBoolean(showUnlistedStr)
+  }
+  if (showListedStr === undefined) {
+    showListed = true
+    ok = true
+  } else {
+    ;[showListed, ok] = typecastBoolean(showListedStr)
+  }
+  if (!ok) { res.statusCode = 422 }
+  return showUnlisted ? (showListed ? undefined : false) : true
+}
+
 function getOrderAndPage(req, page, opts={}) {
   const [order, orderErr] = getOrder(req, opts)
   const [pageNum, pageErr] = getPage(page)
@@ -106,7 +126,7 @@ function typecastBoolean(s) {
   if (s === QUERY_TRUE_VAL) {
     b = true
   } else if (s === QUERY_FALSE_VAL) {
-    b = true
+    b = false
   } else {
     ok = false
   }
@@ -188,6 +208,7 @@ function slugToId(slug) {
 module.exports = {
   AUTH_COOKIE_NAME: 'auth',
   getClientIp,
+  getList,
   getOrder,
   getOrderAndPage,
   getPage,

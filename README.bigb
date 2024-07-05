@@ -8204,6 +8204,11 @@ And it is also a bit like <#Obsidian> (a personal knowledge base): you can optio
 
 The goal of the <OurBigBook Project> is to make university students write perfect natural sciences books for free as they are trying to learn for their lectures.
 
+\Video[https://www.youtube.com/watch?v=7JOJYx0mmhg]
+{title=Introduction to the <OurBigBook Project>}
+{disambiguate=OurBigBook Web user manual}
+{height=500}
+
 Suppose that Mr. Barack Obama is your calculus teacher this semester.
 
 Being an enlightened teacher, Mr. Obama writes everything that he knows on his OurBigBook.com account. His home page look something like the following tree:
@@ -9729,6 +9734,8 @@ The JWT token is only given to users after account verification. Having the JWT 
   * like, subscribe
   * create article/issue/comment
   * go to a separate new/edit article/issue page. This is strictly technically speaking just a link, but it is closely related to creating something new, so it feels more intuitive for it to be a button
+* when logged off:
+  * stateful actions like "create article" or "like article" show as if logged in, but redirected to signup page. Unless it is possible for user to create significant content and then lose it, e.g. type in a new comment body and only notice later that he cannot submit.
 
 = OurBigBook Web URL standards
 {c}

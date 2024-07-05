@@ -10,7 +10,7 @@ import useLoggedInUser from 'front/useLoggedInUser'
 interface CustomLinkProps {
   href: string;
   className?: string;
-  onClick?: () => void;
+  onClick?: (ev: React.MouseEvent<HTMLElement>) => void;
   children: React.ReactNode;
   shallow?: boolean;
   newTab?: boolean;
@@ -35,14 +35,14 @@ const CustomLink = ({
   const { updatePrevPageNoSignup } = React.useContext(AppContext)
   const loggedInUser = useLoggedInUser()
   const innerProps: any = {
-    onClick: () => {
+    onClick: (ev) => {
       if (updatePreviousPage) {
         if (!loggedInUser) {
           updatePrevPageNoSignup(href)
         }
       }
       if (onClick) {
-        onClick()
+        onClick(ev)
       }
     },
     className,

@@ -28,7 +28,7 @@ const CommentList = ({
   showAuthor,
 }: CommentListProps) => {
   return (
-    <>
+    <div className="comment-list">
       { commentsCount === 0
         ? <div className="article-preview">
             There are currently no matching comments.
@@ -85,7 +85,7 @@ const CommentList = ({
             }} />
           </div>
       }
-    </>
+    </div>
   )
 }
 

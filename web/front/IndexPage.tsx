@@ -60,32 +60,7 @@ function IndexPageHoc({
     users,
     usersCount,
   }: IndexPageProps) => {
-    let paginationUrlFunc
-    let isIssue, isUsers
-    switch (itemType) {
-      case 'article':
-        if (followed) {
-          paginationUrlFunc = (page) => routes.articlesFollowed({ page, sort: order })
-        } else {
-          paginationUrlFunc = (page) => routes.articles({ page, sort: order })
-        }
-        break
-      case 'discussion':
-        if (isHomepage) {
-          paginationUrlFunc = (page) => routes.issuesAll({ page, sort: order })
-        } else {
-          paginationUrlFunc = (page) => routes.issues(issueArticle.slug, { page, sort: order })
-        }
-        isIssue = true
-        break
-      case 'topic':
-        paginationUrlFunc = (page) => routes.topics({ page, sort: order, loggedInUser })
-        break
-      case 'user':
-        paginationUrlFunc = (page) => routes.users({ page, sort: order })
-        isUsers = true
-        break
-    }
+    let isIssue
     const { setTitle } = React.useContext(AppContext)
     React.useEffect(
       () => { setTitle(
@@ -194,7 +169,6 @@ function IndexPageHoc({
           ? <UserList {...{
               loggedInUser,
               page,
-              paginationUrlFunc,
               users,
               usersCount,
             }}/>
@@ -214,7 +188,6 @@ function IndexPageHoc({
               itemType,
               loggedInUser,
               page,
-              paginationUrlFunc,
               showAuthor: true,
             }}/>
         }

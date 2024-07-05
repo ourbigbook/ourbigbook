@@ -542,6 +542,7 @@ export default function EditorPageHoc({
     // Tabs
     function goToTab() {
       const hash = window.location.hash
+      console.log(`window.location.hash: ${require('util').inspect(window.location.hash, { depth: null })}`)
       let tab
       if (hash === '#_metadata') {
         tab = 'metadata'
@@ -583,7 +584,7 @@ export default function EditorPageHoc({
                   }
                   {isIssue && <> on <ArticleBy article={issueArticle} newTab={true}/></>}
                 </h1>
-                <Label label="Title" inline={true}>
+                <Label label="Title" flex={true}>
                   <input
                     type="text"
                     className="title"
@@ -596,7 +597,7 @@ export default function EditorPageHoc({
                 <div className="tab-list">
                   <Link
                     className={`tab-item${tab === 'editor' ? ' active' : ''}`}
-                    href={'#'}
+                    href={'#' /* TODO don't know how to make this empty. Like this it makes the URL be '#' which is ugly, but it works. */}
                     onClick={(ev) => {
                       ev.preventDefault()
                       window.location.hash = '' }}

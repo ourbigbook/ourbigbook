@@ -43,7 +43,7 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
         </Maybe>
       </div>
       <div
-        className="comment-body ourbigbook"
+        className="ourbigbook"
         dangerouslySetInnerHTML={{ __html: comment.render }}
       />
     </div>

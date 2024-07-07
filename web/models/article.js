@@ -133,9 +133,15 @@ module.exports = (sequelize) => {
       },
     },
     {
-      // TODO updatedAt lazy to create migration now.
       indexes: [
+        // For ORDER BY creatdAt without list specified
         { fields: ['createdAt'], },
+        // For WHERE list = 1 ORDER BY creatdAt
+        { fields: ['list', 'createdAt'], },
+        // For ORDER BY updatedAt without list specified
+        { fields: ['updatedAt'], },
+        // For WHERE list = 1 ORDER BY updatedAt
+        { fields: ['list', 'updatedAt'], },
         { fields: ['issueCount'], },
         { fields: ['followerCount'], },
         { fields: ['topicId'], },

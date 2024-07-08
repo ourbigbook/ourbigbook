@@ -46,6 +46,7 @@ module.exports = (sequelize) => {
 
   Comment.getComments = async function({
     authorId,
+    articleId,
     limit,
     offset,
     order,
@@ -58,6 +59,15 @@ module.exports = (sequelize) => {
     if (order === undefined) {
       order = [['createdAt', 'DESC']]
     }
+    const articleInclude = {
+      model: sequelize.models.Article,
+      as: 'article',
+      required: true,
+      subQuery: false,
+    }
+    if (articleId) {
+      articleInclude.where = { id: articleId }
+    }
     return sequelize.models.Comment.findAndCountAll({
       include: [
         {
@@ -67,10 +77,11 @@ module.exports = (sequelize) => {
         {
           model: sequelize.models.Issue,
           as: 'issue',
-          include: [{
-            model: sequelize.models.Article,
-            as: 'article',
-          }],
+          required: true,
+          subQuery: false,
+          include: [
+            articleInclude
+          ],
         },
       ],
       limit,

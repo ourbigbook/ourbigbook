@@ -193,7 +193,8 @@ Link to topic: <#mathematics>
         }],
       ]],
       // This is used to check if we are jumping to an ID at the bottom of the page correctly.
-      ['Test data long before ID', [], { body: 'spacer\n\n'.repeat(50) + `$$\\frac{1}{\\sqrt{2}}$\${title=Test data long before ID}` }],
+      ['Test data long before ID', [], { body: [...Array(50).keys()].map(i => `spacer ${i}\n\n`) +
+         `$$\\frac{1}{\\sqrt{2}}$\${title=Test data long before ID}` }],
       ['Test data disambiguate', [
         ['Test data disambiguate child', []],
         ],

@@ -28,7 +28,7 @@ const CommentList = ({
   showAuthor,
 }: CommentListProps) => {
   return (
-    <div className="comment-list">
+    <div className="comment-list content-not-ourbigbook">
       { commentsCount === 0
         ? <div className="article-preview">
             There are currently no matching comments.

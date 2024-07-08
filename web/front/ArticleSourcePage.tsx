@@ -34,7 +34,7 @@ const ArticleSourcePageHoc = (isIssue=false) => {
       <div className="article-source-page content-not-ourbigbook">
         <h1><SourceIcon /> Source: <a href={routes.article(article.slug)}>/{article.slug}</a></h1>
         <pre><code>{modifyEditorInput(article.file.titleSource, article.file.bodySource).new}</code></pre>
-        <div className="source"><a href={routes.article(article.slug)}><ArticleIcon /> Back to article page</a></div>
+        <div className="navlink"><a href={routes.article(article.slug)}><ArticleIcon /> Back to article page</a></div>
       </div>
     )
   };

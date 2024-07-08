@@ -161,7 +161,7 @@ const ArticlePageHoc = (isIssue=false) => {
                 showControls: false,
                 what: 'articles',
               }}/>
-              <p className="content-not-ourbigbook">
+              <div className="content-not-ourbigbook navlink">
                 <CustomLink href={routes.topic(article.topicId)}> <TopicIcon /> <SeeIcon /> See all articles in the same topic</CustomLink>
                 {articleInTopicByLoggedInUser
                   ? <>
@@ -171,7 +171,7 @@ const ArticlePageHoc = (isIssue=false) => {
                     </>
                   : <>{' '}<CreateMyOwnVersionOfThisTopic titleSource={article.titleSource} toplevel={true} /></>
                 }
-              </p>
+              </div>
             </>
           }
         </div>

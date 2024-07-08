@@ -15,7 +15,12 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
       const [number, ok] = typecastInteger(numberString)
       if (!ok) { return { notFound: true } }
       const [issue, loggedInUser] = await Promise.all([
-        sequelize.models.Issue.getIssue({ includeComments: true, number, sequelize, slug: slug.join('/') }),
+        sequelize.models.Issue.getIssue({
+          includeComments: true,
+          number,
+          sequelize,
+          slug: slug.join('/'),
+        }),
         getLoggedInUser(req, res),
       ])
       if (!issue) { return { notFound: true } }

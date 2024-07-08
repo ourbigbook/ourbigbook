@@ -23,15 +23,17 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
   };
   const targetId = `${config.commentIdPrefix}${comment.number}`
   return (
-    <div className="comment" id={targetId}>
-      <div className="comment-header">
+    <div className="item" id={targetId}>
+      <div className="item-header content-not-ourbigbook">
         <CustomLink className="number" href={`#${targetId}`}>#{comment.number}</CustomLink>
         {' by '}
         <UserLinkWithImage user={comment.author} showUsernameMobile={false} />
         {' on '}
-        <TimeIcon />
-        {' '}
-        {formatDate(comment.createdAt)}
+        <span className="item-date">
+          <TimeIcon />
+          {' '}
+          {formatDate(comment.createdAt)}
+        </span>
         {' '}
         <Maybe test={!cant.deleteComment(loggedInUser, comment)}>
           <button

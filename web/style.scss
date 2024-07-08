@@ -156,9 +156,11 @@ label {
   }
 }
 
+/* For lists of items like Article and Comment, which can display or not
+ * full body or body previews in addition to title. */
 div.list-container {
   overflow-x: auto;
-  margin-bottom: 20px;
+  margin-bottom: 1em;
   .item:not(:last-child) {
     margin-bottom: 1em;
   }
@@ -168,6 +170,9 @@ div.list-container {
   table.list {
     border-collapse: collapse;
     white-space: nowrap;
+    thead {
+      background-color: $table-head-background-color;
+    }
     tr {
       td, th {
         border: 1px solid $table-border-color;
@@ -185,8 +190,6 @@ div.list-container {
         &.right {
           text-align: right;
         }
-        &.shrink {
-        }
         &.expand {
           max-width: 60vw;
           overflow: hidden;
@@ -200,8 +203,65 @@ div.list-container {
       }
     }
   }
-  .title {
-    font-weight: bold;
+  &.show-body {
+    $padding: 10px;
+    $border-color: $color-discreet;
+    .item {
+      border: 1px solid $border-color;
+      border-radius: $border-radius;
+      margin-bottom: $padding;
+      .item-header {
+        border-bottom: 1px solid $border-color;
+        border-radius: $border-radius $border-radius 0 0;
+        background-color: $table-head-background-color;
+        padding-bottom: $padding;
+        padding-top: $padding;
+        .item-date {
+          font-weight: bold;
+        }
+        .number {
+          color: $h-color;
+          font-weight: bold;
+          font-size: 1.2em;
+        }
+        // TODO this makes everything in the title look verticaly centered nicelly.
+        // But it breaks down if the page becomes narrow and title goes in different
+        // line than the other elements. Related:
+        // https://stackoverflow.com/questions/44707141/how-to-force-flex-columns-to-stay-on-the-same-line-if-container-flex-wrap-is-s
+        //align-items:center;  
+        //display: flex;
+        //flex-wrap: wrap;
+        //column-gap: 7px;
+
+        .ourbigbook-title {
+          color: $h-color;
+          font-size: $header-font-size;
+          font-weight: bold;
+        }
+      }
+      &:target .item-header {
+        background-color: $target-background-color;
+      }
+      .item-body {
+        // TODO limit render height. Difficulties:
+        // - avoid double margins on rendered content. Margin collapse is disabled if we set overflow:
+        //   - https://gist.github.com/gokulkrishh/1c197d0369c45a8153d327b11d1626ca
+        //   - https://stackoverflow.com/questions/47958007/why-does-overflow-hidden-add-padding-margin
+        // - show indicator if there is overflow:
+        //   - https://stackoverflow.com/questions/70131020/how-to-display-scroll-down-if-and-only-if-content-overflows-in-pure-css
+        //   - https://stackoverflow.com/questions/45105611/css-only-solution-for-overflow-scroll-indicators
+        //max-height: 500px;
+        overflow-y: hidden;
+      }
+      .item-footer {
+        background-color: $table-head-background-color;
+        border-radius: 0 0 $border-radius $border-radius;
+        border-top: 1px solid $border-color;
+        font-weight: bold;
+        padding-bottom: $padding;
+        padding-top: $padding;
+      }
+    }
   }
 }
 
@@ -238,9 +298,8 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 span.pill {
-  background-color: $button-hover-background-color;
   border-radius: 0.8em;
-  border: 1px solid $color;
+  border: 1px solid $color-discreet;
   font-weight: bold;
   padding: 0.2em 0.5em;
   white-space: pre;
@@ -395,41 +454,6 @@ div.editor-page {
   }
 }
 
-div.article-list {
-  &.show-body {
-    .read-full {
-      font-weight: bold;
-    }
-    .render {
-      // TODO limit render height. Difficulties:
-      // - avoid double margins on rendered content. Margin collapse is disabled if we set overflow:
-      //   - https://gist.github.com/gokulkrishh/1c197d0369c45a8153d327b11d1626ca
-      //   - https://stackoverflow.com/questions/47958007/why-does-overflow-hidden-add-padding-margin
-      // - show indicator if there is overflow:
-      //   - https://stackoverflow.com/questions/70131020/how-to-display-scroll-down-if-and-only-if-content-overflows-in-pure-css
-      //   - https://stackoverflow.com/questions/45105611/css-only-solution-for-overflow-scroll-indicators
-      //max-height: 500px;
-      //margin-bottom: 1em;
-      //overflow-y: hidden;
-    }
-    .title-container {
-      // TODO this makes everything look verticaly centered nicelly.
-      // But it breaks down if the page becomes narrow and title goes in different
-      // line than the other elements. Related:
-      // https://stackoverflow.com/questions/44707141/how-to-force-flex-columns-to-stay-on-the-same-line-if-container-flex-wrap-is-s
-      //align-items:center;  
-      //display: flex;
-      //flex-wrap: wrap;
-      //column-gap: 7px;
-
-      .ourbigbook-title {
-        color: $h-color;
-        font-size: $header-font-size;
-      }
-    }
-  }
-}
-
 div.tab-list {
   font-weight: bold;
   margin: 5px 0 10px;
@@ -490,27 +514,6 @@ span.shortcut {
   @media only screen and (min-width: $max-mobile-width + 1) {
     padding-left: $toplevel-padding;
     padding-right: $toplevel-padding;
-  }
-}
-
-.comment {
-  border: 1px solid $color;
-  border-radius: $border-radius;
-  margin-bottom: 10px;
-  &:target .comment-header {
-    background-color: $target-background-color;
-  }
-  .comment-header {
-    border-bottom: 1px solid $color;
-    border-radius: $border-radius $border-radius 0 0;
-    background-color: $navbar-background-color;
-    margin-bottom: 10px;
-    padding: 10px 10px;
-    .number {
-      color: $h-color;
-      font-weight: bold;
-      font-size: 1.2em;
-    }
   }
 }
 
@@ -599,22 +602,27 @@ span.shortcut {
   */
 }
 
+/* Links for internal navigation between pages. */
+.navlink {
+  font-weight: bold;
+}
+
 .pagination {
-  padding: 0;
-  list-style-type: none;
-  margin-bottom: 1.5em;
   height: 100%;
+  list-style-type: none;
+  margin-bottom: 1em;
+  padding: 0;
   .pages {
     margin-right: 10px;
     .page-item {
       a {
+        font-weight: bold;
         text-decoration: none;
       }
       &.active {
         a {
           color: $tab-bar-active-color;
         }
-        font-weight: bold;
       }
       &:hover {
         a {

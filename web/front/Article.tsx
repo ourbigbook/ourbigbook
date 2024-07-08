@@ -104,12 +104,12 @@ const Article = ({
     seeAllCreateNew = <>
       {latestIssues.length > 0 &&
         <>
-          <CustomLink href={routes.issues(article.slug)} className="btn small"><SeeIcon /> See all ({ article.issueCount })</CustomLink>
+          <CustomLink href={routes.issues(article.slug)} className="btn"><SeeIcon /> See all ({ article.issueCount })</CustomLink>
           {' '}
         </>
       }
       <CustomLink
-        className="btn small"
+        className="btn"
         href={routes.issueNew(article.slug)}
         updatePreviousPage={true}
       >
@@ -384,6 +384,7 @@ const Article = ({
                 {' '}
                 <span className="pill" title="Last updated">
                   <TimeIcon />{article.createdAt === article.updatedAt ? '' : ' Updated '}
+                  {' '}
                   <span className="article-dates">
                     {formatDate(article.updatedAt)}
                   </span>
@@ -648,16 +649,18 @@ const Article = ({
                 setComments,
               }}/>
             </div>
-            {curComments?.map((comment: CommentType) =>
-              <Comment {...{
-                comment,
-                comments,
-                id: comment.id,
-                key: comment.id,
-                loggedInUser,
-                setComments,
-              }} />
-            )}
+            <div className="list-container show-body">
+              {curComments?.map((comment: CommentType) =>
+                <Comment {...{
+                  comment,
+                  comments,
+                  id: comment.id,
+                  key: comment.id,
+                  loggedInUser,
+                  setComments,
+                }} />
+              )}
+            </div>
           </div>
         : <>
             <div className="content-not-ourbigbook">
@@ -678,9 +681,9 @@ const Article = ({
                     )}
                   </ol>
                 </>}
-              {linkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
-              {linkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
-              <p><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></p>
+                {linkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
+                {linkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
+                <div className="navlink"><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></div>
               </div>
               <h2>
                 <CustomLink href={routes.issues(article.slug)}>

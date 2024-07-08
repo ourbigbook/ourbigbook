@@ -464,6 +464,9 @@ div.multiline {
     border: $table_border;
     border-collapse: collapse;
     margin: math.div($p-margin-vert, 2) 0;
+    thead {
+      background-color: $table-head-background-color;
+    }
     tr {
       th, td {
         border: $table_border;

@@ -9970,7 +9970,20 @@ And from OurBigBook to anything, create new output formats inside OurBigBook to 
 
 VS Code is intended to be the best supported OurBigBook editor.
 
-The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[]. Its source code is located under \a[vscode].
+The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[]. Its source code is located under \a[vscode]. You can install it with:
+
+``
+ext install ourbigbook.ourbigbook-vscode
+ext install streetsidesoftware.code-spell-checker
+``
+
+We recommend adding the following settings to your User JSON settings file:
+
+``
+"cSpell.enableFiletypes": [
+    "ourbigbook"
+],
+``
 
 Currently, the extension it only supports syntax highlighting, but we want to support everything you would expect from proper programming language support, notably:
 * deployment as <static website> or to <OurBigBook Web>

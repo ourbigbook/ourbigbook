@@ -200,6 +200,7 @@ export function SignupOrLogin(
   { to: string }
 ) {
   return <>
+    <UserIcon />{' '}
     <CustomLink href={routes.userNew()}>
       {REGISTER_ACTION}
     </CustomLink>

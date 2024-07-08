@@ -171,7 +171,7 @@ const ArticleList = ({
   }
   const aElemToMetaMap = React.useRef(new Set())
   return (
-    <div className={`article-list${showBodyState ? ' show-body' : '' }`}>
+    <div className={`article-list`}>
       { articles.length === 0
         ? <div className="article-preview content-not-ourbigbook">
             {emptyMessage}
@@ -207,133 +207,136 @@ const ArticleList = ({
               </div>
             }
             {showBodyState && pagination}
-            <div className="list-container">
-              {showBodyState
-                ? articles?.map((article, i) => {
-                    let curIssueArticle
-                    if (issueArticle) {
-                      curIssueArticle = issueArticle
-                    } else {
-                      curIssueArticle = article.article
-                    }
-                    return (
-                      <div
-                        key={getKey(itemType, article) }
-                        className="item"
-                      >
-                        <div className="content-not-ourbigbook title-container">
-                          <LikeArticleButton {...{
-                            article,
-                            isIssue,
-                            issueArticle,
-                            loggedInUser,
-                            showText: false,
-                          }} />
-                          {' '}
-                          <CustomLink
-                            href={itemType === 'discussion' ? routes.issue(curIssueArticle.slug, article.number) :
-                                  itemType === 'article' ? routes.article(article.slug) :
-                                  routes.topic(article.topicId, { sort: 'score' })
-                            }
-                          >
-                            <span
-                              className="ourbigbook-title title"
-                              dangerouslySetInnerHTML={{ __html: article.titleRender }}
-                            />
-                          </CustomLink>
-                          {' '}
-                          {showAuthor &&
-                            <>
-                              by
-                              {' '}
-                              <UserLinkWithImage showUsername={false} user={article.author} />
-                              {' '}
-                            </>
-                          }
-                          <span title="Last updated">
-                            <TimeIcon />
-                            {' '}
-                            {formatDate(article.updatedAt)}
-                          </span>
-                        </div>
+            <div className="content-not-ourbigbook">
+              <div className={`list-container${showBodyState ? ' show-body' : '' }`}>
+                {showBodyState
+                  ? articles?.map((article, i) => {
+                      let curIssueArticle
+                      if (issueArticle) {
+                        curIssueArticle = issueArticle
+                      } else {
+                        curIssueArticle = article.article
+                      }
+                      return (
                         <div
-                          className="render ourbigbook"
-                          dangerouslySetInnerHTML={{ __html: article.render }}
-                          ref={(elem) => {
-                            if (elem) {
-                              const as = elem.getElementsByTagName('a')
-                              for (let i = 0; i < as.length; i++) {
-                                const a = as[i]
-                                if (!aElemToMetaMap.current.has(a)) {
-                                  const href = a.href
-                                  aElemToMetaMap.current.add(a)
-                                  const url = new URL(href, document.baseURI)
-                                  if (
-                                    // Don't do processing for external links.
-                                    url.origin === new URL(document.baseURI).origin
-                                  ) {
-                                    let frag
-                                    let longFrag
-                                    let goToTargetInPage = false
-                                    let targetElem
-                                    if (url.hash) {
-                                      frag = url.hash.slice(1)
-                                      targetElem = document.getElementById(frag)
-                                      longFrag = AT_MENTION_CHAR + frag
-                                      if (targetElem) {
-                                        goToTargetInPage = true
-                                        a.href = '#' + longFrag
-                                      }
-                                    }
-                                    if (!goToTargetInPage) {
-                                      const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
-                                      a.href = url.pathname + (frag ? ('#' + frag) : '')
-                                    }
-                                    a.addEventListener('click', e => {
+                          key={getKey(itemType, article) }
+                          className="item"
+                        >
+                          <div className="item-header content-not-ourbigbook">
+                            <LikeArticleButton {...{
+                              article,
+                              isIssue,
+                              issueArticle,
+                              loggedInUser,
+                              showText: false,
+                            }} />
+                            {' '}
+                            <CustomLink
+                              href={itemType === 'discussion' ? routes.issue(curIssueArticle.slug, article.number) :
+                                    itemType === 'article' ? routes.article(article.slug) :
+                                    routes.topic(article.topicId, { sort: 'score' })
+                              }
+                            >
+                              <span
+                                className="ourbigbook-title title"
+                                dangerouslySetInnerHTML={{ __html: article.titleRender }}
+                              />
+                            </CustomLink>
+                            {' '}
+                            {showAuthor &&
+                              <>
+                                by
+                                {' '}
+                                <UserLinkWithImage showUsername={false} user={article.author} />
+                                {' '}
+                              </>
+                            }
+                            on{' '}
+                            <span title="Last updated" className="item-date">
+                              <TimeIcon />
+                              {' '}
+                              {formatDate(article.updatedAt)}
+                            </span>
+                          </div>
+                          {article.render &&
+                            <div
+                              className="item-body ourbigbook"
+                              dangerouslySetInnerHTML={{ __html: article.render }}
+                              ref={(elem) => {
+                                if (elem) {
+                                  const as = elem.getElementsByTagName('a')
+                                  for (let i = 0; i < as.length; i++) {
+                                    const a = as[i]
+                                    if (!aElemToMetaMap.current.has(a)) {
+                                      const href = a.href
+                                      aElemToMetaMap.current.add(a)
+                                      const url = new URL(href, document.baseURI)
                                       if (
-                                        // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
-                                        // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
-                                        !e.ctrlKey
+                                        // Don't do processing for external links.
+                                        url.origin === new URL(document.baseURI).origin
                                       ) {
-                                        e.preventDefault()
-                                        if (
-                                          // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
-                                          // For artiles all works fine because each section is rendered separately and thus has a non empty href.
-                                          // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
-                                          // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
-                                          // But lazy now.
-                                          !href
-                                        ) {
-                                          window.location.hash = ''
-                                        } else {
-                                          if (goToTargetInPage) {
-                                            shortFragGoTo(handleShortFragmentSkipOnce, frag, longFrag, targetElem)
-                                          } else {
-                                            Router.push(a.href)
+                                        let frag
+                                        let longFrag
+                                        let goToTargetInPage = false
+                                        let targetElem
+                                        if (url.hash) {
+                                          frag = url.hash.slice(1)
+                                          targetElem = document.getElementById(frag)
+                                          longFrag = AT_MENTION_CHAR + frag
+                                          if (targetElem) {
+                                            goToTargetInPage = true
+                                            a.href = '#' + longFrag
                                           }
                                         }
+                                        if (!goToTargetInPage) {
+                                          const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
+                                          a.href = url.pathname + (frag ? ('#' + frag) : '')
+                                        }
+                                        a.addEventListener('click', e => {
+                                          if (
+                                            // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
+                                            // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
+                                            !e.ctrlKey
+                                          ) {
+                                            e.preventDefault()
+                                            if (
+                                              // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
+                                              // For artiles all works fine because each section is rendered separately and thus has a non empty href.
+                                              // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
+                                              // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
+                                              // But lazy now.
+                                              !href
+                                            ) {
+                                              window.location.hash = ''
+                                            } else {
+                                              if (goToTargetInPage) {
+                                                shortFragGoTo(handleShortFragmentSkipOnce, frag, longFrag, targetElem)
+                                              } else {
+                                                Router.push(a.href)
+                                              }
+                                            }
+                                          }
+                                        })
                                       }
-                                    })
+                                    }
                                   }
                                 }
+                              }}
+                            />
+                          }
+                          <div className="item-footer content-not-ourbigbook">
+                            <CustomLink
+                              href={itemType === 'discussion' ? routes.issue(curIssueArticle.slug, article.number) :
+                                    itemType === 'article' ? routes.article(article.slug) :
+                                    routes.topic(article.topicId, { sort: 'score' })
                               }
-                            }
-                          }}
-                        />
-                        <div className="content-not-ourbigbook read-full">
-                          <CustomLink
-                            href={itemType === 'discussion' ? routes.issue(curIssueArticle.slug, article.number) :
-                                  itemType === 'article' ? routes.article(article.slug) :
-                                  routes.topic(article.topicId, { sort: 'score' })
-                            }
-                          >
-                            <ArticleIcon /> Read the full article
-                          </CustomLink>
+                            >
+                              <ArticleIcon /> Read the full article
+                            </CustomLink>
+                          </div>
                         </div>
-                      </div>
-                    )})
-                : <div className="content-not-ourbigbook">
-                    <table className="list">
+                      )})
+                  : <table className="list">
                       <thead>
                         <tr>
                           {itemType === 'like' &&
@@ -424,7 +427,7 @@ const ArticleList = ({
                                     <CustomLink href={mainHref}>{issueArticle ? '' : curIssueArticle.slug }#{article.number}</CustomLink>
                                   </td>
                                 }
-                                <td className="expand title">
+                                <td className="expand bold">
                                   <CustomLink href={mainHref} >
                                     <span
                                       className="ourbigbook-title"
@@ -457,8 +460,8 @@ const ArticleList = ({
                         })}
                       </tbody>
                     </table>
-                  </div>
-              }
+                }
+              </div>
             </div>
             {pagination}
           </div>

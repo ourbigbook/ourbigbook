@@ -97,7 +97,7 @@ function IndexPageHoc({
                 </>
               }
               <CustomLink
-                className={`tab-item${(itemType === 'article' || itemType === 'discussion') && order === 'score' && !followed ? ' active' : ''}`}
+                className={`tab-item${itemType === 'article' && order === 'score' && !followed ? ' active' : ''}`}
                 href={(isIssue && !isHomepage) ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
               >
                 <ArticleIcon /> Top<span className="mobile-hide"> articles</span>
@@ -142,7 +142,7 @@ function IndexPageHoc({
           </CustomLink>
           <CustomLink
             className={`tab-item${itemType === 'comment' ? ' active' : ''}`}
-            href={routes.comments({ sort: 'created' })}
+            href={isHomepage ? routes.comments({ sort: 'created' }) : routes.articleComments(issueArticle.slug, { sort: 'created' })}
           >
             <CommentIcon /> New<span className="mobile-hide"> comments</span>
           </CustomLink>
@@ -162,7 +162,7 @@ function IndexPageHoc({
             href={(isIssue && !isHomepage) ? routes.issueNew(issueArticle.slug) : routes.articleNew()}
             updatePreviousPage={true}
           >
-            <NewArticleIcon /> New {pageType === 'articleIssues' ? 'Discussion' : 'Article'}
+            <NewArticleIcon /> New {(pageType === 'articleIssues' || pageType === 'articleComments') ? 'discussion' : 'article'}
           </CustomLink>
         </div>
         {itemType === 'user'

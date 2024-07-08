@@ -26,6 +26,7 @@ module.exports = {
   home: () => `/`,
   articlesFollowed: (opts={}) => `/${encodeGetParamsWithPage(opts)}`,
   articles: (opts={}) => `/${escapeUsername}/articles/${encodeGetParamsWithPage(opts)}`,
+  articleComments: (slug, opts={}) => `/${escapeUsername}/comments/${slug}${encodeGetParamsWithPage(opts)}`,
   articleDelete: slug => `/${escapeUsername}/delete/${slug}`,
   articleEdit: slug => `/${escapeUsername}/edit/${slug}`,
   articleNew: (opts={}) => `/${escapeUsername}/new${encodeGetParams(opts)}`,

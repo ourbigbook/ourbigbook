@@ -35,7 +35,7 @@ const UserList = ({
   }
   return (
     <div className="list-nav-container">
-      <div className="list-container">
+      <div className="list-container content-not-ourbigbook">
         <table className="list">
           <thead>
             <tr>

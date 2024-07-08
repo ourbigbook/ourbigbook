@@ -222,7 +222,7 @@ const ArticleList = ({
                           key={getKey(itemType, article) }
                           className="item"
                         >
-                          <div className="item-header content-not-ourbigbook">
+                          <div className={`item-header content-not-ourbigbook${article.render ? '' : ' empty-body'}`}>
                             <LikeArticleButton {...{
                               article,
                               isIssue,

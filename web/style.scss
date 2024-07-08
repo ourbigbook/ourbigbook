@@ -238,6 +238,9 @@ div.list-container {
           font-size: $header-font-size;
           font-weight: bold;
         }
+        &.empty-body {
+          border-bottom: none;
+        }
       }
       &:target .item-header {
         background-color: $target-background-color;

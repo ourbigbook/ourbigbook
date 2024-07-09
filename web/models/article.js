@@ -1049,6 +1049,10 @@ WHERE
     includeIssueNumber,
     includeIssuesOrder,
     includeParentAndPreviousSibling,
+    // limits the number of fetched issues or comments.
+    // It makes no sense to have separate limitIssues or limitComments
+    // because there can be just one limit for the join.
+    limit,
     sequelize,
     slug,
   }) {
@@ -1090,10 +1094,11 @@ WHERE
       ]]
     }
     const article = await sequelize.models.Article.findOne({
-      where: { slug },
       include,
+      limit,
       order,
       subQuery: false,
+      where: { slug },
     })
     if (includeParentAndPreviousSibling && article !== null) {
       Article.getArticleIncludeParentAndPreviousSiblingAddShortcuts(article)

@@ -1,17 +1,15 @@
 import { useRouter } from 'next/router'
 import React from 'react'
 
-import { SignupOrLogin, useConfirmExitPage } from 'front'
+import { NewArticleIcon, SignupOrLogin, useConfirmExitPage } from 'front'
 import { hasReachedMaxItemCount } from 'front/js';
 import CustomImage from 'front/CustomImage'
-import CustomLink from 'front/CustomLink'
 import { useCtrlEnterSubmit, slugFromRouter, LOGIN_ACTION, REGISTER_ACTION, decapitalize } from 'front'
 import { webApi } from 'front/api'
 import MapErrors from 'front/MapErrors'
 
 const CommentInput = ({
   commentCountByLoggedInUser,
-  comments,
   loggedInUser,
   issueNumber,
   setComments,
@@ -108,7 +106,7 @@ const CommentInput = ({
               updateSubmitButton(body)
             }}
           >
-            <span className="disable-part">Post Comment</span>
+            <span className="disable-part"><NewArticleIcon /> EditArticleIconPost comment</span>
           </button>
         </div>
       </form>

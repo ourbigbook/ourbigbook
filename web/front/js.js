@@ -53,26 +53,27 @@ function getOrder(req, opts={}) {
   const default_ = opts.defaultOrder || 'createdAt'
   const urlToDbSort = opts.urlToDbSort || {}
   if (sort) {
-    if (
-      sort === 'created'
-    ) {
-      return ['createdAt']
-    } else if (
-      sort === 'updated'
-    ) {
-      return ['updatedAt']
-    } else if (sort === 'score' || sort === 'followerCount') {
-      return [sort]
-    } else {
-      if (sort in urlToDbSort) {
-        return [urlToDbSort[sort]]
+    if (opts.allowedOrders === undefined || opts.allowedOrders.has(sort)) {
+      if (
+        sort === 'created'
+      ) {
+        return ['createdAt']
+      } else if (
+        sort === 'updated'
+      ) {
+        return ['updatedAt']
+      } else if (sort === 'score' || sort === 'followerCount') {
+        return [sort]
       } else {
-        return [default_, `Invalid sort value: '${sort}'`]
+        if (sort in urlToDbSort) {
+          return [urlToDbSort[sort]]
+        }
       }
     }
   } else {
     return [default_]
   }
+  return [default_, `Invalid sort value: '${sort}'`]
 }
 
 /**

@@ -5,7 +5,6 @@ import { encodeGetParams } from 'ourbigbook/web_api'
 
 import Maybe from 'front/Maybe'
 import CustomLink from 'front/CustomLink'
-import { loadProjectInfo } from 'next/dist/build/webpack-config'
 
 // number: 1-indexed page number
 export type PaginationPropsUrlFunc = (number) => string;

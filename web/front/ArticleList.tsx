@@ -5,9 +5,9 @@ import Link from 'next/link'
 import lodash from 'lodash'
 
 import CustomLink from 'front/CustomLink'
-import Label from 'front/Label'
 import LikeArticleButton from 'front/LikeArticleButton'
 import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
+import ShowBody from 'front/ShowBody'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import {
   ArticleIcon,
@@ -27,7 +27,7 @@ import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 
-import { boolToQueryVal, encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
+import { QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
 import {
   AT_MENTION_CHAR,
 } from 'ourbigbook'
@@ -89,7 +89,7 @@ const ArticleList = ({
   what='all',
 }: ArticleListProps) => {
   const router = useRouter();
-  const { pathname, query } = router
+  const { query } = router
   const { uid } = query;
   const itemTypeHasShowBody = itemType === 'article'
     // This almost works to have discussion body previews. The only missing problem is that
@@ -108,15 +108,7 @@ const ArticleList = ({
   } else {
     showBodyInit = false
   }
-  const showBodyElem = React.useRef(null)
   const [showBodyState, setShowBodyState] = React.useState(showBodyInit)
-  React.useEffect(() => {
-    // Reset on tab change.
-    setShowBodyState(showBodyInit)
-    if (showBodyElem.current) {
-      showBodyElem.current.checked = showBodyInit
-    }
-  }, [pathname, encodeGetParams(lodash.omit(query, 'body'))])
 
   let isIssue
   switch (itemType) {
@@ -147,10 +139,10 @@ const ArticleList = ({
         if (followed) {
           emptyMessage = `Follow some users to see their posts here.`
         } else {
-          emptyMessage = (<>
+          emptyMessage = <>
             There are no {isIssue ? 'discussions' : 'articles'} on this {isIssue ? 'article' : 'website'} yet.
             Why don't you <CustomLink href={isIssue ? routes.issueNew(issueArticle.slug) : routes.articleNew()}>create a new one</CustomLink>?
-          </>)
+          </>
         }
         break
       default:
@@ -173,37 +165,13 @@ const ArticleList = ({
   return (
     <div className={`article-list`}>
       { articles.length === 0
-        ? <div className="article-preview content-not-ourbigbook">
+        ? <div className="list-container content-not-ourbigbook">
             {emptyMessage}
           </div>
         : <div className="list-nav-container">
             {showControls &&
               <div className="content-not-ourbigbook controls">
-                {itemTypeHasShowBody &&
-                  <Label label="Show body" inline={true}>
-                    <input
-                      type="checkbox"
-                      ref={showBodyElem}
-                      defaultChecked={showBodyState}
-                      onChange={(e) => {
-                        const showBodyState = e.target.checked
-                        setShowBodyState(showBodyState)
-                        const url = new URL(window.location.href)
-                        const query = Object.fromEntries(url.searchParams)
-                        if (showBodyState === showBody) {
-                          delete query.body
-                        } else {
-                          query.body = boolToQueryVal(showBodyState)
-                        }
-                        Router.push(
-                          `${url.pathname}${encodeGetParams(query)}`,
-                          undefined,
-                          { shallow: true }
-                        )
-                      }}
-                    />
-                  </Label>
-                }
+                {itemTypeHasShowBody && <ShowBody {...{ setShowBodyState, showBody, showBodyInit }}/>}
               </div>
             }
             {showBodyState && pagination}

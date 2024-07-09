@@ -78,6 +78,8 @@ module.exports = {
   buttonActiveClass: 'active',
   defaultProfileImage: `/default-profile-image.svg`,
   disableFrontend: process.env.OURBIGBOOK_DISABLE_FRONTEND === env_true,
+  // For things like "article in same topic on topic page"
+  articleLimitSmall: 5,
   // Default.
   articleLimit: 20,
   // Max allowed to be set by user.

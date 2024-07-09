@@ -1,5 +1,3 @@
-import { GetServerSideProps } from 'next'
-
 import { getLoggedInUser } from 'back'
 import { articleLimit } from 'front/config'
 import { getOrderAndPage } from 'front/js'
@@ -34,9 +32,9 @@ export const getServerSidePropsIndexHoc = ({
         'article-count': 'articleCount'
       }
     }
-    const [order, pageNum, err] = getOrderAndPage(req, query.page, getOrderAndPageOpts)
+    const [order, page, err] = getOrderAndPage(req, query.page, getOrderAndPageOpts)
     if (err) { res.statusCode = 422 }
-    const offset = pageNum * articleLimit
+    const offset = page * articleLimit
     const limit = articleLimit
     const sequelize = req.sequelize
     const [
@@ -123,7 +121,7 @@ export const getServerSidePropsIndexHoc = ({
       followed: followedEff,
       itemType: itemTypeEff,
       order,
-      page: pageNum,
+      page,
       pinnedArticle,
     }
     if (itemType === 'comment') {

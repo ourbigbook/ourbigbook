@@ -1,11 +1,12 @@
 import { getLoggedInUser } from 'back'
+import { articleLimit } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
-import { typecastInteger } from 'front/js'
+import { getOrderAndPage, typecastInteger } from 'front/js'
 import { ArticlePageProps } from 'front/ArticlePage'
 import { CommentType } from 'front/types/CommentType'
 
 export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
-  return async ({ params: { slug, number: numberString }, req, res }) => {
+  return async ({ params: { slug, number: numberString }, query, req, res }) => {
     if (
       slug instanceof Array &&
       typeof numberString === 'string'
@@ -14,29 +15,45 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
       typecastInteger
       const [number, ok] = typecastInteger(numberString)
       if (!ok) { return { notFound: true } }
+      const [order, page, err] = getOrderAndPage(req, query.page, { allowedOrders: new Set(['created', 'updated'])  })
+      const offset = page * articleLimit
       const [issue, loggedInUser] = await Promise.all([
         sequelize.models.Issue.getIssue({
-          includeComments: true,
+          // TODO implement and use these options one day.
+          //includeComments: true,
+          //commentOrder: order,
+          //offset,
+          //limit: articleLimit,
+
           number,
           sequelize,
           slug: slug.join('/'),
         }),
         getLoggedInUser(req, res),
       ])
+      if (err) { res.statusCode = 422 }
       if (!issue) { return { notFound: true } }
       const [
         articleJson,
         commentCountByLoggedInUser,
-        comments,
-        commentsCount,
+        [ comments, commentsCount, ],
         issueJson,
         issuesCount,
         loggedInUserJson,
       ] = await Promise.all([
         issue.article.toJson(loggedInUser),
         loggedInUser ? sequelize.models.Comment.count({ where: { authorId: loggedInUser.id } }) : null,
-        Promise.all(issue.comments.map(comment => comment.toJson(loggedInUser))),
-        sequelize.models.Comment.count({ where: { issueId: issue.id } }),
+        sequelize.models.Comment.getComments({
+          issueId: issue.id,
+          order: [[order, 'ASC']],
+          limit: articleLimit,
+          offset,
+        }).then(commentsAndCount =>
+          Promise.all([
+            Promise.all(commentsAndCount.rows.map(comment => comment.toJson(loggedInUser))),
+            commentsAndCount.count,
+          ])
+        ),
         issue.toJson(loggedInUser),
         sequelize.models.Issue.count({ where: { articleId: issue.articleId } }),
         loggedInUser ? loggedInUser.toJson() : undefined,
@@ -45,6 +62,7 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
         article: issueJson,
         comments: comments as CommentType[],
         commentsCount,
+        page,
         issueArticle: articleJson,
         issuesCount,
       }

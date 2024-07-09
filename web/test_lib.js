@@ -13,6 +13,7 @@ const ourbigbook = require('ourbigbook')
 const back_js = require('./back/js')
 const convert = require('./convert')
 const models = require('./models')
+const config = require('./front/config')
 
 const { performance } = require('perf_hooks')
 const now = performance.now.bind(performance)
@@ -193,7 +194,7 @@ Link to topic: <#mathematics>
         }],
       ]],
       // This is used to check if we are jumping to an ID at the bottom of the page correctly.
-      ['Test data long before ID', [], { body: [...Array(50).keys()].map(i => `spacer ${i}\n\n`) +
+      ['Test data long before ID', [], { body: [...Array(50).keys()].map(i => `spacer ${i}\n\n`).join('') +
          `$$\\frac{1}{\\sqrt{2}}$\${title=Test data long before ID}` }],
       ['Test data disambiguate', [
         ['Test data disambiguate child', []],
@@ -555,24 +556,26 @@ async function generateDemoData(params) {
         i++
       }
     }
-    console.log('articles.length: ' + require('util').inspect(articles.length));
 
     // Create an article in a topic that exists only for user0. All other articles exist for all users.
     // This is useful to test that case which hsa UI imlications such as "show create new vs view mine".
-    await convert.convertArticle({
-      author: users[0],
-      bodySource: 'This topic only exists for the first user.',
-      convertOptionsExtra: { katex_macros },
-      parentId: `${ourbigbook.AT_MENTION_CHAR}${users[0].username}`,
-      render: true,
-      sequelize,
-      titleSource: 'user0 only',
-    })
+    let articleUser0Only
+    {
+      const { articles } = await convert.convertArticle({
+        author: users[0],
+        bodySource: 'This topic only exists for the first user.',
+        convertOptionsExtra: { katex_macros },
+        parentId: `${ourbigbook.AT_MENTION_CHAR}${users[0].username}/${await titleToId('Test data')}`,
+        render: true,
+        sequelize,
+        titleSource: 'Test data user0 only',
+      })
+      articleUser0Only = articles[0]
+    }
 
     // Write files to filesystem.
     // https://docs.ourbigbook.com/demo-data-local-file-output
     for (const user of users) {
-      console.error('here');
       const articles = (await sequelize.models.Article.getArticles({
         author: user.username,
         count: false,
@@ -650,8 +653,6 @@ async function generateDemoData(params) {
     const issues = [];
     let issueIdx = 0;
     await sequelize.models.Issue.destroy({ where: { authorId: users.map(user => user.id) } })
-    console.log('nArticles: ' + require('util').inspect(nArticles));
-    console.log('articles.length: ' + require('util').inspect(articles.length));
     for (let i = 0; i < nArticles; i++) {
       let articleIssueIdx = 0;
       const article = articles[i]
@@ -698,6 +699,48 @@ async function generateDemoData(params) {
       }
     }
     if (verbose) printTime()
+
+    // Create an article in a topic that exists only for user0. All other articles exist for all users.
+    // This is useful to test that case which hsa UI imlications such as "show create new vs view mine".
+    let articleManyDiscussions
+    {
+      const { articles } = await convert.convertArticle({
+        author: users[0],
+        bodySource: 'This article has many discussions. To test article discussion pagination.',
+        convertOptionsExtra: { katex_macros },
+        parentId: `${ourbigbook.AT_MENTION_CHAR}${articleUser0Only.slug}`,
+        render: true,
+        sequelize,
+        titleSource: 'Test data article with many discussions',
+      })
+      articleManyDiscussions = articles[0]
+    }
+    let issueManyComments
+    for (let i = 0; i < config.articleLimit + 2; i++) {
+      const article =  articleManyDiscussions
+      if (verbose) console.error(`${article.slug}#${i}`)
+      const issue = await convert.convertIssue({
+        article,
+        bodySource: `Many discussions body ${i}.`,
+        number: i + 1,
+        sequelize,
+        titleSource: `Many discussions title ${i}`,
+        user: users[0],
+      })
+      if (i === 0) {
+        issueManyComments = issue
+      }
+    }
+    for (let i = 0; i < config.articleLimit + 2; i++) {
+      if (verbose) console.error(`${articleManyDiscussions.slug}#${issueManyComments.number}#${i}`)
+      await convert.convertComment({
+        issue: issueManyComments,
+        source: `Many comments body ${i}.`,
+        number: i + 1,
+        sequelize,
+        user: users[0],
+      })
+    }
   }
 
   return sequelize
@@ -804,4 +847,3 @@ async function titleToId(titleSource) {
     )
   )
 }
-

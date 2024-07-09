@@ -42,6 +42,7 @@ export interface ArticlePageProps {
   latestIssues?: IssueType[];
   loggedInUser?: UserType;
   otherArticlesInTopic?: (ArticleType & IssueType & TopicType)[];
+  page?: number;
   synonymLinks?: ArticleLinkType[];
   tagged?: ArticleLinkType[];
   topIssues?: IssueType[];
@@ -54,18 +55,19 @@ const ArticlePageHoc = (isIssue=false) => {
     articleInTopicByLoggedInUser,
     articlesInSamePage,
     articlesInSamePageForToc,
-    otherArticlesInTopic,
     commentCountByLoggedInUser,
     comments,
     commentsCount,
     incomingLinks,
     issueArticle,
-    latestIssues,
-    topIssues,
     issuesCount,
+    latestIssues,
     loggedInUser,
+    otherArticlesInTopic,
+    page,
     synonymLinks,
     tagged,
+    topIssues,
   }: ArticlePageProps) => {
     const author = article.author
     const { setTitle } = React.useContext(AppContext)
@@ -138,6 +140,7 @@ const ArticlePageHoc = (isIssue=false) => {
               isIssue,
               issuesCount,
               latestIssues,
+              page,
               synonymLinks,
               loggedInUser,
               tagged,

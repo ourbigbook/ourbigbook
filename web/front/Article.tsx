@@ -17,7 +17,6 @@ import {
   NewArticleIcon,
   SeeIcon,
   SeeMyOwnVersionOfThisTopic,
-  SignupOrLogin,
   SourceIcon,
   TimeIcon,
   TopicIcon,
@@ -27,10 +26,9 @@ import {
   getShortFragFromLongForPath,
   shortFragGoTo,
 } from 'front'
-import Comment from 'front/Comment'
+import CommentList from 'front/CommentList'
 import CommentInput from 'front/CommentInput'
 import LikeArticleButton from 'front/LikeArticleButton'
-import { CommentType } from 'front/types/CommentType'
 import ArticleList from 'front/ArticleList'
 import routes from 'front/routes'
 import { cant } from 'front/cant'
@@ -58,6 +56,7 @@ import {
 // or factor out the webpack setup of the ourbigbook package.
 //import { ourbigbook_runtime } from 'ourbigbook/ourbigbook_runtime.js';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js'
+import { encodeGetParams } from 'ourbigbook/web_api'
 
 function linkList(articles, idUnreserved, marker, title, linkPref) {
   if (articles.length) return <>
@@ -93,12 +92,17 @@ const Article = ({
   issueArticle=undefined,
   latestIssues,
   loggedInUser,
+  page=undefined,
   synonymLinks,
   tagged,
   topIssues,
 }) => {
   const [curComments, setComments] = React.useState(comments)
   const router = useRouter()
+  React.useEffect(() => {
+    // Otherwise comments don't change on page changes.
+    setComments(comments)
+  }, [encodeGetParams(router.query)])
   let seeAllCreateNew
   if (!isIssue) {
     seeAllCreateNew = <>
@@ -628,40 +632,43 @@ const Article = ({
     />
     <div className="meta">
       {isIssue
-        ? <div className="content-not-ourbigbook">
-            <h2 id={commentsHeaderId}>
-              <a href={`#${commentsHeaderId}`}><CommentIcon /> Comments ({ commentsCount })</a>
-              {' '}
-              <FollowArticleButton {...{
-                article,
-                issueArticle,
-                isIssue: true,
-                loggedInUser,
-                showText: false,
-              }} />
-            </h2>
-            <div className="comment-form-holder">
-              <CommentInput {...{
-                comments,
-                commentCountByLoggedInUser,
-                issueNumber: article.number,
-                loggedInUser,
-                setComments,
-              }}/>
+        ? <>
+            <div className="content-not-ourbigbook">
+              <h2 id={commentsHeaderId}>
+                <a href={`#${commentsHeaderId}`}><CommentIcon /> Comments ({ commentsCount })</a>
+                {' '}
+                <FollowArticleButton {...{
+                  article,
+                  issueArticle,
+                  isIssue: true,
+                  loggedInUser,
+                  showText: false,
+                }} />
+              </h2>
             </div>
             <div className="list-container show-body">
-              {curComments?.map((comment: CommentType) =>
-                <Comment {...{
-                  comment,
-                  comments,
-                  id: comment.id,
-                  key: comment.id,
+              <CommentList {...{
+                comments: curComments,
+                commentsCount,
+                loggedInUser,
+                page,
+                setComments,
+                showBody: true,
+                showFullSlug: false,
+                showBodyControl: false,
+              }}/>
+            </div>
+            <div className="content-not-ourbigbook">
+              <div className="comment-form-holder">
+                <CommentInput {...{
+                  commentCountByLoggedInUser,
+                  issueNumber: article.number,
                   loggedInUser,
                   setComments,
-                }} />
-              )}
+                }}/>
+              </div>
             </div>
-          </div>
+          </>
         : <>
             <div className="content-not-ourbigbook">
               <div className="ourbigbook-title">
@@ -729,7 +736,7 @@ const Article = ({
                       page: 0,
                       showAuthor: true,
                       showControls: false,
-                      what: 'issues',
+                      what: 'discussions',
                     }}/>
                     {seeAllCreateNew &&
                       <div className="content-not-ourbigbook">
@@ -737,7 +744,7 @@ const Article = ({
                       </div>
                     }
                   </>
-                : <p>There are no discussions about this article yet.</p>
+                : <p className="content-not-ourbigbook">There are no discussions about this article yet.</p>
               }
             </div>
           </>

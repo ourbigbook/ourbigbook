@@ -1,7 +1,7 @@
 import React from 'react'
 import { useRouter } from 'next/router'
 
-import { TimeIcon } from 'front'
+import { getCommentSlug, TimeIcon } from 'front'
 import Maybe from 'front/Maybe'
 import { webApi } from 'front/api'
 import config from 'front/config'
@@ -9,8 +9,14 @@ import CustomLink from 'front/CustomLink'
 import { cant } from 'front/cant'
 import { formatDate } from 'front/date'
 import UserLinkWithImage from 'front/UserLinkWithImage'
+import routes from 'front/routes'
 
-const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
+const Comment = ({
+  comment,
+  loggedInUser,
+  setComments=undefined,
+  showFullSlug=true
+}) => {
   const router = useRouter();
   const {
     query: { number: issueNumber, slug },
@@ -18,14 +24,19 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
   const handleDelete = async (commentId) => {
     if (confirm('Are you sure you want to delete this comment?')) {
       await webApi.commentDelete((slug as string[]).join('/'), issueNumber, comment.number)
-      setComments(comments => comments.filter(comment => comment.id !== id))
+      setComments(comments => comments.filter(comment => comment.id !== commentId))
     }
   };
   const targetId = `${config.commentIdPrefix}${comment.number}`
   return (
     <div className="item" id={targetId}>
       <div className="item-header content-not-ourbigbook">
-        <CustomLink className="number" href={`#${targetId}`}>#{comment.number}</CustomLink>
+        <CustomLink className="number" href={showFullSlug ?
+          routes.issueComment(comment.issue.article.slug, comment.issue.number, comment.number) :
+          `#${targetId}`}
+        >
+          {showFullSlug ? getCommentSlug(comment) : `#${comment.number}`}
+        </CustomLink>
         {' by '}
         <UserLinkWithImage user={comment.author} showUsernameMobile={false} />
         {' on '}
@@ -35,12 +46,15 @@ const Comment = ({ comment, comments, id, loggedInUser, setComments }) => {
           {formatDate(comment.createdAt)}
         </span>
         {' '}
-        <Maybe test={!cant.deleteComment(loggedInUser, comment)}>
+        <Maybe test={
+          setComments &&
+          !cant.deleteComment(loggedInUser, comment)
+        }>
           <button
             className="btn"
             onClick={() => handleDelete(comment.id)}
           >
-            <i className="ion-trash-a" /> Delete Comment
+            <i className="icon ion-trash-a" /> Delete comment
           </button>
         </Maybe>
       </div>

@@ -2,7 +2,7 @@ import ourbigbook from 'ourbigbook'
 
 import { getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
-import { maxArticlesFetch } from 'front/config'
+import { articleLimitSmall, maxArticlesFetch } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
 import { idToSlug } from 'front/js'
 import { IssueType } from 'front/types/IssueType'
@@ -68,12 +68,13 @@ export const getServerSidePropsArticleHoc = ({
       const slugString = slug.join('/')
       const sequelize = req.sequelize
       const loggedInUser = await getLoggedInUser(req, res, loggedInUserCache)
-      const limit = 5;
+      const limit = articleLimitSmall
       const [article, articleTopIssues] = await Promise.all([
         sequelize.models.Article.getArticle({
           includeIssues,
           sequelize,
           slug: slugString,
+          limit,
         }),
         //// TODO benchmark the effect of this monstrous query on article pages.
         //// If very slow, we could move it to after page load.
@@ -152,7 +153,7 @@ export const getServerSidePropsArticleHoc = ({
         includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
         sequelize.models.Article.getArticles({
           excludeIds: [article.id],
-          limit: 5,
+          limit,
           offset: 0,
           order: 'score',
           sequelize,

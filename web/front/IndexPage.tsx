@@ -176,8 +176,8 @@ function IndexPageHoc({
             ? <CommentList {...{
                 comments,
                 commentsCount,
-                page,
                 showAuthor: true,
+                page,
               }}/>
             : <ArticleList {...{
               articles,
@@ -202,11 +202,13 @@ function IndexPageHoc({
             />
           </>
         }
-        <div className="content-not-ourbigbook site-settings">
-          <CustomLink href={routes.siteSettings()}>
-            <SettingsIcon /> Site Settings
-          </CustomLink>
-        </div>
+        {isHomepage &&
+          <div className="content-not-ourbigbook site-settings">
+            <CustomLink href={routes.siteSettings()}>
+              <SettingsIcon /> Site Settings
+            </CustomLink>
+          </div>
+        }
       </div>
     )
   }

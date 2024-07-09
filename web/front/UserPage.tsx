@@ -285,14 +285,12 @@ export default function UserPage({
       }}/>
     }
     {itemType === 'comment' &&
-      <div className="content-not-ourbigbook">
-        <CommentList {...{
-          comments,
-          commentsCount,
-          page,
-          showAuthor: false,
-        }}/>
-      </div>
+      <CommentList {...{
+        comments,
+        commentsCount,
+        page,
+        showAuthor: false,
+      }}/>
     }
     {itemType === 'user' &&
       <div className="content-not-ourbigbook">

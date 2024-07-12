@@ -1,5 +1,9 @@
 const { DataTypes } = require('sequelize')
 
+const config = require('../front/config')
+const { getCommentSlug } = require('../front/js')
+const convert = require('../convert')
+
 module.exports = (sequelize) => {
   const Comment = sequelize.define(
     'Comment',
@@ -121,6 +125,66 @@ module.exports = (sequelize) => {
       ret.issue = await issue.toJson(loggedInUser)
     }
     return ret
+  }
+
+  Comment.prototype.rerender = async function({ convertOptionsExtra, ignoreErrors, transaction }={}) {
+    if (ignoreErrors === undefined)
+      ignoreErrors = false
+    await sequelize.transaction({ transaction }, async (transaction) => {
+      try {
+        await convert.convertComment({
+          comment: this,
+          sequelize,
+          transaction,
+          user: this.author,
+        })
+      } catch(e) {
+        if (ignoreErrors) {
+          console.log(e)
+        } else {
+          throw e
+        }
+      }
+    })
+  }
+
+  Comment.rerender = async ({ convertOptionsExtra, ignoreErrors, log }={}) => {
+    if (log === undefined)
+      log = false
+    let offset = 0
+    while (true) {
+      const comments = await sequelize.models.Comment.findAll({
+        include: [
+          {
+            model: sequelize.models.Issue,
+            as: 'issue',
+            include: [{
+              model: sequelize.models.Article,
+              as: 'article',
+            }]
+          },
+          {
+            model: sequelize.models.User,
+            as: 'author',
+          }
+        ],
+        offset,
+        limit: config.maxArticlesInMemory,
+        order: [
+          [{ model: sequelize.models.Issue, as: 'issue' }, { model: sequelize.models.Article, as: 'article' }, 'slug', 'ASC'],
+          [{ model: sequelize.models.Issue, as: 'issue' }, 'number', 'ASC'],
+          ['number', 'ASC']
+        ],
+      })
+      if (comments.length === 0)
+        break
+      for (const comment of comments) {
+        if (log)
+          console.log(getCommentSlug(comment))
+        await comment.rerender({ convertOptionsExtra, ignoreErrors })
+      }
+      offset += config.maxArticlesInMemory
+    }
   }
 
   return Comment

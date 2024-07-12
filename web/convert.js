@@ -446,7 +446,8 @@ async function convertArticle({
       }
       newNestedSetNextSibling = newNestedSetIndex + nestedSetSize
       if (isIndex) {
-        // It would be better to handle this by oldArticle to the old article. But we don't have it in this case becausethere is no oldRef. So let's fake it until things blow up somehow.
+        // It would be better to handle this by oldArticle to the old article.
+        // But we don't have it in this case because there is no oldRef. So let's fake it until things blow up somehow.
         oldNestedSetIndex = newNestedSetIndex
         oldNestedSetNextSibling = newNestedSetNextSibling
         oldDepth = newDepth
@@ -785,6 +786,7 @@ async function convertArticle({
 }
 
 async function convertComment({
+  comment,
   issue,
   number,
   sequelize,
@@ -792,6 +794,11 @@ async function convertComment({
   transaction,
   user,
 }) {
+  if (source === undefined) {
+    source = comment.source
+  } else {
+    comment.source = source
+  }
   return sequelize.transaction({ transaction }, async (transaction) => {
     const { extra_returns } = await convert({
       author: user,
@@ -809,16 +816,24 @@ async function convertComment({
       type: 'comment',
     })
     const outpath = Object.keys(extra_returns.rendered_outputs)[0]
-    return sequelize.models.Comment.createSideEffects(
-      user,
-      issue,
-      {
-        number,
-        render: extra_returns.rendered_outputs[outpath].full,
-        source,
-      },
-      { transaction }
-    )
+    const renders = extra_returns.rendered_outputs[outpath]
+    const render = renders.full
+    if (comment === undefined) {
+      const outpath = Object.keys(extra_returns.rendered_outputs)[0]
+      return sequelize.models.Comment.createSideEffects(
+        user,
+        issue,
+        {
+          number,
+          render: extra_returns.rendered_outputs[outpath].full,
+          source,
+        },
+        { transaction }
+      )
+    } else {
+      comment.render = render
+      return comment.save({ transaction })
+    }
   })
 }
 

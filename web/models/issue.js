@@ -92,6 +92,7 @@ module.exports = (sequelize) => {
       }
     })
   }
+
   Issue.prototype.toJson = async function(loggedInUser) {
     // TODO do liked and followed with JOINs on caller, check if it is there and skip this if so.
     const [followed, liked] = await Promise.all([

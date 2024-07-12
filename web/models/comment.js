@@ -94,6 +94,7 @@ module.exports = (sequelize) => {
       offset,
       order,
       transaction,
+      where,
     })
   }
 

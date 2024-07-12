@@ -4378,6 +4378,23 @@ it(`api: /hash: cleanupIfDeleted is correct`, async () => {
       { path: '@user0/index.bigb', cleanupIfDeleted: true, },
       { path: '@user0/mathematics.bigb', cleanupIfDeleted: true, },
     ])
+
+    // Render false does not blow up /hash with empty body
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'Physics',
+      bodySource: '',
+    })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.articlesHash({ author: 'user0' }))
+    assertStatus(status, data)
+    assertRows(data.articles, [
+      { path: '@user0/index.bigb', cleanupIfDeleted: true, },
+      { path: '@user0/mathematics.bigb', cleanupIfDeleted: true, },
+      // We don't need to clenup as it was never rendered.
+      { path: '@user0/physics.bigb', cleanupIfDeleted: false, },
+    ])
   })
 })
 

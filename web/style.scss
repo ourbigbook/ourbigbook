@@ -224,7 +224,7 @@ div.list-container {
           font-weight: bold;
           font-size: 1.2em;
         }
-        // TODO this makes everything in the title look verticaly centered nicelly.
+        // TODO this makes everything in the title look vertically centered nicely.
         // But it breaks down if the page becomes narrow and title goes in different
         // line than the other elements. Related:
         // https://stackoverflow.com/questions/44707141/how-to-force-flex-columns-to-stay-on-the-same-line-if-container-flex-wrap-is-s
@@ -253,7 +253,7 @@ div.list-container {
         // - show indicator if there is overflow:
         //   - https://stackoverflow.com/questions/70131020/how-to-display-scroll-down-if-and-only-if-content-overflows-in-pure-css
         //   - https://stackoverflow.com/questions/45105611/css-only-solution-for-overflow-scroll-indicators
-        //max-height: 500px;
+        max-height: 500px;
         overflow-y: hidden;
       }
       .item-footer {

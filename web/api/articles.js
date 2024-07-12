@@ -141,7 +141,14 @@ router.get('/hash', auth.optional, async function(req, res, next) {
     const articlesJson = []
     for (const file of files) {
       articlesJson.push({
-        cleanupIfDeleted: file.get('bodySourceLen') !== 0 || file.articles[0].list,
+        cleanupIfDeleted: (
+          file.get('bodySourceLen') !== 0 ||
+          (
+            // Happens on render === false
+            file.articles.length !== 0 &&
+            file.articles[0].list
+          )
+        ),
         hash: file.hash,
         path: file.path,
         renderOutdated: !!file.get('renderOutdated'),
@@ -259,7 +266,6 @@ async function createOrUpdateArticle(req, res, opts) {
       throw new lib.ValidationError(`owner: there is no user with username owner="${owner}"`)
     }
   }
-  console.log('owner: ' + require('util').inspect(owner));
 
   // Skip conversion if unchanged.
   let articles = []

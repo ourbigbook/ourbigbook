@@ -9,8 +9,8 @@ import {
   IssueIcon,
   TimeIcon,
   UserIcon,
-  getCommentSlug,
 } from 'front'
+import { getCommentSlug } from 'front/js'
 import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
@@ -30,6 +30,7 @@ export type CommentListProps = {
   showBody?: boolean;
   showBodyControl?: boolean;
   showControls?: boolean;
+  showFullBody?: boolean;
   showFullSlug?: boolean;
 }
 
@@ -39,9 +40,10 @@ const CommentList = ({
   loggedInUser,
   page,
   showAuthor=true,
-  showBody=false,
+  showBody=true,
   showBodyControl=true,
   showControls=true,
+  showFullBody=false,
   showFullSlug=true,
 }: CommentListProps) => {
   const router = useRouter();
@@ -87,6 +89,7 @@ const CommentList = ({
                         comment,
                         key: showFullSlug ? getCommentSlug(comment) : comment.number,
                         loggedInUser,
+                        showFullBody,
                         showFullSlug,
                       }} />
                     )}

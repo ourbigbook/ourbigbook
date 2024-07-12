@@ -15,6 +15,10 @@ function getClientIp(req) {
   return req.header('x-forwarded-for')
 }
 
+function getCommentSlug(comment) {
+  return `${comment.issue.article.slug}#${comment.issue.number}#${comment.number}`
+}
+
 function getList(req, res) {
   let ok, showUnlisted, showListed
   const showUnlistedStr = req.query['show-unlisted']
@@ -209,6 +213,7 @@ function slugToId(slug) {
 module.exports = {
   AUTH_COOKIE_NAME: 'auth',
   getClientIp,
+  getCommentSlug,
   getList,
   getOrder,
   getOrderAndPage,

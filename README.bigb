@@ -9879,6 +9879,12 @@ The functionality of this script should be called from a <OurBigBook Web databas
 
 Analogous to <web/bin/rerender-articles.js>{file} but for issues.
 
+= web/bin/rerender-comments.js
+{file}
+{parent=Web CLI utils}
+
+Analogous to <web/bin/rerender-articles.js>{file} but for comments.
+
 = web/bin/set-password
 {file}
 {parent=Web CLI utils}

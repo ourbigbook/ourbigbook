@@ -13,7 +13,6 @@ import { AUTH_COOKIE_NAME } from 'front/js'
 import CustomLink from 'front/CustomLink'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
-import { CommentType } from 'front/types/CommentType'
 import { IssueType } from 'front/types/IssueType'
 import { UserLinkWithImageInner } from 'front/UserLinkWithImage'
 
@@ -224,10 +223,6 @@ export function disableButton(btn, msg='Cannot submit due to errors') {
 export function enableButton(btn) {
   btn.removeAttribute('disabled')
   btn.removeAttribute('title')
-}
-
-export function getCommentSlug(comment: CommentType): string {
-  return `${comment.issue.article.slug}#${comment.issue.number}#${comment.number}`
 }
 
 /// Logout the current user on web UI.

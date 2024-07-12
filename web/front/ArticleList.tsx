@@ -23,6 +23,7 @@ import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
+import { ItemBody } from 'front/ItemBody'
 import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
@@ -68,6 +69,7 @@ export type ArticleListProps = {
   showAuthor: boolean;
   showBody?: boolean,
   showControls?: boolean;
+  showFullBody?: boolean,
   what?: string;
 }
 
@@ -84,8 +86,9 @@ const ArticleList = ({
   page,
   paginationUrlFunc,
   showAuthor,
-  showBody=false,
+  showBody=true,
   showControls=true,
+  showFullBody=false,
   what='all',
 }: ArticleListProps) => {
   const router = useRouter();
@@ -227,70 +230,72 @@ const ArticleList = ({
                             </span>
                           </div>
                           {article.render &&
-                            <div
-                              className="item-body ourbigbook"
-                              dangerouslySetInnerHTML={{ __html: article.render }}
-                              ref={(elem) => {
-                                if (elem) {
-                                  const as = elem.getElementsByTagName('a')
-                                  for (let i = 0; i < as.length; i++) {
-                                    const a = as[i]
-                                    if (!aElemToMetaMap.current.has(a)) {
-                                      const href = a.href
-                                      aElemToMetaMap.current.add(a)
-                                      const url = new URL(href, document.baseURI)
-                                      if (
-                                        // Don't do processing for external links.
-                                        url.origin === new URL(document.baseURI).origin
-                                      ) {
-                                        let frag
-                                        let longFrag
-                                        let goToTargetInPage = false
-                                        let targetElem
-                                        if (url.hash) {
-                                          frag = url.hash.slice(1)
-                                          targetElem = document.getElementById(frag)
-                                          longFrag = AT_MENTION_CHAR + frag
-                                          if (targetElem) {
-                                            goToTargetInPage = true
-                                            a.href = '#' + longFrag
-                                          }
-                                        }
-                                        if (!goToTargetInPage) {
-                                          const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
-                                          a.href = url.pathname + (frag ? ('#' + frag) : '')
-                                        }
-                                        a.addEventListener('click', e => {
-                                          if (
-                                            // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
-                                            // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
-                                            !e.ctrlKey
-                                          ) {
-                                            e.preventDefault()
-                                            if (
-                                              // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
-                                              // For artiles all works fine because each section is rendered separately and thus has a non empty href.
-                                              // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
-                                              // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
-                                              // But lazy now.
-                                              !href
-                                            ) {
-                                              window.location.hash = ''
-                                            } else {
-                                              if (goToTargetInPage) {
-                                                shortFragGoTo(handleShortFragmentSkipOnce, frag, longFrag, targetElem)
-                                              } else {
-                                                Router.push(a.href)
-                                              }
+                            <ItemBody {...{ showFullBody }}>
+                              <div
+                                className=" ourbigbook"
+                                dangerouslySetInnerHTML={{ __html: article.render }}
+                                ref={(elem) => {
+                                  if (elem) {
+                                    const as = elem.getElementsByTagName('a')
+                                    for (let i = 0; i < as.length; i++) {
+                                      const a = as[i]
+                                      if (!aElemToMetaMap.current.has(a)) {
+                                        const href = a.href
+                                        aElemToMetaMap.current.add(a)
+                                        const url = new URL(href, document.baseURI)
+                                        if (
+                                          // Don't do processing for external links.
+                                          url.origin === new URL(document.baseURI).origin
+                                        ) {
+                                          let frag
+                                          let longFrag
+                                          let goToTargetInPage = false
+                                          let targetElem
+                                          if (url.hash) {
+                                            frag = url.hash.slice(1)
+                                            targetElem = document.getElementById(frag)
+                                            longFrag = AT_MENTION_CHAR + frag
+                                            if (targetElem) {
+                                              goToTargetInPage = true
+                                              a.href = '#' + longFrag
                                             }
                                           }
-                                        })
+                                          if (!goToTargetInPage) {
+                                            const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
+                                            a.href = url.pathname + (frag ? ('#' + frag) : '')
+                                          }
+                                          a.addEventListener('click', e => {
+                                            if (
+                                              // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
+                                              // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
+                                              !e.ctrlKey
+                                            ) {
+                                              e.preventDefault()
+                                              if (
+                                                // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
+                                                // For artiles all works fine because each section is rendered separately and thus has a non empty href.
+                                                // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
+                                                // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
+                                                // But lazy now.
+                                                !href
+                                              ) {
+                                                window.location.hash = ''
+                                              } else {
+                                                if (goToTargetInPage) {
+                                                  shortFragGoTo(handleShortFragmentSkipOnce, frag, longFrag, targetElem)
+                                                } else {
+                                                  Router.push(a.href)
+                                                }
+                                              }
+                                            }
+                                          })
+                                        }
                                       }
                                     }
                                   }
-                                }
-                              }}
-                            />
+                                }}
+                              />
+                            </ItemBody>
                           }
                           <div className="item-footer content-not-ourbigbook">
                             <CustomLink

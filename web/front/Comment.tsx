@@ -1,13 +1,16 @@
 import React from 'react'
 import { useRouter } from 'next/router'
+import Link from 'next/link'
 
-import { getCommentSlug, TimeIcon } from 'front'
+import { CommentIcon, SeeIcon, TimeIcon } from 'front'
+import { getCommentSlug } from 'front/js'
 import Maybe from 'front/Maybe'
 import { webApi } from 'front/api'
 import config from 'front/config'
 import CustomLink from 'front/CustomLink'
 import { cant } from 'front/cant'
 import { formatDate } from 'front/date'
+import { ItemBody } from 'front/ItemBody'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import routes from 'front/routes'
 
@@ -15,7 +18,8 @@ const Comment = ({
   comment,
   loggedInUser,
   setComments=undefined,
-  showFullSlug=true
+  showFullSlug=true,
+  showFullBody,
 }) => {
   const router = useRouter();
   const {
@@ -58,10 +62,21 @@ const Comment = ({
           </button>
         </Maybe>
       </div>
-      <div
-        className="ourbigbook"
-        dangerouslySetInnerHTML={{ __html: comment.render }}
-      />
+      <ItemBody {...{ showFullBody }}>
+        <div
+          className="ourbigbook"
+          dangerouslySetInnerHTML={{ __html: comment.render }}
+        />
+      </ItemBody>
+      {!showFullBody &&
+        <div className="item-footer content-not-ourbigbook">
+          <CustomLink
+            href={routes.issueComment(comment.issue.article.slug, comment.issue.number, comment.number)}
+          >
+            <CommentIcon /> Read the full discussion
+          </CustomLink>
+        </div>
+      }
     </div>
   );
 };

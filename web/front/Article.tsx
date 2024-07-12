@@ -654,6 +654,7 @@ const Article = ({
                 page,
                 setComments,
                 showBody: true,
+                showFullBody: true,
                 showFullSlug: false,
                 showBodyControl: false,
               }}/>

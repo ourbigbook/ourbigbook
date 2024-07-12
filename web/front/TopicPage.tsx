@@ -101,6 +101,7 @@ export const TopicPage = ({
               paginationUrlFunc,
               showAuthor: true,
               showBody: true,
+              showFullBody: true,
               what,
             }}/>
           </>

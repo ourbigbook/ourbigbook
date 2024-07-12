@@ -246,15 +246,37 @@ div.list-container {
         background-color: $target-background-color;
       }
       .item-body {
-        // TODO limit render height. Difficulties:
+        // Limit render height:
         // - avoid double margins on rendered content. Margin collapse is disabled if we set overflow:
         //   - https://gist.github.com/gokulkrishh/1c197d0369c45a8153d327b11d1626ca
         //   - https://stackoverflow.com/questions/47958007/why-does-overflow-hidden-add-padding-margin
-        // - show indicator if there is overflow:
+        // - show indicator if there is overflow: these were for scrollable stuff.
         //   - https://stackoverflow.com/questions/70131020/how-to-display-scroll-down-if-and-only-if-content-overflows-in-pure-css
         //   - https://stackoverflow.com/questions/45105611/css-only-solution-for-overflow-scroll-indicators
-        max-height: 500px;
-        overflow-y: hidden;
+        //   We ended up going for a relatively positioned element instead since we are non scrollable.
+        &.cut {
+          $max-height: 500px;
+          max-height: $max-height;
+          overflow-y: hidden;
+          .show-more {
+            $h: 50px;
+            a {
+              background-color: $background-color;
+              cursor: pointer;
+              font-weight: bold;
+              padding-left: 0.5em;
+              padding-right: 0.5em;
+            }
+            background: linear-gradient(rgba($background-color, 0), $background-color);
+            height: $h;
+            margin-top: -$h;
+            position: relative;
+            line-height: $h * 1.3;
+            text-align: center;
+            top: $max-height;
+            z-index: 1;
+          }
+        }
       }
       .item-footer {
         background-color: $table-head-background-color;

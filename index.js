@@ -3868,9 +3868,15 @@ function getTestData(ast, context) {
   }
 }
 
-function getTitleAndDescription({ title, description, source, inner }) {
+function getTitleAndDescription({
+  description,
+  inner,
+  innerNoDiv,
+  source,
+  title,
+}) {
   let sep
-  if (inner === undefined || isPunctuation(inner[inner.length - 1])) {
+  if (innerNoDiv === undefined || isPunctuation(innerNoDiv[innerNoDiv.length - 1])) {
     sep = ''
   } else {
     sep = '.'
@@ -4053,12 +4059,12 @@ function htmlRenderSimpleElem(elem_name, options={}) {
     let elem_attrs
     if (show_caption) {
       const { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
-      const { full: title, inner } = xTextBase(ast, context, {
+      const { full: title, inner, innerNoDiv } = xTextBase(ast, context, {
         addTitleDiv: true,
         href_prefix: htmlSelfLink(ast, context),
         force_separator
       })
-      const title_and_description = getTitleAndDescription({ title, description, inner })
+      const title_and_description = getTitleAndDescription({ title, description, inner, innerNoDiv })
       res += `<div${attrs}><div${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`;
       res += `<div class="caption">${title_and_description}</div>`;
       elem_attrs = ''
@@ -4226,12 +4232,12 @@ function htmlTitleAndDescription(ast, context, opts={}) {
     href = ''
   }
   if (ast.index_id || ast.validation_output.description.given) {
-    const { full: title, inner } = xTextBase(ast, context, {
+    const { full: title, inner, innerNoDiv } = xTextBase(ast, context, {
       addTitleDiv: opts.addTitleDiv,
       force_separator,
       href_prefix: href,
     })
-    title_and_description += `<div class="caption">${getTitleAndDescription({ title, description, inner })}</div>`
+    title_and_description += `<div class="caption">${getTitleAndDescription({ title, description, inner, innerNoDiv })}</div>`
   }
   return { title_and_description, multiline_caption, href }
 }
@@ -4416,8 +4422,8 @@ function macroImageVideoBlockConvertFunction(ast, context) {
     src,
   });
   if (has_caption) {
-    const { full: title, inner } = xTextBase(ast, context, { addTitleDiv: true, href_prefix, force_separator })
-    const title_and_description = getTitleAndDescription({ title, description, source, inner })
+    const { full: title, inner, innerNoDiv } = xTextBase(ast, context, { addTitleDiv: true, href_prefix, force_separator })
+    const title_and_description = getTitleAndDescription({ title, description, source, inner, innerNoDiv })
     ret += `<figcaption>${title_and_description}</figcaption>`;
   }
   ret += '</div></figure>';
@@ -7474,7 +7480,8 @@ function xTextBase(ast, context, options={}) {
   }
   const macro = context.macros[ast.macro_name];
   let inner
-  let style_full;
+  let innerNoDiv
+  let style_full
   if ('style_full' in options) {
     style_full = options.style_full;
   } else {
@@ -7580,12 +7587,14 @@ function xTextBase(ast, context, options={}) {
       }
     }
     if (ast.file) {
-      inner = ast.file
+      innerNoDiv = ast.file
     } else {
-      inner = renderArg(title_arg, context);
+      innerNoDiv = renderArg(title_arg, context);
     }
     if (options.addTitleDiv) {
-      inner = `<div class="title">${inner}</div>`
+      inner = `<div class="title">${innerNoDiv}</div>`
+    } else {
+      inner = innerNoDiv
     }
     ret += inner
     if (style_full) {
@@ -7614,7 +7623,7 @@ function xTextBase(ast, context, options={}) {
       }
     }
   }
-  return { full: ret, inner }
+  return { full: ret, inner, innerNoDiv }
 }
 
 function xText(ast, context, options={}) {
@@ -9495,12 +9504,12 @@ const OUTPUT_FORMATS_LIST = [
           //Caption on top as per: https://tex.stackexchange.com/questions/3243/why-should-a-table-caption-be-placed-above-the-table */
           let href = htmlAttr('href', '#' + htmlEscapeAttr(ast.id));
           if (ast.index_id || ast.validation_output.description.given) {
-            const { full: title, inner } = xTextBase(ast, context, {
+            const { full: title, inner, innerNoDiv } = xTextBase(ast, context, {
               addTitleDiv: true,
               href_prefix: href,
               force_separator,
             })
-            const title_and_description = getTitleAndDescription({ title, description, inner })
+            const title_and_description = getTitleAndDescription({ title, description, inner, innerNoDiv })
             ret += `<div class="caption">${title_and_description}</div>`;
           }
           ret += `<table>${content}</table>`;

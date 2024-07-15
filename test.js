@@ -1903,24 +1903,25 @@ f()
     },
     assert_xpath: {
       'index.html': [
+        // TODO move sep . into title. This makes it more uniform with explicit punctuation in title.
         "//x:figcaption[text()='. My image 1.']//x:div[@class='title' and text()='My title 1']",
-        "//x:figcaption[text()='. My image 2.']//x:div[@class='title' and text()='My title 2.']",
-        "//x:figcaption[text()='. My image 3.']//x:div[@class='title' and text()='My title 3?']",
-        "//x:figcaption[text()='. My image 4.']//x:div[@class='title' and text()='My title 4!']",
-        "//x:figcaption[text()='. My image 5.']//x:div[@class='title' and text()='My title 5 (2000)']",
+        "//x:figcaption[text()=' My image 2.']//x:div[@class='title' and text()='My title 2.']",
+        "//x:figcaption[text()=' My image 3.']//x:div[@class='title' and text()='My title 3?']",
+        "//x:figcaption[text()=' My image 4.']//x:div[@class='title' and text()='My title 4!']",
+        "//x:figcaption[text()=' My image 5.']//x:div[@class='title' and text()='My title 5 (2000)']",
         "//x:figcaption[text()='. My video 1.']//x:div[@class='title' and text()='My title 1']",
-        "//x:figcaption[text()='. My video 2.']//x:div[@class='title' and text()='My title 2.']",
+        "//x:figcaption[text()=' My video 2.']//x:div[@class='title' and text()='My title 2.']",
         // TODO any way to test this properly? I would like something like:
         //"//x:figcaption[text()='. My title with source 2. . My image with source 2.']",
         // There are multiple text nodes because of the <a from source in the middle.
         "//x:figcaption//x:div[@class='title' and text()='My title with source 1']",
         "//x:figcaption//x:div[@class='title' and text()='My title with source 2.']",
         "//x:div[@class='caption' and text()='. My code 1.']//x:div[@class='title' and text()='My title 1']",
-        "//x:div[@class='caption' and text()='. My code 2.']//x:div[@class='title' and text()='My title 2.']",
+        "//x:div[@class='caption' and text()=' My code 2.']//x:div[@class='title' and text()='My title 2.']",
         "//x:div[@class='caption' and text()='. My table 1.']//x:div[@class='title' and text()='My title 1']",
-        "//x:div[@class='caption' and text()='. My table 2.']//x:div[@class='title' and text()='My title 2.']",
+        "//x:div[@class='caption' and text()=' My table 2.']//x:div[@class='title' and text()='My title 2.']",
         "//x:div[@class='caption' and text()='. My quote 1.']//x:div[@class='title' and text()='My title 1']",
-        "//x:div[@class='caption' and text()='. My quote 2.']//x:div[@class='title' and text()='My title 2.']",
+        "//x:div[@class='caption' and text()=' My quote 2.']//x:div[@class='title' and text()='My title 2.']",
         "//x:figcaption[text()='My image no title.']",
         "//x:figcaption[text()='. My image source no title.']",
       ],

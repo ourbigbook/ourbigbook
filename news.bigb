@@ -7,6 +7,33 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= Body preview on all article lists
+{parent=News}
+{tag=OurBigBook Web}
+
+The article body now shows by default on all article lists. So do comment lists.
+
+The major application of this is to quickly browser through a users's top or latest posts, e.g. https://ourbigbook.com/go/user/cirosantilli/articles?sort=score
+
+Previously, the body would only show on:
+* <topic> listings
+* discussion comment lists 
+
+Now it shows everywhere else as well, except that in other views, only a fixed height preview is shown to allow quickly going through large articles without too much scrolling.
+
+A "view more" button can uncover the hidden content if the user wishes to usee it.
+
+A "Show body" control was also added to toggle body vs the previously existing table mode.
+
+\Video[https://www.youtube.com/watch?v=4Pxphm7N6_0]
+{title=View more and show body demo}
+
+\Image[feature/view-more/demo.png]
+{title=View more and show body demo}
+{provider=github}
+{border}
+{height=2000}
+
 = Unlisted articles on web
 {parent=News}
 {tag=OurBigBook Web}

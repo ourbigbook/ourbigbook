@@ -17,6 +17,7 @@ const config = require('./front/config')
 
 const { performance } = require('perf_hooks')
 const now = performance.now.bind(performance)
+const ISSUE_DATE = new Date(2000, 0, 1, 2, 3, 4, 5)
 
 let printTimeNow;
 function printTime() {
@@ -662,6 +663,7 @@ async function generateDemoData(params) {
         const issue = await convert.convertIssue({
           article,
           bodySource,
+          date: ISSUE_DATE,
           number: articleIssueIdx + 1,
           sequelize,
           titleSource,
@@ -687,6 +689,7 @@ async function generateDemoData(params) {
         if (verbose) console.error(`${articleIdToArticle[issue.articleId].slug}#${issue.number}#${issueCommentIdx}`)
         const source = commentData[commentIdx % commentData.length]
         const comment = await convert.convertComment({
+          date: ISSUE_DATE,
           issue,
           source,
           number: issueCommentIdx + 1,
@@ -722,6 +725,7 @@ async function generateDemoData(params) {
       const issue = await convert.convertIssue({
         article,
         bodySource: `Many discussions body ${i}.`,
+        date: ISSUE_DATE,
         number: i + 1,
         sequelize,
         titleSource: `Many discussions title ${i}`,
@@ -734,6 +738,7 @@ async function generateDemoData(params) {
     for (let i = 0; i < config.articleLimit + 2; i++) {
       if (verbose) console.error(`${articleManyDiscussions.slug}#${issueManyComments.number}#${i}`)
       await convert.convertComment({
+        date: ISSUE_DATE,
         issue: issueManyComments,
         source: `Many comments body ${i}.`,
         number: i + 1,

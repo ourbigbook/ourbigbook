@@ -787,6 +787,7 @@ async function convertArticle({
 
 async function convertComment({
   comment,
+  date,
   issue,
   number,
   sequelize,
@@ -820,18 +821,28 @@ async function convertComment({
     const render = renders.full
     if (comment === undefined) {
       const outpath = Object.keys(extra_returns.rendered_outputs)[0]
+      const attrs = {
+        number,
+        render: extra_returns.rendered_outputs[outpath].full,
+        source,
+      }
+      if (date) {
+        attrs.createdAt = date
+        // TODO doesn't really work
+        attrs.updatedAt = date
+      }
       return sequelize.models.Comment.createSideEffects(
         user,
         issue,
-        {
-          number,
-          render: extra_returns.rendered_outputs[outpath].full,
-          source,
-        },
+        attrs,
         { transaction }
       )
     } else {
       comment.render = render
+      if (date) {
+        comment.createdAt = date
+        comment.updatedAt = date
+      }
       return comment.save({ transaction })
     }
   })
@@ -840,6 +851,7 @@ async function convertComment({
 async function convertIssue({
   article,
   bodySource,
+  date,
   issue,
   number,
   sequelize,
@@ -891,16 +903,23 @@ async function convertIssue({
     const titleRender = renders.title
     const render = renders.full
     if (issue === undefined) {
+      const attrs = {
+        bodySource,
+        date,
+        number,
+        render,
+        titleRender,
+        titleSource,
+      }
+      if (date) {
+        attrs.createdAt = date
+        // TODO doesn't really work
+        attrs.updatedAt = date
+      }
       return sequelize.models.Issue.createSideEffects(
         user,
         article,
-        {
-          bodySource,
-          number,
-          render,
-          titleRender,
-          titleSource,
-        },
+        attrs,
         {
           transaction,
         },
@@ -908,6 +927,10 @@ async function convertIssue({
     } else {
       issue.titleRender = titleRender
       issue.render = render
+      if (date) {
+        issue.createdAt = date
+        issue.updatedAt = date
+      }
       return issue.save({ transaction })
     }
   })

@@ -106,7 +106,7 @@ const CommentInput = ({
               updateSubmitButton(body)
             }}
           >
-            <span className="disable-part"><NewArticleIcon /> EditArticleIconPost comment</span>
+            <span className="disable-part"><NewArticleIcon /> Post comment</span>
           </button>
         </div>
       </form>

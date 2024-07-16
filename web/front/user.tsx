@@ -76,7 +76,7 @@ export function DisplayAndUsername(
   }
   let mobileOptionalPartPost: React.ReactNode = showParenthesis ? <span className="par">)</span> : ''
   if (!showUsernameMobile) {
-    mobileOptionalPart.push(<span className="mobile-hide">{mobileOptionalPart}</span>)
+    mobileOptionalPart = [<span className="mobile-hide">{mobileOptionalPart}</span>]
     mobileOptionalPartPost = <span className="mobile-hide">{mobileOptionalPartPost}</span>
   }
   return <>

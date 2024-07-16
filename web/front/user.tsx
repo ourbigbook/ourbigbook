@@ -42,30 +42,24 @@ export function DisplayAndUsername(
   {
     user,
     showScore=true,
-    showUsername,
-    showUsernameMobile,
+    showUsername=true,
+    showUsernameMobile=true,
   }
   : DisplayAndUsernameProps
 ) {
-  let mobileMandatoryPart = ''
-  let mobileOptionalPart: React.ReactNode  = ''
-  if (showUsername === undefined) {
-    showUsername = true
-  }
-  if (showUsernameMobile === undefined) {
-    showUsernameMobile = true
-  }
+  let mobileMandatoryPart: React.ReactNode[] = []
+  let mobileOptionalPart: React.ReactNode[] = []
   if (user.displayName) {
-    mobileMandatoryPart += `${user.displayName} `
+    mobileMandatoryPart.push(<span className="display-name">{user.displayName} </span>)
   } else {
-    mobileOptionalPart += `${user.username} `
+    mobileOptionalPart.push(`${user.username} `)
   }
   const showParenthesis = user.displayName && showUsername
   if (showParenthesis) {
-    mobileOptionalPart += `(`
+    mobileOptionalPart.push(<span className="par">(</span>)
   }
   if (showUsername) {
-    mobileOptionalPart += `@${user.username}`
+    mobileOptionalPart.push(`@${user.username}`)
     // TODO https://stackoverflow.com/questions/33710833/how-do-i-conditionally-wrap-a-react-component
     //if (showUsernameMobile) {
     //  ret += `@${user.username}`
@@ -75,20 +69,22 @@ export function DisplayAndUsername(
   }
   if (showParenthesis) {
     if (user.displayName) {
-      mobileOptionalPart += ', '
+      mobileOptionalPart.push(', ')
     } else {
-      mobileOptionalPart += ' ('
+      mobileOptionalPart.push(' (')
     }
   }
-  let mobileOptionalPartPost: React.ReactNode = showParenthesis ? ')' : ''
+  let mobileOptionalPartPost: React.ReactNode = showParenthesis ? <span className="par">)</span> : ''
   if (!showUsernameMobile) {
-    mobileOptionalPart = <span className="mobile-hide">{mobileOptionalPart}</span>
+    mobileOptionalPart.push(<span className="mobile-hide">{mobileOptionalPart}</span>)
     mobileOptionalPartPost = <span className="mobile-hide">{mobileOptionalPartPost}</span>
   }
   return <>
     {mobileMandatoryPart}
-    {mobileOptionalPart}
-    {showScore && <UserScore user={user} />}
-    {mobileOptionalPartPost}
+    <span className="username-and-score">
+      {mobileOptionalPart}
+      {showScore && <UserScore user={user} />}
+      {mobileOptionalPartPost}
+    </span>
   </>
 }

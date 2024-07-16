@@ -104,7 +104,7 @@ const ArticlePageHoc = (isIssue=false) => {
               }
               by
               {' '}
-              <UserLinkWithImage user={author} showUsername={true} showUsernameMobile={false} />
+              <UserLinkWithImage user={author} showUsername={true} />
               {isIssue &&
                 <>
                   {' '}

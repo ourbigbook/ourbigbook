@@ -676,16 +676,47 @@ span.shortcut {
 }
 
 .profile-page {
-  div.user-actions {
-    margin-bottom: 1em;
-    >:not(:last-child) {
-      margin-right: 0.5ch;
+  .name-and-image {
+    @media only screen and (min-width: $max-mobile-width + 1) {
+      display: flex;
+      gap: 1em;
+      flex-direction: row-reverse;
     }
-  }
-  .user-img {
-    $size: 256px;
-    height: $size;
-    width: $size;
+    .no-image {
+      .username-and-score {
+        color: $color;
+      }
+      @media only screen and (min-width: $max-mobile-width + 1) {
+        flex-grow: 1;
+        .display-name {
+          font-size: $h1-font-size * 1.4
+        }
+        .username-and-score {
+          display: block;
+          $p: 0.2em;
+          padding-bottom: $p;
+          padding-top: $p;
+          .par {
+            display: none;
+          }
+        }
+      }
+    }
+    .user-actions {
+      margin-bottom: 1em;
+      >:not(:last-child) {
+        margin-right: 0.5ch;
+      }
+    }
+    .user-img {
+      $size: 256px;
+      height: $size;
+      width: $size;
+      @media only screen and (min-width: $max-mobile-width + 1) {
+        flex-basis: $size;
+        flex-shrink: 0;
+      }
+    }
   }
 }
 

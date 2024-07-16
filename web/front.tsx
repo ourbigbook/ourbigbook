@@ -55,7 +55,7 @@ export function ArticleBy(
       dangerouslySetInnerHTML={{ __html: article.titleRender }}
     />" by <UserLinkWithImageInner {...{
       user: article.author,
-      showUsername: false,
+      showUsername: true,
     }} />
   </>
   const href = routes.article(article.slug)

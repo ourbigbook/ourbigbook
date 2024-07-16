@@ -127,34 +127,38 @@ export default function UserPage({
   return (<>
     <div className="profile-page">
       <div className="user-info content-not-ourbigbook">
-        <h1>
-          <UserIcon /> <DisplayAndUsername user={user}></DisplayAndUsername>
-        </h1>
-        <div className="user-actions">
-          <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
-          <CustomLink className="btn" href={routes.issueNew(`${user.username}`)}>
-            <IssueIcon /> Message
-          </CustomLink>
-          <Maybe test={!cant.viewUserSettings(loggedInUser, user)}>
-            <CustomLink
-              href={routes.userEdit(user.username)}
-              className="btn btn-sm btn-outline-secondary action-btn"
-            >
-              <i className="ion-gear-a" /> Settings
-            </CustomLink>
-          </Maybe>
-          {isCurrentUser &&
-            <>
-              <LogoutButton />
-            </>
-          }
+        <div className="name-and-image">
+          <div className="no-image">
+            <h1>
+              <DisplayAndUsername user={user} />
+            </h1>
+            <div className="user-actions">
+              <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
+              <CustomLink className="btn" href={routes.issueNew(`${user.username}`)}>
+                <IssueIcon /> Message
+              </CustomLink>
+              <Maybe test={!cant.viewUserSettings(loggedInUser, user)}>
+                <CustomLink
+                  href={routes.userEdit(user.username)}
+                  className="btn btn-sm btn-outline-secondary action-btn"
+                >
+                  <i className="ion-gear-a" /> Settings
+                </CustomLink>
+              </Maybe>
+              {isCurrentUser &&
+                <>
+                  <LogoutButton />
+                </>
+              }
+            </div>
+          </div>
+          {user.admin && <h2><i className="ion-star" /> <a href={`${config.docsAdminUrl}`}>Admin</a> <i className="ion-star" /> </h2>}
+          <CustomImage
+            src={user.effectiveImage}
+            alt="User's profile image"
+            className="user-img"
+          />
         </div>
-        {user.admin && <h2><i className="ion-star" /> <a href={`${config.docsAdminUrl}`}>Admin</a> <i className="ion-star" /> </h2>}
-        <CustomImage
-          src={user.effectiveImage}
-          alt="User's profile image"
-          className="user-img"
-        />
         <div className="tab-list">
           <CustomLink
             href={routes.user(username)}

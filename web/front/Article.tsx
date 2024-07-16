@@ -242,8 +242,11 @@ const Article = ({
             elem = document.getElementById(fullid)
             if (!elem) {
               // Toplevel does not have scope. So e.g. we will look for /username/algebra.
-              fullid = prefix + path.split('/').slice(0, -2).join('/') + '/' + fragNoHashNoPrefix
-              elem = document.getElementById(fullid)
+              const pathSplit = path.split('/')
+              if (pathSplit.length > 2) {
+                fullid = prefix + pathSplit.slice(0, -2).join('/') + '/' + fragNoHashNoPrefix
+                elem = document.getElementById(fullid)
+              }
             }
             if (elem) {
               handleShortFragmentCurrentFragType = 'long'

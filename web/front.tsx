@@ -79,20 +79,22 @@ export function IssueBy(
 }
 
 export function DiscussionAbout(
-  { article, children, issue, }:
-  { article?: ArticleType; issue?: IssueType, children?: React.ReactNode }
+  { article, children, span }:
+  { article?: ArticleType; children?: React.ReactNode, span?: boolean }
 ) {
   const inner = <>
       <IssueIcon />{' '}
-      Discussion{issue ? ` #${issue.number}` : ''} on {' '}
-      <ArticleBy {...{article, issue}} />
+      Discussion on{' '}
+      <ArticleBy {...{article}} />
       {children}
     </>
-  if (issue) {
-    return <span className="h2">{ inner }</span>
+  let inner2
+  if (span) {
+    inner2 = <span className="h2">{ inner }</span>
   } else {
-    return <h1 className="h2">{ inner }</h1>
+    inner2 = <h1 className="h2">{ inner }</h1>
   }
+  return <div className="discussion-about">{inner2}</div>
 }
 
 // Icons.

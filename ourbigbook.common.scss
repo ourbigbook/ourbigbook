@@ -67,11 +67,11 @@ $footer-color: $color;
 }
 
 @mixin h-common {
+  box-sizing: border-box;
   display: inline-block;
   font-size: $header-font-size;
   font-weight: bold;
   width: 100%;
-  box-sizing: border-box;
   h1, h2, h3, h4, h5, h6 {
     > a:first-child {
       color: $h-color;

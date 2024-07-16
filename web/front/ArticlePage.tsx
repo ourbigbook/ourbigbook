@@ -94,14 +94,10 @@ const ArticlePageHoc = (isIssue=false) => {
       <>
         <div className="article-page">
           <div className="content-not-ourbigbook article-meta">
-            {isIssue &&
-              <nav className="issue-nav">
-                <DiscussionAbout article={issueArticle} />
-              </nav>
-            }
+            {isIssue && <DiscussionAbout article={issueArticle} span={true}/>}
             <div className="article-info">
               {isIssue &&
-                <span className="h2 inline">
+                <span className="h2-nocolor inline">
                   #{article.number}
                   {' '}
                 </span>

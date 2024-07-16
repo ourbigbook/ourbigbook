@@ -324,6 +324,9 @@ h1, h2, h3, h4, h5, h6 {
     color: $h-color;
   }
 }
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  color: $h-color;
+}
 
 span.pill {
   border-radius: 0.8em;
@@ -384,21 +387,15 @@ pre {
   @include pre;
 }
 
+div.discussion-about {
+  a {
+    color: $a-color;
+  }
+  font-weight: bold;
+}
+
 div.article-page {
   div.article-meta {
-    nav.issue-nav {
-      a {
-        color: $a-color;
-      }
-      font-weight: bold;
-      .see-all {
-        font-size: 1.2em;
-        margin-bottom: 1em;
-        a {
-          white-space: pre;
-        }
-      }
-    }
     div.article-info {
       @media only screen and (max-width: $max-mobile-width) {
         margin-bottom: 10px;
@@ -528,7 +525,7 @@ span.shortcut {
     margin-top: 0;
     margin-bottom: 0.2em;
   }
-  .h2 {
+  .h2, .h2-nocolor {
     @include h-common;
     margin-bottom: 0.3em;
     &.inline {

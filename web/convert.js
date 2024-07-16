@@ -796,7 +796,7 @@ async function convertComment({
 }) {
   if (source === undefined) {
     source = comment.source
-  } else {
+  } else if(comment !== undefined) {
     comment.source = source
   }
   return sequelize.transaction({ transaction }, async (transaction) => {

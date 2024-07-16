@@ -701,18 +701,36 @@ span.shortcut {
           }
         }
       }
+      @media only screen and (max-width: $max-mobile-width) {
+        margin-bottom: 0.5em;
+      }
+    }
+    @media only screen and (max-width: $max-mobile-width) {
+      h1 {
+        display: inline;
+      }
     }
     .user-actions {
+      @media only screen and (max-width: $max-mobile-width) {
+        display: inline;
+        margin-left: 0.5em;
+      }
       margin-bottom: 1em;
       >:not(:last-child) {
         margin-right: 0.5ch;
       }
     }
     .user-img {
-      $size: 256px;
-      height: $size;
-      width: $size;
+      @media only screen and (max-width: $max-mobile-width) {
+        // Make image a bit larger otherwise feels too empty.
+        $size: 250px;
+        height: $size;
+        width: $size;
+      }
       @media only screen and (min-width: $max-mobile-width + 1) {
+        $size: 180px;
+        height: $size;
+        width: $size;
         flex-basis: $size;
         flex-shrink: 0;
       }

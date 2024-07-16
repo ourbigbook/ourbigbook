@@ -4306,7 +4306,7 @@ it('api: parent and child to unrelated synonyms with updateNestedSetIndex', asyn
 })
 
 // https://github.com/ourbigbook/ourbigbook/issues/306
-it('api: article create with synonym parent fails gracefully', async () => {
+it('api: article create with synonym parent uses the synonym target', async () => {
   await testApp(async (test) => {
     let data, status, article
     const sequelize = test.sequelize
@@ -4315,13 +4315,32 @@ it('api: article create with synonym parent fails gracefully', async () => {
     // Because of course we didn't do this when originally implementing.
     test.loginUser(user)
 
+    // Create an article with synonym.
     article = createArticleArg({ i: 0, titleSource: 'h2', bodySource: '= h2 2\n{synonym}' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assertStatus(status, data)
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0,    slug: 'user0/h2' },
+    ])
 
+    // Point the parent of h3 to the synonym h2-2.
     article = createArticleArg({ i: 0, titleSource: 'h3' })
     ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/h2-2' }))
     assertStatus(status, data)
+    await assertNestedSets(sequelize, [
+      { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+      { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0,    slug: 'user0/h2' },
+      { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0,    slug: 'user0/h3' },
+    ])
+    {
+      const article = await sequelize.models.Article.getArticle({
+        includeParentAndPreviousSibling: true,
+        sequelize,
+        slug: 'user0/h3',
+      })
+      assert.strictEqual(article.parentId.idid, '@user0/h2')
+    }
   })
 })
 

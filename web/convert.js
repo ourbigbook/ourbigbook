@@ -43,7 +43,7 @@ function getConvertOpts({ authorUsername, input_path, sequelize, parentId, rende
   }
 }
 
-// Subset of convertArticle for usage in issues and comments.
+// Subset of convertArticle for usage in issues and comments. Used by convertArticle as well.
 // This is a much simpler procedure as it does not alter the File/Article database.
 async function convert({
   author,
@@ -75,11 +75,33 @@ async function convert({
     input_path_given = true
   }
   if (parentId) {
-    const parentIdRow = await sequelize.models.Id.findOne({
+    let parentIdRow = await sequelize.models.Id.findOne({
       where: { idid: parentId },
+      include: [
+        {
+          model: sequelize.models.Ref,
+          as: 'from',
+          required: false,
+          where: {
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
+          },
+          include: [{
+            model: sequelize.models.Id,
+            as: 'to',
+          }]
+        }
+      ]
     })
     if (!parentIdRow) {
       throw new ValidationError(`parentId did not match any known parent: "${parentId}"`)
+    }
+    {
+      const from = parentIdRow.from
+      if (from.length) {
+        // This is a synonym. Use the non-synonym target instead.
+        parentIdRow = from[0].to
+        parentId = parentIdRow.idid
+      }
     }
     let scope
     if (input_path_given) {
@@ -125,6 +147,9 @@ async function convert({
     db_provider,
     extra_returns,
     input_path,
+    // Potentially updated to point to the target synonym.
+    // Caller should use this from then on.
+    parentId,
     source,
   }
 }
@@ -178,7 +203,7 @@ async function convertArticle({
       render = true
     }
     let db_provider, input_path
-    ;({ db_provider, extra_returns, input_path, source } = await convert({
+    ;({ db_provider, extra_returns, input_path, parentId, source } = await convert({
       author,
       bodySource,
       convertOptionsExtra: Object.assign({
@@ -188,7 +213,7 @@ async function convertArticle({
         // renderings inside and outside of the scope. With dynamic article tree on web, we cannot know if the
         // page will be visible from inside or outside the toplevel scope, so if we use a cut up version:
         // `my-scope/section-id` as just `section-id` from something outside of `my-scope`, then there could
-        // be ambiguity with other headeres with ID `section-id`. We could keep multiple h2 renderings around
+        // be ambiguity with other headers with ID `section-id`. We could keep multiple h2 renderings around
         // for different situations, but let's not muck around with that for now. This option will also remove
         // the @username prefix, which is implemented as a scope. This does have an advantage: we can use the same
         // rendering on topic pages, and in the future on collections, which require elements by different users
@@ -363,7 +388,7 @@ async function convertArticle({
                       as: 'articles',
                     }
                   ],
-                }
+                },
               ],
               transaction
             })

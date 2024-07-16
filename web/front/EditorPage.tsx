@@ -217,7 +217,7 @@ export default function EditorPageHoc({
     const [parentTitle, setParentTitle] = useState(initialParentTitle || 'Index')
     const [previousSiblingTitle, setPreviousSiblingTitle] = useState(initialPreviousSiblingTitle || '')
     const [tab, setTab] = useState('editor')
-    const [list, setList] = useState(initialArticle === null ? false : initialArticle.list)
+    const [list, setList] = useState(initialArticle === null ? true : initialArticle.list)
     const ourbigbookEditorElem = useRef(null)
     const ourbigbookHeaderElem = useRef(null)
     const ourbigbookParentIdContainerElem = useRef(null)

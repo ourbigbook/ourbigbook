@@ -98,10 +98,12 @@ const Article = ({
   topIssues,
 }) => {
   const [curComments, setComments] = React.useState(comments)
+  const [curCommentsCount, setCommentsCount] = React.useState(commentsCount)
   const router = useRouter()
   React.useEffect(() => {
     // Otherwise comments don't change on page changes.
     setComments(comments)
+    setCommentsCount(commentsCount)
   }, [encodeGetParams(router.query)])
   let seeAllCreateNew
   if (!isIssue) {
@@ -635,7 +637,7 @@ const Article = ({
         ? <>
             <div className="content-not-ourbigbook">
               <h2 id={commentsHeaderId}>
-                <a href={`#${commentsHeaderId}`}><CommentIcon /> Comments ({ commentsCount })</a>
+                <a href={`#${commentsHeaderId}`}><CommentIcon /> Comments ({ curCommentsCount })</a>
                 {' '}
                 <FollowArticleButton {...{
                   article,
@@ -649,10 +651,9 @@ const Article = ({
             <div className="list-container show-body">
               <CommentList {...{
                 comments: curComments,
-                commentsCount,
+                commentsCount: curCommentsCount,
                 loggedInUser,
                 page,
-                setComments,
                 showBody: true,
                 showFullBody: true,
                 showFullSlug: false,
@@ -666,6 +667,7 @@ const Article = ({
                   issueNumber: article.number,
                   loggedInUser,
                   setComments,
+                  setCommentsCount,
                 }}/>
               </div>
             </div>
@@ -715,8 +717,6 @@ const Article = ({
                     <ArticleList {...{
                       articles: latestIssues,
                       articlesCount: article.issueCount,
-                      comments,
-                      commentsCount,
                       issueArticle: article,
                       itemType: 'discussion',
                       loggedInUser,
@@ -729,8 +729,6 @@ const Article = ({
                     <ArticleList {...{
                       articles: topIssues,
                       articlesCount: article.issueCount,
-                      comments,
-                      commentsCount,
                       issueArticle: article,
                       itemType: 'discussion',
                       loggedInUser,

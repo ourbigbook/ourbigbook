@@ -13,6 +13,7 @@ const CommentInput = ({
   loggedInUser,
   issueNumber,
   setComments,
+  setCommentsCount,
 }) => {
   const router = useRouter();
   const slug = slugFromRouter(router)
@@ -48,6 +49,7 @@ const CommentInput = ({
       const {data, status} = await webApi.commentCreate(slug, issueNumber, body)
       if (status === 200) {
         setComments(comments => [...comments, data.comment])
+        setCommentsCount(count => count + 1)
         changeBody('');
         setErrors([]);
       } else {

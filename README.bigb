@@ -10015,6 +10015,24 @@ One current fundamental limitation of <VS Code> is that there is no way to previ
 {provider=github}
 {height=800}
 
+= Developing the Visual Studio Code extension
+{parent=Visual Studio Code}
+{tag=Developing OurBigBook}
+
+It's the standard procedure for any extension:
+* open a new workspace with just the extension at toplevel:
+  * Ctrl + Shift + N
+  * Ctrl + Shift + P
+  * Open workspace from file
+  * select \a[vscode/vscode.code-workspace]
+* In the new window from any file:
+  * Ctrl+Shift+P
+  * Debug: Start Debugging
+  This opens a new window titled "Extension Development Host". You will likely then want to open any .bigb file from that window to test out the extension
+* from there on:
+  * make changes on the "vscode" workspace
+  * test them on the "Extension Development Host" window, and "Developer: Reload Window" command to make extension changes take effect
+
 = Vim
 {parent=Editor support}
 

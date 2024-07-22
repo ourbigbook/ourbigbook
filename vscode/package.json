@@ -16,13 +16,13 @@
   "main": "./extension.js",
   "contributes": {
     "commands": [{
-      "command": "bigb.helloWorld",
-      "title": "Hello World"
+      "command": "ourbigbook.helloWorld",
+      "title": "OurBigBook: Hello World"
     }],
     "configurationDefaults": {
 			"[ourbigbook]": {
 				"editor.wordWrap": "on",
-				"editor.quickSuggestions": false
+				"editor.quickSuggestions": true
 			}
 		},
     "languages": [{
@@ -38,8 +38,11 @@
       "language": "ourbigbook",
       "scopeName": "source.ourbigbook",
       "path": "./syntaxes/ourbigbook.tmLanguage.json"
+    }],
+    "snippets": [{
+      "language": "ourbigbook",
+      "path": "./snippets.json"
     }]
-
   },
   "scripts": {
     "lint": "eslint .",

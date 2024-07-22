@@ -4,7 +4,6 @@ const path = require('path')
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
 
-const ourbigbook = require('ourbigbook')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 // This method is called when your extension is activated
@@ -17,7 +16,7 @@ function activate(context) {
 	const channel = vscode.window.createOutputChannel('OurBigBook', 'ourbigbook')
 	channel.appendLine('ourbigbook.activate OutputChannel')
 	console.log('ourbigbook.activate log')
-	let disposable = vscode.commands.registerCommand('ourbigbook.helloWorld', function () {
+	let helloWorld = vscode.commands.registerCommand('ourbigbook.helloWorld', async function () {
 		console.log('ourbigbook.helloWorld console.log')
 		channel.appendLine('ourbigbook.helloWorld OutputChannel.appendLine')
 		vscode.window.showInformationMessage('Hello World from OurBigBook!')
@@ -30,8 +29,11 @@ function activate(context) {
 		}
 		const ourbigbookJsonDir = ourbigbook_nodejs_webpack_safe.findOurbigbookJsonDir(curdir)
 		vscode.window.showInformationMessage(ourbigbookJsonDir)
-	})
-	context.subscriptions.push(disposable)
+		if (ourbigbookJsonDir) {
+			const sequelize = ourbigbook_nodejs_webpack_safe.createSequelize({}, )
+		}
+	)
+	context.subscriptions.push(helloWorld)
 }
 
 function deactivate() {}

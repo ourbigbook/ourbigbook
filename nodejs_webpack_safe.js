@@ -21,6 +21,7 @@ const web_api = require('./web_api');
 const models = require('./models');
 
 const ENCODING = 'utf8'
+const SQLITE_MAGIC_MEMORY_NAME = ':memory:'
 
 // DB options that have to be given to both ourbigbook CLI and dynamic website.
 // These must be used for both for consistency, e.g. freezeTableName would lead
@@ -595,6 +596,12 @@ async function createSequelize(db_options, Sequelize, sync_opts={}) {
     )
     sequelize = new Sequelize('postgres://ourbigbook_user:a@localhost:5432/ourbigbook_cli', db_options)
   } else {
+    if (storage !== SQLITE_MAGIC_MEMORY_NAME) {
+      const db_dir = path.dirname(storage);
+      if (!fs.existsSync(db_dir)) {
+        fs.mkdirSync(db_dir, { recursive: true });
+      }
+    }
     Object.assign(db_options,
       {
         dialect: 'sqlite',
@@ -607,7 +614,7 @@ async function createSequelize(db_options, Sequelize, sync_opts={}) {
   models.addModels(sequelize, { cli: true })
   if (
     db_options.dialect !== 'sqlite' ||
-    storage === ourbigbook.SQLITE_MAGIC_MEMORY_NAME ||
+    storage === SQLITE_MAGIC_MEMORY_NAME ||
     (storage && !fs.existsSync(storage))
   ) {
     await sequelize.sync(sync_opts)
@@ -1055,6 +1062,7 @@ module.exports = {
   createSequelize,
   DB_OPTIONS,
   destroy_sequelize,
+  ENCODING,
   fetch_header_tree_ids,
   findOurbigbookJsonDir,
   get_noscopes_base_fetch_rows,
@@ -1062,8 +1070,9 @@ module.exports = {
   remove_duplicates_sorted_array,
   sequelizeCreateTrigger,
   sequeliezeCreateTriggerUpdateCount,
+  SQLITE_DB_BASENAME: 'db.sqlite3',
   update_database_after_convert,
-  ENCODING,
+  SQLITE_MAGIC_MEMORY_NAME,
   TMP_DIRNAME: 'out',
   DIST_BASENAME: 'dist',
 }

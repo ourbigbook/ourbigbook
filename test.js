@@ -2,7 +2,6 @@ const assert = require('assert');
 const child_process = require('child_process');
 const fs = require('fs');
 const path = require('path');
-const os = require('os');
 const util = require('util');
 
 const { Sequelize } = require('sequelize')
@@ -12,7 +11,6 @@ const ourbigbook_nodejs = require('./nodejs');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const { read_include } = require('./web_api');
-const models = require('./models');
 const {
   assert_xpath,
   xpath_header,
@@ -227,7 +225,7 @@ function assert_lib(
 
     // SqlDbProvider with in-memory database.
     const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
-        storage: ':memory:',
+        storage: ourbigbook_nodejs_webpack_safe.SQLITE_MAGIC_MEMORY_NAME,
         logging: false,
       },
       Sequelize,
@@ -538,9 +536,8 @@ function assert_cli(
     const common_args = ['--add-test-instrumentation', '--fakeroot', tmpdir]
     if (ourbigbook_nodejs_front.postgres) {
       // Clear the database.
-      const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
-          logging: false,
-        },
+      const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize(
+        { logging: false },
         Sequelize,
         { force: true },
       )

@@ -30,7 +30,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
     sequelizeParams.dialect = config.development.dialect;
     let storage;
     if (process.env.NEXT_PUBLIC_NODE_ENV === 'test' || toplevelDir === undefined) {
-      storage = ':memory:';
+      storage = ourbigbook_nodejs_webpack_safe.SQLITE_MAGIC_MEMORY_NAME;
     } else {
       if (toplevelBasename === undefined) {
         toplevelBasename = config.development.storage;
@@ -208,7 +208,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
     onDelete: 'SET NULL',
   })
   File.hasMany(Article, {
-    // This name is a bad idea as it breaks SQLite case insensitive madness due to conflice with File...
+    // This name is a bad idea as it breaks SQLite case insensitive madness due to conflict with File...
     // https://stackoverflow.com/questions/50926312/how-to-make-column-names-case-sensitive-of-sqlite3-in-python
     //
     // const rows = await File.findAll(

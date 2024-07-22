@@ -1,6 +1,7 @@
 const ourbigbook = require('ourbigbook')
 const { read_include } = require('ourbigbook/web_api')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
+const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 
 const escapeUsername = 'go'
 
@@ -34,7 +35,7 @@ if (ourbigbook_nodejs_front.postgres) {
   dbSettings = {
     dialect: 'sqlite',
     logging: true,
-    storage: 'db.sqlite3',
+    storage: ourbigbook_nodejs_webpack_safe.SQLITE_DB_BASENAME,
   }
 }
 

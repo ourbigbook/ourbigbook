@@ -46,8 +46,6 @@ const PUBLISH_TARGETS = {
   'github-pages': 'github-pages',
   local: 'local',
 }
-const SQLITE_MAGIC_MEMORY_NAME = ':memory:'
-exports.SQLITE_MAGIC_MEMORY_NAME = SQLITE_MAGIC_MEMORY_NAME
 const WEB_MAX_RETRIES = 5
 
 class DbProviderDbAdapter {
@@ -835,10 +833,6 @@ function convert_path_to_file_print_finish(ourbigbook_options, input_path, outpu
 
 async function create_db(ourbigbook_options, nonOurbigbookOptions) {
   perfPrint('create_db_begin', ourbigbook_options)
-  const db_dir = path.dirname(nonOurbigbookOptions.db_options.storage);
-  if (!fs.existsSync(db_dir)) {
-    fs.mkdirSync(db_dir, { recursive: true });
-  }
   const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize(
     nonOurbigbookOptions.db_options,
     Sequelize,
@@ -1762,9 +1756,9 @@ if (cli.helpMacros) {
 
     // Setup the ID database.
     if (cli.db) {
-      nonOurbigbookOptions.db_options.storage = path.join(publish_tmpdir, 'db.sqlite3');
+      nonOurbigbookOptions.db_options.storage = path.join(publish_tmpdir, ourbigbook_nodejs_webpack_safe.SQLITE_DB_BASENAME)
     } else {
-      nonOurbigbookOptions.db_options.storage = SQLITE_MAGIC_MEMORY_NAME
+      nonOurbigbookOptions.db_options.storage = ourbigbook_nodejs_webpack_safe.SQLITE_MAGIC_MEMORY_NAME
     }
     if (cli.checkDbOnly) {
       await create_db(ourbigbook_options, nonOurbigbookOptions);
@@ -2403,7 +2397,7 @@ if (cli.helpMacros) {
             // entire out/publish/out. Te slight downside of that is that:
             // - it deletes other publish targets
             // - it forces re-fetch of git history on the gh-pages branch
-            fs.rmSync(path.join(publish_tmpdir, 'db.sqlite3'), { force: true })
+            fs.rmSync(path.join(publish_tmpdir, ourbigbook_nodejs_webpack_safe.SQLITE_DB_BASENAME), { force: true })
 
             fs.mkdirSync(publishOutPublishDir, { recursive: true })
           }

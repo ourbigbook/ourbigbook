@@ -9,10 +9,13 @@ const vscode = require('vscode');
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-	console.log('ourbigbook.activate')
+	const channel = vscode.window.createOutputChannel('OurBigBook', 'ourbigbook')
+	channel.appendLine('ourbigbook.activate OutputChannel')
+	console.log('ourbigbook.activate log')
 	let disposable = vscode.commands.registerCommand('ourbigbook.helloWorld', function () {
 		vscode.window.showInformationMessage('Hello World from OurBigBook!')
-		console.log('hello world command')
+		console.log('ourbigbook.helloWorld console.log')
+		channel.appendLine('ourbigbook.helloWorld OutputChannel.appendLine')
 	})
 	context.subscriptions.push(disposable)
 }

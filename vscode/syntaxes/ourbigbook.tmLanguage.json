@@ -53,7 +53,7 @@
 					"begin": "(\\$+)",
 					"end": "\\1",
 					"captures": { "0": { "name": "entity.name.tag.bigb" } },
-					"name": "math.bigb",
+					"name": "string.quoted.bigb",
 					"patterns": [ { "include": "text.tex" } ]
 				}
 			]

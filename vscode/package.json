@@ -20,11 +20,12 @@
       "title": "OurBigBook: Hello World"
     }],
     "configurationDefaults": {
-			"[ourbigbook]": {
-				"editor.wordWrap": "on",
-				"editor.quickSuggestions": true
-			}
-		},
+      "[ourbigbook]": {
+        "editor.wordWrap": "on",
+        "editor.quickSuggestions": true,
+        "editor.tabSize": 2
+      }
+    },
     "languages": [{
       "id": "ourbigbook",
       "aliases": ["OurBigBook", "ourbigbook"],

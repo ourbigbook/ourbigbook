@@ -9,12 +9,12 @@ const vscode = require('vscode');
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-	console.log('ourbigbook.activate');
+	console.log('ourbigbook.activate')
 	let disposable = vscode.commands.registerCommand('ourbigbook.helloWorld', function () {
-		vscode.window.showInformationMessage('Hello World from OurBigBook!');
-		console.log('hello world command');
-	});
-	context.subscriptions.push(disposable);
+		vscode.window.showInformationMessage('Hello World from OurBigBook!')
+		console.log('hello world command')
+	})
+	context.subscriptions.push(disposable)
 }
 
 function deactivate() {}

@@ -13,6 +13,7 @@ npm run test-release
 # This also does npm run build-assets
 npm run publish
 sed -i "s/  \"version\":.*/  \"version\": \"${version}\",/" package.json
+sed -i "s/  \"ourbigbook\":.*/  \"ourbigbook\": \"${version}\",/" vscode/package.json
 # To update the package-lock.json.
 # Not sure why needed twice, some mess with link madness.
 npm run link

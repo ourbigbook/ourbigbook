@@ -19,7 +19,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
       // https://stackoverflow.com/questions/55715724/how-to-log-queries-with-bounded-paramenters-in-sequelize/70954144#70954144
       logQueryParameters: true,
     },
-    ourbigbook_nodejs_webpack_safe.db_options,
+    ourbigbook_nodejs_webpack_safe.DB_OPTIONS,
   );
   let sequelize;
   if (config.isProduction || config.postgres) {

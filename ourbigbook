@@ -21,8 +21,6 @@ const ourbigbook = require('ourbigbook');
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
 const { ARTICLE_HASH_MAX, articleHash, WebApi, read_include } = require('ourbigbook/web_api');
-const { trace } = require('console');
-const { execPath } = require('process');
 
 const DEFAULT_TEMPLATE_BASENAME = 'ourbigbook.liquid.html';
 const OURBIGBOOK_TEX_BASENAME = 'ourbigbook.tex';
@@ -841,7 +839,7 @@ async function create_db(ourbigbook_options, nonOurbigbookOptions) {
   if (!fs.existsSync(db_dir)) {
     fs.mkdirSync(db_dir, { recursive: true });
   }
-  const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize(
+  const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize(
     nonOurbigbookOptions.db_options,
     Sequelize,
     { force: cli.clearDb },
@@ -1322,7 +1320,6 @@ if (cli.helpMacros) {
   console.log(china_dictatorship.get_data());
 } else {
   let input;
-  let title;
   let output;
   let publish = cli.publish || cli.publishCommit !== undefined || cli.publishNoConvert
   let htmlXExtension;
@@ -1365,34 +1362,19 @@ if (cli.helpMacros) {
   }
 
   // Initialize ourbigbook.json and directories determined from it if present.
-  let ourbigbook_json_dir;
+  let ourbigbook_json_dir
   const ourbigbook_json = {};
   if (inputPaths.length === 0) {
     ourbigbook_json_dir = '.'
   } else {
     let curdir = path.resolve(inputPath);
-    let initial_dir;
     if (input_path_is_file) {
       curdir = path.dirname(curdir)
     }
-    initial_dir = curdir;
-    const fakeroot = cli.fakeroot === undefined ? undefined : path.resolve(cli.fakeroot)
-    while (true) {
-      const ourbigbook_json_path = path.join(curdir, ourbigbook.OURBIGBOOK_JSON_BASENAME);
-      if (fs.existsSync(ourbigbook_json_path)) {
-        Object.assign(ourbigbook_json, JSON.parse(fs.readFileSync(
-          ourbigbook_json_path, ourbigbook_nodejs_webpack_safe.ENCODING)))
-        ourbigbook_json_dir = curdir;
-        break;
-      }
-      if (
-        curdir === '/' ||
-        curdir === fakeroot
-      ) {
-        break;
-      }
-      curdir = path.dirname(curdir)
-    }
+    ourbigbook_json_dir = ourbigbook_nodejs_webpack_safe.findOurbigbookJsonDir(
+      curdir,
+      { fakeroot: cli.fakeroot === undefined ? undefined : path.resolve(cli.fakeroot) },
+    )
     if (ourbigbook_json_dir === undefined) {
       // No ourbigbook.json found.
       const cwd = process.cwd();
@@ -1405,6 +1387,9 @@ if (cli.helpMacros) {
           ourbigbook_json_dir = inputPath
         }
       }
+    } else {
+      Object.assign(ourbigbook_json, JSON.parse(fs.readFileSync(
+        path.join(ourbigbook_json_dir, ourbigbook.OURBIGBOOK_JSON_BASENAME), ourbigbook_nodejs_webpack_safe.ENCODING)))
     }
   }
   let ignore;

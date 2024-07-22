@@ -50,6 +50,9 @@
     "pretest": "npm run lint",
     "test": "node ./test/runTest.js"
   },
+  "dependencies": {
+    "ourbigbook": "0.9.8"
+  },
   "devDependencies": {
     "eslint": "^8.39.0",
     "glob": "^8.1.0",

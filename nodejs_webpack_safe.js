@@ -15,8 +15,6 @@
 const fs = require('fs');
 const path = require('path');
 
-const { DataTypes } = require('sequelize')
-
 const ourbigbook = require('./index');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const web_api = require('./web_api');
@@ -29,7 +27,7 @@ const ENCODING = 'utf8'
 // to different able names in the database, which could break manually written queries.
 // Yes, we could work around that by using model properties like models.Id.tableName,
 // but having different tables in both cases would be too insane.
-const db_options = {
+const DB_OPTIONS = {
   define: {
     freezeTableName: true,
   },
@@ -585,30 +583,30 @@ ORDER BY "RecRefs".level DESC
   }
 }
 
-async function create_sequelize(db_options_arg, Sequelize, sync_opts={}) {
-  db_options_arg = Object.assign({ timestamps: false }, db_options_arg, db_options)
-  const storage = db_options_arg.storage
-  delete db_options_arg.storage
+async function createSequelize(db_options, Sequelize, sync_opts={}) {
+  db_options = Object.assign({ timestamps: false }, db_options, DB_OPTIONS)
+  const storage = db_options.storage
+  delete db_options.storage
   let sequelize
   if (ourbigbook_nodejs_front.postgres) {
     Object.assign(
-      db_options_arg,
+      db_options,
       ourbigbook_nodejs_front.sequelize_postgres_opts,
     )
-    sequelize = new Sequelize('postgres://ourbigbook_user:a@localhost:5432/ourbigbook_cli', db_options_arg)
+    sequelize = new Sequelize('postgres://ourbigbook_user:a@localhost:5432/ourbigbook_cli', db_options)
   } else {
-    Object.assign(db_options_arg,
+    Object.assign(db_options,
       {
         dialect: 'sqlite',
         storage,
       },
-      db_options_arg,
+      db_options,
     )
-    sequelize = new Sequelize(db_options_arg)
+    sequelize = new Sequelize(db_options)
   }
   models.addModels(sequelize, { cli: true })
   if (
-    db_options_arg.dialect !== 'sqlite' ||
+    db_options.dialect !== 'sqlite' ||
     storage === ourbigbook.SQLITE_MAGIC_MEMORY_NAME ||
     (storage && !fs.existsSync(storage))
   ) {
@@ -1034,13 +1032,31 @@ async function sequeliezeCreateTriggerUpdateCount(sequelize, articleTable, likeT
   )
 }
 
+function findOurbigbookJsonDir(curdir, opts={}) {
+  const { fakeroot } = opts
+  while (true) {
+    const ourbigbook_json_path = path.join(curdir, ourbigbook.OURBIGBOOK_JSON_BASENAME)
+    if (fs.existsSync(ourbigbook_json_path)) {
+      return curdir
+    }
+    if (
+      curdir === path.parse(curdir).root ||
+      curdir === fakeroot
+    ) {
+      return
+    }
+    curdir = path.dirname(curdir)
+  }
+}
+
 module.exports = {
   SqlDbProvider,
   check_db,
-  create_sequelize,
-  db_options,
+  createSequelize,
+  DB_OPTIONS,
   destroy_sequelize,
   fetch_header_tree_ids,
+  findOurbigbookJsonDir,
   get_noscopes_base_fetch_rows,
   preload_katex_from_file,
   remove_duplicates_sorted_array,

@@ -226,7 +226,7 @@ function assert_lib(
     }
 
     // SqlDbProvider with in-memory database.
-    const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize({
+    const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
         storage: ':memory:',
         logging: false,
       },
@@ -538,7 +538,7 @@ function assert_cli(
     const common_args = ['--add-test-instrumentation', '--fakeroot', tmpdir]
     if (ourbigbook_nodejs_front.postgres) {
       // Clear the database.
-      const sequelize = await ourbigbook_nodejs_webpack_safe.create_sequelize({
+      const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
           logging: false,
         },
         Sequelize,

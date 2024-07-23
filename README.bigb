@@ -46,7 +46,7 @@
   * \b[as HTML files to a <static website>]: you can host yourself for free on many external providers like <GitHub Pages>, and remain in full control
   This way you can be sure that even if <ourbigbook.com> were to go down one day (which we have no plans to as it is quite cheap to host!), your content will still be perfectly readable as a static site.
 
-  \Image[feature/local-editing/bigb-publish-to-web-or-static.svg]
+  \Image[feature/local-editing/bigb-publish-to-web-or-static-editor-logos.svg]
   {title=With OurBigBook you can <publish> local <OurBigBook markup>[lightweight markup files] to either <OurBigBook Web> or as a <static website>}
   {provider=github}
   {height=600}
@@ -6081,7 +6081,7 @@ A fundamental design choice of the <OurBigBook Project> is that, except for bugs
 
 The trade-offs between the two options are highlighted at: <OurBigBook Web vs static website publishing>.
 
-\Image[feature/local-editing/bigb-publish-to-web-or-static.svg]
+\Image[feature/local-editing/bigb-publish-to-web-or-static-editor-logos.svg]
 {title=You can <publish> local lightweight markup files to either <OurBigBook Web> or as a <static website>}
 {provider=github}
 {height=600}

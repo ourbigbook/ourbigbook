@@ -186,19 +186,19 @@ export default function UserPage({
           </CustomLink>
           <CustomLink
             href={routes.userIssues(user.username, { sort: 'created' })}
-            className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
+            className={`tab-item${what === 'user-issues' && order === 'createdAt' ? ' active' : ''}`}
           >
             <IssueIcon /> New<span className="mobile-hide"> discussions</span>
           </CustomLink>
           <CustomLink
             href={routes.userIssues(user.username, { sort: 'score' })}
-            className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
+            className={`tab-item${what === 'user-issues' && order === 'score' ? ' active' : ''}`}
           >
             <IssueIcon /> Top<span className="mobile-hide"> discussions</span>
           </CustomLink>
           <CustomLink
             href={routes.userComments(user.username, { sort: 'created' })}
-            className={`tab-item${itemType === 'comment' && order === 'createdAt' ? ' active' : ''}`}
+            className={`tab-item${what === 'user-comments' && order === 'createdAt' ? ' active' : ''}`}
           >
             <CommentIcon /> New<span className="mobile-hide"> comments</span>
           </CustomLink>

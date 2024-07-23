@@ -1814,9 +1814,16 @@ if (cli.helpMacros) {
         hostname: url.hostname,
         validateStatus: () => true,
       })
+      let tokenOk = true
       if (host_row) {
         token = host_row.token
-      } else {
+        let data, status
+        // Can fail with "jwt expired" if expered if you wait for a long time
+        // after the previous login. So we test the token first thing.
+        ;({ data, status } = await webApi.min())
+        tokenOk = data.loggedIn
+      }
+      if (!host_row || !tokenOk) {
         let err, password
 
         // Password

@@ -2,6 +2,8 @@ import React from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 
+import lodash from 'lodash'
+
 import Comment from 'front/Comment'
 import Pagination from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
@@ -16,7 +18,7 @@ import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import ShowBody from 'front/ShowBody'
 
-import { QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
+import { encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
 
 import { CommentType } from 'front/types/CommentType'
 import { UserType } from 'front/types/UserType'
@@ -47,7 +49,7 @@ const CommentList = ({
   showFullSlug=true,
 }: CommentListProps) => {
   const router = useRouter();
-  const { query } = router
+  const { pathname, query } = router
   let showBodyInit
   if (query.body === QUERY_TRUE_VAL) {
     showBodyInit = true
@@ -57,6 +59,10 @@ const CommentList = ({
     showBodyInit = showBody
   }
   const [showBodyState, setShowBodyState] = React.useState(showBodyInit)
+  React.useEffect(() => {
+    // Reset on tab change.
+    setShowBodyState(showBodyInit)
+  }, [pathname, encodeGetParams(lodash.omit(query, 'body'))])
   let pagination
   if (showControls) {
     pagination = <Pagination {...{
@@ -77,7 +83,7 @@ const CommentList = ({
         : <div className="list-nav-container">
             {(showControls && showBodyControl) &&
               <div className="content-not-ourbigbook controls">
-                {<ShowBody {...{ setShowBodyState, showBody, showBodyInit }}/>}
+                {<ShowBody {...{ setShowBodyState, showBody, showBodyState }}/>}
               </div>
             }
             {showBodyState && pagination}

@@ -1,28 +1,20 @@
 import React from 'react'
-import Router, { useRouter } from 'next/router'
-
-import lodash from 'lodash'
+import Router from 'next/router'
 
 import Label from 'front/Label'
 
 import { boolToQueryVal, encodeGetParams } from 'ourbigbook/web_api'
 
-export default function ShowBody({ setShowBodyState, showBody, showBodyInit }) {
-  const router = useRouter();
-  const { pathname, query } = router
+export default function ShowBody({ setShowBodyState, showBody, showBodyState }) {
   const showBodyElem = React.useRef(null)
-  React.useEffect(() => {
-    // Reset on tab change.
-    setShowBodyState(showBodyInit)
-    if (showBodyElem.current) {
-      showBodyElem.current.checked = showBodyInit
-    }
-  }, [pathname, encodeGetParams(lodash.omit(query, 'body'))])
+  if (showBodyElem.current) {
+    showBodyElem.current.checked = showBodyState
+  }
   return <Label label="Show body" inline={true}>
     <input
       type="checkbox"
       ref={showBodyElem}
-      defaultChecked={showBodyInit}
+      defaultChecked={showBodyState}
       onChange={(e) => {
         const showBodyState = e.target.checked
         setShowBodyState(showBodyState)

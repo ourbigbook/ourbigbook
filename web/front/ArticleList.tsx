@@ -1,6 +1,6 @@
-import Router, { useRouter } from 'next/router'
 import React from 'react'
 import Link from 'next/link'
+import Router, { useRouter } from 'next/router'
 
 import lodash from 'lodash'
 
@@ -28,7 +28,7 @@ import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 
-import { QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
+import { encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
 import {
   AT_MENTION_CHAR,
 } from 'ourbigbook'
@@ -92,7 +92,7 @@ const ArticleList = ({
   what='all',
 }: ArticleListProps) => {
   const router = useRouter();
-  const { query } = router
+  const { pathname, query } = router
   const { uid } = query;
   const itemTypeHasShowBody = itemType === 'article'
     // This almost works to have discussion body previews. The only missing problem is that
@@ -112,6 +112,10 @@ const ArticleList = ({
     showBodyInit = false
   }
   const [showBodyState, setShowBodyState] = React.useState(showBodyInit)
+  React.useEffect(() => {
+    // Reset on tab change.
+    setShowBodyState(showBodyInit)
+  }, [pathname, encodeGetParams(lodash.omit(query, 'body'))])
 
   let isIssue
   switch (itemType) {
@@ -174,7 +178,7 @@ const ArticleList = ({
         : <div className="list-nav-container">
             {showControls &&
               <div className="content-not-ourbigbook controls">
-                {itemTypeHasShowBody && <ShowBody {...{ setShowBodyState, showBody, showBodyInit }}/>}
+                {itemTypeHasShowBody && <ShowBody {...{ setShowBodyState, showBodyState, showBody }}/>}
               </div>
             }
             {showBodyState && pagination}

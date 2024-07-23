@@ -295,14 +295,12 @@ export default function UserPage({
       }}/>
     }
     {itemType === 'user' &&
-      <div className="content-not-ourbigbook">
-        <UserList {...{
-          loggedInUser,
-          page,
-          users,
-          usersCount,
-        }}/>
-      </div>
+      <UserList {...{
+        loggedInUser,
+        page,
+        users,
+        usersCount,
+      }}/>
     }
   </>);
 }

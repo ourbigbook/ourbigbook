@@ -146,13 +146,11 @@ export default function UserPage({
                 </CustomLink>
               </Maybe>
               {isCurrentUser &&
-                <>
-                  <LogoutButton />
-                </>
+                <LogoutButton />
               }
+              {user.admin && <span className="h2 inline"><i className="ion-star" /> <a href={`${config.docsAdminUrl}`}>Admin</a> <i className="ion-star" /> </span>}
             </div>
           </div>
-          {user.admin && <h2><i className="ion-star" /> <a href={`${config.docsAdminUrl}`}>Admin</a> <i className="ion-star" /> </h2>}
           <CustomImage
             src={user.effectiveImage}
             alt="User's profile image"

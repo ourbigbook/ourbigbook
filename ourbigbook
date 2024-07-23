@@ -19,6 +19,7 @@ const { DataTypes, Op, Sequelize } = require('sequelize')
 
 const ourbigbook = require('ourbigbook');
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
+const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
 const { ARTICLE_HASH_MAX, articleHash, WebApi, read_include } = require('ourbigbook/web_api');
 
@@ -835,7 +836,6 @@ async function create_db(ourbigbook_options, nonOurbigbookOptions) {
   perfPrint('create_db_begin', ourbigbook_options)
   const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize(
     nonOurbigbookOptions.db_options,
-    Sequelize,
     { force: cli.clearDb },
   )
   nonOurbigbookOptions.sequelize = sequelize;
@@ -1756,7 +1756,7 @@ if (cli.helpMacros) {
 
     // Setup the ID database.
     if (cli.db) {
-      nonOurbigbookOptions.db_options.storage = path.join(publish_tmpdir, ourbigbook_nodejs_webpack_safe.SQLITE_DB_BASENAME)
+      nonOurbigbookOptions.db_options.storage = path.join(publish_tmpdir, ourbigbook_nodejs_front.SQLITE_DB_BASENAME)
     } else {
       nonOurbigbookOptions.db_options.storage = ourbigbook_nodejs_webpack_safe.SQLITE_MAGIC_MEMORY_NAME
     }
@@ -2397,7 +2397,7 @@ if (cli.helpMacros) {
             // entire out/publish/out. Te slight downside of that is that:
             // - it deletes other publish targets
             // - it forces re-fetch of git history on the gh-pages branch
-            fs.rmSync(path.join(publish_tmpdir, ourbigbook_nodejs_webpack_safe.SQLITE_DB_BASENAME), { force: true })
+            fs.rmSync(path.join(publish_tmpdir, ourbigbook_nodejs_front.SQLITE_DB_BASENAME), { force: true })
 
             fs.mkdirSync(publishOutPublishDir, { recursive: true })
           }

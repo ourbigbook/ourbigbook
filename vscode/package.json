@@ -9,6 +9,9 @@
   "engines": {
     "vscode": "^1.81.0"
   },
+  "capabilities": {
+    "workspaceSymbolProvider": "true"
+  },
   "categories": [
     "Programming Languages"
   ],

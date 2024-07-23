@@ -228,7 +228,6 @@ function assert_lib(
         storage: ourbigbook_nodejs_webpack_safe.SQLITE_MAGIC_MEMORY_NAME,
         logging: false,
       },
-      Sequelize,
       { force: true },
     )
     let exception
@@ -538,7 +537,6 @@ function assert_cli(
       // Clear the database.
       const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize(
         { logging: false },
-        Sequelize,
         { force: true },
       )
       await ourbigbook_nodejs_webpack_safe.destroy_sequelize(sequelize)

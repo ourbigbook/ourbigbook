@@ -9,8 +9,7 @@
 //   path.dirname(require.resolve(path.join('ourbigbook', 'package.json'))
 // from web/app.js also blows up.
 
-// We cannot require sequelize here, because otherwise the web/ version blows up due to missing postgres,
-// which is a peer dependency of sequelize that we don't need for the CLI converter, as we use SQLite there.
+const { Sequelize } = require('sequelize')
 
 const fs = require('fs');
 const path = require('path');
@@ -584,7 +583,7 @@ ORDER BY "RecRefs".level DESC
   }
 }
 
-async function createSequelize(db_options, Sequelize, sync_opts={}) {
+async function createSequelize(db_options, sync_opts={}) {
   db_options = Object.assign({ timestamps: false }, db_options, DB_OPTIONS)
   const storage = db_options.storage
   delete db_options.storage
@@ -1070,7 +1069,6 @@ module.exports = {
   remove_duplicates_sorted_array,
   sequelizeCreateTrigger,
   sequeliezeCreateTriggerUpdateCount,
-  SQLITE_DB_BASENAME: 'db.sqlite3',
   update_database_after_convert,
   SQLITE_MAGIC_MEMORY_NAME,
   TMP_DIRNAME: 'out',

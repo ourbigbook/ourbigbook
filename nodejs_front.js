@@ -52,4 +52,5 @@ module.exports = {
       }
     }
   },
+  SQLITE_DB_BASENAME: 'db.sqlite3',
 }

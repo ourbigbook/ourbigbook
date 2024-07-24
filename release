@@ -1,6 +1,23 @@
 #!/usr/bin/env bash
 # https://docs.ourbigbook.com#do-the-release
 set -eux
+test=true
+while [ $# -gt 0 ]; do
+  case $1 in
+    -T)
+      test=false
+      shift
+      ;;
+    -*|--*)
+      echo "Unknown option $1"
+      exit 1
+      ;;
+    *)
+      POSITIONAL_ARGS+=("$1") # save positional arg
+      shift # past argument
+      ;;
+  esac
+done
 if [ $# -lt 1 ]; then
   version="$(./inc-version)"
 else
@@ -9,7 +26,9 @@ fi
 # Although this is also run by `npm run publish`, it is also
 # required for some tests to pass so we have to run it here too.
 npm run build-assets
-npm run test-release
+if $test; then
+  npm run test-release
+fi
 # This also does npm run build-assets
 npm run publish
 sed -i "s/  \"version\":.*/  \"version\": \"${version}\",/" package.json

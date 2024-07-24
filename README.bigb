@@ -9974,6 +9974,9 @@ And from OurBigBook to anything, create new output formats inside OurBigBook to 
 {synonym}
 {title2}
 
+= VS Code extension
+{synonym}
+
 VS Code is intended to be the best supported OurBigBook editor.
 
 The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[]. Its source code is located under \a[vscode]. You can install it with:
@@ -11193,11 +11196,20 @@ firefox out/html/index.html
 = Visual Studio Code extension release procedure
 {parent=Release procedure}
 
+The <VS Code extension> is automatically updated and released by the standard release procedure: <Do the release>{full}.
+
+This is done so that the extension always includes the latest version of the ourbigbook package.
+
+This is not ideal as we would like for the extension to use the ourbigbook package version specified on each project's package.json.
+
+However that is not easy to achieve, because in some cases we need to refactor ourbigbook to allow for a new extension feature, creating incompatibilities.
+
+So for now, we ignore the problem and take the "easy to get started" approach of "always ship ourbigbook with the extension".
+
+If changes are made only to the extension, it is also possible to release a new version of the extension alone with \a[release-vscode]:
+
 ``
-npm install -g @vscode/vsce
-cd vscode
-vsce package
-vsce publish
+./relese-vscode
 ``
 
 = OurBigBook media repository

@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+./release-vscode-pre
+./release-vscode-post

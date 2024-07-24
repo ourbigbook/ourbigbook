@@ -37,21 +37,11 @@ sed -i "s/  \"version\":[^,]*/  \"version\": \"${version}\"/" package.json
 npm run link
 npm run link
 
-# Re-release vscode extension to use the updated ourbigbook package.
-sed -i "s/  \"ourbigbook\":[^,]*/  \"ourbigbook\": \"${version}\"/" vscode/package.json
-ext_version="$(./inc-version vscode/package.json)"
-sed -i "s/  \"version\":[^,]*/  \"version\": \"${ext_version}\"/" vscode/package.json
-
+./release-vscode-pre "$version"
 git add -u
 git commit -m "version $version"
 git tag -m "$version" "$version"
 git push --follow-tags
 npm publish
-
-# vscode extension
-cd vscode
-vsce package
-vsce publish
-cd -
-
+./release-vscode-post
 ./update-templates

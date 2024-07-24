@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+cd vscode
+npm install
+npx vsce package
+npx vsce publish

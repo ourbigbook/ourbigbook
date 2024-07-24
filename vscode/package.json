@@ -18,10 +18,12 @@
   "activationEvents": [],
   "main": "./extension.js",
   "contributes": {
-    "commands": [{
-      "command": "ourbigbook.helloWorld",
-      "title": "OurBigBook: Hello World"
-    }],
+    "commands": [
+      {
+        "command": "ourbigbook.helloWorld",
+        "title": "OurBigBook: Hello World"
+      }
+    ],
     "configurationDefaults": {
       "[ourbigbook]": {
         "editor.wordWrap": "on",
@@ -29,24 +31,35 @@
         "editor.tabSize": 2
       }
     },
-    "languages": [{
-      "id": "ourbigbook",
-      "aliases": ["OurBigBook", "ourbigbook"],
-      "extensions": [".bigb"],
-      "configuration": "./language-configuration.json"
-    }],
-    "grammars": [{
-      "embeddedLanguages": {
-        "math.bigb": "latex"
-      },
-      "language": "ourbigbook",
-      "scopeName": "source.ourbigbook",
-      "path": "./syntaxes/ourbigbook.tmLanguage.json"
-    }],
-    "snippets": [{
-      "language": "ourbigbook",
-      "path": "./snippets.json"
-    }]
+    "languages": [
+      {
+        "id": "ourbigbook",
+        "aliases": [
+          "OurBigBook",
+          "ourbigbook"
+        ],
+        "extensions": [
+          ".bigb"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "embeddedLanguages": {
+          "math.bigb": "latex"
+        },
+        "language": "ourbigbook",
+        "scopeName": "source.ourbigbook",
+        "path": "./syntaxes/ourbigbook.tmLanguage.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "ourbigbook",
+        "path": "./snippets.json"
+      }
+    ]
   },
   "scripts": {
     "lint": "eslint .",
@@ -57,9 +70,10 @@
     "ourbigbook": "0.9.9"
   },
   "devDependencies": {
+    "@vscode/test-electron": "^2.3.0",
+    "@vscode/vsce": "^2.31.1",
     "eslint": "^8.39.0",
     "glob": "^8.1.0",
-    "mocha": "^10.2.0",
-    "@vscode/test-electron": "^2.3.0"
+    "mocha": "^10.2.0"
   }
 }

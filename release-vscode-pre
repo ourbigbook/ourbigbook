@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+if [ $# -gt 1 ]; then
+  version="$1"
+  sed -i "s/  \"ourbigbook\":[^,]*/  \"ourbigbook\": \"${version}\"/" vscode/package.json
+fi
+ext_version="$(./inc-version vscode/package.json)"
+sed -i "s/  \"version\":[^,]*/  \"version\": \"${ext_version}\"/" vscode/package.json

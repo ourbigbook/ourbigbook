@@ -49,7 +49,9 @@ git push --follow-tags
 npm publish
 
 # vscode extension
+cd vscode
 vsce package
 vsce publish
+cd -
 
 ./update-templates

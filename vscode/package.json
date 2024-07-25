@@ -71,12 +71,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.7.0",
-    "@vscode/test-electron": "^2.3.0",
-    "@vscode/vsce": "^2.31.1",
-    "eslint": "^9.7.0",
-    "glob": "^8.1.0",
-    "globals": "^15.8.0",
-    "mocha": "^10.2.0",
-    "typescript-eslint": "^7.17.0"
+    "@vscode/test-electron": "2.3.0",
+    "@vscode/vsce": "2.31.1",
+    "eslint": "9.7.0",
+    "glob": "8.1.0",
+    "globals": "15.8.0",
+    "mocha": "10.2.0"
   }
 }

@@ -22,6 +22,9 @@ if [ $# -gt 1 ]; then
 fi
 ext_version="$(./inc-version vscode/package.json)"
 sed -i "s/  \"version\":[^,]*/  \"version\": \"${ext_version}\"/" vscode/package.json
+cd vscode
+npm install
+cd -
 if $commit; then
   git add vscode/package.json
   git commit -m "vscode: version $ext_version"

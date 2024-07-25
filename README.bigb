@@ -10002,7 +10002,10 @@ Supported language features:
   ``
   fundamental theorem
   ``
-  will not find the ID `fundamental-theorem-of-calculus`. This is because VS Code does not pass the search after the first space to the extension at all in the `provideWorkspaceSymbols` callback.
+  will not find the ID `fundamental-theorem-of-calculus`. This is because VS Code does not pass the search after the first space to the extension at all in the `provideWorkspaceSymbols` callback. It does work if you instead use the hyphen `-` ID separator as in:
+  ``
+  fundamental-theorem
+  ``
 
   Using `%` SQL wildcards such as in:
   ``

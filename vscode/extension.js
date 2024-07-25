@@ -58,7 +58,7 @@ async function activate(context) {
 						limit: MAX_IDS,
 					}),
 					sequelize.models.Id.findAll({
-						where: { idid: { [sequelize.Sequelize.Op.substring]: query } },
+						where: { idid: { [sequelize.Sequelize.Op.like]: `_%${query}%` } },
 						order: [['idid', 'ASC']],
 						limit: MAX_IDS,
 					}),

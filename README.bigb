@@ -9977,24 +9977,40 @@ And from OurBigBook to anything, create new output formats inside OurBigBook to 
 = VS Code extension
 {synonym}
 
-VS Code is intended to be the best supported OurBigBook editor.
+VS Code is currently intended to be the best supported non-fully-custom OurBigBook editor.
 
 The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[]. Its source code is located under \a[vscode]. You can install it with:
-
 ``
 ext install ourbigbook.ourbigbook-vscode
 ext install streetsidesoftware.code-spell-checker
 ``
 
 We recommend adding the following settings to your User JSON settings file:
-
 ``
 "cSpell.enableFiletypes": [
     "ourbigbook"
 ],
 ``
 
-Currently, the extension it only supports syntax highlighting, but we want to support everything you would expect from proper programming language support, notably:
+Supported language features:
+* syntax highlighting
+* `Ctrl + T` "https://code.visualstudio.com/docs/editor/editingevolved#_open-symbol-by-name[Open symbol by name]". Shows matching <element IDs> such as for <headers>, and allows you to quickly jump to them. It lists:
+  * first lists IDs that start with the search
+  * then followed by IDs that contain the search anywhere inside them
+
+  Unfortunately, due to VS Code limitations, you cannot use spaces in the search as we would like, e.g.:
+  ``
+  fundamental theorem
+  ``
+  will not find the ID `fundamental-theorem-of-calculus`. This is because VS Code does not pass the search after the first space to the extension at all in the `provideWorkspaceSymbols` callback.
+
+  Using `%` SQL wildcards such as in:
+  ``
+  fund%ntal
+  ``
+  also does not work. Looking at debug logs, we see that the correct SQL queries are generated and the correct rows returned, but VS Code must be doing a hardcoded post-processing step that removes the matches afterwards, so it also seems to be out of our control.
+
+Todo features:
 * deployment as <static website> or to <OurBigBook Web>
 * build with click to line stdout error parsing
 * jump to ID definitions

@@ -3,3 +3,4 @@ set -eux
 cd vscode
 npx vsce package
 npx vsce publish
+rm -f *.vsix

@@ -10015,7 +10015,7 @@ Supported language features:
 
   Ideally we would have liked to use open curtly braces `{` as the initial character for those snippets, but VS Code automatically closes the braces, which we often actually want to happen, so we've decided to use the comma instead, as it is easy to type and unlikely to have conflicts.
 
-  see their definition on the snippts file \a[vscode/snippts.json]. 
+  see their definition on the snippts file \a[vscode/snippets.json]. 
 * `Ctrl + T` "https://code.visualstudio.com/docs/editor/editingevolved#_open-symbol-by-name[Open symbol by name]". Shows matching <element IDs> such as for <headers>, and allows you to quickly jump to them. It lists:
   * first lists IDs that start with the search
   * then followed by IDs that contain the search anywhere inside them

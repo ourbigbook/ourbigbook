@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eux
 cd vscode
 npm install
 npx vsce package

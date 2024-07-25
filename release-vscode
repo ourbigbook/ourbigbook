@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
-./release-vscode-pre
+./release-vscode-pre --commit
 ./release-vscode-post

@@ -1,7 +1,29 @@
 #!/usr/bin/env bash
+commit=false
+while [ $# -gt 0 ]; do
+  case $1 in
+    --commit)
+      commit=true
+      shift
+      ;;
+    -*|--*)
+      echo "Unknown option $1"
+      exit 1
+      ;;
+    *)
+      break
+      ;;
+  esac
+done
 if [ $# -gt 1 ]; then
   version="$1"
   sed -i "s/  \"ourbigbook\":[^,]*/  \"ourbigbook\": \"${version}\"/" vscode/package.json
 fi
 ext_version="$(./inc-version vscode/package.json)"
 sed -i "s/  \"version\":[^,]*/  \"version\": \"${ext_version}\"/" vscode/package.json
+if $commit; then
+  git add vscode/package.json
+  git commit -m "version $version"
+  git tag -m "$version" "$version"
+  git push --follow-tags
+fi

@@ -44,7 +44,7 @@ $$
 \sqrt{1+1}
 $$
 
-Ciro loves maths, and so equations can have titles, and references to math equations just work! See e.g.: \x[my-favorite-equation]
+OurBigBook loves maths, and so equations can have titles, and references to math equations just work! See e.g.: my favorite equation>
 $$
 \newcommand{\mycmd}[1]{\nabla \cdot #1}
 \newcommand{\divergence}[1]{\nabla \cdot #1}
@@ -91,7 +91,7 @@ Sane list with explicit `Ul`:
 \L[second item]
 ]
 
-And now for tables, see this one: \x[table-my-table-title]. Try clicking next to the headers to sort the columns!
+And now for tables, see this one: <table my table title>. Try clicking next to the headers to sort the columns!
 \Table
 {title=My table title}
 [
@@ -129,31 +129,27 @@ Ourbigbook is the answer.]
 
 == References, headers, images
 
-Ciro loves headers and headers!
+OurBigBook loves headers and headers!
 
-Reference to a header: \x[paragraphs-links-code-math].
+Reference to a header: <paragraphs links code math>.
 
-Make it show the section number as well with `{full}`: \x[paragraphs-links-code-math]{full}.
+Make it show the section number as well with `{full}`: <paragraphs links code math>{full}.
 
-The following header is set to be uppercase by default due to the `{c}` (upperCase): \x[ciro-is-awesome]
+Make it uppercase and plural: OurBigBook loves <Bananas>!
 
-This one isn't however: \x[banana]. But we can change:
-* it to uppercase with `{c}`: \x[banana]{c}
-* to plural with `{p}`: \x[banana]{p}
-
-Reference to the following image: \x[image-my-xi-chrysanthemum].
+Reference to the following image: <image my xi chrysanthemum>.
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Xi Chrysanthemum is a very nice image}
 {id=image-my-xi-chrysanthemum}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
 
-An YouTube video: \x[video-sample-youtube-video].
+An YouTube video: <video sample youtube video>.
 
 \Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
 {title=Sample YouTube video.}
 
-=== Ciro is awesome
+=== OurBigBook is awesome
 {c}
 
 === Banana
@@ -210,13 +206,13 @@ But all headers get their own toplevel pages when using split headers: https://d
 ==== Cow
 {tag=Mammal}
 
-Oh, and cows are also \x[mammal]{p}.
+Oh, and cows are also <mammals>.
 
 ==== Flying animal
 
-\x[bat]{c}{p} can fly.
+<Bats> can fly.
 
-But \x[cat]{p} can't.
+But <cats> can't.
 
 ==== Mammal
 
@@ -224,3 +220,44 @@ But \x[cat]{p} can't.
 
 ===== Bat
 {tag=Flying animal}
+
+== Scopes
+
+Sometimes, nested header names would really start getting too long.
+
+For this we have https://docs.ourbigbook.com/#h-scope-argument[scopes], which add a prefix to the ID of all descendants.
+
+E.g.:
+* <Experiment how to measure temperature of a cow/Equipment> has id `experiment-how-to-measure-temperature-of-a-cow/equipment`
+* <Experiment how to measure temperature of a pig/Equipment> has id `experiment-how-to-measure-temperature-of-a-pig/equipment`
+so both "Equipment" sections can coexist in the same project.
+
+=== Experiment how to measure temperature of a cow
+{scope}
+
+==== Equipment
+
+Cow thermometer.
+
+==== Setup
+
+Put cow thermometer in cow mouth.
+
+==== Results
+
+The cow was cold.
+
+=== Experiment how to measure temperature of a pig
+{scope}
+
+==== Equipment
+
+Pig thermometer.
+
+==== Setup
+
+Put pig thermometer in pig ear.
+
+==== Results
+
+The pig was cold.

@@ -23,13 +23,21 @@ html, body {
 
 Welcome to Ourbigbook! Here's the table of contents:
 
-== Paragraphs, code, math
+== Paragraphs, links, code, math
 
 My first paragraph is amazing!
 
+Implicit link with body equals URL: https://examle.com This works because we automatically recognize the `https://` prefix.
+
+Implicit link with custom body: https://examle.com[example website]
+
+Implicit link immediately followed by a period by using an empty argument: https://examle.com[].  After period.
+
+Explicit link with `\a[]`: \a[https://examle.com][example website]
+
 And the second one with inline code `f(){}` and inline server-side rendered maths with KaTeX: $\sqrt{1+1}$.
 
-But if we want block code here it is:
+But if we want block code here it is
 ``
 f() {
   return 1;
@@ -41,15 +49,12 @@ $$
 \sqrt{1+1}
 $$
 
-Ciro loves maths, and so equations can have titles, and references to math equations just work! See e.g.: \x[my-favorite-equation]
+OurBigBook loves maths, and so equations can have titles, and references to math equations just work! See e.g.: my favorite equation&gt;
 $$
-\newcommand{\va}[1]{\overrightarrow{#1}}
-\newcommand{\B}[0]{\va{\mathbf{B}}}
-\newcommand{\E}[0]{\va{\mathbf{E}}}
+\newcommand{\mycmd}[1]{\nabla \cdot #1}
 \newcommand{\divergence}[1]{\nabla \cdot #1}
-\newcommand{\vacuumPermittivity}[0]{\varepsilon_0}
-\divergence{\E} = \frac{\rho}{\vacuumPermittivity} \\
-\divergence{\B} = 0
+\divergence{\overrightarrow{E}} = \frac{\rho}{\mycmd{\overrightarrow{E}}} \\
+\divergence{\overrightarrow{\mathbf{B}}} = 0
 $$
 {title=This is my favorite equation in the entire world!!!}
 {id=my-favorite-equation}
@@ -64,12 +69,18 @@ Here  are three backticks:
 ```
 Nice!
 ````
-or you can also use the equivalent sane literals:
+or you can also use the equivalent sane macro literals. When you open and close a macro argument with more than one square bracket `[` or curly brackets `{`, it becomes a literal string and does not get parsed further:
 \C[[
 Here  are three backticks:
 ```
 Nice!
 ]]
+
+And here's an example of named `title=` argument with multiple curly brackets `{` which makes its content literal:
+$$
+x = \frac{1}{\sqrt{2}}
+$$
+{{title=My \notAMacro is nice.}}
 
 == Lists, tables, quotations
 
@@ -85,9 +96,9 @@ Sane list with explicit `Ul`:
 \L[second item]
 ]
 
-And now for tables, see this one: \x[table-my-table]. Try clicking next to the headers sort the columns!
+And now for tables, see this one: &lt;table my table title&gt;. Try clicking next to the headers to sort the columns!
 \Table
-{title=My table}
+{title=My table title}
 [
 || String col
 || Integer col
@@ -110,6 +121,12 @@ And now for tables, see this one: \x[table-my-table]. Try clicking next to the h
 | 3.3
 ]
 
+To escape the insane lists and tables just backslash them as usual:
+
+\* not a list
+
+\| not a table
+
 And a quotation:
 \Q[To be or not to be!
 
@@ -117,29 +134,30 @@ Ourbigbook is the answer.]
 
 == References, headers, images
 
-Ciro loves headers and headers!
+OurBigBook loves headers and headers!
 
-Reference to a header: \x[paragraphs-code-math].
+Reference to a header: &lt;paragraphs links code math&gt;.
 
-Make it show the section number as well with `{full}`: \x[paragraphs-code-math]{full}.
+Make it show the section number as well with `{full}`: &lt;paragraphs links code math&gt;{full}.
 
-The following header is set to be uppercase by default due to the `{c}` (upperCase): \x[ciro-is-awesome]
+Make it uppercase and plural: OurBigBook loves &lt;Bananas&gt;!
 
-This one isn't however: \x[dog]. But we can change:
-* it to uppercase with `{c}`: \x[dog]{c}
-* to plural with `{p}`: \x[dog]{p}
-
-Reference to the following image: \x[image-my-xi-chrysanthemum].
+Reference to the following image: &lt;image my xi chrysanthemum&gt;.
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]
 {title=Xi Chrysanthemum is a very nice image}
 {id=image-my-xi-chrysanthemum}
 {source=https://commons.wikimedia.org/wiki/File:Lotus_flower_(978659).jpg}
 
-=== Ciro is awesome
+An YouTube video: &lt;video sample youtube video&gt;.
+
+\Video[https://youtube.com/watch?v=YeFzeNAHEhU&t=38]
+{title=Sample YouTube video.}
+
+=== OurBigBook is awesome
 {c}
 
-=== Dog
+=== Banana
 
 === Unlimited header levels?!
 
@@ -163,7 +181,7 @@ Reference to the following image: \x[image-my-xi-chrysanthemum].
 
 \H[13][My h13]
 
-= Parent determined by ID!!!
+= Header parent determined by ID!!!
 {parent=my-h9}
 
 The parent of this header is determined by specifying it's ID with:
@@ -172,7 +190,7 @@ The parent of this header is determined by specifying it's ID with:
 ``
 rather than by the number of `=` signs of this header.
 
-This means that you don't need to worry about counting header anymore!
+This means that you don't need to worry about counting equal signs anymore!
 
 And it is much easier to move large chunks of headers around! You only need to change the `{parent=}` of the toplevel one.
 
@@ -193,13 +211,13 @@ But all headers get their own toplevel pages when using split headers: https://d
 ==== Cow
 {tag=Mammal}
 
-Oh, and cows are also \x[mammal]{p}.
+Oh, and cows are also &lt;mammals&gt;.
 
 ==== Flying animal
 
-\x[bat]{c}{p} can fly.
+&lt;Bats&gt; can fly.
 
-But \x[cat]{p} can't.
+But &lt;cats&gt; can't.
 
 ==== Mammal
 
@@ -208,14 +226,46 @@ But \x[cat]{p} can't.
 ===== Bat
 {tag=Flying animal}
 
-== Mostly testing now I confess
+== Scopes
 
-Literal named argument:
+Sometimes, nested header names would really start getting too long.
 
-``
-my nice code
-``
-{{title=Nice code}}
+For this we have https://docs.ourbigbook.com/#h-scope-argument[scopes], which add a prefix to the ID of all descendants.
+
+E.g.:
+* &lt;Experiment how to measure temperature of a cow/Equipment&gt; has id `experiment-how-to-measure-temperature-of-a-cow/equipment`
+* &lt;Experiment how to measure temperature of a pig/Equipment&gt; has id `experiment-how-to-measure-temperature-of-a-pig/equipment`
+so both "Equipment" sections can coexist in the same project.
+
+=== Experiment how to measure temperature of a cow
+{scope}
+
+==== Equipment
+
+Cow thermometer.
+
+==== Setup
+
+Put cow thermometer in cow mouth.
+
+==== Results
+
+The cow was cold.
+
+=== Experiment how to measure temperature of a pig
+{scope}
+
+==== Equipment
+
+Pig thermometer.
+
+==== Setup
+
+Put pig thermometer in pig ear.
+
+==== Results
+
+The pig was cold.
 </pre>
 <script src="editor.js"></script>
 <script src="ourbigbook.js"></script>

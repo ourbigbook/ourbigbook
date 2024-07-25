@@ -39,7 +39,7 @@ async function activate(context) {
 			const workspaceFolders = vscode.workspace.workspaceFolders
 			let curdir
 			if (workspaceFolders) {
-				curdir = workspaceFolders[0]
+				curdir = workspaceFolders[0].uri.path
 			} else {
 				curdir = path.dirname(vscode.window.activeTextEditor.document.fileName)
 			}

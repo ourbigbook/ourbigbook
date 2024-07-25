@@ -23,7 +23,7 @@ ext_version="$(./inc-version vscode/package.json)"
 sed -i "s/  \"version\":[^,]*/  \"version\": \"${ext_version}\"/" vscode/package.json
 if $commit; then
   git add vscode/package.json
-  git commit -m "version $version"
-  git tag -m "$version" "$version"
+  git commit -m "vscode: version $ext_version"
+  git tag -m "$ext_version" "$ext_version"
   git push --follow-tags
 fi

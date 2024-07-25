@@ -1,26 +1,32 @@
 {
-	"Description named argument": {
-		"prefix": "d",
-		"body": [
-			"{description=$0}"
-		],
-	},
 	"Image": {
 		"prefix": "\\I",
 		"body": [
 			"\\Image[${CLIPBOARD}]"
 		],
 	},
-	"Title named argument": {
-		"prefix": "t",
-		"body": [
-			"{title=$0}"
-		],
-	},
 	"Video": {
 		"prefix": "\\V",
 		"body": [
 			"\\Video[${CLIPBOARD}]"
+		],
+	},
+	"Description named argument": {
+		"prefix": ",d",
+		"body": [
+			"{description=$0}"
+		],
+	},
+	"Source named argument": {
+		"prefix": ",s",
+		"body": [
+			"{source=${CLIPBOARD}}"
+		],
+	},
+	"Title named argument": {
+		"prefix": ",t",
+		"body": [
+			"{title=$0}"
 		],
 	},
 }

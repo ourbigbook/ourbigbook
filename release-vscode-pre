@@ -26,7 +26,7 @@ cd vscode
 npm install
 cd -
 if $commit; then
-  git add vscode/package.json
+  git add vscode/package.json vscode/package-lock.json
   git commit -m "vscode: version $ext_version"
   git tag -m "vscode-$ext_version" "vscode-$ext_version"
   git push --follow-tags

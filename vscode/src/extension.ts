@@ -20,7 +20,7 @@ export async function activate(context: vscode.ExtensionContext) {
   let helloWorld = vscode.commands.registerCommand('ourbigbook.helloWorld', async function () {
     console.log('ourbigbook.helloWorld console.log')
     channel.appendLine('ourbigbook.helloWorld OutputChannel.appendLine')
-    vscode.window.showInformationMessage('Hello World from OurBigBook ts v4!')
+    vscode.window.showInformationMessage('Hello World from OurBigBook ts v5!')
   })
   context.subscriptions.push(helloWorld)
 

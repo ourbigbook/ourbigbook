@@ -22,15 +22,44 @@
       {
         "command": "ourbigbook.helloWorld",
         "title": "OurBigBook: Hello World"
+      },
+      {
+        "command": "ourbigbook.build",
+        "title": "OurBigBook: Build all"
+      },
+      {
+        "command": "ourbigbook.buildAndView",
+        "title": "OurBigBook: Build all and view current"
       }
     ],
     "configurationDefaults": {
       "[ourbigbook]": {
         "editor.wordWrap": "on",
         "editor.quickSuggestions": true,
-        "editor.tabSize": 2
+        "editor.tabSize": 2,
+        "terminal.integrated.scrollback": 100000
       }
     },
+    "keybindings": [
+      {
+        "command": "ourbigbook.build",
+        "key": "ctrl+shift+b"
+      },
+      {
+        "command": "ourbigbook.buildAndView",
+        "key": "f5"
+      }
+    ],
+    "grammars": [
+      {
+        "embeddedLanguages": {
+          "math.bigb": "latex"
+        },
+        "language": "ourbigbook",
+        "scopeName": "source.ourbigbook",
+        "path": "./syntaxes/ourbigbook.tmLanguage.json"
+      }
+    ],
     "languages": [
       {
         "id": "ourbigbook",
@@ -42,16 +71,6 @@
           ".bigb"
         ],
         "configuration": "./language-configuration.json"
-      }
-    ],
-    "grammars": [
-      {
-        "embeddedLanguages": {
-          "math.bigb": "latex"
-        },
-        "language": "ourbigbook",
-        "scopeName": "source.ourbigbook",
-        "path": "./syntaxes/ourbigbook.tmLanguage.json"
       }
     ],
     "snippets": [
@@ -73,16 +92,16 @@
     "ourbigbook": "0.9.9"
   },
   "devDependencies": {
-    "@types/vscode": "1.91.0",
     "@types/mocha": "10.0.7",
     "@types/node": "20.x",
+    "@types/vscode": "1.91.0",
     "@typescript-eslint/eslint-plugin": "7.14.1",
     "@typescript-eslint/parser": "7.11.0",
+    "@vscode/test-cli": "0.0.9",
+    "@vscode/test-electron": "2.4.0",
     "@vscode/vsce": "2.31.1",
     "eslint": "8.57.0",
-    "typescript": "5.4.5",
     "ts-loader": "9.5.1",
-    "@vscode/test-cli": "0.0.9",
-    "@vscode/test-electron": "2.4.0"
+    "typescript": "5.4.5"
   }
 }

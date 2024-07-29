@@ -89,6 +89,7 @@
     "test": "vscode-test"
   },
   "dependencies": {
+    "open": "^10.1.0",
     "ourbigbook": "0.9.9"
   },
   "devDependencies": {

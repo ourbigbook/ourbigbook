@@ -95,7 +95,7 @@ export async function activate(context: vscode.ExtensionContext) {
       shellExec
     )
     myTask.presentationOptions.clear = true
-    myTask.presentationOptions.showReuseMessage = false
+    myTask.presentationOptions.showReuseMessage = true
     await vscode.tasks.executeTask(myTask)
   }
 

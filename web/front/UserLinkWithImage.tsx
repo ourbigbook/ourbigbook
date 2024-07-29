@@ -1,7 +1,6 @@
 /* A link to a user profile that includes a small profile picture. */
 
 import CustomImage from 'front/CustomImage'
-import { UserType } from 'front/types/UserType'
 import { DisplayAndUsername, DisplayAndUsernameProps, UserLink } from 'front/user'
 
 export const UserLinkWithImageInner = ({

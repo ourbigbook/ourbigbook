@@ -46,7 +46,7 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  async function buildAll(close: boolean =false) {
+  async function buildAll() {
     // Also worked, but worse user experience.
     // With task:
     // - auto pops up terminal
@@ -96,7 +96,6 @@ export async function activate(context: vscode.ExtensionContext) {
     )
     myTask.presentationOptions.clear = true
     myTask.presentationOptions.showReuseMessage = false
-    myTask.presentationOptions.close = close
     await vscode.tasks.executeTask(myTask)
   }
 

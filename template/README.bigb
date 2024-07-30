@@ -13,10 +13,6 @@ And below this line, we actually include the toplevel header of the other file.
 
 \Include[not-readme]
 
-== Topic links
-
-In mathematics #mathematics I really like the <#fundamental theorem of calculus>.
-
 {% endif -%}
 == Paragraphs, links, code, math
 
@@ -131,7 +127,14 @@ Ourbigbook is the answer.]
 
 OurBigBook loves headers and headers!
 
-Reference to a header: <paragraphs links code math>.
+Reference to a header: <paragraphs, links, code, math>.
+
+Reference to a header with custom text shown: <paragraphs links code math>[bla bla bla bla].
+
+We can also specify the actual ID explicitly: \x[paragraphs-links-code-math], but this is only useful in some edge cases.
+
+With topic links, we can link to OurBigBook Web topics directly for topics you haven't yet written about yourself:
+\Q[In #mathematics I really like the <#fundamental theorem of calculus>.]
 
 Make it show the section number as well with `{full}`: <paragraphs links code math>{full}.
 
@@ -191,7 +194,7 @@ And it is much easier to move large chunks of headers around! You only need to c
 
 This is why when creating large documents, you should use `parent` exclusively.
 
-== Tags
+=== Tags
 
 These will show up on the metadata of a given header.
 
@@ -199,29 +202,29 @@ Note that metadata is only visible when the header is the toplevel header of a p
 
 But all headers get their own toplevel pages when using split headers: https://docs.ourbigbook.com/split-headers
 
-=== Animal
+==== Animal
 
-==== Ant
+===== Ant
 
-==== Cow
+===== Cow
 {tag=Mammal}
 
 Oh, and cows are also <mammals>.
 
-==== Flying animal
+===== Flying animal
 
 <Bats> can fly.
 
 But <cats> can't.
 
-==== Mammal
+===== Mammal
 
-===== Cat
+====== Cat
 
-===== Bat
+====== Bat
 {tag=Flying animal}
 
-== Scopes
+=== Scopes
 
 Sometimes, nested header names would really start getting too long.
 
@@ -232,32 +235,32 @@ E.g.:
 * <Experiment how to measure temperature of a pig/Equipment> has id `experiment-how-to-measure-temperature-of-a-pig/equipment`
 so both "Equipment" sections can coexist in the same project.
 
-=== Experiment how to measure temperature of a cow
+==== Experiment how to measure temperature of a cow
 {scope}
 
-==== Equipment
+===== Equipment
 
 Cow thermometer.
 
-==== Setup
+===== Setup
 
 Put cow thermometer in cow mouth.
 
-==== Results
+===== Results
 
 The cow was cold.
 
-=== Experiment how to measure temperature of a pig
+==== Experiment how to measure temperature of a pig
 {scope}
 
-==== Equipment
+===== Equipment
 
 Pig thermometer.
 
-==== Setup
+===== Setup
 
 Put pig thermometer in pig ear.
 
-==== Results
+===== Results
 
 The pig was cold.

@@ -97,10 +97,13 @@ We are also happy to discuss paid contracts to implement specific features, to g
 {parent=OurBigBook}
 
 The following sections cover different ways to use tools from the OurBigBook:
-* <OurBigBook Web user manual>: manual for <OurBigBook Web>, the dynamic website. This is what most users will use by default when it is matured;.
-* <OurBigBook CLI quick start>: allows you to convert local `.bigb` files from the command line to either:
-  * a static website. This is already very usable.
-  * upload to <OurBigBook Web>. Almost very usable, we're getting there.
+* <OurBigBook Web user manual>: manual for <OurBigBook Web>, the dynamic website. With this approach, you can write content on the browser without downloading anything, and save it on our database.
+* convert local `.bigb` files with either:
+  * <Visual Studio Code extension>
+  * <OurBigBook CLI quick start>
+  This method allows you to publish either as:
+  * a <static website>
+  * to <OurBigBook Web>
 * <OurBigBook Markup quick start>: covers specifically <OurBigBook Markup>, which is the markup language you use to write content in OurBigBook, both <OurBigBook Web> and <OurBigBook CLI>.
 
   This is currently the only way to write OurBigBook content, but we would really like to add <todo/WYSIWYG>[WYSIWYG] editor support one day!
@@ -9975,6 +9978,9 @@ And from OurBigBook to anything, create new output formats inside OurBigBook to 
 {title2}
 
 = VS Code extension
+{synonym}
+
+= Visual Studio Code extension
 {synonym}
 
 VS Code is currently intended to be the best supported non-fully-custom OurBigBook editor.

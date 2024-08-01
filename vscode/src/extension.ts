@@ -20,7 +20,7 @@ function getOurbigbookExecPath(): string {
  * @param {vscode.ExtensionContext} context
  */
 export async function activate(context: vscode.ExtensionContext) {
-  // State.tasks.
+  // State.
   const channel = vscode.window.createOutputChannel('OurBigBook', 'ourbigbook')
   let ourbigbookJsonDir: string|undefined
   let sequelize: any
@@ -34,12 +34,11 @@ export async function activate(context: vscode.ExtensionContext) {
   function getOurbigbookJsonDir(): string | undefined {
     const workspaceFolders = vscode.workspace.workspaceFolders
     let curdir
-    if (workspaceFolders) {
+    const editor = vscode.window.activeTextEditor
+    if (editor) {
+      curdir = path.dirname(editor.document.fileName)
+    } else if (workspaceFolders) {
       curdir = workspaceFolders[0].uri.path
-    } else {
-      if (vscode.window.activeTextEditor) {
-        curdir = path.dirname(vscode.window.activeTextEditor.document.fileName)
-      }
     }
     channel.appendLine(`getOurbigbookJsonDir curdir=${curdir}`)
     if (curdir) {
@@ -47,7 +46,7 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  async function buildAll() {
+  async function buildAll(): Promise<number|undefined> {
     // Also worked, but worse user experience.
     // With task:
     // - auto pops up terminal
@@ -69,7 +68,13 @@ export async function activate(context: vscode.ExtensionContext) {
     //buildHandleStdout(p.stdout)
     //buildHandleStdout(p.stderr)
 
-    // build task.
+    // Save any unsaved changes.
+    const editor = vscode.window.activeTextEditor
+    if (editor) {
+      editor.document.save()
+    }
+
+    // build task
     const quotingStyle: vscode.ShellQuoting = vscode.ShellQuoting.Strong
     let myTaskCommand: vscode.ShellQuotedString = {
       value: getOurbigbookExecPath(),
@@ -96,8 +101,18 @@ export async function activate(context: vscode.ExtensionContext) {
       shellExec
     )
     myTask.presentationOptions.clear = true
-    myTask.presentationOptions.showReuseMessage = false
-    await vscode.tasks.executeTask(myTask)
+    myTask.presentationOptions.showReuseMessage = true
+    // This allows us to wait for the task to complete.
+    // https://stackoverflow.com/questions/61428928/how-to-await-a-build-task-in-a-vs-code-extension/61703141#61703141
+    const execution = await vscode.tasks.executeTask(myTask)
+    return new Promise(resolve => {
+      const disposable = vscode.tasks.onDidEndTaskProcess(e => {
+        if (e.execution === execution) {
+          disposable.dispose()
+          resolve(e.exitCode)
+        }
+      })
+    })
   }
 
   // Commands
@@ -111,15 +126,14 @@ export async function activate(context: vscode.ExtensionContext) {
       const ourbigbookJsonDirMaybe = getOurbigbookJsonDir()
       if (typeof ourbigbookJsonDirMaybe === 'string') {
         let ourbigbookJsonDir:string = ourbigbookJsonDirMaybe
-        await buildAll()
-        if (vscode.window.activeTextEditor) {
+        if (await buildAll() === 0 && vscode.window.activeTextEditor) {
           const curFilepath = vscode.window.activeTextEditor.document.fileName
           const parse = path.parse(curFilepath)
           channel.appendLine(`ourbigbook.buildAndView: curFilepath=${curFilepath}`)
           if (parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}`) {
             const outpath = path.join(
               ourbigbookJsonDir,
-              ourbigbook_nodejs_webpack_safe.TMP_DIRNAME>,
+              ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
               ourbigbook.OUTPUT_FORMAT_HTML,
               path.relative(parse.dir, ourbigbookJsonDir),
               parse.name + '.' + ourbigbook.HTML_EXT

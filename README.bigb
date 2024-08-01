@@ -99,7 +99,7 @@ We are also happy to discuss paid contracts to implement specific features, to g
 The following sections cover different ways to use tools from the OurBigBook:
 * <OurBigBook Web user manual>: manual for <OurBigBook Web>, the dynamic website. With this approach, you can write content on the browser without downloading anything, and save it on our database.
 * convert local `.bigb` files with either:
-  * <Visual Studio Code extension>
+  * <Visual Studio Code quick start>
   * <OurBigBook CLI quick start>
   This method allows you to publish either as:
   * a <static website>
@@ -9977,6 +9977,9 @@ And from OurBigBook to anything, create new output formats inside OurBigBook to 
 {synonym}
 {title2}
 
+= vscode
+{synonym}
+
 = VS Code extension
 {synonym}
 
@@ -9990,6 +9993,10 @@ The official OurBigBook extension is published at: https://marketplace.visualstu
 ext install ourbigbook.ourbigbook-vscode
 ext install streetsidesoftware.code-spell-checker
 ``
+
+= Visual Studio Code quick start
+{parent=Visual Studio Code}
+{tag=Quick start}
 
 We recommend adding the following settings to your User JSON settings file:
 ``
@@ -10040,12 +10047,14 @@ Supported language features:
   fund%ntal
   ``
   also does not work. Looking at debug logs, we see that the correct SQL queries are generated and the correct rows returned, but VS Code must be doing a hardcoded post-processing step that removes the matches afterwards, so it also seems to be out of our control.
+* commands: all our command shortcuts are defined to only work on OurBigBook files (<.bigb extension>) to avoid cluttering non-OurBigBook projects. This is done as vscode does not seem to have the concept of "project type" built into it. If you want the build and launch shorcuts to work on your project for any file, also define build and launch commands under `.vscode`
+  * `Build all`: do `ourbigbook .` on the <project toplevel directory>
+  * `Build all and view current output file`: do `ourbigbook .` and then open the HTML output for the current file in your browser
 
 Todo features:
-* deployment as <static website> or to <OurBigBook Web>
-* build with click to line stdout error parsing
-* jump to ID definitions
-* HTML preview, maybe we should learn from the Asciidoc extension
+* deployment as <static website> or to <OurBigBook Web> via command
+* ctrl click to jump to ID definitions
+* live side-by-side HTML preview, maybe we could learn a bit from the Asciidoc extension
 
 Historically, <Vim> support came first and was better developed. But that was just an ad-hoc path of least resistance, VS Code is the one we are going to actually support moving forward.
 
@@ -10064,6 +10073,10 @@ One current fundamental limitation of <VS Code> is that there is no way to previ
 {title=Screenshot of a sample OurBigBook project in VS Code}
 {provider=github}
 {height=800}
+
+= Visual Studio Code getting started
+{c}
+{parent=Visual Studio Code}
 
 = Developing the Visual Studio Code extension
 {parent=Visual Studio Code}

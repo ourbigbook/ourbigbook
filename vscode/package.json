@@ -29,7 +29,7 @@
       },
       {
         "command": "ourbigbook.buildAndView",
-        "title": "OurBigBook: Build all and view current"
+        "title": "OurBigBook: Build all and view current output file"
       }
     ],
     "configurationDefaults": {
@@ -43,11 +43,13 @@
     "keybindings": [
       {
         "command": "ourbigbook.build",
-        "key": "ctrl+shift+b"
+        "key": "ctrl+shift+b",
+        "when": "editorLangId == 'ourbigbook'"
       },
       {
         "command": "ourbigbook.buildAndView",
-        "key": "f5"
+        "key": "f5",
+        "when": "editorLangId == 'ourbigbook'"
       }
     ],
     "grammars": [

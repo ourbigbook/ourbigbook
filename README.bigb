@@ -9994,10 +9994,6 @@ ext install ourbigbook.ourbigbook-vscode
 ext install streetsidesoftware.code-spell-checker
 ``
 
-= Visual Studio Code quick start
-{parent=Visual Studio Code}
-{tag=Quick start}
-
 We recommend adding the following settings to your User JSON settings file:
 ``
 "cSpell.enableFiletypes": [
@@ -10051,7 +10047,7 @@ Supported language features:
   * `Build all`: do `ourbigbook .` on the <project toplevel directory>
   * `Build all and view current output file`: do `ourbigbook .` and then open the HTML output for the current file in your browser
 
-Todo features:
+Todo
 * deployment as <static website> or to <OurBigBook Web> via command
 * ctrl click to jump to ID definitions
 * live side-by-side HTML preview, maybe we could learn a bit from the Asciidoc extension
@@ -10074,9 +10070,28 @@ One current fundamental limitation of <VS Code> is that there is no way to previ
 {provider=github}
 {height=800}
 
-= Visual Studio Code getting started
-{c}
+= Visual Studio Code quick start
 {parent=Visual Studio Code}
+{tag=Quick start}
+
+The <Visual Studio Code extension> ships with a full working copy of <OurBigBook>, so you don't need to install anything besides the extension itself to get started!
+
+Obtain a copy of the template: https://github.com/ourbigbook/template For example you can either:
+* download and extract this ZIP: https://github.com/ourbigbook/template/archive/refs/heads/master.zip
+* `git clone https://github.com/ourbigbook/template` if you are familiar with git
+
+Next, open the downloaded folder in Visual Studio Code with:
+* Ctrl + Shift + P
+* File: Open Folder
+
+Next, open a .bigb file such as README.bigb on vscode.
+
+Now you are ready to:
+* Ctrl + Shift + B: build all files in the folder 
+* F5: build all files in the folder, and view the HTML output for the current source file in your browser
+
+Other key shortcuts include:
+* Ctrl + T: search for a header in any file
 
 = Developing the Visual Studio Code extension
 {parent=Visual Studio Code}
@@ -10738,6 +10753,9 @@ The two pass approach is required to resolve <cross references>
 = ID extraction
 {c}
 {parent=Conversion process overview}
+
+= Extraction IDs
+{synonym}
 
 One of the main two passes done during conversion, where the files are parsed and all references stored in the database.
 

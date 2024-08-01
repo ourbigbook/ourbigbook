@@ -1,4 +1,6 @@
 import path from 'path'
+import child_process from 'child_process'
+import { Readable } from 'stream'
 
 import * as vscode from 'vscode'
 
@@ -52,7 +54,6 @@ export async function activate(context: vscode.ExtensionContext) {
     // - auto pops up terminal
     // - user can Ctrl+Click to go to error message
     //import child_process from 'child_process'
-    //import readline from 'readline'
     //import { Readable } from 'stream'
     //function buildHandleStdout(stdout: Readable) {
     //    stdout.setEncoding('utf8')
@@ -155,6 +156,22 @@ export async function activate(context: vscode.ExtensionContext) {
       vscode.window.showInformationMessage(`Hello World from OurBigBook ts!`)
     })
   )
+  vscode.workspace.onDidSaveTextDocument((e) => {
+    channel.appendLine(`ourbigbook.onDidSaveTextDocument fileName=${e.fileName}`)
+    function buildHandleStdout(stdout: Readable) {
+        stdout.setEncoding('utf8')
+        stdout.on('data', function(data: string) {
+          for (const line of data.split('\n')) {
+            if (line) {
+              channel.appendLine(`onDidSaveTextDocument: ${e.fileName}: ` + line.replace(/(\n)$/m, ''))
+            }
+          }
+        })
+    }
+    const p = child_process.spawn(getOurbigbookExecPath(), ['--no-render', e.fileName], { cwd: getOurbigbookJsonDir() })
+    buildHandleStdout(p.stdout)
+    buildHandleStdout(p.stderr)
+  })
 
   class OurbigbookWorkspaceSymbolProvider implements vscode.WorkspaceSymbolProvider {
     /** The query only contains the string before the first space typed into

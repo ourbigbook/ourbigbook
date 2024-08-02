@@ -11,20 +11,44 @@
             "\\Video[${CLIPBOARD}]"
         ],
     },
+    "Title2 named argument": {
+        "prefix": "{2",
+        "body": [
+            "{title2=$0}"
+        ],
+    },
     "Description named argument": {
-        "prefix": ",d",
+        "prefix": "{d",
         "body": [
             "{description=$0}"
         ],
     },
+    "Parent named argument": {
+        "prefix": "{p",
+        "body": [
+            "{parent=${0}}"
+        ],
+    },
     "Source named argument": {
-        "prefix": ",s",
+        "prefix": "{s",
         "body": [
             "{source=${CLIPBOARD}}"
         ],
     },
+    "Synonym named argument": {
+        "prefix": "{synonym",
+        "body": [
+            "{synonym=${0}}"
+        ],
+    },
+    "Tag named argument": {
+        "prefix": "{ta",
+        "body": [
+            "{tag=$0}"
+        ],
+    },
     "Title named argument": {
-        "prefix": ",t",
+        "prefix": "{t",
         "body": [
             "{title=$0}"
         ],

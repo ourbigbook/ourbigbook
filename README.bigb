@@ -10012,9 +10012,9 @@ Supported language features:
   \Image[]
   `` and if you select it autofills with URL the clipboard text.
 
-  Common <named arguments> also have shortcuts starting with comma `,`, e.g. for the <title-argument> it is `,t` (comma + `t`)
+  Common <named arguments> also have shortcuts starting with open curly brace `{`, e.g. for the <title-argument> it is `{t` (open curly brace + `t`)
   ``
-  ,t
+  {t
   ``
   which expands to:
   ``
@@ -10022,9 +10022,7 @@ Supported language features:
   ``
   leaving your cursor after the `=` sign.
 
-  Ideally we would have liked to use open curtly braces `{` as the initial character for those snippets, but VS Code automatically closes the braces, which we often actually want to happen, so we've decided to use the comma instead, as it is easy to type and unlikely to have conflicts.
-
-  see their definition on the snippts file \a[vscode/snippets.json]. 
+  see their definition fn the snippts file \a[vscode/snippets.json]. 
 * `Ctrl + T` "https://code.visualstudio.com/docs/editor/editingevolved#_open-symbol-by-name[Open symbol by name]". Shows matching <element IDs> such as for <headers>, and allows you to quickly jump to them. It lists:
   * first lists IDs that start with the search
   * then followed by IDs that contain the search anywhere inside them
@@ -10043,9 +10041,25 @@ Supported language features:
   fund%ntal
   ``
   also does not work. Looking at debug logs, we see that the correct SQL queries are generated and the correct rows returned, but VS Code must be doing a hardcoded post-processing step that removes the matches afterwards, so it also seems to be out of our control.
+
+  <ID extraction> is performed on .bigb files automatically with `ourbigbook --no-render file.bigb` whenever new changes are saved to disk e.g. with Ctrl + S. This ensures that the <ID database> is kept up to date so that Ctrl + T and autocompletion will work.
 * commands: all our command shortcuts are defined to only work on OurBigBook files (<.bigb extension>) to avoid cluttering non-OurBigBook projects. This is done as vscode does not seem to have the concept of "project type" built into it. If you want the build and launch shorcuts to work on your project for any file, also define build and launch commands under `.vscode`
-  * `Build all`: do `ourbigbook .` on the <project toplevel directory>
+  * `Build all`: save the current file is unsaved, and then build the <project toplevel directory> with `ourbigbook .`
   * `Build all and view current output file`: do `ourbigbook .` and then open the HTML output for the current file in your browser
+* ID autocompletion initiated by things like:
+  * `<`: <internal cross-file reference>
+  * `{tag=`: <H tag argument>
+  * `{parent=`: <H parent argument>
+  Known limitation: although separate words do find good matches in this case unlike in Ctrl + T, if you:
+  * type the first word
+  * space
+  * start the second word
+  * cancel autocomplete with ESC
+  * finish autocomplete on second word
+  then the stuff before the last space remains rather than being replaced, leaving you with something like:
+  ``
+  <United United States>
+  ``
 
 Todo
 * deployment as <static website> or to <OurBigBook Web> via command

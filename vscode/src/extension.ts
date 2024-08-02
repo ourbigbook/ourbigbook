@@ -9,7 +9,8 @@ const ourbigbook = require('ourbigbook')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
 
-const MAX_IDS = 10000
+const MAX_IDS = 100
+const OURBIGBOOK_LANGUAGE_ID = 'ourbigbook'
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
@@ -157,20 +158,22 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   )
   vscode.workspace.onDidSaveTextDocument((e) => {
-    channel.appendLine(`ourbigbook.onDidSaveTextDocument fileName=${e.fileName}`)
-    function buildHandleStdout(stdout: Readable) {
-        stdout.setEncoding('utf8')
-        stdout.on('data', function(data: string) {
-          for (const line of data.split('\n')) {
-            if (line) {
-              channel.appendLine(`onDidSaveTextDocument: ${e.fileName}: ` + line.replace(/(\n)$/m, ''))
+    if (e.languageId === OURBIGBOOK_LANGUAGE_ID) {
+      channel.appendLine(`ourbigbook.onDidSaveTextDocument fileName=${e.fileName}`)
+      function buildHandleStdout(stdout: Readable) {
+          stdout.setEncoding('utf8')
+          stdout.on('data', function(data: string) {
+            for (const line of data.split('\n')) {
+              if (line) {
+                channel.appendLine(`onDidSaveTextDocument: ${e.fileName}: ` + line.replace(/(\n)$/m, ''))
+              }
             }
-          }
-        })
+          })
+      }
+      const p = child_process.spawn(getOurbigbookExecPath(), ['--no-render', e.fileName], { cwd: getOurbigbookJsonDir() })
+      buildHandleStdout(p.stdout)
+      buildHandleStdout(p.stderr)
     }
-    const p = child_process.spawn(getOurbigbookExecPath(), ['--no-render', e.fileName], { cwd: getOurbigbookJsonDir() })
-    buildHandleStdout(p.stdout)
-    buildHandleStdout(p.stderr)
   })
 
   class OurbigbookWorkspaceSymbolProvider implements vscode.WorkspaceSymbolProvider {
@@ -195,13 +198,15 @@ export async function activate(context: vscode.ExtensionContext) {
         }
         return Promise.all([
           sequelize.models.Id.findAll({
+            attributes: { include: [ [sequelize.fn('LENGTH', sequelize.col('idid')), 'idid_length'], ], },
             where: { idid: { [sequelize.Sequelize.Op.startsWith]: query } },
-            order: [['idid', 'ASC']],
+            order: [[sequelize.literal('idid_length'), 'ASC'], ['idid', 'ASC']],
             limit: MAX_IDS,
           }),
           sequelize.models.Id.findAll({
+            attributes: { include: [ [sequelize.fn('LENGTH', sequelize.col('idid')), 'idid_length'], ], },
             where: { idid: { [sequelize.Sequelize.Op.like]: `_%${query}%` } },
-            order: [['idid', 'ASC']],
+            order: [[sequelize.literal('idid_length'), 'ASC'], ['idid', 'ASC']],
             limit: MAX_IDS,
           }),
         ]).then(ids => ids.flat().map(id => {
@@ -224,6 +229,108 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
   context.subscriptions.push(vscode.languages.registerWorkspaceSymbolProvider(new OurbigbookWorkspaceSymbolProvider()))
+
+  class OurbigbookCompletionItemProvider implements vscode.CompletionItemProvider {
+    /** The query only contains the string before the first space typed into
+     * the Ctrl+T bar... Related500:
+     * https://github.com/microsoft/vscode/issues/93645
+     * Anything after the first space is used by vscode as a further
+     * filter over something, not exactly symbol names either, so it is quite sad.
+     * We would need to implement our own custom search window to overcome this.
+     */
+    async provideCompletionItems(
+      document: vscode.TextDocument,
+      position: vscode.Position,
+      token: vscode.CancellationToken,
+      context: vscode.CompletionContext
+    ) {
+      const col = position.character
+      channel.appendLine(`provideCompletionItems position=${position.line}:${col}`)
+      channel.appendLine(`provideCompletionItems context={triggerCharacter=${context.triggerCharacter}, triggerKind=${context.triggerKind}`)
+      const lineToCursor = document.lineAt(position.line).text.substring(0, col)
+      const matches = [...lineToCursor.matchAll(/(?<=<)[^>]*$|(?<=\{(parent|tag)=)[^}]*$/g)]
+      if (matches.length) {
+        const lastMatch = matches[matches.length - 1]
+        const queryRaw = lineToCursor.substring(lastMatch.index, col)
+        channel.appendLine(`provideCompletionItems query=${queryRaw}`)
+        const query = ourbigbook.titleToId(queryRaw)
+        let oldOurbigbookJsonDir = ourbigbookJsonDir
+        ourbigbookJsonDir = getOurbigbookJsonDir()
+        if (typeof(ourbigbookJsonDir) === "string") {
+          if (ourbigbookJsonDir !== oldOurbigbookJsonDir) {
+            sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
+              logging: (s: string) => channel.appendLine(`provideCompletionItems sql=${s}`),
+              storage: path.join(ourbigbookJsonDir, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, ourbigbook_nodejs_front.SQLITE_DB_BASENAME),
+            })
+          }
+          const renderContext = Object.assign(
+            ourbigbook.convertInitContext(),
+            {
+              db_provider: new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize),
+              output_format: ourbigbook.OUTPUT_FORMAT_ID
+            }
+          )
+          async function createCompletionItem(ids: any[], atStart: boolean) {
+            channel.appendLine('createCompletionItem')
+            const ret = []
+            for (const id of ids) {
+              // This slightly duplicates <> ourbigbook output type conversion,
+              // but it was a bit different and much simpler. Let's see.
+              const ast = ourbigbook.AstNode.fromJSON(id.ast_json, renderContext)
+              const macro = renderContext.macros[ast.macro_name];
+              const titleArg = macro.options.get_title_arg(ast, renderContext);
+              let label = ourbigbook.renderArg(titleArg, renderContext)
+              if (atStart) {
+                const c0 = query[0]
+                if (!(
+                  ast.validation_output.c &&
+                  ast.validation_output.c.boolean
+                )) {
+                  if (c0.toLowerCase() === c0) {
+                    label = ourbigbook.decapitalizeFirstLetter(label)
+                  } else {
+                    label = ourbigbook.capitalizeFirstLetter(label)
+                  }
+                }
+              }
+              ret.push(new vscode.CompletionItem(label))
+            }
+            return ret
+          }
+          return new vscode.CompletionList(
+            [
+              ...(await sequelize.models.Id.findAll({
+                attributes: { include: [ [sequelize.fn('LENGTH', sequelize.col('idid')), 'idid_length'], ], },
+                where: { idid: { [sequelize.Sequelize.Op.startsWith]: query } },
+                // No matter what we set here, vscode then re-sorts it on the UI it is so annoying!
+                // https://github.com/microsoft/monaco-editor/issues/1077
+                order: [[sequelize.literal('idid_length'), 'ASC'], ['idid', 'ASC']],
+                limit: MAX_IDS,
+              }).then((ids:any) => createCompletionItem(ids, true))),
+              ...await sequelize.models.Id.findAll({
+                attributes: { include: [ [sequelize.fn('LENGTH', sequelize.col('idid')), 'idid_length'], ], },
+                where: { idid: { [sequelize.Sequelize.Op.like]: `_%${query}%` } },
+                order: [[sequelize.literal('idid_length'), 'ASC'], ['idid', 'ASC']],
+                limit: MAX_IDS,
+              }).then((ids:any) => createCompletionItem(ids, false)),
+            ],
+            // This way it keeps triggering we type more characters.
+            true,
+          )
+        }
+      } else {
+        return []
+      }
+    }
+  }
+  context.subscriptions.push(
+    vscode.languages.registerCompletionItemProvider(
+      { scheme: 'file', language: OURBIGBOOK_LANGUAGE_ID },
+      new OurbigbookCompletionItemProvider(),
+      // TODO what does this give us?
+      '<',
+    )
+  )
 }
 
 export function deactivate() { }

@@ -2637,6 +2637,11 @@ function closingToken(token) {
   throw new Error('token does not have a close: ' + token);
 }
 
+function decapitalizeFirstLetter(string) {
+  return string.charAt(0).toLowerCase() + string.slice(1);
+}
+exports.decapitalizeFirstLetter = decapitalizeFirstLetter
+
 /**
  * Main ourbigbook input to HTML/LaTeX/etc. output JavaScript API.
  *
@@ -2902,6 +2907,7 @@ function renderArg(arg, context) {
   }
   return converted_arg.join('');
 }
+exports.renderArg = renderArg
 
 /* Similar to renderArg, but used for IDs.
  *
@@ -9937,7 +9943,6 @@ function ourbigbookGetXHref({
   href,
   magic,
   p,
-  scope,
   target_ast,
   target_id,
 }) {
@@ -10387,7 +10392,6 @@ OUTPUT_FORMATS_LIST.push(
               c: false,
               p: false,
               magic: true,
-              scope: ast.scope,
               for_header_parent: true,
             }).href
             // Return only some whitelisted characters to prevent creating new elements
@@ -10507,7 +10511,6 @@ OUTPUT_FORMATS_LIST.push(
             href,
             magic,
             p: ast.validation_output.p.boolean,
-            scope: ast.scope,
             target_ast,
             target_id,
           }))

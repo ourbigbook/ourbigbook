@@ -34,9 +34,14 @@
     ],
     "configurationDefaults": {
       "[ourbigbook]": {
-        "editor.wordWrap": "on",
-        "editor.quickSuggestions": true,
+        "editor.autoClosingBrackets": "never",
+        "editor.quickSuggestions": {
+            "other": "on",
+            "comments": "off",
+            "strings": "off"
+        },
         "editor.tabSize": 2,
+        "editor.wordWrap": "on",
         "terminal.integrated.scrollback": 100000
       }
     },
@@ -64,6 +69,10 @@
     ],
     "languages": [
       {
+        "icon": {
+          "light": "logo.png",
+          "dark": "logo.png"
+        },
         "id": "ourbigbook",
         "aliases": [
           "OurBigBook",
@@ -91,8 +100,8 @@
     "test": "vscode-test"
   },
   "dependencies": {
-    "open": "^10.1.0",
-    "ourbigbook": "0.9.9"
+    "open": "10.1.0",
+    "ourbigbook": ".."
   },
   "devDependencies": {
     "@types/mocha": "10.0.7",

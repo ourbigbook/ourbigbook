@@ -23,6 +23,12 @@
             "{description=$0}"
         ],
     },
+    "Height named argument": {
+        "prefix": "{h",
+        "body": [
+            "{height=$0}"
+        ],
+    },
     "Parent named argument": {
         "prefix": "{p",
         "body": [

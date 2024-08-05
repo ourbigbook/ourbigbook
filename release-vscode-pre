@@ -16,11 +16,10 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
-# We were considering it, but decided to just ..  to make dev and deploy easier.
-#if [ $# -gt 1 ]; then
-#  version="$1"
-#  sed -i "s/  \"ourbigbook\":[^,]*/  \"ourbigbook\": \"${version}\"/" vscode/package.json
-#fi
+if [ $# -gt 1 ]; then
+  version="$1"
+  sed -i "s/  \"ourbigbook\":[^,]*/  \"ourbigbook\": \"${version}\"/" vscode/package.json
+fi
 ext_version="$(./inc-version vscode/package.json)"
 sed -i "s/  \"version\":[^,]*/  \"version\": \"${ext_version}\"/" vscode/package.json
 cd vscode

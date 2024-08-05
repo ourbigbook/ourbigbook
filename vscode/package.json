@@ -108,7 +108,7 @@
   },
   "dependencies": {
     "open": "8.4.2",
-    "ourbigbook": "0.9.10"
+    "ourbigbook": "0.9.11"
   },
   "devDependencies": {
     "@types/mocha": "10.0.7",

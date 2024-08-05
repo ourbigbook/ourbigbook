@@ -10048,20 +10048,23 @@ Supported language features:
 * commands: all our command shortcuts are defined to only work on OurBigBook files (<.bigb extension>) to avoid cluttering non-OurBigBook projects. This is done as vscode does not seem to have the concept of "project type" built into it. If you want the build and launch shorcuts to work on your project for any file, also define build and launch commands under `.vscode`
   * `Build all`: save the current file is unsaved, and then build the <project toplevel directory> with `ourbigbook .`
   * `Build all and view current output file`: do `ourbigbook .` and then open the HTML output for the current file in your browser
+
+    Known limitations: snap browsers on Ubuntu 24.04 can't access dotfiles, so CSS and JavaScript will be broken because they go under `~/.vscode` when building with the extension: https://askubuntu.com/questions/1238211/how-to-make-snaps-access-hidden-files-and-folders-in-home#comment2676255_1238219 We don't know how to work around this besides not using the snap version of browsers.
 * ID autocompletion initiated by things like:
   * `<`: <internal cross-file reference>
   * `{tag=`: <H tag argument>
   * `{parent=`: <H parent argument>
-  Known limitation: although separate words do find good matches in this case unlike in Ctrl + T, if you:
-  * type the first word
-  * space
-  * start the second word
-  * cancel autocomplete with ESC
-  * finish autocomplete on second word
-  then the stuff before the last space remains rather than being replaced, leaving you with something like:
-  ``
-  <United United States>
-  ``
+  Known limitations:
+  * although separate words do find good matches in this case unlike in Ctrl + T, if you auto-complete after the first word, pre existing words are duplicated, e.g.:
+    * type the first word
+    * space
+    * start the second word
+    * finish autocomplete on second word
+    then the stuff before the last space remains rather than being replaced, leaving you with something like:
+    ``
+    <United United States>
+    ``
+    The bult-in markdown extension does not support this either as it uses only slash separated "IDs" in its searches.
 
 Todo
 * breadcrumb navigation/outline, present in markdown and asciidoctor
@@ -10130,6 +10133,54 @@ It's the standard procedure for any extension:
   * test them on the "Extension Development Host" window. To reload changes either:
     * from the Extension Host run the "Developer: Reload Window" command to make extension changes take effect. We recommend adding a shortcut "Alt + Shift + R" for that
     * from the "vscode" workspace, restart the debug proces with the "Debug: Restart" command (default shortcut "Ctrl + Shift + F5")
+
+= Making concurrent changes to ourbigbook and the extension
+{parent=Visual Studio Code}
+
+Sometimes you need to change ourbigbook files like \a[index.js] when working on a new extension feature.
+
+TODO: we don't have a neat way to handle this now. Currently;
+\a[vscode/package.json]
+uses fixed `ourbigbook` versions such as:
+``
+  "dependencies": {
+    "ourbigbook": "0.9.11"
+``
+and therefore does not pick up changes made to \a[index.js].
+
+To work around that, you can hack that line to:
+``
+  "dependencies": {
+    "ourbigbook": ".."
+``
+and:
+``
+cd vscode
+npm install
+``
+
+The reason we don't use the `..` by default is that we are unable to release the extension with the `..` for an unknown reason because then:
+``
+npx vsce package
+``
+is failing with:
+``
+Executing prepublish script 'npm run vscode:prepublish'...
+
+> ourbigbook-vscode@0.0.26 vscode:prepublish
+> npm run compile
+
+
+> ourbigbook-vscode@0.0.26 compile
+> tsc -p ./
+
+ ERROR  Command failed: npm list --production --parseable --depth=99999 --loglevel=error
+npm ERR! code ELSPROBLEMS
+npm ERR! invalid: katex@v0.11.1 /home/ciro/bak/git/ourbigbook/node_modules/katex
+
+npm ERR! A complete log of this run can be found in:
+npm ERR!     /home/ciro/.npm/_logs/2024-08-05T15_51_22_124Z-debug-0.log
+``
 
 = Vim
 {parent=Editor support}

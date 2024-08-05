@@ -3282,7 +3282,7 @@ function convertInitContext(options={}, extra_returns={}) {
   }
   if (!('publish' in options)) {
     // If true, this means that this is a ourbigbook --publish run rather
-    // than a regular developmt compilation.
+    // than a regular development compilation.
     options.publish = false
   }
     if (options.publish && 'publishOptions' in ourbigbook_json) {
@@ -7927,8 +7927,12 @@ function macroImageVideoResolveParams(ast, context) {
 
   if (media_provider_type_detected === undefined) {
     if (media_provider_type === undefined) {
-      // Relative URL, use the default provider if any.
-      media_provider_type = context.media_provider_default[ast.macro_name];
+      if (context.media_provider_default) {
+        // Relative URL, use the default provider if any.
+        media_provider_type = context.media_provider_default[ast.macro_name];
+      } else {
+        media_provider_type = 'local'
+      }
     }
     is_url = false;
   } else {

@@ -271,73 +271,76 @@ export async function activate(context: vscode.ExtensionContext) {
         const queryRaw = lineToCursor.substring(lastMatch.index, col)
         channel.appendLine(`provideCompletionItems query=${queryRaw}`)
         const query = ourbigbook.titleToId(queryRaw)
-        let oldOurbigbookJsonDir = ourbigbookJsonDir
-        ourbigbookJsonDir = getOurbigbookJsonDir()
-        if (typeof(ourbigbookJsonDir) === "string") {
-          if (ourbigbookJsonDir !== oldOurbigbookJsonDir) {
-            sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
-              logging: (s: string) => channel.appendLine(`provideCompletionItems sql=${s}`),
-              storage: path.join(ourbigbookJsonDir, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, ourbigbook_nodejs_front.SQLITE_DB_BASENAME),
-            })
-          }
-          const renderContext = Object.assign(
-            ourbigbook.convertInitContext(),
-            {
+        if (query) {
+          const c0 = query[0]
+          const queryIsLower = c0.toLowerCase() === c0
+          let oldOurbigbookJsonDir = ourbigbookJsonDir
+          ourbigbookJsonDir = getOurbigbookJsonDir()
+          if (typeof(ourbigbookJsonDir) === "string") {
+            if (ourbigbookJsonDir !== oldOurbigbookJsonDir) {
+              sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
+                logging: (s: string) => channel.appendLine(`provideCompletionItems sql=${s}`),
+                storage: path.join(ourbigbookJsonDir, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, ourbigbook_nodejs_front.SQLITE_DB_BASENAME),
+              })
+            }
+            const renderContext = ourbigbook.convertInitContext({
               db_provider: new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize),
               output_format: ourbigbook.OUTPUT_FORMAT_ID
-            }
-          )
-          async function createCompletionItem(ids: any[], atStart: boolean) {
-            channel.appendLine('createCompletionItem')
-            const ret = []
-            for (const id of ids) {
-              // This slightly duplicates <> ourbigbook output type conversion,
-              // but it was a bit different and much simpler. Let's see.
-              const ast = ourbigbook.AstNode.fromJSON(id.ast_json, renderContext)
-              const macro = renderContext.macros[ast.macro_name];
-              const titleArg = macro.options.get_title_arg(ast, renderContext);
-              let label = ourbigbook.renderArg(titleArg, renderContext)
-              if (atStart) {
-                const c0 = query[0]
-                if (!(
-                  ast.validation_output.c &&
-                  ast.validation_output.c.boolean
-                )) {
-                  if (c0.toLowerCase() === c0) {
-                    label = ourbigbook.decapitalizeFirstLetter(label)
-                  } else {
-                    label = ourbigbook.capitalizeFirstLetter(label)
+            })
+            async function createCompletionItem(ids: any[], atStart: boolean) {
+              const ret = []
+              for (const id of ids) {
+                // This slightly duplicates <> ourbigbook output type conversion,
+                // but it was a bit different and much simpler. Let's see.
+                const ast = ourbigbook.AstNode.fromJSON(id.ast_json, renderContext)
+                const macro = renderContext.macros[ast.macro_name];
+                const titleArg = macro.options.get_title_arg(ast, renderContext);
+                let label = ourbigbook.renderArg(titleArg, renderContext)
+                const idPrefix = macro.options.id_prefix
+                if (idPrefix) {
+                  label = `${idPrefix} ${ourbigbook.capitalizeFirstLetter(label)}`
+                } else {
+                  if (atStart) {
+                    if (!(
+                      ast.validation_output.c &&
+                      ast.validation_output.c.boolean
+                    )) {
+                      if (queryIsLower) {
+                        label = ourbigbook.decapitalizeFirstLetter(label)
+                      } else {
+                        label = ourbigbook.capitalizeFirstLetter(label)
+                      }
+                    }
                   }
                 }
+                ret.push(new vscode.CompletionItem(label))
               }
-              ret.push(new vscode.CompletionItem(label))
+              return ret
             }
-            return ret
+            return new vscode.CompletionList(
+              [
+                ...(await sequelize.models.Id.findAll({
+                  attributes: { include: [ [sequelize.fn('LENGTH', sequelize.col('idid')), 'idid_length'], ], },
+                  where: { idid: { [sequelize.Sequelize.Op.startsWith]: query } },
+                  // No matter what we set here, vscode then re-sorts it on the UI it is so annoying!
+                  // https://github.com/microsoft/monaco-editor/issues/1077
+                  order: [[sequelize.literal('idid_length'), 'ASC'], ['idid', 'ASC']],
+                  limit: MAX_IDS,
+                }).then((ids:any) => createCompletionItem(ids, true))),
+                ...await sequelize.models.Id.findAll({
+                  attributes: { include: [ [sequelize.fn('LENGTH', sequelize.col('idid')), 'idid_length'], ], },
+                  where: { idid: { [sequelize.Sequelize.Op.like]: `_%${query}%` } },
+                  order: [[sequelize.literal('idid_length'), 'ASC'], ['idid', 'ASC']],
+                  limit: MAX_IDS,
+                }).then((ids:any) => createCompletionItem(ids, false)),
+              ],
+              // This way it keeps triggering we type more characters.
+              true,
+            )
           }
-          return new vscode.CompletionList(
-            [
-              ...(await sequelize.models.Id.findAll({
-                attributes: { include: [ [sequelize.fn('LENGTH', sequelize.col('idid')), 'idid_length'], ], },
-                where: { idid: { [sequelize.Sequelize.Op.startsWith]: query } },
-                // No matter what we set here, vscode then re-sorts it on the UI it is so annoying!
-                // https://github.com/microsoft/monaco-editor/issues/1077
-                order: [[sequelize.literal('idid_length'), 'ASC'], ['idid', 'ASC']],
-                limit: MAX_IDS,
-              }).then((ids:any) => createCompletionItem(ids, true))),
-              ...await sequelize.models.Id.findAll({
-                attributes: { include: [ [sequelize.fn('LENGTH', sequelize.col('idid')), 'idid_length'], ], },
-                where: { idid: { [sequelize.Sequelize.Op.like]: `_%${query}%` } },
-                order: [[sequelize.literal('idid_length'), 'ASC'], ['idid', 'ASC']],
-                limit: MAX_IDS,
-              }).then((ids:any) => createCompletionItem(ids, false)),
-            ],
-            // This way it keeps triggering we type more characters.
-            true,
-          )
         }
-      } else {
-        return []
       }
+      return []
     }
   }
   context.subscriptions.push(

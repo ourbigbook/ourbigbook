@@ -15,7 +15,10 @@
   "categories": [
     "Programming Languages"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "onLanguage:ourbigbook",
+    "workspaceContains:**/ourbigbook.json"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [

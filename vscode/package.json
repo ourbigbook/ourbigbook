@@ -32,7 +32,11 @@
       },
       {
         "command": "ourbigbook.buildAndView",
-        "title": "OurBigBook: Build all and view current output file"
+        "title": "OurBigBook: Build all and view output for current file"
+      },
+      {
+        "command": "ourbigbook.viewOutput",
+        "title": "OurBigBook: View output for current file"
       }
     ],
     "configurationDefaults": {
@@ -103,7 +107,7 @@
     "test": "vscode-test"
   },
   "dependencies": {
-    "open": "10.1.0",
+    "open": "8.4.2",
     "ourbigbook": ".."
   },
   "devDependencies": {

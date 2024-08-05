@@ -4,6 +4,8 @@ import { Readable } from 'stream'
 
 import * as vscode from 'vscode'
 
+const open = require('open')
+
 const ourbigbook = require('ourbigbook')
 
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
@@ -33,6 +35,8 @@ export async function activate(context: vscode.ExtensionContext) {
   channel.appendLine(`process.cwd=${process.cwd()}`)
   channel.appendLine(`require.resolve('ourbigbook')=${require.resolve('ourbigbook')}`)
   console.log('ourbigbook.activate log')
+
+  // Functions
 
   function getOurbigbookJsonDir(): string | undefined {
     const workspaceFolders = vscode.workspace.workspaceFolders
@@ -117,6 +121,31 @@ export async function activate(context: vscode.ExtensionContext) {
     })
   }
 
+  function openOutput() {
+    const editor = vscode.window.activeTextEditor
+    if (editor) {
+      const curFilepath = editor.document.fileName
+      const parse = path.parse(curFilepath)
+      channel.appendLine(`ourbigbook.buildAndView: curFilepath=${curFilepath}`)
+      const ourbigbookJsonDir = getOurbigbookJsonDir() as string
+      if (parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}`) {
+        const outpath = path.join(
+          ourbigbookJsonDir,
+          ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
+          ourbigbook.OUTPUT_FORMAT_HTML,
+          path.relative(parse.dir, ourbigbookJsonDir),
+          parse.name + '.' + ourbigbook.HTML_EXT
+        )
+        channel.appendLine(`ourbigbook.openOutput: outpath=${outpath}`)
+        open(outpath)
+      } else {
+        vscode.window.showInformationMessage(`ourbigbook.openOutput: Don't know how to open the output for this file extension: ${curFilepath}`)
+      }
+    } else {
+      vscode.window.showInformationMessage(`ourbigbook.OurBigBook: no file or workspace is open`)
+    }
+  }
+
   // Commands
   context.subscriptions.push(
     vscode.commands.registerCommand('ourbigbook.build', async function () {
@@ -127,27 +156,15 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand('ourbigbook.buildAndView', async function () {
       const ourbigbookJsonDirMaybe = getOurbigbookJsonDir()
       if (typeof ourbigbookJsonDirMaybe === 'string') {
-        let ourbigbookJsonDir:string = ourbigbookJsonDirMaybe
         if (await buildAll() === 0 && vscode.window.activeTextEditor) {
-          const curFilepath = vscode.window.activeTextEditor.document.fileName
-          const parse = path.parse(curFilepath)
-          channel.appendLine(`ourbigbook.buildAndView: curFilepath=${curFilepath}`)
-          if (parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}`) {
-            const outpath = path.join(
-              ourbigbookJsonDir,
-              ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
-              ourbigbook.OUTPUT_FORMAT_HTML,
-              path.relative(parse.dir, ourbigbookJsonDir),
-              parse.name + '.' + ourbigbook.HTML_EXT
-            )
-            channel.appendLine(`ourbigbook.buildAndView: outpath=${outpath}`)
-            const { default: open } = await import('open')
-            open(outpath)
-          } else {
-            vscode.window.showInformationMessage(`Don't know how to open the output for this file extension: ${curFilepath}`)
-          }
+          openOutput()
         }
       }
+    })
+  )
+  context.subscriptions.push(
+    vscode.commands.registerCommand('ourbigbook.viewOutput', async function () {
+      openOutput()
     })
   )
   context.subscriptions.push(

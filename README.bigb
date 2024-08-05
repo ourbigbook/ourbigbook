@@ -10042,6 +10042,8 @@ Supported language features:
   ``
   also does not work. Looking at debug logs, we see that the correct SQL queries are generated and the correct rows returned, but VS Code must be doing a hardcoded post-processing step that removes the matches afterwards, so it also seems to be out of our control.
 
+  TODO: the built-in markdown extension handles spaces on Ctrl+T. Understand how it works.
+
   <ID extraction> is performed on .bigb files automatically with `ourbigbook --no-render file.bigb` whenever new changes are saved to disk e.g. with Ctrl + S. This ensures that the <ID database> is kept up to date so that Ctrl + T and autocompletion will work.
 * commands: all our command shortcuts are defined to only work on OurBigBook files (<.bigb extension>) to avoid cluttering non-OurBigBook projects. This is done as vscode does not seem to have the concept of "project type" built into it. If you want the build and launch shorcuts to work on your project for any file, also define build and launch commands under `.vscode`
   * `Build all`: save the current file is unsaved, and then build the <project toplevel directory> with `ourbigbook .`
@@ -10062,9 +10064,11 @@ Supported language features:
   ``
 
 Todo
+* breadcrumb navigation/outline, present in markdown and asciidoctor
 * deployment as <static website> or to <OurBigBook Web> via command
 * ctrl click to jump to ID definitions
 * live side-by-side HTML preview, maybe we could learn a bit from the Asciidoc extension
+The default markdown support is incredible and should serve as inspiration for this extension: https://code.visualstudio.com/docs/languages/markdown
 
 Historically, <Vim> support came first and was better developed. But that was just an ad-hoc path of least resistance, VS Code is the one we are going to actually support moving forward.
 

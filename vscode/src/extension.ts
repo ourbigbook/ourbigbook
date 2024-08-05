@@ -269,10 +269,9 @@ export async function activate(context: vscode.ExtensionContext) {
       if (matches.length) {
         const lastMatch = matches[matches.length - 1]
         const queryRaw = lineToCursor.substring(lastMatch.index, col)
-        channel.appendLine(`provideCompletionItems query=${queryRaw}`)
         const query = ourbigbook.titleToId(queryRaw)
         if (query) {
-          const c0 = query[0]
+          const c0 = queryRaw[0]
           const queryIsLower = c0.toLowerCase() === c0
           let oldOurbigbookJsonDir = ourbigbookJsonDir
           ourbigbookJsonDir = getOurbigbookJsonDir()

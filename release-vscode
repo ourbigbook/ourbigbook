@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
 set -eux
-./release-vscode-pre --commit
+./release-vscode-pre --commit "$@"
 ./release-vscode-post

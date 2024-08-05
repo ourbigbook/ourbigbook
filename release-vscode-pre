@@ -16,7 +16,7 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
-if [ $# -gt 1 ]; then
+if [ $# -gt 0 ]; then
   version="$1"
   sed -i "s/  \"ourbigbook\":[^,]*/  \"ourbigbook\": \"${version}\"/" vscode/package.json
 fi

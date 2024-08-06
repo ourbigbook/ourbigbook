@@ -17,6 +17,11 @@ const OURBIGBOOK_LANGUAGE_ID = 'ourbigbook'
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 
+/** Gets the path to the ourbigbook inside the extension.
+ * Returns the correct path, but that executable is not very portable because
+ * because of difficulties with native dependencies such as sqlite3.
+ * https://github.com/ourbigbook/ourbigbook/issues/318
+ */
 function getOurbigbookExecPath(): string {
   return path.join(path.dirname(require.resolve('ourbigbook')), 'ourbigbook')
 }
@@ -83,10 +88,10 @@ export async function activate(context: vscode.ExtensionContext) {
     // build task
     const quotingStyle: vscode.ShellQuoting = vscode.ShellQuoting.Strong
     let myTaskCommand: vscode.ShellQuotedString = {
-      value: getOurbigbookExecPath(),
+      value: 'npx',
       quoting: quotingStyle,
     }
-    const args = ['.']
+    const args = ['ourbigbook', '.']
     let myTaskArgs: vscode.ShellQuotedString[] = args.map((arg) => {
       return { value: arg, quoting: quotingStyle }
     })
@@ -187,7 +192,7 @@ export async function activate(context: vscode.ExtensionContext) {
             }
           })
       }
-      const p = child_process.spawn(getOurbigbookExecPath(), ['--no-render', e.fileName], { cwd: getOurbigbookJsonDir() })
+      const p = child_process.spawn('npx', ['ourbigbook', '--no-render', e.fileName], { cwd: getOurbigbookJsonDir() })
       buildHandleStdout(p.stdout)
       buildHandleStdout(p.stderr)
     }

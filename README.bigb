@@ -5938,7 +5938,12 @@ Stdin converion is a bit different from conversion from a file in that it ignore
 
 Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/_obb/dist/editor[].
 
-Play with https://github.com/ourbigbook/template[an OurBigBook template] locally:
+First ensure that Node.js is installed in your computer. You should be able to successfully the following command successfully from a terminal:
+``
+node --version
+``
+
+Now let's play with https://github.com/ourbigbook/template[an OurBigBook template] locally:
 ``
 git clone https://github.com/ourbigbook/template
 cd template
@@ -6494,6 +6499,9 @@ and the second one to uppercasing the reference to the image title:
 
 = `--generate`
 {parent=OurBigBook CLI options}
+
+= Demo project
+{synonym}
 
 Generate one of the template repositories locally:
 * `ourbigbook --generate default`: a good starter template that illustrates many key OurBigBook features
@@ -9987,20 +9995,65 @@ And from OurBigBook to anything, create new output formats inside OurBigBook to 
 = Visual Studio Code extension
 {synonym}
 
-VS Code is currently intended to be the best supported non-fully-custom OurBigBook editor.
+VS Code is currently intended to be the best supported <todo/wysiwyg>[non-fully-custom OurBigBook editor].
 
-The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[]. Its source code is located under \a[vscode]. You can install it with:
+The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[].
+
+= Visual Studio Code quick start
+{parent=Visual Studio Code}
+{tag=Quick start}
+
+First follow <play with the template> and ensure that you are able to run `ourbigbook` from the command line succesfully on a <demo project>:
 ``
-ext install ourbigbook.ourbigbook-vscode
+npx ourbigbook .
+``
+We would like to remove the need for this step and allow users doing everyting without the command line, but that will require some extra work: https://github.com/ourbigbook/ourbigbook/issues/318
+
+Once that is working, you can now install the extension either:
+* via the VS Code UI: Ctrl + Shift + X and search for "ourbigbook", the ID is: `ourbigbook.ourbigbook-vscode`
+* from the command line with:
+  ``
+  ext install ourbigbook.ourbigbook-vscode
+  ``
+
+We also recommend installing the "Code Spell checker" extension:
+``
 ext install streetsidesoftware.code-spell-checker
 ``
-
-We recommend adding the following settings to your User JSON settings file:
+and adding the following settings to your User JSON settings file:
 ``
 "cSpell.enableFiletypes": [
     "ourbigbook"
 ],
 ``
+
+Next, open the downloaded folder in Visual Studio Code with:
+* Ctrl + Shift + P
+* File: Open Folder
+then open a .bigb file such as README.bigb on vscode.
+
+Now you are ready to:
+* Ctrl + Shift + B: build all files in the folder
+* F5: build all files in the folder, and view the HTML output for the current source file in your browser
+
+Other things to try include:
+* Ctrl + T: search for a header in any file
+* type `<` to create an <internal cross file reference> and observe autocompletion suggest header names for you
+
+\Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
+{title=Edit locally and publish demo}
+{description=This shows editing <OurBigBook Markup> and <publishing> it using the <VS Code> extension.}
+{disambiguate=Visual Studio Code}
+{height=720}
+{width=720}
+
+\Image[feature/local-editing/vscode-mathematics-calculus-derivative.png]
+{title=Screenshot of a sample OurBigBook project in VS Code}
+{provider=github}
+{height=800}
+
+= Visual Studio Code documentation
+{parent=Visual Studio Code}
 
 Supported language features:
 * syntax highlighting
@@ -10080,44 +10133,11 @@ Our syntax highlighting attempts mostly to follow the official HTML style, which
 
 One current fundamental limitation of <VS Code> is that there is no way to preview images and mathematics inline with text: https://stackoverflow.com/questions/52709966/vscode-is-it-possible-to-show-an-image-inside-a-text-buffer If only it were able to do that, it would go a long way to being as good as a WYSIWYG interface.
 
-\Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
-{title=Edit locally and publish demo}
-{description=This shows editing <OurBigBook Markup> and <publishing> it using the <VS Code> extension.}
-{disambiguate=Visual Studio Code}
-{height=720}
-{width=720}
-
-\Image[feature/local-editing/vscode-mathematics-calculus-derivative.png]
-{title=Screenshot of a sample OurBigBook project in VS Code}
-{provider=github}
-{height=800}
-
-= Visual Studio Code quick start
-{parent=Visual Studio Code}
-{tag=Quick start}
-
-The <Visual Studio Code extension> ships with a full working copy of <OurBigBook>, so you don't need to install anything besides the extension itself to get started!
-
-Obtain a copy of the template: https://github.com/ourbigbook/template For example you can either:
-* download and extract this ZIP: https://github.com/ourbigbook/template/archive/refs/heads/master.zip
-* `git clone https://github.com/ourbigbook/template` if you are familiar with git
-
-Next, open the downloaded folder in Visual Studio Code with:
-* Ctrl + Shift + P
-* File: Open Folder
-
-Next, open a .bigb file such as README.bigb on vscode.
-
-Now you are ready to:
-* Ctrl + Shift + B: build all files in the folder 
-* F5: build all files in the folder, and view the HTML output for the current source file in your browser
-
-Other key shortcuts include:
-* Ctrl + T: search for a header in any file
-
 = Developing the Visual Studio Code extension
 {parent=Visual Studio Code}
 {tag=Developing OurBigBook}
+
+The source code for the extension is located under: \a[vscode]
 
 It's the standard procedure for any extension:
 * open a new workspace with just the extension at toplevel:
@@ -10182,6 +10202,7 @@ npm ERR! invalid: katex@v0.11.1 /home/ciro/bak/git/ourbigbook/node_modules/katex
 npm ERR! A complete log of this run can be found in:
 npm ERR!     /home/ciro/.npm/_logs/2024-08-05T15_51_22_124Z-debug-0.log
 ``
+One thing we could do is to play it really nasty and hack `..` to a fixed version for relese, then hack it back to `..` immediately, always requiring a ourbigbook release for each vscode release.
 
 = Vim
 {parent=Editor support}

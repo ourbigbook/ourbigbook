@@ -11,6 +11,7 @@ const ourbigbook = require('ourbigbook')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
 
+const INSANE_HEADER_START_REGEXP = new RegExp(`^${ourbigbook.INSANE_HEADER_CHAR}+ `)
 const MAX_IDS = 100
 const OURBIGBOOK_LANGUAGE_ID = 'ourbigbook'
 
@@ -34,9 +35,11 @@ export async function activate(context: vscode.ExtensionContext) {
   const channel = vscode.window.createOutputChannel('OurBigBook', 'ourbigbook')
   let ourbigbookJsonDir: string|undefined
   let sequelize: any
+  let dbProvider: any
+  let renderContext: any
 
   // Sanity checks.
-  channel.appendLine('ourbigbook.activate OutputChannel.appendLine')
+  channel.appendLine('activate OutputChannel.appendLine')
   channel.appendLine(`process.cwd=${process.cwd()}`)
   channel.appendLine(`require.resolve('ourbigbook')=${require.resolve('ourbigbook')}`)
   console.log('ourbigbook.activate log')
@@ -55,6 +58,24 @@ export async function activate(context: vscode.ExtensionContext) {
     channel.appendLine(`getOurbigbookJsonDir curdir=${curdir}`)
     if (curdir) {
       return ourbigbook_nodejs_webpack_safe.findOurbigbookJsonDir(curdir)
+    }
+  }
+
+  async function updateSequelize(oldOurbigbookJsonDir: string|undefined, funcname: string) {
+    if (ourbigbookJsonDir !== oldOurbigbookJsonDir) {
+      sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
+        logging: (s: string) => channel.appendLine(`${funcname} sql=${s}`),
+        storage: path.join(
+          ourbigbookJsonDir as string,
+          ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
+          ourbigbook_nodejs_front.SQLITE_DB_BASENAME
+        ),
+      })
+      dbProvider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize)
+      renderContext = ourbigbook.convertInitContext({
+        db_provider: dbProvider,
+        output_format: ourbigbook.OUTPUT_FORMAT_ID
+      })
     }
   }
 
@@ -131,7 +152,7 @@ export async function activate(context: vscode.ExtensionContext) {
     if (editor) {
       const curFilepath = editor.document.fileName
       const parse = path.parse(curFilepath)
-      channel.appendLine(`ourbigbook.buildAndView: curFilepath=${curFilepath}`)
+      channel.appendLine(`buildAndView: curFilepath=${curFilepath}`)
       const ourbigbookJsonDir = getOurbigbookJsonDir() as string
       if (parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}`) {
         const outpath = path.join(
@@ -141,7 +162,7 @@ export async function activate(context: vscode.ExtensionContext) {
           path.relative(parse.dir, ourbigbookJsonDir),
           parse.name + '.' + ourbigbook.HTML_EXT
         )
-        channel.appendLine(`ourbigbook.openOutput: outpath=${outpath}`)
+        channel.appendLine(`openOutput: outpath=${outpath}`)
         open(outpath)
       } else {
         vscode.window.showInformationMessage(`ourbigbook.openOutput: Don't know how to open the output for this file extension: ${curFilepath}`)
@@ -175,13 +196,13 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('ourbigbook.helloWorld', async function () {
       console.log('ourbigbook.helloWorld console.log')
-      channel.appendLine('ourbigbook.helloWorld OutputChannel.appendLine')
+      channel.appendLine('helloWorld OutputChannel.appendLine')
       vscode.window.showInformationMessage(`Hello World from OurBigBook ts!`)
     })
   )
   vscode.workspace.onDidSaveTextDocument((e) => {
     if (e.languageId === OURBIGBOOK_LANGUAGE_ID) {
-      channel.appendLine(`ourbigbook.onDidSaveTextDocument fileName=${e.fileName}`)
+      channel.appendLine(`onDidSaveTextDocument fileName=${e.fileName}`)
       function buildHandleStdout(stdout: Readable) {
           stdout.setEncoding('utf8')
           stdout.on('data', function(data: string) {
@@ -193,11 +214,33 @@ export async function activate(context: vscode.ExtensionContext) {
           })
       }
       const p = child_process.spawn('npx', ['ourbigbook', '--no-render', e.fileName], { cwd: getOurbigbookJsonDir() })
+      p.on('close', (code) => {
+        // Force outline refresh.
+        // https://stackoverflow.com/questions/58940136/vs-code-document-symbol-provider-incremental-refresh/78844031#78844031
+        if (code === 0) {
+          const editor = vscode.window.activeTextEditor
+          if (editor) {
+            const line = editor.document.lineAt(0)
+            const text = line.text
+            if (text.length) {
+              editor.edit(editBuilder => {
+                const c = line.range.end.character
+                editBuilder.delete(new vscode.Range(0, c-1, 0, c))
+                editBuilder.insert(new vscode.Position(0, c), text[c-1])
+              })
+            }
+          }
+        }
+      })
       buildHandleStdout(p.stdout)
       buildHandleStdout(p.stderr)
+      //const p = child_process.spawnSync('npx', ['ourbigbook', '--no-render', e.fileName], { cwd: getOurbigbookJsonDir() })
+      //console.log('onDidSaveTextDocument stdout:\n' + p.stdout)
+      //console.log('onDidSaveTextDocument stderr:\n' + p.stderr)
     }
   })
 
+  /* Ctrl + T */
   class OurbigbookWorkspaceSymbolProvider implements vscode.WorkspaceSymbolProvider {
     /** The query only contains the string before the first space typed into
      * the Ctrl+T bar... Related500:
@@ -210,14 +253,9 @@ export async function activate(context: vscode.ExtensionContext) {
       channel.appendLine(`provideWorkspaceSymbols query=${query}`)
       let oldOurbigbookJsonDir = ourbigbookJsonDir
       ourbigbookJsonDir = getOurbigbookJsonDir()
-      if (typeof(ourbigbookJsonDir) === "string") {
+      if (typeof(ourbigbookJsonDir) === 'string') {
         channel.appendLine(`provideWorkspaceSymbols ourbigbookJsonDir=${ourbigbookJsonDir}`)
-        if (ourbigbookJsonDir !== oldOurbigbookJsonDir) {
-          sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
-            logging: (s: string) => channel.appendLine(`provideWorkspaceSymbols sql=${s}`),
-            storage: path.join(ourbigbookJsonDir, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, ourbigbook_nodejs_front.SQLITE_DB_BASENAME),
-          })
-        }
+        await updateSequelize(oldOurbigbookJsonDir, 'provideWorkspaceSymbols')
         return Promise.all([
           sequelize.models.Id.findAll({
             attributes: { include: [ [sequelize.fn('LENGTH', sequelize.col('idid')), 'idid_length'], ], },
@@ -252,9 +290,182 @@ export async function activate(context: vscode.ExtensionContext) {
   }
   context.subscriptions.push(vscode.languages.registerWorkspaceSymbolProvider(new OurbigbookWorkspaceSymbolProvider()))
 
-  class OurbigbookCompletionItemProvider implements vscode.CompletionItemProvider {
+  /* Ctrl + Shift + O and
+   * Ctrl + 3: outline: https://stackoverflow.com/questions/55846146/make-vs-code-parse-and-display-the-structure-of-a-new-language-to-the-outline-re
+   **/
+  class OurbigbooDocumentSymbolProvider implements vscode.DocumentSymbolProvider {
     /** The query only contains the string before the first space typed into
      * the Ctrl+T bar... Related500:
+     * https://github.com/microsoft/vscode/issues/93645
+     * Anything after the first space is used by vscode as a further
+     * filter over something, not exactly symbol names either, so it is quite sad.
+     * We would need to implement our own custom search window to overcome this.
+     */
+    async provideDocumentSymbols(document: vscode.TextDocument, token: vscode.CancellationToken) {
+      channel.appendLine(`provideDocumentSymbols document.fileName=${document.fileName}`)
+      const oldOurbigbookJsonDir = ourbigbookJsonDir
+      ourbigbookJsonDir = getOurbigbookJsonDir()
+      if (typeof(ourbigbookJsonDir) === 'string') {
+        const relpath = path.relative(ourbigbookJsonDir, document.fileName)
+        if (ourbigbookJsonDir !== oldOurbigbookJsonDir) {
+          await updateSequelize(oldOurbigbookJsonDir, 'provideDocumentSymbols')
+        }
+        //const ids = await sequelize.models.Id.findAll({
+        //  where: { macro_name: ourbigbook.Macro.HEADER_MACRO_NAME },
+        //  include: [
+        //    {
+        //      model: sequelize.models.File,
+        //      as: 'idDefinedAt',
+        //      where: { path: relpath },
+        //    },
+        //    //{
+        //    //  model: sequelize.models.Ref,
+        //    //  as: 'from',
+        //    //  where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
+        //    //},
+        //  ],
+        //  // TODO ascending line number, column number here.
+        //  //order: [['idid', 'ASC']],
+        //})
+        //const jsons: any[] = ids.map((id: any) => JSON.parse(id.ast_json)).sort((a: any, b: any) => {
+        //  const x = a.source_location.line
+        //  const y = b.source_location.line
+        //  return ((x < y) ? -1 : ((x > y) ? 1 : 0))
+        //})
+        //const ret = []
+        //for (var i = 0; i < jsons.length; i++) {
+        //  const json = jsons[i]
+        //  const json2 = jsons[i + 1]
+        //  let endLine, endColumn
+        //  if (json2) {
+        //    endLine = json2.source_location.line - 1
+        //    endColumn = json2.source_location.column - 1
+        //  } else {
+        //    endLine = document.lineCount
+        //    endColumn = 0
+        //  }
+        //  const range = new vscode.Range(
+        //    json.source_location.line - 1,
+        //    json.source_location.column - 1,
+        //    endLine,
+        //    endColumn,
+        //  )
+        //  let line = document.lineAt(json.source_location.line - 1).text
+        //  if (line.startsWith(INSANE_HEADER_START)) {
+        //    line = line.substring(INSANE_HEADER_START.length)
+        //  }
+        //  ret.push(new vscode.DocumentSymbol(
+        //    line,
+        //    '',
+        //    vscode.SymbolKind.Function,
+        //    range,
+        //    range,
+        //  ))
+        //}
+        //return ret
+
+        const file = await sequelize.models.File.findOne({
+          where: { path: relpath },
+          include: [{
+            model: sequelize.models.Id,
+            as: 'toplevelId'
+          }]
+        })
+        const fetchHeaderTreeIdsRows = await dbProvider.fetch_header_tree_ids(
+          [file.toplevelId.idid], { crossFileBoundaries: false })
+
+        const toplevelIdJson = JSON.parse(file.toplevelId.ast_json)
+        const toplevelIdJsonSourceLocation = toplevelIdJson.source_location
+        const toplevelHeaderTreeNode = new ourbigbook.HeaderTreeNode()
+        const headerTree = dbProvider.build_header_tree(fetchHeaderTreeIdsRows, {
+          context: renderContext,
+          // Otherwise we can't know h2 indices.
+          toplevelHeaderTreeNode,
+        })
+        function getName(lineNum: number) {
+          return document.lineAt(lineNum).text.replace(INSANE_HEADER_START_REGEXP, '')
+        }
+        // Toplevel not returned from the tree fetch, so we manually add it here.
+        const toplevelDocumentSymbol = new vscode.DocumentSymbol(
+          getName(toplevelIdJsonSourceLocation.line - 1),
+          '',
+          vscode.SymbolKind.Function,
+          new vscode.Range(
+            toplevelIdJsonSourceLocation.line - 1,
+            toplevelIdJsonSourceLocation.column - 1,
+            document.lineCount - 1,
+            0
+          ),
+          new vscode.Range(
+            toplevelIdJsonSourceLocation.line - 1,
+            toplevelIdJsonSourceLocation.column - 1,
+            toplevelIdJsonSourceLocation.line - 1,
+            document.lineAt(toplevelIdJsonSourceLocation.column - 1).text.length
+          ),
+        )
+        const ret = [toplevelDocumentSymbol]
+        toplevelHeaderTreeNode.documentSymbol = toplevelDocumentSymbol
+        const todoVisit = []
+        for (let i = toplevelHeaderTreeNode.children.length - 1; i >= 0; i--) {
+          todoVisit.push(toplevelHeaderTreeNode.children[i])
+          toplevelHeaderTreeNode.children[i].nextSibling = toplevelHeaderTreeNode.children[i+1]
+        }
+        while (todoVisit.length > 0) {
+          const treeNode = todoVisit.pop()
+          const ast = treeNode.ast
+          let endLine, endColumn
+          const parentTreeNode = treeNode.parent_ast
+          const nextSibling = parentTreeNode.children[treeNode.index + 1]
+          if (nextSibling) {
+            endLine = nextSibling.ast.source_location.line - 1
+            endColumn = nextSibling.ast.source_location.column - 1
+          } else {
+            const nextSiblingParent = parentTreeNode.nextSibling
+            if (nextSiblingParent) {
+              endLine = nextSiblingParent.ast.source_location.line - 1
+              endColumn = nextSiblingParent.ast.source_location.column - 1
+            } else {
+              endLine = document.lineCount - 1
+              endColumn = 0
+            }
+          }
+          const documentSymbol = new vscode.DocumentSymbol(
+            getName(ast.source_location.line - 1),
+            '',
+            vscode.SymbolKind.Function,
+            new vscode.Range(
+              ast.source_location.line - 1,
+              ast.source_location.column - 1,
+              endLine,
+              endColumn,
+            ),
+            new vscode.Range(
+              ast.source_location.line - 1,
+              ast.source_location.column - 1,
+              ast.source_location.line - 1,
+              document.lineAt(ast.source_location.line - 1).text.length,
+            ),
+          )
+          parentTreeNode.documentSymbol.children.push(documentSymbol)
+          treeNode.documentSymbol = documentSymbol
+          for (let i = treeNode.children.length - 1; i >= 0; i--) {
+            todoVisit.push(treeNode.children[i])
+          }
+        }
+        return ret
+      }
+      return []
+    }
+  }
+  context.subscriptions.push(vscode.languages.registerDocumentSymbolProvider(
+    { scheme: 'file', language: OURBIGBOOK_LANGUAGE_ID },
+    new OurbigbooDocumentSymbolProvider()
+  ))
+
+  /* Autocomplete */
+  class OurbigbookCompletionItemProvider implements vscode.CompletionItemProvider {
+    /** The query only contains the string before the first space typed into
+     * the Ctrl+T bar... Related
      * https://github.com/microsoft/vscode/issues/93645
      * Anything after the first space is used by vscode as a further
      * filter over something, not exactly symbol names either, so it is quite sad.
@@ -280,17 +491,10 @@ export async function activate(context: vscode.ExtensionContext) {
           const queryIsLower = c0.toLowerCase() === c0
           let oldOurbigbookJsonDir = ourbigbookJsonDir
           ourbigbookJsonDir = getOurbigbookJsonDir()
-          if (typeof(ourbigbookJsonDir) === "string") {
+          if (typeof(ourbigbookJsonDir) === 'string') {
             if (ourbigbookJsonDir !== oldOurbigbookJsonDir) {
-              sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
-                logging: (s: string) => channel.appendLine(`provideCompletionItems sql=${s}`),
-                storage: path.join(ourbigbookJsonDir, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, ourbigbook_nodejs_front.SQLITE_DB_BASENAME),
-              })
+              await updateSequelize(oldOurbigbookJsonDir, 'provideCompletionItems')
             }
-            const renderContext = ourbigbook.convertInitContext({
-              db_provider: new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize),
-              output_format: ourbigbook.OUTPUT_FORMAT_ID
-            })
             async function createCompletionItem(ids: any[], atStart: boolean) {
               const ret = []
               for (const id of ids) {

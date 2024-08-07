@@ -136,8 +136,14 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
  *                    These children start at depth 0.
  */
 async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
+  let { crossFileBoundaries, to_id_index_order } = opts
+  if (to_id_index_order === undefined) {
+    to_id_index_order = 'ASC'
+  }
+  if (crossFileBoundaries === undefined) {
+    crossFileBoundaries = true
+  }
   if (starting_ids.length > 0) {
-    const to_id_index_order = opts.to_id_index_order || 'ASC'
     let { idAttrs, definedAtFileId, transaction } = opts
     if (idAttrs === undefined) {
       idAttrs = '*'
@@ -147,6 +153,16 @@ async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
       definedAtString = ' AND "defined_at" = :definedAtFileId'
     } else {
       definedAtString = ''
+    }
+    let startingFileIds
+    if (!crossFileBoundaries) {
+      startingFileIds = (await sequelize.models.Id.findAll({
+        where: { idid: starting_ids },
+        include: [{
+          model: sequelize.models.File,
+          as: 'idDefinedAt',
+        }]
+      })).map(id => id.idDefinedAt.id)
     }
     // Fetch all data recursively.
     //
@@ -185,12 +201,13 @@ INNER JOIN (
   SELECT * FROM tree_search
 ) AS "RecRefs"
 ON "${sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
-  AND "${sequelize.models.Id.tableName}".macro_name = '${ourbigbook.Macro.HEADER_MACRO_NAME}'
+  AND "${sequelize.models.Id.tableName}".macro_name = '${ourbigbook.Macro.HEADER_MACRO_NAME}'${crossFileBoundaries ? '' : `\n  AND "${sequelize.models.Id.tableName}".defined_at IN (:startingFileIds)`}
 ORDER BY "RecRefs".level ASC, "RecRefs".from_id ASC, "RecRefs".to_id_index ${to_id_index_order}
 `,
       {
         replacements: {
           starting_ids,
+          startingFileIds,
           type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
           definedAtFileId,
         },
@@ -407,24 +424,35 @@ class SqlDbProvider extends web_api.DbProviderBase {
   // because we want to first fetch everything
   // and populate the ID cache with the include entry points that have proper header_tree_node.
   // Only then are we ready for linking up the rest of the tree.
-  build_header_tree(fetch_header_tree_ids_rows, { context }) {
+  build_header_tree(fetch_header_tree_ids_rows, { context, toplevelHeaderTreeNode }) {
     const asts = []
     for (const row of fetch_header_tree_ids_rows) {
       const ast = this.row_to_ast(row, context)
       if (ast.synonym === undefined) {
         const parent_id = row.from_id
         const parent_ast = this.id_cache[parent_id]
-        const parent_ast_header_tree_node = parent_ast.header_tree_node
+        let parent_ast_header_tree_node
+        if (parent_ast) {
+          parent_ast_header_tree_node = parent_ast.header_tree_node
+        }
+        if (parent_ast_header_tree_node === undefined) {
+          parent_ast_header_tree_node = toplevelHeaderTreeNode
+        }
         ast.header_tree_node = new ourbigbook.HeaderTreeNode(ast, parent_ast_header_tree_node);
         // I love it when you get potential features like this for free.
         // Only noticed when Figures showed up on ToC.
         if (
-          ast.macro_name === ourbigbook.Macro.HEADER_MACRO_NAME &&
+          ast.macro_name === ourbigbook.Macro.HEADER_MACRO_NAME
+        ) {
           // Can happen on error condition of pointing options.parent_id to self.
           // Blew up on web test "Circular parent loops to self fail gracefully."
-          parent_ast_header_tree_node !== undefined
-        ) {
-          parent_ast_header_tree_node.add_child(ast.header_tree_node);
+          if (parent_ast_header_tree_node === undefined)  {
+            if (toplevelHeaderTreeNode) {
+              toplevelHeaderTreeNode.add_child(ast.header_tree_node);
+            }
+          } else {
+            parent_ast_header_tree_node.add_child(ast.header_tree_node);
+          }
         }
         ourbigbook.propagateNumbered(ast, context)
         this.id_cache[ast.id] = ast

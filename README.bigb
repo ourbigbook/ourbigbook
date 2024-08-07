@@ -66,7 +66,7 @@
 * project announcements: <news>{full}. Also posted in shorter form to <official accounts>{full} such as:
   * https://twitter.com/OurBigBook[]
   * https://mastodon.social/@OurBigBook
-* https://cirosantilli.com/ourbigbook-com[]: further rationale behind the project by the founder <Ciro Santilli> 
+* https://cirosantilli.com/ourbigbook-com[]: further rationale behind the project by the founder <Ciro Santilli>
 * https://cirosantilli.com[]: showcase static demo document with interesting content, published with <OurBigBook CLI>. Primary inspiration for OurBigBook development.
   * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
   * https://github.com/cirosantilli/cirosantilli.github.io[] and https://github.com/cirosantilli/cirosantilli.github.io/blob/dev/oxford-nanopore-river-bacteria.bigb[]: source of the above showcase documents
@@ -84,7 +84,7 @@
 {parent=OurBigBook}
 
 To donate:
-* https://cirosantilli.com/sponsor[]: give money directly to <Ciro Santilli> 
+* https://cirosantilli.com/sponsor[]: give money directly to <Ciro Santilli>
 * buy project merchandise, see: <merchandise>{full}
 
 All donated money currently just goes directly to <Ciro Santilli>'s personal bank account, the project founder and current lead. If things ever take off we will set up a legal entity to make things cleaner. One may dream. But for now, it would just add unnecessary overhead. Related: <Project governance>{full}.
@@ -563,7 +563,7 @@ It works both on the <OurBigBook Web> dynamic website, and on <OurBigBook CLI> s
 {c}
 {parent=OurBigBook Markup}
 
-<Paragraphs> are made by simplying adding an empty line, e.g.:
+<Paragraphs> are made by simplifying adding an empty line, e.g.:
 \OurBigBookExample[[
 My first paragraph.
 
@@ -6500,8 +6500,15 @@ and the second one to uppercasing the reference to the image title:
 = `--generate`
 {parent=OurBigBook CLI options}
 
-= Demo project
+= Project template
 {synonym}
+
+= Template project
+{synonym}
+
+The project templates are simple ourbigbook project directories that serve as good starting point for new ourbigbook projects.
+
+They also contain useful examples of <OurBigBook Markup> usage to help users get started quickly.
 
 Generate one of the template repositories locally:
 * `ourbigbook --generate default`: a good starter template that illustrates many key OurBigBook features
@@ -7606,7 +7613,7 @@ Default: `true`.
 
 ASCII normalization is a custom OurBigBook defined normalization that converts many characters that look like Latin characters into Latin characters.
 
-For now, we are using the `deburr` method of Lodash: https://lodash.com/docs/4.17.15#deburr[], which only affects Latin-like characters. 
+For now, we are using the `deburr` method of Lodash: https://lodash.com/docs/4.17.15#deburr[], which only affects Latin-like characters.
 
 In addition to `deburr` we also convert:
 * en-dash and em-dash to simple ASCII dash `-`. Wikipedia Loves en-dashes in their article titles!
@@ -8255,9 +8262,9 @@ This is where OurBigBook comes to your rescue. There are two ways that it can he
 = Topics feature
 {synonym}
 
-Topics group articles that have the same title by different users. This feature allows you to find the best article for a given topic, and it is one of the key innovations of <OurBigBook Web>. 
+Topics group articles that have the same title by different users. This feature allows you to find the best article for a given topic, and it is one of the key innovations of <OurBigBook Web>.
 
-Topics are a bit like Twitter hashtags or Quora questions: their goal is to centralize knowledge about a specific subject by different people at a single location. 
+Topics are a bit like Twitter hashtags or Quora questions: their goal is to centralize knowledge about a specific subject by different people at a single location.
 
 \Video[https://www.youtube.com/watch?v=54nxjC9BWTg]
 {title=<OurBigBook Web topics> demo}
@@ -8348,7 +8355,7 @@ The only efficient way to do this is to pick which articles will be rendered as 
 
 The design goals of the dynamic article tree are to produce articles such that:
 * each article can appear as the toplevel article of a page to get better SEO opportunities
-* and that page that contains the article can also contain as many descedants as we want to load, not jus the article itself, so as to not force readers to click a bunch of links to read more 
+* and that page that contains the article can also contain as many descedants as we want to load, not jus the article itself, so as to not force readers to click a bunch of links to read more
 
 For example, with a static website, a user could have a page structure such as:
 
@@ -8383,7 +8390,7 @@ In this setup the header "Physics" for example is present in one of two possible
 
 In the case of the dynamic article tree however, we achieve our design goals:
 * "Physics" is the toplevel header, and therefore can get much better SEO
-* "Special Relativity", "Lorentz transformation" and any other descendants will still show up below it, so it is much more readable than a page 
+* "Special Relativity", "Lorentz transformation" and any other descendants will still show up below it, so it is much more readable than a page
 We then just cut off at 100 articles to not overload the server and browsers on very large pages. Sometimes those pages can still be accessed through the ToC, which has a larger limit of 1000 entries. We also want to implement: <TODO/load more articles> to allow users to click to load more articles.
 
 And all of that is achieved:
@@ -8529,14 +8536,14 @@ and so on.
 Note however that the "non-commercial" (NC) and "no derivatives" (ND) CC license are basically legal minefields as it can be very subjective to decide what counts as commercial or a derivative, and so we will immediately take down material upon copyright owner request as we are not ready to test this in court!
 
 For example:
-* <project governance>[it has not yet been decided if the OurBigBook Project will be ran as a not for profit or for profit organization]. If a for-profit model is chosen, NC copyright owners could feel that their content being merely hosted on ourbigbook.com might constitute a for-profit usage as it could help bring publicity to the site. 
+* <project governance>[it has not yet been decided if the OurBigBook Project will be ran as a not for profit or for profit organization]. If a for-profit model is chosen, NC copyright owners could feel that their content being merely hosted on ourbigbook.com might constitute a for-profit usage as it could help bring publicity to the site.
 
   The project makes the following commitment however: if ever a way if found to make money from the project, all NC content will be excluded from any directly monetizable money-making activities, e.g. ads or otherwise.
 * which of the following consist of a derivative or not:
   * a table of contents that mirrors a ND work, but without the actual contents, which would automatically be filled with "the most upvoted article in a given <OurBigBook Web topics>[topic]"
   * a section of ND content without the rest of the work?
   * ND content but with extra article interlinking added?
-  * ND content with IDs (such as HTML id= elements) but where IDs have been 
+  * ND content with IDs (such as HTML id= elements) but where IDs have been
   * a public modification request to an ND content?
 
 Unfortunately, NC is extremely popular amongst academics, presumably due to professors hopes that one day their notes may become a book which will sell for money, or maybe simply for idealist reasons, and it would be too hard to fight against such licenses at this point in time.
@@ -10003,7 +10010,7 @@ The official OurBigBook extension is published at: https://marketplace.visualstu
 {parent=Visual Studio Code}
 {tag=Quick start}
 
-First follow <play with the template> and ensure that you are able to run `ourbigbook` from the command line succesfully on a <demo project>:
+First follow <play with the template> and ensure that you are able to run `ourbigbook` from the command line succesfully on a <project template>:
 ``
 npx ourbigbook .
 ``
@@ -10057,26 +10064,42 @@ Other things to try include:
 
 Supported language features:
 * syntax highlighting
-* snippets: E.g. if you type in an editor window:
-  ``
-  \I
-  ``
-  it suggests the autocompletion to
-  ``
-  \Image[]
-  `` and if you select it autofills with URL the clipboard text.
+* auto-completion:
+  * snippets: E.g. if you type in an editor window:
+    ``
+    \I
+    ``
+    it suggests the autocompletion to
+    ``
+    \Image[]
+    `` and if you select it autofills with URL the clipboard text.
 
-  Common <named arguments> also have shortcuts starting with open curly brace `{`, e.g. for the <title-argument> it is `{t` (open curly brace + `t`)
-  ``
-  {t
-  ``
-  which expands to:
-  ``
-  {title=}
-  ``
-  leaving your cursor after the `=` sign.
+    Common <named arguments> also have shortcuts starting with open curly brace `{`, e.g. for the <title-argument> it is `{t` (open curly brace + `t`)
+    ``
+    {t
+    ``
+    which expands to:
+    ``
+    {title=}
+    ``
+    leaving your cursor after the `=` sign.
 
-  see their definition fn the snippts file \a[vscode/snippets.json]. 
+    see their definition fn the snippts file \a[vscode/snippets.json].
+  * ID autocompletion initiated by things like:
+    * `<`: <internal cross-file reference>
+    * `{tag=`: <H tag argument>
+    * `{parent=`: <H parent argument>
+    Known limitations:
+    * although separate words do find good matches in this case unlike in Ctrl + T, if you auto-complete after the first word, pre existing words are duplicated, e.g.:
+      * type the first word
+      * space
+      * start the second word
+      * finish autocomplete on second word
+      then the stuff before the last space remains rather than being replaced, leaving you with something like:
+      ``
+      <United United States>
+      ``
+      The bult-in markdown extension does not support this either as it uses only slash separated "IDs" in its searches.
 * `Ctrl + T` "https://code.visualstudio.com/docs/editor/editingevolved#_open-symbol-by-name[Open symbol by name]". Shows matching <element IDs> such as for <headers>, and allows you to quickly jump to them. It lists:
   * first lists IDs that start with the search
   * then followed by IDs that contain the search anywhere inside them
@@ -10099,26 +10122,19 @@ Supported language features:
   TODO: the built-in markdown extension handles spaces on Ctrl+T. Understand how it works.
 
   <ID extraction> is performed on .bigb files automatically with `ourbigbook --no-render file.bigb` whenever new changes are saved to disk e.g. with Ctrl + S. This ensures that the <ID database> is kept up to date so that Ctrl + T and autocompletion will work.
+* outline, stick scroll, breadcrumb. These features allow you to quickly navigate between headers of the current file in a tree structure. Consider adding the following shortcut to reveal the outline sidebar on `Alt + Shift + O`:
+  ``
+  {
+      "key": "alt+shift+o",
+      "command": "outline.focus"
+  },
+  ``
+  As you add or remove lines to the document, the outline becomes immediately outdated. To update it, make sure to save the document (Ctrl + S) and wait a few seconds.
 * commands: all our command shortcuts are defined to only work on OurBigBook files (<.bigb extension>) to avoid cluttering non-OurBigBook projects. This is done as vscode does not seem to have the concept of "project type" built into it. If you want the build and launch shorcuts to work on your project for any file, also define build and launch commands under `.vscode`
   * `Build all`: save the current file is unsaved, and then build the <project toplevel directory> with `ourbigbook .`
   * `Build all and view current output file`: do `ourbigbook .` and then open the HTML output for the current file in your browser
 
     Known limitations: snap browsers on Ubuntu 24.04 can't access dotfiles, so CSS and JavaScript will be broken because they go under `~/.vscode` when building with the extension: https://askubuntu.com/questions/1238211/how-to-make-snaps-access-hidden-files-and-folders-in-home#comment2676255_1238219 We don't know how to work around this besides not using the snap version of browsers.
-* ID autocompletion initiated by things like:
-  * `<`: <internal cross-file reference>
-  * `{tag=`: <H tag argument>
-  * `{parent=`: <H parent argument>
-  Known limitations:
-  * although separate words do find good matches in this case unlike in Ctrl + T, if you auto-complete after the first word, pre existing words are duplicated, e.g.:
-    * type the first word
-    * space
-    * start the second word
-    * finish autocomplete on second word
-    then the stuff before the last space remains rather than being replaced, leaving you with something like:
-    ``
-    <United United States>
-    ``
-    The bult-in markdown extension does not support this either as it uses only slash separated "IDs" in its searches.
 
 Todo
 * breadcrumb navigation/outline, present in markdown and asciidoctor

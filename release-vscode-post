@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -eux
 cd vscode
+rm -rf node_modules
+npm install
 npx vsce package
 npx vsce publish
 rm -f *.vsix

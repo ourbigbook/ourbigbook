@@ -10225,6 +10225,13 @@ npm ERR!     /home/ciro/.npm/_logs/2024-08-05T15_51_22_124Z-debug-0.log
 ``
 One thing we could do is to play it really nasty and hack `..` to a fixed version for relese, then hack it back to `..` immediately, always requiring a ourbigbook release for each vscode release.
 
+If you use the `..` hack, besides undoing the `..` change, before releasing you have to:
+``
+cd vscode
+rm -rf node_modules package-lock.json
+``
+otherwise the error does not go away.
+
 = Vim
 {parent=Editor support}
 

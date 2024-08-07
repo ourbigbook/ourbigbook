@@ -69,8 +69,11 @@
 		"insaneRef": {
 			"patterns": [
 				{
-					"match": "[<>]",
-					"captures": { "0": { "name": "entity.name.tag.bigb" } }
+					"begin": "<",
+					"end": ">",
+					"beginCaptures": { "0": { "name": "entity.name.tag.bigb" } },
+					"endCaptures": { "0": { "name": "entity.name.tag.bigb" } },
+					"name": "string.quoted.bigb"
 				}
 			]
 		},

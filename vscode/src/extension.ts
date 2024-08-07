@@ -559,6 +559,54 @@ export async function activate(context: vscode.ExtensionContext) {
       '<',
     )
   )
+
+  /* Ctrl + click to jump to definition */
+  class OurbigbookDefinitionProvider implements vscode.DefinitionProvider {
+    async provideDefinition(
+      document: vscode.TextDocument,
+      position: vscode.Position,
+      token: vscode.CancellationToken
+    ) {
+      const col = position.character
+      channel.appendLine(`provideDefinition position=${position.line}:${col}`)
+      const line = document.lineAt(position.line).text
+      let find
+      for (const match of line.matchAll(/(<|\{(parent|tag)=)(.*?)(>|})/g)) {
+        if (col >= match.index && col <= match.index + match[0].length) {
+          find = match[3]
+        }
+      }
+      channel.appendLine(`provideDefinition find=${find}`)
+      const ret = []
+      if (find) {
+        let oldOurbigbookJsonDir = ourbigbookJsonDir
+        ourbigbookJsonDir = getOurbigbookJsonDir()
+        if (typeof(ourbigbookJsonDir) === 'string') {
+          channel.appendLine(`provideWorkspaceSymbols ourbigbookJsonDir=${ourbigbookJsonDir}`)
+          await updateSequelize(oldOurbigbookJsonDir, 'provideWorkspaceSymbols')
+          const textId = ourbigbook.titleToId(find)
+          const id = await sequelize.models.Id.findOne({
+            where: { idid: textId },
+          })
+          if (id) {
+            const json = JSON.parse(id.ast_json)
+            const sourceLocation = json.source_location
+            ret.push(new vscode.Location(
+              vscode.Uri.file(path.join(ourbigbookJsonDir, sourceLocation.path)),
+              new vscode.Range(sourceLocation.line-1, sourceLocation.column-1, sourceLocation.line-1, sourceLocation.column-1),
+            ))
+          }
+        }
+      }
+      return ret
+    }
+  }
+  context.subscriptions.push(
+    vscode.languages.registerDefinitionProvider(
+      { scheme: 'file', language: OURBIGBOOK_LANGUAGE_ID },
+      new OurbigbookDefinitionProvider(),
+    )
+  )
 }
 
 export function deactivate() { }

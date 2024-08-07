@@ -10122,6 +10122,11 @@ Supported language features:
   TODO: the built-in markdown extension handles spaces on Ctrl+T. Understand how it works.
 
   <ID extraction> is performed on .bigb files automatically with `ourbigbook --no-render file.bigb` whenever new changes are saved to disk e.g. with Ctrl + S. This ensures that the <ID database> is kept up to date so that Ctrl + T and autocompletion will work.
+* Ctrl + Click: jump to definition. If you hover over <internal cross file reference>-like elements such anywhere over the following:
+  * `<New York>`
+  * `{tag=New York}`
+  * `{parent=New York}`
+  then the editor jumps to their definition point.
 * outline, stick scroll, breadcrumb. These features allow you to quickly navigate between headers of the current file in a tree structure. Consider adding the following shortcut to reveal the outline sidebar on `Alt + Shift + O`:
   ``
   {

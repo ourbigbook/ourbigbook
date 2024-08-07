@@ -36,11 +36,10 @@ sed -i "s/  \"version\":[^,]*/  \"version\": \"${version}\"/" package.json
 npm run link
 npm run link
 
-./release-vscode-pre "$version"
 git add -u
 git commit -m "version $version"
 git tag -m "$version" "$version"
 git push --follow-tags
 npm publish
-./release-vscode-post
+./release-vscode
 ./update-templates

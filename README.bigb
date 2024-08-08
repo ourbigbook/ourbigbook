@@ -10006,6 +10006,9 @@ VS Code is currently intended to be the best supported <todo/wysiwyg>[non-fully-
 
 The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[].
 
+\Video[https://www.youtube.com/watch?v=0W8U2YtQ8fg]
+{title=OurBigBook Visual Studio Code extension}
+
 = Visual Studio Code quick start
 {parent=Visual Studio Code}
 {tag=Quick start}
@@ -10127,7 +10130,7 @@ Supported language features:
   * `{tag=New York}`
   * `{parent=New York}`
   then the editor jumps to their definition point.
-* outline, stick scroll, breadcrumb. These features allow you to quickly navigate between headers of the current file in a tree structure. Consider adding the following shortcut to reveal the outline sidebar on `Alt + Shift + O`:
+* outline, sticky scroll, breadcrumb. These features allow you to quickly navigate between headers of the current file in a tree structure. Consider adding the following shortcut to reveal the outline sidebar on `Alt + Shift + O`:
   ``
   {
       "key": "alt+shift+o",

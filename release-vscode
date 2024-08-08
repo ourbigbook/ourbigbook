@@ -1,4 +1,16 @@
 #!/usr/bin/env bash
 set -eux
-./release-vscode-pre --commit "$@"
-./release-vscode-post
+version="$(awk -F \" '$2=="version"{print $4}' package.json)"
+sed -i "s/  \"ourbigbook\":[^,]*/  \"ourbigbook\": \"${version}\"/" vscode/package.json
+ext_version="$(./inc-version vscode/package.json)"
+cd vscode
+sed -i "s/  \"version\":[^,]*/  \"version\": \"${ext_version}\"/" package.json
+rm -rf node_modules
+npm install
+git add package.json package-lock.json
+git commit -m "vscode: version $ext_version"
+git tag -m "vscode-$ext_version" "vscode-$ext_version"
+git push --follow-tags
+npx vsce package
+npx vsce publish
+rm -f *.vsix

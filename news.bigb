@@ -17,6 +17,7 @@ Thanks to https://x.com/subspace_audio[Juhani Junkala] for the awesome CC0 chipt
 
 \Video[https://www.youtube.com/watch?v=0W8U2YtQ8fg]
 {title=OurBigBook Visual Studio Code extension}
+{height=600}
 
 = Body preview on all article lists
 {parent=News}
@@ -38,6 +39,7 @@ A "Show body" control was also added to toggle body vs the previously existing t
 
 \Video[https://www.youtube.com/watch?v=4Pxphm7N6_0]
 {title=View more and show body demo}
+{height=600}
 
 \Image[feature/view-more/demo.png]
 {title=View more and show body demo}
@@ -219,7 +221,7 @@ Large parts of this change were pushed forward by <sidstuff> who contributed a s
 
 \Video[https://www.youtube.com/watch?v=BR2dXeR5jt8]
 {title=Intro to the <OurBigBook Project>}
-{height=500}
+{height=600}
 
 = Pinned article
 {parent=News}

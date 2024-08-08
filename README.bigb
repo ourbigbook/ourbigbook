@@ -60,7 +60,7 @@
   {width=720}
 
   \Video[https://www.youtube.com/watch?v=0W8U2YtQ8fg]
-  {title=OurBigBook Visual Studio Code extension}
+  {title=OurBigBook <Visual Studio Code extension>}
   {disambiguate=intro}
   {height=600}
 ]
@@ -10012,7 +10012,7 @@ VS Code is currently intended to be the best supported <todo/wysiwyg>[non-fully-
 The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[].
 
 \Video[https://www.youtube.com/watch?v=0W8U2YtQ8fg]
-{title=OurBigBook Visual Studio Code extension}
+{title=OurBigBook <Visual Studio Code extension>}
 {height=600}
 
 = Visual Studio Code quick start

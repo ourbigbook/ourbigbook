@@ -11,12 +11,12 @@ Significant entries will have a corresponding announcement on the following <off
 {parent=News}
 {tag=Visual Studio Code}
 
-We've greatly improved the <Visual Studio Code> extension, making it support the most important language functionalities in VS Code such as jump to definition and autocomplete!
+We've greatly improved the <Visual Studio Code extension>, making it support the most important language functionalities in VS Code such as jump to definition and autocomplete!
 
 Thanks to https://x.com/subspace_audio[Juhani Junkala] for the awesome CC0 chiptune game soundtrack! https://opengameart.org/content/5-chiptunes-action
 
 \Video[https://www.youtube.com/watch?v=0W8U2YtQ8fg]
-{title=OurBigBook Visual Studio Code extension}
+{title=OurBigBook <Visual Studio Code extension>}
 {height=600}
 
 = Body preview on all article lists

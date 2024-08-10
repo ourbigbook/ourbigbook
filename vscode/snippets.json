@@ -23,6 +23,12 @@
             "{description=$0}"
         ],
     },
+    "Full named argument": {
+        "prefix": "{f",
+        "body": [
+            "{description=$0}"
+        ],
+    },
     "Height named argument": {
         "prefix": "{h",
         "body": [

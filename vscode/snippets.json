@@ -17,6 +17,12 @@
             "{title2=$0}"
         ],
     },
+    "Tag named argument": {
+        "prefix": "{a",
+        "body": [
+            "{tag=$0}"
+        ],
+    },
     "Description named argument": {
         "prefix": "{d",
         "body": [
@@ -51,12 +57,6 @@
         "prefix": "{synonym",
         "body": [
             "{synonym=${0}}"
-        ],
-    },
-    "Tag named argument": {
-        "prefix": "{ta",
-        "body": [
-            "{tag=$0}"
         ],
     },
     "Title named argument": {

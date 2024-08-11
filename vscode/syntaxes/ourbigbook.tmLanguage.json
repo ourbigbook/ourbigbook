@@ -9,6 +9,7 @@
 		{ "include": "#insaneList" },
 		{ "include": "#insaneMath" },
 		{ "include": "#insaneRef" },
+		{ "include": "#insaneRefNoBracket" },
 		{ "include": "#macro" },
 		{ "include": "#named" },
 		{ "include": "#namedLiteral2" },
@@ -24,7 +25,7 @@
 		"escape": {
 			"patterns": [
 				{
-					"match": "\\\\(`|\\$|\\\\|\\[|]|\\{|}|<|\\||\\*)",
+					"match": "\\\\(`|\\$|\\\\|\\[|]|\\{|}|<|\\||\\*|#)",
 					"name": "string.quoted.bigb"
 				}
 			]
@@ -66,12 +67,26 @@
 				}
 			]
 		},
+		"insaneRefNoBracket": {
+			"patterns": [
+				{
+					"match": "(#)([a-zA-Z0-9]+)",
+					"captures": {
+                        "1": { "name": "entity.name.tag.bigb" },
+                        "2": { "name": "variable" }
+                    }
+				}
+			]
+		},
 		"insaneRef": {
 			"patterns": [
 				{
-					"begin": "<",
+					"begin": "(<)(#?)",
 					"end": ">",
-					"beginCaptures": { "0": { "name": "entity.name.tag.bigb" } },
+					"beginCaptures": {
+                        "1": { "name": "entity.name.tag.bigb" },
+                        "2": { "name": "string.quoted.bigb" }
+                    },
 					"endCaptures": { "0": { "name": "entity.name.tag.bigb" } },
 					"name": "variable"
 				}

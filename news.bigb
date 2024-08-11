@@ -126,7 +126,7 @@ Announcements:
 {tag=Dynamic article tree}
 {tag=OurBigBook Web}
 
-Previously, when clicking a link to an element that is present in the curent page, the URL fragment would contain the full ID that element.
+Previously, when clicking a link to an element that is present in the current page, the URL fragment would contain the full ID that element.
 
 Now, only the ID relative to URL path shows.
 
@@ -181,14 +181,14 @@ We're experimenting with a more traditional and boring "dark" theme than the gre
 
 Readability is probably slightly better, though it is hard to measure these things. It is quite possible that the change matter much more for some people than others who have different eye sight phenotypes.
 
-Perhaps the most important outcome of this is that it will greatly reduce the endless complaning from the community. Though perhaps that was a feature rather than a bug?
+Perhaps the most important outcome of this is that it will greatly reduce the endless complaining from the community. Though perhaps that was a feature rather than a bug?
 
 Beyond the theme change, many other changes were made. Many of those improvements feel like undisputable upgrades, e.g.:
 * headers are not colored differently from regular text
 * table borders are less visible
 * navbar and footer are more discrete and readable
 
-The CSS code was also refactored and it is not much easier to make broad color changes such as hese in the future, as color constants are not more closely grouped, and fewer constants are now used.
+The CSS code was also refactored and it is not much easier to make broad color changes such as these in the future, as color constants are not more closely grouped, and fewer constants are now used.
 
 Large parts of this change were pushed forward by <sidstuff> who contributed a several code snippets and ideas to it.
 

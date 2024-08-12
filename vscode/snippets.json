@@ -54,9 +54,9 @@
         ],
     },
     "Synonym named argument": {
-        "prefix": "{synonym",
+        "prefix": "{y",
         "body": [
-            "{synonym=${0}}"
+            "{synonym}"
         ],
     },
     "Title named argument": {

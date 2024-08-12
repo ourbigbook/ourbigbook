@@ -70,7 +70,7 @@
 		"insaneRefNoBracket": {
 			"patterns": [
 				{
-					"match": "(#)([a-zA-Z0-9]+)",
+					"match": "(#)([^\\[\\]{} \n]+)",
 					"captures": {
                         "1": { "name": "entity.name.tag.bigb" },
                         "2": { "name": "variable" }

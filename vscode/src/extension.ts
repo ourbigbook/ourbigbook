@@ -587,6 +587,7 @@ export async function activate(context: vscode.ExtensionContext) {
       channel.appendLine(`provideDefinition find=${find}`)
       const ret = []
       if (find) {
+        const textId = ourbigbook.titleToId(find)
         if (find[0] === ourbigbook.INSANE_TOPIC_CHAR) {
           open(`https://${ourbigbook.OURBIGBOOK_DEFAULT_HOST}${ourbigbook.URL_SEP}${ourbigbook.WEB_TOPIC_PATH}${ourbigbook.URL_SEP}${ourbigbook.pluralizeWrap(textId, 1)}`)
         } else {
@@ -594,7 +595,6 @@ export async function activate(context: vscode.ExtensionContext) {
           ourbigbookJsonDir = getOurbigbookJsonDir()
           if (typeof(ourbigbookJsonDir) === 'string') {
             await updateSequelize(oldOurbigbookJsonDir, 'provideWorkspaceSymbols')
-            const textId = ourbigbook.titleToId(find)
             channel.appendLine(`provideWorkspaceSymbols ourbigbookJsonDir=${ourbigbookJsonDir} textId=${textId}`)
             let id = await sequelize.models.Id.findOne({
               where: { idid: textId },

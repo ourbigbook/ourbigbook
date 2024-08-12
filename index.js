@@ -6791,6 +6791,7 @@ function pluralizeWrap(s, n) {
   }
   return ret
 }
+exports.pluralizeWrap = pluralizeWrap
 
 function propagateNumbered(ast, context) {
   // numbered propagation to children.

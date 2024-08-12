@@ -585,9 +585,14 @@ export async function activate(context: vscode.ExtensionContext) {
           channel.appendLine(`provideWorkspaceSymbols ourbigbookJsonDir=${ourbigbookJsonDir}`)
           await updateSequelize(oldOurbigbookJsonDir, 'provideWorkspaceSymbols')
           const textId = ourbigbook.titleToId(find)
-          const id = await sequelize.models.Id.findOne({
+          let id = await sequelize.models.Id.findOne({
             where: { idid: textId },
           })
+          if (!id) {
+            id = await sequelize.models.Id.findOne({
+              where: { idid: ourbigbook.pluralizeWrap(textId, 1) },
+            })
+          }
           if (id) {
             const json = JSON.parse(id.ast_json)
             const sourceLocation = json.source_location

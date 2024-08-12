@@ -60,11 +60,16 @@ import { encodeGetParams } from 'ourbigbook/web_api'
 
 function linkList(articles, idUnreserved, marker, title, linkPref) {
   if (articles.length) return <>
-    <h2 id={`${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}><a
-      href={`#${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}
-      dangerouslySetInnerHTML={{ __html: `${marker} ${title}` }}
-      className="ourbigbook-title">
-    </a></h2>
+    <h2 id={`${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}>
+      <a
+        href={`#${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}
+        className="ourbigbook-title"
+      >
+        <span dangerouslySetInnerHTML={{ __html: `${marker} ${title}` }} />
+        {' '}
+        <span className="meta">({articles.length})</span>
+      </a>
+    </h2>
     <ul>
       {articles.map(a =>
         <li key={a.slug}><a
@@ -680,10 +685,16 @@ const Article = ({
               <div className="ourbigbook-title">
                 {linkList(tagged, TAGGED_ID_UNRESERVED, TAGS_MARKER, 'Tagged', linkPref)}
                 {(ancestors.length !== 0) && <>
-                  <h2 id={ANCESTORS_ID}><a
-                    href={`#${ANCESTORS_ID}`} dangerouslySetInnerHTML={{ __html: HTML_PARENT_MARKER + ' Ancestors' }}
-                    className="ourbigbook-title">
-                  </a></h2>
+                  <h2 id={ANCESTORS_ID}>
+                    <a
+                      href={`#${ANCESTORS_ID}`}
+                      className="ourbigbook-title"
+                    >
+                      <span dangerouslySetInnerHTML={{ __html: HTML_PARENT_MARKER + ' Ancestors' }} />
+                      {' '}
+                      <span className="meta">({ancestors.length})</span>
+                    </a>
+                  </h2>
                   <ol>
                     {ancestors.slice().reverse().map(a =>
                       // Don't need href=../a.slug because this section cannot appear on the index page.
@@ -700,7 +711,7 @@ const Article = ({
               </div>
               <h2>
                 <CustomLink href={routes.issues(article.slug)}>
-                  <IssueIcon /> Discussion ({ article.issueCount })
+                  <IssueIcon /> Discussion <span className="meta">({ article.issueCount })</span>
                 </CustomLink>
                 {' '}
                 <FollowArticleButton {...{

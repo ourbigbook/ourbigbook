@@ -257,6 +257,12 @@ figure {
 h1, h2, h3, h4, h5, h6 {
   a {
     color: $h-color;
+    &:visited {
+      color: $h-color;
+    }
+    .meta {
+      color: $color-slightly-discreet;
+    }
   }
 }
 

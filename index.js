@@ -29,7 +29,6 @@ exports.NOSPLIT_MARKER_TEXT = NOSPLIT_MARKER_TEXT;
 const SPLIT_MARKER_TEXT = 'split'
 exports.SPLIT_MARKER_TEXT = SPLIT_MARKER_TEXT;
 const TOC_MARKER_SYMBOL = '<span class="fa-solid-900 icon">\u{f03a}</span>'
-const TOC_MARKER = `${TOC_MARKER_SYMBOL} toc`
 
 class AstNode {
   /**
@@ -7623,7 +7622,7 @@ function xTextBase(ast, context, options={}) {
         title2_renders.push(renderArg(title2ast.args.title, context));
       }
       if (title2_renders.length) {
-        ret += ` (${title2_renders.join(', ')})`
+        ret += ` <span class="meta">(${title2_renders.join(', ')})</span>`
       }
       if (options.quote) {
         ret += htmlEscapeContext(context, `"`);
@@ -8773,14 +8772,15 @@ const DEFAULT_MACRO_LIST = [
   ),
 ];
 
-function createLinkList(context, ast, id, title, target_ids, body) {
+function createLinkList(context, ast, id, title, target_ids) {
   let ret = '';
   if (target_ids.size !== 0) {
     // TODO factor this out more with real headers.
     const target_asts = [];
     const idWithPrefix = `${Macro.RESERVED_ID_PREFIX}${id}`
-    ret += htmlToplevelChildModifierById(`<h2 id="${idWithPrefix}"><a href="#${idWithPrefix}">${title}</a></h2>`, idWithPrefix)
-    for (const target_id of Array.from(target_ids).sort()) {
+    const targetIdsArr = Array.from(target_ids)
+    ret += htmlToplevelChildModifierById(`<h2 id="${idWithPrefix}"><a href="#${idWithPrefix}">${title} <span class="meta">(${targetIdsArr.length})</span></a></h2>`, idWithPrefix)
+    for (const target_id of targetIdsArr.sort()) {
       let target_ast = context.db_provider.get(target_id, context);
       if (
         // Possible when user sets an invalid ID on \x with child \x[invalid]{child}.
@@ -9573,7 +9573,7 @@ const OUTPUT_FORMATS_LIST = [
               const ancestors = context.toplevel_ast.ancestors(context)
               if (ancestors.length !== 0) {
                 // TODO factor this out more with real headers.
-                body += htmlToplevelChildModifierById(`<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${HTML_PARENT_MARKER} Ancestors</a></h2>`, ANCESTORS_ID)
+                body += htmlToplevelChildModifierById(`<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${HTML_PARENT_MARKER} Ancestors <span class="meta">(${ancestors.length})</span></a></h2>`, ANCESTORS_ID)
                 const ancestor_id_asts = [];
                 for (const ancestor of ancestors) {
                   //let counts_str;

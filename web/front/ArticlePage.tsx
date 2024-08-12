@@ -147,7 +147,7 @@ const ArticlePageHoc = (isIssue=false) => {
             <>
               <h2 className="content-not-ourbigbook">
                 <CustomLink href={routes.topic(article.topicId)}>
-                  <TopicIcon /> Articles by others on the same topic ({ article.topicCount - 1 })
+                  <TopicIcon /> Articles by others on the same topic <span className="meta">({ article.topicCount - 1 })</span>
                 </CustomLink>
               </h2>
               <ArticleList {...{

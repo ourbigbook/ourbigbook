@@ -417,13 +417,13 @@ export async function activate(context: vscode.ExtensionContext) {
           const parentTreeNode = treeNode.parent_ast
           const nextSibling = parentTreeNode.children[treeNode.index + 1]
           if (nextSibling) {
-            endLine = nextSibling.ast.source_location.line - 1
-            endColumn = nextSibling.ast.source_location.column - 1
+            endLine = nextSibling.ast.source_location.line - 2
+            endColumn = nextSibling.ast.source_location.column
           } else {
             const nextSiblingParent = parentTreeNode.nextSibling
             if (nextSiblingParent) {
-              endLine = nextSiblingParent.ast.source_location.line - 1
-              endColumn = nextSiblingParent.ast.source_location.column - 1
+              endLine = nextSiblingParent.ast.source_location.line - 2
+              endColumn = nextSiblingParent.ast.source_location.column
             } else {
               endLine = document.lineCount - 1
               endColumn = 0

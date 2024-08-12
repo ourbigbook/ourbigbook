@@ -1,5 +1,7 @@
 import React from 'react'
 
+import pluralize from 'pluralize'
+
 import {
   AppContext,
   ArticleIcon,
@@ -7,6 +9,7 @@ import {
   DiscussionAbout,
   IssueIcon,
   NewArticleIcon,
+  orderToPageTitle,
   PinnedArticleIcon,
   SettingsIcon,
   TopicIcon,
@@ -61,12 +64,17 @@ function IndexPageHoc({
     usersCount,
   }: IndexPageProps) => {
     const { setTitle } = React.useContext(AppContext)
-    React.useEffect(
-      () => { setTitle(
-        (!isHomepage) ? `${ issueArticle.titleSource } by ${ issueArticle.author.displayName } - Discussion` : ''
-      )},
-      []
-    )
+    let title
+    if (isHomepage) {
+      let orderTitle = orderToPageTitle(order)
+      if (orderTitle === undefined && itemType === 'topic') {
+        orderTitle = 'Largest'
+      }
+      title = `${orderTitle}${followed ? ' followed' : ''} ${pluralize(itemType)}`
+    } else {
+      title = `${ issueArticle.titleSource } by ${ issueArticle.author.displayName } - Discussion`
+    }
+    React.useEffect(() => { setTitle(title)}, [title])
     return (
       <div className="home-page">
         {(!isHomepage) &&

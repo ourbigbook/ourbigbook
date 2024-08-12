@@ -515,3 +515,14 @@ export function shortFragGoTo(
   replaceFrag(shortFrag)
   fragSetTarget(targetElem)
 }
+
+export function orderToPageTitle(order: string): string {
+  switch(order) {
+    case 'createdAt':
+      return 'New'
+    case 'score':
+      return 'Top'
+    case 'updatedAt':
+      return 'Recently updated'
+  }
+}

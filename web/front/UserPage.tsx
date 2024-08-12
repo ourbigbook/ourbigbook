@@ -1,15 +1,18 @@
 import { useRouter } from 'next/router'
 import React from 'react'
 
+import pluralize from 'pluralize'
+
 import {
   AppContext,
   ArticleIcon,
   CommentIcon,
-  useEEdit,
   HomeIcon,
   IssueIcon,
   LikeIcon,
   UserIcon,
+  orderToPageTitle,
+  useEEdit,
 } from 'front'
 import ArticleList from 'front/ArticleList'
 import CommentList from 'front/CommentList'
@@ -118,9 +121,33 @@ export default function UserPage({
 
   // title
   const { setTitle } = React.useContext(AppContext)
-  React.useEffect(() => {
-    setTitle(displayAndUsernameText(user))
-  }, [user?.displayName, user?.username])
+  const displayAndUsername = displayAndUsernameText(user)
+  let title2
+  switch (what) {
+    case 'followed':
+      title2 = 'Newly followed by'
+      break;
+    case 'follows':
+      title2 = 'New follows'
+      break;
+    case 'liked':
+      title2 = `New received likes`
+      break;
+    case 'likes':
+    case 'likes-discussions':
+      title2 = `Newly liked ${pluralize(itemType)}`
+      break;
+    case 'followed-articles':
+    case 'followed-discussions':
+      title2 = `Newly followed ${pluralize(itemType)}`
+      break;
+    default:
+      if (itemType) {
+        title2 = `${orderToPageTitle(order)} ${pluralize(itemType)}`
+      }
+  }
+  const title = `${displayAndUsername} ${title2 ? ` - ${title2}` : ''}`
+  React.useEffect(() => { setTitle(title) }, [title])
 
   const handleShortFragmentSkipOnce = React.useRef(false)
   if (router.isFallback) { return <LoadingSpinner />; }

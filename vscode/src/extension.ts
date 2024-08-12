@@ -576,30 +576,42 @@ export async function activate(context: vscode.ExtensionContext) {
           find = match[3]
         }
       }
+      if (!find) {
+        // Search for insane #topic links without <>.
+        for (const match of line.matchAll(/#[^\[\]{} \n]+/g)) {
+          if (col >= match.index && col <= match.index + match[0].length) {
+            find = match[0]
+          }
+        }
+      }
       channel.appendLine(`provideDefinition find=${find}`)
       const ret = []
       if (find) {
-        let oldOurbigbookJsonDir = ourbigbookJsonDir
-        ourbigbookJsonDir = getOurbigbookJsonDir()
-        if (typeof(ourbigbookJsonDir) === 'string') {
-          channel.appendLine(`provideWorkspaceSymbols ourbigbookJsonDir=${ourbigbookJsonDir}`)
-          await updateSequelize(oldOurbigbookJsonDir, 'provideWorkspaceSymbols')
-          const textId = ourbigbook.titleToId(find)
-          let id = await sequelize.models.Id.findOne({
-            where: { idid: textId },
-          })
-          if (!id) {
-            id = await sequelize.models.Id.findOne({
-              where: { idid: ourbigbook.pluralizeWrap(textId, 1) },
+        if (find[0] === ourbigbook.INSANE_TOPIC_CHAR) {
+          open(`https://${ourbigbook.OURBIGBOOK_DEFAULT_HOST}${ourbigbook.URL_SEP}${ourbigbook.WEB_TOPIC_PATH}${ourbigbook.URL_SEP}${ourbigbook.pluralizeWrap(textId, 1)}`)
+        } else {
+          let oldOurbigbookJsonDir = ourbigbookJsonDir
+          ourbigbookJsonDir = getOurbigbookJsonDir()
+          if (typeof(ourbigbookJsonDir) === 'string') {
+            await updateSequelize(oldOurbigbookJsonDir, 'provideWorkspaceSymbols')
+            const textId = ourbigbook.titleToId(find)
+            channel.appendLine(`provideWorkspaceSymbols ourbigbookJsonDir=${ourbigbookJsonDir} textId=${textId}`)
+            let id = await sequelize.models.Id.findOne({
+              where: { idid: textId },
             })
-          }
-          if (id) {
-            const json = JSON.parse(id.ast_json)
-            const sourceLocation = json.source_location
-            ret.push(new vscode.Location(
-              vscode.Uri.file(path.join(ourbigbookJsonDir, sourceLocation.path)),
-              new vscode.Range(sourceLocation.line-1, sourceLocation.column-1, sourceLocation.line-1, sourceLocation.column-1),
-            ))
+            if (!id) {
+              id = await sequelize.models.Id.findOne({
+                where: { idid: ourbigbook.pluralizeWrap(textId, 1) },
+              })
+            }
+            if (id) {
+              const json = JSON.parse(id.ast_json)
+              const sourceLocation = json.source_location
+              ret.push(new vscode.Location(
+                vscode.Uri.file(path.join(ourbigbookJsonDir, sourceLocation.path)),
+                new vscode.Range(sourceLocation.line-1, sourceLocation.column-1, sourceLocation.line-1, sourceLocation.column-1),
+              ))
+            }
           }
         }
       }

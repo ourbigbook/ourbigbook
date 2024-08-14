@@ -6461,6 +6461,14 @@ function parseError(state, message, source_location) {
     message, new_source_location));
 }
 
+const parseNonNegativeIntegerStrictRe = /^\d+$/
+
+function parseNonNegativeIntegerStrict(s) {
+  if (!s.match(parseNonNegativeIntegerStrictRe))
+    return NaN
+  return parseInt(s)
+}
+
 function pathJoin(dirname, basename, sep) {
   let ret = dirname;
   if (ret !== '') {
@@ -6995,10 +7003,10 @@ ${ast.toString()}`)
         }
       }
       if (macro_arg.positive_nonzero_integer) {
-        const arg_string = renderArgNoescape(arg, context);
-        const int_value = parseInt(arg_string);
-        ast.validation_output[argname].positive_nonzero_integer = int_value;
-        if (!Number.isInteger(int_value) || !(int_value > 0)) {
+        const arg_string = renderArgNoescape(arg, cloneAndSet(context, 'id_conversion', true));
+        const intValue = parseNonNegativeIntegerStrict(arg_string);
+        ast.validation_output[argname].positive_nonzero_integer = intValue;
+        if (!Number.isInteger(intValue) || !(intValue > 0)) {
           ast.validation_error = [
             `argument "${argname}" of macro "${ast.macro_name}" must be a positive non-zero integer, got: "${arg_string}"`,
             arg.source_location

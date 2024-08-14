@@ -1983,6 +1983,18 @@ assert_lib_ast('empty named argument without = is allowed',
     description: [],
   })]
 )
+assert_lib_error(
+  'named argument: positive_nonzero_integer fails gracefully if not an integer',
+  '\\Image[http://example.com]\n{height=asdf}',
+  2, 1, 'notindex.bigb',
+  { input_path_noext: 'notindex', }
+)
+assert_lib_error(
+  'named argument: positive_nonzero_integer fails gracefully if it contains a link',
+  '\\Image[http://example.com]\n{height=600 http://example.com}',
+  2, 1, 'notindex.bigb',
+  { input_path_noext: 'notindex', }
+)
 
 // Newline after close.
 assert_lib_ast('text after block element',

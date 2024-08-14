@@ -3047,6 +3047,7 @@ Analogous to the <\a external argument> when checking if the <image src argument
 
 = Image `height` argument
 {parent=Image argument}
+{tag=Positive nonzero integer argument}
 
 = Image height
 {synonym}
@@ -3138,6 +3139,7 @@ Analogous to the <\H title argument>.
 
 = Image `width` argument
 {parent=Image argument}
+{tag=Positive nonzero integer argument}
 
 This argument is meant to be analogous to the <Image height argument> but for images.
 
@@ -5347,8 +5349,11 @@ These arguments marked with the `mandatory: true` <--help-macros> argument prope
 
 See: <positional vs named arguments>{full}.
 
-= Boolean argument
+= Macro argument type
 {parent=Macro argument}
+
+= Boolean argument
+{parent=Macro argument type}
 
 Name arguments marked in <--help-macros> as `boolean: true` must either:
 * take no value and no `=` sign, in which case the value is implicitly set to `1`
@@ -5363,6 +5368,11 @@ The `full=0` version is useful in the case of reference targets that unlike <hea
 \OurBigBookExample[[\x[boolean-argument]{full=1}]]
 
 The name "boolean argument" is given by analogy to the https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427["boolean attribute" concept in HTML5].
+
+= Positive nonzero integer argument
+{parent=Macro argument type}
+
+Positive nonzero integer arguments accept only the characters [0-9] as their input, and 0 may not be the first character. If anything else is present, an error is raised.
 
 = Common argument
 {c}

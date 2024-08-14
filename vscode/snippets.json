@@ -11,12 +11,6 @@
             "\\Video[${CLIPBOARD}]"
         ],
     },
-    "Title2 named argument": {
-        "prefix": "{2",
-        "body": [
-            "{title2=$0}"
-        ],
-    },
     "Tag named argument": {
         "prefix": "{a",
         "body": [
@@ -41,6 +35,12 @@
             "{height=$0}"
         ],
     },
+    "Title2 named argument": {
+        "prefix": "{i",
+        "body": [
+            "{title2}"
+        ],
+    },
     "Parent named argument": {
         "prefix": "{p",
         "body": [
@@ -51,6 +51,12 @@
         "prefix": "{s",
         "body": [
             "{source=${CLIPBOARD}}"
+        ],
+    },
+    "Wiki named argument": {
+        "prefix": "{w",
+        "body": [
+            "{wiki}"
         ],
     },
     "Synonym named argument": {

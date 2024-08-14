@@ -1,3 +1,4 @@
+import Head from 'next/head';
 import React from 'react'
 import Link from 'next/link'
 import Router from 'next/router'
@@ -5,6 +6,7 @@ import { mutate } from 'swr'
 
 import ourbigbook, {
   Macro,
+  OURBIGBOOK_JSON_DEFAULT,
 } from 'ourbigbook';
 
 import { webApi } from 'front/api'
@@ -13,7 +15,6 @@ import { AUTH_COOKIE_NAME } from 'front/js'
 import CustomLink from 'front/CustomLink'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
-import { IssueType } from 'front/types/IssueType'
 import { UserLinkWithImageInner } from 'front/UserLinkWithImage'
 
 export const AUTH_LOCAL_STORAGE_NAME = 'user'
@@ -43,20 +44,24 @@ export function decapitalize(s) {
 export function ArticleBy(
   {
     article,
-    newTab=false
+    newTab=false,
+    showAuthor=true,
   }: {
     article?: ArticleType,
     newTab?: boolean,
+    showAuthor?: boolean
   }
 ) {
   const inner = <>
     "<span
       className="ourbigbook-title"
       dangerouslySetInnerHTML={{ __html: article.titleRender }}
-    />" by <UserLinkWithImageInner {...{
-      user: article.author,
-      showUsername: true,
-    }} />
+    />"{showAuthor && <>
+      by <UserLinkWithImageInner {...{
+        user: article.author,
+        showUsername: true,
+      }} />
+    </>}
   </>
   const href = routes.article(article.slug)
   if (newTab) {
@@ -251,25 +256,16 @@ export function slugFromRouter(router, opts={}) {
 }
 
 export const AppContext = React.createContext<{
-  title: string
-  setTitle: React.Dispatch<any> | undefined
   prevPageNoSignup: string
   updatePrevPageNoSignup: (newCur: string) => void | undefined,
 }>({
-  title: '',
-  setTitle: undefined,
   prevPageNoSignup: '',
   updatePrevPageNoSignup: undefined
 });
 
 // Global state.
 export const AppContextProvider = ({ children, vals }) => {
-  const [title, setTitle] = React.useState('')
-  return <AppContext.Provider value={
-    Object.assign({
-      title, setTitle,
-    }, vals)
-  }>
+  return <AppContext.Provider value={vals} >
     {children}
   </AppContext.Provider>
 };
@@ -525,4 +521,14 @@ export function orderToPageTitle(order: string): string {
     case 'updatedAt':
       return 'Recently updated'
   }
+}
+
+export function MyHead({ title }) {
+  return <Head>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1"
+    />
+    <title>{(title ? `${title} - ` : '') + 'OurBigBook.com'}</title>
+  </Head>
 }

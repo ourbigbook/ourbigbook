@@ -7,9 +7,9 @@ import ErrorList from 'front/ErrorList'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
 import {
-  AppContext,
   disableButton,
   enableButton,
+  MyHead,
   SettingsIcon,
   useCtrlEnterSubmit,
   useConfirmExitPage,
@@ -77,11 +77,10 @@ const SiteSettings = ({
   useCtrlEnterSubmit(handleSubmit)
   useConfirmExitPage(!formChanged)
   const title = 'Site settings'
-  const { setTitle } = React.useContext(AppContext)
   const canUpdate = !cant.updateSiteSettings(loggedInUser)
   const submitElem = useRef(null);
-  React.useEffect(() => { setTitle(title) }, [])
-  return (
+  return <>
+    <MyHead title={title} />
     <div className="settings-page content-not-ourbigbook">
       <h1><SettingsIcon /> {title}</h1>
       <p>This page contains global settings that affect the entire website. It can only be edited by <a href={`${config.docsAdminUrl}`}>admins</a>.</p>
@@ -116,7 +115,7 @@ const SiteSettings = ({
         </form>
       </>
     </div>
-  )
+  </>
 }
 
 export default SiteSettings

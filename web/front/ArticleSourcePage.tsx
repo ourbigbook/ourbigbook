@@ -2,7 +2,7 @@ import React from 'react'
 
 import {
   ArticleIcon,
-  AppContext,
+  MyHead,
   SourceIcon,
   useEEdit
 } from 'front'
@@ -24,20 +24,17 @@ const ArticleSourcePageHoc = (isIssue=false) => {
     loggedInUser,
   }: ArticleSourcePageProps) => {
     const author = article.author
-    const { setTitle } = React.useContext(AppContext)
-    React.useEffect(() =>
-      setTitle(`Source: /${article.slug}`)
-    )
     const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
     useEEdit(canEdit, article.slug)
-    return (
+    return <>
+      <MyHead title={`Source: /${article.slug}`} />
       <div className="article-source-page content-not-ourbigbook">
         <h1><SourceIcon /> Source: <a href={routes.article(article.slug)}>/{article.slug}</a></h1>
         <pre><code>{modifyEditorInput(article.file.titleSource, article.file.bodySource).new}</code></pre>
         <div className="navlink"><a href={routes.article(article.slug)}><ArticleIcon /> Back to article page</a></div>
       </div>
-    )
-  };
+    </>
+  }
 }
 
 export default ArticleSourcePageHoc;

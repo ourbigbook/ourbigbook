@@ -5,7 +5,7 @@ import { contactUrl } from 'front/config'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
 import {
-  AppContext,
+  MyHead,
   SettingsIcon,
   setupUserLocalStorage,
   useCtrlEnterSubmit
@@ -58,10 +58,9 @@ const Settings = ({
   const maxArticlesLabel = "Maximum article/issue/comment size (maxArticleSize)"
   const maxIssuesPerMinuteLabel = "Maximum issues/comments per minute (maxIssuesPerMinute)"
   const maxIssuesPerHourLabel = "Maximum issues/comments per hour (maxIssuesPerHour)"
-  const title = 'Account settings'
-  const { setTitle } = React.useContext(AppContext)
-  React.useEffect(() => { setTitle(title) }, [])
-  return (
+  const title = "Account settings"
+  return <>
+    <MyHead title={title} />
     <div className="settings-page content-not-ourbigbook">
       <h1><SettingsIcon /> {title}</h1>
       <>
@@ -193,7 +192,7 @@ const Settings = ({
         </form>
       </>
     </div>
-  );
+  </>
 };
 
 export default Settings;

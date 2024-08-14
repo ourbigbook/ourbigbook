@@ -2,8 +2,8 @@ import React from 'react'
 import { useRouter } from 'next/router'
 
 import {
-  AppContext,
   ArticleIcon,
+  MyHead,
   NewArticleIcon,
   SeeIcon,
   TopicIcon,
@@ -49,12 +49,9 @@ export const TopicPage = ({
   const router = useRouter();
   const topicId = slugFromArray(router.query.id)
   const paginationUrlFunc = (page) => routes.topic(topicId, { page, sort: order })
-  const { setTitle } = React.useContext(AppContext)
-  if (topic) {
-    React.useEffect(() => { setTitle(topic.titleSource) }, [topic.titleSource])
-  }
   if (router.isFallback) { return <LoadingSpinner />; }
-  return (
+  return <>
+    <MyHead title={topic.titleSource} />
     <div className="topic-page">
       {topic
         ? <>
@@ -121,7 +118,7 @@ export const TopicPage = ({
           </>
       }
     </div>
-  )
+  </>
 }
 
 export default TopicPage

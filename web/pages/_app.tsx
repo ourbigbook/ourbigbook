@@ -1,4 +1,3 @@
-import Head from 'next/head';
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 import useSWR from 'swr'
@@ -21,20 +20,6 @@ import 'style.scss'
 //export function reportWebVitals(metric) {
 //  console.log(metric)
 //}
-
-function MyHead() {
-  const { title } = React.useContext(AppContext)
-  let realTitle = title ? title + ' - ' : ''
-  return (
-    <Head>
-      <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1, maximum-scale=1"
-      />
-      <title>{realTitle + appName}</title>
-    </Head>
-  )
-}
 
 function handleRouteChange(url) {
   window.gtag('config', googleAnalyticsId, {
@@ -95,7 +80,6 @@ const MyApp = ({ Component, pageProps }) => {
   const isEditor = !!Component.isEditor
   return (
     <AppContextProvider vals={{ prevPageNoSignup: prevPageNoSignup.prev, updatePrevPageNoSignup }} >
-      <MyHead />
       <div className={`toplevel${isEditor ? ' editor' : ''}`}>
         <Navbar {...{ isEditor, scoreDelta }} />
         <div className="main">

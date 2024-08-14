@@ -8,6 +8,7 @@ import {
   CommentIcon,
   DiscussionAbout,
   IssueIcon,
+  MyHead,
   NewArticleIcon,
   orderToPageTitle,
   PinnedArticleIcon,
@@ -63,7 +64,6 @@ function IndexPageHoc({
     users,
     usersCount,
   }: IndexPageProps) => {
-    const { setTitle } = React.useContext(AppContext)
     let title
     if (isHomepage) {
       let orderTitle = orderToPageTitle(order)
@@ -74,8 +74,8 @@ function IndexPageHoc({
     } else {
       title = `${ issueArticle.titleSource } by ${ issueArticle.author.displayName } - Discussion`
     }
-    React.useEffect(() => { setTitle(title)}, [title])
-    return (
+    return <>
+      <MyHead title={title} />
       <div className="home-page">
         {(!isHomepage) &&
           <div className="content-not-ourbigbook">
@@ -220,7 +220,7 @@ function IndexPageHoc({
           </div>
         }
       </div>
-    )
+    </>
   }
 }
 

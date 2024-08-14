@@ -1,4 +1,4 @@
-import Editor, { DiffEditor, useMonaco, loader } from '@monaco-editor/react'
+import { loader } from '@monaco-editor/react'
 import React, { useEffect, useRef, useState, } from 'react'
 import Router, { useRouter } from 'next/router'
 import Link from 'next/link'
@@ -30,11 +30,12 @@ import {
 import ErrorList from 'front/ErrorList'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
-import { AppContext, useCtrlEnterSubmit } from 'front'
+import { MyHead, useCtrlEnterSubmit } from 'front'
 import { hasReachedMaxItemCount, modifyEditorInput } from 'front/js'
 import { ArticleType } from 'front/types/ArticleType'
 import { IssueType } from 'front/types/IssueType'
 import Label from 'front/Label'
+import { displayAndUsernameText } from 'front/user'
 import { UserType } from 'front/types/UserType'
 
 /** DbProvider that fetchs data via the OurBigBook Web REST API. */
@@ -531,13 +532,10 @@ export default function EditorPageHoc({
         }
       }
     }
-    const { setTitle } = React.useContext(AppContext)
-    React.useEffect(() => {
-      setTitle(isNew ? `New ${itemType}` : `Editing ${isIssue
-        ? `discussion #${initialFile.number} "${initialFile.titleSource}" on ${issueArticle.titleSource} by ${issueArticle.author.displayName}`
-        : `"${initialFile.titleSource}" by ${initialArticle.author.displayName}`
-      }`)
-    }, [isNew, initialFile?.titleSource])
+    const title = isNew ? `New ${itemType}` : `Editing ${isIssue
+      ? `discussion #${initialFile.number} "${initialFile.titleSource}" on ${issueArticle.titleSource} by ${issueArticle.author.displayName}`
+      : `"${initialFile.titleSource}"${initialArticle.author.id === loggedInUser.id ? '' : `by ${displayAndUsernameText(initialArticle.author)}`}`
+    }`
 
     // Tabs
     function goToTab() {
@@ -560,7 +558,8 @@ export default function EditorPageHoc({
       return () => window.removeEventListener('hashchange', onHashChange)
     })
 
-    return (
+    return <>
+      <MyHead title={title} />
       <div className="editor-page content-not-ourbigbook">
         { maxReached
           ? <p>{maxReached}</p>
@@ -576,9 +575,9 @@ export default function EditorPageHoc({
                         {' '}
                         {isIssue
                           ? <a href={isIssue ? routes.issue(issueArticle.slug, initialArticle.number) : routes.article(initialArticle.slug)} target="_blank">
-                              {isIssue ? `discussion #${initialArticle.number}: ` : ''}"{initialFile?.titleSource}"
+                              {isIssue ? `discussion #${initialArticle.number} ` : ''}"{initialFile?.titleSource}"
                             </a>
-                          : <ArticleBy article={initialArticle} newTab={true}/>
+                          : <ArticleBy article={initialArticle} newTab={true} showAuthor={initialArticle.author.id !== loggedInUser.id}/>
                         }
                       </>
                   }
@@ -681,7 +680,7 @@ export default function EditorPageHoc({
             </>
         }
       </div>
-    )
+    </>
   }
   editor.isEditor = true
   return editor

@@ -2,7 +2,7 @@ import React from 'react'
 import Router from 'next/router'
 
 import useLoggedInUser from 'front/useLoggedInUser'
-import { AppContext, setupUserLocalStorage } from 'front'
+import { MyHead, setupUserLocalStorage } from 'front'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
 
@@ -14,20 +14,20 @@ export interface VerifyPageProps {
 }
 
 function VerifyPage({ code, email, user, verificationOk } : VerifyPageProps) {
-  const { setTitle } = React.useContext(AppContext)
   const loggedInUser = useLoggedInUser()
   if (loggedInUser) {
     Router.push(routes.home())
   }
   React.useEffect(() => {
-    setTitle('Verify your account')
     if (verificationOk) {
       setupUserLocalStorage(user).then(() => Router.push(routes.home()))
     }
   })
-  return (
+  const title = 'Verify your account'
+  return <>
+    <MyHead title={title} />
     <div className="verify-page content-not-ourbigbook">
-      <h1>Verify your account.</h1>
+      <h1>{title}</h1>
       {!code &&
         <>
           <p>Click the verification link we've sent to your email: {email} to verify your account.</p>
@@ -41,7 +41,7 @@ function VerifyPage({ code, email, user, verificationOk } : VerifyPageProps) {
         <p>Verification code invalid. TODO give user something to do about it, e.g. resend.</p>
       }
     </div>
-  )
+  </>
 }
 
 export default VerifyPage

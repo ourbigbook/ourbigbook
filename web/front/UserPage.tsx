@@ -4,12 +4,12 @@ import React from 'react'
 import pluralize from 'pluralize'
 
 import {
-  AppContext,
   ArticleIcon,
   CommentIcon,
   HomeIcon,
   IssueIcon,
   LikeIcon,
+  MyHead,
   UserIcon,
   orderToPageTitle,
   useEEdit,
@@ -120,7 +120,6 @@ export default function UserPage({
   ])
 
   // title
-  const { setTitle } = React.useContext(AppContext)
   const displayAndUsername = displayAndUsernameText(user)
   let title2
   switch (what) {
@@ -147,11 +146,11 @@ export default function UserPage({
       }
   }
   const title = `${displayAndUsername} ${title2 ? ` - ${title2}` : ''}`
-  React.useEffect(() => { setTitle(title) }, [title])
 
   const handleShortFragmentSkipOnce = React.useRef(false)
   if (router.isFallback) { return <LoadingSpinner />; }
-  return (<>
+  return <>
+    <MyHead title={title} />
     <div className="profile-page">
       <div className="user-info content-not-ourbigbook">
         <div className="name-and-image">
@@ -329,5 +328,5 @@ export default function UserPage({
         usersCount,
       }}/>
     }
-  </>);
+  </>
 }

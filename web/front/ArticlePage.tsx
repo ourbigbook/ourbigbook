@@ -7,10 +7,10 @@ import { displayAndUsernameText } from 'front/user'
 import Article from 'front/Article'
 import ArticleList from 'front/ArticleList'
 import {
-  AppContext,
   CreateMyOwnVersionOfThisTopic,
   DiscussionAbout,
   IssueIcon,
+  MyHead,
   NewArticleIcon,
   SeeIcon,
   SeeMyOwnVersionOfThisTopic,
@@ -18,7 +18,6 @@ import {
   useEEdit,
   useEEditIssue,
 } from 'front'
-import { webApi } from 'front/api'
 import { cant } from 'front/cant'
 import routes from 'front/routes'
 import { ArticleType, ArticleLinkType  } from 'front/types/ArticleType'
@@ -70,20 +69,7 @@ const ArticlePageHoc = (isIssue=false) => {
     topIssues,
   }: ArticlePageProps) => {
     const author = article.author
-    const { setTitle } = React.useContext(AppContext)
-    React.useEffect(() =>
-      // TODO here we would like to have a plaintext render of the title.
-      // https://github.com/ourbigbook/ourbigbook/issues/250
-      setTitle(`${article.titleSource} by ${displayAndUsernameText(author)}`)
-    )
     const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
-    const handleDelete = async () => {
-      if (!loggedInUser) return;
-      const result = window.confirm("Do you really want to delete this article?");
-      if (!result) return;
-      await webApi.articleDelete(article.slug);
-      Router.push(`/`);
-    };
     if (isIssue) {
       useEEditIssue(canEdit, issueArticle.slug, article.number)
     } else {
@@ -92,6 +78,7 @@ const ArticlePageHoc = (isIssue=false) => {
     const handleShortFragmentSkipOnce = React.useRef(false)
     return (
       <>
+        <MyHead title={`${article.titleSource} - ${displayAndUsernameText(author)}`} />
         <div className="article-page">
           <div className="content-not-ourbigbook article-meta">
             {isIssue && <DiscussionAbout article={issueArticle} span={true}/>}

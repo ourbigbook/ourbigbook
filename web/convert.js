@@ -670,9 +670,9 @@ async function convertArticle({
               await sequelize.models.Article.treeMoveRangeTo({
                 logging: false,
                 depthDelta: newDepth - oldDepth,
-                // Todal toplevel sibling articles to be moved, excluding their descendants.
+                // Total toplevel sibling articles to be moved, excluding their descendants.
                 nArticlesToplevel: 1,
-                // Todal articles to be moved, including toplevel siblings and their descendants.
+                // Total articles to be moved, including toplevel siblings and their descendants.
                 nArticles: nestedSetSize,
                 newNestedSetIndex,
                 newNestedSetIndexParent,

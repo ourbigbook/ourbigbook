@@ -93,7 +93,7 @@ module.exports = {
   // An ID separator that should be used or all IDs in the website to avoid conflicts with OurBigBook Markup output,
   // of which users can control IDs to some extent. Usage is like: prefix + sep + number.
   isTest: ourbigbook_nodejs_front.isTest,
-  // Default isProduction check. Affetcs all aspects of the application unless
+  // Default isProduction check. Affects all aspects of the application unless
   // they are individually overridden, including:
   // * is Next.js server dev or prod?
   // * use SQLite or PostgreSQL?

@@ -33,6 +33,7 @@ export function UserScore({ space=false, user }) {
 
 export type DisplayAndUsernameProps = {
   user: UserType,
+  showParenthesis?: boolean,
   showScore?: boolean,
   showUsername?: boolean,
   showUsernameMobile?: boolean,
@@ -41,6 +42,7 @@ export type DisplayAndUsernameProps = {
 export function DisplayAndUsername(
   {
     user,
+    showParenthesis=true,
     showScore=true,
     showUsername=true,
     showUsernameMobile=true,
@@ -54,8 +56,8 @@ export function DisplayAndUsername(
   } else {
     mobileOptionalPart.push(`${user.username} `)
   }
-  const showParenthesis = user.displayName && showUsername
-  if (showParenthesis) {
+  const doShowParenthesis = showParenthesis && user.displayName && showUsername
+  if (doShowParenthesis) {
     mobileOptionalPart.push(<span className="par">(</span>)
   }
   if (showUsername) {
@@ -67,14 +69,16 @@ export function DisplayAndUsername(
     //  ret += <span className="mobile-hide">`@${user.username}`</span>
     //}
   }
-  if (showParenthesis) {
+  if (doShowParenthesis) {
     if (user.displayName) {
       mobileOptionalPart.push(', ')
     } else {
       mobileOptionalPart.push(' (')
     }
+  } else {
+    mobileOptionalPart.push(' ')
   }
-  let mobileOptionalPartPost: React.ReactNode = showParenthesis ? <span className="par">)</span> : ''
+  let mobileOptionalPartPost: React.ReactNode = doShowParenthesis ? <span className="par">)</span> : ''
   if (!showUsernameMobile) {
     mobileOptionalPart = [<span className="mobile-hide">{mobileOptionalPart.map((item, key) => <React.Fragment key={key}>{item}</React.Fragment>)}</span>]
     mobileOptionalPartPost = <span className="mobile-hide">{mobileOptionalPartPost}</span>

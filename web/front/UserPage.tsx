@@ -157,7 +157,7 @@ export default function UserPage({
         <div className="name-and-image">
           <div className="no-image">
             <h1>
-              <DisplayAndUsername user={user} />
+              <DisplayAndUsername user={user} showParenthesis={false} />
             </h1>
             <div className="user-actions">
               <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>

@@ -2194,10 +2194,6 @@ if (cli.helpMacros) {
             if (previousSiblingId !== null) {
               articleHashProps.previousSiblingId = previousSiblingId
             }
-            console.log(id)
-            console.log(`webPathToArticleEntry.hash: ${require('util').inspect(webPathToArticleEntry.hash, { depth: null })}`)
-            console.log(`articleHash(articleHashProps): ${require('util').inspect(articleHash(articleHashProps), { depth: null })}`)
-            console.log()
             if (
               webPathToArticleEntry === undefined ||
               webPathToArticleEntry.hash !== articleHash(articleHashProps) ||

@@ -581,7 +581,6 @@ async function generateDemoData(params) {
       const articles = (await sequelize.models.Article.getArticles({
         author: user.username,
         count: false,
-        limit: nArticlesPerUser + 1,
         sequelize,
       }))
       for (const article of articles) {

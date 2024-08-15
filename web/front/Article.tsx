@@ -146,7 +146,7 @@ const Article = ({
 
   // Input state: browser bar contains a short fragment like algebra in page /username/mathematics#algebra
   // Output state: browser still contains the unchanged short input fragment, #algebra but everything else works as if
-  // id="username/algebra" were the actualy fragment, i.e.: we are scrolled to it and CSS :target is active on it.
+  // id="username/algebra" were the actual fragment, i.e.: we are scrolled to it and CSS :target is active on it.
   //
   // The actual IDs on HTML are fully scoped like "username/algebra", but using Js hacks
   // we always manipulate the browse to show and use the shortest fragments possible.
@@ -184,7 +184,7 @@ const Article = ({
   //
   //     It should move URL to http://localhost:3000/barack-obama/test-data#@donald-trump/equation-my-favorite-equation hover and highlight.
   //
-  //     The @ is added to make sure an absolute path is used and remove otherwise inevitable anbiguity with short frags.
+  //     The @ is added to make sure an absolute path is used and remove otherwise inevitable ambiguity with short frags.
   //   * http://localhost:3000/barack-obama/test-data#@donald-trump/equation-my-favorite-equation should scroll to and highlight the correct header
   //   * http://localhost:3000/barack-obama/mathematics@donald-trump/physics should redirect to http://localhost:3000/donald-trump/physics because that abs id is not in page
   // We are not in the intermediate point where the URL is momentarily long.

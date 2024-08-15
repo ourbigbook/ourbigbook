@@ -459,6 +459,7 @@ $$
       article = createArticleArg({ i: 0, titleSource: 'Physics' })
       ;({data, status} = await createArticleApi(test, article, { previousSiblingId: '@user0/mathematics' }))
       assertStatus(status, data)
+      const physicsHash = data.articles[0].file.hash
 
       // Sanity check.
       await assertNestedSets(sequelize, [
@@ -474,6 +475,12 @@ $$
       { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
       { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/physics' },
     ])
+
+    // Rerender does not modify the article hash. Was happening because we were calculating hash
+    // with previousSiblingId undefined https://github.com/ourbigbook/ourbigbook/issues/322
+    ;({data, status} = await test.webApi.article('user0/physics'))
+    assertStatus(status, data)
+    assert.strictEqual(physicsHash, data.file.hash)
 
     // Works with OurBigBook predefined macros.
     await sequelize.models.Article.rerender({ slugs: ['user0/mathematics'] })

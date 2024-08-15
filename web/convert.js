@@ -154,11 +154,20 @@ async function convert({
   }
 }
 
-// This does the type of stuff that OurBigBook CLI does for CLI
-// around the conversion itself, i.e. setting up the database, saving output files
-// but on the Web.
-//
-// This is how Articles should always be created and updated.
+/*
+ * Create or update an article.
+ *
+ * This does the type of stuff that OurBigBook CLI does for CLI
+ * around the conversion itself, i.e. setting up the database, saving output files
+ * but on the Web.
+ *
+ * This is how Articles should always be created and updated.
+ *
+ * @param {string} parentId - Required for h2Render to render correctly. Otherwise it looks like an h1Render.
+ * @param {boolean} updateTree - If false, don't change the position of the article in the tree.
+ *   This also prevents the creation of new articles, only content updates are allowed in that case.
+ *   This option can massively save time by skipping unnecessary nested set tree updates.
+ */
 async function convertArticle({
   author,
   bodySource,
@@ -168,7 +177,6 @@ async function convertArticle({
   list,
   path,
   perf,
-  // Required for h2Render to render correctly. Otherwise it looks like an h1Render.
   parentId,
   previousSiblingId,
   render,
@@ -176,13 +184,16 @@ async function convertArticle({
   titleSource,
   transaction,
   updateNestedSetIndex,
+  updateHash,
   updateTree,
 }) {
   if (updateNestedSetIndex === undefined) {
     updateNestedSetIndex = true
   }
+  if (updateHash === undefined) {
+    updateHash = true
+  }
   if (updateTree === undefined) {
-    // If false, also prevents the creation of new articles, only content updates are allowed in that case.
     updateTree = true
   }
   let t0
@@ -315,7 +326,7 @@ async function convertArticle({
         )
       }
 
-    const { file: newFile } = await update_database_after_convert({
+    const update_database_after_convert_arg = {
       authorId: author.id,
       bodySource,
       extra_returns,
@@ -324,10 +335,14 @@ async function convertArticle({
       synonymHeaderPaths: Array.from(extra_returns.context.synonym_headers).map(h => `${h.id}.${ourbigbook.OURBIGBOOK_EXT}`),
       path: input_path,
       render,
-      hash: articleHash({ parentId, previousSiblingId, source }),
       titleSource,
       transaction,
-    })
+      updateHash,
+    }
+    if (updateHash) {
+      update_database_after_convert_arg.hash = articleHash({ parentId, previousSiblingId, source })
+    }
+    const { file: newFile } = await update_database_after_convert(update_database_after_convert_arg)
 
     // Update nestedSetIndex and other things that can only be updated after the initial non-render pass.
     //

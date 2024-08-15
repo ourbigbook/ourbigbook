@@ -675,6 +675,7 @@ async function update_database_after_convert({
   hash,
   transaction,
   titleSource,
+  updateHash,
 }) {
   const context = extra_returns.context;
   if (non_ourbigbook_options === undefined) {
@@ -685,6 +686,9 @@ async function update_database_after_convert({
   }
   if (renderType === undefined) {
     renderType = ourbigbook.OUTPUT_FORMAT_HTML
+  }
+  if (updateHash === undefined) {
+    updateHash = true
   }
   ourbigbook.perfPrint(context, 'convert_path_pre_sqlite_transaction')
   let toplevel_id;
@@ -704,8 +708,10 @@ async function update_database_after_convert({
       'last_parse',
       // https://github.com/ourbigbook/ourbigbook/issues/241
       'toplevel_id',
-      'hash',
     ]
+    if (updateHash) {
+      file_bulk_create_opts.updateOnDuplicate.push('hash')
+    }
     file_bulk_create_last_parse = Date.now()
   }
 

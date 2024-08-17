@@ -19,7 +19,8 @@
 		{ "include": "#positionalLiteral2" },
 		{ "include": "#positionalLiteral3" },
 		{ "include": "#positionalLiteral4" },
-		{ "include": "#positionalLiteral5" }
+		{ "include": "#positionalLiteral5" },
+		{ "include": "#url" }
 	],
 	"repository": {
 		"escape": {
@@ -220,6 +221,14 @@
 					"beginCaptures": { "0": { "name": "punctuation.definition.tag.bigb" } },
 					"endCaptures": { "0": { "name": "punctuation.definition.tag.bigb" } },
 					"name": "string.quoted.bigb"
+				}
+			]
+		},
+		"url": {
+			"patterns": [
+				{
+					"name": "markup.underline.link",
+					"match": "https?://[^ \\[\\]]+"
 				}
 			]
 		}

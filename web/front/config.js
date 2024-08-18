@@ -87,7 +87,7 @@ module.exports = {
   defaultUserScoreTitle: 'Sum of likes of all articles authored by user',
   /** @type {boolean | 'blocking'} */
   fallback: 'blocking',
-  forbidMultiheaderMessage: 'headers are currently not allowed when in Articles on OurBigBook Web, create new articles with the "New" button instead',
+  forbidMultiheaderMessage: 'headers are not allowed in OurBigBook Web Articles. Instead create a new article with the "New" button and set its parent to the current article.',
   googleAnalyticsId: 'G-R721ZZTW7L',
   hideArticleDatesDate: '1970-01-01T00:00:00.000Z',
   // An ID separator that should be used or all IDs in the website to avoid conflicts with OurBigBook Markup output,

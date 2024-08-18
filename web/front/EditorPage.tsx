@@ -318,7 +318,7 @@ export default function EditorPageHoc({
     ])
     useEffect(() => {
       if (
-        ourbigbookEditorElem &&
+        ourbigbookEditorElem.current &&
         loggedInUser &&
         !maxReached
       ) {
@@ -338,7 +338,6 @@ export default function EditorPageHoc({
               modifyEditorInput: (oldInput) => modifyEditorInput(file.titleSource, oldInput),
               postBuildCallback: (extra_returns) => {
                 setHasConvertError(extra_returns.errors.length > 0)
-                console.log('extra_returns.errors.length: ' + require('util').inspect(extra_returns.errors.length));
                 const first_header = extra_returns.context.header_tree.children[0]
                 if (isNew && first_header) {
                   const id = first_header.ast.id
@@ -408,7 +407,7 @@ export default function EditorPageHoc({
           }
         }
       }
-    })
+    }, [ourbigbookEditorElem.current])
     async function checkParent(title, otherTitle, display) {
       const parentErrors = []
       if (title) {
@@ -540,7 +539,6 @@ export default function EditorPageHoc({
     // Tabs
     function goToTab() {
       const hash = window.location.hash
-      console.log(`window.location.hash: ${require('util').inspect(window.location.hash, { depth: null })}`)
       let tab
       if (hash === '#_metadata') {
         tab = 'metadata'

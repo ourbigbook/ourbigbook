@@ -5,9 +5,9 @@ import ReactDomServer from 'react-dom/server'
 import Router, { useRouter } from 'next/router'
 
 import { commentsHeaderId } from 'front/config'
-import { formatDate } from 'front/date'
 import {
   ArrowUpIcon,
+  ArticleCreatedUpdatedPills,
   CreateMyOwnVersionOfThisTopic,
   CommentIcon,
   DeleteIcon,
@@ -396,24 +396,7 @@ const Article = ({
             {toplevel &&
               <>
                 {' '}
-                <span className="pill" title="Last updated">
-                  <TimeIcon />{article.createdAt === article.updatedAt ? '' : ' Updated '}
-                  {' '}
-                  <span className="article-dates">
-                    {formatDate(article.updatedAt)}
-                  </span>
-                </span>
-                {article.createdAt !== article.updatedAt &&
-                  <>
-                    {' '}
-                    <span className="pill" title="Last updated">
-                      <TimeIcon /> Created{' '}
-                      <span className="article-dates">
-                        {formatDate(article.createdAt)}
-                      </span>
-                    </span>
-                  </>
-                }
+                <ArticleCreatedUpdatedPills article={article} />
                 {article.list === false &&
                   <>
                     {' '}

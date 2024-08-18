@@ -10,6 +10,7 @@ import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import ShowBody from 'front/ShowBody'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import {
+  ArticleCreatedUpdatedPills,
   ArticleIcon,
   IssueIcon,
   LikeIcon,
@@ -226,12 +227,7 @@ const ArticleList = ({
                                 {' '}
                               </>
                             }
-                            on{' '}
-                            <span title="Last updated" className="item-date">
-                              <TimeIcon />
-                              {' '}
-                              {formatDate(article.updatedAt)}
-                            </span>
+                            <ArticleCreatedUpdatedPills article={article} />
                           </div>
                           {article.render &&
                             <ItemBody {...{ showFullBody }}>

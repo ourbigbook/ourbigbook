@@ -13,6 +13,7 @@ import { webApi } from 'front/api'
 import { docsUrl, sureLeaveMessage } from 'front/config'
 import { AUTH_COOKIE_NAME } from 'front/js'
 import CustomLink from 'front/CustomLink'
+import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { UserLinkWithImageInner } from 'front/UserLinkWithImage'
@@ -531,4 +532,27 @@ export function MyHead({ title }) {
     />
     <title>{(title ? `${title} - ` : '') + 'OurBigBook.com'}</title>
   </Head>
+}
+
+export function ArticleCreatedUpdatedPills({ article }) {
+  return <>
+    <span className="pill" title="Last updated">
+      <TimeIcon />{article.createdAt === article.updatedAt ? '' : ' Updated '}
+      {' '}
+      <span className="article-dates">
+        {formatDate(article.updatedAt)}
+      </span>
+    </span>
+    {article.createdAt !== article.updatedAt &&
+      <>
+        {' '}
+        <span className="pill" title="Created">
+          <TimeIcon /> Created{' '}
+          <span className="article-dates">
+            {formatDate(article.createdAt)}
+          </span>
+        </span>
+      </>
+    }
+  </>
 }

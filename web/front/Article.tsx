@@ -645,7 +645,7 @@ const Article = ({
         ? <>
             <div className="content-not-ourbigbook">
               <h2 id={commentsHeaderId}>
-                <a href={`#${commentsHeaderId}`}><CommentIcon /> Comments ({ curCommentsCount })</a>
+                <a href={`#${commentsHeaderId}`}><CommentIcon /> Comments <span className="meta">({ curCommentsCount })</span></a>
                 {' '}
                 <FollowArticleButton {...{
                   article,

@@ -17,6 +17,7 @@
     "dev-pg": "OURBIGBOOK_POSTGRES=1 npm run dev",
     "dev-pg-back": "OURBIGBOOK_DISABLE_FRONTEND=1 npm run dev-pg",
     "devs": "DEBUG='sequelize:sql:*' npm run dev",
+    "lint": "eslint .",
     "migrate": "sequelize-cli db:migrate --debug",
     "seed-prod": "./prod.sh bin/generate-demo-data.js --force-production",
     "start": "node --unhandled-rejections=strict ./app.js",
@@ -77,12 +78,12 @@
     "typescript": "^5.3.3"
   },
   "devDependencies": {
-    "eslint": "7.23.0",
+    "eslint": "7.24.0",
     "eslint-config-next": "^14.0.4",
     "eslint-plugin-prettier": "2.6.0",
     "mocha": "6.2.2",
     "nodemon": "1.11.0",
-    "prettier": "1.12.1",
+    "prettier": "^3.3.3",
     "sqlite3": "5.0.2"
   },
   "cacheDirectories": [

@@ -19,10 +19,10 @@ export interface ArticleSourcePageProps {
 }
 
 const ArticleSourcePageHoc = (isIssue=false) => {
-  return ({
+  return function ArticleSourcePage ({
     article,
     loggedInUser,
-  }: ArticleSourcePageProps) => {
+  }: ArticleSourcePageProps) {
     const author = article.author
     const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
     useEEdit(canEdit, article.slug)

@@ -48,7 +48,7 @@ export interface ArticlePageProps {
 }
 
 const ArticlePageHoc = (isIssue=false) => {
-  return ({
+  return function ArticlePage({
     ancestors,
     article,
     articleInTopicByLoggedInUser,
@@ -67,7 +67,7 @@ const ArticlePageHoc = (isIssue=false) => {
     synonymLinks,
     tagged,
     topIssues,
-  }: ArticlePageProps) => {
+  }: ArticlePageProps) {
     const author = article.author
     const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
     if (isIssue) {

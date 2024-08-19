@@ -159,7 +159,7 @@ export default function EditorPageHoc({
   isIssue=false,
   isNew=false,
 }={}) {
-  const editor = ({
+  const editor = function EditorPage({
     article: initialArticle,
     articleCountByLoggedInUser,
     issueArticle,
@@ -167,7 +167,7 @@ export default function EditorPageHoc({
     parentTitle: initialParentTitle,
     previousSiblingTitle: initialPreviousSiblingTitle,
     titleSource,
-  }: EditorPageProps) => {
+  }: EditorPageProps) {
     const router = useRouter()
     const {
       query: { slug },
@@ -225,7 +225,6 @@ export default function EditorPageHoc({
     const saveButtonElem = useRef(null)
 
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
-    let editor
     let ownerUsername: string
     if (isNew) {
       ownerUsername = loggedInUser?.username
@@ -280,7 +279,7 @@ export default function EditorPageHoc({
     useEffect(() => {
       // Initial check here, then check only on title update.
       checkTitle(file.titleSource)
-    }, [])
+    }, [file.titleSource])
 
     // Ask for confirmation before leaving page with:
     // - tab close
@@ -312,10 +311,74 @@ export default function EditorPageHoc({
       }
     }, [
       hasConvertError,
-      saveButtonElem.current,
       titleErrors,
       parentErrors
     ])
+    const handleSubmit = async (e) => {
+      if (e) {
+        e.preventDefault()
+      }
+      if (hasConvertError || titleErrors.length) {
+        // Although the button should be disabled from clicks,
+        // this could still be reached via the Ctrl shortcut.
+        return
+      }
+      setLoading(true)
+      let data, status
+      file.bodySource = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
+      if (isIssue) {
+        if (isNew) {
+          ;({ data, status } = await webApi.issueCreate(slugString, file))
+        } else {
+          ;({ data, status } = await webApi.issueEdit(slugString, router.query.number, file))
+        }
+      } else {
+        const opts: {
+          list: boolean;
+          owner: string;
+          path?: string;
+          parentId?: string;
+          previousSiblingId?: string;
+        } = {
+          list,
+          owner: ownerUsername,
+        }
+        if (!isIndex) {
+          opts.parentId = titleToId(ownerUsername, parentTitle)
+          if (previousSiblingTitle) {
+            opts.previousSiblingId = titleToId(ownerUsername, previousSiblingTitle)
+          }
+        }
+        if (isNew) {
+          ;({ data, status } = await webApi.articleCreate(file, opts))
+        } else {
+          const path = slugFromArray(ourbigbook.pathSplitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false })
+          if (path) {
+            opts.path = path
+          }
+          ;({ data, status } = await webApi.articleCreateOrUpdate(file, opts))
+        }
+      }
+      setLoading(false)
+      if (status === 200) {
+        // This is a hack for the useEffect cleanup callback issue.
+        ourbigbookEditorElem.current.ourbigbookEditor.dispose()
+
+        let redirTarget
+        if (isIssue) {
+          redirTarget = routes.issue(slugString, data.issue.number)
+        } else {
+          if (isNew) {
+            redirTarget = routes.article(data.articles[0].slug)
+          } else {
+            redirTarget = routes.article(slugString)
+          }
+        }
+        Router.push(redirTarget, null, { scroll: true })
+      } else {
+        setTitleErrors(data.errors)
+      }
+    }
     useEffect(() => {
       if (
         ourbigbookEditorElem.current &&
@@ -407,7 +470,15 @@ export default function EditorPageHoc({
           }
         }
       }
-    }, [ourbigbookEditorElem.current])
+    }, [
+      bodySource,
+      file.titleSource,
+      finalConvertOptions,
+      handleSubmit,
+      initialArticle,
+      loggedInUser,
+      maxReached
+    ])
     async function checkParent(title, otherTitle, display) {
       const parentErrors = []
       if (title) {
@@ -437,7 +508,7 @@ export default function EditorPageHoc({
         titleSource,
       }})
       checkTitle(titleSource)
-      // TODO this would be slighty better, but not taking effect, I simply can't understand why,
+      // TODO this would be slightly better, but not taking effect, I simply can't understand why,
       // there appear to be no copies of convertOptions under editor...
       //if (titleSource) {
       //  finalConvertOptions.input_path = titleToPath(loggedInUser, titleSource)
@@ -453,72 +524,7 @@ export default function EditorPageHoc({
         ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
           oldInput => modifyEditorInput(file.titleSource, oldInput))
       }
-    }, [file, editorLoaded, ourbigbookEditorElem.current])
-    const handleSubmit = async (e) => {
-      if (e) {
-        e.preventDefault()
-      }
-      if (hasConvertError || titleErrors.length) {
-        // Although the button should be disabled from clicks,
-        // this could still be reached via the Ctrl shortcut.
-        return
-      }
-      setLoading(true)
-      let data, status
-      file.bodySource = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
-      if (isIssue) {
-        if (isNew) {
-          ;({ data, status } = await webApi.issueCreate(slugString, file))
-        } else {
-          ;({ data, status } = await webApi.issueEdit(slugString, router.query.number, file))
-        }
-      } else {
-        const opts: {
-          list: boolean;
-          owner: string;
-          path?: string;
-          parentId?: string;
-          previousSiblingId?: string;
-        } = {
-          list,
-          owner: ownerUsername,
-        }
-        if (!isIndex) {
-          opts.parentId = titleToId(ownerUsername, parentTitle)
-          if (previousSiblingTitle) {
-            opts.previousSiblingId = titleToId(ownerUsername, previousSiblingTitle)
-          }
-        }
-        if (isNew) {
-          ;({ data, status } = await webApi.articleCreate(file, opts))
-        } else {
-          const path = slugFromArray(ourbigbook.pathSplitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false })
-          if (path) {
-            opts.path = path
-          }
-          ;({ data, status } = await webApi.articleCreateOrUpdate(file, opts))
-        }
-      }
-      setLoading(false)
-      if (status === 200) {
-        // This is a hack for the useEffect cleanup callback issue.
-        ourbigbookEditorElem.current.ourbigbookEditor.dispose()
-
-        let redirTarget
-        if (isIssue) {
-          redirTarget = routes.issue(slugString, data.issue.number)
-        } else {
-          if (isNew) {
-            redirTarget = routes.article(data.articles[0].slug)
-          } else {
-            redirTarget = routes.article(slugString)
-          }
-        }
-        Router.push(redirTarget, null, { scroll: true })
-      } else {
-        setTitleErrors(data.errors)
-      }
-    }
+    }, [file, editorLoaded])
     useCtrlEnterSubmit(handleSubmit)
     const handleCancel = async (e) => {
       if (!ourbigbookEditorElem.current.ourbigbookEditor.modified || confirm('Are you sure you want to abandon your changes?')) {

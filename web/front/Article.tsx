@@ -105,11 +105,12 @@ const Article = ({
   const [curComments, setComments] = React.useState(comments)
   const [curCommentsCount, setCommentsCount] = React.useState(commentsCount)
   const router = useRouter()
+  const getParamString = encodeGetParams(router.query)
   React.useEffect(() => {
     // Otherwise comments don't change on page changes.
     setComments(comments)
     setCommentsCount(commentsCount)
-  }, [encodeGetParams(router.query)])
+  }, [getParamString, comments, commentsCount])
   let seeAllCreateNew
   if (!isIssue) {
     seeAllCreateNew = <>
@@ -188,115 +189,115 @@ const Article = ({
   //   * http://localhost:3000/barack-obama/test-data#@donald-trump/equation-my-favorite-equation should scroll to and highlight the correct header
   //   * http://localhost:3000/barack-obama/mathematics@donald-trump/physics should redirect to http://localhost:3000/donald-trump/physics because that abs id is not in page
   // We are not in the intermediate point where the URL is momentarily long.
-  let handleShortFragmentCurrentFragType = 'short'
-  function handleShortFragment(ev=null) {
-    if (handleShortFragmentSkipOnce.current) {
-      handleShortFragmentSkipOnce.current = false
-      return
-    }
-    let frag
-    if (window.location.href.slice(-1) === '#') {
-      // window.location.hash is empty for '#' with empty frag
-      // new URL(window.location.href).hash is aslo empty for '#' with empty frag
-      frag = '#'
-    } else {
-      frag = window.location.hash
-    }
-    // algebra
-    const fragNoHash = frag.substring(1)
-    // mathematics
-    const pathNoSlash = window.location.pathname.substring(1)
-    // mathematics/
-    const path = pathNoSlash + '/'
-    if (frag) {
-      if (handleShortFragmentCurrentFragType === 'short') {
-        // Either short given ID, or an ID that is not in current page because there are too many articles before it.
-        let fullid
-        let elem
-        if (fragNoHash === '') {
-          fullid = pathNoSlash
-        } else {
-          if (fragNoHash[0] === AT_MENTION_CHAR) {
-            fullid = fragNoHash.slice(1)
-            elem = document.getElementById(fullid)
-            if (elem) {
-              handleShortFragmentCurrentFragType = 'abs'
-            }
-          } else {
-            let prefix
-            let fragNoHashNoPrefix
-            if (fragNoHash.startsWith(Macro.TOC_PREFIX)) {
-              prefix = Macro.TOC_PREFIX
-              fragNoHashNoPrefix = fragNoHash.replace(prefix, '')
-            } else {
-              if (
-                fragNoHash[0] === Macro.RESERVED_ID_PREFIX &&
-                !(
-                  // Unnamed IDs like _1, _2, _3
-                  fragNoHash.length > 1 &&
-                  fragNoHash[1] >= '0' && fragNoHash[1] <= '9'
-                )
-              ) {
-                // For metadata headers like _ancestors
-                return
-              }
-              prefix = ''
-              fragNoHashNoPrefix = fragNoHash
-            }
-            fullid = prefix + path + fragNoHashNoPrefix
-            elem = document.getElementById(fullid)
-            if (!elem) {
-              // Toplevel does not have scope. So e.g. we will look for /username/algebra.
-              const pathSplit = path.split('/')
-              if (pathSplit.length > 2) {
-                fullid = prefix + pathSplit.slice(0, -2).join('/') + '/' + fragNoHashNoPrefix
-                elem = document.getElementById(fullid)
-              }
-            }
-            if (elem) {
-              handleShortFragmentCurrentFragType = 'long'
-            }
-          }
-        }
-        if (elem) {
-          fragSetTarget(elem)
-        }
-        if (handleShortFragmentCurrentFragType !== 'short') {
-          // We've found the full URL from the short one. Redirect to full URL to
-          // jump to the ID and highlight it.. This triggers a onhashchange event
-          // which will call this function once again. The next call will then immediately
-          // convert long ID to short ID.
-          window.location.replace('#' + fullid)
-        } else {
-          // ID is not on page anymore because too many articles were added before it on the same page,
-          // assume toplevel does not have scope for now. TODO get that information from DB and make the
-          // correct assumption here instead.
-          Router.replace('/' + fullid)
-        }
-      } else {
-        // Long URL and present in page. Let's shorten it without triggering
-        // another onhashchange and we are done.
-        //
-        // Using this internal-looking API works. Not amazing, bu we can't find a better way.
-        // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
-        // https://github.com/vercel/next.js/discussions/18072
-        let newUrl
-        if (handleShortFragmentCurrentFragType === 'long') {
-          newUrl = window.location.pathname + '#' + getShortFragFromLong(fragNoHash)
-        } else if (handleShortFragmentCurrentFragType === 'abs') {
-          newUrl = window.location.pathname + '#' + AT_MENTION_CHAR + fragNoHash
-        }
-        window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
-        // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
-        // However makes: user/mathematics -> user/mathematics#algebra -> user/mathematics#linear-algebra -> browser back history button work
-        // give "Error: Cancel rendering route"
-        //await Router.replace(shortFrag)
-        handleShortFragmentCurrentFragType = 'short'
-      }
-    }
-  }
   React.useEffect(
     () => {
+      let handleShortFragmentCurrentFragType = 'short'
+      function handleShortFragment(ev=null) {
+        if (handleShortFragmentSkipOnce.current) {
+          handleShortFragmentSkipOnce.current = false
+          return
+        }
+        let frag
+        if (window.location.href.slice(-1) === '#') {
+          // window.location.hash is empty for '#' with empty frag
+          // new URL(window.location.href).hash is aslo empty for '#' with empty frag
+          frag = '#'
+        } else {
+          frag = window.location.hash
+        }
+        // algebra
+        const fragNoHash = frag.substring(1)
+        // mathematics
+        const pathNoSlash = window.location.pathname.substring(1)
+        // mathematics/
+        const path = pathNoSlash + '/'
+        if (frag) {
+          if (handleShortFragmentCurrentFragType === 'short') {
+            // Either short given ID, or an ID that is not in current page because there are too many articles before it.
+            let fullid
+            let elem
+            if (fragNoHash === '') {
+              fullid = pathNoSlash
+            } else {
+              if (fragNoHash[0] === AT_MENTION_CHAR) {
+                fullid = fragNoHash.slice(1)
+                elem = document.getElementById(fullid)
+                if (elem) {
+                  handleShortFragmentCurrentFragType = 'abs'
+                }
+              } else {
+                let prefix
+                let fragNoHashNoPrefix
+                if (fragNoHash.startsWith(Macro.TOC_PREFIX)) {
+                  prefix = Macro.TOC_PREFIX
+                  fragNoHashNoPrefix = fragNoHash.replace(prefix, '')
+                } else {
+                  if (
+                    fragNoHash[0] === Macro.RESERVED_ID_PREFIX &&
+                    !(
+                      // Unnamed IDs like _1, _2, _3
+                      fragNoHash.length > 1 &&
+                      fragNoHash[1] >= '0' && fragNoHash[1] <= '9'
+                    )
+                  ) {
+                    // For metadata headers like _ancestors
+                    return
+                  }
+                  prefix = ''
+                  fragNoHashNoPrefix = fragNoHash
+                }
+                fullid = prefix + path + fragNoHashNoPrefix
+                elem = document.getElementById(fullid)
+                if (!elem) {
+                  // Toplevel does not have scope. So e.g. we will look for /username/algebra.
+                  const pathSplit = path.split('/')
+                  if (pathSplit.length > 2) {
+                    fullid = prefix + pathSplit.slice(0, -2).join('/') + '/' + fragNoHashNoPrefix
+                    elem = document.getElementById(fullid)
+                  }
+                }
+                if (elem) {
+                  handleShortFragmentCurrentFragType = 'long'
+                }
+              }
+            }
+            if (elem) {
+              fragSetTarget(elem)
+            }
+            if (handleShortFragmentCurrentFragType !== 'short') {
+              // We've found the full URL from the short one. Redirect to full URL to
+              // jump to the ID and highlight it.. This triggers a onhashchange event
+              // which will call this function once again. The next call will then immediately
+              // convert long ID to short ID.
+              window.location.replace('#' + fullid)
+            } else {
+              // ID is not on page anymore because too many articles were added before it on the same page,
+              // assume toplevel does not have scope for now. TODO get that information from DB and make the
+              // correct assumption here instead.
+              Router.replace('/' + fullid)
+            }
+          } else {
+            // Long URL and present in page. Let's shorten it without triggering
+            // another onhashchange and we are done.
+            //
+            // Using this internal-looking API works. Not amazing, bu we can't find a better way.
+            // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
+            // https://github.com/vercel/next.js/discussions/18072
+            let newUrl
+            if (handleShortFragmentCurrentFragType === 'long') {
+              newUrl = window.location.pathname + '#' + getShortFragFromLong(fragNoHash)
+            } else if (handleShortFragmentCurrentFragType === 'abs') {
+              newUrl = window.location.pathname + '#' + AT_MENTION_CHAR + fragNoHash
+            }
+            window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
+            // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
+            // However makes: user/mathematics -> user/mathematics#algebra -> user/mathematics#linear-algebra -> browser back history button work
+            // give "Error: Cancel rendering route"
+            //await Router.replace(shortFrag)
+            handleShortFragmentCurrentFragType = 'short'
+          }
+        }
+      }
       if (!isIssue) {
         handleShortFragment()
         window.addEventListener('hashchange', handleShortFragment)
@@ -308,12 +309,45 @@ const Article = ({
     [
       // Otherwise useEffect doesn't fire when switching to another article,
       // and we might not hover to the correct ID.
-      article.slug
+      article.slug,
+      handleShortFragmentSkipOnce,
+      isIssue
     ]
   )
 
   // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
   const staticHtmlRef = React.useRef(null)
+  React.useEffect(() => {
+    const elem = staticHtmlRef.current
+    if (elem) {
+      ourbigbook_runtime(
+        elem,
+        {
+          hoverSelfLinkCallback: (a) => {
+            if (!isIssue) {
+              // We are certain that these links are of form #barack-obama/mathematics
+              // and that they point to something present in the current page.
+              // E.g. barack-obama/mathematics. So the handling can be a bit simplified.
+              const frag = new URL(a.href).hash.substring(1)
+              const shortFrag = getShortFragFromLong(frag)
+              a.href = '#' + shortFrag
+              a.addEventListener(
+                'click',
+                (ev) => {
+                  if (!ev.ctrlKey) {
+                    shortFragGoTo(handleShortFragmentSkipOnce, shortFrag, frag, document.getElementById(frag))
+                  }
+                }
+              )
+            }
+          }
+        }
+      )
+    }
+  }, [
+    isIssue,
+    handleShortFragmentSkipOnce,
+  ])
   React.useEffect(() => {
     const elem = staticHtmlRef.current
     if (elem) {
@@ -478,29 +512,6 @@ const Article = ({
           </>
         )
       }
-      ourbigbook_runtime(
-        elem,
-        {
-          hoverSelfLinkCallback: (a) => {
-            if (!isIssue) {
-              // We are certain that these links are of form #barack-obama/mathematics
-              // and that they point to something present in the current page.
-              // E.g. barack-obama/mathematics. So the handling can be a bit simplified.
-              const frag = new URL(a.href).hash.substring(1)
-              const shortFrag = getShortFragFromLong(frag)
-              a.href = '#' + shortFrag
-              a.addEventListener(
-                'click',
-                (ev) => {
-                  if (!ev.ctrlKey) {
-                    shortFragGoTo(handleShortFragmentSkipOnce, shortFrag, frag, document.getElementById(frag))
-                  }
-                }
-              )
-            }
-          }
-        }
-      )
 
       // Capture link clicks, use ID on current page if one is present.
       // Only go to another page if the ID is not already present on the page.
@@ -557,7 +568,7 @@ const Article = ({
                   e.preventDefault()
                   if (
                     // This is needed to prevent a blowup when clicking the "parent" link of a direct child of the toplevel page of an issue.
-                    // For artiles all works fine because each section is rendered separately and thus has a non empty href.
+                    // For articles all works fine because each section is rendered separately and thus has a non empty href.
                     // But issues currently work more like static renderings, and use empty ID for the toplevel header. This is even though
                     // the toplevel header does have already have an ID. We should instead of doing this actually make those hrefs correct.
                     // But lazy now.
@@ -577,10 +588,19 @@ const Article = ({
           }
         }
       }
-      // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
-      //return () => ourbigbook_runtime_cleanup(elem)
     }
-  }, [])
+  }, [
+    ancestors,
+    article,
+    articlesInSamePageMap,
+    canDelete,
+    canEdit,
+    handleShortFragmentSkipOnce,
+    isIssue,
+    issueArticle,
+    linkPref,
+    loggedInUser,
+  ])
   let html = ''
   if (!isIssue) {
     html += article.h1Render

@@ -335,7 +335,7 @@ export function useWindowEventListener(event, callback) {
     return () => {
       window.removeEventListener(event, callback)
     }
-  }, [])
+  }, [callback, event])
 }
 
 /** Ask if user really wants to save page that may have unsaved changes.

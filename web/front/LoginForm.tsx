@@ -11,28 +11,21 @@ import { webApi } from 'front/api'
 import routes from 'front/routes'
 
 const LoginForm = ({ register = false }) => {
-  const [isLoading, setLoading] = React.useState(false);
-  const [errors, setErrors] = React.useState([]);
+  const [isLoading, setLoading] = React.useState(false)
+  const [errors, setErrors] = React.useState([])
   const { prevPageNoSignup } = React.useContext(AppContext)
-  let email, setEmail;
-  let displayName, setDisplayName;
-  if (register) {
-    [email, setEmail] = React.useState("");
-    [displayName, setDisplayName] = React.useState("");
-  }
-  const [username, setUsername] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  let handleEmailChange, handleDisplayNameChange;
-  if (register) {
-    handleEmailChange = React.useCallback(
-      (e) => setEmail(e.target.value),
-      []
-    );
-    handleDisplayNameChange = React.useCallback(
-      (e) => setDisplayName(e.target.value),
-      []
-    );
-  }
+  const [email, setEmail] = React.useState("")
+  const [displayName, setDisplayName] = React.useState("")
+  const [username, setUsername] = React.useState("")
+  const [password, setPassword] = React.useState("")
+  const handleEmailChange = React.useCallback(
+    (e) => setEmail(e.target.value),
+    []
+  )
+  const handleDisplayNameChange = React.useCallback(
+    (e) => setDisplayName(e.target.value),
+    []
+  )
   const handleUsernameChange = React.useCallback(
     (e) => setUsername(e.target.value),
     []

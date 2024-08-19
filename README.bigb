@@ -1625,7 +1625,7 @@ See: <`\H` `file` argument toplevel header>{full}.
 = `\H` `file` argument demo
 {parent=H file argument}
 
-This section contains some live demoes of the <`\H` `file` argument>.
+This section contains some live demos of the <`\H` `file` argument>.
 
 = file_demo
 {file}
@@ -9234,8 +9234,11 @@ Note that Next.js tests are just present inside other tests, e.g. `api: create a
 
 These tests can only be run in production mode, and so our scripts automatically rebuild every time before running the tests, which makes things quite slow. This required because in development mode, Next.js is extremelly soft, and e.g. does not raise 500 instead returning a 200 page with error messages. Bad default.
 
-= OurBigBook Web TypeScript type checking
+= OurBigBook Web static analysis
 {parent=OurBigBook Web development}
+
+= OurBigBook Web TypeScript type checking
+{parent=OurBigBook Web static analysis}
 
 TypeScript type checking of <OurBigBook Web> is run automatically during build, e.g. by:
 ``
@@ -9249,6 +9252,21 @@ cd web
 nmp run typecheck
 ``
 The output format is also a bit nicer that what is shown in `npm run build-dev`.
+
+= OurBigBook Web TypeScript type linting
+{parent=OurBigBook Web static analysis}
+
+We use Next.js' rules, which are extremelly useful for finding React hook issues:
+```
+cd web
+npm run lint
+```
+
+To lint just one file run:
+``
+cd web
+npx eslint front/Article.tsx
+``
 
 = OurBigBook Web environment variable
 {c}

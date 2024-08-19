@@ -59,10 +59,11 @@ const CommentList = ({
     showBodyInit = showBody
   }
   const [showBodyState, setShowBodyState] = React.useState(showBodyInit)
+  const resetShowBodyGetString = encodeGetParams(lodash.omit(query, 'body'))
   React.useEffect(() => {
     // Reset on tab change.
     setShowBodyState(showBodyInit)
-  }, [pathname, encodeGetParams(lodash.omit(query, 'body'))])
+  }, [pathname, resetShowBodyGetString, showBodyInit])
   let pagination
   if (showControls) {
     pagination = <Pagination {...{
@@ -91,9 +92,10 @@ const CommentList = ({
               <div className={`list-container${showBodyState ? ' show-body' : ''}`}>
                 {showBodyState
                   ? <>
-                    {comments?.map((comment: CommentType) => <Comment {...{
+                    {comments?.map((comment: CommentType) => <Comment
+                      key={showFullSlug ? getCommentSlug(comment) : comment.number}
+                      {...{
                         comment,
-                        key: showFullSlug ? getCommentSlug(comment) : comment.number,
                         loggedInUser,
                         showFullBody,
                         showFullSlug,

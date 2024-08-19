@@ -49,7 +49,7 @@ function IndexPageHoc({
   pageType='home'
 }={}) {
   const isHomepage = pageType === 'home'
-  return ({
+  return function IndexPage({
     articles,
     articlesCount,
     comments,
@@ -63,7 +63,7 @@ function IndexPageHoc({
     pinnedArticle,
     users,
     usersCount,
-  }: IndexPageProps) => {
+  }: IndexPageProps) {
     let title
     if (isHomepage) {
       let orderTitle = orderToPageTitle(order)

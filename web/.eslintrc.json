@@ -1,10 +1,9 @@
 {
-  "parserOptions": {
-    "ecmaVersion": 6,
-    "sourceType": "module"
-  },
+  "extends": "next",
+  "root": true,
   "plugins": ["prettier"],
   "rules": {
-    "prettier/prettier": "error"
+    "react/no-unescaped-entities": 0,
+    "@next/next/no-img-element": 0
   }
 }

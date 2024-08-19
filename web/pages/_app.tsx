@@ -46,17 +46,16 @@ const MyApp = ({ Component, pageProps }) => {
     },
     [router?.asPath, setPrevPageNoSignup]
   )
-  if (isProduction) {
-    // Google Analytics page switches:
-    // https://stackoverflow.com/questions/60411351/how-to-use-google-analytics-with-next-js-app/62552263#62552263
-    const router = useRouter();
-    useEffect(() => {
-      router.events.on('routeChangeComplete', handleRouteChange);
+  // Google Analytics page switches:
+  // https://stackoverflow.com/questions/60411351/how-to-use-google-analytics-with-next-js-app/62552263#62552263
+  useEffect(() => {
+    if (isProduction) {
+      router.events.on('routeChangeComplete', handleRouteChange)
       return () => {
-        router.events.off('routeChangeComplete', handleRouteChange);
-      };
-    }, [router.events]);
-  }
+        router.events.off('routeChangeComplete', handleRouteChange)
+      }
+    }
+  }, [router.events])
 
   // Fetch every post-load user-specific data required for a page at once here.
   // We can get things up from inner components with properties much like `Component.isEditor`.

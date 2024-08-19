@@ -9,11 +9,10 @@ import {
   REGISTER_ACTION,
   UserIcon,
 } from 'front'
-import { AppContext } from 'front'
 
 const LoginPageHoc = ({ register = false }) => {
   const title = register ? REGISTER_ACTION : LOGIN_ACTION
-  return () => {
+  return function LoginPage() {
     return <>
       <MyHead title={title} />
       <div className="auth-page content-not-ourbigbook">

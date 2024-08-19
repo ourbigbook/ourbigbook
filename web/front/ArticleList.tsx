@@ -113,10 +113,11 @@ const ArticleList = ({
     showBodyInit = false
   }
   const [showBodyState, setShowBodyState] = React.useState(showBodyInit)
+  const resetShowBodyGetString = encodeGetParams(lodash.omit(query, 'body'))
   React.useEffect(() => {
     // Reset on tab change.
     setShowBodyState(showBodyInit)
-  }, [pathname, encodeGetParams(lodash.omit(query, 'body'))])
+  }, [pathname, resetShowBodyGetString, showBodyInit])
 
   let isIssue
   switch (itemType) {

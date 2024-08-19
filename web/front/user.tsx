@@ -80,7 +80,7 @@ export function DisplayAndUsername(
   }
   let mobileOptionalPartPost: React.ReactNode = doShowParenthesis ? <span className="par">)</span> : ''
   if (!showUsernameMobile) {
-    mobileOptionalPart = [<span className="mobile-hide">{mobileOptionalPart.map((item, key) => <React.Fragment key={key}>{item}</React.Fragment>)}</span>]
+    mobileOptionalPart = [<span className="mobile-hide" key="0">{mobileOptionalPart.map((item, key) => <React.Fragment key={key}>{item}</React.Fragment>)}</span>]
     mobileOptionalPartPost = <span className="mobile-hide">{mobileOptionalPartPost}</span>
   }
   return <>

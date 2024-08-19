@@ -127,18 +127,16 @@ const Pagination = ({
             </Maybe>
             {pages.map(page => {
               const isCurrent = page === currentPage;
-              return (
-                <PaginationItem
-                  {...{
-                    key: page.toString(),
-                    className: isCurrent && "active",
-                    page: page + 1,
-                    urlFunc,
-                  }}
-                >
-                  {page + 1}
-                </PaginationItem>
-              );
+              return <PaginationItem
+                key={page.toString()}
+                {...{
+                  className: isCurrent && "active",
+                  page: page + 1,
+                  urlFunc,
+                }}
+              >
+                {page + 1}
+              </PaginationItem>
             })}
             <Maybe test={currentPage < totalPages - 1}>
               <PaginationItem {...{ page: currentPage + 2, urlFunc }}>{`>`}</PaginationItem>

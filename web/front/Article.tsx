@@ -592,7 +592,6 @@ const Article = ({
       const href = a.slug
       const content = a.titleRender
       let parent_href, parent_content
-      console.log(`href=${href} level=${level} a.depth=${a.depth} article.depth=${article.depth}`)
       while (level > 1) {
         const levelToHeaderEntry = levelToHeader[level - 1]
         if (

@@ -588,13 +588,25 @@ const Article = ({
     for (let i = 0; i < articlesInSamePageForToc.length; i++) {
       const a = articlesInSamePageForToc[i]
       const authorUsername = article.author.username
-      const level = a.depth - article.depth
+      let level = a.depth - article.depth
       const href = a.slug
       const content = a.titleRender
       let parent_href, parent_content
-      if (level > 1) {
-        ;({ href: parent_href, content: parent_content } = levelToHeader[level - 1])
-      } else {
+      console.log(`href=${href} level=${level} a.depth=${a.depth} article.depth=${article.depth}`)
+      while (level > 1) {
+        const levelToHeaderEntry = levelToHeader[level - 1]
+        if (
+          // Can be undefined either for:
+          // - Index
+          // - Child of unlisted article at a given level
+          levelToHeaderEntry
+        ) {
+          ;({ href: parent_href, content: parent_content } = levelToHeaderEntry)
+          break
+        }
+        level -= 1
+      }
+      if (parent_content === undefined) {
         parent_content = article.titleRender
       }
       levelToHeader[level] = { href, content }
@@ -602,7 +614,7 @@ const Article = ({
         content,
         href: ` href="/${href}"`,
         level,
-        has_child: i < articlesInSamePageForToc.length - 1 && articlesInSamePageForToc[i + 1].depth === a.depth + 1,
+        has_child: i < articlesInSamePageForToc.length - 1 && articlesInSamePageForToc[i + 1].depth > a.depth,
         // A quick hack as it will be easier to do it here than to modify the link generation.
         // We'll later fix both at once to remove the user prefix one day. Maybe.
         // https://docs.ourbigbook.com/TODO/remove-scope-from-toc-entry-ids

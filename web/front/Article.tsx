@@ -312,7 +312,10 @@ const Article = ({
     ]
   )
 
-  const renderRefCallback = (elem) => {
+  // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
+  const staticHtmlRef = React.useRef(null)
+  React.useEffect(() => {
+    const elem = staticHtmlRef.current
     if (elem) {
       for (const h of elem.querySelectorAll('.h')) {
         const id = h.id
@@ -365,7 +368,8 @@ const Article = ({
         }
 
         // We use this map to prevent calling createRoot twice on the same element, which gives a warning.
-        // TODO how/when to correctly clear this map? Tried on 
+        // TODO how/when to correctly clear this map?
+        // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
         let root = webElemToRootMap.current.get(webElem)
         if (!root) {
           root = createRoot(webElem)
@@ -479,7 +483,7 @@ const Article = ({
         {
           hoverSelfLinkCallback: (a) => {
             if (!isIssue) {
-              // We are certain that thsese links are of form #barack-obama/mathematics
+              // We are certain that these links are of form #barack-obama/mathematics
               // and that they point to something present in the current page.
               // E.g. barack-obama/mathematics. So the handling can be a bit simplified.
               const frag = new URL(a.href).hash.substring(1)
@@ -573,8 +577,10 @@ const Article = ({
           }
         }
       }
+      // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
+      //return () => ourbigbook_runtime_cleanup(elem)
     }
-  }
+  }, [])
   let html = ''
   if (!isIssue) {
     html += article.h1Render
@@ -632,7 +638,7 @@ const Article = ({
     <div
       dangerouslySetInnerHTML={{ __html: html }}
       className="ourbigbook"
-      ref={renderRefCallback}
+      ref={staticHtmlRef}
     />
     <div className="meta">
       {isIssue

@@ -646,13 +646,6 @@ Web upload breaks with duplicate ID if you rename a header and synonym the old o
 === Flyers
 {tag=Publicity}
 
-=== ToC Js folding broken on Web
-{tag=ToC}
-{tag=Web}
-{tag=Bug}
-
-Working on static.
-
 === ourbigbook.com --web uploads sometimes fail with ETIMEDOUT or ECONNRESET
 {tag=Bug}
 {tag=Web upload}
@@ -1121,6 +1114,13 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== ToC Js folding broken on Web
+{tag=ToC}
+{tag=Web}
+{tag=Bug}
+
+Working on static.
 
 === Allow user to edit other user's articles
 {tag=Web}

@@ -1693,6 +1693,17 @@ Another line.
 
 An explanation of what this video is about.
 
+= https://example.com
+{file}
+{parent=H file argument demo}
+
+This section shows how to use a file to an arbitrary URL.
+
+Link to this section as:
+\OurBigBookExample[[
+<https://example.com>{file}
+]]
+
 = `\H` `numbered` argument
 {c}
 {parent=H arguments}
@@ -5372,7 +5383,7 @@ The name "boolean argument" is given by analogy to the https://stackoverflow.com
 = Positive nonzero integer argument
 {parent=Macro argument type}
 
-Positive nonzero integer arguments accept only the characters [0-9] as their input, and 0 may not be the first character. If anything else is present, an error is raised.
+Positive nonzero integer arguments accept only the characters `[0-9]` as their input, and 0 may not be the first character. If anything else is present, an error is raised.
 
 = Common argument
 {c}

@@ -219,7 +219,7 @@ export function SignupOrLogin(
   </>
 }
 
-export function TopicsHelp({ className }) {
+export function TopicsHelp({ className=undefined }) {
   return <div className={className ? className : ''}><HelpIcon /> New to <b>topics</b>? <a href={`${docsUrl}/ourbigbook-web-topics`}>Read the documentation here!</a></div>
 }
 

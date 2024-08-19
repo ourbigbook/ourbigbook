@@ -49,9 +49,15 @@ export const TopicPage = ({
   const router = useRouter();
   const topicId = slugFromArray(router.query.id)
   const paginationUrlFunc = (page) => routes.topic(topicId, { page, sort: order })
+  let titleText
+  if (topic) {
+    titleText = topic.titleSource
+  } else {
+    titleText = idToTitle(topicId)
+  }
   if (router.isFallback) { return <LoadingSpinner />; }
   return <>
-    <MyHead title={topic.titleSource} />
+    <MyHead title={titleText} />
     <div className="topic-page">
       {topic
         ? <>
@@ -104,16 +110,18 @@ export const TopicPage = ({
           </>
         : <>
             <div className="content-not-ourbigbook">
-              <h1><TopicIcon /> Topic does not exist: {topicId}</h1>
+              <h1><TopicIcon /> {titleText}</h1>
+              <p>There are no articles in this topic. Topic ID: {topicId}</p>
               <div>
                 <CustomLink
                   className="btn new"
-                  href={routes.articleNew({ 'title': idToTitle(topicId) })}
+                  href={routes.articleNew({ 'title': titleText })}
                   updatePreviousPage={true}
                 >
                   <NewArticleIcon title={false}/>{' '}Create the first article for this topic
                 </CustomLink>
               </div>
+              <TopicsHelp className="p" />
             </div>
           </>
       }

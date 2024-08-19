@@ -219,8 +219,8 @@ export function SignupOrLogin(
   </>
 }
 
-export function TopicsHelp() {
-  return <div><HelpIcon /> New to <b>topics</b>? <a href={`${docsUrl}/ourbigbook-web-topics`}>Read the documentation here!</a></div>
+export function TopicsHelp({ className }) {
+  return <div className={className ? className : ''}><HelpIcon /> New to <b>topics</b>? <a href={`${docsUrl}/ourbigbook-web-topics`}>Read the documentation here!</a></div>
 }
 
 export function disableButton(btn, msg='Cannot submit due to errors') {

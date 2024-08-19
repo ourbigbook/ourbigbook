@@ -10154,6 +10154,11 @@ Supported language features:
   },
   ``
   As you add or remove lines to the document, the outline becomes immediately outdated. To update it, make sure to save the document (Ctrl + S) and wait a few seconds.
+
+  Drag and drop editing gets requested from time to time but just dies to the bot:
+  * https://github.com/microsoft/vscode/issues/143192
+  * https://github.com/microsoft/vscode/issues/69080
+  though in our case it wouldn't be so simple as <\H parent arguments> would also have to be adjusted.
 * commands: all our command shortcuts are defined to only work on OurBigBook files (<.bigb extension>) to avoid cluttering non-OurBigBook projects. This is done as vscode does not seem to have the concept of "project type" built into it. If you want the build and launch shorcuts to work on your project for any file, also define build and launch commands under `.vscode`
   * `Build all`: save the current file is unsaved, and then build the <project toplevel directory> with `ourbigbook .`
   * `Build all and view current output file`: do `ourbigbook .` and then open the HTML output for the current file in your browser

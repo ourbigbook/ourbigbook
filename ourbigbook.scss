@@ -11,7 +11,6 @@
 @font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
 
 $caption-margin-bottom: 7px;
-$p-margin-vert: 14px;
 // Without this, hover on ToC makes ToC move around. Maybe we should scope to ToC only?
 // TODO find proper way to do it without this random value.
 $icon-font-size: .95em;

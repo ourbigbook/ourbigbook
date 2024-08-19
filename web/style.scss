@@ -488,6 +488,12 @@ div.editor-page {
   }
 }
 
+/** Paragraph-like vertical spacing. */
+div.p {
+  margin-bottom: $p-margin-vert;
+  margin-top: $p-margin-vert;
+}
+
 div.tab-list {
   font-weight: bold;
   margin: 5px 0 10px;

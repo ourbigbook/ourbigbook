@@ -482,7 +482,7 @@ const Article = ({
               // We are certain that thsese links are of form #barack-obama/mathematics
               // and that they point to something present in the current page.
               // E.g. barack-obama/mathematics. So the handling can be a bit simplified.
-              const frag = new URL(a.href).hash.substr(1)
+              const frag = new URL(a.href).hash.substring(1)
               const shortFrag = getShortFragFromLong(frag)
               a.href = '#' + shortFrag
               a.addEventListener(

@@ -464,7 +464,7 @@ class AstNode {
     ) {
       self_scope = this.id;
       if (parent_scope !== undefined) {
-        self_scope = self_scope.substr(parent_scope.length + 1);
+        self_scope = self_scope.substring(parent_scope.length + 1)
       }
     } else {
       self_scope = '';
@@ -991,7 +991,7 @@ function resolveAbsoluteXref(id, context) {
   if (context.options.ref_prefix) {
     return context.options.ref_prefix + id
   } else {
-    return id.substr(1)
+    return id.substring(1)
   }
 }
 
@@ -6482,7 +6482,7 @@ function pathSplit(str, sep) {
   if (dir_sep_index == -1) {
     return ['', str];
   } else {
-    return [str.substring(0, dir_sep_index), str.substr(dir_sep_index + 1)];
+    return [str.substring(0, dir_sep_index), str.substring(dir_sep_index + 1)]
   }
 }
 exports.pathSplit = pathSplit
@@ -6492,7 +6492,7 @@ function pathSplitext(str) {
   if (sep_index == -1) {
     return [str, ''];
   } else {
-    return [str.substring(0, sep_index), str.substr(sep_index + 1)];
+    return [str.substring(0, sep_index), str.substring(sep_index + 1)]
   }
 }
 exports.pathSplitext = pathSplitext
@@ -6531,11 +6531,11 @@ function removeToplevelScope(id, toplevel_ast, context) {
     id === toplevel_ast.id
   ) {
     if (toplevel_ast.scope !== undefined) {
-      return id.substr(toplevel_ast.scope.length + 1);
+      return id.substring(toplevel_ast.scope.length + 1)
     }
     return id;
   } else {
-    return id.substr(calculateScopeLength(toplevel_ast));
+    return id.substring(calculateScopeLength(toplevel_ast))
   }
 }
 
@@ -7050,7 +7050,7 @@ function xGetTargetAstBase({
     context.options.x_leading_at_to_web &&
     target_id[0] === AT_MENTION_CHAR
   ) {
-    return [htmlAttr('href', context.webUrl + target_id.substr(1)), target_id];
+    return [htmlAttr('href', context.webUrl + target_id.substring(1)), target_id];
   }
   let target_id_eff
   if (do_magic_title_to_id) {
@@ -8701,7 +8701,7 @@ const DEFAULT_MACRO_LIST = [
                 }
               } else {
                 // youtu.be/<ID> and path is "/<ID>" so get rid of "/".
-                video_id = url.pathname.substr(1);
+                video_id = url.pathname.substring(1);
               }
             } else {
               video_id = src;

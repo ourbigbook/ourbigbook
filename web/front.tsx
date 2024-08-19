@@ -468,7 +468,7 @@ export function getShortFragFromLongForPath(fragNoHash, pathNoSlash) {
 }
 
 export function getShortFragFromLong(fragNoHash) {
-  return getShortFragFromLongForPath(fragNoHash, window.location.pathname.substr(1))
+  return getShortFragFromLongForPath(fragNoHash, window.location.pathname.substring(1))
 }
 
 /** Modify the current URL to have this hash. Do not add alter browser history. */
@@ -487,7 +487,7 @@ export function replaceFrag(fragNoHash) {
 /** Input: we are in an url with long fragment such as #barack-obama/mathematics
  * Outcome: replace the URL fragment with the corresponding short one without altering browser history. */
 export function replaceShortFrag() {
-  replaceFrag(getShortFragFromLong(window.location.hash.substr(1)))
+  replaceFrag(getShortFragFromLong(window.location.hash.substring(1)))
 }
 
 /** Use explicit .target class to overcome https://github.com/ourbigbook/ourbigbook/issues/302 */

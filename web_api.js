@@ -50,7 +50,7 @@ function read_include({exists, read, path_sep, ext}) {
     let test
     let basename = id + ext;
     if (basename[0] === path_sep) {
-      test = id.substr(1)
+      test = id.substring(1)
       if (await exists(test)) {
         found = test;
       }

@@ -547,7 +547,7 @@ async function generateDemoData(params) {
           titleSource: articleArg.titleSource,
         })
         const after = now();
-        opts.topicId = extra_returns.context.header_tree.children[0].ast.id.substr(
+        opts.topicId = extra_returns.context.header_tree.children[0].ast.id.substring(
           ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1)
         if (verbose) console.error(`${msg} finished in ${after - before}ms`);
         for (const article of newArticles) {

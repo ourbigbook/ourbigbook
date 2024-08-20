@@ -1646,7 +1646,7 @@ LIMIT ${limit}` : ''}
     if (authors.length) {
       authorWhere.username = authors
     } else if (skipAuthors.length) {
-      authorWhere.username = { [sequelize.Sequelize.Op.ne]: skipAuthors }
+      authorWhere.username = { [sequelize.Sequelize.Op.notIn]: skipAuthors }
     }
     let offset = 0
     while (true) {

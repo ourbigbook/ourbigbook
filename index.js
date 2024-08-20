@@ -9504,7 +9504,7 @@ const OUTPUT_FORMATS_LIST = [
         'passthrough': function(ast, context) {
           return `<div class="float-wrap">${renderArgNoescape(ast.args.content, context)}</div>`
         },
-        'Q': htmlRenderSimpleElem('blockquote'),
+        'Q': htmlRenderSimpleElem('blockquote', { wrap: true }),
         'sub': htmlRenderSimpleElem('sub'),
         'sup': htmlRenderSimpleElem('sup'),
         [Macro.TABLE_MACRO_NAME]: function(ast, context) {

@@ -33,7 +33,7 @@
   {title=The <topics feature> allows you to find the best version of a subject written by other users user}
   {description=Live demo: <#derivative>.}
   {provider=github}
-  {height=800}
+  {height=1000}
   {border}
 
   \Video[https://www.youtube.com/watch?v=54nxjC9BWTg]

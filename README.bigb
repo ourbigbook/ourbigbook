@@ -152,7 +152,7 @@ The following sections cover different ways to use tools from the OurBigBook:
 
     == Dog
     ``
-* https://katex.org/[KaTeX] server side <mathematics>, works on browsers with JavaScript disabled:
+* https://katex.org/[KaTeX] server side <mathematics>, works on browsers with <OurBigBook Web with JavaScript disabled>[JavaScript disabled]:
   ``
   I like $\sqrt{2}$, but I adore this \x[equation-quadratic-equation]:
 
@@ -9799,6 +9799,22 @@ The JWT token is only given to users after account verification. Having the JWT 
   * go to a separate new/edit article/issue page. This is strictly technically speaking just a link, but it is closely related to creating something new, so it feels more intuitive for it to be a button
 * when logged off:
   * stateful actions like "create article" or "like article" show as if logged in, but redirected to signup page. Unless it is possible for user to create significant content and then lose it, e.g. type in a new comment body and only notice later that he cannot submit.
+
+= OurBigBook Web with JavaScript disabled
+{c}
+{parent=OurBigBook Web UI guidelines}
+
+It is intended that OurBigBook Web be readable with JavaScript disabled. This has the following advantages:
+* reduces flickering on page load for users that JavaScript enabled
+* may help with SEO
+* helps with Web archiving. The Wayback Machine for example is notably bad with JavaScrip
+* helps privacy freaks who have their JavaScript turned off
+
+Pages should look exactly the same with JavaScript turned on or off.
+
+Page interactive behaviour may differ slighly. Notably, due to <OurBigBook Web dynamic article tree>, clicking links with JavaScript off always opens a new page `/username/myid` rather than going to `#myid` if the target <element ID> is already visible in the current page.
+
+User input and even login is not intended to be necessarily possible however, and will likely be always broken.
 
 = OurBigBook Web URL standards
 {c}

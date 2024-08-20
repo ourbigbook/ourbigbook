@@ -231,17 +231,6 @@ export default function EditorPageHoc({
     } else {
       ownerUsername = initialArticle.author.username
     }
-    const finalConvertOptions = lodash.merge({
-      db_provider: new RestDbProvider(),
-      forbid_multiheader: isIssue ? undefined : forbidMultiheaderMessage,
-      input_path: initialFile?.path || titleToPath(ownerUsername, 'asdf'),
-      katex_macros: preload_katex(ourbigbook_tex),
-      ourbigbook_json: {
-        openLinksOnNewTabs: true,
-      },
-      read_include: read_include_web(cachedIdExists),
-      ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${ownerUsername}`,
-    }, convertOptions)
     async function checkTitle(titleSource) {
       let titleErrors = []
       if (titleSource) {
@@ -387,6 +376,17 @@ export default function EditorPageHoc({
       ) {
         let editor
         loader.init().then(monaco => {
+          const finalConvertOptions = lodash.merge({
+            db_provider: new RestDbProvider(),
+            forbid_multiheader: isIssue ? undefined : forbidMultiheaderMessage,
+            input_path: initialFile?.path || titleToPath(ownerUsername, 'asdf'),
+            katex_macros: preload_katex(ourbigbook_tex),
+            ourbigbook_json: {
+              openLinksOnNewTabs: true,
+            },
+            read_include: read_include_web(cachedIdExists),
+            ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${ownerUsername}`,
+          }, convertOptions)
           finalConvertOptions.x_external_prefix = '../'.repeat(window.location.pathname.match(/\//g).length - 1)
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,
@@ -398,7 +398,7 @@ export default function EditorPageHoc({
               convertOptions: finalConvertOptions,
               handleSubmit,
               initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,
-              modifyEditorInput: (oldInput) => modifyEditorInput(file.titleSource, oldInput),
+              modifyEditorInput: (oldInput) => modifyEditorInput(initialFileState.titleSource, oldInput),
               postBuildCallback: (extra_returns) => {
                 setHasConvertError(extra_returns.errors.length > 0)
                 const first_header = extra_returns.context.header_tree.children[0]
@@ -407,7 +407,7 @@ export default function EditorPageHoc({
                   // TODO
                   // Not working because finalConvertOptions.input_path setting in handleTitle
                   // not taking effect. This would be the better way to check for it.
-                  //if (file.titleSource && cachedIdExists(id)) {
+                  //if (initialFileState.titleSource && cachedIdExists(id)) {
                   //  setTitleErrors([`Article ID already taken: "${id}"`])
                   //}
                 }
@@ -471,13 +471,17 @@ export default function EditorPageHoc({
         }
       }
     }, [
+      // TODO these are dependencies. But we we add some of them,
+      // we get back the error where the editor goes blank on error.
       bodySource,
-      file.titleSource,
-      finalConvertOptions,
-      handleSubmit,
+      initialFileState.titleSource,
+      //handleSubmit,
       initialArticle,
+      initialArticle?.titleSourceLine,
+      initialFile?.path,
       loggedInUser,
-      maxReached
+      maxReached,
+      ownerUsername
     ])
     async function checkParent(title, otherTitle, display) {
       const parentErrors = []

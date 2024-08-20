@@ -22,6 +22,7 @@
     "seed-prod": "./prod.sh bin/generate-demo-data.js --force-production",
     "start": "node --unhandled-rejections=strict ./app.js",
     "start-dev": "NEXT_PUBLIC_NODE_ENV=development NODE_ENV_NEXT_SERVER_ONLY=production node --unhandled-rejections=strict ./app.js",
+    "start-dev-pg": "OURBIGBOOK_POSTGRES=1 npm run start-dev",
     "start-prod": "./prod.sh npm start",
     "test": "NEXT_PUBLIC_NODE_ENV=test mocha test --ignore-leaks --timeout 4000 test.js",
     "test-deploy": "npm run test-next && npm run test-pg-next && cd .. && npm run test-release",

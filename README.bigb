@@ -9944,6 +9944,16 @@ Rerender only the articles with specified slugs:
 web/bin/rerender-articles.js johnsmith/mathematics maryjane/physics
 ``
 
+Only rerender articles by `johnsmith` and `maryjane`:
+``
+web/bin/rerender-articles.js -a johnsmith -a maryjane
+``
+
+Rerender articles by all authors except `johnsmith` and `maryjane`:
+``
+web/bin/rerender-articles.js -A johnsmith -A maryjane
+``
+
 Rerendering has to be done to see updates on OurBigBook changes that change the render output.
 
 Notably, this would be mandatory in case of CSS changes that require corresponding HTML changes.

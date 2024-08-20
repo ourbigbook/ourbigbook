@@ -1615,23 +1615,38 @@ LIMIT ${limit}` : ''}
     return ret
   }
 
-  /** Re-render multiple articles. */
+  /**
+   * Re-render multiple articles.
+   *
+   * @param {string[]} authors - only rerender articles of the given authors
+   * @param {string[]} skipAuthors - skip rerendering articles of the given authors. Ignored if authors is given.
+   */
   Article.rerender = async ({
-    author,
+    authors,
     convertOptionsExtra,
     ignoreErrors,
     log,
+    skipAuthors,
     slugs
   }={}) => {
-    if (log === undefined)
+    if (authors === undefined) {
+      authors = []
+    }
+    if (skipAuthors === undefined) {
+      skipAuthors = []
+    }
+    if (log === undefined) {
       log = false
+    }
     const where = {}
     if (slugs.length) {
       where.slug = slugs
     }
     const authorWhere = {}
-    if (author) {
-      authorWhere.username = author
+    if (authors.length) {
+      authorWhere.username = authors
+    } else if (skipAuthors.length) {
+      authorWhere.username = { [sequelize.Sequelize.Op.ne]: skipAuthors }
     }
     let offset = 0
     while (true) {

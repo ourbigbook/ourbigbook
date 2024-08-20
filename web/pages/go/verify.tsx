@@ -46,8 +46,6 @@ function VerifyPage({ code, email, user, verificationOk } : VerifyPageProps) {
 
 export default VerifyPage
 
-import { MyGetServerSideProps } from 'front/types'
-
 export const getServerSideProps = async ({ params = {}, req, res }) => {
   const email = req.query.email
   const code = req.query.code

@@ -1035,7 +1035,7 @@ However if you refresh the page, it highlights! Mystery.
 === Remove all unnecessary newlines from HTML output
 {tag=Lib}
 
-These newlines were added for debugging purpoes, but debugging should just be done with:
+These newlines were added for debugging purposes, but debugging should just be done with:
 ``
 npx js-beautify min.html
 ``

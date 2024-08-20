@@ -347,6 +347,7 @@ const Article = ({
   }, [
     isIssue,
     handleShortFragmentSkipOnce,
+    getParamString,
   ])
   React.useEffect(() => {
     const elem = staticHtmlRef.current

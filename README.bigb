@@ -8554,6 +8554,13 @@ These policies only applies to the official reference https://OurBigBook.com ins
 
 All content that you upload that you own copyright for is automatically dual licensed as under the https://creativecommons.org/licenses/by-sa/4.0/[Creative Commons CC BY-SA 4.0]. This is for example the same license family used by Wikipedia.
 
+Starting from August 22 2024, users also automatically grant to the <OurBigBook Project> a non-exclusive license to relicense their content. This could be used for example to:
+
+* sell the content to companies that do not wish to comply with the CC BB-SA license, e.g. for LLM training. We will try to avoid ever doing this as much as possible since it goes against the vision of the project for open knowledge. But it could one day be the difference between life and death of the project, so we'd like to keep that door open just in case.
+* add a new license to content on the website which we feel might better serve all users
+
+Any such relicensing does not affect the original CC BY-SA 4.0 license nor your ownership of the content. It only adds new licenses on top of it. This way the content remains free no matter what.
+
 If you don't own the copyright for a work, you may still upload it if its license allows for "perpetual (non-expiring) and non-revocable" usage. This allows for example for:
 * all Creative Commons licenses
 * GNU General Public License

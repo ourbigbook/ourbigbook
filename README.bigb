@@ -9152,6 +9152,33 @@ where `i` stands for `inspect` as in `node inspect`.
 
 This pauses at the start of execution. So just run `c` and normal execution resumes until the `debugger;` statement is reached.
 
+= OurBigBook Web performance
+{parent=OurBigBook Web development}
+
+A good benchmark for the critical Article page is perhaps the <Wikipedia bot> account which stresses the atricle tree the hardest.
+
+We should look out for metrics such as:
+* First Contentful Paint (FCP)
+* Time to First Byte (TTFB)
+and test both on <Heroku deployment> and locally.
+
+Local tests are always on optimized PostgresQL
+
+* 8ea5ffa52d291350e9a5ddef92e4171d50a51dcc TTFB
+  * local
+    * /wikibot: 1.2 s
+    * /cirosantilli: 0.5 s
+    * /barack-obama: 0.4 s
+  * cirosantilli.com: 0.1 - 0.2 s
+  * ourbigbook.com
+    * /wikibot: 3.5 - 4.5 s
+    * /cirosantilli: 1.1 - 1.5 s
+    * /barack-obama: 0.5 - 0.7 
+  This suggests a database scaling issue like a missing index.
+
+Related:
+* <todo/Reach the same performance as static website with dynamic tree>
+
 = OurBigBook Web unit tests
 {parent=OurBigBook Web development}
 

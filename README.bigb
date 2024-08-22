@@ -10116,16 +10116,16 @@ and adding the following settings to your User JSON settings file:
 ``
 
 Next, open the downloaded folder in Visual Studio Code with:
-* Ctrl + Shift + P
+* `Ctrl + Shift + P`
 * File: Open Folder
 then open a .bigb file such as README.bigb on vscode.
 
 Now you are ready to:
-* Ctrl + Shift + B: build all files in the folder
-* F5: build all files in the folder, and view the HTML output for the current source file in your browser
+* `Ctrl + Shift + B`: build all files in the folder
+* `F5`: build all files in the folder, and view the HTML output for the current source file in your browser
 
 Other things to try include:
-* Ctrl + T: search for a header in any file
+* `Ctrl + T`: search for a header in any file
 * type `<` to create an <internal cross file reference> and observe autocompletion suggest header names for you
 
 \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
@@ -10203,16 +10203,17 @@ Supported language features:
   TODO: the built-in markdown extension handles spaces on Ctrl+T. Understand how it works.
 
   <ID extraction> is performed on .bigb files automatically with `ourbigbook --no-render file.bigb` whenever new changes are saved to disk e.g. with Ctrl + S. This ensures that the <ID database> is kept up to date so that Ctrl + T and autocompletion will work.
+* `Ctrl + Shift + O`: ID search in the current file. Somewhat of a subset of `Ctrl + T`, but works faster, is more scoped if you know your ID is in the current file, and allows you to type spaces.
 * Ctrl + Click: jump to definition. If you hover over <internal cross file reference>-like elements such anywhere over the following:
   * `<New York>`
   * `{tag=New York}`
   * `{parent=New York}`
   then the editor jumps to their definition point.
-* outline, sticky scroll, breadcrumb. These features allow you to quickly navigate between headers of the current file in a tree structure. Consider adding the following shortcut to reveal the outline sidebar on `Alt + Shift + O`:
+* outline, sticky scroll, breadcrumb. These features allow you to quickly navigate between headers of the current file in a tree structure. Consider adding the following shortcut to reveal the outline sidebar on `Ctrl + 3`:
   ``
   {
-      "key": "alt+shift+o",
-      "command": "outline.focus"
+    "key": "ctrl+3",
+    "command": "outline.focus"
   },
   ``
   As you add or remove lines to the document, the outline becomes immediately outdated. To update it, make sure to save the document (Ctrl + S) and wait a few seconds.

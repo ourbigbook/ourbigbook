@@ -1,5 +1,3 @@
-import Link from 'next/link'
-import { useRouter } from 'next/router'
 import React from 'react'
 
 import CustomImage from 'front/CustomImage'
@@ -7,16 +5,13 @@ import CustomLink from 'front/CustomLink'
 import Maybe from 'front/Maybe'
 import {
   HelpIcon,
-  HomeIcon,
   LOGIN_ACTION,
   LikeIcon,
   NewArticleIcon,
-  NotificationIcon,
   REGISTER_ACTION,
   UserIcon,
 } from 'front'
 import { appNameShort, aboutUrl, donateUrl } from 'front/config'
-import useLoggedInUser from 'front/useLoggedInUser'
 import routes from 'front/routes'
 
 interface NavLinkProps {
@@ -28,7 +23,6 @@ interface NavLinkProps {
 }
 
 const NavLink = ({ href, onClick, children, className, newTab=false }: NavLinkProps) => {
-  const router = useRouter();
   const classes = ['nav-link']
   // This would mark toplevel nav items as selected or not. But it doesn't make
   // much sense on current toplevel nav configuration.
@@ -50,13 +44,8 @@ const NavLink = ({ href, onClick, children, className, newTab=false }: NavLinkPr
   );
 };
 
-const Navbar = ({ isEditor, scoreDelta }) => {
-  const loggedInUser = useLoggedInUser()
-  const router = useRouter();
-  const [_scoreDelta, setScoreDelta] = React.useState(scoreDelta)
-  React.useEffect(() => {
-    setScoreDelta(scoreDelta);
-  }, [scoreDelta])
+const Navbar = ({ isEditor, loggedInUser }) => {
+  const scoreDelta = loggedInUser?.scoreDelta
   return (
     <nav className="navbar">
       <div className="brand-group">
@@ -75,10 +64,9 @@ const Navbar = ({ isEditor, scoreDelta }) => {
           </NavLink>
           <NavLink
             href={routes.userLiked(loggedInUser?.username)}
-            className={`score${ _scoreDelta ? ` changed` : '' }`}
-            onClick={() => setScoreDelta(0)}
+            className={`score${ scoreDelta ? ` changed` : '' }`}
           >
-            <LikeIcon /> +{_scoreDelta}
+            <LikeIcon /> <span className="txt">+{scoreDelta}</span>
           </NavLink>
           <NavLink
             href={routes.user(loggedInUser?.username)}

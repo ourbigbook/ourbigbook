@@ -839,7 +839,7 @@ nav.navbar {
     color: $navbar-non-brandname-color;
     &:visited {
       color: $navbar-non-brandname-color;
-    }
+   }
     &:hover, &.active {
       color: $navbar-background-color;
       background-color: $navbar-non-brandname-color;
@@ -850,6 +850,9 @@ nav.navbar {
       // Need to go a bit custom here because of the golden background.
       i.ion-heart {
         color: $heart-background-hover-color;
+      }
+      .txt {
+        color: $h-color;
       }
     }
     &.profile {

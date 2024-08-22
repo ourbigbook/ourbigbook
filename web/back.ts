@@ -18,9 +18,52 @@ export async function getLoggedInUser(req, res, loggedInUser?) {
     } else {
       return null
     }
-    const user = await req.sequelize.models.User.findByPk(verifiedUser.id)
+    const sequelize = req.sequelize
+    const User = sequelize.models.User
+    const user = await User.findByPk(
+      verifiedUser.id,
+      {
+        attributes: {
+          include: [
+            [
+              sequelize.fn(
+                'count',
+                sequelize.col('authoredArticles->articles->likes.articleId')
+              ),
+              'scoreDelta'
+            ],
+          ],
+        },
+        group: ['User.id'],
+        include: [{
+          model: sequelize.models.File,
+          as: 'authoredArticles',
+          required: false,
+          subQuery: false,
+          attributes: [],
+          include: [{
+            model: sequelize.models.Article,
+            as: 'articles',
+            required: false,
+            subQuery: false,
+            attributes: [],
+            include: [{
+              model: sequelize.models.UserLikeArticle,
+              as: 'likes',
+              attributes: [],
+              required: false,
+              subQuery: false,
+              where: { createdAt: { [sequelize.Sequelize.Op.gt]: sequelize.col('User.newScoreLastCheck')} },
+            }]
+          }]
+        }]
+      }
+    )
+
     if (user === null) {
       res.clearCookie(AUTH_COOKIE_NAME)
+    } else {
+      user.scoreDelta = user.get('scoreDelta')
     }
     return user
   }

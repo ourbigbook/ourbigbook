@@ -27,14 +27,16 @@ import FollowUserButton from 'front/FollowUserButton'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import routes from 'front/routes'
 import Article from 'front/Article'
+import UserList from 'front/UserList'
+
 import { ArticleType, ArticleLinkType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
+import { CommonPropsType } from 'front/types/CommonPropsType'
 import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
-import UserList from 'front/UserList'
 
-export interface UserPageProps {
+export interface UserPageProps extends CommonPropsType {
   ancestors?: ArticleLinkType[];
   article?: ArticleType & IssueType;
   articles?: (ArticleType & IssueType & TopicType)[];
@@ -50,7 +52,6 @@ export interface UserPageProps {
   itemType?: 'article' | 'comment' | 'discussion' | 'like'| 'topic' | 'user';
   latestIssues?: IssueType[];
   list: boolean,
-  loggedInUser?: UserType;
   order: string;
   page: number;
   synonymLinks?: ArticleLinkType[];

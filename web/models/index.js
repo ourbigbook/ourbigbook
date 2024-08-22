@@ -105,16 +105,20 @@ function getSequelize(toplevelDir, toplevelBasename) {
     },
     {
       indexes: [
-        { fields: ['userId'], },
-        { fields: ['articleId'], },
+        // Basic JOIN and my latest/oldest given likes.
+        { fields: ['userId', 'createdAt'], },
+        // Basic JOIN and potential small speedup to my latest/oldest received likes.
+        { fields: ['articleId', 'createdAt'], },
         { fields: ['userId', 'articleId'], unique: true, },
       ],
     }
-  );
+  )
   Article.belongsToMany(User, { through: UserLikeArticle, as: 'articleLikedBy', foreignKey: 'articleId', otherKey: 'userId'  })
   User.belongsToMany(Article, { through: UserLikeArticle, as: 'likedArticles',  foreignKey: 'userId', otherKey: 'articleId'  })
   UserLikeArticle.belongsTo(User, { foreignKey: 'userId', as: 'user' })
   UserLikeArticle.belongsTo(Article, { foreignKey: 'articleId', as: 'article' })
+  Article.hasMany(UserLikeArticle, { foreignKey: 'articleId', as: 'likes' })
+  User.hasMany(UserLikeArticle, { foreignKey: 'userId', as: 'likes' })
 
   // User follow article.
   // Initial use case: get notifications when new issues are created.
@@ -139,18 +143,45 @@ function getSequelize(toplevelDir, toplevelBasename) {
     {
       tableName: 'UserFollowArticle',
       indexes: [
-        { fields: ['userId'], },
-        { fields: ['articleId'], },
+        { fields: ['userId', 'createdAt'], },
+        { fields: ['articleId', 'createdAt'], },
         { fields: ['userId', 'articleId'], unique: true, },
       ],
     }
-  );
+  )
   Article.belongsToMany(User, { through: UserFollowArticle, as: 'followers', foreignKey: 'articleId', otherKey: 'userId' })
   User.belongsToMany(Article, { through: UserFollowArticle, as: 'followedArticles', foreignKey: 'userId', otherKey: 'articleId' })
 
   // User like Issue
-  Issue.belongsToMany(User, { through: 'UserLikeIssue', as: 'issueLikedBy', foreignKey: 'issueId', otherKey: 'userId' })
-  User.belongsToMany(Issue, { through: 'UserLikeIssue', as: 'likedIssues', foreignKey: 'userId', otherKey: 'issueId' })
+  const UserLikeIssue = sequelize.define('UserLikeIssue',
+    {
+      userId: {
+        type: DataTypes.INTEGER,
+        references: {
+          model: User,
+          key: 'id'
+        }
+      },
+      issueId: {
+        type: DataTypes.INTEGER,
+        references: {
+          model: Issue,
+          key: 'id'
+        }
+      },
+    },
+    {
+      indexes: [
+        // Basic JOIN and my latest/oldest given likes.
+        { fields: ['userId', 'createdAt'], },
+        // Basic JOIN and potential small speedup to my latest/oldest received likes.
+        { fields: ['issueId', 'createdAt'], },
+        { fields: ['userId', 'issueId'], unique: true, },
+      ],
+    }
+  )
+  Issue.belongsToMany(User, { through: UserLikeIssue, as: 'issueLikedBy', foreignKey: 'issueId', otherKey: 'userId' })
+  User.belongsToMany(Issue, { through: UserLikeIssue, as: 'likedIssues', foreignKey: 'userId', otherKey: 'issueId' })
 
   // User follow issue.
   // Initial use case: get notifications when new comments are created under an issue.
@@ -174,8 +205,8 @@ function getSequelize(toplevelDir, toplevelBasename) {
     {
       tableName: 'UserFollowIssue',
       indexes: [
-        { fields: ['userId'], },
-        { fields: ['issueId'], },
+        { fields: ['userId', 'createdAt'], },
+        { fields: ['issueId', 'createdAt'], },
         { fields: ['userId', 'issueId'], unique: true, },
       ],
     }

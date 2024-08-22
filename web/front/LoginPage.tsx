@@ -10,6 +10,10 @@ import {
   UserIcon,
 } from 'front'
 
+import { CommonPropsType } from 'front/types/CommonPropsType'
+
+export interface LoginPageProps extends CommonPropsType {}
+
 const LoginPageHoc = ({ register = false }) => {
   const title = register ? REGISTER_ACTION : LOGIN_ACTION
   return function LoginPage() {

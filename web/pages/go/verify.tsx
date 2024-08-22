@@ -1,20 +1,25 @@
 import React from 'react'
 import Router from 'next/router'
 
-import useLoggedInUser from 'front/useLoggedInUser'
 import { MyHead, setupUserLocalStorage } from 'front'
 import routes from 'front/routes'
+import { CommonPropsType } from 'front/types/CommonPropsType'
 import { UserType } from 'front/types/UserType'
 
-export interface VerifyPageProps {
+export interface VerifyPageProps extends CommonPropsType {
   code?: string;
   email?: string;
   user?: UserType;
   verificationOk?: boolean;
 }
 
-function VerifyPage({ code, email, user, verificationOk } : VerifyPageProps) {
-  const loggedInUser = useLoggedInUser()
+function VerifyPage({
+  code,
+  email,
+  loggedInUser,
+  user,
+  verificationOk
+} : VerifyPageProps) {
   if (loggedInUser) {
     Router.push(routes.home())
   }

@@ -9173,7 +9173,7 @@ Local tests are always on optimized PostgresQL
   * ourbigbook.com
     * /wikibot: 3.5 - 4.5 s
     * /cirosantilli: 1.1 - 1.5 s
-    * /barack-obama: 0.5 - 0.7 
+    * /barack-obama: 0.5 - 0.7 s
   This suggests a database scaling issue like a missing index.
 
 Related:

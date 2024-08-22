@@ -5,7 +5,6 @@
 import Link from 'next/link'
 import React from 'react'
 import { AppContext } from 'front'
-import useLoggedInUser from 'front/useLoggedInUser'
 
 interface CustomLinkProps {
   href: string;
@@ -25,21 +24,18 @@ const CustomLink = ({
   onClick,
   shallow,
   // This should be === true on buttons such as "create new article". These pages would 300 redirect the user,
-  // so there would be no time for Js to update the next page. So we do it here on click instead upon request.
-  // For regular pages that don't 300, that is not needed, as we set the previous page on Js.
+  // so there would be no time for the _app useEffect to update the next page. So we do it here on click instead upon request.
+  // For regular pages that don't 300, that is not needed, as we set the previous page on _app useEffect.
   updatePreviousPage,
 }: CustomLinkProps) => {
   if (shallow === undefined) {
     shallow = false;
   }
   const { updatePrevPageNoSignup } = React.useContext(AppContext)
-  const loggedInUser = useLoggedInUser()
   const innerProps: any = {
     onClick: (ev) => {
       if (updatePreviousPage) {
-        if (!loggedInUser) {
-          updatePrevPageNoSignup(href)
-        }
+        updatePrevPageNoSignup(href)
       }
       if (onClick) {
         onClick(ev)

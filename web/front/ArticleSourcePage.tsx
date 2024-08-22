@@ -8,14 +8,14 @@ import {
 } from 'front'
 import { cant } from 'front/cant'
 import routes from 'front/routes'
-import { ArticleType  } from 'front/types/ArticleType'
-import { IssueType } from 'front/types/IssueType'
-import { UserType } from 'front/types/UserType'
 import { modifyEditorInput } from 'front/js';
 
-export interface ArticleSourcePageProps {
+import { ArticleType  } from 'front/types/ArticleType'
+import { CommonPropsType } from 'front/types/CommonPropsType'
+import { IssueType } from 'front/types/IssueType'
+
+export interface ArticleSourcePageProps extends CommonPropsType {
   article: ArticleType & IssueType;
-  loggedInUser?: UserType;
 }
 
 const ArticleSourcePageHoc = (isIssue=false) => {

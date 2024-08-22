@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # https://docs.ourbigbook.com/test-migration
-set -eu
+set -eux
 
 reset() (
   if [ "$db" = sqlite3 ]; then
@@ -64,8 +64,8 @@ schema old
 git checkout -
 if [ "$db" = postgres ]; then
   export NODE_ENV=production
+  "${script_dir}/psql" -c 'SELECT * FROM "SequelizeMeta";'
 fi
-"${script_dir}/psql" -c 'SELECT * FROM "SequelizeMeta";'
 "${script_dir}/sync-db.js"
 schema new-migration
 

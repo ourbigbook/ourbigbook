@@ -1,5 +1,3 @@
-import { GetServerSideProps } from 'next'
-
 import { getLoggedInUser } from 'back'
 import { articleLimit  } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
@@ -7,7 +5,6 @@ import { TopicPageProps } from 'front/TopicPage'
 import {
   getOrderAndPage,
   getList,
-  typecastBoolean,
 } from 'front/js'
 
 export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {

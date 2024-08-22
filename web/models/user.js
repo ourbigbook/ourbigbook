@@ -153,6 +153,7 @@ module.exports = (sequelize) => {
       hooks: {
         beforeValidate: (user, options) => {
           user.verificationCode = crypto.randomBytes(sequelize.models.User.tableAttributes.verificationCode.type.options.length / 2).toString('hex')
+          user.newScoreLastCheck = Date.now()
           options.fields.push('verificationCode');
         },
         afterCreate: async (user, options) => {
@@ -210,6 +211,9 @@ module.exports = (sequelize) => {
       maxIssuesPerMinute: this.maxIssuesPerMinute,
       maxIssuesPerHour: this.maxIssuesPerHour,
       verified: this.verified,
+    }
+    if (this.scoreDelta !== undefined) {
+      ret.scoreDelta = this.scoreDelta
     }
     if (loggedInUser) {
       ret.following = await loggedInUser.hasFollow(this.id)

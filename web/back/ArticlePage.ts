@@ -207,6 +207,7 @@ export const getServerSidePropsArticleHoc = ({
         articlesInSamePage,
         articlesInSamePageForToc,
         incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
+        loggedInUser,
         otherArticlesInTopic: await Promise.all(otherArticlesInTopic.rows.map(article => article.toJson(loggedInUser))),
         synonymLinks: synonymIds.map(i => { return {
           slug: idToSlug(i.idid),

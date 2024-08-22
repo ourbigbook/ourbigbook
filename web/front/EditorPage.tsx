@@ -32,11 +32,22 @@ import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { MyHead, useCtrlEnterSubmit } from 'front'
 import { hasReachedMaxItemCount, modifyEditorInput } from 'front/js'
-import { ArticleType } from 'front/types/ArticleType'
-import { IssueType } from 'front/types/IssueType'
 import Label from 'front/Label'
+
+import { ArticleType } from 'front/types/ArticleType'
+import { CommonPropsType } from 'front/types/CommonPropsType'
+import { IssueType } from 'front/types/IssueType'
 import { displayAndUsernameText } from 'front/user'
-import { UserType } from 'front/types/UserType'
+
+export interface EditorPageProps extends CommonPropsType {
+  article: ArticleType & IssueType;
+  articleCountByLoggedInUser: number;
+  issueArticle?: ArticleType;
+  parentTitle?: string,
+  previousSiblingTitle?: string,
+  titleSource?: string;
+  titleSourceLine?: number;
+}
 
 /** DbProvider that fetchs data via the OurBigBook Web REST API. */
 class RestDbProvider extends web_api.DbProviderBase {
@@ -114,17 +125,6 @@ class RestDbProvider extends web_api.DbProviderBase {
       }
     }
   }
-}
-
-export interface EditorPageProps {
-  article: ArticleType & IssueType;
-  articleCountByLoggedInUser: number;
-  issueArticle?: ArticleType;
-  loggedInUser: UserType;
-  parentTitle?: string,
-  previousSiblingTitle?: string,
-  titleSource?: string;
-  titleSourceLine?: number;
 }
 
 function titleToId(username, title) {

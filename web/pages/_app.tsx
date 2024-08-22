@@ -1,12 +1,10 @@
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
 import useSWR from 'swr'
-import useLoggedInUser from 'front/useLoggedInUser'
 
-import { aboutUrl, appName, contactUrl, docsUrl, donateUrl, googleAnalyticsId, isProduction } from 'front/config';
+import { aboutUrl, contactUrl, docsUrl, donateUrl, googleAnalyticsId, isProduction } from 'front/config';
 import Navbar from 'front/Navbar'
-import { AppContext, AppContextProvider, HelpIcon, logout } from 'front'
-import { webApi } from 'front/api'
+import { AppContextProvider, HelpIcon, logout } from 'front'
 import routes from 'front/routes'
 
 // Css
@@ -57,30 +55,15 @@ const MyApp = ({ Component, pageProps }) => {
     }
   }, [router.events])
 
-  // Fetch every post-load user-specific data required for a page at once here.
-  // We can get things up from inner components with properties much like `Component.isEditor`.
-  // And ideally one day we will do it all in a single GraphQL query!
-  const loggedInUser = useLoggedInUser()
-  const { data, error } = useSWR(loggedInUser ? '/api/min' : null, async () => {
-    return webApi.min()
-  })
-  let scoreDelta
-  if (!data || error) {
-    scoreDelta = 0
-  } else {
-    scoreDelta = data.data.scoreDelta
-  }
-  useEffect(() => {
-    if (error || (data && !data.data.loggedIn)) {
-      logout()
-    }
-  }, [data, error])
-
   const isEditor = !!Component.isEditor
   return (
     <AppContextProvider vals={{ prevPageNoSignup: prevPageNoSignup.prev, updatePrevPageNoSignup }} >
       <div className={`toplevel${isEditor ? ' editor' : ''}`}>
-        <Navbar {...{ isEditor, scoreDelta }} />
+        <Navbar {...{
+          isEditor,
+          loggedInUser: pageProps.loggedInUser,
+          scoreDelta: pageProps.scoreDelta,
+        }} />
         <div className="main">
           <Component {...pageProps} />
         </div>

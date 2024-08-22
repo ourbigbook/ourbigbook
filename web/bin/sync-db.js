@@ -10,8 +10,8 @@ const path = require('path')
 const child_process = require('child_process');
 const { DatabaseError } = require('sequelize')
 const models = require('../models')
-const sequelize = models.getSequelize(path.dirname(__dirname));
-(async () => {
+const sequelize = models.getSequelize(path.dirname(__dirname))
+;(async () => {
 let dbEmpty = true;
 try {
   await sequelize.models.SequelizeMeta.findOne()
@@ -27,4 +27,4 @@ if (!dbEmpty) {
   console.error(out.stderr.toString());
   process.exit(out.status)
 }
-})().finally(() => { return sequelize.close() });
+})().finally(() => { return sequelize.close() })

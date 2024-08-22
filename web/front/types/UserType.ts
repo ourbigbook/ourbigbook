@@ -11,5 +11,6 @@ export type UserType = {
   image: string;
   ip?: string;
   score: number;
+  scoreDelta?: number;
   username: string;
 };

@@ -22,11 +22,11 @@ import { cant } from 'front/cant'
 import routes from 'front/routes'
 import { ArticleType, ArticleLinkType  } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
+import { CommonPropsType } from 'front/types/CommonPropsType'
 import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
-import { UserType } from 'front/types/UserType'
 
-export interface ArticlePageProps {
+export interface ArticlePageProps extends CommonPropsType {
   ancestors?: ArticleLinkType[];
   article: ArticleType & IssueType;
   articleInTopicByLoggedInUser?: ArticleType,
@@ -39,7 +39,6 @@ export interface ArticlePageProps {
   issueArticle?: ArticleType;
   issuesCount?: number;
   latestIssues?: IssueType[];
-  loggedInUser?: UserType;
   otherArticlesInTopic?: (ArticleType & IssueType & TopicType)[];
   page?: number;
   synonymLinks?: ArticleLinkType[];

@@ -25,11 +25,12 @@ import FollowArticleButton from 'front/FollowArticleButton'
 
 import { ArticleType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
+import { CommonPropsType } from 'front/types/CommonPropsType'
 import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 import { TopicType } from 'front/types/TopicType'
 
-export interface IndexPageProps {
+export interface IndexPageProps extends CommonPropsType {
   articles?: (ArticleType & IssueType & TopicType)[];
   articlesCount?: number;
   comments?: CommentType[];
@@ -37,7 +38,6 @@ export interface IndexPageProps {
   issueArticle?: ArticleType;
   followed?: boolean;
   itemType?: 'article' | 'comment' | 'discussion' | 'topic' | 'user';
-  loggedInUser?: UserType;
   order: string;
   page: number;
   pinnedArticle?: ArticleType;

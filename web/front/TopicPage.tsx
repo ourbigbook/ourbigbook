@@ -15,19 +15,19 @@ import ArticleList from 'front/ArticleList'
 import CustomLink from 'front/CustomLink'
 import LoadingSpinner from 'front/LoadingSpinner'
 import routes from 'front/routes'
+
 import { ArticleType } from 'front/types/ArticleType'
+import { CommonPropsType } from 'front/types/CommonPropsType'
 import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
-import { UserType } from 'front/types/UserType'
 
-export interface TopicPageProps {
+export interface TopicPageProps extends CommonPropsType {
   articleInTopicByLoggedInUser: ArticleType,
   // TODO not ideal. Only Articles are really possible. This is to appease ArticleList.
   articles: (ArticleType & IssueType & TopicType)[];
   articlesCount: number;
   hasUnlisted: boolean;
   list: boolean;
-  loggedInUser?: UserType;
   order: string;
   topic: TopicType;
   page: number;

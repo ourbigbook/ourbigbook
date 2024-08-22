@@ -1,8 +1,9 @@
 import React from 'react'
-import * as ReactDOM from 'react-dom'
 import { createRoot } from 'react-dom/client'
-import ReactDomServer from 'react-dom/server'
+import { renderToString } from 'react-dom/server'
 import Router, { useRouter } from 'next/router'
+
+import { parse } from 'node-html-parser'
 
 import { commentsHeaderId } from 'front/config'
 import {
@@ -41,6 +42,8 @@ import {
   AT_MENTION_CHAR,
   INCOMING_LINKS_ID_UNRESERVED,
   INCOMING_LINKS_MARKER,
+  H_ANCESTORS_CLASS,
+  H_WEB_CLASS,
   Macro,
   HTML_PARENT_MARKER,
   SYNONYM_LINKS_ID_UNRESERVED,
@@ -58,7 +61,7 @@ import {
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js'
 import { encodeGetParams } from 'ourbigbook/web_api'
 
-function linkList(articles, idUnreserved, marker, title, linkPref) {
+function LinkList(articles, idUnreserved, marker, title, linkPref) {
   if (articles.length) return <>
     <h2 id={`${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}>
       <a
@@ -79,6 +82,123 @@ function linkList(articles, idUnreserved, marker, title, linkPref) {
         ></a></li>
       )}
     </ul>
+  </>
+}
+
+function WebMeta({
+  article,
+  canEdit,
+  canDelete,
+  curArticle,
+  isIndex,
+  isIssue,
+  issueArticle,
+  loggedInUser,
+  toplevel,
+}) {
+  let mySlug
+  if (loggedInUser) {
+    mySlug = `${loggedInUser.username}/${curArticle.topicId}`
+  }
+  return <>
+    <LikeArticleButton {...{
+      article: curArticle,
+      issueArticle,
+      isIssue,
+      loggedInUser,
+      showText: toplevel,
+    }} />
+    {!isIssue &&
+      <>
+        {' '}
+        {!isIndex &&
+          <a className="by-others btn" href={routes.topic(curArticle.topicId)} title="Articles by others on the same topic">
+            <TopicIcon title={false} /> {curArticle.topicCount - 1}{toplevel ? <> By others<span className="mobile-hide"> on same topic</span></> : ''}
+          </a>
+        }
+        {' '}
+        <a className="issues btn" href={routes.issues(curArticle.slug)} title="Discussions">
+          <IssueIcon title={false} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
+      </>
+    }
+    {toplevel &&
+      <>
+        {' '}
+        <ArticleCreatedUpdatedPills article={article} />
+        {article.list === false &&
+          <>
+            {' '}
+            <span className="pill"><UnlistedIcon /> unlisted</span>
+          </>
+        }
+      </>
+    }
+    {canEdit &&
+      <>
+        {' '}
+        <span>
+          {false && <>TODO: convert this a and all other injected links to Link. https://github.com/ourbigbook/ourbigbook/issues/274</> }
+          <a
+            href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
+            className="btn edit"
+          >
+            <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
+          </a>
+        </span>
+        {' '}
+        {!isIssue &&
+          <>
+            <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is the first child of this one">
+              {' '}<NewArticleIcon title={false}/>
+              {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
+              <i className="ion-arrow-down-c"/>{toplevel ? <> Create child<span className="mobile-hide"> article</span></> : ''}{' '}
+            </a>
+            {' '}
+            {!isIndex &&
+              <a
+                href={routes.articleNew({ 'parent-title': curArticle.parentTitle, 'previous-sibling': curArticle.titleSource })}
+                className="btn new"
+                title="Create a new article that is the next sibling of this one"
+              >
+                {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? <> Create sibling<span className="mobile-hide"> article</span></> : ''}{' '}
+              </a>
+            }
+          </>
+        }
+      </>
+    }
+    {!(isIssue || isIndex) &&
+      <>
+        {(curArticle.hasSameTopic)
+          ? <>
+              {article.slug !== mySlug &&
+                <>
+                  {' '}
+                  <SeeMyOwnVersionOfThisTopic slug={mySlug} toplevel={toplevel} />
+                </>
+              }
+            </>
+          : <>
+              {' '}
+              <CreateMyOwnVersionOfThisTopic titleSource={curArticle.titleSource} toplevel={toplevel} />
+            </>
+        }
+      </>
+    }
+    {(false && canDelete) &&
+      <>
+        TODO https://docs.ourbigbook.com/todo/delete-articles
+        {' '}
+        <span>
+          <a
+            href={isIssue ? routes.issueDelete(issueArticle.slug, curArticle.number) : routes.articleDelete(curArticle.slug)}
+            className="btn edit"
+          >
+            <DeleteIcon /> Delete
+          </a>
+        </span>
+      </>
+    }
   </>
 }
 
@@ -140,7 +260,6 @@ const Article = ({
     }
     articlesInSamePageMap[article.slug] = article
   }
-  const webElemToRootMap = React.useRef(new Map())
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
   const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
   const aElemToMetaMap = React.useRef(new Map())
@@ -375,143 +494,28 @@ const Article = ({
             continue
           }
         }
-        let mySlug
-        if (loggedInUser) {
-          mySlug = `${loggedInUser.username}/${curArticle.topicId}`
-        }
 
-        // Ancestors.
+        // WebMeta
         {
-          const ancestorsElem = h.querySelector('.ancestors')
-          if (ancestorsElem) {
-            if (ancestors.length) {
-              ancestorsElem.innerHTML = htmlAncestorLinks(
-                ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
-                  href: ` href="${linkPref}${a.slug}"`,
-                  content: a.titleRender,
-                }}),
-                ancestors.length,
-              )
-            } else {
-              createRoot(ancestorsElem).render(
-                <span dangerouslySetInnerHTML={{
-                  __html: `<span> ${ReactDomServer.renderToString(<HelpIcon />)} Ancestors will show here when the tree index is updated</span>`
-                }} ></span>,
-              )
-            }
-          }
+          // Minimal example of this "technique".
+          // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
+          // https://stackoverflow.com/questions/78892868/how-to-inject-a-react-component-inside-static-pre-rendered-html-coming-from-the
+          const tmp = document.createElement('div')
+          tmp.classList.add('tmp')
+          const root = createRoot(tmp)
+          root.render(<WebMeta {...{
+            article,
+            canEdit,
+            canDelete,
+            curArticle,
+            isIndex,
+            isIssue,
+            issueArticle,
+            loggedInUser,
+            toplevel,
+          }}/>)
+          webElem.replaceChildren(tmp)
         }
-
-        // We use this map to prevent calling createRoot twice on the same element, which gives a warning.
-        // TODO how/when to correctly clear this map?
-        // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
-        let root = webElemToRootMap.current.get(webElem)
-        if (!root) {
-          root = createRoot(webElem)
-          webElemToRootMap.current.set(webElem, root)
-        }
-        root.render(
-          <>
-            <LikeArticleButton {...{
-              article: curArticle,
-              issueArticle,
-              isIssue,
-              loggedInUser,
-              showText: toplevel,
-            }} />
-            {!isIssue &&
-              <>
-                {' '}
-                {!isIndex &&
-                  <a className="by-others btn" href={routes.topic(curArticle.topicId)} title="Articles by others on the same topic">
-                    <TopicIcon title={false} /> {curArticle.topicCount - 1}{toplevel ? <> By others<span className="mobile-hide"> on same topic</span></> : ''}
-                  </a>
-                }
-                {' '}
-                <a className="issues btn" href={routes.issues(curArticle.slug)} title="Discussions">
-                  <IssueIcon title={false} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
-              </>
-            }
-            {toplevel &&
-              <>
-                {' '}
-                <ArticleCreatedUpdatedPills article={article} />
-                {article.list === false &&
-                  <>
-                    {' '}
-                    <span className="pill"><UnlistedIcon /> unlisted</span>
-                  </>
-                }
-              </>
-            }
-            {canEdit &&
-              <>
-                {' '}
-                <span>
-                  {false && <>TODO: convert this a and all other injected links to Link. https://github.com/ourbigbook/ourbigbook/issues/274</> }
-                  <a
-                    href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
-                    className="btn edit"
-                  >
-                    <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
-                  </a>
-                </span>
-                {' '}
-                {!isIssue &&
-                  <>
-                    <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is the first child of this one">
-                      {' '}<NewArticleIcon title={false}/>
-                      {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
-                      <i className="ion-arrow-down-c"/>{toplevel ? <> Create child<span className="mobile-hide"> article</span></> : ''}{' '}
-                    </a>
-                    {' '}
-                    {!isIndex &&
-                      <a
-                        href={routes.articleNew({ 'parent-title': curArticle.parentTitle, 'previous-sibling': curArticle.titleSource })}
-                        className="btn new"
-                        title="Create a new article that is the next sibling of this one"
-                      >
-                        {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? <> Create sibling<span className="mobile-hide"> article</span></> : ''}{' '}
-                      </a>
-                    }
-                  </>
-                }
-              </>
-            }
-            {!(isIssue || isIndex) &&
-              <>
-                {(curArticle.hasSameTopic)
-                  ? <>
-                      {article.slug !== mySlug &&
-                        <>
-                          {' '}
-                          <SeeMyOwnVersionOfThisTopic slug={mySlug} toplevel={toplevel} />
-                        </>
-                      }
-                    </>
-                  : <>
-                      {' '}
-                      <CreateMyOwnVersionOfThisTopic titleSource={curArticle.titleSource} toplevel={toplevel} />
-                    </>
-                }
-              </>
-            }
-            {(false && canDelete) &&
-              <>
-                TODO https://docs.ourbigbook.com/todo/delete-articles
-                {' '}
-                <span>
-                  <a
-                    href={isIssue ? routes.issueDelete(issueArticle.slug, curArticle.number) : routes.articleDelete(curArticle.slug)}
-                    className="btn edit"
-                  >
-                    <DeleteIcon /> Delete
-                  </a>
-                </span>
-              </>
-            }
-          </>
-        )
       }
 
       // Capture link clicks, use ID on current page if one is present.
@@ -604,7 +608,42 @@ const Article = ({
   ])
   let html = ''
   if (!isIssue) {
-    html += article.h1Render
+    let h1Render = article.h1Render
+    const h1RenderElem = parse(h1Render)
+
+    //Ancestors
+    {
+      const elem = h1RenderElem.querySelector(`.${H_ANCESTORS_CLASS}`)
+      if (elem) {
+        let htmlFrag: string|undefined
+        if (ancestors.length) {
+          htmlFrag = htmlAncestorLinks(
+            ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
+              href: ` href="${linkPref}${a.slug}"`,
+              content: a.titleRender,
+            }}),
+            ancestors.length,
+          )
+          elem.innerHTML = htmlFrag
+        } else {
+          elem.innerHTML = `<span><span>${renderToString(<HelpIcon />)} Ancestors will show here when the tree index is updated</span></span>`
+        }
+      }
+
+      h1RenderElem.querySelector(`.${H_WEB_CLASS}`).innerHTML = renderToString(<WebMeta {...{
+        article,
+        canDelete,
+        canEdit,
+        curArticle: article,
+        isIndex: article.slug === article.author.username,
+        isIssue,
+        issueArticle,
+        loggedInUser,
+        toplevel: true,
+      }}/>)
+    }
+
+    html += h1RenderElem.outerHTML
   }
   html += article.render
   if (!isIssue) {
@@ -653,7 +692,21 @@ const Article = ({
     if (entry_list.length) {
       html += htmlToplevelChildModifierById(renderTocFromEntryList({ entry_list }), Macro.TOC_ID) 
     }
-    html += articlesInSamePage.map(a => a.h2Render + a.render).join('')
+    for (const a of articlesInSamePage) {
+      const elem = parse(a.h2Render)
+      elem.querySelector(`.${H_WEB_CLASS}`).innerHTML = renderToString(<WebMeta {...{
+        article,
+        canDelete,
+        canEdit,
+        curArticle: a,
+        isIndex: false,
+        isIssue,
+        issueArticle,
+        loggedInUser,
+        toplevel: false,
+      }}/>)
+      html +=  elem.outerHTML + a.render
+    }
   }
   return <>
     <div
@@ -704,7 +757,7 @@ const Article = ({
         : <>
             <div className="content-not-ourbigbook">
               <div className="ourbigbook-title">
-                {linkList(tagged, TAGGED_ID_UNRESERVED, TAGS_MARKER, 'Tagged', linkPref)}
+                {LinkList(tagged, TAGGED_ID_UNRESERVED, TAGS_MARKER, 'Tagged', linkPref)}
                 {(ancestors.length !== 0) && <>
                   <h2 id={ANCESTORS_ID}>
                     <a
@@ -726,8 +779,8 @@ const Article = ({
                     )}
                   </ol>
                 </>}
-                {linkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
-                {linkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
+                {LinkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
+                {LinkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
                 <div className="navlink"><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></div>
               </div>
               <h2>

@@ -162,8 +162,9 @@ The goal of this is to test this possible edge case of short URL fragments e.g. 
         }
       ],
       ['Test tag', [
-        ['Test tagged', [], { headerArgs: '{tag=Test tagger}' }],
-        ['Test tagger', []],
+         ['Test tagged', [], { headerArgs: '{tag=Test tagger}\n{tag=Test tagger 2}\n{wiki}' }],
+         ['Test tagger', []],
+         ['Test tagger 2', []],
       ]],
       ['Test wiki', [], { headerArgs: '{wiki}' }],
       ['Test child', [

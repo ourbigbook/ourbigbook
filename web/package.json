@@ -61,6 +61,7 @@
     "monaco-editor": "0.33.0",
     "morgan": "1.7.0",
     "next": "14.0.4",
+    "node-html-parser": "^6.1.13",
     "npm": "8.7.0",
     "ourbigbook": "..",
     "passport": "0.3.2",

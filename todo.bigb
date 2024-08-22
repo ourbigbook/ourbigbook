@@ -836,7 +836,7 @@ Is working on static website: https://cirosantilli.com/mathematics#physics does 
 {tag=Error checking}
 {tag=Web}
 
-Current failure behaviour if use submits anyways is: shows API error `previousSiblingId "@cirosantilli/physics" does not exist, is not a header or is not a child of parentId "@cirosantilli/test-article"` under title, and it only goes away if you edit title, which is confusing as it is not title related. Also, while title error is visible, the submit button is inactive so the user is left a bit stuck.
+Current failure behavior if use submits anyways is: shows API error `previousSiblingId "@cirosantilli/physics" does not exist, is not a header or is not a child of parentId "@cirosantilli/test-article"` under title, and it only goes away if you edit title, which is confusing as it is not title related. Also, while title error is visible, the submit button is inactive so the user is left a bit stuck.
 
 === Reach the same performance as static website with dynamic tree
 {tag=Performance}

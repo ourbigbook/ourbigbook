@@ -28,7 +28,6 @@ const NOSPLIT_MARKER_TEXT = 'nosplit'
 exports.NOSPLIT_MARKER_TEXT = NOSPLIT_MARKER_TEXT;
 const SPLIT_MARKER_TEXT = 'split'
 exports.SPLIT_MARKER_TEXT = SPLIT_MARKER_TEXT;
-const TOC_MARKER_SYMBOL = '<span class="fa-solid-900 icon">\u{f03a}</span>'
 
 class AstNode {
   /**
@@ -7654,6 +7653,10 @@ const ANCESTORS_MAX = 6
 exports.ANCESTORS_MAX = ANCESTORS_MAX
 const AT_MENTION_CHAR = '@';
 exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
+const H_ANCESTORS_CLASS = 'ancestors'
+exports.H_ANCESTORS_CLASS = H_ANCESTORS_CLASS
+const H_WEB_CLASS = 'web'
+exports.H_WEB_CLASS = H_WEB_CLASS
 const FILE_ROOT_PLACEHOLDER = '(root)'
 exports.FILE_ROOT_PLACEHOLDER = FILE_ROOT_PLACEHOLDER
 const HTML_REF_MARKER = '<sup class="ref">[ref]</sup>'
@@ -9058,7 +9061,7 @@ const OUTPUT_FORMATS_LIST = [
 
           const web_meta = []
           if (context.options.h_web_metadata) {
-            const web_html = `<div class="web${first_header ? ' top' : ''}"></div>`
+            const web_html = `<div class="${H_WEB_CLASS}${first_header ? ' top' : ''}"></div>`
             if (first_header) {
               web_meta.push(web_html)
             } else {
@@ -9334,7 +9337,7 @@ const OUTPUT_FORMATS_LIST = [
             ret += `<nav class="h-nav h-nav-toplevel">`;
           }
           if (context.options.h_web_ancestors && first_header && !context.options.isindex) {
-            ret += `<div class="nav ancestors"></div>`
+            ret += `<div class="nav ${H_ANCESTORS_CLASS}"></div>`
           }
           let i = 0
           for (const [meta, cls] of metas) {

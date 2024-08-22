@@ -351,6 +351,9 @@ span.pill {
 .ourbigbook {
   .web {
     display: inline;
+    .tmp {
+      display: inline;
+    }
     &.top {
       font-size: 18px;
       // Gives a small vertical margin between buttons on narrow screens.

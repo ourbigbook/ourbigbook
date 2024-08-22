@@ -59,7 +59,7 @@ button, a.btn {
   margin: 0;
   padding: 2px 5px;
   text-decoration: none;
-  vertical-align: middle;
+  vertical-align: bottom;
   &:not(.disabled):not(:disabled) {
     // We make hover more visible than active because it glares too much
     // when you have an article list with lost of like buttons.
@@ -340,7 +340,9 @@ h1, h2, h3, h4, h5, h6 {
 span.pill {
   border-radius: 0.8em;
   border: 1px solid $color-discreet;
+  display: inline-block;
   font-weight: bold;
+  line-height: 1em;
   padding: 0.2em 0.5em;
   white-space: pre;
 }

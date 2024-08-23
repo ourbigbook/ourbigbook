@@ -61,6 +61,7 @@ const MyApp = ({ Component, pageProps }) => {
       <div className={`toplevel${isEditor ? ' editor' : ''}`}>
         <Navbar {...{
           isEditor,
+          clearScoreDelta: pageProps.clearScoreDelta,
           loggedInUser: pageProps.loggedInUser,
           scoreDelta: pageProps.scoreDelta,
         }} />

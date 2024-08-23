@@ -63,7 +63,7 @@ export async function getLoggedInUser(req, res, loggedInUser?) {
     if (user === null) {
       res.clearCookie(AUTH_COOKIE_NAME)
     } else {
-      user.scoreDelta = user.get('scoreDelta')
+      user.scoreDelta = Number(user.get('scoreDelta'))
     }
     return user
   }

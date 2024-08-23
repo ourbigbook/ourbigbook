@@ -144,6 +144,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         updateNewScoreLastCheckPromise,
       ])
       const props: UserPageProps = {
+        clearScoreDelta: !!updateNewScoreLastCheckPromise,
         hasUnlisted: !!unlistedArticles.count,
         itemType,
         list: list === undefined ? null : list,

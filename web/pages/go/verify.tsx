@@ -14,16 +14,12 @@ export interface VerifyPageProps extends CommonPropsType {
   verificationOk?: boolean;
 }
 
-function VerifyPage({
+export default function VerifyPage({
   code,
   email,
-  loggedInUser,
   user,
   verificationOk
 } : VerifyPageProps) {
-  if (loggedInUser) {
-    Router.push(routes.home())
-  }
   React.useEffect(() => {
     if (verificationOk) {
       setupUserLocalStorage(user).then(() => Router.push(routes.home()))
@@ -51,14 +47,23 @@ function VerifyPage({
   </>
 }
 
-export default VerifyPage
+import { getLoggedInUser } from 'back'
 
 export const getServerSideProps = async ({ params = {}, req, res }) => {
+  const loggedInUser = await getLoggedInUser(req, res)
+  if (loggedInUser) {
+    return {
+      redirect: {
+        destination: routes.home(),
+        permanent: false,
+      }
+    }
+  }
+  const props: VerifyPageProps = {}
   const email = req.query.email
-  const code = req.query.code
-  let props: VerifyPageProps = {}
   if (email) {
     props.email = email
+    const code = req.query.code
     if (code) {
       const user = await req.sequelize.models.User.findOne({ where: { email }})
       let verificationOk

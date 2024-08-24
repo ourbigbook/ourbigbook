@@ -97,6 +97,10 @@ router.post('/users', async function(req, res, next) {
     const username = lib.validateParam(userPost, 'username')
     const email = lib.validateParam(userPost, 'email')
     const password = lib.validateParam(userPost, 'password')
+    const displayName = lib.validateParam(userPost, 'displayName', {
+      validators: [front.isString, front.isTruthy],
+      defaultValue: undefined,
+    })
     if (config.useCaptcha) {
       ;({data, status} = await sendJsonHttp(
         'POST',
@@ -123,7 +127,7 @@ router.post('/users', async function(req, res, next) {
     const sequelize = req.app.get('sequelize')
     const user = new (sequelize.models.User)()
     user.username = username
-    user.displayName = userPost.displayName
+    user.displayName = displayName
     user.email = email
     user.ip = front.getClientIp(req)
     sequelize.models.User.setPassword(user, password)
@@ -197,7 +201,11 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
         }
       }
       if (typeof userArg.displayName !== 'undefined') {
-        user.displayName = userArg.displayName
+        const displayName = lib.validateParam(userArg, 'displayName', {
+          validators: [front.isString, front.isTruthy],
+          defaultValue: undefined,
+        })
+        user.displayName = displayName
       }
       if (typeof userArg.image !== 'undefined') {
         user.image = userArg.image

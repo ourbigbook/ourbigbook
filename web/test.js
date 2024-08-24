@@ -2191,7 +2191,7 @@ it('api: delete article', async () => {
       }
 
       // Parent and previous siblings that involve deleted article are updated.
-      // All child pages are moved up the tree and placed where the parent was. 
+      // All child pages are moved up the tree and placed where the parent was.
       {
         // Current tree state:
         // * 0 user0/Index
@@ -4158,7 +4158,7 @@ it('api: hideArticleDates', async () => {
     article = createArticleArg({ i: 0, titleSource: 'Before' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assertStatus(status, data)
-    // TODO would be slightly better if this were also reset. However it appears 
+    // TODO would be slightly better if this were also reset. However it appears
     // that bulkCreate doesn't set createdAt even if if is passed explicitly on
     // updateOnDuplicate.
     assert.notStrictEqual(data.articles[0].createdAt, config.hideArticleDatesDate)
@@ -4489,5 +4489,106 @@ it(`api: admin can edit other user's articles`, async () => {
     ;({data, status} = await test.webApi.article('user0/title-0'))
     assertStatus(status, data)
     assert.strictEqual(data.file.bodySource, 'hacked')
+  })
+})
+
+it(`api: user validation`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // New
+
+      // OK sanity check.
+      ;({ data, status } = await test.webApi.userCreate({
+        username: 'john-smith',
+        displayName: 'John Smith',
+        email: 'john.smith@mail.com',
+        password: 'asdf',
+      }))
+      assertStatus(status, data)
+      const user0 = data.user
+      assert.strictEqual(data.user.username, 'john-smith')
+      ;({ data, status } = await test.webApi.user('john-smith'))
+      assert.strictEqual(data.username, 'john-smith')
+
+      // Missing display name.
+      ;({ data, status } = await test.webApi.userCreate({
+        username: 'mary-jane',
+        email: 'mary.jane@mail.com',
+        password: 'asdf',
+      }))
+      assert.strictEqual(status, 422)
+
+      // Empty display name.
+      ;({ data, status } = await test.webApi.userCreate({
+        username: 'mary-jane',
+        displayName: '',
+        email: 'mary.jane@mail.com',
+        password: 'asdf',
+      }))
+      assert.strictEqual(status, 422)
+
+      // Missing password.
+      ;({ data, status } = await test.webApi.userCreate({
+        username: 'mary-jane',
+        displayName: 'Mary Jane',
+        email: 'mary.jane@mail.com',
+      }))
+      assert.strictEqual(status, 422)
+
+      // Missing username
+      ;({ data, status } = await test.webApi.userCreate({
+        displayName: 'Mary Jane',
+        email: 'mary.jane@mail.com',
+        password: 'asdf',
+      }))
+      assert.strictEqual(status, 422)
+
+      // Empty username
+      ;({ data, status } = await test.webApi.userCreate({
+        username: '',
+        displayName: 'Mary Jane',
+        email: 'mary.jane@mail.com',
+        password: 'asdf',
+      }))
+      assert.strictEqual(status, 422)
+
+      // Missing email
+      ;({ data, status } = await test.webApi.userCreate({
+        username: 'mary-jane',
+        displayName: 'Mary Jane',
+        password: 'asdf',
+      }))
+      assert.strictEqual(status, 422)
+
+      // Empty email
+      ;({ data, status } = await test.webApi.userCreate({
+        username: 'mary-jane',
+        displayName: 'Mary Jane',
+        email: '',
+        password: 'asdf',
+      }))
+      assert.strictEqual(status, 422)
+
+    // Edit
+
+      // OK sanity check.
+      test.loginUser(user0)
+      ;({ data, status } = await test.webApi.userUpdate(
+        'john-smith',
+        { displayName: 'John Smith 2', },
+      ))
+      assertStatus(status, data)
+      assert.strictEqual(data.user.displayName, 'John Smith 2')
+      ;({ data, status } = await test.webApi.user('john-smith'))
+      assert.strictEqual(data.displayName, 'John Smith 2')
+
+      // Empty display name.
+      test.loginUser(user0)
+      ;({ data, status } = await test.webApi.userUpdate(
+        'john-smith',
+        { displayName: '', },
+      ))
+      assert.strictEqual(status, 422)
   })
 })

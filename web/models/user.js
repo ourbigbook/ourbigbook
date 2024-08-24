@@ -301,8 +301,8 @@ module.exports = (sequelize) => {
     return crypto.randomBytes(User.tableAttributes.verificationCode.type.options.length / 2).toString('hex')
   }
 
-  User.verificationCodeNToTimeDeltaHours = function verificationCodeNToTimeDeltaHours(verificationCodeN) {
-    return 4**verificationCodeN
+  User.verificationCodeNToTimeDeltaMinutes = function verificationCodeNToTimeDeltaMinutes(verificationCodeN) {
+    return 15 * 4**(verificationCodeN - 1)
   }
 
   User.countArticleLikesReceived = async function(uid, opts={}) {

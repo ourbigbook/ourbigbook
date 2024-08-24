@@ -125,6 +125,9 @@ function getLimitAndOffset(req, res, opts={}) {
   ]
 }
 
+const MILLIS_PER_MINUTE = 1000 * 60
+const MILLIS_PER_HOUR = 60 * MILLIS_PER_MINUTE
+
 /**
  * https://stackoverflow.com/questions/19700283/how-to-convert-time-in-milliseconds-to-hours-min-sec-format-in-javascript/32180863#32180863
  *
@@ -140,8 +143,8 @@ function getLimitAndOffset(req, res, opts={}) {
  */
 function msToRoundedTime(ms) {
   let seconds = (ms / 1000).toFixed(1)
-  let minutes = (ms / (1000 * 60)).toFixed(1)
-  let hours = (ms / (1000 * 60 * 60)).toFixed(1)
+  let minutes = (ms / (MILLIS_PER_MINUTE)).toFixed(1)
+  let hours = (ms / (MILLIS_PER_HOUR)).toFixed(1)
   let days = (ms / (1000 * 60 * 60 * 24)).toFixed(1)
   if (seconds < 60) return seconds + " seconds"
   else if (minutes < 60) return minutes + " minutes"
@@ -154,7 +157,7 @@ function oneMinuteAgo() {
 }
 
 function oneHourAgo() {
-  return new Date(new Date - 1000 * 60 * 60)
+  return new Date(new Date - MILLIS_PER_HOUR)
 }
 
 async function sendEmail({
@@ -270,6 +273,8 @@ module.exports = {
   likeObject,
   oneHourAgo,
   oneMinuteAgo,
+  MILLIS_PER_HOUR,
+  MILLIS_PER_MINUTE,
   msToRoundedTime,
   sendEmail,
   validate,

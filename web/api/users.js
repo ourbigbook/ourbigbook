@@ -125,8 +125,8 @@ router.post('/users', async function(req, res, next) {
     }
     const sequelize = req.app.get('sequelize')
     const User = sequelize.models.User
-    // This allows you to block someone's email by selecting an obscene username for them.
-    // Gotta fix that later on some day. But good enough for now.
+    // We fetch the existing account by email.
+    // https://github.com/ourbigbook/ourbigbook/issues/329
     const existingUser = await User.findOne({ where: { email }})
     let user
     let adminsPromise
@@ -136,12 +136,12 @@ router.post('/users', async function(req, res, next) {
         throw new lib.ValidationError([`email already taken: ${email}`])
       } else {
         // Re-send the email if enough time passed.
-        const timeToWait = (
-          user.verificationCodeSent +
-          User.verificationCodeNToTimeDeltaHours(user.verificationCodeN)
-        ) - new Date()
-        if (timeToWait > 0) {
-          throw new lib.ValidationError([`You can re-send a confirmation email to this address in: ${msToRoundedTime(timeToWait)}`])
+        const timeToWaitMs = (
+          user.verificationCodeSent.getTime() +
+          lib.MILLIS_PER_MINUTE * User.verificationCodeNToTimeDeltaMinutes(user.verificationCodeN)
+        ) - (new Date()).getTime()
+        if (timeToWaitMs > 0) {
+          throw new lib.ValidationError([`Email already registered but not verified. You can re-send a confirmation email in: ${lib.msToRoundedTime(timeToWaitMs)}`])
         } else {
           user.verificationCode = User.generateVerificationCode()
           user.verificationCodeN += 1
@@ -150,18 +150,21 @@ router.post('/users', async function(req, res, next) {
       }
     } else {
       user = new (User)()
+      // username is set only in this else.
+      // https://github.com/ourbigbook/ourbigbook/issues/329
       user.username = username
       user.verificationCodeN = 1
-      user.displayName = displayName
       user.email = email
       user.ip = front.getClientIp(req)
-      User.setPassword(user, password)
       if (config.isTest) {
         // Authenticate all users automatically.
         user.verified = true
       }
       adminsPromise = User.findAll({ where: { admin: true }})
     }
+    user.displayName = displayName
+    User.setPassword(user, password)
+    user.verificationCodeSent = new Date()
     const [, admins] = await Promise.all([
       user.saveSideEffects(),
       adminsPromise,

@@ -12,17 +12,17 @@ import {
 } from 'front'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
+import { CommonPropsType } from 'front/types/CommonPropsType'
 import { UserType } from 'front/types/UserType'
 
-interface SettingsProps {
-  loggedInUser?: UserType;
+interface SettingsProps extends CommonPropsType {
   user?: UserType;
 }
 
 const Settings = ({
   user: user0,
   loggedInUser,
-}) => {
+}: SettingsProps) => {
   const [isLoading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState([]);
   const [userInfo, setUserInfo] = React.useState(user0);

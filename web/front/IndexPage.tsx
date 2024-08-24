@@ -215,7 +215,7 @@ function IndexPageHoc({
         {isHomepage &&
           <div className="content-not-ourbigbook site-settings">
             <CustomLink href={routes.siteSettings()}>
-              <SettingsIcon /> Site Settings
+              <SettingsIcon /> Site settings
             </CustomLink>
           </div>
         }

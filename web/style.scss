@@ -585,20 +585,24 @@ span.shortcut {
   }
 }
 
-.error-messages {
-  color: $ourbigbook-error-color;
+.error-messages, .loading, .ok-messages {
   font-weight: bold;
   margin-top: 0;
   margin-bottom: 0.5em;
-  .error-message-presenter {
+  .presenter {
     display: inline-block;
     margin: 20px auto;
     padding: 8px 15px;
     border-radius: 4px;
-    color: #f02d2d;
     font-weight: 600;
     background: rgba(240, 45, 45, 0.1);
   }
+}
+.error-messages {
+  color: $ourbigbook-error-color;
+}
+.ok-messages {
+  color: $ourbigbook-ok-color;
 }
 
 .hide {

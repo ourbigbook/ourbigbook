@@ -10,7 +10,18 @@ export type UserType = {
   id: number;
   image: string;
   ip?: string;
+  password?: string;
   score: number;
   scoreDelta?: number;
   username: string;
+
+  // For logged in user only.
+  emailNotifications?: boolean;
+  hideArticleDates?: boolean;
+  maxArticles?: number;
+  maxArticleSize?: number;
+  maxIssuesPerHour?: number;
+  maxIssuesPerMinute?: number;
+  nestedSetNeedsUpdate?: boolean;
+  verified?: boolean;
 };

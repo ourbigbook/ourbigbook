@@ -1,5 +1,6 @@
 import React from 'react'
 import Router from 'next/router'
+import Link from 'next/link'
 
 import { MyHead, setupUserLocalStorage } from 'front'
 import routes from 'front/routes'
@@ -35,8 +36,9 @@ function VerifyPage({
       <h1>{title}</h1>
       {!code &&
         <>
-          <p>Click the verification link we've sent to your email: {email} to verify your account.</p>
+          <p>Click the verification link we've sent to your email: <b>{email}</b> to verify your account.</p>
           <p>Also check your spam box if you can't see the email.</p>
+          <p>To re-send this email, simply <Link href={routes.userNew()}>register again with the same email</Link>.</p>
         </>
       }
       {verificationOk &&

@@ -2,7 +2,11 @@ import Router from 'next/router'
 import React, { useEffect, useRef } from 'react'
 
 import { cant } from 'front/cant'
-import config from 'front/config'
+import {
+  docsAdminUrl,
+  networkSlowMs,
+  userStoppedTypingMs,
+} from 'front/config'
 import ErrorList from 'front/ErrorList'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
@@ -16,47 +20,89 @@ import {
 } from 'front'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
+import { CommonPropsType } from 'front/types/CommonPropsType'
 import { SiteType } from 'front/types/SiteType'
-import { UserType } from 'front/types/UserType'
 
-interface SiteSettingsProps {
-  loggedInUser?: UserType
+interface SiteSettingsProps extends CommonPropsType {
   site: SiteType
 }
 
-const SiteSettings = ({
+function getArticleErrors(pinnedArticle, exists) {
+  let newPinnedArticleNotErrors, newPinnedArticleErrors
+  if (pinnedArticle) {
+    if (exists) {
+      newPinnedArticleErrors = []
+      newPinnedArticleNotErrors = [`Article exists`]
+    } else {
+      newPinnedArticleErrors = [`Article does not exist`]
+    }
+  } else {
+    newPinnedArticleErrors = []
+    newPinnedArticleNotErrors = [`No pinned article`]
+  }
+  return [newPinnedArticleErrors, newPinnedArticleNotErrors]
+}
+
+export default function SiteSettings({
   loggedInUser,
   site,
-}) => {
-  const [isLoading, setLoading] = React.useState(false)
+}: SiteSettingsProps) {
+  const [loading, setLoading] = React.useState(false)
   const [errors, setErrors] = React.useState([])
   if (site.pinnedArticle === undefined) {
     site.pinnedArticle = ''
   }
   const [siteInfo, setSiteInfo] = React.useState(site)
-  const [pinnedArticleErrors, setPinnedArticleErrors] = React.useState([]);
+  const [_, pinnedArticleNotErrorsInit] = getArticleErrors(site.pinnedArticle, true)
+  const [pinnedArticleNotErrors, setPinnedArticleNotErrors] = React.useState(pinnedArticleNotErrorsInit)
+  const [pinnedArticleErrors, setPinnedArticleErrors] = React.useState([])
+  const [pinnedArticleLoading, setPinnedArticleLoading] = React.useState(false)
+  const [pinnedArticleCheckDone, setPinnedArticleCheckDone] = React.useState(true)
+  const pinnedArticleI = React.useRef(0)
+  let pinnedArticleIClosure = pinnedArticleI.current
   const [formChanged, setFormChanged] = React.useState(false)
   const updateState = (field) => async (e) => {
     const val = e.target.value
-    setSiteInfo({ ...siteInfo, [field]: val })
+    let pinnedArticle
     if (field === 'pinnedArticle') {
-      let newPinnedArticleErrors
-      if (val) {
-        if ((await webApi.article(val)).data) {
-          newPinnedArticleErrors = []
-        } else {
-          newPinnedArticleErrors = [`Article does not exist: ${val}`]
+      pinnedArticle = val
+      setPinnedArticleCheckDone(false)
+      setFormChanged(site.pinnedArticle !== pinnedArticle)
+      pinnedArticleI.current += 1
+    }
+    setSiteInfo({ ...siteInfo, [field]: val })
+    if (pinnedArticle) {
+      setTimeout(() => {
+        if (pinnedArticleIClosure + 1 === pinnedArticleI.current) {
+          let done = false
+          setTimeout(() => {
+            if (!done) { setPinnedArticleLoading(true) }
+          }, networkSlowMs)
+          webApi.article(pinnedArticle).then(ret => {
+            if (pinnedArticleIClosure + 1 === pinnedArticleI.current) {
+              const articleExists = !!ret.data
+              setPinnedArticleLoading(false)
+              const [newPinnedArticleErrors, newPinnedArticleNotErrors] = getArticleErrors(
+                pinnedArticle,
+                articleExists
+              )
+              setPinnedArticleErrors(newPinnedArticleErrors)
+              setPinnedArticleNotErrors(newPinnedArticleNotErrors)
+              setPinnedArticleCheckDone(true)
+              done = true
+            }
+          })
         }
-      } else {
-        newPinnedArticleErrors = []
-      }
+      }, userStoppedTypingMs)
+    } else {
+      // Empty is always valid, so we make no request.
+      const [newPinnedArticleErrors, newPinnedArticleNotErrors] = getArticleErrors(
+        pinnedArticle,
+        true
+      )
       setPinnedArticleErrors(newPinnedArticleErrors)
-      if (newPinnedArticleErrors.length === 0) {
-        enableButton(submitElem.current)
-      } else {
-        disableButton(submitElem.current)
-      }
-      setFormChanged(site.pinnedArticle !== val)
+      setPinnedArticleNotErrors(newPinnedArticleNotErrors)
+      setPinnedArticleCheckDone(true)
     }
   }
   const handleSubmit = async (e) => {
@@ -78,25 +124,36 @@ const SiteSettings = ({
   useConfirmExitPage(!formChanged)
   const title = 'Site settings'
   const canUpdate = !cant.updateSiteSettings(loggedInUser)
-  const submitElem = useRef(null);
+  const submitElem = useRef(null)
+  if (submitElem.current) {
+    if (pinnedArticleCheckDone && pinnedArticleErrors.length === 0) {
+      enableButton(submitElem.current)
+    } else {
+      disableButton(submitElem.current)
+    }
+  }
   return <>
     <MyHead title={title} />
     <div className="settings-page content-not-ourbigbook">
       <h1><SettingsIcon /> {title}</h1>
-      <p>This page contains global settings that affect the entire website. It can only be edited by <a href={`${config.docsAdminUrl}`}>admins</a>.</p>
+      <p>This page contains global settings that affect the entire website. It can only be edited by <a href={`${docsAdminUrl}`}>admins</a>.</p>
       <>
         <MapErrors errors={errors} />
         <form onSubmit={handleSubmit}>
           <Label label="Pinned article">
             <input
               type="text"
-              placeholder="(empty) Sample value: user0/article0. Empty for don't pin any."
+              placeholder={"(currently empty) Sample value: \"user0/article0\". Empty for don't pin any."}
               value={siteInfo.pinnedArticle}
-              onChange={updateState("pinnedArticle")}
+              onChange={updateState('pinnedArticle')}
               disabled={!canUpdate}
             />
           </Label>
-          <ErrorList errors={pinnedArticleErrors}/>
+          <ErrorList
+            errors={pinnedArticleErrors}
+            loading={pinnedArticleLoading}
+            notErrors={pinnedArticleNotErrors}
+          />
           {(canUpdate) &&
             <>
               <button
@@ -118,8 +175,6 @@ const SiteSettings = ({
   </>
 }
 
-export default SiteSettings
-
 import { getLoggedInUser } from 'back'
 
 export async function getServerSideProps(context) {
@@ -135,8 +190,8 @@ export async function getServerSideProps(context) {
   ])
   return {
     props: {
-      site: siteJson,
       loggedInUser: loggedInUserJson,
+      site: siteJson,
     }
   }
 }

@@ -120,6 +120,9 @@ module.exports = {
   maxArticlesFetch: 100,
   maxIssuesPerMinute: 6,
   maxIssuesPerHour: 60,
+  // After this timeout, assume network is slow and start showing loading messages.
+  // This is to reduce flickering.
+  networkSlowMs: 500,
   read_include_web: function(id_exists) {
     return read_include({
       exists: async (inpath) => {
@@ -150,6 +153,9 @@ module.exports = {
   useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !ourbigbook_nodejs_front.isTest,
   usernameMinLength: 3,
   usernameMaxLength: 40,
+  // After this timeout, assume use stopped typing and start making network requests / error messages.
+  // This is to reduce flickering and the number of network requests.
+  userStoppedTypingMs: 200,
   topicConsiderNArticles: 10,
 
   // Used by sequelize-cli as well as our source code.

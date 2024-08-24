@@ -49,7 +49,6 @@ const Navbar = ({ clearScoreDelta, isEditor, loggedInUser }) => {
   if (clearScoreDelta) {
     scoreDelta = 0
   }
-  console.log(`scoreDelta: ${require('util').inspect(scoreDelta, { depth: null })}`)
   return (
     <nav className="navbar">
       <div className="brand-group">

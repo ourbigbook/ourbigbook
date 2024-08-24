@@ -18,7 +18,6 @@ async function authenticate(req, res, next, opts={}) {
       return next(err)
     }
     if (user) {
-      let missingVerify
       if (user.verified || forceVerify) {
         user.token = user.generateJWT()
         verified = true
@@ -125,19 +124,47 @@ router.post('/users', async function(req, res, next) {
       }
     }
     const sequelize = req.app.get('sequelize')
-    const user = new (sequelize.models.User)()
-    user.username = username
-    user.displayName = displayName
-    user.email = email
-    user.ip = front.getClientIp(req)
-    sequelize.models.User.setPassword(user, password)
-    if (config.isTest) {
-      // Authenticate all users automatically.
-      user.verified = true
+    const User = sequelize.models.User
+    // This allows you to block someone's email by selecting an obscene username for them.
+    // Gotta fix that later on some day. But good enough for now.
+    const existingUser = await User.findOne({ where: { email }})
+    let user
+    let adminsPromise
+    if (existingUser) {
+      user = existingUser
+      if (user.verified) {
+        throw new lib.ValidationError([`email already taken: ${email}`])
+      } else {
+        // Re-send the email if enough time passed.
+        const timeToWait = (
+          user.verificationCodeSent +
+          User.verificationCodeNToTimeDeltaHours(user.verificationCodeN)
+        ) - new Date()
+        if (timeToWait > 0) {
+          throw new lib.ValidationError([`You can re-send a confirmation email to this address in: ${msToRoundedTime(timeToWait)}`])
+        } else {
+          user.verificationCode = User.generateVerificationCode()
+          user.verificationCodeN += 1
+          adminsPromise = null
+        }
+      }
+    } else {
+      user = new (User)()
+      user.username = username
+      user.verificationCodeN = 1
+      user.displayName = displayName
+      user.email = email
+      user.ip = front.getClientIp(req)
+      User.setPassword(user, password)
+      if (config.isTest) {
+        // Authenticate all users automatically.
+        user.verified = true
+      }
+      adminsPromise = User.findAll({ where: { admin: true }})
     }
     const [, admins] = await Promise.all([
       user.saveSideEffects(),
-      sequelize.models.User.findAll({ where: { admin: true }}),
+      adminsPromise,
     ])
     if (config.isTest) {
       return authenticate(req, res, next, { forceVerify: true })
@@ -153,16 +180,18 @@ Please click this link to verify your account: ${verifyUrl}
 `,
     })
     const profileUrl = `${routes.host(req)}${routes.user(user.username)}`
-    for (const admin of admins) {
-      lib.sendEmail({
-        to: admin.email,
-        subject: `A new user signed up: ${user.displayName} (@${user.username}, ${user.email})!`,
-        html: `<p><a href="${profileUrl}">${profileUrl}</a></p><p>Another step towards world domination is taken!</p>`,
-        text: `${profileUrl}
+    if (admins) {
+      for (const admin of admins) {
+        lib.sendEmail({
+          to: admin.email,
+          subject: `A new user signed up: ${user.displayName} (@${user.username}, ${user.email})!`,
+          html: `<p><a href="${profileUrl}">${profileUrl}</a></p><p>Another step towards world domination is taken!</p>`,
+          text: `${profileUrl}
 
 Another step towards world domination is taken!
 `,
-      })
+        })
+      }
     }
     return res.json({ user: await user.toJson(user) })
   } catch(error) {

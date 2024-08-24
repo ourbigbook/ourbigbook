@@ -4511,6 +4511,24 @@ it(`api: user validation`, async () => {
       ;({ data, status } = await test.webApi.user('john-smith'))
       assert.strictEqual(data.username, 'john-smith')
 
+      // Username taken.
+      ;({ data, status } = await test.webApi.userCreate({
+        username: 'john-smith',
+        displayName: 'Mary Jane',
+        email: 'mary.jane@mail.com',
+        password: 'asdf',
+      }))
+      assert.strictEqual(status, 422)
+
+      // Email taken.
+      ;({ data, status } = await test.webApi.userCreate({
+        username: 'mary-jane',
+        displayName: 'Mary Jane',
+        email: 'john.smith@mail.com',
+        password: 'asdf',
+      }))
+      assert.strictEqual(status, 422)
+
       // Missing display name.
       ;({ data, status } = await test.webApi.userCreate({
         username: 'mary-jane',

@@ -125,6 +125,30 @@ function getLimitAndOffset(req, res, opts={}) {
   ]
 }
 
+/**
+ * https://stackoverflow.com/questions/19700283/how-to-convert-time-in-milliseconds-to-hours-min-sec-format-in-javascript/32180863#32180863
+ *
+ * Approximate milliseconds to the nearest time unit.
+ *
+ * @param {Number} ms
+ * @return {string} Sample outputs:
+ *                  1.0 Sec
+ *                  10.0 Sec
+ *                  5.0 Min
+ *                  1.0 Hrs
+ *                  1.0 Days
+ */
+function msToRoundedTime(ms) {
+  let seconds = (ms / 1000).toFixed(1)
+  let minutes = (ms / (1000 * 60)).toFixed(1)
+  let hours = (ms / (1000 * 60 * 60)).toFixed(1)
+  let days = (ms / (1000 * 60 * 60 * 24)).toFixed(1)
+  if (seconds < 60) return seconds + " seconds"
+  else if (minutes < 60) return minutes + " minutes"
+  else if (hours < 24) return hours + " hours"
+  else return days + " days"
+}
+
 function oneMinuteAgo() {
   return new Date(new Date - 1000 * 60)
 }
@@ -246,6 +270,7 @@ module.exports = {
   likeObject,
   oneHourAgo,
   oneMinuteAgo,
+  msToRoundedTime,
   sendEmail,
   validate,
   validateBodySize,

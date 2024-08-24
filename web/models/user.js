@@ -19,7 +19,7 @@ module.exports = (sequelize) => {
       username: {
         type: DataTypes.STRING(config.usernameMaxLength),
         unique: {
-          msg: 'This username is taken.'
+          msg: 'Username is taken.'
         },
         validate: {
           len: {
@@ -104,6 +104,13 @@ module.exports = (sequelize) => {
         type: DataTypes.DATE,
         allowNull: true,
       },
+      // How many verification codes have been sent so far without success.
+      // To help prevent spam with an exponentially increasing timeout.
+      verificationCodeN: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
       maxArticles: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -152,7 +159,7 @@ module.exports = (sequelize) => {
     {
       hooks: {
         beforeValidate: (user, options) => {
-          user.verificationCode = crypto.randomBytes(sequelize.models.User.tableAttributes.verificationCode.type.options.length / 2).toString('hex')
+          user.verificationCode = User.generateVerificationCode()
           user.newScoreLastCheck = Date.now()
           options.fields.push('verificationCode');
         },
@@ -169,7 +176,7 @@ module.exports = (sequelize) => {
         }
       },
       indexes: [
-        { fields: ['admin'] },
+        { fields: ['admin', 'username'] },
         { fields: ['createdAt'] },
         { fields: ['email'] },
         { fields: ['followerCount'] },
@@ -288,6 +295,14 @@ module.exports = (sequelize) => {
 
   User.findAndCountArticleLikesReceived = async function(uid, opts={}) {
     return sequelize.models.UserLikeArticle.findAndCountAll(this.findArticleLikesReceivedArgs(uid, opts))
+  }
+
+  User.generateVerificationCode = function generateVerificationCode() {
+    return crypto.randomBytes(User.tableAttributes.verificationCode.type.options.length / 2).toString('hex')
+  }
+
+  User.verificationCodeNToTimeDeltaHours = function verificationCodeNToTimeDeltaHours(verificationCodeN) {
+    return 4**verificationCodeN
   }
 
   User.countArticleLikesReceived = async function(uid, opts={}) {

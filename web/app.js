@@ -59,7 +59,7 @@ async function start(port, startNext, cb) {
         }
         const user = await sequelize.models.User.findOne({ where: { [field]: usernameOrEmail } })
         if (!user || !sequelize.models.User.validPassword(user, password)) {
-          return done(null, false, { errors: { 'username or password': 'is invalid' } })
+          return done(null, false, { errors: { 'username or password': `is invalid: usernameOrEmail=${usernameOrEmail}` } })
         }
         return done(null, user)
       }
@@ -107,7 +107,7 @@ async function start(port, startNext, cb) {
 
   // Error handlers
   app.use(function(err, req, res, next) {
-    // Automatiaclly handle Sequelize validation errors.
+    // Automatically handle Sequelize validation errors.
     if (err instanceof sequelize.Sequelize.ValidationError) {
       if (!config.isProduction && !config.isTest) {
         // The fuller errors can be helpful during development.

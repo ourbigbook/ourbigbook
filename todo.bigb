@@ -820,6 +820,8 @@ Self headers done. ToC missing.
 === Hide unconfirmed users
 {tag=Web}
 
+Will likely get solved via: https://github.com/ourbigbook/ourbigbook/issues/329
+
 === Fragment redirects not working on web
 {tag=Web}
 

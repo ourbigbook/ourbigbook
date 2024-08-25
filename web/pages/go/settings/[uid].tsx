@@ -142,18 +142,16 @@ const Settings = ({
             Update Settings
           </button>
           <h2>Extra information</h2>
-          <p>Signup IP: {userInfo.ip || 'not set'}</p>
-          <p>nestedSetNeedsUpdate: {userInfo.nestedSetNeedsUpdate.toString()}</p>
           {cant.setUserLimits(loggedInUser)
             ? <>
-                <p>Limits:</p>
+                <p><b>Limits:</b></p>
                 <ul>
-                  <li>{maxArticleSizeLabel}: {userInfo.maxArticleSize}</li>
-                  <li>{maxArticlesLabel}: {userInfo.maxArticles}</li>
-                  <li>{maxIssuesPerMinuteLabel}: {userInfo.maxIssuesPerMinute}</li>
-                  <li>{maxIssuesPerHourLabel}: {userInfo.maxIssuesPerHour}</li>
+                  <li>{maxArticleSizeLabel}: <b>{userInfo.maxArticleSize}</b></li>
+                  <li>{maxArticlesLabel}: <b>{userInfo.maxArticles}</b></li>
+                  <li>{maxIssuesPerMinuteLabel}: <b>{userInfo.maxIssuesPerMinute}</b></li>
+                  <li>{maxIssuesPerHourLabel}: <b>{userInfo.maxIssuesPerHour}</b></li>
                 </ul>
-                <div>You may <a href={contactUrl}>ask an admin</a> to raise any of those limits for you.</div>
+                <div>You may <a href={contactUrl}><b>ask an admin</b></a> to raise any of those limits for you.</div>
               </>
             : <>
                 <Label label={maxArticlesLabel}>
@@ -186,8 +184,10 @@ const Settings = ({
                 </Label>
               </>
           }
+          <p>Signup IP: <b>{userInfo.ip || 'not set'}</b></p>
+          <p>nestedSetNeedsUpdate: <b>{userInfo.nestedSetNeedsUpdate.toString()}</b></p>
           {loggedInUser.admin &&
-            <p>Verified: {userInfo.verified.toString()}</p>
+            <p>Verified: <b>{userInfo.verified.toString()}</b></p>
           }
         </form>
       </>

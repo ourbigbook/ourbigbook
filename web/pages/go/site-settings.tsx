@@ -1,5 +1,5 @@
 import Router from 'next/router'
-import React, { useEffect, useRef } from 'react'
+import React, { useRef } from 'react'
 
 import { cant } from 'front/cant'
 import {
@@ -28,19 +28,19 @@ interface SiteSettingsProps extends CommonPropsType {
 }
 
 function getArticleErrors(pinnedArticle, exists) {
-  let newPinnedArticleNotErrors, newPinnedArticleErrors
+  let newPinnedArticleOks, newPinnedArticleErrors
   if (pinnedArticle) {
     if (exists) {
       newPinnedArticleErrors = []
-      newPinnedArticleNotErrors = [`Article exists`]
+      newPinnedArticleOks = [`Article exists`]
     } else {
       newPinnedArticleErrors = [`Article does not exist`]
     }
   } else {
     newPinnedArticleErrors = []
-    newPinnedArticleNotErrors = [`No pinned article`]
+    newPinnedArticleOks = [`No pinned article`]
   }
-  return [newPinnedArticleErrors, newPinnedArticleNotErrors]
+  return [newPinnedArticleErrors, newPinnedArticleOks]
 }
 
 export default function SiteSettings({
@@ -53,8 +53,8 @@ export default function SiteSettings({
     site.pinnedArticle = ''
   }
   const [siteInfo, setSiteInfo] = React.useState(site)
-  const [_, pinnedArticleNotErrorsInit] = getArticleErrors(site.pinnedArticle, true)
-  const [pinnedArticleNotErrors, setPinnedArticleNotErrors] = React.useState(pinnedArticleNotErrorsInit)
+  const [_, pinnedArticleOksInit] = getArticleErrors(site.pinnedArticle, true)
+  const [pinnedArticleOks, setPinnedArticleOks] = React.useState(pinnedArticleOksInit)
   const [pinnedArticleErrors, setPinnedArticleErrors] = React.useState([])
   const [pinnedArticleLoading, setPinnedArticleLoading] = React.useState(false)
   const [pinnedArticleCheckDone, setPinnedArticleCheckDone] = React.useState(true)
@@ -82,12 +82,12 @@ export default function SiteSettings({
             if (pinnedArticleIClosure + 1 === pinnedArticleI.current) {
               const articleExists = !!ret.data
               setPinnedArticleLoading(false)
-              const [newPinnedArticleErrors, newPinnedArticleNotErrors] = getArticleErrors(
+              const [newPinnedArticleErrors, newPinnedArticleOks] = getArticleErrors(
                 pinnedArticle,
                 articleExists
               )
               setPinnedArticleErrors(newPinnedArticleErrors)
-              setPinnedArticleNotErrors(newPinnedArticleNotErrors)
+              setPinnedArticleOks(newPinnedArticleOks)
               setPinnedArticleCheckDone(true)
               done = true
             }
@@ -96,12 +96,12 @@ export default function SiteSettings({
       }, userStoppedTypingMs)
     } else {
       // Empty is always valid, so we make no request.
-      const [newPinnedArticleErrors, newPinnedArticleNotErrors] = getArticleErrors(
+      const [newPinnedArticleErrors, newPinnedArticleOks] = getArticleErrors(
         pinnedArticle,
         true
       )
       setPinnedArticleErrors(newPinnedArticleErrors)
-      setPinnedArticleNotErrors(newPinnedArticleNotErrors)
+      setPinnedArticleOks(newPinnedArticleOks)
       setPinnedArticleCheckDone(true)
     }
   }
@@ -137,40 +137,38 @@ export default function SiteSettings({
     <div className="settings-page content-not-ourbigbook">
       <h1><SettingsIcon /> {title}</h1>
       <p>This page contains global settings that affect the entire website. It can only be edited by <a href={`${docsAdminUrl}`}>admins</a>.</p>
-      <>
-        <MapErrors errors={errors} />
-        <form onSubmit={handleSubmit}>
-          <Label label="Pinned article">
-            <input
-              type="text"
-              placeholder={"(currently empty) Sample value: \"user0/article0\". Empty for don't pin any."}
-              value={siteInfo.pinnedArticle}
-              onChange={updateState('pinnedArticle')}
-              disabled={!canUpdate}
-            />
-          </Label>
-          <ErrorList
-            errors={pinnedArticleErrors}
-            loading={pinnedArticleLoading}
-            notErrors={pinnedArticleNotErrors}
+      <MapErrors errors={errors} />
+      <form onSubmit={handleSubmit}>
+        <Label label="Pinned article">
+          <input
+            type="text"
+            placeholder={"(currently empty) Sample value: \"user0/article0\". Empty for don't pin any."}
+            value={siteInfo.pinnedArticle}
+            onChange={updateState('pinnedArticle')}
+            disabled={!canUpdate}
           />
-          {(canUpdate) &&
-            <>
-              <button
-                className="btn"
-                type="submit"
-                ref={submitElem}
-              >
-                Update Settings
-              </button>
-              {formChanged && <>
-                {' '}
-                <span>Unsaved changes</span>
-              </>}
-            </>
-          }
-        </form>
-      </>
+        </Label>
+        <ErrorList
+          errors={pinnedArticleErrors}
+          loading={pinnedArticleLoading}
+          oks={pinnedArticleOks}
+        />
+        {(canUpdate) &&
+          <>
+            <button
+              className="btn"
+              type="submit"
+              ref={submitElem}
+            >
+              Update settings
+            </button>
+            {formChanged && <>
+              {' '}
+              <span>Unsaved changes</span>
+            </>}
+          </>
+        }
+      </form>
     </div>
   </>
 }

@@ -4,9 +4,7 @@ Error.stackTraceLimit = Infinity;
 const bodyParser = require('body-parser')
 const cors = require('cors')
 const express = require('express')
-const http = require('http')
 const UnauthorizedError = require('express-jwt/lib/errors/UnauthorizedError');
-const methods = require('methods')
 const morgan = require('morgan')
 const next = require('next')
 const passport = require('passport')
@@ -18,6 +16,7 @@ const apilib = require('./api/lib')
 const back_js = require('./back/js')
 const models = require('./models')
 const config = require('./front/config')
+const front = require('./front/js')
 
 async function start(port, startNext, cb) {
   const app = express()
@@ -52,10 +51,10 @@ async function start(port, startNext, cb) {
       },
       async function(usernameOrEmail, password, done) {
         let field
-        if (usernameOrEmail.indexOf('@') === -1) {
-          field = 'username'
-        } else {
+        if (front.isEmail(usernameOrEmail)) {
           field = 'email'
+        } else {
+          field = 'username'
         }
         const user = await sequelize.models.User.findOne({ where: { [field]: usernameOrEmail } })
         if (!user || !sequelize.models.User.validPassword(user, password)) {

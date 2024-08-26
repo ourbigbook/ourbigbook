@@ -34,7 +34,6 @@ export default function VerifyPage({
         <>
           <p>Click the verification link we've sent to your email: <b>{email}</b> to verify your account.</p>
           <p>Also check your spam box if you can't see the email.</p>
-          <p>To re-send this email, simply <Link href={routes.userNew()}>register again with the same email</Link>.</p>
         </>
       }
       {verificationOk &&
@@ -43,13 +42,16 @@ export default function VerifyPage({
       {(code && email && !verificationOk) &&
         <p>Verification code invalid. TODO give user something to do about it, e.g. resend.</p>
       }
+      {!verificationOk &&
+        <p>To re-send this email, simply <Link href={routes.userNew()}>register again with the same email</Link>.</p>
+      }
     </div>
   </>
 }
 
 import { getLoggedInUser } from 'back'
 
-export const getServerSideProps = async ({ params = {}, req, res }) => {
+export const getServerSideProps = async function getServerSidePropsVerifyPage({ params = {}, req, res }) {
   const loggedInUser = await getLoggedInUser(req, res)
   if (loggedInUser) {
     return {
@@ -70,6 +72,8 @@ export const getServerSideProps = async ({ params = {}, req, res }) => {
       if (user.verificationCode === code) {
         user.token = user.generateJWT()
         user.verified = true
+        user.verificationCode = null
+        user.verificationCodeN = 0
         await user.save()
         verificationOk = true
       } else {

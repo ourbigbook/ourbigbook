@@ -96,9 +96,12 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: false,
       },
+      // Used for for both:
+      // - new account registration
+      // - subsequent password resets
       verificationCode: {
         type: DataTypes.STRING(1024),
-        allowNull: false,
+        allowNull: true,
       },
       verificationCodeSent: {
         type: DataTypes.DATE,
@@ -159,9 +162,14 @@ module.exports = (sequelize) => {
     {
       hooks: {
         beforeValidate: (user, options) => {
-          user.verificationCode = User.generateVerificationCode()
-          user.newScoreLastCheck = Date.now()
-          options.fields.push('verificationCode');
+          if (user.verificationCode === undefined) {
+            user.verificationCode = User.generateVerificationCode()
+            options.fields.push('verificationCode')
+          }
+          if (user.newScoreLastCheck === undefined) {
+            user.newScoreLastCheck = Date.now()
+            options.fields.push('newScoreLastCheck')
+          }
         },
         afterCreate: async (user, options) => {
           // Create the index page for the user.

@@ -186,6 +186,11 @@ function isBoolean(tf) {
   return typeof tf === 'boolean'
 }
 
+/** Is it an email? And not a username. */
+function isEmail(s) {
+  return s.indexOf('@') !== -1
+}
+
 function isSmallerOrEqualTo(max) {
   return (n) => n <= max
 }
@@ -223,6 +228,7 @@ module.exports = {
   slugToId,
   isArrayOf,
   isBoolean,
+  isEmail,
   isLengthSmallerOrEqualTo,
   isNonNegativeInteger,
   isPositiveInteger,

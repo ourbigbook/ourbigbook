@@ -1,16 +1,20 @@
-import Head from 'next/head';
-import React from 'react'
+import Head from 'next/head'
 import Link from 'next/link'
 import Router from 'next/router'
+import Script from 'next/script'
+import React from 'react'
 import { mutate } from 'swr'
 
 import ourbigbook, {
   Macro,
-  OURBIGBOOK_JSON_DEFAULT,
-} from 'ourbigbook';
+} from 'ourbigbook'
 
 import { webApi } from 'front/api'
-import { docsUrl, sureLeaveMessage } from 'front/config'
+import {
+  docsUrl,
+  sureLeaveMessage,
+  useCaptcha
+} from 'front/config'
 import { AUTH_COOKIE_NAME } from 'front/js'
 import CustomLink from 'front/CustomLink'
 import { formatDate } from 'front/date'
@@ -555,4 +559,24 @@ export function ArticleCreatedUpdatedPills({ article }) {
       </>
     }
   </>
+}
+
+export async function getRecaptchaToken() : Promise<string|undefined> {
+  if (useCaptcha) {
+    return new Promise((resolve, reject) => {
+      grecaptcha.ready(function() {
+        grecaptcha.execute(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY, {action: 'submit'}).then(function(token) {
+          resolve(token)
+        })
+      })
+    })
+  }
+}
+
+export function RecaptchaScript() {
+  if (useCaptcha) {
+    return <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
+  } else {
+    return <></>
+  }
 }

@@ -2,11 +2,11 @@ import React from 'react'
 
 import { ErrorIcon, OkIcon, TimeIcon  } from 'front'
 
-const ErrorList = ({
+export default function ErrorList({
   errors,
   loading=undefined,
-  notErrors=undefined,
-}) => {
+  oks=undefined,
+}) {
   let inner
   if (errors instanceof Array) {
     if (errors.length) {
@@ -15,16 +15,16 @@ const ErrorList = ({
   } else if (typeof errors === 'string') {
     inner = errors
   }
-  if (notErrors !== undefined && notErrors.length) {
+  if (oks !== undefined && oks.length) {
     inner = <></>
   }
   if (loading) {
     return <div className="loading"><TimeIcon /> Loading</div>
   } else {
     return <>
-      {(notErrors !== undefined && notErrors.length) &&
+      {(oks !== undefined && oks.length !== 0) &&
         <div className="ok-messages">
-          {notErrors.map((e, i) => <div key={i}><OkIcon /> {e}</div>)}
+          {oks.map((e, i) => <div key={i}><OkIcon /> {e}</div>)}
         </div>
       }
       {(inner !== undefined) &&
@@ -35,5 +35,3 @@ const ErrorList = ({
     </>
   }
 }
-
-export default ErrorList;

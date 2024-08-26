@@ -1,10 +1,16 @@
 import Router from 'next/router'
 import React from 'react'
-import Script from 'next/script'
 
-import { LOGIN_ACTION, REGISTER_ACTION, useCtrlEnterSubmit, setCookie, setupUserLocalStorage } from 'front'
+import {
+  LOGIN_ACTION,
+  REGISTER_ACTION,
+  OkIcon,
+  useCtrlEnterSubmit,
+  setupUserLocalStorage,
+  getRecaptchaToken,
+  RecaptchaScript,
+} from 'front'
 import { AppContext } from 'front'
-import config from 'front/config'
 import MapErrors from 'front/MapErrors'
 import Label from 'front/Label'
 import { webApi } from 'front/api'
@@ -18,45 +24,23 @@ const LoginForm = ({ register = false }) => {
   const [displayName, setDisplayName] = React.useState("")
   const [username, setUsername] = React.useState("")
   const [password, setPassword] = React.useState("")
-  const handleEmailChange = React.useCallback(
-    (e) => setEmail(e.target.value),
-    []
-  )
-  const handleDisplayNameChange = React.useCallback(
-    (e) => setDisplayName(e.target.value),
-    []
-  )
-  const handleUsernameChange = React.useCallback(
-    (e) => setUsername(e.target.value),
-    []
-  );
-  const handlePasswordChange = React.useCallback(
-    (e) => setPassword(e.target.value),
-    []
-  );
-  const useCaptcha = register && config.useCaptcha
+  const handleEmailChange = React.useCallback((e) => setEmail(e.target.value), [] )
+  const handleDisplayNameChange = React.useCallback((e) => setDisplayName(e.target.value), [])
+  const handleUsernameChange = React.useCallback((e) => setUsername(e.target.value), [])
+  const handlePasswordChange = React.useCallback((e) => setPassword(e.target.value), [])
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    let recaptchaToken
-    if (useCaptcha) {
-      recaptchaToken = await new Promise((resolve, reject) => {
-        grecaptcha.ready(function() {
-          grecaptcha.execute(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY, {action: 'submit'}).then(function(token) {
-            resolve(token)
-          });
-        });
-      })
-    }
+    e.preventDefault()
+    setLoading(true)
     try {
-      let data, status;
+      let data, status
       if (register) {
-        ({ data, status } = await webApi.userCreate({ displayName, username, email, password }, recaptchaToken));
+        const recaptchaToken = await getRecaptchaToken()
+        ;({ data, status } = await webApi.userCreate({ displayName, username, email, password }, recaptchaToken))
         if (status === 200) {
           Router.push(routes.userVerify(data.user.email))
         }
       } else {
-        ({ data, status } = await webApi.userLogin({ username, password }));
+        ;({ data, status } = await webApi.userLogin({ username, password }))
         if (status === 200) {
           if (data.verified) {
             if (data.user) {
@@ -73,7 +57,7 @@ const LoginForm = ({ register = false }) => {
         }
       }
       if (status !== 200 && data.errors) {
-        setErrors(data.errors);
+        setErrors(data.errors)
       }
     } catch (error) {
       console.error(error);
@@ -131,14 +115,12 @@ const LoginForm = ({ register = false }) => {
           type="submit"
           disabled={isLoading}
         >
-          {`${register ? REGISTER_ACTION : LOGIN_ACTION}`}
+          <OkIcon /> {`${register ? REGISTER_ACTION : LOGIN_ACTION}`}
         </button>
       </form>
-      {useCaptcha &&
-        <Script src={`https://www.google.com/recaptcha/api.js?render=${process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY}`} />
-      }
+      {register && <RecaptchaScript />}
     </>
-  );
-};
+  )
+}
 
 export default LoginForm;

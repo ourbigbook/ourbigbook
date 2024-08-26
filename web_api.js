@@ -307,6 +307,22 @@ class WebApi {
     return this.req('get', `topics${encodeGetParamsWithOffset(opts)}`)
   }
 
+  async resetPassword(email, password, code) {
+    return this.req(
+      'post',
+      `reset-password`,
+      { body: { email, password, code } }
+    )
+  }
+
+  async resetPasswordRequest(emailOrUsername, recaptchaToken) {
+    return this.req(
+      'post',
+      `reset-password-request`,
+      { body: { emailOrUsername, recaptchaToken } }
+    )
+  }
+
   async users(opts) {
     return this.req('get', `users${encodeGetParamsWithOffset(opts)}`)
   }

@@ -2,11 +2,12 @@ const url = require('url');
 
 const { sendJsonHttp } = require('ourbigbook/web_api')
 
-const { cant } = require('../front/cant')
 const router = require('express').Router()
 const passport = require('passport')
+
 const auth = require('../auth')
 const lib = require('./lib')
+const { cant } = require('../front/cant')
 const front = require('../front/js')
 const config = require('../front/config')
 const routes = require('../front/routes')
@@ -60,6 +61,98 @@ router.post('/login', async function(req, res, next) {
   }
 })
 
+router.post('/reset-password-request', async function(req, res, next) {
+  try {
+    const body = lib.validateParam(req, 'body')
+    const emailOrUsername = lib.validateParam(body,
+      'emailOrUsername',
+      { validators: [front.isString, front.isTruthy] }
+    )
+    await validateCaptcha(config, req, res)
+    const sequelize = req.app.get('sequelize')
+    const where = {}
+    if (front.isEmail(emailOrUsername)) {
+      where.email = emailOrUsername
+    } else {
+      where.username = emailOrUsername
+    }
+    const User = sequelize.models.User
+    const user = await User.findOne({ where })
+    if (!user)
+      throw new lib.ValidationError([`email or username is not registered: ${emailOrUsername}`])
+    if (!user.verified)
+      throw new lib.ValidationError([`user is not verified, you must verify your account before you can reset your password`])
+    const timeToWaitMs = getTimeToWaitForNextEmailMs(user)
+    if (timeToWaitMs > 0) {
+      throw new lib.ValidationError([`Email already registered but not verified. You can re-send a confirmation email in: ${lib.msToRoundedTime(timeToWaitMs)}`])
+    }
+    const verificationCode = User.generateVerificationCode()
+    const resetPasswordUrl = `${routes.host(req)}${routes.resetPasswordUpdate()}?email=${encodeURIComponent(user.email)}&code=${verificationCode}`
+    user.verificationCode = verificationCode
+    user.verificationCodeN += 1
+    user.verificationCodeSent = new Date()
+    await Promise.all([
+      user.saveSideEffects(),
+      lib.sendEmail({
+        to: user.email,
+        subject: `Change your OurBigBook.com password`,
+        html:
+          `<p>Hello, ${user.displayName}!</p>` +
+          `<p>Someone (hopefully you) requested a password reset for your account.</p>` +
+          `<p>If that was you, please <a href="${resetPasswordUrl}">click this link to change your password</a>.</p>` +
+          `<p>If it wasn't, you can safely ignore this email.</p>`
+        ,
+        text: `Hello, ${user.displayName}!
+
+Someone (hopefully you) requested a password reset for your account.
+
+If that was you, please click this link to change your password: ${resetPasswordUrl}
+
+If it wasn't, you can safely ignore this email.
+`,
+      })
+    ])
+    res.sendStatus(200)
+  } catch(error) {
+    next(error);
+  }
+})
+
+router.post('/reset-password', async function(req, res, next) {
+  try {
+    const body = lib.validateParam(req, 'body')
+    const email = lib.validateParam(body,
+      'email',
+      { validators: [front.isString, front.isTruthy] }
+    )
+    const password = lib.validateParam(body,
+      'password',
+      { validators: [front.isString, front.isTruthy] }
+    )
+    const code = lib.validateParam(body,
+      'code',
+      { validators: [front.isString, front.isTruthy] }
+    )
+    await validateCaptcha(config, req, res)
+    const sequelize = req.app.get('sequelize')
+    const User = sequelize.models.User
+    const user = await User.findOne({ where: { email } })
+    if (!user)
+      throw new lib.ValidationError([`email not registered: ${email}`])
+    if (code === user.verificationCode) {
+      res.sendStatus(200)
+      user.verificationCode = null
+      user.verificationCodeN = 0
+      User.setPassword(user, password)
+      await user.saveSideEffects()
+    } else {
+      throw new lib.ValidationError(['verification code invalid. Please send a new one.'])
+    }
+  } catch(error) {
+    next(error);
+  }
+})
+
 router.get('/users', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
@@ -88,6 +181,41 @@ router.get('/users', auth.optional, async function(req, res, next) {
   }
 })
 
+async function validateCaptcha(config, req, res) {
+  if (config.useCaptcha) {
+    const {data, status} = await sendJsonHttp(
+      'POST',
+      '/recaptcha/api/siteverify',
+      {
+        contentType: 'application/x-www-form-urlencoded',
+        https: true,
+        hostname: 'www.google.com',
+        validateStatus: () => true,
+        body: new url.URLSearchParams({
+          secret: process.env.RECAPTCHA_SECRET_KEY,
+          response: req.body.recaptchaToken,
+        }).toString(),
+      }
+    )
+    if (status !== 200) {
+      return res.sendStatus(503)
+    }
+    if (!data.success) {
+      console.error(`recaptcha error: ${data}`);
+      throw new lib.ValidationError(['reCAPTCHA failed'])
+    }
+  }
+}
+
+function getTimeToWaitForNextEmailMs(user) {
+  if (user.verificationCodeN === 0)
+    return -1
+  return (
+    user.verificationCodeSent.getTime() +
+    lib.MILLIS_PER_MINUTE * user.sequelize.models.User.verificationCodeNToTimeDeltaMinutes(user.verificationCodeN)
+  ) - (new Date()).getTime()
+}
+
 // Create a new user.
 router.post('/users', async function(req, res, next) {
   try {
@@ -100,29 +228,7 @@ router.post('/users', async function(req, res, next) {
       validators: [front.isString, front.isTruthy],
       defaultValue: undefined,
     })
-    if (config.useCaptcha) {
-      ;({data, status} = await sendJsonHttp(
-        'POST',
-        '/recaptcha/api/siteverify',
-        {
-          contentType: 'application/x-www-form-urlencoded',
-          https: true,
-          hostname: 'www.google.com',
-          validateStatus: () => true,
-          body: new url.URLSearchParams({
-            secret: process.env.RECAPTCHA_SECRET_KEY,
-            response: req.body.recaptchaToken,
-          }).toString(),
-        }
-      ))
-      if (status !== 200) {
-        return res.sendStatus(503)
-      }
-      if (!data.success) {
-        console.error(`recaptcha error: ${data}`);
-        throw new lib.ValidationError(['reCAPTCHA failed'])
-      }
-    }
+    await validateCaptcha(config, req, res)
     const sequelize = req.app.get('sequelize')
     const User = sequelize.models.User
     // We fetch the existing account by email.
@@ -134,20 +240,15 @@ router.post('/users', async function(req, res, next) {
       user = existingUser
       if (user.verified) {
         throw new lib.ValidationError([`email already taken: ${email}`])
-      } else {
-        // Re-send the email if enough time passed.
-        const timeToWaitMs = (
-          user.verificationCodeSent.getTime() +
-          lib.MILLIS_PER_MINUTE * User.verificationCodeNToTimeDeltaMinutes(user.verificationCodeN)
-        ) - (new Date()).getTime()
-        if (timeToWaitMs > 0) {
-          throw new lib.ValidationError([`Email already registered but not verified. You can re-send a confirmation email in: ${lib.msToRoundedTime(timeToWaitMs)}`])
-        } else {
-          user.verificationCode = User.generateVerificationCode()
-          user.verificationCodeN += 1
-          adminsPromise = null
-        }
       }
+      // Re-send the email if enough time passed.
+      const timeToWaitMs = getTimeToWaitForNextEmailMs(user)
+      if (timeToWaitMs > 0) {
+        throw new lib.ValidationError([`Email already registered but not verified. You can re-send a confirmation email in: ${lib.msToRoundedTime(timeToWaitMs)}`])
+      }
+      user.verificationCode = User.generateVerificationCode()
+      user.verificationCodeN += 1
+      adminsPromise = null
     } else {
       user = new (User)()
       // username is set only in this else.
@@ -173,19 +274,23 @@ router.post('/users', async function(req, res, next) {
       return authenticate(req, res, next, { forceVerify: true })
     }
     const verifyUrl = `${routes.host(req)}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`
-    lib.sendEmail({
+    const sendEmailsPromises = []
+    sendEmailsPromises.push(lib.sendEmail({
       to: user.email,
       subject: `Verify your new OurBigBook.com account`,
-      html: `<p>Welcome to OurBigBook.com!</p><p>Please <a href="${verifyUrl}">click this link to verify your account</a>.</p>`,
-      text: `Welcome to OurBigBook.com!
+      html:
+        `<p>Welcome to OurBigBook.com, ${user.displayName}!</p>` +
+        `<p>Please <a href="${verifyUrl}">click this link to verify your account</a>.</p>`
+      ,
+      text: `Welcome to OurBigBook.com, ${user.displayName}!
 
 Please click this link to verify your account: ${verifyUrl}
 `,
-    })
+    }))
     const profileUrl = `${routes.host(req)}${routes.user(user.username)}`
     if (admins) {
       for (const admin of admins) {
-        lib.sendEmail({
+        sendEmailsPromises.push(lib.sendEmail({
           to: admin.email,
           subject: `A new user signed up: ${user.displayName} (@${user.username}, ${user.email})!`,
           html: `<p><a href="${profileUrl}">${profileUrl}</a></p><p>Another step towards world domination is taken!</p>`,
@@ -193,9 +298,10 @@ Please click this link to verify your account: ${verifyUrl}
 
 Another step towards world domination is taken!
 `,
-        })
+        }))
       }
     }
+    await Promise.all(sendEmailsPromises)
     return res.json({ user: await user.toJson(user) })
   } catch(error) {
     next(error);
@@ -293,7 +399,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
       if (typeof userArg.password !== 'undefined') {
         sequelize.models.User.setPassword(user, userArg.password)
       }
-      await user.save()
+      await user.saveSideEffects()
     }
     user.token = user.generateJWT()
     return res.json({ user: await user.toJson(user) })

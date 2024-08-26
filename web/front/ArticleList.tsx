@@ -423,7 +423,7 @@ const ArticleList = ({
                             }
                             {(itemType !== 'topic') &&
                               <td className="shrink right bold">
-                                <CustomLink href={isIssue ? routes.issueComments(curIssueArticle.slug, article.number) : routes.issues(article.slug)}>
+                                <CustomLink href={isIssue ? routes.issueComments(curIssueArticle.slug, article.number) : routes.articleIssues(article.slug)}>
                                   {isIssue ? article.commentCount : article.issueCount}
                                 </CustomLink>
                               </td>

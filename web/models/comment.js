@@ -31,6 +31,14 @@ module.exports = (sequelize) => {
         // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
         { fields: ['issueId'], },
         { fields: ['authorId'], },
+
+        // Efficient global listings.
+        { fields: ['createdAt'], },
+        { fields: ['updatedAt'], },
+
+        // Efficient listing of issues by a given user.
+        { fields: ['authorId', 'createdAt'], },
+        { fields: ['authorId', 'updatedAt'], },
       ],
     },
   )
@@ -186,6 +194,8 @@ module.exports = (sequelize) => {
       offset += config.maxArticlesInMemory
     }
   }
+
+  Comment.ALLOWED_SORTS_EXTRA = {}
 
   return Comment
 }

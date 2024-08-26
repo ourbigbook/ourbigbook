@@ -1438,99 +1438,133 @@ it('api: create an article and see it on global feed', async () => {
 
     if (testNext) {
       // Tests with the same result for logged in or off.
-      async function testNextLoggedInOrOff() {
+      async function testNextLoggedInOrOff(loggedInUser) {
         // Index.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.home(),
-        ))
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.home(), ))
         assertStatus(status, data)
 
-        // User index.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.users(),
-        ))
+        // Articles
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articles(), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articles({ sort: 'created' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articles({ sort: 'updated' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articles({ sort: 'score' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articles({ sort: 'follower-count' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articles({ sort: 'issues' }), ))
         assertStatus(status, data)
 
-        // User.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.user('user0'),
-        ))
+        // Article
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.article('user0/title-0'), ))
         assertStatus(status, data)
-
-        // User that doesn't exist.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.user('dontexist'),
-        ))
-        assert.strictEqual(status, 404)
-
-        // Article.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.article('user0/title-0'),
-        ))
-        assertStatus(status, data)
-
         // Article that doesn't exist.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.article('user0/dontexist'),
-        ))
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.article('user0/dontexist'), ))
         assert.strictEqual(status, 404)
 
-        // Issue list for article.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.issues('user0/title-0'),
-        ))
+        // Article issues
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articleIssues('user0/title-0'), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articleIssues('user0/title-0', { sort: 'created' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articleIssues('user0/title-0', { sort: 'updated' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articleIssues('user0/title-0', { sort: 'score' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articleIssues('user0/title-0', { sort: 'follower-count' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.articleIssues('user0/title-0', { sort: 'comments' }), ))
         assertStatus(status, data)
 
-        // An issue of article.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.issue('user0/title-0', 1),
-        ))
+        // Issues
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.issues(), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.issues({ sort: 'created' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.issues({ sort: 'updated' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.issues({ sort: 'score' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.issues({ sort: 'follower-count' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.issues({ sort: 'comments' }), ))
         assertStatus(status, data)
 
+        // Issue
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.issue('user0/title-0', 1), ))
+        assertStatus(status, data)
         // An issue that doesn't exist.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.issue('user0/title-0', 999),
-        ))
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.issue('user0/title-0', 999), ))
         assert.strictEqual(status, 404)
 
-        // Topic index.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.topics(),
-        ))
+        // Topics
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.topics({ loggedInUser }), ))
         assertStatus(status, data)
-
-        // Topic.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.topic('title-0'),
-        ))
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.topics({ loggedInUser, sort: 'article-count' }), ))
         assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.topics({ loggedInUser, sort: 'updated' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.topics({ loggedInUser, sort: 'created' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.topics({ loggedInUser, sort: 'score' }), ))
+        assert.strictEqual(status, 422)
 
+        // Topic
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.topic('title-0'), ))
+        assertStatus(status, data)
         // Empty topic.
-        ;({data, status} = await test.sendJsonHttp(
-          'GET',
-          routes.topic('dontexist'),
-        ))
-        // Maybe we want 404?
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.topic('dontexist'), ))
+        assertStatus(status, data)
+
+        // Comments
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.comments(), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.comments({ sort: 'created' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.comments({ sort: 'updated' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.comments({ sort: 'score' }), ))
+        assert.strictEqual(status, 422)
+
+        // Users
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.users(), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.users({ sort: 'created' }), ))
+        assertStatus(status, data)
+        // Users sort by updated not allowed. Feels weird given all private data?
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.users({ sort: 'updated' }), ))
+        assert.strictEqual(status, 422)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.users({ sort: 'score' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.users({ sort: 'username' }), ))
+        assertStatus(status, data)
+
+        // User
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.user('user0'), ))
+        assertStatus(status, data)
+        // User that doesn't exist.
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.user('dontexist'), ))
+        assert.strictEqual(status, 404)
+
+        // User articles
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.userArticles('user0'), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.userArticles('user0', { sort: 'created' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.userArticles('user0', { sort: 'updated' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp( 'GET', routes.userArticles('user0', { sort: 'score' }), ))
         assertStatus(status, data)
       }
 
       // Logged in.
-      await testNextLoggedInOrOff()
+      await testNextLoggedInOrOff(true)
 
       // Logged out.
       test.disableToken()
-      await testNextLoggedInOrOff()
+      await testNextLoggedInOrOff(false)
       test.loginUser(user)
 
       // Cases where logged out access leads to redirect to signup page.
@@ -1542,41 +1576,20 @@ it('api: create an article and see it on global feed', async () => {
         ;({data, status} = await cb())
         assertStatus(status, data)
       }
-      await testRedirIfLoggedOff(async () => test.sendJsonHttp(
-        'GET',
-        routes.articleNew(),
-      ))
-      await testRedirIfLoggedOff(async () => test.sendJsonHttp(
-        'GET',
-        routes.articleEdit('user0/title-0'),
-      ))
-      await testRedirIfLoggedOff(async () => test.sendJsonHttp(
-        'GET',
-        routes.issueNew('user0/title-0'),
-      ))
-      await testRedirIfLoggedOff(async () => test.sendJsonHttp(
-        'GET',
-        routes.issueEdit('user0/title-0', 1),
-      ))
-      await testRedirIfLoggedOff(async () => test.sendJsonHttp(
-        'GET',
-        routes.userEdit('user0'),
-      ))
+      await testRedirIfLoggedOff(async () => test.sendJsonHttp( 'GET', routes.articleNew(), ))
+      await testRedirIfLoggedOff(async () => test.sendJsonHttp( 'GET', routes.articleEdit('user0/title-0'), ))
+      await testRedirIfLoggedOff(async () => test.sendJsonHttp( 'GET', routes.issueNew('user0/title-0'), ))
+      await testRedirIfLoggedOff(async () => test.sendJsonHttp( 'GET', routes.issueEdit('user0/title-0', 1), ))
+      await testRedirIfLoggedOff(async () => test.sendJsonHttp( 'GET', routes.userEdit('user0'), ))
 
       // Non admins cannot see the settings page of other users.
       test.loginUser(user)
-      ;({data, status} = await test.sendJsonHttp(
-        'GET',
-        routes.userEdit('user1'),
-      ))
+      ;({data, status} = await test.sendJsonHttp( 'GET', routes.userEdit('user1'), ))
       assert.strictEqual(status, 404)
 
       // Admins can see the settings page of other users.
       test.loginUser(user2)
-      ;({data, status} = await test.sendJsonHttp(
-        'GET',
-        routes.userEdit('user1'),
-      ))
+      ;({data, status} = await test.sendJsonHttp( 'GET', routes.userEdit('user1'), ))
       assertStatus(status, data)
       test.loginUser(user)
     }
@@ -1787,7 +1800,7 @@ it('api: article follow', async () => {
       ])
 
       // Most followed articles by user
-      ;({data, status} = await test.webApi.articles({ author: 'user1', sort: 'followerCount' }))
+      ;({data, status} = await test.webApi.articles({ author: 'user1', sort: 'follower-count' }))
       assertStatus(status, data)
       assertRows(data.articles, [
         { slug: 'user1/title-0', followerCount: 2 },
@@ -1804,7 +1817,7 @@ it('api: article follow', async () => {
       ;({data, status} = await test.webApi.articleFollow('user1/dontexist'))
       assert.strictEqual(status, 404)
 
-    // Make user0 unfollowe article user1/title-0.
+    // Make user0 unfollow article user1/title-0.
     ;({data, status} = await test.webApi.articleUnfollow('user1/title-0'))
     assertStatus(status, data)
 

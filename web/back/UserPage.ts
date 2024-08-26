@@ -14,9 +14,10 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       typeof uid === 'string'
     ) {
       const sequelize = req.sequelize
+      const { Article, Comment, Issue, User } = sequelize.models
       const [loggedInUser, user] = await Promise.all([
         getLoggedInUser(req, res),
-        sequelize.models.User.findOne({
+        User.findOne({
           where: { username: uid },
         }),
       ])
@@ -25,10 +26,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           notFound: true
         }
       }
-      const [order, pageNum, err] = getOrderAndPage(req, query.page)
       const list = getList(req, res)
-      if (err) { res.statusCode = 422 }
       let author, articlesFollowedBy, likedBy, following, followedBy, itemType
+      let allowedSorts, allowedSortsExtra
       switch (what) {
         case 'follows':
           followedBy = uid
@@ -81,7 +81,31 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         default:
           throw new Error(`Unknown search: ${what}`)
       }
-      const offset = pageNum * articleLimit
+      switch (what) {
+        case 'user-articles':
+          allowedSortsExtra = Article.ALLOWED_SORTS_EXTRA
+          break
+        case 'user-comments':
+          allowedSortsExtra = Comment.ALLOWED_SORTS_EXTRA
+          break
+        case 'user-issues':
+          allowedSortsExtra = Issue.ALLOWED_SORTS_EXTRA
+          break
+        default:
+          allowedSorts = undefined
+          // It is harder to do the rest efficiently as they would require indices across tables.
+          allowedSortsExtra = {}
+      }
+      const getOrderAndPageOpts: any = { allowedSortsExtra }
+      if (allowedSorts) {
+        getOrderAndPageOpts.allowedSorts = allowedSorts
+      }
+      const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, {
+        allowedSorts,
+        allowedSortsExtra,
+      })
+      if (err) { res.statusCode = 422 }
+      const offset = page * articleLimit
       const getArticlesOpts = {
         author,
         followedBy: articlesFollowedBy,
@@ -90,11 +114,12 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         list,
         offset,
         order,
+        orderAscDesc: ascDesc,
         sequelize,
       }
       const articlesPromise =
-        itemType === 'article' ? sequelize.models.Article.getArticles(getArticlesOpts) :
-        itemType === 'discussion' ? sequelize.models.Issue.getIssues({
+        itemType === 'article' ? Article.getArticles(getArticlesOpts) :
+        itemType === 'discussion' ? Issue.getIssues({
           author,
           likedBy,
           followedBy: articlesFollowedBy,
@@ -102,19 +127,23 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           limit: articleLimit,
           offset,
           order,
+          orderAscDesc: ascDesc,
           sequelize,
         }) :
         []
       const likesPromise =
-        itemType === 'like' ? sequelize.models.User.findAndCountArticleLikesReceived(user.id, { offset, order }) :
-        itemType === 'discussion-like' ? sequelize.models.User.findAndCountDiscussionLikesReceived(user.id, { offset, order }) :
+        itemType === 'like' ? User.findAndCountArticleLikesReceived(user.id, {
+          offset, order, orderAscDesc: ascDesc }) :
+        itemType === 'discussion-like' ? User.findAndCountDiscussionLikesReceived(user.id, {
+          offset, order, orderAscDesc: ascDesc }) :
         []
-      const usersPromise = itemType === 'user' ? sequelize.models.User.getUsers({
+      const usersPromise = itemType === 'user' ? User.getUsers({
         following,
         followedBy,
         limit: articleLimit,
         offset,
         order,
+        orderAscDesc: ascDesc,
         sequelize,
       }) : []
       const updateNewScoreLastCheckPromise = (what === 'liked' && loggedInUser && user.id === loggedInUser.id) ?
@@ -130,14 +159,14 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       ] = await Promise.all([
         articlesPromise,
         itemType === 'comment'
-          ? sequelize.models.Comment.getComments({ authorId: user.id, limit: articleLimit, offset })
+          ? Comment.getComments({ authorId: user.id, limit: articleLimit, offset })
           : {}
         ,
         user.toJson(loggedInUser),
         loggedInUser ? loggedInUser.toJson() : undefined,
         likesPromise,
         itemType === 'article'
-          ? sequelize.models.Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false }))
+          ? Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false }))
           : {}
         ,
         usersPromise,
@@ -149,7 +178,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         itemType,
         list: list === undefined ? null : list,
         order,
-        page: pageNum,
+        orderAscDesc: ascDesc,
+        page,
         user: userJson,
         what,
       }

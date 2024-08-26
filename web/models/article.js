@@ -1749,5 +1749,12 @@ LIMIT ${limit}` : ''}
   }
 
   Article.slugTransform = slugTransform
+
+  Article.ALLOWED_SORTS_EXTRA = {
+    'score': undefined,
+    'follower-count': 'followerCount',
+    'issues': 'issueCount',
+  }
+
   return Article
 }

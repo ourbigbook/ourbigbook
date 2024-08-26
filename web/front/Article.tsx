@@ -117,7 +117,7 @@ function WebMeta({
           </a>
         }
         {' '}
-        <a className="issues btn" href={routes.issues(curArticle.slug)} title="Discussions">
+        <a className="issues btn" href={routes.articleIssues(curArticle.slug)} title="Discussions">
           <IssueIcon title={false} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
       </>
     }
@@ -236,7 +236,7 @@ const Article = ({
     seeAllCreateNew = <>
       {latestIssues.length > 0 &&
         <>
-          <CustomLink href={routes.issues(article.slug)} className="btn"><SeeIcon /> See all ({ article.issueCount })</CustomLink>
+          <CustomLink href={routes.articleIssues(article.slug)} className="btn"><SeeIcon /> See all ({ article.issueCount })</CustomLink>
           {' '}
         </>
       }
@@ -784,7 +784,7 @@ const Article = ({
                 <div className="navlink"><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></div>
               </div>
               <h2>
-                <CustomLink href={routes.issues(article.slug)}>
+                <CustomLink href={routes.articleIssues(article.slug)}>
                   <IssueIcon /> Discussion <span className="meta">({ article.issueCount })</span>
                 </CustomLink>
                 {' '}

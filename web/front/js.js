@@ -40,7 +40,7 @@ function getList(req, res) {
 }
 
 function getOrderAndPage(req, page, opts={}) {
-  const [order, orderErr] = getOrder(req, opts)
+  const [order, orderErr, ascDesc] = getOrder(req, opts)
   const [pageNum, pageErr] = getPage(page)
   let errs = []
   if (orderErr) {
@@ -49,35 +49,67 @@ function getOrderAndPage(req, page, opts={}) {
   if (pageErr) {
     errs.push(pageErr)
   }
-  return [order, pageNum, errs.length ? errs : undefined]
+  return {
+    ascDesc,
+    err: errs.length ? errs : undefined,
+    order,
+    page: pageNum,
+  }
 }
+
+/** GET param -> DB order map. undefined means both are the same. */
+const ALLOWED_SORTS_DEFAULT = {
+  created: 'createdAt',
+  updated: 'updatedAt',
+}
+
+const SORT_WITH_DEFAULT_ASC = new Set([
+  'username',
+])
 
 function getOrder(req, opts={}) {
   let sort = req.query.sort
-  const default_ = opts.defaultOrder || 'createdAt'
-  const urlToDbSort = opts.urlToDbSort || {}
+  let {
+    allowedSorts,
+    allowedSortsExtra,
+    defaultOrder: default_,
+  } = opts
+  if (allowedSorts === undefined) {
+    allowedSorts = ALLOWED_SORTS_DEFAULT
+  }
+  if (allowedSortsExtra === undefined) {
+    allowedSortsExtra = {}
+  }
+  if (default_ === undefined) {
+    default_ = 'createdAt'
+  }
+  let ret, err
   if (sort) {
-    if (opts.allowedOrders === undefined || opts.allowedOrders.has(sort)) {
-      if (
-        sort === 'created'
-      ) {
-        return ['createdAt']
-      } else if (
-        sort === 'updated'
-      ) {
-        return ['updatedAt']
-      } else if (sort === 'score' || sort === 'followerCount') {
-        return [sort]
+    const allowedSortsEff = Object.assign(
+      {},
+      allowedSorts,
+      allowedSortsExtra
+    )
+    if (sort in allowedSortsEff) {
+      const order = allowedSortsEff[sort]
+      if (order) {
+        ret = order
       } else {
-        if (sort in urlToDbSort) {
-          return [urlToDbSort[sort]]
-        }
+        ret = sort
       }
+    } else {
+      if (default_ in allowedSortsEff) {
+        ret = default_
+      } else {
+        // Return one arbitrary sort.
+        ret = Object.values(allowedSortsEff)[0]
+      }
+      err = `Invalid sort value: '${sort}'`
     }
   } else {
-    return [default_]
+    ret = default_
   }
-  return [default_, `Invalid sort value: '${sort}'`]
+  return [ret, err, SORT_WITH_DEFAULT_ASC.has(ret) ? 'ASC' : 'DESC']
 }
 
 /**

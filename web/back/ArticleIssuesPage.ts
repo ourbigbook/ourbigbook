@@ -4,13 +4,16 @@ import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
 import { getOrderAndPage } from 'front/js'
 
-export const getServerSidePropsIssueIndexHoc = (): MyGetServerSideProps => {
+export const getServerSidePropsArticleIssuesHoc = (): MyGetServerSideProps => {
   return async ({ params = {}, query, req, res }) => {
     const { slug } = params
     const sequelize = req.sequelize
-    const [order, pageNum, err] = getOrderAndPage(req, query.page)
+    const { Article, Issue, User } = sequelize.models
+    const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, {
+      allowedSortsExtra: Issue.ALLOWED_SORTS_EXTRA,
+    })
     const [article, loggedInUser] = await Promise.all([
-      sequelize.models.Article.getArticle({
+      Article.getArticle({
         /** TODO implement issue fetch like this instead one day. */
         //includeIssues: false,
         //limitIssues: articleLimit,
@@ -23,16 +26,16 @@ export const getServerSidePropsIssueIndexHoc = (): MyGetServerSideProps => {
     ])
     if (!article) { return { notFound: true } }
     if (err) { res.statusCode = 422 }
-    const offset = pageNum * articleLimit
+    const offset = page * articleLimit
     const [articleJson, [issuesCount, issues]] = await Promise.all([
       article.toJson(loggedInUser),
-      sequelize.models.Issue.findAndCountAll({
+      Issue.findAndCountAll({
         where: { articleId: article.id },
         offset,
-        order: [[order, 'DESC']],
+        order: [[order, ascDesc]],
         limit: articleLimit,
         include: [{
-          model: sequelize.models.User,
+          model: User,
           as: 'author',
         }],
       }).then(issuesAndCounts => {
@@ -47,8 +50,9 @@ export const getServerSidePropsIssueIndexHoc = (): MyGetServerSideProps => {
       articlesCount: issuesCount,
       itemType: 'discussion',
       issueArticle: articleJson,
-      page: pageNum,
+      page,
       order,
+      orderAscDesc: ascDesc,
     }
     if (loggedInUser) {
       props.loggedInUser = await loggedInUser.toJson()

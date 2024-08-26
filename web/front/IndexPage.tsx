@@ -3,8 +3,8 @@ import React from 'react'
 import pluralize from 'pluralize'
 
 import {
-  AppContext,
   ArticleIcon,
+  capitalize,
   CommentIcon,
   DiscussionAbout,
   IssueIcon,
@@ -39,6 +39,7 @@ export interface IndexPageProps extends CommonPropsType {
   followed?: boolean;
   itemType?: 'article' | 'comment' | 'discussion' | 'topic' | 'user';
   order: string;
+  orderAscDesc: string;
   page: number;
   pinnedArticle?: ArticleType;
   users?: UserType[];
@@ -59,6 +60,7 @@ function IndexPageHoc({
     itemType,
     loggedInUser,
     order,
+    orderAscDesc,
     page,
     pinnedArticle,
     users,
@@ -70,7 +72,11 @@ function IndexPageHoc({
       if (orderTitle === undefined && itemType === 'topic') {
         orderTitle = 'Largest'
       }
-      title = `${orderTitle}${followed ? ' followed' : ''} ${pluralize(itemType)}`
+      if (orderTitle) {
+        title = `${orderTitle}${followed ? ' followed' : ''} ${pluralize(itemType)}`
+      } else {
+        title = pluralize(capitalize(itemType))
+      }
     } else {
       title = `${ issueArticle.titleSource } by ${ issueArticle.author.displayName } - Discussion`
     }
@@ -109,19 +115,19 @@ function IndexPageHoc({
               }
               <CustomLink
                 className={`tab-item${itemType === 'article' && order === 'score' && !followed ? ' active' : ''}`}
-                href={(!isHomepage) ? routes.issues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
+                href={(!isHomepage) ? routes.articleIssues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
               >
                 <ArticleIcon /> Top<span className="mobile-hide"> articles</span>
               </CustomLink>
               <CustomLink
                 className={`tab-item${itemType === 'article' && order === 'createdAt' && !followed ? ' active' : ''}`}
-                href={(!isHomepage) ? routes.issues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
+                href={(!isHomepage) ? routes.articleIssues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
               >
                 <ArticleIcon /> New<span className="mobile-hide"> articles</span>
               </CustomLink>
               <CustomLink
                 className={`tab-item${itemType === 'article' && order === 'updatedAt' && !followed ? ' active' : ''}`}
-                href={(!isHomepage) ? routes.issues(issueArticle.slug, { sort: 'updated' }) : routes.articles({ sort: 'updated' })}
+                href={(!isHomepage) ? routes.articleIssues(issueArticle.slug, { sort: 'updated' }) : routes.articles({ sort: 'updated' })}
               >
                 <ArticleIcon /> Updated<span className="mobile-hide"> articles</span>
               </CustomLink>
@@ -141,18 +147,18 @@ function IndexPageHoc({
           }
           <CustomLink
             className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
-            href={isHomepage ? routes.issuesAll() : routes.issues(issueArticle.slug)}
+            href={isHomepage ? routes.issues() : routes.articleIssues(issueArticle.slug)}
           >
             <IssueIcon /> New<span className="mobile-hide"> discussions</span>
           </CustomLink>
           <CustomLink
             className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
-            href={isHomepage ? routes.issuesAll({ sort: 'score' }) : routes.issues(issueArticle.slug, { sort: 'score' })}
+            href={isHomepage ? routes.issues({ sort: 'score' }) : routes.articleIssues(issueArticle.slug, { sort: 'score' })}
           >
             <IssueIcon /> Top<span className="mobile-hide"> discussions</span>
           </CustomLink>
           <CustomLink
-            className={`tab-item${itemType === 'comment' ? ' active' : ''}`}
+            className={`tab-item${itemType === 'comment' && order === 'createdAt' ? ' active' : ''}`}
             href={isHomepage ? routes.comments({ sort: 'created' }) : routes.articleComments(issueArticle.slug, { sort: 'created' })}
           >
             <CommentIcon /> New<span className="mobile-hide"> comments</span>

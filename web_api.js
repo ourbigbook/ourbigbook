@@ -402,7 +402,11 @@ async function sendJsonHttp(method, path, opts={}) {
     url,
     validateStatus,
   })
-  return { data: response.data, status: response.status }
+  return {
+    data: response.data,
+    headers: response.headers,
+    status: response.status,
+  }
 }
 
 // Non-API stuff.

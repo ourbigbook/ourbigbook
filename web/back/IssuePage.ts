@@ -12,13 +12,16 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
       typeof numberString === 'string'
     ) {
       const sequelize = req.sequelize
+      const { Comment, Issue } = sequelize.models
       typecastInteger
       const [number, ok] = typecastInteger(numberString)
       if (!ok) { return { notFound: true } }
-      const [order, page, err] = getOrderAndPage(req, query.page, { allowedOrders: new Set(['created', 'updated'])  })
+      const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, {
+        allowedSortsExtra: Comment.ALLOWED_SORTS_EXTRA,
+      })
       const offset = page * articleLimit
       const [issue, loggedInUser] = await Promise.all([
-        sequelize.models.Issue.getIssue({
+        Issue.getIssue({
           // TODO implement and use these options one day.
           //includeComments: true,
           //commentOrder: order,
@@ -42,8 +45,8 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
         loggedInUserJson,
       ] = await Promise.all([
         issue.article.toJson(loggedInUser),
-        loggedInUser ? sequelize.models.Comment.count({ where: { authorId: loggedInUser.id } }) : null,
-        sequelize.models.Comment.getComments({
+        loggedInUser ? Comment.count({ where: { authorId: loggedInUser.id } }) : null,
+        Comment.getComments({
           issueId: issue.id,
           order: [[order, 'ASC']],
           limit: articleLimit,
@@ -55,7 +58,7 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
           ])
         ),
         issue.toJson(loggedInUser),
-        sequelize.models.Issue.count({ where: { articleId: issue.articleId } }),
+        Issue.count({ where: { articleId: issue.articleId } }),
         loggedInUser ? loggedInUser.toJson() : undefined,
       ])
       const props: ArticlePageProps = {

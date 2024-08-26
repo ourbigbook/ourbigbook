@@ -9,7 +9,10 @@ import {
 
 export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
   return async ({ params: { id }, query, req, res }) => {
-    const [order, pageNum, err] = getOrderAndPage(req, query.page, { defaultOrder: 'score' })
+    const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, {
+      allowedSortsExtra: { 'score': undefined },
+      defaultOrder: 'score'
+    })
     const list = getList(req, res)
     if (err) { res.statusCode = 422 }
     const loggedInUser = await getLoggedInUser(req, res)
@@ -21,8 +24,9 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
       const getArticlesOpts = {
         limit: articleLimit,
         list,
-        offset: pageNum * articleLimit,
+        offset: page * articleLimit,
         order,
+        orderAscDesc: ascDesc,
         sequelize,
         topicId,
       }
@@ -72,7 +76,8 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
         list: list === undefined ? null : list,
         topic: topicJson,
         order,
-        page: pageNum,
+        orderAscDesc: ascDesc,
+        page,
         what: 'articles',
       }
       if (loggedInUser) {

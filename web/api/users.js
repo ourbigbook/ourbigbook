@@ -156,16 +156,20 @@ router.post('/reset-password', async function(req, res, next) {
 router.get('/users', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
+    const { User } = sequelize.models
     const [limit, offset] = lib.getLimitAndOffset(req, res)
     const [loggedInUser, {count: usersCount, rows: users}] = await Promise.all([
-      req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
-      sequelize.models.User.getUsers({
+      req.payload ? User.findByPk(req.payload.id) : null,
+      User.getUsers({
         // https://github.com/ourbigbook/ourbigbook/issues/260
         followedBy: req.query.followedBy,
         following: req.query.following,
         limit,
         offset,
-        order: lib.getOrder(req),
+        order: lib.getOrder(req, {
+          allowedSorts: User.ALLOWED_SORTS,
+          allowedSortsExtra: User.ALLOWED_SORTS_EXTRA,
+        }),
         sequelize,
         username: req.query.username,
       }),

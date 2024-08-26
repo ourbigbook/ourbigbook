@@ -29,6 +29,7 @@ export interface TopicPageProps extends CommonPropsType {
   hasUnlisted: boolean;
   list: boolean;
   order: string;
+  orderAscDesc: string;
   topic: TopicType;
   page: number;
   what: string;
@@ -42,6 +43,7 @@ export const TopicPage = ({
   list,
   loggedInUser,
   order,
+  orderAscDesc,
   page,
   topic,
   what

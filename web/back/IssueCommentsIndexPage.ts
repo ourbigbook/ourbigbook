@@ -8,7 +8,7 @@ export const getServerSidePropsIssueCommentsIndexHoc = (): MyGetServerSideProps 
   return async ({ params = {}, query, req, res }) => {
     const { slug } = params
     const sequelize = req.sequelize
-    const [order, pageNum, err] = getOrderAndPage(req, query.page)
+    const { ascDesc, err, order, page } = getOrderAndPage(req, query.page)
     if (err) { res.statusCode = 422 }
     const [article, loggedInUser] = await Promise.all([
       sequelize.models.Article.getArticle({
@@ -23,13 +23,13 @@ export const getServerSidePropsIssueCommentsIndexHoc = (): MyGetServerSideProps 
       getLoggedInUser(req, res),
     ])
     if (!article) { return { notFound: true } }
-    const offset = pageNum * articleLimit
+    const offset = page * articleLimit
     const [articleJson, [commentsCount, comments]] = await Promise.all([
       article.toJson(loggedInUser),
       sequelize.models.Comment.getComments({
         articleId: article.id,
         offset,
-        order: [[order, 'DESC']],
+        order: [[order, ascDesc]],
         limit: articleLimit,
       }).then(commentsAndCounts => {
         return Promise.all([
@@ -43,8 +43,9 @@ export const getServerSidePropsIssueCommentsIndexHoc = (): MyGetServerSideProps 
       commentsCount: commentsCount,
       itemType: 'comment',
       issueArticle: articleJson,
-      page: pageNum,
+      page,
       order,
+      orderAscDesc: ascDesc,
     }
     if (loggedInUser) {
       props.loggedInUser = await loggedInUser.toJson()

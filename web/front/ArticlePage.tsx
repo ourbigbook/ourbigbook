@@ -94,7 +94,7 @@ const ArticlePageHoc = (isIssue=false) => {
               {isIssue &&
                 <>
                   {' '}
-                  <CustomLink href={routes.issues(issueArticle.slug)} className="btn"><IssueIcon /> See all ({issuesCount})</CustomLink>
+                  <CustomLink href={routes.articleIssues(issueArticle.slug)} className="btn"><IssueIcon /> See all ({issuesCount})</CustomLink>
                   {' '}
                   <CustomLink
                     className="btn"

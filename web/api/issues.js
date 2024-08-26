@@ -58,9 +58,12 @@ To unsubscribe from all ${config.appName} emails change the email settings on yo
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
+    const { Article, User } = sequelize.models
     const opts = {
       includeIssues: true,
-      includeIssuesOrder: lib.getOrder(req),
+      includeIssuesOrder: lib.getOrder(req, {
+        allowedSortsExtra: Article.ALLOWED_SORTS_EXTRA,
+      }),
     }
     const number = lib.validateParam(req.query, 'number', {
       typecast: front.typecastInteger,
@@ -72,7 +75,7 @@ router.get('/', auth.optional, async function(req, res, next) {
     }
     const [article, loggedInUser] = await Promise.all([
       getArticle(req, res, opts),
-      req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
+      req.payload ? User.findByPk(req.payload.id) : null,
     ])
     return res.json({
       issues: await Promise.all(article.issues.map(issue => issue.toJson(loggedInUser)))
@@ -193,7 +196,7 @@ router.post('/', auth.required, async function(req, res, next) {
             whatParent: 'article',
             whatParentUnsub: 'article discussions',
             whatChild: 'discussion',
-            unsubThisUrl: `${routes.host(req)}${routes.issues(article.slug)}`,
+            unsubThisUrl: `${routes.host(req)}${routes.articleIssues(article.slug)}`,
           })
           lib.sendEmail(Object.assign({
             to: follower.email,

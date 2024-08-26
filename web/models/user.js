@@ -263,6 +263,9 @@ module.exports = (sequelize) => {
     if (order === undefined) {
       order = 'createdAt'
     }
+    if (orderAscDesc === undefined) {
+      orderAscDesc = 'DESC'
+    }
     const args = {
       include: [
         {
@@ -292,7 +295,7 @@ module.exports = (sequelize) => {
         },
       ],
       limit,
-      order: [[order, 'DESC']],
+      order: [[order, orderAscDesc]],
       offset,
     }
     if (since) {
@@ -321,7 +324,7 @@ module.exports = (sequelize) => {
   // EagerLoadingError [SequelizeEagerLoadingError]: Issue is not associated to UserLikeIssue
   // and no patience to fix it now.
   User.findAndCountDiscussionLikesReceived = async function(uid, opts={}) {
-    let { limit, order, offset, since } = opts
+    let { limit, order, orderAscDesc, offset, since } = opts
     if (limit === undefined) {
       limit = config.articleLimit
     }
@@ -330,6 +333,9 @@ module.exports = (sequelize) => {
     }
     if (order === undefined) {
       order = 'createdAt'
+    }
+    if (orderAscDesc === undefined) {
+      orderAscDesc = 'DESC'
     }
     const args = {
       include: [
@@ -354,7 +360,7 @@ module.exports = (sequelize) => {
         },
       ],
       limit,
-      order: [[order, 'DESC']],
+      order: [[order, orderAscDesc]],
       offset,
     }
     if (since) {
@@ -363,18 +369,18 @@ module.exports = (sequelize) => {
     return sequelize.models.UserLikeIssue.findAndCountAll(args)
   }
 
-  User.prototype.findAndCountArticlesByFollowed = async function(offset, limit, order) {
+  User.prototype.findAndCountArticlesByFollowed = async function(offset, limit, order, orderAscDesc) {
     if (!order) {
       order = 'createdAt'
+    }
+    if (orderAscDesc === undefined) {
+      orderAscDesc = 'DESC'
     }
     return sequelize.models.Article.findAndCountAll({
       offset,
       limit,
       subQuery: false,
-      order: [[
-        order,
-        'DESC'
-      ]],
+      order: [[order, orderAscDesc]],
       include: [
         {
           model: sequelize.models.File,
@@ -405,10 +411,11 @@ module.exports = (sequelize) => {
   User.prototype.findAndCountArticlesByFollowedToJson = async function (
     offset,
     limit,
-    order
+    order,
+    orderAscDesc
   ) {
     const { count: articlesCount, rows: articles } =
-      await this.findAndCountArticlesByFollowed(offset, limit, order)
+      await this.findAndCountArticlesByFollowed(offset, limit, order, orderAscDesc)
     const articlesJson = await Promise.all(
       articles.map((article) => {
         return article.toJson(this)
@@ -487,10 +494,14 @@ module.exports = (sequelize) => {
     followedBy,
     offset,
     order,
+    orderAscDesc,
     sequelize,
     username,
   }) {
     const include = []
+    if (orderAscDesc === undefined) {
+      orderAscDesc = 'DESC'
+    }
     if (following) {
       include.push({
         model: sequelize.models.User,
@@ -509,7 +520,7 @@ module.exports = (sequelize) => {
         through: { attributes: [] }
       })
     }
-    const orderList = [[order, 'DESC']]
+    const orderList = [[order, orderAscDesc]]
     const where = {}
     if (username) {
       where.username = username
@@ -536,6 +547,13 @@ module.exports = (sequelize) => {
   User.setPassword = function(user, password) {
     user.salt = crypto.randomBytes(16).toString('hex')
     user.hash = crypto.pbkdf2Sync(password, user.salt, 10000, 512, 'sha512').toString('hex')
+  }
+
+  User.ALLOWED_SORTS = {
+    'created': 'createdAt',
+  }
+  User.ALLOWED_SORTS_EXTRA = {
+    'score': undefined,
   }
 
   return User

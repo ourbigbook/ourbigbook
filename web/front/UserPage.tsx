@@ -53,6 +53,7 @@ export interface UserPageProps extends CommonPropsType {
   latestIssues?: IssueType[];
   list: boolean,
   order: string;
+  orderAscDesc: string;
   page: number;
   synonymLinks?: ArticleLinkType[];
   tagged?: ArticleLinkType[];
@@ -94,6 +95,7 @@ export default function UserPage({
   list,
   loggedInUser,
   order,
+  orderAscDesc,
   page,
   synonymLinks,
   tagged,

@@ -96,8 +96,8 @@ async function getArticle(req, res, options={}) {
   return article
 }
 
-function getOrder(req) {
-  const [sort, err] = front.getOrder(req)
+function getOrder(req, opts={}) {
+  const [sort, err] = front.getOrder(req, opts)
   if (err) {
     throw new ValidationError(
       [`Invalid sort value: '${sort}'`],

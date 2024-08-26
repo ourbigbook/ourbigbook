@@ -25,10 +25,14 @@ module.exports = (sequelize) => {
     limit,
     offset,
     order,
+    orderAscDesc,
     sequelize,
   }) => {
     if (count === undefined) {
       count = true
+    }
+    if (orderAscDesc === undefined) {
+      orderAscDesc = 'DESC'
     }
     const includeArticle = {
       model: sequelize.models.Article,
@@ -45,7 +49,7 @@ module.exports = (sequelize) => {
     if (order === undefined) {
       order = 'articleCount'
     }
-    const orderList = [[order, 'DESC']]
+    const orderList = [[order, orderAscDesc]]
     if (order !== 'createdAt') {
       orderList.push(['createdAt', 'DESC'])
     }
@@ -224,6 +228,12 @@ WHERE
 
     }
   }
+
+
+  Topic.ALLOWED_SORTS_EXTRA = {
+    'article-count': 'articleCount',
+  }
+  Topic.DEFAULT_SORT = 'articleCount'
 
   return Topic
 }

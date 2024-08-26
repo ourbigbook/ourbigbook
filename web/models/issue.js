@@ -18,7 +18,7 @@ module.exports = (sequelize) => {
           },
         },
       },
-      // OurBigBook Markup source for body withotu toplevel header title..
+      // OurBigBook Markup source for body without toplevel header title..
       bodySource: DataTypes.TEXT,
       // Rendered toplevel header title.
       titleRender: DataTypes.TEXT,
@@ -49,13 +49,24 @@ module.exports = (sequelize) => {
           fields: ['articleId', 'number'],
           unique: true,
         },
-        { fields: ['score'], },
-        { fields: ['followerCount'], },
-        { fields: ['commentCount'], },
 
         // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
         { fields: ['authorId'], },
         { fields: ['articleId'], },
+
+        // Efficient global listings.
+        { fields: ['createdAt'], },
+        { fields: ['updatedAt'], },
+        { fields: ['score'], },
+        { fields: ['followerCount'], },
+        { fields: ['commentCount'], },
+
+        // Efficient listing of issues by a given user.
+        { fields: ['authorId', 'createdAt'], },
+        { fields: ['authorId', 'updatedAt'], },
+        { fields: ['authorId', 'score'], },
+        { fields: ['authorId', 'followerCount'], },
+        { fields: ['authorId', 'commentCount'], },
       ],
     },
   )
@@ -274,6 +285,12 @@ module.exports = (sequelize) => {
       }
       offset += config.maxArticlesInMemory
     }
+  }
+
+  Issue.ALLOWED_SORTS_EXTRA = {
+    'score': undefined,
+    'follower-count': 'followerCount',
+    'comments': 'commentCount',
   }
 
   return Issue

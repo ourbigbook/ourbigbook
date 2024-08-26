@@ -24,19 +24,28 @@ export const getServerSidePropsIndexHoc = ({
     }
     const getOrderAndPageOpts: {
       defaultOrder?: string;
-      urlToDbSort?: any;
+      allowedSortsExtra?: any;
     } = {}
-    if (itemTypeEff === 'topic') {
-      getOrderAndPageOpts.defaultOrder = 'articleCount'
-      getOrderAndPageOpts.urlToDbSort = {
-        'article-count': 'articleCount'
-      }
+    const sequelize = req.sequelize
+    const { Article, Issue, Topic } = sequelize.models
+    switch (itemTypeEff) {
+      case 'article':
+        getOrderAndPageOpts.allowedSortsExtra = Article.ALLOWED_SORTS_EXTRA
+        break
+      case 'comment':
+        break
+      case 'discussion':
+        getOrderAndPageOpts.allowedSortsExtra = Issue.ALLOWED_SORTS_EXTRA
+        break
+      case 'topic':
+        getOrderAndPageOpts.defaultOrder = Topic.DEFAULT_SORT
+        getOrderAndPageOpts.allowedSortsExtra = Topic.ALLOWED_SORTS_EXTRA
+        break
     }
-    const [order, page, err] = getOrderAndPage(req, query.page, getOrderAndPageOpts)
+    const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, getOrderAndPageOpts)
     if (err) { res.statusCode = 422 }
     const offset = page * articleLimit
     const limit = articleLimit
-    const sequelize = req.sequelize
     const [
       [articles, articlesCount],
       commentsAndCount,
@@ -50,15 +59,16 @@ export const getServerSidePropsIndexHoc = ({
           case 'article':
             if (followedEff) {
               articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(
-                offset, limit, order)
+                offset, limit, order, ascDesc)
               articles = articlesAndCounts.articles
               articlesCount = articlesAndCounts.articlesCount
             } else {
-              articlesAndCounts = await sequelize.models.Article.getArticles({
+              articlesAndCounts = await Article.getArticles({
                 limit,
                 list: true,
                 offset,
                 order,
+                orderAscDesc: ascDesc,
                 sequelize,
               })
               articles = await Promise.all(articlesAndCounts.rows.map(
@@ -75,6 +85,7 @@ export const getServerSidePropsIndexHoc = ({
               includeArticle: true,
               offset,
               order,
+              orderAscDesc: ascDesc,
               limit,
             })
             articles = await Promise.all(articlesAndCounts.rows.map(
@@ -88,6 +99,7 @@ export const getServerSidePropsIndexHoc = ({
               sequelize,
               offset,
               order,
+              orderAscDesc: ascDesc,
               limit,
             })
             articles = await Promise.all(articlesAndCounts.rows.map(
@@ -105,7 +117,7 @@ export const getServerSidePropsIndexHoc = ({
       ,
       sequelize.models.Site.findOne({ include:
         [{
-          model: sequelize.models.Article,
+          model: Article,
           as: 'pinnedArticle',
         }]
       }).then(site => {
@@ -121,6 +133,7 @@ export const getServerSidePropsIndexHoc = ({
       followed: followedEff,
       itemType: itemTypeEff,
       order,
+      orderAscDesc: ascDesc,
       page,
       pinnedArticle,
     }

@@ -4,21 +4,28 @@ import { getLoggedInUser } from 'back'
 import { articleLimit } from 'front/config'
 import { getOrderAndPage } from 'front/js'
 import { IndexPageProps } from 'front/IndexPage'
-import { UserType } from 'front/types/UserType'
 import { MyGetServerSideProps } from 'front/types'
 
 export const getServerSidePropsUsers: MyGetServerSideProps = async (
   { query, req, res }
 ) => {
   const loggedInUser = await getLoggedInUser(req, res)
-  const [order, pageNum, err] = getOrderAndPage(req, query.page, { defaultOrder: 'score' })
+  const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, {
+    defaultOrder: 'score',
+    allowedSorts: {
+      'created': 'createdAt',
+      'follower-count': 'followerCount',
+      'score': undefined,
+      'username': undefined,
+    }
+  })
   const sequelize = req.sequelize
   if (err) { res.statusCode = 422 }
-  const offset = pageNum * articleLimit
+  const offset = page * articleLimit
   const [{ count: usersCount, rows: userRows }, site] = await Promise.all([
     await sequelize.models.User.findAndCountAll({
       offset,
-      order: [[order, 'DESC']],
+      order: [[order, ascDesc]],
       limit: articleLimit,
     }),
     sequelize.models.Site.findOne({ include:
@@ -43,7 +50,8 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
   const props: IndexPageProps = {
     itemType: 'user',
     order,
-    page: pageNum,
+    orderAscDesc: ascDesc,
+    page,
     pinnedArticle,
     users,
     usersCount,

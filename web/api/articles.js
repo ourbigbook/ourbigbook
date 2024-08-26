@@ -20,6 +20,7 @@ const config = require('../front/config')
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
+    const { Article, User } = sequelize.models
     const [limit, offset] = lib.getLimitAndOffset(req, res)
     // TODO Make it optional because it is generally very broken now.
     // There could however be performance advantages to this as well.
@@ -37,7 +38,7 @@ router.get('/', auth.optional, async function(req, res, next) {
       loggedInUser,
       redirects,
     ] = await Promise.all([
-      sequelize.models.Article.getArticles({
+      Article.getArticles({
         sequelize,
         limit,
         offset,
@@ -46,10 +47,12 @@ router.get('/', auth.optional, async function(req, res, next) {
         includeParentAndPreviousSibling,
         likedBy: req.query.likedBy,
         topicId: req.query.topicId,
-        order: lib.getOrder(req),
+        order: lib.getOrder(req, {
+          allowedSortsExtra: Article.ALLOWED_SORTS_EXTRA,
+        }),
         slug,
       }),
-      req.payload ? sequelize.models.User.findByPk(req.payload.id) : null,
+      req.payload ? User.findByPk(req.payload.id) : null,
     ])
     return res.json({
       articles: await Promise.all(articles.map(function(article) {
@@ -65,6 +68,7 @@ router.get('/', auth.optional, async function(req, res, next) {
 router.get('/redirects', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
+    const { Article } = sequelize.models
     const [limit, offset] = lib.getLimitAndOffset(req, res)
     let slugs = lib.validateParam(req.query, 'id', {
       validators: [front.isTypeOrArrayOf(front.isString)],
@@ -72,7 +76,7 @@ router.get('/redirects', auth.optional, async function(req, res, next) {
     if (typeof slugs === 'string') {
       slugs = [slugs]
     }
-    const redirects = await sequelize.models.Article.findRedirects(slugs, { limit, offset })
+    const redirects = await Article.findRedirects(slugs, { limit, offset })
     return res.json({
       redirects,
     })

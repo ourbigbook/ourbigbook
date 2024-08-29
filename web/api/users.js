@@ -133,7 +133,6 @@ router.post('/reset-password', async function(req, res, next) {
       'code',
       { validators: [front.isString, front.isTruthy] }
     )
-    await validateCaptcha(config, req, res)
     const sequelize = req.app.get('sequelize')
     const User = sequelize.models.User
     const user = await User.findOne({ where: { email } })

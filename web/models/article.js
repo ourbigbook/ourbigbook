@@ -90,19 +90,6 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
-      author: {
-        type: DataTypes.VIRTUAL,
-        get() {
-          if (this.file) {
-            return this.file.author
-          } else {
-            return null
-          }
-        },
-        set(value) {
-          throw new Error('cannot set virtual`author` value directly');
-        }
-      },
       // To fetch the tree recursively on the fly.
       // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/42781302#42781302
       nestedSetIndex: {
@@ -131,25 +118,40 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: true,
       },
+
+      // Duplicated from File for Indices.
+      authorId: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+      },
     },
     {
       indexes: [
-        // For ORDER BY creatdAt without list specified
+        // For ORDER BY createdAt without list specified
         { fields: ['createdAt'], },
+        // For ORDER BY updatedAt without list specified
+        { fields: ['updatedAt', 'createdAt'], },
         // For WHERE list = 1 ORDER BY creatdAt
         { fields: ['list', 'createdAt'], },
-        // For ORDER BY updatedAt without list specified
-        { fields: ['updatedAt'], },
         // For WHERE list = 1 ORDER BY updatedAt
-        { fields: ['list', 'updatedAt'], },
-        { fields: ['issueCount'], },
-        { fields: ['followerCount'], },
-        { fields: ['topicId'], },
+        { fields: ['list', 'updatedAt', 'createdAt'], },
+        { fields: ['list', 'issueCount', 'createdAt'], },
+        { fields: ['list', 'followerCount', 'createdAt'], },
+        { fields: ['list', 'topicId', 'score', 'createdAt'], },
         { fields: ['slug'], },
-        { fields: ['score'], },
-        { fields: ['nestedSetIndex'], },
-        // For parent searches.
-        { fields: ['nestedSetIndex', 'nestedSetNextSibling'], },
+        { fields: ['list', 'score', 'createdAt'], },
+
+        // Per author searches.
+        { fields: ['authorId', 'list', 'nestedSetIndex'], },
+        // Maybe this will be useful without list for article updates?
+        { fields: ['authorId', 'nestedSetIndex'], },
+        // For parent searches. TODO do these need list?
+        { fields: ['authorId', 'nestedSetIndex', 'nestedSetNextSibling'], },
+        { fields: ['authorId', 'list', 'createdAt'], },
+        { fields: ['authorId', 'list', 'updatedAt', 'createdAt'], },
+        { fields: ['authorId', 'list', 'score', 'createdAt'], },
+        { fields: ['authorId', 'list', 'followerCount', 'createdAt'], },
+        { fields: ['authorId', 'list', 'issueCount', 'createdAt'], },
 
         // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
         { fields: ['fileId'], },
@@ -1046,7 +1048,7 @@ WHERE
     }
   }
 
-  Article.getArticle = async function({
+  Article.getArticle = async function getArticle({
     includeIssues,
     includeIssueNumber,
     includeIssuesOrder,
@@ -1055,18 +1057,20 @@ WHERE
     // It makes no sense to have separate limitIssues or limitComments
     // because there can be just one limit for the join.
     limit,
+    logging,
     sequelize,
     slug,
   }) {
+    const { Article, File, Issue, Render, User } = sequelize.models
     const fileInclude = [
       {
-        model: sequelize.models.User,
+        model: User,
         as: 'author',
       },
       {
-        model: sequelize.models.Render,
+        model: Render,
         where: {
-          type: sequelize.models.Render.Types[ourbigbook.OUTPUT_FORMAT_HTML],
+          type: Render.Types[ourbigbook.OUTPUT_FORMAT_HTML],
         },
         required: false,
       },
@@ -1074,18 +1078,24 @@ WHERE
     if (includeParentAndPreviousSibling) {
       fileInclude.push(Article.getArticleIncludeParentAndPreviousSiblingFileInclude(sequelize))
     }
-    const include = [{
-      model: sequelize.models.File,
-      as: 'file',
-      include: fileInclude,
-    }]
+    const include = [
+      {
+        model: File,
+        as: 'file',
+        include: fileInclude,
+      },
+      {
+        model: User,
+        as: 'author',
+      }
+    ]
     let order
     if (includeIssues) {
       const includeIssue = {
-        model: sequelize.models.Issue,
+        model: Issue,
         as: 'issues',
         required: false,
-        include: [{ model: sequelize.models.User, as: 'author' }],
+        include: [{ model: User, as: 'author' }],
       }
       if (includeIssueNumber) {
         includeIssue.where = { number: includeIssueNumber }
@@ -1095,13 +1105,17 @@ WHERE
         'issues', includeIssuesOrder === undefined ? 'createdAt' : includeIssuesOrder, 'DESC'
       ]]
     }
-    const article = await sequelize.models.Article.findOne({
+    const findArgs = {
       include,
       limit,
       order,
       subQuery: false,
       where: { slug },
-    })
+    }
+    if (logging !== undefined) {
+      findArgs.logging = logging
+    }
+    const article = await Article.findOne(findArgs)
     if (includeParentAndPreviousSibling && article !== null) {
       Article.getArticleIncludeParentAndPreviousSiblingAddShortcuts(article)
     }
@@ -1109,7 +1123,7 @@ WHERE
   }
 
   // Helper for common queries.
-  Article.getArticles = async ({
+  Article.getArticles = async function getArticles({
     author,
     count,
     excludeIds,
@@ -1120,6 +1134,7 @@ WHERE
     likedBy,
     limit,
     list,
+    logging,
     offset,
     order,
     orderAscDesc,
@@ -1128,7 +1143,7 @@ WHERE
     slug,
     topicId,
     transaction,
-  }) => {
+  }) {
     if (orderAscDesc === undefined) {
       orderAscDesc = 'DESC'
     }
@@ -1189,7 +1204,7 @@ WHERE
     if (order !== undefined) {
       orderList.push([order, orderAscDesc])
     }
-    if (order !== 'createdAt') {
+    if (order !== 'createdAt' && order !== 'nestedSetIndex') {
       // To make results deterministic.
       orderList.push(['createdAt', 'DESC'])
     }
@@ -1203,6 +1218,9 @@ WHERE
       order: orderList,
       transaction,
       where,
+    }
+    if (logging !== undefined) {
+      findArgs.logging = logging
     }
     let ret, articles
     if (count) {
@@ -1262,11 +1280,14 @@ WHERE
     h1,
     limit,
     list,
-    render,
+    // Create a highly optimized version of the query just for the ToC.
+    // This is essential for performance as the toc has 10x more entries, and can be
+    // the performance bottleneck according to our testing.
+    toc,
     sequelize,
   }) => {
-    if (render === undefined) {
-      render = true
+    if (toc === undefined) {
+      toc = false
     }
 //    // OLD VERSION 1: as much as possible from calls, same article by file.
 //    const articlesInSamePageAttrs = [
@@ -1406,70 +1427,48 @@ WHERE
 //      }
 //    )
 
-    //const allFields = {
-    //  'id'
-    //  'score',
-    //  'slug',
-    //  'topicId',
-    //  'titleSource',
-    //  'render',
-    //}
-
     ;const [rows, meta] = await sequelize.query(`
 SELECT
+  "Article"."depth" AS "depth",
+  "Article"."slug" AS "slug",
+  "Article"."titleRender" AS "titleRender"${!toc ? `,
   "Article"."id" AS "id",
   "Article"."list" AS "list",
   "Article"."score" AS "score",
-  "Article"."slug" AS "slug",
   "Article"."topicId" AS "topicId",
   "Article"."issueCount" AS "issueCount",
-  "Article"."titleSource" AS "titleSource",${render ? `\n  "Article"."render" AS "render",` : ''}
+  "Article"."titleSource" AS "titleSource",
+  "Article"."render" AS "render",
   ${h1 ? '"Article"."h1Render" AS "h1Render"' : '"Article"."h2Render" AS "h2Render"'},
   "Article"."topicId" AS "topicId",
-  "Article"."titleRender" AS "titleRender",
-  "Article"."depth" AS "depth",
-  "File.Author"."id" AS "file.author.id",
-  "File.Author"."username" AS "file.author.username",
-  "SameTopic"."articleCount" AS "topicCount",
+  "Article.Author"."id" AS "author.id",
+  "Article.Author"."username" AS "author.username",
+  "SameTopic"."articleCount" AS "topicCount"${loggedInUser ? `,
   "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic",
-  "UserLikeArticle"."userId" AS "liked"
+  "UserLikeArticle"."userId" AS "liked"` : ''
+}` : ''}
 FROM
   "Article"
-  INNER JOIN "File" ON "Article"."fileId" = "File"."id"${h1 ? '\n  INNER JOIN "Id" ON "File"."toplevel_id" = "Id"."idid"' : ''}
-  INNER JOIN "User" AS "File.Author"
-    ON "File"."authorId" = "File.Author"."id" AND
-       "File.Author"."username" = :authorUsername
-  INNER JOIN "Article" AS "ArticleSameTopic" ON "Article"."topicId" = "ArticleSameTopic"."topicId"
-  INNER JOIN "Topic" AS "SameTopic" ON "ArticleSameTopic"."id" = "SameTopic"."articleId"
-  LEFT OUTER JOIN (
-    SELECT "Article"."id", "Article"."topicId"
-    FROM "Article"
-    INNER JOIN "File"
-      ON "Article"."fileId" = "File"."id"
-      AND "File"."authorId" = :loggedInUserId
-  ) AS "ArticleSameTopicByLoggedIn"
-    ON "Article"."topicId" = "ArticleSameTopicByLoggedIn"."topicId"
-  LEFT OUTER JOIN "UserLikeArticle"
-    ON "UserLikeArticle"."articleId" = "Article"."id" AND
-       "UserLikeArticle"."userId" = :loggedInUserId
-  LEFT OUTER JOIN "Issue" AS "issues" ON "Article"."id" = "issues"."articleId"
-  ${h1
-    ? `WHERE "Article"."nestedSetIndex" = :nestedSetIndex`
-    : `WHERE "Article"."nestedSetIndex" > :nestedSetIndex AND
-    "Article"."nestedSetIndex" < :nestedSetNextSibling`
-  }
-  ${list === undefined ? '' : `AND "Article"."list" = :list`}
-GROUP BY
-  "Article"."id",
-  "Article"."score",
-  "Article"."slug",
-  "Article"."topicId",
-  "Article"."titleSource",
-  "File.Author"."id",
-  "File.Author"."username",
-  "SameTopic"."articleCount",
-  "ArticleSameTopicByLoggedIn"."id",
-  "UserLikeArticle"."userId"
+${!toc ? `INNER JOIN "User" AS "Article.Author" ON "Article"."authorId" = "Article.Author"."id"
+INNER JOIN "Article" AS "ArticleSameTopic" ON "Article"."topicId" = "ArticleSameTopic"."topicId"
+INNER JOIN "Topic" AS "SameTopic" ON "ArticleSameTopic"."id" = "SameTopic"."articleId"${loggedInUser ? `
+LEFT OUTER JOIN (
+  SELECT "Article"."id", "Article"."topicId"
+  FROM "Article"
+  WHERE "Article"."authorId" = :loggedInUserId
+) AS "ArticleSameTopicByLoggedIn"
+  ON "Article"."topicId" = "ArticleSameTopicByLoggedIn"."topicId"
+LEFT OUTER JOIN "UserLikeArticle"
+  ON "UserLikeArticle"."articleId" = "Article"."id" AND
+     "UserLikeArticle"."userId" = :loggedInUserId
+` : ''}` : ''}
+WHERE "Article"."authorId" = ( SELECT id FROM "User" WHERE username = :authorUsername ) AND${list === undefined ? '' : `
+  "Article"."list" = :list AND`}
+${h1
+  ? `  "Article"."nestedSetIndex" = :nestedSetIndex`
+  : `  "Article"."nestedSetIndex" > :nestedSetIndex AND
+  "Article"."nestedSetIndex" < :nestedSetNextSibling`
+}
 ORDER BY "Article"."nestedSetIndex" ASC${limit !== undefined ? `
 LIMIT ${limit}` : ''}
 `,
@@ -1496,15 +1495,17 @@ LIMIT ${limit}` : ''}
     //     }
     //   ),
     //`)
-    for (const row of rows) {
-      row.hasSameTopic = row.hasSameTopic === null ? false : true
-      row.liked = row.liked === null ? false : true
-      row.author = {
-        id: row['file.author.id'],
-        username: row['file.author.username'],
+    if (!toc) {
+      for (const row of rows) {
+        row.hasSameTopic = row.hasSameTopic === null ? false : true
+        row.liked = row.liked === null ? false : true
+        row.author = {
+          id: row['author.id'],
+          username: row['author.username'],
+        }
+        delete row['author.id']
+        delete row['author.username']
       }
-      delete row['file.author.id']
-      delete row['file.author.username']
     }
     return rows
   }

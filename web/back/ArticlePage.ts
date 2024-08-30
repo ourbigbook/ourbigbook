@@ -2,7 +2,11 @@ import ourbigbook from 'ourbigbook'
 
 import { getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
-import { articleLimitSmall, maxArticlesFetch } from 'front/config'
+import {
+  articleLimitSmall,
+  log,
+  maxArticlesFetch
+} from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
 import { idToSlug } from 'front/js'
 import { IssueType } from 'front/types/IssueType'
@@ -63,18 +67,21 @@ export const getServerSidePropsArticleHoc = ({
     loggedInUserCache?: UserType,
   }
 ={}): MyGetServerSideProps => {
-  return async ({ params: { slug }, req, res }) => {
+  return async function getServerSidePropsArticle({ params: { slug }, req, res }) {
+    let t0
+    if (log.perf) {
+      t0 = performance.now()
+    }
     if (slug instanceof Array) {
       const slugString = slug.join('/')
       const sequelize = req.sequelize
-      const loggedInUser = await getLoggedInUser(req, res, loggedInUserCache)
       const limit = articleLimitSmall
-      const [article, articleTopIssues] = await Promise.all([
+      const [article, articleTopIssues, loggedInUser] = await Promise.all([
         sequelize.models.Article.getArticle({
+          limit,
           includeIssues,
           sequelize,
           slug: slugString,
-          limit,
         }),
         //// TODO benchmark the effect of this monstrous query on article pages.
         //// If very slow, we could move it to after page load.
@@ -92,6 +99,7 @@ export const getServerSidePropsArticleHoc = ({
           sequelize,
           slug: slugString,
         }),
+        getLoggedInUser(req, res, loggedInUserCache),
       ])
       if (!article) {
         const redirects = await sequelize.models.Article.findRedirects([slugString], { limit: 1 })
@@ -109,6 +117,7 @@ export const getServerSidePropsArticleHoc = ({
           }
         }
       }
+      const isIndex = article.topicId === ''
       const [
         ancestors,
         articleJson,
@@ -136,9 +145,12 @@ export const getServerSidePropsArticleHoc = ({
         sequelize.models.Article.getArticlesInSamePage({
           article,
           loggedInUser,
+          // This 10x made this be the dominating query on /wikibot when we last benchmarked.
+          // (lots or empty articles) On /cirosantilli it didn't matter as much.
           limit: maxArticlesFetch * 10,
           list: true,
-          render: false,
+          // Fundamental optimization to alleviate the 10x.
+          toc: true,
           sequelize,
         }),
         sequelize.models.Article.getArticleJsonInTopicBy(loggedInUser, article.topicId),
@@ -151,14 +163,17 @@ export const getServerSidePropsArticleHoc = ({
         }),
         getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X, from: 'from', to: 'to' }),
         includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
-        sequelize.models.Article.getArticles({
-          excludeIds: [article.id],
-          limit,
-          offset: 0,
-          order: 'score',
-          sequelize,
-          topicId: article.topicId,
-        }),
+        isIndex
+          ? { rows: [] }
+          : sequelize.models.Article.getArticles({
+              excludeIds: [article.id],
+              limit,
+              offset: 0,
+              order: 'score',
+              sequelize,
+              topicId: article.topicId,
+            })
+        ,
         sequelize.models.Id.findAll({
           include: [{
             model: sequelize.models.Ref,
@@ -207,6 +222,7 @@ export const getServerSidePropsArticleHoc = ({
         articlesInSamePage,
         articlesInSamePageForToc,
         incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
+        isIndex,
         loggedInUser,
         otherArticlesInTopic: await Promise.all(otherArticlesInTopic.rows.map(article => article.toJson(loggedInUser))),
         synonymLinks: synonymIds.map(i => { return {
@@ -226,7 +242,10 @@ export const getServerSidePropsArticleHoc = ({
         props.topIssues = topIssues
         props.issuesCount = issuesCount
       }
-      return { props };
+      if (log.perf) {
+        console.error(`perf: getServerSidePropsArticle: ${performance.now() - t0} ms`)
+      }
+      return { props }
     } else {
       throw new TypeError
     }

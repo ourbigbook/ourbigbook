@@ -107,7 +107,7 @@ module.exports = {
   ,
   log: {
     db: process.env.OURBIGBOOK_LOG_DB === ourbigbook_nodejs_front.env_true,
-    perf: process.env.OURBIGBOOK_LOG_PERF === env_true,
+    perf: process.env.NEXT_PUBLIC_OURBIGBOOK_LOG_PERF === env_true || process.env.OURBIGBOOK_LOG_PERF === env_true,
   },
   // Per user limit defaults.
   maxArticleTitleSize: 1024,

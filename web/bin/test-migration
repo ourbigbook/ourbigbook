@@ -16,7 +16,7 @@ schema() (
     sqlite3 db.sqlite3 .schema > "$out"
   else
     #"${script_dir}/pg_dump" -s
-    PGPASSWORD=a pg_dump -U ourbigbook_user -h localhost ourbigbook -s > "$out"
+    PGPASSWORD=a pg_dump -U ourbigbook_user -h localhost ourbigbook -s | grep -E -v -- '^(--|$)' > "$out"
   fi
 )
 
@@ -70,12 +70,13 @@ fi
 schema new-migration
 
 # Compare the above.
+diff_args='-u0'
 if [ "$db" = sqlite3 ]; then
   sort "$d/old.$db.${schema_ext}"           > "$d/old.$db.sort.${schema_ext}"
   sort "$d/new-clean.$db.${schema_ext}"     > "$d/new-clean.$db.sort.${schema_ext}"
   sort "$d/new-migration.$db.${schema_ext}" > "$d/new-migration.$db.sort.${schema_ext}"
-  diff -u "$d/old.$db.sort.${schema_ext}" "$d/new-clean.$db.sort.${schema_ext}" || true
-  diff="$(diff -u "$d/new-clean.$db.sort.${schema_ext}" "$d/new-migration.$db.sort.${schema_ext}" || true)"
+  diff $diff_args "$d/old.$db.sort.${schema_ext}" "$d/new-clean.$db.sort.${schema_ext}" || true
+  diff="$(diff $diff_args "$d/new-clean.$db.sort.${schema_ext}" "$d/new-migration.$db.sort.${schema_ext}" || true)"
   echo
   echo "$diff"
   if [ ! -z "$diff" ]; then
@@ -85,6 +86,6 @@ if [ "$db" = sqlite3 ]; then
 else
   # PostgreSQL statements are not one per line so it is harder to automatically compare things correctly,
   # eye inspection for now.
-  diff -u "$d/old.$db.${schema_ext}" "$d/new-clean.$db.${schema_ext}" || true
-  diff -u "$d/new-clean.$db.${schema_ext}" "$d/new-migration.$db.${schema_ext}" || true
+  diff $diff_args "$d/old.$db.${schema_ext}" "$d/new-clean.$db.${schema_ext}" || true
+  diff $diff_args "$d/new-clean.$db.${schema_ext}" "$d/new-migration.$db.${schema_ext}" || true
 fi

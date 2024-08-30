@@ -9152,33 +9152,6 @@ where `i` stands for `inspect` as in `node inspect`.
 
 This pauses at the start of execution. So just run `c` and normal execution resumes until the `debugger;` statement is reached.
 
-= OurBigBook Web performance
-{parent=OurBigBook Web development}
-
-A good benchmark for the critical Article page is perhaps the <Wikipedia bot> account which stresses the atricle tree the hardest.
-
-We should look out for metrics such as:
-* First Contentful Paint (FCP)
-* Time to First Byte (TTFB)
-and test both on <Heroku deployment> and locally.
-
-Local tests are always on optimized PostgresQL
-
-* 8ea5ffa52d291350e9a5ddef92e4171d50a51dcc TTFB
-  * local
-    * /wikibot: 1.2 s
-    * /cirosantilli: 0.5 s
-    * /barack-obama: 0.4 s
-  * cirosantilli.com: 0.1 - 0.2 s
-  * ourbigbook.com
-    * /wikibot: 3.5 - 4.5 s
-    * /cirosantilli: 1.1 - 1.5 s
-    * /barack-obama: 0.5 - 0.7 s
-  This suggests a database scaling issue like a missing index.
-
-Related:
-* <todo/Reach the same performance as static website with dynamic tree>
-
 = OurBigBook Web unit tests
 {parent=OurBigBook Web development}
 
@@ -9305,11 +9278,6 @@ npx eslint front/Article.tsx
 = OurBigBook Web environment variable
 {c}
 {parent=OurBigBook Web development}
-
-= `OURBIGBOOK_LOG_PERF`
-{parent=OurBigBook Web environment variable}
-
-If set to <OurBigBook environment variable true> enables somewhat verbose logs of several key performance points, notably in conversion.
 
 = OurBigBook Web deployment
 {c}
@@ -9750,20 +9718,20 @@ Further discussion at: https://github.com/ourbigbook/ourbigbook/issues/156
 {c}
 {parent=OurBigBook Web development}
 
-TODO new world to me.
-
 https://stackoverflow.com/questions/18215389/how-do-i-measure-request-and-response-times-at-once-using-curl is a useful one if the server is slow:
 ``
 curl -o /dev/null -s -w 'Establish Connection: %{time_connect}s\nTTFB: %{time_starttransfer}s\nTotal: %{time_total}s\n' http://localhost:3000
 ``
 
-As documented at https://nextjs.org/docs/advanced-features/measuring-performance[] by uncommenting the following lines under \a[web/pages/_app.tsx]:
+= Next.js web vitals
+{parent=OurBigBook Web performance benchmarking}
+
+These are documented at https://nextjs.org/docs/advanced-features/measuring-performance[]. To enable them use `NEXT_PUBLIC_OURBIGBOOK_LOG_PERF`, the front-end-avaible version of <OURBIGBOOK_LOG_PERF>:
 ``
-//export function reportWebVitals(metric) {
-//  console.log(metric)
-//}
+NEXT_PUBLIC_OURBIGBOOK_LOG_PERF=1 npm run dev
 ``
-we see a few metrics printed on the browser such as:
+
+If enabled, we see a few metrics printed on the browser console such as:
 ``
 {
     "id": "1667591558646-5510113745482",
@@ -9780,6 +9748,41 @@ we see a few metrics printed on the browser such as:
     "label": "web-vital"
 }
 ``
+
+= `OURBIGBOOK_LOG_PERF`
+{parent=OurBigBook Web performance benchmarking}
+{tag=OurBigBook Web environment variable}
+
+If set to <OurBigBook environment variable true> enables somewhat verbose logs of several key performance points, notably in:
+* web vitals on all pages: https://nextjs.org/docs/pages/building-your-application/optimizing/analytics
+* conversion
+
+= OurBigBook Web performance log
+{parent=OurBigBook Web performance benchmarking}
+
+A good benchmark for the critical Article page is perhaps the <Wikipedia bot> account which stresses the atricle tree the hardest.
+
+We should look out for metrics such as:
+* First Contentful Paint (FCP)
+* Time to First Byte (TTFB)
+and test both on <Heroku deployment> and locally.
+
+Local tests are always on optimized PostgresQL.
+
+* 8ea5ffa52d291350e9a5ddef92e4171d50a51dcc TTFB logged off:
+  * local
+    * /wikibot: 1.2 s
+    * /cirosantilli: 0.5 s
+    * /barack-obama: 0.4 s
+  * cirosantilli.com: 0.1 - 0.2 s
+  * ourbigbook.com
+    * /wikibot: 3.5 - 4.5 s
+    * /cirosantilli: 1.1 - 1.5 s
+    * /barack-obama: 0.5 - 0.7 s
+  This suggests a database scaling issue like a missing index.
+
+Related:
+* <todo/Reach the same performance as static website with dynamic tree>
 
 = OurBigBook Web architecture
 {c}

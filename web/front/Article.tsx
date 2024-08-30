@@ -5,7 +5,7 @@ import Router, { useRouter } from 'next/router'
 
 import { parse } from 'node-html-parser'
 
-import { commentsHeaderId } from 'front/config'
+import { commentsHeaderId, log } from 'front/config'
 import {
   ArrowUpIcon,
   ArticleCreatedUpdatedPills,
@@ -203,7 +203,7 @@ function WebMeta({
 }
 
 /** The name of this element is not very accurate, it should likely be ArticleDescendantsAndMeta or something like that. */
-const Article = ({
+export default function Article({
   ancestors,
   article,
   articlesInSamePage,
@@ -221,7 +221,8 @@ const Article = ({
   synonymLinks,
   tagged,
   topIssues,
-}) => {
+}) {
+  let t0
   const [curComments, setComments] = React.useState(comments)
   const [curCommentsCount, setCommentsCount] = React.useState(commentsCount)
   const router = useRouter()
@@ -651,6 +652,9 @@ const Article = ({
     //const tocHtml = articlesInSamePage.slice(1).map(a => `<div style="padding-left:${30 * (a.depth - firstArticle.depth)}px;"><a href="../${article.author.username}/${a.topicId}">${a.titleRender}</a></div>`).join('') +
     const entry_list = []
     const levelToHeader = { 0: article }
+    if (log.perf) {
+      t0 = performance.now()
+    }
     for (let i = 0; i < articlesInSamePageForToc.length; i++) {
       const a = articlesInSamePageForToc[i]
       const authorUsername = article.author.username
@@ -692,6 +696,12 @@ const Article = ({
     if (entry_list.length) {
       html += htmlToplevelChildModifierById(renderTocFromEntryList({ entry_list }), Macro.TOC_ID) 
     }
+    if (log.perf) {
+      console.error(`perf: Article.articlesInSamePageForToc: ${performance.now() - t0} ms`)
+    }
+    if (log.perf) {
+      t0 = performance.now()
+    }
     for (const a of articlesInSamePage) {
       const elem = parse(a.h2Render)
       elem.querySelector(`.${H_WEB_CLASS}`).innerHTML = renderToString(<WebMeta {...{
@@ -706,6 +716,9 @@ const Article = ({
         toplevel: false,
       }}/>)
       html +=  elem.outerHTML + a.render
+    }
+    if (log.perf) {
+      console.error(`perf: Article.articlesInSamePage: ${performance.now() - t0} ms`)
     }
   }
   return <>
@@ -839,4 +852,3 @@ const Article = ({
     </div>
   </>
 }
-export default Article

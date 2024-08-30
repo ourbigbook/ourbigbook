@@ -583,6 +583,7 @@ async function convertArticle({
         const rendered_output = extra_returns.rendered_outputs[outpath]
         const renderFull = rendered_output.full
         const articleArg = {
+          authorId: author.id,
           fileId: file.id,
           h1Render: renderFull.substring(0, rendered_output.h1RenderLength),
           h2Render: rendered_output.h2Render,
@@ -637,9 +638,10 @@ async function convertArticle({
         'render',
         'topicId',
         'updatedAt',
+        'authorId',
         // We intentionally skip:
         // * depth
-        // * nestedSetInde
+        // * nestedSetIndex
         // * nestedSetNextSibling
         // as those will be updated in bulk soon afterwards together with all descendants.
       ]

@@ -1,8 +1,16 @@
 import { useRouter } from 'next/router';
 import React, { useEffect, useState } from 'react';
-import useSWR from 'swr'
+import { useReportWebVitals } from 'next/web-vitals'
 
-import { aboutUrl, contactUrl, docsUrl, donateUrl, googleAnalyticsId, isProduction } from 'front/config';
+import {
+  aboutUrl,
+  contactUrl,
+  docsUrl,
+  donateUrl,
+  googleAnalyticsId,
+  log,
+  isProduction
+} from 'front/config';
 import Navbar from 'front/Navbar'
 import { AppContextProvider, HelpIcon, logout } from 'front'
 import routes from 'front/routes'
@@ -13,11 +21,6 @@ import 'ourbigbook/dist/ourbigbook.css'
 import 'ourbigbook/editor.scss'
 import 'ionicons/css/ionicons.min.css'
 import 'style.scss'
-
-//// https://nextjs.org/docs/advanced-features/measuring-performance
-//export function reportWebVitals(metric) {
-//  console.log(metric)
-//}
 
 function handleRouteChange(url) {
   window.gtag('config', googleAnalyticsId, {
@@ -32,6 +35,13 @@ const routesThatDontUpdatePrevPageNoSignup = new Set([
 
 const MyApp = ({ Component, pageProps }) => {
   const router = useRouter()
+  // https://nextjs.org/docs/pages/building-your-application/optimizing/analytics
+  useReportWebVitals((metric) => {
+    if (log.perf) {
+      console.log(metric)
+    }
+  })
+
   const [prevPageNoSignup, setPrevPageNoSignup] = useState({ prev: null, cur: null });
   function updatePrevPageNoSignup(newCur, route) {
     // This is so that for logged off user the sequence:

@@ -18,6 +18,7 @@ module.exports = (sequelize) => {
     {
       username: {
         type: DataTypes.STRING(config.usernameMaxLength),
+        allowNull: false,
         unique: {
           msg: 'Username is taken.'
         },
@@ -57,6 +58,7 @@ module.exports = (sequelize) => {
       },
       email: {
         type: DataTypes.STRING,
+        allowNull: false,
         set(v) {
           this.setDataValue('email', v.toLowerCase())
         },

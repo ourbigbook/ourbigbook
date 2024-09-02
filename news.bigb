@@ -7,6 +7,23 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= ourbigbook.com/cirosantilli loads 2x as fast after database optimizations
+{parent=News}
+{tag=Web}
+{tag=OurBigBook Web performance benchmarking}
+
+At https://github.com/ourbigbook/ourbigbook/commit/075872a0a5ca7faf171d45834bc2b47995a15634 and nearby previous commits we've optimized the database queries made on article pages, mostly by adding some key missing indices and cache columns.
+
+As a result, https://ourbigbook.com/cirosantilli now starts downloading the first byte 2x as fast as before, going down from about 1200 ms to around 600 ms, at a time region which makes a huge difference for user experience.
+
+We will also start keeping better performance logs at: <OurBigBook Web performance log>{full} to make sure we don't regress as easily.
+
+Announcements:
+* https://mastodon.social/@ourbigbook/113068626468247721
+* https://x.com/OurBigBook/status/1830626456235299211
+* https://www.linkedin.com/feed/update/urn:li:share:7236392360090243075
+* https://www.facebook.com/OurBigBook/posts/pfbid029F6xK7QrV725cAfFoVbb2RhGtKXvfzqBDcy2kvY1AALNSHDbnbuvZJkYFhzmejUcl
+
 = Visual Studio Code extension overhaul
 {parent=News}
 {tag=Visual Studio Code}

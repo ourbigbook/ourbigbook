@@ -9769,18 +9769,38 @@ We should look out for metrics such as:
 * Time to First Byte (TTFB)
 and test both on <Heroku deployment> and locally.
 
-Local tests are always on optimized PostgresQL.
+Local tests are always on optimized PostgresQL. Remote tests always on powerful home wifi, never 4G. Measuremnts are taken on browser Network tab in developer tools with cache enabled. Each URL is ran randomly a few times, which gives an idea of cache warmup effects. Logged-in is logged-in as `cirosantilli`.
 
+* 075872a0a5ca7faf171d45834bc2b47995a15634 web: speed up article page DB queries further by moving topicId into topic
+
+  At this commit we had highly optimized article page queries. The slowest query was getting the new upvotes of the logged in user at 20 - 30 ms.
+
+  * TTFB
+    * local
+      * logged off:
+        * /wikibot: 65 - 70
+        * /cirosantilli: 160 - 190
+        * /cirosantilli/mathematics: 100 - 120
+        * /barack-obama: 40 - 60
+      * logged in:
+        * /wikibot: 90 - 100
+        * /cirosantilli: 200 - 300
+        * /barack-obama 65
+    * cirosantilli.com:
+    * ourbigbook.com
+      * /wikibot:
+      * /cirosantilli:
+      * /barack-obama:
 * 8ea5ffa52d291350e9a5ddef92e4171d50a51dcc TTFB logged off:
   * local
-    * /wikibot: 1.2 s
-    * /cirosantilli: 0.5 s
-    * /barack-obama: 0.4 s
-  * cirosantilli.com: 0.1 - 0.2 s
+    * /wikibot: 1200
+    * /cirosantilli: 500
+    * /barack-obama: 400
+  * cirosantilli.com: 100 - 200
   * ourbigbook.com
-    * /wikibot: 3.5 - 4.5 s
-    * /cirosantilli: 1.1 - 1.5 s
-    * /barack-obama: 0.5 - 0.7 s
+    * /wikibot: 3500 - 4500
+    * /cirosantilli: 1100 - 1500
+    * /barack-obama: 500 - 700
   This suggests a database scaling issue like a missing index.
 
 Related:

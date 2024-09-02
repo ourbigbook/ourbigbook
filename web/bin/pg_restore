@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -eux
 db=ourbigbook
 args=()
 while [ $# -gt 0 ]; do
@@ -13,4 +14,6 @@ while [ $# -gt 0 ]; do
       ;;
   esac
 done
-PGPASSWORD=a pg_restore -U ourbigbook_user -h localhost --clean -d "$db" -v "${args[@]}"
+f="${args[0]:-latest.dump}"
+args=("${args[@]:1}")
+PGPASSWORD=a pg_restore -U ourbigbook_user -h localhost --clean -d "$db" -v "$f" "${args[@]}"

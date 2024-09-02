@@ -137,6 +137,7 @@ module.exports = (sequelize) => {
         { fields: ['list', 'updatedAt', 'createdAt'], },
         { fields: ['list', 'issueCount', 'createdAt'], },
         { fields: ['list', 'followerCount', 'createdAt'], },
+        // Top articles in a given topic.
         { fields: ['list', 'topicId', 'score', 'createdAt'], },
         { fields: ['slug'], },
         { fields: ['list', 'score', 'createdAt'], },
@@ -152,6 +153,8 @@ module.exports = (sequelize) => {
         { fields: ['authorId', 'list', 'score', 'createdAt'], },
         { fields: ['authorId', 'list', 'followerCount', 'createdAt'], },
         { fields: ['authorId', 'list', 'issueCount', 'createdAt'], },
+        // Does the logged in user have their own version of this topic?
+        { fields: ['authorId', 'topicId'], },
 
         // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
         { fields: ['fileId'], },
@@ -1443,25 +1446,20 @@ SELECT
   "Article"."topicId" AS "topicId",
   "Article.Author"."id" AS "author.id",
   "Article.Author"."username" AS "author.username",
-  "SameTopic"."articleCount" AS "topicCount"${loggedInUser ? `,
+  "Topic"."articleCount" AS "topicCount"${loggedInUser ? `,
   "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic",
   "UserLikeArticle"."userId" AS "liked"` : ''
 }` : ''}
 FROM
-  "Article"
-${!toc ? `INNER JOIN "User" AS "Article.Author" ON "Article"."authorId" = "Article.Author"."id"
-INNER JOIN "Article" AS "ArticleSameTopic" ON "Article"."topicId" = "ArticleSameTopic"."topicId"
-INNER JOIN "Topic" AS "SameTopic" ON "ArticleSameTopic"."id" = "SameTopic"."articleId"${loggedInUser ? `
-LEFT OUTER JOIN (
-  SELECT "Article"."id", "Article"."topicId"
-  FROM "Article"
-  WHERE "Article"."authorId" = :loggedInUserId
-) AS "ArticleSameTopicByLoggedIn"
-  ON "Article"."topicId" = "ArticleSameTopicByLoggedIn"."topicId"
+  "Article"${!toc ? `
+INNER JOIN "User" AS "Article.Author" ON "Article"."authorId" = "Article.Author"."id"
+INNER JOIN "Topic" ON "Article"."topicId" = "Topic"."topicId"${loggedInUser ? `
+LEFT OUTER JOIN "Article" as "ArticleSameTopicByLoggedIn"
+  ON "ArticleSameTopicByLoggedIn"."authorId" = :loggedInUserId AND
+     "ArticleSameTopicByLoggedIn"."topicId" = "Article"."topicId"
 LEFT OUTER JOIN "UserLikeArticle"
   ON "UserLikeArticle"."articleId" = "Article"."id" AND
-     "UserLikeArticle"."userId" = :loggedInUserId
-` : ''}` : ''}
+     "UserLikeArticle"."userId" = :loggedInUserId` : ''}` : ''}
 WHERE "Article"."authorId" = ( SELECT id FROM "User" WHERE username = :authorUsername ) AND${list === undefined ? '' : `
   "Article"."list" = :list AND`}
 ${h1

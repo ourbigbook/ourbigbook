@@ -4,9 +4,6 @@ const config = require('../front/config')
 module.exports = {
   up: async (queryInterface, Sequelize) => queryInterface.sequelize.transaction(async transaction => {
     const DataTypes = Sequelize.DataTypes
-    // Manually ran these, was locking form some reason.
-    // ALTER TABLE "public"."Article" ADD COLUMN "authorId" INTEGER;
-    //
     await queryInterface.addColumn('Article', 'authorId',
       {
         type: DataTypes.INTEGER,
@@ -98,7 +95,7 @@ WHERE "Article"."fileId" = "File"."id"
     await queryInterface.removeIndex('Article', ['authorId', 'list', 'issueCount'], { transaction })
     await queryInterface.removeIndex('Article', ['topicId', 'score'], { transaction })
     await queryInterface.addIndex('Article', ['topicId'], { transaction })
-    await queryInterface.removIndex('Topic', ['articleId'], { transaction })
+    await queryInterface.removeIndex('Topic', ['articleId'], { transaction })
     await queryInterface.changeColumn('User', 'username',
       {
         type: DataTypes.STRING(config.usernameMaxLength),

@@ -211,7 +211,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
       ],
     }
   );
-  Issue.belongsToMany(User, { through: UserFollowIssue, as: 'followers', foreignKey: 'issueId', otherKey: 'userId'    });
+  Issue.belongsToMany(User, { through: UserFollowIssue, as: 'followers', foreignKey: 'issueId', otherKey: 'userId' });
   User.belongsToMany(Issue, { through: UserFollowIssue, as: 'followedIssues', foreignKey: 'userId', otherKey: 'issueId' });
 
   // File author User. Deprecated in favor of Article.User

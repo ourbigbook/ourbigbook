@@ -22,13 +22,19 @@ export async function getLoggedInUser(req, res, loggedInUser?) {
     const User = sequelize.models.User
     const user = await User.findByPk(
       verifiedUser.id,
+      // Get the new upvote count for the logged in user.
+      // This was the slowest DB query as of commit 96c73b204ba498699bc241f61b78c441cd9885bf + 1.
+      // at around 20ms locally for /cirosantilli on localhost. The total query time was 200-300 ms
+      // however, so I was lazy to optimize it. This query is efficient, optimizing it further would
+      // require storing the target article user ID on UserLikeArticle as a cache and indexing by it.
+      // Definitely doable.
       {
         attributes: {
           include: [
             [
               sequelize.fn(
                 'count',
-                sequelize.col('authoredArticles->articles->likes.articleId')
+                sequelize.col('articles->likes.articleId')
               ),
               'scoreDelta'
             ],
@@ -36,25 +42,18 @@ export async function getLoggedInUser(req, res, loggedInUser?) {
         },
         group: ['User.id'],
         include: [{
-          model: sequelize.models.File,
-          as: 'authoredArticles',
+          model: sequelize.models.Article,
+          as: 'articles',
           required: false,
           subQuery: false,
           attributes: [],
           include: [{
-            model: sequelize.models.Article,
-            as: 'articles',
+            model: sequelize.models.UserLikeArticle,
+            as: 'likes',
+            attributes: [],
             required: false,
             subQuery: false,
-            attributes: [],
-            include: [{
-              model: sequelize.models.UserLikeArticle,
-              as: 'likes',
-              attributes: [],
-              required: false,
-              subQuery: false,
-              where: { createdAt: { [sequelize.Sequelize.Op.gt]: sequelize.col('User.newScoreLastCheck')} },
-            }]
+            where: { createdAt: { [sequelize.Sequelize.Op.gt]: sequelize.col('User.newScoreLastCheck')} },
           }]
         }]
       }

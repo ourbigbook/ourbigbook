@@ -10,11 +10,22 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      topicId: {
+        // This is also a cache.
+        // It would be possible to avoid using this field by making queries
+        // that search for the linked ID. But this hits badly on a critical
+        // ArticlePage view path, so we have to optimize it. TODO perhaps
+        // we should actually convert topicId to point to the topic rather
+        // than be a string.
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
     },
     {
       indexes: [
         { fields: ['articleCount'] },
         { fields: ['articleId'] },
+        { fields: ['topicId'] },
       ]
     }
   )
@@ -86,6 +97,7 @@ module.exports = (sequelize) => {
     deleteArticle=false,
     transaction,
   }={}) {
+    const { Article, Topic } = sequelize.models
     const topicIds = articles.map(article => article.topicId).filter(topicId => topicId)
     if (
       // Happens for Index pages, which have empty string topicId.
@@ -104,22 +116,23 @@ module.exports = (sequelize) => {
         // We find all topics that don't exist as per:
         // https://dba.stackexchange.com/questions/141129/find-ids-from-a-list-that-dont-exist-in-a-table
         await sequelize.query(`
-INSERT INTO "${sequelize.models.Topic.tableName}" ("articleId", "articleCount", "createdAt", "updatedAt")
-SELECT "articleId", 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP FROM (
+INSERT INTO "${Topic.tableName}" ("articleId", "topicId", "articleCount", "createdAt", "updatedAt")
+SELECT "articleId", "topicId", 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP FROM (
   SELECT
-    "${sequelize.models.Article.tableName}"."id" AS "articleId",
+    "${Article.tableName}"."id" AS "articleId",
+    "${Article.tableName}"."topicId" AS "topicId",
     ROW_NUMBER() OVER (
-      PARTITION BY "${sequelize.models.Article.tableName}"."topicId"
-      ORDER BY "${sequelize.models.Article.tableName}"."id" ASC
+      PARTITION BY "${Article.tableName}"."topicId"
+      ORDER BY "${Article.tableName}"."id" ASC
     ) AS "rnk"
-  FROM "${sequelize.models.Article.tableName}"
+  FROM "${Article.tableName}"
   WHERE
-    "${sequelize.models.Article.tableName}"."topicId" IN (:topicIds)
-    AND "${sequelize.models.Article.tableName}"."topicId" NOT IN (
-      SELECT "${sequelize.models.Article.tableName}"."topicId"
-      FROM "${sequelize.models.Article.tableName}"
-      INNER JOIN "${sequelize.models.Topic.tableName}"
-        ON "${sequelize.models.Article.tableName}"."id" = "${sequelize.models.Topic.tableName}"."articleId"
+    "${Article.tableName}"."topicId" IN (:topicIds)
+    AND "${Article.tableName}"."topicId" NOT IN (
+      SELECT "${Article.tableName}"."topicId"
+      FROM "${Article.tableName}"
+      INNER JOIN "${Topic.tableName}"
+        ON "${Article.tableName}"."id" = "${Topic.tableName}"."articleId"
     )
 ) AS "NewTopicsAndArticleIds"
 WHERE "rnk" = 1
@@ -135,27 +148,28 @@ WHERE "rnk" = 1
       if (newArticles || deleteArticle) {
         // Update article count of the topics.
         await sequelize.query(`
-UPDATE "${sequelize.models.Topic.tableName}"
-  SET "articleCount" = "TopicIdCount"."articleCount"
+UPDATE "${Topic.tableName}"
+  SET
+    "articleCount" = "TopicIdCount"."articleCount"
 FROM (
   SELECT
-    "${sequelize.models.Topic.tableName}"."id" AS "id",
+    "${Topic.tableName}"."id" AS "id",
     "Counts"."articleCount"
-  FROM "${sequelize.models.Topic.tableName}"
-  INNER JOIN "${sequelize.models.Article.tableName}"
-    ON "${sequelize.models.Article.tableName}"."id" = "${sequelize.models.Topic.tableName}"."articleId"
+  FROM "${Topic.tableName}"
+  INNER JOIN "${Article.tableName}"
+    ON "${Article.tableName}"."id" = "${Topic.tableName}"."articleId"
   INNER JOIN (
     SELECT
       "topicId",
       COUNT(*) AS "articleCount"
-    FROM "${sequelize.models.Article.tableName}"
+    FROM "${Article.tableName}"
     GROUP BY "topicId"
     HAVING "topicId" IN (:topicIds)
   ) AS "Counts"
-  ON "Counts"."topicId" = "${sequelize.models.Article.tableName}"."topicId"
+  ON "Counts"."topicId" = "${Article.tableName}"."topicId"
 ) AS "TopicIdCount"
 WHERE
-  "${sequelize.models.Topic.tableName}"."id" = "TopicIdCount"."id"
+  "${Topic.tableName}"."id" = "TopicIdCount"."id"
 `,
           {
             replacements: {
@@ -174,12 +188,14 @@ WHERE
       // * https://github.com/cirosantilli/cirosantilli.github.io/blob/master/nodejs/sequelize/raw/most_frequent.js most frequent part only
       // * https://github.com/cirosantilli/cirosantilli.github.io/blob/master/nodejs/sequelize/raw/group_by_max_n.js top N in each group part only
       await sequelize.query(`
-UPDATE "${sequelize.models.Topic.tableName}"
+UPDATE "${Topic.tableName}"
 SET
-  "articleId" = "TopArticlePerTopic"."articleId"
+  "articleId" = "TopArticlePerTopic"."articleId",
+  "topicId" = "TopArticlePerTopic"."topicId"
 FROM (
   SELECT
-    "${sequelize.models.Topic.tableName}"."id" AS "id",
+    "${Topic.tableName}"."id" AS "id",
+    "${Article.tableName}"."topicId" AS "topicId",
     "TopArticlesPerTopic"."articleId" AS "articleId"
   FROM (
     SELECT
@@ -201,22 +217,22 @@ FROM (
             "id" ASC
         ) AS "scoreRank",
         *
-      FROM "${sequelize.models.Article.tableName}"
+      FROM "${Article.tableName}"
       WHERE "topicId" IN (:topicIds)
     ) AS "TopArticles"
     WHERE "TopArticles"."scoreRank" <= :topN
     GROUP BY "TopArticles"."topicId", "titleRender"
   ) AS "TopArticlesPerTopic"
-  INNER JOIN "${sequelize.models.Article.tableName}"
-    ON "${sequelize.models.Article.tableName}"."topicId" = "TopArticlesPerTopic"."topicId"
-  INNER JOIN "${sequelize.models.Topic.tableName}"
-    ON "${sequelize.models.Topic.tableName}"."articleId" = "${sequelize.models.Article.tableName}"."id"
+  INNER JOIN "${Article.tableName}"
+    ON "${Article.tableName}"."topicId" = "TopArticlesPerTopic"."topicId"
+  INNER JOIN "${Topic.tableName}"
+    ON "${Topic.tableName}"."articleId" = "${Article.tableName}"."id"
   WHERE "TopArticlesPerTopic"."freqRank" = 1
   ORDER BY
     "TopArticlesPerTopic"."topicId" ASC
 ) AS "TopArticlePerTopic"
 WHERE
-  "${sequelize.models.Topic.tableName}"."id" = "TopArticlePerTopic"."id"
+  "${Topic.tableName}"."id" = "TopArticlePerTopic"."id"
 `,
         {
           replacements: {

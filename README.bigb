@@ -8901,15 +8901,17 @@ This is a bit messy however, as we often want to find the largest numbers for pr
 {parent=Log database queries}
 {tag=OurBigBook Web environment variable}
 
-This tends to be better for benchmarking than <DEBUG sql>:
+This tends to be a better good wayfor benchmarking than <DEBUG sql>:
 ``
 OURBIGBOOK_LOG_DB=1 npm run dev
 ``
-which produces output of type:
+which produces many outputs of type:
 ``
 Executed (default): SELECT 1+1 AS result Elapsed time: 0ms
 ``
 so we get explicit elapsed time measurements rather than deltas, and without the corresponding `Executing` marker.
+
+Furthermore, because we try to code the server correctly by making multiple `async` requests simultaneously wherever possible, the slowest of those requests finishes, last, and is the last "Elapsed time" to get logged! So you generally just have to look at the last logged line if there's one slow bottleneck query, rather than going over all the previous "Elapsed time" entries.
 
 This method uses Sequelize's `benchamrk: true` option as per: https://stackoverflow.com/questions/52260934/how-to-measure-query-execution-time-in-seqilize[].
 

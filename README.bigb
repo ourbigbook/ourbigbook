@@ -12,6 +12,15 @@
 {height=150}
 {title=<project logo>[Logo of] the <OurBigBook Project>}
 
+<OurBigBook CLI quick start>:
+``
+git clone https://github.com/ourbigbook/template
+cd template
+npm install
+npx ourbigbook .
+firefox out/html/index.html
+``
+
 \b[Mission]: to live in a world where you can learn university-level #mathematics{p=1}, #physics{p=1}, <#chemistry>, #biology and #engineering from perfect free open source books that anyone can write to get famous.
 
 \b[Ultimate goal]: destroy the currently grossly inefficient education system and replace it with a much more inspiring system where people learn what they want as fast as possible to reach their goals faster without so much useless pain.
@@ -52,6 +61,20 @@
   {height=600}
   {disambiguate=intro}
 
+  \Image[feature/vscode/tree.png]
+  {title=<Visual Studio Code extension> tree navigation}
+  {provider=github}
+  {height=1100}
+  {disambiguate=intro}
+
+  \Image[feature/web-editor/cirosantilli-derivative.png]
+  {title=<Web editor>}
+  {description=You can also edit articles on the <Web editor> without installing anything locally.}
+  {provider=github}
+  {height=800}
+  {border}
+  {disambiguate=intro}
+
   \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
   {title=Edit locally and <publish> demo}
   {disambiguate=intro}
@@ -63,6 +86,21 @@
   {title=OurBigBook <Visual Studio Code extension>}
   {disambiguate=intro}
   {height=600}
+* \b[infinitely deep table of contents]: with our <dynamic article tree> feature, you can have infinitely deep table of contents. On <OurBigBook Web>, every header can be the toplevel header for better SEO and user experience e.g. both the following pages show all their ancestors:
+  * https://ourbigbook.com/cirosantilli/chordate
+  * https://ourbigbook.com/cirosantilli/chordate-subclade
+
+  \Image[feature/dynamic-article-tree/demo.png]
+  {title=<Dynamic article tree> with infinitely deep table of contents}
+  {description=
+  Live URL: https://ourbigbook.com/cirosantilli/chordate
+
+  Descendant pages can also show up as toplevel e.g.: https://ourbigbook.com/cirosantilli/chordate-subclade[]
+  }
+  {provider=github}
+  {height=2000}
+  {border}
+  {disambiguate=intro}
 ]
 
 \b[Key links]:
@@ -8374,6 +8412,17 @@ As an example of dynamic artic tree, note how the article "Special relativity" c
 * https://ourbigbook.com/barack-obama/natural-science as the child of a child
 The only efficient way to do this is to pick which articles will be rendered as soon as the user makes the request, rather than having fully pre-rendered pages, thus the name "dynamic".
 
+\Image[feature/dynamic-article-tree/demo.png]
+{title=<Dynamic article tree> with infinitely deep table of contents}
+{description=
+Live URL: https://ourbigbook.com/cirosantilli/chordate
+
+Descendant pages can also show up as toplevel e.g.: https://ourbigbook.com/cirosantilli/chordate-subclade[]
+}
+{provider=github}
+{height=2000}
+{border}
+
 \Video[https://www.youtube.com/watch?v=sX_D_5tCQgg]
 {title=<OurBigBook Web dynamic article tree> demo}
 {height=700}
@@ -10135,6 +10184,11 @@ VS Code is currently intended to be the best supported <todo/wysiwyg>[non-fully-
 
 The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[].
 
+\Image[feature/vscode/tree.png]
+{title=<Visual Studio Code extension> tree navigation}
+{provider=github}
+{height=1100}
+
 \Video[https://www.youtube.com/watch?v=0W8U2YtQ8fg]
 {title=OurBigBook <Visual Studio Code extension>}
 {height=600}
@@ -10539,6 +10593,20 @@ as usual when dealing with the <`dist` directory>.
 {parent=Browser editor with preview}
 
 This is editor present in <OurBigBook Web>. It is linked to the database, and has further features added on top of the <static editor>.
+
+\Image[feature/web-editor/cirosantilli-derivative.png]
+{title=<Web editor>}
+{description=Editing the source of the page: https://ourbigbook.com/cirosantilli/derivative}
+{provider=github}
+{height=800}
+{border}
+
+\Image[feature/web-editor/cirosantilli-derivative-metadata.png]
+{title=<Web editor> metadata tab}
+{description=Editing the source of the page: https://ourbigbook.com/cirosantilli/derivative}
+{provider=github}
+{height=400}
+{border}
 
 = Error reporting
 {parent=Tooling}

@@ -255,7 +255,7 @@ module.exports = (sequelize) => {
   }
 
   User.findArticleLikesReceivedArgs = function(uid, opts={}) {
-    let { limit, order, offset, since } = opts
+    let { limit, order, orderAscDesc, offset, since } = opts
     if (limit === undefined) {
       limit = config.articleLimit
     }

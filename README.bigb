@@ -9986,7 +9986,7 @@ web/bin/normalize -f -u barack-obama issue-follower-count
 
 Fix the counts of issue follower if any are wrong with `-f`, thus potentially altering the database:
 ``
-web/bin/normalize -f -u barack-obama ssue-follower-count
+web/bin/normalize -f -u barack-obama issue-follower-count
 ``
 
 = web/bin/rerender-articles.js

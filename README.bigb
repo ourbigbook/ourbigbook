@@ -6,7 +6,7 @@
 {c}
 {synonym}
 
-\b[https://OurBigBook.com[]]: The \b[OurBigBook Project] is creating the ultimate tools to <publish> \b[textbooks]/\b[<#personal knowledge bases>]/\b[<#Zettelkasten>]/\b[<#digital gardens>] in the <#learn in public> philosophy. It is our best shot yet at the final \b[real-world <#Encyclopedia Galactica>] by allowing effective \b[<#mindmeld>[mind melding]]/\b[<#collective intelligence>] via the \b[<topics feature>].
+\b[https://OurBigBook.com[]]: The \b[OurBigBook Project] is creating the ultimate https://github.com/ourbigbook/ourbigbook[open source] tools to <publish> \b[textbooks]/\b[<#personal knowledge bases>]/\b[<#Zettelkasten>]/\b[<#digital gardens>] in the <#learn in public> philosophy. It is our best shot yet at the final \b[real-world <#Encyclopedia Galactica>] by allowing effective \b[<#mindmeld>[mind melding]]/\b[<#collective intelligence>] via the \b[<topics feature>].
 
 \Image[logo.svg]
 {height=150}
@@ -57,6 +57,12 @@ firefox out/html/index.html
 
   \Image[feature/local-editing/bigb-publish-to-web-or-static-editor-logos.svg]
   {title=With OurBigBook you can <publish> local <OurBigBook markup>[lightweight markup files] to either <OurBigBook Web> or as a <static website>}
+  {description=
+  For example, both of the following pages:
+  * https://cirosantilli.com (static)
+  * https://ourbigbook.com/cirosantilli (dynamic)
+  are generated from the exact same source code at: https://github.com/cirosantilli/cirosantilli.github.io[].
+  }
   {provider=github}
   {height=600}
   {disambiguate=intro}
@@ -66,6 +72,7 @@ firefox out/html/index.html
   {provider=github}
   {height=1100}
   {disambiguate=intro}
+  {border}
 
   \Image[feature/web-editor/cirosantilli-derivative.png]
   {title=<Web editor>}
@@ -102,6 +109,13 @@ firefox out/html/index.html
   {border}
   {disambiguate=intro}
 ]
+
+\Image[github_com_ourbigbook_ourbigbook.png]
+{title=OurBigBook GitHub repository}
+{source=https://github.com/ourbigbook/ourbigbook}
+{description=Everything that the <OurBigBook Project> does is open source.}
+{provider=github}
+{height=1000}
 
 \b[Key links]:
 * https://OurBigBook.com[]: reference <OurBigBook Web> instance
@@ -9835,11 +9849,18 @@ Local tests are always on optimized PostgresQL. Remote tests always on powerful 
         * /wikibot: 90 - 100
         * /cirosantilli: 200 - 300
         * /barack-obama 65
-    * cirosantilli.com:
+    * cirosantilli.com: 100 - 200
     * ourbigbook.com
-      * /wikibot:
-      * /cirosantilli:
-      * /barack-obama:
+      * logged off:
+        * /wikibot: 180 - 300
+        * /cirosantilli: 300 - 400
+        * /cirosantilli/mathematics: 240 - 400
+        * /barack-obama: 140 -180
+      * logged in:
+        * /wikibot: 330 - 450
+        * /cirosantilli: 450 - 600
+        * /cirosantilli/mathematics: 350 - 500
+        * /barack-obama: 250 - 400
 * 8ea5ffa52d291350e9a5ddef92e4171d50a51dcc TTFB logged off:
   * local
     * /wikibot: 1200
@@ -10184,10 +10205,17 @@ VS Code is currently intended to be the best supported <todo/wysiwyg>[non-fully-
 
 The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[].
 
+\Image[feature/vscode/install.png]
+{title=<Visual Studio Code extension> installation}
+{provider=github}
+{height=750}
+{border}
+
 \Image[feature/vscode/tree.png]
 {title=<Visual Studio Code extension> tree navigation}
 {provider=github}
 {height=1100}
+{border}
 
 \Video[https://www.youtube.com/watch?v=0W8U2YtQ8fg]
 {title=OurBigBook <Visual Studio Code extension>}

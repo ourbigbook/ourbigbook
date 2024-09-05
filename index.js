@@ -271,9 +271,6 @@ class AstNode {
     if (!('in_literal' in context)) {
       context.in_literal = false;
     }
-    if (!('in_x_text' in context)) {
-      context.in_x_text = false;
-    }
     if (!('katex_macros' in context)) {
       context.katex_macros = {};
     }
@@ -7457,7 +7454,6 @@ function xHrefAttr(target_ast, context) {
  *         {string} inner: 'My favorite equation'
  */
 function xTextBase(ast, context, options={}) {
-  context = cloneAndSet(context, 'in_x_text', true)
   if  (!('addNumberDiv' in options)) {
     options.addNumberDiv = false;
   }

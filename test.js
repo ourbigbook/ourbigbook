@@ -2540,6 +2540,65 @@ assert_lib(
   }
 )
 
+// Forbidden nestings
+assert_lib_error('nest: a inside a gives an error explicit',
+  // Invalid HTML
+  '\\a[http://example2.com][\\a[http://example1.com][example1.com]{external}]{external}\n',
+  1,
+  // This points to the '\\' in the second \\a
+  25,
+)
+assert_lib_error('nest: a inside a gives an error implicit',
+  // Invalid HTML
+  '\\a[http://example2.com][http://example1.com]{external}\n',
+  1,
+  // This points to the 'h' in "http://example1.com"
+  25
+)
+assert_lib_error('nest: a inside H gives an error explicit',
+  // Invalid HTML because we put <h> contents inside <a> for self link
+  '\\H[1][\\a[http://example.com][my content]]\n',
+  1, 7
+)
+assert_lib_error('nest: a inside H gives an error implicit',
+  // Invalid HTML because we put <h> contents inside <a> for self link
+  '= http://example.com\n',
+  1, 3
+)
+assert_lib_error('nest: H inside H gives and error',
+  `= \\H[2]
+`,
+  1, 3, 'tmp.bigb',
+  { input_path_noext: 'tmp' }
+)
+assert_lib_error('nest: Video inside a gives an error',
+  // Invalid HTML, <video> is interactive when controls is given which we do.
+  // And is insane for YouTube videos too, so just forbid it as well.
+  '\\a[http://example2.com][\\Video[http://example1.com]]{external}\n',
+  1,
+  // This points to the '\\' of \\Video
+  25,
+)
+assert_lib_error('nest: Video inside H gives an error',
+  // Invalid HTML, <video> is interactive and we put <h> contents inside <a>.
+  '= a \\Video[http://example.com]\n',
+  1,
+  5,
+)
+assert_lib_error('nest: Image inside H gives an error',
+  // Valid HTML, but feels like a bad idea, especially for web, as it would generate
+  // extra requests on places like indices and ToC, where it is not expected.
+  '= a \\Image[http://example.com]\n',
+  1,
+  5,
+)
+assert_lib_error('nest: image inside H gives an error',
+  // Same rationale as for Image
+  '= a \\image[http://example.com]\n',
+  1,
+  5,
+)
+
 // Internal cross references
 // \x
 assert_lib_ast('x: cross reference simple',
@@ -5928,14 +5987,6 @@ assert_lib_error('header: empty x in header title fails gracefully',
 == a \\x
 `,
   3, 6
-)
-assert_lib_error('header: inside header fails gracefully',
-  `= \\H[2]
-`,
-  1, 3, 'tmp.bigb',
-  {
-    input_path_noext: 'tmp',
-  }
 )
 assert_lib_error('header: forbid_multiheader option forbids multiple headers',
   `= h1

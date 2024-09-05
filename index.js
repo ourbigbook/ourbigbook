@@ -268,6 +268,9 @@ class AstNode {
     if (!('ignore_errors' in context)) {
       context.ignore_errors = false;
     }
+    if (!('in_a' in context)) {
+      context.in_a = false;
+    }
     if (!('in_literal' in context)) {
       context.in_literal = false;
     }
@@ -2575,6 +2578,10 @@ function calculateScopeLength(parent_ast) {
   return 0;
 }
 
+function cannotPlaceXInYErrorMessage(x, y) {
+  return `cannot place \\${x} inside of \\${y}`
+}
+
 function capitalizeFirstLetter(string) {
   return string.charAt(0).toUpperCase() + string.slice(1);
 }
@@ -3796,7 +3803,11 @@ function getLinkHtml({
   if (extraReturns === undefined) {
     extraReturns = {}
   }
-  if (context.x_parents.size === 0) {
+  const in_a = context.in_a
+  if (
+    context.x_parents.size === 0 &&
+    !context.in_a
+  ) {
     if (attrs === undefined) {
       attrs = ''
     }
@@ -3816,10 +3827,18 @@ function getLinkHtml({
     } else {
       testData = ''
     }
-    return `<a${htmlAttr('href', href)}${attrs}${testData}>${content}${error}</a>`;
+    return `<a${htmlAttr('href', href)}${attrs}${testData}>${content}</a>${error}`;
   } else {
+    let errorMessage
+    if (in_a) {
+      const error = cannotPlaceXInYErrorMessage(ast.macro_name, in_a)
+      errorMessage = ' ' + errorMessageInOutput(error)
+      renderError(context, error, ast.source_location)
+    } else {
+      errorMessage = ''
+    }
     // Don't create a link if we are a child of another link, as that is invalid HTML.
-    return content;
+    return content + errorMessage
   }
 }
 
@@ -4280,12 +4299,12 @@ function idIsSuffix(suffix, full) {
   );
 }
 
-// @return [href: string, content: string ], both XSS safe.
-function linkGetHrefContent(ast, context) {
+// @return [href: string, content: string], both XSS safe.
+function linkGetHrefAndContent(ast, context) {
   const href = renderArg(ast.args.href, cloneAndSet(context, 'html_is_attr', true))
-  let content = renderArg(ast.args.content, context);
+  let content = renderArg(ast.args.content, context)
   if (content === '') {
-    content = renderArg(ast.args.href, context);
+    content = renderArg(ast.args.href, context)
     if (!context.id_conversion) {
       content = content.replace(/^https?:\/\//, '')
     }
@@ -4388,47 +4407,60 @@ function macroImageVideoBlockConvertFunction(ast, context) {
     src,
     is_url
   } = macroImageVideoResolveParamsWithSource(ast, context);
-  if (error_message !== undefined) {
-    return error_message;
-  }
-  if (source !== '') {
-    force_separator = true;
-    source = `<a${htmlAttr('href', source)}>Source</a>.`;
-  }
-  let alt_val;
-  const has_caption = (ast.id !== undefined) && captionNumberVisible(ast, context);
-  if (ast.args.alt === undefined) {
-    if (has_caption) {
-      alt_val = undefined;
+  const in_a = context.in_a
+  if (in_a) {
+    let errorMessage
+    if (in_a) {
+      const error = cannotPlaceXInYErrorMessage(ast.macro_name, in_a)
+      errorMessage = ' ' + errorMessageInOutput(error)
+      renderError(context, error, ast.source_location)
     } else {
-      alt_val = src;
+      errorMessage = ''
     }
+    return src + errorMessage
   } else {
-    alt_val = renderArg(ast.args.alt, context);
+    if (error_message !== undefined) {
+      return error_message;
+    }
+    if (source !== '') {
+      force_separator = true;
+      source = `<a${htmlAttr('href', source)}>Source</a>.`;
+    }
+    let alt_val;
+    const has_caption = (ast.id !== undefined) && captionNumberVisible(ast, context);
+    if (ast.args.alt === undefined) {
+      if (has_caption) {
+        alt_val = undefined;
+      } else {
+        alt_val = src;
+      }
+    } else {
+      alt_val = renderArg(ast.args.alt, context);
+    }
+    let alt;
+    if (alt_val === undefined) {
+      alt = '';
+    } else {
+      alt = htmlAttr('alt', htmlEscapeAttr(alt_val));
+    }
+    ret += context.macros[ast.macro_name].options.image_video_content_func({
+      alt,
+      ast,
+      context,
+      is_url,
+      media_provider_type,
+      relpath_prefix,
+      rendered_attrs,
+      src,
+    });
+    if (has_caption) {
+      const { full: title, inner, innerNoDiv } = xTextBase(ast, context, { addTitleDiv: true, href_prefix, force_separator })
+      const title_and_description = getTitleAndDescription({ title, description, source, inner, innerNoDiv })
+      ret += `<figcaption>${title_and_description}</figcaption>`;
+    }
+    ret += '</div></figure>';
+    return ret;
   }
-  let alt;
-  if (alt_val === undefined) {
-    alt = '';
-  } else {
-    alt = htmlAttr('alt', htmlEscapeAttr(alt_val));
-  }
-  ret += context.macros[ast.macro_name].options.image_video_content_func({
-    alt,
-    ast,
-    context,
-    is_url,
-    media_provider_type,
-    relpath_prefix,
-    rendered_attrs,
-    src,
-  });
-  if (has_caption) {
-    const { full: title, inner, innerNoDiv } = xTextBase(ast, context, { addTitleDiv: true, href_prefix, force_separator })
-    const title_and_description = getTitleAndDescription({ title, description, source, inner, innerNoDiv })
-    ret += `<figcaption>${title_and_description}</figcaption>`;
-  }
-  ret += '</div></figure>';
-  return ret;
 }
 
 /** Convert args such as tag= or \x[]{magic} to their final target ID. */
@@ -7454,6 +7486,7 @@ function xHrefAttr(target_ast, context) {
  *         {string} inner: 'My favorite equation'
  */
 function xTextBase(ast, context, options={}) {
+  context = cloneAndSet(context, 'in_x_text', true)
   if  (!('addNumberDiv' in options)) {
     options.addNumberDiv = false;
   }
@@ -8905,7 +8938,7 @@ const OUTPUT_FORMATS_LIST = [
       },
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
-          let [href, content] = linkGetHrefContent(ast, context);
+          let [href, content] = linkGetHrefAndContent(ast, cloneAndSet(context, 'in_a', Macro.LINK_MACRO_NAME))
           if (ast.validation_output.ref.boolean) {
             content = `${HTML_REF_MARKER}`;
           }
@@ -8946,7 +8979,7 @@ const OUTPUT_FORMATS_LIST = [
             // Previously was doing an infinite loop when rendering the parent header.
             // But not valid HTML, so I don't think it is worth allowing at all:
             // https://stackoverflow.com/questions/17363465/is-nesting-a-h2-tag-inside-another-header-with-h1-tag-semantically-wrong/71130770#71130770
-            const message = `cannot have a header inside another`;
+            const message = cannotPlaceXInYErrorMessage(Macro.HEADER_MACRO_NAME, Macro.HEADER_MACRO_NAME)
             renderError(context, message, ast.source_location);
             return errorMessageInOutput(message, context);
           }
@@ -9030,7 +9063,7 @@ const OUTPUT_FORMATS_LIST = [
             show_caption_prefix: false,
             style_full: true,
           };
-          const x_text_base_ret = xTextBase(ast, context, x_text_options);
+          const x_text_base_ret = xTextBase(ast, cloneAndSet(context, 'in_a', Macro.HEADER_MACRO_NAME), x_text_options);
           if (context.toplevel_output_path) {
             const rendered_outputs_entry = context.extra_returns.rendered_outputs[context.toplevel_output_path]
             if (
@@ -9454,12 +9487,25 @@ const OUTPUT_FORMATS_LIST = [
           let alt = htmlAttr('alt', htmlEscapeAttr(renderArg(alt_arg, context)));
           let rendered_attrs = htmlRenderAttrsId(ast, context, ['height', 'width']);
           let { error_message, media_provider_type, src } = macroImageVideoResolveParams(ast, context);
-          const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
-          let { html: imgHtml } = htmlImg({ alt, ast, context, external, inline: true, media_provider_type, rendered_attrs, src })
-          if (error_message) {
-            imgHtml += errorMessageInOutput(error_message, context)
+          const in_a = context.in_a
+          if (in_a) {
+            let errorMessage
+            if (in_a) {
+              const error = cannotPlaceXInYErrorMessage(ast.macro_name, in_a)
+              errorMessage = ' ' + errorMessageInOutput(error)
+              renderError(context, error, ast.source_location)
+            } else {
+              errorMessage = ''
+            }
+            return src + errorMessage
+          } else {
+            const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
+            let { html: imgHtml } = htmlImg({ alt, ast, context, external, inline: true, media_provider_type, rendered_attrs, src })
+            if (error_message) {
+              imgHtml += errorMessageInOutput(error_message, context)
+            }
+            return imgHtml
           }
-          return imgHtml
         },
         [Macro.INCLUDE_MACRO_NAME]: unconvertible,
         'JsCanvasDemo': function(ast, context) {
@@ -9875,7 +9921,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
       ext: 'id',
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
-          const [href, content] = linkGetHrefContent(ast, context);
+          const [href, content] = linkGetHrefAndContent(ast, context);
           return content;
         },
         'b': idConvertSimpleElem(),
@@ -10358,7 +10404,6 @@ function ourbigbookConvertArgs(ast, context, options={}) {
 function ourbigbookConvertSimpleElem(ast, context) {
   const ret = []
   ret.push(ESCAPE_CHAR + ast.macro_name)
-  const macro = context.macros[ast.macro_name]
   ourbigbookConvertArgs(ast, context, { ret })
   ret.push('\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context)))
   return ret.join('')

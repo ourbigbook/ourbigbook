@@ -105,7 +105,15 @@ firefox out/html/index.html
   Descendant pages can also show up as toplevel e.g.: https://ourbigbook.com/cirosantilli/chordate-subclade[]
   }
   {provider=github}
-  {height=2000}
+  {height=2700}
+  {border}
+  {disambiguate=intro}
+
+  \Image[cirosantilli.com/chordate/main.png]
+  {title=And this is how the same article looks on the static website}
+  {description=Live URL: https://cirosantilli.com/taxonomy#chordate}
+  {provider=github}
+  {height=1700}
   {border}
   {disambiguate=intro}
 ]
@@ -8435,6 +8443,13 @@ Descendant pages can also show up as toplevel e.g.: https://ourbigbook.com/ciros
 }
 {provider=github}
 {height=2000}
+{border}
+
+\Image[cirosantilli.com/chordate/main.png]
+{title=And this is how the same article looks on the static website}
+{description=Live URL: https://cirosantilli.com/taxonomy#chordate}
+{provider=github}
+{height=1700}
 {border}
 
 \Video[https://www.youtube.com/watch?v=sX_D_5tCQgg]

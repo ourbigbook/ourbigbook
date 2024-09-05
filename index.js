@@ -4182,7 +4182,7 @@ function htmlImg({
     cls = ''
   }
   const href = ast.validation_output.link.given ? renderArg(ast.args.link, context) : src
-  let html = `<a${htmlAttr('href', href)}><img${htmlAttr('src', htmlEscapeAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${htmlClassesAttr(classes)}></a>`;
+  let html = `<a${htmlAttr('href', htmlEscapeAttr(href))}><img${htmlAttr('src', htmlEscapeAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${htmlClassesAttr(classes)}></a>`;
   if (!inline) {
     html = `<div class="float-wrap">${html}</div>`
   }
@@ -8344,7 +8344,7 @@ const DEFAULT_MACRO_LIST = [
         named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(IMAGE_INLINE_BLOCK_NAMED_ARGUMENTS),
         source_func: function (ast, context, src, media_provider_type, is_url) {
           if ('source' in ast.args) {
-            return renderArg(ast.args.source, context);
+            return renderArg(ast.args.source, cloneAndSet(context, 'html_is_attr', true))
           } else if (media_provider_type == 'wikimedia') {
             return macro_image_video_block_convert_function_wikimedia_source_url +
               context.macros[ast.macro_name].options.image_video_basename(src);
@@ -8781,7 +8781,7 @@ const DEFAULT_MACRO_LIST = [
             } else {
               start = '';
             }
-            return `<video${htmlAttr('src', src + start)}${rendered_attrs} preload="none" controls${alt}></video>${error}`;
+            return `<video${htmlAttr('src', htmlEscapeAttr(src + start))}${rendered_attrs} preload="none" controls${alt}></video>${error}`;
           }
         },
         named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(
@@ -8792,7 +8792,7 @@ const DEFAULT_MACRO_LIST = [
         ),
         source_func: function (ast, context, src, media_provider_type, is_url) {
           if ('source' in ast.args) {
-            return renderArg(ast.args.source, context);
+            return renderArg(ast.args.source, cloneAndSet(context, 'html_is_attr', true))
           } else if (media_provider_type === 'youtube') {
             if (is_url) {
               return htmlEscapeAttr(src);

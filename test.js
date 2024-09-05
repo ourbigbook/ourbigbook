@@ -1537,6 +1537,8 @@ assert_lib_ast('table without id, title, nor description does not increment the 
 )
 
 // Images.
+// \Image
+// \image
 assert_lib_ast('image: block simple',
   `ab
 
@@ -1544,11 +1546,11 @@ assert_lib_ast('image: block simple',
 
 gh
 `,
-[
-  a('P', [t('ab')]),
-  a('Image', undefined, {src: [t('cd')]}),
-  a('P', [t('gh')]),
-],
+  [
+    a('P', [t('ab')]),
+    a('Image', undefined, {src: [t('cd')]}),
+    a('P', [t('gh')]),
+  ],
   {
     filesystem: { cd: '' },
     assert_xpath_stdout: [
@@ -1563,11 +1565,11 @@ assert_lib_ast('image: inline simple',
 
 gh
 `,
-[
-  a('P', [t('ab')]),
-  a('P', [a('image', undefined, {src: [t('cd')]})] ),
-  a('P', [t('gh')]),
-],
+  [
+    a('P', [t('ab')]),
+    a('P', [a('image', undefined, {src: [t('cd')]})] ),
+    a('P', [t('gh')]),
+  ],
   {
     filesystem: { cd: '' },
     assert_xpath_stdout: [
@@ -1582,11 +1584,11 @@ assert_lib_ast('image: link argument',
 
 gh
 `,
-[
-  a('P', [t('ab')]),
-  a('Image', undefined, {src: [t('cd')]}),
-  a('P', [t('gh')]),
-],
+  [
+    a('P', [t('ab')]),
+    a('Image', undefined, {src: [t('cd')]}),
+    a('P', [t('gh')]),
+  ],
   {
     filesystem: { cd: '' },
     assert_xpath_stdout: [
@@ -1601,11 +1603,11 @@ assert_lib_ast('video: simple',
 
 gh
 `,
-[
-  a('P', [t('ab')]),
-  a('Video', undefined, {src: [t('cd')]}),
-  a('P', [t('gh')]),
-],
+  [
+    a('P', [t('ab')]),
+    a('Video', undefined, {src: [t('cd')]}),
+    a('P', [t('gh')]),
+  ],
   {
     filesystem: { cd: '' },
     assert_xpath_stdout: [
@@ -1615,12 +1617,12 @@ gh
 )
 assert_lib_ast('image: title',
   `\\Image[ab]{title=c d}`,
-[
-  a('Image', undefined, {
-    src: [t('ab')],
-    title: [t('c d')],
-  }),
-],
+  [
+    a('Image', undefined, {
+      src: [t('ab')],
+      title: [t('c d')],
+    }),
+  ],
   { filesystem: { ab: '' } },
 )
 assert_lib_error('image: unknown provider',
@@ -1922,6 +1924,54 @@ f()
       ],
     },
   }
+)
+assert_lib_ast('image: escapes HTML correctly block',
+  `\\Image["\\<]{source="\\<}`,
+  [
+    a('Image', undefined, {
+      source: [t('"<')],
+      src: [t('"<')],
+    }),
+  ],
+  {
+    filesystem: { '"<': '' },
+    assert_xpath_stdout: [
+      `//x:a[@href='${ourbigbook.RAW_PREFIX}/"<']//x:img[@src='${ourbigbook.RAW_PREFIX}/"<']`,
+      `//x:a[@href='"<' and text()='Source']`,
+    ],
+  },
+)
+assert_lib_ast('image: escapes HTML correctly inline',
+  `\\image["\\<]`,
+  [
+    a('P', [
+      a('image', undefined, {
+        src: [t('"<')],
+      }),
+    ])
+  ],
+  {
+    filesystem: { '"<': '' },
+    assert_xpath_stdout: [
+      `//x:a[@href='${ourbigbook.RAW_PREFIX}/"<']//x:img[@src='${ourbigbook.RAW_PREFIX}/"<']`,
+    ],
+  },
+)
+assert_lib_ast('video: escapes HTML correctly',
+  `\\Video["\\<]{source="\\<}`,
+  [
+    a('Video', undefined, {
+      source: [t('"<')],
+      src: [t('"<')],
+    }),
+  ],
+  {
+    filesystem: { '"<': '' },
+    assert_xpath_stdout: [
+      `//x:video[@src='${ourbigbook.RAW_PREFIX}/"<']`,
+      `//x:a[@href='"<' and text()='Source']`,
+    ],
+  },
 )
 
 // Escapes.

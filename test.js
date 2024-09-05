@@ -5139,7 +5139,7 @@ assert_lib_ast('header: title2 shows next to title',
   undefined,
   {
     assert_xpath_stdout: [
-      xpath_header(1, 'asdf', "x:a[@href='' and text()='Asdf (qwer, zxcv)']"),
+      xpath_header(1, 'asdf', "x:a[@href='' and text()='Asdf ']//x:span[text()='(qwer, zxcv)']"),
     ],
   }
 )

@@ -553,6 +553,7 @@ function boolToQueryVal(b) {
 }
 
 module.exports = {
+  ARTICLE_HASH_LIMIT_MAX: 10000,
   articleHash,
   boolToQueryVal,
   QUERY_TRUE_VAL,

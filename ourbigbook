@@ -21,7 +21,7 @@ const ourbigbook = require('ourbigbook');
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
-const { ARTICLE_HASH_MAX, articleHash, WebApi, read_include } = require('ourbigbook/web_api');
+const { ARTICLE_HASH_LIMIT_MAX, articleHash, WebApi, read_include } = require('ourbigbook/web_api');
 
 const DEFAULT_TEMPLATE_BASENAME = 'ourbigbook.liquid.html';
 const OURBIGBOOK_TEX_BASENAME = 'ourbigbook.tex';
@@ -2111,7 +2111,7 @@ if (cli.helpMacros) {
             webPathToArticle[article.path] = article
           }
           i += articles.length
-        } while (data.articles.length === ARTICLE_HASH_MAX)
+        } while (data.articles.length === ARTICLE_HASH_LIMIT_MAX)
       }
       const idToArticleMeta = {}
       const localArticles = await sequelizeWebArticle.findAll({ attributes: ['source', 'title', 'idid', 'inpath', 'parentId'] })

@@ -108,14 +108,21 @@ function getOrder(req, opts={}) {
 }
 
 function getLimitAndOffset(req, res, opts={}) {
+  let { defaultLimit, limitMax } = opts
+  if (limitMax === undefined) {
+    limitMax = config.articleLimitMax
+  }
+  if (defaultLimit === undefined) {
+    defaultLimit = limitMax
+  }
   return [
     validateParam(req.query, 'limit', {
       typecast: front.typecastInteger,
       validators: [
         front.isNonNegativeInteger,
-        front.isSmallerOrEqualTo(config.articleLimitMax),
+        front.isSmallerOrEqualTo(limitMax),
       ],
-      defaultValue: opts.defaultLimit !== undefined ? opts.defaultLimit : config.articleLimit
+      defaultValue: defaultLimit
     }),
     validateParam(req.query, 'offset', {
       typecast: front.typecastInteger,

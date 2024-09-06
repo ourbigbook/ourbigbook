@@ -2,6 +2,7 @@ const router = require('express').Router()
 const Op = require('sequelize').Op
 
 const ourbigbook = require('ourbigbook')
+const webApi = require('ourbigbook/web_api')
 
 const auth = require('../auth')
 const { cant } = require('../front/cant')
@@ -91,7 +92,9 @@ router.get('/redirects', auth.optional, async function(req, res, next) {
 router.get('/hash', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
-    const [limit, offset] = lib.getLimitAndOffset(req, res, { defaultLimit: 10000 })
+    const [limit, offset] = lib.getLimitAndOffset(req, res, {
+      limitMax: webApi.ARTICLE_HASH_LIMIT_MAX,
+    })
     const authorInclude = {
       model: sequelize.models.User,
       as: 'author',

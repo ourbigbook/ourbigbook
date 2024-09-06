@@ -4182,7 +4182,10 @@ function htmlImg({
     cls = ''
   }
   const href = ast.validation_output.link.given ? renderArg(ast.args.link, context) : src
-  let html = `<a${htmlAttr('href', htmlEscapeAttr(href))}><img${htmlAttr('src', htmlEscapeAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${htmlClassesAttr(classes)}></a>`;
+  let html = `<img${htmlAttr('src', htmlEscapeAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${htmlClassesAttr(classes)}>`
+  if (!context.in_a) {
+    html = `<a${htmlAttr('href', htmlEscapeAttr(href))}>${html}</a>`
+  }
   if (!inline) {
     html = `<div class="float-wrap">${html}</div>`
   }
@@ -9487,17 +9490,11 @@ const OUTPUT_FORMATS_LIST = [
           let alt = htmlAttr('alt', htmlEscapeAttr(renderArg(alt_arg, context)));
           let rendered_attrs = htmlRenderAttrsId(ast, context, ['height', 'width']);
           let { error_message, media_provider_type, src } = macroImageVideoResolveParams(ast, context);
-          const in_a = context.in_a
-          if (in_a) {
+          if (context.in_header) {
             let errorMessage
-            if (in_a) {
-              const error = cannotPlaceXInYErrorMessage(ast.macro_name, in_a)
-              errorMessage = ' ' + errorMessageInOutput(error)
-              renderError(context, error, ast.source_location)
-            } else {
-              errorMessage = ''
-            }
-            return src + errorMessage
+            const error = cannotPlaceXInYErrorMessage(ast.macro_name, Macro.HEADER_MACRO_NAME)
+            renderError(context, error, ast.source_location)
+            return src + ' ' + errorMessageInOutput(error)
           } else {
             const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
             let { html: imgHtml } = htmlImg({ alt, ast, context, external, inline: true, media_provider_type, rendered_attrs, src })

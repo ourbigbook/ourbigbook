@@ -2635,6 +2635,27 @@ assert_lib_error('nest: Video inside H gives an error',
   1,
   5,
 )
+assert_lib_error('nest: Image inside a gives an error',
+  // This could be allowed, but then we'd need to worry about not creating sublinks on
+  // all of: link to image, {source=, {link= so we're just blocking it for now as there isn't
+  // much of a use case, especially given that {link already exists.
+  `\\a[http://mylink.com][\\Image[http://myimg.com]]`,
+  1,
+  // Points to '\\' in '\\Image'
+  23
+)
+assert_lib_ast('nest: image inside a is allowed and does not create nested a',
+  `\\a[http://mylink.com][\\image[http://myimg.com]]`,
+  undefined,
+  {
+    assert_xpath_stdout: [
+      `//x:a[@href='http://mylink.com']//x:img[@src='http://myimg.com']`,
+    ],
+    assert_not_xpath_stdout: [
+      `//x:a[@href='http://myimg.com']`,
+    ],
+  },
+)
 assert_lib_error('nest: Image inside H gives an error',
   // Valid HTML, but feels like a bad idea, especially for web, as it would generate
   // extra requests on places like indices and ToC, where it is not expected.

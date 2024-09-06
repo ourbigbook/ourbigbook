@@ -1577,7 +1577,6 @@ if (cli.helpMacros) {
     }
     fs.writeFileSync(path.join(outdir, '.gitignore'), gitignore_new);
 
-    const new_ourbigbook_json = {};
     let title = 'Ourbigbook Template';
     let multifile
     if (generate === 'default') {
@@ -1600,10 +1599,13 @@ if (cli.helpMacros) {
       fs.copyFileSync(ourbigbook_nodejs.LOGO_PATH, path.join(outdir, ourbigbook_nodejs.LOGO_BASENAME));
     }
 
-    if (new_ourbigbook_json !== {}) {
-      fs.writeFileSync(path.join(outdir, ourbigbook.OURBIGBOOK_JSON_BASENAME),
-        JSON.stringify(new_ourbigbook_json, null, 2) + '\n');
-    }
+    fs.writeFileSync(
+      path.join(
+        outdir,
+        ourbigbook.OURBIGBOOK_JSON_BASENAME
+      ),
+      JSON.stringify(new_ourbigbook_json, null, 2) + '\n'
+    )
     process.exit(0)
   }
   let tmpdir, renderType

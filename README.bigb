@@ -93,7 +93,42 @@ firefox out/html/index.html
   {title=OurBigBook <Visual Studio Code extension>}
   {disambiguate=intro}
   {height=600}
-* \b[infinitely deep table of contents]: with our <dynamic article tree> feature, you can have infinitely deep table of contents. On <OurBigBook Web>, every header can be the toplevel header for better SEO and user experience e.g. both the following pages show all their ancestors:
+* \Image[feature/x/hilbert-space-arrow.png]
+  {title=<Internal cross file reference>}
+  {provider=github}
+  {height=571}
+  {border}
+  {disambiguate=intro}
+  {description=
+  <OurBigBook> supports <internal cross file references> to clean IDs that don't depend on either:
+  * source code file paths
+  * <table of contents> tree position
+  For example, in this screenshot, we are able to link simply from the file:
+  ``
+  quantum-mechanics.bigb
+  ``
+  with:
+  ``
+  <Hilbert space>
+  ``
+  to the <header>:
+  ``
+  = Hilbert space
+  ``
+  present in another file:
+  ``
+  calculus.bigb
+  ``
+  without specifying:
+  * the source code path `calculus.bigb`
+  * the full tree position: `Mathematics` \> `Area of mathematic`s \> `Calculus` \> `Hilbert space`
+  This means that you can freely change the location of headers or the tree structure and your links will still work.
+
+  <OurBigBook> also automatically checks for broken links every time you build, so you will never have a broken link again.
+  }
+* \b[infinitely deep table of contents]: never again be limited to only 6 levels of HTML `h6` legacy limitations! With <OurBigBook>, the sky is the limit!
+
+  Furthermore, with our <dynamic article tree> of <OurBigBook Web>, every header can be the toplevel header for better SEO and user experience e.g. both the following pages show all their ancestors:
   * https://ourbigbook.com/cirosantilli/chordate
   * https://ourbigbook.com/cirosantilli/chordate-subclade
 
@@ -4613,6 +4648,12 @@ A closely related limitation is the simplistic approach to <\x id output format>
 
 = Internal cross file reference
 {synonym}
+
+\Image[feature/x/hilbert-space-arrow.png]
+{title=<Internal cross file reference>}
+{provider=github}
+{height=571}
+{border}
 
 Reference to the first header of another file:
 \OurBigBookExample[[\x[not-readme\]]]

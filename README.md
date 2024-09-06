@@ -22,6 +22,10 @@ Screenshot of the [topics feature](https://docs.ourbigbook.com/#ourbigbook-web-t
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/topics/derivative.png)
 
+https://docs.ourbigbook.com/#cross-file-reference[Internal cross file references] done right:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png)
+
 You can [publish your local lightweight markup files either to OurBigBook.com or as a static website on your own domain of choice](https://docs.ourbigbook.com/#publish-your-content):
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/local-editing/bigb-publish-to-web-or-static-editor-logos.svg)

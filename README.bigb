@@ -125,6 +125,12 @@ firefox out/html/index.html
   This means that you can freely change the location of headers or the tree structure and your links will still work.
 
   <OurBigBook> also automatically checks for broken links every time you build, so you will never have a broken link again.
+
+  Live output URLs:
+  * https://cirosantilli.com/calculus#hilbert-space
+  * https://cirosantilli.com/quantum-mechanics#schrodinger-picture
+  * https://ourbigbook.com/cirosantilli/hilbert-space
+  * https://ourbigbook.com/cirosantilli/schrodinger-picture
   }
 * \b[infinitely deep table of contents]: never again be limited to only 6 levels of HTML `h6` legacy limitations! With <OurBigBook>, the sky is the limit!
 

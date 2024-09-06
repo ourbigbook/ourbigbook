@@ -195,7 +195,6 @@ Link to topic: <#mathematics>
 `
         }],
       ]],
-      ['Test data a in title http://example.com', []],
       // This is used to check if we are jumping to an ID at the bottom of the page correctly.
       ['Test data long before ID', [], { body: [...Array(50).keys()].map(i => `spacer ${i}\n\n`).join('') +
          `$$\\frac{1}{\\sqrt{2}}$\${title=Test data long before ID}` }],

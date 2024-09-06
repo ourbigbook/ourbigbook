@@ -22,7 +22,7 @@ Screenshot of the [topics feature](https://docs.ourbigbook.com/#ourbigbook-web-t
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/topics/derivative.png)
 
-https://docs.ourbigbook.com/#cross-file-reference[Internal cross file references] done right:
+[Internal cross file references](https://docs.ourbigbook.com/#cross-file-reference) done right:
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png)
 
@@ -30,16 +30,16 @@ You can [publish your local lightweight markup files either to OurBigBook.com or
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/local-editing/bigb-publish-to-web-or-static-editor-logos.svg)
 
-You can edit locally with our Visual Studio Code extension:
+You can edit locally with our [Visual Studio Code extension](https://docs.ourbigbook.com/#visual-studio-code):
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/vscode/install.png)
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/vscode/tree.png)
 
-You can also edit directly on OurBigBook.com:
+You can also edit directly on OurBigBook.com with the [Web Editor](https://docs.ourbigbook.com#web-editor):
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-editor/cirosantilli-derivative.png)
 
-Experience infinitely deep tables of contents:
+Experience infinitely deep [tables of contents](https://docs.ourbigbook.com/#table-of-contents):
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/dynamic-article-tree/demo.png)

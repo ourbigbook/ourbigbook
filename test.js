@@ -6347,9 +6347,8 @@ cc
     ],
   },
 )
-
 // lint h-parent
-assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal parent and no includes',
+assert_lib_stdin('header: parent works with ourbigbook.json lint h-parent equal parent and no includes',
   `= 1
 
 = 2
@@ -6357,7 +6356,7 @@ assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal p
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
 )
-assert_lib_error('header number fails with ourbigbook.json lint h-parent = parent',
+assert_lib_error('header: number fails with ourbigbook.json lint h-parent = parent',
   `= 1
 
 == 2
@@ -6365,14 +6364,14 @@ assert_lib_error('header number fails with ourbigbook.json lint h-parent = paren
   3, 1, undefined,
   { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'parent', } } } }
 )
-assert_lib_stdin('header number works with ourbigbook.json lint h-parent = number',
+assert_lib_stdin('header: number works with ourbigbook.json lint h-parent = number',
   `= 1
 
 == 2
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
 )
-assert_lib_error('header parent fails with ourbigbook.json lint h-parent = number',
+assert_lib_error('header: parent fails with ourbigbook.json lint h-parent = number',
   `= 1
 
 = 2
@@ -6381,7 +6380,7 @@ assert_lib_error('header parent fails with ourbigbook.json lint h-parent = numbe
   3, 1, undefined,
   { convert_opts: { ourbigbook_json: { lint: { 'h-parent': 'number', } } } }
 )
-assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal parent and includes with parent',
+assert_lib_stdin('header: parent works with ourbigbook.json lint h-parent equal parent and includes with parent',
   `= 1
 
 = 2
@@ -6396,7 +6395,7 @@ assert_lib_stdin('header parent works with ourbigbook.json lint h-parent equal p
     }
   }
 )
-assert_lib_error('header parent fails with ourbigbook.json lint h-parent equal parent and includes with number',
+assert_lib_error('header: parent fails with ourbigbook.json lint h-parent equal parent and includes with number',
   `= 1
 
 = 2
@@ -6413,7 +6412,7 @@ assert_lib_error('header parent fails with ourbigbook.json lint h-parent equal p
   }
 )
 // lint h-tag
-assert_lib_error('lint h-tag child failure',
+assert_lib_error('header: lint: h-tag child failure',
   `= 1
 {tag=2}
 
@@ -6442,13 +6441,32 @@ assert_lib_error('lint h-tag tag failure',
   2, 1, undefined,
   { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
 )
-assert_lib_stdin('lint h-tag tag pass',
+assert_lib_stdin('header: lint: h-tag tag pass',
   `= 1
 {tag=2}
 
 == 2
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
+)
+assert_lib_error('header: lint: has to be direct child of toplevel',
+  // While not stricly necessary for static convert, it leads to blowup only in web.
+  // It also leads to hard to understand issues. Just prevent this insanity one and for all.
+  //
+  // We add the "asdf" to the quote otherwise there's a bug where it converts it down to:
+  //
+  // \Q[== h2]
+  //
+  // and it stops being a header.
+  `= Index
+
+\\Q[
+asdf
+
+== h2
+]
+`,
+  6, 1
 )
 
 // Word counts.

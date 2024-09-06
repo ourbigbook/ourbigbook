@@ -5133,6 +5133,13 @@ async function parse(tokens, options, context, extra_returns={}) {
     } else {
       // Not OurBigBookExample.
       if (macro_name === Macro.HEADER_MACRO_NAME) {
+        if (ast.parent_ast.macro_name !== Macro.TOPLEVEL_MACRO_NAME) {
+          parseError(
+            state,
+            `headers (\\${Macro.HEADER_MACRO_NAME}) must be directly at document toplevel, not as children of other elements. Parent was instead: \\${ast.parent_ast.macro_name}`,
+            ast.source_location,
+          )
+        }
         if (is_first_header) {
           ast.id = context.toplevel_id
           if (options.toplevel_has_scope) {

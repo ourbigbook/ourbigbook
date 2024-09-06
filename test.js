@@ -1926,7 +1926,7 @@ f()
   }
 )
 assert_lib_ast('image: escapes HTML correctly block',
-  `\\Image["\\<]{source="\\<}`,
+  `\\Image["\\<]["\\<]{source="\\<}`,
   [
     a('Image', undefined, {
       source: [t('"<')],
@@ -1936,7 +1936,7 @@ assert_lib_ast('image: escapes HTML correctly block',
   {
     filesystem: { '"<': '' },
     assert_xpath_stdout: [
-      `//x:a[@href='${ourbigbook.RAW_PREFIX}/"<']//x:img[@src='${ourbigbook.RAW_PREFIX}/"<']`,
+      `//x:a[@href='${ourbigbook.RAW_PREFIX}/"<']//x:img[@src='${ourbigbook.RAW_PREFIX}/"<' and @alt='"<']`,
       `//x:a[@href='"<' and text()='Source']`,
     ],
   },
@@ -2429,7 +2429,7 @@ assert_lib_ast('link: with multiple paragraphs',
     ]),
   ]
 )
-assert_lib_ast('xss: content and href',
+assert_lib_ast('link: xss: content and href',
   '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{external}\n',
   undefined,
   {

@@ -4141,6 +4141,7 @@ function htmlEscapeContext(context, str) {
 
 /** Image handling common to both inline and block images. */
 function htmlImg({
+  // string, e.g. `alt="something"`, escaped
   alt,
   ast,
   context,
@@ -4149,6 +4150,7 @@ function htmlImg({
   media_provider_type,
   rendered_attrs,
   relpath_prefix,
+  // string, unescaped
   src,
 }) {
   let error
@@ -4438,7 +4440,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
         alt_val = src;
       }
     } else {
-      alt_val = renderArg(ast.args.alt, context);
+      alt_val = renderArgNoescape(ast.args.alt, context)
     }
     let alt;
     if (alt_val === undefined) {

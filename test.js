@@ -1957,6 +1957,38 @@ assert_lib_ast('image: escapes HTML correctly inline',
     ],
   },
 )
+assert_lib_ast('image: escapes link argument HTML correctly block',
+  `\\Image[http://example.com]{link="\\<}`,
+  [
+    a('Image', undefined, {
+      link: [t('"<')],
+      src: [t('http://example.com')],
+    }),
+  ],
+  {
+    filesystem: { '"<': '' },
+    assert_xpath_stdout: [
+      `//x:a[@href='"<']//x:img[@src='http://example.com']`,
+    ],
+  },
+)
+assert_lib_ast('image: escapes link argument HTML correctly inline',
+  `\\image[http://example.com]{link="\\<}`,
+  [
+    a('P', [
+      a('image', undefined, {
+        link: [t('"<')],
+        src: [t('http://example.com')],
+      }),
+    ])
+  ],
+  {
+    filesystem: { '"<': '' },
+    assert_xpath_stdout: [
+      `//x:a[@href='"<']//x:img[@src='http://example.com']`,
+    ],
+  },
+)
 assert_lib_ast('video: escapes HTML correctly',
   `\\Video["\\<]{source="\\<}`,
   [

@@ -4181,7 +4181,7 @@ function htmlImg({
   } else {
     cls = ''
   }
-  const href = ast.validation_output.link.given ? renderArg(ast.args.link, context) : src
+  const href = ast.validation_output.link.given ? renderArgNoescape(ast.args.link, context) : src
   let html = `<img${htmlAttr('src', htmlEscapeAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${htmlClassesAttr(classes)}>`
   if (!context.in_a) {
     html = `<a${htmlAttr('href', htmlEscapeAttr(href))}>${html}</a>`

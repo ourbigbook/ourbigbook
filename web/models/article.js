@@ -139,8 +139,11 @@ module.exports = (sequelize) => {
         { fields: ['list', 'followerCount', 'createdAt'], },
         // Top articles in a given topic.
         { fields: ['list', 'topicId', 'score', 'createdAt'], },
-        { fields: ['slug'], },
+        // Top articles in the entire site.
         { fields: ['list', 'score', 'createdAt'], },
+
+        // Find a topic by slug.
+        { fields: ['slug'], },
 
         // Per author searches.
         { fields: ['authorId', 'list', 'nestedSetIndex'], },
@@ -153,6 +156,8 @@ module.exports = (sequelize) => {
         { fields: ['authorId', 'list', 'score', 'createdAt'], },
         { fields: ['authorId', 'list', 'followerCount', 'createdAt'], },
         { fields: ['authorId', 'list', 'issueCount', 'createdAt'], },
+        // Alphabetic list of articles by user.
+        { fields: ['authorId', 'list', 'topicId'], },
         // Does the logged in user have their own version of this topic?
         { fields: ['authorId', 'topicId'], },
 
@@ -1753,6 +1758,7 @@ LIMIT ${limit}` : ''}
     'score': undefined,
     'follower-count': 'followerCount',
     'issues': 'issueCount',
+    'id': 'topicId',
   }
 
   return Article

@@ -249,6 +249,7 @@ WHERE
 
   Topic.ALLOWED_SORTS_EXTRA = {
     'article-count': 'articleCount',
+    'id': 'topicId',
   }
   Topic.DEFAULT_SORT = 'articleCount'
 

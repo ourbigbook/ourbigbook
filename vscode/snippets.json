@@ -23,10 +23,16 @@
             "{description=$0}"
         ],
     },
+    "Disambiguate named argument": {
+        "prefix": "{di",
+        "body": [
+            "{disambiguate=$0}"
+        ],
+    },
     "Full named argument": {
         "prefix": "{f",
         "body": [
-            "{description=$0}"
+            "{full}"
         ],
     },
     "Height named argument": {

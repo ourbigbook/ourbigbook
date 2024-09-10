@@ -464,113 +464,118 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   }
   let showFinish = false
   let message_prefix
-  const ignore_convert_path = do_ignore_convert_path(input_path_relative_to_ourbigbook_json, nonOurbigbookOptions.ignore_convert_path_regexps, nonOurbigbookOptions.dont_ignore_convert_path_regexps)
-  if (
-    isbigb &&
-    !ignore_convert_path
-  ) {
-    showFinish = true
-    msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
-    message_prefix = msg_ret.message_prefix
-    let newNonOurbigbookOptions = { ...nonOurbigbookOptions }
-    let input = fs.readFileSync(full_path, newNonOurbigbookOptions.encoding);
-    let input_path_basename_noext = input_path_parse.name;
-    if (input_path_relative_to_ourbigbook_json) {
-      const file_row_type = nonOurbigbookOptions.file_rows_dict[nonOurbigbookOptions.renderType]
-      if (
-        // Can not be present on sigle file (non directory) conversion. In that case we always convert.
-        file_row_type
-      ) {
-        const file_row = file_row_type[input_path_relative_to_ourbigbook_json]
+  const ignore_convert_path = do_ignore_convert_path(
+    input_path_relative_to_ourbigbook_json,
+    nonOurbigbookOptions.ignore_convert_path_regexps,
+    nonOurbigbookOptions.dont_ignore_convert_path_regexps
+  )
+  if (isbigb) {
+    if (!ignore_convert_path) {
+      showFinish = true
+      msg_ret = convert_path_to_file_print_starting(ourbigbook_options, input_path)
+      message_prefix = msg_ret.message_prefix
+      let newNonOurbigbookOptions = { ...nonOurbigbookOptions }
+      let input = fs.readFileSync(full_path, newNonOurbigbookOptions.encoding);
+      let input_path_basename_noext = input_path_parse.name;
+      if (input_path_relative_to_ourbigbook_json) {
+        const file_row_type = nonOurbigbookOptions.file_rows_dict[nonOurbigbookOptions.renderType]
         if (
-          // File has previously been rendered.
-          file_row !== undefined
+          // Can not be present on sigle file (non directory) conversion. In that case we always convert.
+          file_row_type
         ) {
-          const file_row_render = file_row.Render
+          const file_row = file_row_type[input_path_relative_to_ourbigbook_json]
           if (
-            ourbigbook_options.render
+            // File has previously been rendered.
+            file_row !== undefined
           ) {
-            if (file_row_render) {
-              skip = !nonOurbigbookOptions.cli.forceRender &&
-                !file_row_render.outdated &&
-                // TODO add a Render magic format for this use case. Or maybe
-                // start tracking output paths as well in Render to also cover -o.
-                // But lazy now, just never use timestamp for --format-source.
-                !nonOurbigbookOptions.cli.formatSource
+            const file_row_render = file_row.Render
+            if (
+              ourbigbook_options.render
+            ) {
+              if (file_row_render) {
+                skip = !nonOurbigbookOptions.cli.forceRender &&
+                  !file_row_render.outdated &&
+                  // TODO add a Render magic format for this use case. Or maybe
+                  // start tracking output paths as well in Render to also cover -o.
+                  // But lazy now, just never use timestamp for --format-source.
+                  !nonOurbigbookOptions.cli.formatSource
+              }
+            } else {
+              skip = file_row.last_parse !== null && file_row.last_parse > fs.statSync(input_path).mtime
+              if (!skip && file_row_render) {
+                // We are going to update the parse, so mark as outdated here.
+                // This way we don't need to fetch from DB again.
+                file_row_render.outdated = true
+              }
             }
-          } else {
-            skip = file_row.last_parse !== null && file_row.last_parse > fs.statSync(input_path).mtime
-            if (!skip && file_row_render) {
-              // We are going to update the parse, so mark as outdated here.
-              // This way we don't need to fetch from DB again.
-              file_row_render.outdated = true
+          }
+        }
+      }
+      if (!skip) {
+        newNonOurbigbookOptions.input_path = input_path_relative_to_ourbigbook_json;
+
+        // Convert.
+        output = await convert_input(input, new_options, newNonOurbigbookOptions);
+        if (newNonOurbigbookOptions.had_error) {
+          nonOurbigbookOptions.had_error = true;
+        }
+        const extra_returns = newNonOurbigbookOptions.extra_returns
+        if (
+          nonOurbigbookOptions.cli.formatSource &&
+          ourbigbook_options.render
+        ) {
+          if (!newNonOurbigbookOptions.had_error) {
+            fs.writeFileSync(full_path, output);
+          }
+          first_output_path = full_path
+        } else {
+          // Write out the output the output files.
+          for (const outpath in extra_returns.rendered_outputs) {
+            const output_path = path.join(nonOurbigbookOptions.outdir, outpath);
+            if (output_path === full_path) {
+              cli_error(`output path equals input path: "${outpath}"`);
             }
+            if (first_output_path === undefined) {
+              first_output_path = output_path
+            }
+            fs.mkdirSync(path.dirname(output_path), { recursive: true });
+            fs.writeFileSync(output_path, extra_returns.rendered_outputs[outpath].full);
           }
         }
-      }
-    }
-    if (!skip) {
-      newNonOurbigbookOptions.input_path = input_path_relative_to_ourbigbook_json;
-
-      // Convert.
-      output = await convert_input(input, new_options, newNonOurbigbookOptions);
-      if (newNonOurbigbookOptions.had_error) {
-        nonOurbigbookOptions.had_error = true;
-      }
-      const extra_returns = newNonOurbigbookOptions.extra_returns
-      if (
-        nonOurbigbookOptions.cli.formatSource &&
-        ourbigbook_options.render
-      ) {
-        if (!newNonOurbigbookOptions.had_error) {
-          fs.writeFileSync(full_path, output);
-        }
-        first_output_path = full_path
-      } else {
-        // Write out the output the output files.
-        for (const outpath in extra_returns.rendered_outputs) {
-          const output_path = path.join(nonOurbigbookOptions.outdir, outpath);
-          if (output_path === full_path) {
-            cli_error(`output path equals input path: "${outpath}"`);
+        if (
+          new_options.split_headers &&
+          ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
+        ) {
+          for (const header_ast of extra_returns.context.synonym_headers) {
+            const new_options_redir = { ...new_options }
+            new_options_redir.db_provider = extra_returns.context.db_provider;
+            await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, nonOurbigbookOptions.outdir);
           }
-          if (first_output_path === undefined) {
-            first_output_path = output_path
-          }
-          fs.mkdirSync(path.dirname(output_path), { recursive: true });
-          fs.writeFileSync(output_path, extra_returns.rendered_outputs[outpath].full);
+        }
+
+        const context = extra_returns.context;
+        if (nonOurbigbookOptions.log.headers) {
+          console.error(context.header_tree.toString());
+        }
+
+        // Update the Sqlite databse with results from the conversion.
+        ourbigbook.perfPrint(context, 'convert_path_pre_sqlite')
+        if ('sequelize' in nonOurbigbookOptions) {
+          await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
+            extra_returns,
+            db_provider: new_options.db_provider,
+            had_error: nonOurbigbookOptions.had_error,
+            is_render_after_extract: nonOurbigbookOptions.is_render_after_extract,
+            nonOurbigbookOptions,
+            renderType: nonOurbigbookOptions.renderType,
+            path: input_path_relative_to_ourbigbook_json,
+            render: ourbigbook_options.render,
+            sequelize: nonOurbigbookOptions.sequelize,
+          })
         }
       }
-      if (
-        new_options.split_headers &&
-        ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
-      ) {
-        for (const header_ast of extra_returns.context.synonym_headers) {
-          const new_options_redir = { ...new_options }
-          new_options_redir.db_provider = extra_returns.context.db_provider;
-          await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, nonOurbigbookOptions.outdir);
-        }
-      }
-
-      const context = extra_returns.context;
-      if (nonOurbigbookOptions.log.headers) {
-        console.error(context.header_tree.toString());
-      }
-
-      // Update the Sqlite databse with results from the conversion.
-      ourbigbook.perfPrint(context, 'convert_path_pre_sqlite')
-      if ('sequelize' in nonOurbigbookOptions) {
-        await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
-          extra_returns,
-          db_provider: new_options.db_provider,
-          had_error: nonOurbigbookOptions.had_error,
-          is_render_after_extract: nonOurbigbookOptions.is_render_after_extract,
-          nonOurbigbookOptions,
-          renderType: nonOurbigbookOptions.renderType,
-          path: input_path_relative_to_ourbigbook_json,
-          render: ourbigbook_options.render,
-          sequelize: nonOurbigbookOptions.sequelize,
-        })
-      }
+    } else {
+      console.log(`ignoreConvert: ${input_path_relative_to_ourbigbook_json}`)
     }
   }
   if (

@@ -1604,7 +1604,7 @@ if (cli.helpMacros) {
         outdir,
         ourbigbook.OURBIGBOOK_JSON_BASENAME
       ),
-      JSON.stringify(new_ourbigbook_json, null, 2) + '\n'
+      JSON.stringify({}, null, 2) + '\n'
     )
     process.exit(0)
   }

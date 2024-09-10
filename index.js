@@ -1437,6 +1437,7 @@ Macro.LIST_ITEM_MACRO_NAME = 'L';
 Macro.MATH_MACRO_NAME = 'm';
 Macro.PARAGRAPH_MACRO_NAME = 'P';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
+Macro.QUOTE_MACRO_NAME = 'Q'
 Macro.TABLE_MACRO_NAME = 'Table';
 Macro.TD_MACRO_NAME = 'Td';
 Macro.TH_MACRO_NAME = 'Th';
@@ -1552,7 +1553,7 @@ class Tokenizer {
     for (let done = 0; done < n; done++) {
       this.log_debug('consume');
       this.log_debug('this.i: ' + this.i);
-      this.log_debug('this.cur_c: ' + this.cur_c);
+      this.log_debug(`this.cur_c: '${this.cur_c}'`)
       this.log_debug();
       if (this.chars[this.i] === '\n') {
         this.source_location.line += 1;
@@ -1581,6 +1582,16 @@ class Tokenizer {
           this.consume();
         }
         new_list_level += 1;
+      }
+      if (this.list_level > new_list_level) {
+        // So that:
+        // ``
+        // > asdf
+        // {title=my title}
+        // ``
+        //
+        // creates a text node 'asdf' and not 'asdf\n'.
+        this.consume_optional_newline_before_close()
       }
       for (let i = 0; i < this.list_level - new_list_level; i++) {
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
@@ -1613,7 +1624,7 @@ class Tokenizer {
         )
       )
     ) {
-    this.log_debug();
+      this.log_debug();
       return this.consume();
     }
     return true;
@@ -1733,8 +1744,8 @@ class Tokenizer {
     while (!this.is_end()) {
       this.log_debug('tokenize loop');
       this.log_debug('this.i: ' + this.i);
-      this.log_debug('this.source_location: ' + this.source_location);
-      this.log_debug('this.cur_c: ' + this.cur_c);
+      this.log_debug(`this.source_location: ${this.source_location.line}:${this.source_location.column}`)
+      this.log_debug(`this.cur_c: '${this.cur_c}'`)
       if (this.in_insane_header && this.cur_c === '\n') {
         this.in_insane_header = false;
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
@@ -1945,7 +1956,7 @@ class Tokenizer {
           done = true
         }
 
-        // Insane lists and tables.
+        // Insane lists, tables and quotes.
         if (
           !done && (
             this.i === 0 ||
@@ -1970,6 +1981,7 @@ class Tokenizer {
             i += INSANE_LIST_INDENT.length;
             new_list_level += 1;
           }
+          this.log_debug(`new_list_level=${new_list_level}`);
           let insane_start_return = this.tokenize_insane_start(i);
           if (insane_start_return !== undefined) {
             const [insane_start, insane_start_length] = insane_start_return;
@@ -2043,7 +2055,7 @@ class Tokenizer {
   tokenize_func(f) {
     this.log_debug('tokenize_func');
     this.log_debug('this.i: ' + this.i);
-    this.log_debug('this.cur_c: ' + this.cur_c);
+    this.log_debug(`this.cur_c: '${this.cur_c}'`)
     this.log_debug('');
     let value = '';
     while (f(this.cur_c)) {
@@ -5107,7 +5119,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         ),
         new AstNode(
           AstType.MACRO,
-          'Q',
+          Macro.QUOTE_MACRO_NAME,
           {
             content: await parseInclude(
               renderArgNoescape(ast.args.content, cloneAndSet(context, 'id_conversion', true)),
@@ -7752,6 +7764,9 @@ const INSANE_TH_START = '|| ';
 const INSANE_LIST_INDENT = '  ';
 const INSANE_HEADER_CHAR = '=';
 exports.INSANE_HEADER_CHAR = INSANE_HEADER_CHAR
+const INSANE_QUOTE_CHAR = '>'
+const INSANE_QUOTE_START = `${INSANE_QUOTE_CHAR} `
+exports.INSANE_QUOTE_START = INSANE_QUOTE_START
 const LOG_OPTIONS = new Set([
   'ast-inside',
   'ast-pp-simple',
@@ -7843,6 +7858,7 @@ const INSANE_LINK_END_CHARS = new Set([
 ]);
 const INSANE_STARTS_TO_MACRO_NAME = {
   [INSANE_LIST_START]:  Macro.LIST_ITEM_MACRO_NAME,
+  [INSANE_QUOTE_START]: Macro.QUOTE_MACRO_NAME,
   [INSANE_TD_START]: Macro.TD_MACRO_NAME,
   [INSANE_TH_START]: Macro.TH_MACRO_NAME,
 };
@@ -7863,6 +7879,7 @@ const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS = [
   '=',
   '\\|\\|',
   '\\|',
+  `\\${INSANE_QUOTE_CHAR}`,
 ].join('|')
 const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX = new RegExp(`(^|\n)(${MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS})`, 'g')
 const INSANE_STARTS_MACRO_NAMES = new Set(Object.values(INSANE_STARTS_TO_MACRO_NAME))
@@ -8521,7 +8538,7 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'Q',
+    Macro.QUOTE_MACRO_NAME,
     [
       new MacroArgument({
         name: 'content',
@@ -9555,7 +9572,7 @@ const OUTPUT_FORMATS_LIST = [
         'passthrough': function(ast, context) {
           return `<div class="float-wrap">${renderArgNoescape(ast.args.content, context)}</div>`
         },
-        'Q': htmlRenderSimpleElem('blockquote', { wrap: true }),
+        [Macro.QUOTE_MACRO_NAME]: htmlRenderSimpleElem('blockquote', { wrap: true }),
         'sub': htmlRenderSimpleElem('sub'),
         'sup': htmlRenderSimpleElem('sup'),
         [Macro.TABLE_MACRO_NAME]: function(ast, context) {
@@ -9951,7 +9968,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
         [Macro.PARAGRAPH_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) { return ast.text },
         'passthrough': idConvertSimpleElem(),
-        'Q': idConvertSimpleElem(),
+        [Macro.QUOTE_MACRO_NAME]: idConvertSimpleElem(),
         'sub': idConvertSimpleElem(),
         'sup': idConvertSimpleElem(),
         [Macro.TABLE_MACRO_NAME]: idConvertSimpleElem(),
@@ -10187,14 +10204,14 @@ function ourbigbookLi(marker) {
       }
       const content = renderArg(ast.args.content, context)
       const content_indent = content.replace(/\n(.)/g, '\n  $1')
-      const newline = ast.is_last_in_argument() ? '' : '\n'
       let marker_eff
       if (!content_indent) {
         marker_eff = marker.substring(0, marker.length - 1)
       } else {
         marker_eff = marker
       }
-      return `${newline_before}${marker_eff}${content_indent}${newline}`
+      const ret = `${newline_before}${marker_eff}${content_indent}`
+      return `${ret}${ret[ret.length - 1] === '\n' ? '' : '\n'}`
     }
   }
 }
@@ -10521,7 +10538,22 @@ OUTPUT_FORMATS_LIST.push(
             return ourbigbookConvertSimpleElem(ast, context)
           } else {
             const rendered_arg = renderArg(ast.args.content, context)
-            const newline = ast.is_last_in_argument() ? '' : '\n\n'
+            let newline
+            if (ast.is_last_in_argument()) {
+              newline = ''
+            } else {
+              // TODO this is horrible. We should actually try and properly calculate
+              // and normalize newlines of the other elements such that this is either
+              // always '\n' or always '\n\n'.
+              if (context.last_render[context.last_render.length - 1] === '\n') {
+                newline = '\n'
+              } else {
+                newline = '\n\n'
+              }
+            }
+            if (dolog && newline) {
+              console.log(`Macro.PARAGRAPH_MACRO_NAME newline: ${require('util').inspect(newline, { depth: null })}`)
+            }
             return `${rendered_arg}${newline}`
           }
         },
@@ -10534,7 +10566,7 @@ OUTPUT_FORMATS_LIST.push(
           }
         },
         'passthrough': ourbigbookConvertSimpleElem,
-        'Q': ourbigbookConvertSimpleElem,
+        [Macro.QUOTE_MACRO_NAME]: ourbigbookConvertSimpleElem,
         'sub': ourbigbookConvertSimpleElem,
         'sup': ourbigbookConvertSimpleElem,
         [Macro.TABLE_MACRO_NAME]: ourbigbookUl,

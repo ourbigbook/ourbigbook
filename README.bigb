@@ -3897,7 +3897,8 @@ And for an inline passthrough:
 {parent=Macro}
 {title2=`\Q`}
 
-With `q`:
+<Explicit macro>:
+
 \OurBigBookExample[[
 And so he said:
 
@@ -3906,6 +3907,18 @@ Something very smart
 
 And with multiple paragraphs.
 ]
+
+and it was great.
+]]
+
+<Implicit syntax>:
+
+\OurBigBookExample[[
+And so he said:
+
+> Something very smart
+
+  And with multiple paragraphs.
 
 and it was great.
 ]]
@@ -3919,7 +3932,7 @@ and it was great.
 
 See: <`description` argument>{full}.
 
-Example:
+Example with <explicit macro>:
 
 \OurBigBookExample[[
 See the: <quote Hamlet what we are>.
@@ -3929,19 +3942,38 @@ See the: <quote Hamlet what we are>.
 {description=This quote refers to human's inability to know their own potential, despite understanding their current abilities.}
 ]]
 
+Example with <implicit syntax>:
+
+\OurBigBookExample[[
+See the: <quote Hamlet what we are implicit>.
+
+> We know what we are, but not what we may be.
+{title=Hamlet what we are implicit}
+{description=This quote refers to human's inability to know their own potential, despite understanding their current abilities.}
+]]
+
 = `\Q` `title` argument
 {parent=`\Q` argument}
 {tag=`title` argument}
 
 See: <`title` argument>{full}.
 
-Example:
+Example with <explicit macro>:
 
 \OurBigBookExample[[
 See the: <quote Julius Caesar star>.
 
 \Q[The fault, dear Brutus, is not in our stars, but in ourselves.]
 {title=Julius Caesar star}
+]]
+
+Example with <implicit syntax>:
+
+\OurBigBookExample[[
+See the: <quote Julius Caesar star implicit>.
+
+> The fault, dear Brutus, is not in our stars, but in ourselves.
+{title=Julius Caesar star implicit}
 ]]
 
 = Table
@@ -5223,6 +5255,18 @@ For more details, see: <cross reference title inflection>{full}.
 {synonym}
 
 = Insanity
+{synonym}
+
+= Implicit
+{synonym}
+
+= Implicit syntax
+{synonym}
+
+= Explicit
+{synonym}
+
+= Explicit macro
 {synonym}
 
 Certain commonly used macros have insane macro shortcuts that do not start with backslash (`\`).

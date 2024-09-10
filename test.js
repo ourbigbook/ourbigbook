@@ -837,6 +837,7 @@ assert_lib_error('two newlines at the end of document are an error', 'p1\n\n', 1
 assert_lib_error('three newline at the end of document an error', 'p1\n\n\n', 2, 1);
 
 // List.
+// \L
 const l_with_explicit_ul_expect = [
   a('P', [t('ab')]),
   a('Ul', [
@@ -845,7 +846,7 @@ const l_with_explicit_ul_expect = [
   ]),
   a('P', [t('gh')]),
 ];
-assert_lib_ast('l with explicit ul and no extra spaces',
+assert_lib_ast('list: with explicit ul and no extra spaces',
   `ab
 
 \\Ul[\\L[cd]\\L[ef]]
@@ -854,7 +855,7 @@ gh
 `,
   l_with_explicit_ul_expect
 )
-assert_lib_ast('l with implicit ul sane',
+assert_lib_ast('list: with implicit ul sane',
   `ab
 
 \\L[cd]
@@ -864,7 +865,7 @@ gh
 `,
   l_with_explicit_ul_expect
 )
-assert_lib_ast('l with implicit ul insane',
+assert_lib_ast('list: with implicit ul insane simple',
   `ab
 
 * cd
@@ -874,7 +875,23 @@ gh
 `,
   l_with_explicit_ul_expect
 )
-assert_lib_ast('empty insane list item without a space',
+assert_lib_ast('list: with implicit ul insane and title',
+  `ab
+
+* cd
+{id=asdf}
+
+ef
+`,
+  [
+    a('P', [t('ab')]),
+    a('Ul', [
+      a('L', [t('cd')], {id : [t('asdf')]}),
+    ]),
+    a('P', [t('ef')]),
+  ]
+)
+assert_lib_ast('list: empty insane item without a space',
   `* ab
 *
 * cd
@@ -887,7 +904,7 @@ assert_lib_ast('empty insane list item without a space',
   ]),
 ]
 )
-assert_lib_ast('l with explicit ul and extra spaces',
+assert_lib_ast('list: with explicit ul and extra spaces',
   `ab
 
 \\Ul[
@@ -900,7 +917,7 @@ gh
 `,
   l_with_explicit_ul_expect
 )
-assert_lib_ast('ordered list',
+assert_lib_ast('list: ordered list',
   `ab
 
 \\Ol[
@@ -919,7 +936,7 @@ gh
   a('P', [t('gh')]),
 ]
 )
-assert_lib_ast('list with paragraph sane',
+assert_lib_ast('list: with paragraph sane',
   `\\L[
 aa
 
@@ -935,7 +952,7 @@ bb
     ]),
   ]
 )
-assert_lib_ast('list with paragraph insane',
+assert_lib_ast('list: with paragraph insane',
   `* aa
 
   bb
@@ -949,7 +966,7 @@ assert_lib_ast('list with paragraph insane',
     ]),
   ]
 )
-assert_lib_ast('list with multiline paragraph insane',
+assert_lib_ast('list: with multiline paragraph insane',
   `* aa
 
   bb
@@ -965,7 +982,7 @@ assert_lib_ast('list with multiline paragraph insane',
   ]
 )
 // https://github.com/ourbigbook/ourbigbook/issues/54
-assert_lib_ast('insane list with literal no error',
+assert_lib_ast('list: insane list with literal no error',
   `* aa
 
   \`\`
@@ -982,7 +999,7 @@ assert_lib_ast('insane list with literal no error',
     ]),
   ]
 )
-assert_lib_error('insane list with literal with error',
+assert_lib_error('list: insane list with literal with error',
   `* aa
 
   \`\`
@@ -992,7 +1009,7 @@ cc
 `,
   4, 1
 )
-assert_lib_ast('insane list with literal with double newline is not an error',
+assert_lib_ast('list: insane list with literal with double newline is not an error',
   `* aa
 
   \`\`
@@ -1011,7 +1028,7 @@ assert_lib_ast('insane list with literal with double newline is not an error',
   ]
 )
 // https://github.com/ourbigbook/ourbigbook/issues/53
-assert_lib_ast('insane list with element with newline separated arguments',
+assert_lib_ast('list: insane list with element with newline separated arguments',
   `* aa
 
   \`\`
@@ -1028,7 +1045,7 @@ assert_lib_ast('insane list with element with newline separated arguments',
     ]),
   ]
 )
-assert_lib_ast('insane list inside paragraph',
+assert_lib_ast('list: insane list inside paragraph',
   `aa
 * bb
 * cc
@@ -1039,13 +1056,13 @@ dd
       t('aa'),
       a('Ul', [
         a('L', [t('bb')]),
-        a('L', [t('cc\n')]),
+        a('L', [t('cc')]),
       ]),
       t('dd'),
     ]),
   ]
 )
-assert_lib_ast('insane list at start of positional argument with newline',
+assert_lib_ast('list: insane list at start of positional argument with newline',
   `\\Q[
 * bb
 * cc
@@ -1055,14 +1072,12 @@ assert_lib_ast('insane list at start of positional argument with newline',
     a('Q', [
       a('Ul', [
         a('L', [t('bb')]),
-        // TODO get rid of that newline
-        // https://github.com/ourbigbook/ourbigbook/issues/245
-        a('L', [t('cc\n')]),
+        a('L', [t('cc')]),
       ]),
     ]),
   ]
 )
-assert_lib_ast('insane list at start of positional argument without newline',
+assert_lib_ast('list: insane list at start of positional argument without newline',
   `\\Q[* bb
 * cc
 ]
@@ -1071,12 +1086,12 @@ assert_lib_ast('insane list at start of positional argument without newline',
     a('Q', [
       a('Ul', [
         a('L', [t('bb')]),
-        a('L', [t('cc\n')]),
+        a('L', [t('cc')]),
       ]),
     ]),
   ]
 )
-assert_lib_ast('insane list at end of positional argument without newline',
+assert_lib_ast('list: insane list at end of positional argument without newline',
   `\\Q[
 * bb
 * cc]
@@ -1090,7 +1105,7 @@ assert_lib_ast('insane list at end of positional argument without newline',
     ]),
   ]
 )
-assert_lib_ast('insane list at start of named argument with newline',
+assert_lib_ast('list: insane list at start of named argument with newline',
   `\\Image[http://example.com]
 {description=
 * bb
@@ -1102,13 +1117,13 @@ assert_lib_ast('insane list at start of named argument with newline',
       description: [
         a('Ul', [
           a('L', [t('bb')]),
-          a('L', [t('cc\n')]),
+          a('L', [t('cc')]),
         ]),
       ],
     }),
   ]
 )
-assert_lib_ast('insane list at start of named argument without newline',
+assert_lib_ast('list: insane list at start of named argument without newline',
   `\\Image[http://example.com]
 {description=* bb
 * cc
@@ -1119,13 +1134,13 @@ assert_lib_ast('insane list at start of named argument without newline',
       description: [
         a('Ul', [
           a('L', [t('bb')]),
-          a('L', [t('cc\n')]),
+          a('L', [t('cc')]),
         ]),
       ],
     }),
   ]
 )
-//assert_lib_ast('insane list at end of named argument without newline',
+//assert_lib_ast('list: insane list at end of named argument without newline',
 //  // TODO https://github.com/ourbigbook/ourbigbook/issues/246
 //  `\\Image[http://example.com]
 //{description=
@@ -1143,7 +1158,7 @@ assert_lib_ast('insane list at start of named argument without newline',
 //    }),
 //  ]
 //);
-assert_lib_ast('nested list insane',
+assert_lib_ast('list: nested list insane',
   `* aa
   * bb
 `,
@@ -1160,16 +1175,16 @@ assert_lib_ast('nested list insane',
     ]),
   ]
 )
-assert_lib_ast('escape insane list at start of document',
+assert_lib_ast('list: escape insane list at start of document',
   '\\* a',
   [a('P', [t('* a')])],
 )
-assert_lib_ast('escape insane list after a newline',
+assert_lib_ast('list: escape insane list after a newline',
   `a
 \\* b`,
   [a('P', [t('a\n* b')])],
 )
-assert_lib_ast('escape insane list inside list indent',
+assert_lib_ast('list: escape insane list inside list indent',
   `* a
   \\* b`,
   [
@@ -1180,12 +1195,12 @@ assert_lib_ast('escape insane list inside list indent',
     ]),
   ]
 )
-assert_lib_ast('asterisk in the middle of line does not need to be escaped',
+assert_lib_ast('list: asterisk in the middle of line does not need to be escaped',
   'a * b',
   [a('P', [t('a * b')])],
 )
 // https://github.com/ourbigbook/ourbigbook/issues/81
-assert_lib_ast('insane list immediately inside insane list',
+assert_lib_ast('list: insane list immediately inside insane list',
   `* * aa
   * bb
   * cc
@@ -1222,7 +1237,7 @@ const tr_with_explicit_table_expect = [
   ]),
   a('P', [t('gh')]),
 ];
-assert_lib_ast('tr with explicit table',
+assert_lib_ast('table: tr with explicit table',
   `ab
 
 \\Table[
@@ -1244,7 +1259,7 @@ gh
 `,
   tr_with_explicit_table_expect
 )
-assert_lib_ast('tr with implicit table',
+assert_lib_ast('table: tr with implicit table',
   `ab
 
 \\Tr[
@@ -1264,7 +1279,7 @@ gh
 `,
   tr_with_explicit_table_expect
 )
-assert_lib_ast('fully implicit table',
+assert_lib_ast('table: fully implicit table',
   `ab
 
 || cd
@@ -1280,7 +1295,7 @@ gh
 `,
   tr_with_explicit_table_expect
 )
-assert_lib_ast('insane table inside insane list inside insane table',
+assert_lib_ast('table: insane table inside insane list inside insane table',
   `| 00
 | 01
 
@@ -1328,7 +1343,7 @@ assert_lib_ast('insane table inside insane list inside insane table',
   ]
 )
 // https://github.com/ourbigbook/ourbigbook/issues/81
-assert_lib_ast('insane table immediately inside insane list',
+assert_lib_ast('table: insane table immediately inside insane list',
   `* | 00
   | 01
 
@@ -1352,7 +1367,7 @@ assert_lib_ast('insane table immediately inside insane list',
     ])
   ]
 )
-assert_lib_ast('insane table body with empty cell and no space',
+assert_lib_ast('table: insane table body with empty cell and no space',
   `| 00
 |
 | 02
@@ -1366,7 +1381,7 @@ assert_lib_ast('insane table body with empty cell and no space',
   ]),
 ],
 )
-assert_lib_ast('insane table head with empty cell and no space',
+assert_lib_ast('table: insane table head with empty cell and no space',
   `|| 00
 ||
 || 02
@@ -1380,13 +1395,13 @@ assert_lib_ast('insane table head with empty cell and no space',
   ]),
 ],
 )
-assert_lib_ast('implicit table escape', '\\| a\n',
+assert_lib_ast('table: implicit table escape', '\\| a\n',
   [a('P', [t('| a')])],
 )
-assert_lib_ast("pipe space in middle of line don't need escape", 'a | b\n',
+assert_lib_ast("table: pipe space in middle of line don't need escape", 'a | b\n',
   [a('P', [t('a | b')])],
 )
-assert_lib_ast('auto_parent consecutive implicit tr and l',
+assert_lib_ast('table: auto_parent consecutive implicit tr and l',
   `\\Tr[\\Td[ab]]
 \\L[cd]
 `,
@@ -1403,7 +1418,7 @@ assert_lib_ast('auto_parent consecutive implicit tr and l',
   ]),
 ]
 )
-assert_lib_ast('table with id has caption',
+assert_lib_ast('table: table with id has caption',
   `\\Table{id=ab}
 [
 | 00
@@ -1414,8 +1429,7 @@ assert_lib_ast('table with id has caption',
     a('Table', [
       a('Tr', [
         a('Td', [t('00')]),
-        // TODO get rid of the \n.
-        a('Td', [t('01\n')]),
+        a('Td', [t('01')]),
       ]),
     ], {}, { id: 'ab' }),
   ],
@@ -1425,7 +1439,7 @@ assert_lib_ast('table with id has caption',
     ]
   }
 )
-assert_lib_ast('table with title has caption',
+assert_lib_ast('table: table with title has caption',
   `\\Table{title=a b}
 [
 | 00
@@ -1436,8 +1450,7 @@ assert_lib_ast('table with title has caption',
     a('Table', [
       a('Tr', [
         a('Td', [t('00')]),
-        // TODO get rid of the \n.
-        a('Td', [t('01\n')]),
+        a('Td', [t('01')]),
       ]),
     ], {}, { id: 'table-a-b' }),
   ],
@@ -1447,7 +1460,7 @@ assert_lib_ast('table with title has caption',
     ]
   }
 )
-assert_lib_ast('table with description has caption',
+assert_lib_ast('table: table with description has caption',
   `\\Table{description=a b}
 [
 | 00
@@ -1458,8 +1471,7 @@ assert_lib_ast('table with description has caption',
     a('Table', [
       a('Tr', [
         a('Td', [t('00')]),
-        // TODO get rid of the \n.
-        a('Td', [t('01\n')]),
+        a('Td', [t('01')]),
       ]),
     ], {}, { id: '_1' }),
   ],
@@ -1469,7 +1481,7 @@ assert_lib_ast('table with description has caption',
     ]
   }
 )
-assert_lib_ast('table without id, title, nor description does not have caption',
+assert_lib_ast('table: table without id, title, nor description does not have caption',
   `\\Table[
 | 00
 | 01
@@ -1479,7 +1491,7 @@ assert_lib_ast('table without id, title, nor description does not have caption',
     a('Table', [
       a('Tr', [
         a('Td', [t('00')]),
-        a('Td', [t('01\n')]),
+        a('Td', [t('01')]),
       ]),
     ]),
   ],
@@ -1489,7 +1501,7 @@ assert_lib_ast('table without id, title, nor description does not have caption',
     ]
   }
 )
-assert_lib_ast('table without id, title, nor description does not increment the table count',
+assert_lib_ast('table: without id, title, nor description does not increment the table count',
   `\\Table{id=0}[
 | 00
 | 01
@@ -1509,19 +1521,19 @@ assert_lib_ast('table without id, title, nor description does not increment the 
     a('Table', [
       a('Tr', [
         a('Td', [t('00')]),
-        a('Td', [t('01\n')]),
+        a('Td', [t('01')]),
       ]),
     ]),
     a('Table', [
       a('Tr', [
         a('Td', [t('10')]),
-        a('Td', [t('11\n')]),
+        a('Td', [t('11')]),
       ]),
     ]),
     a('Table', [
       a('Tr', [
         a('Td', [t('20')]),
-        a('Td', [t('21\n')]),
+        a('Td', [t('21')]),
       ]),
     ]),
   ],
@@ -7117,14 +7129,74 @@ $$
 
 // Quote.
 // \Q
-assert_lib_stdin('quotation: generates valid HTML with title',
+assert_lib_ast('quotation: generates valid HTML with title sane',
   `\\Q[My quote]{title=My title}
 `,
+  [
+    a('Q', [t('My quote')], { title: [t('My title')] }, { id: 'quote-my-title'} ),
+  ],
   {
     assert_xpath_stdout: [
       `//x:div[@id='quote-my-title']//x:blockquote[text()='My quote']`,
     ],
   }
+)
+assert_lib_ast('quotation: generates valid HTML with title insane',
+  `> My quote
+{title=My title}
+`,
+  [
+    a('Q', [t('My quote')], { title: [t('My title')] }, { id: 'quote-my-title'} ),
+  ],
+  {
+    assert_xpath_stdout: [
+      `//x:div[@id='quote-my-title']//x:blockquote[text()='My quote']`,
+    ],
+  }
+)
+assert_lib_ast('quotation: insane simple',
+  `Before quote
+
+> My quote
+
+After quote
+`,
+  [
+    a('P', [t('Before quote')]),
+    a('Q', [t('My quote')]),
+    a('P', [t('After quote')]),
+  ],
+)
+assert_lib_ast('quotation: insane with paragraph',
+  `Before quote
+
+> My quote
+
+  Another paragraph
+
+After quote
+`,
+  [
+    a('P', [t('Before quote')]),
+    a('Q', [
+      a('P', [t('My quote')]),
+      a('P', [t('Another paragraph')]),
+    ]),
+    a('P', [t('After quote')]),
+  ],
+)
+assert_lib_ast('quotation: backslash escape works',
+  `Before quote
+
+\\> My quote
+
+After quote
+`,
+  [
+    a('P', [t('Before quote')]),
+    a('P', [t('> My quote')]),
+    a('P', [t('After quote')]),
+  ],
 )
 
 // Include.
@@ -8251,9 +8323,6 @@ Named multiline second
   },
 )
 assert_lib_stdin('bigb output: nested sane list followed by paragraph',
-  // This was leading to an AST change because the input has inner list as
-  // `ccc\n` but the output only `ccc`. But lazy to fix now, what we want is the
-  // input to parse as `ccc` without the `\n`: https://github.com/ourbigbook/ourbigbook/issues/245
   `aaa
 
 * bbb

@@ -2383,13 +2383,18 @@ assert_lib_ast('link: auto end in square bracket',
   ]
 )
 assert_lib_ast('link: auto containing escapes',
-  `\\P[a http://example.com\\]a\\}b\\\\c\\ d]`,
+  `\\P[a http://example.com\\]a\\}b\\\\c\\ d&Á%C3%81]`,
   [
     a('P', [
       t('a '),
-      a('a', undefined, {'href': [t('http://example.com]a}b\\c d')]}),
+      a('a', undefined, {'href': [t('http://example.com]a}b\\c d&Á%C3%81')]}),
     ])
-  ]
+  ],
+  {
+    assert_xpath_stdout: [
+      "//x:a[@href='http://example.com%5Da%7Db%5Cc%20d&%C3%81%C3%81']",
+    ],
+  }
 )
 assert_lib_ast('link: auto sane http https removal',
   '\\a[http://example.com] \\a[https://example.com] \\a[ftp://example.com]',

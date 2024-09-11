@@ -259,6 +259,9 @@ class AstNode {
     if (!('html_is_attr' in context)) {
       context.html_is_attr = false;
     }
+    if (!('html_is_href' in context)) {
+      context.html_is_href = false
+    }
     if (!('db_provider' in context)) {
       context.db_provider = {};
     }
@@ -4129,6 +4132,35 @@ function htmlEscapeAttr(str) {
   ;
 }
 
+
+/* This does some extra percent encoding conversions that are not
+ * stricly required by HTML itself in general, e.g.:
+ * * '[' -> '%5B'
+ * * 'á' -> '%C3%A1'
+ *
+ * The only thing that we intentionally don't escape is the percent '%' -> '%25'
+ * itself, as the user might be wanting to do their own explicit encodings.
+ *
+ * Notably, 2024 browsers still give you percent encoded strings for Unicode URLs,
+ * so it would be natural for users to copy and paste that as is.
+ *
+ * Most browsers just don't care about any of this and correctly convert for us,
+ * but let's try to satisfy the validator: https://validator.w3.org/#validate_by_input
+ *
+ * Related: https://docs.ourbigbook.com/#link-percent-encoding
+ */
+function htmlEscapeHrefAttr(str) {
+  let ret = ''
+  for (const c of str) {
+    if (c === '%') {
+      ret += c
+    } else {
+      ret += encodeURI(c)
+    }
+  }
+  return htmlEscapeAttr(ret);
+}
+
 function htmlEscapeContent(str) {
   return str
     .replace(/&/g, '&amp;')
@@ -4141,7 +4173,9 @@ exports.htmlEscapeContent = htmlEscapeContent
 /** Escape string depending on the current context. */
 function htmlEscapeContext(context, str) {
   if (context.html_escape) {
-    if (context.html_is_attr) {
+    if (context.html_is_href) {
+      return htmlEscapeHrefAttr(str)
+    } else if (context.html_is_attr) {
       return htmlEscapeAttr(str);
     } else {
       return htmlEscapeContent(str);
@@ -4318,7 +4352,7 @@ function idIsSuffix(suffix, full) {
 
 // @return [href: string, content: string], both XSS safe.
 function linkGetHrefAndContent(ast, context) {
-  const href = renderArg(ast.args.href, cloneAndSet(context, 'html_is_attr', true))
+  const href = renderArg(ast.args.href, cloneAndSet(context, 'html_is_href', true))
   let content = renderArg(ast.args.content, context)
   if (content === '') {
     content = renderArg(ast.args.href, context)
@@ -8373,7 +8407,7 @@ const DEFAULT_MACRO_LIST = [
         named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(IMAGE_INLINE_BLOCK_NAMED_ARGUMENTS),
         source_func: function (ast, context, src, media_provider_type, is_url) {
           if ('source' in ast.args) {
-            return renderArg(ast.args.source, cloneAndSet(context, 'html_is_attr', true))
+            return renderArg(ast.args.source, cloneAndSet(context, 'html_is_href', true))
           } else if (media_provider_type == 'wikimedia') {
             return macro_image_video_block_convert_function_wikimedia_source_url +
               context.macros[ast.macro_name].options.image_video_basename(src);
@@ -8821,7 +8855,7 @@ const DEFAULT_MACRO_LIST = [
         ),
         source_func: function (ast, context, src, media_provider_type, is_url) {
           if ('source' in ast.args) {
-            return renderArg(ast.args.source, cloneAndSet(context, 'html_is_attr', true))
+            return renderArg(ast.args.source, cloneAndSet(context, 'html_is_href', true))
           } else if (media_provider_type === 'youtube') {
             if (is_url) {
               return htmlEscapeAttr(src);

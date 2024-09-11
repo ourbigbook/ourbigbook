@@ -242,8 +242,12 @@ div.p {
 }
 
 // Figures.
-figure {
+div.figure {
   margin: $p-margin-vert 0;
+  figure {
+    // Override weird browser defaults.
+    margin: 0;
+  }
   &.multiline {
     @include multiline-caption;
   }
@@ -264,7 +268,6 @@ h1, h2, h3, h4, h5, h6 {
     }
   }
 }
-
 div.h {
   &:not(.top) {
     // Top one has metadata which should be close below without margin.
@@ -378,6 +381,18 @@ nav.h-nav {
   .toc::after {
     content: " toc";
   }
+}
+
+// Bold
+div.b {
+  display: inline-block;
+  font-weight: bold;
+}
+
+// Italic
+div.i {
+  display: inline-block;
+  font-style: italic;
 }
 
 // https://docs.ourbigbook.com#background-color-of-transparent-images

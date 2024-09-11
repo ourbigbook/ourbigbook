@@ -3800,7 +3800,7 @@ assert_lib_ast('cross reference p simple',
   }
 )
 assert_lib_ast('x: cross reference c ignores non plaintext first argument',
-  // Maybe we shoud go deep into the first argument tree. But let's KISS for now.
+  // Maybe we should go deep into the first argument tree. But let's KISS for now.
   `= Tmp
 
 == \\i[Good] dog
@@ -3810,12 +3810,12 @@ assert_lib_ast('x: cross reference c ignores non plaintext first argument',
   undefined,
   {
     assert_xpath_stdout: [
-      "//x:div[@class='p']//x:a[@href='#good-dog']//x:i[text()='Good']",
+      "//x:div[@class='p']//x:a[@href='#good-dog']//x:div[@class='i' and text()='Good']",
     ],
   }
 )
 assert_lib_ast('x: cross reference p ignores non plaintext last argument',
-  // Maybe we shoud go deep into the last argument tree. But let's KISS for now.
+  // Maybe we should go deep into the last argument tree. But let's KISS for now.
   `= Tmp
 
 == Good \\i[dog]
@@ -3825,7 +3825,7 @@ assert_lib_ast('x: cross reference p ignores non plaintext last argument',
   undefined,
   {
     assert_xpath_stdout: [
-      "//x:div[@class='p']//x:a[@href='#good-dog']//x:i[text()='dog']",
+      "//x:div[@class='p']//x:a[@href='#good-dog']//x:div[@class='i' and text()='dog']",
     ],
   }
 )
@@ -10953,7 +10953,7 @@ assert_cli(
     ],
     assert_xpath: {
       'out/html/notindex.html': [
-        "//x:i[text()='world2']",
+        "//x:div[@class='i' and text()='world2']",
       ],
     },
     assert_bigb: {

@@ -4409,7 +4409,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
   let rendered_attrs = htmlRenderAttrs(ast, context, ['height', 'width']);
   let figure_attrs = htmlRenderAttrsId(ast, context);
   let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
-  let ret = `<figure${figure_attrs}><div${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`
+  let ret = `<div class="figure${multiline_caption ?  ` ${MULTILINE_CAPTION_CLASS}` : ''}"><figure${figure_attrs}>`
   let href_prefix;
   if (ast.id !== undefined) {
     href_prefix = htmlSelfLink(ast, context);
@@ -4475,7 +4475,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
       const title_and_description = getTitleAndDescription({ title, description, source, inner, innerNoDiv })
       ret += `<figcaption>${title_and_description}</figcaption>`;
     }
-    ret += '</div></figure>';
+    ret += '</figure></div>';
     return ret;
   }
 }
@@ -7590,7 +7590,7 @@ function xTextBase(ast, context, options={}) {
           number += '. '
         }
         if (options.addNumberDiv) {
-          const addNumberElem = options.addNumberElem ? options.addNumberElem : 'div'
+          const addNumberElem = options.addNumberElem ? options.addNumberElem : 'span'
           const addNumberClass = options.addNumberClass ? options.addNumberClass : 'number'
           number = `<${addNumberElem} class="${addNumberClass}">${number}</${addNumberElem}>`
         }
@@ -8986,7 +8986,11 @@ const OUTPUT_FORMATS_LIST = [
             source_location: ast.args.href.source_location,
           })
         },
-        'b': htmlRenderSimpleElem('b'),
+        'b': htmlRenderSimpleElem(
+          // Not 'b' to help avoid illegal HTML non-phrasing nestings.
+          'div',
+          { attrs: { class: 'b' }}
+        ),
         'br': function(ast, context) { return '<br>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
           const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
@@ -9504,7 +9508,11 @@ const OUTPUT_FORMATS_LIST = [
           return ret;
         },
         'Hr': function(ast, context) { return '<div><hr></div>' },
-        'i': htmlRenderSimpleElem('i'),
+        'i': htmlRenderSimpleElem(
+          // Not 'i' to help avoid illegal HTML non-phrasing nestings.
+          'div',
+          { attrs: { class: 'i' }}
+        ),
         'Image': macroImageVideoBlockConvertFunction,
         'image': function(ast, context) {
           let alt_arg;

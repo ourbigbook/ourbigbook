@@ -943,8 +943,11 @@ The directory \a[file_demo] is cooler.
 ]]
 This links to an output file that contains a generated directory listing of that directory.
 
-= `\a` `href` argument
+= `\a` argument
 {parent=Link}
+
+= `\a` `href` argument
+{parent=`\a` argument}
 
 The link target, e.g. in:
 ``
@@ -952,26 +955,26 @@ The link target, e.g. in:
 ``
 `href` equals `http://example.com`.
 
-Important behaviours associated with this property for local links are detailed at <\a external argument>{full}:
+Important behaviors associated with this property for local links are detailed at <\a external argument>{full}:
 * they are checked for existence in the local filesystem
 * they are modified to account for <scopes> with <split headers>
 
 = `\a` `ref` argument
-{parent=Link}
+{parent=`\a` argument}
 {tag=Boolean argument}
 
 Analogous to the <\x ref argument>, e.g.:
 \OurBigBookExample[[Trump said this and that.https://en.wikipedia.org/wiki/Donald_Trump_Access_Hollywood_tape#Trump's_responses{ref}https://web.archive.org/web/20161007210105/https://www.donaldjtrump.com/press-releases/statement-from-donald-j.-trump{ref} Then he said that and this.https://en.wikipedia.org/wiki/Donald_Trump_Access_Hollywood_tape#Trump's_responses{ref}https://web.archive.org/web/20161007210105/https://www.donaldjtrump.com/press-releases/statement-from-donald-j.-trump{ref}]]
 
 = `\a` `external` argument
-{parent=Link}
+{parent=`\a` argument}
 {tag=Boolean argument}
 
 If given and true, forces a the link to be an <external link>.
 
 Otherwise, the external is automatically guessed based on the address given as explained at <external link>{full}.
 
-Common use cases for the `external` argument is to link to non OurBigBook content in the curent domain, e.g.:
+Common use cases for the `external` argument is to link to non OurBigBook content in the current domain, e.g.:
 * <link to the domain root path> for <Subdirectory deployments>
 * link non OurBigBook subdirectories. E.g., https://github.com/cirosantilli/cirosantilli.github.io/blob/master/README.bigb was rendered at https://cirosantilli.com[], and contains links `\a[markdown-style-guide]{external}` to https://cirosantilli.com/markdown-style-guide[], whose source lives in a separate non-OurBigBook repository: https://github.com/cirosantilli/markdown-style-guide/
 

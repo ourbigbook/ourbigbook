@@ -6461,7 +6461,7 @@ assert_lib_stdin('header: lint: h-tag tag pass',
 `,
   { convert_opts: { ourbigbook_json: { lint: { 'h-tag': 'tag', } } } }
 )
-assert_lib_error('header: lint: has to be direct child of toplevel',
+assert_lib_error('header: lint: has to be direct child of toplevel explicit',
   // While not stricly necessary for static convert, it leads to blowup only in web.
   // It also leads to hard to understand issues. Just prevent this insanity one and for all.
   //
@@ -6479,6 +6479,14 @@ asdf
 ]
 `,
   6, 1
+)
+assert_lib_error('header: lint: has to be direct child of toplevel implicit paragraph',
+  `= Index
+
+== h2
+asdf
+`,
+  3, 1
 )
 
 // Word counts.

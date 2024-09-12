@@ -890,6 +890,7 @@ The general macro syntax is described at <OurBigBook Markup syntax>{full}.
 
 = Link
 {parent=Macro}
+{tag=Inline macro}
 {tag=Macro with insane shortcut}
 
 = `\a`
@@ -945,6 +946,7 @@ This links to an output file that contains a generated directory listing of that
 
 = `\a` argument
 {parent=Link}
+{tag=Inline macro}
 
 = `\a` `href` argument
 {parent=`\a` argument}
@@ -1203,7 +1205,22 @@ The following characters are the "insane link termination characters":
 * open or close curly braces `{` or `}`
 <Insane cross references> and <insane topic links with a single word> terminate if any of these characters are found, see also: <insane link parsing rules>{full}.
 
+= Link percent encoding
+{parent=Link}
+
+<OurBigBook> automatically encodes all link `href` for characters that are not recommended for URLs.
+
+This way you can for example simply write arbitrary Unicode URLs and OurBigBook will escape them for you on the HTML output.
+
+The only exception for this is the percent sign itself `%`, which it leaves untouched so that explicitly encoded URLs also work. So if you want a literal percent then you have to explicitly write it yourself as `%25`.
+
+\OurBigBookExample[[
+* acute a Á as raw Unicode: https://en.wikipedia.org/wiki/Á
+* acute a Á explicitly escaped by user: https://en.wikipedia.org/wiki/%C3%81
+]]
+
 = Bold
+{tag=Inline macro}
 {parent=Macro}
 {title2=`\b`}
 
@@ -1375,6 +1392,7 @@ My inline \comment[[inside comment]] is awesome.
 
 = Header
 {parent=Macro}
+{tag=Block macro}
 {title2=`\H`}
 
 <Insane> with `= ` (equal sign space):
@@ -5573,7 +5591,7 @@ For example, the word "Python" could either refer to:
 The `disambiguate` <named argument> helps you deal more neatly with such problems.
 
 Have a look at this example:
-\OurBigBookExample[[
+``
 My favorite snakes are \x[python-genus]{p}!
 
 My favorite programming language is \x[python-programming-language]!
@@ -5592,7 +5610,7 @@ My favorite programming language is \x[python-programming-language]!
 {parent=disambiguate-argument}
 {title2=.py}
 {wiki}
-]]
+``
 from which we observe how `disambiguate`:
 * gets added to the ID after conversion following the same rules as <automatic ID from title>
 * shows up on the header between parenthesis, much like Wikipedia, as well as in <\x full argument>[`full` cross references]
@@ -5936,12 +5954,6 @@ If present, the `auto_parent` macro property determines which auto-parent gets a
 = Block vs inline macros
 {parent=OurBigBook Markup concepts}
 
-= Block macro
-{synonym}
-
-= Inline macro
-{synonym}
-
 Every OurBigBook macro is either block or inline:
 * a block macro is one that takes up the entire line when rendered
 
@@ -5954,6 +5966,16 @@ Some macros have both a block and an inline version, and like any other macro, t
 * <mathematics>
 * <code blocks>
 * <comments>
+
+= Block macro
+{parent=Block vs inline macros}
+
+See: <Block vs inline macros>{full}.
+
+= Inline macro
+{parent=Block vs inline macros}
+
+See: <Block vs inline macros>{full}.
 
 = Known URL protocols
 {parent=OurBigBook Markup concepts}

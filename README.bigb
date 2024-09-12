@@ -12,7 +12,7 @@
 {height=150}
 {title=<project logo>[Logo of] the <OurBigBook Project>}
 
-<OurBigBook CLI quick start>:
+<OurBigBook CLI quick start> using https://github.com/ourbigbook/template[]:
 ``
 git clone https://github.com/ourbigbook/template
 cd template

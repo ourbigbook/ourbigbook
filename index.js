@@ -3003,7 +3003,7 @@ function renderAstList({ asts, context, first_toplevel, header_count, split }) {
       AstType.MACRO,
       Macro.TOPLEVEL_MACRO_NAME,
       {
-        'content': new AstArgument(asts, first_ast.source_location)
+        [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(asts, first_ast.source_location)
       },
       first_ast.source_location,
     );
@@ -4808,7 +4808,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   // Get toplevel arguments such as {title=}, see https://docs.ourbigbook.com#toplevel
   const ast_toplevel_args = parseArgumentList(
     state, Macro.TOPLEVEL_MACRO_NAME, AstType.MACRO);
-  if ('content' in ast_toplevel_args) {
+  if (Macro.CONTENT_ARGUMENT_NAME in ast_toplevel_args) {
     parseError(state, `the toplevel arguments cannot contain an explicit content argument`, new SourceLocation(1, 1));
   }
 
@@ -4826,7 +4826,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   const ast_toplevel = new AstNode(
     AstType.MACRO,
     Macro.TOPLEVEL_MACRO_NAME,
-    Object.assign(ast_toplevel_args, {'content': ast_toplevel_content_arg}),
+    Object.assign(ast_toplevel_args, {[Macro.CONTENT_ARGUMENT_NAME]: ast_toplevel_content_arg}),
     new SourceLocation(1, 1),
   );
   if (state.token.type !== TokenType.INPUT_END) {
@@ -5084,7 +5084,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                   AstType.MACRO,
                   Macro.PARAGRAPH_MACRO_NAME,
                   {
-                    'content': new AstArgument(
+                    [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
                       [
                         new AstNode(
                           AstType.MACRO,
@@ -5095,7 +5095,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                                 new PlaintextAstNode(href)
                               ],
                             ),
-                            'content': new AstArgument(
+                            [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
                               [
                                 new PlaintextAstNode(
                                   'This section is present in another page, follow this link to view it.',
@@ -5758,7 +5758,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                         }
                         break;
                       } else if (
-                        auto_parent_name_macro.name_to_arg['content'].remove_whitespace_children &&
+                        auto_parent_name_macro.name_to_arg[Macro.CONTENT_ARGUMENT_NAME].remove_whitespace_children &&
                         htmlIsWhitespaceTextNode(arg_i)
                       ) {
                         // Ignore the whitespace node.
@@ -5772,7 +5772,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                       AstType.MACRO,
                       auto_parent_name,
                       {
-                        'content': new_arg_auto_parent,
+                        [Macro.CONTENT_ARGUMENT_NAME]: new_arg_auto_parent,
                       },
                       start_auto_child_node.source_location,
                       {
@@ -5827,7 +5827,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                           break;
                         }
                       } else if (
-                        auto_parent_name_macro.name_to_arg['content'].remove_whitespace_children &&
+                        auto_parent_name_macro.name_to_arg[Macro.CONTENT_ARGUMENT_NAME].remove_whitespace_children &&
                         htmlIsWhitespaceTextNode(arg_i)
                       ) {
                         // Ignore the whitespace node.
@@ -5841,7 +5841,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                       AstType.MACRO,
                       auto_parent_name,
                       {
-                        'content': new_arg_auto_parent,
+                        [Macro.CONTENT_ARGUMENT_NAME]: new_arg_auto_parent,
                       },
                       start_auto_child_node.source_location,
                       {
@@ -6323,7 +6323,7 @@ function parseAddParagraph(
           AstType.MACRO,
           Macro.PARAGRAPH_MACRO_NAME,
           {
-            'content': slice
+            [Macro.CONTENT_ARGUMENT_NAME]: slice
           },
           arg.get(paragraph_start).source_location,
           {
@@ -6443,7 +6443,7 @@ function parseArgumentList(state, macro_name, macro_type) {
         args[arg_name].push(new AstNode(
           AstType.MACRO,
           'Comment',
-          { 'content': arg_children },
+          { [Macro.CONTENT_ARGUMENT_NAME]: arg_children },
           open_token.source_location,
         ))
       }
@@ -8174,7 +8174,7 @@ const DEFAULT_MACRO_LIST = [
         mandatory: true,
       }),
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
       }),
     ],
@@ -8196,7 +8196,7 @@ const DEFAULT_MACRO_LIST = [
     'b',
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
       }),
     ],
@@ -8216,7 +8216,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.CODE_MACRO_NAME.toUpperCase(),
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
         ourbigbook_output_prefer_literal: true,
       }),
@@ -8244,7 +8244,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.CODE_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
         ourbigbook_output_prefer_literal: true,
       }),
@@ -8257,7 +8257,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         ourbigbook_output_prefer_literal: true,
       }),
     ],
@@ -8382,7 +8382,7 @@ const DEFAULT_MACRO_LIST = [
     'i',
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
       }),
     ],
@@ -8472,7 +8472,7 @@ const DEFAULT_MACRO_LIST = [
     'JsCanvasDemo',
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         mandatory: true,
       }),
     ],
@@ -8484,7 +8484,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.LIST_ITEM_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
       }),
     ],
@@ -8498,7 +8498,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.MATH_MACRO_NAME.toUpperCase(),
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
         ourbigbook_output_prefer_literal: true,
       }),
@@ -8534,7 +8534,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.MATH_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
         ourbigbook_output_prefer_literal: true,
       }),
@@ -8547,7 +8547,7 @@ const DEFAULT_MACRO_LIST = [
     'Ol',
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
         remove_whitespace_children: true,
       }),
@@ -8557,7 +8557,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.PARAGRAPH_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
       }),
     ],
@@ -8566,7 +8566,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.PLAINTEXT_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
       }),
     ],
@@ -8578,7 +8578,7 @@ const DEFAULT_MACRO_LIST = [
     'passthrough',
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
       }),
     ],
     {
@@ -8590,7 +8590,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.QUOTE_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
       }),
     ],
@@ -8613,7 +8613,7 @@ const DEFAULT_MACRO_LIST = [
     'sub',
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
       }),
     ],
     {
@@ -8624,7 +8624,7 @@ const DEFAULT_MACRO_LIST = [
     'sup',
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
       }),
     ],
     {
@@ -8635,7 +8635,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.TABLE_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         remove_whitespace_children: true,
         count_words: true,
       }),
@@ -8660,7 +8660,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.TD_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
       }),
     ]
@@ -8670,7 +8670,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         count_words: true,
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
       }),
     ],
     {
@@ -8687,7 +8687,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.TH_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
       }),
     ],
@@ -8696,7 +8696,7 @@ const DEFAULT_MACRO_LIST = [
     Macro.TR_MACRO_NAME,
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
         remove_whitespace_children: true,
       }),
@@ -8709,7 +8709,7 @@ const DEFAULT_MACRO_LIST = [
     'Ul',
     [
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
         remove_whitespace_children: true,
       }),
@@ -8723,7 +8723,7 @@ const DEFAULT_MACRO_LIST = [
         mandatory: true,
       }),
       new MacroArgument({
-        name: 'content',
+        name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
       }),
     ],
@@ -8915,7 +8915,7 @@ function createLinkList(context, ast, id, title, target_ids) {
           AstType.MACRO,
           Macro.LIST_ITEM_MACRO_NAME,
           {
-            'content': new AstArgument(
+            [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
               [
                 new AstNode(
                   AstType.MACRO,
@@ -8933,7 +8933,7 @@ function createLinkList(context, ast, id, title, target_ids) {
                 //  AstType.MACRO,
                 //  'passthrough',
                 //  {
-                //    'content': new AstArgument(
+                //    [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
                 //      [
                 //        new PlaintextAstNode(counts_str),
                 //      ],
@@ -8951,7 +8951,7 @@ function createLinkList(context, ast, id, title, target_ids) {
       }
     }
     let ulArgs = {
-      'content': new AstArgument(target_asts)
+      [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(target_asts)
     }
     if (context.options.add_test_instrumentation) {
       ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
@@ -9719,7 +9719,7 @@ const OUTPUT_FORMATS_LIST = [
                     AstType.MACRO,
                     Macro.LIST_ITEM_MACRO_NAME,
                     {
-                      'content': new AstArgument(
+                      [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
                         [
                           new AstNode(
                             AstType.MACRO,
@@ -9737,7 +9737,7 @@ const OUTPUT_FORMATS_LIST = [
                           //  AstType.MACRO,
                           //  'passthrough',
                           //  {
-                          //    'content': new AstArgument(
+                          //    [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
                           //      [
                           //        new PlaintextAstNode(counts_str),
                           //      ],
@@ -9754,7 +9754,7 @@ const OUTPUT_FORMATS_LIST = [
                   ));
                 }
                 const ulArgs = {
-                  'content': new AstArgument(ancestor_id_asts)
+                  [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(ancestor_id_asts)
                 }
                 if (context.options.add_test_instrumentation) {
                   ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(ANCESTORS_ID_UNRESERVED)]
@@ -9919,7 +9919,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               incompatible_pair = ['full', 'ref']
             }
             if (ast.validation_output.content.given) {
-              incompatible_pair = ['full', 'content']
+              incompatible_pair = ['full', Macro.CONTENT_ARGUMENT_NAME]
             }
             if (ast.validation_output.c.given) {
               incompatible_pair = ['full', 'c']
@@ -9929,13 +9929,13 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
             }
           } else if (ast.validation_output.content.given) {
             if (ast.validation_output.ref.given) {
-              incompatible_pair = ['content', 'ref']
+              incompatible_pair = [Macro.CONTENT_ARGUMENT_NAME, 'ref']
             }
             if (ast.validation_output.c.given) {
-              incompatible_pair = ['content', 'c']
+              incompatible_pair = [Macro.CONTENT_ARGUMENT_NAME, 'c']
             }
             if (ast.validation_output.p.given) {
-              incompatible_pair = ['content', 'p']
+              incompatible_pair = [Macro.CONTENT_ARGUMENT_NAME, 'p']
             }
           } else if (ast.validation_output.ref.given) {
             if (ast.validation_output.c.given) {
@@ -10036,7 +10036,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
         'Ul': idConvertSimpleElem(),
         [Macro.X_MACRO_NAME]: function(ast, context) {
           if (ast.args.content) {
-            return idConvertSimpleElem('content')(ast, context)
+            return idConvertSimpleElem(Macro.CONTENT_ARGUMENT_NAME)(ast, context)
           } else {
             return idConvertSimpleElem('href')(ast, context)
           }
@@ -10067,7 +10067,7 @@ function ourbigbookCodeMathBlock(c) {
       delim += c
     }
     const newline = '\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context))
-    const attrs = ourbigbookConvertArgs(ast, context, { skip: new Set(['content']) }).join('')
+    const attrs = ourbigbookConvertArgs(ast, context, { skip: new Set([Macro.CONTENT_ARGUMENT_NAME]) }).join('')
     return `${delim}
 ${content}
 ${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`

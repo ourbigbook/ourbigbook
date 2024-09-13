@@ -4318,16 +4318,31 @@ function isAscii(str) {
   return /^[\x00-\x7F]*$/.test(str);
 }
 
-function idConvertSimpleElem(argname) {
+function idConvertSimpleElem(argname, opts={}) {
   if (argname === undefined) {
-    argname = 'content'
+    argname = Macro.CONTENT_ARGUMENT_NAME
+  }
+  let { isToplevel } = opts
+  if (isToplevel === undefined) {
+    isToplevel = false
   }
   return function(ast, context) {
     let ret = renderArg(ast.args[argname], context);
-    if (!context.macros[ast.macro_name].options.phrasing) {
-      ret += '\n';
+    let newline = ''
+    if (isToplevel) {
+      // TODO a bit horrible but works.
+      if (ret[ret.length - 1] !== '\n') {
+        newline = '\n'
+      }
+    } else {
+      if (!context.macros[ast.macro_name].options.phrasing) {
+        newline = '\n'
+      }
     }
-    return ret;
+    if (dolog && newline) {
+      console.log(`idConvertSimpleElem: newline=${require('util').inspect(newline)} ast.macro_name=${ast.macro_name}`)
+    }
+    return ret + newline;
   };
 }
 
@@ -10253,7 +10268,11 @@ function ourbigbookLi(marker) {
         marker_eff = marker
       }
       const ret = `${newline_before}${marker_eff}${content_indent}`
-      return `${ret}${ret[ret.length - 1] === '\n' ? '' : '\n'}`
+      const newlineAfter = ret[ret.length - 1] === '\n' ? '' : '\n'
+      if (dolog && newlineAfter) {
+        console.log(`ourbigbookLi: newlineAfter=${require('util').inspect(newlineAfter, { depth: null })}`)
+      }
+      return `${ret}${newlineAfter}`
     }
   }
 }
@@ -10306,6 +10325,9 @@ function ourbigbookUl(ast, context) {
   } else {
     const argstr = renderArg(ast.args.content, context)
     const newline = '\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context, { auto_parent: true }))
+    if (dolog && newline) {
+      console.log(`ourbigbookUl: newline=${require('util').inspect(newline)}`)
+    }
     return `${argstr}${newline}`
   }
 }
@@ -10470,7 +10492,11 @@ function ourbigbookConvertSimpleElem(ast, context) {
   const ret = []
   ret.push(ESCAPE_CHAR + ast.macro_name)
   ourbigbookConvertArgs(ast, context, { ret })
-  ret.push('\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context)))
+  const newline = '\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context))
+  if (dolog && newline) {
+    console.log(`ourbigbookConvertSimpleElem: newline=${require('util').inspect(newline)}`)
+  }
+  ret.push(newline)
   return ret.join('')
 }
 
@@ -10613,7 +10639,7 @@ OUTPUT_FORMATS_LIST.push(
         'sup': ourbigbookConvertSimpleElem,
         [Macro.TABLE_MACRO_NAME]: ourbigbookUl,
         [Macro.TD_MACRO_NAME]: ourbigbookLi(INSANE_TD_START),
-        [Macro.TOPLEVEL_MACRO_NAME]: idConvertSimpleElem(),
+        [Macro.TOPLEVEL_MACRO_NAME]: idConvertSimpleElem(Macro.CONTENT_ARGUMENT_NAME, { isToplevel: true }),
         [Macro.TH_MACRO_NAME]: ourbigbookLi(INSANE_TH_START),
         [Macro.TR_MACRO_NAME]: ourbigbookUl,
         'Ul': ourbigbookUl,

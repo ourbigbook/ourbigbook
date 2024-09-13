@@ -8355,6 +8355,20 @@ ddd
 `
   },
 )
+assert_lib_stdin('bigb output: list at the end of article does not lead to double trailing newlines',
+  `aaa
+
+* bbb
+* ccc
+`,
+  {
+    assert_bigb_stdout: `aaa
+
+* bbb
+* ccc
+`
+  },
+)
 assert_lib('bigb output: checks target IDs to decide between plural or not on converting non magic to magic links',
   {
     filesystem: {

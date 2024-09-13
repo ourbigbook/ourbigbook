@@ -113,7 +113,8 @@ export const TopicPage = ({
         : <>
             <div className="content-not-ourbigbook">
               <h1><TopicIcon /> {titleText}</h1>
-              <p>There are no articles in this topic. Topic ID: {topicId}</p>
+              <p>There are no articles in this topic.</p>
+              <p>Topic ID: <b>{topicId}</b></p>
               <div>
                 <CustomLink
                   className="btn new"

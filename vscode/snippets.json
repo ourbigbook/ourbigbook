@@ -24,7 +24,7 @@
         ],
     },
     "Disambiguate named argument": {
-        "prefix": "{di",
+        "prefix": "{g",
         "body": [
             "{disambiguate=$0}"
         ],

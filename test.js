@@ -1948,8 +1948,8 @@ assert_lib_ast('image: escapes HTML correctly block',
   {
     filesystem: { '"<': '' },
     assert_xpath_stdout: [
-      `//x:a[@href='${ourbigbook.RAW_PREFIX}/"<']//x:img[@src='${ourbigbook.RAW_PREFIX}/"<' and @alt='"<']`,
-      `//x:a[@href='"<' and text()='Source']`,
+      `//x:a[@href='${ourbigbook.RAW_PREFIX}/%22%3C']//x:img[@src='${ourbigbook.RAW_PREFIX}/%22%3C' and @alt='"<']`,
+      `//x:a[@href='%22%3C' and text()='Source']`,
     ],
   },
 )
@@ -1965,7 +1965,7 @@ assert_lib_ast('image: escapes HTML correctly inline',
   {
     filesystem: { '"<': '' },
     assert_xpath_stdout: [
-      `//x:a[@href='${ourbigbook.RAW_PREFIX}/"<']//x:img[@src='${ourbigbook.RAW_PREFIX}/"<']`,
+      `//x:a[@href='${ourbigbook.RAW_PREFIX}/%22%3C']//x:img[@src='${ourbigbook.RAW_PREFIX}/%22%3C']`,
     ],
   },
 )
@@ -1980,7 +1980,7 @@ assert_lib_ast('image: escapes link argument HTML correctly block',
   {
     filesystem: { '"<': '' },
     assert_xpath_stdout: [
-      `//x:a[@href='"<']//x:img[@src='http://example.com']`,
+      `//x:a[@href='%22%3C']//x:img[@src='http://example.com']`,
     ],
   },
 )
@@ -1997,7 +1997,7 @@ assert_lib_ast('image: escapes link argument HTML correctly inline',
   {
     filesystem: { '"<': '' },
     assert_xpath_stdout: [
-      `//x:a[@href='"<']//x:img[@src='http://example.com']`,
+      `//x:a[@href='%22%3C']//x:img[@src='http://example.com']`,
     ],
   },
 )
@@ -2012,8 +2012,8 @@ assert_lib_ast('video: escapes HTML correctly',
   {
     filesystem: { '"<': '' },
     assert_xpath_stdout: [
-      `//x:video[@src='${ourbigbook.RAW_PREFIX}/"<']`,
-      `//x:a[@href='"<' and text()='Source']`,
+      `//x:video[@src='${ourbigbook.RAW_PREFIX}/%22%3C']`,
+      `//x:a[@href='%22%3C' and text()='Source']`,
     ],
   },
 )
@@ -2447,11 +2447,11 @@ assert_lib_ast('link: with multiple paragraphs',
   ]
 )
 assert_lib_ast('link: xss: content and href',
-  '\\a[ab&\\<>"\'cd][ef&\\<>"\'gh]{external}\n',
+  `\\a[ab&\\<>"'cd][ef&\\<>"'gh]{external}\n`,
   undefined,
   {
     assert_xpath_stdout: [
-      `//x:a[@href=concat('ab&<>"', "'", 'cd') and text()=concat('ef&<>"', "'", 'gh')]`,
+      `//x:a[@href=concat('ab&%3C%3E%22', "'", 'cd') and text()=concat('ef&<>"', "'", 'gh')]`,
     ]
   }
 )
@@ -11124,6 +11124,9 @@ myfile.txt line2
       // File.
       '[.txt': `aaa`,
 
+      // HTML escapes don't blow things up.
+      '&.txt': `aaa`,
+
       'index.html': '',
       '_index.html': '',
       'subdir/myfile-subdir.txt': `myfile-subdir.txt line1
@@ -11150,6 +11153,9 @@ myfile-subdir.txt line2
       `out/html/${ourbigbook.RAW_PREFIX}/_index.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir/index.html`,
       `out/html/${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/[.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/[/hello.txt`,
+      `out/html/${ourbigbook.RAW_PREFIX}/&.txt`,
 
       // Auto-generated {file} by ourbigbook CLI.
       `out/html/${ourbigbook.FILE_PREFIX}/myfile.txt.html`,

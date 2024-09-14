@@ -16,10 +16,12 @@ if (typeof performance === 'undefined') {
   globals.performance = performance;
 }
 
+const { trace } = require('console');
 const katex = require('katex');
 const lodash = require('lodash');
 const path = require('path');
 const pluralize = require('pluralize');
+const { kill } = require('process');
 
 // consts used by classes.
 const HTML_PARENT_MARKER = '<span class="fa-solid-900 icon">\u{f062}</span>';
@@ -3704,12 +3706,12 @@ function getDescendantCountHtml(context, tree_node, options) {
  */
 function checkAndUpdateLocalLink({
   context,
-  href,
+  hrefNoEscape,
   external,
   media_provider_type,
   source_location,
 }) {
-  const was_protocol_given = protocolIsGiven(href)
+  const was_protocol_given = protocolIsGiven(hrefNoEscape)
 
   let inputDirectory
   const input_path = context.options.input_path
@@ -3722,7 +3724,7 @@ function checkAndUpdateLocalLink({
     inputDirectory = '.'
   }
 
-  const is_absolute = href[0] === URL_SEP
+  const is_absolute = hrefNoEscape[0] === URL_SEP
   const is_external = (external !== undefined && external) || (
     external === undefined && was_protocol_given
   )
@@ -3730,18 +3732,18 @@ function checkAndUpdateLocalLink({
   // Check existence.
   let error = ''
   if (!is_external) {
-    if (href.length !== 0) {
+    if (hrefNoEscape.length !== 0) {
       let check_path;
       if (is_absolute) {
-        check_path = href.slice(1)
+        check_path = hrefNoEscape.slice(1)
       } else {
-        check_path = path.join(inputDirectory, href)
+        check_path = path.join(inputDirectory, hrefNoEscape)
       }
       if (
         context.options.fs_exists_sync &&
         !context.options.fs_exists_sync(check_path)
       ) {
-        error = `link to inexistent local file: ${href}`;
+        error = `link to inexistent local file: ${hrefNoEscape}`;
         renderError(context, error, source_location);
         error = errorMessageInOutput(error, context)
       } else {
@@ -3753,7 +3755,7 @@ function checkAndUpdateLocalLink({
           const { type } = context.options.read_file(check_path, context)
           if (type === 'directory') {
             if (context.options.htmlXExtension) {
-              href = path.join(href, 'index.html')
+              hrefNoEscape = path.join(hrefNoEscape, 'index.html')
             }
           }
           // Modify external paths to account for scope + --split-headers
@@ -3768,12 +3770,12 @@ function checkAndUpdateLocalLink({
           if (!is_absolute) {
             pref = path.join(pref, inputDirectory)
           }
-          href = path.join(pref, href)
+          hrefNoEscape = path.join(pref, hrefNoEscape)
         }
       }
     }
   }
-  return { href, error, inputDirectory }
+  return { href: htmlEscapeHrefAttr(hrefNoEscape), error, inputDirectory }
 }
 
 // Get description and other closely related attributes.
@@ -3811,7 +3813,7 @@ function getLinkHtml({
   content,
   context,
   external,
-  href,
+  hrefNoEscape,
   source_location,
   extraReturns,
 }) {
@@ -3826,16 +3828,15 @@ function getLinkHtml({
     if (attrs === undefined) {
       attrs = ''
     }
-    let error
     Object.assign(extraReturns, checkAndUpdateLocalLink({
       context,
       external,
-      href,
+      hrefNoEscape,
       // The only one available for now. One day we could add: \a[some/path]{provider=github}
       media_provider_type: 'local',
       source_location,
     }))
-    ;({ href, error } = extraReturns)
+    let { href, error } = extraReturns
     let testData
     if (ast) {
       testData = getTestData(ast, context)
@@ -4206,7 +4207,7 @@ function htmlImg({
   } = checkAndUpdateLocalLink({
     context,
     external,
-    href: src,
+    hrefNoEscape: src,
     media_provider_type,
     source_location: ast.args.src.source_location,
   }))
@@ -4230,9 +4231,9 @@ function htmlImg({
     cls = ''
   }
   const href = ast.validation_output.link.given ? renderArgNoescape(ast.args.link, context) : src
-  let html = `<img${htmlAttr('src', htmlEscapeAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${htmlClassesAttr(classes)}>`
+  let html = `<img${htmlAttr('src', htmlEscapeHrefAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${htmlClassesAttr(classes)}>`
   if (!context.in_a) {
-    html = `<a${htmlAttr('href', htmlEscapeAttr(href))}>${html}</a>`
+    html = `<a${htmlAttr('href', htmlEscapeHrefAttr(href))}>${html}</a>`
   }
   if (!inline) {
     html = `<div class="float-wrap">${html}</div>`
@@ -4368,6 +4369,7 @@ function idIsSuffix(suffix, full) {
 // @return [href: string, content: string], both XSS safe.
 function linkGetHrefAndContent(ast, context) {
   const href = renderArg(ast.args.href, cloneAndSet(context, 'html_is_href', true))
+  const hrefNoEscape = renderArgNoescape(ast.args.href, context)
   let content = renderArg(ast.args.content, context)
   if (content === '') {
     content = renderArg(ast.args.href, context)
@@ -4375,7 +4377,7 @@ function linkGetHrefAndContent(ast, context) {
       content = content.replace(/^https?:\/\//, '')
     }
   }
-  return [href, content];
+  return [href, content, hrefNoEscape];
 }
 
 // If in split header mode, link to the nosplit version.
@@ -6748,7 +6750,7 @@ function renderTocFromEntryList({
       linear_count_str = ''
     }
     ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
-    let toc_href = htmlAttr('href', '#' + htmlEscapeAttr(my_toc_id));
+    let toc_href = htmlAttr('href', '#' + htmlEscapeHrefAttr(my_toc_id));
     if (tocHasSelflinks) {
       // c for current
       ret += `<a${toc_href}${htmlAttr('class', 'c')}></a>`
@@ -7536,7 +7538,7 @@ function xHrefParts(target_ast, context) {
   }
 
   // return
-  return [htmlEscapeAttr(href_path), htmlEscapeAttr(fragment)];
+  return [htmlEscapeHrefAttr(href_path), htmlEscapeAttr(fragment)];
 }
 
 /* href="" that links to a given node. */
@@ -8841,14 +8843,14 @@ const DEFAULT_MACRO_LIST = [
               const DEFAULT_VIDEO_WIDTH = 560
               width = Math.floor(DEFAULT_VIDEO_WIDTH * height / DEFAULT_MEDIA_HEIGHT)
             }
-            return `<div class="float-wrap"><iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${htmlEscapeAttr(video_id)}${start}" ` +
+            return `<div class="float-wrap"><iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${htmlEscapeHrefAttr(video_id)}${start}" ` +
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
           } else {
             let error
             ;({ href: src, error } = checkAndUpdateLocalLink({
               context,
               external: ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined,
-              href: src,
+              hrefNoEscape: src,
               media_provider_type,
               source_location: ast.args.src.source_location,
             }))
@@ -8859,7 +8861,7 @@ const DEFAULT_MACRO_LIST = [
             } else {
               start = '';
             }
-            return `<video${htmlAttr('src', htmlEscapeAttr(src + start))}${rendered_attrs} preload="none" controls${alt}></video>${error}`;
+            return `<video${htmlAttr('src', htmlEscapeHrefAttr(src + start))}${rendered_attrs} preload="none" controls${alt}></video>${error}`;
           }
         },
         named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(
@@ -8873,9 +8875,9 @@ const DEFAULT_MACRO_LIST = [
             return renderArg(ast.args.source, cloneAndSet(context, 'html_is_href', true))
           } else if (media_provider_type === 'youtube') {
             if (is_url) {
-              return htmlEscapeAttr(src);
+              return htmlEscapeHrefAttr(src);
             } else {
-              return `https://youtube.com/watch?v=${htmlEscapeAttr(src)}`;
+              return `https://youtube.com/watch?v=${htmlEscapeHrefAttr(src)}`;
             }
           } else if (media_provider_type === 'wikimedia') {
             return macro_image_video_block_convert_function_wikimedia_source_url +
@@ -9016,7 +9018,7 @@ const OUTPUT_FORMATS_LIST = [
       },
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
-          let [href, content] = linkGetHrefAndContent(ast, cloneAndSet(context, 'in_a', Macro.LINK_MACRO_NAME))
+          let [href, content, hrefNoEscape] = linkGetHrefAndContent(ast, cloneAndSet(context, 'in_a', Macro.LINK_MACRO_NAME))
           if (ast.validation_output.ref.boolean) {
             content = `${HTML_REF_MARKER}`;
           }
@@ -9032,6 +9034,7 @@ const OUTPUT_FORMATS_LIST = [
             context,
             external,
             href,
+            hrefNoEscape,
             source_location: ast.args.href.source_location,
           })
         },
@@ -10001,7 +10004,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
       ext: 'id',
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
-          const [href, content] = linkGetHrefAndContent(ast, context);
+          const [href, content, hrefNoEscape] = linkGetHrefAndContent(ast, context);
           return content;
         },
         'b': idConvertSimpleElem(),

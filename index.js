@@ -4319,26 +4319,15 @@ function isAscii(str) {
   return /^[\x00-\x7F]*$/.test(str);
 }
 
-function idConvertSimpleElem(argname, opts={}) {
+function idConvertSimpleElem(argname) {
   if (argname === undefined) {
     argname = Macro.CONTENT_ARGUMENT_NAME
-  }
-  let { isToplevel } = opts
-  if (isToplevel === undefined) {
-    isToplevel = false
   }
   return function(ast, context) {
     let ret = renderArg(ast.args[argname], context);
     let newline = ''
-    if (isToplevel) {
-      // TODO a bit horrible but works.
-      if (ret[ret.length - 1] !== '\n') {
-        newline = '\n'
-      }
-    } else {
-      if (!context.macros[ast.macro_name].options.phrasing) {
-        newline = '\n'
-      }
+    if (!context.macros[ast.macro_name].options.phrasing) {
+      newline = '\n'
     }
     if (dolog && newline) {
       console.log(`idConvertSimpleElem: newline=${require('util').inspect(newline)} ast.macro_name=${ast.macro_name}`)
@@ -10642,7 +10631,18 @@ OUTPUT_FORMATS_LIST.push(
         'sup': ourbigbookConvertSimpleElem,
         [Macro.TABLE_MACRO_NAME]: ourbigbookUl,
         [Macro.TD_MACRO_NAME]: ourbigbookLi(INSANE_TD_START),
-        [Macro.TOPLEVEL_MACRO_NAME]: idConvertSimpleElem(Macro.CONTENT_ARGUMENT_NAME, { isToplevel: true }),
+        [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) {
+          let ret = renderArg(ast.args[Macro.CONTENT_ARGUMENT_NAME], context)
+          let newline = ''
+          // TODO a bit horrible but works.
+          if (ret[ret.length - 1] !== '\n') {
+            newline = '\n'
+          }
+          if (dolog && newline) {
+            console.log(`${Macro.TOPLEVEL_MACRO_NAME}: newline=${require('util').inspect(newline)} ast.macro_name=${ast.macro_name}`)
+          }
+          return ret + newline
+        },
         [Macro.TH_MACRO_NAME]: ourbigbookLi(INSANE_TH_START),
         [Macro.TR_MACRO_NAME]: ourbigbookUl,
         'Ul': ourbigbookUl,

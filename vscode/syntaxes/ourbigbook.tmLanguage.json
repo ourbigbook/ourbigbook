@@ -53,7 +53,8 @@
 			"patterns": [
 				{
 					"name": "entity.name.tag.bigb",
-					"match": "^ *(\\*|\\|\\||\\|) "
+                    "comment": "The < has no effect apparently, it gest overridden by brace matching...: https://stackoverflow.com/questions/45301283/how-to-disable-angle-bracket-highlighting-in-visual-studio-code",
+					"match": "^ *(\\*|\\|\\||\\|>) "
 				}
 			]
 		},

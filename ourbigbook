@@ -1231,7 +1231,18 @@ async function webCreateOrUpdate({
     // Retry the transaction a few times. This designed to work well during development when nodemon
     // restarts the server after a file update that adds some logging, often for perf. This way
     // you can just turn logs on and off during a large conversion and it will just keep running fine.
-    ;({ data, status } = await tryCreateOrUpdate(webApi, articleArgs, ourbigbook.cloneAndSet(extraArgs, 'updateNestedSetIndex', updateNestedSetIndex)))
+    ;({ data, status } = await tryCreateOrUpdate(
+      webApi,
+      articleArgs,
+      Object.assign(
+        {},
+        extraArgs,
+        {
+          updateNestedSetIndex,
+          list: true,
+        }
+      )
+    ))
     assertApiStatus(status, data)
     //if (render && i % 100 == 0) {
     //  runCmd('bin/pg', ['bin/normalize', '-c', '-u', 'cirosantilli', 'nested-set'], {

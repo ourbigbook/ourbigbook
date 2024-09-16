@@ -263,9 +263,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
             const sequelize = nonOurbigbookOptions.sequelize
             if (!sequelize || (await ourbigbook_nodejs_webpack_safe.get_noscopes_base_fetch_rows(sequelize, [ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson])).length === 0) {
               const pathSplit = inputPathRelativeToOurbigbookJson.split(ourbigbook.URL_SEP)
-              const src = `${ourbigbook.INSANE_HEADER_CHAR} ${ourbigbook.escapeNotStart(pathSplit[pathSplit.length - 1])}
-{file}
-`
+              const src = `${ourbigbook.INSANE_HEADER_CHAR} ${ourbigbook.escapeNotStart(pathSplit[pathSplit.length - 1])}\n{file}\n`
               const inputPath = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson + '.' + ourbigbook.OURBIGBOOK_EXT
               const newOptions = {
                 ...ourbigbook_options,
@@ -444,7 +442,6 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   let msg_ret
   let output, first_output_path;
   let skip = false
-  let is_bigb = false
   const is_directory = fs.lstatSync(input_path).isDirectory()
   let full_path = path.resolve(input_path);
   let input_path_parse = path.parse(input_path);
@@ -480,7 +477,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
       if (input_path_relative_to_ourbigbook_json) {
         const file_row_type = nonOurbigbookOptions.file_rows_dict[nonOurbigbookOptions.renderType]
         if (
-          // Can not be present on sigle file (non directory) conversion. In that case we always convert.
+          // Can not be present on single file (non directory) conversion. In that case we always convert.
           file_row_type
         ) {
           const file_row = file_row_type[input_path_relative_to_ourbigbook_json]

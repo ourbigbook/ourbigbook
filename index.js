@@ -1228,6 +1228,9 @@ class MacroArgument {
       // https://docs.ourbigbook.com/disabled-macro-argument
       options.disabled = false;
     }
+    const name = options.name
+    let inlineOnly = options.inlineOnly
+    this.inlineOnly = (inlineOnly === undefined) ? (options.name === Macro.TITLE_ARGUMENT_NAME) : inlineOnly
     if (!('mandatory' in options)) {
       // https://docs.ourbigbook.com#mandatory-positional-arguments
       options.mandatory = false;
@@ -1253,7 +1256,7 @@ class MacroArgument {
     this.default = options.default;
     this.elide_link_only = options.elide_link_only;
     this.mandatory = options.mandatory;
-    this.name = options.name;
+    this.name = name
     this.positive_nonzero_integer = options.positive_nonzero_integer;
     this.remove_whitespace_children = options.remove_whitespace_children;
     this.ourbigbook_output_prefer_literal = options.ourbigbook_output_prefer_literal;
@@ -1269,10 +1272,10 @@ class Macro {
    * @param {Array[MacroArgument]} args
    * @param {Function} convert
    * @param {Object} options
-   *        {boolean} phrasing - is this phrasing content?
+   *        {boolean} inline - is this inline content?
    *                  (HTML5 elements that can go in paragraphs). This matters to:
    *                  - determine where `\n\n` paragraphs will split
-   *                  - phrasing content does not get IDs
+   *                  - inline content does not get IDs
    *        {String} auto_parent - automatically surround consecutive sequences of macros with
    *                 the same parent auto_parent into a node with auto_parent type. E.g.,
    *                 to group list items into ul.
@@ -1326,9 +1329,8 @@ class Macro {
     if (!('named_args' in options)) {
       options.named_args = [];
     }
-    if (!('phrasing' in options)) {
-      options.phrasing = false;
-    }
+    const inline = options.inline
+    this.inline = inline === undefined ? false : inline
     if (!('show_disambiguate' in options)) {
       options.show_disambiguate = false;
     }
@@ -2490,7 +2492,7 @@ function calculateId(
 
       if (id === undefined) {
         index_id = false;
-        if (!macro.options.phrasing) {
+        if (!macro.inline) {
           const parent_header_tree_node = ast.header_tree_node.parent_ast
           if (parent_header_tree_node && new_context.options.prefixNonIndexedIdsWithParentId) {
             skip_scope = true
@@ -2915,7 +2917,7 @@ function renderArg(arg, context) {
         if (ast.macro_name === Macro.PARAGRAPH_MACRO_NAME) {
           arg.has_paragraph = true
         }
-        if (context.macros[ast.macro_name].options.phrasing) {
+        if (context.macros[ast.macro_name].inline) {
           arg.not_all_block = true
         }
       }
@@ -3792,7 +3794,7 @@ function getDescription(description_arg, context) {
   if (description_arg) {
     for (const ast of description_arg) {
       if (!(
-        context.macros[ast.macro_name].options.phrasing ||
+        context.macros[ast.macro_name].inline ||
         ast.node_type === AstType.PLAINTEXT
       )) {
         multiline_caption = true
@@ -4326,7 +4328,7 @@ function idConvertSimpleElem(argname) {
   return function(ast, context) {
     let ret = renderArg(ast.args[argname], context);
     let newline = ''
-    if (!context.macros[ast.macro_name].options.phrasing) {
+    if (!context.macros[ast.macro_name].inline) {
       newline = '\n'
     }
     if (dolog && newline) {
@@ -5909,16 +5911,26 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     // Now do a pass that collects information that may be affected by
     // the tree modifications of the previous step, e.g. ID generation.
+    //
+    // We also do some error checking here, to account for change that might have been
+    // made in previous steps.
     perfPrint(context, 'post_process_3')
     {
-      const todo_visit = [ast_toplevel];
+      const todo_visit = [[ast_toplevel, undefined]]
       let cur_header_tree_node
       while (todo_visit.length > 0) {
-        const ast = todo_visit.pop();
+        const [ast, inlineOnly] = todo_visit.pop();
         const macro_name = ast.macro_name;
         const macro = context.macros[macro_name];
 
         let children_in_header;
+        if (inlineOnly && !macro.inline) {
+          parseError(
+            state,
+            `${inlineOnly} but macro ${ESCAPE_CHAR}${macro_name} is not inline`,
+            ast.source_location,
+          )
+        }
         if (macro_name === Macro.HEADER_MACRO_NAME) {
           // TODO start with the toplevel.
           cur_header_tree_node = ast.header_tree_node;
@@ -5926,7 +5938,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           if (ast.parent_ast.macro_name !== Macro.TOPLEVEL_MACRO_NAME) {
             parseError(
               state,
-              `headers (\\${Macro.HEADER_MACRO_NAME}) must be directly at document toplevel, not as children of other elements. Parent was instead: \\${ast.parent_ast.macro_name}`,
+              `headers (\\${Macro.HEADER_MACRO_NAME}) must be directly at document toplevel, not as children of other elements. Parent was instead: ${ESCAPE_CHAR}${ast.parent_ast.macro_name}`,
               ast.source_location,
             )
           }
@@ -5975,9 +5987,20 @@ async function parse(tokens, options, context, extra_returns={}) {
         for (const arg_name in ast.args) {
           const arg = ast.args[arg_name];
           for (let i = arg.length() - 1; i >= 0; i--) {
+            let newInlineOnly
+            if (inlineOnly) {
+              newInlineOnly = inlineOnly
+            } else {
+              const macro_arg = macro.name_to_arg[arg_name]
+              if (macro_arg && macro_arg.inlineOnly) {
+                newInlineOnly = `argument "${arg_name}" of macro ${ESCAPE_CHAR}${macro.name} can only contain inline elements`
+              } else if (macro.inline) {
+                newInlineOnly = `${ESCAPE_CHAR}${macro.name} is an inline macro, and inline macros can only contain inline macros`
+              }
+            }
             const ast = arg.get(i);
             ast.in_header = children_in_header;
-            todo_visit.push(ast);
+            todo_visit.push([ast, newInlineOnly])
           }
         }
       }
@@ -6305,8 +6328,8 @@ function parseAddParagraph(
   if (paragraph_start < paragraph_end) {
     const macro = state.macros[arg.get(paragraph_start).macro_name];
     const slice = arg.slice(paragraph_start, paragraph_end);
-    if (macro.options.phrasing || slice.length() > 1) {
-      // If the first element after the double newline is phrasing content,
+    if (macro.inline || slice.length() > 1) {
+      // If the first element after the double newline is inline content,
       // create a paragraph and put all elements until the next paragraph inside
       // that paragraph.
       new_arg.push(
@@ -8180,7 +8203,7 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
       ],
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8192,14 +8215,14 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
     'br',
     [],
     {
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8241,7 +8264,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8276,7 +8299,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8378,7 +8401,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8438,7 +8461,7 @@ const DEFAULT_MACRO_LIST = [
     MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS,
     {
       named_args: IMAGE_VIDEO_INLINE_BLOCK_NAMED_ARGUMENTS.concat(IMAGE_INLINE_BLOCK_NAMED_ARGUMENTS),
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8456,7 +8479,7 @@ const DEFAULT_MACRO_LIST = [
           name: 'parent',
         }),
       ],
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8531,7 +8554,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8562,7 +8585,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8573,7 +8596,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      phrasing: true,
+      inline: true,
       xss_safe: false,
     }
   ),
@@ -8608,7 +8631,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8619,7 +8642,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -8761,7 +8784,7 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
       ],
-      phrasing: true,
+      inline: true,
     }
   ),
   new Macro(
@@ -9027,11 +9050,7 @@ const OUTPUT_FORMATS_LIST = [
             source_location: ast.args.href.source_location,
           })
         },
-        'b': htmlRenderSimpleElem(
-          // Not 'b' to help avoid illegal HTML non-phrasing nestings.
-          'div',
-          { attrs: { class: 'b' }}
-        ),
+        'b': htmlRenderSimpleElem('b'),
         'br': function(ast, context) { return '<br>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
           const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
@@ -9549,11 +9568,7 @@ const OUTPUT_FORMATS_LIST = [
           return ret;
         },
         'Hr': function(ast, context) { return '<div><hr></div>' },
-        'i': htmlRenderSimpleElem(
-          // Not 'i' to help avoid illegal HTML non-phrasing nestings.
-          'div',
-          { attrs: { class: 'i' }}
-        ),
+        'i': htmlRenderSimpleElem('i'),
         'Image': macroImageVideoBlockConvertFunction,
         'image': function(ast, context) {
           let alt_arg;
@@ -9566,7 +9581,6 @@ const OUTPUT_FORMATS_LIST = [
           let rendered_attrs = htmlRenderAttrsId(ast, context, ['height', 'width']);
           let { error_message, media_provider_type, src } = macroImageVideoResolveParams(ast, context);
           if (context.in_header) {
-            let errorMessage
             const error = cannotPlaceXInYErrorMessage(ast.macro_name, Macro.HEADER_MACRO_NAME)
             renderError(context, error, ast.source_location)
             return src + ' ' + errorMessageInOutput(error)
@@ -10272,7 +10286,7 @@ function ourbigbookLi(marker) {
 function ourbigbookAddNewlinesAfterBlock(ast, context, options={}) {
   const { auto_parent } = options
   if (
-    !context.macros[ast.macro_name].options.phrasing &&
+    !context.macros[ast.macro_name].inline &&
     !ast.is_last_in_argument() &&
     (
       // It is a bit sad that we have to use this "am I on toplevel" checks processing here.
@@ -10472,7 +10486,7 @@ function ourbigbookConvertArgs(ast, context, options={}) {
   let i = 0
   for (const ret_arg of ret_args) {
     ret.push(...ret_arg)
-    if (!macro.options.phrasing && i !== ret_args.length - 1) {
+    if (!macro.inline && i !== ret_args.length - 1) {
       ret.push('\n')
     }
     i++

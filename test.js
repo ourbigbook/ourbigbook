@@ -2431,21 +2431,6 @@ assert_lib_ast('link: auto insane http https removal',
     ]
   }
 )
-assert_lib_ast('link: with multiple paragraphs',
-  '\\a[http://example.com][aaa\n\nbbb]\n',
-  [
-    a('P', [
-      a(
-        'a',
-        [
-          a('P', [t('aaa')]),
-          a('P', [t('bbb')]),
-        ],
-        {'href': [t('http://example.com')]},
-      ),
-    ]),
-  ]
-)
 assert_lib_ast('link: xss: content and href',
   `\\a[ab&\\<>"'cd][ef&\\<>"'gh]{external}\n`,
   undefined,
@@ -2706,17 +2691,37 @@ assert_lib_ast('nest: image inside a is allowed and does not create nested a',
   },
 )
 assert_lib_error('nest: Image inside H gives an error',
-  // Valid HTML, but feels like a bad idea, especially for web, as it would generate
-  // extra requests on places like indices and ToC, where it is not expected.
+  // We add div and other block stuff to block images, which is invalid HTML.
   '= a \\Image[http://example.com]\n',
   1,
   5,
 )
 assert_lib_error('nest: image inside H gives an error',
-  // Same rationale as for Image
+  // Valid HTML, but feels like a bad idea, especially for web, as it would generate
+  // extra requests on places like indices and ToC, where it is not expected.
   '= a \\image[http://example.com]\n',
   1,
   5,
+)
+assert_lib_error('nest: any block macro inside H gives an error explicit',
+  '= a \\Hr\n',
+  1,
+  5,
+)
+assert_lib_error('nest: any block macro inside H gives an error implicit paragraph',
+  '\\H[1][a\n\nb]',
+  1,
+  7,
+)
+assert_lib_error('nest: inline macros can only contain inline macros explicit',
+  '\\i[ab \\Hr cd]\n',
+  1,
+  7,
+)
+assert_lib_error('nest: inline macros can only contain inline macros implicit paragraph',
+  '\\i[ab \\Hr cd]\n',
+  1,
+  7,
 )
 
 // Internal cross references
@@ -3815,7 +3820,7 @@ assert_lib_ast('x: cross reference c ignores non plaintext first argument',
   undefined,
   {
     assert_xpath_stdout: [
-      "//x:div[@class='p']//x:a[@href='#good-dog']//x:div[@class='i' and text()='Good']",
+      "//x:div[@class='p']//x:a[@href='#good-dog']//x:i[text()='Good']",
     ],
   }
 )
@@ -3830,7 +3835,7 @@ assert_lib_ast('x: cross reference p ignores non plaintext last argument',
   undefined,
   {
     assert_xpath_stdout: [
-      "//x:div[@class='p']//x:a[@href='#good-dog']//x:div[@class='i' and text()='dog']",
+      "//x:div[@class='p']//x:a[@href='#good-dog']//x:i[text()='dog']",
     ],
   }
 )
@@ -6570,24 +6575,6 @@ assert_lib('word count descendant from include without embed includes',
 )
 
 // Toc
-// https://github.com/ourbigbook/ourbigbook/issues/143
-assert_lib_ast('header with insane paragraph in the content does not blow up',
-  `\\H[1][a
-
-b]
-`,
-  [
-    a('H', undefined, {
-      level: [t('1')],
-      title: [
-        a('P', [t('a')]),
-        a('P', [t('b')]),
-      ]
-    },
-      { id: 'a-b' }
-    )
-  ]
-)
 assert_lib_ast('xss: H id',
   `= tmp
 {id=&\\<>"'}
@@ -10980,7 +10967,7 @@ assert_cli(
     ],
     assert_xpath: {
       'out/html/notindex.html': [
-        "//x:div[@class='i' and text()='world2']",
+        "//x:i[text()='world2']",
       ],
     },
     assert_bigb: {

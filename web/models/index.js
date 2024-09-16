@@ -417,7 +417,7 @@ async function sync(sequelize, opts={}) {
   return dbExists
 }
 
-/** Optionall check, print and update any of our denormaliezd in-database caches. */
+/** Optional check, print and update any of our denormaliezd in-database caches. */
 async function normalize({
   check,
   fix,

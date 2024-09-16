@@ -925,13 +925,6 @@ If the custom text is empty, an autolink is generated. This is often useful if y
 \OurBigBookExample[[The website is really cool: http://example.com[].]]
 This could also be achieved with the sane syntax of course, but this pattern saves a tiny bit of typing.
 
-Link with multiple paragraphs inside it:
-\OurBigBookExample[[
-\a[http://example.com][Multiple
-
-paragraphs]
-]]
-
 Link to a file in the current repository:
 \OurBigBookExample[[
 The file \a[index.js] is cool.
@@ -1194,20 +1187,6 @@ This magic can be observed with <--help-macros> by seeing that the `href` argume
 ``
 "elide_link_only": true,
 ``
-
-= Link percent encoding
-{parent=Link}
-
-<OurBgiBook> automatically encodes all link `href` for characters that are not recommended for URLs.
-
-This way you can for example simply write arbitrary Unicode URLs and OurBigBook will escape them for you on the HTML output.
-
-The only exception for this is the percent sign itself `%`, which it leaves untouched so that explicitly encoded URLs also work. So if you want a literal percent then you have to explicitly write it yourself as `%25`.
-
-\OurBigBookExample[[
-* acute a Á as raw Unicode: https://en.wikipedia.org/wiki/Á
-* acute a Á explicitly escaped by user: https://en.wikipedia.org/wiki/%C3%81
-]]
 
 = Insane link termination character
 {parent=Insane link parsing rules}
@@ -5430,15 +5409,6 @@ OurBigBookExample
 = Macro argument syntax
 {synonym}
 
-= Disabled macro argument
-{parent=Macro argument}
-
-Some macro arguments are disabled by default.
-
-These are typicially arguments which felt like a good idea one day, but which we ended up regretting.
-
-They can be enabled via <ourbigbook.json> options TODO, but doing so will make the project incompatible with <OurBigBook Web>, so it is not advised.
-
 = Positional vs named arguments
 {parent=Macro argument}
 {title2=`[...]` vs `{key=...}`}
@@ -5846,6 +5816,28 @@ This is good for short arguments of regular text, but for longer blocks like <co
 Each <macro argument> can have certain properties associated to it.
 
 These properties have programmatic effects, and allow users and developers to more easily understand and create new macro arguments.
+
+= Disabled macro argument
+{parent=Macro argument property}
+
+Some macro arguments are disabled by default.
+
+These are typicially arguments which felt like a good idea one day, but which we ended up regretting.
+
+They can be enabled via <ourbigbook.json> options TODO, but doing so will make the project incompatible with <OurBigBook Web>, so it is not advised.
+
+= `inlineOnly`
+{parent=Macro argument property}
+
+A macro argument property that is `inlineOnly` can only contain <inline macros>. If any <block macros> present in the argument or its descendants, will lead to a conversion error.
+
+Some notable rules:
+* <title arguments> are alwayws `inlineOnly`
+* all arguments of <inline macros> are `inlineOnly`
+
+There are two main rationales for enforcing these rules:
+* the HTML `h1` - `h6` header HTML elements can only contain phrasing content (analogout to our <inline macros>) for the HTML to be valid. We could chose to use styled `div`s instead of `h` elements, but this could have a negative SEO impact. All other HTML elements could be replaced by `div`s without issue however, the problem really is only `h`.
+* on <OurBigBook Web>, where multiple users are working together and many titles from multiple users show on index pages, it is saner to be more restrictive on what is allowed on titles and to prevent visually very large things from being added in order to prevent bad actors or accidents from disrupting other users too much
 
 = `remove_whitespace_children`
 {parent=Macro argument property}

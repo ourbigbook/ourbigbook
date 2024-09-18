@@ -256,7 +256,7 @@ div.list-container {
         //   - https://stackoverflow.com/questions/45105611/css-only-solution-for-overflow-scroll-indicators
         //   We ended up going for a relatively positioned element instead since we are non scrollable.
         &.cut {
-          $max-height: 500px;
+          $max-height: 1000px;
           max-height: $max-height;
           overflow-y: hidden;
           .show-more {

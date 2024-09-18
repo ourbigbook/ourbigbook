@@ -5,6 +5,7 @@ $like-button-inactive-color: white;
 // Less bright than $like-button-hover-color otherwise too much glare.
 $like-button-active-color: #BB1070;
 $like-button-hover-color: #FF1493;
+$img-background-color: white;
 
 $border-radius: 10px;
 $toplevel-padding: $toplevel-horizontal-padding-left;
@@ -745,6 +746,7 @@ span.shortcut {
       }
     }
     .user-img {
+      background-color: $img-background-color;
       @media only screen and (max-width: $max-mobile-width) {
         // Make image a bit larger otherwise feels too empty.
         $size: 250px;
@@ -764,6 +766,7 @@ span.shortcut {
 
 img.profile-thumb {
   $size: 26px;
+  background-color: $img-background-color;
   height: $size;
   width: $size;
   vertical-align: middle;

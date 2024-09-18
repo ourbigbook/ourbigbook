@@ -10342,6 +10342,12 @@ VS Code is currently intended to be the best supported <todo/wysiwyg>[non-fully-
 
 The official OurBigBook extension is published at: https://marketplace.visualstudio.com/items?itemName=ourbigbook.ourbigbook-vscode[] by the publisher account: https://marketplace.visualstudio.com/publishers/ourbigbook[].
 
+At https://github.com/ourbigbook/ourbigbook/issues/333 was deleted for unexplained reasons from the marketplace and, we are awaiting a reply from Microsoft. Until that gets fixed, please install with:
+``
+wget https://github.com/ourbigbook/ourbigbook-media/raw/master/ourbigbook-vscode.vsix
+code --install-extension ourbigbook-vscode.vsix
+``
+
 \Image[feature/vscode/install.png]
 {title=<Visual Studio Code extension> installation}
 {provider=github}

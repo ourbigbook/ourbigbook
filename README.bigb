@@ -1223,6 +1223,8 @@ The only exception for this is the percent sign itself `%`, which it leaves unto
 {parent=Macro}
 {title2=`\br`}
 
+The `\br` macro inserts a visible newline between two lines without creating a paragraph.
+
 There is basically one application for this: poetry, which would be too ugly with <code block> due to fixed width font:
 \OurBigBookExample[[
 Paragraph 1 Line 1\br

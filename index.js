@@ -16,12 +16,10 @@ if (typeof performance === 'undefined') {
   globals.performance = performance;
 }
 
-const { trace } = require('console');
 const katex = require('katex');
 const lodash = require('lodash');
 const path = require('path');
 const pluralize = require('pluralize');
-const { kill } = require('process');
 
 // consts used by classes.
 const HTML_PARENT_MARKER = '<span class="fa-solid-900 icon">\u{f062}</span>';
@@ -5931,6 +5929,20 @@ async function parse(tokens, options, context, extra_returns={}) {
             ast.source_location,
           )
         }
+        // It would be better to have a more generalized version of this check,
+        // and one that can detect which argument we are in. But this will do for now.
+        if (
+          ast.in_header && (
+            macro_name === 'br' ||
+            macro_name === 'image'
+          )
+        ) {
+          parseError(
+            state,
+            cannotPlaceXInYErrorMessage(macro_name, Macro.HEADER_MACRO_NAME),
+            ast.source_location,
+          )
+        }
         if (macro_name === Macro.HEADER_MACRO_NAME) {
           // TODO start with the toplevel.
           cur_header_tree_node = ast.header_tree_node;
@@ -5998,9 +6010,9 @@ async function parse(tokens, options, context, extra_returns={}) {
                 newInlineOnly = `${ESCAPE_CHAR}${macro.name} is an inline macro, and inline macros can only contain inline macros`
               }
             }
-            const ast = arg.get(i);
-            ast.in_header = children_in_header;
-            todo_visit.push([ast, newInlineOnly])
+            const childAst = arg.get(i)
+            childAst.in_header = children_in_header
+            todo_visit.push([childAst, newInlineOnly])
           }
         }
       }
@@ -9580,18 +9592,12 @@ const OUTPUT_FORMATS_LIST = [
           let alt = htmlAttr('alt', htmlEscapeAttr(renderArg(alt_arg, context)));
           let rendered_attrs = htmlRenderAttrsId(ast, context, ['height', 'width']);
           let { error_message, media_provider_type, src } = macroImageVideoResolveParams(ast, context);
-          if (context.in_header) {
-            const error = cannotPlaceXInYErrorMessage(ast.macro_name, Macro.HEADER_MACRO_NAME)
-            renderError(context, error, ast.source_location)
-            return src + ' ' + errorMessageInOutput(error)
-          } else {
-            const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
-            let { html: imgHtml } = htmlImg({ alt, ast, context, external, inline: true, media_provider_type, rendered_attrs, src })
-            if (error_message) {
-              imgHtml += errorMessageInOutput(error_message, context)
-            }
-            return imgHtml
+          const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
+          let { html: imgHtml } = htmlImg({ alt, ast, context, external, inline: true, media_provider_type, rendered_attrs, src })
+          if (error_message) {
+            imgHtml += errorMessageInOutput(error_message, context)
           }
+          return imgHtml
         },
         [Macro.INCLUDE_MACRO_NAME]: unconvertible,
         'JsCanvasDemo': function(ast, context) {

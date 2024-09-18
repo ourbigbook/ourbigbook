@@ -2713,6 +2713,11 @@ assert_lib_error('nest: any block macro inside H gives an error implicit paragra
   1,
   7,
 )
+assert_lib_error('nest: br inside H gives an error',
+  '= a \\br b',
+  1,
+  5,
+)
 assert_lib_error('nest: inline macros can only contain inline macros explicit',
   '\\i[ab \\Hr cd]\n',
   1,

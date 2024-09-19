@@ -2993,7 +2993,7 @@ assert_lib_ast('x: cross reference to ids in the current file with split',
       ],
       'bb.html': [
         // Cross-page split-header parent link.
-        xpath_header_parent(1, 'bb', 'notindex.html', 'Notindex'),
+        xpath_header_parent(1, 'bb', 'notindex.html', 'Home'),
         "//x:a[@href='notindex.html' and text()='bb to notindex']",
         "//x:a[@href='notindex.html#bb' and text()='bb to bb']",
         // Link to the split version.
@@ -7717,7 +7717,7 @@ assert_lib('include: subdir index.bigb removes leading @ from links with the x_r
       ],
       '@subdir/notindex.html': [
         "//x:a[@href='../subdir.html' and text()='link to subdir']",
-        xpath_header_parent(1, 'notindex', '../subdir.html', 'Subdir'),
+        xpath_header_parent(1, 'notindex', '../subdir.html', 'Home'),
       ],
     },
   }
@@ -7826,7 +7826,7 @@ assert_lib(
     },
     assert_xpath: {
       'included-by-index.html': [
-        xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
+        xpath_header_parent(1, 'included-by-index', 'index.html', 'Home'),
         // Multiple includers showing on parent used to work. But we killed it when we added breadcrumbs
         // at 7e571ee7f8a2e1af30fccbf51029ce51d7cca529
         // If we were to revive this, we should likely have a separate meta line for each includer.
@@ -7877,7 +7877,7 @@ assert_lib('include: parent_id option',
 
     assert_xpath: {
       'notindex2.html': [
-        xpath_header_parent(1, 'notindex2', 'notindex.html', 'Notindex'),
+        xpath_header_parent(1, 'notindex2', 'notindex.html', 'Home'),
       ],
     },
   }
@@ -9353,11 +9353,11 @@ assert_cli(
       ],
       'out/html/included-by-index.html': [
         // Cross input file header.
-        xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
+        xpath_header_parent(1, 'included-by-index', 'index.html', 'Home'),
       ],
       'out/html/included-by-index-split.html': [
         // Cross input file header on split header.
-        xpath_header_parent(1, 'included-by-index', 'index.html', 'Index'),
+        xpath_header_parent(1, 'included-by-index', 'index.html', 'Home'),
       ],
       'out/html/included-by-h2-in-index.html': [
         xpath_header_parent(1, 'included-by-h2-in-index', 'index.html#h2', 'h2'),

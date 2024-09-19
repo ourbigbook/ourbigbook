@@ -292,6 +292,7 @@ export default function UserPage({
           commentCountByLoggedInUser,
           handleShortFragmentSkipOnce,
           incomingLinks,
+          isIndex: true,
           issuesCount,
           latestIssues,
           loggedInUser,

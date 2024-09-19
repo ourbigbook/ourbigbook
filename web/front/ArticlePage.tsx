@@ -123,6 +123,7 @@ const ArticlePageHoc = (isIssue=false) => {
             handleShortFragmentSkipOnce,
             incomingLinks,
             issueArticle,
+            isIndex: false,
             isIssue,
             issuesCount,
             latestIssues,

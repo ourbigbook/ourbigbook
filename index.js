@@ -3973,7 +3973,7 @@ function htmlAncestorLinks(entries, nAncestors) {
     i++
   }
   for (const entry of entries) {
-    ret.push(`<a${entry.href}> ${entry.content}</a>`)
+    ret.push(`<a${entry.href}>${i > 0 ? ' ' : ''}${entry.content}</a>`)
     i++
   }
   return ret.join('')
@@ -7827,6 +7827,8 @@ const INCOMING_LINKS_MARKER = '<span title="Incoming links" class="fa-solid-900 
 exports.INCOMING_LINKS_MARKER = INCOMING_LINKS_MARKER
 const SYNONYM_LINKS_MARKER = '<span title="Synonyms" class="fa-solid-900 icon">\u{f07e}</span>'
 exports.SYNONYM_LINKS_MARKER = SYNONYM_LINKS_MARKER
+const HOME_MARKER = '<span title="Home" class="fa-solid-900 icon">\u{f015}</span> Home'
+exports.HOME_MARKER = HOME_MARKER
 const INCOMING_LINKS_ID_UNRESERVED = 'incoming-links'
 exports.INCOMING_LINKS_ID_UNRESERVED = INCOMING_LINKS_ID_UNRESERVED
 const SYNONYM_LINKS_ID_UNRESERVED = 'synonyms'
@@ -7906,6 +7908,8 @@ exports.TAGGED_ID_UNRESERVED = TAGGED_ID_UNRESERVED
 const TAGS_MARKER = '<span title="Tags" class="fa-solid-900 icon">\u{f02c}</span>'
 exports.TAGS_MARKER = TAGS_MARKER
 const TOC_ARROW_HTML = '<div class="arrow"><div></div></div>'
+const TOC_LINK_ELEM_CLASS_NAME = 'toc'
+exports.TOC_LINK_ELEM_CLASS_NAME = TOC_LINK_ELEM_CLASS_NAME
 const TOC_HAS_CHILD_CLASS = 'has-child'
 const UL_OL_OPTS = {
   wrap: true,
@@ -9391,8 +9395,7 @@ const OUTPUT_FORMATS_LIST = [
                 // it is used only on web so... lazy to think now.
                 id = id.slice(fixedScopeRemoval)
               }
-              const toc_href = htmlAttr('href', '#' + htmlEscapeAttr(tocId(id)));
-              toc_link_html = `<a${toc_href} class="toc"></a>`
+              toc_link_html = `<a${htmlAttr('href', '#' + htmlEscapeAttr(tocId(id)))} class="${TOC_LINK_ELEM_CLASS_NAME}"></a>`
             }
           }
 
@@ -9411,9 +9414,13 @@ const OUTPUT_FORMATS_LIST = [
                 const nearestAncestors = ancestors.slice(0, ANCESTORS_MAX).reverse()
                 const entries = []
                 for (const ancestor of nearestAncestors) {
-                  const href = xHrefAttr(ancestor, context)
-                  const content = renderArg(ancestor.args[Macro.TITLE_ARGUMENT_NAME], context)
-                  entries.push({ href, content })
+                  entries.push({
+                    href: xHrefAttr(ancestor, context),
+                    content: renderArg(ancestor.args[Macro.TITLE_ARGUMENT_NAME], context),
+                  })
+                }
+                if (ancestors.length <= ANCESTORS_MAX) {
+                  entries[0].content = HOME_MARKER
                 }
                 header_meta_ancestors.push(htmlAncestorLinks(entries, nAncestors));
               }
@@ -9434,7 +9441,7 @@ const OUTPUT_FORMATS_LIST = [
           }
           if (first_header) {
             if (checkHasToc(context)) {
-              header_meta.push(`<a${htmlAttr('href', `#${context.options.tocIdPrefix}${Macro.TOC_ID}`)} class="toc"></a>`);
+              header_meta.push(`<a${htmlAttr('href', `#${context.options.tocIdPrefix}${Macro.TOC_ID}`)} class="${TOC_LINK_ELEM_CLASS_NAME}"></a>`);
             }
           } else {
             if (toc_link_html) {

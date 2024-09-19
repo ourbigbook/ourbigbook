@@ -45,11 +45,13 @@ import {
   H_ANCESTORS_CLASS,
   H_WEB_CLASS,
   Macro,
+  HOME_MARKER,
   HTML_PARENT_MARKER,
   SYNONYM_LINKS_ID_UNRESERVED,
   SYNONYM_LINKS_MARKER,
   TAGGED_ID_UNRESERVED,
   TAGS_MARKER,
+  TOC_LINK_ELEM_CLASS_NAME,
   tocId,
   htmlAncestorLinks,
   htmlToplevelChildModifierById,
@@ -90,6 +92,7 @@ function WebMeta({
   canEdit,
   canDelete,
   curArticle,
+  hasArticlesInSamePage=false,
   isIndex,
   isIssue,
   issueArticle,
@@ -101,6 +104,12 @@ function WebMeta({
     mySlug = `${loggedInUser.username}/${curArticle.topicId}`
   }
   return <>
+    {(toplevel && hasArticlesInSamePage) &&
+      <>
+        <a href={'#' + Macro.TOC_ID} className={TOC_LINK_ELEM_CLASS_NAME} />
+        {' '}
+      </>
+    }
     <LikeArticleButton {...{
       article: curArticle,
       issueArticle,
@@ -213,6 +222,7 @@ export default function Article({
   commentCountByLoggedInUser=undefined,
   handleShortFragmentSkipOnce,
   incomingLinks,
+  isIndex=false,
   isIssue=false,
   issueArticle=undefined,
   latestIssues,
@@ -261,6 +271,7 @@ export default function Article({
     }
     articlesInSamePageMap[article.slug] = article
   }
+  const hasArticlesInSamePage = articlesInSamePage !== undefined && !!articlesInSamePage.length
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
   const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
   const aElemToMetaMap = React.useRef(new Map())
@@ -509,6 +520,7 @@ export default function Article({
             canEdit,
             canDelete,
             curArticle,
+            hasArticlesInSamePage,
             isIndex,
             isIssue,
             issueArticle,
@@ -611,6 +623,9 @@ export default function Article({
   if (!isIssue) {
     let h1Render = article.h1Render
     const h1RenderElem = parse(h1Render)
+    if (isIndex) {
+      h1RenderElem.querySelector(`h1 > a`).innerHTML = HOME_MARKER
+    }
 
     //Ancestors
     {
@@ -618,11 +633,15 @@ export default function Article({
       if (elem) {
         let htmlFrag: string|undefined
         if (ancestors.length) {
+          const ancestorLinks = ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
+            href: ` href="${linkPref}${a.slug}"`,
+            content: a.titleRender,
+          }})
+          if (ancestors.length <= ANCESTORS_MAX) {
+            ancestorLinks[0].content = HOME_MARKER
+          }
           htmlFrag = htmlAncestorLinks(
-            ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
-              href: ` href="${linkPref}${a.slug}"`,
-              content: a.titleRender,
-            }}),
+            ancestorLinks,
             ancestors.length,
           )
           elem.innerHTML = htmlFrag
@@ -636,7 +655,8 @@ export default function Article({
         canDelete,
         canEdit,
         curArticle: article,
-        isIndex: article.slug === article.author.username,
+        hasArticlesInSamePage,
+        isIndex,
         isIssue,
         issueArticle,
         loggedInUser,

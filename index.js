@@ -2518,6 +2518,9 @@ function calculateId(
       let message = `IDs that start with "${Macro.RESERVED_ID_PREFIX}" are reserved: "${id}"`;
       parseError(state, message, ast.source_location);
     }
+    if (id === '') {
+      parseError(state, 'ID cannot be empty', ast.source_location);
+    }
     if (id !== undefined && ast.scope !== undefined && !skip_scope) {
       id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + id
     }
@@ -2536,9 +2539,6 @@ function calculateId(
       scopeSplit = scopeSplit.slice(1)
     }
     ast.file = (scopeSplit.length ? scopeSplit.join(Macro.HEADER_SCOPE_SEPARATOR) + Macro.HEADER_SCOPE_SEPARATOR : '') + ast.file
-  }
-  if (id === '') {
-    parseError(state, 'ID cannot be empty', ast.source_location);
   }
   ast.index_id = index_id;
   if (ast.id !== undefined && !ast.force_no_index) {

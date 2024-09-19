@@ -69,7 +69,15 @@ async function convert({
   const source = modifyEditorInput(titleSource, bodySource).new
   let input_path_given
   if (path === undefined) {
-    path = titleSource ? ourbigbook.titleToId(titleSource) : 'asdf'
+    // titleSource can be undefined for comments
+    path = titleSource === undefined ? 'asdf' : ourbigbook.titleToId(titleSource)
+    if (!path) {
+      // I was not able to find a non-web case where this happens because e.g.:
+      // * .bigb -> not treated as .bigb extension by ourbigbook cli
+      // * ,.bigb -> ID actually gets set to `,`
+      // so adding a check here directly.
+      throw new ValidationError(`title "${titleSource}" generates an empty ID`)
+    }
     input_path_given = false
   } else {
     input_path_given = true

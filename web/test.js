@@ -743,6 +743,14 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await createArticleApi(test, { bodySource: 'Body 1' }))
       assert.strictEqual(status, 422)
 
+      // Empty title
+      ;({data, status} = await createArticleApi(test, { titleSource: '', bodySource: 'Body 1' }))
+      assert.strictEqual(status, 422)
+
+      // Empty id
+      ;({data, status} = await createArticleApi(test, { titleSource: '.', bodySource: 'Body 1' }))
+      assert.strictEqual(status, 422)
+
       // Missing all data and no path to existing article to take it from
       ;({data, status} = await createArticleApi(test, {}))
       assert.strictEqual(status, 422)
@@ -4658,5 +4666,28 @@ it(`api: min`, async () => {
     ;({data, status} = await test.webApi.min())
     assertStatus(status, data)
     assert.strictEqual(data.loggedIn, true)
+  })
+})
+
+it(`api: nomin 2`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // Create article as user0
+    article = createArticleArg({ i: 0 })
+    ;({data, status} = await test.webApi.min())
+    assertStatus(status, data)
+    assert.strictEqual(data.loggedIn, true)
+
+    // Unterminated literal on title
+    ;({data, status} = await createArticleApi(test, {
+      titleSource: 'a `',
+      bodySource: '` b'
+    }))
+    assert.strictEqual(status, 422)
   })
 })

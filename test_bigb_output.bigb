@@ -414,3 +414,9 @@ Hyphens are not removed from insane links to file: <not-readme.bigb>{file}
 
 = Synonym secondary
 {synonym}
+
+\H[2]
+[
+Header with
+newline
+]

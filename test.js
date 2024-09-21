@@ -2728,6 +2728,13 @@ assert_lib_error('nest: inline macros can only contain inline macros implicit pa
   1,
   7,
 )
+assert_lib_error('nest: header source cannot contain newlines',
+  // While this could be allowed in principle, it requires better implementation on web
+  // to avoid serious issues related to title splitting. So let's just forbid for now.
+  '= a `b\nc` d',
+  1,
+  7,
+)
 
 // Internal cross references
 // \x

@@ -1561,6 +1561,16 @@ class Tokenizer {
       this.log_debug(`this.cur_c: '${this.cur_c}'`)
       this.log_debug();
       if (this.chars[this.i] === '\n') {
+        if (this.in_insane_header) {
+          this.error(
+            `insane header cannot contain newlines`,
+            new SourceLocation(
+              this.source_location.line,
+              this.source_location.column,
+              this.source_location.path
+            )
+          )
+        }
         this.source_location.line += 1;
         this.source_location.column = 1;
       } else {
@@ -10597,8 +10607,11 @@ OUTPUT_FORMATS_LIST.push(
               }
             }
           ).join('')
-          //ast.validation_output.level.positive_nonzero_integer
-          return `${INSANE_HEADER_CHAR.repeat(output_level)} ${renderArg(ast.args.title, context)}${args_string ? '\n' : '' }${args_string}${newline}`
+          const titleRender = renderArg(ast.args.title, context)
+          if (titleRender.indexOf('\n') > -1) {
+            return ourbigbookConvertSimpleElem(ast, context)
+          }
+          return `${INSANE_HEADER_CHAR.repeat(output_level)} ${titleRender}${args_string ? '\n' : '' }${args_string}${newline}`
         },
         'Hr': ourbigbookConvertSimpleElem,
         'i': ourbigbookConvertSimpleElem,

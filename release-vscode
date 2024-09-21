@@ -12,5 +12,12 @@ git commit -m "vscode: version $ext_version"
 git tag -m "vscode-$ext_version" "vscode-$ext_version"
 git push --follow-tags
 npx vsce package
-npx vsce publish
+# https://github.com/ourbigbook/ourbigbook/issues/333
+#npx vsce publish
+cp ourbigbook-vscode-2-${ext_version}.vsix ../../ourbigbook-media/ourbigbook-vscode.vsix
+cd ../../ourbigbook-media
+git add ourbigbook-vscode.vsix
+git commit -m "vscode version ${ext_version}"
+git push
+cd -
 rm -f *.vsix

@@ -565,6 +565,12 @@ export default function EditorPageHoc({
       window.addEventListener('hashchange', onHashChange)
       return () => window.removeEventListener('hashchange', onHashChange)
     })
+    const titleInputElem = useRef(null);
+    useEffect(() => {
+      if (titleInputElem.current) {
+        titleInputElem.current.focus()
+      }
+    }, []);
 
     return <>
       <MyHead title={title} />
@@ -598,6 +604,8 @@ export default function EditorPageHoc({
                     placeholder={`${capitalize(itemType)} Title`}
                     value={file.titleSource}
                     onChange={handleTitle}
+                    autoFocus={true}
+                    ref={titleInputElem}
                   />
                 </Label>
                 <ErrorList errors={titleErrors}/>

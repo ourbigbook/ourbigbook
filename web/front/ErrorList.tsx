@@ -13,7 +13,7 @@ export default function ErrorList({
       inner = <>{errors.map((e, i) => <div key={i}><ErrorIcon /> {e}</div>)}</>
     }
   } else if (typeof errors === 'string') {
-    inner = errors
+    inner = <><ErrorIcon /> {errors}</>
   }
   if (oks !== undefined && oks.length) {
     inner = <></>

@@ -130,7 +130,7 @@ class AstNode {
     this.source_location = source_location;
 
     this.args = args;
-    // The effetctive path of the the file counting from the toplevel directory,
+    // The effective path of the the file counting from the toplevel directory,
     // coming either from the file=XXX or title if that is empty.
     // Examples:
     // - _file/path/to/myfile.txt.bigb: .file = path/to/myfile.txt, without the _file prefix
@@ -726,7 +726,6 @@ class AstNode {
   }
 
   setup_argument(argname, arg) {
-    // TODO the second post process pass is destroying this information.
     arg.parent_ast = this;
     arg.argument_name = argname;
   }
@@ -865,7 +864,8 @@ class AstArgument {
   /** @param {List[AstNode]} nodes
    *  @ param {SourceLocation} source_location
    */
-  constructor(asts, source_location) {
+  constructor(asts, source_location, opts={}) {
+    const { parent_ast, argument_name } = opts
     if (asts === undefined) {
       this.asts = []
     } else {
@@ -873,9 +873,9 @@ class AstArgument {
     }
     this.source_location = source_location;
     // AstNode
-    this.parent_ast = undefined;
+    this.parent_ast = parent_ast
     // String
-    this.argument_name = undefined;
+    this.argument_name = argument_name
     // boolean
     //this.has_paragraph = undefined;
     let i = 0;
@@ -884,6 +884,17 @@ class AstArgument {
       ast.parent_argument_index = i;
       i++;
     };
+  }
+
+  static copyEmpty(arg) {
+    return new AstArgument(
+      [],
+      arg.source_location,
+      {
+        argument_name: arg.argument_name,
+        parent_ast: arg.parent_ast,
+      }
+    )
   }
 
   concat(...other) {
@@ -1431,6 +1442,11 @@ Macro.COMMON_ARGNAMES = [
 Macro.COMMON_ARGNAMES_SET = new Set(Macro.COMMON_ARGNAMES)
 Macro.CONTENT_ARGUMENT_NAME = 'content';
 Macro.DESCRIPTION_ARGUMENT_NAME = 'description';
+// A simple test-only macro that only has a sane form.
+// Because we keep adding insane versions of everything,
+// adding an insane version of \Q which was used extensively
+// in tests was a motivation for this.
+Macro.TEST_SANE_ONLY = 'TestSaneOnly';
 Macro.HEADER_MACRO_NAME = 'H';
 Macro.HEADER_CHILD_ARGNAME = 'child';
 Macro.HEADER_TAG_ARGNAME = 'tag';
@@ -1477,10 +1493,12 @@ class PlaintextAstNode extends AstNode {
 }
 
 class SourceLocation {
-  constructor(line, column, path) {
+  constructor(line, column, path, opts={}) {
     this.line = line;
     this.column = column;
     this.path = path;
+    this.endLine = opts.endline
+    this.endColumn = opts.endColumn
   }
   clone() {
     // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
@@ -3138,7 +3156,6 @@ function convertIdArg(arg, context) {
 function convertInitContext(options={}, extra_returns={}) {
   options = { ...options }
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
-  if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }
   if (!('db_provider' in options)) { options.db_provider = undefined; }
   if (!('fixedScopeRemoval' in options)) {
@@ -3514,7 +3531,7 @@ function convertInitContext(options={}, extra_returns={}) {
     include_path_set: new Set(options.include_path_set),
     input_dir,
     in_header: false,
-    macros: macroListToMacros(),
+    macros: macroListToMacros(options.add_test_instrumentation),
     options,
     // Shifts in local \a links due to either:
     // - scope + split headers e.g. scope/notindex.html
@@ -3600,13 +3617,6 @@ function errorMessageInOutput(msg, context) {
   }
   return `[OURBIGBOOK_ERROR: ${escaped_msg}]`
 }
-
-/** Escape all ourbigbook constructs that must be escaped, except
- * for those that only need to be escaped if they are at the start of a line. */
-function escapeNotStart(text) {
-  return text.replace(MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX, `${ESCAPE_CHAR}$1`)
-}
-exports.escapeNotStart = escapeNotStart
 
 // https://stackoverflow.com/questions/9461621/format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900
 const FORMAT_NUMBER_APPROX_MAP = [
@@ -3952,6 +3962,15 @@ function checkHasToc(context) {
     root_node = root_node.children[0];
   }
   return root_node.children.length > 0
+}
+
+function hasInsaneLinkEndChars(s) {
+  for (const c of s) {
+    if (INSANE_LINK_END_CHARS.has(c)) {
+      return true
+    }
+  }
+  return false
 }
 
 // Ensure that all children and tag targets exist. This is for error checking only.
@@ -4419,9 +4438,9 @@ function linkToSplitOpposite(ast, context) {
 /**
  * @return {Object} dict of macro name to macro
  */
-function macroListToMacros() {
+function macroListToMacros(addTestInstrumentation) {
   const macros = {};
-  for (const macro of macroList()) {
+  for (const macro of macroList(addTestInstrumentation)) {
     for (const format_id in OUTPUT_FORMATS) {
       const convert_func = OUTPUT_FORMATS[format_id].convert_funcs[macro.name]
       if (convert_func === undefined) {
@@ -4435,8 +4454,33 @@ function macroListToMacros() {
 }
 
 /** At some point we will generalize this to on-the-fly macro definitions. */
-function macroList() {
-  return DEFAULT_MACRO_LIST;
+function macroList(addTestInstrumentation) {
+  return [
+    ...DEFAULT_MACRO_LIST,
+    new Macro(
+      Macro.TEST_SANE_ONLY,
+      [
+        new MacroArgument({
+          name: Macro.CONTENT_ARGUMENT_NAME,
+          count_words: true,
+          mandatory: true,
+        }),
+      ],
+    ),
+    new Macro(
+      decapitalizeFirstLetter(Macro.TEST_SANE_ONLY),
+      [
+        new MacroArgument({
+          name: Macro.CONTENT_ARGUMENT_NAME,
+          count_words: true,
+          mandatory: true,
+        }),
+      ],
+      {
+        macroinline: true,
+      }
+    ),
+  ]
 }
 exports.macroList = macroList
 
@@ -5717,7 +5761,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           // It is however very similar to the other loop: the only difference is that we eat up
           // a trailing paragraph if followed by another.
           {
-            const new_arg = new AstArgument([], arg.source_location);
+            const new_arg = AstArgument.copyEmpty(arg)
             for (let i = 0; i < arg.length(); i++) {
               let child_node = arg.get(i);
               let new_child_nodes = [];
@@ -5734,7 +5778,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                     ast.macro_name !== auto_parent_name
                   ) {
                     const start_auto_child_node = child_node;
-                    const new_arg_auto_parent = new AstArgument([], child_node.source_location);
+                    const new_arg_auto_parent = AstArgument.copyEmpty(child_node.source_location)
                     while (i < arg.length()) {
                       const arg_i = arg.get(i);
                       if (arg_i.node_type === AstType.MACRO) {
@@ -5795,7 +5839,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
           // Child loop that adds ul and table implicit parents.
           {
-            const new_arg = new AstArgument([], arg.source_location);
+            const new_arg = AstArgument.copyEmpty(arg)
             for (let i = 0; i < arg.length(); i++) {
               let child_node = arg.get(i);
               let new_child_nodes = [];
@@ -5818,7 +5862,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                     !child_macro.auto_parent_skip.has(ast.macro_name)
                   ) {
                     const start_auto_child_node = child_node;
-                    const new_arg_auto_parent = new AstArgument([], child_node.source_location);
+                    const new_arg_auto_parent = AstArgument.copyEmpty(child_node)
                     while (i < arg.length()) {
                       const arg_i = arg.get(i);
                       if (arg_i.node_type === AstType.MACRO) {
@@ -5872,7 +5916,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               }
             }
             if (paragraph_indexes.length > 0) {
-              const new_arg = new AstArgument([], arg.source_location);
+              const new_arg = AstArgument.copyEmpty(arg.source_location)
               if (paragraph_indexes[0] > 0) {
                 parseAddParagraph(state, ast, new_arg, arg, 0, paragraph_indexes[0], options);
               }
@@ -5892,7 +5936,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           // Push children to continue the search. We make the new argument be empty
           // so that children can decide if they want to push themselves or not.
           {
-            const new_arg = new AstArgument([], arg.source_location);
+            const new_arg = AstArgument.copyEmpty(arg)
             const macro_arg_count_words = macro_arg !== undefined && macro_arg.count_words
             for (let i = arg.length() - 1; i >= 0; i--) {
               const child_ast = arg.get(i)
@@ -7962,7 +8006,13 @@ const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS = [
   INSANE_MATH_CHAR,
   INSANE_TOPIC_CHAR,
 ].join('')
-const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX = new RegExp(`([${MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS}])`, 'g')
+// https://docs.ourbigbook.com#known-url-protocols
+const KNOWN_URL_PROTOCOL_NAMES = ['http', 'https'];
+const KNOWN_URL_PROTOCOLS = new Set()
+for (const name of KNOWN_URL_PROTOCOL_NAMES) {
+  KNOWN_URL_PROTOCOLS.add(name + '://');
+}
+const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX = new RegExp(`([${MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS}]|${Array.from(KNOWN_URL_PROTOCOLS).join('|')})`, 'g')
 const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS = [
   '\\* ',
   '=',
@@ -8194,13 +8244,6 @@ const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
     name: 'alt',
   }),
 ];
-// https://docs.ourbigbook.com#known-url-protocols
-const KNOWN_URL_PROTOCOL_NAMES = ['http', 'https'];
-
-const KNOWN_URL_PROTOCOLS = new Set()
-for (const name of KNOWN_URL_PROTOCOL_NAMES) {
-  KNOWN_URL_PROTOCOLS.add(name + '://');
-}
 const URL_SEP = '/';
 exports.URL_SEP = URL_SEP;
 const MACRO_WITH_MEDIA_PROVIDER = new Set(['image', 'video']);
@@ -10021,6 +10064,8 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           }
         },
         'Video': macroImageVideoBlockConvertFunction,
+        [Macro.TEST_SANE_ONLY]: htmlRenderSimpleElem('div'),
+        [decapitalizeFirstLetter(Macro.TEST_SANE_ONLY)]: htmlRenderSimpleElem('span'),
       },
     }
   ),
@@ -10071,6 +10116,8 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           }
         },
         'Video': function(ast, context) { return ''; },
+        [Macro.TEST_SANE_ONLY]: idConvertSimpleElem,
+        [decapitalizeFirstLetter(Macro.TEST_SANE_ONLY)]: idConvertSimpleElem,
       }
     }
   ),
@@ -10102,6 +10149,18 @@ ${content}
 ${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`
   }
 }
+
+/** Escape all ourbigbook constructs that must be escaped, except
+ * for those that only need to be escaped if they are at the start of a line. */
+function ourbigbookEscapeNotStart(text) {
+  return text.replace(MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS_REGEX, `${ESCAPE_CHAR}$1`)
+}
+exports.ourbigbookEscapeNotStart = ourbigbookEscapeNotStart
+
+function ourbigbookEscape(text) {
+  return ourbigbookEscapeNotStart(text).replace(MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX, '$1\\$2')
+}
+exports.ourbigbookEscape = ourbigbookEscape
 
 /** Get the preferred x href for the ourbigbook output format of an \x. */
 function ourbigbookGetXHref({
@@ -10365,16 +10424,25 @@ function ourbigbookPreferLiteral(ast, context, ast_arg, arg, open, close) {
   let rendered_arg
   let delim_repeat
   let has_newline
-  const argname = arg.name
   if (
+    // Can only be literal if there is just one single plaintext node.
     ast_arg.asts.length === 1 &&
     ast_arg.asts[0].node_type === AstType.PLAINTEXT
   ) {
-    const rendered_arg_non_literal = renderArg(ast_arg, context)
+    const macro = context.macros[ast.macro_name]
+    const macroArg = macro.name_to_arg[arg.name]
+    const text = ast_arg.asts[0].text
     if (
       // Prefer literals if any escapes would be needed.
       arg.ourbigbook_output_prefer_literal ||
-      rendered_arg_non_literal !== ast_arg.asts[0].text
+      (
+        ourbigbookEscape(text) !== text &&
+        !(
+          macroArg.elide_link_only &&
+          protocolIsKnown(text) &&
+          !hasInsaneLinkEndChars(text)
+        )
+      )
     ) {
       rendered_arg = ast_arg.asts[0].text
       delim_repeat = 2
@@ -10661,12 +10729,35 @@ OUTPUT_FORMATS_LIST.push(
           const text = ast.text
           if (context.in_literal) {
             return text
-          } else {
-            return escapeNotStart(text).replace(MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX, '$1\\$2')
           }
+
+          // Elide link only does not need escaping.
+          const parentArg = ast.parent_argument
+          if (
+            // There is just one string literal.
+            parentArg.asts.length === 1 &&
+            parentArg.asts[0].node_type === AstType.PLAINTEXT
+          ) {
+            const parentAst = ast.parent_ast
+            if (parentAst) {
+              const macro = context.macros[parentAst.macro_name]
+              const macroArg = macro.name_to_arg[parentArg.argument_name]
+              if (
+                macroArg.elide_link_only &&
+                protocolIsKnown(text) &&
+                !hasInsaneLinkEndChars(text)
+              ) {
+                return text
+              }
+            }
+          }
+
+          return ourbigbookEscape(text)
         },
         'passthrough': ourbigbookConvertSimpleElem,
         [Macro.QUOTE_MACRO_NAME]: ourbigbookConvertSimpleElem,
+        // TODO coming soon.
+        //[Macro.QUOTE_MACRO_NAME]: ourbigbookLi(INSANE_QUOTE_START),
         'sub': ourbigbookConvertSimpleElem,
         'sup': ourbigbookConvertSimpleElem,
         [Macro.TABLE_MACRO_NAME]: ourbigbookUl,
@@ -10730,6 +10821,8 @@ OUTPUT_FORMATS_LIST.push(
           return `<${href}>${ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
         },
         'Video': ourbigbookConvertSimpleElem,
+        [Macro.TEST_SANE_ONLY]: ourbigbookConvertSimpleElem,
+        [decapitalizeFirstLetter(Macro.TEST_SANE_ONLY)]: ourbigbookConvertSimpleElem,
       }
     }
   )

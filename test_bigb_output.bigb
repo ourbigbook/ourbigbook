@@ -22,9 +22,21 @@ Sane inline element with named argument: \a[qwer]{external} after.
 
 Sane inline element with positional and named argument: \a[qwer][zxcv]{external} after.
 
+Test sane only inline: \testSaneOnly[inside TestSaneOnly inline]
+
+Test sane only block:
+
+\TestSaneOnly[inside TestSaneOnly block]
+
+Test sane only literal with subelement: \testSaneOnly[[a \testSaneOnly[b] c]]
+
+Test sane only literal with http escape: \testSaneOnly[[a http://example.com c]]
+
 Insane link http://example.com after.
 
 Insane link http://example.com[], with comma immediately following.
+
+Escaped insane link: \http://example.com
 
 Insane ref: <black cat>.
 
@@ -52,30 +64,30 @@ Inline code block with backtick and double close square brackets: \c[[[a ` ]] b]
 
 Inline code block with backtick and triple open square brackets: \c[[[[a ` [[[ b]]]] after.
 
-\Q[Sane block with a single line.]
+\TestSaneOnly[Sane block with a single line.]
 
-\Q[
+\TestSaneOnly[
 Sane block with a single line.
 
 No, actually multiple lines.
 ]
 
-\Q[\Q[Nested sane block]tight.]
+\TestSaneOnly[\TestSaneOnly[Nested sane block]tight.]
 
 Sane block together with paragraph:
-\Q[To be]
+\TestSaneOnly[To be]
 and another:
-\Q[or maybe not]
+\TestSaneOnly[or maybe not]
 and finally.
 
 br:
 
-\Q[
+\TestSaneOnly[
 aa\br
 bb\br
 ]
 
-\Q[
+\TestSaneOnly[
 asdf\br
 
 qwer
@@ -83,13 +95,13 @@ qwer
 
 Empty argument followed by paragraph:
 
-\Q[]
+\TestSaneOnly[]
 
 and something after.
 
 Argument ending in list:
 
-\Q[
+\TestSaneOnly[
 * asdf
 ]
 
@@ -100,17 +112,17 @@ followed by a newline
 
 Literal block that renders as sane:
 
-\Q[[To be \i[or] maybe not.]]
+\TestSaneOnly[[To be \i[or] maybe not.]]
 
 Literal block with escaped leading and trailing:
 
-\Q[[\[asdf\]]]
+\TestSaneOnly[[\[asdf\]]]
 
-\Q[\Q[asdf]]
+\TestSaneOnly[\TestSaneOnly[inside double TestSaneOnly]]
 
 Literal block with multiple lines starting in \[ and ending in \]:
 
-\Q[[
+\TestSaneOnly[[
 [
 ]
 ]]
@@ -178,11 +190,11 @@ List:
 
   Sane block:
 
-  \Q[To be]
+  \TestSaneOnly[To be]
 
   and another:
 
-  \Q[or maybe not]
+  \TestSaneOnly[or maybe not]
 * p2
 
 List with paragraph:
@@ -258,23 +270,23 @@ Nested and tight:
   ``
 * after
 
-* tight quote in list without paragraph
-  \Q[first]
+* tight block in list without paragraph
+  \TestSaneOnly[first]
   and
-  \Q[second]
+  \TestSaneOnly[second]
   done.
 * after
 
-\Q[list after block tight]
+\TestSaneOnly[list after block tight]
 * the list
 
 List in paragraph with blocks with paragraph:
-* \Q[first]
+* \TestSaneOnly[first]
 
-  \Q[second]
+  \TestSaneOnly[second]
 
 List in paragraph with block followed by nested list tight:
-* \Q[first]
+* \TestSaneOnly[first]
 
   * second
 
@@ -334,6 +346,20 @@ Table with empty cell:
 
 | row 2 1
 | row 2 2
+
+\Comment[[
+TODO coming soon:
+
+Quote with single paragraph:
+
+> inside quote with single paragraph
+
+Quote with multiple paragraphs:
+
+> inside quote with
+
+  multiple paragraphs
+]]
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=image-my-test-image}

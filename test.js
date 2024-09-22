@@ -8238,46 +8238,46 @@ assert_lib('bigb output: format is unchanged for the preferred format',
   },
 )
 assert_lib_stdin('bigb output: converts plaintext arguments with escapes to literal arguments when possible',
-  `\\Q[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
+  `\\TestSaneOnly[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
 
-\\Q[\\* *]
+\\TestSaneOnly[\\* *]
 
-\\Q[\\= =]
+\\TestSaneOnly[\\= =]
 
-\\Q[\\|| ||]
+\\TestSaneOnly[\\|| ||]
 
-\\Q[\\| |]
+\\TestSaneOnly[\\| |]
 
-\\Q[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$ \\i[asdf]]
+\\TestSaneOnly[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$ \\i[asdf]]
 
-\\Q[\\* \\i[asdf]]
+\\TestSaneOnly[\\* \\i[asdf]]
 
-\\Q[\\= \\i[asdf]]
+\\TestSaneOnly[\\= \\i[asdf]]
 
-\\Q[\\|| \\i[asdf]]
+\\TestSaneOnly[\\|| \\i[asdf]]
 
-\\Q[\\| \\i[asdf]]
+\\TestSaneOnly[\\| \\i[asdf]]
 `,
   {
-    assert_bigb_stdout: `\\Q[[\\ [ ] { } < \` $]]
+    assert_bigb_stdout: `\\TestSaneOnly[[\\ [ ] { } < \` $]]
 
-\\Q[[* *]]
+\\TestSaneOnly[[* *]]
 
-\\Q[[= =]]
+\\TestSaneOnly[[= =]]
 
-\\Q[[|| ||]]
+\\TestSaneOnly[[|| ||]]
 
-\\Q[[| |]]
+\\TestSaneOnly[[| |]]
 
-\\Q[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$ \\i[asdf]]
+\\TestSaneOnly[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$ \\i[asdf]]
 
-\\Q[\\* \\i[asdf]]
+\\TestSaneOnly[\\* \\i[asdf]]
 
-\\Q[\\= \\i[asdf]]
+\\TestSaneOnly[\\= \\i[asdf]]
 
-\\Q[\\|| \\i[asdf]]
+\\TestSaneOnly[\\|| \\i[asdf]]
 
-\\Q[\\| \\i[asdf]]
+\\TestSaneOnly[\\| \\i[asdf]]
 `
   },
 )
@@ -8306,9 +8306,9 @@ assert_lib_stdin('bigb output: converts sane refs to insane ones',
   },
 )
 assert_lib_stdin('bigb output: adds newlines to start and end of multiline arguments',
-  `\\Q[Positional oneline first]
+  `\\TestSaneOnly[Positional oneline first]
 
-\\Q[Positional multiline first
+\\TestSaneOnly[Positional multiline first
 
 Positional multiline second]
 
@@ -8321,9 +8321,9 @@ Positional multiline second]
 Named multiline second}
 `,
   {
-    assert_bigb_stdout: `\\Q[Positional oneline first]
+    assert_bigb_stdout: `\\TestSaneOnly[Positional oneline first]
 
-\\Q[
+\\TestSaneOnly[
 Positional multiline first
 
 Positional multiline second

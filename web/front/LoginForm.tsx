@@ -1,5 +1,5 @@
 import Router from 'next/router'
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 
 import {
   LOGIN_ACTION,
@@ -66,6 +66,22 @@ const LoginForm = ({ register = false }) => {
     }
   };
   useCtrlEnterSubmit(handleSubmit)
+
+  // Start focused on display name or username
+  const displayNameInputElem = useRef(null)
+  const usernameInputElem = useRef(null)
+  useEffect(() => {
+    if (register) {
+      if (displayNameInputElem.current) {
+        displayNameInputElem.current.focus()
+      }
+    } else {
+      if (usernameInputElem.current) {
+        usernameInputElem.current.focus()
+      }
+    }
+  }, [])
+
   return (
     <>
       <MapErrors errors={errors} />
@@ -74,46 +90,48 @@ const LoginForm = ({ register = false }) => {
           <Label label="Display name">
             <input
               autoComplete="name"
-              type="text"
-              placeholder="John Smith"
-              value={displayName}
               onChange={handleDisplayNameChange}
+              placeholder="John Smith"
+              ref={displayNameInputElem}
+              type="text"
+              value={displayName}
             />
           </Label>
         }
         <Label label={ register ? "Username (cannot be modified later)" : "Username or email" }>
           <input
             autoComplete="username"
-            type="text"
-            placeholder="a-z, 0-9, '-', e.g.: john-smith, johnsmith123"
-            value={username}
             onChange={handleUsernameChange}
+            placeholder="a-z, 0-9, '-', e.g.: john-smith, johnsmith123"
+            ref={usernameInputElem}
+            type="text"
+            value={username}
           />
         </Label>
         {register &&
           <Label label="Email">
             <input
               autoComplete="email"
-              type="email"
-              placeholder="john.smith@mail.com"
-              value={email}
               onChange={handleEmailChange}
+              placeholder="john.smith@mail.com"
+              type="email"
+              value={email}
             />
           </Label>
         }
         <Label label="Password">
           <input
             autoComplete={register ? "new-password" : "current-password"}
-            type="password"
-            placeholder="Password"
-            value={password}
             onChange={handlePasswordChange}
+            placeholder="Password"
+            type="password"
+            value={password}
           />
         </Label>
         <button
           className="btn"
-          type="submit"
           disabled={isLoading}
+          type="submit"
         >
           <OkIcon /> {`${register ? REGISTER_ACTION : LOGIN_ACTION}`}
         </button>

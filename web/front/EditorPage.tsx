@@ -223,6 +223,7 @@ export default function EditorPageHoc({
     const ourbigbookHeaderElem = useRef(null)
     const ourbigbookParentIdContainerElem = useRef(null)
     const saveButtonElem = useRef(null)
+    const parentInputElem = useRef(null);
 
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
     let ownerUsername: string
@@ -565,12 +566,14 @@ export default function EditorPageHoc({
       window.addEventListener('hashchange', onHashChange)
       return () => window.removeEventListener('hashchange', onHashChange)
     })
-    const titleInputElem = useRef(null);
+
+    // Start focused on title
+    const titleInputElem = useRef(null)
     useEffect(() => {
       if (titleInputElem.current) {
         titleInputElem.current.focus()
       }
-    }, []);
+    }, [])
 
     return <>
       <MyHead title={title} />
@@ -604,6 +607,20 @@ export default function EditorPageHoc({
                     placeholder={`${capitalize(itemType)} Title`}
                     value={file.titleSource}
                     onChange={handleTitle}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Tab') {
+                        e.preventDefault();
+                        if (tab === 'editor') {
+                          if (ourbigbookEditorElem.current && ourbigbookEditorElem.current.ourbigbookEditor) {
+                            ourbigbookEditorElem.current.ourbigbookEditor.editor.focus()
+                          }
+                        } else {
+                          if (parentInputElem.current) {
+                            parentInputElem.current.focus()
+                          }
+                        }
+                      }
+                    }}
                     autoFocus={true}
                     ref={titleInputElem}
                   />
@@ -670,6 +687,7 @@ export default function EditorPageHoc({
                           placeholder={parentTitleDisplay}
                           value={parentTitle}
                           onChange={handleParentTitle}
+                          ref={parentInputElem}
                         />
                       </Label>
                       <Label label={previousSiblingTitleDisplay} >

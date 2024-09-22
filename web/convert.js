@@ -71,13 +71,6 @@ async function convert({
   if (path === undefined) {
     // titleSource can be undefined for comments
     path = titleSource === undefined ? 'asdf' : ourbigbook.titleToId(titleSource)
-    if (!path) {
-      // I was not able to find a non-web case where this happens because e.g.:
-      // * .bigb -> not treated as .bigb extension by ourbigbook cli
-      // * ,.bigb -> ID actually gets set to `,`
-      // so adding a check here directly.
-      throw new ValidationError(`title "${titleSource}" generates an empty ID`)
-    }
     input_path_given = false
   } else {
     input_path_given = true
@@ -590,6 +583,17 @@ async function convertArticle({
       for (const outpath in extra_returns.rendered_outputs) {
         const rendered_output = extra_returns.rendered_outputs[outpath]
         const renderFull = rendered_output.full
+        const topicId = outpath.slice(
+          ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
+          -ourbigbook.HTML_EXT.length - 1
+        )
+        if (!isIndex && !topicId) {
+          // I was not able to find a non-web case where this happens because e.g.:
+          // * .bigb -> not treated as .bigb extension by ourbigbook cli
+          // * ,.bigb -> ID actually gets set to `,`
+          // so adding a check here directly.
+          throw new ValidationError(`article ID would be empty "${titleSource}"`)
+        }
         const articleArg = {
           authorId: author.id,
           fileId: file.id,
@@ -604,10 +608,7 @@ async function convertArticle({
               ? rendered_output.titleSourceLocation.line
               // Can happen if user tries to add h1 to a document. TODO investigate further why.
               : undefined,
-          topicId: outpath.slice(
-            ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
-            -ourbigbook.HTML_EXT.length - 1
-          ),
+          topicId,
         }
         if (list !== undefined) {
           articleArg.list = list

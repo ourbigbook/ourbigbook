@@ -1091,6 +1091,10 @@ it('api: create an article and see it on global feed', async () => {
       assert.strictEqual(data.issue.number, 4)
       test.loginUser(user)
 
+      // Issue with empty ID is fine unlike article.
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', { titleSource: '.' }))
+      assertStatus(status, data)
+
       ;({data, status} = await test.webApi.issueCreate('user0/title-1', createIssueArg(0, 1, 0)))
       assertStatus(status, data)
       assert.match(data.issue.titleRender, /The <i>title<\/i> 0 1 0\./)
@@ -1112,19 +1116,19 @@ it('api: create an article and see it on global feed', async () => {
 
     // Create issue errors
 
-    // Article does not exist
-    ;({data, status} = await test.webApi.issueCreate('user0/dontexist', createIssueArg(0, 2, 0)))
-    assert.strictEqual(status, 404)
+      // Article does not exist
+      ;({data, status} = await test.webApi.issueCreate('user0/dontexist', createIssueArg(0, 2, 0)))
+      assert.strictEqual(status, 404)
 
-    // Markup error on title
-    ;({data, status} = await test.webApi.issueCreate('user0/title-0', {
-      titleSource: 'The \\notdefined 0 2.', bodySource: 'The \\i[body] 0 2.' }))
-    assert.strictEqual(status, 422)
+      // Markup error on title
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', {
+        titleSource: 'The \\notdefined 0 2.', bodySource: 'The \\i[body] 0 2.' }))
+      assert.strictEqual(status, 422)
 
-    // Markup error on body
-    ;({data, status} = await test.webApi.issueCreate('user0/title-0',
-      { titleSource: 'The \\i[title] 0 2.', bodySource: 'The \\notdefined 0 2.' }))
-    assert.strictEqual(status, 422)
+      // Markup error on body
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0',
+        { titleSource: 'The \\i[title] 0 2.', bodySource: 'The \\notdefined 0 2.' }))
+      assert.strictEqual(status, 422)
 
     // Get issues
 
@@ -1132,6 +1136,7 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.issues({ id: 'user0/title-0' }))
       assertStatus(status, data)
       assertRows(data.issues, [
+        { number: 5, titleRender: /\./ },
         { number: 4, titleRender: /The <i>title<\/i> 0 0 3\./ },
         { number: 3, titleRender: /The <i>title<\/i> 0 0 2\./ },
         { number: 2, titleRender: /The <i>title<\/i> 0 0 1\./ },
@@ -1141,7 +1146,7 @@ it('api: create an article and see it on global feed', async () => {
       // Article issue count increments when new issues are created.
       ;({data, status} = await test.webApi.article('user0/title-0'))
       assertStatus(status, data)
-      assert.strictEqual(data.issueCount, 4)
+      assert.strictEqual(data.issueCount, 5)
 
       // Get another issue.
       ;({data, status} = await test.webApi.issues({ id: 'user0/title-1' }))
@@ -4665,22 +4670,6 @@ it(`api: user validation`, async () => {
 })
 
 it(`api: min`, async () => {
-  await testApp(async (test) => {
-    let data, status, article
-
-    // Create users
-    const user0 = await test.createUserApi(0)
-    test.loginUser(user0)
-
-    // Create article as user0
-    article = createArticleArg({ i: 0 })
-    ;({data, status} = await test.webApi.min())
-    assertStatus(status, data)
-    assert.strictEqual(data.loggedIn, true)
-  })
-})
-
-it(`api: nomin 2`, async () => {
   await testApp(async (test) => {
     let data, status, article
 

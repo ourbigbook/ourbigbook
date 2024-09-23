@@ -4132,8 +4132,7 @@ it('api: synonym rename', async () => {
       article = createArticleArg({
         i: 0,
         titleSource: 'Ł',
-        bodySource: `{id=Ł}
-{parent=Polish letter}
+        bodySource: `{id=weird-l}
 {title2=wa}
 {title2=wo}
 
@@ -4141,7 +4140,9 @@ it('api: synonym rename', async () => {
 {synonym}
 `,
       })
+      ;({data, status} = await createOrUpdateArticleApi(test, article,))
       assertStatus(status, data)
+      assert.strictEqual(data.articles[0].slug, 'user0/weird-l')
   })
 })
 
@@ -4682,5 +4683,33 @@ it(`api: min`, async () => {
     ;({data, status} = await test.webApi.min())
     assertStatus(status, data)
     assert.strictEqual(data.loggedIn, true)
+  })
+})
+
+it(`api: explicit id`, async () => {
+  // We made this work, but it is never used on ourbigbook upload and
+  // likely should be explicitly forbidden instead. The best general idea for
+  // now seems to be to leave anything that determines an article ID out of the
+  // article source itself on web, and have that only on local source. Similar applies
+  // to scope and disambiguate.
+  // Then on web, these are editable outside of the article source itself.
+  // https://github.com/ourbigbook/ourbigbook/issues/304
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // Create the article
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'asdf',
+      bodySource: `{id=qwer}
+`,
+    })
+    ;({data, status} = await createOrUpdateArticleApi(test, article,))
+    assertStatus(status, data)
+    assert.strictEqual(data.articles[0].slug, 'user0/qwer')
   })
 })

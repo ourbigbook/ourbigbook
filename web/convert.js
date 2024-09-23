@@ -57,8 +57,8 @@ async function convert({
   sequelize,
   splitHeaders,
   titleSource,
-  type,
   transaction,
+  type,
 }) {
   let t0
   if (perf) {
@@ -67,10 +67,37 @@ async function convert({
   }
   const extra_returns = {};
   const source = modifyEditorInput(titleSource, bodySource).new
+  let input_path
   let input_path_given
   if (path === undefined) {
-    // titleSource can be undefined for comments
-    path = titleSource === undefined ? 'asdf' : ourbigbook.titleToId(titleSource)
+    if (titleSource === undefined) {
+      // titleSource can be undefined for comments
+      path = 'comment-path-placeholder'
+    } else {
+      // Do one pre-conversion to determine the file path.
+      // All we need from it is the toplevel header.
+      // E.g. this finds the correct path from {id= and {disambiguate=
+      // We should likely just forbid those cases instead however
+      // and let ID determination be exclusively outside of source on web:
+      // https://github.com/ourbigbook/ourbigbook/issues/304
+      const extra_returns = {}
+      const { convertOptions } = getConvertOpts({
+        authorUsername: author.username,
+        input_path: undefined,
+        parentId,
+        render: false,
+        sequelize,
+        splitHeaders: false,
+        transaction,
+        type,
+      })
+      await ourbigbook.convert(
+        source,
+        lodash.merge(convertOptions, convertOptionsExtra),
+        extra_returns,
+      )
+      path = extra_returns.context.header_tree.children[0].ast.id
+    }
     input_path_given = false
   } else {
     input_path_given = true
@@ -127,7 +154,16 @@ async function convert({
     // Index page. Hardcode input path.
     input_path = scopeIdToPath(usernameDir, path)
   }
-  const { db_provider, convertOptions } = getConvertOpts({ authorUsername: author.username, input_path, sequelize, parentId, render, splitHeaders, type, transaction })
+  const { db_provider, convertOptions } = getConvertOpts({
+    authorUsername: author.username,
+    input_path,
+    parentId,
+    render,
+    sequelize,
+    splitHeaders,
+    transaction,
+    type,
+  })
   await ourbigbook.convert(
     source,
     lodash.merge(convertOptions, convertOptionsExtra),

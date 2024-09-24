@@ -277,6 +277,7 @@ export const AppContextProvider = ({ children, vals }) => {
 
 export function useCtrlEnterSubmit(handleSubmit) {
   React.useEffect(() => {
+    console.log(`useCtrlEnterSubmit`)
     function ctrlEnterListener(e) {
       if (e.code === 'Enter' && e.ctrlKey) {
         handleSubmit(e)

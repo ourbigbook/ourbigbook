@@ -31,6 +31,7 @@ class OurbigbookEditor {
       options.scrollPreviewToSourceLineCallback = (opts) => {}
     }
     this.options = options
+    this.handleSubmit = this.options.handleSubmit
 
     // Create input and output elems.
     const input_elem = document.createElement('div');
@@ -167,8 +168,8 @@ class OurbigbookEditor {
       // https://stackoverflow.com/questions/45123386/scroll-to-line-in-monaco-editor
       editor.revealLineInCenter(options.initialLine)
     }
-    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, function() {
-      options.handleSubmit();
+    editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
+      this.handleSubmit()
     })
     editor.onDidChangeModelContent(async (e) => {
       options.onDidChangeModelContentCallback(editor, e)

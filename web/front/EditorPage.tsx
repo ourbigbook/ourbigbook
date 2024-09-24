@@ -369,6 +369,10 @@ export default function EditorPageHoc({
         setTitleErrors(data.errors)
       }
     }
+    // https://github.com/ourbigbook/ourbigbook/issues/222
+    if (ourbigbookEditorElem.current && ourbigbookEditorElem.current.ourbigbookEditor) {
+      ourbigbookEditorElem.current.ourbigbookEditor.handleSubmit = handleSubmit
+    }
     useEffect(() => {
       if (
         ourbigbookEditorElem.current &&
@@ -472,10 +476,11 @@ export default function EditorPageHoc({
         }
       }
     }, [
-      // TODO these are dependencies. But we we add some of them,
-      // we get back the error where the editor goes blank on error.
       bodySource,
       initialFileState.titleSource,
+      // TODO this is a dependency, but if we add it
+      // we get back the error where the editor goes blank on error.
+      // This is related to https://github.com/ourbigbook/ourbigbook/issues/222
       //handleSubmit,
       initialArticle,
       initialArticle?.titleSourceLine,

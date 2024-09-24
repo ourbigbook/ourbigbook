@@ -456,6 +456,9 @@ export default function EditorPageHoc({
               },
             },
           )
+          if (isIndex) {
+            editor.editor.focus()
+          }
           ourbigbookEditorElem.current.ourbigbookEditor = editor
           // To ensure an initial conversion in case user has modified title before the editor had loaded.
           // Otherwise title would only update if user edited title again.
@@ -532,7 +535,7 @@ export default function EditorPageHoc({
         ourbigbookEditorElem.current.ourbigbookEditor
       ) {
         ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
-          oldInput => modifyEditorInput(file.titleSource, oldInput))
+          oldInput => modifyEditorInput(isIndex ? 'Home' : file.titleSource, oldInput))
       }
     }, [file, editorLoaded])
     useCtrlEnterSubmit(handleSubmit)
@@ -547,10 +550,17 @@ export default function EditorPageHoc({
         }
       }
     }
-    const title = isNew ? `New ${itemType}` : `Editing ${isIssue
-      ? `discussion #${initialFile.number} "${initialFile.titleSource}" on ${issueArticle.titleSource} by ${issueArticle.author.displayName}`
-      : `"${initialFile.titleSource}"${initialArticle.author.id === loggedInUser.id ? '' : `by ${displayAndUsernameText(initialArticle.author)}`}`
-    }`
+    const title = isNew
+      ? `New ${itemType}`
+      : `Editing ${isIssue
+          ? `discussion #${initialFile.number} "${initialFile.titleSource}" on ${issueArticle.titleSource} by ${issueArticle.author.displayName}`
+          : isIndex
+            ? 'Home'
+            : `"${initialFile.titleSource}"${initialArticle.author.id === loggedInUser.id
+                ? ''
+                : `by ${displayAndUsernameText(initialArticle.author)}`
+              }`
+        }`
 
     // Tabs
     function goToTab() {
@@ -572,14 +582,6 @@ export default function EditorPageHoc({
       return () => window.removeEventListener('hashchange', onHashChange)
     })
 
-    // Start focused on title
-    const titleInputElem = useRef(null)
-    useEffect(() => {
-      if (titleInputElem.current) {
-        titleInputElem.current.focus()
-      }
-    }, [])
-
     return <>
       <MyHead title={title} />
       <div className="editor-page content-not-ourbigbook">
@@ -599,18 +601,23 @@ export default function EditorPageHoc({
                           ? <a href={isIssue ? routes.issue(issueArticle.slug, initialArticle.number) : routes.article(initialArticle.slug)} target="_blank">
                               {isIssue ? `discussion #${initialArticle.number} ` : ''}"{initialFile?.titleSource}"
                             </a>
-                          : <ArticleBy article={initialArticle} newTab={true} showAuthor={initialArticle.author.id !== loggedInUser.id}/>
+                          : <ArticleBy
+                              article={initialArticle}
+                              newTab={true}
+                              showAuthor={initialArticle.author.id !== loggedInUser.id}
+                            />
                         }
                       </>
                   }
                   {isIssue && <> on <ArticleBy article={issueArticle} newTab={true}/></>}
                 </h1>
-                <Label label="Title" flex={true}>
+                <Label
+                  className={isIndex ? 'hide' : ''}
+                  flex={true}
+                  label="Title"
+                >
                   <input
-                    type="text"
                     className="title"
-                    placeholder={`${capitalize(itemType)} Title`}
-                    value={file.titleSource}
                     onChange={handleTitle}
                     onKeyDown={(e) => {
                       if (e.key === 'Tab') {
@@ -626,8 +633,14 @@ export default function EditorPageHoc({
                         }
                       }
                     }}
-                    autoFocus={true}
-                    ref={titleInputElem}
+                    placeholder={`${capitalize(itemType)} Title`}
+                    ref={node => {
+                      if (node && !isIndex) {
+                        node.focus()
+                      }
+                    }}
+                    value={file.titleSource}
+                    type="text"
                   />
                 </Label>
                 <ErrorList errors={titleErrors}/>

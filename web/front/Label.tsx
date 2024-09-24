@@ -6,16 +6,19 @@
  */
 function Label({
   children=undefined,
+  className='',
   label,
   // If given, the label appears on the same line as a child <input />
   inline=false,
   flex=false,
 }) {
-  return <div><label className={`${inline ? 'inline' : ''}${flex ? 'flex' : ''}`}>
-    <div className={`label${inline ? ' inline' : ''}${flex ? ' flex' : ''}`}>{label}</div>
-    {inline && ' '}
-    {children}
-  </label></div>
+  return <div className={className}>
+    <label className={`${inline ? 'inline' : ''}${flex ? 'flex' : ''}`}>
+      <div className={`label${inline ? ' inline' : ''}${flex ? ' flex' : ''}`}>{label}</div>
+      {inline && ' '}
+      {children}
+    </label>
+  </div>
 }
 
 export default Label;

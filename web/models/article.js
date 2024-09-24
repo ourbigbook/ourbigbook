@@ -793,6 +793,10 @@ WHERE
     })
   }
 
+  Article.prototype.isIndex = function() {
+    return this.topicId === ''
+  }
+
   Article.prototype.toJson = async function(loggedInUser) {
     const authorPromise = this.file && this.file.author ? this.file.author : this.getAuthor()
     // TODO do liked and followed with JOINs on caller, check if it is there and skip this if so.

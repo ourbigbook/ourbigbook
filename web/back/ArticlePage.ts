@@ -117,7 +117,7 @@ export const getServerSidePropsArticleHoc = ({
           }
         }
       }
-      const isIndex = article.topicId === ''
+      const isIndex = article.isIndex()
       const [
         ancestors,
         articleJson,

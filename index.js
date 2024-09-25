@@ -4234,8 +4234,8 @@ function htmlImg({
 }) {
   let error
   ;({
+    error,
     href: src,
-    error
   } = checkAndUpdateLocalLink({
     context,
     external,
@@ -4245,7 +4245,6 @@ function htmlImg({
   }))
 
   const classes = []
-  let border_attr
   if (ast.validation_output.border.boolean) {
     classes.push('border')
   }
@@ -4262,10 +4261,10 @@ function htmlImg({
   } else {
     cls = ''
   }
-  const href = ast.validation_output.link.given ? renderArgNoescape(ast.args.link, context) : src
-  let html = `<img${htmlAttr('src', htmlEscapeHrefAttr(src))}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${htmlClassesAttr(classes)}>`
+  const href = ast.validation_output.link.given ? renderArg(ast.args.link, cloneAndSet(context, 'html_is_href', true)) : src
+  let html = `<img${htmlAttr('src', src)}${htmlAttr('loading', 'lazy')}${rendered_attrs}${alt}${htmlClassesAttr(classes)}>`
   if (!context.in_a) {
-    html = `<a${htmlAttr('href', htmlEscapeHrefAttr(href))}>${html}</a>`
+    html = `<a${htmlAttr('href', href)}>${html}</a>`
   }
   if (!inline) {
     html = `<div class="float-wrap">${html}</div>`
@@ -8932,7 +8931,7 @@ const DEFAULT_MACRO_LIST = [
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
           } else {
             let error
-            ;({ href: src, error } = checkAndUpdateLocalLink({
+            ;({ error, href: src } = checkAndUpdateLocalLink({
               context,
               external: ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined,
               hrefNoEscape: src,
@@ -8946,7 +8945,7 @@ const DEFAULT_MACRO_LIST = [
             } else {
               start = '';
             }
-            return `<video${htmlAttr('src', htmlEscapeHrefAttr(src + start))}${rendered_attrs} preload="none" controls${alt}></video>${error}`;
+            return `<video${htmlAttr('src', src + start)}${rendered_attrs} preload="none" controls${alt}></video>${error}`;
           }
         },
         named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(

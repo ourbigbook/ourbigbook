@@ -25,7 +25,7 @@ const SELFLINK_CLASS = 'selflink'
 // max-mobile-width
 const CSS_MAX_MOBILE_WIDTH = 635
 
-// toplevel: if given, is an Element (not document) under which OurBigBook Marktup runtime will take effect.
+// toplevel: if given, is an Element (not document) under which OurBigBook Markup runtime will take effect.
 export function ourbigbook_runtime(toplevel, opts={}) {
   if (toplevel === undefined) {
     toplevel = document;

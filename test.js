@@ -1938,34 +1938,34 @@ f()
   }
 )
 assert_lib_ast('image: escapes HTML correctly block',
-  `\\Image["\\<]["\\<]{source="\\<}`,
+  `\\Image["'\\<&]["'\\<&]{source="'\\<&}`,
   [
     a('Image', undefined, {
-      source: [t('"<')],
-      src: [t('"<')],
+      source: [t(`"'<&`)],
+      src: [t(`"'<&`)],
     }),
   ],
   {
-    filesystem: { '"<': '' },
+    filesystem: { [`"'<&`]: '' },
     assert_xpath_stdout: [
-      `//x:a[@href='${ourbigbook.RAW_PREFIX}/%22%3C']//x:img[@src='${ourbigbook.RAW_PREFIX}/%22%3C' and @alt='"<']`,
-      `//x:a[@href='%22%3C' and text()='Source']`,
+      `//x:a[@href="${ourbigbook.RAW_PREFIX}/%22'%3C&"]//x:img[@src="${ourbigbook.RAW_PREFIX}/%22'%3C&" and @alt=concat('"', "'<&")]`,
+      `//x:a[@href="%22'%3C&" and text()='Source']`,
     ],
   },
 )
 assert_lib_ast('image: escapes HTML correctly inline',
-  `\\image["\\<]`,
+  `\\image["'\\<]`,
   [
     a('P', [
       a('image', undefined, {
-        src: [t('"<')],
+        src: [t(`"'<`)],
       }),
     ])
   ],
   {
-    filesystem: { '"<': '' },
+    filesystem: { [`"'<`]: '' },
     assert_xpath_stdout: [
-      `//x:a[@href='${ourbigbook.RAW_PREFIX}/%22%3C']//x:img[@src='${ourbigbook.RAW_PREFIX}/%22%3C']`,
+      `//x:a[@href="${ourbigbook.RAW_PREFIX}/%22'%3C"]//x:img[@src="${ourbigbook.RAW_PREFIX}/%22'%3C"]`,
     ],
   },
 )

@@ -10,19 +10,11 @@
 @font-face { font-family: fa-regular-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2); }
 @font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
 
-$caption-margin-bottom: 7px;
+$caption-margin-vert: 0.5em;
 // Without this, hover on ToC makes ToC move around. Maybe we should scope to ToC only?
 // TODO find proper way to do it without this random value.
 $icon-font-size: .95em;
 $sep-width: 1ch;
-
-// Wraps "floating elements" such as images, so ensure they will not create a global scrollbar.
-// Related issue: https://docs.ourbigbook.com/todo/vertical-scrollbar-when-image-title-contains-math-underscore
-div.float-wrap {
-  display: inline-block;
-  overflow-x: auto;
-  width: 100%;
-}
 
 @mixin file-icon {
   font-family: "fa-solid-900";
@@ -72,6 +64,20 @@ div.float-wrap {
   }
 }
 
+// This should be added to all elements that can show up at toplevel,
+// e.g. notably the output of block macros.
+@mixin toplevel-elem {
+  margin-bottom: $p-margin-vert;
+  // We need both top and bottom because of block elements can always appear inside paragraph next to text e.g.:
+  // ``
+  // My math
+  // $$
+  // 1 + 1
+  // $$
+  // ``
+  margin-top: $p-margin-vert;
+}
+
 @mixin up-arrow-icon {
   font-family: "fa-solid-900";
   font-weight: 900;
@@ -116,8 +122,13 @@ $toc-arrow-width: 0.7em;
   }
 }
 
+// Contains all the style that is required to render titles correctly,
+// which is most of all the styles that we have sine titles can contain
+// a lot of different elements. It just doesn't contain some things which
+// apply to OurBigBook content outside of titles only.
 @mixin ourbigbook-title {
 
+padding-left: 0;
 // Helps prevent the horizontal scrollbar on mobile.
 word-wrap: break-word;
 
@@ -182,7 +193,12 @@ span {
   }
 }
 
-padding-left: 0;
+.caption {
+  // By default assume captions are at bottom and so need a margin top.
+  // Items that have caption on top need to override this.
+  margin-top: $caption-margin-vert;
+}
+
 .caption-prefix {
   font-weight: bold;
 }
@@ -227,23 +243,21 @@ blockquote {
   margin-left: 0;
   margin-right: 0;
   padding-left: 10px;
+  @include toplevel-elem;
 }
 
 code {
   background-color: $code-background-color;
 }
 
-// Paragraph.
-// Can't be p because p can only contain phrasing it is insane:
-// https://stackoverflow.com/questions/7168723/unordered-list-in-a-paragraph-element
-div.p {
-  margin-bottom: $p-margin-vert;
-  margin-top: $p-margin-vert;
+div.code {
+  @include toplevel-elem;
 }
 
 // Figures.
 div.figure {
   margin: $p-margin-vert 0;
+  @include toplevel-elem;
   figure {
     // Override weird browser defaults.
     margin: 0;
@@ -252,7 +266,153 @@ div.figure {
     @include multiline-caption;
   }
   figcaption {
-    margin-top: 5px;
+    margin-top: $caption-margin-vert;
+  }
+}
+
+// Wraps "floating elements" such as images, so ensure they will not create a global scrollbar.
+// Related issue: https://docs.ourbigbook.com/todo/vertical-scrollbar-when-image-title-contains-math-underscore
+div.float-wrap {
+  display: inline-block;
+  overflow-x: auto;
+  width: 100%;
+  // https://docs.ourbigbook.com#background-color-of-transparent-images
+  img {
+    background-color: white;
+    @include responsive-img;
+  }
+}
+
+div.p {
+  @include toplevel-elem;
+}
+
+div.h {
+  // Also show header metadata when the header is selected as the current #fragment.
+  &:target .hover-meta {
+    @include visible;
+  }
+  @include toplevel-elem;
+  div.notnav {
+    @include h-common;
+    h1 {
+      @include h1-only;
+    }
+    h2, h3, h4, h5, h6 {
+      font-size: $header-font-size;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      div.number {
+        color: $color;
+        display: inline;
+      }
+    }
+  }
+  .hover-meta {
+    @include hidden;
+    > :not(:last-child) {
+      margin-right: $sep-width;
+    }
+    margin-left: $sep-width;
+  }
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    &:hover .hover-meta {
+      @include visible;
+    }
+  }
+  nav.h-nav {
+    div.nav {
+      font-weight: bold;
+      margin-top: $caption-margin-vert;
+      &:before {
+        // Downwards Arrow with Tip Rightwards: https://www.compart.com/en/unicode/U+21B3
+        content: "\21b3";
+        padding-right: 0.5ch;
+      }
+      img.logo {
+        height: 1em;
+      }
+      > :not(:last-child) {
+        margin-right: $sep-width
+      }
+      &.file {
+        > :first-child::before {
+          @include file-icon;
+        }
+      }
+      &.ancestors {
+        // Other ancestors.
+        > :not(:first-child)::before {
+          color: $color;
+          font-family: "fa-solid-900";
+          font-weight: 900;
+          font-size: $icon-font-size;
+          // right arrow https://fontawesome.com/v5/icons/arrow-right?f=classic&s=solid
+          content: "\f061";
+        }
+      }
+    }
+    a {
+      // u for Up
+      &.u::before {
+        @include up-arrow-icon;
+        color: $color;
+      }
+      &.wiki {
+        &::before {
+          color: $color;
+          font-family: "fa-brands-400";
+          font-weight: bold;
+          font-size: $icon-font-size;
+          // Wikipedia w https://fontawesome.com/v5/icons/wikipedia-w?f=brands&s=solid
+          content: "\f266";
+        }
+        &::after {
+          content: " wiki"
+        }
+      }
+    }
+    span.tags::before {
+      font-family: "fa-solid-900";
+      font-weight: 900;
+      font-size: $icon-font-size;
+      // tags https://fontawesome.com/v5/icons/tags?f=classic&s=solid
+      content: "\f02c";
+    }
+    .toc::after {
+      content: " toc";
+    }
+  }
+}
+
+// Tables
+div.table {
+  overflow-x: auto;
+  @include toplevel-elem;
+  &.multiline {
+    @include multiline-caption;
+  }
+  table {
+    $table_border: 1px solid $table-border-color;
+    border: $table_border;
+    border-collapse: collapse;
+    margin: math.div($p-margin-vert, 2) 0;
+    thead {
+      background-color: $table-head-background-color;
+    }
+    tr {
+      th, td {
+        border: $table_border;
+        padding: $table-padding-top $table-padding-sides;
+      }
+      &:nth-child(even) {
+        background-color: $table-even-background-color;
+      }
+    }
+  }
+  .caption {
+    margin-bottom: $caption-margin-vert;
+    margin-top: 0;
   }
 }
 
@@ -268,123 +428,11 @@ h1, h2, h3, h4, h5, h6 {
     }
   }
 }
-div.h {
-  &:not(.top) {
-    // Top one has metadata which should be close below without margin.
-    margin-bottom: $p-margin-vert;
-  }
-  div.notnav {
-    @include h-common;
-    h1 {
-      @include h1-only;
-    }
-    h2, h3, h4, h5, h6 {
-      font-size: $header-font-size;
-    }
-    h1, h2, h3, h4, h5, h6 {
-      div.number {
-        color: $color;
-        display: inline;
-      }
-    }
-    &:not(:last-child) {
-      margin-bottom: 10px;
-    }
-  }
-  .hover-meta {
-    @include hidden;
-    > :not(:last-child) {
-      margin-right: $sep-width;
-    }
-    margin-left: $sep-width;
-  }
-  @media only screen and (min-width: $max-mobile-width + 1) {
-    &:hover .hover-meta {
-      @include visible;
-    }
-  }
-  &.top {
-    div.notnav {
-      margin-bottom: 10px;
-    }
-  }
-  // Also show header metadata when the header is selected as the current #fragment.
-  &:target .hover-meta {
-    @include visible;
-  }
-}
-nav.h-nav {
-  margin-bottom: $p-margin-vert;
-  div.nav {
-    font-weight: bold;
-		margin-bottom: math.div($p-margin-vert, 2);
-    &:before {
-      // Downwards Arrow with Tip Rightwards: https://www.compart.com/en/unicode/U+21B3
-      content: "\21b3";
-      padding-right: 0.5ch;
-    }
-    img.logo {
-      height: 1em;
-    }
-    > :not(:last-child) {
-      margin-right: $sep-width
-    }
-    &.file {
-      > :first-child::before {
-        @include file-icon;
-      }
-    }
-    &.ancestors {
-      // Other ancestors.
-      > :not(:first-child)::before {
-        color: $color;
-        font-family: "fa-solid-900";
-        font-weight: 900;
-        font-size: $icon-font-size;
-        // right arrow https://fontawesome.com/v5/icons/arrow-right?f=classic&s=solid
-        content: "\f061";
-      }
-    }
-  }
-  a {
-    // u for Up
-    &.u::before {
-      @include up-arrow-icon;
-      color: $color;
-    }
-    &.wiki {
-      &::before {
-        color: $color;
-        font-family: "fa-brands-400";
-        font-weight: bold;
-        font-size: $icon-font-size;
-        // Wikipedia w https://fontawesome.com/v5/icons/wikipedia-w?f=brands&s=solid
-        content: "\f266";
-      }
-      &::after {
-        content: " wiki"
-      }
-    }
-  }
-  span.tags::before {
-    font-family: "fa-solid-900";
-    font-weight: 900;
-    font-size: $icon-font-size;
-    // tags https://fontawesome.com/v5/icons/tags?f=classic&s=solid
-    content: "\f02c";
-  }
-  .toc::after {
-    content: " toc";
-  }
+
+hr {
+  @include toplevel-elem;
 }
 
-// https://docs.ourbigbook.com#background-color-of-transparent-images
-div.float-wrap {
-  img {
-    background-color: white;
-    @include responsive-img;
-  }
-}
 img {
   &.inline {
     max-width: 100%;
@@ -402,7 +450,7 @@ img {
 nav {
   img {
     // Undo responsive-img width ==100 for navigation images, otherwise
-    // the OurBigBook.com iamge becomes huge and breaks the navigation.
+    // the OurBigBook.com image becomes huge and breaks the navigation.
     width: auto;
   }
 }
@@ -418,15 +466,11 @@ iframe {
 // Math.
 // https://stackoverflow.com/questions/50896041/katex-font-size/57355836#57355836
 .katex { font-size: 1.5em; }
-.math {
+div.math {
   align-items: center;
   overflow-x: auto;
   overflow-y: clip;
-  margin-bottom: $p-margin-vert;
-  margin-top: $p-margin-vert;
-  .caption {
-    margin-top: $caption-margin-bottom;
-  }
+  @include toplevel-elem;
   .equation {
     align-items: center;
     display: flex;
@@ -455,38 +499,11 @@ pre {
   @include multiline-caption;
 }
 
-// Tables
-.table {
-  margin: $p-margin-vert 0;
-  overflow-x: auto;
-  &.multiline {
-    @include multiline-caption;
-  }
-  table {
-    $table_border: 1px solid $table-border-color;
-    border: $table_border;
-    border-collapse: collapse;
-    margin: math.div($p-margin-vert, 2) 0;
-    thead {
-      background-color: $table-head-background-color;
-    }
-    tr {
-      th, td {
-        border: $table_border;
-        padding: $table-padding-top $table-padding-sides;
-      }
-      &:nth-child(even) {
-        background-color: $table-even-background-color;
-      }
-    }
-  }
-  .caption {
-    margin-bottom: $caption-margin-bottom;
-  }
-}
-
 ol, ul {
   padding-left: 30px;
+  // This makes nested lists (notably tocs) look really bad due to double spacing :-(
+  // Related to https://github.com/ourbigbook/ourbigbook/issues/68
+  //@include toplevel-elem;
   li {
     // https://github.com/ourbigbook/ourbigbook/issues/68
     margin-bottom: $p-margin-vert;
@@ -496,7 +513,6 @@ ol, ul {
 
 // Table of contents.
 .toc-container {
-  margin-bottom: $p-margin-vert;
   overflow-x: auto;
 
   // On mobile, this would make:

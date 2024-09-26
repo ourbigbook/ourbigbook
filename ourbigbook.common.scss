@@ -94,7 +94,7 @@ $footer-color: $color;
 
 @mixin pre {
   background-color: $code-background-color;
-  margin: 8px 0;
+  margin: 0;
   padding: 8px 8px;
   overflow-x: auto;
 }

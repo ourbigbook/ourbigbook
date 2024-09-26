@@ -9690,9 +9690,11 @@ const OUTPUT_FORMATS_LIST = [
         },
         'Ol': htmlRenderSimpleElem('ol', UL_OL_OPTS),
         [Macro.PARAGRAPH_MACRO_NAME]: htmlRenderSimpleElem(
+          // Paragraph. Can't be p because p can only contain phrasing it is insane:
+          // https://stackoverflow.com/questions/7168723/unordered-list-in-a-paragraph-element
           'div',
           {
-            attrs: {'class': 'p'},
+            attrs: { 'class': 'p' },
           }
         ),
         [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {

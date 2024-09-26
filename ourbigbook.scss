@@ -451,7 +451,7 @@ pre {
   @include pre;
 }
 
-div.multiline {
+.multiline {
   @include multiline-caption;
 }
 

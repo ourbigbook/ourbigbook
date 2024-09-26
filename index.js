@@ -4503,7 +4503,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
   let rendered_attrs = htmlRenderAttrs(ast, context, ['height', 'width']);
   let figure_attrs = htmlRenderAttrsId(ast, context);
   let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
-  let ret = `<div class="figure${multiline_caption ?  ` ${MULTILINE_CAPTION_CLASS}` : ''}"><figure${figure_attrs}>`
+  let ret = `<div class="figure"><figure${figure_attrs}${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`
   let href_prefix;
   if (ast.id !== undefined) {
     href_prefix = htmlSelfLink(ast, context);

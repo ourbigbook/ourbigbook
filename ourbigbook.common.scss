@@ -39,7 +39,6 @@ $font-family: Arial, Helvetica, sans-serif;
 $font-size: 16px;
 $header-font-size: 24px;
 $max-mobile-width: 635px;
-$p-margin-vert: 14px;
 $table-padding-sides: 10px;
 $table-padding-top: 10px;
 $toplevel-horizontal-padding-mobile: 5px;
@@ -50,6 +49,7 @@ $toplevel-horizontal-padding-right: 15px;
 // #FFAAFF was a reasonable value. But modern websites don't do this anymore.
 $a-color-visited: $a-color;
 $h1-font-size: $header-font-size * 1.5;
+$p-margin-vert: $font-size*0.6;
 $navbar-color-discrete: $color-discreet;
 $navbar-non-brandname-color: $a-color;
 $footer-color: $color;

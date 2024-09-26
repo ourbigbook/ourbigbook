@@ -4111,6 +4111,9 @@ function htmlRenderSimpleElem(elem_name, options={}) {
   if (!('wrap' in options)) {
     options.wrap = false;
   }
+  if (!('wrap' in options)) {
+    options.wrapAttrs = {};
+  }
   return function(ast, context) {
     let attrs = htmlRenderAttrsId(ast, context);
     let extra_attrs_string = '';
@@ -4141,7 +4144,7 @@ function htmlRenderSimpleElem(elem_name, options={}) {
       res += `</div></div>`;
     }
     if (options.wrap) {
-      res = htmlElem('div', res);
+      res = htmlElem('div', res, options.wrapAttrs);
     }
     return res;
   };
@@ -7966,6 +7969,7 @@ const TOC_LINK_ELEM_CLASS_NAME = 'toc'
 exports.TOC_LINK_ELEM_CLASS_NAME = TOC_LINK_ELEM_CLASS_NAME
 const TOC_HAS_CHILD_CLASS = 'has-child'
 const UL_OL_OPTS = {
+  wrapAttrs: { 'class': 'list' },
   wrap: true,
 }
 const INSANE_X_START = '<';

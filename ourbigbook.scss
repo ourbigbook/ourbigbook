@@ -67,7 +67,9 @@ $sep-width: 1ch;
 // This should be added to all elements that can show up at toplevel,
 // e.g. notably the output of block macros.
 @mixin toplevel-elem {
-  margin-bottom: $p-margin-vert;
+  &:not(:last-child) {
+    margin-bottom: $p-margin-vert;
+  }
   // We need both top and bottom because of block elements can always appear inside paragraph next to text e.g.:
   // ``
   // My math
@@ -75,7 +77,9 @@ $sep-width: 1ch;
   // 1 + 1
   // $$
   // ``
-  margin-top: $p-margin-vert;
+  &:not(:first-child) {
+    margin-top: $p-margin-vert;
+  }
 }
 
 @mixin up-arrow-icon {
@@ -128,6 +132,7 @@ $toc-arrow-width: 0.7em;
 // apply to OurBigBook content outside of titles only.
 @mixin ourbigbook-title {
 
+line-height: 1.4;
 padding-left: 0;
 // Helps prevent the horizontal scrollbar on mobile.
 word-wrap: break-word;
@@ -385,6 +390,11 @@ div.h {
   }
 }
 
+
+div.list {
+  @include toplevel-elem;
+}
+
 // Tables
 div.table {
   overflow-x: auto;
@@ -501,13 +511,14 @@ pre {
 
 ol, ul {
   padding-left: 30px;
-  // This makes nested lists (notably tocs) look really bad due to double spacing :-(
-  // Related to https://github.com/ourbigbook/ourbigbook/issues/68
-  //@include toplevel-elem;
   li {
     // https://github.com/ourbigbook/ourbigbook/issues/68
-    margin-bottom: $p-margin-vert;
-    margin-top: $p-margin-vert;
+    &:not(:last-child) {
+      margin-bottom: $p-margin-vert;
+    }
+    &:not(:first-child) {
+      margin-top: $p-margin-vert;
+    }
   }
 }
 

@@ -582,6 +582,13 @@ export default function EditorPageHoc({
       return () => window.removeEventListener('hashchange', onHashChange)
     })
 
+    const titleInputElem = useRef(null)
+    useEffect(() => {
+      if (titleInputElem.current) {
+        titleInputElem.current.focus()
+      }
+    }, [])
+
     return <>
       <MyHead title={title} />
       <div className="editor-page content-not-ourbigbook">
@@ -634,11 +641,7 @@ export default function EditorPageHoc({
                       }
                     }}
                     placeholder={`${capitalize(itemType)} Title`}
-                    ref={node => {
-                      if (node && !isIndex) {
-                        node.focus()
-                      }
-                    }}
+                    ref={titleInputElem}
                     value={file.titleSource}
                     type="text"
                   />

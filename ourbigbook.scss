@@ -10,10 +10,11 @@
 @font-face { font-family: fa-regular-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2); }
 @font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
 
-$caption-margin-vert: 0.5em;
+$caption-margin-vert: 0.4em;
 // Without this, hover on ToC makes ToC move around. Maybe we should scope to ToC only?
 // TODO find proper way to do it without this random value.
 $icon-font-size: .95em;
+$line-height: 1.4;
 $sep-width: 1ch;
 
 @mixin file-icon {
@@ -67,9 +68,7 @@ $sep-width: 1ch;
 // This should be added to all elements that can show up at toplevel,
 // e.g. notably the output of block macros.
 @mixin toplevel-elem {
-  &:not(:last-child) {
-    margin-bottom: $p-margin-vert;
-  }
+  margin-bottom: $p-margin-vert;
   // We need both top and bottom because of block elements can always appear inside paragraph next to text e.g.:
   // ``
   // My math
@@ -77,9 +76,7 @@ $sep-width: 1ch;
   // 1 + 1
   // $$
   // ``
-  &:not(:first-child) {
-    margin-top: $p-margin-vert;
-  }
+  margin-top: $p-margin-vert;
 }
 
 @mixin up-arrow-icon {
@@ -132,7 +129,7 @@ $toc-arrow-width: 0.7em;
 // apply to OurBigBook content outside of titles only.
 @mixin ourbigbook-title {
 
-line-height: 1.4;
+line-height: $line-height;
 padding-left: 0;
 // Helps prevent the horizontal scrollbar on mobile.
 word-wrap: break-word;
@@ -278,12 +275,14 @@ div.figure {
 // Wraps "floating elements" such as images, so ensure they will not create a global scrollbar.
 // Related issue: https://docs.ourbigbook.com/todo/vertical-scrollbar-when-image-title-contains-math-underscore
 div.float-wrap {
-  display: inline-block;
   overflow-x: auto;
   width: 100%;
   // https://docs.ourbigbook.com#background-color-of-transparent-images
   img {
     background-color: white;
+    // Otherwise we get some extra vertical space related to line height, insane!
+    // https://stackoverflow.com/questions/38091547/height-of-div-is-greater-than-image
+    vertical-align: middle;
     @include responsive-img;
   }
 }
@@ -328,7 +327,7 @@ div.h {
   nav.h-nav {
     div.nav {
       font-weight: bold;
-      margin-top: $caption-margin-vert;
+      margin-top: 0.2em;
       &:before {
         // Downwards Arrow with Tip Rightwards: https://www.compart.com/en/unicode/U+21B3
         content: "\21b3";
@@ -524,6 +523,7 @@ ol, ul {
 
 // Table of contents.
 .toc-container {
+  line-height: $line-height * 0.9;
   overflow-x: auto;
 
   // On mobile, this would make:

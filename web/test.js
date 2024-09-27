@@ -107,6 +107,25 @@ function assertRows(rows, rowsExpect, opts={}) {
 // assertRows helpers.
 const ne = (expect) => (v) => v !== expect
 
+async function assertNestedSetsMultiuser(sequelize, users, rows) {
+  const newRows = []
+  for (const user of users) {
+    for (const row of rows) {
+      const slug = row.slug
+      let sep
+      if (slug) {
+        sep = '/'
+      } else {
+        sep = ''
+      }
+      const newRow = Object.assign({}, row)
+      newRow.slug = user.username + sep + slug
+      newRows.push(newRow)
+    }
+  }
+  return assertNestedSets(sequelize, newRows)
+}
+
 // 200 status assertion helper that also prints the data to help
 // quickly see what the error is about.
 function assertStatus(status, data) {
@@ -165,6 +184,19 @@ function createArticleArg(opts, author) {
   }
   ret.parentId = opts.parentId
   return ret
+}
+
+async function createArticleApiMultiuser(test, users, articleArg, meta={}) {
+  for (const user of users) {
+    test.loginUser(user)
+    const parentId = meta.parentId
+    const newMeta = Object.assign({}, meta)
+    if (parentId) {
+      newMeta.parentId = `@${user.username}/${parentId}`
+    }
+    ;({data, status} = await createArticleApi(test, articleArg, newMeta))
+    assertStatus(status, data)
+  }
 }
 
 function createIssueArg(i, j, k, opts={}) {
@@ -1912,123 +1944,12 @@ it('api: article follow', async () => {
   })
 })
 
-it('api: issue follow', async () => {
-  await testApp(async (test) => {
-    let data, status, article
-
-    // Create users
-    const user0 = await test.createUserApi(0)
-    const user1 = await test.createUserApi(1)
-
-    // user1 creates issue user0#1
-    test.loginUser(user1)
-    ;({data, status} = await test.webApi.issueCreate('user0', createIssueArg(0, 0, 0)))
-    assertStatus(status, data)
-    assert.strictEqual(data.issue.number, 1)
-    test.loginUser(user0)
-
-    // Users follow their own issues by default
-
-      ;({data, status} = await test.webApi.issue('user0', 1))
-      assertStatus(status, data)
-      assert.strictEqual(data.followerCount, 1)
-      assert.strictEqual(data.followed, false)
-
-      test.loginUser(user1)
-      ;({data, status} = await test.webApi.issue('user0', 1))
-      assertStatus(status, data)
-      assert.strictEqual(data.followerCount, 1)
-      assert.strictEqual(data.followed, true)
-      test.loginUser(user0)
-
-    // Make user0 follow issue user0#1
-    ;({data, status} = await test.webApi.issueFollow('user0', 1))
-    assertStatus(status, data)
-
-    // Follow effects
-
-      // Issue follower count goes up and shows on logged in user as followed.
-      ;({data, status} = await test.webApi.issue('user0', 1))
-      assertStatus(status, data)
-      assert.strictEqual(data.followerCount, 2)
-      assert.strictEqual(data.followed, true)
-
-      //// TODO Shows on user0's followedBy list.
-      //;({data, status} = await test.webApi.issues({ followedBy: 'user0' }))
-      //assertStatus(status, data)
-      //assertRows(data.issues, [
-      //  { slug: 'user1/title-0' },
-      //  { slug: 'user0' },
-      //])
-
-    // issue follow errors.
-
-      // Users cannot follow issues twice.
-      ;({data, status} = await test.webApi.issueFollow('user0', 1))
-      assert.strictEqual(status, 403)
-
-      // Trying to follow issue on article that does not exist fails gracefully.
-      ;({data, status} = await test.webApi.issueFollow('user0/dontexist', 1))
-      assert.strictEqual(status, 404)
-
-      // Trying to follow issue that does not exist fails gracefully.
-      ;({data, status} = await test.webApi.issueFollow('user0', 2))
-      assert.strictEqual(status, 404)
-
-    // Make user0 unfollow issue user1/title-0.
-
-      ;({data, status} = await test.webApi.issueUnfollow('user0', 1))
-      assertStatus(status, data)
-
-    // Unfollow effects
-
-      // Follower count goes back down.
-      ;({data, status} = await test.webApi.issue('user0', 1))
-      assertStatus(status, data)
-      assert.strictEqual(data.followerCount, 1)
-      assert.strictEqual(data.followed, false)
-
-    // Unfollow errors
-
-      // Cannot unfollow issue twice.
-      ;({data, status} = await test.webApi.issueUnfollow('user0', 1))
-      assert.strictEqual(status, 403)
-
-      // Trying to follow issue on article that does not exist fails gracefully.
-      ;({data, status} = await test.webApi.issueUnfollow('user0/dontexist', 1))
-      assert.strictEqual(status, 404)
-
-      // Trying to follow issue that does not exist fails gracefully.
-      ;({data, status} = await test.webApi.issueUnfollow('user0', 2))
-      assert.strictEqual(status, 404)
-
-    // Commenting on an issue makes you follow it automatically
-
-      ;({data, status} = await test.webApi.commentCreate('user0', 1, 'The \\i[body] 0 index 0.'))
-      assertStatus(status, data)
-
-      ;({data, status} = await test.webApi.issue('user0', 1))
-      assertStatus(status, data)
-      assert.strictEqual(data.followerCount, 2)
-      assert.strictEqual(data.followed, true)
-
-      // Commenting again does not keep increasing the followerCount.
-      ;({data, status} = await test.webApi.commentCreate('user0', 1, 'The \\i[body] 0 index 0.'))
-      assertStatus(status, data)
-
-      ;({data, status} = await test.webApi.issue('user0', 1))
-      assertStatus(status, data)
-      assert.strictEqual(data.followerCount, 2)
-      assert.strictEqual(data.followed, true)
-  })
-})
-
 // TODO this is an initial sketch of https://docs.ourbigbook.com/todo/delete-articles
 // Some steps have been skipped because we are initially only enabling this for article moves:
 // and issues and children are moved out to the new merge target by the migration code prior
 // to deletion. For this reason, it is also not yet exposed on the API, and is tested by calling
 // via the sequelize model directly.
-it('api: delete article', async () => {
+it('api: article delete', async () => {
   await testApp(async (test) => {
     let data, status, article
 
@@ -2315,6 +2236,117 @@ it('api: delete article', async () => {
       ;({data, status} = await test.webApi.topics({ id: 'calculus' }))
       assertStatus(status, data)
       assertRows(data.topics, [])
+  })
+})
+
+it('api: issue follow', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+
+    // user1 creates issue user0#1
+    test.loginUser(user1)
+    ;({data, status} = await test.webApi.issueCreate('user0', createIssueArg(0, 0, 0)))
+    assertStatus(status, data)
+    assert.strictEqual(data.issue.number, 1)
+    test.loginUser(user0)
+
+    // Users follow their own issues by default
+
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, false)
+
+      test.loginUser(user1)
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, true)
+      test.loginUser(user0)
+
+    // Make user0 follow issue user0#1
+    ;({data, status} = await test.webApi.issueFollow('user0', 1))
+    assertStatus(status, data)
+
+    // Follow effects
+
+      // Issue follower count goes up and shows on logged in user as followed.
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 2)
+      assert.strictEqual(data.followed, true)
+
+      //// TODO Shows on user0's followedBy list.
+      //;({data, status} = await test.webApi.issues({ followedBy: 'user0' }))
+      //assertStatus(status, data)
+      //assertRows(data.issues, [
+      //  { slug: 'user1/title-0' },
+      //  { slug: 'user0' },
+      //])
+
+    // issue follow errors.
+
+      // Users cannot follow issues twice.
+      ;({data, status} = await test.webApi.issueFollow('user0', 1))
+      assert.strictEqual(status, 403)
+
+      // Trying to follow issue on article that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.issueFollow('user0/dontexist', 1))
+      assert.strictEqual(status, 404)
+
+      // Trying to follow issue that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.issueFollow('user0', 2))
+      assert.strictEqual(status, 404)
+
+    // Make user0 unfollow issue user1/title-0.
+
+      ;({data, status} = await test.webApi.issueUnfollow('user0', 1))
+      assertStatus(status, data)
+
+    // Unfollow effects
+
+      // Follower count goes back down.
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 1)
+      assert.strictEqual(data.followed, false)
+
+    // Unfollow errors
+
+      // Cannot unfollow issue twice.
+      ;({data, status} = await test.webApi.issueUnfollow('user0', 1))
+      assert.strictEqual(status, 403)
+
+      // Trying to follow issue on article that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.issueUnfollow('user0/dontexist', 1))
+      assert.strictEqual(status, 404)
+
+      // Trying to follow issue that does not exist fails gracefully.
+      ;({data, status} = await test.webApi.issueUnfollow('user0', 2))
+      assert.strictEqual(status, 404)
+
+    // Commenting on an issue makes you follow it automatically
+
+      ;({data, status} = await test.webApi.commentCreate('user0', 1, 'The \\i[body] 0 index 0.'))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 2)
+      assert.strictEqual(data.followed, true)
+
+      // Commenting again does not keep increasing the followerCount.
+      ;({data, status} = await test.webApi.commentCreate('user0', 1, 'The \\i[body] 0 index 0.'))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.issue('user0', 1))
+      assertStatus(status, data)
+      assert.strictEqual(data.followerCount, 2)
+      assert.strictEqual(data.followed, true)
   })
 })
 
@@ -2743,6 +2775,7 @@ it('api: article tree: single user', async () => {
         assert.strictEqual(status, 422)
 
         // Circular parent loops fail gracefully with render: false.
+        // Related: https://github.com/ourbigbook/ourbigbook/issues/204
         article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', render: false }))
         // TODO bad.
@@ -3239,38 +3272,6 @@ it('api: article tree: update first sibling to become a child', async () => {
     ])
   })
 })
-
-async function createArticleApiMultiuser(test, users, articleArg, meta={}) {
-  for (const user of users) {
-    test.loginUser(user)
-    const parentId = meta.parentId
-    const newMeta = Object.assign({}, meta)
-    if (parentId) {
-      newMeta.parentId = `@${user.username}/${parentId}`
-    }
-    ;({data, status} = await createArticleApi(test, articleArg, newMeta))
-    assertStatus(status, data)
-  }
-}
-
-async function assertNestedSetsMultiuser(sequelize, users, rows) {
-  const newRows = []
-  for (const user of users) {
-    for (const row of rows) {
-      const slug = row.slug
-      let sep
-      if (slug) {
-        sep = '/'
-      } else {
-        sep = ''
-      }
-      const newRow = Object.assign({}, row)
-      newRow.slug = user.username + sep + slug
-      newRows.push(newRow)
-    }
-  }
-  return assertNestedSets(sequelize, newRows)
-}
 
 it('api: article tree: multiuser', async () => {
   await testApp(async (test) => {
@@ -4731,5 +4732,19 @@ it(`api: min`, async () => {
     ;({data, status} = await test.webApi.min())
     assertStatus(status, data)
     assert.strictEqual(data.loggedIn, true)
+  })
+})
+
+it(`api: create article`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // Create article user0/title-0
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
+    assertStatus(status, data)
   })
 })

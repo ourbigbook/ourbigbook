@@ -798,19 +798,19 @@ function update_filesystem(filesystem, tmpdir) {
 assert_lib_ast('empty document', '', []);
 
 // Paragraphs.
-assert_lib_ast('one paragraph implicit no split headers', 'ab\n',
+assert_lib_ast('p: one paragraph implicit no split headers', 'ab\n',
   [a('P', [t('ab')])],
 )
-assert_lib_ast('one paragraph explicit', '\\P[ab]\n',
+assert_lib_ast('p: one paragraph explicit', '\\P[ab]\n',
   [a('P', [t('ab')])],
 )
-assert_lib_ast('two paragraphs', 'p1\n\np2\n',
+assert_lib_ast('p: two paragraphs', 'p1\n\np2\n',
   [
     a('P', [t('p1')]),
     a('P', [t('p2')]),
   ]
 )
-assert_lib_ast('three paragraphs',
+assert_lib_ast('p: three paragraphs',
   'p1\n\np2\n\np3\n',
   [
     a('P', [t('p1')]),
@@ -818,7 +818,7 @@ assert_lib_ast('three paragraphs',
     a('P', [t('p3')]),
   ]
 )
-assert_lib_ast('insane paragraph at start of sane quote',
+assert_lib_ast('p: insane paragraph at start of sane quote',
   '\\Q[\n\naa]\n',
   [
     a('Q', [
@@ -826,15 +826,11 @@ assert_lib_ast('insane paragraph at start of sane quote',
     ),
   ]
 )
-assert_lib_ast('sane quote without inner paragraph',
-  '\\Q[aa]\n',
-  [a('Q', [t('aa')])],
-)
-assert_lib_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
-assert_lib_error('paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
-assert_lib_ast('one newline at the end of document is ignored', 'p1\n', [a('P', [t('p1')])]);
-assert_lib_error('two newlines at the end of document are an error', 'p1\n\n', 1, 3);
-assert_lib_error('three newline at the end of document an error', 'p1\n\n\n', 2, 1);
+assert_lib_error('p: paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
+assert_lib_error('p: paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
+assert_lib_ast('p: one newline at the end of document is ignored', 'p1\n', [a('P', [t('p1')])]);
+assert_lib_error('p: two newlines at the end of document are an error', 'p1\n\n', 1, 3);
+assert_lib_error('p: three newline at the end of document an error', 'p1\n\n\n', 2, 1);
 
 // List.
 // \L
@@ -7115,14 +7111,14 @@ $$
     convert_opts: { split_headers: true },
   }
 )
-assert_lib_stdin('math block with comment on last line',
+assert_lib_stdin('math: block with comment on last line',
   // KaTeX parse error: LaTeX-incompatible input and strict mode is set to 'error': % comment has no terminating newline; LaTeX would fail because of commenting the end of math mode (e.g. $) [commentAtEnd]
   `$$
 % my comment
 $$
 `,
 )
-assert_lib_error('math undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
+assert_lib_error('math: undefined macro', '\\m[[\\reserved_undefined]]', 1, 3);
 assert_lib_ast('math: with description has caption',
   `$$
 aa
@@ -7141,6 +7137,10 @@ $$
 
 // Quote.
 // \Q
+assert_lib_ast('quotation: sane quote without inner paragraph',
+  '\\Q[aa]\n',
+  [a('Q', [t('aa')])],
+)
 assert_lib_ast('quotation: generates valid HTML with title sane',
   `\\Q[My quote]{title=My title}
 `,
@@ -7444,7 +7444,7 @@ const circular_entry = `= notindex
 
 \\Include[include-circular]
 `;
-assert_lib_error('include: circular dependency 1 <-> 2',
+assert_lib_error('include: circular dependency loop 1 <-> 2',
   circular_entry,
   // TODO works from CLI call......... fuck, why.
   // Similar problem as in test below.
@@ -7472,7 +7472,7 @@ assert_lib_error('include: circular dependency 1 <-> 2',
 // ```
 // file not found on database: "${target_input_path}", needed for toplevel scope removal
 // on ToC conversion.
-assert_lib_error('include: circular dependency 1 -> 2 <-> 3',
+assert_lib_error('include: circular dependency loop 1 -> 2 <-> 3',
   `= aa
 
 \\Include[include-circular-1]
@@ -7891,7 +7891,7 @@ assert_lib('include: parent_id option',
 )
 
 // OurBigBookExample
-assert_lib_ast('OurBigBookExample basic',
+assert_lib_ast('OurBigBookExample: basic',
   `\\OurBigBookExample[[aa \\i[bb] cc]]`,
   [
     // TODO get rid of this paragaraph.
@@ -7909,7 +7909,7 @@ assert_lib_ast('OurBigBookExample basic',
     ])
   ],
 )
-assert_lib('OurBigBookExample that links to id in another file',
+assert_lib('OurBigBookExample: that links to id in another file',
   {
     filesystem: {
       'abc.bigb': `\\OurBigBookExample[[\\x[notindex\\]]]
@@ -8058,7 +8058,7 @@ assert_lib_error('id autogen: with undefined reference in title fails gracefully
   `= \\x[reserved_undefined]
 `, 1, 3);
 // https://github.com/ourbigbook/ourbigbook/issues/45
-assert_lib_ast('id autogeneration with nested elements does an id conversion and works',
+assert_lib_ast('id autogen: with nested elements does an id conversion and works',
   `= ab \`cd\` ef
 
 \\x[ab-cd-ef]
@@ -11846,3 +11846,42 @@ assert_cli('file: _file auto-generation conversion image media provider works',
     },
   },
 )
+// TODO https://github.com/ourbigbook/ourbigbook/issues/204
+//assert_cli(
+//  'include: circular dependency loop index <-> 1',
+//  {
+//    args: ['.'],
+//    assert_exit_status: 1,
+//    filesystem: {
+//      'README.bigb': `= Index
+//
+//\\Include[notindex]
+//`,
+//      'notindex.bigb': `= Notindex
+//
+//\\Include[index]
+//`,
+//    },
+//  }
+//)
+//assert_cli(
+//  'include: circular dependency loop index -> 1 <-> 2',
+//  {
+//    args: ['.'],
+//    assert_exit_status: 2,
+//    filesystem: {
+//      'README.bigb': `= Index
+//
+//\\Include[notindex]
+//`,
+//      'notindex.bigb': `= Notindex
+//
+//\\Include[notindex2]
+//`,
+//      'notindex2.bigb': `= Notindex2
+//
+//\\Include[notindex]
+//`,
+//    },
+//  }
+//)

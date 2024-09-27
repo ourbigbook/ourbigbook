@@ -428,11 +428,9 @@ class AstNode {
         break
       }
       if (ancestor_id_set.has(cur_ast.id)) {
-        // This fixes https://github.com/ourbigbook/ourbigbook/issues/204 so long as we are
-        // rendering. Doing something before render would be ideal however, likely on the check_db step.
-        const message = `parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`;
-        renderError(context, message, this.source_location);
-        break
+        // Error because we should never reach this, it should be caught by other
+        // user friendly checks before. If this happens it is a bug.
+        throw new Error(`parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`)
       } else {
         ancestor_id_set.add(cur_ast.id)
       }
@@ -3345,7 +3343,7 @@ function convertInitContext(options={}, extra_returns={}) {
     //
     // However, we later found another usage for it, which should not be removed:
     // it is necessary to resolve absolute references like \x[/top-id] correctly to
-    // \x[@username/top-id] in Web.
+    // \x[@username/top-id] in Web, where it would be set to '@username'.
     options.ref_prefix = '';
   }
   if (!('render' in options)) { options.render = true; }
@@ -7883,8 +7881,8 @@ const INCOMING_LINKS_MARKER = '<span title="Incoming links" class="fa-solid-900 
 exports.INCOMING_LINKS_MARKER = INCOMING_LINKS_MARKER
 const SYNONYM_LINKS_MARKER = '<span title="Synonyms" class="fa-solid-900 icon">\u{f07e}</span>'
 exports.SYNONYM_LINKS_MARKER = SYNONYM_LINKS_MARKER
-const HOME_MARKER = '<span title="Home" class="fa-solid-900 icon">\u{f015}</span> Home'
-exports.HOME_MARKER = HOME_MARKER
+const HTML_HOME_MARKER = '<span title="Home" class="fa-solid-900 icon">\u{f015}</span> Home'
+exports.HTML_HOME_MARKER = HTML_HOME_MARKER
 const INCOMING_LINKS_ID_UNRESERVED = 'incoming-links'
 exports.INCOMING_LINKS_ID_UNRESERVED = INCOMING_LINKS_ID_UNRESERVED
 const SYNONYM_LINKS_ID_UNRESERVED = 'synonyms'
@@ -9462,10 +9460,14 @@ const OUTPUT_FORMATS_LIST = [
           if (fileLinkHtml !== undefined) {
             header_meta_file.push(fileLinkHtml);
           }
+          let ancestors
+          let nAncestors
+          if (!context.options.webMode) {
+            ancestors = ast.ancestors(context)
+            nAncestors = ancestors.length
+          }
           if (first_header) {
             if (!context.options.h_web_metadata) {
-              const ancestors = ast.ancestors(context)
-              const nAncestors = ancestors.length
               if (nAncestors) {
                 const nearestAncestors = ancestors.slice(0, ANCESTORS_MAX).reverse()
                 const entries = []
@@ -9476,19 +9478,38 @@ const OUTPUT_FORMATS_LIST = [
                   })
                 }
                 if (ancestors.length <= ANCESTORS_MAX) {
-                  entries[0].content = HOME_MARKER
+                  entries[0].content = HTML_HOME_MARKER
                 }
                 header_meta_ancestors.push(htmlAncestorLinks(entries, nAncestors));
               }
             }
           } else {
             const parent_asts = ast.get_header_parent_asts(context)
-            parent_links = [];
+            parent_links = []
             for (const parent_ast of parent_asts) {
-              const parent_href = xHrefAttr(parent_ast, context);
-              const parent_content = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+              //const parent_content = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context)
+              let parentContent
+              if (
+                // Not ideal, but I'm not smart enough to factor them out.
+                // On web, nAncestors doesn't work, and I'm weary of pulling more data in if I can avoid it.
+                // It is expected that the resolution of https://github.com/ourbigbook/ourbigbook/issues/334
+                // might remove the need for this by forcing the toplevel ID of the toplevel index to have empty ID,
+                // and then just set any title as a synonym to it effectively.
+                context.options.webMode
+              ) {
+                if (parent_ast.id === context.options.ref_prefix) {
+                  parentContent = HTML_HOME_MARKER
+                }
+              } else {
+                if (nAncestors === 1) {
+                  parentContent = HTML_HOME_MARKER
+                }
+              }
+              if (parentContent === undefined) {
+                parentContent = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context)
+              }
               // .u for Up
-              parent_links.push(`<a${parent_href} class="u"> ${parent_content}</a>`);
+              parent_links.push(`<a${xHrefAttr(parent_ast, context)} class="u"> ${parentContent}</a>`);
             }
             parent_links = parent_links.join('');
             if (parent_links) {

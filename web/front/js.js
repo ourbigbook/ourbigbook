@@ -148,7 +148,7 @@ function modifyEditorInput(title, body) {
   // = h1
   // {c}
   if (body) {
-    if (body[0] !== ourbigbook.START_NAMED_ARGUMENT_CHAR) {
+    if (title !== undefined && body[0] !== ourbigbook.START_NAMED_ARGUMENT_CHAR) {
       ret += '\n'
       offsetOffset = 1
     }

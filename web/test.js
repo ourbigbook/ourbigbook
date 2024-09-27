@@ -4670,22 +4670,6 @@ it(`api: user validation`, async () => {
   })
 })
 
-it(`api: min`, async () => {
-  await testApp(async (test) => {
-    let data, status, article
-
-    // Create users
-    const user0 = await test.createUserApi(0)
-    test.loginUser(user0)
-
-    // Create article as user0
-    article = createArticleArg({ i: 0 })
-    ;({data, status} = await test.webApi.min())
-    assertStatus(status, data)
-    assert.strictEqual(data.loggedIn, true)
-  })
-})
-
 it(`api: explicit id`, async () => {
   // We made this work, but it is never used on ourbigbook upload and
   // likely should be explicitly forbidden instead. The best general idea for
@@ -4711,5 +4695,41 @@ it(`api: explicit id`, async () => {
     ;({data, status} = await createOrUpdateArticleApi(test, article,))
     assertStatus(status, data)
     assert.strictEqual(data.articles[0].slug, 'user0/qwer')
+  })
+})
+
+it(`api: comment that starts with title does not blow up`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // Create article user0/title-0
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
+    assertStatus(status, data)
+
+    // Create issue user0/title-0#1
+    ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0)))
+    assertStatus(status, data)
+
+    // Create comment user0/title-0#1#1 that starts with header.
+    ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, '= The header\n\n==The body\n'))
+    assertStatus(status, data)
+  })
+})
+
+it(`api: min`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    ;({data, status} = await test.webApi.min())
+    assertStatus(status, data)
+    assert.strictEqual(data.loggedIn, true)
   })
 })

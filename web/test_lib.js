@@ -374,6 +374,7 @@ async function generateDemoData(params) {
 
   const nArticles = nUsers * nArticlesPerUser
   const sequelize = models.getSequelize(directory, basename);
+  const { Id } = sequelize.models
   const katex_macros = back_js.preloadKatex()
   await models.sync(sequelize, { force: empty || clear })
   if (!empty) {
@@ -564,16 +565,20 @@ async function generateDemoData(params) {
     // This is useful to test that case which hsa UI implications such as "show create new vs view mine".
     let articleUser0Only
     {
-      const { articles } = await convert.convertArticle({
-        author: users[0],
-        bodySource: 'This topic only exists for the first user.',
-        convertOptionsExtra: { katex_macros },
-        parentId: `${ourbigbook.AT_MENTION_CHAR}${users[0].username}/${await titleToId('Test data')}`,
-        render: true,
-        sequelize,
-        titleSource: 'Test data user0 only',
-      })
-      articleUser0Only = articles[0]
+      const parentId = `${ourbigbook.AT_MENTION_CHAR}${users[0].username}/${await titleToId('Test data')}`
+      const parentIdObj = await Id.findOne({ where: { idid: parentId } })
+      if (parentIdObj) {
+        const { articles } = await convert.convertArticle({
+          author: users[0],
+          bodySource: 'This topic only exists for the first user.',
+          convertOptionsExtra: { katex_macros },
+          parentId,
+          render: true,
+          sequelize,
+          titleSource: 'Test data user0 only',
+        })
+        articleUser0Only = articles[0]
+      }
     }
 
     // Write files to filesystem.
@@ -705,47 +710,49 @@ async function generateDemoData(params) {
     if (verbose) printTime()
 
     // Create an article in a topic that exists only for user0. All other articles exist for all users.
-    // This is useful to test that case which hsa UI imlications such as "show create new vs view mine".
+    // This is useful to test that case which hsa UI implications such as "show create new vs view mine".
     let articleManyDiscussions
-    {
-      const { articles } = await convert.convertArticle({
-        author: users[0],
-        bodySource: 'This article has many discussions. To test article discussion pagination.',
-        convertOptionsExtra: { katex_macros },
-        parentId: `${ourbigbook.AT_MENTION_CHAR}${articleUser0Only.slug}`,
-        render: true,
-        sequelize,
-        titleSource: 'Test data article with many discussions',
-      })
-      articleManyDiscussions = articles[0]
-    }
-    let issueManyComments
-    for (let i = 0; i < config.articleLimit + 2; i++) {
-      const article =  articleManyDiscussions
-      if (verbose) console.error(`${article.slug}#${i}`)
-      const issue = await convert.convertIssue({
-        article,
-        bodySource: `Many discussions body ${i}.`,
-        date: ISSUE_DATE,
-        number: i + 1,
-        sequelize,
-        titleSource: `Many discussions title ${i}`,
-        user: users[0],
-      })
-      if (i === 0) {
-        issueManyComments = issue
+    if (articleUser0Only) {
+      {
+        const { articles } = await convert.convertArticle({
+          author: users[0],
+          bodySource: 'This article has many discussions. To test article discussion pagination.',
+          convertOptionsExtra: { katex_macros },
+          parentId: `${ourbigbook.AT_MENTION_CHAR}${articleUser0Only.slug}`,
+          render: true,
+          sequelize,
+          titleSource: 'Test data article with many discussions',
+        })
+        articleManyDiscussions = articles[0]
       }
-    }
-    for (let i = 0; i < config.articleLimit + 2; i++) {
-      if (verbose) console.error(`${articleManyDiscussions.slug}#${issueManyComments.number}#${i}`)
-      await convert.convertComment({
-        date: ISSUE_DATE,
-        issue: issueManyComments,
-        source: `Many comments body ${i}.`,
-        number: i + 1,
-        sequelize,
-        user: users[0],
-      })
+      let issueManyComments
+      for (let i = 0; i < config.articleLimit + 2; i++) {
+        const article =  articleManyDiscussions
+        if (verbose) console.error(`${article.slug}#${i}`)
+        const issue = await convert.convertIssue({
+          article,
+          bodySource: `Many discussions body ${i}.`,
+          date: ISSUE_DATE,
+          number: i + 1,
+          sequelize,
+          titleSource: `Many discussions title ${i}`,
+          user: users[0],
+        })
+        if (i === 0) {
+          issueManyComments = issue
+        }
+      }
+      for (let i = 0; i < config.articleLimit + 2; i++) {
+        if (verbose) console.error(`${articleManyDiscussions.slug}#${issueManyComments.number}#${i}`)
+        await convert.convertComment({
+          date: ISSUE_DATE,
+          issue: issueManyComments,
+          source: `Many comments body ${i}.`,
+          number: i + 1,
+          sequelize,
+          user: users[0],
+        })
+      }
     }
   }
 

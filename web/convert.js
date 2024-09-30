@@ -348,20 +348,20 @@ async function convertArticle({
 
     // Synonym handling part 1
 
-      const synonymArticles = await sequelize.models.Article.getArticles({
-        count: false,
-        includeParentAndPreviousSibling: true,
-        sequelize,
-        slug: synonymIds.map(id => idToSlug(id)),
+    const synonymArticles = await sequelize.models.Article.getArticles({
+      count: false,
+      includeParentAndPreviousSibling: true,
+      sequelize,
+      slug: synonymIds.map(id => idToSlug(id)),
+      transaction,
+    })
+    if (synonymIds.length) {
+      // Clear IDs of the synonyms.
+      await db_provider.clear(
+        synonymArticles.map(a => a.file.path),
         transaction,
-      })
-      if (synonymIds.length) {
-        // Clear IDs of the synonyms.
-        await db_provider.clear(
-          synonymArticles.map(a => a.file.path),
-          transaction,
-        )
-      }
+      )
+    }
 
     const update_database_after_convert_arg = {
       authorId: author.id,
@@ -623,13 +623,6 @@ async function convertArticle({
           ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
           -ourbigbook.HTML_EXT.length - 1
         )
-        if (!isIndex && !topicId) {
-          // I was not able to find a non-web case where this happens because e.g.:
-          // * .bigb -> not treated as .bigb extension by ourbigbook cli
-          // * ,.bigb -> ID actually gets set to `,`
-          // so adding a check here directly.
-          throw new ValidationError(`article ID would be empty "${titleSource}"`)
-        }
         const articleArg = {
           authorId: author.id,
           fileId: file.id,
@@ -1024,7 +1017,7 @@ async function convertIssue({
 }
 
 function scopeIdToPath(scope, id) {
-  return `${scope}/${id}.${ourbigbook.OURBIGBOOK_EXT}`
+  return `${scope}/${id ? id : ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`
 }
 
 module.exports = {

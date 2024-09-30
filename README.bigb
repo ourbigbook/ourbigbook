@@ -1,8 +1,8 @@
 = OurBigBook Project
 {c}
-{id=ourbigbook}
+{id=asdf}
 
-= OurBigBook Project
+= OurBigBook
 {c}
 {synonym}
 
@@ -187,7 +187,7 @@ firefox out/html/index.html
 * https://cirosantilli.com/ourbigbook-media[]: media for the project such as for documentation and <publicity>, more info: <OurBigBook media repository>{full}
 
 = Donate
-{parent=OurBigBook}
+{parent=}
 
 To donate:
 * https://cirosantilli.com/sponsor[]: give money directly to <Ciro Santilli>
@@ -195,12 +195,12 @@ To donate:
 
 All donated money currently just goes directly to <Ciro Santilli>'s personal bank account, the project founder and current lead. If things ever take off we will set up a legal entity to make things cleaner. One may dream. But for now, it would just add unnecessary overhead. Related: <Project governance>{full}.
 
-Ciro announces funding milestones and transparently accounts for all donations at: https://cirosantilli.com/sponsor[]. When milestones are reached, he quits his day job and works full time on the project for a given ammount of time.
+Ciro announces funding milestones and transparently accounts for all donations at: https://cirosantilli.com/sponsor[]. When milestones are reached, he quits his day job and works full time on the project for a given amount of time.
 
 We are also happy to discuss paid contracts to implement specific features, to get in touch see: <contact>.
 
 = Quick start
-{parent=OurBigBook}
+{parent=}
 
 The following sections cover different ways to use tools from the OurBigBook:
 * <OurBigBook Web user manual>: manual for <OurBigBook Web>, the dynamic website. With this approach, you can write content on the browser without downloading anything, and save it on our database.
@@ -215,12 +215,12 @@ The following sections cover different ways to use tools from the OurBigBook:
   This is currently the only way to write OurBigBook content, but we would really like to add <todo/WYSIWYG>[WYSIWYG] editor support one day!
 
 = OurBigBook Markup and CLI overview
-{parent=OurBigBook}
+{parent=}
 
 = Features
 {parent=OurBigBook Markup and CLI overview}
 
-* <cross references> to any <header> (including e.g. h2, h3, etc. <internal cross file references>[in other files]), <images>, etc. with amazing <error reporting>[error checking and reporting]: never break internal links without knoing again, and quickly find out what broke when you do. E.g.:
+* <cross references> to any <header> (including e.g. h2, h3, etc. <internal cross file references>[in other files]), <images>, etc. with amazing <error reporting>[error checking and reporting]: never break internal links without knowing again, and quickly find out what broke when you do. E.g.:
 
   animal.bigb
   ``
@@ -653,7 +653,7 @@ The key limitations have repeatedly annoyed Ciro were:
 
 = OurBigBook Markup
 {c}
-{parent=OurBigBook}
+{parent=}
 
 = `.bigb` extension
 {synonym}
@@ -1552,11 +1552,11 @@ This is because in this case, we guess that the `h2` is the toplevel.
 = The ID of the first header is derived from the filename
 {parent=The toplevel header}
 
-TODO: we kind of wanted this to be the ID of the toplevel header instead of the first header, but this would require an extra postprocessing pass (to determine if the first header is toplevel or not), which might affect performance, so we are not doing it right now.
+With the exception of  For example:
 
 When the OurBigBook input comes from a file (and not e.g. <stdin>), the default ID of the first header in the document is derived from the basename of the OurBigBook input source file rather than from its title.
 
-This is specially relevant when <include>[including] other files.
+The only exception to this is <the home article>, where the ID is empty.
 
 For example, in file named `my-file.bigb` which contains:
 ``
@@ -1582,6 +1582,8 @@ For the toplevel index file however, the ID is just taken from the header itself
 For example, a <publish to GitHub Pages>[GitHub pages] root directory must be named as `<username>.github.io`. And users may need to rename directories to avoid naming conflicts.
 
 As a consequence of this, the toplevel index file cannot <include>[be included in other files].
+
+TODO: we kind of wanted this to be the ID of the toplevel header instead of the first header, but this would require an extra postprocessing pass (to determine if the first header is toplevel or not), which might affect performance, so we are not doing it right now.
 
 = `\H` arguments
 {parent=Header}
@@ -6073,7 +6075,7 @@ error: tmp.bigb:3:1: IDs that start with "_" are reserved: "_toc"
 
 = OurBigBook CLI
 {c}
-{parent=OurBigBook}
+{parent=}
 
 = `ourbigbook` executable
 {synonym}
@@ -6375,13 +6377,14 @@ In this case:
 
 This is the <index file> present in the <project toplevel directory>.
 
-Being the toplevel index file has the following implications compared to other <index files>:
-* its ID is derived from the header itself, not the directory, see also: <the ID of the first header is derived from the filename>
+= The home article
+{parent=The toplevel index file}
+{tag=Toplevel header}
 
 = The index article
-{parent=The toplevel index file}
+{synonym}
 
-The "index article" is the first article of the <The toplevel index file>. E.g. in:
+The "home article" is the first article of <the toplevel index file>. E.g. in:
 
 README.bigb
 ``
@@ -6389,7 +6392,53 @@ README.bigb
 
 == I like dogs
 ``
-then "John Smith's Homepage" is the index article of the project, but "I like dogs" is not.
+then "John Smith's Homepage" is the home article, but "I like dogs" is not.
+
+The home article has some special handling done to it, notably:
+* it renders as "Home" in many places as such as the breadcrumb, a way to make things more unified and succinct, especially on web
+* it automatically gets two IDs:
+  * a main empty ID
+  * a <`\H` synonym argument>[synonym] to that empty ID
+  For example we could write:
+  ``
+  = John Smith's Homepage
+
+  == I like dogs
+
+  This is my homepage: <>
+
+  And also: <John Smith's Homepage>
+  ``
+  Here
+  * `<>` renders as "Home"
+  * `<John Smith's Homepage>` renders as `John Smith's Homepage`
+  but both link to the same location
+
+  As a consequence of the ID being empty, you have to set <H parent argument> of subsequent headers to empty if you witsh to use them as in:
+  ``
+  = John Smith's Homepage
+
+  = I like dogs
+  {parent=}
+  ``
+
+  Doing:
+  ``
+  = John Smith's Homepage
+
+  = I like dogs
+  {parent=John Smith's Homepage}
+  ``
+  doesn't current work because the ID `john-smith-s-homepage` is just a synonym to the empty ID, and you can't currently set `parent=` to point to synonyms:
+
+  This is because the ID John Smith's Homepage
+
+  You can prevent a second ID from being giving by simply setting the ID to be explicitly empty:
+  ``
+  = John Smith's Homepage
+  {id=}
+  ``
+  which would generte just a single empty ID.
 
 = The current working directory does not matter when there is a `ourbigbook.json`
 {parent=The toplevel index file}
@@ -8377,7 +8426,7 @@ Observed render speedup on 1k small files from the <Wikipedia bot> and 8 cores: 
 
 = OurBigBook Library
 {c}
-{parent=OurBigBook}
+{parent=}
 
 = JavaScript API
 {c}
@@ -8411,7 +8460,7 @@ Every other value is considered false, including e.g. `true`.
 
 = OurBigBook Web
 {c}
-{parent=OurBigBook}
+{parent=}
 
 = Dynamic website
 {synonym}
@@ -10253,7 +10302,7 @@ set-password <username> <new-password>
 Note that this can also be achieved on the web interface by visiting the settings page of a target user with an <OurBigBook Admin> account.
 
 = Runtime feature
-{parent=OurBigBook}
+{parent=}
 
 This section describes features present in \a[ourbigbook_runtime.js]
 
@@ -10308,7 +10357,7 @@ To make that less worse, if <split headers> are enabled, we check at runtime if 
 It would be even more awesome if we were able to redirect to the non-split version as well, `dog.html#poodle`, but that would be harder to implement, so not doing it for now.
 
 = Tooling
-{parent=OurBigBook}
+{parent=}
 
 Unlike all languages which rely on ad-hoc tooling, we will support every single tool that is required and feasible to be in this repository in this repository, in a centralized manner.
 
@@ -10839,7 +10888,7 @@ error: tmp.bigb:5:3: cross reference to unknown id: "b"
 ``
 
 = Security
-{parent=OurBigBook}
+{parent=}
 
 = Arbitrary code execution
 {parent=Security}
@@ -10870,7 +10919,7 @@ or from the <ourbigbook.json> file with an entry of form:
 ``
 
 = Contact
-{parent=OurBigBook}
+{parent=}
 
 * https://github.com/ourbigbook/ourbigbook/issues for any public contact, see also: <OurBigBook issue tracker>{full}
 * for private contact email: `admin@ourbigbook.com`
@@ -10881,7 +10930,7 @@ or from the <ourbigbook.json> file with an entry of form:
 https://github.com/ourbigbook/ourbigbook/issues
 
 = Developing OurBigBook
-{parent=OurBigBook}
+{parent=}
 
 = License
 {parent=Developing OurBigBook}

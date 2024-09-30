@@ -180,7 +180,7 @@ module.exports = (sequelize) => {
             bodySource: User.defaultIndexBody,
             path: ourbigbook.INDEX_BASENAME_NOEXT,
             sequelize,
-            titleSource: ourbigbook.capitalizeFirstLetter(ourbigbook.INDEX_BASENAME_NOEXT),
+            titleSource: '',
             transaction: options.transaction
           })
         }

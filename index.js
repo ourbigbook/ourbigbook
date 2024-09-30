@@ -428,9 +428,12 @@ class AstNode {
         break
       }
       if (ancestor_id_set.has(cur_ast.id)) {
-        // Error because we should never reach this, it should be caught by other
-        // user friendly checks before. If this happens it is a bug.
-        throw new Error(`parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`)
+        // TODO should throw Error instead. The check should be done in
+        // a nicer way earlier on parse, not just render. This is currently exercised on web.
+        //throw new Error(`parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`)
+        const message = `parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`;
+        renderError(context, message, this.source_location);
+        break
       } else {
         ancestor_id_set.add(cur_ast.id)
       }
@@ -541,7 +544,7 @@ class AstNode {
     // This is what we want for Web.
     if (
       this.id === context.toplevel_ast.id &&
-      context.options.parent_id
+      context.options.parent_id !== undefined
     ) {
       const ast = context.db_provider.get(context.options.parent_id, context)
       if (
@@ -1057,8 +1060,13 @@ class DbProvider {
         current_scope += Macro.HEADER_SCOPE_SEPARATOR
         for (let i = current_scope.length - 1; i > 0; i--) {
           if (current_scope[i] === Macro.HEADER_SCOPE_SEPARATOR) {
-            let resolved_scope_id = this.get_noscope(
-              current_scope.substring(0, i + 1) + id, context);
+            let pref
+            if (id === '') {
+              pref = current_scope.substring(0, i)
+            } else {
+              pref = current_scope.substring(0, i + Macro.HEADER_SCOPE_SEPARATOR.length)
+            }
+            let resolved_scope_id = this.get_noscope(pref + id, context);
             if (resolved_scope_id !== undefined) {
               return resolved_scope_id;
             }
@@ -2454,10 +2462,12 @@ function calculateId(
   macro_counts_visible,
   state,
   is_header,
-  line_to_id_array
+  line_to_id_array,
+  opts={},
 ) {
   const macro_name = ast.macro_name;
   const macro = context.macros[macro_name];
+  const { ignoreEmptyId, isHomeHeader } = opts
 
   // Linear count of each macro type for macros that have IDs.
   if (!macro.options.macro_counts_ignore(ast)) {
@@ -2471,6 +2481,7 @@ function calculateId(
 
   let index_id = true;
   let skip_scope = false
+  let idIsEmpty = false
   let id
   let file_header = ast.macro_name === Macro.HEADER_MACRO_NAME &&
     ast.validation_output.file.given
@@ -2478,6 +2489,7 @@ function calculateId(
   const new_context = cloneAndSet(context, 'id_conversion', true);
   const title_arg = macro.options.get_title_arg(ast, context);
   const title_text = renderArgNoescape(title_arg, new_context)
+  // https://docs.ourbigbook.com/#h-file-argument
   if (file_header) {
     const file_render = renderArg(ast.args.file, new_context)
     if (file_render) {
@@ -2487,127 +2499,156 @@ function calculateId(
     }
     ast.file = file_id_text_append
   }
-  if (
-    // This can happen be false for included headers, and this is notably important
-    // for the toplevel header which gets its ID from the filename.
-    ast.id === undefined
-  ) {
-    const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
-    if (macro_id_arg === undefined) {
-      let id_text = '';
-      const id_prefix = context.macros[ast.macro_name].id_prefix;
-      if (title_arg !== undefined) {
-        if (id_prefix !== '') {
-          id_text += id_prefix + ID_SEPARATOR
-        }
-        if (file_header) {
-          id_text = Macro.FILE_ID_PREFIX + id_text + file_id_text_append
-        } else {
-          id_text += titleToId(title_text, new_context.options.ourbigbook_json.id, new_context);
-        }
-        const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
-        if (disambiguate_arg !== undefined) {
-          id_text += ID_SEPARATOR + titleToId(renderArgNoescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json.id);
-        }
-        id = id_text;
-      } else {
-        id_text += '_'
-      }
-
-      if (id === undefined) {
-        index_id = false;
-        if (!macro.inline) {
-          const parent_header_tree_node = ast.header_tree_node.parent_ast
-          if (parent_header_tree_node && new_context.options.prefixNonIndexedIdsWithParentId) {
-            skip_scope = true
-            id_text = parent_header_tree_node.ast.id + Macro.HEADER_SCOPE_SEPARATOR + id_text;
-          }
-          id_text += macro_count_global;
-          macro_count_global++
-          id = id_text;
-          // IDs of type p-1, p-2, q-1, q-2, etc.
-          //if (ast.macro_count !== undefined) {
-          //  id_text += ast.macro_count;
-          //  id = id_text;
-          //}
-        }
-      }
-    } else {
-      id = renderArgNoescape(macro_id_arg, new_context);
+  if (isHomeHeader) {
+    id = ''
+    if (ast.scope !== undefined && !skip_scope) {
+      id = ast.scope
     }
+    const idArg = ast.args[Macro.ID_ARGUMENT_NAME]
+    if (idArg && idArg.length()) {
+      console.log(`idArg.length: ${require('util').inspect(idArg.length(), { depth: null })}`)
+      parseError(
+        state,
+        'the home article cannot have non-empty id= explicitly set as its ID is always empty and the argument is ignored, consider using synonyms instead',
+        idArg.source_location
+      )
+    }
+  } else {
     if (
-      index_id &&
-      id !== undefined &&
-      id.startsWith(Macro.RESERVED_ID_PREFIX) &&
-      !file_header
+      // This can happen be false for included headers, and this is notably important
+      // for the toplevel header which gets its ID from the filename.
+      ast.id === undefined
     ) {
-      let message = `IDs that start with "${Macro.RESERVED_ID_PREFIX}" are reserved: "${id}"`;
-      parseError(state, message, ast.source_location);
-    }
-    if (id === '') {
-      parseError(state, 'ID cannot be empty', ast.source_location);
-    }
-    if (id !== undefined && ast.scope !== undefined && !skip_scope) {
-      id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + id
+      const macro_id_arg = ast.args[Macro.ID_ARGUMENT_NAME];
+      if (macro_id_arg === undefined) {
+        let id_text = '';
+        const id_prefix = context.macros[ast.macro_name].id_prefix;
+        if (title_arg !== undefined) {
+          if (id_prefix !== '') {
+            id_text += id_prefix + ID_SEPARATOR
+          }
+          if (file_header) {
+            id_text = Macro.FILE_ID_PREFIX + id_text + file_id_text_append
+          } else {
+            id_text += titleToId(title_text, new_context.options.ourbigbook_json.id, new_context);
+          }
+          const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
+          if (disambiguate_arg !== undefined) {
+            id_text += ID_SEPARATOR + titleToId(renderArgNoescape(disambiguate_arg, new_context), new_context.options.ourbigbook_json.id);
+          }
+          id = id_text;
+        } else {
+          id_text += '_'
+        }
+
+        if (id === undefined) {
+          index_id = false;
+          if (!macro.inline) {
+            const parent_header_tree_node = ast.header_tree_node.parent_ast
+            if (parent_header_tree_node && new_context.options.prefixNonIndexedIdsWithParentId) {
+              skip_scope = true
+              id_text = parent_header_tree_node.ast.id + Macro.HEADER_SCOPE_SEPARATOR + id_text;
+            }
+            id_text += macro_count_global;
+            macro_count_global++
+            id = id_text;
+            // IDs of type p-1, p-2, q-1, q-2, etc.
+            //if (ast.macro_count !== undefined) {
+            //  id_text += ast.macro_count;
+            //  id = id_text;
+            //}
+          }
+        }
+      } else {
+        id = renderArgNoescape(macro_id_arg, new_context);
+      }
+      if (
+        index_id &&
+        id !== undefined &&
+        id.startsWith(Macro.RESERVED_ID_PREFIX) &&
+        !file_header
+      ) {
+        let message = `IDs that start with "${Macro.RESERVED_ID_PREFIX}" are reserved: "${id}"`;
+        parseError(state, message, ast.source_location);
+      }
+      // TODO also reserve 'split'... or use a better convention for it.
+      if (id === INDEX_BASENAME_NOEXT) {
+        parseError(
+          state,
+          `the ID "${INDEX_BASENAME_NOEXT}" is reserved because it conflicts with HTML index files like index.html: https://github.com/ourbigbook/ourbigbook/issues/337`,
+          ast.source_location
+        )
+      }
+      if (id === '') {
+        if (!ignoreEmptyId) {
+          parseError(state, 'ID cannot be empty except for the home article', ast.source_location);
+        }
+        idIsEmpty = true
+      }
+      if (id && ast.scope !== undefined && !skip_scope) {
+        id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + id
+      }
     }
   }
   if (id !== undefined) {
     ast.id = id
   }
-  if (ast.id && ast.subdir && !skip_scope) {
-    ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
-  }
-  if (file_header && ast.scope) {
-    // TODO we should use the input directory here, not scope. {file} should ignore scope most likely
-    // and care only about the input directory.
-    let scopeSplit = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
-    if (scopeSplit[0] === FILE_PREFIX) {
-      scopeSplit = scopeSplit.slice(1)
+  if (!(ignoreEmptyId && idIsEmpty)) {
+    if (ast.id && ast.subdir && !skip_scope) {
+      ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
     }
-    ast.file = (scopeSplit.length ? scopeSplit.join(Macro.HEADER_SCOPE_SEPARATOR) + Macro.HEADER_SCOPE_SEPARATOR : '') + ast.file
-  }
-  ast.index_id = index_id;
-  if (ast.id !== undefined && !ast.force_no_index) {
-    let non_indexed_ast = non_indexed_ids[ast.id];
-    if (non_indexed_ast === undefined) {
-      non_indexed_ids[ast.id] = ast;
-      if (index_id) {
-        indexed_ids[ast.id] = ast;
-        const local_id = ast.get_local_header_parent_id()
-        if (local_id !== undefined) {
-          addToRefsTo(
-            ast.id,
-            context,
-            local_id,
-            REFS_TABLE_PARENT,
-            {
-              child_index: ast.header_tree_node.index,
-              source_location: ast.source_location,
-            }
-          )
+    if (file_header && ast.scope) {
+      // TODO we should use the input directory here, not scope. {file} should ignore scope most likely
+      // and care only about the input directory.
+      let scopeSplit = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
+      if (scopeSplit[0] === FILE_PREFIX) {
+        scopeSplit = scopeSplit.slice(1)
+      }
+      ast.file = (scopeSplit.length ? scopeSplit.join(Macro.HEADER_SCOPE_SEPARATOR) + Macro.HEADER_SCOPE_SEPARATOR : '') + ast.file
+    }
+    ast.index_id = index_id;
+    if (ast.id !== undefined && !ast.force_no_index) {
+      let non_indexed_ast = non_indexed_ids[ast.id];
+      if (non_indexed_ast === undefined) {
+        non_indexed_ids[ast.id] = ast;
+        if (index_id) {
+          indexed_ids[ast.id] = ast;
+          const local_id = ast.get_local_header_parent_id()
+          if (local_id !== undefined) {
+            addToRefsTo(
+              ast.id,
+              context,
+              local_id,
+              REFS_TABLE_PARENT,
+              {
+                child_index: ast.header_tree_node.index,
+                source_location: ast.source_location,
+              }
+            )
+          }
         }
+      } else {
+        const message = duplicateIdErrorMessage(
+          ast.id,
+          non_indexed_ast.source_location.path,
+          non_indexed_ast.source_location.line,
+          non_indexed_ast.source_location.column
+        )
+        parseError(state, message, ast.source_location);
       }
-    } else {
-      const message = duplicateIdErrorMessage(
-        ast.id,
-        non_indexed_ast.source_location.path,
-        non_indexed_ast.source_location.line,
-        non_indexed_ast.source_location.column
-      )
-      parseError(state, message, ast.source_location);
-    }
-    if (captionNumberVisible(ast, context)) {
-      if (!(macro_name in macro_counts_visible)) {
-        macro_counts_visible[macro_name] = 0;
+      if (captionNumberVisible(ast, context)) {
+        if (!(macro_name in macro_counts_visible)) {
+          macro_counts_visible[macro_name] = 0;
+        }
+        const macro_count = macro_counts_visible[macro_name] + 1;
+        macro_counts_visible[macro_name] = macro_count;
+        ast.macro_count_visible = macro_count;
       }
-      const macro_count = macro_counts_visible[macro_name] + 1;
-      macro_counts_visible[macro_name] = macro_count;
-      ast.macro_count_visible = macro_count;
+      binarySearchInsert(line_to_id_array,
+        [ast.source_location.line, ast.synonym || ast.id], binarySearchLineToIdArrayFn);
     }
-    binarySearchInsert(line_to_id_array,
-      [ast.source_location.line, ast.synonym || ast.id], binarySearchLineToIdArrayFn);
   }
-  return { title_text, macro_count_global }
+  return { idIsEmpty, title_text, macro_count_global }
 }
 
 /* Calculate the length of the scope of a child header given its parent ast. */
@@ -2966,6 +3007,30 @@ function renderArgNoescape(arg, context={}) {
   return renderArg(arg, cloneAndSet(context, 'html_escape', false));
 }
 
+/** We want HOME_MARKER to be used in some contexts but not others. Notably
+ * we currently don't want it on local link to toplevel. This may change however:
+ * https://github.com/ourbigbook/ourbigbook/issues/334
+ */
+function renderTitlePossibleHomeMarker(ast, context) {
+  if (
+    // Not ideal, but I'm not smart enough to factor them out.
+    // On web, nAncestors doesn't work, and I'm weary of pulling more data in if I can avoid it.
+    // It is expected that the resolution of https://github.com/ourbigbook/ourbigbook/issues/334
+    // might remove the need for this by forcing the toplevel ID of the toplevel index to have empty ID,
+    // and then just set any title as a synonym to it effectively.
+    context.options.webMode
+  ) {
+    if (ast.id === context.options.ref_prefix) {
+      return HTML_HOME_MARKER
+    }
+  } else {
+    if (ast.ancestors(context).length === 0) {
+      return HTML_HOME_MARKER
+    }
+  }
+  return renderArg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)
+}
+
 /* Convert a list of asts.
  *
  * The simplest type of conversion is to convert
@@ -3056,6 +3121,15 @@ function renderAstList({ asts, context, first_toplevel, header_count, split }) {
     }
     // Do the conversion.
     context.toc_was_rendered = false
+    if (!context.options.webMode) {
+      // We set this so that on local conversion the project toplevel header
+      // will actually render as is rather than HOME.
+      // This is horrendous, but I don't know how to make it work otherwise.
+      // Things get a bit complicated on web, where we want HOME to go everywhere,
+      // and where title is stored in the database and used everywhere in places
+      // such as index and so on.
+      context.renderFirstHeaderNotAsHome = true
+    }
     const ret = ast_toplevel.render(context)
     if (output_path !== undefined) {
       rendered_outputs_entry.full = ret
@@ -3477,6 +3551,7 @@ function convertInitContext(options={}, extra_returns={}) {
   options.toplevel_id = undefined;
   let root_relpath_shift
   let input_dir, basename
+  let isToplevelIndex = false
   if (options.input_path !== undefined) {
     ;[input_dir, basename] = pathSplit(options.input_path, options.path_sep)
     const [basename_noext, ext] = pathSplitext(basename)
@@ -3484,12 +3559,14 @@ function convertInitContext(options={}, extra_returns={}) {
       if (input_dir === '') {
         // https://docs.ourbigbook.com#the-toplevel-index-file
         options.toplevel_id = undefined;
+        isToplevelIndex = true
       } else {
         // https://docs.ourbigbook.com#the-id-of-the-first-header-is-derived-from-the-filename
         options.toplevel_id = input_dir;
         options.toplevel_has_scope = true
         root_relpath_shift = input_dir
       }
+      isToplevelIndex = input_dir === options.ref_prefix
       options.isindex = true
     } else {
       const [input_path_noext, ext] = pathSplitext(options.input_path)
@@ -3529,6 +3606,7 @@ function convertInitContext(options={}, extra_returns={}) {
     include_path_set: new Set(options.include_path_set),
     input_dir,
     in_header: false,
+    isToplevelIndex,
     macros: macroListToMacros(options.add_test_instrumentation),
     options,
     // Shifts in local \a links due to either:
@@ -3656,7 +3734,14 @@ function getAllPossibleScopeResolutions(current_scope, id, context) {
       current_scope += Macro.HEADER_SCOPE_SEPARATOR
       for (let i = current_scope.length - 1; i > 0; i--) {
         if (current_scope[i] === Macro.HEADER_SCOPE_SEPARATOR) {
-          ids.push(current_scope.substring(0, i + 1) + id)
+          let pref
+          if (id === '') {
+            // Happens on empty link to home on web which has prefix: <>.
+            pref = current_scope.substring(0, i)
+          } else {
+            pref = current_scope.substring(0, i + Macro.HEADER_SCOPE_SEPARATOR.length)
+          }
+          ids.push(pref + id)
         }
       }
     }
@@ -4778,6 +4863,10 @@ function outputPathBase(args={}) {
       if (dirname_ret === undefined) {
         if (ast_toplevel_id !== undefined) {
           ;[dirname_ret, basename_ret] = pathSplit(ast_toplevel_id, URL_SEP);
+          if (basename_ret === '') {
+            // Happens on home article.
+            basename_ret = INDEX_BASENAME_NOEXT
+          }
         } else {
           ;[dirname_ret, basename_ret] = [dirname, renamed_basename_noext]
         }
@@ -5259,7 +5348,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         validateAst(ast, context);
 
         if (
-          !ast.is_first_header_in_input_file &&
+          !is_first_header &&
           !ast.validation_output.synonym.boolean &&
           options.forbid_multiheader
         ) {
@@ -5350,16 +5439,6 @@ async function parse(tokens, options, context, extra_returns={}) {
             new PlaintextAstNode(cur_header_level.toString(), ast.args.level.source_location)],
             ast.args.level.source_location);
         }
-        if (
-          cur_header_level === 1 &&
-          !is_first_header &&
-          options.forbid_multi_h1 &&
-          !ast.validation_output.synonym.boolean
-        ) {
-          const msg = 'only one level 1 header is allowed in this conversion'
-          parseError(state, msg, ast.source_location);
-          parent_arg.push(new PlaintextAstNode(msg, ast.source_location));
-        }
 
         // lint['h-parent']
         if (
@@ -5409,8 +5488,6 @@ async function parse(tokens, options, context, extra_returns={}) {
             parent_arg_push_after.push(new PlaintextAstNode(errorMessageInOutput(message), arg.source_location));
           }
         }
-
-        is_first_header = false;
 
         if (options.is_first_global_header) {
           first_header = ast;
@@ -5466,11 +5543,81 @@ async function parse(tokens, options, context, extra_returns={}) {
           header_tree_last_level = cur_header_level;
         }
         ast.header_tree_node = cur_header_tree_node
+        const isHomeHeader = is_first_header && context.isToplevelIndex
 
         // Must come after the header tree step is mostly done, because scopes influence ID,
         // and they also depend on the parent node.
-        ;({ macro_count_global } = calculateId(ast, context, options.non_indexed_ids, options.indexed_ids,
-          macro_counts, macro_count_global, macro_counts_visible, state, true, line_to_id_array));
+        ;({ macro_count_global } = calculateId(
+          ast,
+          context,
+          options.non_indexed_ids,
+          options.indexed_ids,
+          macro_counts,
+          macro_count_global,
+          macro_counts_visible,
+          state,
+          true,
+          line_to_id_array,
+          {
+            isHomeHeader,
+          }
+        ))
+
+        // Sanity checks.
+        if (
+          cur_header_level === 1 &&
+          !is_first_header &&
+          options.forbid_multi_h1 &&
+          //!ast.synonym
+          !ast.validation_output.synonym.boolean
+        ) {
+          const msg = `only one level 1 header is allowed in this conversion, extra header has ID: "${ast.id}"`
+          parseError(state, msg, ast.source_location);
+          parent_arg.push(new PlaintextAstNode(msg, ast.source_location));
+        }
+
+        if (isHomeHeader) {
+          // The main ID is empty ''. And now also create what is written in the header e.g.
+          // = My toplevel id
+          // as a virtual synonym of that empty ID. This was originally introduced for Home
+          // to work, and also to solve https://github.com/ourbigbook/ourbigbook/issues/334
+          const synonymAst = lodash.clone(ast)
+          synonymAst.id = undefined
+          if (Macro.ID_ARGUMENT_NAME in synonymAst.args) {
+            delete synonymAst.args[Macro.ID_ARGUMENT_NAME]
+          }
+          synonymAst.validation_output[Macro.ID_ARGUMENT_NAME].given = false
+          synonymAst.synonym = context.options.ref_prefix
+          // This is only normally propagated on post_process_2. But here we have a weird
+          // out of tree thing that does not show up in post_process_2, so lets set it here
+          // as we know it for ure for this case. Ugly but works.
+          synonymAst.toplevel_id = ''
+          const { idIsEmpty } = calculateId(
+            synonymAst,
+            context,
+            options.non_indexed_ids,
+            options.indexed_ids,
+            macro_counts,
+            macro_count_global,
+            macro_counts_visible,
+            state,
+            true,
+            line_to_id_array,
+            {
+              ignoreEmptyId: true,
+              isHomeHeader: false,
+            }
+          )
+          if (!idIsEmpty) {
+            addToRefsTo(
+              prev_non_synonym_header_ast.id,
+              context,
+              synonymAst.id,
+              REFS_TABLE_SYNONYM,
+              { source_location: ast.source_location, }
+            )
+          }
+        }
 
         // Now stuff that must come after calculateId.
 
@@ -5489,9 +5636,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             context,
             ast.id,
             REFS_TABLE_SYNONYM,
-            {
-              source_location: ast.source_location,
-            }
+            { source_location: ast.source_location, }
           )
         } else {
           if (header_level_skip_error !== undefined) {
@@ -5538,6 +5683,8 @@ async function parse(tokens, options, context, extra_returns={}) {
             }
           }
         }
+
+        is_first_header = false
       } else if (macro_name === Macro.X_MACRO_NAME) {
         if (header_title_ast_ancestors.length > 0 && ast.args.content === undefined) {
           const message = `x without content inside title of a header: ${OURBIGBOOK_DEFAULT_DOCS_URL}/x-within-title-restrictions`
@@ -6161,7 +6308,6 @@ async function parse(tokens, options, context, extra_returns={}) {
     if (context.options.render) {
       perfPrint(context, 'db_queries')
 
-      let id_conflict_asts = []
       if (options.db_provider !== undefined) {
         const prefetch_ids = new Set()
         for (const ref of options.refs_to_h) {
@@ -7304,48 +7450,56 @@ function xGetHrefContent(ast, context) {
   // content
   let content;
   if (content_arg === undefined) {
-    // No explicit content given, deduce content from target ID title.
-    if (context.x_parents.has(ast)) {
-      // Prevent render infinite loops.
-      let message = `x with infinite recursion`;
-      renderError(context, message, ast.source_location);
-      return [href, errorMessageInOutput(message, context)];
-    }
-    let x_text_options = {
-      caption_prefix_span: false,
-      capitalize: ast.validation_output.c.boolean,
-      from_x: true,
-      quote: true,
-      pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
-    };
-    if (ast.validation_output.magic.boolean) {
-      const first_ast = href_arg.get(0);
-      if (first_ast.node_type === AstType.PLAINTEXT) {
-        const sep_idx = first_ast.text.lastIndexOf(Macro.HEADER_SCOPE_SEPARATOR)
-        const idx = sep_idx === -1 ? 0 : sep_idx + 1
-        const c = first_ast.text[idx]
-        if (c !== c.toLowerCase()) {
-          x_text_options.capitalize = true
+    if (target_id === context.options.ref_prefix) {
+      content = HTML_HOME_MARKER
+    } else {
+      // No explicit content given, deduce content from target ID title.
+      if (context.x_parents.has(ast)) {
+        // Prevent render infinite loops.
+        let message = `x with infinite recursion`;
+        renderError(context, message, ast.source_location);
+        return [href, errorMessageInOutput(message, context)];
+      }
+      let x_text_options = {
+        caption_prefix_span: false,
+        capitalize: ast.validation_output.c.boolean,
+        from_x: true,
+        quote: true,
+        pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
+      };
+      if (ast.validation_output.magic.boolean) {
+        const first_ast = href_arg.get(0);
+        if (first_ast.node_type === AstType.PLAINTEXT) {
+          const sep_idx = first_ast.text.lastIndexOf(Macro.HEADER_SCOPE_SEPARATOR)
+          const idx = sep_idx === -1 ? 0 : sep_idx + 1
+          const c = first_ast.text[idx]
+          if (
+            // Possible on home article on web, which has empty ID.
+            c !== undefined &&
+            c !== c.toLowerCase()
+          ) {
+            x_text_options.capitalize = true
+          }
+        }
+        const last_ast = href_arg.get(href_arg.length() - 1);
+        if (last_ast.node_type === AstType.PLAINTEXT) {
+          const text = first_ast.text
+          if (text !== pluralizeWrap(text, 1)) {
+            x_text_options.pluralize = true
+          }
         }
       }
-      const last_ast = href_arg.get(href_arg.length() - 1);
-      if (last_ast.node_type === AstType.PLAINTEXT) {
-        const text = first_ast.text
-        if (text !== pluralizeWrap(text, 1)) {
-          x_text_options.pluralize = true
-        }
+      if (ast.validation_output.full.given) {
+        x_text_options.style_full = ast.validation_output.full.boolean;
       }
-    }
-    if (ast.validation_output.full.given) {
-      x_text_options.style_full = ast.validation_output.full.boolean;
-    }
-    const x_parents_new = new Set(context.x_parents);
-    x_parents_new.add(ast);
-    content = xText(target_ast, cloneAndSet(context, 'x_parents', x_parents_new), x_text_options);
-    if (content === ``) {
-      let message = `empty cross reference body: "${target_id}"`;
-      renderError(context, message, ast.source_location);
-      return errorMessageInOutput(message, context);
+      const x_parents_new = new Set(context.x_parents);
+      x_parents_new.add(ast);
+      content = xText(target_ast, cloneAndSet(context, 'x_parents', x_parents_new), x_text_options);
+      if (content === ``) {
+        let message = `empty cross reference body: "${target_id}"`;
+        renderError(context, message, ast.source_location);
+        return errorMessageInOutput(message, context);
+      }
     }
   } else {
     // Explicit content given, just use it then.
@@ -7739,52 +7893,62 @@ function xTextBase(ast, context, options={}) {
     if (style_full && options.quote) {
       ret += htmlEscapeContext(context, `"`);
     }
-    // https://docs.ourbigbook.com#cross-reference-title-inflection
-    if (options.from_x) {
-
-      // {c}
-      let first_ast = title_arg.get(0);
-      if (
-        ast.macro_name === Macro.HEADER_MACRO_NAME &&
-        !ast.validation_output.c.boolean &&
-        !style_full &&
-        first_ast.node_type === AstType.PLAINTEXT
-      ) {
-        // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
-        title_arg = lodash.clone(title_arg)
-        title_arg.asts = lodash.clone(title_arg.asts)
-        // This is not amazing, as it can change some properties of the node,
-        // as we are not copying anything besides text and source_location.
-        // This almost had an impact on {toplevel} rendering, but it dien't matter
-        // so we didn't try to sanitize it further for now.
-        title_arg.set(0, new PlaintextAstNode(first_ast.text, first_ast.source_location))
-        let txt = title_arg.get(0).text;
-        let first_c = txt[0];
-        if (options.capitalize) {
-          first_c = first_c.toUpperCase();
-        } else {
-          first_c = first_c.toLowerCase();
-        }
-        title_arg.get(0).text = first_c + txt.substring(1);
-      }
-
-      // {p}
-      let last_ast = title_arg.get(title_arg.length() - 1);
-      if (
-        options.pluralize !== undefined &&
-        !style_full &&
-        last_ast.node_type === AstType.PLAINTEXT
-      ) {
-        title_arg = lodash.clone(title_arg)
-        title_arg.asts = lodash.clone(title_arg.asts)
-        title_arg.set(title_arg.length() - 1, new PlaintextAstNode(last_ast.text, last_ast.source_location));
-        title_arg.get(title_arg.length() - 1).text = pluralizeWrap(last_ast.text, options.pluralize ? 2 : 1);
-      }
-    }
-    if (ast.file) {
-      innerNoDiv = ast.file
+    if (
+      ast.id === context.options.ref_prefix &&
+      !context.renderFirstHeaderNotAsHome
+    ) {
+      innerNoDiv = HTML_HOME_MARKER
     } else {
-      innerNoDiv = renderArg(title_arg, context);
+      context.renderFirstHeaderNotAsHome = false
+
+      // Hack title_arg with {c} and {p} corrections:
+      // https://docs.ourbigbook.com#cross-reference-title-inflection
+      if (options.from_x) {
+
+        // {c}
+        let first_ast = title_arg.get(0);
+        if (
+          ast.macro_name === Macro.HEADER_MACRO_NAME &&
+          !ast.validation_output.c.boolean &&
+          !style_full &&
+          first_ast.node_type === AstType.PLAINTEXT
+        ) {
+          // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
+          title_arg = lodash.clone(title_arg)
+          title_arg.asts = lodash.clone(title_arg.asts)
+          // This is not amazing, as it can change some properties of the node,
+          // as we are not copying anything besides text and source_location.
+          // This almost had an impact on {toplevel} rendering, but it dien't matter
+          // so we didn't try to sanitize it further for now.
+          title_arg.set(0, new PlaintextAstNode(first_ast.text, first_ast.source_location))
+          let txt = title_arg.get(0).text;
+          let first_c = txt[0];
+          if (options.capitalize) {
+            first_c = first_c.toUpperCase();
+          } else {
+            first_c = first_c.toLowerCase();
+          }
+          title_arg.get(0).text = first_c + txt.substring(1);
+        }
+
+        // {p}
+        let last_ast = title_arg.get(title_arg.length() - 1);
+        if (
+          options.pluralize !== undefined &&
+          !style_full &&
+          last_ast.node_type === AstType.PLAINTEXT
+        ) {
+          title_arg = lodash.clone(title_arg)
+          title_arg.asts = lodash.clone(title_arg.asts)
+          title_arg.set(title_arg.length() - 1, new PlaintextAstNode(last_ast.text, last_ast.source_location));
+          title_arg.get(title_arg.length() - 1).text = pluralizeWrap(last_ast.text, options.pluralize ? 2 : 1);
+        }
+      }
+      if (ast.file) {
+        innerNoDiv = ast.file
+      } else {
+        innerNoDiv = renderArg(title_arg, context);
+      }
     }
     if (options.addTitleDiv) {
       inner = `<div class="title">${innerNoDiv}</div>`
@@ -9460,13 +9624,9 @@ const OUTPUT_FORMATS_LIST = [
           if (fileLinkHtml !== undefined) {
             header_meta_file.push(fileLinkHtml);
           }
-          let ancestors
-          let nAncestors
-          if (!context.options.webMode) {
-            ancestors = ast.ancestors(context)
-            nAncestors = ancestors.length
-          }
           if (first_header) {
+            const ancestors = ast.ancestors(context)
+            const nAncestors = ancestors.length
             if (!context.options.h_web_metadata) {
               if (nAncestors) {
                 const nearestAncestors = ancestors.slice(0, ANCESTORS_MAX).reverse()
@@ -9474,11 +9634,8 @@ const OUTPUT_FORMATS_LIST = [
                 for (const ancestor of nearestAncestors) {
                   entries.push({
                     href: xHrefAttr(ancestor, context),
-                    content: renderArg(ancestor.args[Macro.TITLE_ARGUMENT_NAME], context),
+                    content: renderTitlePossibleHomeMarker(ancestor, context),
                   })
-                }
-                if (ancestors.length <= ANCESTORS_MAX) {
-                  entries[0].content = HTML_HOME_MARKER
                 }
                 header_meta_ancestors.push(htmlAncestorLinks(entries, nAncestors));
               }
@@ -9487,29 +9644,8 @@ const OUTPUT_FORMATS_LIST = [
             const parent_asts = ast.get_header_parent_asts(context)
             parent_links = []
             for (const parent_ast of parent_asts) {
-              //const parent_content = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context)
-              let parentContent
-              if (
-                // Not ideal, but I'm not smart enough to factor them out.
-                // On web, nAncestors doesn't work, and I'm weary of pulling more data in if I can avoid it.
-                // It is expected that the resolution of https://github.com/ourbigbook/ourbigbook/issues/334
-                // might remove the need for this by forcing the toplevel ID of the toplevel index to have empty ID,
-                // and then just set any title as a synonym to it effectively.
-                context.options.webMode
-              ) {
-                if (parent_ast.id === context.options.ref_prefix) {
-                  parentContent = HTML_HOME_MARKER
-                }
-              } else {
-                if (nAncestors === 1) {
-                  parentContent = HTML_HOME_MARKER
-                }
-              }
-              if (parentContent === undefined) {
-                parentContent = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context)
-              }
               // .u for Up
-              parent_links.push(`<a${xHrefAttr(parent_ast, context)} class="u"> ${parentContent}</a>`);
+              parent_links.push(`<a${xHrefAttr(parent_ast, context)} class="u"> ${renderTitlePossibleHomeMarker(parent_ast, context)}</a>`);
             }
             parent_links = parent_links.join('');
             if (parent_links) {

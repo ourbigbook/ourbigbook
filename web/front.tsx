@@ -7,7 +7,6 @@ import { mutate } from 'swr'
 
 import ourbigbook, {
   Macro,
-  HTML_HOME_MARKER,
 } from 'ourbigbook'
 
 import { webApi } from 'front/api'
@@ -62,7 +61,7 @@ export function ArticleBy(
   const inner = <>
     {!isIndex && '"'}<span
       className="ourbigbook-title"
-      dangerouslySetInnerHTML={{ __html: isIndex ? HTML_HOME_MARKER : article.titleRender }}
+      dangerouslySetInnerHTML={{ __html: article.titleRender }}
     />{!isIndex && '"'}{showAuthor && <>
       by <UserLinkWithImageInner {...{
         user: article.author,

@@ -297,7 +297,7 @@ On ourbigbook.com like and unlike takes 4s-10s! Something is wrong. It must be b
 
 Both web and CLI.
 
-=== Incoming links and tagged metadata does not show synoyms
+=== Incoming links and tagged metadata does not show synonyms
 {tag=Metadata section}
 {tag=Synonym}
 
@@ -325,6 +325,8 @@ ourbigbook .
 the output notindex.html does not have an incoming links metadata section. With `<notindex>` it does have a metadata section. The outcome metadata section should be identical on both.
 
 Same for tags that use the synonym.
+
+Added a test now for it.
 
 === Image title with x to image with content incorrectly disallowed
 {tag=Lib}
@@ -599,7 +601,7 @@ If the `href` argument starts with certain prefixes, magic links are generated:
   links to: https://ourbigbook.com/go/topic/quantum-mechanics
 ``
 
-It is not perfectly elegant to use `<>` for this, especially locally, since it means linking to IDs that don't exist (on Web, `@username` is an actualy regular ID on the DB. But `#topic` isn't). But perhaps just having the `<>` links to non-files is just the way to go.
+It is not perfectly elegant to use `<>` for this, especially locally, since it means linking to IDs that don't exist (on Web, `@username` is an actually regular ID on the DB. But `#topic` isn't). But perhaps just having the `<>` links to non-files is just the way to go.
 
 === View article and issue likers and followers
 {tag=Web}
@@ -1328,9 +1330,9 @@ In that sequence, the File for `Header 2` would be effectively emptied of Ids, a
 But still, if the user deletes a header, it becomes very difficult to know it later on. So perhaps when the CLI downloads the SHA list, it could also check if there are articles on server that both:
 * are not present locally anymore
 * have a non-empty hash
-and then procede to make any such headers empty to avoid ID duplication.
+and then proceed to make any such headers empty to avoid ID duplication.
 
-Aditionally, it would also be good to move the deleted articles to some predefined header to avoid cluttering the headers. E.g. we could start with a dummy "My deleted articles". Dedicated section: <Move articles deleted locally to under a trash article on web>{full}.
+Aditionaly, it would also be good to move the deleted articles to some predefined header to avoid cluttering the headers. E.g. we could start with a dummy "My deleted articles". Dedicated section: <Move articles deleted locally to under a trash article on web>{full}.
 
 === Don't skip parent/previous sibling updates on --web uploads
 {tag=Web}

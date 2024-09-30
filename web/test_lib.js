@@ -229,6 +229,8 @@ $$
 {title=My second favorite equation}
 
 Ourbigbook defined LaTeX macro: $\\abs{x}$
+
+Empty link to home page: <>
 `
     }
   ],

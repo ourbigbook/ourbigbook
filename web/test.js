@@ -143,7 +143,13 @@ async function createArticleApi(test, article, opts={}) {
 }
 
 async function createOrUpdateArticleApi(test, article, opts={}) {
-  if (opts.parentId === undefined && test.user && article.titleSource.toLowerCase() !== ourbigbook.INDEX_BASENAME_NOEXT) {
+  if (
+    !opts.hasOwnProperty('parentId') &&
+    test.user &&
+    // This is just a heuristic to detect index editing. Index can also be achieved e.g. with {id=},
+    // but let's KISS it for now.
+    article.titleSource !== ''
+  ) {
     opts = Object.assign({ parentId: `${ourbigbook.AT_MENTION_CHAR}${test.user.username}` }, opts)
   }
   return test.webApi.articleCreateOrUpdate(article, opts)
@@ -775,14 +781,6 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await createArticleApi(test, { bodySource: 'Body 1' }))
       assert.strictEqual(status, 422)
 
-      // Empty title
-      ;({data, status} = await createArticleApi(test, { titleSource: '', bodySource: 'Body 1' }))
-      assert.strictEqual(status, 422)
-
-      // Empty id
-      ;({data, status} = await createArticleApi(test, { titleSource: '.', bodySource: 'Body 1' }))
-      assert.strictEqual(status, 422)
-
       // Newline in title
       ;({data, status} = await createArticleApi(test, { titleSource: 'a\nb', bodySource: 'Body 1' }))
       assert.strictEqual(status, 422)
@@ -826,9 +824,9 @@ it('api: create an article and see it on global feed', async () => {
       assertStatus(status, data)
       assertRows(data.articles, [
         { titleRender: 'Title 0', slug: 'user0/title-0', render: /Body 0/ },
-        { titleRender: 'Index', slug: 'user2' },
-        { titleRender: 'Index', slug: 'user1' },
-        { titleRender: 'Index', slug: 'user0' },
+        { titleRender: ourbigbook.HTML_HOME_MARKER, slug: 'user2' },
+        { titleRender: ourbigbook.HTML_HOME_MARKER, slug: 'user1' },
+        { titleRender: ourbigbook.HTML_HOME_MARKER, slug: 'user0' },
       ])
 
       // See latest articles by a user.
@@ -837,7 +835,7 @@ it('api: create an article and see it on global feed', async () => {
       assertStatus(status, data)
       assertRows(data.articles, [
         { titleRender: 'Title 0', slug: 'user0/title-0', render: /Body 0/ },
-        { titleRender: 'Index', slug: 'user0' },
+        { titleRender: ourbigbook.HTML_HOME_MARKER, slug: 'user0' },
       ])
 
     // Edit article.
@@ -905,15 +903,18 @@ it('api: create an article and see it on global feed', async () => {
     // Edit index article.
 
       ;({data, status} = await createOrUpdateArticleApi(test, {
-        titleSource: 'Index',
-        bodySource: 'Welcome to my home page hacked!'
+        titleSource: '',
+        bodySource: `{id=}
+
+Welcome to my home page hacked!
+`
       }))
       assertStatus(status, data)
       assertRows(data.articles, [{ render: /Welcome to my home page hacked!/ }])
 
       ;({data, status} = await test.webApi.article('user0'))
       assertStatus(status, data)
-      assert.strictEqual(data.titleRender, 'Index')
+      assert.strictEqual(data.titleRender, ourbigbook.HTML_HOME_MARKER)
       assert.match(data.render, /Welcome to my home page hacked!/)
 
     // View articles
@@ -1717,7 +1718,7 @@ it('api: article like', async () => {
       ;({data, status} = await test.webApi.articles({ likedBy: 'user1' }))
       assertStatus(status, data)
       assertRows(data.articles, [
-        { titleRender: 'Index', slug: 'user0' },
+        { titleRender: ourbigbook.HTML_HOME_MARKER, slug: 'user0' },
       ])
 
       // Does not show up on likedBy list of user0.
@@ -1729,7 +1730,7 @@ it('api: article like', async () => {
       ;({data, status} = await test.webApi.articles({ author: 'user0', sort: 'score' }))
       assertStatus(status, data)
       assertRows(data.articles, [
-        { titleRender: 'Index', slug: 'user0', score: 2 },
+        { titleRender: ourbigbook.HTML_HOME_MARKER, slug: 'user0', score: 2 },
         { titleRender: 'Title 0', slug: 'user0/title-0', render: /Body 0/, score: 0 },
       ])
 
@@ -2229,7 +2230,7 @@ it('api: article delete', async () => {
     }
 
       // Topics without articles are deleted
-      // This behaviour might have to change later on if we implement features
+      // This behavior might have to change later on if we implement features
       // such as topic following and topic issues:
       // https://docs.ourbigbook.com/todo/follow-topic
       // https://github.com/ourbigbook/ourbigbook/issues/257
@@ -2392,7 +2393,7 @@ it('api: issue follow', async () => {
 //    assertStatus(status, data)
 //    sortByKey(data.articles, 'slug')
 //    assertRows(data.articles, [
-//      { titleRender: 'Index', slug: 'user0' },
+//      { titleRender: ourbigbook.HTML_HOME_MARKER, slug: 'user0' },
 //      { titleRender: 'Title 0', slug: 'user0/title-0' },
 //      { titleRender: 'Title 0 0', slug: 'user0/title-0-0' },
 //      { titleRender: 'Title 0 1', slug: 'user0/title-0-1' },
@@ -2434,7 +2435,7 @@ it('api: issue follow', async () => {
 //    assertStatus(status, data)
 //    sortByKey(data.articles, 'slug')
 //    assertRows(data.articles, [
-//      { titleRender: 'Index',     slug: 'user0', },
+//      { titleRender: ourbigbook.HTML_HOME_MARKER,     slug: 'user0', },
 //      { titleRender: 'Title 0',   slug: 'user0/title-0',  render: /Body 0 0 hacked\./ },
 //      { titleRender: 'Title 0 0', slug: 'user0/title-0-0', render: /Body 0 0\./ },
 //      { titleRender: 'Title 0 0 hacked', slug: 'user0/title-0-0-hacked', render: /Body 0 0 hacked\./ },
@@ -2755,12 +2756,12 @@ it('api: article tree: single user', async () => {
         assert.strictEqual(status, 422)
 
         // It is not possible to change the index parentId.
-        article = createArticleArg({ i: 0, titleSource: 'Index' })
+        article = createArticleArg({ i: 0, titleSource: '' })
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
         assert.strictEqual(status, 422)
 
         // Also doesn't work with render: false
-        article = createArticleArg({ i: 0, titleSource: 'Index' })
+        article = createArticleArg({ i: 0, titleSource: '' })
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render: false }))
         assert.strictEqual(status, 422)
 
@@ -2944,7 +2945,7 @@ it('api: article tree: single user', async () => {
 
           // First create a link to derivative from here. This is to stress the case where there is a non-parent
           // link to the previousSiblingId, to ensure that the Ref type is chosen on the query. This failed to exercise
-          // the bug concretely, as it is an undocumented behaviour ordering issue.
+          // the bug concretely, as it is an undocumented behavior ordering issue.
           article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: '<derivative>' })
           ;({data, status} = await createOrUpdateArticleApi(test, article))
           assertStatus(status, data)
@@ -3895,7 +3896,7 @@ it('api: synonym rename', async () => {
     ])
 
     // Adding synonym to index is fine.
-    article = createArticleArg({ i: 0, titleSource: 'Index', bodySource: '= Index 2\n{synonym}' })
+    article = createArticleArg({ i: 0, titleSource: '', bodySource: '= Index 2\n{synonym}' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assertStatus(status, data)
 
@@ -4291,7 +4292,7 @@ it(`api: topic links dont have the domain name`, async () => {
 
     article = createArticleArg({
       i: 0,
-      titleSource: 'Index',
+      titleSource: '',
       bodySource: `<#My Topic>
 `,
     })
@@ -4493,7 +4494,7 @@ it(`api: /hash: cleanupIfDeleted is correct`, async () => {
     assertRows(data.articles, [
       { path: '@user0/index.bigb', cleanupIfDeleted: true, },
       { path: '@user0/mathematics.bigb', cleanupIfDeleted: true, },
-      // We don't need to clenup as it was never rendered.
+      // We don't need to cleanup as it was never rendered.
       { path: '@user0/physics.bigb', cleanupIfDeleted: false, },
     ])
   })
@@ -4699,7 +4700,7 @@ it(`api: explicit id`, async () => {
   })
 })
 
-it(`api: comment that starts with title does not blow up`, async () => {
+it(`api: comment: that starts with title does not blow up`, async () => {
   await testApp(async (test) => {
     let data, status, article
 
@@ -4735,7 +4736,75 @@ it(`api: min`, async () => {
   })
 })
 
-it(`api: create article`, async () => {
+it(`api: link to home article`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // Index creation does not create an extra dummy ID.
+    assert.notStrictEqual(await test.sequelize.models.Id.findOne({ where: { idid: '@user0' } }), null)
+    assert.strictEqual(await test.sequelize.models.Id.findOne({ where: { idid: '@user0/' } }), null)
+
+    // Add alternate title to home article
+    ;({data, status} = await createOrUpdateArticleApi(test, {
+      titleSource: 'My custom home',
+      bodySource: `{id=}
+
+<>
+
+<My custom home>
+`,
+      },
+      {
+        // This example misses our heuristic parentId calculation in the tests.
+        parentId: undefined,
+      }
+    ))
+    assertStatus(status, data)
+
+    ;({data, status} = await test.webApi.article('user0'))
+    assertStatus(status, data)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='' and text()='My custom home']`, data.render)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='' and text()=' Home']`, data.render)
+
+    // Create article user0/title-0
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      i: 0,
+      bodySource: `<>
+
+<My custom home>
+`,
+    })))
+    assertStatus(status, data)
+
+    ;({data, status} = await test.webApi.article('user0/title-0'))
+    assertStatus(status, data)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='/user0' and text()='My custom home']`, data.render)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='/user0' and text()=' Home']`, data.render)
+  })
+})
+
+it(`api: article: with named argument`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // Create article user0/title-0
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      i: 0,
+      bodySource: `{title2=Asdf qwer}`
+    })))
+    assertStatus(status, data)
+  })
+})
+
+it(`api: article: create simple`, async () => {
   await testApp(async (test) => {
     let data, status, article
 
@@ -4746,5 +4815,12 @@ it(`api: create article`, async () => {
     // Create article user0/title-0
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
     assertStatus(status, data)
+
+    // Check that the article is there
+    ;({data, status} = await test.webApi.article('user0/title-0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Title 0')
+    assert.strictEqual(data.titleSource, 'Title 0')
+    assert.match(data.render, /Body 0\./)
   })
 })

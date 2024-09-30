@@ -45,7 +45,6 @@ import {
   H_ANCESTORS_CLASS,
   H_WEB_CLASS,
   Macro,
-  HTML_HOME_MARKER,
   HTML_PARENT_MARKER,
   SYNONYM_LINKS_ID_UNRESERVED,
   SYNONYM_LINKS_MARKER,
@@ -623,9 +622,6 @@ export default function Article({
   if (!isIssue) {
     let h1Render = article.h1Render
     const h1RenderElem = parse(h1Render)
-    if (isIndex) {
-      h1RenderElem.querySelector(`h1 > a`).innerHTML = HTML_HOME_MARKER
-    }
 
     //Ancestors
     {
@@ -637,9 +633,6 @@ export default function Article({
             href: ` href="${linkPref}${a.slug}"`,
             content: a.titleRender,
           }})
-          if (ancestors.length <= ANCESTORS_MAX) {
-            ancestorLinks[0].content = HTML_HOME_MARKER
-          }
           htmlFrag = htmlAncestorLinks(
             ancestorLinks,
             ancestors.length,

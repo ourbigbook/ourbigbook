@@ -1753,7 +1753,7 @@ assert_lib('link to image in other files that has title with x to header in anot
   {
     convert_dir: true,
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\x[image-my-notindex]
 `,
@@ -1775,7 +1775,7 @@ assert_lib('link to image in other files that has title with x to synonym header
   {
     convert_dir: true,
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\x[image-my-notindex-h1-2]
 `,
@@ -1802,7 +1802,7 @@ assert_lib('link to image in other files that has title with two x to other head
   {
     convert_dir: true,
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\x[image-my-notindex-2-notindex-3]
 `,
@@ -2531,7 +2531,7 @@ assert_lib(
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 {scope}
@@ -2885,6 +2885,91 @@ assert_lib('x: cross reference to non-included toplevel header in another file',
     },
   },
 )
+assert_lib('x: to toplevel home and synthetic synonym',
+  {
+    convert_dir: true,
+    convert_opts: {
+      split_headers: true,
+    },
+    filesystem: {
+      'README.bigb': `= My toplevel
+
+<>{id=toplevel-to-toplevel-empty}
+
+<My toplevel>{id=toplevel-to-toplevel-nonempty}
+
+<Notindex>
+
+\\Include[notindex]
+
+= Toplevel 2 
+{parent=}
+
+<>{id=toplevel-2-to-toplevel-empty}
+
+<My toplevel>{id=toplevel-2-to-toplevel-nonempty}
+`,
+      'notindex.bigb': `= Notindex
+{tag=}
+
+<>{id=notindex-to-toplevel-empty}
+
+<My toplevel>{id=notindex-to-toplevel-nonempty}
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        // Empty link renders as Home.
+        `//x:a[@id='toplevel-to-toplevel-empty' and @href='' and text()=' Home']`,
+        // Non-empty link renders as its actual text.
+        `//x:a[@id='toplevel-to-toplevel-nonempty' and @href='' and text()='My toplevel']`,
+        // Toplevel project header renders as actual text in static.
+        xpath_header(1, '', "x:a[@href='split.html' and text()='My toplevel']"),
+        // Parent link of children of toplevel project header show as "Home".
+        xpath_header_parent(2, 'toplevel-2', '', 'Home'),
+      ],
+      'split.html': [
+        `//x:a[@id='toplevel-to-toplevel-empty' and @href='index.html' and text()=' Home']`,
+        `//x:a[@id='toplevel-to-toplevel-nonempty' and @href='index.html' and text()='My toplevel']`,
+      ],
+      'toplevel-2.html': [
+        `//x:a[@id='toplevel-2-to-toplevel-empty' and @href='index.html' and text()=' Home']`,
+        `//x:a[@id='toplevel-2-to-toplevel-nonempty' and @href='index.html' and text()='My toplevel']`,
+        xpath_header_parent(1, 'toplevel-2', 'index.html', 'Home'),
+      ],
+      'notindex.html': [
+        `//x:a[@id='notindex-to-toplevel-empty' and @href='index.html' and text()=' Home']`,
+        `//x:a[@id='notindex-to-toplevel-nonempty' and @href='index.html' and text()='My toplevel']`,
+        xpath_header_parent(1, 'notindex', 'index.html', 'Home'),
+        // Ancestors metadata show Home as Home.
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html' and text()=' Home']`,
+        // Incoming links show Home as Home.
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html' and text()=' Home']`,
+      ]
+    },
+  },
+)
+assert_lib('x: to empty home header',
+  {
+    convert_dir: true,
+    convert_opts: {
+      split_headers: true,
+    },
+    filesystem: {
+      // We are requiring a space after the = for now. Not ideal
+      // but not in the mood for changing the tokenizer either...
+      'README.bigb': `= 
+
+<>{id=toplevel-to-toplevel-empty}
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        `//x:a[@id='toplevel-to-toplevel-empty' and @href='' and text()=' Home']`,
+      ],
+    },
+  },
+)
 assert_lib('x: cross reference to non-included non-toplevel header in another file',
   {
     convert_dir: true,
@@ -3027,84 +3112,84 @@ assert_lib('x: splitDefault true and splitDefaultNotToplevel true',
     filesystem: {
       'notindex.bigb': `= Notindex
 
-\\x[index][notindex to index]
+\\x[toplevel][notindex to toplevel]
 
-\\x[index-h2][notindex to index h2]
+\\x[toplevel-h2][notindex to toplevel h2]
 
 == Notindex h2
 
-\\x[index][notindex h2 to index]
+\\x[toplevel][notindex h2 to toplevel]
 
-\\x[index-h2][notindex h2 to index h2]
+\\x[toplevel-h2][notindex h2 to toplevel h2]
 
 === Notindex h3
 
-\\x[index][notindex h3 to index]
+\\x[toplevel][notindex h3 to toplevel]
 `,
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
-\\x[index][index to index]
+\\x[toplevel][toplevel to toplevel]
 
-\\x[index-h2][index to index h2]
+\\x[toplevel-h2][toplevel to toplevel h2]
 
-== Index h2
+== Toplevel h2
 
-\\x[index][index h2 to index]
+\\x[toplevel][toplevel h2 to toplevel]
 
-\\x[index-h2][index h2 to index h2]
+\\x[toplevel-h2][toplevel h2 to toplevel h2]
 
-=== Index h3
+=== Toplevel h3
 
-\\x[index][index h3 to index]
+\\x[toplevel][toplevel h3 to toplevel]
 
-== Index h2 2
+== Toplevel h2 2
 
-\\x[index-h2][index h2 2 to index h2]
+\\x[toplevel-h2][toplevel h2 2 to toplevel h2]
 `,
     },
     assert_xpath: {
       'notindex.html': [
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to index']",
-        "//x:div[@class='p']//x:a[@href='index-h2.html' and text()='notindex to index h2']",
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
+        "//x:div[@class='p']//x:a[@href='toplevel-h2.html' and text()='notindex to toplevel h2']",
 
         // This output is not split.
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to index']",
-        "//x:div[@class='p']//x:a[@href='index-h2.html' and text()='notindex h2 to index h2']",
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='toplevel-h2.html' and text()='notindex h2 to toplevel h2']",
       ],
       'index.html': [
-        "//x:div[@class='p']//x:a[@href='' and text()='index to index']",
-        "//x:div[@class='p']//x:a[@href='#index-h2' and text()='index to index h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
+        "//x:div[@class='p']//x:a[@href='#toplevel-h2' and text()='toplevel to toplevel h2']",
 
         // This output is not split.
-        "//x:div[@class='p']//x:a[@href='' and text()='index h2 to index']",
-        "//x:div[@class='p']//x:a[@href='#index-h2' and text()='index h2 to index h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='#toplevel-h2' and text()='toplevel h2 to toplevel h2']",
 
         // Links to the split versions.
-        xpath_header_split(2, 'index-h2', 'index-h2.html', ourbigbook.SPLIT_MARKER_TEXT),
+        xpath_header_split(2, 'toplevel-h2', 'toplevel-h2.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
-      'index-h2.html': [
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='index h2 to index']",
-        "//x:div[@class='p']//x:a[@href='' and text()='index h2 to index h2']",
-        xpath_header_split(1, 'index-h2', 'index.html#index-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
+      'toplevel-h2.html': [
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='toplevel h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel h2 to toplevel h2']",
+        xpath_header_split(1, 'toplevel-h2', 'index.html#toplevel-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'notindex-h2.html': [
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to index']",
-        "//x:div[@class='p']//x:a[@href='index-h2.html' and text()='notindex h2 to index h2']",
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='toplevel-h2.html' and text()='notindex h2 to toplevel h2']",
         xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
     },
     assert_not_xpath: {
       'index.html': [
         // There is no split version of this header.
-        xpath_header_split(1, 'index', undefined, ourbigbook.SPLIT_MARKER_TEXT),
+        xpath_header_split(1, '', undefined, ourbigbook.SPLIT_MARKER_TEXT),
       ],
-      'index-h2.html': [
+      'toplevel-h2.html': [
         // This output is split.
-        "//x:div[@class='p']//x:a[text()='index h3 to index']",
+        "//x:div[@class='p']//x:a[text()='index h3 to toplevel']",
       ],
       'notindex-h2.html': [
         // This output is split.
-        "//x:div[@class='p']//x:a[text()='notindex h3 to index']",
+        "//x:div[@class='p']//x:a[text()='notindex h3 to toplevel']",
       ],
     },
     assert_not_exists: [
@@ -3128,74 +3213,74 @@ assert_lib('x: splitDefault false and splitDefaultNotToplevel true',
       },
     },
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
-\\x[index][index to index]
+\\x[toplevel][toplevel to toplevel]
 
-\\x[index-h2][index to index h2]
+\\x[toplevel-h2][toplevel to toplevel h2]
 
-== Index h2
+== Toplevel h2
 
-\\x[index][index h2 to index]
+\\x[toplevel][toplevel h2 to toplevel]
 
-\\x[index-h2][index h2 to index h2]
+\\x[toplevel-h2][toplevel h2 to toplevel h2]
 
-=== Index h3
+=== Toplevel h3
 
-\\x[index][index h3 to index]
+\\x[toplevel][toplevel h3 to toplevel]
 
-== Index h2 2
+== Toplevel h2 2
 
-\\x[index-h2][index h2 2 to index h2]
+\\x[toplevel-h2][toplevel h2 2 to toplevel h2]
 `,
       'notindex.bigb': `= Notindex
 
-\\x[index][notindex to index]
+\\x[toplevel][notindex to toplevel]
 
-\\x[index-h2][notindex to index h2]
+\\x[toplevel-h2][notindex to toplevel h2]
 
 == Notindex h2
 
-\\x[index][notindex h2 to index]
+\\x[toplevel][notindex h2 to toplevel]
 
-\\x[index-h2][notindex h2 to index h2]
+\\x[toplevel-h2][notindex h2 to toplevel h2]
 
 === Notindex h3
 
-\\x[index][notindex h3 to index]
+\\x[toplevel][notindex h3 to toplevel]
 `,
       'no-children.bigb': `= No children
 `,
     },
     assert_xpath: {
       'notindex.html': [
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to index']",
-        "//x:div[@class='p']//x:a[@href='index.html#index-h2' and text()='notindex to index h2']",
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex to toplevel']",
+        "//x:div[@class='p']//x:a[@href='index.html#toplevel-h2' and text()='notindex to toplevel h2']",
 
         // This output is not split.
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to index']",
-        "//x:div[@class='p']//x:a[@href='index.html#index-h2' and text()='notindex h2 to index h2']",
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='index.html#toplevel-h2' and text()='notindex h2 to toplevel h2']",
       ],
       'index.html': [
-        "//x:div[@class='p']//x:a[@href='' and text()='index to index']",
-        "//x:div[@class='p']//x:a[@href='#index-h2' and text()='index to index h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
+        "//x:div[@class='p']//x:a[@href='#toplevel-h2' and text()='toplevel to toplevel h2']",
 
         // This output is not split.
-        "//x:div[@class='p']//x:a[@href='' and text()='index h2 to index']",
-        "//x:div[@class='p']//x:a[@href='#index-h2' and text()='index h2 to index h2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='#toplevel-h2' and text()='toplevel h2 to toplevel h2']",
 
         // Links to the split versions.
-        xpath_header_split(2, 'index-h2', 'index-h2.html', ourbigbook.SPLIT_MARKER_TEXT),
+        xpath_header_split(2, 'toplevel-h2', 'toplevel-h2.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
-      'index-h2.html': [
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='index h2 to index']",
-        "//x:div[@class='p']//x:a[@href='index.html#index-h2' and text()='index h2 to index h2']",
+      'toplevel-h2.html': [
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='toplevel h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='index.html#toplevel-h2' and text()='toplevel h2 to toplevel h2']",
         // https://github.com/ourbigbook/ourbigbook/issues/271
-        xpath_header_split(1, 'index-h2', 'index.html#index-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'toplevel-h2', 'index.html#toplevel-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'notindex-h2.html': [
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to index']",
-        "//x:div[@class='p']//x:a[@href='index.html#index-h2' and text()='notindex h2 to index h2']",
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='notindex h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='index.html#toplevel-h2' and text()='notindex h2 to toplevel h2']",
         // https://github.com/ourbigbook/ourbigbook/issues/271
         xpath_header_split(1, 'notindex-h2', 'notindex.html#notindex-h2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
@@ -3203,20 +3288,20 @@ assert_lib('x: splitDefault false and splitDefaultNotToplevel true',
     assert_not_xpath: {
       'index.html': [
         // There is no split version of this header.
-        xpath_header_split(1, 'index', undefined, ourbigbook.SPLIT_MARKER_TEXT),
+        xpath_header_split(1, '', undefined, ourbigbook.SPLIT_MARKER_TEXT),
       ],
       'no-children.html': [
         // There is no split version of this header.
         xpath_header_split(1, 'no-children', undefined, ourbigbook.SPLIT_MARKER_TEXT),
         xpath_header_split(1, 'no-children', undefined, ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'index-h2.html': [
+      'toplevel-h2.html': [
         // This output is split.
-        "//x:div[@class='p']//x:a[text()='index h3 to index']",
+        "//x:div[@class='p']//x:a[text()='index h3 to toplevel']",
       ],
       'notindex-h2.html': [
         // This output is split.
-        "//x:div[@class='p']//x:a[text()='notindex h3 to index']",
+        "//x:div[@class='p']//x:a[text()='notindex h3 to toplevel']",
       ],
     },
     assert_not_exists: [
@@ -3237,7 +3322,9 @@ assert_lib(
       'README.bigb': `= Toplevel
 {splitDefault}
 
-\\x[toplevel][toplevel to toplevel]
+\\x[][toplevel to toplevel empty]
+
+\\x[toplevel][toplevel to toplevel synonym]
 
 \\x[image-my-image-toplevel][toplevel to my image toplevel]
 
@@ -3253,7 +3340,9 @@ assert_lib(
 
 == H2
 
-\\x[toplevel][h2 to toplevel]
+\\x[][h2 to toplevel empty]
+
+\\x[toplevel][h2 to toplevel synonym]
 
 \\x[image-my-image-toplevel][h2 to my image toplevel]
 
@@ -3307,7 +3396,8 @@ assert_lib(
     assert_xpath: {
       // This is he split one.
       'index.html': [
-        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel empty']",
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel synonym']",
         "//x:div[@class='p']//x:a[@href='h2.html' and text()='toplevel to h2']",
         // That one is nosplit by default.
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
@@ -3315,24 +3405,25 @@ assert_lib(
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
 
         // The toplevel split header does not get a numerical prefix.
-        xpath_header(1, 'toplevel', "x:a[@href='' and text()='Toplevel']"),
+        xpath_header(1, '', "x:a[@href='' and text()='Toplevel']"),
 
         // Images.
         "//x:div[@class='p']//x:a[@href='#image-my-image-toplevel' and text()='toplevel to my image toplevel']",
         "//x:div[@class='p']//x:a[@href='h2.html#image-my-image-h2' and text()='toplevel to my image h2']",
 
         // Split/nosplit.
-        xpath_header_split(1, 'toplevel', 'nosplit.html', ourbigbook.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, '', 'nosplit.html', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'nosplit.html': [
-        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
-        // Although h2 is split by defualt, it is already rendered in the curent page,
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel empty']",
+        // Although h2 is split by default, it is already rendered in the current page,
         // so just link to the current page render instead.
         "//x:div[@class='p']//x:a[@href='#h2' and text()='toplevel to h2']",
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='toplevel to notindex h2']",
 
-        "//x:div[@class='p']//x:a[@href='' and text()='h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='' and text()='h2 to toplevel empty']",
+        "//x:div[@class='p']//x:a[@href='' and text()='h2 to toplevel synonym']",
         "//x:div[@class='p']//x:a[@href='#h2' and text()='h2 to h2']",
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
@@ -3344,14 +3435,14 @@ assert_lib(
         "//x:div[@class='p']//x:a[@href='#image-my-image-h2' and text()='h2 to my image h2']",
 
         // Headers.
-        xpath_header(1, 'toplevel', "x:a[@href='index.html' and text()='Toplevel']"),
+        xpath_header(1, '', "x:a[@href='index.html' and text()='Toplevel']"),
         xpath_header(2, 'h2', "x:a[@href='h2.html' and text()='H2']"),
 
         // Spilt/nosplit.
-        xpath_header_split(1, 'toplevel', 'index.html', ourbigbook.SPLIT_MARKER_TEXT),
+        xpath_header_split(1, '', 'index.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
       'h2.html': [
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel']",
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='h2 to toplevel empty']",
         "//x:div[@class='p']//x:a[@href='' and text()='h2 to h2']",
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='h2 to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='h2 to notindex h2']",
@@ -3893,17 +3984,17 @@ assert_lib('x: ourbigbook.json xPrefix',
       },
     },
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
-<Index>[index to index]
+<Toplevel>[toplevel to toplevel]
 
-<Index 2>[index to index 2]
+<Toplevel 2>[toplevel to toplevel 2]
 
-<Notindex>[index to notindex]
+<Notindex>[toplevel to notindex]
 
-<Notindex 2>[index to notindex 2]
+<Notindex 2>[toplevel to notindex 2]
 
-== Index 2
+== Toplevel 2
 `,
       'notindex.bigb': `= Notindex
 
@@ -3931,14 +4022,14 @@ assert_lib('x: ourbigbook.json xPrefix',
         // Maybe we'd want:
         //`//x:h1//x:a[@href='asdf']`,
         // but would be slightly inconsistent with the following, so not sure...
-        "//x:div[@class='p']//x:a[@href='' and text()='index to index']",
-        "//x:div[@class='p']//x:a[@href='#index-2' and text()='index to index 2']",
-        "//x:div[@class='p']//x:a[@href='asdf/notindex.html' and text()='index to notindex']",
-        "//x:div[@class='p']//x:a[@href='asdf/notindex.html#notindex-2' and text()='index to notindex 2']",
+        "//x:div[@class='p']//x:a[@href='' and text()='toplevel to toplevel']",
+        "//x:div[@class='p']//x:a[@href='#toplevel-2' and text()='toplevel to toplevel 2']",
+        "//x:div[@class='p']//x:a[@href='asdf/notindex.html' and text()='toplevel to notindex']",
+        "//x:div[@class='p']//x:a[@href='asdf/notindex.html#notindex-2' and text()='toplevel to notindex 2']",
       ],
       'split.html': [
-        "//x:div[@class='p']//x:a[@href='asdf/index.html#index-2' and text()='index to index 2']",
-        "//x:div[@class='p']//x:a[@href='asdf/notindex.html#notindex-2' and text()='index to notindex 2']",
+        "//x:div[@class='p']//x:a[@href='asdf/index.html#toplevel-2' and text()='toplevel to toplevel 2']",
+        "//x:div[@class='p']//x:a[@href='asdf/notindex.html#notindex-2' and text()='toplevel to notindex 2']",
       ],
       'notindex.html': [
         // Don't add the suffix for -split or -nosplit outputs. Rationale: they don't
@@ -3960,20 +4051,20 @@ assert_lib(
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
-\\x[subdir/index-h2][link to subdir index h2]
+\\x[subdir/subdir-index-h2][link to subdir index h2]
     `,
       'ourbigbook.json': `{}\n`,
       'subdir/index.bigb': `= Subdir index
 
-== Index h2
+== Subdir index h2
 `,
     },
     assert_xpath: {
       'index.html': [
-        xpath_header(1, 'index'),
-        "//x:a[@href='subdir.html#index-h2' and text()='link to subdir index h2']",
+        xpath_header(1, ''),
+        "//x:a[@href='subdir.html#subdir-index-h2' and text()='link to subdir index h2']",
       ]
     },
   }
@@ -4010,7 +4101,7 @@ assert_lib_ast('cross reference from image title to previous non-header without 
 //  {
 //    convert_dir: true,
 //    filesystem: {
-//      'README.bigb': `= Index
+//      'README.bigb': `= Toplevel
 //
 //\\Image[ab]{title=cd}{external}
 //
@@ -4029,7 +4120,7 @@ assert_lib_ast('cross reference from image title to previous non-header without 
 //  {
 //    convert_dir: true,
 //    filesystem: {
-//      'README.bigb': `= Index
+//      'README.bigb': `= Toplevel
 //
 //\\Image[ab]{title=cd}{external}
 //
@@ -4501,9 +4592,9 @@ assert_lib(
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
-\\x[index]
+\\x[]
 
 \\x[h2]
 
@@ -4518,7 +4609,7 @@ assert_lib(
 {child=h2-4}
 {child=notindex-h2-2}
 
-\\x[index]
+\\x[]
 
 \\x[notindex]
 
@@ -4558,7 +4649,7 @@ assert_lib(
 `,
       'notindex.bigb': `= Notindex
 
-\\x[index]
+\\x[]
 
 \\x[h2]
 
@@ -4629,11 +4720,11 @@ assert_lib(
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'notindex.bigb': `= Notindex
 
-\\x[index]
+\\x[]
 `,
     },
     assert_xpath: {
@@ -4643,15 +4734,45 @@ assert_lib(
     },
   }
 )
+//assert_lib(
+//  // TODO https://docs.ourbigbook.com/incoming-links-and-tagged-metadata-does-not-show-synonyms
+//  'incoming links: links to synonyms show up on the list as incoming links',
+//  {
+//    convert_opts: {
+//      split_headers: true,
+//    },
+//    convert_dir: true,
+//    filesystem: {
+//      'README.bigb': `= Toplevel
+//
+//== Toplevel 2
+//
+//= Toplevel 2 synonym
+//{synonym}
+//`,
+//      'notindex.bigb': `= Notindex
+//
+//== Notindex 2
+//
+//\\x[toplevel-2-synonym]
+//`,
+//    },
+//    assert_xpath: {
+//      'toplevel-2.html': [
+//        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html#notindex-2']`,
+//      ],
+//    },
+//  }
+//)
 assert_lib(
-  'incoming links: cross reference incoming links from other file min index to notindex',
+  'incoming links: cross reference incoming links from other file min toplevel to notindex',
   {
     convert_opts: {
       split_headers: true,
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 \\x[notindex]
 `,
@@ -4674,7 +4795,7 @@ assert_lib(
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == Dog
 
@@ -4715,7 +4836,7 @@ assert_lib(
     convert_dir: true,
     convert_opts: { split_headers: true },
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == Dog
 `,
@@ -4742,7 +4863,7 @@ assert_lib(
     convert_dir: true,
     convert_opts: { split_headers: true },
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == Dog
 `,
@@ -4780,17 +4901,17 @@ assert_lib('x leading slash to escape scopes works across files',
 //  {
 //    convert_dir: true,
 //    filesystem: {
-//      'README.bigb': `= Index
+//      'README.bigb': `= Toplevel
 //
-//== Index scope
+//== Toplevel scope
 //{scope}
 //
 //\\Include[notindex]
 //
-//== Index scope 2
+//== Toplevel scope 2
 //{scope}
 //
-//\\x[notindex-h2][index scope 2 to notindex h2]`,
+//\\x[notindex-h2][toplevel scope 2 to notindex h2]`,
 //     'notindex.bigb': `= Notindex
 //
 //== Notindex h2
@@ -4813,9 +4934,9 @@ assert_lib('scope: hierarchy resolution works across files with directories and 
     filesystem: {
       'subdir/notindex.bigb': `= Notindex
 
-\\x[notindex2][index to notindex2]
+\\x[notindex2][toplevel to notindex2]
 
-\\x[notindex2-h2][index to notindex2 h2]
+\\x[notindex2-h2][toplevel to notindex2 h2]
 
 == Notindex h2
 {tag=notindex2}
@@ -4832,7 +4953,7 @@ assert_lib('scope: hierarchy resolution works across files with directories and 
     },
     assert_xpath: {
       'subdir/notindex.html': [
-        "//x:div[@class='p']//x:a[@href='notindex2.html#notindex2-h2' and text()='index to notindex2 h2']",
+        "//x:div[@class='p']//x:a[@href='notindex2.html#notindex2-h2' and text()='toplevel to notindex2 h2']",
         "//x:div[@id='notindex-h2']//x:span[@class='tags']//x:a[@href='notindex2.html']",
         "//x:div[@id='notindex-h2']//x:span[@class='tags']//x:a[@href='notindex2.html#notindex2-h2']",
       ],
@@ -4947,14 +5068,14 @@ assert_lib('x: split renders by default links back to nosplit render of another 
     filesystem: {
       'README.bigb': `= tmp
 
-<tmp 2>[index to tmp 2]
+<tmp 2>[toplevel to tmp 2]
 
 == tmp 2
 `
     },
     assert_xpath: {
       'split.html': [
-        "//x:div[@class='p']//x:a[@href='index.html#tmp-2' and text()='index to tmp 2']",
+        "//x:div[@class='p']//x:a[@href='index.html#tmp-2' and text()='toplevel to tmp 2']",
       ],
     },
     convert_opts: { split_headers: true },
@@ -5364,7 +5485,7 @@ assert_lib('header: synonym basic',
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 
@@ -5419,7 +5540,7 @@ assert_lib('header: synonym in splitDefault',
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 {splitDefault}
 
 == h2
@@ -5445,7 +5566,7 @@ assert_lib('header: link to synonym toplevel does not have fragment',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 <notindex>
 
@@ -5646,7 +5767,7 @@ assert_lib('header: splitDefault on ourbigbook.json',
       ourbigbook_json: { h: { splitDefault: true } }
     },
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 \\Include[notindex]
 
@@ -5675,7 +5796,7 @@ assert_lib('header: file argument works',
       split_headers: true,
     },
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == path/to
 {file}
@@ -5763,7 +5884,7 @@ assert_lib('header: file argument ignores text files on nosplit if they are too 
       split_headers: true,
     },
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == small.txt
 {file}
@@ -5822,7 +5943,7 @@ assert_lib('header: file argument in _file directory toplevel header',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 <path/to/my-file.txt>{file}
 `,
@@ -5882,37 +6003,37 @@ assert_lib('header: toplevel argument',
       split_headers: true,
     },
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
-<h 1>[index to h 1]
+<h 1>[toplevel to h 1]
 
-<h 1 1>[index to h 1 1]
+<h 1 1>[toplevel to h 1 1]
 
-<h 1 1 1>[index to h 1 1 1]
+<h 1 1 1>[toplevel to h 1 1 1]
 
-<image 1 1 1>[index to image 1 1 1]
+<image 1 1 1>[toplevel to image 1 1 1]
 
-<h 1 1 1 1>[index to h 1 1 1 1]
+<h 1 1 1 1>[toplevel to h 1 1 1 1]
 
-<h 1 1 1 1 1>[index to h 1 1 1 1 1]
+<h 1 1 1 1 1>[toplevel to h 1 1 1 1 1]
 
-<h 1 1 1 1 1 1>[index to h 1 1 1 1 1 1]
+<h 1 1 1 1 1 1>[toplevel to h 1 1 1 1 1 1]
 
-<h 2>[index to h 2]
+<h 2>[toplevel to h 2]
 
-<h 2/h 2 1>[index to h 2 1]
+<h 2/h 2 1>[toplevel to h 2 1]
 
-<h 2/h 2 1 1>[index to h 2 1 1]
+<h 2/h 2 1 1>[toplevel to h 2 1 1]
 
-<h 2/h 2 1 1 1>[index to h 2 1 1 1]
+<h 2/h 2 1 1 1>[toplevel to h 2 1 1 1]
 
-<notindex>[index to notindex]
+<notindex>[toplevel to notindex]
 
-<notindex 1>[index to notindex 1]
+<notindex 1>[toplevel to notindex 1]
 
-<notindex 1 1>[index to notindex 1 1]
+<notindex 1 1>[toplevel to notindex 1 1]
 
-<notindex 1 1 1>[index to notindex 1 1 1]
+<notindex 1 1 1>[toplevel to notindex 1 1 1]
 
 == h 1
 
@@ -5961,28 +6082,28 @@ assert_lib('header: toplevel argument',
     assert_xpath: {
       'index.html': [
         // Same as without toplevel sanity checks.
-        xpath_header(1, 'index'),
+        xpath_header(1, ''),
         xpath_header(2, 'h-1'),
-        "//x:div[@class='p']//x:a[@href='#h-1' and text()='index to h 1']",
-        "//x:div[@class='p']//x:a[@href='#h-2' and text()='index to h 2']",
-        "//x:div[@class='p']//x:a[@href='#h-2/h-2-1' and text()='index to h 2 1']",
-        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='index to notindex']",
-        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-1' and text()='index to notindex 1']",
-        "//x:div[@class='p']//x:a[@href='notindex-1-1.html' and text()='index to notindex 1 1']",
-        "//x:div[@class='p']//x:a[@href='notindex-1-1.html#notindex-1-1-1' and text()='index to notindex 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='#h-1' and text()='toplevel to h 1']",
+        "//x:div[@class='p']//x:a[@href='#h-2' and text()='toplevel to h 2']",
+        "//x:div[@class='p']//x:a[@href='#h-2/h-2-1' and text()='toplevel to h 2 1']",
+        "//x:div[@class='p']//x:a[@href='notindex.html' and text()='toplevel to notindex']",
+        "//x:div[@class='p']//x:a[@href='notindex.html#notindex-1' and text()='toplevel to notindex 1']",
+        "//x:div[@class='p']//x:a[@href='notindex-1-1.html' and text()='toplevel to notindex 1 1']",
+        "//x:div[@class='p']//x:a[@href='notindex-1-1.html#notindex-1-1-1' and text()='toplevel to notindex 1 1 1']",
         "//*[@id='_toc']//x:a[@href='#h-1' and text()='h 1']",
         "//*[@id='_toc']//x:a[@href='h-1-1.html' and text()='h 1 1']",
         "//*[@id='_toc']//x:a[@href='h-1-1.html#h-1-1-1' and text()='h 1 1 1']",
 
         // Modified by toplevel.
-        "//x:div[@class='p']//x:a[@href='h-1-1.html' and text()='index to h 1 1']",
-        "//x:div[@class='p']//x:a[@href='h-1-1.html#h-1-1-1' and text()='index to h 1 1 1']",
-        "//x:div[@class='p']//x:a[@href='h-1-1.html#image-1-1-1' and text()='index to image 1 1 1']",
-        "//x:div[@class='p']//x:a[@href='h-1-1.html#h-1-1-1-1' and text()='index to h 1 1 1 1']",
-        "//x:div[@class='p']//x:a[@href='h-1-1-1-1-1.html' and text()='index to h 1 1 1 1 1']",
-        "//x:div[@class='p']//x:a[@href='h-1-1-1-1-1.html#h-1-1-1-1-1-1' and text()='index to h 1 1 1 1 1 1']",
-        "//x:div[@class='p']//x:a[@href='h-2/h-2-1-1.html' and text()='index to h 2 1 1']",
-        "//x:div[@class='p']//x:a[@href='h-2/h-2-1-1.html#h-2-1-1-1' and text()='index to h 2 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1.html' and text()='toplevel to h 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1.html#h-1-1-1' and text()='toplevel to h 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1.html#image-1-1-1' and text()='toplevel to image 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1.html#h-1-1-1-1' and text()='toplevel to h 1 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1-1-1-1.html' and text()='toplevel to h 1 1 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-1-1-1-1-1.html#h-1-1-1-1-1-1' and text()='toplevel to h 1 1 1 1 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-2/h-2-1-1.html' and text()='toplevel to h 2 1 1']",
+        "//x:div[@class='p']//x:a[@href='h-2/h-2-1-1.html#h-2-1-1-1' and text()='toplevel to h 2 1 1 1']",
 
         //// How it would be without toplevel.
         //xpath_header(3, 'h-1-1'),
@@ -5990,11 +6111,11 @@ assert_lib('header: toplevel argument',
         //xpath_header(5, 'h-1-1-1-1'),
         //xpath_header(6, 'h-1-1-1-1-1'),
         //xpath_header(7, 'h-1-1-1-1-1-1'),
-        //"//x:div[@class='p']//x:a[@href='#h-1-1' and text()='index to h 1 1']",
-        //"//x:div[@class='p']//x:a[@href='#h-1-1-1' and text()='index to h 1 1 1']",
-        //"//x:div[@class='p']//x:a[@href='#h-1-1-1-1' and text()='index to h 1 1 1 1']",
-        //"//x:div[@class='p']//x:a[@href='#h-1-1-1-1-1' and text()='index to h 1 1 1 1 1']",
-        //"//x:div[@class='p']//x:a[@href='#h-1-1-1-1-1-1' and text()='index to h 1 1 1 1 1 1']",
+        //"//x:div[@class='p']//x:a[@href='#h-1-1' and text()='toplevel to h 1 1']",
+        //"//x:div[@class='p']//x:a[@href='#h-1-1-1' and text()='toplevel to h 1 1 1']",
+        //"//x:div[@class='p']//x:a[@href='#h-1-1-1-1' and text()='toplevel to h 1 1 1 1']",
+        //"//x:div[@class='p']//x:a[@href='#h-1-1-1-1-1' and text()='toplevel to h 1 1 1 1 1']",
+        //"//x:div[@class='p']//x:a[@href='#h-1-1-1-1-1-1' and text()='toplevel to h 1 1 1 1 1 1']",
       ],
       'h-1-1.html': [
         xpath_header(1, 'h-1-1'),
@@ -6078,7 +6199,7 @@ assert_lib_ast('header: id of first header comes from the file name if not index
     input_path_noext: 'notindex'
   },
 )
-assert_lib_ast('header: id of first header comes from header title if index',
+assert_lib_ast('header: id of first header is empty if index',
   `= abc
 
 \\x[abc]
@@ -6090,7 +6211,7 @@ assert_lib_ast('header: id of first header comes from header title if index',
         title: [t('abc')],
       },
       {
-        id: 'abc',
+        id: '',
       }
     ),
     a('P', [
@@ -6194,7 +6315,7 @@ assert_lib('header: forbid_multi_h1 option does not forbid h1 headers with paren
       'README.bigb': `= h1
 
 = h2
-{parent=h1}
+{parent=}
 `,
     },
   }
@@ -6488,7 +6609,7 @@ assert_lib_error('header: lint: has to be direct child of toplevel explicit',
   // \Q[== h2]
   //
   // and it stops being a header.
-  `= Index
+  `= Toplevel
 
 \\Q[
 asdf
@@ -6499,12 +6620,32 @@ asdf
   6, 1
 )
 assert_lib_error('header: lint: has to be direct child of toplevel implicit paragraph',
-  `= Index
+  `= Toplevel
 
 == h2
 asdf
 `,
   3, 1
+)
+assert_lib_error('header: home article cannot have non-empty id',
+  `= My home
+{id=asdf}
+`,
+  2, 1, 'index.bigb',
+  {
+    input_path_noext: 'index',
+  }
+)
+assert_lib_ast('header: home article can have empty id',
+  // This is useful for web upload, where empty id allows identifying the article ID as being the index
+  // without the need for out of band path which we kind of want to erradicate.
+  `= My home
+{id=}
+`,
+  undefined,
+  {
+    input_path_noext: 'index',
+  }
 )
 
 // Word counts.
@@ -6885,7 +7026,7 @@ assert_lib('toc: header numbered=0 in ourbigbook.json works across source files 
       ourbigbook_json: { h: { numbered: false } }
     },
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 \\Include[notindex]
 
@@ -6917,7 +7058,7 @@ assert_lib('toc: split header with an include and no headers has a single table 
       ourbigbook_json: { h: { numbered: false } }
     },
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
@@ -6936,7 +7077,7 @@ assert_lib('toc: toplevel scope gets removed on table of contents of included he
     convert_dir: true,
     convert_opts: { split_headers: true },
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\Q[\\x[notindex/notindex-h2]{full}]
 
@@ -7017,26 +7158,12 @@ assert_lib_ast('toc: the toc is added before the first h2 when there is a single
 assert_lib('toc: ancestors list shows after toc on toplevel',
   {
     filesystem: {
-      'index.bigb': `= Index
-
-\\Include[notindex]
+      'README.bigb': `= Asdf
 
 == h2
 
 === h3
-
-==== h4
 `,
-      'notindex.bigb': `= Notindex
-
-\\Include[notindex2]
-`,
-      'notindex2.bigb': `= Notindex 2
-
-\\Include[notindex3]
-`,
-      'notindex3.bigb': `= Notindex 2
-`
     },
     convert_dir: true,
     convert_opts: { split_headers: true },
@@ -7048,23 +7175,23 @@ assert_lib('toc: ancestors list shows after toc on toplevel',
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
         `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h2']`,
       ],
-      'h4.html': [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h2']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h3']`,
-      ],
-      'notindex.html': [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-      ],
-      'notindex2.html': [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
-      ],
-      'notindex3.html': [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
-      ],
+      //'h4.html': [
+      //  `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+      //  `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h2']`,
+      //  `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html#h3']`,
+      //],
+      //'notindex.html': [
+      //  `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+      //],
+      //'notindex2.html': [
+      //  `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+      //  `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+      //],
+      //'notindex3.html': [
+      //  `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+      //  `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+      //  `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
+      //],
     },
     assert_not_xpath: {
       'index.html': [
@@ -7224,17 +7351,17 @@ const include_two_levels_ast_args = [
   a('P', [t('hh')]),
 ]
 assert_lib_ast('include: simple with paragraph with embed includes',
-  `= Index
+  `= Toplevel
 
-Index paragraph.
+Toplevel paragraph.
 
 \\Include[include-one-level-1]
 
 \\Include[include-one-level-2]
 `,
   [
-    a('H', undefined, {level: [t('1')], title: [t('Index')]}),
-    a('P', [t('Index paragraph.')]),
+    a('H', undefined, {level: [t('1')], title: [t('Toplevel')]}),
+    a('P', [t('Toplevel paragraph.')]),
     a('H', undefined, {level: [t('2')], title: [t('Include one level 1')]}),
     a('P', [t('Include one level 1 paragraph.')]),
     a('H', undefined, {level: [t('2')], title: [t('Include one level 2')]}),
@@ -7582,7 +7709,7 @@ assert_lib_error('include: to file that does exists without embed includes befor
 assert_lib('include: relative include in subdirectory',
   {
     filesystem: {
-      's1/index.bigb': `= Index
+      's1/index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
@@ -7613,16 +7740,16 @@ assert_lib('include: from parent to subdirectory',
   // https://github.com/ourbigbook/ourbigbook/issues/116
   {
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
-\\x[subdir][index to subdir]
+\\x[subdir][toplevel to subdir]
 
-\\x[subdir/h2][index to subdir h2]
+\\x[subdir/h2][toplevel to subdir h2]
 
 \\Include[subdir]
 \\Include[subdir/notindex]
 `,
-      'subdir/index.bigb': `= Index
+      'subdir/index.bigb': `= Toplevel
 
 == h2
 `,
@@ -7634,8 +7761,8 @@ assert_lib('include: from parent to subdirectory',
     convert_dir: true,
     assert_xpath: {
       'index.html': [
-        "//x:a[@href='subdir.html' and text()='index to subdir']",
-        "//x:a[@href='subdir.html#h2' and text()='index to subdir h2']",
+        "//x:a[@href='subdir.html' and text()='toplevel to subdir']",
+        "//x:a[@href='subdir.html#h2' and text()='toplevel to subdir h2']",
       ],
     },
   }
@@ -7763,7 +7890,7 @@ assert_lib('include: subdir index.bigb outputs to subdir.html when there is no t
 assert_lib('include: include of a header with a tag or child in a third file does not blow up',
   {
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
@@ -7785,7 +7912,7 @@ assert_cli('include: tags show on embed include',
       { cmd: ['ourbigbook', ['.']], },
     ],
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
@@ -7820,7 +7947,7 @@ assert_lib(
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 \\Include[included-by-index]
 `,
@@ -7852,7 +7979,7 @@ assert_lib(
       split_headers: true,
     },
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 \\Include[included-by-index]
 `,
@@ -7976,14 +8103,14 @@ assert_lib_error('id autogen: conflict with later autogenerated id',
   1, 1
 )
 assert_lib_error('id autogen: cannot be empty simple',
-  `= Index
+  `= Toplevel
 
 == 
 `,
   3, 1
 )
 assert_lib_error('id autogen: cannot be empty with scope',
-  `= Index
+  `= Toplevel
 
 == Asdf
 {scope}
@@ -8088,21 +8215,22 @@ assert_lib_ast('id autogen: with nested elements does an id conversion and works
 // ID conflicts.
 assert_lib_error('id conflict with previous id on the same file',
   `= tmp
-{id=tmp}
 
-== tmp
+== tmp 2
+
+== tmp 2
 `,
-  4, 1, 'index.bigb',
+  5, 1, 'index.bigb',
   {
-    error_message: ourbigbook.duplicateIdErrorMessage('tmp', 'index.bigb', 1, 1),
+    error_message: ourbigbook.duplicateIdErrorMessage('tmp-2', 'index.bigb', 3, 1),
     input_path_noext: 'index',
   },
 )
 assert_lib_ast('id conflict with id on another file simple',
   // https://github.com/ourbigbook/ourbigbook/issues/201
-  `= index
+  `= Toplevel
 
-== notindex h2
+== Notindex h2
 `,
   undefined,
   {
@@ -8112,9 +8240,9 @@ assert_lib_ast('id conflict with id on another file simple',
       ['notindex-h2', 'notindex.bigb', 3, 1],
     ],
     filesystem: {
-      'notindex.bigb': `= notindex
+      'notindex.bigb': `= Notindex
 
-== notindex h2
+== Notindex h2
 `,
     },
     input_path_noext: 'index'
@@ -8381,7 +8509,7 @@ assert_lib_stdin('bigb output: list at the end of article does not lead to doubl
 assert_lib('bigb output: checks target IDs to decide between plural or not on converting non magic to magic links',
   {
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\x[dog]
 
@@ -8396,7 +8524,7 @@ assert_lib('bigb output: checks target IDs to decide between plural or not on co
     },
     convert_dir: true,
     assert_bigb: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 <dog>
 
@@ -8408,7 +8536,7 @@ assert_lib('bigb output: checks target IDs to decide between plural or not on co
 assert_lib('bigb output: unused ID check does not blow up across files with magic plural',
   {
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 <dogs>
 `,
@@ -8424,7 +8552,7 @@ assert_lib('bigb output: unused ID check does not blow up across files with magi
 assert_lib('bigb output: x uses text conversion as the target link',
   {
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\x[dog-and-cat]{c}{p}
 
@@ -8456,7 +8584,7 @@ assert_lib('bigb output: x uses text conversion as the target link',
     },
     convert_dir: true,
     assert_bigb: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 <Dog and Cats>
 
@@ -8476,7 +8604,7 @@ assert_lib('bigb output: x uses text conversion as the target link',
 assert_lib('bigb output: x magic input across files',
   {
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 <Dog and cat>
 
@@ -8507,7 +8635,7 @@ assert_lib('bigb output: x magic input across files',
     },
     convert_dir: true,
     assert_bigb: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 <Dog and cat>
 
@@ -8529,7 +8657,7 @@ assert_lib('bigb output: x magic input across files',
 assert_lib('bigb output: x to disambiguate',
   {
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\x[python-animal]
 
@@ -8548,7 +8676,7 @@ assert_lib('bigb output: x to disambiguate',
     convert_dir: true,
     // TODO maybe https://github.com/ourbigbook/ourbigbook/issues/244
     assert_bigb: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 <python (animal)>
 
@@ -8565,7 +8693,7 @@ assert_lib('bigb output: x to plural disambiguate',
   // Happens notably with pluralize false plural bugs such as "Mathematics".
   {
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 <field cats>
 `,
@@ -8578,7 +8706,7 @@ assert_lib('bigb output: x to plural disambiguate',
     convert_dir: true,
     // TODO maybe https://github.com/ourbigbook/ourbigbook/issues/244
     assert_bigb: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 <field (cats)>
 `,
@@ -8588,7 +8716,7 @@ assert_lib('bigb output: x to plural disambiguate',
 assert_lib('bigb output: x to scope',
   {
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 <my dog/pit bull>
 
@@ -8629,7 +8757,7 @@ assert_lib('bigb output: x to scope',
     },
     convert_dir: true,
     assert_bigb: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 <my dog/pit bull>
 
@@ -8666,7 +8794,7 @@ assert_lib('bigb output: x to scope',
 assert_lib('bigb output: x with leading slash to escape scope',
   {
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 == Fruit
 {scope}
@@ -8681,7 +8809,7 @@ assert_lib('bigb output: x with leading slash to escape scope',
     },
     convert_dir: true,
     assert_bigb: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 == Fruit
 {scope}
@@ -8699,7 +8827,7 @@ assert_lib('bigb output: x with leading slash to escape scope',
 assert_lib('bigb output: magic x in subdir scope',
   {
     filesystem: {
-      'myscope/notindex.bigb': `= Index
+      'myscope/notindex.bigb': `= Toplevel
 
 <dog>
 `,
@@ -8710,7 +8838,7 @@ assert_lib('bigb output: magic x in subdir scope',
     },
     convert_dir: true,
     assert_bigb: {
-      'myscope/notindex.bigb': `= Index
+      'myscope/notindex.bigb': `= Toplevel
 
 <dog>
 `,
@@ -8720,7 +8848,7 @@ assert_lib('bigb output: magic x in subdir scope',
 assert_lib('bigb output: magic x to image',
   {
     filesystem: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <image My dog>
 
@@ -8736,7 +8864,7 @@ assert_lib('bigb output: magic x to image',
     },
     convert_dir: true,
     assert_bigb: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <image My dog>
 
@@ -8756,7 +8884,7 @@ assert_lib('bigb output: x to slash in title',
   // Don't have a solution for that now.
   {
     filesystem: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <my title>
 
@@ -8765,7 +8893,7 @@ assert_lib('bigb output: x to slash in title',
     },
     convert_dir: true,
     assert_bigb: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <my title>
 
@@ -8779,7 +8907,7 @@ assert_lib('bigb output: id from filename',
   // Don't have a solution for that now.
   {
     filesystem: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <notindex2>
 `,
@@ -8788,7 +8916,7 @@ assert_lib('bigb output: id from filename',
     },
     convert_dir: true,
     assert_bigb: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <notindex2>
 `,
@@ -8811,7 +8939,7 @@ assert_lib('bigb output: pluralize fail',
   // 'tuberculose'
   {
     filesystem: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 \\x[tuberculosis]
 
@@ -8824,7 +8952,7 @@ assert_lib('bigb output: pluralize fail',
     },
     convert_dir: true,
     assert_bigb: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <tuberculosis>
 
@@ -8862,7 +8990,7 @@ assert_lib('bigb output: acronym plural',
 assert_lib('bigb output: to file',
   {
     filesystem: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <path/to/my file>{file}
 
@@ -8873,7 +9001,7 @@ assert_lib('bigb output: to file',
     },
     convert_dir: true,
     assert_bigb: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <path/to/my file>{file}
 
@@ -8886,7 +9014,7 @@ assert_lib('bigb output: to file',
 assert_lib('bigb output: to explicit id with slash',
   {
     filesystem: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <asdf/qwer>
 
@@ -8897,7 +9025,7 @@ assert_lib('bigb output: to explicit id with slash',
     },
     convert_dir: true,
     assert_bigb: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <asdf/qwer>
 
@@ -8910,7 +9038,7 @@ assert_lib('bigb output: to explicit id with slash',
 assert_lib('bigb output: x do not change capitalization if the first ast is not plaintext',
   {
     filesystem: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <so 3>
 
@@ -8920,7 +9048,7 @@ assert_lib('bigb output: x do not change capitalization if the first ast is not 
     },
     convert_dir: true,
     assert_bigb: {
-      'notindex.bigb': `= Index
+      'notindex.bigb': `= Toplevel
 
 <SO(3)>
 
@@ -9172,7 +9300,7 @@ assert_cli(
   }
 )
 const complex_filesystem = {
-  'README.bigb': `= Index
+  'README.bigb': `= Toplevel
 
 \\x[notindex][link to notindex]
 
@@ -9188,7 +9316,7 @@ const complex_filesystem = {
 
 \\x[subdir][link to subdir]
 
-\\x[subdir/index-h2][link to subdir index h2]
+\\x[subdir/toplevel-h2][link to subdir toplevel h2]
 
 \\x[subdir/notindex][link to subdir notindex]
 
@@ -9234,12 +9362,12 @@ $$
 
 ==== h4 3 2 1
 
-== Index scope
+== My toplevel scope
 {scope}
 
-=== Index scope child
+=== My toplevel scope child
 
-=== Index scope 2
+=== My toplevel scope 2
 {scope}
 
 == Has split suffix
@@ -9247,7 +9375,7 @@ $$
 `,
   'notindex.bigb': `= Notindex
 
-\\x[index][link to index]
+\\x[toplevel][link to toplevel]
 
 \\x[h2][link to h2]
 
@@ -9279,7 +9407,7 @@ $$
   'ourbigbook.json': `{}\n`,
   'subdir/index.bigb': `= Subdir index
 
-\\x[index][link to toplevel]
+\\x[toplevel][link to toplevel]
 
 \\x[h2][link to toplevel subheader]
 
@@ -9298,7 +9426,7 @@ $$
 
 \\x[h3][scope/h3 to scope/h3]
 
-== Index h2
+== Toplevel h2
 `,
   'subdir/notindex.bigb': `= Subdir notindex
 
@@ -9341,7 +9469,7 @@ assert_cli(
       ],
       'out/html/notindex.html': [
         xpath_header(1, 'notindex'),
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='link to index']",
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='link to toplevel']",
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='link to h2']",
       ],
       'out/html/has-split-suffix-split.html': [
@@ -9349,12 +9477,12 @@ assert_cli(
       ],
       // Custom splitSuffix `-asdf` instead of the default `-split`.
       'out/html/index.html': [
-        xpath_header(1, 'index'),
+        xpath_header(1, ''),
         "//x:div[@class='p']//x:a[@href='notindex.html' and text()='link to notindex']",
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-h2' and text()='link to notindex h2']",
         "//x:div[@class='p']//x:a[@href='#has-split-suffix' and text()='link to has split suffix']",
         "//x:a[@href='subdir.html' and text()='link to subdir']",
-        "//x:a[@href='subdir.html#index-h2' and text()='link to subdir index h2']",
+        "//x:a[@href='subdir.html#toplevel-h2' and text()='link to subdir toplevel h2']",
         "//x:a[@href='subdir/notindex.html' and text()='link to subdir notindex']",
         "//x:a[@href='subdir/notindex.html#notindex-h2' and text()='link to subdir notindex h2']",
 
@@ -9365,8 +9493,8 @@ assert_cli(
 
         xpath_header(2, 'included-by-index'),
         "//x:blockquote[text()='A Ourbigbook example!']",
-        xpath_header_split(2, 'index-scope', 'index-scope.html', ourbigbook.SPLIT_MARKER_TEXT),
-        xpath_header_split(3, 'index-scope/index-scope-2', 'index-scope/index-scope-2.html', ourbigbook.SPLIT_MARKER_TEXT),
+        xpath_header_split(2, 'my-toplevel-scope', 'my-toplevel-scope.html', ourbigbook.SPLIT_MARKER_TEXT),
+        xpath_header_split(3, 'my-toplevel-scope/my-toplevel-scope-2', 'my-toplevel-scope/my-toplevel-scope-2.html', ourbigbook.SPLIT_MARKER_TEXT),
       ],
       'out/html/included-by-index.html': [
         // Cross input file header.
@@ -9403,8 +9531,8 @@ assert_cli(
       'out/html/subdir.html': [
         xpath_header(1),
         xpath_header_split(1, '', 'subdir/split.html', ourbigbook.SPLIT_MARKER_TEXT),
-        xpath_header(2, 'index-h2'),
-        xpath_header_split(2, 'index-h2', 'subdir/index-h2.html', ourbigbook.SPLIT_MARKER_TEXT),
+        xpath_header(2, 'toplevel-h2'),
+        xpath_header_split(2, 'toplevel-h2', 'subdir/toplevel-h2.html', ourbigbook.SPLIT_MARKER_TEXT),
         xpath_header(2, 'scope'),
         xpath_header_split(2, 'scope', 'subdir/scope.html', ourbigbook.SPLIT_MARKER_TEXT),
         xpath_header(3, 'scope/h3'),
@@ -9435,8 +9563,8 @@ assert_cli(
         xpath_header(1, 'h3'),
         xpath_header_split(1, 'h3', '../notindex.html#notindex-scope/h3', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'out/html/subdir/index-h2.html': [
-        xpath_header(1, 'index-h2'),
+      'out/html/subdir/toplevel-h2.html': [
+        xpath_header(1, 'toplevel-h2'),
       ],
       'out/html/subdir/notindex-h2.html': [
         xpath_header(1, 'notindex-h2'),
@@ -9447,16 +9575,16 @@ assert_cli(
       'out/html/subdir/notindex-h2.html': [
         xpath_header(1, 'notindex-h2'),
       ],
-      'out/html/index-scope.html': [
-        xpath_header_split(1, 'index-scope', 'index.html#index-scope', ourbigbook.NOSPLIT_MARKER_TEXT),
+      'out/html/my-toplevel-scope.html': [
+        xpath_header_split(1, 'my-toplevel-scope', 'index.html#my-toplevel-scope', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'out/html/index-scope/index-scope-child.html': [
+      'out/html/my-toplevel-scope/my-toplevel-scope-child.html': [
         // https://github.com/ourbigbook/ourbigbook/issues/159
-        xpath_header_split(1, 'index-scope-child', '../index.html#index-scope/index-scope-child', ourbigbook.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'my-toplevel-scope-child', '../index.html#my-toplevel-scope/my-toplevel-scope-child', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
-      'out/html/index-scope/index-scope-2.html': [
+      'out/html/my-toplevel-scope/my-toplevel-scope-2.html': [
         // https://github.com/ourbigbook/ourbigbook/issues/159
-        xpath_header_split(1, 'index-scope-2', '../index.html#index-scope/index-scope-2', ourbigbook.NOSPLIT_MARKER_TEXT),
+        xpath_header_split(1, 'my-toplevel-scope-2', '../index.html#my-toplevel-scope/my-toplevel-scope-2', ourbigbook.NOSPLIT_MARKER_TEXT),
       ],
       'out/html/toplevel-scope.html': [
         xpath_header_split(2, 'nested-scope', 'toplevel-scope/nested-scope.html', ourbigbook.SPLIT_MARKER_TEXT),
@@ -9491,7 +9619,7 @@ assert_cli(
 )
 const publish_filesystem = {
   'ourbigbook.json': `{}\n`,
-  'README.bigb': `= Index
+  'README.bigb': `= Toplevel
 
 \\x[notindex][link to notindex]
 
@@ -9501,7 +9629,7 @@ const publish_filesystem = {
 `,
   'notindex.bigb': `= Notindex
 
-\\x[index][link to index]
+\\x[toplevel][link to toplevel]
 
 \\x[h2][link to h2]
 
@@ -9555,7 +9683,7 @@ assert_cli(
       ],
       'out/publish/out/github-pages/notindex.html': [
         xpath_header(1, 'notindex'),
-        "//x:div[@class='p']//x:a[@href='.' and text()='link to index']",
+        "//x:div[@class='p']//x:a[@href='.' and text()='link to toplevel']",
         "//x:div[@class='p']//x:a[@href='.#h2' and text()='link to h2']",
       ],
       'out/publish/out/github-pages/toplevel-scope/toplevel-scope-h2.html': [
@@ -9584,7 +9712,7 @@ assert_cli(
       ],
       'out/publish/out/local/notindex.html': [
         xpath_header(1, 'notindex'),
-        "//x:div[@class='p']//x:a[@href='index.html' and text()='link to index']",
+        "//x:div[@class='p']//x:a[@href='index.html' and text()='link to toplevel']",
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='link to h2']",
       ],
       'out/publish/out/local/toplevel-scope/toplevel-scope-h2.html': [
@@ -9612,7 +9740,7 @@ assert_cli(
   }
 }
 `,
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 {scope}
@@ -9626,8 +9754,8 @@ assert_cli(
     ],
     assert_xpath: {
       'out/publish/out/github-pages/index.html': [
-        "//x:div[contains(@class, \"h \") and @id='index']//x:img[@class='logo' and @src='_obb/logo.svg']",
-        "//x:div[contains(@class, \"h \") and @id='index']//x:a[@href='https://ourbigbook.com/myusername' and text()=' OurBigBook.com']",
+        "//x:div[contains(@class, \"h \")]//x:img[@class='logo' and @src='_obb/logo.svg']",
+        "//x:div[contains(@class, \"h \")]//x:a[@href='https://ourbigbook.com/myusername' and text()=' OurBigBook.com']",
         "//x:div[@class='h' and @id='h2']//x:a[@href='https://ourbigbook.com/myusername/h2' and text()=' OurBigBook.com']",
       ],
       'out/publish/out/github-pages/h2/h2-2.html': [
@@ -9650,13 +9778,13 @@ assert_cli(
   }
 }
 `,
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
     },
     pre_exec: publish_pre_exec,
     assert_xpath: {
       'out/html/index.html': [
-        "//x:div[contains(@class, \"h \") and @id='index']//x:a[@href='https://asdf.com/myusername' and text()=' asdf.com']",
+        "//x:div[contains(@class, \"h \")]//x:a[@href='https://asdf.com/myusername' and text()=' asdf.com']",
       ],
     },
   }
@@ -9675,13 +9803,13 @@ assert_cli(
   }
 }
 `,
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
     },
     pre_exec: publish_pre_exec,
     assert_xpath: {
       'out/html/index.html': [
-        "//x:div[contains(@class, \"h \") and @id='index']//x:a[@href='https://asdf.com/myusername' and text()=' AsDf.com']",
+        "//x:div[contains(@class, \"h \")]//x:a[@href='https://asdf.com/myusername' and text()=' AsDf.com']",
       ],
     },
   }
@@ -9698,7 +9826,7 @@ assert_cli(
   }
 }
 `,
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 {scope}
@@ -9709,8 +9837,8 @@ assert_cli(
     pre_exec: publish_pre_exec,
     assert_xpath: {
       'out/html/index.html': [
-        `//x:div[contains(@class, "h ") and @id='index']//x:img[@class='logo' and @src='${ourbigbook_nodejs.LOGO_PATH}']`,
-        "//x:div[contains(@class, \"h \") and @id='index']//x:a[@href='https://ourbigbook.com/myusername' and text()=' OurBigBook.com']",
+        `//x:div[contains(@class, "h ")]//x:img[@class='logo' and @src='${ourbigbook_nodejs.LOGO_PATH}']`,
+        "//x:div[contains(@class, \"h \")]//x:a[@href='https://ourbigbook.com/myusername' and text()=' OurBigBook.com']",
         `//x:div[@class='h' and @id='h2']//x:img[@class='logo' and @src='${ourbigbook_nodejs.LOGO_PATH}']`,
         "//x:div[@class='h' and @id='h2']//x:a[@href='https://ourbigbook.com/myusername/h2' and text()=' OurBigBook.com']",
       ],
@@ -9727,7 +9855,7 @@ assert_cli(
     args: ['subdir'],
     filesystem: {
       'ourbigbook.json': `{}\n`,
-      'README.bigb': `= Index`,
+      'README.bigb': `= Toplevel`,
       'subdir/index.bigb': `= Subdir index`,
       'subdir/notindex.bigb': `= Subdir notindex`,
       // A Sass file.
@@ -9759,7 +9887,7 @@ assert_cli(
   {
     args: ['subdir'],
     filesystem: {
-      'README.bigb': `= Index`,
+      'README.bigb': `= Toplevel`,
       'subdir/index.bigb': `= Subdir index`,
       'subdir/notindex.bigb': `= Subdir notindex`,
       'subdir/scss.scss': `body { color: red }`,
@@ -9788,7 +9916,7 @@ assert_cli(
   {
     args: ['subdir/notindex.bigb'],
     filesystem: {
-      'README.bigb': `= Index`,
+      'README.bigb': `= Toplevel`,
       'subdir/index.bigb': `= Subdir index`,
       'subdir/notindex.bigb': `= Subdir notindex`,
       'ourbigbook.json': `{}`,
@@ -9806,7 +9934,7 @@ assert_cli(
   {
     args: ['subdir/notindex.bigb'],
     filesystem: {
-      'README.bigb': `= Index`,
+      'README.bigb': `= Toplevel`,
       'subdir/index.bigb': `= Subdir index`,
       'subdir/notindex.bigb': `= Subdir notindex`,
     },
@@ -9823,7 +9951,7 @@ assert_cli(
   {
     args: ['--outdir', 'my_outdir', '.'],
     filesystem: {
-      'README.bigb': `= Index`,
+      'README.bigb': `= Toplevel`,
       'subdir/index.bigb': `= Subdir index`,
       'subdir/notindex.bigb': `= Subdir notindex`,
       'ourbigbook.json': `{}\n`,
@@ -9860,7 +9988,7 @@ assert_cli(
   {
     args: ['--outdir', 'asdf', '--split-headers', '.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 
@@ -9882,7 +10010,7 @@ assert_cli(
   {
     args: ['--split-headers', '.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 
@@ -9999,7 +10127,7 @@ assert_cli(
   {
     args: ['--embed-resources', '.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
     },
     assert_xpath: {
@@ -10021,7 +10149,7 @@ assert_cli(
   {
     args: ['--embed-includes', 'README.bigb'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 \\x[subdir]
 
@@ -10053,7 +10181,7 @@ assert_cli(
   {
     args: ['myproject'],
     filesystem: {
-      'myproject/README.bigb': `= Index
+      'myproject/README.bigb': `= Toplevel
 
 \\x[not-readme]
 
@@ -10096,7 +10224,7 @@ assert_cli(
     args: [path.join('..', 'myproject')],
     cwd: 'notmyproject',
     filesystem: {
-      'myproject/README.bigb': `= Index
+      'myproject/README.bigb': `= Toplevel
 
 \\x[not-readme]
 
@@ -10136,7 +10264,7 @@ assert_cli(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 `,
@@ -10199,7 +10327,7 @@ assert_cli(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 `,
@@ -10350,7 +10478,7 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 \\x[notindex]{child}
 
@@ -10358,9 +10486,9 @@ assert_cli(
 `,
       'notindex.bigb': `= Notindex
 
-\\x[index]{parent}
+\\x[toplevel]{parent}
 
-\\x[index]{parent}
+\\x[toplevel]{parent}
 `,
       'ourbigbook.json': `{ "enableArg": { "x": {
   "child": true,
@@ -10379,7 +10507,7 @@ assert_cli(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 `,
@@ -10417,7 +10545,7 @@ assert_cli(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 `,
@@ -10455,7 +10583,7 @@ assert_cli(
   {
     args: ['notindex.bigb'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 `,
@@ -10469,7 +10597,7 @@ assert_cli(
       // Remove h2 from README.bigb
       {
         filesystem_update: {
-          'README.bigb': `= Index
+          'README.bigb': `= Toplevel
 `,
         }
       },
@@ -10482,7 +10610,7 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 `,
@@ -10496,7 +10624,7 @@ assert_cli(
       // Remove h2 from README.bigb
       {
         filesystem_update: {
-          'README.bigb': `= Index
+          'README.bigb': `= Toplevel
 `,
         }
       },
@@ -10508,7 +10636,7 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 `,
@@ -10522,7 +10650,7 @@ assert_cli(
       // Remove h2 from README.bigb
       {
         filesystem_update: {
-          'notindex.bigb': `= Index
+          'notindex.bigb': `= Toplevel
 `,
         }
       },
@@ -10534,7 +10662,7 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'notindex.bigb': `= Notindex
 
@@ -10545,7 +10673,7 @@ assert_cli(
       ['ourbigbook', ['.']],
       {
         filesystem_update: {
-          'README.bigb': `= Index
+          'README.bigb': `= Toplevel
 
 == h2
 `,
@@ -10565,7 +10693,7 @@ assert_cli(
       ],
     },
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == h2
 `,
@@ -10578,7 +10706,7 @@ assert_cli(
       ['ourbigbook', ['.']],
       {
         filesystem_update: {
-          'README.bigb': `= Index
+          'README.bigb': `= Toplevel
 
 == h2 hacked
 {id=h2}
@@ -10611,7 +10739,7 @@ assert_cli('cross file ancestors work on single file conversions at toplevel',
     // purely from the database, and not from a cache shared across several input files.
     args: ['notindex3.bigb'],
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
@@ -10657,7 +10785,7 @@ assert_cli('cross file ancestors work on single file conversions in subdir',
     // purely from the database, and not from a cache shared across several input files.
     args: ['subdir/notindex3.bigb'],
     filesystem: {
-      'subdir/index.bigb': `= Index
+      'subdir/index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
@@ -10703,7 +10831,7 @@ assert_cli(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 == Dog
 
@@ -10793,7 +10921,7 @@ assert_cli('toplevel scope gets removed on table of contents of included headers
   {
     args: ['--split-headers', '.'],
     filesystem: {
-      'index.bigb': `= Index
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
@@ -10837,7 +10965,7 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
@@ -11069,7 +11197,7 @@ assert_cli(
     args: ['.'],
     assert_exit_status: 1,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 <asdf>
 `,
@@ -11091,7 +11219,7 @@ assert_cli(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 \\a[.][link to root]
 
@@ -11099,11 +11227,11 @@ assert_cli(
 
 \\a[subdir/subdir2][link to subdir2]
 
-\\a[index.html][index to index.html]
+\\a[index.html][toplevel to index.html]
 
-\\a[_index.html][index to _index.html]
+\\a[_index.html][toplevel to _index.html]
 
-\\a[subdir/index.html][index to subdir/index.html]
+\\a[subdir/index.html][toplevel to subdir/index.html]
 
 == subdir
 {file}
@@ -11185,9 +11313,9 @@ myfile-subdir.txt line2
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='link to subdir']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
 
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='index to index.html']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/_index.html' and text()='index to _index.html']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index to subdir/index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='toplevel to index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/_index.html' and text()='toplevel to _index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='toplevel to subdir/index.html']`,
       ],
       [`out/html/subdir.html`]: [
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root']`,
@@ -11256,7 +11384,7 @@ assert_cli(
       'ourbigbook.json': `{
   "htmlXExtension": false
 }`,
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 
 \\a[.][link to root]
 
@@ -11264,11 +11392,11 @@ assert_cli(
 
 \\a[subdir/subdir2][link to subdir2]
 
-\\a[index.html][index to index.html]
+\\a[index.html][toplevel to index.html]
 
-\\a[_index.html][index to _index.html]
+\\a[_index.html][toplevel to _index.html]
 
-\\a[subdir/index.html][index to subdir/index.html]
+\\a[subdir/index.html][toplevel to subdir/index.html]
 
 == subdir
 {file}
@@ -11325,9 +11453,9 @@ assert_cli(
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir' and text()='link to subdir']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
 
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='index to index.html']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/_index.html' and text()='index to _index.html']`,
-        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='index to subdir/index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/index.html' and text()='toplevel to index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/_index.html' and text()='toplevel to _index.html']`,
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/subdir/index.html' and text()='toplevel to subdir/index.html']`,
       ],
       [`out/html/subdir.html`]: [
         `//x:a[@href='${ourbigbook.DIR_PREFIX}' and text()='link to root']`,
@@ -11413,7 +11541,7 @@ assert_cli(
     args: ['--dry-run', '--publish'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'not-ignored.txt': ``,
       'ourbigbook.json': `{
@@ -11435,7 +11563,7 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'ignored-top.txt': ``,
       'not-ignored.txt': ``,
@@ -11502,7 +11630,7 @@ assert_cli(
     args: ['--dry-run', '--publish'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'ignored.txt': ``,
       'not-ignored.txt': ``,
@@ -11559,7 +11687,7 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'bigb-ignored.bigb': `= Bigb ignored
 `,
@@ -11658,7 +11786,7 @@ assert_cli(
     args: ['.'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'ignored.txt': ``,
       'not-ignored.txt': ``,
@@ -11690,7 +11818,7 @@ assert_cli(
     args: ['subdir'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'ignored.txt': ``,
       'not-ignored.txt': ``,
@@ -11720,7 +11848,7 @@ assert_cli(
     args: ['tmp.bigb'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'tmp.bigb': `= Tmp
 
@@ -11740,7 +11868,7 @@ assert_cli(
     args: ['--web', '--web-dry', '.'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'tmp.bigb': `= Tmp
 
@@ -11760,7 +11888,7 @@ assert_cli(
     args: ['README.bigb'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       '.gitignore': `tmp.bigb
 `,
@@ -11779,7 +11907,7 @@ assert_cli(
   {
     args: ['--web', '--web-dry', '.'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'ourbigbook.json': `{
 }
@@ -11792,7 +11920,7 @@ assert_cli(
   {
     args: ['--web', '--web-dry', 'README.bigb'],
     filesystem: {
-      'README.bigb': `= Index
+      'README.bigb': `= Toplevel
 `,
       'ourbigbook.json': `{
 }
@@ -11806,7 +11934,7 @@ assert_cli(
 //  {
 //    args: ['.'],
 //    filesystem: {
-//      'README.bigb': `= Index
+//      'README.bigb': `= Toplevel
 //`,
 //      'ourbigbook.json': `{
 //  "publishOptions": {
@@ -11853,7 +11981,7 @@ assert_cli('file: _file auto-generation conversion image media provider works',
 //    args: ['.'],
 //    assert_exit_status: 1,
 //    filesystem: {
-//      'README.bigb': `= Index
+//      'README.bigb': `= Toplevel
 //
 //\\Include[notindex]
 //`,
@@ -11870,7 +11998,7 @@ assert_cli('file: _file auto-generation conversion image media provider works',
 //    args: ['.'],
 //    assert_exit_status: 2,
 //    filesystem: {
-//      'README.bigb': `= Index
+//      'README.bigb': `= Toplevel
 //
 //\\Include[notindex]
 //`,

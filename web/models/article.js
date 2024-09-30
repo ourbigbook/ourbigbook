@@ -1,4 +1,3 @@
-const assert = require('assert')
 const path = require('path')
 
 const { DataTypes, Op } = require('sequelize')
@@ -10,7 +9,6 @@ const config = require('../front/config')
 const front_js = require('../front/js')
 const convert = require('../convert')
 const e = require('cors')
-const { execPath } = require('process')
 
 module.exports = (sequelize) => {
   function slugTransform(v) {
@@ -41,8 +39,8 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
-      // Rendered title. Only contains the inner contents of the toplevel h1's title.
-      // not the HTML header itself. Used extensively e.g. in article indexes.
+      // Rendered title. Only contains the inner contents of the toplevel h1's title argument,
+      // not the full HTML header itself. Used extensively e.g. in article indexes.
       titleRender: {
         type: DataTypes.TEXT,
         allowNull: false,
@@ -873,6 +871,8 @@ WHERE
     if (ignoreErrors === undefined)
       ignoreErrors = false
     await sequelize.transaction({ transaction }, async (transaction) => {
+      const toplevelId = this.file.toplevelId
+      const parentId = toplevelId ? toplevelId.to[0].from.idid : undefined
       try {
         await convert.convertArticle({
           author: file.author,
@@ -880,7 +880,7 @@ WHERE
           convertOptionsExtra,
           forceNew: false,
           path: ourbigbook.pathSplitext(file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR))[0],
-          parentId: this.file.toplevelId.to[0].from.idid,
+          parentId,
           render: true,
           sequelize,
           titleSource: file.titleSource,
@@ -1675,11 +1675,13 @@ LIMIT ${limit}` : ''}
                 required: true,
                 where: authorWhere,
               },
+              // Also get the parent ID in one go which is used in rendering.
               {
                 model: sequelize.models.Id,
                 as: 'toplevelId',
                 subQuery: false,
-                required: true,
+                // false otherwise we skip over the index article which has no parent.
+                required: false,
                 include: [{
                   model: sequelize.models.Ref,
                   as: 'to',

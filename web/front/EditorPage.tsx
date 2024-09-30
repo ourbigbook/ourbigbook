@@ -262,7 +262,9 @@ export default function EditorPageHoc({
           }
         }
       } else {
-        titleErrors.push('Title cannot be empty')
+        if (!isIndex) {
+          titleErrors.push('Title cannot be empty')
+        }
       }
       setTitleErrors(titleErrors)
     }

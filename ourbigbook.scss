@@ -297,6 +297,9 @@ div.h {
     @include visible;
   }
   @include toplevel-elem;
+  &.top {
+    margin-bottom: $p-margin-vert * 1.5;
+  }
   div.notnav {
     @include h-common;
     h1 {

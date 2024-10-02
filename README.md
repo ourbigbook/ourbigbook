@@ -34,6 +34,8 @@ You can edit locally with our [Visual Studio Code extension](https://docs.ourbig
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/vscode/install.png)
 
+The [Visual Studio Code extension](https://docs.ourbigbook.com/#visual-studio-code) implements features such as header trees:
+
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/vscode/tree.png)
 
 You can also edit directly on OurBigBook.com with the [Web Editor](https://docs.ourbigbook.com#web-editor):

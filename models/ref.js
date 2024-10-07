@@ -32,7 +32,7 @@ module.exports = (sequelize) => {
       },
       inflected: {
         // This is as was given in the \x after trying pluralization/singularization
-        // due to {magic} attempts, difffering from the raw inflection given.
+        // due to {magic} attempts, differing from the raw inflection given.
         type: DataTypes.BOOLEAN,
         allowNull: false,
       },

@@ -606,6 +606,7 @@ async function convertArticle({
           sequelize,
           [input_path],
           {
+            web: true,
             perf,
             transaction,
           },

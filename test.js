@@ -7905,42 +7905,6 @@ assert_lib('include: include of a header with a tag or child in a third file doe
     convert_opts: { ourbigbook_json: { enableArg: { 'H': { 'child': true } } } },
   }
 )
-assert_cli('include: tags show on embed include',
-  {
-    args: ['--embed-includes', 'index.bigb'],
-    pre_exec: [
-      { cmd: ['ourbigbook', ['.']], },
-    ],
-    filesystem: {
-      'index.bigb': `= Toplevel
-
-\\Include[notindex]
-`,
-      'notindex.bigb': `= Notindex
-{tag=notindex2}
-`,
-      'notindex2.bigb': `= Notindex 2
-`,
-    },
-    // TODO fails on lib with duplicate id notindex.
-    //
-    // This started happening when we moved Id.path from a string
-    // to Id.defined_at as a reference to a File.
-    //
-    // Apparently this fails because of convert_dir which
-    // creates the ID, and then things don't get cleaned up.
-    // But works on CLI, so not worrying for now.
-    //convert_dir: true,
-    //convert_opts: {
-    //  embed_includes: true,
-    //},
-    assert_xpath: {
-      'out/html/index.html': [
-        "//*[contains(@class, 'h-nav')]//x:span[@class='tags']//x:a[@href='notindex2.html']",
-      ],
-    },
-  }
-)
 assert_lib(
   // https://github.com/ourbigbook/ourbigbook/issues/123
   'include: includers should show as a parents of the includee',
@@ -7951,22 +7915,12 @@ assert_lib(
 
 \\Include[included-by-index]
 `,
-      'not-readme.bigb': `= Not readme
-
-\\Include[included-by-index]
-`,
   'included-by-index.bigb': `= Included by index
 `,
     },
     assert_xpath: {
       'included-by-index.html': [
         xpath_header_parent(1, 'included-by-index', 'index.html', 'Home'),
-        // Multiple includers showing on parent used to work. But we killed it when we added breadcrumbs
-        // at 7e571ee7f8a2e1af30fccbf51029ce51d7cca529
-        // If we were to revive this, we should likely have a separate meta line for each includer.
-        // But lazy, especially considering that this construct do not work on OurBigBook Web and
-        // should likely be linted out by default instead.
-        //xpath_header_parent(1, 'included-by-index', 'not-readme.html', 'Not readme'),
       ],
     }
   }
@@ -11974,6 +11928,57 @@ assert_cli('file: _file auto-generation conversion image media provider works',
     },
   },
 )
+
+// CLI include: tests
+assert_cli(
+  'include: double parents are forbidden clean',
+  {
+    args: ['.'],
+    assert_exit_status: 1,
+    assert_exit_status: 1,
+    filesystem: {
+      'README.bigb': `= Toplevel
+
+\\Include[notindex2]
+`,
+      'notindex.bigb': `= Notindex
+
+\\Include[notindex2]
+`,
+      'notindex2.bigb': `= Notindex2
+`,
+    },
+  }
+)
+assert_cli(
+  'include: double parents are forbidden incremental',
+  {
+    args: ['notindex.bigb'],
+    assert_exit_status: 1,
+    pre_exec: [
+      { cmd: ['ourbigbook', ['.']], },
+      {
+        filesystem_update: {
+          'notindex.bigb': `= Notindex
+
+\\Include[notindex2]
+`,
+        }
+      },
+    ],
+    assert_exit_status: 1,
+    filesystem: {
+      'README.bigb': `= Toplevel
+
+\\Include[notindex2]
+`,
+      'notindex.bigb': `= Notindex
+`,
+      'notindex2.bigb': `= Notindex2
+`,
+    },
+  }
+)
 // TODO https://github.com/ourbigbook/ourbigbook/issues/204
 //assert_cli(
 //  'include: circular dependency loop index <-> 1',
@@ -12013,3 +12018,39 @@ assert_cli('file: _file auto-generation conversion image media provider works',
 //    },
 //  }
 //)
+assert_cli('include: tags show on embed include',
+  {
+    args: ['--embed-includes', 'index.bigb'],
+    pre_exec: [
+      { cmd: ['ourbigbook', ['.']], },
+    ],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]
+`,
+      'notindex.bigb': `= Notindex
+{tag=notindex2}
+`,
+      'notindex2.bigb': `= Notindex 2
+`,
+    },
+    // TODO fails on lib with duplicate id notindex.
+    //
+    // This started happening when we moved Id.path from a string
+    // to Id.defined_at as a reference to a File.
+    //
+    // Apparently this fails because of convert_dir which
+    // creates the ID, and then things don't get cleaned up.
+    // But works on CLI, so not worrying for now.
+    //convert_dir: true,
+    //convert_opts: {
+    //  embed_includes: true,
+    //},
+    assert_xpath: {
+      'out/html/index.html': [
+        "//*[contains(@class, 'h-nav')]//x:span[@class='tags']//x:a[@href='notindex2.html']",
+      ],
+    },
+  }
+)

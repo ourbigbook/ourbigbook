@@ -2506,7 +2506,6 @@ function calculateId(
     }
     const idArg = ast.args[Macro.ID_ARGUMENT_NAME]
     if (idArg && idArg.length()) {
-      console.log(`idArg.length: ${require('util').inspect(idArg.length(), { depth: null })}`)
       parseError(
         state,
         'the home article cannot have non-empty id= explicitly set as its ID is always empty and the argument is ignored, consider using synonyms instead',

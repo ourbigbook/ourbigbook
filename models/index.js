@@ -38,8 +38,13 @@ function addModels(sequelize, { web, cli }={}) {
   Render.belongsTo(File, { foreignKey: { name: 'fileId', allowNull: false }, onDelete: 'CASCADE' })
   File.hasOne(Render, { foreignKey: { name: 'fileId', allowNull: false }, onDelete: 'CASCADE' })
 
+  // Id <-> Id
   // Needed for finding duplicates.
   Id.hasMany(Id, { as: 'duplicate', foreignKey: 'idid', sourceKey: 'idid', constraints: false });
+
+  // Ref <-> Ref
+  // Needed for finding multiple parents.
+  Ref.hasMany(Ref, { as: 'duplicate', foreignKey: 'to_id', sourceKey: 'to_id', constraints: false });
 }
 
 module.exports = {

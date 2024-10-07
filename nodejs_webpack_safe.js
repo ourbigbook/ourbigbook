@@ -804,14 +804,16 @@ async function check_db(sequelize, paths_converted, opts={}) {
   //   * directory based scopes
   //   * \x magic pluralization variants
   // * ensure that all \x targets exist
-  const { perf, transaction } = opts
+  const { perf, transaction, web } = opts
+  const { Op } = sequelize.Sequelize
+  const { File, Id, Ref } = sequelize.models
   let t0
   if (perf) {
     t0 = performance.now();
     console.error('perf: check_db.start');
   }
-  const [new_refs, duplicate_rows, invalid_title_title_rows] = await Promise.all([
-    sequelize.models.Ref.findAll({
+  const [new_refs, doubleParents, duplicate_rows, invalid_title_title_rows] = await Promise.all([
+    Ref.findAll({
       order: [
         ['defined_at', 'ASC'],
         ['defined_at_line', 'ASC'],
@@ -823,27 +825,81 @@ async function check_db(sequelize, paths_converted, opts={}) {
       ],
       include: [
         {
-          model: sequelize.models.Id,
+          model: Id,
           as: 'to',
           attributes: ['id'],
         },
         {
-          model: sequelize.models.Id,
+          model: Id,
           as: 'from',
           attributes: ['id'],
         },
         {
-          model: sequelize.models.File,
+          model: File,
           as: 'definedAt',
           where: { path: paths_converted },
         },
       ],
       transaction,
     }),
-    sequelize.models.Id.findDuplicates(
-      paths_converted, transaction),
-    sequelize.models.Id.findInvalidTitleTitle(
-      paths_converted, transaction),
+    // doubleParents
+    web
+      ? []
+      : Ref.findAll({
+          where: {
+            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          },
+          include: [
+            {
+              model: Ref,
+              as: 'duplicate',
+              required: true,
+              on: {
+                '$Ref.to_id$': { [Op.col]: 'duplicate.to_id' },
+                '$Ref.id$': { [Op.ne]: { [Op.col]: 'duplicate.id' } },
+                type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+              },
+              include: [
+                {
+                  model: File,
+                  as: 'definedAt',
+                  required: true,
+                },
+                {
+                  model: Id,
+                  as: 'to',
+                },
+                {
+                  model: Id,
+                  as: 'from',
+                },
+              ],
+            },
+            {
+              model: File,
+              as: 'definedAt',
+              required: true,
+              where: {
+                path: paths_converted,
+              },
+            },
+            {
+              model: Id,
+              as: 'to',
+            },
+            {
+              model: Id,
+              as: 'from',
+            },
+          ],
+          order: [
+            [sequelize.col('definedAt.path'), 'ASC'],
+          ],
+          transaction,
+        })
+    ,
+    Id.findDuplicates(paths_converted, transaction),
+    Id.findInvalidTitleTitle(paths_converted, transaction),
   ])
   if (perf) {
     console.error(`perf: check_db.after_finds: ${performance.now() - t0} ms`);
@@ -969,6 +1025,17 @@ async function check_db(sequelize, paths_converted, opts={}) {
       const source_location = ast.source_location
       error_messages.push(
         `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://docs.ourbigbook.com/x-within-title-restrictions`
+      )
+    }
+  }
+  if (doubleParents.length > 0) {
+    for (const ref of doubleParents) {
+      const new_ref = ref
+      const oldRef = ref.duplicate[0]
+      error_messages.push(
+        `ID "${new_ref.to.idid}" has two parents: ` +
+        `"${new_ref.from.idid}" defined at ${new_ref.definedAt.path}:${new_ref.defined_at_line}:${new_ref.defined_at_col} and ` +
+        `"${oldRef.from.idid}" defined at ${oldRef.definedAt.path}:${oldRef.defined_at_line}:${oldRef.defined_at_col}`
       )
     }
   }

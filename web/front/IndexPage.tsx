@@ -106,6 +106,12 @@ function IndexPageHoc({
                     <ArticleIcon /> New followed
                   </CustomLink>
                   <CustomLink
+                    className={`tab-item${itemType === 'article' && order === 'updatedAt' && followed ? ' active' : ''}`}
+                    href={routes.articlesFollowed({ sort: 'updated' })}
+                  >
+                    <ArticleIcon /> Updated followed
+                  </CustomLink>
+                  <CustomLink
                     className={`tab-item${itemType === 'article' && order === 'score' && followed ? ' active' : ''}`}
                     href={routes.articlesFollowed({ sort: 'score' })}
                   >

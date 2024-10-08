@@ -565,14 +565,15 @@ async function generateDemoData(params) {
 
     // Create an article in a topic that exists only for user0. All other articles exist for all users.
     // This is useful to test that case which hsa UI implications such as "show create new vs view mine".
-    let articleUser0Only
+    let articleManyDiscussions
     {
       const parentId = `${ourbigbook.AT_MENTION_CHAR}${users[0].username}/${await titleToId('Test data')}`
       const parentIdObj = await Id.findOne({ where: { idid: parentId } })
+      let articleUser0Only
       if (parentIdObj) {
         const { articles } = await convert.convertArticle({
           author: users[0],
-          bodySource: 'This topic only exists for the first user.',
+          bodySource: 'This topic only exists for the first user.\n',
           convertOptionsExtra: { katex_macros },
           parentId,
           render: true,
@@ -580,6 +581,18 @@ async function generateDemoData(params) {
           titleSource: 'Test data user0 only',
         })
         articleUser0Only = articles[0]
+      }
+      if (articleUser0Only) {
+        const { articles } = await convert.convertArticle({
+          author: users[0],
+          bodySource: 'This article has many discussions. To test article discussion pagination.',
+          convertOptionsExtra: { katex_macros },
+          parentId: `${ourbigbook.AT_MENTION_CHAR}${articleUser0Only.slug}`,
+          render: true,
+          sequelize,
+          titleSource: 'Test data article with many discussions',
+        })
+        articleManyDiscussions = articles[0]
       }
     }
 
@@ -609,9 +622,9 @@ async function generateDemoData(params) {
       fs.writeFileSync(path.join(sourceRoot, user.username, ourbigbook.OURBIGBOOK_JSON_BASENAME), '{}\n');
     }
 
-    // TODO This was livelocking (taking a very long time, live querries)
+    // TODO This was livelocking (taking a very long time, live queries)
     // due to update_database_after_convert on the hook it would be good to investigate it.
-    // Just convereted to the regular for loop above instead.
+    // Just converted to the regular for loop above instead.
     //const articles = await sequelize.models.Article.bulkCreate(
     //  articleArgs,
     //  {
@@ -713,20 +726,7 @@ async function generateDemoData(params) {
 
     // Create an article in a topic that exists only for user0. All other articles exist for all users.
     // This is useful to test that case which hsa UI implications such as "show create new vs view mine".
-    let articleManyDiscussions
-    if (articleUser0Only) {
-      {
-        const { articles } = await convert.convertArticle({
-          author: users[0],
-          bodySource: 'This article has many discussions. To test article discussion pagination.',
-          convertOptionsExtra: { katex_macros },
-          parentId: `${ourbigbook.AT_MENTION_CHAR}${articleUser0Only.slug}`,
-          render: true,
-          sequelize,
-          titleSource: 'Test data article with many discussions',
-        })
-        articleManyDiscussions = articles[0]
-      }
+    if (articleManyDiscussions) {
       let issueManyComments
       for (let i = 0; i < config.articleLimit + 2; i++) {
         const article =  articleManyDiscussions

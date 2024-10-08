@@ -11,7 +11,7 @@
 {height=150}
 {title=<project logo>[Logo of] the <OurBigBook Project>}
 
-<OurBigBook CLI quick start> using https://github.com/ourbigbook/template[]:
+<OurBigBook CLI quick start> using our template project https://github.com/ourbigbook/template[]:
 ``
 git clone https://github.com/ourbigbook/template
 cd template
@@ -19,6 +19,25 @@ npm install
 npx ourbigbook .
 firefox out/html/index.html
 ``
+The HTML output is visible at: https://ourbigbook.github.io/template
+
+To <publish>[publish your project as a static website to GitHub Pages], first create a GitHub repository for it, e.g. `johnsmith/mybrain` and then:
+```
+git remote set-url origin git@github.com:ourbigbook/ourbigbook-private.git
+ourbigbook --publish
+```
+and your project is now published to https://johnsmith.github.io/template
+
+To publish your project to https://OurBigBook.com[], create an account at https://ourbigbook.com/go/register[] and then:
+``
+ourbigbook --web
+``
+and now your project is published at: https://ourbigbook.com/johnsmith[].
+
+A full blown showcase knowledge base can be seen at:
+* https://cirosantilli.com (<static website> publish)
+* https://ourbigbook.com/cirosantilli (equivalent on <OurBigBook.com> with dynamic website features such as <topics>)
+* https://github.com/cirosantilli/cirosantilli.github.io (source code for both of the above)
 
 \b[Mission]: to live in a world where you can learn university-level #mathematics{p=1}, #physics{p=1}, <#chemistry>, #biology and #engineering from perfect free open source books that anyone can write to get famous.
 
@@ -3957,7 +3976,7 @@ One major advantage of this, is that when writing documentation, you often want 
 
 Dumps its contents directly into the rendered output.
 
-This construct is not XSS safe, see: <unsafe-xss>{full}.
+This construct is not XSS safe, see: <unsafeXss>{full}.
 
 Here for example we define a paragraph in raw HTML:
 \OurBigBookExample[[[
@@ -6556,12 +6575,10 @@ A paragraph in notindex.
 
 Note that a prior <ID extraction> pass is not required, `--embed-includes` just makes `\Include` read files as they are found in the source.
 
-Note that a
-
 In addition to this:
-* <cross file references> are disabled, and the cross file ID database does not get updated.
+* <cross file references> outside the included files are disabled, and the cross file ID database does not get updated.
 
-  It should be possible to work around this, but we are starting with the simplest implementation that forbids it.
+  It should be possible to work around this, but we are starting with the simplest implementation that forbids it. TODO at: https://github.com/ourbigbook/ourbigbook/issues/343
 
   The problem those cause is that the IDs of included headers show as duplicate IDs of those in the ID database.
 
@@ -8150,11 +8167,23 @@ All Git date formats are accepted as documented in `man git-commit`, e.g. `2005-
 = `publishOptions`
 {parent=ourbigbook.json}
 
-<ourbigbook.json> options that should be used only on the published output when publishing with the <--publish option>.
+Options that should be used only on the published output when publishing with the <--publish option>.
+
+These options are merged directly into the options of the <`convert` function>.
+
+One example usage is to redirect all links of your <static website> to your <OurBigBook Web> profile:
+
+``
+  "publishOptions": {
+    "htmlXExtension": false,
+    "ourbigbook_json": {
+      "toSplitHeaders": true,
+      "xPrefix": "https://ourbigbook.com/cirosantilli/"
+    }
+  },
+``
 
 If given these options override pre-existing options on the published output.
-
-Only options that get passed to <OurBigBook Library> currently take effect, options that affect e.g. only the <`ourbigbook` executable> don't work currently. Lazy.
 
 = `publishRemoteUrl`
 {parent=ourbigbook.json}
@@ -8456,6 +8485,16 @@ For boolean environment variables, the value of "true" should use be `1`, e.g. a
 OURBIGBOOK_POSTGRES=1 ./bin/generate-demo-data.js
 ``
 Every other value is considered false, including e.g. `true`.
+
+= `convert` function
+{c}
+{parent=OurBigBook Library}
+
+The `convert` JavaScript function of the <OurBigBook Library> is the central <OurBigBook Markup> conversion function of the <OurBigBook Project>.
+
+That function converts an input string to various output formats, and has many options.
+
+It is by both <OurBigBook CLI> and <OurBigBook Web>.
 
 = OurBigBook Web
 {c}
@@ -10900,11 +10939,14 @@ In order to allow code execution for pre/post processing tasks e.g. from <ourbig
 
 Note however that you have to be careful in general, since e.g. a malicious author could create a package with their own malicious version of the `ourbigbook` executable, that you could unknowingly run with with the standard `npx ourbigbook` execution.
 
-= unsafe-xss
+= unsafeXss
 {parent=Security}
 {title2=`--unsafe-xss`}
 
-OurBigBook HTML output is designed to be XSS safe by default, any non-XSS safe constructs must be enabled with a non-default flag or setting, see: <unsafe-xss>.
+= unsafe-xss
+{synonym}
+
+OurBigBook HTML output is designed to be XSS safe by default, any non-XSS safe constructs must be enabled with a non-default flag or setting, see: <unsafeXss>.
 
 Of course, we are walking on eggs, and this is hard to assert, so the best thing to do later on will be to parse the output e.g. with https://developer.mozilla.org/en-US/docs/Web/API/DOMParser[`DOMParser`] to ensure that it is valid and does not contain any `script` tags, but it is not as simple as that: https://stackoverflow.com/questions/37435077/execute-javascript-for-xss-without-script-tags/61588322#61588322
 
@@ -10914,7 +10956,7 @@ XSS unsafe constructs lead to errors by default. XSS unsafe constructs can be al
 ``
 or from the <ourbigbook.json> file with an entry of form:
 ``
-"unsafe-xss": true
+"unsafeXss": true
 ``
 
 = Contact
@@ -12322,6 +12364,7 @@ Video guidelines:
 * on YouTube, add the video as the first video of the "Videos" playlist: https://www.youtube.com/playlist?list=PLshTOzrBHLkZlpvTuBdphKLWwU7xBV6VF This list is needed because otherwise YouTube's stupid "Shorts" features produces two separate timelines by default, one for shorts and one for non-shorts. With this list, all videos can be seen easily as non-shorts.
 
 \Include[news]{parent=Publicity}
+\Include[todo]{parent=Publicity}
 
 = OurBigBook.com Fellowship
 {parent=Publicity}

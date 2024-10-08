@@ -18,6 +18,24 @@ The real README is of course at: [README.bigb](README.bigb)
 
 A rendered version of it can be seen at: <https://docs.ourbigbook.com>
 
+[OurBigBook CLI quick start](https://docs.ourbigbook.com/#ourbigbook-cli-quick-start) using our template project https://github.com/ourbigbook/template[]:
+
+```
+git clone https://github.com/ourbigbook/template
+cd template
+npm install
+npx ourbigbook .
+firefox out/html/index.html
+```
+
+The generated HTML is published at: https://ourbigbook.github.io/template
+
+A full blown **showcase knowledge base** can be seen at:
+
+* https://cirosantilli.com ([static website](https://docs.ourbigbook.com/#p-publish) publish)
+* https://ourbigbook.com/cirosantilli (equivalent on [OurBigBook.com](https://docs.ourbigbook.com/#ourbigbook-com) with dynamic website features such as [topics](https://docs.ourbigbook.com/#ourbigbook-web-topics)
+* https://github.com/cirosantilli/cirosantilli.github.io (source code for both of the above)
+
 Screenshot of the [topics feature](https://docs.ourbigbook.com/#ourbigbook-web-topics), which provides multi-user mind-melding:
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/topics/derivative.png)

@@ -1110,7 +1110,7 @@ and:
 ``
 Some ideas:
 * generalize things a bit so that `_` does not exist. Inline quotes go just with the usual `""` ascii art
-* make some arguments literal by default to cover those common cases. Makes language a bit more insane, but perhaps it is for the best, we don't want HTML expanding in anything that won't end up in the HTML right. That makes the possible furture case of defining variables a bit harder. But we could overcome it by just making literals be non literals then when literal is the default, e.g.:
+* make some arguments literal by default to cover those common cases. Makes language a bit more insane, but perhaps it is for the best, we don't want HTML expanding in anything that won't end up in the HTML right. That makes the possible future case of defining variables a bit harder. But we could overcome it by just making literals be non literals then when literal is the default, e.g.:
   ``
   = My topic
   {wiki=Another_one}

@@ -278,7 +278,7 @@ class SqlDbProvider extends web_api.DbProviderBase {
               model: sequelize.models.File,
               as: 'idDefinedAt',
               required: true,
-              where: { path: { [this.sequelize.Sequelize.Op.like]: prefix_literal } } 
+              where: { path: { [this.sequelize.Sequelize.Op.like]: prefix_literal } }
           },
         ],
       }),
@@ -787,16 +787,22 @@ async function update_database_after_convert({
   return { file: newFile }
 }
 
-// Do various post conversion checks to verify database integrity after the database is updated by the ID extraction step:
-//
-// - refs to IDs that don't exist
-// - duplicate IDs
-// - https://docs.ourbigbook.com/x-within-title-restrictions
-//
-// Previously these were done inside ourbigbook.convert. But then we started skipping render by timestamp,
-// so if you e.g. move an ID from one file to another, a common operation, then it would still see
-// the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
-// Having this single query at the end also be slightly more efficient than doing each query separately per file converion.
+/** Do various post ID extraction checks to verify database integrity after the database is updated by the ID extraction step:
+ *
+ * - refs to IDs that don't exist
+ * - duplicate IDs
+ * - https://docs.ourbigbook.com/x-within-title-restrictions
+ *
+ * This step should be run after all ID extraction are finished, and before render start.
+ *
+ * Previously these were done inside ourbigbook.convert. But then we started skipping render by timestamp,
+ * so if you e.g. move an ID from one file to another, a common operation, then it would still see
+ * the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
+ * Having this single query at the end also be slightly more efficient than doing each query separately per file conversion.
+ *
+ * Quite insanely, this also modifies the database by deleting unused flexion references, and therefore must be called
+ * before render for a correct conversion. I wasted 2 hours of my life by forgetting that.
+ */
 async function check_db(sequelize, paths_converted, opts={}) {
   // * delete unused xrefs in different files to correctly have tags and incoming links in such cases
   //   https://github.com/ourbigbook/ourbigbook/issues/229
@@ -804,7 +810,13 @@ async function check_db(sequelize, paths_converted, opts={}) {
   //   * directory based scopes
   //   * \x magic pluralization variants
   // * ensure that all \x targets exist
-  const { perf, transaction, web } = opts
+  let { perf, options, ref_prefix, transaction, web } = opts
+  if (ref_prefix === undefined) {
+    ref_prefix = ''
+  }
+  if (options === undefined) {
+    options = {}
+  }
   const { Op } = sequelize.Sequelize
   const { File, Id, Ref } = sequelize.models
   let t0
@@ -812,7 +824,13 @@ async function check_db(sequelize, paths_converted, opts={}) {
     t0 = performance.now();
     console.error('perf: check_db.start');
   }
-  const [new_refs, doubleParents, duplicate_rows, invalid_title_title_rows] = await Promise.all([
+  const [
+    new_refs,
+    doubleParents,
+    noParents,
+    duplicate_rows,
+    invalid_title_title_rows,
+  ] = await Promise.all([
     Ref.findAll({
       order: [
         ['defined_at', 'ASC'],
@@ -834,11 +852,13 @@ async function check_db(sequelize, paths_converted, opts={}) {
           as: 'from',
           attributes: ['id'],
         },
-        {
-          model: File,
-          as: 'definedAt',
-          where: { path: paths_converted },
-        },
+        Object.assign(
+          {
+            model: File,
+            as: 'definedAt',
+          },
+          paths_converted === undefined ? {} : { where: { path: paths_converted } }
+        )
       ],
       transaction,
     }),
@@ -875,14 +895,14 @@ async function check_db(sequelize, paths_converted, opts={}) {
                 },
               ],
             },
-            {
-              model: File,
-              as: 'definedAt',
-              required: true,
-              where: {
-                path: paths_converted,
+            Object.assign(
+              {
+                model: File,
+                as: 'definedAt',
+                required: true,
               },
-            },
+              paths_converted === undefined ? {} : { where: { path: paths_converted } }
+            ),
             {
               model: Id,
               as: 'to',
@@ -896,6 +916,37 @@ async function check_db(sequelize, paths_converted, opts={}) {
             [sequelize.col('definedAt.path'), 'ASC'],
           ],
           transaction,
+        })
+    ,
+    // noParents
+    (web || (options.ourbigbook_json !== undefined && options.ourbigbook_json.lint !== undefined && !options.ourbigbook_json.lint.filesAreIncluded))
+      ? []
+      : Id.findAll({
+          include: [
+            {
+              model: Ref,
+              as: 'to',
+              required: false,
+              where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
+            },
+            {
+              model: Ref,
+              as: 'from',
+              required: false,
+              where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM] },
+            },
+            {
+              model: File,
+              as: 'idDefinedAt',
+              required: true,
+            },
+          ],
+          where: {
+            idid: { [Op.ne]: ref_prefix },
+            '$to.id$': null,
+            // Ignore synonyms.
+            '$from.id$': null,
+          }
         })
     ,
     Id.findDuplicates(paths_converted, transaction),
@@ -1025,6 +1076,13 @@ async function check_db(sequelize, paths_converted, opts={}) {
       const source_location = ast.source_location
       error_messages.push(
         `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://docs.ourbigbook.com/x-within-title-restrictions`
+      )
+    }
+  }
+  if (noParents.length > 0) {
+    for (const id of noParents) {
+      error_messages.push(
+        `ID "${id.idid}" defined in file "${id.idDefinedAt.path}" has no parent and won't show on the toplevel table of contents, and is not Web uploadable, make sure to either include that file from another file with \\Include https://docs.ourbigbook.com/#include or add it to your ignored files: https://docs.ourbigbook.com/#ourbigbook-json/ignore`
       )
     }
   }

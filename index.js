@@ -972,7 +972,7 @@ class ErrorMessage {
     this.severity = severity;
   }
 
-  toString(path) {
+  toString() {
     let ret = 'error: ';
     let had_line_or_col = false;
     if (this.source_location.path !== undefined) {
@@ -1011,18 +1011,14 @@ function resolveAbsoluteXref(id, context) {
 
 /** Set a context.option that may come from ourbigbook.json.
  * This method can also be used from ourbigbook to resolve the values of options,
- * in the case of options that have effects on both Library and CLI. */
+ * in the case of options that have effects on both Library and CLI.
+ */
 function resolveOption(options, opt) {
   let ret = options[opt]
   if (ret !== undefined) {
     return options[opt]
   }
-  const ourbigbook_json = options.ourbigbook_json
-  ret = ourbigbook_json[opt]
-  if (ret !== undefined) {
-    return ourbigbook_json[opt]
-  }
-  return OURBIGBOOK_JSON_DEFAULT[opt]
+  return options.ourbigbook_json[opt]
 }
 exports.resolveOption = resolveOption
 
@@ -3224,8 +3220,28 @@ function convertIdArg(arg, context) {
     cloneAndSet(context, 'id_conversion', true))
 }
 
-function convertInitContext(options={}, extra_returns={}) {
-  options = { ...options }
+/** Resolve input options into their final values considering defaults and
+ * forcing across values.
+ */
+function convertInitOptions(options) {
+  const newOptions = { ...OPTION_DEFAULTS }
+  for (const key in options) {
+    const val = options[key]
+    if (val !== undefined) {
+      newOptions[key] = val
+    }
+  }
+  options = newOptions
+  // TODO this fails several --embed-includes tests. Why.
+  // Futhermore, this would print the exact same for both according to diff.
+  //console.log(`options: ${require('util').inspect(options, { depth: null })}`)
+  // The only difference in behavior is that lodash makes copies of all subobjects.
+  //options = lodash.merge({}, OPTION_DEFAULTS, options)
+  // TODO get rid of ourbigbook_json this, move everything into options directly.
+  options.ourbigbook_json = convertInitOurbigbookJson(options.ourbigbook_json)
+  if (options.publish && 'publishOptions' in options.ourbigbook_json) {
+    lodash.merge(options, options.ourbigbook_json.publishOptions)
+  }
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
   if (!('body_only' in options)) { options.body_only = false; }
   if (!('db_provider' in options)) { options.db_provider = undefined; }
@@ -3236,83 +3252,12 @@ function convertInitContext(options={}, extra_returns={}) {
     options.fixedScopeRemoval = undefined;
   }
   if (!('renderH2' in options)) { options.renderH2 = false; }
-  if (!('ourbigbook_json' in options)) { options.ourbigbook_json = {}; }
-    const ourbigbook_json = options.ourbigbook_json;
-    {
-      if (!('media-providers' in ourbigbook_json)) { ourbigbook_json['media-providers'] = {}; }
-      {
-        const media_providers = ourbigbook_json['media-providers'];
-        for (const media_provider_type of MEDIA_PROVIDER_TYPES) {
-          if (!(media_provider_type in media_providers)) {
-            media_providers[media_provider_type] = {};
-          }
-          const media_provider = media_providers[media_provider_type];
-          if (!('title-from-src' in media_provider)) {
-            media_provider['title-from-src'] = false;
-          }
-        }
-        if (media_providers.local && !('path' in media_providers.local)) {
-          media_providers.local.path = '';
-        }
-        if (media_providers.github && !('remote' in media_providers.github)) {
-          media_providers.github.remote = 'TODO determine from git remote origin if any';
-        }
-        for (const media_provider_name in media_providers) {
-          const media_provider = media_providers[media_provider_name];
-          if (!('title-from-src' in media_provider)) {
-            media_provider['title-from-src'] = false;
-          }
-        }
-      }
-      if (!('enableArg' in ourbigbook_json)) { ourbigbook_json.enableArg = {}; }
-      if (!('h' in ourbigbook_json)) { ourbigbook_json.h = {}; }
-      if (!('htmlXExtension' in ourbigbook_json)) { ourbigbook_json.htmlXExtension = undefined; }
-      if (!('numbered' in ourbigbook_json.h)) { ourbigbook_json.h.numbered = true; }
-      if (!('openLinksOnNewTabs' in ourbigbook_json)) { ourbigbook_json.openLinksOnNewTabs = false; }
-      if (!('splitDefault' in ourbigbook_json.h)) { ourbigbook_json.h.splitDefault = false; }
-      if (!('splitDefaultNotToplevel' in ourbigbook_json.h)) {
-        ourbigbook_json.h.splitDefaultNotToplevel = false;
-      }
-      {
-        if (!('lint' in ourbigbook_json)) { ourbigbook_json.lint = {}; }
-        const lint = ourbigbook_json.lint
-        if (!('h-tag' in lint)) { lint['h-tag'] = undefined; }
-        if (!('h-parent' in lint)) { lint['h-parent'] = undefined; }
-      }
-      {
-        if (!('id' in ourbigbook_json)) { ourbigbook_json.id = {}; }
-        const id = ourbigbook_json.id
-        if (!('normalize' in id)) { id.normalize = {}; }
-        const normalize = id.normalize
-        if (!('latin' in normalize)) {
-          normalize.latin = OURBIGBOOK_JSON_DEFAULT.id.normalize.latin
-        }
-        if (!('punctuation' in normalize)) {
-          normalize.punctuation = OURBIGBOOK_JSON_DEFAULT.id.normalize.punctuation
-        }
-      }
-      if (!('web' in ourbigbook_json)) { ourbigbook_json.web = {}; }
-      {
-        const web = ourbigbook_json.web
-        if (!('hostCapitalized' in web)) {
-          if ('host' in web) {
-            web.hostCapitalized = web.host
-          } else {
-            web.hostCapitalized = OURBIGBOOK_JSON_DEFAULT.web.hostCapitalized
-          }
-        }
-        if (!('host' in web)) {
-          web.host = OURBIGBOOK_JSON_DEFAULT.web.host
-        }
-        if (!('linkFromStaticHeaderMetaToWeb' in web)) { web.linkFromStaticHeaderMetaToWeb = false; }
-        if (!('username' in web)) { web.username = undefined; }
-        if (web.linkFromStaticHeaderMetaToWeb && web.username === undefined) {
-          throw new Error(`web.username must be given when web.linkFromStaticHeaderMetaToWeb = true"`)
-        }
-      }
-      if (!('xPrefix' in ourbigbook_json)) { ourbigbook_json.xPrefix = undefined; }
-    }
-  if (!('embed_includes' in options)) { options.embed_includes = false; }
+  if (options.embed_includes) {
+    // This is bad, but I don't have the time to fix it.
+    // Embed-includes just doesn't produce a correct ref DB currently.
+    // https://github.com/ourbigbook/ourbigbook/issues/343
+    options.ourbigbook_json.lint.filesAreIncluded = false
+  }
   // Check if file exists.
   if (!('fs_exists_sync' in options)) { options.fs_exists_sync }
   if (!('forbid_include' in options)) {
@@ -3321,6 +3266,8 @@ function convertInitContext(options={}, extra_returns={}) {
   }
   if (!('forbid_multi_h1' in options)) {
     // Only allow 1 h1 per input source.
+    // This is also effectively enforced by filesAreIncluded,
+    // but with a less clear error message.
     options.forbid_multi_h1 = false
   }
   if (!('forbid_multiheader' in options)) {
@@ -3337,17 +3284,6 @@ function convertInitContext(options={}, extra_returns={}) {
     options.auto_generated_source = false;
   }
   if (!('html_embed' in options)) { options.html_embed = false; }
-  options.htmlXExtension = resolveOption(options, 'htmlXExtension')
-  if (options.htmlXExtension === undefined) {
-    // Add HTML extension to x links. And therefore also:
-    // * output files with the `.html` extension
-    // * output `/index.html` vs just `/`
-    if (ourbigbook_json.htmlXExtension === undefined) {
-      options.htmlXExtension = true;
-    } else {
-      options.htmlXExtension = ourbigbook_json.htmlXExtension;
-    }
-  }
   if (!('hFileShowLarge' in options)) { options.hFileShowLarge = false }
   if (!('h_parse_level_offset' in options)) {
     // When parsing, start the first header at this offset instead of h1.
@@ -3397,18 +3333,9 @@ function convertInitContext(options={}, extra_returns={}) {
     // conversion to determine the toplevel ID of this file.
     options.parent_id = undefined;
   }
-  if (!('publish' in options)) {
-    // If true, this means that this is a ourbigbook --publish run rather
-    // than a regular development compilation.
-    options.publish = false
-  }
-    if (options.publish && 'publishOptions' in ourbigbook_json) {
-      lodash.merge(ourbigbook_json, ourbigbook_json.publishOptions)
-    }
   if (!('read_include' in options)) { options.read_include = () => undefined; }
   if (!('read_file' in options)) { options.read_file = () => undefined; }
   if (!('ref_prefix' in options)) {
-    // TODO implement.
     // This option started as a hack as a easier to implement workaround for:
     // https://github.com/ourbigbook/ourbigbook/issues/229
     // to allow tagged and incoming links to work at all on OurBigBook Web.
@@ -3417,6 +3344,9 @@ function convertInitContext(options={}, extra_returns={}) {
     // However, we later found another usage for it, which should not be removed:
     // it is necessary to resolve absolute references like \x[/top-id] correctly to
     // \x[@username/top-id] in Web, where it would be set to '@username'.
+    //
+    // Not sure if this was intended or not, but now it is also getting used as a
+    // "detect if ID is a virtual toplevel or not".
     options.ref_prefix = '';
   }
   if (!('render' in options)) { options.render = true; }
@@ -3527,6 +3457,13 @@ function convertInitContext(options={}, extra_returns={}) {
   if (options.include_hrefs === undefined) {
     options.include_hrefs = {};
   }
+  options.unsafeXss = resolveOption(options, 'unsafeXss')
+  return options
+}
+exports.convertInitOptions = convertInitOptions
+
+function convertInitContext(options={}, extra_returns={}) {
+  options = convertInitOptions(options)
 
   // Handle scope and IDs that are based on the input path:
   //
@@ -3584,14 +3521,6 @@ function convertInitContext(options={}, extra_returns={}) {
     root_relpath_shift = ''
   }
 
-  if (options.unsafe_xss === undefined) {
-    const unsafe_xss = ourbigbook_json['unsafe-xss'];
-    if (unsafe_xss !== undefined) {
-      options.unsafe_xss = unsafe_xss;
-    } else {
-      options.unsafe_xss = false;
-    }
-  }
   extra_returns.debug_perf = {};
   extra_returns.errors = [];
   extra_returns.rendered_outputs = {};
@@ -3633,12 +3562,55 @@ function convertInitContext(options={}, extra_returns={}) {
     // true: force to split headers, e.g. split links
     // false: force to nosplit headers, e.g. nosplit links
     to_split_headers: undefined,
-    webUrl: `https://${ourbigbook_json.web.host}/`,
+    webUrl: `https://${options.ourbigbook_json.web.host}/`,
   }
   perfPrint(context, 'start_convert')
   return context;
 }
 exports.convertInitContext = convertInitContext
+
+function convertInitOurbigbookJson(ourbigbook_json={}) {
+  const ourbigbook_json_orig = ourbigbook_json
+  ourbigbook_json = lodash.merge({}, OURBIGBOOK_JSON_DEFAULT, ourbigbook_json)
+  {
+    if (!('media-providers' in ourbigbook_json)) { ourbigbook_json['media-providers'] = {}; }
+    {
+      const media_providers = ourbigbook_json['media-providers'];
+      for (const media_provider_type of MEDIA_PROVIDER_TYPES) {
+        if (!(media_provider_type in media_providers)) {
+          media_providers[media_provider_type] = {};
+        }
+        const media_provider = media_providers[media_provider_type];
+        if (!('title-from-src' in media_provider)) {
+          media_provider['title-from-src'] = false;
+        }
+      }
+      if (media_providers.local && !('path' in media_providers.local)) {
+        media_providers.local.path = '';
+      }
+      if (media_providers.github && !('remote' in media_providers.github)) {
+        media_providers.github.remote = 'TODO determine from git remote origin if any';
+      }
+      for (const media_provider_name in media_providers) {
+        const media_provider = media_providers[media_provider_name];
+        if (!('title-from-src' in media_provider)) {
+          media_provider['title-from-src'] = false;
+        }
+      }
+    }
+    {
+      const web = ourbigbook_json.web
+      const web_orig = ourbigbook_json_orig.web
+      if (web_orig !== undefined && !('hostCapitalized' in web_orig) && ('host' in web_orig)) {
+        web.hostCapitalized = web_orig.host
+      }
+      if (web.linkFromStaticHeaderMetaToWeb && web.username === undefined) {
+        throw new Error(`web.username must be given when web.linkFromStaticHeaderMetaToWeb = true"`)
+      }
+    }
+  }
+  return ourbigbook_json
+}
 
 /** Similar to convertXHref, used for external callers that don't have the context.
  * TODO: possibly broken, was returning empty at some point. */
@@ -7990,7 +7962,6 @@ function xText(ast, context, options={}) {
 
 // consts
 
-// Dynamic website stuff.
 const ANCESTORS_ID_UNRESERVED = 'ancestors'
 const ANCESTORS_ID = `${Macro.RESERVED_ID_PREFIX}${ANCESTORS_ID_UNRESERVED}`
 exports.ANCESTORS_ID = ANCESTORS_ID
@@ -8088,20 +8059,46 @@ exports.OURBIGBOOK_JSON_BASENAME = OURBIGBOOK_JSON_BASENAME
 const OURBIGBOOK_DEFAULT_HOST = 'ourbigbook.com'
 exports.OURBIGBOOK_DEFAULT_HOST = OURBIGBOOK_DEFAULT_HOST
 const OURBIGBOOK_DEFAULT_DOCS_URL = `https://docs.${OURBIGBOOK_DEFAULT_HOST}`
-const OURBIGBOOK_JSON_DEFAULT = {
+const OPTION_DEFAULTS = {
+  embed_includes: false,
   htmlXExtension: true,
+  // If true, this means that this is a ourbigbook --publish run rather
+  // than a regular development compilation.
+  publish: false,
+}
+const OURBIGBOOK_JSON_DEFAULT = {
+  dontIgnore: [],
+  dontIgnoreConvert: [],
+  enableArg: {},
+  h: {
+    numbered: true,
+    splitDefault: false,
+    splitDefaultNotToplevel: false,
+  },
   id: {
     normalize: {
       latin: true,
       punctuation: true,
     },
   },
+  ignore: [],
+  ignoreConvert: [],
+  lint: {
+    filesAreIncluded: true,
+    'h-tag': undefined,
+    'h-parent': undefined,
+  },
+  openLinksOnNewTabs: false,
+  redirects: [],
+  'unsafeXss': false,
   web: {
     host: OURBIGBOOK_DEFAULT_HOST,
     hostCapitalized: 'OurBigBook.com',
     link: false,
+    linkFromStaticHeaderMetaToWeb: false,
     username: undefined,
-  }
+  },
+  xPrefix: undefined,
 }
 exports.OURBIGBOOK_JSON_DEFAULT = OURBIGBOOK_JSON_DEFAULT
 const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
@@ -9488,7 +9485,8 @@ const OUTPUT_FORMATS_LIST = [
             } else {
               p = `${URL_SEP}${ast.id}`
             }
-            ourbigbookLink = `<a href="${context.webUrl}${context.options.ourbigbook_json.web.username}${p}"><img src="${logoPath}" class="logo" /> ${newContext.options.ourbigbook_json.web.hostCapitalized}</a>`;
+            ourbigbookLink = `<a href="${context.webUrl}${context.options.ourbigbook_json.web.username}${p}">` +
+              `<img src="${logoPath}" class="logo" /> ${newContext.options.ourbigbook_json.web.hostCapitalized}</a>`;
           }
 
           // file handling 1

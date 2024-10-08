@@ -11,8 +11,8 @@ module.exports = (sequelize) => {
         allowNull: false,
         // Used to be unique, but not the case anymore, because when converting a directory
         // with duplicates, we have to do the duplicate check at the end to account e.g. if an
-        // ID is moved between two files. Previousy, we were nuking the DB of files to be converted,
-        // and just extracing IDs every time. But with timestamp skipping, we just don't know if the
+        // ID is moved between two files. Previously, we were nuking the DB of files to be converted,
+        // and just extracting IDs every time. But with timestamp skipping, we just don't know if the
         // ID was moved between files or not until everything is done.
         //
         // Once there are no conversion errors however and the DB is stable, then they should be unique.
@@ -60,7 +60,7 @@ module.exports = (sequelize) => {
 
   Id.findDuplicates = async (paths, transaction) => {
     const where = {}
-    if (paths.length) {
+    if (paths !== undefined) {
       where.path = paths
     }
     return sequelize.models.Id.findAll({
@@ -90,9 +90,9 @@ module.exports = (sequelize) => {
   }
 
   Id.findInvalidTitleTitle = async (paths, transaction) => {
-    let where
-    if (paths === undefined) {
-      where = { path: paths }
+    const where = {}
+    if (paths !== undefined) {
+      where.path = paths
     }
     return sequelize.models.Id.findAll({
       include: [

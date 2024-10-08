@@ -1,6 +1,18 @@
 = {{ title }}
 
-Welcome to Ourbigbook version {{version}}! Here's the table of contents:
+This is a sample project that you can use to get started with the https://docs.ourbigbook.com/[OurBigBook Project] and learn the basics of the https://docs.ourbigbook.com/#ourbigbook-markup[OurBigBook Markup language]. The full documentation is present at: https://docs.ourbigbook.com
+
+This sample project is rendered live at: https://ourbigbook.github.io/template{% if generate != "default" %}-{{generate}}{% endif %}
+
+The source of this template is present at: https://github.com/ourbigbook/template{% if generate != "default" %}-{{generate}}{% endif %}
+
+This template can be generated from the https://docs.ourbigbook.com/#ourbigbook-cli[OurBigBook CLI] with:
+``
+ourbigbook --generate {{generate}}
+``
+and this template was generated with OurBigBook version {{version}}.
+
+Here's the table of contents:
 
 {% if multifile -%}
 == Internal cross file references

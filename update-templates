@@ -52,7 +52,7 @@ update-template() (
   fi
 )
 
-# TODO https://github.com/ourbigbook/ourbigbook/issues/160
+# https://github.com/ourbigbook/ourbigbook/issues/160
 update-template subdir template-subdir docs
 update-template min template-min
 update-template default template

@@ -792,6 +792,13 @@ it('api: create an article and see it on global feed', async () => {
       }))
       assert.strictEqual(status, 422)
 
+      // Title ending in backslash is an error because it adds newline to insane header
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+        titleSource: 'ab\\',
+        bodySource: 'cd',
+      })))
+      assert.strictEqual(status, 422)
+
       // Missing all data and no path to existing article to take it from
       ;({data, status} = await createArticleApi(test, {}))
       assert.strictEqual(status, 422)

@@ -1989,7 +1989,7 @@ if (cli.helpMacros) {
                     //addSubdir = dirPathParse.dir
                   }
                 } else {
-                  title = 'Index'
+                  title = ''
                   // Hack source for subsequent hash calculation to match what we have on server, which
                   // currently forces "Index" (TODO "index" et al. are likely also possible and would break this hack).
                   // Ideally we should actually alter the file under out/web/index.bigb

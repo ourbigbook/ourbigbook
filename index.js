@@ -10367,7 +10367,7 @@ function ourbigbookGetXHref({
       }
       const components = href.split(Macro.HEADER_SCOPE_SEPARATOR)
       const c = components[components.length - 1][0]
-      was_magic_uppercase = c === c.toUpperCase()
+      was_magic_uppercase = c && (c === c.toUpperCase())
     }
     const href_from_id = href
     if (!(
@@ -10407,10 +10407,12 @@ function ourbigbookGetXHref({
           ) ||
           for_header_parent
         )) {
-          if (c || was_magic_uppercase) {
-            href = href[0].toUpperCase() + href.substring(1)
-          } else {
-            href = href[0].toLowerCase() + href.substring(1)
+          if (href.length) {
+            if (c || was_magic_uppercase) {
+              href = href[0].toUpperCase() + href.substring(1)
+            } else {
+              href = href[0].toLowerCase() + href.substring(1)
+            }
           }
         }
         if (

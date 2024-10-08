@@ -38,6 +38,8 @@ Insane link http://example.com[], with comma immediately following.
 
 Escaped insane link: \http://example.com
 
+Insane ref to toplevel: <>.
+
 Insane ref: <black cat>.
 
 Insane ref capital: <Black cat>.

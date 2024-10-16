@@ -18,4 +18,4 @@ The [Visual Studio Code extension](https://docs.ourbigbook.com/#visual-studio-co
 
 You can [publish your local lightweight markup files either to OurBigBook.com or as a static website on your own domain of choice](https://docs.ourbigbook.com/#publish-your-content):
 
-![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/local-editing/bigb-publish-to-web-or-static-editor-logos.svg)
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/local-editing/bigb-publish-to-web-or-static-editor-logos.png)

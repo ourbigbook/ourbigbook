@@ -32,7 +32,7 @@ To publish your project to https://OurBigBook.com[], create an account at https:
 ``
 ourbigbook --web
 ``
-and now your project is published at: https://ourbigbook.com/johnsmith[].
+This will ask for your ourbigbook username and password, and then your project will be published at: https://ourbigbook.com/johnsmith[].
 
 A full blown showcase knowledge base can be seen at:
 * https://cirosantilli.com (<static website> publish)
@@ -12364,7 +12364,6 @@ Video guidelines:
 * on YouTube, add the video as the first video of the "Videos" playlist: https://www.youtube.com/playlist?list=PLshTOzrBHLkZlpvTuBdphKLWwU7xBV6VF This list is needed because otherwise YouTube's stupid "Shorts" features produces two separate timelines by default, one for shorts and one for non-shorts. With this list, all videos can be seen easily as non-shorts.
 
 \Include[news]{parent=Publicity}
-\Include[todo]{parent=Publicity}
 
 = OurBigBook.com Fellowship
 {parent=Publicity}
@@ -12435,3 +12434,5 @@ Publicly known updates on related to their fellowship projects may also be added
 At the time of award, Letícia was a 3rd year student at the https://ourbigbook.com/go/topic/molecular-sciences-course-of-the-university-of-sao-paulo[Molecular Sciences Course of the University of São Paulo] and held a https://fapesp.br/bolsas/ic[FAPESP Scientific Initiation Scholarship]. She had become interested in Quantum Computing in the past year, and is passionate about working on that promising area of technology.
 
 Her main mentors in the area have been https://scholar.google.com/citations?user=FbGL0BEAAAAJ&hl=it[professor Paulo Nussenzveig] and https://portal.if.usp.br/ifusp/pt-br/users/bamaral[Barbara Amaral] of the Institute of Physics of the https://ourbigbook.com/go/topic/university-of-sao-paulo[University of São Paulo].
+
+\Include[todo]{parent=}

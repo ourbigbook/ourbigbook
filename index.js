@@ -5076,8 +5076,14 @@ async function parse(tokens, options, context, extra_returns={}) {
         let parent_ast_header_level
         let parent_ast_header_tree_node
         let include_id = href
-        if (options.cur_header && options.cur_header.scope) {
-          include_id = options.cur_header.scope + Macro.HEADER_SCOPE_SEPARATOR + include_id
+        let curScope
+        if (parent_ast) {
+          curScope = parent_ast.scope
+        } else if (options.cur_header && options.cur_header.scope) {
+          curScope = options.cur_header.scope
+        }
+        if (curScope) {
+          include_id = curScope + Macro.HEADER_SCOPE_SEPARATOR + include_id
         }
         if (parent_ast === undefined) {
           parent_ast_header_level = 0

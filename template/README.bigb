@@ -10,7 +10,7 @@ This template can be generated from the https://docs.ourbigbook.com/#ourbigbook-
 ``
 ourbigbook --generate {{generate}}
 ``
-and this template was generated with OurBigBook version {{version}}.
+and this onu was generated with OurBigBook version {{version}}.
 
 Here's the table of contents:
 
@@ -19,7 +19,7 @@ Here's the table of contents:
 
 Here is a link to a header present in another file: <h2 not in the readme>.
 
-Explicit macro equivalent, but with a "Section" prefix: \x[h2-not-in-the-readme]{full}.
+Explicit macro equivalent, but with a "Section" prefix: \x[h2-not-in-the-readme]{full}. 
 
 And below this line, we actually include the toplevel header of the other file.
 

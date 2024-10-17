@@ -7577,6 +7577,8 @@ const include_two_levels_ast_args = [
   a('H', undefined, {level: [t('3')], title: [t('gg')]}),
   a('P', [t('hh')]),
 ]
+
+// \Include
 assert_lib_ast('include: simple with paragraph with embed includes',
   `= Toplevel
 
@@ -7602,6 +7604,27 @@ Toplevel paragraph.
     assert_xpath_stdout: [
         "//x:div[@class='p' and text()='Include one level 1 paragraph.']",
     ],
+  },
+)
+assert_lib('include: with unscoped parent after scope does not force pick the scope',
+  // https://github.com/ourbigbook/ourbigbook/issues/232#issuecomment-2402776284
+  {
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== No scope
+
+=== My scope
+{scope}
+
+==== In my scope 1
+
+\\Include[notindex]{parent=No scope}
+`,
+      'notindex.bigb': `= Notindex
+`,
+    },
+    convert_dir: true,
   },
 )
 assert_lib_ast('include: parent argument with embed includes',

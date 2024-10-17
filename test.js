@@ -4151,7 +4151,7 @@ assert_lib(
 \\x[subdir/subdir-index-h2][link to subdir index h2]
 
 \\Include[subdir]
-    `,
+`,
       'ourbigbook.json': `{}\n`,
       'subdir/index.bigb': `= Subdir index
 
@@ -7625,6 +7625,30 @@ assert_lib('include: with unscoped parent after scope does not force pick the sc
 `,
     },
     convert_dir: true,
+  },
+)
+assert_lib_error('include: cannot be added in the middle of headers',
+  // https://github.com/ourbigbook/ourbigbook/issues/344
+  `= Toplevel
+
+asdf
+
+\\Include[notindex]
+
+qwer
+
+== h2
+`,
+  5, 1, 'index.bigb',
+  {
+    filesystem: {
+      'notindex.bigb': `= Notindex
+`,
+    },
+    input_path_noext: 'index',
+    // TODO https://github.com/ourbigbook/ourbigbook/issues/342
+    convert_opts: { ourbigbook_json: { lint: { filesAreIncluded: false } } },
+    convert_before_norender: ['notindex.bigb'],
   },
 )
 assert_lib_ast('include: parent argument with embed includes',

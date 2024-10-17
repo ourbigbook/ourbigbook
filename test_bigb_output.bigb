@@ -373,9 +373,6 @@ Quote with multiple paragraphs:
 
 == Dog
 
-\Include[test-bigb-output-2]{parent=dog}
-\Include[test-bigb-output-3]{parent=dog}
-
 <code In OurBigBookExample>
 
 <image Tank man standing in front of some tanks.>
@@ -401,6 +398,9 @@ Hello
 
 World
 ]]
+
+\Include[test-bigb-output-2]{parent=dog}
+\Include[test-bigb-output-3]{parent=dog}
 
 == Black cat
 

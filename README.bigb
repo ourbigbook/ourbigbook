@@ -11,7 +11,7 @@
 {height=150}
 {title=<project logo>[Logo of] the <OurBigBook Project>}
 
-<OurBigBook CLI quick start> using our template project https://github.com/ourbigbook/template[]:
+<OurBigBook CLI quick start> using our template project https://github.com/ourbigbook/template[] with <#Node.js>{p} installed run:
 ``
 git clone https://github.com/ourbigbook/template
 cd template
@@ -39,7 +39,7 @@ A full blown showcase knowledge base can be seen at:
 * https://ourbigbook.com/cirosantilli (equivalent on <OurBigBook.com> with dynamic website features such as <topics>)
 * https://github.com/cirosantilli/cirosantilli.github.io (source code for both of the above)
 
-\b[Mission]: to live in a world where you can learn university-level #mathematics{p=1}, #physics{p=1}, <#chemistry>, #biology and #engineering from perfect free open source books that anyone can write to get famous.
+\b[Mission]: to live in a world where you can learn university-level #mathematics{p}, #physics{p}, <#chemistry>, #biology and #engineering from perfect free open source books that anyone can write to get famous.
 
 \b[Ultimate goal]: destroy the currently grossly inefficient education system and replace it with a much more inspiring system where people learn what they want as fast as possible to reach their goals faster without so much useless pain.
 
@@ -5255,9 +5255,9 @@ Therefore, it is up to authors to specifically specify the desired pluralization
   ``
   \a[https://ourbigbook.com/go/topic/many-dog][Many Dogs]
   ``
-* to prevent this automatic singularization, use <`\x` `p` argument> with `{p=1}`, e.g.:
+* to prevent this automatic singularization, use <`\x` `p` argument> with `{p}`, e.g.:
   ``
-  <#Many Dogs>{p=1}
+  <#Many Dogs>{p}
   ``
   renders something like:
   ``
@@ -5265,7 +5265,7 @@ Therefore, it is up to authors to specifically specify the desired pluralization
   ``
   This is unfortunately always necessary for uncountable nouns such as "mathematics":
   \OurBigBookExample[[
-  I like #mathematics{p=1}
+  I like #mathematics{p}
   ]]
   since our underlying pluralization library <blakeembrey pluralize> cannot handle uncountable nouns reliably.
 

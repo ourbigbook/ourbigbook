@@ -5015,6 +5015,7 @@ async function parse(tokens, options, context, extra_returns={}) {
   const title_ast_ancestors = []
   const header_title_ast_ancestors = []
   const header_ids = []
+  let prevAst, ast, parent_arg
   while (todo_visit.length > 0) {
     const pop = todo_visit.pop();
     if (pop === 'pop_title_ast_ancestors') {
@@ -5025,7 +5026,10 @@ async function parse(tokens, options, context, extra_returns={}) {
       header_title_ast_ancestors.pop()
       continue
     }
-    const [parent_arg, ast] = pop
+    if (ast && ast.node_type === AstType.MACRO) {
+      prevAst = ast
+    }
+    ;([parent_arg, ast] = pop)
     if (parent_arg.argument_name === Macro.TITLE_ARGUMENT_NAME) {
       const parent_ast = parent_arg.parent_ast
       title_ast_ancestors.push(parent_ast)
@@ -5041,6 +5045,20 @@ async function parse(tokens, options, context, extra_returns={}) {
     ast.from_include = options.from_include;
     ast.from_ourbigbook_example = options.from_ourbigbook_example;
     ast.source_location.path = options.input_path;
+    if (
+      prevAst &&
+      prevAst.macro_name === Macro.INCLUDE_MACRO_NAME &&
+      ast.node_type !== AstType.PARAGRAPH &&
+      macro_name !== Macro.INCLUDE_MACRO_NAME &&
+      macro_name !== Macro.HEADER_MACRO_NAME
+    ) {
+      parseError(
+        state,
+        `\\Include cannot be in the middle of sections, only at the end of sections immediately before the next header. ` +
+        `This include was followed by a "${macro_name}" macro`,
+        prevAst.source_location
+      );
+    }
     if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       if (options.forbid_include) {
         const error_ast = new PlaintextAstNode(options.forbid_include, ast.source_location);

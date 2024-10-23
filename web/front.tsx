@@ -63,7 +63,7 @@ export function ArticleBy(
       className="ourbigbook-title"
       dangerouslySetInnerHTML={{ __html: article.titleRender }}
     />{!isIndex && '"'}{showAuthor && <>
-      by <UserLinkWithImageInner {...{
+      {' '}by <UserLinkWithImageInner {...{
         user: article.author,
         showUsername: true,
       }} />

@@ -44,7 +44,7 @@
     "Title2 named argument": {
         "prefix": "{i",
         "body": [
-            "{title2}"
+            "{title2=}"
         ],
     },
     "Parent named argument": {

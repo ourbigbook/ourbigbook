@@ -807,7 +807,7 @@ export default function Article({
                 </>}
                 {LinkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
                 {LinkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
-                <div className="navlink"><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></div>
+                <p className="navlink"><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></p>
               </div>
               <h2>
                 <CustomLink href={routes.articleIssues(article.slug)}>

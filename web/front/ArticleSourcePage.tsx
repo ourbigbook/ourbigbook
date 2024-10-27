@@ -29,7 +29,7 @@ const ArticleSourcePageHoc = (isIssue=false) => {
     return <>
       <MyHead title={`Source: /${article.slug}`} />
       <div className="article-source-page content-not-ourbigbook">
-        <h1><SourceIcon /> Source: <a href={routes.article(article.slug)}>/{article.slug}</a></h1>
+        <h1><SourceIcon /> Source: <a href={routes.article(article.slug)}>{article.slug}</a></h1>
         <pre><code>{modifyEditorInput(article.file.titleSource, article.file.bodySource).new}</code></pre>
         <p className="navlink"><a href={routes.article(article.slug)}><ArticleIcon /> Back to article page</a></p>
       </div>

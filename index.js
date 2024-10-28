@@ -4513,29 +4513,35 @@ function macroListToMacros(addTestInstrumentation) {
 function macroList(addTestInstrumentation) {
   return [
     ...DEFAULT_MACRO_LIST,
-    new Macro(
-      Macro.TEST_SANE_ONLY,
-      [
-        new MacroArgument({
-          name: Macro.CONTENT_ARGUMENT_NAME,
-          count_words: true,
-          mandatory: true,
-        }),
-      ],
-    ),
-    new Macro(
-      decapitalizeFirstLetter(Macro.TEST_SANE_ONLY),
-      [
-        new MacroArgument({
-          name: Macro.CONTENT_ARGUMENT_NAME,
-          count_words: true,
-          mandatory: true,
-        }),
-      ],
-      {
-        macroinline: true,
-      }
-    ),
+    ...(
+      addTestInstrumentation
+        ? [
+            new Macro(
+              Macro.TEST_SANE_ONLY,
+              [
+                new MacroArgument({
+                  name: Macro.CONTENT_ARGUMENT_NAME,
+                  count_words: true,
+                  mandatory: true,
+                }),
+              ],
+            ),
+            new Macro(
+              decapitalizeFirstLetter(Macro.TEST_SANE_ONLY),
+              [
+                new MacroArgument({
+                  name: Macro.CONTENT_ARGUMENT_NAME,
+                  count_words: true,
+                  mandatory: true,
+                }),
+              ],
+              {
+                macroinline: true,
+              }
+            ),
+          ]
+        : []
+    )
   ]
 }
 exports.macroList = macroList

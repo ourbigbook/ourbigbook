@@ -1,5 +1,3 @@
-"use strict";
-
 let dolog = false
 
 const globals = {};
@@ -326,7 +324,7 @@ class AstNode {
     if (context.validateAst && !this.validated) {
       validateAst(this, context);
     }
-    if (this.node_type === AstType.PARAGRAPH) {
+    if (this.node_type === AstType.PARAGRAPH || this.node_type === AstType.NEWLINE) {
       // Possible for AstType === PARAGRAPH which can happen for
       // insane paragraph inside header or ID during post processing.
       // Not the nicest solution, but prevents the crash, so so be it.
@@ -878,7 +876,8 @@ class AstArgument {
     // String
     this.argument_name = argument_name
     // boolean
-    //this.has_paragraph = undefined;
+    this.has_paragraph = undefined;
+    this.not_all_block = undefined;
     let i = 0;
     for (const ast of this.asts) {
       ast.parent_argument = this;
@@ -959,6 +958,14 @@ class AstArgument {
       asts: this.asts,
       source_location: this.source_location,
     }
+  }
+
+  toString() {
+    const ret = []
+    for (const ast of this.asts) {
+      ret.push(ast.toString())
+    }
+    return ret.join('\n')
   }
 }
 
@@ -1239,6 +1246,10 @@ class MacroArgument {
       // https://docs.ourbigbook.com/disabled-macro-argument
       options.disabled = false;
     }
+    if (!('empty' in options)) {
+      // https://docs.ourbigbook.com/empty-macro-argument
+      options.empty = false;
+    }
     const name = options.name
     let inlineOnly = options.inlineOnly
     this.inlineOnly = (inlineOnly === undefined) ? (options.name === Macro.TITLE_ARGUMENT_NAME) : inlineOnly
@@ -1263,6 +1274,7 @@ class MacroArgument {
     this.boolean = options.boolean;
     this.count_words = options.count_words;
     this.disabled = options.disabled;
+    this.empty = options.empty;
     this.multiple = options.multiple;
     this.default = options.default;
     this.elide_link_only = options.elide_link_only;
@@ -1455,6 +1467,7 @@ Macro.HEADER_TAG_ARGNAME = 'tag';
 Macro.X_MACRO_NAME = 'x';
 Macro.HEADER_SCOPE_SEPARATOR = '/';
 Macro.INCLUDE_MACRO_NAME = 'Include';
+Macro.LINE_BREAK_MACRO_NAME = 'br'
 Macro.LINK_MACRO_NAME = 'a';
 Macro.LIST_ITEM_MACRO_NAME = 'L';
 Macro.MATH_MACRO_NAME = 'm';
@@ -1475,6 +1488,7 @@ Macro.TITLE2_ARGUMENT_NAME = 'title2';
 // - only a single ToC ever renders per document. So we can just have a fixed
 //   magic one.
 Macro.RESERVED_ID_PREFIX = '_'
+Macro.UNORDERED_LIST_MACRO_NAME = 'Ul';
 const FILE_PREFIX = Macro.RESERVED_ID_PREFIX +  'file'
 exports.FILE_PREFIX = FILE_PREFIX
 Macro.FILE_ID_PREFIX = FILE_PREFIX + Macro.HEADER_SCOPE_SEPARATOR
@@ -1511,6 +1525,14 @@ class SourceLocation {
   }
   isEqual(other) {
     return lodash.isEqual(this, other);
+  }
+  toString() {
+    let ret = []
+    if (this.path) {
+      ret.push(this.path + ':')
+    }
+    ret.push(`${this.line}:${this.column}`)
+    return ret.join('')
   }
 }
 exports.SourceLocation = SourceLocation;
@@ -1558,10 +1580,7 @@ class Tokenizer {
     this.list_level = 0;
     this.tokens = [];
     this.show_tokenize = show_tokenize;
-    this.log_debug('Tokenizer');
-    this.log_debug(`this.chars ${this.chars}`);
-    this.log_debug(`this.chars.length ${this.chars.length}`);
-    this.log_debug('');
+    this.log_debug(`${JSON.stringify(this.chars)}`);
   }
 
   /** Advance the current character and set cur_c to the next one.
@@ -1576,10 +1595,7 @@ class Tokenizer {
    */
   consume(n=1) {
     for (let done = 0; done < n; done++) {
-      this.log_debug('consume');
-      this.log_debug('this.i: ' + this.i);
-      this.log_debug(`this.cur_c: '${this.cur_c}'`)
-      this.log_debug();
+      this.log_debug(`consume ${JSON.stringify(this.cur_c)}`);
       if (this.chars[this.i] === '\n') {
         if (this.in_insane_header) {
           this.error(
@@ -1604,6 +1620,12 @@ class Tokenizer {
       this.cur_c = this.chars[this.i];
     }
     return true;
+  }
+
+  consumeCharRepeatedly(c) {
+    while (this.cur_c === c) {
+      this.consume()
+    }
   }
 
   consume_list_indent() {
@@ -1636,7 +1658,7 @@ class Tokenizer {
   }
 
   consume_plaintext_char() {
-    return this.plaintext_append_or_create(this.cur_c);
+    return this.plaintext_append_or_create(this.cur_c)
   }
 
   /**
@@ -1720,7 +1742,7 @@ class Tokenizer {
 
   log_debug(message='') {
     if (this.show_tokenize) {
-      console.error('tokenize: ' + message);
+      console.error(`tokenize: ${this.source_location.line}:${this.source_location.column}: ${message}`);
     }
   }
 
@@ -1744,10 +1766,7 @@ class Tokenizer {
   }
 
   push_token(token, value, source_location) {
-    this.log_debug('push_token');
-    this.log_debug('token: ' + token.toString());
-    this.log_debug('value: ' + value);
-    this.log_debug();
+    this.log_debug(`push_token ${token.toString()}${value === undefined ? '' : ` ${JSON.stringify(value)}`}`)
     let new_source_location;
     if (source_location === undefined) {
       new_source_location = new SourceLocation();
@@ -1777,10 +1796,7 @@ class Tokenizer {
     let unterminated_literal = false;
     let start_source_location;
     while (!this.is_end()) {
-      this.log_debug('tokenize loop');
-      this.log_debug('this.i: ' + this.i);
-      this.log_debug(`this.source_location: ${this.source_location.line}:${this.source_location.column}`)
-      this.log_debug(`this.cur_c: '${this.cur_c}'`)
+      this.log_debug(`loop ${JSON.stringify(this.cur_c)}`);
       if (this.in_insane_header && this.cur_c === '\n') {
         this.in_insane_header = false;
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
@@ -1912,26 +1928,92 @@ class Tokenizer {
           this.push_token(TokenType.NAMED_ARGUMENT_END, END_NAMED_ARGUMENT_CHAR, source_location);
         }
         this.consume_optional_newline_after_argument()
-      } else if (this.cur_c === '\n' && this.peek() === '\n') {
-        this.consume();
-        this.consume();
-        // We must close list level changes before the paragraph, e.g. in:
-        //
-        // ``
-        // * aa
-        // * bb
-        //
-        // cc
-        // ``
-        //
-        // the paragraph goes after `ul`, it does not stick to `bb`
-        this.consume_list_indent();
-        this.push_token(TokenType.PARAGRAPH);
-        if (this.cur_c === '\n') {
-          this.error('paragraph with more than two newlines, use just two');
-        }
       } else {
-        let done = false;
+        if (this.cur_c === '\n') {
+          // We are either a paragraph or a line break.
+          this.consume()
+
+          // Remove empty lines containing only spaces. Count how many newlines we went through.
+          let nNewlines = 1
+          while (true) {
+            let i = this.i
+            let nSpaces = 0
+            while (this.chars[i] === ' ') {
+              i++
+              nSpaces++
+            }
+            if (this.chars[i] === '\n') {
+              for (let j = 0; j <= nSpaces; j++) {
+                this.consume()
+              }
+              nNewlines++
+            } else {
+              break
+            }
+          }
+
+          if (nNewlines === 1) {
+            this.consume_list_indent()
+            this.push_token(TokenType.NEWLINE)
+          } else if (nNewlines >= 2) {
+            if (arrayContainsArrayAt(this.chars, this.i, INSANE_LIST_INDENT.repeat(this.list_level) + '\n')) {
+              // Paragraph comes before list close:
+              //
+              // * aa
+              // 
+              //   bb
+              this.push_token(TokenType.PARAGRAPH)
+              this.consume_list_indent()
+            } else {
+              // Paragraph comes after list close:
+              //
+              // * aa
+              // 
+              // bb
+              this.consume_list_indent()
+              this.push_token(TokenType.PARAGRAPH)
+            }
+            if (nNewlines > 2) {
+              this.error(`paragraph with ${nNewlines} newlines, you must use just two`, new SourceLocation(this.source_location.line - nNewlines + 2, 1))
+            }
+          }
+
+          //if (this.cur_c === '\n') {
+          //  // Empty line in the middle of indent:
+          //  //
+          //  // * aa
+          //  // 
+          //  //   bb
+          //  this.consume()
+          //  this.consume_list_indent()
+          //  this.push_token(TokenType.PARAGRAPH)
+          //  if (this.cur_c === '\n') {
+          //    this.error('paragraph with more than two newlines, use just two')
+          //    this.consumeCharRepeatedly('\n')
+          //  }
+          //  wasParagraph = true
+          //} else {
+          //  this.consume_list_indent()
+          //  if (this.cur_c === '\n') {
+          //    // Empty indent in the middle of indent:
+          //    //
+          //    // * aa
+          //    // <space><space>
+          //    //   bb
+          //    this.consume()
+          //    this.push_token(TokenType.PARAGRAPH)
+          //    wasParagraph = true
+          //  }
+          //}
+          //if (!wasParagraph) {
+          //  this.push_token(TokenType.NEWLINE)
+          //}
+
+          continue
+        }
+        if (this.cur_c === '\n') {
+          continue
+        }
 
         // Insane link.
         if (this.in_escape_insane_link) {
@@ -1965,12 +2047,11 @@ class Tokenizer {
             }
             this.push_token(TokenType.POSITIONAL_ARGUMENT_END)
             this.consume_optional_newline_after_argument()
-            done = true;
+            continue
           }
         }
 
         // Insane topic link.
-        let is_insane_topic_link = false;
         if (this.cur_c === INSANE_TOPIC_CHAR) {
           const source_location = this.source_location.clone()
           this.push_token(TokenType.MACRO_NAME, Macro.X_MACRO_NAME, source_location)
@@ -1988,23 +2069,24 @@ class Tokenizer {
           this.push_token(TokenType.NAMED_ARGUMENT_START, START_NAMED_ARGUMENT_CHAR, source_location)
           this.push_token(TokenType.NAMED_ARGUMENT_NAME, 'topic', source_location)
           this.push_token(TokenType.NAMED_ARGUMENT_END, END_NAMED_ARGUMENT_CHAR, source_location)
-          done = true
+          continue
         }
 
         // Insane lists, tables and quotes.
         if (
-          !done && (
-            this.i === 0 ||
-            this.cur_c === '\n' ||
+          this.i === 0 ||
+          this.chars[this.i - 1] === '\n' ||
+          (
+            this.tokens.length > 0 &&
             (
-              this.tokens.length > 0 &&
-              this.tokens[this.tokens.length - 1].type === TokenType.PARAGRAPH
-            ) ||
-            // Immediately at the start of an argument.
-            this.tokens.length > 0 && (
-              this.tokens[this.tokens.length - 1].type === TokenType.NAMED_ARGUMENT_NAME ||
-              this.tokens[this.tokens.length - 1].type === TokenType.POSITIONAL_ARGUMENT_START
+              this.tokens[this.tokens.length - 1].type === TokenType.PARAGRAPH ||
+              this.tokens[this.tokens.length - 1].type === TokenType.NEWLINE
             )
+          ) ||
+          // Immediately at the start of an argument.
+          this.tokens.length > 0 && (
+            this.tokens[this.tokens.length - 1].type === TokenType.NAMED_ARGUMENT_NAME ||
+            this.tokens[this.tokens.length - 1].type === TokenType.POSITIONAL_ARGUMENT_START
           )
         ) {
           let i = this.i;
@@ -2028,19 +2110,19 @@ class Tokenizer {
               this.push_token(TokenType.MACRO_NAME, INSANE_STARTS_TO_MACRO_NAME[insane_start]);
               this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
               this.list_level += 1;
-              done = true;
               for (let i = 0; i < insane_start_length; i++) {
                 this.consume();
               }
+              continue
             }
           }
         }
 
         // Insane headers.
-        if (!done && (
+        if (
           this.i === 0 ||
           this.chars[this.i - 1] === '\n'
-        )) {
+        ) {
           let i = this.i;
           let new_header_level = 0;
           while (this.chars[i] === INSANE_HEADER_CHAR) {
@@ -2056,14 +2138,13 @@ class Tokenizer {
             for (let i = 0; i <= new_header_level; i++)
               this.consume();
             this.in_insane_header = true;
-            done = true;
+            continue
           }
         }
 
         // Character is nothing else, so finally it is a regular plaintext character.
-        if (!done) {
-          this.consume_plaintext_char();
-        }
+        this.log_debug(`plaintext ${JSON.stringify(this.cur_c)}`);
+        this.consume_plaintext_char()
       }
     }
     if (unterminated_literal) {
@@ -2757,7 +2838,10 @@ async function convert(
   let sub_extra_returns;
   sub_extra_returns = {};
   perfPrint(context, 'tokenize_pre')
-  input_string = input_string.replace(/\n$/, '')
+  const trailingNewlines = input_string.match(/\n\n+$/)
+  if (trailingNewlines) {
+    input_string = input_string.replace(/\n\n+$/, '')
+  }
   const tokenizer = new Tokenizer(
     input_string,
     sub_extra_returns,
@@ -2765,9 +2849,22 @@ async function convert(
     context.options.start_line,
     context.options.input_path,
   )
-  let tokens = tokenizer.tokenize();
-  if (input_string[input_string.length - 1] === '\n') {
-    context.errors.push(new ErrorMessage(`the document cannot end in two or more newlines`, tokenizer.source_location))
+  let tokens = tokenizer.tokenize()
+  if (trailingNewlines) {
+    context.errors.push(
+      new ErrorMessage(
+        `the document cannot end in two or more newlines`,
+        new SourceLocation(tokenizer.source_location.line + 1, 1)
+      )
+    )
+  }
+  if (context.options.log.tokens) {
+    console.error('tokens:')
+    for (const t of tokens) {
+      const s = t.source_location
+      console.error(`${s.path}:${s.line}:${s.column}: ${t.type.description}${t.value === undefined ? '' : ` ${JSON.stringify(t.value)}`}`)
+    }
+    console.error()
   }
   perfPrint(context, 'tokenize_post')
   if (context.options.log['tokens-inside']) {
@@ -2823,9 +2920,14 @@ async function convert(
 
   const toplevel_ast = await parse(tokens, context.options, context, sub_extra_returns);
   if (context.options.log['ast-inside']) {
-    console.error('ast:');
-    console.error(JSON.stringify(toplevel_ast, null, 2));
-    console.error();
+    console.error('ast-inside:')
+    console.error(JSON.stringify(toplevel_ast, null, 2))
+    console.error()
+  }
+  if (context.options.log['ast-inside-simple']) {
+    console.error('ast-inside-simple:')
+    console.error(toplevel_ast.toString())
+    console.error()
   }
   extra_returns.ast = toplevel_ast;
   extra_returns.context = context;
@@ -2842,7 +2944,7 @@ async function convert(
     let undefined_asts = []
     for (const child_ast of content) {
       if (child_ast.toplevel_id === undefined) {
-        /** Some undefined topleve_ids are unescapable e.g. input from stdin.
+        /** Some undefined toplevel_ids are unescapable e.g. input from stdin.
          *
          * But there is on case that we could improve:
          *
@@ -2973,11 +3075,18 @@ function renderArg(arg, context) {
   let converted_arg = [];
   if (arg !== undefined) {
     if (context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
+      // TODO should be done in parse not render. And should be done for all output formats.
       for (const ast of arg) {
         if (ast.macro_name === Macro.PARAGRAPH_MACRO_NAME) {
           arg.has_paragraph = true
         }
-        if (context.macros[ast.macro_name].inline) {
+        if (
+          // Can fail for leftover Newline on:
+          // \H[2][ab
+          // cd]
+          ast.macro_name &&
+          context.macros[ast.macro_name].inline
+        ) {
           arg.not_all_block = true
         }
       }
@@ -4522,9 +4631,17 @@ function macroList(addTestInstrumentation) {
                 new MacroArgument({
                   name: Macro.CONTENT_ARGUMENT_NAME,
                   count_words: true,
-                  mandatory: true,
+                  mandatory: false,
                 }),
               ],
+              {
+                named_args: [
+                  new MacroArgument({
+                    name: 'named',
+                    count_words: true,
+                  }),
+                ],
+              }
             ),
             new Macro(
               decapitalizeFirstLetter(Macro.TEST_SANE_ONLY),
@@ -4536,7 +4653,7 @@ function macroList(addTestInstrumentation) {
                 }),
               ],
               {
-                macroinline: true,
+                inline: true,
               }
             ),
           ]
@@ -4912,9 +5029,9 @@ async function parse(tokens, options, context, extra_returns={}) {
     extra_returns,
     i: 0,
     macros: context.macros,
-    options: options,
+    options,
     token: tokens[0],
-    tokens: tokens,
+    tokens,
   };
   // Get toplevel arguments such as {title=}, see https://docs.ourbigbook.com#toplevel
   const ast_toplevel_args = parseArgumentList(
@@ -5048,13 +5165,15 @@ async function parse(tokens, options, context, extra_returns={}) {
     let parent_arg_push_after = []
     let parent_arg_push_before = []
     const macro_name = ast.macro_name;
+    const nodeType = ast.node_type
     ast.from_include = options.from_include;
     ast.from_ourbigbook_example = options.from_ourbigbook_example;
     ast.source_location.path = options.input_path;
     if (
       prevAst &&
       prevAst.macro_name === Macro.INCLUDE_MACRO_NAME &&
-      ast.node_type !== AstType.PARAGRAPH &&
+      nodeType !== AstType.PARAGRAPH &&
+      nodeType !== AstType.NEWLINE &&
       macro_name !== Macro.INCLUDE_MACRO_NAME &&
       macro_name !== Macro.HEADER_MACRO_NAME
     ) {
@@ -5065,7 +5184,13 @@ async function parse(tokens, options, context, extra_returns={}) {
         prevAst.source_location
       );
     }
-    if (macro_name === Macro.INCLUDE_MACRO_NAME) {
+    if (
+      nodeType === AstType.NEWLINE &&
+      prevAst &&
+      prevAst.macro_name === Macro.INCLUDE_MACRO_NAME
+    ) {
+      // Ignore newlines between Includes.
+    } else if (macro_name === Macro.INCLUDE_MACRO_NAME) {
       if (options.forbid_include) {
         const error_ast = new PlaintextAstNode(options.forbid_include, ast.source_location);
         error_ast.parent_ast = ast.parent_ast;
@@ -5904,6 +6029,34 @@ async function parse(tokens, options, context, extra_returns={}) {
             arg = href_arg;
           }
 
+          // Resolve line breaks.
+          {
+            const new_arg = AstArgument.copyEmpty(arg)
+            for (let i = 0; i < arg.length(); i++) {
+              const child = arg.get(i)
+              if (
+                child.node_type === AstType.NEWLINE
+              ) {
+                const prev = arg.get(i - 1)
+                const next = arg.get(i + 1)
+                if (
+                  (prev && prev.node_type !== AstType.PARAGRAPH && context.macros[prev.macro_name].inline) &&
+                  (next && next.node_type !== AstType.PARAGRAPH && context.macros[next.macro_name].inline)
+                ) {
+                  new_arg.push(new AstNode(
+                    AstType.MACRO,
+                    Macro.LINE_BREAK_MACRO_NAME,
+                    {},
+                    child.source_location
+                  ))
+                }
+              } else {
+                new_arg.push(child)
+              }
+            }
+            arg = new_arg
+          }
+
           // Child loop that adds table tr implicit parents to th and td.
           // This needs to be done on a separate pass before the tr implicit table adding.
           // It is however very similar to the other loop: the only difference is that we eat up
@@ -6064,7 +6217,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               }
             }
             if (paragraph_indexes.length > 0) {
-              const new_arg = AstArgument.copyEmpty(arg.source_location)
+              const new_arg = AstArgument.copyEmpty(arg)
               if (paragraph_indexes[0] > 0) {
                 parseAddParagraph(state, ast, new_arg, arg, 0, paragraph_indexes[0], options);
               }
@@ -6135,7 +6288,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         // and one that can detect which argument we are in. But this will do for now.
         if (
           ast.in_header && (
-            macro_name === 'br' ||
+            macro_name === Macro.LINE_BREAK_MACRO_NAME ||
             macro_name === 'image'
           )
         ) {
@@ -6207,12 +6360,50 @@ async function parse(tokens, options, context, extra_returns={}) {
             } else {
               const macro_arg = macro.name_to_arg[arg_name]
               if (macro_arg && macro_arg.inlineOnly) {
-                newInlineOnly = `argument "${arg_name}" of macro ${ESCAPE_CHAR}${macro.name} can only contain inline elements`
+                newInlineOnly = `argument "${arg_name}" of macro ${ESCAPE_CHAR}${macro.name} can only contain inline macros`
               } else if (macro.inline) {
                 newInlineOnly = `${ESCAPE_CHAR}${macro.name} is an inline macro, and inline macros can only contain inline macros`
               }
             }
             const childAst = arg.get(i)
+            const childMacroName = childAst.macro_name
+            if (
+              (
+                macro_name === Macro.UNORDERED_LIST_MACRO_NAME ||
+                macro_name === 'Ol'
+              ) &&
+              arg_name === Macro.CONTENT_ARGUMENT_NAME &&
+              childMacroName !== Macro.LIST_ITEM_MACRO_NAME
+            ) {
+              parseError(
+                state,
+                `macro \\${macro_name} argument "${Macro.CONTENT_ARGUMENT_NAME}" can only contain \\${Macro.LIST_ITEM_MACRO_NAME}, found instead ${childAst.node_type.toString()} with ${childAst.macro_name}`,
+                childAst.source_location,
+              )
+            }
+            if (
+              macro_name === Macro.TABLE_MACRO_NAME &&
+              arg_name === Macro.CONTENT_ARGUMENT_NAME &&
+              childMacroName !== Macro.TR_MACRO_NAME
+            ) {
+              parseError(
+                state,
+                `macro \\${macro_name} argument "${Macro.CONTENT_ARGUMENT_NAME}" can only contain \\${Macro.TR_MACRO_NAME}, found instead ${childAst.node_type.toString()} with ${childAst.macro_name}`,
+                childAst.source_location,
+              )
+            }
+            if (
+              macro_name === Macro.TR_MACRO_NAME &&
+              arg_name === Macro.CONTENT_ARGUMENT_NAME &&
+              childMacroName !== Macro.TD_MACRO_NAME &&
+              childMacroName !== Macro.TH_MACRO_NAME
+            ) {
+              parseError(
+                state,
+                `macro \\${macro_name} argument "${Macro.CONTENT_ARGUMENT_NAME}" can only contain \\${Macro.TH_MACRO_NAME} or \\${Macro.TD_MACRO_NAME}, found instead ${childAst.node_type.toString()} with ${childAst.macro_name}`,
+                childAst.source_location,
+              )
+            }
             childAst.in_header = children_in_header
             todo_visit.push([childAst, newInlineOnly])
           }
@@ -6607,77 +6798,92 @@ function parseArgumentList(state, macro_name, macro_type) {
     state.token.type !== TokenType.INPUT_END &&
     (
       state.token.type === TokenType.POSITIONAL_ARGUMENT_START ||
-      state.token.type === TokenType.NAMED_ARGUMENT_START
+      state.token.type === TokenType.NAMED_ARGUMENT_START ||
+      state.token.type === TokenType.NEWLINE
     )
   ) {
     let arg_name;
     let open_token = state.token;
-    // Consume the *_ARGUMENT_START token out.
-    parseConsume(state);
-    if (open_token.type === TokenType.POSITIONAL_ARGUMENT_START) {
-      if (macro_type === AstType.ERROR) {
-        arg_name = positional_arg_count.toString();
+    const nextToken = state.tokens[state.i + 1]
+    const nextTokenType = nextToken ? nextToken.type : undefined
+    if (open_token.type === TokenType.NEWLINE) {
+      if (
+        nextTokenType === TokenType.POSITIONAL_ARGUMENT_START ||
+        nextTokenType === TokenType.NAMED_ARGUMENT_START
+      ) {
+        // Ignore newline between two arguments.
+        parseConsume(state);
       } else {
-        if (positional_arg_count >= macro.positional_args.length) {
-          parseError(state,
-            `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
-            open_token.source_location,
-          );
-          arg_name = positional_arg_count.toString();
-        } else {
-          arg_name = macro.positional_args[positional_arg_count].name;
-        }
-        positional_arg_count += 1;
+        break
       }
     } else {
-      // Named argument.
-      arg_name = state.token.value;
-      if (macro_type !== AstType.ERROR && !(arg_name in macro.named_args)) {
-        parseError(state,
-          `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
-          state.token.source_location
-        );
-      }
-      // Parse the argument name out.
+      // Consume the *_ARGUMENT_START token out.
       parseConsume(state);
-    }
-    const arg_children = parseArgument(state, open_token.source_location);
-    if (state.token.type !== closingToken(open_token.type)) {
-      parseError(state, `unclosed argument "${open_token.value}"`, open_token.source_location);
-    }
-    if (
-      // Happens in some error cases, e.g. \\undefinedMacro[aa]
-      macro !== undefined
-    ) {
-      const macro_arg = name_to_arg[arg_name];
-      const multiple = macro_arg !== undefined && macro_arg.multiple
-      if (arg_name in args) {
-        if (!multiple) {
-          // https://github.com/ourbigbook/ourbigbook/issues/101
-          parseError(state,
-            `named argument "${arg_name}" given multiple times`,
-            open_token.source_location,
-          )
+      if (open_token.type === TokenType.POSITIONAL_ARGUMENT_START) {
+        if (macro_type === AstType.ERROR) {
+          arg_name = positional_arg_count.toString();
+        } else {
+          if (positional_arg_count >= macro.positional_args.length) {
+            parseError(state,
+              `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
+              open_token.source_location,
+            );
+            arg_name = positional_arg_count.toString();
+          } else {
+            arg_name = macro.positional_args[positional_arg_count].name;
+          }
+          positional_arg_count += 1;
         }
       } else {
-        if (multiple) {
-          args[arg_name] = new AstArgument([], open_token.source_location)
+        // Named argument.
+        arg_name = state.token.value;
+        if (macro_type !== AstType.ERROR && !(arg_name in macro.named_args)) {
+          parseError(state,
+            `unknown named macro argument "${arg_name}" of macro "${macro_name}"`,
+            state.token.source_location
+          );
+        }
+        // Parse the argument name out.
+        parseConsume(state);
+      }
+      const arg_children = parseArgument(state, open_token.source_location);
+      if (state.token.type !== closingToken(open_token.type)) {
+        parseError(state, `unclosed argument "${open_token.value}"`, open_token.source_location);
+      }
+      if (
+        // Happens in some error cases, e.g. \\undefinedMacro[aa]
+        macro !== undefined
+      ) {
+        const macro_arg = name_to_arg[arg_name];
+        const multiple = macro_arg !== undefined && macro_arg.multiple
+        if (arg_name in args) {
+          if (!multiple) {
+            // https://github.com/ourbigbook/ourbigbook/issues/101
+            parseError(state,
+              `named argument "${arg_name}" given multiple times`,
+              open_token.source_location,
+            )
+          }
         } else {
-          args[arg_name] = arg_children;
+          if (multiple) {
+            args[arg_name] = new AstArgument([], open_token.source_location)
+          } else {
+            args[arg_name] = arg_children;
+          }
+        }
+        if (multiple) {
+          args[arg_name].push(new AstNode(
+            AstType.MACRO,
+            'Comment',
+            { [Macro.CONTENT_ARGUMENT_NAME]: arg_children },
+            open_token.source_location,
+          ))
         }
       }
-      if (multiple) {
-        args[arg_name].push(new AstNode(
-          AstType.MACRO,
-          'Comment',
-          { [Macro.CONTENT_ARGUMENT_NAME]: arg_children },
-          open_token.source_location,
-        ))
+      if (state.token.type !== TokenType.INPUT_END) {
+        // Consume the *_ARGUMENT_END token out.
+        parseConsume(state);
       }
-    }
-    if (state.token.type !== TokenType.INPUT_END) {
-      // Consume the *_ARGUMENT_END token out.
-      parseConsume(state);
     }
   }
   return args;
@@ -6697,7 +6903,7 @@ function parseArgument(state, open_argument_source_location) {
     // The recursive case: the argument is a lists of macros, go into all of them.
     arg_children.push(parseMacro(state));
   }
-return arg_children;
+  return arg_children;
 }
 
 // Parse one macro. This is the centerpiece of the parsing!
@@ -6747,7 +6953,15 @@ function parseMacro(state) {
       undefined,
       state.token.source_location,
     );
-    // Consume the PLAINTEXT node out.
+    parseConsume(state);
+    return node;
+  } else if (state.token.type === TokenType.NEWLINE) {
+    let node = new AstNode(
+      AstType.NEWLINE,
+      undefined,
+      undefined,
+      state.token.source_location,
+    );
     parseConsume(state);
     return node;
   } else {
@@ -7261,8 +7475,7 @@ function urlBasename(str) {
 // was likely to not need context at that point, and be nicer to serialization.
 function validateAst(ast, context) {
   if (ast.validated) {
-    throw new Error(`ast has already been validated:
-${ast.toString()}`)
+    throw new Error(`ast has already been validated:\n${ast.toString()}`)
   } else {
     ast.validated = true
   }
@@ -7275,6 +7488,13 @@ ${ast.toString()}`)
     const macro_arg = name_to_arg[argname];
     if (argname in ast.args) {
       ast.validation_output[argname].given = true;
+      const arg = ast.args[argname]
+      if (macro_arg.empty && arg.asts.length) {
+        ast.validation_error = [
+          `empty argument "${argname}" of macro "${macro_name}" was not empty: https://docs.ourbigbook.com/empty-macro-argument`,
+          arg.asts[0].source_location,
+        ]
+      }
       if (
         macro_arg.disabled &&
         !(
@@ -7283,7 +7503,6 @@ ${ast.toString()}`)
           context.options.ourbigbook_json.enableArg[macro_name][argname]
         )
       ) {
-        const arg = ast.args[argname]
         ast.validation_error = [
           `disabled argument "${argname}" of macro "${macro_name}": ${OURBIGBOOK_DEFAULT_DOCS_URL}/disabled-macro-argument`,
           arg.source_location,
@@ -8064,6 +8283,7 @@ const INSANE_QUOTE_START = `${INSANE_QUOTE_CHAR} `
 exports.INSANE_QUOTE_START = INSANE_QUOTE_START
 const LOG_OPTIONS = new Set([
   'ast-inside',
+  'ast-inside-simple',
   'ast-pp-simple',
   'mem',
   'parse',
@@ -8071,6 +8291,7 @@ const LOG_OPTIONS = new Set([
   'split-headers',
   'tokens-inside',
   'tokenize',
+  'tokens',
 ]);
 exports.LOG_OPTIONS = LOG_OPTIONS;
 const IMAGE_EXTENSIONS = new Set([
@@ -8224,9 +8445,11 @@ const AstType = makeEnum([
   // Paragraphs are basically MACRO, but with some special
   // magic because of the double newline madness treatment.
   'PARAGRAPH',
+  'NEWLINE',
 ]);
 const TokenType = makeEnum([
   'INPUT_END',
+  'NEWLINE',
   'MACRO_NAME',
   'NAMED_ARGUMENT_END',
   'NAMED_ARGUMENT_NAME',
@@ -8479,8 +8702,13 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'br',
-    [],
+    Macro.LINE_BREAK_MACRO_NAME,
+    [
+      new MacroArgument({
+        name: Macro.CONTENT_ARGUMENT_NAME,
+        empty: true,
+      }),
+    ],
     {
       inline: true,
     }
@@ -8650,7 +8878,12 @@ const DEFAULT_MACRO_LIST = [
   ),
   new Macro(
     'Hr',
-    []
+    [
+      new MacroArgument({
+        name: Macro.CONTENT_ARGUMENT_NAME,
+        empty: true,
+      }),
+    ]
   ),
   new Macro(
     'i',
@@ -8739,7 +8972,6 @@ const DEFAULT_MACRO_LIST = [
           name: 'parent',
         }),
       ],
-      inline: true,
     }
   ),
   new Macro(
@@ -8763,7 +8995,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
-      auto_parent: 'Ul',
+      auto_parent: Macro.UNORDERED_LIST_MACRO_NAME,
       auto_parent_skip: new Set(['Ol']),
     }
   ),
@@ -8980,7 +9212,7 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'Ul',
+    Macro.UNORDERED_LIST_MACRO_NAME,
     [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
@@ -9230,7 +9462,7 @@ function createLinkList(context, ast, id, title, target_ids) {
     if (context.options.add_test_instrumentation) {
       ulArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(id)]
     }
-    const incoming_ul_ast = new AstNode(AstType.MACRO, 'Ul', ulArgs)
+    const incoming_ul_ast = new AstNode(AstType.MACRO, Macro.UNORDERED_LIST_MACRO_NAME, ulArgs)
     const new_context = cloneAndSet(context, 'validateAst', true);
     new_context.source_location = ast.source_location;
     ret += htmlToplevelChildModifierById(incoming_ul_ast.render(new_context))
@@ -9311,7 +9543,7 @@ const OUTPUT_FORMATS_LIST = [
           })
         },
         'b': htmlRenderSimpleElem('b'),
-        'br': function(ast, context) { return '<br>' },
+        [Macro.LINE_BREAK_MACRO_NAME]: function(ast, context) { return '<br>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
           const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
           let ret = `<div class="code"${htmlRenderAttrsId(ast, context)}><div${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`
@@ -9382,7 +9614,7 @@ const OUTPUT_FORMATS_LIST = [
           ) {
             let render_toc_ret = renderToc(context)
             if (render_toc_ret !== '') {
-              opts.extra_returns.render_pre = htmlToplevelChildModifierById(render_toc_ret, Macro.TOC_ID) 
+              opts.extra_returns.render_pre = htmlToplevelChildModifierById(render_toc_ret, Macro.TOC_ID)
               hasToc = true
             }
           }
@@ -10171,7 +10403,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           }
           return res;
         },
-        'Ul': htmlRenderSimpleElem('ul', UL_OL_OPTS),
+        [Macro.UNORDERED_LIST_MACRO_NAME]: htmlRenderSimpleElem('ul', UL_OL_OPTS),
         [Macro.X_MACRO_NAME]: function(ast, context) {
           let [href, content, target_ast] = xGetHrefContent(ast, context);
           let incompatible_pair
@@ -10268,7 +10500,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           return content;
         },
         'b': idConvertSimpleElem(),
-        'br': function(ast, context) { return '\n'; },
+        [Macro.LINE_BREAK_MACRO_NAME]: function(ast, context) { return '\n'; },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: idConvertSimpleElem(),
         [Macro.CODE_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: unconvertible,
@@ -10296,7 +10528,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
         [Macro.TOPLEVEL_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.TH_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.TR_MACRO_NAME]: idConvertSimpleElem(),
-        'Ul': idConvertSimpleElem(),
+        [Macro.UNORDERED_LIST_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.X_MACRO_NAME]: function(ast, context) {
           if (ast.args.content) {
             return idConvertSimpleElem(Macro.CONTENT_ARGUMENT_NAME)(ast, context)
@@ -10326,16 +10558,16 @@ function ourbigbookCodeMathInline(c) {
 function ourbigbookCodeMathBlock(c) {
   return function(ast, context) {
     context = cloneAndSet(context, 'in_literal', true)
+    const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
     const content = renderArg(ast.args.content, context)
     let delim = c + c
     while (content.indexOf(delim) !== -1) {
       delim += c
     }
-    const newline = '\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context))
     const attrs = ourbigbookConvertArgs(ast, context, { skip: new Set([Macro.CONTENT_ARGUMENT_NAME]) }).join('')
-    return `${delim}
+    return `${newline}${delim}
 ${content}
-${delim}${attrs === '' ? '' : '\n'}${attrs}${newline}`
+${delim}${attrs === '' ? '' : '\n'}${attrs}`
   }
 }
 
@@ -10518,25 +10750,18 @@ function ourbigbookGetXHref({
   return { href, override_href: undefined }
 }
 
-function ourbigbookLi(marker) {
+function ourbigbookLi(marker, opts={}) {
+  let { oneNewlineMax } = opts
+  if (oneNewlineMax === undefined) {
+    oneNewlineMax = true
+  }
   return function(ast, context) {
     if (!ast.args.content || Object.keys(ast.args).length !== 1) {
       return ourbigbookConvertSimpleElem(ast, context)
     } else {
-      let newline_before
-      if (
-        ast.parent_argument_index === 0 &&
-        !(
-          INSANE_STARTS_MACRO_NAMES.has(ast.parent_ast.parent_ast.macro_name) &&
-          ast.parent_ast.parent_argument_index === 0
-        ) &&
-        // This feels hacky, but I can't find a better way.
-        context.last_render &&
-        context.last_render[context.last_render.length - 1] !== '\n'
-      ) {
-        newline_before = '\n'
-      } else {
-        newline_before = ''
+      const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context, { oneNewlineMax }))
+      if (dolog) {
+        console.log(`ourbigbookLi: newline=${require('util').inspect(newline)}`)
       }
       const content = renderArg(ast.args.content, context)
       const content_indent = content.replace(/\n(.)/g, '\n  $1')
@@ -10546,55 +10771,82 @@ function ourbigbookLi(marker) {
       } else {
         marker_eff = marker
       }
-      const ret = `${newline_before}${marker_eff}${content_indent}`
-      const newlineAfter = ret[ret.length - 1] === '\n' ? '' : '\n'
-      if (dolog && newlineAfter) {
-        console.log(`ourbigbookLi: newlineAfter=${require('util').inspect(newlineAfter, { depth: null })}`)
-      }
-      return `${ret}${newlineAfter}`
+      return `${newline}${marker_eff}${content_indent}`
     }
   }
 }
 
-function ourbigbookAddNewlinesAfterBlock(ast, context, options={}) {
-  const { auto_parent } = options
-  if (
-    !context.macros[ast.macro_name].inline &&
-    !ast.is_last_in_argument() &&
-    (
-      // It is a bit sad that we have to use this "am I on toplevel" checks processing here.
-      // It would be saner if indented blocks were exactly the same as toplevel.
-      // But it just intuitively feels that the "no loose on toplevel, but loose in subelements"
-      // sound good, so going for it like that now... I think this is implemented by always adding
-      // a PARAGRAPH Token on toplevel in case we ever want to dump that.
-      ast.parent_ast.macro_name === Macro.TOPLEVEL_MACRO_NAME ||
-      (
-        !(
-          ast.parent_ast.macro_name === Macro.PARAGRAPH_MACRO_NAME &&
-          ast.parent_ast.parent_ast.macro_name === Macro.TOPLEVEL_MACRO_NAME
-        ) &&
-        ast.parent_ast.macro_name !== Macro.TOPLEVEL_MACRO_NAME &&
-        (
-          ( ast.parent_argument.has_paragraph ) ||
-          ( !ast.parent_argument.has_paragraph && !ast.parent_argument.not_all_block )
-        )
-      )
-    )
-  ) {
-    let n = 2
-    if (auto_parent) {
-      if (context.last_render) {
-        if (context.last_render[context.last_render.length - 1] === '\n') {
-          n--
-          if (context.last_render[context.last_render.length - 2] === '\n') {
+/** How many newlines to add before each macro.
+ * This is by far the hardest part of -O bigb output to insane macros!
+ * Countless hours have spent on this function.
+ *
+ * @return {Number}
+ */
+function ourbigbookNewlinesBefore(ast, context, options={}) {
+  const { oneNewlineMax } = options
+  if (ast.parent_argument_index === 0) {
+    return 0
+  } else {
+    if (
+      context.macros[ast.macro_name].inline
+      //(
+      //  // It is a bit sad that we have to use this "am I on toplevel" checks processing here.
+      //  // It would be saner if indented blocks were exactly the same as toplevel.
+      //  // But it just intuitively feels that the "no loose on toplevel, but loose in subelements"
+      //  // sound good, so going for it like that now... I think this is implemented by always adding
+      //  // a PARAGRAPH Token on toplevel in case we ever want to dump that.
+      //  //ast.parent_ast.macro_name === Macro.TOPLEVEL_MACRO_NAME ||
+      //  (
+      //    //!(
+      //    //  ast.parent_ast.macro_name === Macro.PARAGRAPH_MACRO_NAME &&
+      //    //  ast.parent_ast.parent_ast.macro_name === Macro.TOPLEVEL_MACRO_NAME
+      //    //) &&
+      //    ast.parent_ast.macro_name !== Macro.TOPLEVEL_MACRO_NAME &&
+      //    (
+      //      ( ast.parent_argument.has_paragraph ) ||
+      //      ( !ast.parent_argument.has_paragraph && !ast.parent_argument.not_all_block )
+      //    )
+      //  )
+      //)
+    ) {
+      const prevMacro = ast.parent_argument.get(ast.parent_argument_index - 1)
+      if (prevMacro && !context.macros[prevMacro.macro_name].inline) {
+        return 1
+      }
+    } else {
+      let n
+      if (ast.parent_ast.macro_name === Macro.PARAGRAPH_MACRO_NAME) {
+        // We are bb or dd below (direct descendant of paragraph but not first sibling.)
+        //
+        // \TestSaneOnly[
+        // \TestSaneOnly[aa]
+        // \TestSaneOnly[bb]
+        //
+        // \TestSaneOnly[cc]
+        // \TestSaneOnly[dd]
+        // ]
+        n = 1
+      } else {
+        const prevMacro = ast.parent_argument.get(ast.parent_argument_index - 1)
+        if (
+          prevMacro && context.macros[prevMacro.macro_name].inline ||
+          oneNewlineMax
+        ) {
+          n = 1
+        } else {
+          n = 2
+        }
+        if (context.last_render) {
+          if (context.last_render[context.last_render.length - 1] === '\n') {
             n--
+            if (n && context.last_render[context.last_render.length - 2] === '\n') {
+              n--
+            }
           }
         }
       }
+      return n
     }
-    return n
-  } else {
-    return 0
   }
 }
 
@@ -10602,12 +10854,12 @@ function ourbigbookUl(ast, context) {
   if (!ast.args.content || Object.keys(ast.args).length !== 1) {
     return ourbigbookConvertSimpleElem(ast, context)
   } else {
+    const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
     const argstr = renderArg(ast.args.content, context)
-    const newline = '\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context, { auto_parent: true }))
-    if (dolog && newline) {
+    if (dolog) {
       console.log(`ourbigbookUl: newline=${require('util').inspect(newline)}`)
     }
-    return `${argstr}${newline}`
+    return `${newline}${argstr}`
   }
 }
 
@@ -10668,10 +10920,14 @@ function ourbigbookPreferLiteral(ast, context, ast_arg, arg, open, close) {
 }
 
 function ourbigbookConvertArgs(ast, context, options={}) {
+  let { onelineArg } = options
   const ret = options.ret || []
   const skip = options.skip || new Set()
   const modify_callbacks = options.modify_callbacks || {}
   const macro = context.macros[ast.macro_name]
+  if (onelineArg === undefined) {
+    onelineArg = false
+  }
   const named_args = Macro.COMMON_ARGNAMES.concat(macro.options.named_args.map(arg => arg.name)).filter(
     (argname) => !skip.has(argname) && ast.validation_output[argname].given
   )
@@ -10680,8 +10936,16 @@ function ourbigbookConvertArgs(ast, context, options={}) {
     const ret_arg = []
     const argname = arg.name
     if (!skip.has(argname) && ast.validation_output[argname].given) {
+      const astArg = ast.args[argname]
+      let hasBlockChild = false
+      for (const ast of astArg.asts) {
+        if (!context.macros[ast.macro_name].inline) {
+          hasBlockChild = true
+          break
+        }
+      }
       let { delim_repeat, has_newline, rendered_arg } = ourbigbookPreferLiteral(
-        ast, context, ast.args[argname], arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
+        ast, context, astArg, arg, START_POSITIONAL_ARGUMENT_CHAR, END_POSITIONAL_ARGUMENT_CHAR)
       if (argname in modify_callbacks) {
         rendered_arg = modify_callbacks[argname](ast, context, rendered_arg)
       }
@@ -10689,7 +10953,7 @@ function ourbigbookConvertArgs(ast, context, options={}) {
       if (arg.remove_whitespace_children) {
         ret_arg.push('\n')
       } else {
-        if (has_newline) {
+        if (has_newline || hasBlockChild) {
           if (rendered_arg[0] !== '\n') {
             ret_arg.push('\n')
           }
@@ -10697,7 +10961,7 @@ function ourbigbookConvertArgs(ast, context, options={}) {
       }
       ret_arg.push(rendered_arg)
       if (
-        has_newline &&
+        (has_newline || hasBlockChild) &&
         (
           rendered_arg.length === 0 ||
           rendered_arg[rendered_arg.length - 1] !== '\n'
@@ -10723,6 +10987,13 @@ function ourbigbookConvertArgs(ast, context, options={}) {
     for (const ast_arg of ast_args) {
       const ret_arg = []
       const macro_arg = macro.name_to_arg[argname]
+      let hasBlockChild = false
+      for (const ast of ast_arg.asts) {
+        if (!context.macros[ast.macro_name].inline) {
+          hasBlockChild = true
+          break
+        }
+      }
       let { delim_repeat, has_newline, rendered_arg } = ourbigbookPreferLiteral(
         ast, context, ast_arg, arg, START_NAMED_ARGUMENT_CHAR, END_NAMED_ARGUMENT_CHAR)
       if (argname in modify_callbacks) {
@@ -10745,12 +11016,12 @@ function ourbigbookConvertArgs(ast, context, options={}) {
       )
       if (!skip_val) {
         ret_arg.push(NAMED_ARGUMENT_EQUAL_CHAR)
-        if (has_newline && rendered_arg[0] !== '\n') {
+        if ((has_newline || hasBlockChild) && rendered_arg[0] !== '\n') {
           ret_arg.push('\n')
         }
         ret_arg.push(rendered_arg)
         if (
-          has_newline &&
+          (has_newline || hasBlockChild) &&
           (
             rendered_arg.length === 0 ||
             rendered_arg[rendered_arg.length - 1] !== '\n'
@@ -10768,7 +11039,8 @@ function ourbigbookConvertArgs(ast, context, options={}) {
   let i = 0
   for (const ret_arg of ret_args) {
     ret.push(...ret_arg)
-    if (!macro.inline && i !== ret_args.length - 1) {
+    if (!macro.inline && i !== ret_args.length - 1 && !onelineArg) {
+      // Add newline between last positional and first named argument.
       ret.push('\n')
     }
     i++
@@ -10776,20 +11048,22 @@ function ourbigbookConvertArgs(ast, context, options={}) {
   return ret
 }
 
-function ourbigbookConvertSimpleElem(ast, context) {
+function ourbigbookConvertSimpleElem(ast, context, opts={}) {
   const ret = []
   ret.push(ESCAPE_CHAR + ast.macro_name)
-  ourbigbookConvertArgs(ast, context, { ret })
-  const newline = '\n'.repeat(ourbigbookAddNewlinesAfterBlock(ast, context))
-  if (dolog && newline) {
-    console.log(`ourbigbookConvertSimpleElem: newline=${require('util').inspect(newline)}`)
+  const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
+  if (dolog) {
+    console.log(`ourbigbookConvertSimpleElem ${ast.macro_name} newline=${require('util').inspect(newline)}`)
   }
-  ret.push(newline)
-  return ret.join('')
+  ourbigbookConvertArgs(ast, context, { ret, ...opts })
+  return newline + ret.join('')
 }
 
 OUTPUT_FORMATS_LIST.push(
   new OutputFormat(
+    // This is hard, especially for insane constructs and in particular newline placement.
+    // A general principle is: each macro optionally outputs newlines only before itself,
+    // and never after.
     OUTPUT_FORMAT_OURBIGBOOK,
     {
       ext: OURBIGBOOK_EXT,
@@ -10803,14 +11077,29 @@ OUTPUT_FORMATS_LIST.push(
           }
         },
         'b': ourbigbookConvertSimpleElem,
-        'br': ourbigbookConvertSimpleElem,
+        [Macro.LINE_BREAK_MACRO_NAME]: function(ast, context) {
+          const nextMacro = ast.parent_argument.get(ast.parent_argument_index + 1)
+          const prevAst = ast.parent_argument.get(ast.parent_argument_index - 1)
+          if (
+            ast.parent_argument_index === 0 ||
+            !context.macros[ast.parent_argument.get(ast.parent_argument_index - 1).macro_name].inline ||
+            // Last child in argument, need to be explicit or else ignored by newline removal.
+            !nextMacro ||
+            !context.macros[nextMacro.macro_name].inline ||
+            // Multiple brs together, can't render them all as \n or else we get a paragraph, 
+            (prevAst && prevAst.macro_name === Macro.LINE_BREAK_MACRO_NAME)
+          ) {
+            return ourbigbookConvertSimpleElem(ast, context)
+          } else {
+            return '\n'
+          }
+        },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbookCodeMathBlock(INSANE_CODE_CHAR),
         [Macro.CODE_MACRO_NAME]: ourbigbookCodeMathInline(INSANE_CODE_CHAR),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: ourbigbookConvertSimpleElem,
         'Comment': ourbigbookConvertSimpleElem,
         'comment': ourbigbookConvertSimpleElem,
         [Macro.HEADER_MACRO_NAME]: function(ast, context) {
-          const newline = ast.is_last_in_argument() ? '' : '\n\n'
           function modifyCallback(ast, context, arg, rendered_arg) {
             const { target_ast, target_id } = xGetTargetAstBase({
               context,
@@ -10870,22 +11159,14 @@ OUTPUT_FORMATS_LIST.push(
           if (titleRender.indexOf('\n') > -1) {
             return ourbigbookConvertSimpleElem(ast, context)
           }
-          return `${INSANE_HEADER_CHAR.repeat(output_level)} ${titleRender}${args_string ? '\n' : '' }${args_string}${newline}`
+          return `${ast.parent_argument_index === 0 ? '' : '\n\n'}${INSANE_HEADER_CHAR.repeat(output_level)} ${titleRender}${args_string ? '\n' : '' }${args_string}`
         },
         'Hr': ourbigbookConvertSimpleElem,
         'i': ourbigbookConvertSimpleElem,
         'Image': ourbigbookConvertSimpleElem,
         'image': ourbigbookConvertSimpleElem,
-        [Macro.INCLUDE_MACRO_NAME]: function(ast, context) {
-          let newline
-          if (
-            context.last_render.length &&
-            context.last_render[context.last_render.length - 1] !== '\n') {
-            newline = '\n'
-          } else {
-            newline = ''
-          }
-          return newline + ourbigbookConvertSimpleElem(ast, context)
+        [Macro.INCLUDE_MACRO_NAME]: function (ast, context) {
+          return ourbigbookConvertSimpleElem(ast, context, { onelineArg: true })
         },
         'JsCanvasDemo': ourbigbookConvertSimpleElem,
         [Macro.LIST_ITEM_MACRO_NAME]: ourbigbookLi(INSANE_LIST_START),
@@ -10898,7 +11179,7 @@ OUTPUT_FORMATS_LIST.push(
           } else {
             const rendered_arg = renderArg(ast.args.content, context)
             let newline
-            if (ast.is_last_in_argument()) {
+            if (ast.parent_argument_index === 0) {
               newline = ''
             } else {
               // TODO this is horrible. We should actually try and properly calculate
@@ -10913,7 +11194,7 @@ OUTPUT_FORMATS_LIST.push(
             if (dolog && newline) {
               console.log(`Macro.PARAGRAPH_MACRO_NAME newline: ${require('util').inspect(newline, { depth: null })}`)
             }
-            return `${rendered_arg}${newline}`
+            return `${newline}${rendered_arg}`
           }
         },
         [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {
@@ -10943,12 +11224,10 @@ OUTPUT_FORMATS_LIST.push(
             }
           }
 
-          return ourbigbookEscape(text)
+          return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + ourbigbookEscape(text)
         },
         'passthrough': ourbigbookConvertSimpleElem,
-        [Macro.QUOTE_MACRO_NAME]: ourbigbookConvertSimpleElem,
-        // TODO coming soon.
-        //[Macro.QUOTE_MACRO_NAME]: ourbigbookLi(INSANE_QUOTE_START),
+        [Macro.QUOTE_MACRO_NAME]: ourbigbookLi(INSANE_QUOTE_START, { oneNewlineMax: false }),
         'sub': ourbigbookConvertSimpleElem,
         'sup': ourbigbookConvertSimpleElem,
         [Macro.TABLE_MACRO_NAME]: ourbigbookUl,
@@ -10967,7 +11246,7 @@ OUTPUT_FORMATS_LIST.push(
         },
         [Macro.TH_MACRO_NAME]: ourbigbookLi(INSANE_TH_START),
         [Macro.TR_MACRO_NAME]: ourbigbookUl,
-        'Ul': ourbigbookUl,
+        [Macro.UNORDERED_LIST_MACRO_NAME]: ourbigbookUl,
         [Macro.X_MACRO_NAME]: function(ast, context) {
           let href = renderArg(ast.args.href, context)
           if (ast.validation_output.topic.boolean) {

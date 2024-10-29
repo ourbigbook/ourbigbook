@@ -1241,15 +1241,34 @@ The only exception for this is the percent sign itself `%`, which it leaves unto
 {parent=Macro}
 {title2=`\br`}
 
-The `\br` macro inserts a visible newline between two lines without creating a paragraph.
-
-There is basically one application for this: poetry, which would be too ugly with <code block> due to fixed width font:
+The `\br` macro inserts a visible newline between two lines without creating a paragraph, for example:
 \OurBigBookExample[[
-Paragraph 1 Line 1\br
-Paragraph 1 Line 2\br
+ab\br[]cd
+]]
+Note that here `[]` is an <empty macro argument> used for convenience to separate the `\br` from the `cd` text that immediately follows.
 
-Paragraph 2 Line 1\br
-Paragraph 2 Line 2\br
+The preferred syntax is the insane version which simply uses a newline as in:
+\OurBigBookExample[[
+ab
+cd
+]]
+Note that the newline only works as a line break if surrounded by two <inline macros> as mentioned at <newline removal>.
+
+There is basically just one application for line breaks: poetry, which would be too ugly with <code blocks> due to fixed width font:
+\OurBigBookExample[[
+Even as the sun with purple-coloured face
+Had taken his last leave of the weeping morn,
+Rose-cheeked Adonis tried him to the chase;
+Hunting he loved, but love he laughed to scorn;
+Sick-thoughted Venus makes amain unto him,
+And like a bold-faced suitor begins to woo him.
+
+"Thrice fairer than myself," thus she began,
+The field's chief flower, sweet above compare,
+Stain to all nymphs, more lovely than a man,
+More white and red than doves or roses are;
+Nature that made thee, with herself at strife,
+Saith that the world hath ending with thy life.
 ]]
 
 = Code block
@@ -3990,6 +4009,7 @@ And for an inline passthrough:
 
 = Quotation
 {parent=Macro}
+{tag=Block macro}
 {title2=`\Q`}
 
 <Explicit macro>:
@@ -5726,8 +5746,40 @@ and close examples:
 <code>a \]</code>
 ``
 
-= Argument leading and trailing newline removal
+= Newline removal
 {parent=Macro argument}
+
+OurBigBook ignores most single newlines present in your source code. This allows authors to write much more readable <OurBigBook Markup> source.
+
+This removal includes things like:
+* <argument newlines between arguments removal>
+* when the newline is surrounded by one or two <block macros>, for example:
+  ``
+  This quote:\Q[My quote]is very cool
+  ``
+  is the same as:
+  ``
+  This quote:
+  \Q[My quote]
+  is very cool
+  ``
+  because <quotation> is a <block macro>.
+* <argument leading and trailing newline removal>
+
+The exception is when the newline is placed between two <inline macros>, where it generates an explicit <line break>. This is particularly useful for poetry, for example:
+\OurBigBookExample[[
+Roses are red
+Violets are blue
+]]
+and produces HTML like:
+``
+Roses are red<br>Violets are blue
+``
+
+Double newlines generate <paragraphs>, and triple newlines are forbidden except in <literal arguments>.
+
+= Argument leading and trailing newline removal
+{parent=Newline removal}
 
 = Argument leading newline removal
 {synonym}
@@ -5768,7 +5820,7 @@ The newline is however considered if it would be part of some <insane macro shor
 where the insane list requires a leading newline `\n* ` to work. That newline is not ignored, even though it comes immediately after the `\Q[` opening.
 
 = Argument newlines between arguments removal
-{parent=Macro argument}
+{parent=Newline removal}
 
 The macro name and the first argument, and any two consecutive arguments, can be optionally separated by exactly one newline character, e.g.:
 ``
@@ -5796,7 +5848,7 @@ There is one exception to this however: inside an <header>[insane header], any n
 and the `id` gets assigned to the header rather than the trailing code element.
 
 = Document trailing newline removal
-{parent=Macro argument}
+{parent=Newline removal}
 
 If the document ends one newline, it is ignored.
 
@@ -5847,6 +5899,16 @@ Some macro arguments are disabled by default.
 These are typicially arguments which felt like a good idea one day, but which we ended up regretting.
 
 They can be enabled via <ourbigbook.json> options TODO, but doing so will make the project incompatible with <OurBigBook Web>, so it is not advised.
+
+= `empty` macro argument
+{parent=Macro argument property}
+
+An `empty` macro argument must always be empty, or else an error is raised.
+
+The main application of such arguments is to allow macros that normally take no arguments to be immediately followed by text, e.g.:
+\OurBigBookExample[[
+ab\br[]cd
+]]
 
 = `inlineOnly`
 {parent=Macro argument property}

@@ -74,18 +74,27 @@ Sane block with a single line.
 No, actually multiple lines.
 ]
 
-\TestSaneOnly[\TestSaneOnly[Nested sane block]tight.]
+\TestSaneOnly[
+\TestSaneOnly[Nested sane block]
+tight.
+]
 
-Sane block together with paragraph:
+Sane block together with text in paragraph:
 \TestSaneOnly[To be]
 and another:
 \TestSaneOnly[or maybe not]
 and finally.
 
+Sane block together with macros paragraph:
+\TestSaneOnly[To be]
+\i[and another:]
+\TestSaneOnly[or maybe not]
+\i[and finally.]
+
 br:
 
 \TestSaneOnly[
-aa\br
+aa
 bb\br
 ]
 
@@ -120,7 +129,9 @@ Literal block with escaped leading and trailing:
 
 \TestSaneOnly[[\[asdf\]]]
 
-\TestSaneOnly[\TestSaneOnly[inside double TestSaneOnly]]
+\TestSaneOnly[
+\TestSaneOnly[inside double TestSaneOnly]
+]
 
 Literal block with multiple lines starting in \[ and ending in \]:
 
@@ -297,6 +308,18 @@ List immediately in list item:
 * * first
   * second
 
+Quote in paragraph:
+> My quote in paragraph
+
+Quote on next paragraph:
+
+> My quote on next paragraph
+
+On insane quote after another in the same paragraph:
+
+> insane quote 1
+> insane quote 2
+
 Table:
 
 || header 1
@@ -442,9 +465,3 @@ Hyphens are not removed from insane links to file: <not-readme.bigb>{file}
 
 = Synonym secondary
 {synonym}
-
-\H[2]
-[
-Header with
-newline
-]

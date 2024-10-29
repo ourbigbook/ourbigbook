@@ -429,11 +429,6 @@ async function convert_input(input, ourbigbook_options, nonOurbigbookOptions={})
   if (nonOurbigbookOptions.post_convert_callback) {
     await nonOurbigbookOptions.post_convert_callback(nonOurbigbookOptions.input_path, new_options.extra_returns)
   }
-  if (nonOurbigbookOptions.log.tokens) {
-    console.error('tokens:');
-    console.error(JSON.stringify(new_options.extra_returns.tokens, null, 2));
-    console.error();
-  }
   if (nonOurbigbookOptions.log.ast) {
     console.error('ast:');
     console.error(JSON.stringify(new_options.extra_returns.ast, null, 2));

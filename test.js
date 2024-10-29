@@ -36,6 +36,7 @@ const convert_opts = {
   // Can help when debugging failures.
   log: {
     //'ast-inside': true,
+    //'ast-inside-simple': true,
     //parse: true,
     //'split-headers': true,
     //'tokens-inside': true,
@@ -324,9 +325,6 @@ function assert_lib(
         let is_subset;
         let content;
         let content_array;
-        if (options.assert_bigb_stdout) {
-          assert.strictEqual(output, options.assert_bigb_stdout);
-        }
         if (options.assert_ast === undefined) {
           is_subset = true;
         } else {
@@ -383,6 +381,9 @@ function assert_lib(
           console.error('input ' + util.inspect(options.stdin));
           assert.strictEqual(extra_returns.errors.length, 0);
           assert.ok(is_subset);
+        }
+        if (options.assert_bigb_stdout) {
+          assert.strictEqual(output, options.assert_bigb_stdout);
         }
         if (expect_error) {
           assert.ok(extra_returns.errors.length > 0);
@@ -843,11 +844,13 @@ assert_lib_ast('p: insane paragraph at start of sane quote',
     ),
   ]
 )
-assert_lib_error('p: paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
-assert_lib_error('p: paragraph three newlines', 'p1\n\n\np2\n', 3, 1);
+assert_lib_error('p: paragraph with three newlines is an error', 'p1\n\n\np2\n', 3, 1);
+assert_lib_error('p: paragraph with four newlines is an error', 'p1\n\n\n\np2\n', 3, 1);
+assert_lib_error('p: list indented paragraph with three newlines is an error', '* p1\n  \n  \n  p2\n', 3, 1);
+assert_lib_error('p: list semi indented paragraph with three newlines is an error', '* p1\n  \n\n  p2\n', 3, 1);
 assert_lib_ast('p: one newline at the end of document is ignored', 'p1\n', [a('P', [t('p1')])]);
-assert_lib_error('p: two newlines at the end of document are an error', 'p1\n\n', 1, 3);
-assert_lib_error('p: three newline at the end of document an error', 'p1\n\n\n', 2, 1);
+assert_lib_error('p: two newlines at the end of document gives an error', 'p1\n\n', 2, 1);
+assert_lib_error('p: three newlines at the end of document gives an error', 'p1\n\n\n', 2, 1);
 
 // List.
 // \L
@@ -867,6 +870,26 @@ assert_lib_ast('list: with explicit ul and no extra spaces',
 gh
 `,
   l_with_explicit_ul_expect
+)
+assert_lib_ast('list: insane with empty line after spaces',
+  `ab
+
+* cd
+\u{20}\u{20}
+  ef
+
+gh
+`,
+  [
+    a('P', [t('ab')]),
+    a('Ul', [
+      a('L', [
+        a('P', [t('cd')]),
+        a('P', [t('ef')]),
+      ])
+    ]),
+    a('P', [t('gh')]),
+  ],
 )
 assert_lib_ast('list: with implicit ul sane',
   `ab
@@ -916,19 +939,6 @@ assert_lib_ast('list: empty insane item without a space',
     a('L', [t('cd')]),
   ]),
 ]
-)
-assert_lib_ast('list: with explicit ul and extra spaces',
-  `ab
-
-\\Ul[
-\\L[cd]\u0020
-\u0020\t\u0020
-\\L[ef]
-]
-
-gh
-`,
-  l_with_explicit_ul_expect
 )
 assert_lib_ast('list: ordered list',
   `ab
@@ -989,7 +999,11 @@ assert_lib_ast('list: with multiline paragraph insane',
     a('Ul', [
       a('L', [
         a('P', [t('aa')]),
-        a('P', [t('bb\ncc')]),
+        a('P', [
+          t('bb'),
+          a('br'),
+          t('cc'),
+        ]),
       ]),
     ]),
   ]
@@ -1195,7 +1209,11 @@ assert_lib_ast('list: escape insane list at start of document',
 assert_lib_ast('list: escape insane list after a newline',
   `a
 \\* b`,
-  [a('P', [t('a\n* b')])],
+  [a('P', [
+    t('a'),
+    a('br'),
+    t('* b'),
+  ])],
 )
 assert_lib_ast('list: escape insane list inside list indent',
   `* a
@@ -1203,7 +1221,9 @@ assert_lib_ast('list: escape insane list inside list indent',
   [
     a('Ul', [
       a('L', [
-        t('a\n* b'),
+        t('a'),
+        a('br'),
+        t('* b'),
       ]),
     ]),
   ]
@@ -1227,6 +1247,19 @@ assert_lib_ast('list: insane list immediately inside insane list',
           a('L', [t('cc')]),
         ]),
       ]),
+    ]),
+  ]
+)
+// https://github.com/ourbigbook/ourbigbook/issues/81
+assert_lib_ast('list: with Unicode characters',
+  // https://www.compart.com/en/unicode/U+1F331 Seedling
+  `* \u{1F331}
+* bb
+`,
+  [
+    a('Ul', [
+      a('L', [t('\u{1F331}')]),
+      a('L', [t('bb')]),
     ]),
   ]
 )
@@ -2135,8 +2168,12 @@ e
 [
   a('P', [t('a')]),
   a('P', [
-    a('C', [t('b\nc')]),
-    t('\nd'),
+    a('C', [
+      t('b'),
+      a('br'),
+      t('c'),
+    ]),
+    t('d'),
   ]),
   a('P', [t('e')]),
 ]
@@ -2155,8 +2192,11 @@ e
 [
   a('P', [t('a')]),
   a('P', [
-    a('C', [t('b\nc')]),
-    t('\n'),
+    a('C', [
+      t('b'),
+      a('br'),
+      t('c'),
+    ]),
     a('c', [t('d')]),
   ]),
   a('P', [t('e')]),
@@ -2190,7 +2230,11 @@ a
 b
 ]
 `,
-  [a('P', [t('a\nb')])],
+  [a('P', [
+    t('a'),
+    a('br'),
+    t('b')
+  ])],
 )
 assert_lib_ast('literal argument leading and trailing newlines get removed',
   `\\P[[
@@ -2711,6 +2755,48 @@ assert_lib_error('nest: Image inside a gives an error',
   // Points to '\\' in '\\Image'
   23
 )
+assert_lib_error('nest: text inside Ul gives an error',
+  `\\Ul[asdf]`,
+  1,
+  // Points to 'a' in 'asdf'
+  5
+)
+assert_lib_error('nest: non-L inside Ul gives an error',
+  `\\Ul[\\Q[asdf]]`,
+  1,
+  // Points to \ in '\Q'
+  5
+)
+assert_lib_error('nest: non-L inside Ol gives an error',
+  `\\Ol[\\Q[asdf]]`,
+  1,
+  // Points to \ in \Q
+  5
+)
+assert_lib_error('nest: text inside Table gives an error',
+  `\\Table[asdf]`,
+  1,
+  // Points to 'a' in 'asdf'
+  8
+)
+assert_lib_error('nest: non-Tr inside Table gives an error',
+  `\\Table[\\Q[asdf]]`,
+  1,
+  // Points to \ in \Q
+  8
+)
+assert_lib_error('nest: text inside Tr gives an error',
+  `\\Table[\\Tr[asdf]]`,
+  1,
+  // Points to 'a' in 'asdf'
+  12
+)
+assert_lib_error('nest: non-Td non-Th inside Tr gives an error',
+  `\\Table[\\Tr[\\Q[asdf]]]`,
+  1,
+  // Points to \ in \Q
+  12
+)
 assert_lib_ast('nest: image inside a is allowed and does not create nested a',
   `\\a[http://mylink.com][\\image[http://myimg.com]]`,
   undefined,
@@ -2768,6 +2854,15 @@ assert_lib_error('nest: header source cannot contain newlines',
   1,
   7,
 )
+
+// Internal cross references
+// \br, \Hr
+assert_lib_error('br: empty argument must be empty',
+  `\\br[a]
+`, 1, 5);
+assert_lib_error('Hr: empty argument must be empty',
+  `\\Hr[a]
+`, 1, 5);
 
 // Internal cross references
 // \x
@@ -5506,13 +5601,28 @@ assert_lib_error('header: parent cannot be an older id of a level',
 assert_lib_error('header: header inside parent',
   `= 1
 
-== 2
+= 2
 {parent=1
 
 == 3
 }
 `,
-  3, 1
+  6, 1, undefined,
+  {
+    error_message: 'headers (\\H) must be directly at document toplevel, not as children of other elements. Parent was instead: \\H'
+  }
+)
+assert_lib_error('header: implicit line break inside parent',
+  `= ab cd
+
+= 2
+{parent=ab
+cd}
+`,
+  5, 1, undefined,
+  {
+    error_message: 'cannot place \\br inside of \\H'
+  }
 )
 assert_lib_error('header: child argument to id that does not exist gives an error',
   `= 1
@@ -7479,9 +7589,7 @@ aa
 $$
 {description=b b}
 `,
-  [
-    a('M', [t('aa')], { description: [t('b b')] }, { id: '_1'} ),
-  ],
+  [a('M', [t('aa')], { description: [t('b b')] }, { id: '_1'})],
   {
     assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Equation 1. ']",
@@ -7498,9 +7606,7 @@ assert_lib_ast('quotation: sane quote without inner paragraph',
 assert_lib_ast('quotation: generates valid HTML with title sane',
   `\\Q[My quote]{title=My title}
 `,
-  [
-    a('Q', [t('My quote')], { title: [t('My title')] }, { id: 'quote-my-title'} ),
-  ],
+  [a('Q', [t('My quote')], { title: [t('My title')] }, { id: 'quote-my-title'})],
   {
     assert_xpath_stdout: [
       `//x:div[@id='quote-my-title']//x:blockquote[text()='My quote']`,
@@ -7511,9 +7617,7 @@ assert_lib_ast('quotation: generates valid HTML with title insane',
   `> My quote
 {title=My title}
 `,
-  [
-    a('Q', [t('My quote')], { title: [t('My title')] }, { id: 'quote-my-title'} ),
-  ],
+  [a('Q', [t('My quote')], { title: [t('My title')] }, { id: 'quote-my-title'})],
   {
     assert_xpath_stdout: [
       `//x:div[@id='quote-my-title']//x:blockquote[text()='My quote']`,
@@ -8694,6 +8798,81 @@ assert_lib('bigb output: link to empty toplevel header does not blow up',
     input_path_noext: 'index',
   },
 )
+assert_lib('bigb output: inline sane macro simple',
+  {
+    stdin: `Test sane only inline: \\testSaneOnly[inside TestSaneOnly inline]\n`,
+    assert_bigb_stdout: `Test sane only inline: \\testSaneOnly[inside TestSaneOnly inline]\n`,
+  }
+)
+assert_lib('bigb output: double br does not render as a double newline paragraph',
+  {
+    stdin: `ab\\br[]\\br[]cd`,
+    assert_bigb_stdout: `ab
+\\br[]cd
+`,
+  }
+)
+assert_lib('bigb output: br at start of argument gets rendered explicitly',
+  {
+    stdin: `\\TestSaneOnly[\\br[]ab]\n`,
+    assert_bigb_stdout: `\\TestSaneOnly[\\br[]ab]\n`
+  }
+)
+assert_lib('bigb output: br at end of argument gets rendered explicitly',
+  {
+    stdin: `\\TestSaneOnly[ab\\br[]]\n`,
+    assert_bigb_stdout: `\\TestSaneOnly[ab\\br[]]\n`
+  }
+)
+assert_lib('bigb output: br before block macro gets rendered explicitly',
+  {
+    stdin: `ab\\br[]\\TestSaneOnly[]\n`,
+    assert_bigb_stdout: `ab\\br[]
+\\TestSaneOnly[]\n`,
+  }
+)
+assert_lib('bigb output: br after block macro gets rendered explicitly',
+  {
+    stdin: `\\TestSaneOnly[]\\br[]ab\n`,
+    assert_bigb_stdout: `\\TestSaneOnly[]
+\\br[]ab\n`,
+  }
+)
+assert_lib('bigb output: br in the middle of text gets converted to newline',
+  {
+    stdin: `ab\\br[]cd\n`,
+    assert_bigb_stdout: `ab\ncd\n`
+  }
+)
+assert_lib('bigb output: text block text block text',
+  {
+    stdin: `txt1\\TestSaneOnly[blk1]txt2\\TestSaneOnly[blk2]txt3\n`,
+    assert_bigb_stdout: `txt1
+\\TestSaneOnly[blk1]
+txt2
+\\TestSaneOnly[blk2]
+txt3
+`,
+  }
+)
+assert_lib('bigb output: adds newlines around positional arguments that contain block',
+  {
+    stdin: `\\TestSaneOnly[\\TestSaneOnly[txt]]\n`,
+    assert_bigb_stdout: `\\TestSaneOnly[
+\\TestSaneOnly[txt]
+]
+`,
+  }
+)
+assert_lib('bigb output: adds newlines around named arguments that contain block',
+  {
+    stdin: `\\TestSaneOnly{named=\\TestSaneOnly[txt]}\n`,
+    assert_bigb_stdout: `\\TestSaneOnly{named=
+\\TestSaneOnly[txt]
+}
+`,
+  }
+)
 assert_lib_stdin('bigb output: converts plaintext arguments with escapes to literal arguments when possible',
   `\\TestSaneOnly[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
 
@@ -8862,6 +9041,25 @@ assert_lib('bigb output: checks target IDs to decide between plural or not on co
 <dog>{p}
 
 \\Include[notindex]
+`,
+    }
+  }
+)
+assert_lib('bigb output: include with parent',
+  {
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]{parent}
+`,
+      'notindex.bigb': `= Notindex
+`,
+    },
+    convert_dir: true,
+    assert_bigb: {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]{parent}
 `,
     }
   }
@@ -9443,6 +9641,15 @@ assert_lib_error('bigb output: undefined tag does not blow up',
     convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
   }
 )
+assert_lib_error('bigb output: newline in header title fails gracefully',
+  `\\H[1][ab
+cd]`,
+  2, 1, undefined,
+  {
+    convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
+    error_message: 'cannot place \\br inside of \\H',
+  }
+)
 assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
   {
     filesystem: {
@@ -9453,7 +9660,6 @@ assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
 {parent=}
 
 = My h3
-{child=my-h2-e-dis}
 {parent=my-h2-e-dis}
 {tag=my-h2-e-dis}
 
@@ -9478,7 +9684,6 @@ assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
 {parent}
 
 = My h3
-{child=My h2 é (dis)}
 {parent=My h2 é (dis)}
 {tag=My h2 é (dis)}
 
@@ -9493,6 +9698,42 @@ assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
 {parent=/Myscope}
 `,
     }
+  }
+)
+assert_lib('bigb output: header parent simple works',
+  {
+    stdin: `= Toplevel
+
+== H2
+
+= H3
+{parent=H2}
+`,
+    assert_bigb_stdout: `= Toplevel
+
+== H2
+
+= H3
+{parent=H2}
+`,
+  }
+)
+assert_lib('bigb output: header tag works does not blow up',
+  {
+    stdin: `= Toplevel
+
+== H2
+
+=== H3
+{tag=H2}
+`,
+    assert_bigb_stdout: `= Toplevel
+
+== H2
+
+=== H3
+{tag=H2}
+`,
   }
 )
 assert_lib('bigb output: split_headers',
@@ -9544,6 +9785,38 @@ Paragraph in notindex 2.
       'notindex-3.bigb': `= Notindex 3
 
 Paragraph in notindex 3.
+`,
+    }
+  }
+)
+assert_lib('bigb output: sane quotes to insane quotes',
+  {
+    convert_opts: { split_headers: true },
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Q[in1]
+
+After:
+
+\\Q[in2]
+\\Q[in3]
+
+And at last.
+`,
+    },
+    assert_bigb: {
+      'index.bigb': `= Toplevel
+
+> in1
+
+After:
+
+> in2
+> in3
+
+And at last.
 `,
     }
   }

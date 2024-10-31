@@ -387,9 +387,9 @@ Quote with multiple paragraphs:
 ]]
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{id=image-my-test-image}
 {title=The title of my image.}
 {description=The description of my image.}
+{id=image-my-test-image}
 {source=https://en.wikipedia.org/wiki/File:Tianasquare.jpg}
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
@@ -457,8 +457,8 @@ World
 Hyphens are not removed from insane links to file: <not-readme.bigb>{file}
 
 == Header with args
-{id=tmp-2}
 {c}
+{id=tmp-2}
 {wiki}
 
 == Synonym main

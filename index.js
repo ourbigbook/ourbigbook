@@ -10928,7 +10928,7 @@ function ourbigbookConvertArgs(ast, context, options={}) {
   if (onelineArg === undefined) {
     onelineArg = false
   }
-  const named_args = Macro.COMMON_ARGNAMES.concat(macro.options.named_args.map(arg => arg.name)).filter(
+  let named_args = Macro.COMMON_ARGNAMES.concat(macro.options.named_args.map(arg => arg.name)).filter(
     (argname) => !skip.has(argname) && ast.validation_output[argname].given
   )
   const ret_args = []
@@ -10975,7 +10975,14 @@ function ourbigbookConvertArgs(ast, context, options={}) {
       ret_args.push(ret_arg)
     }
   }
-  for (const argname of named_args) {
+  const orderedNamedArgs = []
+  const titleIdx = named_args.indexOf(Macro.TITLE_ARGUMENT_NAME)
+  if (titleIdx !== -1) {
+    orderedNamedArgs.push(Macro.TITLE_ARGUMENT_NAME)
+    named_args.splice(titleIdx, 1)
+  }
+  orderedNamedArgs.push(...named_args.sort())
+  for (const argname of orderedNamedArgs) {
     const arg = macro.named_args[argname]
     const validation_output = ast.validation_output[argname]
     let ast_args

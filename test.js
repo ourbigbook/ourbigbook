@@ -8838,6 +8838,17 @@ assert_lib('bigb output: br after block macro gets rendered explicitly',
 \\br[]ab\n`,
   }
 )
+assert_lib('bigb output: named args are ordered alphabetically except title is on top',
+  {
+    stdin: `\\Image[http://example.com]{description=My description}{title=My title}{border}{id=asdf}\n`,
+    assert_bigb_stdout: `\\Image[http://example.com]
+{title=My title}
+{border}
+{description=My description}
+{id=asdf}
+`,
+  }
+)
 assert_lib('bigb output: br in the middle of text gets converted to newline',
   {
     stdin: `ab\\br[]cd\n`,

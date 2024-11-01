@@ -52,6 +52,10 @@ Topic link with spaces: <#rare topic with spaces>.
 
 Topic link without spaces: #RareTopic
 
+Topic link without spaces must have delimiters if followed by non-whitespace: <#RareTopic>after
+
+Same but followed by insane link: <#RareTopic>http://example.com
+
 Sane xref that cannot be converted to insane: \x[[$]]
 
 Insane ref with greater than: <greater than>

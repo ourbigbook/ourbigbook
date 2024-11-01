@@ -11226,13 +11226,32 @@ OUTPUT_FORMATS_LIST.push(
         [Macro.UNORDERED_LIST_MACRO_NAME]: ourbigbookUl,
         [Macro.X_MACRO_NAME]: function(ast, context) {
           let href = renderArg(ast.args.href, context)
+          let hasLinkEndChar = false
           if (ast.validation_output.topic.boolean) {
             for (const c of href) {
               if (INSANE_LINK_END_CHARS.has(c)) {
-                return `${INSANE_X_START}${INSANE_TOPIC_CHAR}${href}${INSANE_X_END}`
+                hasLinkEndChar = true
+                break
               }
             }
-            return `${INSANE_TOPIC_CHAR}${href}`
+            const nextAst = ast.parent_argument.get(ast.parent_argument_index + 1)
+            let nextAstRender
+            if (nextAst) {
+              nextAstRender = nextAst.render(context)
+            }
+            if (
+              !hasLinkEndChar &&
+              // Check that what immediately follows does not start with a character
+              // that would glue to the link e.g.
+              // <#ab>cd
+              // cannot be:
+              // #abcd
+              !(nextAstRender && !INSANE_LINK_END_CHARS.has(nextAstRender[0]))
+            ) {
+              return `${INSANE_TOPIC_CHAR}${href}`
+            } else {
+              return `${INSANE_X_START}${INSANE_TOPIC_CHAR}${href}${INSANE_X_END}`
+            }
           }
           //if (AstType.PLAINTEXT === ast.args.href[0] === INSANE_TOPIC_CHAR) {
           //  return `<${href}>`

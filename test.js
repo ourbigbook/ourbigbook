@@ -844,6 +844,27 @@ assert_lib_ast('p: insane paragraph at start of sane quote',
     ),
   ]
 )
+assert_lib_ast('p: space-only line is not ignored outside of list indent',
+  // Otherwise it would blow up on 3 newline detection. And this happens on bigb output from:
+  // ``
+  // \TestSaneOnly[]<space>
+  //
+  //
+  // b
+  // ``
+  // so making a valid construct lead to a conversion error.
+  'a\n \n\nb',
+  [
+    a('P', [
+      t('a'),
+      a('br'),
+      t(' '),
+    ]),
+    a('P', [
+      t('b'),
+    ]),
+  ],
+)
 assert_lib_error('p: paragraph with three newlines is an error', 'p1\n\n\np2\n', 3, 1);
 assert_lib_error('p: paragraph with four newlines is an error', 'p1\n\n\n\np2\n', 3, 1);
 assert_lib_error('p: list indented paragraph with three newlines is an error', '* p1\n  \n  \n  p2\n', 3, 1);
@@ -8846,6 +8867,32 @@ assert_lib('bigb output: named args are ordered alphabetically except title is o
 {border}
 {description=My description}
 {id=asdf}
+`,
+  }
+)
+assert_lib('bigb output: space after macro argument before newline',
+  {
+    stdin: `\\TestSaneOnly[ab]\u{20}
+
+\\TestSaneOnly[cd]
+`,
+    assert_bigb_stdout: `\\TestSaneOnly[ab]
+\u{20}
+
+\\TestSaneOnly[cd]
+`,
+  }
+)
+assert_lib('bigb output: non-space after macro argument before newline',
+  {
+    stdin: `\\TestSaneOnly[ab]x
+
+\\TestSaneOnly[cd]
+`,
+    assert_bigb_stdout: `\\TestSaneOnly[ab]
+x
+
+\\TestSaneOnly[cd]
 `,
   }
 )

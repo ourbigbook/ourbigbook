@@ -1938,9 +1938,11 @@ class Tokenizer {
           while (true) {
             let i = this.i
             let nSpaces = 0
-            while (this.chars[i] === ' ') {
-              i++
-              nSpaces++
+            if (this.list_level) {
+              while (this.chars[i] === ' ') {
+                i++
+                nSpaces++
+              }
             }
             if (this.chars[i] === '\n') {
               for (let j = 0; j <= nSpaces; j++) {
@@ -1977,38 +1979,6 @@ class Tokenizer {
               this.error(`paragraph with ${nNewlines} newlines, you must use just two`, new SourceLocation(this.source_location.line - nNewlines + 2, 1))
             }
           }
-
-          //if (this.cur_c === '\n') {
-          //  // Empty line in the middle of indent:
-          //  //
-          //  // * aa
-          //  // 
-          //  //   bb
-          //  this.consume()
-          //  this.consume_list_indent()
-          //  this.push_token(TokenType.PARAGRAPH)
-          //  if (this.cur_c === '\n') {
-          //    this.error('paragraph with more than two newlines, use just two')
-          //    this.consumeCharRepeatedly('\n')
-          //  }
-          //  wasParagraph = true
-          //} else {
-          //  this.consume_list_indent()
-          //  if (this.cur_c === '\n') {
-          //    // Empty indent in the middle of indent:
-          //    //
-          //    // * aa
-          //    // <space><space>
-          //    //   bb
-          //    this.consume()
-          //    this.push_token(TokenType.PARAGRAPH)
-          //    wasParagraph = true
-          //  }
-          //}
-          //if (!wasParagraph) {
-          //  this.push_token(TokenType.NEWLINE)
-          //}
-
           continue
         }
         if (this.cur_c === '\n') {

@@ -2101,6 +2101,7 @@ assert_lib_ast('video: escapes HTML correctly',
 
 // Escapes.
 assert_lib_ast('escape backslash',            'a\\\\b\n', [a('P', [t('a\\b')])]);
+assert_lib_ast('escape newline',              'a\\\nb\n', [a('P', [t('a\nb')])]);
 assert_lib_ast('escape left square bracket',  'a\\[b\n',  [a('P', [t('a[b')])]);
 assert_lib_ast('escape right square bracket', 'a\\]b\n',  [a('P', [t('a]b')])]);
 assert_lib_ast('escape left curly brace',     'a\\{b\n',  [a('P', [t('a{b')])]);

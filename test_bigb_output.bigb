@@ -95,18 +95,26 @@ Sane block together with macros paragraph:
 \TestSaneOnly[or maybe not]
 \i[and finally.]
 
-br:
+Explicit br is required at the end of an argument:
 
 \TestSaneOnly[
 aa
 bb\br
 ]
 
+Explicit br is required before a paragraph:
+
 \TestSaneOnly[
 asdf\br
 
 qwer
 ]
+
+Literal\
+newline
+
+Non-br macro without arguments\i
+followed by a newline
 
 Empty argument followed by paragraph:
 
@@ -121,9 +129,6 @@ Argument ending in list:
 ]
 
 and something after.
-
-Non-br macro without arguments\i
-followed by a newline
 
 Literal block that renders as sane:
 

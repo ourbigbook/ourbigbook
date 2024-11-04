@@ -8387,6 +8387,8 @@ const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS = [
   INSANE_CODE_CHAR,
   INSANE_MATH_CHAR,
   INSANE_TOPIC_CHAR,
+  // \br
+  '\n',
 ].join('')
 // https://docs.ourbigbook.com#known-url-protocols
 const KNOWN_URL_PROTOCOL_NAMES = ['http', 'https'];

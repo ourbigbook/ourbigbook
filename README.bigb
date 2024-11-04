@@ -1247,12 +1247,14 @@ ab\br[]cd
 ]]
 Note that here `[]` is an <empty macro argument> used for convenience to separate the `\br` from the `cd` text that immediately follows.
 
-The preferred syntax is the insane version which simply uses a newline as in:
+The recommended syntax is the insane version which simply uses a newline as in:
 \OurBigBookExample[[
 ab
 cd
 ]]
 Note that the newline only works as a line break if surrounded by two <inline macros> as mentioned at <newline removal>.
+
+If for some reason you want to have an actual literal newline in your output outside of <literal arguments>, just <escape characters>[escape the newline with a backslash as for escaping anything else].
 
 There is basically just one application for line breaks: poetry, which would be too ugly with <code blocks> due to fixed width font:
 \OurBigBookExample[[

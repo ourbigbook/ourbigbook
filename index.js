@@ -7299,10 +7299,10 @@ function perfPrint(context, name) {
 }
 exports.perfPrint = perfPrint
 
-// https://github.com/plurals/pluralize/issues/127
 function pluralizeWrap(s, n) {
   let ret = pluralize(s, n)
   if (n === undefined || n > 1 && s !== ret) {
+    // https://github.com/plurals/pluralize/issues/127
     const last = ret[ret.length - 1]
     if (last === 'S') {
       ret = ret.substring(0, ret.length - 1) + last.toLowerCase()
@@ -7674,7 +7674,14 @@ function xGetHrefContent(ast, context) {
         const last_ast = href_arg.get(href_arg.length() - 1);
         if (last_ast.node_type === AstType.PLAINTEXT) {
           const text = first_ast.text
-          if (text !== pluralizeWrap(text, 1)) {
+          if (
+            text !== pluralizeWrap(text, 1) &&
+            // Due to buggy pluralize behaviour, it can be different from both.
+            // So let's check and abort otherwise just using what is actually in the ref
+            // https://github.com/plurals/pluralize/issues/172
+            // for those weirder cases. This covers
+            text === pluralizeWrap(text, 2)
+          ) {
             x_text_options.pluralize = true
           }
         }
@@ -10570,8 +10577,8 @@ function ourbigbookGetXHref({
 }) {
   if (!file) {
     href = href.replaceAll(ID_SEPARATOR, ' ')
+    const href_plural = pluralizeWrap(href, 2)
     if (p) {
-      const href_plural = pluralizeWrap(href, 2)
       let target_ast_plural = context.db_provider.get(magicTitleToId(href_plural), context)
       if (
         // When we have \x without magic to a destination that exists
@@ -10594,7 +10601,10 @@ function ourbigbookGetXHref({
     let was_magic_plural, was_magic_uppercase
     if (magic && !for_header_parent) {
       const href_singular = pluralizeWrap(href, 1)
-      if (!target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME] && href !== href_singular) {
+      if (
+        !target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME] &&
+        href === href_plural
+      ) {
         was_magic_plural = true
       }
       const components = href.split(Macro.HEADER_SCOPE_SEPARATOR)
@@ -11286,7 +11296,7 @@ OUTPUT_FORMATS_LIST.push(
             return override_href
           }
           href = href.replace(/[ >]+/g, ' ')
-          return `<${href}>${ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
+          return `${INSANE_X_START}${href}${INSANE_X_END}${ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
         },
         'Video': ourbigbookConvertSimpleElem,
         [Macro.TEST_SANE_ONLY]: ourbigbookConvertSimpleElem,

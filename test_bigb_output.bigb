@@ -46,6 +46,8 @@ Insane ref capital: <Black cat>.
 
 Insane ref plural: <black cats>.
 
+Insane ref tuberculosis bug https://github.com/plurals/pluralize/issues/172[]: <tuberculosis>.
+
 Insane ref full: <black cats>{full}.
 
 Topic link with spaces: <#rare topic with spaces>.
@@ -474,3 +476,5 @@ Hyphens are not removed from insane links to file: <not-readme.bigb>{file}
 
 = Synonym secondary
 {synonym}
+
+== Tuberculosis

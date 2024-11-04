@@ -3932,6 +3932,28 @@ assert_lib('x: cross reference magic cross file plural resolution',
     },
   },
 )
+assert_lib('x: tuberculosis hysteresis bug',
+  // https://github.com/plurals/pluralize/issues/172
+  {
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+<Hysteresis>{id=x1}
+
+<Hysteresis>{c}{id=x2}
+
+== Hysteresis
+`,
+    },
+    convert_dir: true,
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@id='x1' and text()='Hysteresis']",
+        "//x:a[@id='x2' and text()='Hysteresis']",
+      ]
+    },
+  }
+)
 assert_lib('x: cross reference magic detects capitalization and plural on output',
   {
     convert_dir: true,
@@ -9551,9 +9573,10 @@ assert_lib('bigb output: id from filename',
     }
   }
 )
-assert_lib('bigb output: pluralize fail',
+assert_lib('bigb output: tuberculosis pluralize fail',
   // Was blowing up on pluralize failures. Notably, pluralize is wrong for every -osis suffix,
   // common in scientific literature. This is the current buggy behaviour of pluralize:
+  // https://github.com/plurals/pluralize/issues/172
   //
   // So for now, if pluralize is wrong, we just abort and do a sane link.
   //
@@ -9569,11 +9592,11 @@ assert_lib('bigb output: pluralize fail',
     filesystem: {
       'index.bigb': `= Toplevel
 
-\\x[tuberculosis]
+\\x[tuberculosis]{id=x1}
 
-\\x[tuberculosis]{p}
+\\x[tuberculosis]{p}{id=x2}
 
-\\x[tuberculosis]{magic}
+\\x[tuberculosis]{magic}{id=x3}
 
 == Tuberculosis
 `,
@@ -9582,15 +9605,15 @@ assert_lib('bigb output: pluralize fail',
     assert_bigb: {
       'index.bigb': `= Toplevel
 
-<tuberculosis>
+<tuberculosis>{id=x1}
 
-\\x[tuberculosis]{p}
+\\x[tuberculosis]{id=x2}{p}
 
-\\x[tuberculosis]{magic}
+<tuberculosis>{id=x3}
 
 == Tuberculosis
 `,
-    }
+    },
   }
 )
 assert_lib('bigb output: acronym plural',

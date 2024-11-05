@@ -1223,6 +1223,26 @@ assert_lib_ast('list: nested list insane',
     ]),
   ]
 )
+assert_lib_ast('list: extra nesting outside of list does not create a list',
+  // https://github.com/ourbigbook/ourbigbook/issues/345
+  `  * aa\n`,
+  [ a('P', [t('  * aa')]) ],
+)
+assert_lib_ast('list: extra nesting inside of list does not create a list',
+  // https://github.com/ourbigbook/ourbigbook/issues/345
+  `* aa
+    * bb
+`,
+  [
+    a('Ul', [
+      a('L', [
+        t('aa'),
+        a('br'),
+        t('  * bb')
+      ]),
+    ]),
+  ]
+)
 assert_lib_ast('list: escape insane list at start of document',
   '\\* a',
   [a('P', [t('* a')])],

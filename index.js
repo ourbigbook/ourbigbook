@@ -1628,8 +1628,9 @@ class Tokenizer {
     }
   }
 
-  consume_list_indent() {
-    if (this.i > 0 && this.chars[this.i - 1] === '\n') {
+  /* Consume list indents, but only when we are closing them, not opening. */
+  consumeListIndentClose() {
+    if (this.i === 0 || this.chars[this.i - 1] === '\n') {
       let new_list_level = 0;
       while (
         arrayContainsArrayAt(this.chars, this.i, INSANE_LIST_INDENT) &&
@@ -1802,7 +1803,7 @@ class Tokenizer {
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         this.consume_optional_newline_after_argument()
       }
-      this.consume_list_indent();
+      this.consumeListIndentClose();
       start_source_location = this.source_location.clone();
       if (this.cur_c === ESCAPE_CHAR) {
         this.consume();
@@ -1955,7 +1956,7 @@ class Tokenizer {
           }
 
           if (nNewlines === 1) {
-            this.consume_list_indent()
+            this.consumeListIndentClose()
             this.push_token(TokenType.NEWLINE)
           } else if (nNewlines >= 2) {
             if (arrayContainsArrayAt(this.chars, this.i, INSANE_LIST_INDENT.repeat(this.list_level) + '\n')) {
@@ -1965,14 +1966,14 @@ class Tokenizer {
               // 
               //   bb
               this.push_token(TokenType.PARAGRAPH)
-              this.consume_list_indent()
+              this.consumeListIndentClose()
             } else {
               // Paragraph comes after list close:
               //
               // * aa
               // 
               // bb
-              this.consume_list_indent()
+              this.consumeListIndentClose()
               this.push_token(TokenType.PARAGRAPH)
             }
             if (nNewlines > 2) {
@@ -2063,28 +2064,20 @@ class Tokenizer {
           if (this.cur_c === '\n') {
             i += 1;
           }
-          let new_list_level = 0;
-          while (arrayContainsArrayAt(this.chars, i, INSANE_LIST_INDENT)) {
-            i += INSANE_LIST_INDENT.length;
-            new_list_level += 1;
-          }
-          this.log_debug(`new_list_level=${new_list_level}`);
           let insane_start_return = this.tokenize_insane_start(i);
           if (insane_start_return !== undefined) {
             const [insane_start, insane_start_length] = insane_start_return;
-            if (new_list_level <= this.list_level + 1) {
-              if (this.cur_c === '\n') {
-                this.consume();
-              }
-              this.consume_list_indent();
-              this.push_token(TokenType.MACRO_NAME, INSANE_STARTS_TO_MACRO_NAME[insane_start]);
-              this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
-              this.list_level += 1;
-              for (let i = 0; i < insane_start_length; i++) {
-                this.consume();
-              }
-              continue
+            if (this.cur_c === '\n') {
+              this.consume();
             }
+            this.push_token(TokenType.MACRO_NAME, INSANE_STARTS_TO_MACRO_NAME[insane_start]);
+            this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
+            this.list_level += 1;
+            this.log_debug(`loop list_level=${this.list_level}`);
+            for (let i = 0; i < insane_start_length; i++) {
+              this.consume();
+            }
+            continue
           }
         }
 

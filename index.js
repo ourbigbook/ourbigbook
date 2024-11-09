@@ -8558,7 +8558,7 @@ function macroImageVideoResolveParams(ast, context) {
       !context.options.publish
     ) {
       // Can't join it in here now or else existence check fails.
-      // But we need to keep this information around to be able to link from inside out/html/... relative path.
+      // But we need to keep this information around to be able to link from inside _out/html/... relative path.
       relpath_prefix = path.relative('.', context.options.outdir)
       src = `${github_path}/${src}`
     } else {

@@ -2019,7 +2019,7 @@ if (cli.helpMacros) {
                   title = ''
                   // Hack source for subsequent hash calculation to match what we have on server, which
                   // currently forces "Index" (TODO "index" et al. are likely also possible and would break this hack).
-                  // Ideally we should actually alter the file under out/web/index.bigb
+                  // Ideally we should actually alter the file under _out/web/index.bigb
                   // but that would be slightly more involved (a new option to convert?) so lazy.
                   source = source.replace(titleRegex, `${ourbigbook.INSANE_HEADER_CHAR} ${title}`)
                   await sequelizeWebIndexId.upsert({ idid: header_ast.id, uniqueHack: 0 })
@@ -2445,7 +2445,7 @@ if (cli.helpMacros) {
 
             // Clean database to ensure a clean conversion. TODO: this is dangerous, if some day we
             // start adding more conversion state outside of db.sqlite3. Better would be to remove the
-            // entire out/publish/out. Te slight downside of that is that:
+            // entire _out/publish/_out. Te slight downside of that is that:
             // - it deletes other publish targets
             // - it forces re-fetch of git history on the gh-pages branch
             fs.rmSync(path.join(publish_tmpdir, ourbigbook_nodejs_front.SQLITE_DB_BASENAME), { force: true })

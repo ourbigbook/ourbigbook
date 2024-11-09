@@ -25,7 +25,7 @@ git clone https://github.com/ourbigbook/template
 cd template
 npm install
 npx ourbigbook .
-firefox out/html/index.html
+firefox _out/html/index.html
 ```
 
 The generated HTML is published at: https://ourbigbook.github.io/template

@@ -1230,6 +1230,6 @@ module.exports = {
   sequeliezeCreateTriggerUpdateCount,
   update_database_after_convert,
   SQLITE_MAGIC_MEMORY_NAME,
-  TMP_DIRNAME: 'out',
+  TMP_DIRNAME: ourbigbook.Macro.RESERVED_ID_PREFIX + 'out',
   DIST_BASENAME: 'dist',
 }

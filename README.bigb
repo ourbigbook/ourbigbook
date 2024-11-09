@@ -17,7 +17,7 @@ git clone https://github.com/ourbigbook/template
 cd template
 npm install
 npx ourbigbook .
-firefox out/html/index.html
+firefox _out/html/index.html
 ``
 The HTML output is visible at: https://ourbigbook.github.io/template
 
@@ -4822,11 +4822,11 @@ This is why IDs must be unique for elements across all pages.
 {c}
 {synonym}
 
-When running in Node.js, OurBigBook dumps the IDs of all processed files to a `out/db.sqlite3` file in <the out directory>, and then reads from that file when IDs are needed.
+When running in Node.js, OurBigBook dumps the IDs of all processed files to a `_out/db.sqlite3` file in <the out directory>, and then reads from that file when IDs are needed.
 
-When converting under a directory that contains <ourbigbook.json>, `out/db.sqlite3` is placed inside the same directory as the `ourbigbook.json` file.
+When converting under a directory that contains <ourbigbook.json>, `_out/db.sqlite3` is placed inside the same directory as the `ourbigbook.json` file.
 
-If there is no `ourbigbook.json` in parent directories, then `out/db.sqlite3` is placed in the current working directory.
+If there is no `ourbigbook.json` in parent directories, then `_out/db.sqlite3` is placed in the current working directory.
 
 These follows the principles described at: <the current working directory does not matter when there is a ourbigbook.json>.
 
@@ -4836,16 +4836,16 @@ When running in the browser, the same JavaScript API will send queries to the se
 
 To inspect the ID database to debug it, you can use:
 ``
-sqlite3 out/db.sqlite3 .dump
+sqlite3 _out/db.sqlite3 .dump
 ``
 
 It is often useful to dump a single table, e.g. to dump the `ids` table:
 ``
-sqlite3 out/db.sqlite3 '.dump ids'
+sqlite3 _out/db.sqlite3 '.dump ids'
 ``
 and one particularly important query is to dump a list of all known IDs:
 ``
-sqlite3 out/db.sqlite3 'select id from ids'
+sqlite3 _out/db.sqlite3 'select id from ids'
 ``
 
 You can force `ourbigbook` to not use the ID database with the <--no-db> command line option
@@ -6184,16 +6184,16 @@ The OurBigBook CLI calls the <OurBigBook Library> to convert each input file.
 Convert a `.bigb` file to HTML and output the HTML to a file with the same basename without extension, e.g.:
 ``
 ourbigbook hello.bigb
-firefox out/html/hello.html
+firefox _out/html/hello.html
 ``
 
 Files named `README.bigb` are automatically converted to `index.html` so that they will show on both GitHub READMEs and at the website's base address:
 ``
 ourbigbook README.bigb
-firefox out/html/index.html
+firefox _out/html/index.html
 ``
 
-Convert all `.bigb` files in a directory to HTML files, e.g. `somefile.bigb` to `out/html/somefile.html`:
+Convert all `.bigb` files in a directory to HTML files, e.g. `somefile.bigb` to `_out/html/somefile.html`:
 ``
 ourbigbook .
 ``
@@ -6243,7 +6243,7 @@ git clone https://github.com/ourbigbook/template
 cd template
 npm install
 npx ourbigbook .
-firefox out/html/index.html
+firefox _out/html/index.html
 ``
 That template can be seen rendered live at: http://cirosantilli.com/ourbigbook-generate-multifile/ Other templates are documented at: <--generate>.
 
@@ -6297,8 +6297,8 @@ When you run:
 npx ourbigbook .
 ``
 it converts all files in the current directory separately, e.g.:
-* `README.bigb` to `out/html/index.html`, since `README` is a magic name that we want to show on the root URL
-* `not-readme.bigb` to `out/html/not-readme.html`, as this one is a regular name unlike `README`
+* `README.bigb` to `_out/html/index.html`, since `README` is a magic name that we want to show on the root URL
+* `not-readme.bigb` to `_out/html/not-readme.html`, as this one is a regular name unlike `README`
 * `main.scss` to `main.css`
 
 If one of the input files starts getting too large, usually the toplevel `README.bigb` in which you dump everything by default like Ciro does, you can speed up development and just compile files individually with either:
@@ -6327,8 +6327,8 @@ To produce a single standalone output file that contains everything the viewer n
 ``
 npx ourbigbook --embed-resources --embed-includes README.bigb
 ``
-You can now just give the generated `out/html/index.html` to any reader and they should be able to view it offline without installing anything. The flags are:
-* <--embed-includes>: without this, `\Include[not-readme]` shows as a link to the file `out/html/not-readme.html` which comes from `not-readme.bigb` With the flag, `not-readme.bigb` output gets embedded into the output `out/html/index.html` directly
+You can now just give the generated `_out/html/index.html` to any reader and they should be able to view it offline without installing anything. The flags are:
+* <--embed-includes>: without this, `\Include[not-readme]` shows as a link to the file `_out/html/not-readme.html` which comes from `not-readme.bigb` With the flag, `not-readme.bigb` output gets embedded into the output `_out/html/index.html` directly
 * <--embed-resources>: by default, we link to CSS and JavaScript that lives inside `node_modules`. With this flag, that CSS and JavaScript is copied inline into the document instead. One day we will try to handle <images> that way as well
 
 = Useless knowledge
@@ -6585,7 +6585,7 @@ ourbigbook --dry-run --publish .
 ``
 you can just go and inspect the generated HTML to see what would get pushed at:
 ``
-cd out/publish/out/publish/
+cd _out/publish/_out/publish/
 ``
 see also: <the out directory>.
 
@@ -7099,10 +7099,10 @@ One important property of the `bigb` conversion is that is must not alter the <A
 One good test is:
 ``
 ourbigbook README.bigb &&
-mv out/html/index.html out/html/old.html &&
+mv _out/html/index.html _out/html/old.html &&
 ourbigbook --format-source README.bigb  &&
 ourbigbook README.bigb &&
-diff -u out/html/old.html out/html/index.html
+diff -u _out/html/old.html _out/html/index.html
 ``
 
 This was tracked at: https://github.com/ourbigbook/ourbigbook/issues/83
@@ -7294,11 +7294,11 @@ This option was introduced for debugging purposes to help get the git commands r
 
 What type of target to publish for. The generated output of each publish target is stored under:
 ``
-out/publish/out/<target>
+_out/publish/_out/<target>
 ``
 e.g.:
 ``
-out/publish/out/local
+_out/publish/_out/local
 ``
 
 = `--publish-target github-pages`
@@ -7312,7 +7312,7 @@ Publish to <#GitHub Pages>. See also: <Publish to GitHub Pages>{full}.
 Publish as a local directory that can be zipped and sent to someone else, and then correctly viewed by a browser locally by the receiver. You can then zip it from the Linux command line for example with:
 ``
 ourbigbook --publish --publish-target local
-cd out/publish/out
+cd _out/publish/_out
 zip -r local.zip local
 ``
 Maybe we should do the Zip step from the <OurBigBook CLI> as well. There is no Node.js standard library wrapper however apparently: https://stackoverflow.com/questions/15641243/need-to-zip-an-entire-directory-using-node-js
@@ -8122,7 +8122,7 @@ The general format of `media-providers` looks like:
 "media-providers": {
   "github": {
     "default-for": ["image"], // "all" to default for both image, video and anything else
-    "path": "data/media/",    // data is gitignored, but should not be nuked like out/
+    "path": "data/media/",    // data is gitignored, but should not be nuked like _out/
     "remote": "ourbigbook/ourbigbook-media"
   },
   "local": {
@@ -8173,7 +8173,7 @@ See also: https://github.com/ourbigbook/ourbigbook/issues/40
 
 Default: `true`
 
-If `true` place the HTML output under <the out directory> at `out/html`.
+If `true` place the HTML output under <the out directory> at `_out/html`.
 
 For example with:
 ``
@@ -8189,7 +8189,7 @@ would be place its output under:
 ``
 hello.html
 ``
-instead of `out/html/hello.html`.
+instead of `_out/html/hello.html`.
 
 Advantages of `outputOutOfTree=true`:
 * the source tree becomes cleaner, especially when using <split headers> which can produce hundreds of output files from a single input file
@@ -8502,11 +8502,11 @@ If the project is a <Git tracked project>, the standard `git` ignore rules are u
 
 TODO: get this working. Maybe we should also bake it into the `ourbigbook` CLI tool as well for greater portability. Starting like this as a faster way to prototype:
 ``
-rm -rf out/parallel
-mkdir -p out/parallel
+rm -rf _out/parallel
+mkdir -p _out/parallel
 # ID extraction.
-git ls-files | grep -E '\.bigb$' | parallel -X ourbigbook --no-render --no-check-db --outdir 'out/parallel/{%}' '{}'
-./merge-dbs out/db.sqlite3 out/parallel/*/db.sqlite3
+git ls-files | grep -E '\.bigb$' | parallel -X ourbigbook --no-render --no-check-db --outdir '_out/parallel/{%}' '{}'
+./merge-dbs _out/db.sqlite3 _out/parallel/*/db.sqlite3
 ourbigbook --check-db
 # Render.
 git ls-files | grep -E '\.bigb$' | parallel -X ourbigbook --no-check-db '{}'
@@ -11073,7 +11073,7 @@ so you can now run the `ourbigbook` command from any directory in your computer,
 ``
 ourbigbook .
 ``
-Note that this repository uses <ourbigbook.json/outputOutOfTree>, and so the output will be present at `out/html/index.html` rather than `index.html`.
+Note that this repository uses <ourbigbook.json/outputOutOfTree>, and so the output will be present at `_out/html/index.html` rather than `index.html`.
 
 We also have a shortcut for `npm link` and `npm link ourbigbook`:
 ``
@@ -11221,11 +11221,11 @@ const out = child_process.spawnSync('node', ['inspect', 'ourbigbook'].concat(opt
 ``
 but not working, related: https://stackoverflow.com/questions/23612087/gulp-target-to-debug-mocha-tests So for now, we are just printing the command being run as in:
 ``
-cmd: cd out/test/executable-ourbigbook.json-outputOutOfTree && ourbigbook --split-headers .
+cmd: cd _out/test/executable-ourbigbook.json-outputOutOfTree && ourbigbook --split-headers .
 ``
 so you can just re-run it manually with `node inspect` as in:
 ``
-cd out/test/executable-ourbigbook.json-outputoutoftree && node inspect "../../../ourbigbook" --split-headers .
+cd _out/test/executable-ourbigbook.json-outputoutoftree && node inspect "../../../ourbigbook" --split-headers .
 ``
 This works since the `tmp` directory is not deleted in case of failure.
 
@@ -11256,9 +11256,9 @@ There are two types of test in our test suite:
     The only major difference is that instead of passing command line arguments like in `ourbigbook .` to convert multiple files in a directory, you have to use `convert_before` and `convert_before_norender` and specify conversion order one by one.
 
     This test robustness is new as of 2022, and many tests were previously written with executable that would now also work as unit tests, and we generally want that to be the case to make the tests go faster.
-  * work by creating an actual physical filesystem under `out/test/<normalized-test-title>` with the OurBigBook files and other files like `ourbigbook.json`, and then running the executable on that directory.
+  * work by creating an actual physical filesystem under `_out/test/<normalized-test-title>` with the OurBigBook files and other files like `ourbigbook.json`, and then running the executable on that directory.
 
-    `npm test` first deletes the `out/test` directory before running the tests. After running, the generated files are kept so you can inspect them to help debug any issues.
+    `npm test` first deletes the `_out/test` directory before running the tests. After running, the generated files are kept so you can inspect them to help debug any issues.
   * all these tests check their results by parsing the HTML and searching for elements, since here we don't have access to the <abstract syntax tree>. It wouldn't be impossible to obtain it however, as it is likely already JSON serializable.
 
 = Overview of files in this repository
@@ -11310,16 +11310,16 @@ When publishing with <OurBigBook CLI>, certain files such as the <`dist` directo
 
 Because `_obb` is a <reserved ID>, we can safely dump any autogenerated files under `_obb` without fear of name conflicts with other files.
 
-= The `out` directory
+= The `_out` directory
 {parent=Overview of files in this repository}
 
-OurBigBook stores some metadata and outputs it generates/needs inside the `./out/` directory that it creates inside the <outdir>.
+OurBigBook stores some metadata and outputs it generates/needs inside the `./_out/` directory that it creates inside the <outdir>.
 
 Overview of files it contains:
 * `db.sqlite3`: <cross file reference internals>
 * `publish`: a git clone of the source of the main repository to ensure that untracked files won't accidentally go into the output
-  * `publish/out/db.sqlite3`: like `out/db.sqlite3` but from the clean clone of `out/publish`
-  * `publish/out/publish`: the final generated output directory that gets published, e.g. as in <publish to GitHub Pages>
+  * `publish/_out/db.sqlite3`: like `_out/db.sqlite3` but from the clean clone of `_out/publish`
+  * `publish/_out/publish`: the final generated output directory that gets published, e.g. as in <publish to GitHub Pages>
 
 = Conversion process overview
 {parent=Developing OurBigBook}
@@ -11538,7 +11538,7 @@ We have stopped making any effort to generate nicely indented HTML output as it 
 
 Instead, if you want to debug some badly formatted HTML you can just use our pre-installed js-beautify dependency, e.g. with:
 ``
-npx js-beautify out/html/index.html
+npx js-beautify _out/html/index.html
 ``
 
 = Performance
@@ -11643,7 +11643,7 @@ On P51:
     sys     0m1.832
     ``
 
-    `sqlite3 out/db.sqlite3 .schema`
+    `sqlite3 _out/db.sqlite3 .schema`
     ``
     CREATE TABLE IF NOT EXISTS 'ids' (
             id TEXT PRIMARY KEY,
@@ -11696,7 +11696,7 @@ On P51:
     sys     0m6.945s
     ``
 
-    `sqlite3 out/db.sqlite3 .schema`
+    `sqlite3 _out/db.sqlite3 .schema`
     ``
     CREATE TABLE `Files` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `path` TEXT NOT NULL UNIQUE, `toplevel_id` TEXT UNIQUE);
     CREATE TABLE sqlite_sequence(name,seq);
@@ -11915,7 +11915,7 @@ git clone https://github.com/ourbigbook/template
 cd template
 npm install
 npx ourbigbook .
-firefox out/html/index.html
+firefox _out/html/index.html
 ``
 
 = Visual Studio Code extension release procedure

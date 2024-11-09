@@ -1254,7 +1254,7 @@ rm -rf out
 ``
 therefore it is just a case of some outdated local state, thank God for that, should be simple to fix.
 
-The root problem seems to be that `sqlite3 out/web/web.sqlite3 .dump` still contains `tmp`, we have to get rid of any synonym headers during ID extraction.
+The root problem seems to be that `sqlite3 _out/web/web.sqlite3 .dump` still contains `tmp`, we have to get rid of any synonym headers during ID extraction.
 
 === Render ancestors, incoming links and tagged on web
 {tag=Web}
@@ -1532,7 +1532,7 @@ We are auto-formatting locally for splitting and to get rid of includes.
 
 So we need to also format on web in order for content caching to work.
 
-=== Split out/bigb and out/web
+=== Split _out/bigb and _out/web
 {tag=Bug}
 
 Currently:

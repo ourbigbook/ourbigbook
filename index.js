@@ -2992,7 +2992,10 @@ async function convert(
       // Because the following conversion would redefine them.
     }
     perfPrint(context, 'render_post')
-    extra_returns.errors.push(...context.errors);
+    if (extra_returns.errors.length === 0) {
+      // Only add render errors if there are no parse errors before. They could be just a bunch of noise.
+      extra_returns.errors.push(...context.errors)
+    }
   }
   // Sort errors that might have been produced on different conversion
   // stages by line.

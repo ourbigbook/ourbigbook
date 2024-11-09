@@ -2343,7 +2343,7 @@ if (cli.helpMacros) {
             output = await convert_path_to_file(inputPath, ourbigbook_options, nonOurbigbookOptions);
           }
         }
-        if (cli.render) {
+        if (!nonOurbigbookOptions.had_error && cli.render) {
           await check_db(nonOurbigbookOptions)
         }
       } else {

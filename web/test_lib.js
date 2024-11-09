@@ -611,9 +611,9 @@ async function generateDemoData(params) {
           outdir = path.join(sourceRoot, slugParse.dir)
           outbase_noext = slugParse.base
         } else {
-          // Toplevel README.
+          // Toplevel index.
           outdir = path.join(sourceRoot, slugParse.base)
-          outbase_noext = ourbigbook.README_BASENAME_NOEXT
+          outbase_noext = ourbigbook.INDEX_BASENAME_NOEXT
         }
         fs.mkdirSync(outdir, { recursive: true })
         const outpath = path.join(outdir, outbase_noext + '.' + ourbigbook.OURBIGBOOK_EXT)

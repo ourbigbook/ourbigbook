@@ -2561,17 +2561,17 @@ assert_lib_error(
   // {check} local file existence of \a and \Image and local link automodifications.
   'link: relative reference to nonexistent file leads to failure in link',
   `\\a[i-dont-exist]
-`, 1, 3, 'README.bigb',
+`, 1, 3, 'index.bigb',
   {
-    input_path_noext: 'README',
+    input_path_noext: 'index',
   }
 )
 assert_lib_error(
   'link: relative reference to nonexistent file leads to failure in image',
   `\\Image[i-dont-exist]
-`, 1, 7, 'README.bigb',
+`, 1, 7, 'index.bigb',
   {
-    input_path_noext: 'README',
+    input_path_noext: 'index',
   }
 )
 assert_lib_ast(
@@ -2580,7 +2580,7 @@ assert_lib_ast(
 `,
   undefined,
   {
-    input_path_noext: 'README',
+    input_path_noext: 'index',
     filesystem: {
       'i-exist': '',
     }
@@ -2592,7 +2592,7 @@ assert_lib_ast(
 `,
   undefined,
   {
-    input_path_noext: 'README',
+    input_path_noext: 'index',
     filesystem: {
       'i-exist': '',
     }
@@ -2604,7 +2604,7 @@ assert_lib_ast(
 `,
   undefined,
   {
-    input_path_noext: 'README',
+    input_path_noext: 'index',
   }
 )
 assert_lib_ast(
@@ -2613,7 +2613,7 @@ assert_lib_ast(
 `,
   undefined,
   {
-    input_path_noext: 'README',
+    input_path_noext: 'index',
   }
 )
 assert_lib_ast(
@@ -2622,7 +2622,7 @@ assert_lib_ast(
 `,
   undefined,
   {
-    input_path_noext: 'README',
+    input_path_noext: 'index',
   }
 )
 assert_lib_ast(
@@ -2631,7 +2631,7 @@ assert_lib_ast(
 `,
   undefined,
   {
-    input_path_noext: 'README',
+    input_path_noext: 'index',
     convert_opts: {
       ourbigbook_json: {
         "media-providers": {
@@ -2652,10 +2652,10 @@ assert_lib(
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[subdir]
-\\Include[subdir/not-readme]
+\\Include[subdir/not-index]
 
 == h2
 {scope}
@@ -2697,11 +2697,11 @@ assert_lib(
 
 \\a[i-exist-subdir][subdir h3 i-exist-subdir]
 `,
-      'subdir/not-readme.bigb': `= Subdir Not Readme
+      'subdir/not-index.bigb': `= Subdir Not Index
 
-\\a[../i-exist][subdir not readme i-exist]
+\\a[../i-exist][subdir not index i-exist]
 
-\\a[i-exist-subdir][subdir not readme i-exist-subdir]
+\\a[i-exist-subdir][subdir not index i-exist-subdir]
 `,
       'i-exist': ``,
       'subdir/i-exist-subdir': ``,
@@ -2736,9 +2736,9 @@ assert_lib(
         `//x:a[@href='/i-dont-exist' and text()='subdir h3 /i-dont-exist external']`,
         `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/i-exist-subdir' and text()='subdir h3 i-exist-subdir']`,
       ],
-      'subdir/not-readme.html': [
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/i-exist' and text()='subdir not readme i-exist']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir/i-exist-subdir' and text()='subdir not readme i-exist-subdir']`,
+      'subdir/not-index.html': [
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/i-exist' and text()='subdir not index i-exist']`,
+        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/subdir/i-exist-subdir' and text()='subdir not index i-exist-subdir']`,
       ],
     },
   }
@@ -3075,7 +3075,7 @@ assert_lib('x: to toplevel home and synthetic synonym',
       split_headers: true,
     },
     filesystem: {
-      'README.bigb': `= My toplevel
+      'index.bigb': `= My toplevel
 
 <>{id=toplevel-to-toplevel-empty}
 
@@ -3141,7 +3141,7 @@ assert_lib('x: to empty home header',
     filesystem: {
       // We are requiring a space after the = for now. Not ideal
       // but not in the mood for changing the tokenizer either...
-      'README.bigb': `=${' '}
+      'index.bigb': `=${' '}
 
 <>{id=toplevel-to-toplevel-empty}
 `,
@@ -3520,7 +3520,7 @@ assert_lib(
     convert_dir: true,
     convert_opts: { split_headers: true },
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 {splitDefault}
 
 \\x[][toplevel to toplevel empty]
@@ -3838,7 +3838,7 @@ assert_lib('x: to image in another file that has x title in another file',
 //  //);
 //  //assert.deepStrictEqual(
 //  //  ourbigbook.output_path_parts(
-//  //    'README.bigb',
+//  //    'index.bigb',
 //  //    'index',
 //  //    context,
 //  //  ),
@@ -4101,7 +4101,7 @@ assert_lib('x: topic link: sane',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= tmp
+      'index.bigb': `= tmp
 
 \\x[Sane Link]{topic}
 
@@ -4306,7 +4306,7 @@ assert_lib(
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\x[subdir/subdir-index-h2][link to subdir index h2]
 
@@ -4359,7 +4359,7 @@ assert_lib('cross reference from image title to previous non-header without cont
 //  {
 //    convert_dir: true,
 //    filesystem: {
-//      'README.bigb': `= Toplevel
+//      'index.bigb': `= Toplevel
 //
 //\\Image[ab]{title=cd}{external}
 //
@@ -4378,7 +4378,7 @@ assert_lib('cross reference from image title to previous non-header without cont
 //  {
 //    convert_dir: true,
 //    filesystem: {
-//      'README.bigb': `= Toplevel
+//      'index.bigb': `= Toplevel
 //
 //\\Image[ab]{title=cd}{external}
 //
@@ -4873,7 +4873,7 @@ assert_lib(
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\x[]
 
@@ -5003,7 +5003,7 @@ assert_lib(
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
@@ -5028,7 +5028,7 @@ assert_lib(
 //    },
 //    convert_dir: true,
 //    filesystem: {
-//      'README.bigb': `= Toplevel
+//      'index.bigb': `= Toplevel
 //
 //== Toplevel 2
 //
@@ -5057,7 +5057,7 @@ assert_lib(
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\x[notindex]
 
@@ -5125,7 +5125,7 @@ assert_lib(
     convert_dir: true,
     convert_opts: { split_headers: true },
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 == Dog
 
@@ -5154,7 +5154,7 @@ assert_lib(
     convert_dir: true,
     convert_opts: { split_headers: true },
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[subdir/notindex]
 
@@ -5178,7 +5178,7 @@ assert_lib('x leading slash to escape scopes works across files',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\x[/notindex]
 
@@ -5199,7 +5199,7 @@ assert_lib('x leading slash to escape scopes works across files',
 //  {
 //    convert_dir: true,
 //    filesystem: {
-//      'README.bigb': `= Toplevel
+//      'index.bigb': `= Toplevel
 //
 //== Toplevel scope
 //{scope}
@@ -5367,7 +5367,7 @@ assert_lib(
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Image[img.jpg]{title=My image toplevel}
 
@@ -5387,7 +5387,7 @@ assert_lib('x: split renders by default links back to nosplit render of another 
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= tmp
+      'index.bigb': `= tmp
 
 <tmp 2>[toplevel to tmp 2]
 
@@ -5406,7 +5406,7 @@ assert_lib('x: redirect from cirosantilli.com to ourbigbook.com',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= tmp
+      'index.bigb': `= tmp
 
 <tmp 2>[tmp to tmp 2]
 
@@ -5844,7 +5844,7 @@ assert_lib('header: synonym basic',
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 
@@ -5901,7 +5901,7 @@ assert_lib('header: synonym in splitDefault',
     },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 {splitDefault}
 
 == h2
@@ -5927,7 +5927,7 @@ assert_lib('header: link to synonym toplevel does not have fragment',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 <notindex>
 
@@ -6030,7 +6030,7 @@ assert_lib('header: numbered argument',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': header_numbered_input,
+      'index.bigb': header_numbered_input,
     },
     assert_xpath: {
       'index.html': [
@@ -6078,7 +6078,7 @@ assert_lib('header: numbered ourbigbook.json',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': header_numbered_input,
+      'index.bigb': header_numbered_input,
     },
     assert_xpath: {
       'index.html': [
@@ -6130,7 +6130,7 @@ assert_lib('header: splitDefault on ourbigbook.json',
       ourbigbook_json: { h: { splitDefault: true } }
     },
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 
@@ -6159,7 +6159,7 @@ assert_lib('header: file argument works',
       split_headers: true,
     },
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 == path/to
 {file}
@@ -6225,7 +6225,7 @@ assert_lib('header: file argument that is the last header adds the preview',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= h1
+      'index.bigb': `= h1
 
 == path/to/my-file.png
 {file}
@@ -6247,7 +6247,7 @@ assert_lib('header: file argument ignores text files on nosplit if they are too 
       split_headers: true,
     },
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 == small.txt
 {file}
@@ -6283,9 +6283,9 @@ assert_lib('header: file argument in subdir',
     filesystem: {
       'index.bigb': `= Toplevel
 
-\\Include[path/to/notreadme]
+\\Include[path/to/notindex]
 `,
-      'path/to/notreadme.bigb': `= Notreadme
+      'path/to/notindex.bigb': `= notindex
 
 <my-file.txt>{file}
 
@@ -6298,7 +6298,7 @@ My Line 2
 `,
     },
     assert_xpath: {
-      [`path/to/notreadme.html`]: [
+      [`path/to/notindex.html`]: [
         `//x:div[@class='p']//x:a[@href='#${ourbigbook.FILE_PREFIX}/my-file.txt' and text()='path/to/my-file.txt']`,
         // Maybe ID should be full path for _file. It's 3AM and I don't have the brains for this kind of stuff now.
         xpath_header(2, `${ourbigbook.FILE_PREFIX}/my-file.txt`, `x:a[@href='#${ourbigbook.FILE_PREFIX}/my-file.txt' and text()='path/to/my-file.txt']`),
@@ -6310,7 +6310,7 @@ assert_lib('header: file argument in _file directory toplevel header',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 <path/to/my-file.txt>{file}{id=toplevel-to-txt}
 
@@ -6373,7 +6373,7 @@ assert_lib('header: toplevel argument',
       split_headers: true,
     },
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 <h 1>[toplevel to h 1]
 
@@ -6604,6 +6604,30 @@ assert_lib_ast('header: id of first header is empty if index',
     }
   },
 )
+assert_lib('header: README is a regular filename',
+  {
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\x[README]{id=index-to-readme}
+
+\\Include[README]
+`,
+      'README.bigb': `= README
+{c}
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@id='index-to-readme' and @href='README.html' and text()='README']",
+      ],
+      'README.html': [
+        xpath_header(1, 'README'),
+      ],
+    },
+  }
+)
 assert_lib_error('header: empty include in header title fails gracefully',
   // https://github.com/ourbigbook/ourbigbook/issues/195
   `= tmp
@@ -6676,7 +6700,7 @@ assert_lib('header: forbid_multi_h1 option does not forbid synonym headers',
     convert_opts: { forbid_multi_h1: true },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= h1
+      'index.bigb': `= h1
 
 = h1 2
 {synonym}
@@ -6689,7 +6713,7 @@ assert_lib('header: forbid_multi_h1 option does not forbid h1 headers with paren
     convert_opts: { forbid_multi_h1: true },
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= h1
+      'index.bigb': `= h1
 
 = h2
 {parent=}
@@ -7080,7 +7104,7 @@ assert_lib('word count descendant from include without embed includes',
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= h1
+      'index.bigb': `= h1
 
 11 22 33
 
@@ -7428,7 +7452,7 @@ assert_lib('toc: header numbered=0 in ourbigbook.json works across source files 
       ourbigbook_json: { h: { numbered: false } }
     },
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 
@@ -7560,7 +7584,7 @@ assert_lib_ast('toc: the toc is added before the first h2 when there is a single
 assert_lib('toc: ancestors list shows after toc on toplevel',
   {
     filesystem: {
-      'README.bigb': `= Asdf
+      'index.bigb': `= Asdf
 
 == h2
 
@@ -8424,7 +8448,7 @@ assert_lib(
   {
     convert_dir: true,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[included-by-index]
 `,
@@ -8446,7 +8470,7 @@ assert_lib(
       split_headers: true,
     },
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[included-by-index]
 `,
@@ -10064,7 +10088,7 @@ assert_cli(
   }
 )
 const complex_filesystem = {
-  'README.bigb': `= Toplevel
+  'index.bigb': `= Toplevel
 
 \\x[notindex][link to notindex]
 
@@ -10388,7 +10412,7 @@ assert_cli(
 )
 const publish_filesystem = {
   'ourbigbook.json': `{}\n`,
-  'README.bigb': `= Toplevel
+  'index.bigb': `= Toplevel
 
 \\x[notindex][link to notindex]
 
@@ -10513,7 +10537,7 @@ assert_cli(
   }
 }
 `,
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 == h2
 {scope}
@@ -10551,7 +10575,7 @@ assert_cli(
   }
 }
 `,
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
     },
     pre_exec: publish_pre_exec,
@@ -10576,7 +10600,7 @@ assert_cli(
   }
 }
 `,
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
     },
     pre_exec: publish_pre_exec,
@@ -10599,7 +10623,7 @@ assert_cli(
   }
 }
 `,
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 == h2
 {scope}
@@ -10692,7 +10716,7 @@ assert_cli(
   {
     args: ['--outdir', 'my_outdir', '.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[subdir]
 \\Include[subdir/notindex]
@@ -10721,9 +10745,9 @@ assert_cli(
 assert_cli(
   'ourbigbook.tex does not blow up',
   {
-    args: ['README.bigb'],
+    args: ['index.bigb'],
     filesystem: {
-      'README.bigb': `$$\\mycmd$$`,
+      'index.bigb': `$$\\mycmd$$`,
       'ourbigbook.tex': `\\newcommand{\\mycmd}[0]{hello}`,
     },
   }
@@ -10733,7 +10757,7 @@ assert_cli(
   {
     args: ['--outdir', 'asdf', '--split-headers', '.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 == h2
 
@@ -10813,10 +10837,10 @@ assert_cli(
       ['ourbigbook', ['--generate', 'min']],
     ],
     assert_exists: [
-      'subdir/README.bigb',
+      'subdir/index.bigb',
     ],
     assert_not_exists: [
-      'README.bigb',
+      'index.bigb',
     ],
   }
 )
@@ -10872,7 +10896,7 @@ assert_cli(
   {
     args: ['--embed-resources', '.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
     },
     assert_xpath: {
@@ -10930,19 +10954,19 @@ assert_cli(
   {
     args: ['myproject'],
     filesystem: {
-      'myproject/README.bigb': `= Toplevel
+      'myproject/index.bigb': `= Toplevel
 
-\\x[not-readme]
+\\x[not-index]
 
 \\x[subdir]
 
-\\Include[not-readme]
+\\Include[not-index]
 
 \\Include[subdir]
 
 \\Include[subdir/notindex]
 `,
-      'myproject/not-readme.bigb': `= Not readme
+      'myproject/not-index.bigb': `= not index
 `,
       'myproject/scss.scss': `body { color: red }`,
       'myproject/ourbigbook.json': `{}
@@ -10973,19 +10997,19 @@ assert_cli(
     args: [path.join('..', 'myproject')],
     cwd: 'notmyproject',
     filesystem: {
-      'myproject/README.bigb': `= Toplevel
+      'myproject/index.bigb': `= Toplevel
 
-\\x[not-readme]
+\\x[not-index]
 
 \\x[subdir]
 
-\\Include[not-readme]
+\\Include[not-index]
 
 \\Include[subdir]
 
 \\Include[subdir/notindex]
 `,
-      'myproject/not-readme.bigb': `= Not readme
+      'myproject/not-index.bigb': `= not index
 `,
       'myproject/scss.scss': `body { color: red }`,
       'myproject/subdir/index.bigb': `= Subdir
@@ -11013,7 +11037,7 @@ assert_cli(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 
@@ -11078,7 +11102,7 @@ assert_cli(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 \\Include[subdir]
@@ -11311,7 +11335,7 @@ assert_cli(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 
@@ -11408,7 +11432,7 @@ assert_cli(
         }
       },
       ['ourbigbook', ['.']],
-      // Add h2 to README..bigb
+      // Add h2 to index..bigb
       {
         filesystem_update: {
           'index.bigb': `= Toplevel
@@ -11493,9 +11517,9 @@ assert_cli(
   // Related: https://github.com/ourbigbook/ourbigbook/issues/340
   "toplevel index file without a header produces output to index.html",
   {
-    args: ['README.bigb'],
+    args: ['index.bigb'],
     filesystem: {
-      'README.bigb': `asdf
+      'index.bigb': `asdf
 `,
     },
     assert_xpath: {
@@ -11747,7 +11771,7 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
@@ -11793,7 +11817,7 @@ assert_cli(
   {
     args: ['myproj'],
     filesystem: {
-      'myproj/README.bigb': `\\Image[myimg.png]{provider=github}
+      'myproj/index.bigb': `\\Image[myimg.png]{provider=github}
 `,
       'myproj/ourbigbook.json': `{
   "media-providers": {
@@ -11821,7 +11845,7 @@ assert_cli(
   {
     args: ['myproj'],
     filesystem: {
-      'myproj/README.bigb': `\\Image[myimg.png]{provider=github}
+      'myproj/index.bigb': `\\Image[myimg.png]{provider=github}
 `,
       'myproj/ourbigbook.json': `{
   "media-providers": {
@@ -11849,7 +11873,7 @@ assert_cli(
     cwd: 'myproj',
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'myproj/README.bigb': `\\Image[myimg.png]{provider=github}
+      'myproj/index.bigb': `\\Image[myimg.png]{provider=github}
 `,
       'myproj/ourbigbook.json': `{
   "media-providers": {
@@ -11959,17 +11983,17 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': ``,
-      'notreadme.bigb': ``,
-      'subdir/README.bigb': ``,
-      'subdir/notreadme.bigb': ``,
+      'index.bigb': ``,
+      'notindex.bigb': ``,
+      'subdir/index.bigb': ``,
+      'subdir/notindex.bigb': ``,
       'main.scss': ``,
     },
     assert_exists: [
-      `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/README.bigb`,
-      `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/notreadme.bigb`,
-      `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/subdir/README.bigb`,
-      `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/subdir/notreadme.bigb`,
+      `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/index.bigb`,
+      `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/notindex.bigb`,
+      `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/subdir/index.bigb`,
+      `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/subdir/notindex.bigb`,
       // Also the source of other converted formats like SCSS.
       `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/main.scss`,
     ]
@@ -11983,7 +12007,7 @@ assert_cli(
     args: ['.'],
     assert_exit_status: 1,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 <asdf>
 `,
@@ -12005,7 +12029,7 @@ assert_cli(
   {
     args: ['-S', '.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\a[.][link to root]
 
@@ -12118,7 +12142,7 @@ myfile-subdir.txt line2
       ],
       [`${TMP_DIRNAME}/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
         `//x:a[@href='../${ourbigbook.FILE_PREFIX}/myfile.txt.html' and text()='myfile.txt']`,
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/README.bigb.html' and text()='README.bigb']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/index.bigb.html' and text()='index.bigb']`,
         `//x:a[@href='../${ourbigbook.FILE_PREFIX}/index.html.html' and text()='index.html']`,
         `//x:a[@href='../${ourbigbook.FILE_PREFIX}/_index.html.html' and text()='_index.html']`,
 
@@ -12173,7 +12197,7 @@ assert_cli(
       'ourbigbook.json': `{
   "htmlXExtension": false
 }`,
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\a[.][link to root]
 
@@ -12261,7 +12285,7 @@ assert_cli(
       ],
       [`${TMP_DIRNAME}/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
         `//x:a[@href='../${ourbigbook.FILE_PREFIX}/myfile.txt' and text()='myfile.txt']`,
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/README.bigb' and text()='README.bigb']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/index.bigb' and text()='index.bigb']`,
         `//x:a[@href='../${ourbigbook.FILE_PREFIX}/index.html' and text()='index.html']`,
         `//x:a[@href='../${ourbigbook.FILE_PREFIX}/_index.html' and text()='_index.html']`,
 
@@ -12333,7 +12357,7 @@ assert_cli(
     args: ['--dry-run', '--publish'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       'not-ignored.txt': ``,
       'ourbigbook.json': `{
@@ -12355,7 +12379,7 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       'ignored-top.txt': ``,
       'not-ignored.txt': ``,
@@ -12422,7 +12446,7 @@ assert_cli(
     args: ['--dry-run', '--publish'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       'ignored.txt': ``,
       'not-ignored.txt': ``,
@@ -12479,7 +12503,7 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       'bigb-ignored.bigb': `= Bigb ignored
 `,
@@ -12578,7 +12602,7 @@ assert_cli(
     args: ['.'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       'ignored.txt': ``,
       'not-ignored.txt': ``,
@@ -12610,7 +12634,7 @@ assert_cli(
     args: ['subdir'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       'ignored.txt': ``,
       'not-ignored.txt': ``,
@@ -12640,7 +12664,7 @@ assert_cli(
     args: ['tmp.bigb'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       'tmp.bigb': `= Tmp
 
@@ -12660,7 +12684,7 @@ assert_cli(
     args: ['--web', '--web-dry', '.'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       'tmp.bigb': `= Tmp
 
@@ -12677,10 +12701,10 @@ assert_cli(
 assert_cli(
   'git: conversion of single file in git directory works',
   {
-    args: ['README.bigb'],
+    args: ['index.bigb'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       '.gitignore': `tmp.bigb
 `,
@@ -12699,7 +12723,7 @@ assert_cli(
   {
     args: ['--web', '--web-dry', '.'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       'ourbigbook.json': `{
 }
@@ -12710,9 +12734,9 @@ assert_cli(
 assert_cli(
   '--web-dry on single file',
   {
-    args: ['--web', '--web-dry', 'README.bigb'],
+    args: ['--web', '--web-dry', 'index.bigb'],
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 `,
       'ourbigbook.json': `{
 }
@@ -12789,7 +12813,7 @@ assert_cli(
     args: ['.'],
     assert_exit_status: 1,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex2]
 `,
@@ -12820,7 +12844,7 @@ assert_cli(
     ],
     assert_exit_status: 1,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 \\Include[notindex2]
@@ -12839,7 +12863,7 @@ assert_cli(
 //    args: ['.'],
 //    assert_exit_status: 1,
 //    filesystem: {
-//      'README.bigb': `= Toplevel
+//      'index.bigb': `= Toplevel
 //
 //\\Include[notindex]
 //`,
@@ -12856,7 +12880,7 @@ assert_cli(
 //    args: ['.'],
 //    assert_exit_status: 2,
 //    filesystem: {
-//      'README.bigb': `= Toplevel
+//      'index.bigb': `= Toplevel
 //
 //\\Include[notindex]
 //`,
@@ -12917,7 +12941,7 @@ assert_cli(
     args: ['.'],
     assert_exit_status: 1,
     filesystem: {
-      'README.bigb': `= Toplevel
+      'index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,

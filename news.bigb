@@ -264,7 +264,7 @@ It is now possible for admins pin an article to the homepage. The initial use ca
 
 Previously we would only create an entry in the <`_file` output directory> for <headers> marked wiht the <`\H` `file` argument>.
 
-For example the file \a[file_demo/hello_world.js] in this repository has an associated header with the `file` argument in our \a[README.bigb] :
+For example the file \a[file_demo/hello_world.js] in this repository has an associated header with the `file` argument in our \a[index.bigb] :
 ``
 = file_demo/hello_world.js
 {file}

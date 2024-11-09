@@ -4854,7 +4854,6 @@ function objectSubset(source_object, keys) {
  * Countless hours have been wasted writing and debugging this function. It is extremelly hard.
  *
  * Some of the things this function considers include:
- * * README.bigb -> index.bigb renaming
  * * split header stuff
  **/
 function outputPathBase(args={}) {
@@ -7050,10 +7049,7 @@ function removeToplevelScope(id, toplevel_ast, context) {
 // https://docs.ourbigbook.com#index-files
 const INDEX_BASENAME_NOEXT = 'index';
 exports.INDEX_BASENAME_NOEXT = INDEX_BASENAME_NOEXT;
-const README_BASENAME_NOEXT = 'README';
-exports.README_BASENAME_NOEXT = README_BASENAME_NOEXT;
 const INDEX_FILE_BASENAMES_NOEXT = new Set([
-  README_BASENAME_NOEXT,
   INDEX_BASENAME_NOEXT,
 ]);
 exports.INDEX_FILE_BASENAMES_NOEXT = INDEX_FILE_BASENAMES_NOEXT;
@@ -7748,8 +7744,8 @@ function isPunctuation(c) {
 //
 // id='ourbigbook'           -> ['',       'index-split']
 // id='quick-start'          -> ['',       'quick-start']
-// id='not-readme'           -> ['',       'not-readme-split']
-// id='h2-in-not-the-readme' -> ['',       'h2-in-not-the-readme']
+// id='not-index'           -> ['',       'not-index-split']
+// id='h2-in-not-the-index' -> ['',       'h2-in-not-the-index']
 // id='subdir'               -> ['subdir', 'index-split']
 // id='subdir/subdir-h2'     -> ['subdir', 'subdir-h2']
 // id='subdir/notindex'      -> ['subdir', 'notindex']

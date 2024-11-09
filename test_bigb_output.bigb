@@ -462,10 +462,10 @@ World
 == Tank_man_standing_in_front_of_some_tanks.jpg
 {file}
 
-== not-readme.bigb
+== not-index.bigb
 {file}
 
-Hyphens are not removed from insane links to file: <not-readme.bigb>{file}
+Hyphens are not removed from insane links to file: <not-index.bigb>{file}
 
 == Header with args
 {c}

@@ -17,13 +17,13 @@ Here's the table of contents:
 {% if multifile -%}
 == Internal cross file references
 
-Here is a link to a header present in another file: <h2 not in the readme>.
+Here is a link to a header present in another file: <h2 not in the index>.
 
-Explicit macro equivalent, but with a "Section" prefix: \x[h2-not-in-the-readme]{full}. 
+Explicit macro equivalent, but with a "Section" prefix: \x[h2-not-in-the-index]{full}. 
 
 And below this line, we actually include the toplevel header of the other file.
 
-\Include[not-readme]
+\Include[not-index]
 
 {% endif -%}
 == Paragraphs, links, code, math

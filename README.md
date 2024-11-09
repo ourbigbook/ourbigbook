@@ -14,11 +14,9 @@ OurBigBook is a powerful static wiki generator and lightweight markup language t
 
 The same markup source code can also be uploaded to [OurBigBook.com](https://OurBigBook.com) which has the amazing ["Topics" multi-user mind-melding magic feature](https://docs.ourbigbook.com/#ourbigbook-web-topics) 🧙
 
-The real README is of course at: [README.bigb](README.bigb)
+A rendered version of it can be seen at: <https://docs.ourbigbook.com>. The source file for the homepage is: [index.bigb](index.bigb).
 
-A rendered version of it can be seen at: <https://docs.ourbigbook.com>
-
-[OurBigBook CLI quick start](https://docs.ourbigbook.com/#ourbigbook-cli-quick-start) using our template project https://github.com/ourbigbook/template[]:
+[Get started quickly with the OurBigBook command line utility](https://docs.ourbigbook.com/#ourbigbook-cli-quick-start) by using our template project https://github.com/ourbigbook/template[]:
 
 ```
 git clone https://github.com/ourbigbook/template

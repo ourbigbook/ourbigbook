@@ -1617,13 +1617,14 @@ if (cli.helpMacros) {
     let title = 'Ourbigbook Template';
     let multifile
     if (generate === 'default') {
-      renderTemplate('not-readme.bigb', outdir, {});
+      renderTemplate(`not-index.${ourbigbook.OURBIGBOOK_EXT}`, outdir, {});
       multifile = true
     } else {
       title += ' ' + generate
       multifile = false
     }
-    renderTemplate('README.bigb', outdir, {
+    renderTemplate('README.md', outdir, {})
+    renderTemplate(`${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`, outdir, {
       generate,
       multifile,
       title,
@@ -2025,7 +2026,7 @@ if (cli.helpMacros) {
                   await sequelizeWebIndexId.upsert({ idid: header_ast.id, uniqueHack: 0 })
                   isToplevelIndex = true
                 }
-                inpath = `index.${ourbigbook.OURBIGBOOK_EXT}`
+                inpath = `${outbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`
               } else {
                 const titleId = ourbigbook.titleToId(title)
                 if (titleId !== inpathParse.name) {

@@ -1,5 +1,0 @@
-= Included by not the README
-
-This file is included by `not-readme.bigb`, which is in turn included by `README.bigb`. Will this two level inclusion blow everything up?
-
-== Included by not the README 2

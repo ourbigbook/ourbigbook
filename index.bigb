@@ -197,7 +197,7 @@ A full blown showcase knowledge base can be seen at:
 * <design goals>{full}: <OurBigBook Markup> and <OurBigBook CLI> feature overview
 * https://github.com/ourbigbook/ourbigbook[]: OurBigBook source code
 * https://github.com/ourbigbook/ourbigbook/issues[]: project issue tracker
-* https://github.com/ourbigbook/ourbigbook/blob/master/README.bigb[]: source for this document
+* https://github.com/ourbigbook/ourbigbook/blob/master/index.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
 * https://docs.ourbigbook.com/_obb/dist/editor[]: live in-browser editor demo
 * https://github.com/ourbigbook/template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
@@ -285,28 +285,28 @@ The following sections cover different ways to use tools from the OurBigBook:
   * single-source multi-format output based on <includes> and build options:
     * by default, one HTML per source with includes rendered as links between pages, e.g.:
 
-      README.bigb
+      index.bigb
       ``
       = My website
 
       == h2
 
-      \Include[not-readme]
+      \Include[not-index]
       ``
-      not-readme.bigb
+      not-index.bigb
       ``
-      = Not readme
+      = Not index
 
-      == Not readme h2
+      == Not index h2
       ``
-      produces `index.html` and `not-readme.html`
+      produces `index.html` and `not-index.html`
     * with the <split headers> option, you can output each header of an input file into a separate output file. The previous filesystem would produce:
-      * `index.html`: which contains the full `README.bigb` output
+      * `index.html`: which contains the full `index.bigb` output
       * `split.html`: split version of the above containing only the `= My website` header and not `h2`
       * `h2.html`: only contains the `h2` header
-      * `not-readme.html` contains the full output of `not-readme.bigb`
-      * `not-readme-split.html`: only contains the `= Not readme` header
-      * `not-readme-h2.html`: only contains the `= Not readme h2` header
+      * `not-index.html` contains the full output of `not-index.bigb`
+      * `not-index-split.html`: only contains the `= Not index` header
+      * `not-index-h2.html`: only contains the `= Not index h2` header
       Each of those pages automatically gets a <table of contents>
     * <--embed-includes> single file output from multiple input files. Includes are parsed smartly, not just source copy pasted, e.g. included headers are shifted from `h1` to `h2` correctly.
 
@@ -316,13 +316,13 @@ The following sections cover different ways to use tools from the OurBigBook:
 
       == h2
 
-      === Not readme
+      === Not index
 
-      ==== Not readme h2
+      ==== Not index h2
       ``
     * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. <cross references> automatically get `.html` extension and or not. E.g.:
-      * locally, a link `\x[not-readme]` would render as `<a href="not-readme.html">` and `not-readme.bigb` produces `not-readme.html`
-      * when publishing, `\x[not-readme]` would render as `<a  href="not-readme">` and `not-readme.bigb` also produces `not-readme.html`, which the server converts to just `http://my-website.com/not-readme`
+      * locally, a link `\x[not-index]` would render as `<a href="not-index.html">` and `not-index.bigb` produces `not-index.html`
+      * when publishing, `\x[not-index]` would render as `<a  href="not-index">` and `not-index.bigb` also produces `not-index.html`, which the server converts to just `http://my-website.com/not-index`
   * cross file configuration files to factor out common page parts like headers, footers and other metadata, e.g.:
     * `ourbigbook.liquid.html`: https://github.com/Shopify/liquid[Liquid template] used for all pages, see example at: <play with the template>{full}
     * `main.scss`: CSS stylesheet generated from https://sass-lang.com/[SASS] input, see example at: <play with the template>{full}
@@ -338,25 +338,25 @@ The following sections cover different ways to use tools from the OurBigBook:
     * <ourbigbook.json>: per repository configuration options
   * <table of contents> that crosses input files via includes. E.g. in:
 
-    README.bigb
+    index.bigb
     ``
     = My website
 
     == h2
 
-    \Include[not-readme]
+    \Include[not-index]
     ``
-    not-readme.bigb
+    not-index.bigb
     ``
-    = Not readme
+    = Not index
 
-    == Not readme h2
+    == Not index h2
     ``
-    the table of contents for `index.html` also contains the headers for `not-readme.bigb` producing:
+    the table of contents for `index.html` also contains the headers for `not-index.bigb` producing:
     * My website
       * h2
-        * Not readme
-          * Not readme h2
+        * Not index
+          * Not index h2
     This means that you can split large <\H splitDefault argument>[splitDefault] input files if rendering starts to slow you down, and things will still render exactly the same.
   * check that local files and images linked to actually exist: <\a external argument>. E.g.:
     ``
@@ -989,7 +989,7 @@ Otherwise, the external is automatically guessed based on the address given as e
 
 Common use cases for the `external` argument is to link to non OurBigBook content in the current domain, e.g.:
 * <link to the domain root path> for <Subdirectory deployments>
-* link non OurBigBook subdirectories. E.g., https://github.com/cirosantilli/cirosantilli.github.io/blob/master/README.bigb was rendered at https://cirosantilli.com[], and contains links `\a[markdown-style-guide]{external}` to https://cirosantilli.com/markdown-style-guide[], whose source lives in a separate non-OurBigBook repository: https://github.com/cirosantilli/markdown-style-guide/
+* link non OurBigBook subdirectories. E.g., https://github.com/cirosantilli/cirosantilli.github.io/blob/master/index.bigb was rendered at https://cirosantilli.com[], and contains links `\a[markdown-style-guide]{external}` to https://cirosantilli.com/markdown-style-guide[], whose source lives in a separate non-OurBigBook repository: https://github.com/cirosantilli/markdown-style-guide/
 
 = Internal links are smart
 {parent=`\a` `external` argument}
@@ -1020,7 +1020,7 @@ If it doesn't work, it should be easy to make it work, as we use relative links 
 
 An external link is a link that points to a resource that is not present in the curent OurBigBook project sources.
 
-By default, most links are internal links, e.g. it is often the case in computer programming tutorials that we want to refer to source files in the current directory. So from our `README.bigb`, we could want to write something like:
+By default, most links are internal links, e.g. it is often the case in computer programming tutorials that we want to refer to source files in the current directory. So from our `index.bigb`, we could want to write something like:
 \OurBigBookExample[[Have a look at this amazing source file: \a[index.js].]]
 and here `\a[ourbigbook]` is a internal link.
 
@@ -1605,7 +1605,7 @@ the ID of the header is `my-file` rather than `awesome-ourbigbook-file`. See als
 
 If the file is an <index file> other than <the toplevel index file>, then the basename of the parent directory is used instead, e.g. the toplevel ID of a file:
 ``
-my-subdir/README.bigb
+my-subdir/index.bigb
 ``
 would be:
 ``
@@ -1613,7 +1613,7 @@ would be:
 ``
 rather than:
 ``
-#README.bigb
+#index.bigb
 ``
 
 For the toplevel index file however, the ID is just taken from the header itself as usual. This is done because you often can't general control the directory name of a project.
@@ -2255,9 +2255,9 @@ instead of
 * `full-and-unique-experiment-name.html#full-and-unique-experiment-name/materials`
 
 Some quick interactive cross file link tests:
-* <not readme with scope>
-* <not readme with scope/h2>
-* <not readme with scope/image My image>
+* <not index with scope>
+* <not index with scope/h2>
+* <not index with scope/image My image>
 
 = `\H` `splitDefault` argument
 {parent=H arguments}
@@ -2269,63 +2269,63 @@ If the `splitDefault` <boolean argument> is given however:
 * the split header becomes the default, e.g. `index.html` is now the split one, and `nosplit.html` is the non-split one
 * the header it is given for, and all of its descendant headers will use the split header as the default internal cross target, unless the header is already rendered in the current page. This does not propagate across <includes> however.
 
-For example, consider `README.bigb`:
+For example, consider `index.bigb`:
 ``
 = Toplevel
 {splitDefault}
 
 \x[h2][toplevel to h2]
 
-\x[notreadme][toplevel to notreadme]
+\x[notindex][toplevel to notindex]
 
-\Include[notreadme]
+\Include[notindex]
 
 == h2
 ``
-and `notreadme.bigb`:
+and `notindex.bigb`:
 ``
-= Notreadme
+= Notindex
 
-\x[h2][notreadme to h2]
+\x[h2][notindex to h2]
 
-\x[notreadme][notreadme to notreadme h2]
+\x[notindex][notindex to notindex h2]
 
-== Notreadme h2
+== Notindex h2
 ``
 Then the following links would be generated:
-* `index.html`: split version of `README.bigb`, i.e. does not contain `h2`
+* `index.html`: split version of `index.bigb`, i.e. does not contain `h2`
   * `toplevel to h2`: `h2.html`. Links to the split version of `h2`, since `h2` is also affected by the `splitDefault` of its parent, and therefore links to it use the split version by default
-  * `toplevel to notreadme`: `notreadme.html`. Links to non-split version of `notreadme.html` since that header is not `splitDefault`, because `splitDefault` does not propagate across includes
-* `nosplit.html` non-split version of `README.bigb`, i.e. contains `h2`
+  * `toplevel to notindex`: `notindex.html`. Links to non-split version of `notindex.html` since that header is not `splitDefault`, because `splitDefault` does not propagate across includes
+* `nosplit.html` non-split version of `index.bigb`, i.e. contains `h2`
   * `toplevel to h2`: `#h2`, because even though `h2` is `splitDefault`, that header is already present in the current page, so it would be pointless to reload the split one
-  * `toplevel to notreadme`: `notreadme.html`
-* `h2.html` split version of `h2` from `README.bigb`
-* `notreadme.html`: non-split version of `notreadme.bigb`
-  * `notreadme to h2`: `h2.html`, because `h2` is `splitDefault`
-  * `notreadme to notreadme h2`: `#notreadme-h2`
-* `notreadme-split.html`: split version of `notreadme.bigb`
-  * `notreadme to h2`: `h2.html`, because `h2` is `splitDefault`
-  * `notreadme to notreadme h2`: `notreadme.html#notreadme-h2`, because `notreadme-h2` is not `splitDefault`
+  * `toplevel to notindex`: `notindex.html`
+* `h2.html` split version of `h2` from `index.bigb`
+* `notindex.html`: non-split version of `notindex.bigb`
+  * `notindex to h2`: `h2.html`, because `h2` is `splitDefault`
+  * `notindex to notindex h2`: `#notindex-h2`
+* `notindex-split.html`: split version of `notindex.bigb`
+  * `notindex to h2`: `h2.html`, because `h2` is `splitDefault`
+  * `notindex to notindex h2`: `notindex.html#notindex-h2`, because `notindex-h2` is not `splitDefault`
 
-The major application of this if you like work with a huge `README.bigb` containing thousands of random small topics.
+The major application of this if you like work with a huge `index.bigb` containing thousands of random small topics.
 
 Splitting those into separate source files would be quite laborious, as it would require duplicating IDs on the filename, and setting up <includes>.
 
-However, after this README reaches a certain size, page loads start becoming annoyingly slow, even despite already loading large assets like <images> video <videos> only on hover or click: the annoying slowness comes from the loading of the HTML itself before the browser can jump to the ID.
+However, after this index reaches a certain size, page loads start becoming annoyingly slow, even despite already loading large assets like <images> video <videos> only on hover or click: the annoying slowness comes from the loading of the HTML itself before the browser can jump to the ID.
 
-And even worse: this README corresponds to the main index page of the website, which will make what a large number of users will see be that slowness.
+And even worse: this index corresponds to the main index page of the website, which will make what a large number of users will see be that slowness.
 
-Therefore, once this README reaches a certain size, you can add the `splitDefault` attribute to it, to make things smoother for readers.
+Therefore, once this index reaches a certain size, you can add the `splitDefault` attribute to it, to make things smoother for readers.
 
 And if you have a smaller, more self-contained, and highly valuable tutorial such as https://cirosantilli.com/x86-paging[], you can just split that into a separate `.bigb` source file.
 
 This way, any links into the smaller tutorial will show the entire page as generally desired.
 
-And any links from the tutorial, back to the main massive README will link back to split versions, leading to fast loads.
+And any links from the tutorial, back to the main massive index will link back to split versions, leading to fast loads.
 
 This feature was implemented at: https://github.com/ourbigbook/ourbigbook/issues/131
 
-Note that this huge README style is not recommended however. <Ciro Santilli> used to do it, but moved away from it. The currently recommended approach is to manually create not too large subtrees in each page. This way, readers can easily view several nearby sections without having to load a new page every time.
+Note that this huge index style is not recommended however. <Ciro Santilli> used to do it, but moved away from it. The currently recommended approach is to manually create not too large subtrees in each page. This way, readers can easily view several nearby sections without having to load a new page every time.
 
 = `\H` `splitSuffix` argument
 {parent=H arguments}
@@ -3038,10 +3038,10 @@ If you are making a limited repository that will not have a ton of images, then 
 
 With this setup, no further action is needed. For example, with a file structure of:
 ``
-./README.bigb
+./index.bigb
 ./Tank_man_standing_in_front_of_some_tanks.jpg
 ``
-just use the image from `README.bigb` as:
+just use the image from `index.bigb` as:
 \OurBigBookExample[[
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 ]]
@@ -3410,19 +3410,19 @@ Otherwise, the following effects happen:
 * the include itself renders as a link to the included document
 * <--embed-includes>
 
-Here is an example of inclusion of the files `not-readme.bigb` and `not-readme-2.bigb`:
+Here is an example of inclusion of the files `not-index.bigb` and `not-index-2.bigb`:
 ``
-\Include[not-readme]
-\Include[not-readme-2]
-\Include[not-readme-with-scope]
+\Include[not-index]
+\Include[not-index-2]
+\Include[not-index-with-scope]
 ``
 The above is the recommended and slightly <insane macro shortcut>[insaner] version of:
 ``
-\Include[not-readme]
+\Include[not-index]
 
-\Include[not-readme-2]
+\Include[not-index-2]
 
-\Include[not-readme-with-scope]
+\Include[not-index-with-scope]
 ``
 The insaner version is a bit insaner because the `\Include` magically discards the following newline node that follows it if it just a plaintext node containing exactly a newline. With a double newline, the newline would already have been previously taken out on the lexing stage as part of a paragraph.
 
@@ -3501,9 +3501,9 @@ Implemented at: https://github.com/ourbigbook/ourbigbook/issues/127
 
 This shows what includes render as.
 
-\Include[not-readme]
-\Include[not-readme-2]
-\Include[not-readme-with-scope]
+\Include[not-index]
+\Include[not-index-2]
+\Include[not-index-with-scope]
 \Include[subdir]
 \Include[subdir/notindex]
 
@@ -4551,9 +4551,9 @@ Now for a live example for quick and dirty interactive testing.
 
 \OurBigBookExample[[\x[inflection-example-proper-lower\]]]
 
-\OurBigBookExample[[\x[not-readme\]]]
+\OurBigBookExample[[\x[not-index\]]]
 
-\OurBigBookExample[[\x[not-readme]{c}]]
+\OurBigBookExample[[\x[not-index]{c}]]
 
 \OurBigBookExample[[\x[inflection-example-not-proper]{p}]]
 
@@ -4565,7 +4565,7 @@ Now for a live example for quick and dirty interactive testing.
 
 \OurBigBookExample[[\x[inflection-plural-examples]{p=1}]]
 
-\OurBigBookExample[[\x[not-the-readme-header-with-fixed-case\]]]
+\OurBigBookExample[[\x[not-the-index-header-with-fixed-case\]]]
 
 = Inflection example not-proper
 {parent=Cross reference title inflection example}
@@ -4752,42 +4752,42 @@ A closely related limitation is the simplistic approach to <\x id output format>
 {border}
 
 Reference to the first header of another file:
-\OurBigBookExample[[\x[not-readme\]]]
+\OurBigBookExample[[\x[not-index\]]]
 
 Reference to a non-first header of another file:
-\OurBigBookExample[[\x[h2-in-not-the-readme\]]]
+\OurBigBookExample[[\x[h2-in-not-the-index\]]]
 
-To make toplevel links cleaner, if the target header is the very first element of the other page, then the link does not get a fragment, e.g.: `\x[not-readme]` rendered as:
+To make toplevel links cleaner, if the target header is the very first element of the other page, then the link does not get a fragment, e.g.: `\x[not-index]` rendered as:
 ``
-<a href="not-readme"
+<a href="not-index"
 ``
 and not:
 ``
-<a href="not-readme#not-readme"
+<a href="not-index#not-index"
 ``
-while `\x[h2-in-not-the-readme]` is rendered with the fragment:
+while `\x[h2-in-not-the-index]` is rendered with the fragment:
 ``
-<a href="not-readme#h2-in-not-the-readme"
+<a href="not-index#h2-in-not-the-index"
 ``
 
 Reference to the first header of another file that is a second inclusion:
-\OurBigBookExample[[\x[included-by-not-readme\]]]
+\OurBigBookExample[[\x[included-by-not-index\]]]
 
 Reference to another header of another file, with <\x full argument>[`full`]:
-\OurBigBookExample[[\x[h2-in-not-the-readme]{full}.]]
+\OurBigBookExample[[\x[h2-in-not-the-index]{full}.]]
 Note that when `full` is used with references in another file in <--embed-includes>[multi page mode], the number is not rendered as explained at: <\x full argument in cross file references>{full}.
 
 Reference to an image in another file:
-\OurBigBookExample[[\x[image-not-readme-xi]{full}.]]
+\OurBigBookExample[[\x[image-not-index-xi]{full}.]]
 
 Reference to an image in another file:
-\OurBigBookExample[[\x[image-figure-in-not-the-readme-without-explicit-id]{full}.]]
+\OurBigBookExample[[\x[image-figure-in-not-the-index-without-explicit-id]{full}.]]
 
 Remember that the <the toplevel header>[ID of the toplevel header] is automatically derived from its file name, that's why we have to use:
-\OurBigBookExample[[\x[not-readme\]]]
+\OurBigBookExample[[\x[not-index\]]]
 instead of:
 ``
-\x[not-the-readme]
+\x[not-the-index]
 ``
 
 Reference to a subdirectory:
@@ -4802,15 +4802,15 @@ Reference to a subdirectory:
 ]]
 Implemented at: https://github.com/ourbigbook/ourbigbook/issues/116
 
-Reference to an internal header of another file: <h2 in not the README>. By default, That header ID gets prefixed by the ID of the top header.
+Reference to an internal header of another file: <h2 in not the index>. By default, That header ID gets prefixed by the ID of the top header.
 
 When using <--embed-includes> mode, the cross file references end up pointing to an ID inside the current HTML element, e.g.:
 ``
-<a href="#not-readme">
+<a href="#not-index">
 ``
 rather than:
 ``
-<a href="not-readme.html/#not-readme">
+<a href="not-index.html/#not-index">
 ``
 This is why IDs must be unique for elements across all pages.
 
@@ -5080,14 +5080,14 @@ To also show the section auto-generated number as in "Section X.Y My title" we a
 {parent=x full argument}
 
 For example in the following <cross file reference>:
-\OurBigBookExample[[\x[h2-in-not-the-readme]{full}.]]
+\OurBigBookExample[[\x[h2-in-not-the-index]{full}.]]
 we get just something like:
 ``
-Section "h2 in not the readme"
+Section "h2 in not the index"
 ``
 instead of:
 ``
-Section 1.2 "h2 in not the readme"
+Section 1.2 "h2 in not the index"
 ``
 This is because the number "Section 1.2" might already have been used in the current page, leading to confusion.
 
@@ -6187,9 +6187,9 @@ ourbigbook hello.bigb
 firefox _out/html/hello.html
 ``
 
-Files named `README.bigb` are automatically converted to `index.html` so that they will show on both GitHub READMEs and at the website's base address:
+Files named `index.bigb` are converted to `index.html` so that they will show on the website's base address:
 ``
-ourbigbook README.bigb
+ourbigbook index.bigb
 firefox _out/html/index.html
 ``
 
@@ -6203,7 +6203,7 @@ The output file can be selected explicitly with: <outfile>.
 
 Output to stdout instead of saving it to a file:
 ``
-ourbigbook --stdout README.bigb
+ourbigbook --stdout index.bigb
 ``
 
 In order to resolve <cross file references>, this actually does two passes:
@@ -6297,16 +6297,16 @@ When you run:
 npx ourbigbook .
 ``
 it converts all files in the current directory separately, e.g.:
-* `README.bigb` to `_out/html/index.html`, since `README` is a magic name that we want to show on the root URL
-* `not-readme.bigb` to `_out/html/not-readme.html`, as this one is a regular name unlike `README`
+* `index.bigb` to `_out/html/index.html`, since `index` is a magic name that we want to show on the root URL
+* `not-index.bigb` to `_out/html/not-index.html`, as this one is a regular name unlike `index`
 * `main.scss` to `main.css`
 
-If one of the input files starts getting too large, usually the toplevel `README.bigb` in which you dump everything by default like Ciro does, you can speed up development and just compile files individually with either:
+If one of the input files starts getting too large, usually the toplevel `index.bigb` in which you dump everything by default like Ciro does, you can speed up development and just compile files individually with either:
 ``
-npx ourbigbook README.bigb
-npx ourbigbook not-readme.bigb
+npx ourbigbook index.bigb
+npx ourbigbook not-index.bigb
 ``
-Note however that when those individual files have a <cross file reference> to something defined in `not-readme.bigb`, e.g. via `\x[h2-in-not-the-readme]`, then you must have first previously done pass once with:
+Note however that when those individual files have a <cross file reference> to something defined in `not-index.bigb`, e.g. via `\x[h2-in-not-the-index]`, then you must have first previously done pass once with:
 ``
 npx ourbigbook .
 ``
@@ -6325,10 +6325,10 @@ When dealing with large files, you might also be interested in the following ama
 
 To produce a single standalone output file that contains everything the viewer needs to correctly see the page do:
 ``
-npx ourbigbook --embed-resources --embed-includes README.bigb
+npx ourbigbook --embed-resources --embed-includes index.bigb
 ``
 You can now just give the generated `_out/html/index.html` to any reader and they should be able to view it offline without installing anything. The flags are:
-* <--embed-includes>: without this, `\Include[not-readme]` shows as a link to the file `_out/html/not-readme.html` which comes from `not-readme.bigb` With the flag, `not-readme.bigb` output gets embedded into the output `_out/html/index.html` directly
+* <--embed-includes>: without this, `\Include[not-index]` shows as a link to the file `_out/html/not-index.html` which comes from `not-index.bigb` With the flag, `not-index.bigb` output gets embedded into the output `_out/html/index.html` directly
 * <--embed-resources>: by default, we link to CSS and JavaScript that lives inside `node_modules`. With this flag, that CSS and JavaScript is copied inline into the document instead. One day we will try to handle <images> that way as well
 
 = Useless knowledge
@@ -6415,13 +6415,11 @@ The trade-offs between the two options are highlighted at: <OurBigBook Web vs st
 = Index file
 {parent=OurBigBook CLI}
 
-The following basenames are considered "index files":
-* `README.bigb`
-* `index.bigb`
+An index file is a file with basename `index.bigb`.
 
 Those basenames have the following magic properties:
 * the default output file name for an index file in HTML output is either:
-  * `index.html` when in the <project toplevel directory>. E.g. `README.bigb` renders to `index.html`. Note that GitHub and many other static website hosts then automatically hide the `index.html` part from the URL, so that your `README.bigb` hosted at `http://example.com` will be accessible simply under `http://example.com` and not `http://example.com/index.html`
+  * `index.html` when in the <project toplevel directory>. E.g. `index.bigb` renders to `index.html`. Note that GitHub and many other static website hosts then automatically hide the `index.html` part from the URL, so that your `index.bigb` hosted at `http://example.com` will be accessible simply under `http://example.com` and not `http://example.com/index.html`
   * the name of the subdirectory in which it is located when not in the <project toplevel directory>. E.g. `mysubdir/index.bigb` outputs to `mysubdir.html`
 
     Previously, we had placed the output in `mysubdir/index.html`, but this is not as nice as it makes GitHub pages produce URLs with a trailing slash as `mysubdir/`, which is ugly, see also: https://stackoverflow.com/questions/5948659/when-should-i-use-a-trailing-slash-in-my-url
@@ -6468,7 +6466,7 @@ This is the <index file> present in the <project toplevel directory>.
 
 The "home article" is the first article of <the toplevel index file>. E.g. in:
 
-README.bigb
+index.bigb
 ``
 = John Smith's Homepage
 
@@ -6528,8 +6526,8 @@ The home article has some special handling done to it, notably:
 When the file or directory being converted has an ancestor directory with a `ourbigbook.json` file, then your current working directory does not have any effect on OurBigBook output. For example if we have:
 ``
 /project/ourbigbook.json
-/project/README.bigb
-/project/subdir/README.bigb
+/project/index.bigb
+/project/subdir/index.bigb
 ``
 then all of the following conversions produce the same output:
 * directory conversion:
@@ -6537,12 +6535,12 @@ then all of the following conversions produce the same output:
   * `cd / && ourbigbook project`
   * `cd project/subdir && ourbigbook ..`
 * file conversion:
-  * `cd /project && ourbigbook README.bigb`
-  * `cd / && ourbigbook project/README.bigb`
-  * `cd project/subdir && ourbigbook ../README.bigb`
+  * `cd /project && ourbigbook index.bigb`
+  * `cd / && ourbigbook project/index.bigb`
+  * `cd project/subdir && ourbigbook ../index.bigb`
 
 When there isn't a `ourbigbook.json`, everything happens as though there were an empty `ourbigbook.json` file in the current working directory. So for example:
-* outputs that would be placed relative to inputs are still placed in that place, e.g. `README.bigb -> index.html` always stay together
+* outputs that would be placed relative to inputs are still placed in that place, e.g. `index.bigb -> index.html` always stay together
 * outputs that would be placed next to the `ourbigbook.json` are put in the current working directory, e.g. <the out directory>
 
 Internally, the general philosophy is that the JavaScript API in \a[index.js] works exclusively with paths relative to the <project toplevel directory>. It is then up to callers such as \a[ourbigbook] to ensure that filesystem specifics handle the relative paths correctly.
@@ -6606,7 +6604,7 @@ Makes <includes> render the included content in the same output file as the incl
 
 For example given:
 
-README.bigb
+index.bigb
 ``
 = Index
 
@@ -6624,7 +6622,7 @@ A paragraph in notindex.
 
 then for conversion with:
 ``
-ourbigbook --embed-includes README.bigb
+ourbigbook --embed-includes index.bigb
 ``
 then the output `index.html` contains an output equivalent to if your input file were:
 ``
@@ -6731,7 +6729,7 @@ For <ID extraction>, we always skip the extraction if the filesystem timestamp o
 For render:
 * we mark output files as outdated when the corresponding source file is parsed
 * we also skip rendering non-outdated files by default when you invoke ourbigbook on a directory, e.g. `ourbigbook .`, as this greatly speeds up the interactive error fixing turnaround time
-* we always re-render fully when you specify a single file, e.g. `ourbigbook path/to/README.bigb`
+* we always re-render fully when you specify a single file, e.g. `ourbigbook path/to/index.bigb`
 
 However, note that skipping renders, unlike for ID extraction, can lead to some outdated pages.
 
@@ -6801,9 +6799,9 @@ We could in principle solve this problem by figuring out exactly which files nee
 
 Parse and overwrite the local .bigb <OurBigBook Markup> input source files with the recommended code format. E.g.:
 ``
-ourbigbook README.bigb
+ourbigbook index.bigb
 ``
-overwrites `README.bigb` with the recommended formatting, and:
+overwrites `index.bigb` with the recommended formatting, and:
 ``
 ourbigbook .
 ``
@@ -6884,11 +6882,11 @@ ourbigbook --help-macros
 
 Give multiple times to enable a list of certain types of logs to stderr help debugging, e.g.:
 ``
-./ourbigbook --log ast tokens -- README.bigb
+./ourbigbook --log ast tokens -- index.bigb
 ``
 Note that this follows https://github.com/tj/commander.js/tree/e0e723810357e915210af38ccf5098ffe1fb8e65#variadic-option[commander.js' insane variadic argumentso syntax], and thus the `--` is required above. If you want to omit it for a single value you have to add the `=` sign as in:
 ``
-./ourbigbook --log=ast README.bigb
+./ourbigbook --log=ast index.bigb
 ``
 
 Values not documented in other sections:
@@ -6939,7 +6937,7 @@ TODO
 
 print <performance> statistics to stderr, for example
 ``
-./ourbigbook --log=perf README.bigb
+./ourbigbook --log=perf index.bigb
 ``
 could output:
 ``
@@ -6962,7 +6960,7 @@ which shows how long different parts of the <conversion process overview>[conver
 
 This option can also be useful to mark phases of the conversion to identify from which phase other logs are coming from, e.g. if we wanted to know which part of the conversion is making a ton of database requests we could run:
 ``
-ourbigbook --log db perf -- README.bigb
+ourbigbook --log db perf -- index.bigb
 ``
 and we would see the database requests made at each conversion phase.
 
@@ -6990,7 +6988,7 @@ Don't use the <ID database> during this run. This implies that the on-disk datab
 
 If not given, <cross references> render with the `.html` extension as in:
 ``
-<a href=not-readme.html#h2-in-not-the-readme>
+<a href=not-index.html#h2-in-not-the-index>
 ``
 
 This way, those links will work when rendering locally to `.html` files which is the default behaviour of:
@@ -7000,7 +6998,7 @@ ourbigbook .
 
 If given however, the links render without the `.html` as in:
 ``
-<a href=not-readme#h2-in-not-the-readme>
+<a href=not-index#h2-in-not-the-index>
 ``
 which is what is needed for servers such as GitHub Pages, which automatically remove the `.html` extension from paths.
 
@@ -7059,12 +7057,12 @@ This means that the source tree remains completely clean, and every output and t
 
 Save the output to a given file instead of outputting to stdout:
 ``
-./ourbigbook --outfile not-readme.html not-readme.bigb
+./ourbigbook --outfile not-index.html not-index.bigb
 ``
 
 The generated output is slightly different than that of:
 ``
-./ourbigbook not-readme.bigb > not-readme.html
+./ourbigbook not-index.bigb > not-index.html
 ``
 because with `--outfile` we know where the output is going, and so we can generate relative includes to default CSS/JavaScript files.
 
@@ -7098,10 +7096,10 @@ One important property of the `bigb` conversion is that is must not alter the <A
 
 One good test is:
 ``
-ourbigbook README.bigb &&
+ourbigbook index.bigb &&
 mv _out/html/index.html _out/html/old.html &&
-ourbigbook --format-source README.bigb  &&
-ourbigbook README.bigb &&
+ourbigbook --format-source index.bigb  &&
+ourbigbook index.bigb &&
 diff -u _out/html/old.html _out/html/index.html
 ``
 
@@ -7241,7 +7239,7 @@ OurBigBook tooling is so amazing that we also take care of the HTML publishing f
 
 Once a publish target is properly setup, all you have to do is run:
 ``
-git add README.bigb
+git add index.bigb
 git commit -m 'more content!'
 ourbigbook --publish
 ``
@@ -7515,7 +7513,7 @@ Defined variables:
   ``
 * `is_root_relpath`. Boolean. True if the toplevel being rendered on this output file is the <the index article>. E.g. in:
 
-  README.bigb
+  index.bigb
 
   ``
   = John Smith's homepage
@@ -7641,13 +7639,13 @@ ourbigbook --watch .
 ``
 When a directory is given as the input path, this automatically first does an <ID extraction> pass on all files to support <cross file references>.
 
-Now you can just edit any OurBigBook file such has `README.bigb`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `ourbigbook` command explicitly every time.
+Now you can just edit any OurBigBook file such has `index.bigb`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `ourbigbook` command explicitly every time.
 
 Exit by entering Ctrl + C on the terminal.
 
 Watch a single file:
 ``
-ourbigbook --watch README.bigb
+ourbigbook --watch index.bigb
 ``
 When a single file is watched, the reference database is not automatically updated. If it is not already up-to-date, you should first update it with:
 ``
@@ -8363,7 +8361,7 @@ For example, if you set:
   "linkFromStaticHeaderMetaToWeb": true
 }
 ``
-then in the rendering of a README.bigb:
+then in the rendering of a index.bigb:
 ``
 = Index
 
@@ -10542,7 +10540,7 @@ and adding the following settings to your User JSON settings file:
 Next, open the downloaded folder in Visual Studio Code with:
 * `Ctrl + Shift + P`
 * File: Open Folder
-then open a .bigb file such as README.bigb on vscode.
+then open a .bigb file such as index.bigb on vscode.
 
 Now you are ready to:
 * `Ctrl + Shift + B`: build all files in the folder
@@ -11614,11 +11612,11 @@ On Ubuntu 20.04 https://cirosantilli.com/linux-kernel-module-cheat/#p51[Lenovo T
 
 On P51:
 
-* `time ./ourbigbook --no-render . && time ./ourbigbook -S --log=perf README.bigb`:
+* `time ./ourbigbook --no-render . && time ./ourbigbook -S --log=perf index.bigb`:
 
   * ourbigbook 39e633f08b2abce10331b884c04d70dbe6d4565a before moving OurBigBook to Sequelize: 14s
     ``
-    convert README.bigb
+    convert index.bigb
     perf start 248.0712810009718
     perf tokenize_pre 248.36641899868846
     perf tokenize_post 2027.6697090007365
@@ -11635,7 +11633,7 @@ On P51:
     perf convert_path_pre_sqlite_transaction 14281.835940998048
     perf convert_path_post_sqlite_transaction 14551.673818998039
     perf convert_path_end 14551.860617998987
-    convert README.bigb finished in 14309.703324001282 ms
+    convert index.bigb finished in 14309.703324001282 ms
     perf convert_path_to_file_end 14552.230636000633
 
     real    0m14.602s
@@ -11672,7 +11670,7 @@ On P51:
     user    0m34.095s
     sys     0m4.427s
 
-    convert README.bigb
+    convert index.bigb
     perf start_convert undefined
     perf tokenize_pre 411.71094800531864
     perf tokenize_post 2265.3646410033107
@@ -11688,7 +11686,7 @@ On P51:
     perf convert_path_pre_sqlite_transaction 42147.847070001066
     perf convert_path_post_sqlite_transaction 42732.242132000625
     perf convert_path_end 42732.35991900414
-    convert README.bigb finished in 42327.62727500498 ms
+    convert index.bigb finished in 42327.62727500498 ms
     perf convert_path_to_file_end 42732.534088000655
 
     real    0m42.779s

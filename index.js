@@ -2966,7 +2966,7 @@ async function convert(
     // Split header conversion.
     if (context.options.split_headers) {
       // Reset katex_macros to the ourbigbook.json defaults, otherwise
-      // macros will get redefiend in the split render, as they are redefined on every render.
+      // macros will get redefined in the split render, as they are redefined on every render.
       context.katex_macros = { ...context.options.katex_macros }
       const content = toplevel_ast.args.content;
       // Gather up each header (must be a direct child of toplevel)
@@ -2978,7 +2978,7 @@ async function convert(
         if (
           macro_name === Macro.HEADER_MACRO_NAME &&
           // Just ignore extra added include headers, these
-          // were overwritting index-split.html output.
+          // were overwriting index-split.html output.
           !child_ast.from_include &&
           !child_ast.validation_output.synonym.boolean
         ) {
@@ -5177,7 +5177,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (ast.validation_output.parent.given) {
           [parent_id, parent_ast] = getParentArgumentAst(ast, context, options)
           if (parent_ast === undefined) {
-            const message = Macro.INCLUDE_MACRO_NAME + ' ' + HEADER_PARENT_ERROR_MESSAGE + parent_id;
+            const message = `${ESCAPE_CHAR}${Macro.INCLUDE_MACRO_NAME} ${HEADER_PARENT_ERROR_MESSAGE}"${parent_id}"`
             const error_ast = new PlaintextAstNode(' ' + errorMessageInOutput(message), ast.source_location);
             error_ast.parent_ast = ast.parent_ast;
             parent_arg.push(error_ast);

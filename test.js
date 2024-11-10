@@ -397,7 +397,7 @@ function assert_lib(
                 options.error_column,
                 options.error_path
               )
-            );
+            )
             if (options.error_message) {
               assert.strictEqual(error.message, options.error_message)
             }
@@ -7892,35 +7892,29 @@ assert_lib_error('include: parent argument to old ID fails gracefully with level
   7, 30, undefined, include_opts,
 )
 // TODO test not quite correct, have to remember how to do a error check with multiple files.
-//assert_lib_error('include: parent argument to old ID fails gracefully with parent',
-//  // https://github.com/ourbigbook/ourbigbook/issues/341
-//  `= Toplevel
-//
-//= No scope
-//{parent=}
-//
-//= No scope 2
-//{parent=No scope}
-//
-//= In my scope
-//{parent=No scope 2}
-//
-//\\Include[notindex]{parent=No scope}
-//
-//= In my scope 2
-//{parent=No scope 2}
-//`,
-//  12,
-//  1,
-//  'index',
-//  {
-//    convert_dir: true,
-//    input_path_noext: 'notindex',
-//    filesystem: {
-//      'notindex.bigb': '= Notindex\n'
-//    }
-//  },
-//)
+assert_lib_error('include: parent argument to old ID fails gracefully with parent',
+  // Related to https://github.com/ourbigbook/ourbigbook/issues/341
+  `= h1
+
+= h2
+{parent=}
+
+= h2 2
+{parent=}
+
+\\Include[include-one-level-1]{parent=h2}
+`,
+  9,
+  // Points to the `{` in `{parent=h2}`.
+  30,
+  'index.bigb',
+  {
+    input_path_noext: 'index',
+    convert_opts: {
+      embed_includes: true,
+    }
+  }
+)
 assert_lib_ast('include: simple without parent in the include with embed includes',
   `= aa
 

@@ -5,7 +5,7 @@
   "description": "OurBigBook markup and publishing",
   "icon": "logo.png",
   "repository": "https://docs.ourbigbook.com/_dir/vscode",
-  "version": "0.0.45",
+  "version": "0.0.46",
   "engines": {
     "vscode": "^1.91.0"
   },
@@ -108,7 +108,7 @@
   },
   "dependencies": {
     "open": "8.4.2",
-    "ourbigbook": "0.9.18"
+    "ourbigbook": "0.9.19"
   },
   "devDependencies": {
     "@types/mocha": "10.0.7",

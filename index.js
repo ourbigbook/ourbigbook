@@ -5104,6 +5104,10 @@ async function parse(tokens, options, context, extra_returns={}) {
   const header_title_ast_ancestors = []
   const header_ids = []
   let prevAst, ast, parent_arg
+  let isFirstAst = true
+  const lintStartsWithH1Header =
+    context.options.ourbigbook_json.lint.startsWithH1Header &&
+    !options.fromOurBigBookExample
   while (todo_visit.length > 0) {
     const pop = todo_visit.pop();
     if (pop === 'pop_title_ast_ancestors') {
@@ -5129,7 +5133,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
     let parent_arg_push_after = []
     let parent_arg_push_before = []
-    const macro_name = ast.macro_name;
+    const macro_name = ast.macro_name
     const nodeType = ast.node_type
     ast.from_include = options.from_include;
     ast.from_ourbigbook_example = options.from_ourbigbook_example;
@@ -5199,171 +5203,180 @@ async function parse(tokens, options, context, extra_returns={}) {
         if (curScope) {
           include_id = curScope + Macro.HEADER_SCOPE_SEPARATOR + include_id
         }
-        if (parent_ast === undefined) {
-          parent_ast_header_level = 0
-          parent_ast_header_tree_node = context.header_tree
+        if (include_id === TOPLEVEL_INDEX_ID) {
+          const message = `cannot ${ESCAPE_CHAR}${Macro.INCLUDE_MACRO_NAME} the toplevel index file https://docs.ourbigbook.com/#the-toplevel-index-file`
+          const error_ast = new PlaintextAstNode(' ' + errorMessageInOutput(message), ast.source_location);
+          error_ast.parent_ast = ast.parent_ast;
+          parent_arg.push(error_ast);
+          parseError(state, message, ast.source_location);
         } else {
-          // Possible on include without a parent header.
-          parent_ast_header_tree_node = parent_ast.header_tree_node;
-          parent_ast_header_level = parent_ast_header_tree_node.get_level();
-
-          addToRefsTo(
-            include_id,
-            context,
-            parent_ast.id,
-            REFS_TABLE_PARENT,
-            {
-              child_index: parent_ast_header_tree_node.children.length,
-              source_location: ast.source_location,
-            },
-          );
-          parent_ast.includes.push(href);
-        }
-        const peek_ast = todo_visit[todo_visit.length - 1][1];
-        if (peek_ast.node_type === AstType.PLAINTEXT && peek_ast.text === '\n') {
-          todo_visit.pop();
-        }
-        // https://github.com/ourbigbook/ourbigbook/issues/215
-        const read_include_ret = await (options.read_include(href, input_dir));
-        if (read_include_ret === undefined) {
-          if (
-            // On the local filesystem, this doesn't matter.
-            // But on the server it does, as we don't know about the other includes
-            // before they are processed.
-            context.options.render
-          ) {
-            let message = `could not find include: "${href}"`;
-            parseError(
-              state,
-              message,
-              ast.source_location,
-            );
-            parent_arg.push(new PlaintextAstNode(message, ast.source_location));
-          }
-        } else {
-          const [include_path, include_content] = read_include_ret;
-          if (options.include_path_set.has(include_path)) {
-            let message = `circular include detected to: "${include_path}"`;
-            parseError(
-              state,
-              message,
-              ast.source_location,
-            );
-            parent_arg.push(new PlaintextAstNode(message, ast.source_location));
+          if (parent_ast === undefined) {
+            parent_ast_header_level = 0
+            parent_ast_header_tree_node = context.header_tree
           } else {
-            let new_child_nodes;
-            if (options.embed_includes) {
-              new_child_nodes = await parseInclude(
-                include_content,
-                options,
-                parent_ast_header_level,
-                include_path,
-                href,
-                {
-                  errors: extra_returns.errors,
-                }
+            // Possible on include without a parent header.
+            parent_ast_header_tree_node = parent_ast.header_tree_node;
+            parent_ast_header_level = parent_ast_header_tree_node.get_level();
+
+            addToRefsTo(
+              include_id,
+              context,
+              parent_ast.id,
+              REFS_TABLE_PARENT,
+              {
+                child_index: parent_ast_header_tree_node.children.length,
+                source_location: ast.source_location,
+              },
+            );
+            parent_ast.includes.push(href);
+          }
+          const peek_ast = todo_visit[todo_visit.length - 1][1];
+          if (peek_ast.node_type === AstType.PLAINTEXT && peek_ast.text === '\n') {
+            todo_visit.pop();
+          }
+          // https://github.com/ourbigbook/ourbigbook/issues/215
+          const read_include_ret = await (options.read_include(href, input_dir));
+          if (read_include_ret === undefined) {
+            if (
+              // On the local filesystem, this doesn't matter.
+              // But on the server it does, as we don't know about the other includes
+              // before they are processed.
+              context.options.render
+            ) {
+              let message = `could not find include: "${href}"`;
+              parseError(
+                state,
+                message,
+                ast.source_location,
               );
-              options.include_path_set.add(include_path);
+              parent_arg.push(new PlaintextAstNode(message, ast.source_location));
+            }
+          } else {
+            const [include_path, include_content] = read_include_ret;
+            if (options.include_path_set.has(include_path)) {
+              let message = `circular include detected to: "${include_path}"`;
+              parseError(
+                state,
+                message,
+                ast.source_location,
+              );
+              parent_arg.push(new PlaintextAstNode(message, ast.source_location));
             } else {
-              const from_include = true
-              // Don't merge into a single file, render as a dummy header and an xref link instead.
-              const header_ast = new AstNode(
-                AstType.MACRO,
-                Macro.HEADER_MACRO_NAME,
-                {
-                  'level': new AstArgument(
-                    [
-                      new PlaintextAstNode(
-                        (parent_ast_header_level + 1).toString(),
-                      )
-                    ],
-                  ),
-                  [Macro.TITLE_ARGUMENT_NAME]: new AstArgument( [
-                      // Will be patched in later in order to group all DB queries at the end of parse,
-                      // as this requires getting an ID from DB.
-                      new PlaintextAstNode('TODO patchme')
-                    ],
-                  ),
-                },
-                undefined,
-                {
-                  force_no_index: true,
-                  from_include,
-                  id: include_id,
-                  level: parent_ast_header_level + 1,
-                },
-              );
-              options.include_hrefs[include_id] = header_ast
-              headers_from_include[include_id] = header_ast
-              if (options.cur_header !== undefined) {
-                header_ast.scope = options.cur_header.scope
-              }
-              header_ast.header_tree_node = new HeaderTreeNode(header_ast, parent_ast_header_tree_node);
-              parent_ast_header_tree_node.add_child(header_ast.header_tree_node);
-              new_child_nodes = [
-                header_ast,
-                new AstNode(
-                  AstType.PARAGRAPH,
-                ),
-                new AstNode(
-                  AstType.MACRO,
-                  Macro.PARAGRAPH_MACRO_NAME,
+              let new_child_nodes;
+              if (options.embed_includes) {
+                new_child_nodes = await parseInclude(
+                  include_content,
+                  options,
+                  parent_ast_header_level,
+                  include_path,
+                  href,
                   {
-                    [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
+                    errors: extra_returns.errors,
+                  }
+                );
+                options.include_path_set.add(include_path);
+              } else {
+                const from_include = true
+                // Don't merge into a single file, render as a dummy header and an xref link instead.
+                const header_ast = new AstNode(
+                  AstType.MACRO,
+                  Macro.HEADER_MACRO_NAME,
+                  {
+                    'level': new AstArgument(
                       [
-                        new AstNode(
-                          AstType.MACRO,
-                          Macro.X_MACRO_NAME,
-                          {
-                            'href': new AstArgument(
-                              [
-                                new PlaintextAstNode(href)
-                              ],
-                            ),
-                            [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
-                              [
-                                new PlaintextAstNode(
-                                  'This section is present in another page, follow this link to view it.',
-                                )
-                              ],
-                            ),
-                          },
-                          undefined,
-                        ),
+                        new PlaintextAstNode(
+                          (parent_ast_header_level + 1).toString(),
+                        )
+                      ],
+                    ),
+                    [Macro.TITLE_ARGUMENT_NAME]: new AstArgument( [
+                        // Will be patched in later in order to group all DB queries at the end of parse,
+                        // as this requires getting an ID from DB.
+                        new PlaintextAstNode('TODO patchme')
                       ],
                     ),
                   },
                   undefined,
-                ),
-                new AstNode(AstType.PARAGRAPH),
-              ];
-              for (const child_node of new_child_nodes) {
-                child_node.set_source_location(ast.source_location)
-                child_node.set_recursively({
-                  count_words: false,
-                  from_include,
-                })
+                  {
+                    force_no_index: true,
+                    from_include,
+                    id: include_id,
+                    level: parent_ast_header_level + 1,
+                  },
+                );
+                options.include_hrefs[include_id] = header_ast
+                headers_from_include[include_id] = header_ast
+                if (options.cur_header !== undefined) {
+                  header_ast.scope = options.cur_header.scope
+                }
+                header_ast.header_tree_node = new HeaderTreeNode(header_ast, parent_ast_header_tree_node);
+                parent_ast_header_tree_node.add_child(header_ast.header_tree_node);
+                new_child_nodes = [
+                  header_ast,
+                  new AstNode(
+                    AstType.PARAGRAPH,
+                  ),
+                  new AstNode(
+                    AstType.MACRO,
+                    Macro.PARAGRAPH_MACRO_NAME,
+                    {
+                      [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
+                        [
+                          new AstNode(
+                            AstType.MACRO,
+                            Macro.X_MACRO_NAME,
+                            {
+                              'href': new AstArgument(
+                                [
+                                  new PlaintextAstNode(href)
+                                ],
+                              ),
+                              [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
+                                [
+                                  new PlaintextAstNode(
+                                    'This section is present in another page, follow this link to view it.',
+                                  )
+                                ],
+                              ),
+                            },
+                            undefined,
+                          ),
+                        ],
+                      ),
+                    },
+                    undefined,
+                  ),
+                  new AstNode(AstType.PARAGRAPH),
+                ];
+                for (const child_node of new_child_nodes) {
+                  child_node.set_source_location(ast.source_location)
+                  child_node.set_recursively({
+                    count_words: false,
+                    from_include,
+                  })
+                }
               }
-            }
-            if (options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
-              if (options.render_include) {
-                parent_arg.push(ast)
+              if (options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
+                if (options.render_include) {
+                  parent_arg.push(ast)
+                }
+              } else {
+                // Push all included nodes, but don't recurse because:
+                // - all child includes will be resolved on the sub-render call
+                // - the current header level must not move, so that consecutive \Include
+                //   calls won't nest into one another
+                for (const new_child_node of new_child_nodes) {
+                  new_child_node.parent_ast = ast.parent_ast;
+                }
+                parent_arg.push(...new_child_nodes);
               }
-            } else {
-              // Push all included nodes, but don't recurse because:
-              // - all child includes will be resolved on the sub-render call
-              // - the current header level must not move, so that consecutive \Include
-              //   calls won't nest into one another
-              for (const new_child_node of new_child_nodes) {
-                new_child_node.parent_ast = ast.parent_ast;
-              }
-              parent_arg.push(...new_child_nodes);
             }
           }
         }
       }
     } else if (macro_name === Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME) {
-      if (options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
+      const ourbigbookExampleOptions = cloneAndSet(options, 'fromOurBigBookExample', true)
+      if (ourbigbookExampleOptions.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
         parent_arg.push(ast)
       }
       // We need to add these asts on OUTPUT_FORMAT_OURBIGBOOK so that we can extract their IDs later on.
@@ -5397,9 +5410,9 @@ async function parse(tokens, options, context, extra_returns={}) {
           {
             content: await parseInclude(
               renderArgNoescape(ast.args.content, cloneAndSet(context, 'id_conversion', true)),
-              options,
+              ourbigbookExampleOptions,
               0,
-              options.input_path,
+              ourbigbookExampleOptions.input_path,
               undefined,
               {
                 start_line: ast.source_location.line + 1,
@@ -5853,6 +5866,29 @@ async function parse(tokens, options, context, extra_returns={}) {
         arg.reset()
       }
     }
+
+    if (
+      macro_name !== Macro.TOPLEVEL_MACRO_NAME &&
+      macro_name !== undefined
+    ) {
+      if (
+        isFirstAst && lintStartsWithH1Header &&
+        (
+          macro_name !== Macro.HEADER_MACRO_NAME ||
+          ast.validation_output.level.positive_nonzero_integer !== 1
+        )
+      ) {
+        parseError(state, `files must start with a header of level 1, found instead ${
+          macro_name === Macro.HEADER_MACRO_NAME
+            ? `a header of level ${ast.validation_output.level.positive_nonzero_integer}`
+            : `${ESCAPE_CHAR}${macro_name}`
+        }`, ast.source_location)
+      }
+      isFirstAst = false
+    }
+  }
+  if (isFirstAst && lintStartsWithH1Header) {
+    parseError(state, `files cannot be empty`, new SourceLocation(1, 1))
   }
   if (context.options.log['ast-pp-simple']) {
     console.error('ast-pp-simple: after pass 1');
@@ -8290,6 +8326,7 @@ const OURBIGBOOK_JSON_DEFAULT = {
   dontIgnore: [],
   dontIgnoreConvert: [],
   enableArg: {},
+  fromOurBigBookExample: false,
   h: {
     numbered: true,
     splitDefault: false,
@@ -8304,6 +8341,7 @@ const OURBIGBOOK_JSON_DEFAULT = {
   ignore: [],
   ignoreConvert: [],
   lint: {
+    startsWithH1Header: false,
     filesAreIncluded: true,
     'h-tag': undefined,
     'h-parent': undefined,

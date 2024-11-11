@@ -9945,7 +9945,7 @@ And at last.
 
 // ourbigbook executable tests.
 assert_cli(
-  'input from stdin produces output on stdout simple',
+  'stdin: input from stdin produces output on stdout simple',
   {
     stdin: 'aabb',
     assert_not_exists: [TMP_DIRNAME],
@@ -9953,7 +9953,7 @@ assert_cli(
   }
 )
 assert_cli(
-  'input from stdin produces output on stdout when in git repository',
+  'stdin: input from stdin produces output on stdout when in git repository',
   {
     pre_exec: [['git', ['init']]],
     stdin: 'aabb',
@@ -9963,7 +9963,7 @@ assert_cli(
 )
 assert_cli(
   // Was blowing up on file existence check.
-  'input from stdin with relative link does not blow up',
+  'stdin: input from stdin with relative link does not blow up',
   {
     stdin: '\\a[asdf]',
     assert_not_exists: [TMP_DIRNAME],
@@ -9972,7 +9972,7 @@ assert_cli(
   }
 )
 assert_cli(
-  'input from stdin ignores ourbigbook.liquid.html',
+  'stdin: input from stdin ignores ourbigbook.liquid.html',
   {
     stdin: 'qwer',
     assert_xpath_stdout: [`//x:div[@class='p' and text()='qwer']`],
@@ -9984,28 +9984,67 @@ assert_cli(
 assert_cli(
   'input from file and --stdout produces output on stdout',
   {
-    args: ['--stdout', 'notindex.bigb'],
+    args: ['--stdout', 'index.bigb'],
     assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
-    filesystem: { 'notindex.bigb': 'aabb' },
+    filesystem: { 'index.bigb': '= Notindex\n\naabb\n' },
   }
 )
 assert_cli(
   'input from file produces an output file',
   {
+    args: ['notindex.bigb'],
     pre_exec: [
       { cmd: ['ourbigbook', ['--no-render', '.']], },
     ],
-    args: ['notindex.bigb'],
     filesystem: {
       'index.bigb': `= Toplevel
 
 \\Include[notindex]
 `,
       'notindex.bigb': `= Notindex\n`,
+      'ourbigbook.json': '{}\n',
     },
     assert_xpath: {
       [`${TMP_DIRNAME}/html/notindex.html`]: [xpath_header(1, 'notindex')],
     }
+  }
+)
+assert_cli(
+  'input from a file must start with an h1 header, plaintext leads to error',
+  {
+    args: ['index.bigb'],
+    filesystem: {
+      'index.bigb': `aaa\n`,
+    },
+    assert_exit_status: 1,
+  }
+)
+assert_cli(
+  'input from a file must start with an h1 header, h2 leads to error',
+  {
+    args: ['index.bigb'],
+    filesystem: {
+      'index.bigb': `== aaa\n`,
+    },
+    assert_exit_status: 1,
+  }
+)
+assert_cli(
+  // https://github.com/ourbigbook/ourbigbook/issues/340
+  'input from a file cannot be empty',
+  {
+    args: ['index.bigb'],
+    filesystem: {
+      'index.bigb': `\n`,
+    },
+    assert_exit_status: 1,
+  }
+)
+assert_cli(
+  'input from stdin does not need to start with a header',
+  {
+    stdin: 'aabb',
+    assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
   }
 )
 assert_cli(
@@ -10233,6 +10272,21 @@ $$
 Goodbye world.
 `,
 };
+assert_cli(
+  // Was blowing up during the implementation of
+  // https://github.com/ourbigbook/ourbigbook/issues/340
+  // because the OurBigBookExample creates a new toplevel parse,
+  // but it should not lint startsWithH1Header.
+  'OurBigBook Example: does not blow up in CLI file conversion when not starting in header',
+  {
+    args: ['index.bigb'],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\OurBigBookExample[[aaa]]`
+    }
+  }
+)
 assert_cli(
   // This is a big catch-all and should likely be split.
   'input from directory with ourbigbook.json produces several output files',
@@ -10741,7 +10795,7 @@ assert_cli(
   {
     args: ['index.bigb'],
     filesystem: {
-      'index.bigb': `$$\\mycmd$$`,
+      'index.bigb': `= Toplevel\n\n$$\\mycmd$$\n`,
       'ourbigbook.tex': `\\newcommand{\\mycmd}[0]{hello}`,
     },
   }
@@ -11513,8 +11567,8 @@ assert_cli(
   {
     args: ['index.bigb'],
     filesystem: {
-      'index.bigb': `asdf
-`,
+      'index.bigb': `asdf\n`,
+      'ourbigbook.json': `{ "lint": { "startsWithH1Header": false } }\n`,
     },
     assert_xpath: {
       [`${TMP_DIRNAME}/html/index.html`]: [
@@ -11811,7 +11865,9 @@ assert_cli(
   {
     args: ['myproj'],
     filesystem: {
-      'myproj/index.bigb': `\\Image[myimg.png]{provider=github}
+      'myproj/index.bigb': `= Toplevel
+
+\\Image[myimg.png]{provider=github}
 `,
       'myproj/ourbigbook.json': `{
   "media-providers": {
@@ -11839,7 +11895,9 @@ assert_cli(
   {
     args: ['myproj'],
     filesystem: {
-      'myproj/index.bigb': `\\Image[myimg.png]{provider=github}
+      'myproj/index.bigb': `= Toplevel
+
+\\Image[myimg.png]{provider=github}
 `,
       'myproj/ourbigbook.json': `{
   "media-providers": {
@@ -11867,7 +11925,9 @@ assert_cli(
     cwd: 'myproj',
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
-      'myproj/index.bigb': `\\Image[myimg.png]{provider=github}
+      'myproj/index.bigb': `= Toplevel
+
+\\Image[myimg.png]{provider=github}
 `,
       'myproj/ourbigbook.json': `{
   "media-providers": {
@@ -11892,8 +11952,7 @@ assert_cli(
   {
     args: ['--output-format', 'bigb', '.'],
     filesystem: {
-      'notindex.bigb': `Hello \\i[world]!
-`,
+      'index.bigb': `= Toplevel\n\nHello \\i[world]!\n`,
       'ourbigbook.json': `{
 }
 `,
@@ -11907,8 +11966,7 @@ assert_cli(
       },
       {
         filesystem_update: {
-          'notindex.bigb': `Hello \\i[world2]!
-`,
+          'index.bigb': `= Toplevel\n\nHello \\i[world2]!\n`,
         }
       },
       {
@@ -11916,13 +11974,12 @@ assert_cli(
       },
     ],
     assert_xpath: {
-      [`${TMP_DIRNAME}/html/notindex.html`]: [
+      [`${TMP_DIRNAME}/html/index.html`]: [
         "//x:i[text()='world2']",
       ],
     },
     assert_bigb: {
-      [`${TMP_DIRNAME}/bigb/notindex.bigb`]: `Hello \\i[world2]!
-`,
+      [`${TMP_DIRNAME}/bigb/index.bigb`]: `= Toplevel\n\nHello \\i[world2]!\n`,
     },
   }
 )
@@ -11977,10 +12034,15 @@ assert_cli(
   {
     args: ['.'],
     filesystem: {
-      'index.bigb': ``,
-      'notindex.bigb': ``,
-      'subdir/index.bigb': ``,
-      'subdir/notindex.bigb': ``,
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]
+\\Include[subdir]
+\\Include[subdir/notindex]
+`,
+      'notindex.bigb': `= Notindex\n`,
+      'subdir/index.bigb': `= Subdir\n`,
+      'subdir/notindex.bigb': `= Subdir/notindex\n`,
       'main.scss': ``,
     },
     assert_exists: [

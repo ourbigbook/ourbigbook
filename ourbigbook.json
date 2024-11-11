@@ -8,6 +8,7 @@
     "test_bigb_output.bigb",
     "test_bigb_output_2.bigb",
     "test_bigb_output_3.bigb",
+    "web/.*\\.bigb",
     "web/.*\\.scss"
   ],
   "media-providers": {

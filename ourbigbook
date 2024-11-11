@@ -482,7 +482,9 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
     if (nonOurbigbookOptions.ourbigbook_paths_converted_only) {
       return
     }
-    new_options = { ...ourbigbook_options }
+    new_options = {
+      ...ourbigbook_options
+    }
   }
   let showFinish = false
   let message_prefix
@@ -536,7 +538,25 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
         newNonOurbigbookOptions.input_path = input_path_relative_to_ourbigbook_json;
 
         // Convert.
-        output = await convert_input(input, new_options, newNonOurbigbookOptions);
+        const new_options_main =  { ...new_options }
+        let ourbigbook_json = new_options_main.ourbigbook_json
+        if (ourbigbook_json === undefined) {
+          ourbigbook_json = {}
+        } else {
+          ourbigbook_json = { ...ourbigbook_json }
+        }
+        new_options_main.ourbigbook_json = ourbigbook_json
+        let lint = ourbigbook_json.lint
+        if (lint === undefined) {
+          lint = {}
+        } else {
+          lint = { ...lint }
+        }
+        ourbigbook_json.lint = lint
+        if (lint.startsWithH1Header === undefined) {
+          lint.startsWithH1Header = true
+        }
+        output = await convert_input(input, new_options_main, newNonOurbigbookOptions);
         if (newNonOurbigbookOptions.had_error) {
           nonOurbigbookOptions.had_error = true;
         }

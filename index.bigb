@@ -6455,7 +6455,7 @@ In this case:
 = The toplevel index file
 {parent=Project toplevel directory}
 
-This is the <index file> present in the <project toplevel directory>.
+This is the <index file> present in the <project toplevel directory>, i.e. the file with path exactly `index.bigb`.
 
 = The home article
 {parent=The toplevel index file}

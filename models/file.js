@@ -21,7 +21,7 @@ module.exports = (sequelize, web=false) => {
     },
     last_parse: {
       // Used to skip parsing unmodified files on CLI. We could also
-      // do SHA checking there, but would likely be a slower, possibly not noticable.
+      // do SHA checking there, but would likely be a slower, possibly not noticeable.
       // Not used on Web, where we just mass return SHA2s so CLI uploader can check.
       type: DataTypes.DATE,
       allowNull: true,

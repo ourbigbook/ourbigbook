@@ -8402,21 +8402,23 @@ Hello world
     },
   }
 )
-assert_lib('include: subdir index.bigb outputs to subdir.html when there is no toplevel header',
-  // https://github.com/ourbigbook/ourbigbook/issues/247
-  {
-    filesystem: {
-      'subdir/index.bigb': `Hello world
-`,
-    },
-    convert_dir: true,
-    assert_xpath: {
-      'subdir.html': [
-        "//x:div[@class='p' and text()='Hello world']",
-      ],
-    },
-  }
-)
+// This is forbidden by default lintings (files must start with h1 and files must be included)
+// and allowing it would require a bit more option work. I don't think we care enough for now.
+//assert_lib('include: subdir index.bigb outputs to subdir.html when there is no toplevel header',
+//  // https://github.com/ourbigbook/ourbigbook/issues/247
+//  {
+//    filesystem: {
+//      'subdir/index.bigb': `Hello world
+//`,
+//    },
+//    convert_dir: true,
+//    assert_xpath: {
+//      'subdir.html': [
+//        "//x:div[@class='p' and text()='Hello world']",
+//      ],
+//    },
+//  }
+//)
 assert_lib('include: include of a header with a tag or child in a third file does not blow up',
   {
     filesystem: {
@@ -10010,6 +10012,7 @@ assert_cli(
   }
 )
 assert_cli(
+  // https://github.com/ourbigbook/ourbigbook/issues/340
   'input from a file must start with an h1 header, plaintext leads to error',
   {
     args: ['index.bigb'],
@@ -10020,6 +10023,7 @@ assert_cli(
   }
 )
 assert_cli(
+  // https://github.com/ourbigbook/ourbigbook/issues/340
   'input from a file must start with an h1 header, h2 leads to error',
   {
     args: ['index.bigb'],
@@ -12930,27 +12934,25 @@ assert_cli(
 //    },
 //  }
 //)
-//assert_cli(
-//  'include: circular dependency loop index -> 1 <-> 2',
-//  {
-//    args: ['.'],
-//    assert_exit_status: 2,
-//    filesystem: {
-//      'index.bigb': `= Toplevel
-//
-//\\Include[notindex]
-//`,
-//      'notindex.bigb': `= Notindex
-//
-//\\Include[notindex2]
-//`,
-//      'notindex2.bigb': `= Notindex2
-//
-//\\Include[notindex]
-//`,
-//    },
-//  }
-//)
+assert_cli(
+  'include: circular dependency loop index -> 1 <-> 2',
+  {
+    args: ['.'],
+    assert_exit_status: 1,
+    filesystem: {
+      'index.bigb': `= Toplevel
+`,
+      'notindex.bigb': `= Notindex
+
+\\Include[notindex2]
+`,
+      'notindex2.bigb': `= Notindex2
+
+\\Include[notindex]
+`,
+    },
+  }
+)
 assert_cli('include: tags show on embed include',
   {
     args: ['--embed-includes', 'index.bigb'],

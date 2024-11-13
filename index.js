@@ -2540,7 +2540,7 @@ function calculateId(
     ast.file = file_id_text_append
   }
   if (isHomeHeader) {
-    id = ''
+    id = TOPLEVEL_INDEX_ID
     if (ast.scope !== undefined && !skip_scope) {
       id = ast.scope
     }
@@ -3422,7 +3422,7 @@ function convertInitOptions(options) {
     //
     // Not sure if this was intended or not, but now it is also getting used as a
     // "detect if ID is a virtual toplevel or not".
-    options.ref_prefix = '';
+    options.ref_prefix = TOPLEVEL_INDEX_ID;
   }
   if (!('render' in options)) { options.render = true; }
   if (!('render_include' in options)) {
@@ -8252,7 +8252,8 @@ const REFS_TABLE_SYNONYM = 'SYNONYM';
 exports.REFS_TABLE_SYNONYM = REFS_TABLE_SYNONYM;
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
-const ESCAPE_CHAR = '\\';
+const ESCAPE_CHAR = '\\'
+exports.ESCAPE_CHAR = ESCAPE_CHAR
 // Rationale: 1 line  = 80 characters.
 // We want to preview files that are up to about 25 lines.
 // More than that is wasteful in visual vertical area and bandwidth.
@@ -8367,6 +8368,8 @@ const OUTPUT_FORMAT_HTML = 'html';
 exports.OUTPUT_FORMAT_HTML = OUTPUT_FORMAT_HTML
 const OUTPUT_FORMAT_ID = 'id';
 exports.OUTPUT_FORMAT_ID = OUTPUT_FORMAT_ID
+const TOPLEVEL_INDEX_ID = '';
+exports.TOPLEVEL_INDEX_ID = TOPLEVEL_INDEX_ID
 const VIDEO_EXTENSIONS = new Set([
   'avi',
   'mkv',

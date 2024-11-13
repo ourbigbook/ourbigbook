@@ -136,18 +136,32 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
  *                    These children start at depth 0.
  */
 async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
-  let { crossFileBoundaries, to_id_index_order } = opts
+  let {
+    crossFileBoundaries,
+    definedAtFileId,
+    unreachableFiles,
+    idAttrs,
+    refPrefix,
+    to_id_index_order,
+    transaction,
+  } = opts
+  const { File, Id, Ref } = sequelize.models
   if (to_id_index_order === undefined) {
     to_id_index_order = 'ASC'
   }
   if (crossFileBoundaries === undefined) {
     crossFileBoundaries = true
   }
+  if (idAttrs === undefined) {
+    idAttrs = '*'
+  }
+  if (unreachableFiles === undefined) {
+    unreachableFiles = false
+  }
+  if (unreachableFiles) {
+    idAttrs = 'defined_at'
+  }
   if (starting_ids.length > 0) {
-    let { idAttrs, definedAtFileId, transaction } = opts
-    if (idAttrs === undefined) {
-      idAttrs = '*'
-    }
     let definedAtString
     if (definedAtFileId) {
       definedAtString = ' AND "defined_at" = :definedAtFileId'
@@ -156,10 +170,10 @@ async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
     }
     let startingFileIds
     if (!crossFileBoundaries) {
-      startingFileIds = (await sequelize.models.Id.findAll({
+      startingFileIds = (await Id.findAll({
         where: { idid: starting_ids },
         include: [{
-          model: sequelize.models.File,
+          model: File,
           as: 'idDefinedAt',
         }]
       })).map(id => id.idDefinedAt.id)
@@ -177,38 +191,44 @@ async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
     // but it would likely be less efficient and harder to implement. So just going
     // with this for now.
     ;const [rows, meta] = await sequelize.query(`
-SELECT ${idAttrs} FROM "${sequelize.models.Id.tableName}"
+${unreachableFiles
+  ? `SELECT "id", "path" FROM "${File.tableName}"\n` +
+    `WHERE "toplevel_id" <> :refPrefix\n` +
+    `AND "id" NOT IN (`
+  : ''}
+SELECT ${idAttrs} FROM "${Id.tableName}"
 INNER JOIN (
-  WITH RECURSIVE tree_search (to_id, level, from_id, to_id_index) AS (
+  WITH RECURSIVE "tree_search" ("to_id", ${unreachableFiles ? '' : '"level", '}"from_id", "to_id_index") AS (
     SELECT
-      to_id,
-      0,
-      from_id,
-      to_id_index
-    FROM "${sequelize.models.Ref.tableName}"
-    WHERE from_id IN (:starting_ids) AND type = :type${definedAtString}
+      "to_id",
+      ${unreachableFiles ? '' : '0,'}
+      "from_id",
+      "to_id_index"
+    FROM "${Ref.tableName}"
+    WHERE "from_id" IN (:starting_ids) AND "type" = :type${definedAtString}
 
-    UNION ALL
+    UNION
 
     SELECT
-      t.to_id,
-      ts.level + 1,
-      ts.to_id,
-      t.to_id_index
-    FROM "${sequelize.models.Ref.tableName}" t, tree_search ts
-    WHERE t.from_id = ts.to_id AND type = :type${definedAtString}
+      "t"."to_id",
+      ${unreachableFiles ? '' : '"ts"."level" + 1,'}
+      "ts"."to_id",
+      "t"."to_id_index"
+    FROM "${Ref.tableName}" "t", tree_search "ts"
+    WHERE "t"."from_id" = "ts"."to_id" AND "type" = :type${definedAtString}
   )
   SELECT * FROM tree_search
 ) AS "RecRefs"
-ON "${sequelize.models.Id.tableName}".idid = "RecRefs"."to_id"
-  AND "${sequelize.models.Id.tableName}".macro_name = '${ourbigbook.Macro.HEADER_MACRO_NAME}'${crossFileBoundaries ? '' : `\n  AND "${sequelize.models.Id.tableName}".defined_at IN (:startingFileIds)`}
-ORDER BY "RecRefs".level ASC, "RecRefs".from_id ASC, "RecRefs".to_id_index ${to_id_index_order}
+ON "${Id.tableName}".idid = "RecRefs"."to_id"
+  AND "${Id.tableName}"."macro_name" = '${ourbigbook.Macro.HEADER_MACRO_NAME}'${crossFileBoundaries ? '' : `\n  AND "${Id.tableName}"."defined_at" IN (:startingFileIds)`}
+${unreachableFiles ? ')' : `ORDER BY "RecRefs"."from_id" ASC, "RecRefs"."to_id_index" ${to_id_index_order}`}
 `,
       {
         replacements: {
+          refPrefix,
           starting_ids,
           startingFileIds,
-          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
           definedAtFileId,
         },
         transaction,
@@ -232,33 +252,34 @@ class SqlDbProvider extends web_api.DbProviderBase {
 
   async clear(input_paths, transaction) {
     const sequelize = this.sequelize
+    const { File, Id, Ref } = sequelize.models
     return Promise.all([
       // TODO get rid of this when we start deleting files on CLI.
       // https://docs.ourbigbook.com/bigb-id-ref-and-file-foreign-normalization
-      sequelize.models.Id.findAll({
+      Id.findAll({
         where: {},
         include: [
           {
-            model: sequelize.models.File,
+            model: File,
             as: 'idDefinedAt',
             required: true,
             where: { path: input_paths },
           },
         ],
         transaction
-      }).then(ids => sequelize.models.Id.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
-      sequelize.models.Ref.findAll({
+      }).then(ids => Id.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
+      Ref.findAll({
         attributes: ['id'],
         include: [
           {
-            model: sequelize.models.File,
+            model: File,
             as: 'definedAt',
             where: { path: input_paths },
             attributes: [],
           },
         ],
         transaction,
-      }).then(ids => sequelize.models.Ref.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
+      }).then(ids => Ref.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
     ])
   }
 
@@ -270,30 +291,33 @@ class SqlDbProvider extends web_api.DbProviderBase {
       // Toplevel dir, delete all IDs.
       prefix_literal = '%'
     }
+    const sequelize = this.sequelize
+    const Op = sequelize.op
+    const { File, Id, Ref } = sequelize.models
     return Promise.all([
-      this.sequelize.models.Id.destroy({
+      Id.destroy({
         where: {},
         include: [
           {
-              model: sequelize.models.File,
-              as: 'idDefinedAt',
-              required: true,
-              where: { path: { [this.sequelize.Sequelize.Op.like]: prefix_literal } }
+            model: File,
+            as: 'idDefinedAt',
+            required: true,
+            where: { path: { [Op.like]: prefix_literal } }
           },
         ],
       }),
-      this.sequelize.models.Ref.findAll({
+      Ref.findAll({
         attributes: ['id'],
         include: [
           {
-            model: this.sequelize.models.File,
+            model: File,
             as: 'definedAt',
-            where: { path: { [this.sequelize.Sequelize.Op.like]: prefix_literal } },
+            where: { path: { [Op.like]: prefix_literal } },
             attributes: [],
           },
         ],
         transaction,
-      }).then(ids => this.sequelize.models.Ref.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
+      }).then(ids => Ref.destroy({ where: { id: ids.map(id => id.id ) }, transaction })),
     ])
   }
 
@@ -824,10 +848,18 @@ async function check_db(sequelize, paths_converted, opts={}) {
     t0 = performance.now();
     console.error('perf: check_db.start');
   }
+  const dontLintFilesAreIncluded =
+    web ||
+    (
+      options.ourbigbook_json !== undefined &&
+      options.ourbigbook_json.lint !== undefined &&
+      !options.ourbigbook_json.lint.filesAreIncluded
+    )
   const [
     new_refs,
     doubleParents,
     noParents,
+    unreachableFiles,
     duplicate_rows,
     invalid_title_title_rows,
   ] = await Promise.all([
@@ -919,7 +951,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
         })
     ,
     // noParents
-    (web || (options.ourbigbook_json !== undefined && options.ourbigbook_json.lint !== undefined && !options.ourbigbook_json.lint.filesAreIncluded))
+    dontLintFilesAreIncluded
       ? []
       : Id.findAll({
           include: [
@@ -948,6 +980,24 @@ async function check_db(sequelize, paths_converted, opts={}) {
             '$from.id$': null,
           }
         })
+    ,
+    // unreachableFiles
+    // It is not ideal to skip this check here as it means that we can have 
+    // infinite loops if filesAreIncluded check is disabled by user
+    // on ourbigbook.json. But good enough for now.
+    // https://github.com/ourbigbook/ourbigbook/issues/204
+    dontLintFilesAreIncluded
+      ? []
+      : fetch_header_tree_ids(
+          sequelize,
+          [ref_prefix],
+          {
+            unreachableFiles: true,
+            idAttrs: ['defined_at'],
+            refPrefix: ref_prefix,
+            transaction,
+          },
+        )
     ,
     Id.findDuplicates(paths_converted, transaction),
     Id.findInvalidTitleTitle(paths_converted, transaction),
@@ -1083,6 +1133,24 @@ async function check_db(sequelize, paths_converted, opts={}) {
     for (const id of noParents) {
       error_messages.push(
         `ID "${id.idid}" defined in file "${id.idDefinedAt.path}" has no parent and won't show on the toplevel table of contents, and is not Web uploadable, make sure to either include that file from another file with \\Include https://docs.ourbigbook.com/#include or add it to your ignored files: https://docs.ourbigbook.com/#ourbigbook-json/ignore`
+      )
+    }
+  } else {
+    // Only check for reachability when there are no files without parent.
+    // Otherwise, e.g. if we have aaa.bigb without parent and Include chain:
+    // aaa.bigb -> bbb.bigb -> ccc.bigb
+    // then this error would give three possible paths, which is less precise and more confusing.
+    // This check exists only to prevent cycling includes: https://github.com/ourbigbook/ourbigbook/issues/204
+    // e.g. such as:
+    // aaa.bigb -> bbb.bigb -> ccc.bigb -> aaa.bigb
+    // because in that case all files have a parent, but we have a loop. But because double parent
+    // is also forbidden, this can only happen if there is a loop.
+    if (unreachableFiles.length) {
+      error_messages.push(
+        `the following files cannot be reached from the toplevel index file via ` +
+        `${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.INCLUDE_MACRO_NAME}, ` +
+        `did you forget some ${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.INCLUDE_MACRO_NAME}? ` +
+        unreachableFiles.map(f => `"${f.path}"`).join(', ')
       )
     }
   }

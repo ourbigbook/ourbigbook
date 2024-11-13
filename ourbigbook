@@ -126,14 +126,18 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, nonOu
       pathPrefix = ''
     }
     pathPrefix += '%'
+    const { File, Id, Ref, Render } = sequelize.models
     const ourbigbook_paths_converted = newNonOurbigbookOptions.ourbigbook_paths_converted
-    const [,,file_rows] = await Promise.all([
+    const [,,,file_rows] = await Promise.all([
+      // Delete IDs from deleted files.
+      // It is possible in pure SQL, but not supported in sequelize:
       // https://cirosantilli.com/delete-with-join-sql
+      // so we do a double query for now.
       sequelize.models.Id.findAll({
         attributes: ['id'],
         include: [
           {
-            model: sequelize.models.File,
+            model: File,
             as: 'idDefinedAt',
             where: {
               path: {
@@ -144,12 +148,13 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, nonOu
             attributes: [],
           },
         ],
-      }).then(ids => sequelize.models.Id.destroy({ where: { id: ids.map(id => id.id ) } })),
-      sequelize.models.Ref.findAll({
+      }).then(ids => Id.destroy({ where: { id: ids.map(id => id.id ) } })),
+      // Delete Refs from deleted files.
+      Ref.findAll({
         attributes: ['id'],
         include: [
           {
-            model: sequelize.models.File,
+            model: File,
             as: 'definedAt',
             where: {
               path: {
@@ -160,13 +165,22 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, nonOu
             attributes: [],
           },
         ],
-      }).then(ids => sequelize.models.Ref.destroy({ where: { id: ids.map(id => id.id ) } })),
-      sequelize.models.File.findAll({
+      }).then(ids => Ref.destroy({ where: { id: ids.map(id => id.id ) } })),
+      // Delete deleted Files
+      File.destroy({
+        where: {
+          path: {
+            [Op.not]: ourbigbook_paths_converted,
+            [Op.like]: pathPrefix,
+          }
+        }
+      }),
+      File.findAll({
         where: { path: ourbigbook_paths_converted },
         include: [{
-          model: sequelize.models.Render,
+          model: Render,
           where: {
-            type: sequelize.models.Render.Types[nonOurbigbookOptions.renderType],
+            type: Render.Types[nonOurbigbookOptions.renderType],
           },
           // We still want to get last_parsed from non-rendered files.
           required: false,
@@ -206,7 +220,8 @@ async function check_db(nonOurbigbookOptions) {
         }
       )
       if (error_messages.length > 0) {
-        cli_error('\n' + error_messages.join('\n'))
+        console.error(error_messages.map(m => 'error: ' + m).join('\n'))
+        cli_error()
       }
     }
     console.log(`check_db: ${finished_in_ms(now() - t1)}`)

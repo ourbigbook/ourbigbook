@@ -10,6 +10,10 @@
 	"settings": {
 		"cSpell.words": [
 			"Ourbigbook"
-		]
+		],
+        "files.watcherExclude": {
+            "**/.git/**": true,
+            "_out/**": true
+        }
 	}
 }

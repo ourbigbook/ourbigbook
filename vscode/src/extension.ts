@@ -373,17 +373,23 @@ export async function activate(context: vscode.ExtensionContext) {
         })
         const fetchHeaderTreeIdsRows = await dbProvider.fetch_header_tree_ids(
           [file.toplevelId.idid], { crossFileBoundaries: false })
-
         const toplevelIdJson = JSON.parse(file.toplevelId.ast_json)
         const toplevelIdJsonSourceLocation = toplevelIdJson.source_location
         const toplevelHeaderTreeNode = new ourbigbook.HeaderTreeNode()
-        const headerTree = dbProvider.build_header_tree(fetchHeaderTreeIdsRows, {
+        dbProvider.build_header_tree(fetchHeaderTreeIdsRows, {
           context: renderContext,
           // Otherwise we can't know h2 indices.
           toplevelHeaderTreeNode,
         })
         function getName(lineNum: number) {
-          return document.lineAt(lineNum).text.replace(INSANE_HEADER_START_REGEXP, '')
+          //channel.appendLine(`provideDocumentSymbols.getName lineNum=${lineNum} document.lineAt(lineNum)=${document.lineAt(lineNum).text}`)
+          const text = document.lineAt(lineNum).text
+          const ret = text.replace(INSANE_HEADER_START_REGEXP, '')
+          if (ret !== text) {
+            return ret
+          } else {
+            return '[TOC OUTDATED, TRY SAVING THE FILE AGAIN WITH CTRL + S]'
+          }
         }
         // Toplevel not returned from the tree fetch, so we manually add it here.
         const toplevelDocumentSymbol = new vscode.DocumentSymbol(
@@ -413,6 +419,7 @@ export async function activate(context: vscode.ExtensionContext) {
         while (todoVisit.length > 0) {
           const treeNode = todoVisit.pop()
           const ast = treeNode.ast
+          //channel.appendLine(`provideDocumentSymbols treeNode.ast.id=${treeNode.ast.id}`)
           let endLine, endColumn
           const parentTreeNode = treeNode.parent_ast
           const nextSibling = parentTreeNode.children[treeNode.index + 1]

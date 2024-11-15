@@ -40,6 +40,11 @@
       }
     ],
     "configurationDefaults": {
+      "files.watcherExclude": {
+        "**/.git/objects/**": true,
+        "**/node_modules/**": true,
+        "_out/**": true
+      },
       "[ourbigbook]": {
         "editor.autoClosingBrackets": "never",
         "editor.quickSuggestions": {

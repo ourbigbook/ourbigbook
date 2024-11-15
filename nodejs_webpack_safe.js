@@ -221,7 +221,7 @@ INNER JOIN (
 ) AS "RecRefs"
 ON "${Id.tableName}".idid = "RecRefs"."to_id"
   AND "${Id.tableName}"."macro_name" = '${ourbigbook.Macro.HEADER_MACRO_NAME}'${crossFileBoundaries ? '' : `\n  AND "${Id.tableName}"."defined_at" IN (:startingFileIds)`}
-${unreachableFiles ? ')' : `ORDER BY "RecRefs"."from_id" ASC, "RecRefs"."to_id_index" ${to_id_index_order}`}
+${unreachableFiles ? ')' : `ORDER BY ${unreachableFiles ? '' : '"RecRefs"."level" ASC, '}"RecRefs"."from_id" ASC, "RecRefs"."to_id_index" ${to_id_index_order}`}
 `,
       {
         replacements: {

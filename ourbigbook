@@ -2061,7 +2061,7 @@ if (cli.helpMacros) {
                   await sequelizeWebIndexId.upsert({ idid: header_ast.id, uniqueHack: 0 })
                   isToplevelIndex = true
                 }
-                inpath = `${outbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`
+                inpath = `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`
               } else {
                 const titleId = ourbigbook.titleToId(title)
                 if (titleId !== inpathParse.name) {

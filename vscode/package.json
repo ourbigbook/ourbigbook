@@ -35,6 +35,18 @@
         "title": "OurBigBook: Build all and view output for current file"
       },
       {
+        "command": "ourbigbook.publishStatic",
+        "title": "OurBigBook: Publish static website (--publish)"
+      },
+      {
+        "command": "ourbigbook.publishWeb",
+        "title": "OurBigBook: Publish to OurBigBook Web (--web)"
+      },
+      {
+        "command": "ourbigbook.publishWebAndStatic",
+        "title": "OurBigBook: Publish to OurBigBook Web and static website (--web and --publish)"
+      },
+      {
         "command": "ourbigbook.viewOutput",
         "title": "OurBigBook: View output for current file"
       }
@@ -71,6 +83,16 @@
       {
         "command": "ourbigbook.build",
         "key": "ctrl+shift+b",
+        "when": "editorLangId == 'ourbigbook'"
+      },
+      {
+        "command": "ourbigbook.publishWeb",
+        "key": "ctrl+shift+alt+b",
+        "when": "editorLangId == 'ourbigbook'"
+      },
+      {
+        "command": "ourbigbook.publishWebAndStatic",
+        "key": "ctrl+alt+b",
         "when": "editorLangId == 'ourbigbook'"
       },
       {

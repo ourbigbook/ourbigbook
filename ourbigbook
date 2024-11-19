@@ -1857,6 +1857,7 @@ if (cli.helpMacros) {
         }
         webUrl = `https://${host}`
       }
+      console.log(`Publishing to: ${webUrl}`)
       const url = new URL(webUrl)
       const host = url.host
       await create_db(ourbigbook_options, nonOurbigbookOptions);

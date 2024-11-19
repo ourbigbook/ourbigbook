@@ -62,25 +62,11 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
 
-  async function updateSequelize(oldOurbigbookJsonDir: string|undefined, funcname: string) {
-    if (ourbigbookJsonDir !== oldOurbigbookJsonDir) {
-      sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
-        logging: (s: string) => channel.appendLine(`${funcname} sql=${s}`),
-        storage: path.join(
-          ourbigbookJsonDir as string,
-          ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
-          ourbigbook_nodejs_front.SQLITE_DB_BASENAME
-        ),
-      })
-      dbProvider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize)
-      renderContext = ourbigbook.convertInitContext({
-        db_provider: dbProvider,
-        output_format: ourbigbook.OUTPUT_FORMAT_ID
-      })
-    }
-  }
-
-  async function buildAll(): Promise<number|undefined> {
+  async function runTask(
+    cmd: string,
+    args: string[],
+    cb?: ((ourbigbookjsonDir: string|undefined) => void)
+  ): Promise<number|undefined> {
     // Also worked, but worse user experience.
     // With task:
     // - auto pops up terminal
@@ -110,10 +96,9 @@ export async function activate(context: vscode.ExtensionContext) {
     // build task
     const quotingStyle: vscode.ShellQuoting = vscode.ShellQuoting.Strong
     let myTaskCommand: vscode.ShellQuotedString = {
-      value: 'npx',
+      value: cmd,
       quoting: quotingStyle,
     }
-    const args = ['ourbigbook', '.']
     let myTaskArgs: vscode.ShellQuotedString[] = args.map((arg) => {
       return { value: arg, quoting: quotingStyle }
     })
@@ -131,7 +116,7 @@ export async function activate(context: vscode.ExtensionContext) {
       { type: "shell", group: "build", label: taskName },
       vscode.TaskScope.Workspace,
       taskName,
-      "makefile",
+      'makefile',
       shellExec
     )
     myTask.presentationOptions.clear = true
@@ -145,30 +130,74 @@ export async function activate(context: vscode.ExtensionContext) {
           disposable.dispose()
           const exitCode = e.exitCode
           if (exitCode === 0) {
-            if (
-              ourbigbookJsonDir !== undefined &&
-              vscode.workspace.getConfiguration('ourbigbook').gitAutoCommitAfterBuild
-            ) {
-              let p
-              p = child_process.spawnSync('git', ['-C', ourbigbookJsonDir, 'add', '-u', path.join(ourbigbookJsonDir, `/*.${OURBIGBOOK_EXT}`)])
-              if (p.status !== 0) {
-                vscode.window.showInformationMessage('git add failed, see extension logs for details')
-                channel.appendLine(`git add failed:\nstdout:\n${p.stdout}\nstderr\n${p.stderr}`)
-              } else {
-                p = child_process.spawnSync('git', ['diff', '--name-only', '--cached'])
-                if (p.stdout) {
-                  let p = child_process.spawnSync('git', ['-C', ourbigbookJsonDir, 'commit', '-m', 'OurBigBook Vscode extension auto commit'])
-                  if (p.status !== 0) {
-                    vscode.window.showInformationMessage('git commit failed, see extension logs for details')
-                    channel.appendLine(`git commit failed:\nstdout:\n${p.stdout}\nstderr\n${p.stderr}`)
-                  }
-                }
-              }
+            if (cb !== undefined) {
+              cb(ourbigbookJsonDir)
             }
           }
           resolve(exitCode)
         }
       })
+    })
+  }
+
+  async function updateSequelize(oldOurbigbookJsonDir: string|undefined, funcname: string) {
+    if (ourbigbookJsonDir !== oldOurbigbookJsonDir) {
+      sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
+        logging: (s: string) => channel.appendLine(`${funcname} sql=${s}`),
+        storage: path.join(
+          ourbigbookJsonDir as string,
+          ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
+          ourbigbook_nodejs_front.SQLITE_DB_BASENAME
+        ),
+      })
+      dbProvider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize)
+      renderContext = ourbigbook.convertInitContext({
+        db_provider: dbProvider,
+        output_format: ourbigbook.OUTPUT_FORMAT_ID
+      })
+    }
+  }
+
+  async function buildAll(): Promise<number|undefined> {
+    return runTask(
+      'npx',
+      ['ourbigbook', '.'],
+      (ourbigbookJsondir: string|undefined) => {
+        if (
+          ourbigbookJsonDir !== undefined &&
+          vscode.workspace.getConfiguration('ourbigbook').gitAutoCommitAfterBuild
+        ) {
+          let p
+          p = child_process.spawnSync('git', ['-C', ourbigbookJsonDir, 'add', '-u', path.join(ourbigbookJsonDir, `/*.${OURBIGBOOK_EXT}`)])
+          if (p.status !== 0) {
+            vscode.window.showInformationMessage('git add failed, see extension logs for details')
+            channel.appendLine(`git add failed:\nstdout:\n${p.stdout}\nstderr\n${p.stderr}`)
+          } else {
+            p = child_process.spawnSync('git', ['diff', '--name-only', '--cached'])
+            if (p.stdout.toString()) {
+              let p = child_process.spawnSync('git', ['-C', ourbigbookJsonDir, 'commit', '-m', 'OurBigBook Vscode extension auto commit'])
+              if (p.status !== 0) {
+                vscode.window.showInformationMessage('git commit failed, see extension logs for details')
+                channel.appendLine(`git commit failed:\nstdout:\n${p.stdout}\nstderr\n${p.stderr}`)
+              }
+            }
+          }
+        }
+      }
+    )
+  }
+
+  async function publishStatic(): Promise<number|undefined> {
+    return runTask('npx', ['ourbigbook', '--publish'])
+  }
+
+  async function publishWeb(): Promise<number|undefined> {
+    return runTask('npx', ['ourbigbook', '--web'])
+  }
+
+  async function publishWebAndStatic(): Promise<number|undefined> {
+    return runTask('npx', ['ourbigbook', '--web'], (ourbigbookJsonDir) => {
+      return runTask('npx', ['ourbigbook', '--publish'])
     })
   }
 
@@ -201,7 +230,16 @@ export async function activate(context: vscode.ExtensionContext) {
   context.subscriptions.push(
     vscode.commands.registerCommand('ourbigbook.build', async function () {
       return buildAll()
-    })
+    }),
+    vscode.commands.registerCommand('ourbigbook.publishStatic', async function () {
+      return publishStatic()
+    }),
+    vscode.commands.registerCommand('ourbigbook.publishWeb', async function () {
+      return publishWeb()
+    }),
+    vscode.commands.registerCommand('ourbigbook.publishWebAndStatic', async function () {
+      return publishWebAndStatic()
+    }),
   )
   context.subscriptions.push(
     vscode.commands.registerCommand('ourbigbook.buildAndView', async function () {

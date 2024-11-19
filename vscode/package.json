@@ -39,6 +39,16 @@
         "title": "OurBigBook: View output for current file"
       }
     ],
+    "configuration": {
+      "title": "OurBigBook",
+      "properties": {
+        "ourbigbook.gitAutoCommitAfterBuild": {
+          "type": "boolean",
+          "default": false,
+          "description": "Automatically git add and commit after a successful build. New .bigb files are automatically added, but you must manually git add new non-.bigb files to help prevent accidental data leaks."
+        }
+      }
+    },
     "configurationDefaults": {
       "files.watcherExclude": {
         "**/.git/objects/**": true,

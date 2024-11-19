@@ -7,6 +7,7 @@ import * as vscode from 'vscode'
 const open = require('open')
 
 const ourbigbook = require('ourbigbook')
+const { OURBIGBOOK_EXT } = ourbigbook
 
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
@@ -116,8 +117,9 @@ export async function activate(context: vscode.ExtensionContext) {
     let myTaskArgs: vscode.ShellQuotedString[] = args.map((arg) => {
       return { value: arg, quoting: quotingStyle }
     })
+    const ourbigbookJsonDir = getOurbigbookJsonDir()
     let myTaskOptions: vscode.ShellExecutionOptions = {
-      cwd: getOurbigbookJsonDir(),
+      cwd: ourbigbookJsonDir,
     }
     let shellExec: vscode.ShellExecution = new vscode.ShellExecution(
       myTaskCommand,
@@ -141,7 +143,30 @@ export async function activate(context: vscode.ExtensionContext) {
       const disposable = vscode.tasks.onDidEndTaskProcess(e => {
         if (e.execution === execution) {
           disposable.dispose()
-          resolve(e.exitCode)
+          const exitCode = e.exitCode
+          if (exitCode === 0) {
+            if (
+              ourbigbookJsonDir !== undefined &&
+              vscode.workspace.getConfiguration('ourbigbook').gitAutoCommitAfterBuild
+            ) {
+              let p
+              p = child_process.spawnSync('git', ['-C', ourbigbookJsonDir, 'add', '-u', path.join(ourbigbookJsonDir, `/*.${OURBIGBOOK_EXT}`)])
+              if (p.status !== 0) {
+                vscode.window.showInformationMessage('git add failed, see extension logs for details')
+                channel.appendLine(`git add failed:\nstdout:\n${p.stdout}\nstderr\n${p.stderr}`)
+              } else {
+                p = child_process.spawnSync('git', ['diff', '--name-only', '--cached'])
+                if (p.stdout) {
+                  let p = child_process.spawnSync('git', ['-C', ourbigbookJsonDir, 'commit', '-m', 'OurBigBook Vscode extension auto commit'])
+                  if (p.status !== 0) {
+                    vscode.window.showInformationMessage('git commit failed, see extension logs for details')
+                    channel.appendLine(`git commit failed:\nstdout:\n${p.stdout}\nstderr\n${p.stderr}`)
+                  }
+                }
+              }
+            }
+          }
+          resolve(exitCode)
         }
       })
     })
@@ -154,7 +179,7 @@ export async function activate(context: vscode.ExtensionContext) {
       const parse = path.parse(curFilepath)
       channel.appendLine(`buildAndView: curFilepath=${curFilepath}`)
       const ourbigbookJsonDir = getOurbigbookJsonDir() as string
-      if (parse.ext === `.${ourbigbook.OURBIGBOOK_EXT}`) {
+      if (parse.ext === `.${OURBIGBOOK_EXT}`) {
         const outpath = path.join(
           ourbigbookJsonDir,
           ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
@@ -204,14 +229,14 @@ export async function activate(context: vscode.ExtensionContext) {
     if (e.languageId === OURBIGBOOK_LANGUAGE_ID) {
       channel.appendLine(`onDidSaveTextDocument fileName=${e.fileName}`)
       function buildHandleStdout(stdout: Readable) {
-          stdout.setEncoding('utf8')
-          stdout.on('data', function(data: string) {
-            for (const line of data.split('\n')) {
-              if (line) {
-                channel.appendLine(`onDidSaveTextDocument: ${e.fileName}: ` + line.replace(/(\n)$/m, ''))
-              }
+        stdout.setEncoding('utf8')
+        stdout.on('data', function(data: string) {
+          for (const line of data.split('\n')) {
+            if (line) {
+              channel.appendLine(`onDidSaveTextDocument: ${e.fileName}: ` + line.replace(/(\n)$/m, ''))
             }
-          })
+          }
+        })
       }
       const p = child_process.spawn('npx', ['ourbigbook', '--no-render', e.fileName], { cwd: getOurbigbookJsonDir() })
       p.on('close', (code) => {

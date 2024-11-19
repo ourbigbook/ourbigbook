@@ -10661,6 +10661,18 @@ Our syntax highlighting attempts mostly to follow the official HTML style, which
 
 One current fundamental limitation of <VS Code> is that there is no way to preview images and mathematics inline with text: https://stackoverflow.com/questions/52709966/vscode-is-it-possible-to-show-an-image-inside-a-text-buffer If only it were able to do that, it would go a long way to being as good as a WYSIWYG interface.
 
+= Visual Studio Code options
+{parent=Visual Studio Code documentation}
+
+= `gitAutoCommitAfterBuild`
+{parent=Visual Studio Code documentation}
+
+Default: `false`
+
+If true, automaticlaly Git commit after a succesful build with `Ctrl + Shift + B`.
+
+New .bigb files are automatically git added, but you must manually git add new non-.bigb files to help prevent accidental data leaks.
+
 = Developing the Visual Studio Code extension
 {parent=Visual Studio Code}
 {tag=Developing OurBigBook}

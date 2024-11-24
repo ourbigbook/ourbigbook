@@ -16,7 +16,7 @@ The same markup source code can also be uploaded to [OurBigBook.com](https://Our
 
 A rendered version of it can be seen at: <https://docs.ourbigbook.com>. The source file for the homepage is: [index.bigb](index.bigb).
 
-[Get started quickly with the OurBigBook command line utility](https://docs.ourbigbook.com/#ourbigbook-cli-quick-start) by using our template project https://github.com/ourbigbook/template[]:
+[Get started quickly with the OurBigBook command line utility](https://docs.ourbigbook.com/#ourbigbook-cli-quick-start) by using our template project <https://github.com/ourbigbook/template>:
 
 ```
 git clone https://github.com/ourbigbook/template

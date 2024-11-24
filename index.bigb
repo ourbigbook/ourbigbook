@@ -232,6 +232,78 @@ The following sections cover different ways to use tools from the OurBigBook:
 
   This is currently the only way to write OurBigBook content, but we would really like to add <todo/WYSIWYG>[WYSIWYG] editor support one day!
 
+= OurBigBook vs other systems
+{parent=}
+
+= OurBigBook vs other mind-melding systems
+{parent=OurBigBook vs other systems}
+
+This section compares <OurBigBook> with other websites that attempt to do mind-melding, which <OurBigBook> attempts through the <Topics feature>.
+
+In particular, we mean mind-melding without a simple centralized authority.
+
+= OurBigBook vs Wikipedia
+{parent=OurBigBook vs other mind-melding systems}
+
+<OurBigBook> is a bit like a <#Wikipedia> where each person can have their own version of every article.
+
+This addresses the main shortcomings of Wikipedia:
+* contributors are not clearly recognized for their contributions. Clearly knowing who wrote what, and having upvotes and reputation is an essential motivation mechanism for free knowledge contributors.
+* what you write can be deleted at any time, for two major reasons:
+  * excessive notability guidelines
+  * the requirement for "encyclopedic tone", which precludes in theory tutorials
+  If you spend four hours writing a tutorial for a website and it gets deleted without comment, you are never ever going to write everything for that website again.
+
+  In <OurBigBook>, you can write about whatever you want, and no one can delete it.
+* inconsistent page granularity: it is somewhat random if an article deserves to be a toplevel page, or only a subheader. With <OurBigBook>, every header is a toplevel page with the <dynamic article tree> feature.
+
+= OurBigBook vs Stack Overflow
+{parent=OurBigBook vs other mind-melding systems}
+
+<#Stack Overflow> and other <#Q&A websites> solve the main issues of Wikipedia: 
+* they give clear recognition to users' contributions
+* they make it much less likely that your content will be deleted by others (though it can still happen sometimes)
+
+The limitation of <#Stack Exchange> is that you cannot write a book on it, and anything judged to be "too general" will be closed or deleted. In other words, it can only contain the smallest units of knowledge, and lacks a table of content mechanism to group knowledge together more broadly.
+
+Therefore, while it basically perfectly solves "shallower subjects" such as computer programming, it is insufficient for "deeper" subjects with longer dependency chains of knowledge such as mathematics and physics.
+
+To a large extent, the goal of OurBigBook is to combine the strengths of <#Stack Exchange> with those of <#Wikipedia>.
+
+= OurBigBook vs Knol
+{parent=OurBigBook vs other mind-melding systems}
+
+<OurBigBook> is quite similar to the now defunct <#Knol>, a <#Google> project that basically made a Wiki where each person can have their own version of each article.
+
+Knol ran from 2008 until its shutdown in 2012, and failed to attract enough attention that Google would keep it running.
+
+It is our belief however that the website had great promise and potential value, and simply would generate profits too small to compare with other Google projects.
+
+Knol also lacks a mechanism to store your notes locally, which we believe is essential if you want to get people to use as a system for people to dump large chunks into.
+
+= OurBigBook vs other non-mind-melding systems
+{parent=OurBigBook vs other systems}
+
+The main distinguishing feature of <OurBigBook> from other scientific publishing methods is mind-melding via <topics>.
+
+It is perfectly possible to use OurBigBook without ever targeting mind meld, and we want to make that use case as awesome as we can.
+
+There are many methods for people to publish their scientific knowledge online, each with their own strengths and weaknesses, but we believe that mind-melding is essential for a project to be able to truly take off.
+
+<OurBigBook> seeks to pick the best of each of those methods, while also adding the mild-melding aspect on top, which we believe to be so transformative.
+
+Types typically non-mind-melding systems include:
+* <#note taking software>
+* <#personal knowledge base software>
+* putting PDFs on a university FTP servers (a classic!)
+* blogs
+
+<OurBigBook> is essentially a <#note taking software> with mind-melding added on top of it.
+
+Some noteworthy non-mind-meld software include:
+* <#Forester>: this software comes the closest in initial design philosophy to OurBigBook, with a native plaintext format and scientific focus
+* <#Trillium Notes>: amazing local <#WYSIWYG> note taking app with a bug table of contents. Also has a web version even!
+
 = OurBigBook Markup and CLI overview
 {parent=}
 

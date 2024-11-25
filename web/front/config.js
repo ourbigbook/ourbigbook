@@ -53,11 +53,6 @@ module.exports = {
     path_sep: '/',
     // https://docs.ourbigbook.com/todo/word-count-on-web
     show_descendant_count: false,
-    ourbigbook_json: {
-      h: {
-        numbered: false,
-      },
-    },
     render_metadata: false,
     webMode: true,
     x_absolute: true,

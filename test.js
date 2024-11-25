@@ -3252,7 +3252,7 @@ assert_lib_ast('x: cross reference to ids in the current file with split',
         // https://stackoverflow.com/questions/5637969/is-an-empty-href-valid
         "//x:div[@class='p']//x:a[@href='' and text()='notindex']",
         "//x:div[@class='p']//x:a[@href='#bb' and text()='bb']",
-        "//x:blockquote//x:a[@href='#bb' and text()='Section 1. \"bb\"']",
+        "//x:blockquote//x:a[@href='#bb' and text()='Section \"bb\"']",
         // https://github.com/ourbigbook/ourbigbook/issues/94
         "//x:a[@href='#bb' and text()='bb to bb']",
         "//x:a[@href='#image-bb' and text()='image bb 1']",
@@ -3264,7 +3264,7 @@ assert_lib_ast('x: cross reference to ids in the current file with split',
       'notindex-split.html': [
         "//x:div[@class='p']//x:a[@href='notindex.html#bb' and text()='bb']",
         // https://github.com/ourbigbook/ourbigbook/issues/130
-        "//x:blockquote//x:a[@href='notindex.html#bb' and text()='Section 1. \"bb\"']",
+        "//x:blockquote//x:a[@href='notindex.html#bb' and text()='Section \"bb\"']",
         // Link to the split version.
         xpath_header_split(1, 'notindex', 'notindex.html', ourbigbook.NOSPLIT_MARKER_TEXT),
         // Internal cross reference inside split header.
@@ -3289,6 +3289,36 @@ assert_lib_ast('x: cross reference to ids in the current file with split',
 \\Include[notindex]
 `,
       'bb.png': ''
+    }),
+    input_path_noext: 'notindex',
+  },
+)
+assert_lib_ast('x: full link to numbered header shows the number',
+  `= Notindex
+
+\\Q[\\x[bb]{full}]
+
+== bb
+`,
+  undefined,
+  {
+    assert_xpath: {
+      'notindex.html': [
+        "//x:blockquote//x:a[@href='#bb' and text()='Section 1. \"bb\"']",
+      ],
+      'notindex-split.html': [
+        "//x:blockquote//x:a[@href='notindex.html#bb' and text()='Section 1. \"bb\"']",
+      ],
+    },
+    convert_opts: { split_headers: true },
+    convert_before_norender: ['notindex.bigb', 'index.bigb'],
+    filesystem: Object.assign({}, default_filesystem, {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]
+`,
+      'bb.png': '',
+      'ourbigbook.json': '{ "h": { "numbered": true } }',
     }),
     input_path_noext: 'notindex',
   },
@@ -3911,7 +3941,7 @@ assert_lib_ast('x: cross reference magic with full uses full content',
   undefined,
   {
     assert_xpath_stdout: [
-      "//x:div[@class='p']//x:a[@href='#my-header' and text()='Section 1. \"My header\"']",
+      "//x:div[@class='p']//x:a[@href='#my-header' and text()='Section \"My header\"']",
     ],
   }
 )
@@ -5799,7 +5829,7 @@ assert_lib_ast('header: title2 full link to synonym with title2 does not get dum
   undefined,
   {
     assert_xpath_stdout: [
-      "//x:blockquote//x:a[@href='#1-2' and text()='Section 1. \"1 3\"']",
+      "//x:blockquote//x:a[@href='#1-2' and text()='Section \"1 3\"']",
     ],
   }
 )
@@ -6031,6 +6061,7 @@ assert_lib('header: numbered argument',
     convert_dir: true,
     filesystem: {
       'index.bigb': header_numbered_input,
+      'ourbigbook.json': '{ "h": { "numbered": true } }',
     },
     assert_xpath: {
       'index.html': [
@@ -7264,6 +7295,7 @@ assert_lib('toc: table of contents contains included headers numbered without em
 
 == Notindex3 h3
 `,
+      'ourbigbook.json': '{ "h": { "numbered": true } }',
     },
     assert_xpath: {
       'notindex.html': [
@@ -7314,6 +7346,7 @@ assert_lib('toc: table of contents respects numbered=0 of included headers',
 
 == Notindex2 h2
 `,
+      'ourbigbook.json': '{ "h": { "numbered": true } }',
     },
     assert_xpath: {
       'notindex.html': [
@@ -7390,6 +7423,7 @@ assert_lib('toc: table of contents include placeholder header has no number when
 
 == Notindex2 h2
 `,
+      'ourbigbook.json': '{ "h": { "numbered": true } }',
     },
     assert_xpath: {
       'notindex.html': [
@@ -7517,7 +7551,7 @@ assert_lib('toc: toplevel scope gets removed on table of contents of included he
     },
     assert_xpath: {
       'index.html': [
-        "//x:blockquote//x:a[@href='notindex.html#notindex-h2' and text()='Section 1.1. \"Notindex h2\"']",
+        "//x:blockquote//x:a[@href='notindex.html#notindex-h2' and text()='Section \"Notindex h2\"']",
         "//*[@id='_toc']//x:a[@href='notindex.html' and text()='Notindex']",
         "//*[@id='_toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
       ],
@@ -10299,8 +10333,6 @@ assert_cli(
     filesystem: complex_filesystem,
     assert_xpath: {
       [`${TMP_DIRNAME}/html/h2-2.html`]: [
-        // These headers are not children of the current toplevel header.
-        // Therefore, they do not get a number like "Section 2.".
         "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section \"h2\"']",
         "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section \"h4 3 2 1\"']",
       ],
@@ -10310,7 +10342,7 @@ assert_cli(
       ],
       [`${TMP_DIRNAME}/html/h2-3.html`]: [
         // This one is under the current tree, so it shows fully.
-        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section 2.1. \"h4 3 2 1\"']",
+        "//x:div[@class='p']//x:a[@href='index.html#h4-3-2-1' and text()='Section \"h4 3 2 1\"']",
       ],
       [`${TMP_DIRNAME}/html/notindex.html`]: [
         xpath_header(1, 'notindex'),
@@ -10359,7 +10391,7 @@ assert_cli(
       ],
       [`${TMP_DIRNAME}/html/split.html`]: [
         // Full links between split header pages have correct numbering.
-        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section 7. \"h2\"']",
+        "//x:div[@class='p']//x:a[@href='index.html#h2' and text()='Section \"h2\"']",
 
         // OurBigBookExample renders in split header.
         "//x:blockquote[text()='A Ourbigbook example!']",

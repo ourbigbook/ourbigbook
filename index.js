@@ -3299,13 +3299,14 @@ function convertIdArg(arg, context) {
  * forcing across values.
  */
 function convertInitOptions(options) {
-  const newOptions = { ...OPTION_DEFAULTS }
+  const newOptions = lodash.cloneDeep(OPTION_DEFAULTS)
   for (const key in options) {
     const val = options[key]
     if (val !== undefined) {
       newOptions[key] = val
     }
   }
+  const optionsOrig = options 
   options = newOptions
   // TODO this fails several --embed-includes tests. Why.
   // Futhermore, this would print the exact same for both according to diff.
@@ -3532,7 +3533,15 @@ function convertInitOptions(options) {
   if (options.include_hrefs === undefined) {
     options.include_hrefs = {};
   }
+  // Set options from ourbigbook_json. Eventually we want to set every single
+  // ourbigbook_json option into options. For now let's whitelist them one by one.
   options.unsafeXss = resolveOption(options, 'unsafeXss')
+  if (
+    ( optionsOrig.h === undefined || optionsOrig.h.numbered === undefined ) &&
+    ( options.ourbigbook_json.h !== undefined && options.ourbigbook_json.h.numbered !== undefined)
+  ) {
+    options.h.numbered = options.ourbigbook_json.h.numbered
+  }
   return options
 }
 exports.convertInitOptions = convertInitOptions
@@ -6631,7 +6640,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             // but the descendants to follow what they would actually render in the output as so they will show correctly on ToC.
             header_ast.add_argument('numbered', new AstArgument(
               [
-                new PlaintextAstNode(context.options.ourbigbook_json.h.numbered ? '1' : '0', header_ast.source_location),
+                new PlaintextAstNode(context.options.h.numbered ? '1' : '0', header_ast.source_location),
               ],
               header_ast.source_location,
             ))
@@ -7355,7 +7364,7 @@ function propagateNumbered(ast, context) {
     //  ast.numbered = parent_asts.some(ast => ast.numbered)
     //} else {
 
-    ast.numbered = context.options.ourbigbook_json.h.numbered
+    ast.numbered = context.options.h.numbered
   } else {
     const parent_ast = parent_tree_node.ast
     if (parent_ast.validation_output.numbered.given) {
@@ -8319,6 +8328,9 @@ const OURBIGBOOK_DEFAULT_DOCS_URL = `https://docs.${OURBIGBOOK_DEFAULT_HOST}`
 const OPTION_DEFAULTS = {
   embed_includes: false,
   htmlXExtension: true,
+  h: {
+    numbered: false,
+  },
   // If true, this means that this is a ourbigbook --publish run rather
   // than a regular development compilation.
   publish: false,
@@ -8329,7 +8341,6 @@ const OURBIGBOOK_JSON_DEFAULT = {
   enableArg: {},
   fromOurBigBookExample: false,
   h: {
-    numbered: true,
     splitDefault: false,
     splitDefaultNotToplevel: false,
   },

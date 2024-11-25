@@ -1435,9 +1435,12 @@ class Macro {
 }
 exports.Macro = Macro;
 
+Macro.BOLD_MACRO_NAME = 'b'
 // Macro names defined here are those that have magic properties, e.g.
 // headers are used by the 'toc'.
 Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME = 'OurBigBookExample';
+Macro.BOOLEAN_ARGUMENT_FALSE = '0'
+Macro.BOOLEAN_ARGUMENT_TRUE = '1'
 Macro.CODE_MACRO_NAME = 'c';
 // Add arguments common to all macros.
 Macro.DISAMBIGUATE_ARGUMENT_NAME = 'disambiguate';
@@ -1471,6 +1474,7 @@ Macro.LINE_BREAK_MACRO_NAME = 'br'
 Macro.LINK_MACRO_NAME = 'a';
 Macro.LIST_ITEM_MACRO_NAME = 'L';
 Macro.MATH_MACRO_NAME = 'm';
+Macro.PASSTHROUGH_MACRO_NAME = 'passthrough'
 Macro.PARAGRAPH_MACRO_NAME = 'P';
 Macro.PLAINTEXT_MACRO_NAME = 'plaintext';
 Macro.QUOTE_MACRO_NAME = 'Q'
@@ -5394,14 +5398,14 @@ async function parse(tokens, options, context, extra_returns={}) {
         new AstNode(
           AstType.MACRO,
           Macro.CODE_MACRO_NAME.toUpperCase(),
-          { content: ast.args.content },
+          { [Macro.CONTENT_ARGUMENT_NAME]: ast.args.content },
           ast.source_location,
         ),
         new AstNode(
           AstType.MACRO,
           Macro.PARAGRAPH_MACRO_NAME,
           {
-            content: new AstArgument(
+            [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
               [
                 new PlaintextAstNode(
                   'which renders as:',
@@ -5417,7 +5421,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           AstType.MACRO,
           Macro.QUOTE_MACRO_NAME,
           {
-            content: await parseInclude(
+            [Macro.CONTENT_ARGUMENT_NAME]: await parseInclude(
               renderArgNoescape(ast.args.content, cloneAndSet(context, 'id_conversion', true)),
               ourbigbookExampleOptions,
               0,
@@ -6640,7 +6644,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             // but the descendants to follow what they would actually render in the output as so they will show correctly on ToC.
             header_ast.add_argument('numbered', new AstArgument(
               [
-                new PlaintextAstNode(context.options.h.numbered ? '1' : '0', header_ast.source_location),
+                new PlaintextAstNode(context.options.h.numbered ? Macro.BOOLEAN_ARGUMENT_TRUE : Macro.BOOLEAN_ARGUMENT_FALSE, header_ast.source_location),
               ],
               header_ast.source_location,
             ))
@@ -7527,7 +7531,7 @@ function validateAst(ast, context) {
         ast.args[argname] = new AstArgument([
           new PlaintextAstNode(macro_arg.default, ast.source_location)]);
       } else if (macro_arg.boolean) {
-        ast.args[argname] = new AstArgument([new PlaintextAstNode('0', ast.source_location)]);
+        ast.args[argname] = new AstArgument([new PlaintextAstNode(Macro.BOOLEAN_ARGUMENT_FALSE, ast.source_location)]);
       }
     }
   }
@@ -7541,16 +7545,16 @@ function validateAst(ast, context) {
         if (arg.length() > 0) {
           arg_string = renderArgNoescape(arg, cloneAndSet(context, 'id_conversion', true));
         } else {
-          arg_string = '1';
+          arg_string = Macro.BOOLEAN_ARGUMENT_TRUE;
         }
-        if (arg_string === '0') {
+        if (arg_string === Macro.BOOLEAN_ARGUMENT_FALSE) {
           ast.validation_output[argname].boolean = false;
-        } else if (arg_string === '1') {
+        } else if (arg_string === Macro.BOOLEAN_ARGUMENT_TRUE) {
           ast.validation_output[argname].boolean = true;
         } else {
           ast.validation_output[argname].boolean = false;
           ast.validation_error = [
-            `boolean argument "${argname}" of "${ast.macro_name}" has invalid value: "${arg_string}", only "0" and "1" are allowed`,
+            `boolean argument "${argname}" of "${ast.macro_name}" has invalid value: "${arg_string}", only "${Macro.BOOLEAN_ARGUMENT_FALSE}" and "${Macro.BOOLEAN_ARGUMENT_TRUE}" are allowed`,
             arg.source_location
           ];
           break;
@@ -8713,7 +8717,7 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'b',
+    Macro.BOLD_MACRO_NAME,
     [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
@@ -9052,7 +9056,7 @@ const DEFAULT_MACRO_LIST = [
         }),
         new MacroArgument({
           boolean: true,
-          default: '1',
+          default: Macro.BOOLEAN_ARGUMENT_TRUE,
           name: 'show',
         }),
       ],
@@ -9104,7 +9108,18 @@ const DEFAULT_MACRO_LIST = [
     }
   ),
   new Macro(
-    'passthrough',
+    capitalizeFirstLetter(Macro.PASSTHROUGH_MACRO_NAME),
+    [
+      new MacroArgument({
+        name: Macro.CONTENT_ARGUMENT_NAME,
+      }),
+    ],
+    {
+      xss_safe: false,
+    }
+  ),
+  new Macro(
+    Macro.PASSTHROUGH_MACRO_NAME,
     [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
@@ -9460,7 +9475,7 @@ function createLinkList(context, ast, id, title, target_ids) {
                 ),
                 //new AstNode(
                 //  AstType.MACRO,
-                //  'passthrough',
+                //  Macro.PASSTHROUGH_MACRO_NAME,
                 //  {
                 //    [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
                 //      [
@@ -9565,7 +9580,7 @@ const OUTPUT_FORMATS_LIST = [
             source_location: ast.args.href.source_location,
           })
         },
-        'b': htmlRenderSimpleElem('b'),
+        [Macro.BOLD_MACRO_NAME]: htmlRenderSimpleElem('b'),
         [Macro.LINE_BREAK_MACRO_NAME]: function(ast, context) { return '<br>' },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
           const { title_and_description, multiline_caption } = htmlTitleAndDescription(ast, context, { addTitleDiv: true })
@@ -9785,7 +9800,7 @@ const OUTPUT_FORMATS_LIST = [
             } else {
               const readFileRet = context.options.read_file(ast.file, context)
               if (readFileRet) {
-                ;({ content: fileContent } = readFileRet)
+                ;({ [Macro.CONTENT_ARGUMENT_NAME]: fileContent } = readFileRet)
               }
             }
             // This section is about.
@@ -9809,7 +9824,7 @@ const OUTPUT_FORMATS_LIST = [
                 new AstNode(AstType.MACRO,
                   Macro.LINK_MACRO_NAME,
                   {
-                    content: new AstArgument([
+                    [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([
                       new PlaintextAstNode(FILE_ROOT_PLACEHOLDER)
                     ]),
                     href: new AstArgument([
@@ -9825,7 +9840,7 @@ const OUTPUT_FORMATS_LIST = [
                 }
                 curp += p
                 const astNodeArgs = {
-                  content: new AstArgument([
+                  [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([
                     new PlaintextAstNode(p)
                   ]),
                   href: new AstArgument([
@@ -9838,8 +9853,8 @@ const OUTPUT_FORMATS_LIST = [
                 pathArg.push(new AstNode(AstType.MACRO, Macro.LINK_MACRO_NAME, astNodeArgs))
               }
             }
-            fileLinkHtml = new AstNode(AstType.MACRO, 'b', {
-              content: new AstArgument(pathArg)
+            fileLinkHtml = new AstNode(AstType.MACRO, Macro.BOLD_MACRO_NAME, {
+              [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(pathArg)
             }).render(renderPostAstsContext)
           }
 
@@ -10036,8 +10051,8 @@ const OUTPUT_FORMATS_LIST = [
               if (protocol === null || protocol === 'file') {
                 if (fileContent !== undefined) {
                   // https://stackoverflow.com/questions/1677644/detect-non-printable-characters-in-javascript
-                  const bold_file_ast = new AstNode(AstType.MACRO, 'b', {
-                    content: new AstArgument([
+                  const bold_file_ast = new AstNode(AstType.MACRO, Macro.BOLD_MACRO_NAME, {
+                    [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([
                       new PlaintextAstNode(`${ast.file}`),
                     ])
                   })
@@ -10053,21 +10068,21 @@ const OUTPUT_FORMATS_LIST = [
                   }
                   if (no_preview_msg) {
                     context_old.renderBeforeNextHeader.push(new AstNode(AstType.MACRO, Macro.PARAGRAPH_MACRO_NAME, {
-                      content: new AstArgument([
+                      [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([
                         bold_file_ast,
                         new PlaintextAstNode(` was not rendered because ${no_preview_msg}`),
                       ])
                     }).render(renderPostAstsContext))
                   } else {
                     context_old.renderBeforeNextHeader.push(new AstNode(AstType.MACRO, Macro.PARAGRAPH_MACRO_NAME, {
-                      content: new AstArgument([
+                      [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([
                         bold_file_ast
                       ])
                     }).render(renderPostAstsContext))
                     context_old.renderBeforeNextHeader.push(new AstNode(
                       AstType.MACRO,
                       Macro.CODE_MACRO_NAME.toUpperCase(), {
-                        content: new AstArgument([ new PlaintextAstNode(fileContent)]),
+                        [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([ new PlaintextAstNode(fileContent)]),
                       },
                     ).render(renderPostAstsContext))
                   }
@@ -10077,6 +10092,72 @@ const OUTPUT_FORMATS_LIST = [
           }
           if (renderPostAsts.length) {
             opts.extra_returns.render_post = renderPostAsts.map(a => htmlToplevelChildModifierById(a.render(renderPostAstsContext))).join('')
+          }
+
+          // Tagged list for non-toplevel headers.
+          if (
+            level_int !== context.header_tree_top_level &&
+            !ast.from_include
+          ) {
+            const tagged = Array.from(context.db_provider.get_refs_to_as_ids(REFS_TABLE_X_CHILD, ast.id, true))
+            if (tagged.length) {
+              context_old.renderBeforeNextHeader.push(htmlToplevelChildModifierById(
+                new AstNode(
+                  AstType.MACRO,
+                  Macro.PARAGRAPH_MACRO_NAME,
+                  {
+                    [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([
+                      new AstNode(
+                        AstType.MACRO,
+                        Macro.BOLD_MACRO_NAME,
+                        {
+                          [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([
+                            new AstNode(
+                              AstType.MACRO,
+                              Macro.PASSTHROUGH_MACRO_NAME,
+                              {
+                                [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([
+                                  new PlaintextAstNode(TAGS_MARKER)
+                                ]),
+                              }
+                            ),
+                            new PlaintextAstNode(` Tagged`),
+                          ])
+                        }
+                      ),
+                      new AstNode(
+                        AstType.MACRO,
+                        Macro.UNORDERED_LIST_MACRO_NAME,
+                        {
+                          [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
+                            tagged.map(t => {
+                              const arg = {
+                                'c': new AstArgument([ new PlaintextAstNode(Macro.BOOLEAN_ARGUMENT_TRUE) ]),
+                                'href': new AstArgument([ new PlaintextAstNode(t) ]),
+                              }
+                              if (context.options.add_test_instrumentation) {
+                                arg[Macro.TEST_DATA_ARGUMENT_NAME] = new AstArgument([
+                                  new PlaintextAstNode(`tagged-not-toplevel_${ast.id}_${t}`)
+                                ])
+                              }
+                              return new AstNode(
+                                AstType.MACRO,
+                                Macro.LIST_ITEM_MACRO_NAME,
+                                {
+                                  [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([
+                                    new AstNode(AstType.MACRO, Macro.X_MACRO_NAME, arg)
+                                  ])
+                                }
+                              )
+                            })
+                          )
+                        }
+                      ),
+                    ]),
+                  }
+                ).render(renderPostAstsContext)
+              ))
+            }
           }
 
           return ret;
@@ -10142,8 +10223,11 @@ const OUTPUT_FORMATS_LIST = [
         [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {
           return htmlEscapeContext(context, ast.text);
         },
-        'passthrough': function(ast, context) {
+        [capitalizeFirstLetter(Macro.PASSTHROUGH_MACRO_NAME)]: function(ast, context) {
           return `<div class="float-wrap">${renderArgNoescape(ast.args.content, context)}</div>`
+        },
+        [Macro.PASSTHROUGH_MACRO_NAME]: function(ast, context) {
+          return renderArgNoescape(ast.args.content, context)
         },
         [Macro.QUOTE_MACRO_NAME]: htmlRenderSimpleElem('blockquote', { wrap: true }),
         'sub': htmlRenderSimpleElem('sub'),
@@ -10251,7 +10335,7 @@ const OUTPUT_FORMATS_LIST = [
                           ),
                           //new AstNode(
                           //  AstType.MACRO,
-                          //  'passthrough',
+                          //  Macro.PASSTHROUGH_MACRO_NAME,
                           //  {
                           //    [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
                           //      [
@@ -10502,7 +10586,11 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               }
             }
 
-            return `<a${href}${attrs}${context.options.internalLinkMetadata ? htmlAttr('title', 'internal link' + counts_str) : ''}${target}>${content}</a>`;
+            return `<a${href}${attrs}` +
+             (context.options.internalLinkMetadata ? htmlAttr('title', 'internal link' + counts_str) : '') +
+             target +
+             getTestData(ast, context) +
+             `>${content}</a>`
           } else {
             return content;
           }
@@ -10522,7 +10610,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           const [href, content, hrefNoEscape] = linkGetHrefAndContent(ast, context);
           return content;
         },
-        'b': idConvertSimpleElem(),
+        [Macro.BOLD_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.LINE_BREAK_MACRO_NAME]: function(ast, context) { return '\n'; },
         [Macro.CODE_MACRO_NAME.toUpperCase()]: idConvertSimpleElem(),
         [Macro.CODE_MACRO_NAME]: idConvertSimpleElem(),
@@ -10542,7 +10630,8 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
         'Ol': idConvertSimpleElem(),
         [Macro.PARAGRAPH_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) { return ast.text },
-        'passthrough': idConvertSimpleElem(),
+        [capitalizeFirstLetter(Macro.PASSTHROUGH_MACRO_NAME)]: idConvertSimpleElem(),
+        [Macro.PASSTHROUGH_MACRO_NAME]: idConvertSimpleElem(),
         [Macro.QUOTE_MACRO_NAME]: idConvertSimpleElem(),
         'sub': idConvertSimpleElem(),
         'sup': idConvertSimpleElem(),
@@ -11034,8 +11123,8 @@ function ourbigbookConvertArgs(ast, context, options={}) {
       }
       let skip_val = false
       if (macro_arg.boolean) {
-        const argstr_default = macro_arg.default === undefined ? '0' : '1'
-        const argstr_eff = validation_output.boolean ? '1' : '0'
+        const argstr_default = macro_arg.default === undefined ? Macro.BOOLEAN_ARGUMENT_FALSE : Macro.BOOLEAN_ARGUMENT_TRUE
+        const argstr_eff = validation_output.boolean ? Macro.BOOLEAN_ARGUMENT_TRUE : Macro.BOOLEAN_ARGUMENT_FALSE
         if (argstr_default === argstr_eff) {
           continue
         }
@@ -11109,7 +11198,7 @@ OUTPUT_FORMATS_LIST.push(
             return ourbigbookConvertSimpleElem(ast, context)
           }
         },
-        'b': ourbigbookConvertSimpleElem,
+        [Macro.BOLD_MACRO_NAME]: ourbigbookConvertSimpleElem,
         [Macro.LINE_BREAK_MACRO_NAME]: function(ast, context) {
           const nextMacro = ast.parent_argument.get(ast.parent_argument_index + 1)
           const prevAst = ast.parent_argument.get(ast.parent_argument_index - 1)
@@ -11259,7 +11348,8 @@ OUTPUT_FORMATS_LIST.push(
 
           return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + ourbigbookEscape(text)
         },
-        'passthrough': ourbigbookConvertSimpleElem,
+        [capitalizeFirstLetter(Macro.PASSTHROUGH_MACRO_NAME)]: ourbigbookConvertSimpleElem,
+        [Macro.PASSTHROUGH_MACRO_NAME]: ourbigbookConvertSimpleElem,
         [Macro.QUOTE_MACRO_NAME]: ourbigbookLi(INSANE_QUOTE_START, { oneNewlineMax: false }),
         'sub': ourbigbookConvertSimpleElem,
         'sup': ourbigbookConvertSimpleElem,

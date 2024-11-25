@@ -5026,6 +5026,47 @@ assert_lib(
   }
 )
 assert_lib(
+  'incoming links: tagged not at toplevel',
+  {
+    convert_opts: {
+      split_headers: true,
+    },
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== h2 1
+
+\\Include[notindex]
+
+== h2 2
+`,
+      'notindex.bigb': `= Notindex
+
+== Notindex h2
+{tag=h2 1}
+{tag=h2 2}
+
+== Notindex h2 2
+{tag=h2 1}
+{tag=}
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        `//x:a[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged-not-toplevel_h2-1_notindex-h2']`,
+        `//x:a[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged-not-toplevel_h2-1_notindex-h2-2']`,
+        `//x:a[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged-not-toplevel_h2-2_notindex-h2']`,
+      ],
+    },
+    assert_not_xpath: {
+      'index.html': [
+        `//x:a[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged-not-toplevel__notindex-h2-2']`,
+      ],
+    },
+  }
+)
+assert_lib(
   'incoming links: cross reference incoming links from other file min notindex to index',
   {
     convert_opts: {

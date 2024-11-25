@@ -4065,7 +4065,7 @@ One major advantage of this, is that when writing documentation, you often want 
 
 = Passthrough
 {parent=Macro}
-{title2=`\passthrough`}
+{title2=`\Passthrough`, `\passthrough`}
 
 Dumps its contents directly into the rendered output.
 
@@ -4073,7 +4073,7 @@ This construct is not XSS safe, see: <unsafeXss>{full}.
 
 Here for example we define a paragraph in raw HTML:
 \OurBigBookExample[[[
-\passthrough[[
+\Passthrough[[
 <p>Hello <b>raw</b> HTML!</p>
 ]]
 ]]]

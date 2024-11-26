@@ -9324,11 +9324,15 @@ This is a bit messy however, as we often want to find the largest numbers for pr
 {parent=Log database queries}
 {tag=OurBigBook Web environment variable}
 
-This tends to be a better good wayfor benchmarking than <DEBUG sql>:
+This tends to be a better good way for benchmarking than <DEBUG sql>:
 ``
 OURBIGBOOK_LOG_DB=1 npm run dev
 ``
-which produces many outputs of type:
+which sets in the Sequelize constructor:
+``
+rew Sequelize({ logging: console.log })
+``
+and produces many outputs of type:
 ``
 Executed (default): SELECT 1+1 AS result Elapsed time: 0ms
 ``
@@ -10194,6 +10198,13 @@ and test both on <Heroku deployment> and locally.
 
 Local tests are always on optimized PostgresQL. Remote tests always on powerful home wifi, never 4G. Measuremnts are taken on browser Network tab in developer tools with cache enabled. Each URL is ran randomly a few times, which gives an idea of cache warmup effects. Logged-in is logged-in as `cirosantilli`.
 
+* ae4d0e3a0964f3c00a7e1ec0d561ebd6f2d2f44f (show tagged headers under non-toplevel headers) TTFB logged off local:
+  * /barack-obama: 60 - 75
+  * /cirosantilli: 200 - 300
+  * /wikibot: 100 - 120
+* 3c61db4b778f0cc6c0fcfbc5519ef82927d365b3 (one before "show tagged headers under non-toplevel headers") TTFB logged off local:
+  * /cirosantilli: 200 - 300
+  * /wikibot: 110 - 120
 * 075872a0a5ca7faf171d45834bc2b47995a15634 web: speed up article page DB queries further by moving topicId into topic
 
   At this commit we had highly optimized article page queries. The slowest query was getting the new upvotes of the logged in user at 20 - 30 ms.
@@ -10201,36 +10212,36 @@ Local tests are always on optimized PostgresQL. Remote tests always on powerful 
   * TTFB
     * local
       * logged off:
-        * /wikibot: 65 - 70
+        * /barack-obama: 40 - 60
         * /cirosantilli: 160 - 190
         * /cirosantilli/mathematics: 100 - 120
-        * /barack-obama: 40 - 60
+        * /wikibot: 65 - 70
       * logged in:
-        * /wikibot: 90 - 100
-        * /cirosantilli: 200 - 300
         * /barack-obama 65
+        * /cirosantilli: 200 - 300
+        * /wikibot: 90 - 100
     * cirosantilli.com: 100 - 200
     * ourbigbook.com
       * logged off:
-        * /wikibot: 180 - 300
+        * /barack-obama: 140 -180
         * /cirosantilli: 300 - 400
         * /cirosantilli/mathematics: 240 - 400
-        * /barack-obama: 140 -180
+        * /wikibot: 180 - 300
       * logged in:
-        * /wikibot: 330 - 450
+        * /barack-obama: 250 - 400
         * /cirosantilli: 450 - 600
         * /cirosantilli/mathematics: 350 - 500
-        * /barack-obama: 250 - 400
+        * /wikibot: 330 - 450
 * 8ea5ffa52d291350e9a5ddef92e4171d50a51dcc TTFB logged off:
   * local
-    * /wikibot: 1200
-    * /cirosantilli: 500
     * /barack-obama: 400
+    * /cirosantilli: 500
+    * /wikibot: 1200
   * cirosantilli.com: 100 - 200
   * ourbigbook.com
-    * /wikibot: 3500 - 4500
-    * /cirosantilli: 1100 - 1500
     * /barack-obama: 500 - 700
+    * /cirosantilli: 1100 - 1500
+    * /wikibot: 3500 - 4500
   This suggests a database scaling issue like a missing index.
 
 Related:

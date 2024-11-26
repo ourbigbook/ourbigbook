@@ -145,6 +145,9 @@ export const getServerSidePropsArticleHoc = ({
           sequelize,
           toplevelId: true,
         }).then(async (articles) => {
+          // TODO move this into a single query under getArticlesInSamePage
+          // I'm a bit concerned it will store the same column multiple times in memory.
+          // but perhaps that was just a bad early optimization, who knows.
           const idToArticleMap = {}
           for (const article of articles) {
             idToArticleMap[article.toplevel_id] = article

@@ -7,16 +7,166 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= Tagged headers show under non-toplevel headers
+{parent=News}
+{tag=Tag}
+
+Previously, tagged articles would only show up at the bottom of the page for the toplevel header, e.g. you'd only be able to see which articles are tagged as:
+``
+Documentary film
+``
+under the <split header> page:
+``
+cirosantilli.com/documentary-film
+``
+but not under the non-split:
+``
+cirosantilli.com/film#documentary-film
+``
+Now tagged articles are also shown under non-toplevel headers, both on <static websites> and <OurBigBook Web>.
+
+This makes it much easier for readers to view the tags, as it does not require them to click the header to view it as the toplevel and then go to the bottom of the page.
+
+It also means that headers that are used primarily as tags and which would be otherwise empty now show some meaningful content.
+
+\Image[feature/tag/non-toplevel-documentary-arrows.png]
+{title=Non-toplevel <tagged> headers demo}
+{description=Visible live at: https://cirosantilli.com/film#documentary-film}
+{provider=github}
+{border}
+{height=650}
+
 = OurBigBook CLI enforces consistent header tree by default
 {parent=News}
 {tag=OurBigBook CLI}
 
 <OurBigBook CLI> now forces you to write a consistent tree of headers by default, including e.g.:
 
-* can't have text under the current header after <Includes>
-* files must start with a h1 header and contain only a single h1 header
-* prevent infinite <include> loop recursion
-* every file must be included
+* can't have text under the current header after <Includes>. E.g. this is not allowed anymore:
+  ``
+  = Vertebrate
+
+  Vertebrates are cool.
+
+  \Include[mammal]
+
+  And they have vertebrae.
+  ``
+  You need instead something like:
+  ``
+  = Vertebrate
+
+  Vertebrates are cool.
+
+  And they have vertebrae.
+
+  \Include[mammal]
+  ``
+* files must start with a h1 header and contain only a single h1 header. E.g. in `vertebrate.bigb` this is not allowed because it does not start with a header:
+  ``
+  I like vertebrates.
+
+  = Vertebrate
+  ``
+  Neither is this because it starts with a h2 header:
+  ``
+  == Vertebrate
+
+  I like vertebrates.
+  ``
+  Neither is this because it has two h1 headers:
+  ``
+  = Vertebrate
+
+  I like vertebrates.
+
+  = Non-vertebrate
+
+  I don't like non vertebrates.
+  ``
+* prevent infinite <include> loop recursion. E.g. this would lead to an infinite loop at render time:
+
+  index.bigb
+  ``
+  = My homepage
+
+  \Include[vertebrate]
+  ``
+
+  vertebrate.bigb
+  ``
+  = Vertebrate
+
+  \Include[mammal]
+  ``
+
+  mammal.bigb
+  ``
+  = Mammal
+
+  \Include[vertebrate]
+  ``
+
+  Now you just get a nice error message instead.
+* every file must be recursively included from <the toplevel index file>. E.g.
+
+  index.bigb
+  ``
+  = My homepage
+
+  \Include[vertebrate]
+  ``
+
+  vertebrate.bigb
+  ``
+  = Vertebrate
+  ``
+
+  mammal.bigb
+  ``
+  = Mammal
+  ``
+
+  would give an error because `mammal.bigb` is not included from anywhere. To fix it you would likely want:
+
+  vertebrate.bigb
+  ``
+  = Vertebrate
+
+  \Include[mammal]
+  ``
+* files cannot be included twice. Previously the following was allowed:
+
+  index.bigb
+  ``
+  = My homepage
+
+  \Include[vertebrate]
+  \Include[mammal]
+  ``
+
+  vertebrate.bigb
+  ``
+  = Vertebrate
+
+  \Include[mammal]
+  ``
+
+  mammal.bigb
+  ``
+  = Mammal
+  ``
+
+  But now it gives an error because `mammal.bigb` is included from both `index.bigb` and `vertebrate.bigb`.
+
+  To fix it you would likely instead want to include it only from the most specific location `vertebrate.bigb` and remove it from `index.bigb`:
+
+  index.bigb
+  ``
+  = My homepage
+
+  \Include[vertebrate]
+  ``
 
 It is a common issue with most plaintext note taking systems that they don't force you to make a consistent tree.
 
@@ -33,6 +183,7 @@ While <OurBigBook Web> topic mind melding remains the most innovative feature of
 
 Announcements:
 * https://mastodon.social/@ourbigbook/113549071062984064
+* https://x.com/OurBigBook/status/1861383431973683551
 
 = ourbigbook.com/cirosantilli loads 2x as fast after database optimizations
 {parent=News}
@@ -80,7 +231,7 @@ The major application of this is to quickly browser through a users's top or lat
 
 Previously, the body would only show on:
 * <topic> listings
-* discussion comment lists 
+* discussion comment lists
 
 Now it shows everywhere else as well, except that in other views, only a fixed height preview is shown to allow quickly going through large articles without too much scrolling.
 

@@ -292,11 +292,6 @@ https://cirosantilli.com/brazilian-music-split doesn't have nosplit
 
 On ourbigbook.com like and unlike takes 4s-10s! Something is wrong. It must be because of the complex side effects like topic updating? Maybe those should be deferred? This only appears noticeable on a larger database.
 
-=== Show tagged list of non toplevel pages
-{tag=Tag}
-
-Both web and CLI.
-
 === Incoming links and tagged metadata does not show synonyms
 {tag=Metadata section}
 {tag=Synonym}
@@ -1056,6 +1051,11 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== Show tagged list of non toplevel pages
+{tag=Tag}
+
+Both web and CLI.
 
 === Insane block quotes
 {tag=Web}

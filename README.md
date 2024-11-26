@@ -41,6 +41,10 @@ Screenshot of the [topics feature](https://docs.ourbigbook.com/#ourbigbook-web-t
 [Internal cross file references](https://docs.ourbigbook.com/#cross-file-reference) done right:
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png)
+(
+[Tags](https://docs.ourbigbook.com/#h-tag-argument) are just headers:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/tag/non-toplevel-documentary-sell.png)
 
 You can [publish your local lightweight markup files either to OurBigBook.com or as a static website on your own domain of choice](https://docs.ourbigbook.com/#publish-your-content):
 

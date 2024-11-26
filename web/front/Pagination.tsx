@@ -18,33 +18,41 @@ export interface PaginationProps {
   what: string;
 }
 
-function PaginationItem(props) {
-  const newProps = Object.assign({}, props)
-  delete newProps.children
-  delete newProps.className
-  delete newProps.page
-  delete newProps.urlFunc
-  let className;
-  if (props.className) {
-    className = ' ' + props.className
+function PaginationItem({
+  children,
+  className,
+  href,
+  mobileHide=false,
+  isCurrent,
+  page,
+  urlFunc
+}) {
+  const classNames = ['page-item']
+  if (className) {
+    classNames.push(className)
+  }
+  if (isCurrent) {
+    classNames.push('active')
   } else {
-    className = ''
+    if (mobileHide) {
+      classNames.push('mobile-hide')
+    }
   }
   return <>
-    <span className={`page-item${className}`} {...newProps}>
+    <span className={classNames.join(' ')}>
       <CustomLink
         className="page-link"
-        href={props.urlFunc(props.href)}
+        href={urlFunc(href)}
         onClick={(ev) => {
-          // This is to maintain display-only query parameteres which
+          // This is to maintain display-only query parameters which
           // are added with shallow routing, this was the case for body= as
           // of writing. Ideally we should also hack the href to reflect the correct
           // location, but lazy.
           ev.preventDefault()
-          Router.push(makeUrlFunc(window.location.href)(props.page))
+          Router.push(makeUrlFunc(window.location.href)(page))
         }}
       >
-        {props.children}
+        {children}
       </CustomLink>
     </span>
     {' '}
@@ -76,6 +84,7 @@ const Pagination = ({
   showPagesMax,
   urlFunc,
   what,
+  wrap=true,
 }: PaginationProps) => {
   const router = useRouter()
   if (showPagesMax === undefined) {
@@ -114,44 +123,45 @@ const Pagination = ({
   }
 
   const pages = itemsCount > 0 ? getRange(firstPage, lastPage) : [];
-  return (
-    <nav className="content-not-ourbigbook">
-      <div className="pagination">
-        <Maybe test={totalPages > 1}>
-          <span className="pages">
-            <Maybe test={firstPage > 0}>
-              <PaginationItem {...{ page: 0, urlFunc }}>{`<<`}</PaginationItem>
-            </Maybe>
-            <Maybe test={currentPage > 0}>
-              <PaginationItem {...{ page: currentPage, urlFunc }}>{`<`}</PaginationItem>
-            </Maybe>
-            {pages.map(page => {
-              const isCurrent = page === currentPage;
-              return <PaginationItem
-                key={page.toString()}
-                {...{
-                  className: isCurrent && "active",
-                  page: page + 1,
-                  urlFunc,
-                }}
-              >
-                {page + 1}
-              </PaginationItem>
-            })}
-            <Maybe test={currentPage < totalPages - 1}>
-              <PaginationItem {...{ page: currentPage + 2, urlFunc }}>{`>`}</PaginationItem>
-            </Maybe>
-            <Maybe test={lastPage < totalPages - 1}>
-              <PaginationItem  {...{ page: totalPages, urlFunc }}>{`>>`}</PaginationItem>
-            </Maybe>
-          </span>
+  let ret = <div className="pagination">
+    <Maybe test={totalPages > 1}>
+      <span className="pages">
+        <Maybe test={firstPage > 0}>
+          <PaginationItem {...{ page: 0, urlFunc }}>{`<<`}</PaginationItem>
         </Maybe>
-        <span className="total">
-          Total {what}: <b>{itemsCount}</b>
-        </span>
-      </div>
-    </nav>
-  )
+        <Maybe test={currentPage > 0}>
+          <PaginationItem {...{ page: currentPage, urlFunc }}>{`<`}</PaginationItem>
+        </Maybe>
+        {pages.map(page => {
+          const isCurrent = page === currentPage;
+          return <PaginationItem
+            key={page.toString()}
+            {...{
+              isCurrent,
+              mobileHide: true,
+              page: page + 1,
+              urlFunc,
+            }}
+          >
+            {page + 1}
+          </PaginationItem>
+        })}
+        <Maybe test={currentPage < totalPages - 1}>
+          <PaginationItem {...{ page: currentPage + 2, urlFunc }}>{`>`}</PaginationItem>
+        </Maybe>
+        <Maybe test={lastPage < totalPages - 1}>
+          <PaginationItem  {...{ page: totalPages, urlFunc }}>{`>>`}</PaginationItem>
+        </Maybe>
+      </span>
+    </Maybe>
+    <span className="total">
+      Total<span className="mobile-hide"> {what}</span>: <b>{itemsCount}</b>
+    </span>
+  </div>
+  if (wrap) {
+    ret = <nav className="content-not-ourbigbook">{ret}</nav>
+  }
+  return ret
 };
 
 export default Pagination;

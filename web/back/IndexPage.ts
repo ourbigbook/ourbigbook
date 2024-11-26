@@ -69,6 +69,7 @@ export const getServerSidePropsIndexHoc = ({
                 offset,
                 order,
                 orderAscDesc: ascDesc,
+                searchTopicId: query.search,
                 sequelize,
               })
               articles = await Promise.all(articlesAndCounts.rows.map(
@@ -96,11 +97,12 @@ export const getServerSidePropsIndexHoc = ({
             break
           case 'topic':
             articlesAndCounts = await sequelize.models.Topic.getTopics({
-              sequelize,
+              limit,
               offset,
               order,
               orderAscDesc: ascDesc,
-              limit,
+              searchTopicId: query.search,
+              sequelize,
             })
             articles = await Promise.all(articlesAndCounts.rows.map(
               (article) => {return article.toJson(loggedInUser) }))

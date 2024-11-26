@@ -115,6 +115,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         offset,
         order,
         orderAscDesc: ascDesc,
+        searchTopicId: query.search,
         sequelize,
       }
       const articlesPromise =

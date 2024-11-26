@@ -5,7 +5,9 @@
 {c}
 {synonym}
 
-\b[https://OurBigBook.com[]]: The \b[OurBigBook Project] is creating the ultimate https://github.com/ourbigbook/ourbigbook[open source] tools to <publish> \b[textbooks]/\b[<#personal knowledge bases>]/\b[<#Zettelkasten>]/\b[<#digital gardens>] in the <#learn in public> philosophy. It is our best shot yet at the final \b[real-world <#Encyclopedia Galactica>] by allowing effective \b[<#mindmeld>[mind melding]]/\b[<#collective intelligence>] via the \b[<topics feature>].
+\b[https://OurBigBook.com[]]: the best way to publish your scientific knowledge.
+
+The \b[OurBigBook Project] is creating the ultimate https://github.com/ourbigbook/ourbigbook[open source] tools to <publish> \b[textbooks]/\b[<#personal knowledge bases>]/\b[<#Zettelkasten>]/\b[<#digital gardens>] in the <#learn in public> philosophy. It is our best shot yet at the final \b[real-world <#Encyclopedia Galactica>] by allowing effective \b[<#mindmeld>[mind melding]]/\b[<#collective intelligence>] via the \b[<topics feature>].
 
 \Image[logo.svg]
 {height=150}

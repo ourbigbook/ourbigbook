@@ -11,9 +11,20 @@
 		"cSpell.words": [
 			"Ourbigbook"
 		],
+        "files.exclude": {
+            "**/.git/**": true,
+            "**/_out/**": true,
+            "**/.next/**": true
+        },
         "files.watcherExclude": {
             "**/.git/**": true,
-            "_out/**": true
-        }
+            "**/_out/**": true,
+            "**/.next/**": true
+        },
+        "search.exclude": {
+            "**/.git/**": true,
+            "**/_out/**": true,
+            "**/.next/**": true
+        },
 	}
 }

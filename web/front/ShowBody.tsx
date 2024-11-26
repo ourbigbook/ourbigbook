@@ -2,6 +2,7 @@ import React from 'react'
 import Router from 'next/router'
 
 import Label from 'front/Label'
+import { SeeIcon } from 'front'
 
 import { boolToQueryVal, encodeGetParams } from 'ourbigbook/web_api'
 
@@ -10,7 +11,17 @@ export default function ShowBody({ setShowBodyState, showBody, showBodyState }) 
   if (showBodyElem.current) {
     showBodyElem.current.checked = showBodyState
   }
-  return <Label label="Show body" inline={true}>
+  return <Label
+    className='show-body'
+    label={<>
+      <SeeIcon />
+      {' '}
+      <span className="mobile-hide">Show body</span>
+      <span className="non-mobile-hide">Body</span>
+    </>}
+    inline={true}
+    wrap={false}
+  >
     <input
       type="checkbox"
       ref={showBodyElem}

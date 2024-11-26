@@ -1,11 +1,6 @@
 import Router from 'next/router'
 import React, { useRef } from 'react'
 
-import {
-  docsAdminUrl,
-  networkSlowMs,
-  userStoppedTypingMs,
-} from 'front/config'
 import ErrorList from 'front/ErrorList'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
@@ -15,12 +10,10 @@ import {
   MyHead,
   UserIcon,
   useCtrlEnterSubmit,
-  useConfirmExitPage,
 } from 'front'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { CommonPropsType } from 'front/types/CommonPropsType'
-import { UserType } from 'front/types/UserType'
 
 interface ResetPasswordProps extends CommonPropsType {
   code?: string;

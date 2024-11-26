@@ -13,7 +13,7 @@
     "build-dev-nodeps": "NEXT_PUBLIC_NODE_ENV=development npm run build-nodeps",
     "deploy-prod": "npm run test-deploy && git push -f prod master && git push && git push origin HEAD:prod",
     "deploy-staging": "git push -f staging master && git push && git push -f origin HEAD:staging",
-    "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon --ignore tmp --ignore test.js -w . -w ../index.js -w ./app.js -w ../nodejs.js -w ../nodejs_webpack_safe.js -w ../web_api.js -w ../ourbigbook.scss -w ../ourbigbook_runtime",
+    "dev": "NODE_OPTIONS='--unhandled-rejections=strict' nodemon --ignore tmp --ignore test.js -w . -w ../index.js -w ./app.js -w ../nodejs.js -w ../nodejs_webpack_safe.js -w ../web_api.js -w ../ourbigbook.scss -w ../ourbigbook_runtime -w ../models/index.js",
     "devi": "NODE_OPTIONS='--unhandled-rejections=strict' node inspect ./app.js",
     "dev-pg": "OURBIGBOOK_POSTGRES=1 npm run dev",
     "dev-pg-back": "OURBIGBOOK_DISABLE_FRONTEND=1 npm run dev-pg",

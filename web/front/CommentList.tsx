@@ -87,7 +87,6 @@ const CommentList = ({
                 {<ShowBody {...{ setShowBodyState, showBody, showBodyState }}/>}
               </div>
             }
-            {showBodyState && pagination}
             <div className="content-not-ourbigbook">
               <div className={`list-container${showBodyState ? ' show-body' : ''}`}>
                 {showBodyState

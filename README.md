@@ -1,5 +1,7 @@
 # OurBigBook Project
 
+The best way to publish your scientific knowledge.
+
 [OurBigBook.com](https://OurBigBook.com) | [docs.OurBigBook.com](https://docs.ourbigbook.com)
 
 ![](logo.svg)
@@ -41,7 +43,7 @@ Screenshot of the [topics feature](https://docs.ourbigbook.com/#ourbigbook-web-t
 [Internal cross file references](https://docs.ourbigbook.com/#cross-file-reference) done right:
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png)
-(
+
 [Tags](https://docs.ourbigbook.com/#h-tag-argument) are just headers:
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/tag/non-toplevel-documentary-sell.png)

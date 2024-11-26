@@ -8,6 +8,7 @@ $like-button-hover-color: #FF1493;
 $img-background-color: white;
 
 $border-radius: 10px;
+$pagination-page-height: 2em;
 $toplevel-padding: $toplevel-horizontal-padding-left;
 
 // Derived parameters
@@ -46,6 +47,9 @@ overflow: auto;
   }
 }
 @media only screen and (min-width: $max-mobile-width + 1) {
+  .non-mobile-hide {
+    display: none;
+  }
 }
 
 button, a.btn {
@@ -111,7 +115,6 @@ input, textarea.not-monaco {
   box-sizing: border-box;
   color: white;
   padding: 0.3em 0.5em;
-  margin-bottom: 10px;
   width: 100%;
   &[disabled] {
     background-color: rgb(50, 50, 50);
@@ -132,8 +135,13 @@ input[type=checkbox] {
 label {
   font-weight: bold;
   display: block;
-  div.label {
+  margin-bottom: 10px;
+  .label {
+    display: block;
     margin-bottom: 5px;
+    &.inline {
+      display: inline;
+    }
   }
   &.flex {
     display: flex;
@@ -151,9 +159,6 @@ label {
   }
   &.inline {
     display: inline-block;
-    div.label.inline {
-      display: inline;
-    }
   }
 }
 
@@ -624,7 +629,17 @@ span.shortcut {
 
 .list-nav-container {
   .controls {
-    padding-bottom: 0.5em;
+    margin-bottom: 1em;
+  }
+  .search {
+    display: inline-block;
+    margin-right: 1ch;
+    width: 40ch;
+  }
+  .show-body {
+    line-height: $pagination-page-height;
+    margin-right: 1ch;
+    margin-bottom: 0;
   }
 }
 
@@ -658,9 +673,9 @@ span.shortcut {
 }
 
 .pagination {
+  display: inline-block;
   height: 100%;
   list-style-type: none;
-  margin-bottom: 1em;
   padding: 0;
   .pages {
     margin-right: 10px;
@@ -681,9 +696,6 @@ span.shortcut {
           font-weight: bold;
         }
       }
-      &.total {
-        margin-left: 10px;
-      }
     }
   }
   /* https://github.com/gothinkster/angular-realworld-example-app/blob/9e8c49514ee874e5e0bbfe53ffdba7d2fd0af36f/src/app/shared/article-helpers/article-list.component.css#L1 */
@@ -697,6 +709,9 @@ span.shortcut {
     &:hover {
       border-color: $color;
     }
+  }
+  .total {
+    line-height: $pagination-page-height;
   }
 }
 

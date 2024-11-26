@@ -1,3 +1,5 @@
+const { sequelizeWhereStartsWith } = require('ourbigbook/models')
+
 const { DataTypes, Op } = require('sequelize')
 
 module.exports = (sequelize) => {
@@ -38,6 +40,7 @@ module.exports = (sequelize) => {
     offset,
     order,
     orderAscDesc,
+    searchTopicId,
     sequelize,
   }) => {
     if (count === undefined) {
@@ -45,6 +48,14 @@ module.exports = (sequelize) => {
     }
     if (orderAscDesc === undefined) {
       orderAscDesc = 'DESC'
+    }
+    const where = {}
+    /** Get a starts with that will be accelerated both in SQLite and PostgreSQL.
+     * In sequelize we need GLOB: https://stackoverflow.com/questions/8584499/should-like-searchstr-use-an-index/76512019#76512019
+     * In PostgreSQL GLOB doe not exist and we setup the DB so that LIKE will work: https://dba.stackexchange.com/questions/53811/why-would-you-index-text-pattern-ops-on-a-text-column/343887#343887
+     */
+    if (searchTopicId !== undefined) {
+      where.topicId = sequelizeWhereStartsWith(sequelize, searchTopicId, '"Topic"."topicId"')
     }
     const includeArticle = {
       model: sequelize.models.Article,
@@ -61,18 +72,25 @@ module.exports = (sequelize) => {
     if (order === undefined) {
       order = 'articleCount'
     }
-    const orderList = [[order, orderAscDesc]]
-    if (order !== 'createdAt') {
-      orderList.push(['createdAt', 'DESC'])
-    }
-    if (articleOrder !== undefined) {
-      orderList.push([{model: sequelize.models.Article, as: 'article'}, articleOrder, 'DESC'])
+    const orderList = []
+    if (searchTopicId === undefined) {
+      orderList.push([order, orderAscDesc])
+      if (order !== 'createdAt') {
+        orderList.push(['createdAt', 'DESC'])
+      }
+      if (articleOrder !== undefined) {
+        orderList.push([{model: sequelize.models.Article, as: 'article'}, articleOrder, 'DESC'])
+      }
+    } else {
+      // See comments under getArticles why we don't do other orders with this one.
+      orderList.push(['topicId', 'ASC'])
     }
     const args = {
-      order: orderList,
+      include,
       limit,
       offset,
-      include,
+      order: orderList,
+      where,
     }
     if (count) {
       return sequelize.models.Topic.findAndCountAll(args)

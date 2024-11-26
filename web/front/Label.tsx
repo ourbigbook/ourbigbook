@@ -11,14 +11,27 @@ function Label({
   // If given, the label appears on the same line as a child <input />
   inline=false,
   flex=false,
+  wrap=true,
 }) {
-  return <div className={className}>
-    <label className={`${inline ? 'inline' : ''}${flex ? 'flex' : ''}`}>
-      <div className={`label${inline ? ' inline' : ''}${flex ? ' flex' : ''}`}>{label}</div>
-      {inline && ' '}
-      {children}
-    </label>
-  </div>
+  const classes = []
+  if (inline) {
+    classes.push('inline')
+  }
+  if (flex) {
+    classes.push('flex')
+  }
+  if (!wrap && className) {
+    classes.push(className)
+  }
+  let ret = <label className={classes.join(' ')}>
+    <span className={`label${inline ? ' inline' : ''}${flex ? ' flex' : ''}`}>{label}</span>
+    {inline && ' '}
+    {children}
+  </label>
+  if (wrap) {
+    ret = <div className={className}>{ret}</div>
+  }
+  return ret
 }
 
 export default Label;

@@ -38,29 +38,32 @@ if (ourbigbook_nodejs_front.postgres) {
   }
 }
 
+const convertOptions = {
+  add_test_instrumentation: ourbigbook_nodejs_front.isTest,
+  body_only: true,
+  forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
+  htmlXExtension: false,
+  renderH2: true,
+  path_sep: '/',
+  // https://docs.ourbigbook.com/todo/word-count-on-web
+  show_descendant_count: false,
+  render_metadata: false,
+  webMode: true,
+  x_absolute: true,
+  x_leading_at_to_web: false,
+  x_remove_leading_at: true,
+  xss_safe: true,
+}
+
 module.exports = {
   apiPath: '/' + ourbigbook.WEB_API_PATH,
   commentsHeaderId: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comments`,
   commentIdPrefix: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comment-`,
   // Common convert options used by all frontend components: the backend and the editor,
   // for both issues and articles.
-  convertOptions: {
-    add_test_instrumentation: ourbigbook_nodejs_front.isTest,
-    body_only: true,
-    forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
-    htmlXExtension: false,
-    renderH2: true,
-    path_sep: '/',
-    // https://docs.ourbigbook.com/todo/word-count-on-web
-    show_descendant_count: false,
-    render_metadata: false,
-    webMode: true,
-    x_absolute: true,
-    x_leading_at_to_web: false,
-    x_remove_leading_at: true,
-    xss_safe: true,
-  },
   contactUrl: `${docsUrl}/contact`,
+  convertContext: ourbigbook.convertInitContext(convertOptions),
+  convertOptions,
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
   appDomain,

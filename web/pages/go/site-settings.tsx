@@ -68,7 +68,7 @@ export default function SiteSettings({
       pinnedArticle = val
       setPinnedArticleCheckDone(false)
       setFormChanged(site.pinnedArticle !== pinnedArticle)
-      pinnedArticleI.current += 1
+      pinnedArticleI.current++
     }
     setSiteInfo({ ...siteInfo, [field]: val })
     if (pinnedArticle) {

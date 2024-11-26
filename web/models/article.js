@@ -4,6 +4,7 @@ const { DataTypes, Op } = require('sequelize')
 
 const ourbigbook = require('ourbigbook')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
+const { sequelizeWhereStartsWith } = require('ourbigbook/models')
 
 const config = require('../front/config')
 const front_js = require('../front/js')
@@ -135,8 +136,13 @@ module.exports = (sequelize) => {
         { fields: ['list', 'updatedAt', 'createdAt'], },
         { fields: ['list', 'issueCount', 'createdAt'], },
         { fields: ['list', 'followerCount', 'createdAt'], },
-        // Top articles in a given topic.
-        { fields: ['list', 'topicId', 'score', 'createdAt'], },
+        // - Top articles in a given topic.
+        // - Find articles whose topic start with a given prefix
+        //   text_pattern_ops is to speed up this 'LIKE%' query when searching by topicId prefix.
+        //   https://dba.stackexchange.com/questions/53811/why-would-you-index-text-pattern-ops-on-a-text-column/343887#343887
+        { fields: ['list', { name: 'topicId', operator: 'text_pattern_ops' }, 'score', 'createdAt'], },
+        // Newest articles in a given topic.
+        { fields: ['list', { name: 'topicId', operator: 'text_pattern_ops' }, 'createdAt'], },
         // Top articles in the entire site.
         { fields: ['list', 'score', 'createdAt'], },
 
@@ -155,7 +161,8 @@ module.exports = (sequelize) => {
         { fields: ['authorId', 'list', 'followerCount', 'createdAt'], },
         { fields: ['authorId', 'list', 'issueCount', 'createdAt'], },
         // Alphabetic list of articles by user.
-        { fields: ['authorId', 'list', 'topicId'], },
+        // Find article by user that has a given topicId prefix.
+        { fields: ['authorId', 'list', { name: 'topicId', operator: 'text_pattern_ops' }], },
         // Does the logged in user have their own version of this topic?
         { fields: ['authorId', 'topicId'], },
 
@@ -303,8 +310,8 @@ WHERE
                 from_id: oldParentId,
                 type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
                 to_id_index: {
-                  [sequelize.Sequelize.Op.gte]: old_to_id_index,
-                  [sequelize.Sequelize.Op.lt]: old_to_id_index + nArticlesToplevel,
+                  [Op.gte]: old_to_id_index,
+                  [Op.lt]: old_to_id_index + nArticlesToplevel,
                 },
               },
               transaction,
@@ -394,8 +401,8 @@ WHERE
           logging: logging ? console.log : false,
           where: {
             nestedSetIndex: {
-              [sequelize.Sequelize.Op.gt]: nestedSetIndex,
-              [sequelize.Sequelize.Op.lt]: nestedSetNextSibling,
+              [Op.gt]: nestedSetIndex,
+              [Op.lt]: nestedSetNextSibling,
             },
           },
           transaction,
@@ -604,7 +611,7 @@ WHERE
             by: shiftRefBy,
             where: {
               from_id: parentId,
-              to_id_index: { [sequelize.Sequelize.Op.gte]: to_id_index },
+              to_id_index: { [Op.gte]: to_id_index },
               type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
             },
             transaction,
@@ -771,8 +778,8 @@ WHERE
     return sequelize.models.Article.findAll({
       where: {
         nestedSetIndex: {
-          [sequelize.Sequelize.Op.gt]: this.nestedSetIndex,
-          [sequelize.Sequelize.Op.lt]: this.nestedSetNextSibling,
+          [Op.gt]: this.nestedSetIndex,
+          [Op.lt]: this.nestedSetNextSibling,
         },
         depth: this.depth + 1,
       },
@@ -937,7 +944,7 @@ WHERE
       // These happen on "updateNestedNsetIndex=false updates"
       !opts.includeNulls
     ) {
-      where.nestedSetIndex = {[sequelize.Sequelize.Op.ne]: null}
+      where.nestedSetIndex = {[Op.ne]: null}
     }
     const include = [
       {
@@ -969,8 +976,8 @@ WHERE
     return Article.findAll({
       attributes: opts.attributes,
       where: {
-        nestedSetIndex: { [sequelize.Sequelize.Op.lt]: this.nestedSetIndex },
-        nestedSetNextSibling: { [sequelize.Sequelize.Op.gt]: this.nestedSetIndex },
+        nestedSetIndex: { [Op.lt]: this.nestedSetIndex },
+        nestedSetNextSibling: { [Op.gt]: this.nestedSetIndex },
       },
       include: [{
         model: sequelize.models.File,
@@ -1151,6 +1158,7 @@ WHERE
     order,
     orderAscDesc,
     rows=true,
+    searchTopicId,
     sequelize,
     slug,
     topicId,
@@ -1168,10 +1176,13 @@ WHERE
 
     let where = {}
     if (excludeIds.length) {
-      where.id = { [sequelize.Sequelize.Op.notIn]: excludeIds }
+      where.id = { [Op.notIn]: excludeIds }
     }
     if (list !== undefined) {
       where.list = list
+    }
+    if (searchTopicId !== undefined) {
+      where.topicId = sequelizeWhereStartsWith(sequelize, searchTopicId, '"Article"."topicId"')
     }
     const fileInclude = []
     const authorInclude = {
@@ -1213,12 +1224,22 @@ WHERE
       where.topicId = topicId
     }
     const orderList = []
-    if (order !== undefined) {
-      orderList.push([order, orderAscDesc])
-    }
-    if (order !== 'createdAt' && order !== 'nestedSetIndex') {
-      // To make results deterministic.
-      orderList.push(['createdAt', 'DESC'])
+    if (searchTopicId === undefined) {
+      if (order !== undefined) {
+        orderList.push([order, orderAscDesc])
+      }
+      if (order !== 'createdAt' && order !== 'nestedSetIndex') {
+        // To make results deterministic.
+        orderList.push(['createdAt', 'DESC'])
+      }
+    } else {
+      // Override all other orderings, as we currently don't have
+      // an efficient way of also sorting by them. The root problem
+      // is that a prefix search is basically a range search, and 
+      // then doing an unrelated sort on top essentially means doing
+      // two range searches, which requires spatial indices: 
+      // https://stackoverflow.com/questions/2256364/what-is-a-spatial-index-and-when-should-i-use-it/76685445#76685445
+      orderList.push(['topicId', 'ASC'])
     }
     if (Object.keys(where).length === 0) {
       where = undefined;
@@ -1659,7 +1680,7 @@ LIMIT ${limit}` : ''}
     if (authors.length) {
       authorWhere.username = authors
     } else if (skipAuthors.length) {
-      authorWhere.username = { [sequelize.Sequelize.Op.notIn]: skipAuthors }
+      authorWhere.username = { [Op.notIn]: skipAuthors }
     }
     let offset = 0
     while (true) {

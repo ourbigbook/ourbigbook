@@ -61,8 +61,33 @@ import {
 //import { ourbigbook_runtime } from 'ourbigbook/ourbigbook_runtime.js';
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js'
 import { encodeGetParams } from 'ourbigbook/web_api'
+import { ArticleType } from 'front/types/ArticleType'
 
-function LinkList(articles, idUnreserved, marker, title, linkPref) {
+function LinkListNoTitle({
+  articles,
+  linkPref,
+}: {
+  articles: ArticleType[],
+  linkPref: string,
+}) {
+  return <ul>
+    {articles.map(a =>
+      <li key={a.slug}><a
+        href={`${linkPref}${a.slug}`}
+        className="ourbigbook-title"
+        dangerouslySetInnerHTML={{ __html: a.titleRender}}
+      ></a></li>
+    )}
+  </ul>
+}
+
+function LinkList(
+  articles: ArticleType[],
+  idUnreserved: string,
+  marker: string,
+  title: string,
+  linkPref: string,
+) {
   if (articles.length) return <>
     <h2 id={`${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}>
       <a
@@ -71,18 +96,10 @@ function LinkList(articles, idUnreserved, marker, title, linkPref) {
       >
         <span dangerouslySetInnerHTML={{ __html: `${marker} ${title}` }} />
         {' '}
-        <span className="meta">({articles.length})</span>
+        <span className="meta">({ articles.length })</span>
       </a>
     </h2>
-    <ul>
-      {articles.map(a =>
-        <li key={a.slug}><a
-          href={`${linkPref}${a.slug}`}
-          className="ourbigbook-title"
-          dangerouslySetInnerHTML={{ __html: a.titleRender}}
-        ></a></li>
-      )}
-    </ul>
+    <LinkListNoTitle {...{ articles, linkPref }} />
   </>
 }
 
@@ -728,7 +745,16 @@ export default function Article({
         loggedInUser,
         toplevel: false,
       }}/>)
-      html +=  elem.outerHTML + a.render
+      html += elem.outerHTML + a.render
+      if (a.taggedArticles) {
+        html += `<p><b>${TAGS_MARKER} Tagged</b></p>`
+        html += '<div className="content-not-ourbigbook">'
+        html += renderToString(LinkListNoTitle( {...{ articles: a.taggedArticles, linkPref } }))
+        //for (const t of a.taggedArticles) {
+        //  html += `<a href="${t.slug}">${t.titleRender}</a>`
+        //}
+        html += '</div>'
+      }
     }
     if (log.perf) {
       console.error(`perf: Article.articlesInSamePage: ${performance.now() - t0} ms`)

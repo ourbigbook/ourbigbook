@@ -1296,6 +1296,7 @@ WHERE
     // This is essential for performance as the toc has 10x more entries, and can be
     // the performance bottleneck according to our testing.
     toc,
+    toplevelId,
     sequelize,
   }) => {
     if (toc === undefined) {
@@ -1439,6 +1440,7 @@ WHERE
 //      }
 //    )
 
+    const { File, Id, Ref } = sequelize.models
     ;const [rows, meta] = await sequelize.query(`
 SELECT
   "Article"."depth" AS "depth",
@@ -1455,14 +1457,17 @@ SELECT
   "Article"."topicId" AS "topicId",
   "Article.Author"."id" AS "author.id",
   "Article.Author"."username" AS "author.username",
-  "Topic"."articleCount" AS "topicCount"${loggedInUser ? `,
+  "Topic"."articleCount" AS "topicCount"${toplevelId ? `,
+  "${File.tableName}"."toplevel_id" AS "toplevel_id"
+` : ''}${loggedInUser ? `,
   "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic",
   "UserLikeArticle"."userId" AS "liked"` : ''
 }` : ''}
 FROM
   "Article"${!toc ? `
 INNER JOIN "User" AS "Article.Author" ON "Article"."authorId" = "Article.Author"."id"
-INNER JOIN "Topic" ON "Article"."topicId" = "Topic"."topicId"${loggedInUser ? `
+INNER JOIN "Topic" ON "Article"."topicId" = "Topic"."topicId"${toplevelId ? `INNER JOIN "${File.tableName}" ON "Article"."fileId" = "${File.tableName}"."id"
+` : ''}${loggedInUser ? `
 LEFT OUTER JOIN "Article" as "ArticleSameTopicByLoggedIn"
   ON "ArticleSameTopicByLoggedIn"."authorId" = :loggedInUserId AND
      "ArticleSameTopicByLoggedIn"."topicId" = "Article"."topicId"

@@ -75,9 +75,10 @@ export const getServerSidePropsArticleHoc = ({
     if (slug instanceof Array) {
       const slugString = slug.join('/')
       const sequelize = req.sequelize
+      const { Article, File, Issue, Id, Ref } = sequelize.models
       const limit = articleLimitSmall
       const [article, articleTopIssues, loggedInUser] = await Promise.all([
-        sequelize.models.Article.getArticle({
+        Article.getArticle({
           limit,
           includeIssues,
           sequelize,
@@ -87,12 +88,12 @@ export const getServerSidePropsArticleHoc = ({
         //// If very slow, we could move it to after page load.
         //// TODO don't run this on split pages? But it requires doing a separate query step, which
         //// would possibly slow things down more than this actual query?
-        //sequelize.models.Article.getArticlesInSamePage({
+        //Article.getArticlesInSamePage({
         //  sequelize,
         //  slug: slugString,
         //  loggedInUser,
         //}),
-        sequelize.models.Article.getArticle({
+        Article.getArticle({
           includeIssues,
           includeIssuesOrder: 'score',
           limit,
@@ -102,7 +103,7 @@ export const getServerSidePropsArticleHoc = ({
         getLoggedInUser(req, res, loggedInUserCache),
       ])
       if (!article) {
-        const redirects = await sequelize.models.Article.findRedirects([slugString], { limit: 1 })
+        const redirects = await Article.findRedirects([slugString], { limit: 1 })
         const newSlug = redirects[slugString]
         if (newSlug) {
           return {
@@ -135,14 +136,61 @@ export const getServerSidePropsArticleHoc = ({
       ] = await Promise.all([
         article.treeFindAncestors({ attributes: ['slug', 'titleRender'] }),
         article.toJson(loggedInUser),
-        sequelize.models.Article.getArticlesInSamePage({
+        // articlesInSamePage
+        Article.getArticlesInSamePage({
           article,
           loggedInUser,
           limit: maxArticlesFetch,
           list: true,
           sequelize,
+          toplevelId: true,
+        }).then(async (articles) => {
+          const idToArticleMap = {}
+          for (const article of articles) {
+            idToArticleMap[article.toplevel_id] = article
+          }
+          // TODO limit.
+          const refs = await Ref.findAll({
+            where: {
+              from_id: articles.map(a => a.toplevel_id),
+              type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_CHILD],
+            },
+            include: [{
+              model: Id,
+              as: 'to',
+              required: true,
+              //attributes: [],
+              include: [{
+                model: File,
+                as: 'toplevelId',
+                required: true,
+                // No you can't because bugs: https://github.com/sequelize/sequelize/issues/16436
+                //attributes: [],
+                include: [{
+                  model: Article,
+                  as: 'articles',
+                  required: true,
+                  attributes: ['slug', 'titleRender'],
+                }],
+              }],
+            }],
+          })
+          for (const ref of refs) {
+            const article = idToArticleMap[ref.from_id]
+            let taggedArticles = article.taggedArticles
+            if (taggedArticles === undefined) {
+              taggedArticles = []
+              article.taggedArticles = taggedArticles
+            }
+            const toArticle = ref.to.toplevelId.articles[0]
+            taggedArticles.push({
+              slug: toArticle.slug,
+              titleRender: toArticle.titleRender,
+            })
+          }
+          return articles
         }),
-        sequelize.models.Article.getArticlesInSamePage({
+        Article.getArticlesInSamePage({
           article,
           loggedInUser,
           // This 10x made this be the dominating query on /wikibot when we last benchmarked.
@@ -153,8 +201,8 @@ export const getServerSidePropsArticleHoc = ({
           toc: true,
           sequelize,
         }),
-        sequelize.models.Article.getArticleJsonInTopicBy(loggedInUser, article.topicId),
-        sequelize.models.Article.getArticlesInSamePage({
+        Article.getArticleJsonInTopicBy(loggedInUser, article.topicId),
+        Article.getArticlesInSamePage({
           article,
           loggedInUser,
           list: undefined,
@@ -162,10 +210,10 @@ export const getServerSidePropsArticleHoc = ({
           sequelize,
         }),
         getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X, from: 'from', to: 'to' }),
-        includeIssues ? sequelize.models.Issue.count({ where: { articleId: article.id } }) : null,
+        includeIssues ? Issue.count({ where: { articleId: article.id } }) : null,
         isIndex
           ? { rows: [] }
-          : sequelize.models.Article.getArticles({
+          : Article.getArticles({
               excludeIds: [article.id],
               limit,
               offset: 0,
@@ -174,25 +222,25 @@ export const getServerSidePropsArticleHoc = ({
               topicId: article.topicId,
             })
         ,
-        sequelize.models.Id.findAll({
+        Id.findAll({
           include: [{
-            model: sequelize.models.Ref,
+            model: Ref,
             as: 'from',
             required: true,
-            where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM] },
+            where: { type: Ref.Types[ourbigbook.REFS_TABLE_SYNONYM] },
             attributes: [],
             include: [{
-              model: sequelize.models.Id,
+              model: Id,
               as: 'to',
               required: true,
               attributes: [],
               include: [{
-                model: sequelize.models.File,
+                model: File,
                 as: 'toplevelId',
                 required: true,
                 attributes: [],
                 include: [{
-                  model: sequelize.models.Article,
+                  model: Article,
                   as: 'articles',
                   required: true,
                   attributes: [],
@@ -203,6 +251,7 @@ export const getServerSidePropsArticleHoc = ({
           }]
         }),
         includeIssues ? Promise.all(article.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
+        // Tagged.
         getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X_CHILD, from: 'to', to: 'from' }),
         includeIssues ? Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
       ])

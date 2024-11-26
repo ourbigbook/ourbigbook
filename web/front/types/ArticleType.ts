@@ -36,6 +36,7 @@ export type ArticleType = {
   score: number;
   slug: string;
   tagList: string[];
+  taggedArticles?: ArticleLinkType[];
   titleRender: string;
   titleSource: string;
   titleSourceLine: number;

@@ -1626,7 +1626,7 @@ The toplevel header of a OurBigBook file is its first header and the one with th
 
 == Cat
 ``
-the header `= Animal` is the tolevel header.
+the header `= Animal` is the toplevel header.
 
 Being the toplevel header gives a header some special handling described in child sections of the section and elsewhere throughout this documentation.
 

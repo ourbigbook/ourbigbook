@@ -7,6 +7,33 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= OurBigBook CLI enforces consistent header tree by default
+{parent=News}
+{tag=OurBigBook CLI}
+
+<OurBigBook CLI> now forces you to write a consistent tree of headers by default, including e.g.:
+
+* can't have text under the current header after <Includes>
+* files must start with a h1 header and contain only a single h1 header
+* prevent infinite <include> loop recursion
+* every file must be included
+
+It is a common issue with most plaintext note taking systems that they don't force you to make a consistent tree.
+
+However, for publishing, having one tree is essential, otherwise it can be very hard for users to navigate your content.
+
+Furthermore, this makes things much simpler to implement and understand for OurBigBook Web and a future WYSIWYG local editor.
+
+Some other pedantry:
+
+* rename `README.bigb` to `index.bigb` for the <the toplevel index file>. Much cleaner, and we already have a conflict on the baseneme index with index.html, so why create another conflict with README
+* rename <the out directory> from `out` to `_out`, which is a reserved ID. Otherwise it was impossible to have a directory called `out` with ourbigbook files for <directory-based scope>.
+
+While <OurBigBook Web> topic mind melding remains the most innovative feature of the project, local plaintext is a fundamental guarantee that you will never lose your content, and we intend to keep it awesome.
+
+Announcements:
+* https://mastodon.social/@ourbigbook/113549071062984064
+
 = ourbigbook.com/cirosantilli loads 2x as fast after database optimizations
 {parent=News}
 {tag=Web}

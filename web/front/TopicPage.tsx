@@ -50,7 +50,6 @@ export const TopicPage = ({
 }: TopicPageProps) => {
   const router = useRouter();
   const topicId = slugFromArray(router.query.id)
-  const paginationUrlFunc = (page) => routes.topic(topicId, { page, sort: order })
   let titleText
   if (topic) {
     titleText = topic.titleSource
@@ -103,7 +102,6 @@ export const TopicPage = ({
               list,
               loggedInUser,
               page,
-              paginationUrlFunc,
               showAuthor: true,
               showBody: true,
               showFullBody: true,

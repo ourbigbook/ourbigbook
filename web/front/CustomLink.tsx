@@ -7,7 +7,7 @@ import React from 'react'
 import { AppContext } from 'front'
 
 interface CustomLinkProps {
-  href: string;
+  href?: string;
   className?: string;
   onClick?: (ev: React.MouseEvent<HTMLElement>) => void;
   children: React.ReactNode;

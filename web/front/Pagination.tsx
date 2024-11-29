@@ -10,22 +10,30 @@ import CustomLink from 'front/CustomLink'
 export type PaginationPropsUrlFunc = (number) => string;
 
 export interface PaginationProps {
+  isCurrent?: boolean;
   itemsCount: number;
   itemsPerPage: number;
   showPagesMax?: number;
   currentPage: number;
   urlFunc?: PaginationPropsUrlFunc;
   what: string;
+  wrap?: boolean;
 }
 
 function PaginationItem({
   children,
   className,
-  href,
   mobileHide=false,
-  isCurrent,
+  isCurrent=false,
   page,
   urlFunc
+}: {
+  children: React.ReactNode;
+  className?: string;
+  mobileHide?: boolean;
+  isCurrent?: boolean;
+  page: number;
+  urlFunc?: PaginationPropsUrlFunc;
 }) {
   const classNames = ['page-item']
   if (className) {
@@ -42,10 +50,10 @@ function PaginationItem({
     <span className={classNames.join(' ')}>
       <CustomLink
         className="page-link"
-        href={urlFunc(href)}
+        href={urlFunc(page)}
         onClick={(ev) => {
-          // This is to maintain display-only query parameters which
-          // are added with shallow routing, this was the case for body= as
+          // Capture the click here to maintain display-only query parameters which
+          // are added with shallow routing and not seen on server. This was the case for body= as
           // of writing. Ideally we should also hack the href to reflect the correct
           // location, but lazy.
           ev.preventDefault()
@@ -63,10 +71,10 @@ export const getRange = (start: number, end: number) => {
   return [...Array(end - start + 1)].map((_, i) => start + i);
 };
 
-function makeUrlFunc(urlString) {
+function makeUrlFunc(urlString: string): (page: number) => string {
   return page => {
     const url = new URL(urlString)
-    const query = Object.fromEntries(url.searchParams)
+    const query: any = Object.fromEntries(url.searchParams)
     if (page === 1) {
       delete query.page
     } else {

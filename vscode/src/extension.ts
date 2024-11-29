@@ -158,24 +158,29 @@ export async function activate(context: vscode.ExtensionContext) {
     }
   }
 
+  function runCmd(cmd: string, args: string[]) {
+    channel.appendLine(`runCmd: ${cmd} ${args.join(' ')}`)
+    return child_process.spawnSync(cmd, args)
+  }
+
   async function buildAll(): Promise<number|undefined> {
     return runTask(
       'npx',
       ['ourbigbook', '.'],
-      (ourbigbookJsondir: string|undefined) => {
+      (ourbigbookJsonDir: string|undefined) => {
         if (
           ourbigbookJsonDir !== undefined &&
           vscode.workspace.getConfiguration('ourbigbook').gitAutoCommitAfterBuild
         ) {
           let p
-          p = child_process.spawnSync('git', ['-C', ourbigbookJsonDir, 'add', '-u', path.join(ourbigbookJsonDir, `/*.${OURBIGBOOK_EXT}`)])
+          p = runCmd('git', ['-C', ourbigbookJsonDir, 'add', '-u', path.join(ourbigbookJsonDir, `/*.${OURBIGBOOK_EXT}`)])
           if (p.status !== 0) {
             vscode.window.showInformationMessage('git add failed, see extension logs for details')
             channel.appendLine(`git add failed:\nstdout:\n${p.stdout}\nstderr\n${p.stderr}`)
           } else {
-            p = child_process.spawnSync('git', ['diff', '--name-only', '--cached'])
+            p = runCmd('git', ['-C', ourbigbookJsonDir, 'diff', '--name-only', '--cached'])
             if (p.stdout.toString()) {
-              let p = child_process.spawnSync('git', ['-C', ourbigbookJsonDir, 'commit', '-m', 'OurBigBook Vscode extension auto commit'])
+              let p = runCmd('git', ['-C', ourbigbookJsonDir, 'commit', '-m', 'OurBigBook Vscode extension auto commit'])
               if (p.status !== 0) {
                 vscode.window.showInformationMessage('git commit failed, see extension logs for details')
                 channel.appendLine(`git commit failed:\nstdout:\n${p.stdout}\nstderr\n${p.stderr}`)

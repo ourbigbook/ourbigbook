@@ -7,6 +7,25 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= Article and topic ID prefix search
+{parent=News}
+{tag=Web}
+
+It is now possible to search articles and topics by a given ID prefix.
+
+We are going to look full text search for non prefix searches next. But at least the frontend is working and any improvements will be backend only.
+
+Simultaneous search and sort (e.g. sorting by date and score) is also not available at present, once you start searching it disables sorting. We will also look into how to implement that.
+
+Related issue: https://github.com/ourbigbook/ourbigbook/issues/263
+
+\Image[feature/search/physics-arrow.png]
+{title=Article search demo}
+{description=Visible live at: https://ourbigbook.com/go/articles?body=false&search=physics-and}
+{provider=github}
+{border}
+{height=650}
+
 = Tagged headers show under non-toplevel headers
 {parent=News}
 {tag=Tag}

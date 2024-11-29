@@ -1306,7 +1306,7 @@ class Macro {
    *        {Function[AstNode, Object] -> String} get_number - return the number that shows on on full references
    *                 as a string, e.g. "123" in "Figure 123." or "1.2.3" in "Section 1.2.3.".
    *                 A return of undefined means that the number is not available, e.g. this is current limitation
-   *                 of cross references to other files (could be implemented).
+   *                 of internal links to other files (could be implemented).
    *        {Function[AstNode, Object] -> Bool} macro_counts_ignore - if true, then an ID should not be automatically given
    *                 to this node. This is usually the case for nodes that are not visible in the final output,
    *                 otherwise that would confuse readers.
@@ -6633,7 +6633,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         const target_ast = context.db_provider.get(href, context, header_ast.scope);
         if (target_ast === undefined) {
           let message = `ID in include not found on database: "${href}", ` +
-            `needed to calculate the cross reference title. Did you forget to convert all files beforehand?`;
+            `needed to calculate the internal link title. Did you forget to convert all files beforehand?`;
           header_ast.args[Macro.TITLE_ARGUMENT_NAME].get(0).text = errorMessageInOutput(message)
           if (options.render) {
             parseError(state, message, header_ast.source_location);
@@ -7123,7 +7123,7 @@ function renderError(context, message, source_location, severity=1) {
 
 function renderErrorXUndefined(ast, context, target_id, options={}) {
   let { source_location } = options
-  let message = `cross reference to unknown id: "${target_id}" at render time`;
+  let message = `internal link ${ESCAPE_CHAR}${Macro.X_MACRO_NAME} to unknown ID: "${target_id}" at render time`;
   if (source_location === undefined) {
     if (ast.args.href) {
       source_location = ast.args.href.source_location
@@ -7253,7 +7253,7 @@ function renderToc(context) {
     let target_ast = context.db_provider.get(tree_node.ast.id, context);
     if (
       // Can happen in test error cases:
-      // - cross reference from header title without ID to previous header is not allowed
+      // - internal link from header title without ID to previous header is not allowed
       // - include to file that does exists without embed includes before extracting IDs fails gracefully
       target_ast !== undefined
     ) {
@@ -7734,7 +7734,7 @@ function xGetHrefContent(ast, context) {
       x_parents_new.add(ast);
       content = xText(target_ast, cloneAndSet(context, 'x_parents', x_parents_new), x_text_options);
       if (content === ``) {
-        let message = `empty cross reference body: "${target_id}"`;
+        let message = `empty internal link body: "${target_id}"`;
         renderError(context, message, ast.source_location);
         return errorMessageInOutput(message, context);
       }
@@ -7752,7 +7752,7 @@ function xGetHrefContent(ast, context) {
  * https://docs.ourbigbook.com#internal-cross-file-references
  *
  * @param {AstNode} target_ast
- * @return {String} the value of href (no quotes) that an \x cross reference to the given target_ast
+ * @return {String} the value of href (no quotes) that an \x internal link to the given target_ast
  */
 function xHref(target_ast, context) {
   const [href_path, fragment] = xHrefParts(target_ast, context);
@@ -8017,8 +8017,8 @@ function xHrefAttr(target_ast, context) {
 }
 
 /**
- * Calculate the text (visible content) of a cross reference, or the text
- * that the caption text that cross references can refer to, e.g.
+ * Calculate the text (visible content) of a internal link, or the text
+ * that the caption text that internal links can refer to, e.g.
  * "Table 123. My favorite table". Both are done in a single function
  * so that style_full references will show very siimlar to the caption
  * they refer to.
@@ -8140,7 +8140,7 @@ function xTextBase(ast, context, options={}) {
       context.renderFirstHeaderNotAsHome = false
 
       // Hack title_arg with {c} and {p} corrections:
-      // https://docs.ourbigbook.com#cross-reference-title-inflection
+      // https://docs.ourbigbook.com#internal-link-title-inflection
       if (options.from_x) {
 
         // {c}

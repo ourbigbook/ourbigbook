@@ -2898,7 +2898,7 @@ assert_lib_error('nest: header source cannot contain newlines',
   7,
 )
 
-// Internal cross references
+// Line break and Horizontal lines
 // \br, \Hr
 assert_lib_error('br: empty argument must be empty',
   `\\br[a]
@@ -2907,9 +2907,9 @@ assert_lib_error('Hr: empty argument must be empty',
   `\\Hr[a]
 `, 1, 5);
 
-// Internal cross references
+// Internal links
 // \x
-assert_lib_ast('x: cross reference simple',
+assert_lib_ast('x: internal link simple',
   `= My header
 
 \\x[my-header][link body]
@@ -2927,7 +2927,7 @@ assert_lib_ast('x: cross reference simple',
     ]),
   ],
 )
-assert_lib_ast('x: cross reference full boolean style without value',
+assert_lib_ast('x: internal link full boolean style without value',
   `= My header
 
 \\x[my-header]{full}
@@ -2945,7 +2945,7 @@ assert_lib_ast('x: cross reference full boolean style without value',
     ]),
   ]
 )
-assert_lib_ast('x: cross reference full boolean style with value 0',
+assert_lib_ast('x: internal link full boolean style with value 0',
   `= abc
 
 \\x[abc]{full=0}
@@ -2963,7 +2963,7 @@ assert_lib_ast('x: cross reference full boolean style with value 0',
     ]),
   ]
 )
-assert_lib_ast('x: cross reference full boolean style with value 1',
+assert_lib_ast('x: internal link full boolean style with value 1',
   `= abc
 
 \\x[abc]{full=1}
@@ -2981,28 +2981,28 @@ assert_lib_ast('x: cross reference full boolean style with value 1',
     ]),
   ]
 )
-assert_lib_error('x: cross reference full boolean style with invalid value 2',
+assert_lib_error('x: internal link full boolean style with invalid value 2',
   `= abc
 
 \\x[abc]{full=2}
 `, 3, 8);
-assert_lib_error('x: cross reference full boolean style with invalid value true',
+assert_lib_error('x: internal link full boolean style with invalid value true',
   `= abc
 
 \\x[abc]{full=true}
 `, 3, 8);
-assert_lib_stdin('x: cross reference to image',
+assert_lib_stdin('x: internal link to image',
   `\\Image[ab]{id=cd}{title=ef}
 
 \\x[cd]
 `, { filesystem: { ab: '' } });
-assert_lib_stdin('x: cross reference without content nor target title style full',
+assert_lib_stdin('x: internal link without content nor target title style full',
   `\\Image[ab]{id=cd}
 
 \\x[cd]
 `, { filesystem: { ab: '' } });
-assert_lib_error('x: cross reference undefined fails gracefully', '\\x[ab]', 1, 3);
-assert_lib_error('x: cross reference with child to undefined id fails gracefully',
+assert_lib_error('x: internal link undefined fails gracefully', '\\x[ab]', 1, 3);
+assert_lib_error('x: internal link with child to undefined id fails gracefully',
   `= h1
 
 \\x[ab]
@@ -3013,7 +3013,7 @@ assert_lib_error('x: using a disabled macro argument fails gracefully',
 \\x[h1]{child}
 `, 3, 7, undefined, {toplevel: true});
 // https://docs.ourbigbook.com#order-of-reported-errors
-assert_lib_error('x: cross reference undefined errors show after other errors',
+assert_lib_error('x: internal link undefined errors show after other errors',
   `= a
 
 \\x[b]
@@ -3021,32 +3021,32 @@ assert_lib_error('x: cross reference undefined errors show after other errors',
 \`\`
 == b
 `, 5, 1);
-assert_lib_error('x: cross reference full and ref are incompatible',
+assert_lib_error('x: internal link full and ref are incompatible',
   `= abc
 
 \\x[abc]{full}{ref}
 `, 3, 1);
-assert_lib_error('x: cross reference content and full are incompatible',
+assert_lib_error('x: internal link content and full are incompatible',
   `= abc
 
 \\x[abc][def]{full}
 `, 3, 1);
-assert_lib_error('x: cross reference content and ref are incompatible',
+assert_lib_error('x: internal link content and ref are incompatible',
   `= abc
 
 \\x[abc][def]{ref}
 `, 3, 1);
-assert_lib_error('x: cross reference full and c are incompatible',
+assert_lib_error('x: internal link full and c are incompatible',
   `= abc
 
 \\x[abc]{c}{full}
 `, 3, 1);
-assert_lib_error('x: cross reference full and p are incompatible',
+assert_lib_error('x: internal link full and p are incompatible',
   `= abc
 
 \\x[abc]{p}{full}
 `, 3, 1);
-assert_lib('x: cross reference to non-included toplevel header in another file',
+assert_lib('x: internal link to non-included toplevel header in another file',
   {
     convert_dir: true,
     filesystem: {
@@ -3153,7 +3153,7 @@ assert_lib('x: to empty home header',
     },
   },
 )
-assert_lib('x: cross reference to non-included non-toplevel header in another file',
+assert_lib('x: internal link to non-included non-toplevel header in another file',
   {
     convert_dir: true,
     filesystem: {
@@ -3178,7 +3178,7 @@ assert_lib('x: cross reference to non-included non-toplevel header in another fi
     },
   },
 )
-assert_lib('x: cross reference to included header in another file',
+assert_lib('x: internal link to included header in another file',
   // I kid you not. Everything breaks everything.
   {
     convert_dir: true,
@@ -3204,7 +3204,7 @@ assert_lib('x: cross reference to included header in another file',
     }
   },
 )
-assert_lib_ast('x: cross reference to ids in the current file with split',
+assert_lib_ast('x: internal link to ids in the current file with split',
   // TODO this test is ridiculously overbloated and is likely covered in other tests already.
   `= Notindex
 
@@ -3267,7 +3267,7 @@ assert_lib_ast('x: cross reference to ids in the current file with split',
         "//x:blockquote//x:a[@href='notindex.html#bb' and text()='Section \"bb\"']",
         // Link to the split version.
         xpath_header_split(1, 'notindex', 'notindex.html', ourbigbook.NOSPLIT_MARKER_TEXT),
-        // Internal cross reference inside split header.
+        // Internal link inside split header.
         "//x:a[@href='notindex.html#image-bb' and text()='image bb 1']",
       ],
       'bb.html': [
@@ -3277,7 +3277,7 @@ assert_lib_ast('x: cross reference to ids in the current file with split',
         "//x:a[@href='notindex.html#bb' and text()='bb to bb']",
         // Link to the split version.
         xpath_header_split(1, 'bb', 'notindex.html#bb', ourbigbook.NOSPLIT_MARKER_TEXT),
-        // Internal cross reference inside split header.
+        // Internal link inside split header.
         "//x:a[@href='#image-bb' and text()='bb to image bb']",
       ],
     },
@@ -3751,7 +3751,7 @@ assert_lib(
     }
   }
 )
-assert_lib('x: cross reference to non-included image in another file',
+assert_lib('x: internal link to non-included image in another file',
   // https://github.com/ourbigbook/ourbigbook/issues/199
   {
     convert_dir: true,
@@ -3780,7 +3780,7 @@ assert_lib('x: cross reference to non-included image in another file',
     }
   },
 )
-assert_lib_ast('x: cross reference with link inside it does not blow up',
+assert_lib_ast('x: internal link with link inside it does not blow up',
   `= asdf
 {id=http://example.com}
 
@@ -3875,9 +3875,9 @@ assert_lib('x: to image in another file that has x title in another file',
 //  //  ['', 'index']
 //  //);
 //});
-// Internal cross references \x
+// Internal links \x
 // https://github.com/ourbigbook/ourbigbook/issues/213
-assert_lib_ast('x: cross reference magic simple sane',
+assert_lib_ast('x: internal link magic simple sane',
   `= Notindex
 
 == My header
@@ -3891,7 +3891,7 @@ assert_lib_ast('x: cross reference magic simple sane',
     ],
   }
 )
-assert_lib_ast('x: cross reference magic simple insane',
+assert_lib_ast('x: internal link magic simple insane',
   `= Notindex
 
 == My header
@@ -3905,7 +3905,7 @@ assert_lib_ast('x: cross reference magic simple insane',
     ],
   }
 )
-assert_lib_ast('x: cross reference magic in title',
+assert_lib_ast('x: internal link magic in title',
   `= Notindex
 
 == My header
@@ -3922,7 +3922,7 @@ assert_lib_ast('x: cross reference magic in title',
     ],
   }
 )
-assert_lib_ast('x: cross reference magic insane escape',
+assert_lib_ast('x: internal link magic insane escape',
   `a\\<>b`,
   undefined,
   {
@@ -3931,7 +3931,7 @@ assert_lib_ast('x: cross reference magic insane escape',
     ],
   }
 )
-assert_lib_ast('x: cross reference magic with full uses full content',
+assert_lib_ast('x: internal link magic with full uses full content',
   `= Notindex
 
 == My header
@@ -3945,7 +3945,7 @@ assert_lib_ast('x: cross reference magic with full uses full content',
     ],
   }
 )
-assert_lib('x: cross reference magic cross file plural resolution',
+assert_lib('x: internal link magic cross file plural resolution',
   {
     convert_dir: true,
     filesystem: {
@@ -4005,7 +4005,7 @@ assert_lib('x: tuberculosis hysteresis bug',
     },
   }
 )
-assert_lib('x: cross reference magic detects capitalization and plural on output',
+assert_lib('x: internal link magic detects capitalization and plural on output',
   {
     convert_dir: true,
     filesystem: {
@@ -4046,7 +4046,7 @@ assert_lib('x: cross reference magic detects capitalization and plural on output
     },
   },
 )
-assert_lib_ast('x: cross reference magic insane to scope',
+assert_lib_ast('x: internal link magic insane to scope',
   `= Notindex
 
 \\Q[<My scope/In scope>]{id=same}
@@ -4067,7 +4067,7 @@ assert_lib_ast('x: cross reference magic insane to scope',
     ],
   }
 )
-assert_lib_ast('x: cross reference magic insane to header file argument',
+assert_lib_ast('x: internal link magic insane to header file argument',
   `= Notindex
 
 <path/to/my_file.jpg>{file}
@@ -4155,7 +4155,7 @@ assert_lib('x: topic link: sane',
     },
   },
 )
-assert_lib_ast('x: cross reference c simple',
+assert_lib_ast('x: internal link c simple',
   `= Tmp
 
 == Dog
@@ -4169,7 +4169,7 @@ assert_lib_ast('x: cross reference c simple',
     ],
   }
 )
-assert_lib_ast('cross reference p simple',
+assert_lib_ast('x: internal link p simple',
   `= Tmp
 
 == Dog
@@ -4183,7 +4183,7 @@ assert_lib_ast('cross reference p simple',
     ],
   }
 )
-assert_lib_ast('x: cross reference c ignores non plaintext first argument',
+assert_lib_ast('x: internal link c ignores non plaintext first argument',
   // Maybe we should go deep into the first argument tree. But let's KISS for now.
   `= Tmp
 
@@ -4198,7 +4198,7 @@ assert_lib_ast('x: cross reference c ignores non plaintext first argument',
     ],
   }
 )
-assert_lib_ast('x: cross reference p ignores non plaintext last argument',
+assert_lib_ast('x: internal link p ignores non plaintext last argument',
   // Maybe we should go deep into the last argument tree. But let's KISS for now.
   `= Tmp
 
@@ -4359,17 +4359,17 @@ assert_lib(
 
 // Infinite recursion.
 // failing https://github.com/ourbigbook/ourbigbook/issues/34
-assert_lib_error('cross reference from header title to following header is not allowed',
+assert_lib_error('x: internal link from header title to following header is not allowed',
   `= \\x[h2] aa
 
 == h2
 `, 1, 3);
-assert_lib_error('cross reference from header title to previous header is not allowed',
+assert_lib_error('x: internal link from header title to previous header is not allowed',
   `= h1
 
 == \\x[h1] aa
 `, 3, 4);
-assert_lib('cross reference from image title to previous non-header without content is not allowed',
+assert_lib('x: internal link from image title to previous non-header without content is not allowed',
   {
     filesystem: {
       'index.bigb': `= Toplevel
@@ -4385,7 +4385,7 @@ assert_lib('cross reference from image title to previous non-header without cont
 )
 //// TODO https://docs.ourbigbook.com/todo/image-title-with-x-to-image-with-content-incorrectly-disallowed
 //assert_lib(
-//  'cross reference from image title to previous non-header with content is allowed',
+//  'x: internal link from image title to previous non-header with content is allowed',
 //  {
 //    convert_dir: true,
 //    filesystem: {
@@ -4404,7 +4404,7 @@ assert_lib('cross reference from image title to previous non-header without cont
 //  }
 //);
 //assert_lib(
-//  'cross reference from image title to previous non-header with id is allowed',
+//  'x: internal link from image title to previous non-header with id is allowed',
 //  {
 //    convert_dir: true,
 //    filesystem: {
@@ -4422,7 +4422,7 @@ assert_lib('cross reference from image title to previous non-header without cont
 //    },
 //  }
 //);
-assert_lib('cross reference from image title to following non-header is not allowed',
+assert_lib('x: internal link from image title to following non-header is not allowed',
   {
     filesystem: {
       'index.bigb': `= Toplevel
@@ -4436,14 +4436,14 @@ assert_lib('cross reference from image title to following non-header is not allo
     assert_check_db_errors: 1,
   }
 )
-assert_lib_error('cross reference infinite recursion with explicit IDs fails gracefully',
+assert_lib_error('x: internal link infinite recursion with explicit IDs fails gracefully',
   `= \\x[h2]
 {id=h1}
 
 == \\x[h1]
 {id=h2}
 `, 1, 3);
-assert_lib_error('cross reference infinite recursion to self IDs fails gracefully',
+assert_lib_error('x: internal link infinite recursion to self IDs fails gracefully',
   `= \\x[tmp]
 `, 1, 3, 'tmp.bigb',
   {
@@ -4452,7 +4452,7 @@ assert_lib_error('cross reference infinite recursion to self IDs fails gracefull
     convert_opts: { ourbigbook_json: { lint: { filesAreIncluded: false } } },
   }
 )
-assert_lib_ast('cross reference from image to previous header with x content without image ID works',
+assert_lib_ast('x: internal link from image to previous header with x content without image ID works',
   `= ab
 
 \\Image[cd]{title=\\x[ab][cd]}
@@ -4473,7 +4473,7 @@ assert_lib_ast('cross reference from image to previous header with x content wit
   ],
   { filesystem: { cd: '' } },
 )
-assert_lib_ast('cross reference from image to previous header without x content with image ID works',
+assert_lib_ast('x: internal link from image to previous header without x content with image ID works',
   `= ab
 
 \\Image[cd]{title=\\x[ab]}{id=cd}
@@ -4491,7 +4491,7 @@ assert_lib_ast('cross reference from image to previous header without x content 
   ],
   { filesystem: { cd: '' } },
 )
-assert_lib_ast('cross reference from image to previous header without x content without image ID works',
+assert_lib_ast('x: internal link from image to previous header without x content without image ID works',
   `= ab
 
 \\Image[cd]{title=\\x[ab] cd}
@@ -4518,7 +4518,7 @@ assert_lib_ast('cross reference from image to previous header without x content 
   ],
   { filesystem: { cd: '' } },
 )
-assert_lib_ast('cross reference from image to following header without x content without image id works',
+assert_lib_ast('x: internal link from image to following header without x content without image id works',
   `= ab
 
 \\Image[cd]{title=ef \\x[gh]}
@@ -4551,7 +4551,7 @@ assert_lib_ast('cross reference from image to following header without x content
   ],
   { filesystem: { cd: '' } },
 )
-assert_lib_error('cross reference with parent to undefined ID does not throw',
+assert_lib_error('x: internal link with parent to undefined ID does not throw',
   `= aa
 
 \\x[bb]{parent}
@@ -4561,7 +4561,7 @@ assert_lib_error('cross reference with parent to undefined ID does not throw',
 )
 
 // Scope.
-assert_lib_stdin("scope: internal cross references work with header scope and don't throw",
+assert_lib_stdin("scope: internal links work with header scope and don't throw",
 `= h1
 
 \\x[h2-1/h3-1].
@@ -4681,7 +4681,7 @@ assert_lib_ast('scope: nested with parent',
   a('H', undefined, {level: [t('4')], title: [t('h1 2 1 1')]}, {id: 'h1/h1-2/h1-2-1/h1-2-1-1'}),
 ]
 )
-assert_lib_ast('scope: nested internal cross references resolves progressively',
+assert_lib_ast('scope: nested internal link resolves progressively',
   `= h1
 {scope}
 
@@ -4711,7 +4711,7 @@ assert_lib_error('scope: broken parent still generates a header ID',
 
 `, 6, 1
 )
-assert_lib_ast('scope: cross reference to toplevel scoped split header',
+assert_lib_ast('scope: internal link to toplevel scoped split header',
   `= Notindex
 {scope}
 
@@ -4768,7 +4768,7 @@ assert_lib_ast('scope: cross reference to toplevel scoped split header',
     },
   },
 )
-assert_lib_ast('scope: cross reference to non-toplevel scoped split header',
+assert_lib_ast('scope: internal link to non-toplevel scoped split header',
   // https://github.com/ourbigbook/ourbigbook/issues/173
   `= tmp
 
@@ -4811,7 +4811,7 @@ assert_lib_ast('scope: cross reference to non-toplevel scoped split header',
   },
 )
 // https://docs.ourbigbook.com#header-scope-argument-of-toplevel-headers
-assert_lib_ast('scope: cross reference to non-included file with toplevel scope',
+assert_lib_ast('scope: internal link to non-included file with toplevel scope',
   `= Notindex
 
 \\x[toplevel-scope]
@@ -4892,7 +4892,7 @@ assert_lib_ast('scope: toplevel scope gets removed from IDs in the file',
   }
 )
 assert_lib(
-  'incoming links: cross reference incoming links and other children simple',
+  'incoming links: internal link incoming links and other children simple',
   {
     convert_opts: {
       split_headers: true,
@@ -5067,7 +5067,7 @@ assert_lib(
   }
 )
 assert_lib(
-  'incoming links: cross reference incoming links from other file min notindex to index',
+  'incoming links: internal link incoming links from other file min notindex to index',
   {
     convert_opts: {
       split_headers: true,
@@ -5121,7 +5121,7 @@ assert_lib(
 //  }
 //)
 assert_lib(
-  'incoming links: cross reference incoming links from other file min toplevel to notindex',
+  'incoming links: internal link incoming links from other file min toplevel to notindex',
   {
     convert_opts: {
       split_headers: true,
@@ -5146,7 +5146,7 @@ assert_lib(
 )
 assert_lib(
   // We can have confusion between singular and plural here unless proper resolution is done.
-  'incoming links: cross reference incoming links and other children with magic',
+  'incoming links: internal link incoming links and other children with magic',
   {
     convert_opts: {
       split_headers: true,
@@ -8073,7 +8073,7 @@ bb
   },
 )
 // https://github.com/ourbigbook/ourbigbook/issues/74
-assert_lib_ast('include: cross reference to embed include header',
+assert_lib_ast('include: internal link to embed include header',
   `= aa
 
 \\x[include-two-levels]
@@ -11755,7 +11755,7 @@ assert_cli('cross file ancestors work on single file conversions in subdir',
 )
 assert_cli(
   // See also corresponding lib: test.
-  'incoming links: cross reference incoming links and other children with magic',
+  'incoming links: internal link incoming links and other children with magic',
   {
     args: ['-S', '.'],
     filesystem: {

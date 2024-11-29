@@ -67,3 +67,7 @@ You can also edit directly on OurBigBook.com with the [Web Editor](https://docs.
 Experience infinitely deep [tables of contents](https://docs.ourbigbook.com/#table-of-contents):
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/dynamic-article-tree/demo.png)
+
+Web article search:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/feature/search/physics-arrow.png)

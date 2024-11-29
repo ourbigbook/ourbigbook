@@ -114,13 +114,13 @@ A full blown showcase knowledge base can be seen at:
   {disambiguate=intro}
   {height=600}
 * \Image[feature/x/hilbert-space-arrow.png]
-  {title=<Internal cross file reference>}
+  {title=<Internal cross file internal link>}
   {provider=github}
   {height=571}
   {border}
   {disambiguate=intro}
   {description=
-  <OurBigBook> supports <internal cross file references> to clean IDs that don't depend on either:
+  <OurBigBook> supports <internal links> to clean IDs that don't depend on either:
   * source code file paths
   * <table of contents> tree position
   For example, in this screenshot, we are able to link simply from the file:
@@ -207,7 +207,7 @@ A full blown showcase knowledge base can be seen at:
   * https://mastodon.social/@OurBigBook
 * https://cirosantilli.com/ourbigbook-com[]: further rationale behind the project by the founder <Ciro Santilli>
 * https://cirosantilli.com[]: showcase static demo document with interesting content, published with <OurBigBook CLI>. Primary inspiration for OurBigBook development.
-  * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how internal links integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
+  * https://cirosantilli.com/oxford-nanopore-river-bacteria[]: a self-contained tutorial style part of the above. Note how <internal links> integrate seamlessly into the more global topic of biology, e.g. when talking about DNA we link to the global topic https://cirosantilli.com/dna[].
   * https://github.com/cirosantilli/cirosantilli.github.io[] and https://github.com/cirosantilli/cirosantilli.github.io/blob/dev/oxford-nanopore-river-bacteria.bigb[]: source of the above showcase documents
 * <design goals>{full}: <OurBigBook Markup> and <OurBigBook CLI> feature overview
 * https://github.com/ourbigbook/ourbigbook[]: OurBigBook source code
@@ -325,7 +325,7 @@ Some noteworthy non-mind-meld software include:
 = Features
 {parent=OurBigBook Markup and CLI overview}
 
-* <cross references> to any <header> (including e.g. h2, h3, etc. <internal cross file references>[in other files]), <images>, etc. with amazing <error reporting>[error checking and reporting]: never break internal links without knowing again, and quickly find out what broke when you do. E.g.:
+* <internal links> to any <header> (including e.g. h2, h3, etc. <internal links>[in other files]), <images>, etc. with amazing <error reporting>[error checking and reporting]: never break <internal links> without knowing again, and quickly find out what broke when you do. E.g.:
 
   animal.bigb
   ``
@@ -368,7 +368,7 @@ Some noteworthy non-mind-meld software include:
   {title=Quadratic equation}
   ``
 * multi-file features out of the box so you don't need a separate wrapper like Jekyll to make a multi-page website:
-  * <cross file references>
+  * <cross file internal links>
   * single-source multi-format output based on <includes> and build options:
     * by default, one HTML per source with includes rendered as links between pages, e.g.:
 
@@ -407,7 +407,7 @@ Some noteworthy non-mind-meld software include:
 
       ==== Not index h2
       ``
-    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. <cross references> automatically get `.html` extension and or not. E.g.:
+    * supports both local serverless rendering to HTML files for local viewing, and server oriented rendering such as GitHub pages, e.g. <internal links> automatically get `.html` extension and or not. E.g.:
       * locally, a link `\x[not-index]` would render as `<a href="not-index.html">` and `not-index.bigb` produces `not-index.html`
       * when publishing, `\x[not-index]` would render as `<a  href="not-index">` and `not-index.bigb` also produces `not-index.html`, which the server converts to just `http://my-website.com/not-index`
   * cross file configuration files to factor out common page parts like headers, footers and other metadata, e.g.:
@@ -485,7 +485,7 @@ Some noteworthy non-mind-meld software include:
 
     == Conclusion
     ``
-  * <cross reference title inflection> for capitalization and pluralization, e.g.;
+  * <internal link title inflection> for capitalization and pluralization, e.g.;
     ``
     = Dog
 
@@ -585,7 +585,7 @@ Some noteworthy non-mind-meld software include:
 
     ======== h8
     ``
-  * generate lists of <incoming links> between internal headers: it shows every internal link coming into the current page
+  * generate lists of <incoming links> between internal headers: it shows every <internal link> coming into the current page
 * automatic file upload and directory listing of non OurBigBook files: <`_raw` directory>, e.g.:
   * link to a file:
     \OurBigBookExample[[
@@ -691,7 +691,7 @@ The <saner>[high sanity of OurBigBook], also makes creating new macro extensions
 
 All built-in language features use the exact same API as new extensions, which ensures that the extension API is sane forever.
 
-Markdown is clearly missing many key features such as block attributes and <cross references>, and has no standardized extension mechanism.
+Markdown is clearly missing many key features such as block attributes and <internal links>, and has no standardized extension mechanism.
 
 The "more powerful than Asciidoctor" part is only partially true, since Asciidoctor is very featureful can do basically anything through extensions.
 
@@ -715,7 +715,7 @@ Static wiki generators: this is perhaps the best way of classifying this project
   * https://github.com/dreverri/gollum-site
   Does not appear to check that any links are correct.
 * https://github.com/wcchin/markypydia
-* https://obsidian.md/ closed source, Markdown with <cross file reference> + a SaaS. Appears to require payment for any publishing. 28k followers 2021: https://twitter.com/obsdmd[]. Founders are likely Canadians of Asian descent from Waterloo University: https://www.linkedin.com/in/lishid/ | https://www.linkedin.com/in/ericaxu/ also working in parallel on https://dynalist.io/ 2020 review at: https://www.youtube.com/watch?v=aK2fOQRNSxc Has offline editor with side-by-side preview. Compares with https://roamresearch.com/[Roam] and https://roamresearch.com/[Notion], but can't find any public publishing on those, seem to be enterprise only things.
+* https://obsidian.md/ closed source, Markdown with <cross file internal link> + a SaaS. Appears to require payment for any publishing. 28k followers 2021: https://twitter.com/obsdmd[]. Founders are likely Canadians of Asian descent from Waterloo University: https://www.linkedin.com/in/lishid/ | https://www.linkedin.com/in/ericaxu/ also working in parallel on https://dynalist.io/ 2020 review at: https://www.youtube.com/watch?v=aK2fOQRNSxc Has offline editor with side-by-side preview. Compares with https://roamresearch.com/[Roam] and https://roamresearch.com/[Notion], but can't find any public publishing on those, seem to be enterprise only things.
 
 Static book generators:
 * https://github.com/rstudio/bookdown[], https://bookdown.org/[]. Very similar feature set to what we want!!! Transpiles to markdown, and then goes through Pandoc: https://bookdown.org/yihui/bookdown/pandoc.html[], thus will never run on browser without huge translation layers. But does have an obscene amount of output formats however.
@@ -728,7 +728,7 @@ Static book generators:
 * https://www.gitbook.com/
   * https://github.com/rust-lang/mdBook[]. Impressive integrated search feature. Like Gitbook but implemented in Rust.
 * https://github.com/facebook/docusaurus React + markdown based, written in TypeScript. So how can it be build fast? Gotta benchmark.
-* vimdoc: http://vimdoc.sourceforge.net/ They do have perfectly working <Internal cross file references>, see any page e.g. http://vimdoc.sourceforge.net/htmldoc/pattern.html[].
+* vimdoc: http://vimdoc.sourceforge.net/ They do have perfectly working <internal links>, see any page e.g. http://vimdoc.sourceforge.net/htmldoc/pattern.html[].
 * typst: https://github.com/typst/typst An attempt at a LaTeX killer. Has its own typesetting engine, does not simply transpile to LaTeX. Meant to be faster and simpler to write. No HTML output as of writing: https://github.com/typst/typst/issues/721
 
 Less related but of interest, similar philosophy to what Ciro wants, but no explicitly reusable system:
@@ -835,11 +835,11 @@ You can can use any header as a <`\H` `tag` argument>[tag] of any other header, 
 
 Headers have several powerful features that you can read more about under <`\H` arguments>, e.g. <`\H` `synonym` argument> and <`\H` `disambiguate` argument>.
 
-To <internal cross references>[link to any of your other pages], you can use angle brackets (less than/greater than) signs:
+To <internal links>[link to any of your other pages], you can use angle brackets (less than/greater than) signs:
 ``
 I have a <cute animal>. <Birds> are too noisy.
 ``
-Note how <cross reference title inflection>[capitalization and pluralization generally just work].
+Note how <internal link title inflection>[capitalization and pluralization generally just work].
 
 To use a custom link text on a reference, use the following syntax:
 ``
@@ -885,7 +885,7 @@ $$
 $$
 ]]
 
-You can <internal cross references>[refer] to specific equations like this:
+You can <internal links>[refer] to specific equations like this:
 \OurBigBookExample[[
 As shown in <equation Very important equation>, this is true.
 
@@ -895,7 +895,7 @@ $$
 {title=Very important equation}
 ]]
 
-<Images> and <videos> are also easy to add and <internal cross references>[refer] to:
+<Images> and <videos> are also easy to add and <internal links>[refer] to:
 \OurBigBookExample[[
 As shown at <image Cute chicken chick>, chicks are cute.
 
@@ -1078,16 +1078,12 @@ Common use cases for the `external` argument is to link to non OurBigBook conten
 * <link to the domain root path> for <Subdirectory deployments>
 * link non OurBigBook subdirectories. E.g., https://github.com/cirosantilli/cirosantilli.github.io/blob/master/index.bigb was rendered at https://cirosantilli.com[], and contains links `\a[markdown-style-guide]{external}` to https://cirosantilli.com/markdown-style-guide[], whose source lives in a separate non-OurBigBook repository: https://github.com/cirosantilli/markdown-style-guide/
 
-= Internal links are smart
-{parent=`\a` `external` argument}
-
 = Link to the domain root path
-{synonym}
-{title2}
+{parent=`\a` `external` argument}
 
 The <`\a` `external` argument> can be used to refer to the root of the domain. E.g. suppose that we have a <subdirectory deployment> under `https://mydomain.com/subdir/`. Then:
 * `\a[/somepath]` refers to the directory `/subdir/somepath`
-* `\a[/somepath]{external}` refers t othe directory `/somepath`
+* `\a[/somepath]{external}` refers to the directory `/somepath`
 
 = Subdirectory deployment
 {parent=a `external` argument}
@@ -1102,21 +1098,18 @@ If it doesn't work, it should be easy to make it work, as we use relative links 
 = External link
 {parent=a `external` argument}
 
-= Internal link
+= Internal path link
 {synonym}
 
-An external link is a link that points to a resource that is not present in the curent OurBigBook project sources.
-
-By default, most links are internal links, e.g. it is often the case in computer programming tutorials that we want to refer to source files in the current directory. So from our `index.bigb`, we could want to write something like:
-\OurBigBookExample[[Have a look at this amazing source file: \a[index.js].]]
-and here `\a[ourbigbook]` is a internal link.
-
-A typicial external link is something like:
+An external link is a link that points to a resource that is not present in the current OurBigBook project sources. A typical external link is something like:
 \OurBigBookExample[[This is great website: https://cirosantilli.com]]
 which points to an absolute URL.
 
-OurBigBook considers a link relative by default if:
-* it is not a <URL with protocol>
+<Internal path links> are links that point to files present inside the current project. For example, in computer programming tutorials we will often want to refer to source files in the current directory. So from our `index.bigb`, we could want to write something like:
+\OurBigBookExample[[Have a look at this amazing source file: \a[index.js].]]
+and here `\a[ourbigbook]` is a internal link. These should not to be confused with <internal links>, which may point not only to files, but to any <ID>, e.g. of headers inside a OurBigBook file.
+
+OurBigBook considers a link external by default if it does not have a <URL with protocol>.
 
 Therefore, the following links are external by default:
 * `http://cirosantilli.com`
@@ -1130,7 +1123,12 @@ and the following are internal by default:
 * `/path/to/index.js`. Note that paths starting with `/` refer to the root of the <OurBigBook CLI> deployment, not the root of the domain, see: <link to the domain root path>.
 * `//example.com/path/to/index.js`
 
-A link being internal has the following effects
+Implemented at: https://github.com/ourbigbook/ourbigbook/issues/87[] as `relative`, and subsequently modified to the more accurate/useful `external`.
+
+= Internal path links are smart
+{parent=External link}
+
+When a link is an <internal path link> this has the following effects:
 * the correct relative path to the file is used when using nested <scopes> with <split headers>. For example, if we have:
   ``
   = h1
@@ -1149,8 +1147,6 @@ A link being internal has the following effects
   Instead, OurBigBook automatically converts it to the correct `href="../index.js"`
 * the <`_raw` directory> prefix is added to the link
 * existence of the file is checked on compilation. If it does not exist, an error is given.
-
-Implemented at: https://github.com/ourbigbook/ourbigbook/issues/87[] as `relative`, and subsequently modified to the more accurate/useful `external`.
 
 = `_dir` directory
 {parent=a `external` argument}
@@ -1172,7 +1168,7 @@ Analogous to the <`_raw` directory>, but for the <`\H` `file` argument>.
 
 <OurBigBook> places output files that are not the output of `.bigb` to `.html` conversion (i.e. `.html` output files) under the `_raw/` prefix of the output.
 
-<Internal links> then automatically add the `_raw/` prefix to every link.
+<Internal path links> then automatically add the `_raw/` prefix to every link.
 
 For example, consider an input directory that contains:
 
@@ -1301,7 +1297,7 @@ The following characters are the "insane link termination characters":
 * newline `\n`
 * open or close square bracket `[` or `]`
 * open or close curly braces `{` or `}`
-<Insane cross references> and <insane topic links with a single word> terminate if any of these characters are found, see also: <insane link parsing rules>{full}.
+<Insane internal links> and <insane topic links with a single word> terminate if any of these characters are found, see also: <insane link parsing rules>{full}.
 
 = Link percent encoding
 {parent=Link}
@@ -1434,7 +1430,7 @@ And now a very long inline code: `Hello Hello Hello Hello Hello Hello Hello Hell
 
 \Comment[[[[
 TODO implement.
-We can have cross references to code blocks as for other elements such as \x[image]{p}:
+We can have to code blocks as for other elements such as \x[image]{p}:
 \OurBigBookExample[[[
 See this awesome code \x[my-code]:
 ``
@@ -1535,7 +1531,7 @@ Equivalent sane:
 \H[3][My h3]
 ``
 
-Custom ID for <cross references> on insane headers:
+Custom ID for <internal links> on insane headers:
 ``
 = My h1
 {id=h1}
@@ -1717,9 +1713,9 @@ TODO: we kind of wanted this to be the ID of the toplevel header instead of the 
 = `\H` `c` argument
 {parent=H arguments}
 
-If given, makes the header capitalized by default on <cross file references>.
+If given, makes the header capitalized by default on <cross file internal links>.
 
-More details at: <cross reference title inflection>{full}.
+More details at: <internal link title inflection>{full}.
 
 = `\H` `child` argument
 {parent=H arguments}
@@ -1839,7 +1835,7 @@ The video \x[tank-man-by-cnn-1989] is very useful.
 An explanation of what this video is about.
 ``
 
-To make <internal cross references> to `{file}` headers, use the <`\x` `file` argument>.
+To make <internal links> to `{file}` headers, use the <`\x` `file` argument>.
 
 = `\H` `file` argument toplevel header
 {parent=H file argument}
@@ -1957,7 +1953,7 @@ Link to this section as:
 This <boolean argument> determines whether renderings of a header will have section numbers or not. This affects all of:
 * <headers> themselves
 * <table of contents> links
-* <cross references> with the <\x full argument>
+* <internal links> with the <\x full argument>
 This option can be set by default for all files with:
 
 By default, headers are numbered as in a book, e.g.:
@@ -2277,7 +2273,7 @@ Note how:
 = `scope` resolution
 {parent=H scope argument}
 
-When nested scopes are involved, <cross references> resolution peels off the scopes one by one trying to find the closes match, e.g. the following works as expected:
+When nested scopes are involved, <internal links> resolution peels off the scopes one by one trying to find the closes match, e.g. the following works as expected:
 ``
 = h1
 {scope}
@@ -2350,7 +2346,7 @@ Some quick interactive cross file link tests:
 {parent=H arguments}
 {tag=Boolean argument}
 
-When using <split headers>, <cross references> always point to non-split pages as mentioned at <cross reference targets in split headers>.
+When using <split headers>, <internal links> always point to non-split pages as mentioned at <internal link targets in split headers>.
 
 If the `splitDefault` <boolean argument> is given however:
 * the split header becomes the default, e.g. `index.html` is now the split one, and `nosplit.html` is the non-split one
@@ -2488,7 +2484,7 @@ notindex-asdf.bigb
 
 This option is similar to <\H title2 argument> but it additionally:
 * creates a new ID that you can refer to, and renders it with the alternate chosen title
-* the rendered ID on <cross references> is the same as what it is a synonym for
+* the rendered ID on <internal links> is the same as what it is a synonym for
 * the synonym header is not rendered at all, including in the <table of contents>
 * when using <split headers>, a redirect output file is generated from the synonym to the main ID
 
@@ -3053,7 +3049,7 @@ Have a look at this amazing image: \x[image-my-test-image].
 {description=The description of my image.}
 ]]
 This exemplifies the following parameters:
-* `title`: analogous to the <\H title argument>. Shows up preeminently, and sets a default ID if one is not given. It is recommended that you don't add a period `.` to it, as that would show in <cross references>
+* `title`: analogous to the <\H title argument>. Shows up preeminently, and sets a default ID if one is not given. It is recommended that you don't add a period `.` to it, as that would show in <internal links>
 * <image `description` argument>
 * <image `source` argument>[`source`]: a standardized way to credit an image by linking to a URL that contains further image metadata
 For further discussion on the effects of ID see: <image ID>{full}.
@@ -3077,7 +3073,7 @@ Have a look at this amazing image: \x[image-my-test-image-2].
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=image-my-test-image-2}
 ]]
-This works because <\x full argument>[`full` is the default cross reference style for `Image`], otherwise the link text would be empty since there is no `title`, and OurBigBook would raise an error.
+This works because <\x full argument>[`full` is the default <internal link> style for `Image`], otherwise the link text would be empty since there is no `title`, and OurBigBook would raise an error.
 
 OurBigBook can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` <boolean argument> is given, or if `title-from-src` is set as the default <ourbigbook.json/media-providers>[media provider] for the media type:
 \OurBigBookExample[[
@@ -3101,7 +3097,7 @@ Note that the `123` is not linked to the `Figure <number>.`, but just a sequenti
 
 This type of ID is of course not stable across document revisions however, since if an image is added before that one, the link will break. So give an ID or title for anything that you expect users to link to.
 
-Also, it is not possible to link to such images with an <cross reference>, like any other OurBigBook element with autogenerated temporary IDs.
+Also, it is not possible to link to such images with an <internal link>, like any other OurBigBook element with autogenerated temporary IDs.
 
 Another issue to consider is that in paged output formats like PDF, the image could float away from the text that refers to the image, so you basically always want to refer to image by ID, and not just by saying "the following image".
 
@@ -3321,7 +3317,7 @@ Adds a border around the image. This can be useful to make it clearer where imag
 {tag=`description` argument}
 {tag=Named argument}
 
-The `description` argument similar to the <image title argument> argument, but allows allowing longer explanations without them appearing in <cross references> to the image.
+The `description` argument similar to the <image title argument> argument, but allows allowing longer explanations without them appearing in <internal links> to the image.
 
 For example, consider:
 \OurBigBookExample[[
@@ -3483,9 +3479,9 @@ It exists to allow optional single page HTML output while still retaining the ab
 * split up large input files into multiple files to make renders faster during document development
 * suggest an optional custom output split with one HTML output per OurBigBook input, in order to avoid extremely large HTML pages which could be slow to load
 
-`\Include` takes one mandatory argument: the ID of the section to be included, much like <cross references>.
+`\Include` takes one mandatory argument: the ID of the section to be included, much like <internal links>.
 
-There is however one restriction: only <the toplevel headers> can be pointed to. This restriction allows us to easily find the included file in the filesystem, and dispenses the need to do a first `./ourbigbook` run to generate the <cross file reference internals>[ID database]. This works because <the ID of the first header is derived from the filename>.
+There is however one restriction: only <the toplevel headers> can be pointed to. This restriction allows us to easily find the included file in the filesystem, and dispenses the need to do a first `./ourbigbook` run to generate the <cross file internal link internals>[ID database]. This works because <the ID of the first header is derived from the filename>.
 
 Headers of the included document are automatically shifted to match the level of the child of the level where they are being included.
 
@@ -3494,7 +3490,7 @@ If <--embed-includes> is given, the external document is rendered embedded into 
 Otherwise, the following effects happen:
 * The headers of the included tree appear in the <table of contents> of the document as links to the corresponding external files.
 
-  This is implemented simply by reading a previously generated database file much like <cross file reference internals>, which avoids the slowdown of parsing all included files every time.
+  This is implemented simply by reading a previously generated database file much like <cross file internal link internals>, which avoids the slowdown of parsing all included files every time.
 
   As a result, you have to do an initial parse of all files in the project to extract their headers however, just as you would need to do when linking to those headers.
 * the include itself renders as a link to the included document
@@ -4102,6 +4098,7 @@ And for an inline passthrough:
 = Quotation
 {parent=Macro}
 {tag=Block macro}
+{tag=Macro with insane shortcut}
 {title2=`\Q`}
 
 <Explicit macro>:
@@ -4503,9 +4500,12 @@ See: <`title` argument>{full}.
 
 The time to start playing the video at in seconds. Works for both `youtube` and non-YouTube videos.
 
-= Cross reference
-{tag=Macro with insane shortcut}
+= Internal link
 {parent=Macro}
+{tag=Macro with insane shortcut}
+
+= Cross reference
+{synonym}
 
 = Internal cross reference
 {synonym}
@@ -4518,41 +4518,47 @@ Every macro in OurBigBook can have an optional `id` and many also have a reserve
 
 When a macro in the document has a `title` argument but no `id` argument given, get an auto-generated ID from the title: <automatic ID from title>.
 
-Usually, the most convenient way to write cross references is with the insane syntax with delimited angled braces:
-\OurBigBookExample[[<Cross references> are awesome.]]
-More details at: <insane cross reference>.
+Usually, the most convenient way to write <internal links> is with the insane syntax with delimited angled braces:
+\OurBigBookExample[[<internal links> are awesome.]]
+More details at: <insane internal link>.
 
 The sane equivalent to this is:
-\OurBigBookExample[[\x[cross-reference]{c}{p} are awesome section.]]
+\OurBigBookExample[[\x[internal-link]{c}{p} are awesome section.]]
 Note how that is more verbose, especially because here we use both the <\x c argument> and  <\x p argument> to capitalize and pluraize as desired.
 
 Another sane equivalent would be to add an explicit link body as in:
-\OurBigBookExample[[\x[cross-reference][Cross references] are awesome.]]
+\OurBigBookExample[[\x[internal-link][Internal link] are awesome.]]
 
-= Insane cross reference
-{parent=Cross reference}
+= Insane internal link
+{parent=Internal link}
 {tag=Insane macro shortcut}
 {title2=`<>`}
 
-When you use an insane cross reference (`<>`) such as in:
-\OurBigBookExample[[<Cross references> are awesome.]]
+= Insane cross reference
+{synonym}
+
+When you use an <insane internal link> (`<>`) such as in:
+\OurBigBookExample[[<Internal links> are awesome.]]
 it gets expanded exactly to the sane equivalent:
 ``
-\x[Cross references]{magic} are alwasome
+\x[Internal links]{magic} are alwasome
 ``
-so we see that the <\x magic argument> gets added. It is that argument that for example adds the missing `-`, and removes the pluralization to find the correct ID `cross-reference`.  For more details, see the documentation of the <\x magic argument>.
+so we see that the <\x magic argument> gets added. It is that argument that for example adds the missing `-`, and removes the pluralization to find the correct ID `internal-link`.  For more details, see the documentation of the <\x magic argument>.
 
-Like other <insane> constructs, <insane cross references> are exactly equivalent to the sane version, so you can just add other arguments after the construct, e.g.:
-\OurBigBookExample[[<Cross references>{full} are awesome.]]
+Like other <insane> constructs, <insane internal links> are exactly equivalent to the sane version, so you can just add other arguments after the construct, e.g.:
+\OurBigBookExample[[<Internal links>{full} are awesome.]]
 which gets converted to exact the same as the sane:
-\OurBigBookExample[[\x[cross-reference]{full} are awesome.]]
+\OurBigBookExample[[\x[internal-link]{full} are awesome.]]
+
+= Internal link title inflection
+{parent=Internal link}
 
 = Cross reference title inflection
-{parent=Cross reference}
+{synonym}
 
-In most cases it is generally more convenient to simply use the <\x magic argument> through <insane cross references> instead of the `c` and `p` arguments as described on the rest of this section, see also: <inflection vs magic>{full}.
+In most cases it is generally more convenient to simply use the <\x magic argument> through <insane internal links> instead of the `c` and `p` arguments as described on the rest of this section, see also: <inflection vs magic>{full}.
 
-A common usage pattern is that we want to use <header> titles in <\x full argument>[non-full] <cross references> as the definition of a concept without repeating the title, for example:
+A common usage pattern is that we want to use <header> titles in <\x full argument>[non-full] <internal links> as the definition of a concept without repeating the title, for example:
 ``
 == Dog
 
@@ -4579,18 +4585,18 @@ For example, in the previous example, without any further intelligent behaviour 
 
 OurBigBook can take care of some inflection cases for you.
 
-For capitalization, both headers and cross reference macros have the `c` <boolean argument> which stands for "capitalized":
+For capitalization, both headers and <internal link> macros have the `c` <boolean argument> which stands for "capitalized":
 * for headers, `c` means that the header title has fixed capitalization as given in the title, i.e.
   * if the title has a capital first character, it will always show as a capital, as is the case for most https://en.wikipedia.org/wiki/Proper_noun[proper noun]
   * if it is lower case, it will also always remain lower case, as is the case for some rare proper nouns, notably https://en.wikipedia.org/wiki/Arm_Holdings[the name of certain companies]
 
   This means that for such headers, `c` in the `x` has no effect. Maybe we should give an error in that case. But lazy now, send PR.
-* for cross reference macros, `c` means that the first letter of the title should be capitalized.
+* for <internal link> macros, `c` means that the first letter of the title should be capitalized.
 
   Using this option is required when you are starting a sentence with a non-proper noun.
 Capitalization is handled by a <JavaScript case conversion>.
 
-For pluralization, cross reference macros have the `p` <boolean argument> which stands for "pluralize":
+For pluralization, <internal link> macros have the `p` <boolean argument> which stands for "pluralize":
 * if given and true, this automatically pluralizes the last word of the target title by using the <blakeembrey pluralize> library.
 * if given and false, automatically singularize
 * if not given, don't change the number of elements
@@ -4622,8 +4628,8 @@ If plural and capitalization don't handle your common desired inflections, you c
 
 Now for a live example for quick and dirty interactive testing.
 
-= Cross reference title inflection example
-{parent=Cross reference title inflection}
+= Internal link title inflection example
+{parent=Internal link title inflection}
 
 \OurBigBookExample[[\x[inflection-example-not-proper\]]]
 
@@ -4658,35 +4664,35 @@ Now for a live example for quick and dirty interactive testing.
 \OurBigBookExample[[\x[not-the-index-header-with-fixed-case\]]]
 
 = Inflection example not-proper
-{parent=Cross reference title inflection example}
+{parent=Internal link title inflection example}
 
 = Inflection example proper
 {c}
-{parent=Cross reference title inflection example}
+{parent=Internal link title inflection example}
 
 = inflection example not-proper lower
-{parent=Cross reference title inflection example}
+{parent=Internal link title inflection example}
 
 = inflection example proper lower
 {c}
-{parent=Cross reference title inflection example}
+{parent=Internal link title inflection example}
 
 = Inflection plural examples
-{parent=Cross reference title inflection example}
+{parent=Internal link title inflection example}
 
 = blakeembrey/pluralize
-{parent=Cross reference title inflection}
+{parent=Internal link title inflection}
 
 https://github.com/blakeembrey/pluralize
 
-This is the default automatic pluralization/singularization library used by OurBigBook <cross reference title inflection>.
+This is the default automatic pluralization/singularization library used by OurBigBook <internal link title inflection>.
 
 That library handles most cases well, but note that English language perfection is never possible with it as it would likely require having word databases which the authors do not wish to support, e.g. to deal with uncountable nouns such as "mathematics" correctly: https://github.com/plurals/pluralize/issues/60#issuecomment-310740594
 
 = Inflection vs magic
-{parent=Cross reference}
+{parent=Internal link}
 
-The <\x magic argument> was introduced later, and basically became a better alternative to <cross reference title inflection> in all but the following cases:
+The <\x magic argument> was introduced later, and basically became a better alternative to <internal link title inflection> in all but the following cases:
 * <\H disambiguate argument>: disambiguate prevents the determination of plural inflection, e.g. in:
   ``
   = Python
@@ -4722,7 +4728,7 @@ The <\x magic argument> was introduced later, and basically became a better alte
   ``
 
 = `\x` within `title` restrictions
-{parent=Cross reference}
+{parent=Internal link}
 
 If you use `\x` within a `title`, which most commonly happens for <image>[image titles], that can generate complex dependencies between IDs, which would either be harder to implement, or lead to infinite recursion.
 
@@ -4770,7 +4776,7 @@ To prevent such problems, OurBigBook emits an error if you use an `\x` without c
   \Image[myimg.jpg]
   {title=my \x[h1]}
   ``
-  and there the workaround are much the same as for headers: either explicitly set the cross reference content:
+  and there the workaround are much the same as for headers: either explicitly set the <internal link> content:
   ``
   \Image[myimg.jpg]
   {id=myimage1}
@@ -4829,14 +4835,17 @@ or:
 
 A closely related limitation is the simplistic approach to <\x id output format>.
 
-= Cross file reference
-{parent=Cross reference}
+= Cross file internal link
+{parent=Internal link}
 
-= Internal cross file reference
+= Cross file reference
+{synonym}
+
+= Internal cross file internal link
 {synonym}
 
 \Image[feature/x/hilbert-space-arrow.png]
-{title=<Internal cross file reference>}
+{title=<Cross file internal link>}
 {provider=github}
 {height=571}
 {border}
@@ -4865,7 +4874,7 @@ Reference to the first header of another file that is a second inclusion:
 
 Reference to another header of another file, with <\x full argument>[`full`]:
 \OurBigBookExample[[\x[h2-in-not-the-index]{full}.]]
-Note that when `full` is used with references in another file in <--embed-includes>[multi page mode], the number is not rendered as explained at: <\x full argument in cross file references>{full}.
+Note that when `full` is used with references in another file in <--embed-includes>[multi page mode], the number is not rendered as explained at: <\x full argument in cross file internal links>{full}.
 
 Reference to an image in another file:
 \OurBigBookExample[[\x[image-not-index-xi]{full}.]]
@@ -4894,7 +4903,7 @@ Implemented at: https://github.com/ourbigbook/ourbigbook/issues/116
 
 Reference to an internal header of another file: <h2 in not the index>. By default, That header ID gets prefixed by the ID of the top header.
 
-When using <--embed-includes> mode, the cross file references end up pointing to an ID inside the current HTML element, e.g.:
+When using <--embed-includes> mode, the cross file internal links end up pointing to an ID inside the current HTML element, e.g.:
 ``
 <a href="#not-index">
 ``
@@ -4904,9 +4913,12 @@ rather than:
 ``
 This is why IDs must be unique for elements across all pages.
 
-= Cross file reference internals
-{parent=Cross file reference}
+= Cross file internal link internals
+{parent=Cross file internal link}
 {title2=`db.sqlite3`}
+
+= Cross file reference internals
+{synonym}
 
 = ID database
 {c}
@@ -4941,13 +4953,13 @@ sqlite3 _out/db.sqlite3 'select id from ids'
 You can force `ourbigbook` to not use the ID database with the <--no-db> command line option
 
 = Link to IDs, not URL path
-{parent=Cross file reference}
+{parent=Cross file internal link}
 
-This section describes the philosophy of <internal cross references>.
+This section describes the philosophy of <internal links>.
 
 In many static website generators, you just link to URL specific paths of internal headers.
 
-In OurBigBook, <internal cross references> point to IDs, not paths.
+In OurBigBook, <internal links> point to IDs, not paths.
 
 For example, suppose "Superconductivity" is a descendant of "Condensed Matter Physics", and that the source for both is located at `condensed-matter-physics.bigb`, so that both appear on the same .html page `condensed-matter-physics.html`.
 
@@ -4967,10 +4979,20 @@ For <OurBigBook Web>, this is even more important, as we have <dynamic article t
 
 If you really want to to use scopes, e.g. enforce the ID of "superconductivity" to be "condensed-matter-physics/superconductivity", then you can use the <scope> feature. However, this particular case would likely be a bad use case for that feature. You want your IDs to be as short as possible, which causes less need for refactoring, and makes <topics> on <OurBigBook Web> more likely to have matches from other users.
 
-= Cross reference title link removal
-{parent=Cross file reference}
+\Image[feature/x/hilbert-space-arrow.png]
+{title=<Cross file internal link>}
+{disambiguate=Link to IDs, not URL path}
+{provider=github}
+{height=571}
+{border}
 
-If the target `title` argument contains a link from either another <cross references> or a regular <link>[external hyperlink], OurBigBook automatically prevents that link from rendering as a link when no explicit body is given.
+= Internal link title link removal
+{parent=Cross file internal link}
+
+= Cross reference title link removal
+{synonym}
+
+If the target `title` argument contains a link from either another <internal links> or a regular <link>[external hyperlink], OurBigBook automatically prevents that link from rendering as a link when no explicit body is given.
 
 This is done because https://stackoverflow.com/questions/9882916/are-you-allowed-to-nest-a-link-inside-of-a-link[nested links are illegal in HTML], and the result would be confusing.
 
@@ -5001,24 +5023,24 @@ Live example:
 This is a nice image: \x[image-aa-zxcv-lolol-bb].
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{title=aa \x[cross-reference-title-link-removal][zxcv] \a[http://example.com][lolol] bb}
+{title=aa \x[internal-link-title-link-removal][zxcv] \a[http://example.com][lolol] bb}
 ]]
 
 = `\x` arguments
-{parent=Cross reference}
+{parent=Internal link}
 
 = `\x` `c` argument
 {parent=x arguments}
 
 Capitalizes the first letter of the target title.
 
-For more details, see: <cross reference title inflection>{full}.
+For more details, see: <internal link title inflection>{full}.
 
 = `\x` `child` argument
 {parent=x arguments}
 {tag=Disabled macro argument}
 
-Setting the `child` <boolean argument> on a cross reference to a header as in:
+Setting the `child` <boolean argument> on a <internal link> to a header as in:
 ``
 \x[my-header]{child}
 ``
@@ -5160,16 +5182,16 @@ Some live demos follow:
 = `\x` `full` argument
 {parent=x arguments}
 
-To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` <boolean argument> to the cross reference, for example:
+To also show the section auto-generated number as in "Section X.Y My title" we add the optional `{full}` <boolean argument> to the <internal link>, for example:
 \OurBigBookExample[[\x[x-full-argument]{full}.]]
 
-`{full}` is not needed for cross references to most macros besides <headers>, which use `full` by default as seen by the `default_x_style_full` macro property in <--help-macros>. This is for example the case for <images>. You can force this to be disabled with `{full=0}`:
+`{full}` is not needed for <internal links> to most macros besides <headers>, which use `full` by default as seen by the `default_x_style_full` macro property in <--help-macros>. This is for example the case for <images>. You can force this to be disabled with `{full=0}`:
 \OurBigBookExample[[Compare \x[image-my-test-image]{full=0} vs \x[image-my-test-image]{full=1}.]]
 
-= `\x` `full` argument in cross file references
+= `\x` `full` argument in cross file internal links
 {parent=x full argument}
 
-For example in the following <cross file reference>:
+For example in the following <cross file internal link>:
 \OurBigBookExample[[\x[h2-in-not-the-index]{full}.]]
 we get just something like:
 ``
@@ -5188,7 +5210,7 @@ This is because the number "Section 1.2" might already have been used in the cur
 = Magic link
 {synonym}
 
-This argument makes writing many internal links more convenient, and it was notably introduced because it serves as the sane version of <insane cross references>.
+This argument makes writing many <internal links> more convenient, and it was notably introduced because it serves as the sane version of <insane internal links>.
 
 If given e.g. as in:
 ``
@@ -5226,7 +5248,7 @@ the link treated magically as follows:
   * if there is a match to an existing ID use it. `internal-references` in the plural does not match, so go to the next step
   * if the above failed, try singularizing the last word as in the <\x p argument> with `p=0` before doing <automatic ID from title> conversion. This gives `internal-reference`, which does exist, and so we use that.
 
-There may be some cases where you might still want to use <cross reference title inflection> however, see: <inflection vs magic>{full}.
+There may be some cases where you might still want to use <internal link title inflection> however, see: <inflection vs magic>{full}.
 
 = Insane magic link
 {parent=`\x` `magic` argument}
@@ -5387,7 +5409,7 @@ Therefore, it is up to authors to specifically specify the desired pluralization
 
 Pluralizes or singularizes the last word of the target title.
 
-For more details, see: <cross reference title inflection>{full}.
+For more details, see: <internal link title inflection>{full}.
 
 = OurBigBook Markup syntax
 {c}
@@ -5435,11 +5457,12 @@ Insane in our context does not mean worse. It just mean "harder for the computer
 
 * <paragraph>{full}: `\n\n` (double newline)
 * <link>{full}: `a http://example.com b` (space followed by `http://`)
-* <cross reference>{full}: `<Cross references>` (angle brackets), see: <insane cross reference>{full}
+* <internal link>{full}: `<Internal links>` (angle brackets), see: <insane internal link>{full}
 * <mathematics>{full}: `$`, described at: <insane code and math shortcuts>
 * <code block>{full}: \c[[`]], described at: <insane code and math shortcuts>
 * <list>{full}: `* ` and indentation
 * <table>{full}: `|| `, `| ` and indentation
+* <quotation>{full}: `> `
 
 = Insane code and math shortcuts
 {parent=Macro with insane shortcut}
@@ -5661,11 +5684,11 @@ Name arguments marked in <--help-macros> as `boolean: true` must either:
 * take value exactly `0` or `1`
 * not be given, in which case a custom per-macro default is used. That value is the `default` from <--help-macros>, or `0` if such default is not given
 
-For example, the <\x full argument> of <cross references> is correctly written as:
+For example, the <\x full argument> of <internal links> is correctly written as:
 \OurBigBookExample[[\x[boolean-argument]{full}]]
 without the `=` sign, or equivalently:
 \OurBigBookExample[[\x[boolean-argument]{full=1}]]
-The `full=0` version is useful in the case of reference targets that unlike <headers> expand the title on the cross reference by default, e.g. <images>:
+The `full=0` version is useful in the case of reference targets that unlike <headers> expand the title on the <internal link> by default, e.g. <images>:
 \OurBigBookExample[[\x[boolean-argument]{full=1}]]
 
 The name "boolean argument" is given by analogy to the https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427["boolean attribute" concept in HTML5].
@@ -5687,8 +5710,8 @@ Positive nonzero integer arguments accept only the characters `[0-9]` as their i
 Explicitly sets the ID of a macro.
 
 In <OurBigBook Markup>, every single macro has an ID, which can be either:
-* explicit: extracted from some input given by the user, either the <`id` argument> or the <`title` argument>. Explicit IDs can be referenced in <Internal cross references> and must be unique
-* implicit: automatically generated numerical ID. Implicit IDs cannot be referenced in <Internal cross references> and don't need to be unique. Their primary application is generating on hover links next to everything you hover, e.g. arbitrary paragraphs.
+* explicit: extracted from some input given by the user, either the <`id` argument> or the <`title` argument>. Explicit IDs can be referenced in <Internal links> and must be unique
+* implicit: automatically generated numerical ID. Implicit IDs cannot be referenced in <internal links> and don't need to be unique. Their primary application is generating on hover links next to everything you hover, e.g. arbitrary paragraphs.
 
 The most common way to assign an ID is implicitly with <automatic ID from title> conversion for macros that have a <`title` argument>.
 
@@ -5731,8 +5754,8 @@ My favorite programming language is \x[python-programming-language]!
 ``
 from which we observe how `disambiguate`:
 * gets added to the ID after conversion following the same rules as <automatic ID from title>
-* shows up on the header between parenthesis, much like Wikipedia, as well as in <\x full argument>[`full` cross references]
-* does not show up on non-`full` references. This makes it much more likely that you will be able to reuse the title automatically on a cross reference without the <`content` argument>: we wouldn't want to say "My favorite programming language is Python (programming language)" all the time, would we?
+* shows up on the header between parenthesis, much like Wikipedia, as well as in <\x full argument>[`full` internal links]
+* does not show up on non-`full` references. This makes it much more likely that you will be able to reuse the title automatically on an <internal link> without the <`content` argument>: we wouldn't want to say "My favorite programming language is Python (programming language)" all the time, would we?
 * gets added to the default <\H wiki argument> inside parenthesis, following Wikipedia convention, therefore increasing the likelihood that you will be able to go with the default Wikipedia value
 
 Besides disambiguating headers, the `disambiguate` argument has a second related application: disambiguating IDs of images. For example:
@@ -5958,7 +5981,7 @@ But in <literal arguments>[non-literal macro arguments], you have to use a backs
 * `\[` and `\]`: open and close <positional vs named arguments>[positional macro arguments]
 * `\{` and `\}`: open and close <positional vs named arguments>[optional macro arguments]
 * escapes for <macros with insane shortcut>:
-  * `<` (open angle brackets, less than sign): <insane macro shortcut> for <insane cross references>
+  * `<` (open angle brackets, less than sign): <insane macro shortcut> for <insane internal links>
   * `$` (dollar sign): <insane macro shortcut> for <mathematics>
   * \c[[`]] (backtick): <insane macro shortcut> for <code blocks>
   * `#` (hash): <insane topic links>
@@ -6202,9 +6225,13 @@ If the <project toplevel directory> of an OurBigBook project is also a git repos
 {c}
 {parent=OurBigBook Markup concepts}
 
+= ID
+{c}
+{synonym}
+
 In general usages of a <macro> produces an element, and every element has an ID.
 
-IDs must be unique, and they are used as the target of <internal cross references>.
+IDs must be unique, and they are used as the target of <internal links>.
 
 E.g. due to <automatic ID from title>{full}, the elements:
 ``
@@ -6237,7 +6264,7 @@ animal.html#big-dog
 IDs that start with an underscore `_` are reserved for OurBigBook usage, and will give an error if you try to use them, in order to prevent ID conflicts.
 
 For example:
-* the <table of contents> uses an ID `_toc` the <cross reference>[ID] of the ToC is always fixed to `toc`. If you try to use that for another element, you will get the following error:
+* the <table of contents> uses an ID `_toc` the <ID> of the ToC is always fixed to `toc`. If you try to use that for another element, you will get the following error:
 * elements without an explicit ID may receive automatically generated IDs of type `_1`, `_2` and so on
 
 If you use a reserved ID, you will get an error mesasge of type:
@@ -6296,7 +6323,7 @@ Output to stdout instead of saving it to a file:
 ourbigbook --stdout index.bigb
 ``
 
-In order to resolve <cross file references>, this actually does two passes:
+In order to resolve <cross file internal links>, this actually does two passes:
 * first an <ID extraction> pass, which parses all inputs and dumps their IDs to the ID database
 * then a second render pass, which uses the IDs in the ID database
 
@@ -6396,7 +6423,7 @@ If one of the input files starts getting too large, usually the toplevel `index.
 npx ourbigbook index.bigb
 npx ourbigbook not-index.bigb
 ``
-Note however that when those individual files have a <cross file reference> to something defined in `not-index.bigb`, e.g. via `\x[h2-in-not-the-index]`, then you must have first previously done pass once with:
+Note however that when those individual files have a <cross file internal link> to something defined in `not-index.bigb`, e.g. via `\x[h2-in-not-the-index]`, then you must have first previously done pass once with:
 ``
 npx ourbigbook .
 ``
@@ -6728,7 +6755,7 @@ A paragraph in notindex.
 Note that a prior <ID extraction> pass is not required, `--embed-includes` just makes `\Include` read files as they are found in the source.
 
 In addition to this:
-* <cross file references> outside the included files are disabled, and the cross file ID database does not get updated.
+* <cross file internal links> outside the included files are disabled, and the cross file ID database does not get updated.
 
   It should be possible to work around this, but we are starting with the simplest implementation that forbids it. TODO at: https://github.com/ourbigbook/ourbigbook/issues/343
 
@@ -6986,7 +7013,7 @@ Values not documented in other sections:
 * `ast-inside`: print the AST from inside the `ourbigbook.convert` call before it returns.
 
   This is useful to debug the program if `ourbigbook.convert` blows up on the next stages before returning.
-* `db`: show database transactions done by OurBigBook, to help debug stuff like <cross file references>
+* `db`: show database transactions done by OurBigBook, to help debug stuff like <cross file internal links>
 * `mem`: show process memory usage as per Node.js' `process.memoryUsage()` after each <--log perf> step: https://stackoverflow.com/questions/12023359/what-do-the-return-values-of-node-js-process-memoryusage-stand-for[]. Implies <--log perf>.
 
   To use this options, you must run OurBigBook with the `--expose-gc` command line option, e.g. with:
@@ -7076,7 +7103,7 @@ Don't use the <ID database> during this run. This implies that the on-disk datab
 = `--no-html-x-extension`
 {parent=OurBigBook CLI options}
 
-If not given, <cross references> render with the `.html` extension as in:
+If not given, <internal links> render with the `.html` extension as in:
 ``
 <a href=not-index.html#h2-in-not-the-index>
 ``
@@ -7513,17 +7540,20 @@ would produce the following output files:
 
 `--split-headers` is implied by the <--publish option>: the published website will automatically get the split pages. There is no way to turn it off currently. A pull request would be accepted, especially if it offers a <ourbigbook.json> way to do it. Maybe it would be nice to have a more generalized way of setting any CLI option equivalent from the `ourbigbook.json`, and an option `cli` vs `cli-publish` so that `cli-publish` is publish only. Just lazy for now/not enough pressing use case met.
 
-= Cross reference targets in split headers
+= Internal link targets in split headers
 {parent=split headers}
 
-By default, all cross references point to the non-split version of headers, including those found in split headers.
+= Cross reference targets in split headers
+{synonym}
+
+By default, all <internal links> point to the non-split version of headers, including those found in split headers.
 
 The rationale for this is that it gives readers the most context around the header by simply scrolling.
 
-For example, considering the example document at <split headers>, <cross references> such as `\x[h1-1]` would point:
+For example, considering the example document at <split headers>, <internal links> such as `\x[h1-1]` would point:
 * from the non-split `hello.html` to the section in the current non-split file `#h1-1`
 * from split `hello-split.html` to the same section in non-split file with `hello.html#h1-1`
-The same applies to <cross file references> when there are multiple input files.
+The same applies to <cross file internal links> when there are multiple input files.
 
 In order to make the split version be the default for some headers, you can use the <\H splitDefault argument>.
 
@@ -7727,7 +7757,7 @@ Watch every `.bigb` file in an entire directory:
 ``
 ourbigbook --watch .
 ``
-When a directory is given as the input path, this automatically first does an <ID extraction> pass on all files to support <cross file references>.
+When a directory is given as the input path, this automatically first does an <ID extraction> pass on all files to support <cross file internal links>.
 
 Now you can just edit any OurBigBook file such has `index.bigb`, save the file in your editor, and refresh the webpage and your change should be visible, no need to run a `ourbigbook` command explicitly every time.
 
@@ -8399,7 +8429,7 @@ If <ourbigbook.liquid.html> exists but you don't want to use it, set the option 
 = `toSplitHeaders`
 {parent=ourbigbook.json}
 
-Make every <internal cross reference> point to the <split header> version of the pages of the website. Do this even if those pages don't exist, or if they are not the default target e.g. as per the <`\H` `splitDefault` argument>.
+Make every <internal link> point to the <split header> version of the pages of the website. Do this even if those pages don't exist, or if they are not the default target e.g. as per the <`\H` `splitDefault` argument>.
 
 The initial application of this option was to <redirect from a static website to a dynamic website>{full}.
 
@@ -8480,7 +8510,7 @@ Sets your <OurBigBook.com> username. This is used e.g. by <linkFromStaticHeaderM
 = `xPrefix`
 {parent=ourbigbook.json}
 
-If given, prepend the given string to every single <internal cross file reference> output.
+If given, prepend the given string to every single <internal cross file internal link> output.
 
 The initial application of this option was to <redirect from a static website to a dynamic website>{full}.
 
@@ -8617,7 +8647,7 @@ The main entry point for the JavaScript API is the `ourbigbook.convert` function
 
 An example can be seen under \a[lib_hello.js].
 
-Note that while doing a simple conversion is easy, things get harder if you want to take multi-file features in consideration, notably <cross file reference internals>.
+Note that while doing a simple conversion is easy, things get harder if you want to take multi-file features in consideration, notably <cross file internal link internals>.
 
 This is because these features require interacting with the <ID database>, and we don't do that from the default `ourbigbook.convert` API because different deployments will have very different implementations, notably:
 * local Node.js run uses SQLite, an implementation can be seen in the \a[ourbigbook] file class `SqlDbProvider`
@@ -8947,7 +8977,7 @@ The procedure is:
 As a result of this:
 * the page will now be hosted under https://ourbigbook.com/barack-obama/calculus
 * https://ourbigbook.com/barack-obama/calculus-2 becomes a redirect to https://ourbigbook.com/barack-obama/calculus
-* articles that point with an <internal cross reference> to `calculus` are unmodified, and still link to: https://ourbigbook.com/barack-obama/calculus[]. But that link works due to the redirect.
+* articles that point with an <internal link> to `calculus` are unmodified, and still link to: https://ourbigbook.com/barack-obama/calculus[]. But that link works due to the redirect.
 
 This is not super user friendly, and could be made better by:
 * moving `synonym` from source to widgets: <todo/web-header-metadata-to-widgets>
@@ -10650,7 +10680,7 @@ Now you are ready to:
 
 Other things to try include:
 * `Ctrl + T`: search for a header in any file
-* type `<` to create an <internal cross file reference> and observe autocompletion suggest header names for you
+* type `<` to create an <internal cross file internal link> and observe autocompletion suggest header names for you
 
 \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
 {title=Edit locally and publish demo}
@@ -10691,7 +10721,7 @@ Supported language features:
 
     see their definition fn the snippts file \a[vscode/snippets.json].
   * ID autocompletion initiated by things like:
-    * `<`: <internal cross-file reference>
+    * `<`: <internal link>
     * `{tag=`: <H tag argument>
     * `{parent=`: <H parent argument>
     Known limitations:
@@ -10728,7 +10758,7 @@ Supported language features:
 
   <ID extraction> is performed on .bigb files automatically with `ourbigbook --no-render file.bigb` whenever new changes are saved to disk e.g. with Ctrl + S. This ensures that the <ID database> is kept up to date so that Ctrl + T and autocompletion will work.
 * `Ctrl + Shift + O`: ID search in the current file. Somewhat of a subset of `Ctrl + T`, but works faster, is more scoped if you know your ID is in the current file, and allows you to type spaces.
-* Ctrl + Click: jump to definition. If you hover over <internal cross file reference>-like elements such anywhere over the following:
+* Ctrl + Click: jump to definition. If you hover over <internal cross file internal link>-like elements such anywhere over the following:
   * `<New York>`
   * `{tag=New York}`
   * `{parent=New York}`
@@ -10889,7 +10919,7 @@ The following support is provided:
   ``
   = My long header
   ``
-  To create an cross reference to it you can:
+  To create an <internal link> to it you can:
   * copy `My long header` to the clipboard, see copy to clipboard shortcuts at: https://stackoverflow.com/questions/3961859/how-to-copy-to-clipboard-in-vim/67890119#67890119
   * type `\x` and then hit tab
   and it will automatically expand to:
@@ -11065,7 +11095,7 @@ should always deterministically lead to a resolution of all problems.
 
 Error messages are normally sorted by file, line and column, regardless of which conversion stage they happened (e.g. a tokeniser error first gets reported before a parser error).
 
-There is however one important exception to that: broken cross references are always reported last.
+There is however one important exception to that: broken <internal links> are always reported last.
 
 For example, consider the following syntactically wrong document:
 ```
@@ -11082,15 +11112,15 @@ However, this unterminated code block leads the header `b` not to be seen, and t
 
 Therefore, if we sorted naively by line, the broken reference would shoe up first:
 ``
-error: tmp.bigb:3:3: cross reference to unknown id: "b"
+error: tmp.bigb:3:3: internal link to unknown id: "b"
 error: tmp.bigb:5:1: unterminated literal argument
 ``
 
 But in a big document, this case could lead to hundreds of undefined references to show up before the actual root unterminated literal problem.:
 ``
-error: tmp.bigb:3:3: cross reference to unknown id: "b"
-error: tmp.bigb:4:3: cross reference to unknown id: "b"
-error: tmp.bigb:5:3: cross reference to unknown id: "b"
+error: tmp.bigb:3:3: internal link \x to unknown id: "b"
+error: tmp.bigb:4:3: internal link \x to unknown id: "b"
+error: tmp.bigb:5:3: internal link \x to unknown id: "b"
 ...
 error: tmp.bigb:1000:1: unterminated literal argument
 ``
@@ -11098,9 +11128,9 @@ error: tmp.bigb:1000:1: unterminated literal argument
 Therefore, we force undefined references to show up last to prevent this common problem:
 ``
 error: tmp.bigb:1000:1: unterminated literal argument
-error: tmp.bigb:3:3: cross reference to unknown id: "b"
-error: tmp.bigb:4:3: cross reference to unknown id: "b"
-error: tmp.bigb:5:3: cross reference to unknown id: "b"
+error: tmp.bigb:3:3: intenal link \x to unknown id: "b"
+error: tmp.bigb:4:3: intenal link \x to unknown id: "b"
+error: tmp.bigb:5:3: intenal link \x to unknown id: "b"
 ...
 ``
 
@@ -11431,7 +11461,7 @@ Because `_obb` is a <reserved ID>, we can safely dump any autogenerated files un
 OurBigBook stores some metadata and outputs it generates/needs inside the `./_out/` directory that it creates inside the <outdir>.
 
 Overview of files it contains:
-* `db.sqlite3`: <cross file reference internals>
+* `db.sqlite3`: <cross file internal link internals>
 * `publish`: a git clone of the source of the main repository to ensure that untracked files won't accidentally go into the output
   * `publish/_out/db.sqlite3`: like `_out/db.sqlite3` but from the clean clone of `_out/publish`
   * `publish/_out/publish`: the final generated output directory that gets published, e.g. as in <publish to GitHub Pages>
@@ -11467,7 +11497,7 @@ A conversion follows the following steps done for each file to be converted:
 
   This step is skipped when using the <--no-render> option, or during <ID extraction>.
 
-  TODO it is intended that it should not be possible for there to be rendering errors once the previous steps have concluded successfully. This is currently not the case for at least one known scenario however: <cross references> that are not defined.
+  TODO it is intended that it should not be possible for there to be rendering errors once the previous steps have concluded successfully. This is currently not the case for at least one known scenario however: <internal links> that are not defined.
 
   Sub-steps include:
   * DB queries: this is the first thing we do during the rendering step.
@@ -11499,7 +11529,7 @@ A conversion follows the following steps done for each file to be converted:
 Conversion of a directory with multiple input files works as follows:
 * do one <ID extraction> pass without render
 * do a global database check/fixup for all files that have been parsed which checks in one go for:
-  * check that all <cross reference> targets exist.
+  * check that all <internal link> targets exist.
 
     When using the <\x magic argument>:
     * only one of the plural/singular needs to exist
@@ -11508,7 +11538,7 @@ Conversion of a directory with multiple input files works as follows:
   * references from one non-header title to another non-header title as mentioned at <\x within title restrictions>
   Ideally, failure of any of the above checks should lead to the database not being updated with new values, but that is not the case as of writing.
 * do one conversion pass with render. To speed up conversion, we might at some point start storing a parsed JSON after the first conversion pass, and then just deserialize it and convert the deserialized output directly without re-parsing.
-The two pass approach is required to resolve <cross references>
+The two pass approach is required to resolve <internal links>
 
 = ID extraction
 {c}

@@ -963,7 +963,7 @@ async function convertIssue({
   }
   return sequelize.transaction({ transaction }, async (transaction) => {
     // We use routes here to achieve a path that matches the exact length of what the issue will render to,
-    // so that the internal cross references will render with the correct number of ../
+    // so that the internal links will render with the correct number of ../
     const { extra_returns } = await convert({
       author: user,
       bodySource,

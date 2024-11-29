@@ -17,7 +17,7 @@ This file is, surprisingly, not the index. It is used for multifile tests. It is
 
 Toplevel: <OurBigBook>.
 
-Non-toplevel: <internal cross reference>.
+Non-toplevel: <internal link>.
 
 == Not the index header with scope
 {scope}

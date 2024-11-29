@@ -1101,7 +1101,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
         to = shortest_not_inflected_ref.to_id
       }
       error_messages.push(
-        `${new_ref.definedAt.path}:${new_ref.defined_at_line}:${new_ref.defined_at_col}: cross reference to unknown id: "${to}"`
+        `${new_ref.definedAt.path}:${new_ref.defined_at_line}:${new_ref.defined_at_col}: internal link ${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.X_MACRO_NAME} to unknown id: "${to}"`
       )
     }
   }

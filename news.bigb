@@ -20,7 +20,7 @@ Simultaneous search and sort (e.g. sorting by date and score) is also not availa
 Related issue: https://github.com/ourbigbook/ourbigbook/issues/263
 
 \Image[feature/search/physics-arrow.png]
-{title=Article search demo}
+{title=<OurBigBook Web search> demo}
 {description=Visible live at: https://ourbigbook.com/go/articles?body=false&search=physics-and}
 {provider=github}
 {border}

@@ -190,6 +190,17 @@ A full blown showcase knowledge base can be seen at:
   {height=1700}
   {border}
   {disambiguate=intro}
+* \Image[feature/search/physics-arrow.png]
+  {title=<OurBigBook Web search> demo}
+  {description=
+  Search for your and other people's articles.
+
+  Visible live at: https://ourbigbook.com/go/articles?body=false&search=physics-and
+  }
+  {provider=github}
+  {border}
+  {height=650}
+  {disambiguate=intro}
 ]
 
 \Image[github_com_ourbigbook_ourbigbook.png]
@@ -8921,6 +8932,25 @@ Each article has their own discussion section. This way you can easily see if ot
 {height=600}
 {provider=github}
 {description=So let's inspect that discussion. Ah, clearly, the comments are very illuminating, our problem is solved! URL: https://ourbigbook.com/go/issue/1/barack-obama/fundamental-theorem-of-calculus[]}
+
+= OurBigBook Web search
+{c}
+{parent=OurBigBook Web user manual}
+
+OurBigBook Web supports basic search for <ID> prefixes of articles and <topics>. Current search limitations:
+* only matches the start of IDs, not in the middle words
+* cannot both search and sort simultaneously, e.g. sorting by articles with the greates score or newest articles
+
+\Image[feature/search/physics-arrow.png]
+{title=<OurBigBook Web search> demo}
+{description=Visible live at: https://ourbigbook.com/go/articles?body=false&search=physics-and}
+{provider=github}
+{border}
+{height=650}
+
+Related:
+* https://github.com/ourbigbook/ourbigbook/issues/263
+* <news/Article and topic ID prefix search>
 
 = OurBigBook Web editor
 {c}

@@ -17,7 +17,7 @@ export default function ShowBody({ setShowBodyState, showBody, showBodyState }) 
       <SeeIcon />
       {' '}
       <span className="mobile-hide">Show body</span>
-      <span className="non-mobile-hide">Body</span>
+      <span className="desktop-hide">Body</span>
     </>}
     inline={true}
     wrap={false}

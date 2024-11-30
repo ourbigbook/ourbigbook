@@ -47,7 +47,7 @@ overflow: auto;
   }
 }
 @media only screen and (min-width: $max-mobile-width + 1) {
-  .non-mobile-hide {
+  .desktop-hide {
     display: none;
   }
 }

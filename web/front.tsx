@@ -543,8 +543,13 @@ export function MyHead({ title }) {
 export function ArticleCreatedUpdatedPills({ article }) {
   return <>
     <span className="pill" title="Last updated">
-      <TimeIcon />{article.createdAt === article.updatedAt ? '' : ' Updated'}
+      <TimeIcon />
       {' '}
+      {article.createdAt !== article.updatedAt && <>
+        <span className="desktop-hide"><EditArticleIcon /></span>
+        <span className="mobile-hide">Updated</span>
+        {' '}
+      </>}
       <span className="article-dates">
         {formatDate(article.updatedAt)}
       </span>
@@ -553,7 +558,11 @@ export function ArticleCreatedUpdatedPills({ article }) {
       <>
         {' '}
         <span className="pill" title="Created">
-          <TimeIcon /> Created{' '}
+          <TimeIcon />
+          {' '}
+          <span className="desktop-hide"><NewArticleIcon /></span>
+          <span className="mobile-hide">Created</span>
+          {' '}
           <span className="article-dates">
             {formatDate(article.createdAt)}
           </span>

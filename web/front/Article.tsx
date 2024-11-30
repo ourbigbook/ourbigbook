@@ -176,7 +176,7 @@ function WebMeta({
             <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is the first child of this one">
               {' '}<NewArticleIcon title={false}/>
               {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
-              <i className="ion-arrow-down-c"/>{toplevel ? <> Create child<span className="mobile-hide"> article</span></> : ''}{' '}
+              <i className="ion-arrow-down-c"/>{toplevel ? <> Add child<span className="mobile-hide"> article</span></> : ''}{' '}
             </a>
             {' '}
             {!isIndex &&
@@ -185,7 +185,7 @@ function WebMeta({
                 className="btn new"
                 title="Create a new article that is the next sibling of this one"
               >
-                {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? <> Create sibling<span className="mobile-hide"> article</span></> : ''}{' '}
+                {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? <> Add sibling<span className="mobile-hide"> article</span></> : ''}{' '}
               </a>
             }
           </>

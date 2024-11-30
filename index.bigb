@@ -310,7 +310,7 @@ This addresses the main shortcomings of Wikipedia:
 = OurBigBook vs Stack Overflow
 {parent=OurBigBook vs other mind-melding systems}
 
-<#Stack Overflow> and other <#Q&A websites> solve the main issues of Wikipedia:
+<#Stack Overflow> and other <#Q&A websites> solve the main issues of <OurBigBook vs Wikipedia>[Wikipedia]:
 * they give clear recognition to users' contributions
 * they make it much less likely that your content will be deleted by others (though it can still happen sometimes)
 
@@ -321,6 +321,7 @@ Therefore, while it basically perfectly solves "shallower subjects" such as comp
 To a large extent, the goal of OurBigBook is to combine the strengths of <#Stack Exchange> with those of <#Wikipedia>.
 
 \Image[https://upload.wikimedia.org/wikipedia/commons/0/02/Stack_Overflow_logo.svg]
+{height=100}
 
 = OurBigBook vs Knol
 {parent=OurBigBook vs other mind-melding systems}
@@ -334,6 +335,7 @@ It is our belief however that the website had great promise and potential value,
 Knol also lacks a mechanism to store your notes locally, which we believe is essential if you want to get people to use as a system for people to dump large chunks into.
 
 \Image[https://upload.wikimedia.org/wikipedia/commons/4/4b/Knol-logo.svg]
+{height=100}
 
 = OurBigBook vs other non-mind-melding systems
 {parent=OurBigBook vs other systems}

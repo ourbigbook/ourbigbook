@@ -68,6 +68,14 @@ Experience infinitely deep [tables of contents](https://docs.ourbigbook.com/#tab
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/dynamic-article-tree/demo.png)
 
-Web article search:
+[Web article search](https://docs.ourbigbook.com/#ourbigbook-web-search):
 
-![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/feature/search/physics-arrow.png)
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/search/physics-arrow.png)
+
+Every single section [gets its own discussion section](https://docs.ourbigbook.com/#ourbigbook-web-discussions) so you can find issues specific to any part of the text:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_subheader_discussion_arrow.png)
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_by_Barack_Obama_discussions.png)
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png)

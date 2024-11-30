@@ -201,6 +201,28 @@ A full blown showcase knowledge base can be seen at:
   {border}
   {height=650}
   {disambiguate=intro}
+* Every single section has a clear and sane <OurBigBook Web discussions>[discussion area], where you can easily ask the author for clarifications and corrections, and where other readers can find answers to their problems in older existing discussions.
+
+  \Image[Fundamental_theorem_of_calculus_subheader_discussion_arrow.png]
+  {title=<OurBigBook Web discussion> links from the section headers}
+  {border}
+  {height=725}
+  {provider=github}
+  {description=Every section has a "Discussions" button where  URL: https://ourbigbook.com/barack-obama/integral#fundamental-theorem-of-calculus[]}
+
+  \Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussions.png]
+  {title=<OurBigBook Web discussion> list for a given article}
+  {border}
+  {height=423}
+  {provider=github}
+  {description=We can then list all the existing discussions for a given header. URL: https://ourbigbook.com/go/discussions/barack-obama/fundamental-theorem-of-calculus[]}
+
+  \Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png]
+  {title=<OurBigBook Web discussion> example}
+  {border}
+  {height=1043}
+  {provider=github}
+  {description=This is how a specific discussion looks like. URL: https://ourbigbook.com/go/discussion/1/barack-obama/fundamental-theorem-of-calculus[]}
 ]
 
 \Image[github_com_ourbigbook_ourbigbook.png]
@@ -283,10 +305,12 @@ This addresses the main shortcomings of Wikipedia:
   In <OurBigBook>, you can write about whatever you want, and no one can delete it.
 * inconsistent page granularity: it is somewhat random if an article deserves to be a toplevel page, or only a subheader. With <OurBigBook>, every header is a toplevel page with the <dynamic article tree> feature.
 
+\Image[https://upload.wikimedia.org/wikipedia/en/8/80/Wikipedia-logo-v2.svg]
+
 = OurBigBook vs Stack Overflow
 {parent=OurBigBook vs other mind-melding systems}
 
-<#Stack Overflow> and other <#Q&A websites> solve the main issues of Wikipedia: 
+<#Stack Overflow> and other <#Q&A websites> solve the main issues of Wikipedia:
 * they give clear recognition to users' contributions
 * they make it much less likely that your content will be deleted by others (though it can still happen sometimes)
 
@@ -295,6 +319,8 @@ The limitation of <#Stack Exchange> is that you cannot write a book on it, and a
 Therefore, while it basically perfectly solves "shallower subjects" such as computer programming, it is insufficient for "deeper" subjects with longer dependency chains of knowledge such as mathematics and physics.
 
 To a large extent, the goal of OurBigBook is to combine the strengths of <#Stack Exchange> with those of <#Wikipedia>.
+
+\Image[https://upload.wikimedia.org/wikipedia/commons/0/02/Stack_Overflow_logo.svg]
 
 = OurBigBook vs Knol
 {parent=OurBigBook vs other mind-melding systems}
@@ -306,6 +332,8 @@ Knol ran from 2008 until its shutdown in 2012, and failed to attract enough atte
 It is our belief however that the website had great promise and potential value, and simply would generate profits too small to compare with other Google projects.
 
 Knol also lacks a mechanism to store your notes locally, which we believe is essential if you want to get people to use as a system for people to dump large chunks into.
+
+\Image[https://upload.wikimedia.org/wikipedia/commons/4/4b/Knol-logo.svg]
 
 = OurBigBook vs other non-mind-melding systems
 {parent=OurBigBook vs other systems}
@@ -8913,25 +8941,28 @@ We believe that dynamic article treee offers a very good tradeoff between server
 {c}
 {parent=OurBigBook Web user manual}
 
+= OurBigBook Web discussion
+{synonym}
+
 Each article has their own discussion section. This way you can easily see if other students have had the same problem as you and asked about it already.
 
-\Image[Fundamental_theorem_of_calculus_subheader_discussion.png]
+\Image[Fundamental_theorem_of_calculus_subheader_discussion_arrow.png]
 {border}
-{height=200}
+{height=725}
 {provider=github}
-{description=Click the "Discussions" button to see if other people hit the same problem as you and created a discussion thread for it. We see that there are 3 total discussions about this header, so let's check them out. URL: https://ourbigbook.com/barack-obama/mathematics#fundamental-theorem-of-calculus[]}
+{description=Every section has a "Discussions" button where you can see if other people hit the same problem as you and created a discussion thread for it. We see that there are 2 total discussions about the section "Fundamental theorem of calculus", so let's check them out. URL: https://ourbigbook.com/barack-obama/integral#fundamental-theorem-of-calculus[]}
 
 \Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussions.png]
 {border}
-{height=300}
+{height=423}
 {provider=github}
-{description=From these 3 recent threads, the first one has one like, and it seems that someone found the same difficulty that we did. URL: https://ourbigbook.com/go/issues/barack-obama/fundamental-theorem-of-calculus[]}
+{description=From these 2 recent threads, in the first one seems that someone found the same difficulty that we did. URL: https://ourbigbook.com/go/discussions/barack-obama/fundamental-theorem-of-calculus[]}
 
 \Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png]
 {border}
-{height=600}
+{height=1043}
 {provider=github}
-{description=So let's inspect that discussion. Ah, clearly, the comments are very illuminating, our problem is solved! URL: https://ourbigbook.com/go/issue/1/barack-obama/fundamental-theorem-of-calculus[]}
+{description=So let's inspect that discussion. Ah, clearly, the comments are very illuminating, our problem is solved! Hopefully the author will fix the issue so that other people don't have to go searching the discussions as well. URL: https://ourbigbook.com/go/discussion/1/barack-obama/fundamental-theorem-of-calculus[]}
 
 = OurBigBook Web search
 {c}

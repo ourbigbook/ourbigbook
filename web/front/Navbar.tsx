@@ -50,11 +50,11 @@ const Navbar = ({ clearScoreDelta, isEditor, loggedInUser }) => {
     scoreDelta = 0
   }
   return (
-    <nav className="navbar">
+    <nav className={`navbar${loggedInUser ? ' logged-in' : ''}`}>
       <div className="brand-group">
         <CustomLink href={routes.home()} className="brand" newTab={isEditor}>
           <CustomImage src="/logo.svg" className="logo"/>
-          {appNameShort}
+          <span className="appname">{appNameShort}</span>
         </CustomLink>
         <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }><HelpIcon />&nbsp;About</a>
         <a href={donateUrl} className="donate" target={ isEditor ? '_blank' : '_self' }><span className="icon">$</span>&nbsp;Donate</a>

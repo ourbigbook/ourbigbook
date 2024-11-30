@@ -861,7 +861,7 @@ nav.navbar {
     color: $navbar-non-brandname-color;
     &:visited {
       color: $navbar-non-brandname-color;
-   }
+    }
     &:hover, &.active {
       color: $navbar-background-color;
       background-color: $navbar-non-brandname-color;
@@ -904,8 +904,8 @@ nav.navbar {
     }
     @media only screen and (max-width: 450px) {
       &.login {
-          display: none;
-        }
+        display: none;
+      }
     }
     .icon {
       color: $icon-color;
@@ -923,6 +923,15 @@ nav.navbar {
     }
     @media only screen and (min-width: $max-mobile-width + 1) {
       padding-left: $toplevel-padding;
+    }
+  }
+}
+nav.navbar.logged-in {
+  .brand {
+    @media only screen and (max-width: 450px) {
+      .appname {
+        display: none;
+      }
     }
   }
 }

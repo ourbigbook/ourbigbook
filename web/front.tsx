@@ -543,7 +543,7 @@ export function MyHead({ title }) {
 export function ArticleCreatedUpdatedPills({ article }) {
   return <>
     <span className="pill" title="Last updated">
-      <TimeIcon />{article.createdAt === article.updatedAt ? '' : ' Updated '}
+      <TimeIcon />{article.createdAt === article.updatedAt ? '' : ' Updated'}
       {' '}
       <span className="article-dates">
         {formatDate(article.updatedAt)}

@@ -152,7 +152,7 @@ export const getServerSidePropsArticleHoc = ({
           for (const article of articles) {
             idToArticleMap[article.toplevel_id] = article
           }
-          // TODO limit.
+          // TODO limit to n tags. This can be done with ROW_NUMBER() in a raw query.
           const refs = await Ref.findAll({
             where: {
               from_id: articles.map(a => a.toplevel_id),

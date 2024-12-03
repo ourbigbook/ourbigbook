@@ -151,9 +151,6 @@ module.exports = {
   useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !ourbigbook_nodejs_front.isTest,
   usernameMinLength: 3,
   usernameMaxLength: 40,
-  // After this timeout, assume use stopped typing and start making network requests / error messages.
-  // This is to reduce flickering and the number of network requests.
-  userStoppedTypingMs: 200,
   topicConsiderNArticles: 10,
 
   // Used by sequelize-cli as well as our source code.

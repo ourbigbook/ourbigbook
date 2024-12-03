@@ -724,7 +724,7 @@ export default function Article({
       })
     }
     if (entry_list.length) {
-      html += htmlToplevelChildModifierById(renderTocFromEntryList({ entry_list }), Macro.TOC_ID) 
+      html += htmlToplevelChildModifierById(renderTocFromEntryList({ entry_list, hasSearch: false }), Macro.TOC_ID) 
     }
     if (log.perf) {
       console.error(`perf: Article.articlesInSamePageForToc: ${performance.now() - t0} ms`)

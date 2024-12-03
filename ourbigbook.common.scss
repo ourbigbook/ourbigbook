@@ -92,6 +92,37 @@ $footer-color: $color;
   font-size: $h1-font-size;
 }
 
+@mixin input {
+  background-color: $background-color;
+  border-radius: 3px;
+  border: 1px solid gray;
+  box-sizing: border-box;
+  color: white;
+  padding: 0.3em 0.5em;
+  width: 100%;
+  &[disabled] {
+    background-color: rgb(50, 50, 50);
+  }
+  &[type=checkbox] {
+    width: auto;
+  }
+  &:focus {
+    outline: none;
+    border-color: #CCC;
+  }
+  &::placeholder {
+    color: #AAA;
+  }
+  // Unable to make it work for password fields.
+  // https://stackoverflow.com/questions/55131944/how-to-remove-blue-background-on-chrome-autocomplete
+}
+
+@mixin search {
+  display: inline-block;
+  margin-right: 1ch;
+  width: 30ch;
+}
+
 @mixin pre {
   background-color: $code-background-color;
   margin: 0;

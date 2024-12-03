@@ -5,8 +5,10 @@ import { cant } from 'front/cant'
 import {
   docsAdminUrl,
   networkSlowMs,
-  userStoppedTypingMs,
 } from 'front/config'
+import {
+  USER_FINISHED_TYPING_MS
+} from 'ourbigbook/runtime_common'
 import ErrorList from 'front/ErrorList'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
@@ -93,7 +95,7 @@ export default function SiteSettings({
             }
           })
         }
-      }, userStoppedTypingMs)
+      }, USER_FINISHED_TYPING_MS)
     } else {
       // Empty is always valid, so we make no request.
       const [newPinnedArticleErrors, newPinnedArticleOks] = getArticleErrors(

@@ -23,7 +23,6 @@ import {
 import {
   articleLimit,
   convertContext,
-  userStoppedTypingMs,
 } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
@@ -36,8 +35,12 @@ import { UserType } from 'front/types/UserType'
 import { encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
 import {
   AT_MENTION_CHAR,
+  UNICODE_SEARCH_CHAR,
   titleToId,
 } from 'ourbigbook'
+import {
+  USER_FINISHED_TYPING_MS
+} from 'ourbigbook/runtime_common'
 
 function getKey(
   itemType: string,
@@ -221,7 +224,7 @@ const ArticleList = ({
           undefined,
         )
       }
-    }, userStoppedTypingMs)
+    }, USER_FINISHED_TYPING_MS)
   }
   return (
     <div className={`article-list`}>
@@ -231,7 +234,7 @@ const ArticleList = ({
             <input
               className="search"
               onChange={handleSearch}
-              placeholder={'\u{1F50D} Search'}
+              placeholder={`${UNICODE_SEARCH_CHAR} Search`}
               //ref={displayNameInputElem}
               type="text"
               value={search}

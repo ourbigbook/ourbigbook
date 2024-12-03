@@ -477,6 +477,19 @@ iframe {
   }
 }
 
+input {
+  @include input;
+  // Currently <input> is only used for ToC search.
+  @include search;
+  @media only screen and (max-width: $max-mobile-width) {
+    &:not(:focus) {
+      padding-left: 0.2em;
+      padding-right: 0.2em;
+      width: 3ch;
+    }
+  }
+}
+
 // Math.
 // https://stackoverflow.com/questions/50896041/katex-font-size/57355836#57355836
 .katex { font-size: 1.5em; }
@@ -651,6 +664,7 @@ ol, ul {
     color: $h-color;
     font-size: $header-font-size;
     font-weight: bold;
+    margin-right: 1ch;
   }
   .metrics {
     padding-left: $sep-width;

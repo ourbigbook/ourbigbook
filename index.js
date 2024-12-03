@@ -19,6 +19,8 @@ const lodash = require('lodash');
 const path = require('path');
 const pluralize = require('pluralize');
 
+const runtime_common = require('./runtime_common');
+
 // consts used by classes.
 const HTML_PARENT_MARKER = '<span class="fa-solid-900 icon">\u{f062}</span>';
 exports.HTML_PARENT_MARKER = HTML_PARENT_MARKER;
@@ -1468,7 +1470,7 @@ Macro.HEADER_MACRO_NAME = 'H';
 Macro.HEADER_CHILD_ARGNAME = 'child';
 Macro.HEADER_TAG_ARGNAME = 'tag';
 Macro.X_MACRO_NAME = 'x';
-Macro.HEADER_SCOPE_SEPARATOR = '/';
+Macro.HEADER_SCOPE_SEPARATOR = runtime_common.HEADER_SCOPE_SEPARATOR
 Macro.INCLUDE_MACRO_NAME = 'Include';
 Macro.LINE_BREAK_MACRO_NAME = 'br'
 Macro.LINK_MACRO_NAME = 'a';
@@ -2573,7 +2575,7 @@ function calculateId(
           if (file_header) {
             id_text = Macro.FILE_ID_PREFIX + id_text + file_id_text_append
           } else {
-            id_text += titleToId(title_text, new_context.options.ourbigbook_json.id, new_context);
+            id_text += titleToIdContext(title_text, new_context.options.ourbigbook_json.id, new_context);
           }
           const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
           if (disambiguate_arg !== undefined) {
@@ -4487,11 +4489,6 @@ function htmlTitleAndDescription(ast, context, opts={}) {
   return { title_and_description, multiline_caption, href }
 }
 
-/** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
-function isAscii(str) {
-  return /^[\x00-\x7F]*$/.test(str);
-}
-
 function idConvertSimpleElem(argname) {
   if (argname === undefined) {
     argname = Macro.CONTENT_ARGUMENT_NAME
@@ -4744,7 +4741,7 @@ function magicTitleArgToId(arg, context) {
 function magicTitleToId(target_id, context) {
   if (target_id.startsWith(Macro.FILE_ID_PREFIX))
     return target_id
-  let ret = titleToId(target_id, { keep_scope_sep: true, magic: true }, context)
+  let ret = titleToIdContext(target_id, { keep_scope_sep: true, magic: true }, context)
   if (target_id[0] === AT_MENTION_CHAR) {
     ret = AT_MENTION_CHAR + ret
   }
@@ -4762,88 +4759,6 @@ function makeEnum(arr) {
 
 function noext(str) {
   return str.substring(0, str.lastIndexOf('.'));
-}
-
-const GREEK_MAP = {
-  '\u{03b1}': 'alpha',
-  '\u{0391}': 'Alpha',
-  '\u{03b2}': 'beta',
-  '\u{0392}': 'Beta',
-  '\u{03b3}': 'gamma',
-  '\u{0393}': 'Gamma',
-  '\u{03b4}': 'delta',
-  '\u{0394}': 'Delta',
-  '\u{03b5}': 'epsilon',
-  '\u{0395}': 'Epsilon',
-  '\u{03b6}': 'zeta',
-  '\u{0396}': 'Zeta',
-  '\u{03b7}': 'eta',
-  '\u{0397}': 'Eta',
-  '\u{03b8}': 'theta',
-  '\u{0398}': 'Theta',
-  '\u{03b9}': 'iota',
-  '\u{0399}': 'Iota',
-  '\u{03ba}': 'kappa',
-  '\u{039a}': 'Kappa',
-  '\u{03bb}': 'lambda',
-  '\u{039b}': 'Lambda',
-  '\u{03bc}': 'mu',
-  '\u{039c}': 'Mu',
-  '\u{03bd}': 'nu',
-  '\u{039d}': 'Nu',
-  '\u{03be}': 'xi',
-  '\u{039e}': 'Xi',
-  '\u{03bf}': 'omicron',
-  '\u{039f}': 'Omicron',
-  '\u{03c0}': 'pi',
-  '\u{03a0}': 'Pi',
-  '\u{03c1}': 'rho',
-  '\u{03a1}': 'Rho',
-  '\u{03c3}': 'sigma',
-  '\u{03a3}': 'Sigma',
-  '\u{03c4}': 'tau',
-  '\u{03a4}': 'Tau',
-  '\u{03c5}': 'upsilon',
-  '\u{03a5}': 'Upsilon',
-  '\u{03c6}': 'phi',
-  '\u{03a6}': 'Phi',
-  '\u{03c7}': 'chi',
-  '\u{03a7}': 'Chi',
-  '\u{03c8}': 'psi',
-  '\u{03a8}': 'Psi',
-  '\u{03c9}': 'omega',
-  '\u{03a9}': 'Omega',
-}
-
-// https://docs.ourbigbook.com#ascii-normalization
-function normalizeLatinCharacter(c) {
-  c = lodash.deburr(c)
-  if (c in GREEK_MAP) {
-    return ID_SEPARATOR + GREEK_MAP[c] + ID_SEPARATOR
-  }
-  switch(c) {
-    // en-dash
-    case '\u{2013}':
-    // em-dash
-    case '\u{2014}':
-      return ID_SEPARATOR
-  }
-  return c
-}
-
-const NORMALIZE_PUNCTUATION_CHARACTER_MAP = {
-  '%': 'percent',
-  '&': 'and',
-  '+': 'plus',
-  '@': 'at',
-  '\u{2212}': 'minus',
-}
-function normalizePunctuationCharacter(c) {
-  if (c in NORMALIZE_PUNCTUATION_CHARACTER_MAP) {
-    return ID_SEPARATOR + NORMALIZE_PUNCTUATION_CHARACTER_MAP[c] + ID_SEPARATOR
-  } else {
-    return c
-  }
 }
 
 // https://stackoverflow.com/questions/17781472/how-to-get-a-subset-of-a-javascript-objects-properties/17781518#17781518
@@ -7145,6 +7060,7 @@ function renderTocFromEntryList({
   add_test_instrumentation,
   entry_list,
   descendant_count_html,
+  hasSearch,
   tocHasSelflinks,
   tocIdPrefix,
 }) {
@@ -7152,13 +7068,22 @@ function renderTocFromEntryList({
   if (tocIdPrefix === undefined) {
     tocIdPrefix = ''
   }
+  if (hasSearch === undefined) {
+    hasSearch = true
+  }
   if (tocHasSelflinks === undefined) {
     // There is currently no code that sets this to true. Previously it was fixed at true,
     // and we decided to drop it by default, but keep the code around just in case.
     tocHasSelflinks = false
   }
-  let ret = `<div class="toc-container" id="${tocIdPrefix}${Macro.TOC_ID}"><ul><li${htmlClassAttr([TOC_HAS_CHILD_CLASS, 'toplevel'])}><div class="title-div">`
-  ret += `${TOC_ARROW_HTML}<span class="not-arrow"><a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}"> Table of contents</a>`
+  let ret = `<div class="toc-container" id="${tocIdPrefix}${Macro.TOC_ID}">` +
+    `<ul><li${htmlClassAttr([TOC_HAS_CHILD_CLASS, 'toplevel'])}>` +
+    `<div class="title-div">` +
+    `${TOC_ARROW_HTML}<span class="not-arrow">` +
+    `<a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}"> Table of contents</a>`
+  if (hasSearch) {
+    ret += `<input class="search" placeholder="${UNICODE_SEARCH_CHAR} Search. Shortcut: / (slash)"></input>`
+  }
   if (descendant_count_html) {
     ret += `<span class="hover-metadata">${descendant_count_html}</span>`
   }
@@ -7386,71 +7311,46 @@ function symbolToString(symbol) {
   return symbol.toString().slice(7, -1);
 }
 
-function titleToId(title, options={}, context) {
-  if (options.normalize === undefined) {
-    options.normalize = {}
-  }
-  const new_chars = [];
-  let first = true
-  for (let c of title) {
-    if (
-      (
-        options.normalize !== undefined &&
-        options.normalize.latin !== undefined &&
-        options.normalize.latin
-      ) ||
-      (
-        context !== undefined &&
-        context.options.ourbigbook_json.id.normalize.latin
-      )
-    ) {
-      c = normalizeLatinCharacter(c)
-    }
-    if (
-      (
+function titleToIdContext(title, options={}, context) {
+  return titleToId(
+    title,
+    {
+      keepScopeSep: options.keep_scope_sep,
+      magic: options.magic,
+      normalizeLatin:
         (
           options.normalize !== undefined &&
-          options.normalize.punctuation !== undefined &&
-          options.normalize.punctuation
+          options.normalize.latin !== undefined &&
+          options.normalize.latin
         ) ||
         (
           context !== undefined &&
-          context.options.ourbigbook_json.id.normalize.punctuation
+          context.options.ourbigbook_json.id.normalize.latin
         )
-      )
-      &&
-      !(
-        first &&
-        c === AT_MENTION_CHAR &&
-        options.magic &&
+      ,
+      normalizePunctuation:
         (
-          context !== undefined &&
-          context.options.x_remove_leading_at
+          (
+            options.normalize !== undefined &&
+            options.normalize.punctuation !== undefined &&
+            options.normalize.punctuation
+          ) ||
+          (
+            context !== undefined &&
+            context.options.ourbigbook_json.id.normalize.punctuation
+          )
         )
-      )
-    ) {
-      c = normalizePunctuationCharacter(c)
+      ,
+      removeLeadingAt: (
+        context !== undefined &&
+        context.options.x_remove_leading_at
+      ),
     }
-    c = c.toLowerCase();
-    const scope_sep = options.keep_scope_sep ? Macro.HEADER_SCOPE_SEPARATOR : ''
-    const ok_chars_regexp = new RegExp(`[a-z0-9-${scope_sep}]`)
-    if (
-      !isAscii(c) ||
-      ok_chars_regexp.test(c)
-    ) {
-      new_chars.push(c);
-    } else {
-      new_chars.push(ID_SEPARATOR);
-    }
-    first = false
-  }
-  return new_chars.join('')
-    .replace(new RegExp(ID_SEPARATOR + '+', 'g'), ID_SEPARATOR)
-    .replace(new RegExp('^' + ID_SEPARATOR + '+'), '')
-    .replace(new RegExp(ID_SEPARATOR + '+$'), '')
-  ;
+  )
 }
-exports.titleToId = titleToId;
+
+const titleToId = runtime_common.titleToId
+exports.titleToId = titleToId
 
 /** Heuristic only. */
 function idToTitle(id) {
@@ -7662,7 +7562,7 @@ function xGetHrefContent(ast, context) {
     if (!ast.validation_output.p.boolean) {
       topicTitleSingular = pluralizeWrap(topicTitleSingular, 1)
     }
-    const topicId = titleToId(topicTitleSingular, undefined, context)
+    const topicId = titleToIdContext(topicTitleSingular, undefined, context)
     if (content_arg !== undefined) {
       topicTitle = renderArg(content_arg, context)
     }
@@ -8234,7 +8134,7 @@ const ANCESTORS_ID = `${Macro.RESERVED_ID_PREFIX}${ANCESTORS_ID_UNRESERVED}`
 exports.ANCESTORS_ID = ANCESTORS_ID
 const ANCESTORS_MAX = 6
 exports.ANCESTORS_MAX = ANCESTORS_MAX
-const AT_MENTION_CHAR = '@';
+const AT_MENTION_CHAR = runtime_common.AT_MENTION_CHAR
 exports.AT_MENTION_CHAR = AT_MENTION_CHAR;
 const H_ANCESTORS_CLASS = 'ancestors'
 exports.H_ANCESTORS_CLASS = H_ANCESTORS_CLASS
@@ -8289,7 +8189,7 @@ const INCOMING_LINKS_ID_UNRESERVED = 'incoming-links'
 exports.INCOMING_LINKS_ID_UNRESERVED = INCOMING_LINKS_ID_UNRESERVED
 const SYNONYM_LINKS_ID_UNRESERVED = 'synonyms'
 exports.SYNONYM_LINKS_ID_UNRESERVED = SYNONYM_LINKS_ID_UNRESERVED
-const ID_SEPARATOR = '-';
+const ID_SEPARATOR = runtime_common.ID_SEPARATOR
 exports.ID_SEPARATOR = ID_SEPARATOR
 const INSANE_LIST_START = '* ';
 const INSANE_TD_START = '| ';
@@ -8541,6 +8441,8 @@ const XSS_SAFE_ALT_DEFAULT = {
     return '<div>HTML snippet:</div>' + htmlCode(renderArg(ast.args[Macro.CONTENT_ARGUMENT_NAME], context))
   }
 }
+const UNICODE_SEARCH_CHAR = '\u{1F50D}'
+exports.UNICODE_SEARCH_CHAR = UNICODE_SEARCH_CHAR
 
 /**
 * Calculate a bunch of default parameters of the media from smart defaults if not given explicitly

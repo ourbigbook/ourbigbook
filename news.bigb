@@ -7,6 +7,32 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= Static ToC search
+{parent=News}
+{tag=Web}
+
+It is now possible to search through ToCs on <static websites> renders. Only items under the current ToC are searched for.
+
+Ideally we should also implement a mechanism to search across all headers from any page. This would require generating a JSON with all the headers and their renders and fetching it from JavaScript. Doable but more work. For now we keep it simple and only search the existing ToCs.
+
+\Image[feature/static-search/empty-arrow.png]
+{title=OurBigBook static search demo: empty search}
+{provider=github}
+{border}
+{height=426}
+
+\Image[feature/static-search/molecular-biology-arrow.png]
+{title=OurBigBook static search demo: search for "<#molecular biology>"}
+{provider=github}
+{border}
+{height=426}
+
+\Image[feature/static-search/molecular-biology-edit.gif]
+{title=OurBigBook static search demo video}
+{provider=github}
+{border}
+{height=602}
+
 = Article and topic ID prefix search
 {parent=News}
 {tag=Web}

@@ -56,127 +56,133 @@ export function ourbigbook_runtime(toplevel, opts={}) {
 
   // ToC interaction.
   const tocContainerElem = toplevel.querySelectorAll(`.${TOC_CONTAINER_CLASS}`)[0]
-  // Search
-  {
-    const searchElem = tocContainerElem.querySelectorAll(`.title-div .search`)[0]
-    if (searchElem) {
-      myDocument.addEventListener('keydown', function onPress(event) {
-        if (
-          document.activeElement === document.body &&
-          event.key === '/'
-        ) {
-          searchElem.scrollIntoView({ behavior: 'smooth' })
-          searchElem.focus({ preventScroll: true })
-          event.preventDefault()
-        }
-      })
-      const toplevelLi = tocContainerElem.querySelectorAll(`.toplevel`)[0]
-      const tocNoTitleUlElem = tocContainerElem.querySelectorAll(`ul ul`)[0]
-      let searchI = 0
-      searchElem.addEventListener('input', (e) => {
-        searchI++
-        let searchIClosure = searchI
-        setTimeout(() => {
-          if (searchI === searchIClosure) {
-            const search = titleToId(e.target.value)
-            const oldResults = toplevelLi.querySelectorAll(`.${SEARCH_RESULTS_CLASS}`)[0]
-            if (oldResults) {
-              toplevelLi.removeChild(oldResults)
-            }
-            if (search) {
-              tocNoTitleUlElem.style.display = 'none'
-              const idDivs = tocNoTitleUlElem.querySelectorAll(`[id]`)
-              const startsWithLis = []
-              const includesLis = []
-              for (const idDiv of idDivs) {
-                const idNoPref = idDiv.id.replace('_toc/', '')
-                function idDivToLi(idDiv) {
-                  const notArrowAElem = idDiv.querySelectorAll(`.not-arrow a`)[0]
-                  const clone = notArrowAElem.cloneNode(true)
-                  const clone0 = clone.children[0]
-                  // Remove section number.
-                  if (clone0 && clone0.classList.contains('n')) {
-                    clone.removeChild(clone0)
+  if (tocContainerElem) {
+    // Search
+    {
+      const searchElem = tocContainerElem.querySelectorAll(`.title-div .search`)[0]
+      if (searchElem) {
+        myDocument.addEventListener('keydown', function onPress(event) {
+          if (
+            document.activeElement === document.body &&
+            event.key === '/'
+          ) {
+            searchElem.scrollIntoView({ behavior: 'smooth' })
+            searchElem.focus({ preventScroll: true })
+            event.preventDefault()
+          }
+        })
+        const toplevelLi = tocContainerElem.querySelectorAll(`.toplevel`)[0]
+        const tocNoTitleUlElem = tocContainerElem.querySelectorAll(`ul ul`)[0]
+        let searchI = 0
+        searchElem.addEventListener('input', (e) => {
+          searchI++
+          let searchIClosure = searchI
+          setTimeout(() => {
+            if (searchI === searchIClosure) {
+              const search = titleToId(e.target.value)
+              const oldResults = toplevelLi.querySelectorAll(`.${SEARCH_RESULTS_CLASS}`)[0]
+              if (oldResults) {
+                toplevelLi.removeChild(oldResults)
+              }
+              if (search) {
+                tocNoTitleUlElem.style.display = 'none'
+                const idDivs = tocNoTitleUlElem.querySelectorAll(`[id]`)
+                const startsWithLis = []
+                const includesLis = []
+                for (const idDiv of idDivs) {
+                  const idNoPref = idDiv.id.replace('_toc/', '')
+                  function idDivToLi(idDiv) {
+                    const notArrowAElem = idDiv.querySelectorAll(`.not-arrow a`)[0]
+                    const clone = notArrowAElem.cloneNode(true)
+                    const clone0 = clone.children[0]
+                    // Remove section number.
+                    if (clone0 && clone0.classList.contains('n')) {
+                      clone.removeChild(clone0)
+                    }
+                    const li = myDocument.createElement('li')
+                    li.appendChild(clone)
+                    return li
                   }
-                  const li = myDocument.createElement('li')
-                  li.appendChild(clone)
-                  return li
+                  if (idNoPref.startsWith(search)) {
+                    startsWithLis.push(idDivToLi(idDiv))
+                  } else {
+                    if (idNoPref.includes(search)) {
+                      includesLis.push(idDivToLi(idDiv))
+                    }
+                  }
                 }
-                if (idNoPref.startsWith(search)) {
-                  startsWithLis.push(idDivToLi(idDiv))
+                if (startsWithLis.length || includesLis.length) {
+                  const resultsUl = myDocument.createElement('ul')
+                  resultsUl.classList.add(SEARCH_RESULTS_CLASS)
+                  for (const li of startsWithLis) {
+                    resultsUl.appendChild(li)
+                  }
+                  for (const li of includesLis) {
+                    resultsUl.appendChild(li)
+                  }
+                  toplevelLi.appendChild(resultsUl)
                 } else {
-                  if (idNoPref.includes(search)) {
-                    includesLis.push(idDivToLi(idDiv))
+                  const div = myDocument.createElement('div')
+                  div.classList.add(SEARCH_RESULTS_CLASS)
+                  div.appendChild(myDocument.createTextNode('No results found'))
+                  toplevelLi.appendChild(div)
+                }
+              } else {
+                tocNoTitleUlElem.style.display = 'block'
+              }
+            }
+          }, USER_FINISHED_TYPING_MS)
+        })
+      }
+    }
+
+    // Open close arrows
+    {
+      const toc_arrows = tocContainerElem.querySelectorAll(`div.arrow`)
+      for (const toc_arrow of toc_arrows) {
+        toc_arrow.addEventListener('click', () => {
+          // https://docs.ourbigbook.com#table-of-contents-javascript-open-close-interaction
+          const parent_li = toc_arrow.parentElement.parentElement
+          let all_children_closed = true
+          let all_children_open = true
+          let was_open
+          if (parent_li.classList.contains(CLOSE_CLASS)) {
+            was_open = false
+            // Open self.
+            parent_li.classList.remove(CLOSE_CLASS)
+          } else {
+            was_open = true
+            // Check if all children are closed.
+            for (const toc_arrow_child of parent_li.childNodes) {
+              if (toc_arrow_child.tagName === 'UL') {
+                for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
+                  if (toc_arrow_child_2.tagName === 'LI') {
+                    if (toc_arrow_child_2.classList.contains(CLOSE_CLASS)) {
+                      all_children_open = false
+                    } else if (toc_arrow_child_2.classList.contains('has-child')) {
+                      all_children_closed = false
+                    }
                   }
                 }
               }
-              if (startsWithLis.length || includesLis.length) {
-                const resultsUl = myDocument.createElement('ul')
-                resultsUl.classList.add(SEARCH_RESULTS_CLASS)
-                for (const li of startsWithLis) {
-                  resultsUl.appendChild(li)
-                }
-                for (const li of includesLis) {
-                  resultsUl.appendChild(li)
-                }
-                toplevelLi.appendChild(resultsUl)
-              } else {
-                const div = myDocument.createElement('div')
-                div.classList.add(SEARCH_RESULTS_CLASS)
-                div.appendChild(myDocument.createTextNode('No results found'))
-                toplevelLi.appendChild(div)
-              }
-            } else {
-              tocNoTitleUlElem.style.display = 'block'
             }
           }
-        }, USER_FINISHED_TYPING_MS)
-      })
+          for (const toc_arrow_child of parent_li.childNodes) {
+            if (toc_arrow_child.tagName === 'UL') {
+              for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
+                if (toc_arrow_child_2.tagName === 'LI') {
+                  if (!was_open || (was_open && !all_children_closed)) {
+                    toc_arrow_child_2.classList.add(CLOSE_CLASS)
+                  } else {
+                    toc_arrow_child_2.classList.remove(CLOSE_CLASS)
+                  }
+                }
+              }
+            }
+          }
+        })
+      }
     }
-  }
-  const toc_arrows = tocContainerElem.querySelectorAll(`div.arrow`)
-  for (const toc_arrow of toc_arrows) {
-    toc_arrow.addEventListener('click', () => {
-      // https://docs.ourbigbook.com#table-of-contents-javascript-open-close-interaction
-      const parent_li = toc_arrow.parentElement.parentElement;
-      let all_children_closed = true;
-      let all_children_open = true;
-      let was_open;
-      if (parent_li.classList.contains(CLOSE_CLASS)) {
-        was_open = false;
-        // Open self.
-        parent_li.classList.remove(CLOSE_CLASS);
-      } else {
-        was_open = true;
-        // Check if all children are closed.
-        for (const toc_arrow_child of parent_li.childNodes) {
-          if (toc_arrow_child.tagName === 'UL') {
-            for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
-              if (toc_arrow_child_2.tagName === 'LI') {
-                if (toc_arrow_child_2.classList.contains(CLOSE_CLASS)) {
-                  all_children_open = false;
-                } else if (toc_arrow_child_2.classList.contains('has-child')) {
-                  all_children_closed = false;
-                }
-              }
-            }
-          }
-        }
-      }
-      for (const toc_arrow_child of parent_li.childNodes) {
-        if (toc_arrow_child.tagName === 'UL') {
-          for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
-            if (toc_arrow_child_2.tagName === 'LI') {
-              if (!was_open || (was_open && !all_children_closed)) {
-                toc_arrow_child_2.classList.add(CLOSE_CLASS);
-              } else {
-                toc_arrow_child_2.classList.remove(CLOSE_CLASS);
-              }
-            }
-          }
-        }
-      }
-    });
   }
 
   // Open ToC when jumping to it from header.

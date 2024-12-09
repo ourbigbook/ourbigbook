@@ -3,18 +3,18 @@ import ourbigbook from 'ourbigbook'
 import { getLoggedInUser } from 'back'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { articleLimit  } from 'front/config'
-import { getList, getOrderAndPage } from 'front/js'
+import { getList, getOrderAndPage, idToSlug, uidTopicIdToId } from 'front/js'
 import { MyGetServerSideProps } from 'front/types'
 import { UserPageProps } from 'front/UserPage'
 
 export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
   return async (context) => {
-    const { params: { uid }, query, req, res } = context
+    const { params: { uid, parentTopicId }, query, req, res } = context
     if (
       typeof uid === 'string'
     ) {
       const sequelize = req.sequelize
-      const { Article, Comment, Issue, User } = sequelize.models
+      const { Article, Comment, Ref, Issue, User } = sequelize.models
       const [loggedInUser, user] = await Promise.all([
         getLoggedInUser(req, res),
         User.findOne({
@@ -28,7 +28,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       }
       const list = getList(req, res)
       let author, articlesFollowedBy, likedBy, following, followedBy, itemType
-      let allowedSorts, allowedSortsExtra
+      let allowedSorts, allowedSortsExtra, defaultOrder, parentFromTo, parentId, parentType
       switch (what) {
         case 'follows':
           followedBy = uid
@@ -70,6 +70,31 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           author = uid
           itemType = 'article'
           break
+        case 'user-child-articles':
+          author = uid
+          // TODO would be more efficient here with Ref.to_id_index.
+          // But that requires generalizing the Article.getArticles interface a bit,
+          // not in the mood right now.
+          defaultOrder = 'nestedSetIndex',
+          itemType = 'article'
+          parentId = uidTopicIdToId(uid, parentTopicId)
+          parentType = Ref.Types[ourbigbook.REFS_TABLE_PARENT]
+          break
+        case 'user-incoming-articles':
+          author = uid
+          defaultOrder = 'slug',
+          itemType = 'article'
+          parentId = uidTopicIdToId(uid, parentTopicId)
+          parentFromTo = 'from'
+          parentType = Ref.Types[ourbigbook.REFS_TABLE_X]
+          break
+        case 'user-tagged-articles':
+          author = uid
+          defaultOrder = 'slug',
+          itemType = 'article'
+          parentId = uidTopicIdToId(uid, parentTopicId)
+          parentType = Ref.Types[ourbigbook.REFS_TABLE_X_CHILD]
+          break
         case 'user-comments':
           author = uid
           itemType = 'comment'
@@ -103,6 +128,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, {
         allowedSorts,
         allowedSortsExtra,
+        defaultOrder,
       })
       if (err) { res.statusCode = 422 }
       const offset = page * articleLimit
@@ -115,6 +141,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         offset,
         order,
         orderAscDesc: ascDesc,
+        parentFromTo,
+        parentId,
+        parentType,
         searchTopicId: query.search,
         sequelize,
       }
@@ -156,6 +185,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         loggedInUserJson,
         likes,
         unlistedArticles,
+        parentArticle,
         users,
       ] = await Promise.all([
         articlesPromise,
@@ -170,9 +200,19 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           ? Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false }))
           : {}
         ,
+        // parentArticle
+        (parentId !== undefined)
+          ? Article.getArticle({ slug: idToSlug(parentId), sequelize })
+          : null,
+        ,
         usersPromise,
         updateNewScoreLastCheckPromise,
       ])
+      if (parentTopicId && !parentArticle) {
+        return {
+          notFound: true
+        }
+      }
       const props: UserPageProps = {
         clearScoreDelta: !!updateNewScoreLastCheckPromise,
         hasUnlisted: !!unlistedArticles.count,
@@ -186,6 +226,12 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       }
       if (loggedInUser) {
         props.loggedInUser = loggedInUserJson
+      }
+      if (parentArticle) {
+        props.parentArticle = { 
+          slug: parentArticle.slug,
+          titleRender: parentArticle.titleRender,
+        }
       }
       if (itemType === 'user') {
         props.users = await Promise.all(users.rows.map(user => user.toJson(loggedInUser)))

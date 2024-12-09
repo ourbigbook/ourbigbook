@@ -3,7 +3,11 @@ import Router from 'next/router'
 
 import { buttonActiveClass } from 'front/config'
 import routes from 'front/routes'
-import { capitalize } from 'front'
+import {
+  FollowIcon,
+  UnfollowIcon,
+  capitalize,
+} from 'front'
 
 const FollowButton = ({
   classNames = undefined,
@@ -57,7 +61,7 @@ const FollowButton = ({
       className={className}
       onClick={handleClick}
     >
-      <i className={ "ion-eye" + (_following ? '-disabled' : '') } />
+      {_following ? <UnfollowIcon /> : <FollowIcon />}
       {" "}
       {_following ? `Un${followText}` : capitalize(followText)}{showText ? ` ${text}` : ''}
       {" "}

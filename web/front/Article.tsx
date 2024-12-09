@@ -5,10 +5,12 @@ import Router, { useRouter } from 'next/router'
 
 import { parse } from 'node-html-parser'
 
-import { commentsHeaderId, log } from 'front/config'
+import { commentsHeaderId, docsUrl, log } from 'front/config'
 import {
+  ArrowRightIcon,
   ArrowUpIcon,
   ArticleCreatedUpdatedPills,
+  ChildrenIcon,
   CreateMyOwnVersionOfThisTopic,
   CommentIcon,
   DeleteIcon,
@@ -87,11 +89,16 @@ function LinkList(
   marker: string,
   title: string,
   linkPref: string,
+  opts: any ={},
 ) {
+  let { href } = opts
+  if (href === undefined) {
+    href = `#${Macro.RESERVED_ID_PREFIX}${idUnreserved}`
+  }
   if (articles.length) return <>
     <h2 id={`${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}>
       <a
-        href={`#${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}
+        href={href}
         className="ourbigbook-title"
       >
         <span dangerouslySetInnerHTML={{ __html: `${marker} ${title}` }} />
@@ -138,12 +145,12 @@ function WebMeta({
         {' '}
         {!isIndex &&
           <a className="by-others btn" href={routes.topic(curArticle.topicId)} title="Articles by others on the same topic">
-            <TopicIcon title={false} /> {curArticle.topicCount - 1}{toplevel ? <> By others<span className="mobile-hide"> on same topic</span></> : ''}
+            <TopicIcon title={null} /> {curArticle.topicCount - 1}{toplevel ? <> By others<span className="mobile-hide"> on same topic</span></> : ''}
           </a>
         }
         {' '}
         <a className="issues btn" href={routes.articleIssues(curArticle.slug)} title="Discussions">
-          <IssueIcon title={false} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
+          <IssueIcon title={null} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
       </>
     }
     {toplevel &&
@@ -153,7 +160,7 @@ function WebMeta({
         {article.list === false &&
           <>
             {' '}
-            <span className="pill"><UnlistedIcon /> unlisted</span>
+            <span className="pill"><a href={`${docsUrl}/ourbigbook-web-unlisted-articles`}><UnlistedIcon /> Unlisted</a></span>
           </>
         }
       </>
@@ -171,12 +178,17 @@ function WebMeta({
           </a>
         </span>
         {' '}
-        {!isIssue &&
+        {(
+          !isIssue &&
+          // canEdit check above is not enough because admin can edit but
+          // cannot add children.
+          loggedInUser.username === curArticle.author.username
+        ) &&
           <>
             <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is the first child of this one">
-              {' '}<NewArticleIcon title={false}/>
+              {' '}<NewArticleIcon title={null}/>
               {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
-              <i className="ion-arrow-down-c"/>{toplevel ? <> Add child<span className="mobile-hide"> article</span></> : ''}{' '}
+              <ChildrenIcon title={null} />{toplevel ? <> Add child<span className="mobile-hide"> article</span></> : ''}{' '}
             </a>
             {' '}
             {!isIndex &&
@@ -185,7 +197,7 @@ function WebMeta({
                 className="btn new"
                 title="Create a new article that is the next sibling of this one"
               >
-                {' '}<NewArticleIcon title={false}/>{toplevel ? ' ' : ''}<i className="ion-arrow-right-c"/>{toplevel ? <> Add sibling<span className="mobile-hide"> article</span></> : ''}{' '}
+                {' '}<NewArticleIcon title={null}/>{toplevel ? ' ' : ''}<ArrowRightIcon />{toplevel ? <> Add sibling<span className="mobile-hide"> article</span></> : ''}{' '}
               </a>
             }
           </>
@@ -196,7 +208,7 @@ function WebMeta({
       <>
         {(curArticle.hasSameTopic)
           ? <>
-              {article.slug !== mySlug &&
+              {curArticle.slug !== mySlug &&
                 <>
                   {' '}
                   <SeeMyOwnVersionOfThisTopic slug={mySlug} toplevel={toplevel} />
@@ -747,7 +759,7 @@ export default function Article({
       }}/>)
       html += elem.outerHTML + a.render
       if (a.taggedArticles) {
-        html += `<p><b>${TAGS_MARKER} Tagged</b></p>`
+        html += `<p><b>${TAGS_MARKER} Tagged</b> (<b><a href="${routes.userArticlesTagged(a.author.username, a.topicId)}">${renderToString(<SeeIcon />)} See all</a></b>)</p>`
         html += '<div className="content-not-ourbigbook">'
         html += renderToString(LinkListNoTitle( {...{ articles: a.taggedArticles, linkPref } }))
         //for (const t of a.taggedArticles) {
@@ -809,7 +821,14 @@ export default function Article({
         : <>
             <div className="content-not-ourbigbook">
               <div className="ourbigbook-title">
-                {LinkList(tagged, TAGGED_ID_UNRESERVED, TAGS_MARKER, 'Tagged', linkPref)}
+                {LinkList(
+                  tagged,
+                  TAGGED_ID_UNRESERVED,
+                  TAGS_MARKER,
+                  'Tagged',
+                  linkPref,
+                  { href: routes.userArticlesTagged(article.author.username, article.topicId) }
+                )}
                 {(ancestors.length !== 0) && <>
                   <h2 id={ANCESTORS_ID}>
                     <a
@@ -831,7 +850,14 @@ export default function Article({
                     )}
                   </ol>
                 </>}
-                {LinkList(incomingLinks, INCOMING_LINKS_ID_UNRESERVED, INCOMING_LINKS_MARKER, 'Incoming links', linkPref)}
+                {LinkList(
+                  incomingLinks,
+                  INCOMING_LINKS_ID_UNRESERVED,
+                  INCOMING_LINKS_MARKER,
+                  'Incoming links',
+                  linkPref,
+                  { href: routes.userArticlesIncoming(article.author.username, article.topicId) },
+                )}
                 {LinkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
                 <p className="navlink"><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></p>
               </div>

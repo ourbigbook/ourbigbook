@@ -24,7 +24,6 @@ function issue(slug, number) {
 
 module.exports = {
   home: () => `/`,
-  articlesFollowed: (opts={}) => `/${encodeGetParamsWithPage(opts)}`,
   articles: (opts={}) => `/${escapeUsername}/articles${encodeGetParamsWithPage(opts)}`,
   articleComments: (slug, opts={}) => `/${escapeUsername}/comments/${slug}${encodeGetParamsWithPage(opts)}`,
   articleDelete: slug => `/${escapeUsername}/delete/${slug}`,
@@ -32,6 +31,7 @@ module.exports = {
   articleIssues: (slug, opts={}) => `/${escapeUsername}/discussions/${slug}${encodeGetParamsWithPage(opts)}`,
   articleNew: (opts={}) => `/${escapeUsername}/new${encodeGetParams(opts)}`,
   articleNewFrom: (slug) => `/${escapeUsername}/new/${slug}`,
+  articlesFollowed: (opts={}) => `/${encodeGetParamsWithPage(opts)}`,
   articleSource: (slug) => `/${escapeUsername}/source/${slug}`,
   article: slug => `/${slug}`,
   comments: (opts={}) => `/${escapeUsername}/comments${encodeGetParamsWithPage(opts)}`,
@@ -53,6 +53,9 @@ module.exports = {
   userVerify: (email) => `/${escapeUsername}/verify${encodeGetParams({ email })}`,
   user: (uid) => `/${uid}`,
   userArticles: (uid, opts={}) => `/${escapeUsername}/user/${uid}/articles${encodeGetParamsWithPage(opts)}`,
+  userArticlesChildren: (uid, tagTopicId, opts={}) => `/${escapeUsername}/user/${uid}/children/${tagTopicId}${encodeGetParamsWithPage(opts)}`,
+  userArticlesIncoming: (uid, tagTopicId, opts={}) => `/${escapeUsername}/user/${uid}/incoming/${tagTopicId}${encodeGetParamsWithPage(opts)}`,
+  userArticlesTagged: (uid, tagTopicId, opts={}) => `/${escapeUsername}/user/${uid}/tagged/${tagTopicId}${encodeGetParamsWithPage(opts)}`,
   userComments: (uid, opts={}) => `/${escapeUsername}/user/${uid}/comments${encodeGetParamsWithPage(opts)}`,
   userIssues: (uid, opts={}) => `/${escapeUsername}/user/${uid}/discussions${encodeGetParamsWithPage(opts)}`,
   userFollows: (uid, opts={}) => `/${escapeUsername}/user/${uid}/follows${encodeGetParamsWithPage(opts)}`,

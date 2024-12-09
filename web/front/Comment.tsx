@@ -2,7 +2,7 @@ import React from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 
-import { CommentIcon, SeeIcon, TimeIcon } from 'front'
+import { CommentIcon, DeleteIcon, TimeIcon } from 'front'
 import { getCommentSlug } from 'front/js'
 import Maybe from 'front/Maybe'
 import { webApi } from 'front/api'
@@ -58,7 +58,7 @@ const Comment = ({
             className="btn"
             onClick={() => handleDelete(comment.id)}
           >
-            <i className="icon ion-trash-a" /> Delete comment
+            <DeleteIcon title={null} /> Delete comment
           </button>
         </Maybe>
       </div>

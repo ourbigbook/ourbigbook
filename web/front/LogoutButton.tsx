@@ -1,6 +1,9 @@
 import Router from 'next/router'
 
-import { logout } from 'front'
+import {
+  LogoutIcon,
+  logout
+} from 'front'
 
 const LogoutButton = () => {
   const handleLogout = async (e) => {
@@ -9,7 +12,7 @@ const LogoutButton = () => {
     Router.push(`/`)
   };
   return (
-    <button className="btn" onClick={handleLogout}><i className="ion-log-out"></i> Logout</button>
+    <button className="btn" onClick={handleLogout}><LogoutIcon /> Logout</button>
   );
 };
 

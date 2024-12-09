@@ -678,7 +678,7 @@ export default function EditorPageHoc({
                     ref={saveButtonElem}
                     tabIndex={-1}
                   >
-                    <OkIcon />&nbsp;{isNew ? `Publish ${capitalize(itemType)}` : 'Save Changes'}
+                    <OkIcon title={null} />&nbsp;{isNew ? `Publish ${capitalize(itemType)}` : 'Save Changes'}
                   </button>
                   {' '}
                   <button
@@ -687,7 +687,7 @@ export default function EditorPageHoc({
                     onClick={handleCancel}
                     tabIndex={-1}
                   >
-                    <CancelIcon />&nbsp;Cancel
+                    <CancelIcon title={null}/>&nbsp;Cancel
                   </button>
                 </div>
               </div>

@@ -12,14 +12,18 @@ import {
   isProduction
 } from 'front/config';
 import Navbar from 'front/Navbar'
-import { AppContextProvider, HelpIcon, logout } from 'front'
+import {
+  AppContextProvider,
+  FontAwesomeIcon,
+  HelpIcon,
+  IssueIcon,
+} from 'front'
 import routes from 'front/routes'
 
 // Css
 // migrating the local ourbigbook to webpack: https://github.com/ourbigbook/ourbigbook/issues/157
 import 'ourbigbook/dist/ourbigbook.css'
 import 'ourbigbook/editor.scss'
-import 'ionicons/css/ionicons.min.css'
 import 'style.scss'
 
 function handleRouteChange(url) {
@@ -87,11 +91,12 @@ const MyApp = ({ Component, pageProps }) => {
           <footer>
             <a href={aboutUrl}><HelpIcon /> About</a>
             <a href={donateUrl}>$ Donate</a>
-            <a href={`${docsUrl}#ourbigbook-com-content-license`}><i className="ion-document-text" /> Content license: CC BY-SA 4.0 unless noted</a>
-            <a href="https://github.com/ourbigbook/ourbigbook/tree/master/web"><i className="ion-social-github" /> Website source code</a>
-            <a href={contactUrl}><i className="ion-ios-chatbubble" /> Contact, bugs, suggestions, abuse reports</a>
-            <a href="https://twitter.com/OurBigBook"><i className="ion-social-twitter" /> @OurBigBook</a>
-            <a href="https://www.youtube.com/@OurBigBook"><i className="ion-social-youtube" /> @OurBigBook</a>
+            <a href={`${docsUrl}#ourbigbook-com-content-license`}>{FontAwesomeIcon(0xf15c)} Content license: CC BY-SA 4.0 unless noted</a>
+            <a href="https://github.com/ourbigbook/ourbigbook/tree/master/web">{FontAwesomeIcon(0xf09b, { cls: 'fa-brands-400' })} Website source code</a>
+            <a href={contactUrl}><IssueIcon /> Contact, bugs, suggestions, abuse reports</a>
+            <a href="https://mastodon.social/@ourbigbook">{FontAwesomeIcon(0xf4f6, { cls: 'fa-brands-400' })} @ourbigbook</a>
+            <a href="https://twitter.com/OurBigBook">{FontAwesomeIcon(0xf099, { cls: 'fa-brands-400' })} @OurBigBook</a>
+            <a href="https://www.youtube.com/@OurBigBook">{FontAwesomeIcon(0xf167, { cls: 'fa-brands-400' })} @OurBigBook</a>
           </footer>
         }
       </div>

@@ -7,6 +7,8 @@ import { mutate } from 'swr'
 
 import ourbigbook, {
   Macro,
+  INCOMING_LINKS_MARKER,
+  TAGS_MARKER,
 } from 'ourbigbook'
 
 import { webApi } from 'front/api'
@@ -32,13 +34,13 @@ export function capitalize(s) {
 
 export function CreateMyOwnVersionOfThisTopic({ titleSource, toplevel } : { titleSource: string, toplevel: boolean}) {
   return <Link href={routes.articleNew({ title: titleSource })} className="btn new" title="Create my own version of this topic">
-    {' '}<NewArticleIcon title={false}/>{toplevel ? ' Create my own version' : ''}{' '}
+    {' '}<NewArticleIcon title={null}/>{toplevel ? ' Create my own version' : ''}{' '}
   </Link>
 }
 
 export function SeeMyOwnVersionOfThisTopic({ slug, toplevel } : { slug: string, toplevel: boolean}) {
   return <Link href={routes.article(slug)} className="btn see" title="See my version of this topic">
-    {' '}<SeeIcon title={false}/>{toplevel ? ' See my version' : ''}{' '}
+    {' '}<SeeIcon title={null}/>{toplevel ? ' See my version' : ''}{' '}
   </Link>
 }
 
@@ -116,95 +118,158 @@ export function Icon(cls, title, opts) {
   return <i className={extraClasses.concat([cls, 'icon']).join(' ')} title={showTitle ? title : undefined } />
 }
 
+
+type FontAwesomeIconOptsType = {
+  title?: string|null
+}
+
+export function FontAwesomeIcon(
+  code,
+  opts: {
+    cls?: string,
+    clsExtra?: string[],
+    title?: string,
+    opts?: FontAwesomeIconOptsType,
+  } ={}
+) {
+  let { cls, clsExtra, opts: _opts, title } = opts
+  const classes = ['icon']
+  if (cls === undefined) {
+    cls = 'fa-solid-900'
+  }
+  if (_opts === undefined) {
+    _opts = {}
+  }
+  classes.push(cls)
+  if (clsExtra === undefined) {
+    clsExtra = []
+  }
+  classes.push(...clsExtra)
+  return <span
+    title={_opts.title !== null ? _opts.title : title}
+    className={classes.join(' ')}
+   >
+    {String.fromCharCode(code)}
+  </span>
+}
+
 export function ArticleIcon(opts) {
-  return Icon("ion-ios-book", "Article", opts)
+  return FontAwesomeIcon(0xf518, { opts, title: "Article" })
 }
 
 export function ArrowUpIcon(opts) {
-  return Icon("ion-arrow-up-c", undefined, opts)
+  return FontAwesomeIcon(0xf062, { opts })
+}
+
+export function ArrowRightIcon(opts) {
+  return FontAwesomeIcon(0xf061, { opts })
 }
 
 export function CancelIcon(opts) {
-  return Icon("ion-close", "Cancel", opts)
+  return FontAwesomeIcon(0xf00d, { clsExtra: ['icon-cancel'], opts, title: "Cancel" })
+}
+
+export function ChildrenIcon(opts) {
+  return FontAwesomeIcon(0xf063, { opts, title: "Children" })
 }
 
 export function CommentIcon(opts) {
-  return Icon("ion-chatbubbles", "Comment", opts)
+  return FontAwesomeIcon(0xf086, { opts, title: "Comments" })
 }
 
 export function DeleteIcon(opts) {
-  return Icon("ion-ios-trash", "Delete", opts)
+  return FontAwesomeIcon(0xf2ed, { clsExtra: ['icon-delete'], opts, title: "Delete" })
 }
 export function EditArticleIcon(opts) {
-  return Icon("ion-edit", "Edit", opts)
+  return FontAwesomeIcon(0xf044, { opts, title: "Edit" })
 }
 
 export function ErrorIcon(opts) {
-  return Icon("ion-close", "Edit", opts)
+  return FontAwesomeIcon(0xf00d, { clsExtra: ['icon-error'], opts, title: "Error" })
 }
 
-export function HelpIcon(opts={}) {
-  return Icon("ion-help-circled", "Help", opts)
+export function FollowIcon(opts) {
+  // https://fontawesome.com/icons/eye?f=classic&s=regular
+  return FontAwesomeIcon(0xf06e, { opts, title: "Follow" })
 }
 
-export function HomeIcon(opts) {
-  return Icon("ion-android-home", "Home", opts)
+export function HelpIcon(opts) {
+  return FontAwesomeIcon(0xf05a, { opts, title: "Help" })
+}
+
+export function IncomingIcon() {
+  return <span dangerouslySetInnerHTML={{ __html: INCOMING_LINKS_MARKER }} />
 }
 
 export function IssueIcon(opts) {
-  return Icon("ion-ios-chatbubble", "Discussion", opts)
+  return FontAwesomeIcon(0xf075, { opts, title: "Discussion" })
 }
 
 export function LikeIcon(opts) {
-  return Icon("ion-heart", "Like", opts)
+  return FontAwesomeIcon(0xf004, { clsExtra: ['icon-heart'], opts, title: "Like" })
+}
+
+export function LogoutIcon(opts) {
+  return FontAwesomeIcon(0xf2f5, { opts, title: "Logout" })
 }
 
 export function MoreIcon(opts) {
-  return Icon("ion-information-circled", "More", opts)
+  return FontAwesomeIcon(0xf05a, { opts, title: "More" })
 }
 
 export function NewArticleIcon(opts) {
-  return Icon("ion-plus", "New", opts)
-}
-
-export function NotificationIcon(opts) {
-  return Icon("i ion-ios-bell", "Notifications", opts)
+  return FontAwesomeIcon(0x2b, { opts, title: "New" })
 }
 
 export function OkIcon(opts) {
-  return Icon("ion-checkmark", "Cancel", opts)
+  return FontAwesomeIcon(0xf00c, { clsExtra: ['icon-ok'], opts, title: "Submit" })
+  
 }
 
 export function PinnedArticleIcon(opts) {
-  return Icon("ion-pin", "Pinned Article", opts)
+  return FontAwesomeIcon(0xf08d, { opts, title: "Pin" })
+  
 }
 
 export function SeeIcon(opts) {
-  return Icon("ion-eye", "View", opts)
+  // https://fontawesome.com/icons/eye?f=classic&s=regular
+  return FontAwesomeIcon(0xf06e, { opts, title: "View" })
 }
 
 export function SettingsIcon(opts) {
-  return Icon("ion-gear-a", "Settings", opts)
+  return FontAwesomeIcon(0xf013, { opts, title: "Settings" })
 }
 
 export function SourceIcon(opts) {
-  return Icon("ion-document-text", "View", opts)
+  return FontAwesomeIcon(0xf15c, { opts, title: "Source" })
+}
+
+export function StarIcon(opts) {
+  return FontAwesomeIcon(0xf005, { clsExtra: ['icon-star'], opts, title: "Admin" })
+}
+
+export function TagIcon() {
+  return <span dangerouslySetInnerHTML={{ __html: TAGS_MARKER }} />
 }
 
 export function TimeIcon(opts) {
-  return Icon("ion-android-time", undefined, opts)
+  return FontAwesomeIcon(0xf017, { cls: 'fa-regular-400 '})
 }
 
 export function TopicIcon(opts) {
-  return Icon("ion-ios-people", "Topic", opts)
+  return FontAwesomeIcon(0xf500, { opts, title: "Topic" })
 }
 
 export function UserIcon(opts) {
-  return Icon("ion-ios-person", "User", opts)
+  return FontAwesomeIcon(0xf007, { opts, title: "User" })
+}
+
+export function UnfollowIcon(opts) {
+  return FontAwesomeIcon(0xf070, { opts, title: "Unfollow" })
 }
 
 export function UnlistedIcon(opts) {
-  return Icon("ion-eye-disabled", "Unlisted", opts)
+  return FontAwesomeIcon(0xf070, { opts, title: "Unlisted" })
 }
 
 export function SignupOrLogin(

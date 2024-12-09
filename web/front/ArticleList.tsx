@@ -240,7 +240,7 @@ const ArticleList = ({
               value={search}
             />
           }
-          {itemTypeHasShowBody ? <ShowBody {...{ setShowBodyState, showBodyState, showBody }}/> : <></>}
+          {(itemTypeHasShowBody && articles.length !== 0) ? <ShowBody {...{ setShowBodyState, showBodyState, showBody }}/> : <></>}
         </nav>
         { (articles.length === 0)
           ? <div className="list-container content-not-ourbigbook">

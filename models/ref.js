@@ -49,8 +49,11 @@ module.exports = (sequelize) => {
       indexes: [
         // For the query that checks for corresponding \x magic inflections.
         { fields: ['defined_at', 'defined_at_line', 'defined_at_col', 'type'], },
-        { fields: ['from_id', 'type'], },
-        { fields: ['to_id', 'type'], },
+        // Find all children/tagged articles. In the case of children,
+        // also allow ordering in the tree order with to_id_index.
+        { fields: ['from_id', 'type', 'to_id_index'], },
+        // Reverse of the above.
+        { fields: ['to_id', 'type', 'to_id_index'], },
         { fields: ['from_id', 'defined_at', 'to_id', 'type'], },
         //// This would be a good sanity check.
         //// But it fails for synonyms, which currently have the same parent and index.

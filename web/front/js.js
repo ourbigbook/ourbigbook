@@ -63,12 +63,19 @@ const ALLOWED_SORTS_DEFAULT = {
   updated: 'updatedAt',
 }
 
+/** By default we order by DESC because it works well with createdAt/updatedAt and score.
+ * But for these things, notably alphabetical listings, we want to sort alphabetically instead by default. */
 const SORT_WITH_DEFAULT_ASC = new Set([
+  'slug',
+  'topicId',
   'username',
 ])
+const ASC_GET_SUFFIX  = '-asc'
+const DESC_GET_SUFFIX  = '-desc'
 
 function getOrder(req, opts={}) {
   let sort = req.query.sort
+  let ascDesc
   let {
     allowedSorts,
     allowedSortsExtra,
@@ -85,6 +92,13 @@ function getOrder(req, opts={}) {
   }
   let ret, err
   if (sort) {
+    if (sort.endsWith(ASC_GET_SUFFIX)) {
+      ascDesc = 'asc'
+      sort = sort.substring(0, sort.length - ASC_GET_SUFFIX.length)
+    } else if (sort.endsWith(DESC_GET_SUFFIX)) {
+      ascDesc = 'desc'
+      sort = sort.substring(0, sort.length - DESC_GET_SUFFIX.length)
+    }
     const allowedSortsEff = Object.assign(
       {},
       allowedSorts,
@@ -109,7 +123,7 @@ function getOrder(req, opts={}) {
   } else {
     ret = default_
   }
-  return [ret, err, SORT_WITH_DEFAULT_ASC.has(ret) ? 'ASC' : 'DESC']
+  return [ret, err, ascDesc ? ascDesc : SORT_WITH_DEFAULT_ASC.has(ret) ? 'ASC' : 'DESC']
 }
 
 /**
@@ -121,7 +135,7 @@ function getPage(page='1') {
   const [pageNum, ok] = typecastInteger(page)
   if (ok) {
     if (pageNum <= 0) {
-      return [0, 'The page must be postive']
+      return [0, 'The page must be positive']
     } else {
       return [pageNum - 1,]
     }
@@ -243,6 +257,18 @@ function idToSlug(id) {
   return id.slice(ourbigbook.AT_MENTION_CHAR.length)
 }
 
+function uidTopicIdToId(uid, topicId) {
+  return ourbigbook.AT_MENTION_CHAR + uidTopicIdToSlug(uid, topicId)
+}
+
+function uidTopicIdToSlug(uid, topicId) {
+  let ret =  `${uid}`
+  if (topicId) {
+    ret = `${ret}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${topicId}`
+  }
+  return ret
+}
+
 function slugToId(slug) {
   return ourbigbook.AT_MENTION_CHAR + slug
 }
@@ -271,4 +297,5 @@ module.exports = {
   modifyEditorInput,
   typecastBoolean,
   typecastInteger,
+  uidTopicIdToId,
 }

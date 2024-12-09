@@ -1,16 +1,21 @@
 import { useRouter } from 'next/router'
+import Link from 'next/link'
 import React from 'react'
 
 import pluralize from 'pluralize'
 
 import {
   ArticleIcon,
+  ChildrenIcon,
   CommentIcon,
-  HomeIcon,
+  IncomingIcon,
   IssueIcon,
   LikeIcon,
   MyHead,
+  SettingsIcon,
+  StarIcon,
   UserIcon,
+  TagIcon,
   orderToPageTitle,
   useEEdit,
 } from 'front'
@@ -55,6 +60,9 @@ export interface UserPageProps extends CommonPropsType {
   order: string;
   orderAscDesc: string;
   page: number;
+  // For when listed articles are relative to another article,
+  // e.g. tagged by, incoming links or children.
+  parentArticle?: ArticleLinkType;
   synonymLinks?: ArticleLinkType[];
   tagged?: ArticleLinkType[];
   topIssues?: IssueType[];
@@ -72,6 +80,9 @@ export interface UserPageProps extends CommonPropsType {
     'likes' |
     'likes-discussions' |
     'user-articles' |
+    'user-child-articles' |
+    'user-incoming-articles' |
+    'user-tagged-articles' |
     'user-comments' |
     'user-issues'
   ;
@@ -97,6 +108,7 @@ export default function UserPage({
   order,
   orderAscDesc,
   page,
+  parentArticle,
   synonymLinks,
   tagged,
   topIssues,
@@ -159,7 +171,7 @@ export default function UserPage({
         <div className="name-and-image">
           <div className="no-image">
             <h1>
-              <DisplayAndUsername user={user} showParenthesis={false} />
+              <a href={routes.user(user.username)}><DisplayAndUsername user={user} showParenthesis={false} /></a>
             </h1>
             <div className="user-actions">
               <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
@@ -171,116 +183,130 @@ export default function UserPage({
                   href={routes.userEdit(user.username)}
                   className="btn btn-sm btn-outline-secondary action-btn"
                 >
-                  <i className="ion-gear-a" /> Settings
+                  <SettingsIcon /> Settings
                 </CustomLink>
               </Maybe>
               {isCurrentUser &&
                 <LogoutButton />
               }
-              {user.admin && <span className="h2 inline"><i className="ion-star" /> <a href={`${config.docsAdminUrl}`}>Admin</a> <i className="ion-star" /> </span>}
+              {user.admin && <span className="h2 inline"><a href={`${config.docsAdminUrl}`}><StarIcon /> Admin <StarIcon /></a></span>}
             </div>
           </div>
-          <CustomImage
-            src={user.effectiveImage}
-            alt="User's profile image"
-            className="user-img"
-          />
+          <a href={routes.user(user.username)}>
+            <CustomImage
+              src={user.effectiveImage}
+              alt="User's profile image"
+              className="user-img"
+            />
+          </a>
         </div>
-        <div className="tab-list">
-          <CustomLink
-            href={routes.user(username)}
-            className={`tab-item${what === 'home' ? ' active' : ''}`}
-          >
-            <HomeIcon /> Home
-          </CustomLink>
-          <CustomLink
-            href={routes.userArticles(username, { sort: 'score' })}
-            className={`tab-item${what === 'user-articles' && order === 'score' ? ' active' : ''}`}
-          >
-            <ArticleIcon /> Top<span className="mobile-hide"> articles</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userArticles(username, { sort: 'created' })}
-            className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
-          >
-            <ArticleIcon /> New<span className="mobile-hide"> articles</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userArticles(username, { sort: 'updated' })}
-            className={`tab-item${what === 'user-articles' && order === 'updatedAt' ? ' active' : ''}`}
-          >
-            <ArticleIcon /> Updated<span className="mobile-hide"> articles</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userIssues(user.username, { sort: 'created' })}
-            className={`tab-item${what === 'user-issues' && order === 'createdAt' ? ' active' : ''}`}
-          >
-            <IssueIcon /> New<span className="mobile-hide"> discussions</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userIssues(user.username, { sort: 'score' })}
-            className={`tab-item${what === 'user-issues' && order === 'score' ? ' active' : ''}`}
-          >
-            <IssueIcon /> Top<span className="mobile-hide"> discussions</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userComments(user.username, { sort: 'created' })}
-            className={`tab-item${what === 'user-comments' && order === 'createdAt' ? ' active' : ''}`}
-          >
-            <CommentIcon /> New<span className="mobile-hide"> comments</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userFollows(username)}
-            className={`tab-item${what === 'follows' ? ' active' : ''}`}
-          >
-            <UserIcon /> Follows
-          </CustomLink>
-          <CustomLink
-            href={routes.userFollowed(username)}
-            className={`tab-item${what === 'followed' ? ' active' : ''}`}
-          >
-            <UserIcon /> Followed by
-          </CustomLink>
-          <CustomLink
-            href={routes.userLikes(username)}
-            className={`tab-item${what === 'likes' ? ' active' : ''}`}
-          >
-            <ArticleIcon /> Liked<span className="mobile-hide"> articles</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userFollowsArticles(username)}
-            className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
-          >
-            <ArticleIcon /> Followed<span className="mobile-hide"> articles</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userLikesDiscussions(username)}
-            className={`tab-item${what === 'likes-discussions' ? ' active' : ''}`}
-          >
-            <IssueIcon /> Liked<span className="mobile-hide"> discussions</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userFollowsDiscussions(username)}
-            className={`tab-item${what === 'followed-discussions' ? ' active' : ''}`}
-          >
-            <IssueIcon /> Followed<span className="mobile-hide"> discussions</span>
-          </CustomLink>
-          <CustomLink
-            href={routes.userLiked(username)}
-            className={`tab-item${what === 'liked' ? ' active' : ''}`}
-          >
-            <LikeIcon /> Received<span className="mobile-hide"> likes</span>
-          </CustomLink>
-          {false &&
-            // TODO https://github.com/ourbigbook/ourbigbook/issues/313
-            <CustomLink
-              href={routes.userLikedDiscussions(username)}
-              className={`tab-item${what === 'liked-discussions' ? ' active' : ''}`}
-            >
-              <LikeIcon /><IssueIcon /> Received<span className="mobile-hide"> discussion likes</span>
-            </CustomLink>
+        {parentArticle
+          ? <div className="parent-article">
+              <h2>{
+                  what === 'user-child-articles' ? <><ChildrenIcon /> Children</> :
+                  what === 'user-incoming-articles' ? <><IncomingIcon /> Incoming links</> :
+                  what === 'user-tagged-articles' ? <><TagIcon /> Tagged</> :
+                  (() => { throw new Error("TODO shit's bugged") })()
+                }:
+                {' '}
+                <Link href={routes.article(parentArticle.slug)}>
+                  <span
+                    className="ourbigbook-title title"
+                    dangerouslySetInnerHTML={{ __html: parentArticle.titleRender }}
+                  />
+                </Link>
+              </h2>
+            </div>
+          : <div className="tab-list">
+              <CustomLink
+                href={routes.userArticles(username, { sort: 'score' })}
+                className={`tab-item${what === 'user-articles' && order === 'score' ? ' active' : ''}`}
+              >
+                <ArticleIcon /> Top<span className="mobile-hide"> articles</span>
+              </CustomLink>
+              <CustomLink
+                href={routes.userArticles(username, { sort: 'created' })}
+                className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
+              >
+                <ArticleIcon /> New<span className="mobile-hide"> articles</span>
+              </CustomLink>
+              <CustomLink
+                href={routes.userArticles(username, { sort: 'updated' })}
+                className={`tab-item${what === 'user-articles' && order === 'updatedAt' ? ' active' : ''}`}
+              >
+                <ArticleIcon /> Updated<span className="mobile-hide"> articles</span>
+              </CustomLink>
+              <CustomLink
+                href={routes.userIssues(user.username, { sort: 'created' })}
+                className={`tab-item${what === 'user-issues' && order === 'createdAt' ? ' active' : ''}`}
+              >
+                <IssueIcon /> New<span className="mobile-hide"> discussions</span>
+              </CustomLink>
+              <CustomLink
+                href={routes.userIssues(user.username, { sort: 'score' })}
+                className={`tab-item${what === 'user-issues' && order === 'score' ? ' active' : ''}`}
+              >
+                <IssueIcon /> Top<span className="mobile-hide"> discussions</span>
+              </CustomLink>
+              <CustomLink
+                href={routes.userComments(user.username, { sort: 'created' })}
+                className={`tab-item${what === 'user-comments' && order === 'createdAt' ? ' active' : ''}`}
+              >
+                <CommentIcon /> New<span className="mobile-hide"> comments</span>
+              </CustomLink>
+              <CustomLink
+                href={routes.userFollows(username)}
+                className={`tab-item${what === 'follows' ? ' active' : ''}`}
+              >
+                <UserIcon /> Follows
+              </CustomLink>
+              <CustomLink
+                href={routes.userFollowed(username)}
+                className={`tab-item${what === 'followed' ? ' active' : ''}`}
+              >
+                <UserIcon /> Followed by
+              </CustomLink>
+              <CustomLink
+                href={routes.userLikes(username)}
+                className={`tab-item${what === 'likes' ? ' active' : ''}`}
+              >
+                <ArticleIcon /> Liked<span className="mobile-hide"> articles</span>
+              </CustomLink>
+              <CustomLink
+                href={routes.userFollowsArticles(username)}
+                className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
+              >
+                <ArticleIcon /> Followed<span className="mobile-hide"> articles</span>
+              </CustomLink>
+              <CustomLink
+                href={routes.userLikesDiscussions(username)}
+                className={`tab-item${what === 'likes-discussions' ? ' active' : ''}`}
+              >
+                <IssueIcon /> Liked<span className="mobile-hide"> discussions</span>
+              </CustomLink>
+              <CustomLink
+                href={routes.userFollowsDiscussions(username)}
+                className={`tab-item${what === 'followed-discussions' ? ' active' : ''}`}
+              >
+                <IssueIcon /> Followed<span className="mobile-hide"> discussions</span>
+              </CustomLink>
+              <CustomLink
+                href={routes.userLiked(username)}
+                className={`tab-item${what === 'liked' ? ' active' : ''}`}
+              >
+                <LikeIcon /> Received<span className="mobile-hide"> likes</span>
+              </CustomLink>
+              {false &&
+                // TODO https://github.com/ourbigbook/ourbigbook/issues/313
+                <CustomLink
+                  href={routes.userLikedDiscussions(username)}
+                  className={`tab-item${what === 'liked-discussions' ? ' active' : ''}`}
+                >
+                  <LikeIcon /><IssueIcon /> Received<span className="mobile-hide"> discussion likes</span>
+                </CustomLink>
+              }
+            </div>
           }
-        </div>
       </div>
       {what === 'home' &&
         <Article {...{

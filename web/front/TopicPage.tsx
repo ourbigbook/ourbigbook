@@ -119,7 +119,7 @@ export const TopicPage = ({
                   href={routes.articleNew({ 'title': titleText })}
                   updatePreviousPage={true}
                 >
-                  <NewArticleIcon title={false}/>{' '}Create the first article for this topic
+                  <NewArticleIcon title={null}/>{' '}Create the first article for this topic
                 </CustomLink>
               </div>
               <TopicsHelp className="p" />

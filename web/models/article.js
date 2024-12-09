@@ -1157,6 +1157,9 @@ WHERE
     offset,
     order,
     orderAscDesc,
+    parentId,
+    parentFromTo='to',
+    parentType,
     rows=true,
     searchTopicId,
     sequelize,
@@ -1164,6 +1167,7 @@ WHERE
     topicId,
     transaction,
   }) {
+    const { Article, File, Id, Ref, User } = sequelize.models
     if (orderAscDesc === undefined) {
       orderAscDesc = 'DESC'
     }
@@ -1184,35 +1188,62 @@ WHERE
     if (searchTopicId !== undefined) {
       where.topicId = sequelizeWhereStartsWith(sequelize, searchTopicId, '"Article"."topicId"')
     }
-    const fileInclude = []
     const authorInclude = {
-      model: sequelize.models.User,
+      model: User,
       as: 'author',
       required: true,
+      subQuery: false,
     }
     if (author) {
       authorInclude.where = { username: author }
     }
+    const fileInclude = []
     fileInclude.push(authorInclude)
     if (includeParentAndPreviousSibling) {
       fileInclude.push(Article.getArticleIncludeParentAndPreviousSiblingFileInclude(sequelize))
     }
+    if (parentId) {
+      const parentFromToOther = parentFromTo === 'to' ? 'from' : 'to'
+      fileInclude.push({
+        model: Id,
+        as: 'toplevelId',
+        required: true,
+        subQuery: false,
+        include: [{
+          model: Ref,
+          as: parentFromTo,
+          required: true,
+          subQuery: false,
+          where: {
+            [`${parentFromToOther}_id`]: parentId,
+            type: parentType,
+          },
+          include: [{
+            model: Id,
+            as: parentFromToOther,
+            required: true,
+            subQuery: false,
+          }]
+        }]
+      })
+    }
     const include = [{
-      model: sequelize.models.File,
+      model: File,
       as: 'file',
       include: fileInclude,
       required: true,
+      subQuery: false,
     }]
     if (followedBy) {
       include.push({
-        model: sequelize.models.User,
+        model: User,
         as: 'followers',
         where: { username: followedBy },
       })
     }
     if (likedBy) {
       include.push({
-        model: sequelize.models.User,
+        model: User,
         as: 'articleLikedBy',
         where: { username: likedBy },
       })
@@ -1249,6 +1280,7 @@ WHERE
       limit,
       offset,
       order: orderList,
+      subQuery: false,
       transaction,
       where,
     }
@@ -1258,13 +1290,13 @@ WHERE
     let ret, articles
     if (count) {
       if (rows) {
-        ret = await sequelize.models.Article.findAndCountAll(findArgs)
+        ret = await Article.findAndCountAll(findArgs)
         articles = ret.rows
       } else {
-        ret = { count: await sequelize.models.Article.count(findArgs) }
+        ret = { count: await Article.count(findArgs) }
       }
     } else {
-      ret = await sequelize.models.Article.findAll(findArgs)
+      ret = await Article.findAll(findArgs)
       articles = ret
     }
     if (includeParentAndPreviousSibling) {
@@ -1787,10 +1819,10 @@ LIMIT ${limit}` : ''}
   Article.slugTransform = slugTransform
 
   Article.ALLOWED_SORTS_EXTRA = {
-    'score': undefined,
     'follower-count': 'followerCount',
-    'issues': 'issueCount',
     'id': 'topicId',
+    'issues': 'issueCount',
+    'score': undefined,
   }
 
   return Article

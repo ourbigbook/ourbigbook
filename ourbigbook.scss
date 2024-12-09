@@ -6,14 +6,8 @@
 @use 'katex/dist/katex.min.css';
 @use 'tablesort/tablesort.css';
 @import 'ourbigbook.common.scss';
-@font-face { font-family: fa-brands-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.woff2); }
-@font-face { font-family: fa-regular-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2); }
-@font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
 
 $caption-margin-vert: 0.4em;
-// Without this, hover on ToC makes ToC move around. Maybe we should scope to ToC only?
-// TODO find proper way to do it without this random value.
-$icon-font-size: .95em;
 $line-height: 1.4;
 $sep-width: 1ch;
 
@@ -203,19 +197,6 @@ span {
 
 .caption-prefix {
   font-weight: bold;
-}
-
-.fa-regular-400, .fa-brands-400, .fa-solid-900 {
-  font-size: $icon-font-size;
-}
-.fa-regular-400 {
-  font-family: fa-regular-400;
-}
-.fa-brands-400 {
-  font-family: fa-brands-400;
-}
-.fa-solid-900 {
-  font-family: fa-solid-900;
 }
 
 // Hide by default, show if first child of hovered element.
@@ -721,7 +702,7 @@ video {
     @include img-border;
   }
 }
-.icon:not(.ion-heart) {
+.icon:not(.icon-heart) {
   color: $color;
 }
 }

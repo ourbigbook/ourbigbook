@@ -38,6 +38,9 @@ $font-family: Arial, Helvetica, sans-serif;
 // https://ux.stackexchange.com/questions/211/is-there-an-optimal-font-size
 $font-size: 16px;
 $header-font-size: 24px;
+// Without this, hover on ToC makes ToC move around. Maybe we should scope to ToC only?
+// TODO find proper way to do it without this random value.
+$icon-font-size: .95em;
 $max-mobile-width: 635px;
 $table-padding-sides: 10px;
 $table-padding-top: 10px;
@@ -54,6 +57,10 @@ $navbar-color-discrete: $color-discreet;
 $navbar-non-brandname-color: $a-color;
 $footer-color: $color;
 
+@font-face { font-family: fa-brands-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.woff2); }
+@font-face { font-family: fa-regular-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2); }
+@font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
+
 @mixin body {
   background-color: $background-color;
   color: $color;
@@ -65,6 +72,18 @@ $footer-color: $color;
     &:hover {
       text-decoration: underline;
     }
+  }
+  .fa-regular-400, .fa-brands-400, .fa-solid-900 {
+    font-size: $icon-font-size;
+  }
+  .fa-regular-400 {
+    font-family: fa-regular-400;
+  }
+  .fa-brands-400 {
+    font-family: fa-brands-400;
+  }
+  .fa-solid-900 {
+    font-family: fa-solid-900;
   }
 }
 

@@ -71,13 +71,13 @@ button, a.btn {
     &, &:hover.active {
       background-color: #181818;
       color: $button-fg-color;
-      i.ion-heart {
+      .icon-heart {
         color: $like-button-hover-color;
       }
     }
     &:hover, &.active {
       background-color: $button-hover-background-color;
-      i.ion-heart {
+      .icon-heart {
         color: white;
       }
     }
@@ -276,16 +276,16 @@ div.list-container {
 }
 
 .icon {
-  &:not(.ion-heart) {
+  &:not(.icon-heart) {
     color: $icon-color;
   }
-  &.ion-close {
+  &.icon-cancel,
+  &.icon-delete,
+  &.icon-error
+  {
     color: $ourbigbook-error-color;
   }
-  &.ion-trash-a {
-    color: $ourbigbook-error-color;
-  }
-  &.ion-checkmark {
+  &.icon-ok {
     color: $ourbigbook-ok-color;
   }
 }
@@ -330,6 +330,9 @@ span.pill {
   line-height: 1em;
   padding: 0.2em 0.5em;
   white-space: pre;
+  a {
+    color: $color;
+  }
 }
 
 // For elements that are injected into the rendered OurBigBook HTML.
@@ -353,30 +356,15 @@ span.pill {
         vertical-align: text-bottom;
       }
       .see, .new, .edit {
-        i {
+        .icon {
           padding: 0 4px;
         }
       }
     }
     .by-others, .issues, .see, .new, .edit {
-      i {
+      .icon {
         line-height: 1em;
         vertical-align: text-bottom;
-      }
-    }
-    .by-others {
-      i {
-        font-size: 1.3em;
-      }
-    }
-    .issues {
-      i {
-        font-size: 1.2em;
-      }
-    }
-    .see, .new, .edit {
-      i {
-        font-size: 1.2em;
       }
     }
   }
@@ -391,6 +379,11 @@ div.discussion-about {
     color: $a-color;
   }
   font-weight: bold;
+}
+div.parent-article {
+  a {
+    color: $a-color;
+  }
 }
 
 div.article-page {
@@ -412,7 +405,7 @@ div.article-page {
       }
       .by-others {
         font-weight: bold;
-        i {
+        .icon {
           font-size: 1.5em;
         }
       }
@@ -508,10 +501,10 @@ div.tab-list {
   }
 }
 
-i.ion-star {
+.icon.icon-star {
   color: yellow;
 }
-i.ion-heart {
+.icon.icon-heart {
   color: $like-button-hover-color;
 }
 
@@ -847,7 +840,7 @@ nav.navbar {
       //background-color: $like-button-inactive-color;
       //color: $like-button-active-color;
       // Need to go a bit custom here because of the golden background.
-      i.ion-heart {
+      .icon-heart {
         color: $heart-background-hover-color;
       }
       .txt {

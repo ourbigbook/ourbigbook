@@ -19,6 +19,7 @@ import {
   SettingsIcon,
   useCtrlEnterSubmit,
   useConfirmExitPage,
+  PinnedArticleIcon,
 } from 'front'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
@@ -141,7 +142,7 @@ export default function SiteSettings({
       <p>This page contains global settings that affect the entire website. It can only be edited by <a href={`${docsAdminUrl}`}>admins</a>.</p>
       <MapErrors errors={errors} />
       <form onSubmit={handleSubmit}>
-        <Label label="Pinned article">
+        <Label label={<><PinnedArticleIcon /> Pinned article</>} >
           <input
             type="text"
             placeholder={"(currently empty) Sample value: \"user0/article0\". Empty for don't pin any."}

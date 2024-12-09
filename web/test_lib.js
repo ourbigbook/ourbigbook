@@ -18,6 +18,7 @@ const config = require('./front/config')
 const { performance } = require('perf_hooks')
 const now = performance.now.bind(performance)
 const ISSUE_DATE = new Date(2000, 0, 1, 2, 3, 4, 5)
+const NTAGS = 21
 
 let printTimeNow;
 function printTime() {
@@ -162,9 +163,9 @@ The goal of this is to test this possible edge case of short URL fragments e.g. 
         }
       ],
       ['Test tag', [
-         ['Test tagged', [], { headerArgs: '{tag=Test tagger}\n{tag=Test tagger 2}\n{wiki}' }],
-         ['Test tagger', []],
-         ['Test tagger 2', []],
+         ['Test tagged 1', [], { headerArgs: [...Array(NTAGS).keys()].map(i => `{tag=Test tagger ${i + 1}}\n`).join('') + '{wiki}' }],
+         ...[...Array(NTAGS - 1).keys()].map(i => [`Test tagged ${i + 2}`, [], { headerArgs: '{tag=Test tagger 1}\n{wiki}' }]),
+         ...[...Array(NTAGS).keys()].map(i => [`Test tagger ${i + 1}`, []])
       ]],
       ['Test wiki', [], { headerArgs: '{wiki}' }],
       ['Test child', [

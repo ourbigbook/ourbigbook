@@ -759,7 +759,7 @@ export default function Article({
       }}/>)
       html += elem.outerHTML + a.render
       if (a.taggedArticles) {
-        html += `<p><b>${TAGS_MARKER} Tagged</b> (<b><a href="${routes.userArticlesTagged(a.author.username, a.topicId)}">${renderToString(<SeeIcon />)} See all</a></b>)</p>`
+        html += `<p><a href="${routes.userArticlesTagged(a.author.username, a.topicId)}"><b>${TAGS_MARKER} Tagged</b></a></p>`
         html += '<div className="content-not-ourbigbook">'
         html += renderToString(LinkListNoTitle( {...{ articles: a.taggedArticles, linkPref } }))
         //for (const t of a.taggedArticles) {

@@ -5,7 +5,8 @@ import { ArticlePageProps } from 'front/ArticlePage'
 import {
   articleLimitSmall,
   log,
-  maxArticlesFetch
+  maxArticlesFetch,
+  maxArticlesFetchToc,
 } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
 import { idToSlug } from 'front/js'
@@ -122,8 +123,8 @@ export const getServerSidePropsArticleHoc = ({
       const [
         ancestors,
         articleJson,
-        articlesInSamePage,
-        articlesInSamePageForToc,
+        [articlesInSamePage, articlesInSamePageCount],
+        [articlesInSamePageForToc, articlesInSamePageForTocCount],
         articleInTopicByLoggedInUser,
         h1ArticlesInSamePage,
         incomingLinks,
@@ -139,6 +140,7 @@ export const getServerSidePropsArticleHoc = ({
         // articlesInSamePage
         Article.getArticlesInSamePage({
           article,
+          getCount: true,
           loggedInUser,
           limit: maxArticlesFetch,
           list: true,
@@ -193,18 +195,21 @@ export const getServerSidePropsArticleHoc = ({
           }
           return articles
         }),
+        // articlesInSamePageForToc
         Article.getArticlesInSamePage({
           article,
+          getCount: true,
           loggedInUser,
           // This 10x made this be the dominating query on /wikibot when we last benchmarked.
           // (lots or empty articles) On /cirosantilli it didn't matter as much.
-          limit: maxArticlesFetch * 10,
+          limit: maxArticlesFetchToc,
           list: true,
           // Fundamental optimization to alleviate the 10x.
           toc: true,
           sequelize,
         }),
         Article.getArticleJsonInTopicBy(loggedInUser, article.topicId),
+        // h1ArticlesInSamePage
         Article.getArticlesInSamePage({
           article,
           loggedInUser,
@@ -272,7 +277,9 @@ export const getServerSidePropsArticleHoc = ({
         article: articleJson,
         articleInTopicByLoggedInUser,
         articlesInSamePage,
+        articlesInSamePageCount,
         articlesInSamePageForToc,
+        articlesInSamePageForTocCount,
         incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
         isIndex,
         loggedInUser,

@@ -5,7 +5,13 @@ import Router, { useRouter } from 'next/router'
 
 import { parse } from 'node-html-parser'
 
-import { commentsHeaderId, docsUrl, log } from 'front/config'
+import {
+  commentsHeaderId,
+  docsUrl,
+  log,
+  maxArticlesFetch,
+  maxArticlesFetchToc,
+} from 'front/config'
 import {
   ArrowRightIcon,
   ArrowUpIcon,
@@ -244,7 +250,9 @@ export default function Article({
   ancestors,
   article,
   articlesInSamePage,
+  articlesInSamePageCount,
   articlesInSamePageForToc,
+  articlesInSamePageForTocCount,
   comments,
   commentsCount=0,
   commentCountByLoggedInUser=undefined,
@@ -261,6 +269,7 @@ export default function Article({
   topIssues,
 }) {
   let t0
+  const authorUsername = article.author.username
   const [curComments, setComments] = React.useState(comments)
   const [curCommentsCount, setCommentsCount] = React.useState(commentsCount)
   const router = useRouter()
@@ -699,7 +708,6 @@ export default function Article({
     }
     for (let i = 0; i < articlesInSamePageForToc.length; i++) {
       const a = articlesInSamePageForToc[i]
-      const authorUsername = article.author.username
       let level = a.depth - article.depth
       const href = a.slug
       const content = a.titleRender
@@ -737,6 +745,23 @@ export default function Article({
     }
     if (entry_list.length) {
       html += htmlToplevelChildModifierById(renderTocFromEntryList({ entry_list, hasSearch: false }), Macro.TOC_ID) 
+      if (articlesInSamePageForTocCount > maxArticlesFetchToc) {
+        html += renderToString(
+          <div className="toc-limited">
+            <HelpIcon /> The table of contents was limited to the first {maxArticlesFetchToc} articles out of {articlesInSamePageForTocCount} total.
+            {' '}
+            <a href={routes.userArticlesChildren(authorUsername, article.topicId)}>
+              Click here to view all children of
+              {' '}
+              <span
+                className="ourbigbook-title"
+              >
+                <span dangerouslySetInnerHTML={{ __html: article.titleRender }} />
+              </span>
+            </a>.
+          </div>
+        )
+      }
     }
     if (log.perf) {
       console.error(`perf: Article.articlesInSamePageForToc: ${performance.now() - t0} ms`)
@@ -778,6 +803,21 @@ export default function Article({
       className="ourbigbook"
       ref={staticHtmlRef}
     />
+    {(articlesInSamePageCount > maxArticlesFetch) &&
+      <div className="content-not-ourbigbook toc-limited">
+        <HelpIcon /> Articles were limited to the first {maxArticlesFetch} out of {articlesInSamePageForTocCount} total.
+        {' '}
+        <a href={routes.userArticlesChildren(authorUsername, article.topicId)}>
+          Click here to view all children of
+          {' '}
+          <span
+            className="ourbigbook-title"
+          >
+            <span dangerouslySetInnerHTML={{ __html: article.titleRender }} />
+          </span>
+        </a>.
+      </div>
+    }
     <div className="meta">
       {isIssue
         ? <>

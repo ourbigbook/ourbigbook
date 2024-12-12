@@ -1335,6 +1335,7 @@ WHERE
   // Maybe try to merge into getArticle one day?
   Article.getArticlesInSamePage = async ({
     article,
+    getCount,
     loggedInUser,
     // Get just the article itself. This is just as a way to get the number of
     // articles on same topic + discussion count which we already get the for the h2,
@@ -1494,9 +1495,11 @@ WHERE
 //    )
 
     const { File, Id, Ref } = sequelize.models
-    ;const [rows, meta] = await sequelize.query(`
-SELECT
-  "Article"."depth" AS "depth",
+    function getQuery(countOnly) {
+      return `SELECT
+  ${countOnly
+    ? 'COUNT(*) AS "count"'
+    : `"Article"."depth" AS "depth",
   "Article"."slug" AS "slug",
   "Article"."titleRender" AS "titleRender"${!toc ? `,
   "Article"."id" AS "id",
@@ -1515,7 +1518,7 @@ SELECT
 ` : ''}${loggedInUser ? `,
   "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic",
   "UserLikeArticle"."userId" AS "liked"` : ''
-}` : ''}
+}` : ''}`}
 FROM
   "Article"${!toc ? `
 INNER JOIN "User" AS "Article.Author" ON "Article"."authorId" = "Article.Author"."id"
@@ -1533,20 +1536,32 @@ ${h1
   ? `  "Article"."nestedSetIndex" = :nestedSetIndex`
   : `  "Article"."nestedSetIndex" > :nestedSetIndex AND
   "Article"."nestedSetIndex" < :nestedSetNextSibling`
-}
+}${countOnly ? '' : `
 ORDER BY "Article"."nestedSetIndex" ASC${limit !== undefined ? `
-LIMIT ${limit}` : ''}
-`,
-      {
-        replacements: {
-          authorUsername: article.author.username,
-          loggedInUserId: loggedInUser ? loggedInUser.id : null,
-          list,
-          nestedSetIndex: article.nestedSetIndex,
-          nestedSetNextSibling: article.nestedSetNextSibling,
-        }
+LIMIT ${limit}` : ''}`}
+`
+    }
+    const queryOpts = {
+      replacements: {
+        authorUsername: article.author.username,
+        loggedInUserId: loggedInUser ? loggedInUser.id : null,
+        list,
+        nestedSetIndex: article.nestedSetIndex,
+        nestedSetNextSibling: article.nestedSetNextSibling,
       }
-    )
+    }
+    const promises = [sequelize.query(getQuery(false), queryOpts)]
+    if (getCount) {
+      promises.push(sequelize.query(getQuery(true), queryOpts))
+    }
+    ;const [
+      [rows, meta],
+      countRet
+    ] = await Promise.all(promises)
+    let count
+    if (countRet) {
+      count = countRet[0][0].count
+    }
 
     //sequelize.query(`
     //FROM "Article"
@@ -1572,7 +1587,11 @@ LIMIT ${limit}` : ''}
         delete row['author.username']
       }
     }
-    return rows
+    if (getCount) {
+      return [rows, count]
+    } else {
+      return rows
+    }
   }
 
   /**

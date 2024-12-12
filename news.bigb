@@ -7,6 +7,30 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= Tagged articles and other article lists added to Web
+{parent=News}
+{tag=Web}
+
+For some time we have been listing certain <Header metadata section>["cross article" metadata] at the bottom of articles on both <Web> and <static>.
+
+For example, on both:
+* https://cirosantilli.com/classification-mathematics
+* https://ourbigbook.com/cirosantilli/classification-mathematics
+you can see a list of articles tagged by the given articles at the end of the page.
+
+Now, only on <Web>, you can also see these article lists with the article content itself, for example:
+* tagged: https://ourbigbook.com/go/user/cirosantilli/tagged/classification-mathematics
+* incoming links: https://ourbigbook.com/go/user/cirosantilli/incoming/classification-mathematics
+* children: https://ourbigbook.com/go/user/cirosantilli/children/mammal-subclade
+
+The initial motivation for this was to be able to quickly browse through tagged articles, especially since the recent <tagged headers show under non-toplevel headers>.
+
+Another motivation for this is the ability to be able to view such lists with pagination when a large number of items exists. While we don't currently limit tagged and incoming links listings, children listings are already useful as we currently limit <dynamic article tree> ToCs to 1000 entries, so that children listings open up a way to explore such large article trees.
+
+This is the type of cute thing that can only be done efficiently on <Web>, where we can use an actual database to build up a precise response as requested. On <static websites>, this would either require lots of repetition on pre-rendered HTML, or making several JavaScript requests to fetch individual articles from the server, which could risk overloading the server.
+
+The pages are accessible from the following locations:
+
 = Static ToC search
 {parent=News}
 {tag=Web}

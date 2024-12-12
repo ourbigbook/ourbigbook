@@ -116,6 +116,7 @@ module.exports = {
   maxArticles: 10000,
   maxArticlesInMemory: 1000,
   maxArticlesFetch: 100,
+  maxArticlesFetchToc: 1000,
   maxIssuesPerMinute: 6,
   maxIssuesPerHour: 60,
   // After this timeout, assume network is slow and start showing loading messages.

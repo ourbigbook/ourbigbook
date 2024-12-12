@@ -370,6 +370,10 @@ span.pill {
   }
 }
 
+.toc-limited {
+  font-weight: bold;
+}
+
 pre {
   @include pre;
 }

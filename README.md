@@ -44,10 +44,6 @@ Screenshot of the [topics feature](https://docs.ourbigbook.com/#ourbigbook-web-t
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png)
 
-[Tags](https://docs.ourbigbook.com/#h-tag-argument) are just headers:
-
-![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/tag/non-toplevel-documentary-sell.png)
-
 You can [publish your local lightweight markup files either to OurBigBook.com or as a static website on your own domain of choice](https://docs.ourbigbook.com/#publish-your-content):
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/local-editing/bigb-publish-to-web-or-static-editor-logos.svg)
@@ -63,6 +59,12 @@ The [Visual Studio Code extension](https://docs.ourbigbook.com/#visual-studio-co
 You can also edit directly on OurBigBook.com with the [Web Editor](https://docs.ourbigbook.com#web-editor):
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-editor/cirosantilli-derivative.png)
+
+[Tags](https://docs.ourbigbook.com/#h-tag-argument) are just headers:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/tag/non-toplevel-documentary-sell.png)
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/tagged-list/tagged.png)
 
 Experience infinitely deep [tables of contents](https://docs.ourbigbook.com/#table-of-contents):
 

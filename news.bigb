@@ -20,16 +20,67 @@ you can see a list of articles tagged by the given articles at the end of the pa
 
 Now, only on <Web>, you can also see these article lists with the article content itself, for example:
 * tagged: https://ourbigbook.com/go/user/cirosantilli/tagged/classification-mathematics
+
+  \Image[feature/tagged-list/tagged.png]
+  {title=<OurBigBook Web> tagged article list with body demo}
+  {description=Live URL: https://ourbigbook.com/go/user/cirosantilli/tagged/classification-mathematics}
+  {provider=github}
+  {border}
+  {height=1081}
+
+  Accessible via header links to the Tagged sections both on toplevel and non-toplevel:
+
+  \Image[feature/tagged-list/toplevel-to-tagged-arrow.png]
+  {title=<OurBigBook Web> toplevel header link to tagged article list}
+  {description=Live URL: https://ourbigbook.com/cirosantilli/classification-mathematics}
+  {provider=github}
+  {border}
+  {height=736}
+
+  \Image[feature/tagged-list/not-toplevel-to-tagged-arrow.png]
+  {title=<OurBigBook Web> non-toplevel header link to tagged article list}
+  {description=Live URL: https://ourbigbook.com/cirosantilli/the-beauty-of-mathematics#classification-mathematics}
+  {provider=github}
+  {border}
+  {height=783}
 * incoming links: https://ourbigbook.com/go/user/cirosantilli/incoming/classification-mathematics
+
+  \Image[feature/tagged-list/incoming.png]
+  {title=<OurBigBook Web> incoming article list with body demo}
+  {description=Live URL: https://ourbigbook.com/go/user/cirosantilli/incoming/classification-mathematics}
+  {provider=github}
+  {border}
+  {height=1048}
 * children: https://ourbigbook.com/go/user/cirosantilli/children/mammal-subclade
+
+  \Image[feature/tagged-list/children.png]
+  {title=<OurBigBook Web> incoming child list with body demo}
+  {description=Live URL: https://ourbigbook.com/go/user/cirosantilli/children/mammal-subclade}
+  {provider=github}
+  {border}
+  {height=989}
+
+  Accessible via the newly added "was limited to" info boxes when there are too many articles under a tree to show on the page:
+
+  \Image[feature/tagged-list/limited-to-toc-arrow.png]
+  {title=<OurBigBook Web> limited ToC size link to full child article list}
+  {description=Live URL: https://ourbigbook.com/cirosantilli/mathematics}
+  {provider=github}
+  {border}
+  {height=620}
+
+  \Image[feature/tagged-list/limited-to-articles-arrow.png]
+  {title=<OurBigBook Web> limited descendant articles link to full child article list}
+  {description=Live URL: https://ourbigbook.com/cirosantilli/mathematics}
+  {provider=github}
+  {border}
+  {height=822}
 
 The initial motivation for this was to be able to quickly browse through tagged articles, especially since the recent <tagged headers show under non-toplevel headers>.
 
 Another motivation for this is the ability to be able to view such lists with pagination when a large number of items exists. While we don't currently limit tagged and incoming links listings, children listings are already useful as we currently limit <dynamic article tree> ToCs to 1000 entries, so that children listings open up a way to explore such large article trees.
 
 This is the type of cute thing that can only be done efficiently on <Web>, where we can use an actual database to build up a precise response as requested. On <static websites>, this would either require lots of repetition on pre-rendered HTML, or making several JavaScript requests to fetch individual articles from the server, which could risk overloading the server.
-
-The pages are accessible from the following locations:
 
 = Static ToC search
 {parent=News}

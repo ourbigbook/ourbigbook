@@ -2728,6 +2728,13 @@ So here we see that `Bat` and `Humming bird` have their unique position in the t
 {border}
 {height=650}
 
+\Image[feature/tagged-list/tagged.png]
+{title=<OurBigBook Web> tagged article list with body demo}
+{description=On <OurBigBook Web>, you can also list all articles tagged by an article while also showing the tagged article bodies rather than just their titles. Live URL: https://ourbigbook.com/go/user/cirosantilli/tagged/classification-mathematics}
+{provider=github}
+{border}
+{height=1081}
+
 = `\H` `title2` argument
 {parent=H arguments}
 {tag=multiple argument}
@@ -7388,6 +7395,9 @@ One day, one day. Maybe.
 {synonym}
 
 = Static website
+{synonym}
+
+= Static
 {synonym}
 
 = `ourbigbook --publish`

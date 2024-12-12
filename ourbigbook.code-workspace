@@ -26,5 +26,6 @@
             "**/_out/**": true,
             "**/.next/**": true
         },
+        "editor.detectIndentation": false,
 	}
 }

@@ -3104,7 +3104,7 @@ function renderTitlePossibleHomeMarker(ast, context) {
       return HTML_HOME_MARKER
     }
   }
-  return renderArg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)
+  return xTextBase(ast, context).innerWithDisambiguate
 }
 
 /* Convert a list of asts.
@@ -4138,15 +4138,23 @@ function headerCheckChildTagExists(ast, context, childrenOrTags, type) {
  * @param {{href: string, content: string}[]} entries
  * @return {string}
  * */
-function htmlAncestorLinks(entries, nAncestors) {
+function htmlAncestorLinks(entries, nAncestors, opts={}) {
+  let { addTestInstrumentation } = opts
   const ret = []
   let i = 0
   if (nAncestors > ANCESTORS_MAX) {
-    ret.push(`<a ${htmlAttr('href', `#${ANCESTORS_ID}`)}}>&nbsp;...</a>`)
+    ret.push(
+      `<a ${htmlAttr('href', `#${ANCESTORS_ID}`)}` +
+      `${addTestInstrumentation ? htmlAttr(Macro.TEST_DATA_HTML_PROP, i.toString()) : ''}` +
+      `>&nbsp;...</a>`
+    )
     i++
   }
   for (const entry of entries) {
-    ret.push(`<a${entry.href}>${i > 0 ? ' ' : ''}${entry.content}</a>`)
+    ret.push(`<a${entry.href}` +
+      `${addTestInstrumentation ? htmlAttr(Macro.TEST_DATA_HTML_PROP, i.toString()) : ''}` +
+      `>${i > 0 ? ' ' : ''}${entry.content}</a>`
+    )
     i++
   }
   return ret.join('')
@@ -7553,7 +7561,8 @@ function xGetTargetAst(ast, context) {
  * @param {AstNode} ast \x ast node
  * @return {[String, String]} [href, content] pair for the x node.
  */
-function xGetHrefContent(ast, context) {
+function xGetHrefContent(ast, context, opts={}) {
+  const { showDisambiguate } = opts
   const { href_arg, target_id, target_id_raw, target_ast } = xGetTargetAst(ast, context)
   const content_arg = ast.args.content;
   if (ast.validation_output.topic.boolean) {
@@ -7628,11 +7637,17 @@ function xGetHrefContent(ast, context) {
         }
       }
       if (ast.validation_output.full.given) {
-        x_text_options.style_full = ast.validation_output.full.boolean;
+        x_text_options.style_full = ast.validation_output.full.boolean
+        x_text_options.style_full_from_x = true
       }
       const x_parents_new = new Set(context.x_parents);
       x_parents_new.add(ast);
-      content = xText(target_ast, cloneAndSet(context, 'x_parents', x_parents_new), x_text_options);
+      const xTextBaseRet = xTextBase(target_ast, cloneAndSet(context, 'x_parents', x_parents_new), x_text_options);
+      if (showDisambiguate) {
+         content = xTextBaseRet.innerWithDisambiguate
+      } else {
+         content = xTextBaseRet.full
+      }
       if (content === ``) {
         let message = `empty internal link body: "${target_id}"`;
         renderError(context, message, ast.source_location);
@@ -7929,6 +7944,7 @@ function xHrefAttr(target_ast, context) {
  *   if this link should not be given.
  * @return {string} full: '<a href="#barack-obama/equation-my-favorite-equation"><span class="caption-prefix">Equation 1</span></a>. My favorite equation'
  *         {string} inner: 'My favorite equation'
+ *         {string} innerWithDisambiguate: 'Python (programming language)'. Note no .meta span on the disambiguate.
  */
 function xTextBase(ast, context, options={}) {
   context = cloneAndSet(context, 'in_x_text', true)
@@ -7967,12 +7983,18 @@ function xTextBase(ast, context, options={}) {
   }
   const macro = context.macros[ast.macro_name];
   let inner
+  let innerWithDisambiguate
   let innerNoDiv
-  let style_full
-  if ('style_full' in options) {
-    style_full = options.style_full;
-  } else {
-    style_full = macro.options.default_x_style_full;
+  let { style_full, style_full_from_x } = options
+  if (style_full === undefined) {
+    style_full = macro.options.default_x_style_full
+  }
+  if (style_full_from_x === undefined) {
+    // Comes from a {full} argument of actual X argument and not e.g. a main h1 header render.
+    // These are treated differently: the full header render
+    // - shows title 2
+    // - has <span class="meta"> wrapper for the different color
+    style_full_from_x = false
   }
   let ret = ``;
   let title_arg = macro.options.get_title_arg(ast, context);
@@ -8094,33 +8116,47 @@ function xTextBase(ast, context, options={}) {
       inner = innerNoDiv
     }
     ret += inner
+    const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
+    const show_disambiguate = (disambiguate_arg !== undefined) && macro.options.show_disambiguate;
+    let disambiguateRender
+    if (show_disambiguate) {
+      disambiguateRender = renderArg(disambiguate_arg, context)
+    }
     if (style_full) {
-      const disambiguate_arg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME];
       const title2_arg = ast.args[Macro.TITLE2_ARGUMENT_NAME];
-      const show_disambiguate = (disambiguate_arg !== undefined) && macro.options.show_disambiguate;
       const title2_renders = [];
       if (show_disambiguate) {
-        title2_renders.push(renderArg(disambiguate_arg, context));
+        title2_renders.push(disambiguateRender)
       }
-      if (title2_arg !== undefined) {
-        for (const arg of title2_arg.asts.map(ast => ast.args[Macro.CONTENT_ARGUMENT_NAME])) {
-          if (arg.asts.length) {
-            title2_renders.push(renderArg(arg, context));
+      if (!style_full_from_x) {
+        if (title2_arg !== undefined) {
+          for (const arg of title2_arg.asts.map(ast => ast.args[Macro.CONTENT_ARGUMENT_NAME])) {
+            if (arg.asts.length) {
+              title2_renders.push(renderArg(arg, context));
+            }
           }
         }
-      }
-      for (const title2ast of ast.title2s) {
-        title2_renders.push(renderArg(title2ast.args.title, context));
+        for (const title2ast of ast.title2s) {
+          title2_renders.push(renderArg(title2ast.args.title, context));
+        }
       }
       if (title2_renders.length) {
-        ret += ` <span class="meta">(${title2_renders.join(', ')})</span>`
+        let title2Render = `(${title2_renders.join(', ')})`
+        if (!style_full_from_x) {
+          title2Render = `<span class="meta">${title2Render}</span>`
+        }
+        ret += ` ${title2Render}`
       }
       if (options.quote) {
         ret += htmlEscapeContext(context, `"`);
       }
     }
+    innerWithDisambiguate = inner
+    if (show_disambiguate) {
+      innerWithDisambiguate += ` (${disambiguateRender})`
+    }
   }
-  return { full: ret, inner, innerNoDiv }
+  return { full: ret, inner, innerWithDisambiguate, innerNoDiv }
 }
 
 function xText(ast, context, options={}) {
@@ -9212,6 +9248,10 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
         new MacroArgument({
+          name: 'showDisambiguate',
+          boolean: true,
+        }),
+        new MacroArgument({
           name: 'topic',
           boolean: true,
         }),
@@ -9344,6 +9384,7 @@ function createLinkList(context, ast, id, title, target_ids) {
     const idWithPrefix = `${Macro.RESERVED_ID_PREFIX}${id}`
     const targetIdsArr = Array.from(target_ids)
     ret += htmlToplevelChildModifierById(`<h2 id="${idWithPrefix}"><a href="#${idWithPrefix}">${title} <span class="meta">(${targetIdsArr.length})</span></a></h2>`, idWithPrefix)
+    let i = 0
     for (const target_id of targetIdsArr.sort()) {
       let target_ast = context.db_provider.get(target_id, context);
       if (
@@ -9357,24 +9398,25 @@ function createLinkList(context, ast, id, title, target_ids) {
         //} else {
         //  counts_str = '';
         //}
+        const xArgs = {
+          'c': new AstArgument(),
+          'href': new AstArgument(
+            [
+              new PlaintextAstNode(target_id),
+            ],
+          ),
+          showDisambiguate: new AstArgument(),
+        }
+        if (context.options.add_test_instrumentation) {
+          xArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(i.toString())]
+        }
         target_asts.push(new AstNode(
           AstType.MACRO,
           Macro.LIST_ITEM_MACRO_NAME,
           {
             [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
               [
-                new AstNode(
-                  AstType.MACRO,
-                  Macro.X_MACRO_NAME,
-                  {
-                    'href': new AstArgument(
-                      [
-                        new PlaintextAstNode(target_id),
-                      ],
-                    ),
-                    'c': new AstArgument(),
-                  },
-                ),
+                new AstNode( AstType.MACRO, Macro.X_MACRO_NAME, xArgs),
                 //new AstNode(
                 //  AstType.MACRO,
                 //  Macro.PASSTHROUGH_MACRO_NAME,
@@ -9395,6 +9437,7 @@ function createLinkList(context, ast, id, title, target_ids) {
           },
         ));
       }
+      i++
     }
     let ulArgs = {
       [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(target_asts)
@@ -9598,7 +9641,7 @@ const OUTPUT_FORMATS_LIST = [
               rendered_outputs_entry !== undefined &&
               rendered_outputs_entry.title === undefined
             ) {
-              rendered_outputs_entry.title = x_text_base_ret.inner;
+              rendered_outputs_entry.title = x_text_base_ret.innerWithDisambiguate
               const title_arg = ast.args[Macro.TITLE_ARGUMENT_NAME]
               rendered_outputs_entry.titleSource = renderArg(
                 title_arg,
@@ -9784,7 +9827,6 @@ const OUTPUT_FORMATS_LIST = [
                       new PlaintextAstNode(target_id),
                     ],
                   ),
-                  'c': new AstArgument(),
                 },
                 ast.source_location,
                 {
@@ -9836,7 +9878,12 @@ const OUTPUT_FORMATS_LIST = [
                     content: renderTitlePossibleHomeMarker(ancestor, context),
                   })
                 }
-                header_meta_ancestors.push(htmlAncestorLinks(entries, nAncestors));
+                // Breadcrumb.
+                header_meta_ancestors.push(htmlAncestorLinks(
+                  entries,
+                  nAncestors,
+                  { addTestInstrumentation: context.options.add_test_instrumentation }
+                ))
               }
             }
           } else {
@@ -10034,7 +10081,6 @@ const OUTPUT_FORMATS_LIST = [
                           [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
                             tagged.map(t => {
                               const arg = {
-                                'c': new AstArgument([ new PlaintextAstNode(Macro.BOOLEAN_ARGUMENT_TRUE) ]),
                                 'href': new AstArgument([ new PlaintextAstNode(t) ]),
                               }
                               if (context.options.add_test_instrumentation) {
@@ -10210,6 +10256,7 @@ const OUTPUT_FORMATS_LIST = [
                 // TODO factor this out more with real headers.
                 body += htmlToplevelChildModifierById(`<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${HTML_PARENT_MARKER} Ancestors <span class="meta">(${ancestors.length})</span></a></h2>`, ANCESTORS_ID)
                 const ancestor_id_asts = [];
+                let i = 0
                 for (const ancestor of ancestors) {
                   //let counts_str;
                   //if (ancestor.header_tree_node !== undefined) {
@@ -10217,24 +10264,25 @@ const OUTPUT_FORMATS_LIST = [
                   //} else {
                   //  counts_str = '';
                   //}
+                  const xArgs = {
+                    'c': new AstArgument(),
+                    'href': new AstArgument(
+                      [
+                        new PlaintextAstNode(ancestor.id),
+                      ],
+                    ),
+                    showDisambiguate: new AstArgument(),
+                  }
+                  if (context.options.add_test_instrumentation) {
+                    xArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(i.toString())]
+                  }
                   ancestor_id_asts.push(new AstNode(
                     AstType.MACRO,
                     Macro.LIST_ITEM_MACRO_NAME,
                     {
                       [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
                         [
-                          new AstNode(
-                            AstType.MACRO,
-                            Macro.X_MACRO_NAME,
-                            {
-                              'href': new AstArgument(
-                                [
-                                  new PlaintextAstNode(ancestor.id),
-                                ],
-                              ),
-                              'c': new AstArgument(),
-                            },
-                          ),
+                          new AstNode(AstType.MACRO, Macro.X_MACRO_NAME, xArgs),
                           //new AstNode(
                           //  AstType.MACRO,
                           //  Macro.PASSTHROUGH_MACRO_NAME,
@@ -10254,6 +10302,7 @@ const OUTPUT_FORMATS_LIST = [
                       ),
                     },
                   ));
+                  i++
                 }
                 const ulArgs = {
                   [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(ancestor_id_asts)
@@ -10414,7 +10463,11 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
         },
         [Macro.UNORDERED_LIST_MACRO_NAME]: htmlRenderSimpleElem('ul', UL_OL_OPTS),
         [Macro.X_MACRO_NAME]: function(ast, context) {
-          let [href, content, target_ast] = xGetHrefContent(ast, context);
+          let [href, content, target_ast] = xGetHrefContent(
+            ast,
+            context,
+            { showDisambiguate: ast.validation_output.showDisambiguate.boolean }
+          )
           let incompatible_pair
           if (ast.validation_output.full.given) {
             if (ast.validation_output.ref.given) {

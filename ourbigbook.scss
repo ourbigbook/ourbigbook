@@ -414,12 +414,10 @@ h1, h2, h3, h4, h5, h6 {
   margin-bottom: $p-margin-vert;
   margin-top: $p-margin-vert;
   a {
+    @include h-meta;
     color: $h-color;
     &:visited {
       color: $h-color;
-    }
-    .meta {
-      color: $color-slightly-discreet;
     }
   }
 }

@@ -16,7 +16,6 @@ const { AUTH_COOKIE_NAME } = require('./front/js')
 
 const web_api = require('ourbigbook/web_api');
 const { QUERY_TRUE_VAL } = web_api
-const { execPath } = require('process');
 
 const testNext = process.env.OURBIGBOOK_TEST_NEXT === 'true'
 
@@ -4808,6 +4807,26 @@ it(`api: article: with named argument`, async () => {
       bodySource: `{title2=Asdf qwer}`
     })))
     assertStatus(status, data)
+  })
+})
+
+it(`api: article: create with disambiguate`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // Create article user0/title-0
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, bodySource: '{disambiguate=that type}' })))
+    assertStatus(status, data)
+
+    // Check that the article is there
+    ;({data, status} = await test.webApi.article('user0/title-0-that-type'))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Title 0 (that type)')
+    assert.strictEqual(data.titleSource, 'Title 0')
   })
 })
 

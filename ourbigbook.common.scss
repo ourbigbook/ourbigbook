@@ -107,6 +107,12 @@ $footer-color: $color;
   }
 }
 
+@mixin h-meta {
+  .meta {
+    color: $color-slightly-discreet;
+  }
+}
+
 @mixin h1-only {
   font-size: $h1-font-size;
 }

@@ -41,7 +41,8 @@ module.exports = (sequelize) => {
         allowNull: false,
       },
       // Rendered title. Only contains the inner contents of the toplevel h1's title argument,
-      // not the full HTML header itself. Used extensively e.g. in article indexes.
+      // not the full HTML header itself. Includes only parts of the metadata that are required to
+      // calculate ID: currently this is disambiguate. Used extensively e.g. in article indexes.
       titleRender: {
         type: DataTypes.TEXT,
         allowNull: false,

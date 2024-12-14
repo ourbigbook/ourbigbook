@@ -199,13 +199,13 @@ Link to topic: <#mathematics>
       // This is used to check if we are jumping to an ID at the bottom of the page correctly.
       ['Test data long before ID', [], { body: [...Array(50).keys()].map(i => `spacer ${i}\n\n`).join('') +
          `$$\\frac{1}{\\sqrt{2}}$\${title=Test data long before ID}` }],
-      ['Test data disambiguate', [
-        ['Test data disambiguate child', []],
-        ],
-        {
-          headerArgs: '{disambiguate=specific type}',
-          path: 'test-data-disambiguate-specific-type',
-        }
+      ['Test data disambiguate',
+        [['Test data disambiguate child 1', []]],
+        { headerArgs: '{disambiguate=specific type 1}' }
+      ],
+      ['Test data disambiguate',
+        [['Test data disambiguate child 2', []]],
+        { headerArgs: '{disambiguate=specific type 2}' }
       ],
       ['Test data disambiguate next sibling', []],
       ['Test data unlisted', [

@@ -4979,10 +4979,10 @@ assert_lib(
         // Would like to test like this, but it doesn't seem implemented in this crappy xpath implementation.
         // So we revert to instrumentation instead then.
         //`//x:h2[@id='_incoming-links']/following:://x:a[@href='#h2']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='1']`,
         // https://github.com/ourbigbook/ourbigbook/issues/155
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html']`,
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='2']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='#h2-2']`,
       ],
       'h2.html': [
@@ -5518,6 +5518,104 @@ assert_lib('x: redirect from cirosantilli.com to ourbigbook.com',
       ],
     },
   },
+)
+assert_lib('x: disambiguate shows in ancestors',
+  {
+    convert_dir: true,
+    convert_opts: { split_headers: true },
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== With dis
+{disambiguate=mydis}
+
+=== Without dis
+`,
+    },
+    assert_xpath: {
+      [`without-dis.html`]: [
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']` +
+          `//x:a[@href='index.html#with-dis-mydis' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0' and text()='With dis (mydis)']`
+        ,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']` +
+          `//x:a[@href='index.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='1']`,
+      ],
+    },
+  }
+)
+assert_lib('x: disambiguate shows in incoming links',
+  {
+    convert_dir: true,
+    convert_opts: { split_headers: true },
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== With dis
+{disambiguate=mydis}
+
+<without dis>
+
+=== Without dis
+`,
+    },
+    assert_xpath: {
+      [`without-dis.html`]: [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']` +
+          `//x:a[@href='index.html#with-dis-mydis' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0' and text()='With dis (mydis)']`
+        ,
+      ],
+    },
+  }
+)
+assert_lib('x: disambiguate shows in breadcrumb',
+  {
+    convert_dir: true,
+    convert_opts: { split_headers: true },
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== With dis
+{disambiguate=mydis}
+
+<without dis>
+
+=== Without dis
+`,
+    },
+    assert_xpath: {
+      [`without-dis.html`]: [
+        `//x:div[@class='h top']` +
+          `//x:div[@class='nav ancestors']` +
+          `//x:a[@href='index.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`
+        ,
+        `//x:div[@class='h top']` +
+          `//x:div[@class='nav ancestors']` +
+          `//x:a[@href='index.html#with-dis-mydis' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='1' and text()=' With dis (mydis)']`
+        ,
+      ],
+    },
+  }
+)
+assert_lib(`x: disambiguate shows in {full} links but title2 doesn't`,
+  {
+    convert_dir: true,
+    convert_opts: { split_headers: true },
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+<With dis (My dis)>{id=dut}{full}
+
+== With dis
+{disambiguate=My dis}
+{title2=My Title 2}
+`,
+    },
+    assert_xpath: {
+      [`index.html`]: [
+        `//x:a[@id='dut' and text()='Section "With dis (My dis)"']`
+      ],
+    },
+  }
 )
 
 // Subdir.
@@ -11681,16 +11779,16 @@ assert_cli('cross file ancestors work on single file conversions at toplevel',
     ],
     assert_xpath: {
       [`${TMP_DIRNAME}/html/notindex.html`]: [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`,
       ],
       [`${TMP_DIRNAME}/html/notindex2.html`]: [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='1']`,
       ],
       [`${TMP_DIRNAME}/html/notindex3.html`]: [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='1']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='2']`,
       ],
     },
     assert_not_xpath: {
@@ -11731,19 +11829,19 @@ assert_cli('cross file ancestors work on single file conversions in subdir',
     ],
     assert_xpath: {
       [`${TMP_DIRNAME}/html/subdir.html`]: [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='index.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`,
       ],
       [`${TMP_DIRNAME}/html/subdir/notindex.html`]: [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`,
       ],
       [`${TMP_DIRNAME}/html/subdir/notindex2.html`]: [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='1']`,
       ],
       [`${TMP_DIRNAME}/html/subdir/notindex3.html`]: [
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html']`,
-        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex2.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='notindex.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='1']`,
+        `//x:ol[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='ancestors']//x:a[@href='../subdir.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='2']`,
       ],
     },
     assert_not_xpath: {

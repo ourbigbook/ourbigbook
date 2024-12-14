@@ -219,6 +219,7 @@ div.list-container {
         //column-gap: 7px;
 
         .ourbigbook-title {
+          @include h-meta;
           color: $h-color;
           font-size: $header-font-size;
           font-weight: bold;
@@ -387,6 +388,9 @@ div.discussion-about {
 div.parent-article {
   a {
     color: $a-color;
+    .meta {
+      color: $a-color;
+    }
   }
 }
 

@@ -1,3 +1,4 @@
+import React from 'react'
 import { defaultProfileImage } from 'front/config'
 
 const handleBrokenImage = e => {
@@ -6,16 +7,26 @@ const handleBrokenImage = e => {
 };
 
 interface CustomImageProps {
-  src: string;
   alt?: string;
   className?: string;
+  onClick?: React.MouseEventHandler<HTMLImageElement>;
+  imgRef?: React.LegacyRef<HTMLImageElement>;
+  src: string;
 }
 
-const CustomImage = ({ src, alt, className }: CustomImageProps) => {
+const CustomImage = ({
+  alt,
+  className,
+  onClick,
+  imgRef,
+  src,
+}: CustomImageProps) => {
   return <img {...{
     alt,
     className,
+    onClick,
     onError: handleBrokenImage,
+    ref: imgRef,
     src,
   }} />
 }

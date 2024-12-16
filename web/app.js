@@ -79,7 +79,7 @@ async function start(port, startNext, cb) {
   }))
   app.use(require('method-override')())
 
-  // Next handles anythiung outside of /api.
+  // Next handles anything outside of /api.
   app.get(new RegExp('^(?!' + config.apiPath + '(/|$))'), function (req, res) {
     // We pass the sequelize that we have already created and connected to the database
     // so that the Next.js backend can just use that connection. This is in particular mandatory

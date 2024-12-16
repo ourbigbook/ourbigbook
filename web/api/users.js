@@ -4,9 +4,14 @@ const { sendJsonHttp } = require('ourbigbook/web_api')
 
 const router = require('express').Router()
 const passport = require('passport')
+const sharp = require('sharp')
 
 const auth = require('../auth')
 const lib = require('./lib')
+const {
+  validateParam,
+  ValidationError,
+} = lib
 const { cant } = require('../front/cant')
 const front = require('../front/js')
 const config = require('../front/config')
@@ -51,10 +56,10 @@ router.param('username', function(req, res, next, username) {
 // Login to the website.
 router.post('/login', async function(req, res, next) {
   try {
-    const body = lib.validateParam(req, 'body')
-    const user = lib.validateParam(body, 'user')
-    const username = lib.validateParam(user, 'username')
-    const password = lib.validateParam(user, 'password')
+    const body = validateParam(req, 'body')
+    const user = validateParam(body, 'user')
+    const username = validateParam(user, 'username')
+    const password = validateParam(user, 'password')
     await authenticate(req, res, next)
   } catch(error) {
     next(error);
@@ -63,8 +68,8 @@ router.post('/login', async function(req, res, next) {
 
 router.post('/reset-password-request', async function(req, res, next) {
   try {
-    const body = lib.validateParam(req, 'body')
-    const emailOrUsername = lib.validateParam(body,
+    const body = validateParam(req, 'body')
+    const emailOrUsername = validateParam(body,
       'emailOrUsername',
       { validators: [front.isString, front.isTruthy] }
     )
@@ -79,12 +84,12 @@ router.post('/reset-password-request', async function(req, res, next) {
     const User = sequelize.models.User
     const user = await User.findOne({ where })
     if (!user)
-      throw new lib.ValidationError([`email or username is not registered: ${emailOrUsername}`])
+      throw new ValidationError([`email or username is not registered: ${emailOrUsername}`])
     if (!user.verified)
-      throw new lib.ValidationError([`user is not verified, you must verify your account before you can reset your password`])
+      throw new ValidationError([`user is not verified, you must verify your account before you can reset your password`])
     const timeToWaitMs = getTimeToWaitForNextEmailMs(user)
     if (timeToWaitMs > 0) {
-      throw new lib.ValidationError([`Email already registered but not verified. You can re-send a confirmation email in: ${lib.msToRoundedTime(timeToWaitMs)}`])
+      throw new ValidationError([`Email already registered but not verified. You can re-send a confirmation email in: ${lib.msToRoundedTime(timeToWaitMs)}`])
     }
     const verificationCode = User.generateVerificationCode()
     const resetPasswordUrl = `${routes.host(req)}${routes.resetPasswordUpdate()}?email=${encodeURIComponent(user.email)}&code=${verificationCode}`
@@ -120,16 +125,16 @@ If it wasn't, you can safely ignore this email.
 
 router.post('/reset-password', async function(req, res, next) {
   try {
-    const body = lib.validateParam(req, 'body')
-    const email = lib.validateParam(body,
+    const body = validateParam(req, 'body')
+    const email = validateParam(body,
       'email',
       { validators: [front.isString, front.isTruthy] }
     )
-    const password = lib.validateParam(body,
+    const password = validateParam(body,
       'password',
       { validators: [front.isString, front.isTruthy] }
     )
-    const code = lib.validateParam(body,
+    const code = validateParam(body,
       'code',
       { validators: [front.isString, front.isTruthy] }
     )
@@ -137,7 +142,7 @@ router.post('/reset-password', async function(req, res, next) {
     const User = sequelize.models.User
     const user = await User.findOne({ where: { email } })
     if (!user)
-      throw new lib.ValidationError([`email not registered: ${email}`])
+      throw new ValidationError([`email not registered: ${email}`])
     if (code === user.verificationCode) {
       res.sendStatus(200)
       user.verificationCode = null
@@ -145,7 +150,7 @@ router.post('/reset-password', async function(req, res, next) {
       User.setPassword(user, password)
       await user.saveSideEffects()
     } else {
-      throw new lib.ValidationError(['verification code invalid. Please send a new one.'])
+      throw new ValidationError(['verification code invalid. Please send a new one.'])
     }
   } catch(error) {
     next(error);
@@ -205,7 +210,7 @@ async function validateCaptcha(config, req, res) {
     }
     if (!data.success) {
       console.error(`recaptcha error: ${data}`);
-      throw new lib.ValidationError(['reCAPTCHA failed'])
+      throw new ValidationError(['reCAPTCHA failed'])
     }
   }
 }
@@ -222,12 +227,12 @@ function getTimeToWaitForNextEmailMs(user) {
 // Create a new user.
 router.post('/users', async function(req, res, next) {
   try {
-    const body = lib.validateParam(req, 'body')
-    const userPost = lib.validateParam(body, 'user')
-    const username = lib.validateParam(userPost, 'username')
-    const email = lib.validateParam(userPost, 'email')
-    const password = lib.validateParam(userPost, 'password')
-    const displayName = lib.validateParam(userPost, 'displayName', {
+    const body = validateParam(req, 'body')
+    const userPost = validateParam(body, 'user')
+    const username = validateParam(userPost, 'username')
+    const email = validateParam(userPost, 'email')
+    const password = validateParam(userPost, 'password')
+    const displayName = validateParam(userPost, 'displayName', {
       validators: [front.isString, front.isTruthy],
       defaultValue: undefined,
     })
@@ -242,12 +247,12 @@ router.post('/users', async function(req, res, next) {
     if (existingUser) {
       user = existingUser
       if (user.verified) {
-        throw new lib.ValidationError([`email already taken: ${email}`])
+        throw new ValidationError([`email already taken: ${email}`])
       }
       // Re-send the email if enough time passed.
       const timeToWaitMs = getTimeToWaitForNextEmailMs(user)
       if (timeToWaitMs > 0) {
-        throw new lib.ValidationError([`Email already registered but not verified. You can re-send a confirmation email in: ${lib.msToRoundedTime(timeToWaitMs)}`])
+        throw new ValidationError([`Email already registered but not verified. You can re-send a confirmation email in: ${lib.msToRoundedTime(timeToWaitMs)}`])
       }
       user.verificationCode = User.generateVerificationCode()
       user.verificationCodeN += 1
@@ -320,7 +325,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
     const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
     const msg = cant.editUser(loggedInUser, user)
     if (msg) {
-      throw new lib.ValidationError( [msg], 403)
+      throw new ValidationError( [msg], 403)
     }
     const userArg = req.body.user
     if (userArg) {
@@ -328,7 +333,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
       if (typeof userArg.username !== 'undefined') {
         //user.username = userArg.username
         if (user.username !== userArg.username) {
-          throw new lib.ValidationError(
+          throw new ValidationError(
             [`username cannot be modified currently, would change from ${user.username} to ${userArg.username}`],
           )
         }
@@ -336,29 +341,26 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
       if (typeof userArg.email !== 'undefined') {
         //user.email = userArg.email
         if (user.email !== userArg.email) {
-          throw new lib.ValidationError(
+          throw new ValidationError(
             [`email cannot be modified currently, would change from ${user.email} to ${userArg.email}`],
           )
         }
       }
       if (typeof userArg.displayName !== 'undefined') {
-        const displayName = lib.validateParam(userArg, 'displayName', {
+        const displayName = validateParam(userArg, 'displayName', {
           validators: [front.isString, front.isTruthy],
           defaultValue: undefined,
         })
         user.displayName = displayName
       }
-      if (typeof userArg.image !== 'undefined') {
-        user.image = userArg.image
-      }
-      const emailNotifications = lib.validateParam(userArg, 'emailNotifications', {
+      const emailNotifications = validateParam(userArg, 'emailNotifications', {
         validators: [front.isBoolean],
         defaultValue: undefined,
       })
       if (emailNotifications !== undefined) {
         user.emailNotifications = userArg.emailNotifications
       }
-      const hideArticleDates = lib.validateParam(userArg, 'hideArticleDates', {
+      const hideArticleDates = validateParam(userArg, 'hideArticleDates', {
         validators: [front.isBoolean],
         defaultValue: undefined,
       })
@@ -366,7 +368,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
         user.hideArticleDates = userArg.hideArticleDates
       }
       if (!cant.setUserLimits(loggedInUser)) {
-        const maxArticles = lib.validateParam(userArg, 'maxArticles', {
+        const maxArticles = validateParam(userArg, 'maxArticles', {
           typecast: front.typecastInteger,
           validators: [front.isPositiveInteger],
           defaultValue: undefined,
@@ -374,7 +376,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
         if (maxArticles !== undefined) {
           user.maxArticles = maxArticles
         }
-        const maxArticleSize = lib.validateParam(userArg, 'maxArticleSize', {
+        const maxArticleSize = validateParam(userArg, 'maxArticleSize', {
           typecast: front.typecastInteger,
           validators: [front.isPositiveInteger],
           defaultValue: undefined,
@@ -382,7 +384,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
         if (maxArticleSize !== undefined) {
           user.maxArticleSize = maxArticleSize
         }
-        const maxIssuesPerMinute = lib.validateParam(userArg, 'maxIssuesPerMinute', {
+        const maxIssuesPerMinute = validateParam(userArg, 'maxIssuesPerMinute', {
           typecast: front.typecastInteger,
           validators: [front.isPositiveInteger],
           defaultValue: undefined,
@@ -390,7 +392,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
         if (maxIssuesPerMinute !== undefined) {
           user.maxIssuesPerMinute = maxIssuesPerMinute
         }
-        const maxIssuesPerHour = lib.validateParam(userArg, 'maxIssuesPerHour', {
+        const maxIssuesPerHour = validateParam(userArg, 'maxIssuesPerHour', {
           typecast: front.typecastInteger,
           validators: [front.isPositiveInteger],
           defaultValue: undefined,
@@ -411,11 +413,68 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
   }
 })
 
+// Modify image of the currently logged in user.
+// Backend for settings page on the web UI.
+router.put('/users/:username/profile-picture', auth.required, async function(req, res, next) {
+  try {
+    let t0
+    if (config.log.perf) {
+      t0 = performance.now()
+    }
+    const sequelize = req.app.get('sequelize')
+    const user = req.user
+    const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
+    const msg = cant.editUser(loggedInUser, user)
+    if (msg) {
+      throw new ValidationError([msg], 403)
+    }
+    const body = validateParam(req, 'body')
+    const dataUrl = validateParam(body, 'bytes', { validators: [front.isString] })
+    const [contentType, bytesOrig] = lib.parseDataUriBase64(dataUrl)
+    if (!config.allowedImageContentTypes.has(contentType)) {
+      throw new ValidationError([
+        `content type is not allowed: "${contentType}". ` +
+        `Allowed content types: ${config.allowedImageContentTypesArr.join(', ')}`
+      ], 422)
+    }
+    const sizeOrig = bytesOrig.length
+    if (sizeOrig > config.profilePictureMaxUploadSize) {
+      throw new ValidationError([
+        `image is too large: ${sizeOrig} bytes, maximum size is ${config.profilePictureMaxUploadSize}`
+      ], 422)
+    }
+    let bytes
+    try {
+      bytes = await sharp(bytesOrig).resize(250, 250, { fit: 'fill' }).toBuffer()
+    } catch(err) {
+      throw new ValidationError(`Image conversion failed with: ${err.message}`)
+    }
+    user.image = `${config.profilePicturePath}/${user.id}`
+    t0 = lib.logPerf(t0, 'PUT /users/:username/profile-picture before transaction')
+    await sequelize.transaction(async (transaction) => {
+      await sequelize.models.Upload.upsert(
+        {
+          bytes,
+          contentType,
+          path: `${config.profilePicturePathComponent}/${user.id}`,
+          size: bytes.length,
+        },
+        { transaction }
+      )
+      await user.saveSideEffects({ transaction })
+    })
+    t0 = lib.logPerf(t0, 'PUT /users/:username/profile-picture after transaction')
+    return res.json({})
+  } catch(error) {
+    next(error);
+  }
+})
+
 // Follow
 
 async function validateFollow(req, res, user, isFollow) {
   if ((await user.hasFollow(req.user)) === isFollow) {
-    throw new lib.ValidationError(
+    throw new ValidationError(
       [`User '${user.username}' ${isFollow ? 'already follows' : 'does not follow'} user '${req.user.username}'`],
       403,
     )

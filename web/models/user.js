@@ -75,6 +75,9 @@ module.exports = (sequelize) => {
           }
         }
       },
+      // Previously we allowed this to be an arbitrary external image. Then when we implemented
+      // file upload, we are keeping this just for backward compatibility. New profile picture
+      // uploads however are forcibly stored inside our server and this is always of form "/path/to/image".
       image: DataTypes.STRING(2048),
       hash: DataTypes.STRING(1024),
       salt: DataTypes.STRING,

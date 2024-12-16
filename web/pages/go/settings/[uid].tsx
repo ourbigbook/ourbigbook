@@ -1,10 +1,18 @@
 import Router from 'next/router'
 import React from 'react'
 
-import { contactUrl } from 'front/config'
+import {
+  allowedImageContentTypes,
+  allowedImageContentTypesSimplifiedArr,
+  contactUrl,
+  profilePicturePath,
+  profilePictureMaxUploadSize,
+} from 'front/config'
+import CustomImage from 'front/CustomImage'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
 import {
+  addCommasToInteger,
   MyHead,
   SettingsIcon,
   setupUserLocalStorage,
@@ -14,6 +22,8 @@ import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { CommonPropsType } from 'front/types/CommonPropsType'
 import { UserType } from 'front/types/UserType'
+import { displayAndUsernameText } from 'front/user'
+import { formatNumberApprox } from 'ourbigbook'
 
 interface SettingsProps extends CommonPropsType {
   user?: UserType;
@@ -26,6 +36,7 @@ const Settings = ({
   const [isLoading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState([]);
   const [userInfo, setUserInfo] = React.useState(user0);
+  const profileImageRef = React.useRef<HTMLImageElement|null>(null)
   const updateState = (field) => (e) => {
     const state = userInfo;
     const newState = { ...state, [field]: e.target.value };
@@ -60,7 +71,7 @@ const Settings = ({
   const maxIssuesPerHourLabel = "Maximum issues/comments per hour (maxIssuesPerHour)"
   const title = "Account settings"
   return <>
-    <MyHead title={title} />
+    <MyHead title={`${title} - ${displayAndUsernameText(userInfo)}`} />
     <div className="settings-page content-not-ourbigbook">
       <h1><SettingsIcon /> {title}</h1>
       <>
@@ -86,12 +97,47 @@ const Settings = ({
             />
           </Label>
           <Label label="Profile picture">
-            <input
-              type="text"
-              placeholder="URL of profile picture"
-              value={userInfo.image ? userInfo.image : ""}
-              onChange={updateState("image")}
-            />
+            <span
+              className="profile-picture-container"
+              onClick={() => {
+                const input = document.createElement('input')
+                input.type = 'file'
+                input.onchange = e => { 
+                  var file = (e.target as HTMLInputElement).files[0]
+                  if (file.size > profilePictureMaxUploadSize) {
+                    alert(`File too large: ${addCommasToInteger(file.size)} bytes. Maximum allowed size: ${formatNumberApprox(profilePictureMaxUploadSize)}B`)
+                  } else if (!allowedImageContentTypes.has(file.type)) {
+                    alert(`File type not allowed: ${file.type.split('/')[1]}. Allowed types: ${allowedImageContentTypesSimplifiedArr.join(', ')}`)
+                  } else {
+                    var reader = new FileReader()
+                    reader.readAsDataURL(file)
+                    reader.onload = async (readerEvent) => {
+                      const { data, status } = await webApi.userUpdateProfilePicture(
+                        userInfo.username,
+                        readerEvent.target.result,
+                      )
+                      if (status === 200) {
+                        profileImageRef.current.src = `${profilePicturePath}/${userInfo.id}`
+                      } else {
+                        let msg = `Upload failed with status: ${status}`
+                        if (data.errors) {
+                          msg += `. Error message: ${data.errors[0]}`
+                        }
+                        alert(msg)
+                      }
+                    }
+                  }
+                }
+                input.click()
+              }}
+            >
+              <CustomImage
+                className="profile-picture"
+                imgRef={profileImageRef}
+                src={userInfo.effectiveImage}
+              />
+              <span className="profile-picture-caption">Click to update</span>
+            </span>
           </Label>
           <Label label="Email">
             <input

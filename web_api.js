@@ -359,6 +359,13 @@ class WebApi {
     )
   }
 
+  async userUpdateProfilePicture(username, bytes) {
+    return this.req('put',
+      `users/${username}/profile-picture`,
+      { body: { bytes } },
+    )
+  }
+
   async userUnfollow(username) {
     return this.req('delete',
       `users/${username}/follow`,

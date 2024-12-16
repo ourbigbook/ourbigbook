@@ -28,6 +28,11 @@ export const AUTH_LOCAL_STORAGE_NAME = 'user'
 export const LOGIN_ACTION = 'Sign in'
 export const REGISTER_ACTION = 'Sign up'
 
+/** https://stackoverflow.com/questions/2901102/how-to-format-a-number-with-commas-as-thousands-separators */
+export function addCommasToInteger(i: number): string {
+  return i.toLocaleString('en-US', { maximumFractionDigits: 0 })
+}
+
 export function capitalize(s) {
   return s[0].toUpperCase() + s.slice(1)
 }
@@ -343,7 +348,6 @@ export const AppContextProvider = ({ children, vals }) => {
 
 export function useCtrlEnterSubmit(handleSubmit) {
   React.useEffect(() => {
-    console.log(`useCtrlEnterSubmit`)
     function ctrlEnterListener(e) {
       if (e.code === 'Enter' && e.ctrlKey) {
         handleSubmit(e)

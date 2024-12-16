@@ -4678,6 +4678,50 @@ it(`api: user validation`, async () => {
   })
 })
 
+// Generated with:
+// convert -size 1x1 xc:white empty.png
+// od -t x1 -An empty.png | tr -d '\n '
+const PNG_1X1_WHITE = '89504e470d0a1a0a0000000d4948445200000001000000010100000000376ef924000000206348524d00007a26000080840000fa00000080e8000075300000ea6000003a98000017709cba513c00000002624b47440001dd8a13a40000000774494d4507e80c10123327ede92e940000000a4944415408d76368000000820081dd436af40000000049454e44ae426082'
+
+it(`api: profile picture`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    const base64 = Buffer.from(PNG_1X1_WHITE, 'hex').toString('base64')
+
+    // Success.
+    ;({ data, status } = await test.webApi.userUpdateProfilePicture(
+      'user0',
+      `data:image/png;base64,${base64}`,
+    ))
+    assertStatus(status, data)
+
+    // Format not allowed.
+    ;({ data, status } = await test.webApi.userUpdateProfilePicture(
+      'user0',
+      `data:image/asdf;base64,${base64}`,
+    ))
+    assert.strictEqual(status, 422)
+
+    // Input too large. Adding a bunch of zeros at the end
+    // still produces a valid PNG I think.
+    ;({ data, status } = await test.webApi.userUpdateProfilePicture(
+      'user0',
+      `data:image/png;base64,${Buffer.from(PNG_1X1_WHITE + '00'.repeat(2 * config.profilePictureMaxUploadSize), 'hex').toString('base64')}`,
+    ))
+    assert.strictEqual(status, 422)
+
+    // Invalid image.
+    ;({ data, status } = await test.webApi.userUpdateProfilePicture(
+      'user0',
+      `data:image/png;base64,${Buffer.from(PNG_1X1_WHITE.substring(Math.floor(PNG_1X1_WHITE.length / 2)), 'hex').toString('base64')}`,
+    ))
+    assert.strictEqual(status, 422)
+  })
+})
+
 it(`api: explicit id`, async () => {
   // We made this work, but it is never used on ourbigbook upload and
   // likely should be explicitly forbidden instead. The best general idea for

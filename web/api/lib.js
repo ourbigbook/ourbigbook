@@ -74,6 +74,14 @@ async function likeObject({
   return res.json({ [objectName]: await newObj.toJson(loggedInUser) })
 }
 
+function logPerf(t0, s) {
+  if (config.log.perf) {
+    const t1 = performance.now()
+    console.error(`${s} ${t1 - t0} ms`)
+    return t1
+  }
+}
+
 function validateBodySize(loggedInUser, bodySource) {
   if (!loggedInUser.admin && bodySource.length > loggedInUser.maxArticleSize) {
     throw new ValidationError(
@@ -167,6 +175,22 @@ function oneHourAgo() {
   return new Date(new Date - MILLIS_PER_HOUR)
 }
 
+/** https://stackoverflow.com/questions/11335460/how-do-i-parse-a-data-url-in-node 
+ * With regex is extremely slow.
+ */
+function parseDataUriBase64(s) {
+  const preAndContent = s.split(';base64,')
+  if (preAndContent.length !== 2) {
+    throw new ValidationError('invalid data URI')
+  }
+  const [pre, content] = preAndContent
+  if (!pre.startsWith('data:')) {
+    throw new ValidationError('invalid data URI')
+  }
+  let contentType = pre.substring(5)
+  return [contentType, Buffer.from(content, 'base64')]
+}
+
 async function sendEmail({
   fromName='OurBigBook.com',
   html,
@@ -238,7 +262,7 @@ function validate(inputString, validators, prop) {
  *
  *             Body JSON is preparsed by Express for us as a JavaScript object, and types are already converted,
  *             so typecast is not necessary. But then you have to check that types are correct instead.
- * - validators: if any of them returs false, return an error code.
+ * - validators: if any of them returns false, return an error code.
  *               They are not run if the value was not given, the defaultValue is used directly
  *               if it was given in that case.
  * - defaultValue: if not given, will blow up if the param is missing. Can be undefined however
@@ -278,11 +302,13 @@ module.exports = {
   getLimitAndOffset,
   getOrder,
   likeObject,
+  logPerf,
   oneHourAgo,
   oneMinuteAgo,
   MILLIS_PER_HOUR,
   MILLIS_PER_MINUTE,
   msToRoundedTime,
+  parseDataUriBase64,
   sendEmail,
   validate,
   validateBodySize,

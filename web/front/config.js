@@ -55,8 +55,31 @@ const convertOptions = {
   xss_safe: true,
 }
 
+const apiPath = '/' + ourbigbook.WEB_API_PATH
+const uploadPath = apiPath + '/upload'
+const profilePicturePathComponent = 'profile'
+const profilePicturePath = uploadPath + '/' + profilePicturePathComponent
+const allowedImageContentTypesArr = [
+  'image/jpeg',
+  'image/png',
+]
+const allowedImageContentTypesSimplifiedArr = allowedImageContentTypesArr.map(t => t.split('/')[1])
 module.exports = {
-  apiPath: '/' + ourbigbook.WEB_API_PATH,
+  aboutUrl: `${docsUrl}`,
+  allowedImageContentTypes: new Set(allowedImageContentTypesArr),
+  allowedImageContentTypesArr,
+  allowedImageContentTypesSimplifiedArr,
+  apiPath,
+  appDomain,
+  appNameShort,
+  appName: `${appNameShort}.com`,
+  // For things like "article in same topic on topic page"
+  articleLimitSmall: 5,
+  // Default.
+  articleLimit: 20,
+  // Max allowed to be set by user.
+  articleLimitMax: 20,
+  buttonActiveClass: 'active',
   commentsHeaderId: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comments`,
   commentIdPrefix: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comment-`,
   // Common convert options used by all frontend components: the backend and the editor,
@@ -64,25 +87,14 @@ module.exports = {
   contactUrl: `${docsUrl}/contact`,
   convertContext: ourbigbook.convertInitContext(convertOptions),
   convertOptions,
-  // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
-  escapeUsername,
-  appDomain,
-  appNameShort,
-  appName: `${appNameShort}.com`,
   docsUrl,
   docsAdminUrl: `${docsUrl}/ourbigbook-web-admin`,
   donateUrl: `${docsUrl}#donate`,
-  aboutUrl: `${docsUrl}`,
-  buttonActiveClass: 'active',
   defaultProfileImage: `/default-profile-image.svg`,
   disableFrontend: process.env.OURBIGBOOK_DISABLE_FRONTEND === env_true,
-  // For things like "article in same topic on topic page"
-  articleLimitSmall: 5,
-  // Default.
-  articleLimit: 20,
-  // Max allowed to be set by user.
-  articleLimitMax: 20,
   defaultUserScoreTitle: 'Sum of likes of all articles authored by user',
+  // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
+  escapeUsername,
   /** @type {boolean | 'blocking'} */
   fallback: 'blocking',
   forbidMultiheaderMessage: 'headers are not allowed in OurBigBook Web Articles. Instead create a new article with the "New" button and set its parent to the current article.',
@@ -142,6 +154,9 @@ module.exports = {
   },
   port: process.env.PORT || 3000,
   postgres: ourbigbook_nodejs_front.postgres,
+  profilePictureMaxUploadSize: 2000000,
+  profilePicturePath,
+  profilePicturePathComponent,
   reservedUsernames: new Set([
     ourbigbook.WEB_API_PATH,
     escapeUsername,
@@ -149,6 +164,7 @@ module.exports = {
   revalidate: 10,
   secret: ourbigbook_nodejs_front.isProduction ? process.env.SECRET : 'secret',
   sureLeaveMessage: 'Your change may be unsaved, are you sure you want to leave this page?',
+  uploadPath,
   useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !ourbigbook_nodejs_front.isTest,
   usernameMinLength: 3,
   usernameMaxLength: 40,

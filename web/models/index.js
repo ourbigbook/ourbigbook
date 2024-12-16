@@ -46,6 +46,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   const SequelizeMeta = require('./sequelize_meta')(sequelize)
   const Site = require('./site')(sequelize)
   const User = require('./user')(sequelize)
+  const Upload = require('./upload')(sequelize)
   const Topic = require('./topic')(sequelize)
   ourbigbook_models.addModels(sequelize, { web: true })
   const File = sequelize.models.File

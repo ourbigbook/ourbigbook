@@ -73,6 +73,7 @@
     "nodejs_webpack_safe.js",
     "ourbigbook",
     "ourbigbook.common.scss",
+    "runtime_common.js",
     "web_api.js",
     "template/*"
   ],

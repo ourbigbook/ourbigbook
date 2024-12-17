@@ -7,6 +7,25 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= Profile picture upload
+{parent=News}
+{tag=Web}
+
+You can now update your profile picture on <OurBigBook Web> by uploading an image to the website like in a normal website.
+
+Previously, we only supported linking to an external image URL. Now this is not allowed anymore and you must instead upload your image to the website. Existing external links will continue to work, but if you want to update the profile picture again, then you will need to upload your own next time.
+
+Besides being a basic feature expected from any modern website, this is the first instance of "static file upload" on the site, and serves as part of a more general static file upload mechanism that can be later reused for other important features like uploading images for your articles.
+
+This initial implementation is very simplistic: we are just storing the image directly in the database. We will look into migrating to a more proper static file solution later on if this starts to hurt performance. We're using the https://github.com/lovell/sharp[sharp] Node.js image processing library, a frontend to https://github.com/libvips/libvips[libvips], to downsize input images as needed.
+
+\Image[feature/profile-picture/update-arrow.png]
+{title=<OurBigBook Web> profile picture upload}
+{description=Clicking on the current profile picture opens up a file dialog which allows you to select an image from your computer to be your new profile picture.}
+{provider=github}
+{border}
+{height=800}
+
 = Disambiguate shows on navigation
 {parent=News}
 

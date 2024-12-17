@@ -4719,6 +4719,21 @@ it(`api: profile picture`, async () => {
       `data:image/png;base64,${Buffer.from(PNG_1X1_WHITE.substring(Math.floor(PNG_1X1_WHITE.length / 2)), 'hex').toString('base64')}`,
     ))
     assert.strictEqual(status, 422)
+
+    // User does not exist
+    ;({ data, status } = await test.webApi.userUpdateProfilePicture(
+      'not-exists',
+      `data:image/png;base64,${base64}`,
+    ))
+    assert.strictEqual(status, 404)
+
+    // Logged out
+    test.disableToken()
+    ;({ data, status } = await test.webApi.userUpdateProfilePicture(
+      'user0',
+      `data:image/png;base64,${base64}`,
+    ))
+    assert.strictEqual(status, 401)
   })
 })
 

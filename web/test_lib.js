@@ -544,7 +544,7 @@ async function generateDemoData(params) {
           bodySource: articleArg.bodySource,
           convertOptionsExtra: { katex_macros },
           enforceMaxArticles: false,
-          list: opts.list,
+          list: opts.list === undefined ? true : opts.list,
           parentId,
           path: opts.path,
           render,
@@ -576,6 +576,7 @@ async function generateDemoData(params) {
           author: users[0],
           bodySource: 'This topic only exists for the first user.\n',
           convertOptionsExtra: { katex_macros },
+          list: true,
           parentId,
           render: true,
           sequelize,
@@ -586,8 +587,9 @@ async function generateDemoData(params) {
       if (articleUser0Only) {
         const { articles } = await convert.convertArticle({
           author: users[0],
-          bodySource: 'This article has many discussions. To test article discussion pagination.',
+          bodySource: 'This article has many discussions. To test article discussion pagination.\n',
           convertOptionsExtra: { katex_macros },
+          list: true,
           parentId: `${ourbigbook.AT_MENTION_CHAR}${articleUser0Only.slug}`,
           render: true,
           sequelize,

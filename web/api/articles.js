@@ -158,6 +158,7 @@ router.get('/hash', auth.optional, async function(req, res, next) {
         ),
         hash: file.hash,
         path: file.path,
+        // This means that we've extracted the IDs but didn't render.
         renderOutdated: !!file.get('renderOutdated'),
       })
     }

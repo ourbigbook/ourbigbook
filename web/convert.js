@@ -297,6 +297,9 @@ async function convertArticle({
       // as changing the Index to anything else always leads to infinite loop.
       throw new ValidationError(`cannot give parentId for index conversion, received "${toplevelId}"`)
     }
+    if (isIndex && list === false) {
+      throw new ValidationError(`The index page cannot be unlisted!`)
+    }
 
     const synonymHeadersArr = Array.from(extra_returns.context.synonym_headers)
     const synonymIds = synonymHeadersArr.map(h => h.id)
@@ -377,7 +380,7 @@ async function convertArticle({
       updateHash,
     }
     if (updateHash) {
-      update_database_after_convert_arg.hash = articleHash({ parentId, previousSiblingId, source })
+      update_database_after_convert_arg.hash = articleHash({ list, parentId, previousSiblingId, source })
     }
     const { file: newFile } = await update_database_after_convert(update_database_after_convert_arg)
 

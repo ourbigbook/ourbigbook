@@ -8,6 +8,20 @@ const axios = require('axios')
 
 const ourbigbook = require('./index');
 
+/**
+ * TODO get rid of opts. Instead, it would be better if every article information
+ * just went into the h1 metadata inside the a source string. Currently besides
+ * using this for
+ * * source: main source string
+ * it also contains:
+ * * list (bool)
+ * * parentId (string)
+ * * previousSiblingId (string)
+ * This ended up happening because we started adding information on web which didn't
+ * exist locally because local conversions have other ways of doing things:
+ * * list: does not exist locally as of writing. Could be implemented.
+ * * parentId and previousSiblingId: done with header tree and \Include
+ */
 function articleHash(opts={}) {
   const jsonStr = JSON.stringify(Object.fromEntries(Object.entries(opts).sort()))
   return crypto.createHash('sha256').update(jsonStr).digest('hex')

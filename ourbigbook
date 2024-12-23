@@ -2263,6 +2263,7 @@ if (cli.helpMacros) {
               webPathToArticleEntry
             }
             const articleHashProps = {
+              list: true,
               source: articleMeta.source,
             }
             const parentId = addUsername(articleMeta.parentId, username)

@@ -181,6 +181,7 @@ module.exports = (sequelize) => {
           return convert.convertArticle({
             author: user,
             bodySource: User.defaultIndexBody,
+            list: true,
             path: ourbigbook.INDEX_BASENAME_NOEXT,
             sequelize,
             titleSource: '',

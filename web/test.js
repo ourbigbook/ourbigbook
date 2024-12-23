@@ -923,6 +923,17 @@ Welcome to my home page hacked!
       assert.strictEqual(data.titleRender, ourbigbook.HTML_HOME_MARKER)
       assert.match(data.render, /Welcome to my home page hacked!/)
 
+      ;({data, status} = await createOrUpdateArticleApi(test, {
+        titleSource: '',
+        bodySource: `{id=}
+
+Welcome to my home page hacked!
+`
+        },
+        { list: false, }
+      ))
+      assert.strictEqual(status, 422)
+
     // View articles
 
       // Test global feed paging.
@@ -4440,7 +4451,7 @@ it(`api: /hash: cleanupIfDeleted is correct`, async () => {
     const user = await test.createUserApi(0)
     test.loginUser(user)
 
-    // Empty non-hidden article needs to be cleaned.
+    // Empty listed article needs to be cleaned.
     article = createArticleArg({
       i: 0,
       titleSource: 'Mathematics',
@@ -4455,7 +4466,7 @@ it(`api: /hash: cleanupIfDeleted is correct`, async () => {
       { path: '@user0/mathematics.bigb', cleanupIfDeleted: true, },
     ])
 
-    // Empty hidden article does not need to be cleaned.
+    // Empty unlisted article does not need to be cleaned.
     article = createArticleArg({
       i: 0,
       titleSource: 'Mathematics',
@@ -4471,7 +4482,7 @@ it(`api: /hash: cleanupIfDeleted is correct`, async () => {
       { path: '@user0/mathematics.bigb', cleanupIfDeleted: false, },
     ])
 
-    // Non-empty hidden article needs to be cleaned.
+    // Non-empty unlisted article needs to be cleaned.
     article = createArticleArg({
       i: 0,
       titleSource: 'Mathematics',

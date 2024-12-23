@@ -224,6 +224,9 @@ async function convertArticle({
   updateHash,
   updateTree,
 }) {
+  if (list === undefined) {
+    list = true
+  }
   if (updateNestedSetIndex === undefined) {
     updateNestedSetIndex = true
   }

@@ -259,7 +259,7 @@ export const getServerSidePropsArticleHoc = ({
       }
       return { props }
     } else {
-      throw new TypeError
+      return { notFound: true }
     }
   }
 }

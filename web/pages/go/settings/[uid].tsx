@@ -278,6 +278,6 @@ export async function getServerSideProps(context) {
     }
     return { props }
   } else {
-    throw new TypeError
+    return { notFound: true }
   }
 }

@@ -1970,7 +1970,7 @@ class Tokenizer {
               // Paragraph comes before list close:
               //
               // * aa
-              // 
+              //
               //   bb
               this.push_token(TokenType.PARAGRAPH)
               this.consumeListIndentClose()
@@ -1978,7 +1978,7 @@ class Tokenizer {
               // Paragraph comes after list close:
               //
               // * aa
-              // 
+              //
               // bb
               this.consumeListIndentClose()
               this.push_token(TokenType.PARAGRAPH)
@@ -3313,7 +3313,7 @@ function convertInitOptions(options) {
       newOptions[key] = val
     }
   }
-  const optionsOrig = options 
+  const optionsOrig = options
   options = newOptions
   // TODO this fails several --embed-includes tests. Why.
   // Futhermore, this would print the exact same for both according to diff.
@@ -7100,6 +7100,7 @@ function renderTocFromEntryList({
   for (let i = 0; i < entry_list.length; i++) {
     const entry = entry_list[i]
     let {
+      addLink,
       content,
       href,
       level,
@@ -7133,7 +7134,10 @@ function renderTocFromEntryList({
     } else {
       linear_count_str = ''
     }
-    ret += `<div${id_to_toc}>${TOC_ARROW_HTML}<span class="not-arrow"><a${href}${linear_count_str}>${content}</a><span class="hover-metadata">`;
+    ret += `<div${id_to_toc}>${TOC_ARROW_HTML}` +
+      `<span class="not-arrow">` +
+      `<a${href}${linear_count_str}>${content}</a>` +
+      `<span class="hover-metadata">`
     let toc_href = htmlAttr('href', '#' + htmlEscapeHrefAttr(my_toc_id));
     if (tocHasSelflinks) {
       // c for current
@@ -7145,6 +7149,9 @@ function renderTocFromEntryList({
     if (parent_href) {
       // p for parent
       ret += `<a${parent_href}${htmlAttr('class', 'u')}> ${parent_content}</a>`;
+    }
+    if (addLink) {
+      ret += addLink
     }
     if (entry.descendant_count_html) {
       ret += `${entry.descendant_count_html}`
@@ -8177,6 +8184,9 @@ const H_ANCESTORS_CLASS = 'ancestors'
 exports.H_ANCESTORS_CLASS = H_ANCESTORS_CLASS
 const H_WEB_CLASS = 'web'
 exports.H_WEB_CLASS = H_WEB_CLASS
+// The container of an ourbigbook render should have this class.
+const OURBIGBOOK_CSS_CLASS = 'ourbigbook'
+exports.OURBIGBOOK_CSS_CLASS = OURBIGBOOK_CSS_CLASS
 const FILE_ROOT_PLACEHOLDER = '(root)'
 exports.FILE_ROOT_PLACEHOLDER = FILE_ROOT_PLACEHOLDER
 const HTML_REF_MARKER = '<sup class="ref">[ref]</sup>'
@@ -11171,7 +11181,7 @@ OUTPUT_FORMATS_LIST.push(
             // Last child in argument, need to be explicit or else ignored by newline removal.
             !nextMacro ||
             !context.macros[nextMacro.macro_name].inline ||
-            // Multiple brs together, can't render them all as \n or else we get a paragraph, 
+            // Multiple brs together, can't render them all as \n or else we get a paragraph,
             (prevAst && prevAst.macro_name === Macro.LINE_BREAK_MACRO_NAME)
           ) {
             return ourbigbookConvertSimpleElem(ast, context)

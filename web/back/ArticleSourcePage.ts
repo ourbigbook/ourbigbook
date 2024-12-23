@@ -32,7 +32,7 @@ export const getServerSidePropsArticleSourceHoc = (
         props
       }
     } else {
-      throw new TypeError
+      return { notFound: true }
     }
   }
 }

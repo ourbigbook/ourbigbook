@@ -65,6 +65,11 @@ button, a.btn {
   padding: 2px 5px;
   text-decoration: none;
   vertical-align: bottom;
+  &.wider {
+    $p: 0.6em;
+    padding-left: $p;
+    padding-right: $p;
+  }
   &:not(.disabled):not(:disabled) {
     // We make hover more visible than active because it glares too much
     // when you have an article list with lost of like buttons.
@@ -101,10 +106,23 @@ button, a.btn {
     // A button that can be placed side-by-side with text taking up a comparable height.
     // Because the default button is way taller and looks terrible when side-by-side.
     //
+    // The button is still taller than surrounding text, and this should not be used
+    // when you need it to be strictly as tall, e.g. on things that appear on hover,
+    // otherwise this will cause vertical displacement.
+    //
     // Important here because we were getting conflicts with .tab-item,
     // no patience to sort that out better right now.
     padding: 1px 5px !important;
     line-height: 1.3em;
+  }
+  &.abs {
+    // Button removed from normal page flow. Suitable for
+    // on-hover show elements that would otherwise cause vertical displacement.
+    padding: 0.05em 5px;
+    line-height: 1.3em;
+    position: absolute;
+    transform: translateY(-0.3em);
+    margin-left: 0.5em;
   }
 }
 
@@ -371,6 +389,10 @@ span.pill {
   }
 }
 
+//.toc-new {
+//  border: 1px solid $color;
+//  border-radius: 2px;
+//}
 .toc-limited {
   font-weight: bold;
 }
@@ -666,6 +688,50 @@ span.shortcut {
     transform: rotate(360deg);
   }
   */
+}
+
+.modal-page {
+  //background-color: rgba(128, 128, 128, 10);
+  //position: absolute;
+  //top: 50%;
+  //left: 50%;
+  //transform: translate(-50%, -50%);
+  //width: 100%;
+  //height: 100%;
+
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0,0,0,0.6); /* Black w/ opacity */
+  .modal-container {
+    padding: 1em;
+    background-color: $background-color;
+    position: fixed;
+    //height: 50%;
+    //width: 50%;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    .modal-title {
+      font-weight: bold;
+    }
+    & > * {
+      //display: block;
+      //width: 100%;
+      //height: 100%;
+      //margin: 15% auto; /* 15% from the top and centered */
+      //padding: 20px;
+      &:not(:last-child) {
+        margin-bottom: 0.5em;
+      }
+      text-align: center;
+      width: 100%;
+    }
+  }
 }
 
 /* Links for internal navigation between pages. */

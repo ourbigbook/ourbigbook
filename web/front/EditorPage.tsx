@@ -129,7 +129,7 @@ class RestDbProvider extends web_api.DbProviderBase {
 
 function titleToId(username, title) {
   let ret = `${ourbigbook.AT_MENTION_CHAR}${username}`
-  const topicId = ourbigbook.titleToId(title)
+  const topicId = ourbigbook.titleToId(title, { keepScopeSep: true })
   if (topicId !== ourbigbook.INDEX_BASENAME_NOEXT) {
     ret += `/${topicId}`
   }

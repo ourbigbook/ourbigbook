@@ -49,6 +49,8 @@ export interface IndexPageProps extends CommonPropsType {
 function IndexPageHoc({
   pageType='home'
 }={}) {
+  // This is also used for indexes of:
+  // - discussions for a given article
   const isHomepage = pageType === 'home'
   return function IndexPage({
     articles,

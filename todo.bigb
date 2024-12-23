@@ -76,6 +76,8 @@ Like big files, only show on split pages.
 
 Once this is done, we can entirely replace the custom directory listing generated in the `ourbigbook` executable by it, which will be the exact same code path as `{file}` generation.
 
+Closely related issue: https://github.com/ourbigbook/ourbigbook/issues/348
+
 === Nested set index corruption
 {tag=Web}
 {tag=Bug}
@@ -636,6 +638,8 @@ Off the bat `JSON.stringify` doesn't work due to circular references though that
 {tag=Web upload}
 
 Web upload breaks with duplicate ID if you rename a header and synonym the old one.
+
+TODO this issue is the same as: https://github.com/ourbigbook/ourbigbook/issues/319[]?
 
 === Photos of the merchandise!
 {tag=Publicity}
@@ -1418,7 +1422,7 @@ Will also serve as a mechanism to view .bigb source without GitHub.
 === Start a basic notification system
 {tag=Web}
 
-OK, now afetr the big redirect from cirosantilli.com to ourbigbook.com, this is becoming more pressing.
+OK, now after the big redirect from cirosantilli.com to ourbigbook.com, this is becoming more pressing.
 
 We could start simple without any in-browser things, email only. Though having both would be ideal...
 

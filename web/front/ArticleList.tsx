@@ -515,8 +515,8 @@ const ArticleList = ({
                 {' '}
                 <Link
                   href={{
-                      pathname: router.pathname,
-                      query: { ...router.query, 'show-unlisted': QUERY_TRUE_VAL },
+                    pathname: router.pathname,
+                    query: { ...router.query, 'show-unlisted': QUERY_TRUE_VAL },
                   }}
                 >
                   also show them
@@ -524,8 +524,8 @@ const ArticleList = ({
                 {' '}or{' '}
                 <Link
                   href={{
-                      pathname: router.pathname,
-                      query: { ...router.query, 'show-unlisted': QUERY_TRUE_VAL, 'show-listed': QUERY_FALSE_VAL },
+                    pathname: router.pathname,
+                    query: { ...router.query, 'show-unlisted': QUERY_TRUE_VAL, 'show-listed': QUERY_FALSE_VAL },
                   }}
                 >
                   only show them
@@ -536,8 +536,8 @@ const ArticleList = ({
                 {' '}
                 <Link
                   href={{
-                      pathname: router.pathname,
-                      query: lodash.omit(router.query, 'show-unlisted', 'show-listed'),
+                    pathname: router.pathname,
+                    query: lodash.omit(router.query, 'show-unlisted', 'show-listed'),
                   }}
                 >
                   click here to show only listed articles

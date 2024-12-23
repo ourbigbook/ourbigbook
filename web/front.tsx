@@ -558,7 +558,7 @@ export function getShortFragFromLong(fragNoHash) {
 
 /** Modify the current URL to have this hash. Do not add alter browser history. */
 export function replaceFrag(fragNoHash) {
-  const newUrl = window.location.pathname + '#' + fragNoHash
+  const newUrl = window.location.pathname + window.location.search + '#' + fragNoHash
   // Using this internal-looking API works. Not amazing, bu we can't find a better way.
   // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
   // https://github.com/vercel/next.js/discussions/18072
@@ -669,4 +669,25 @@ export function RecaptchaScript() {
   } else {
     return <></>
   }
+}
+
+// URL operations.
+
+/** /my/path?aaa=bbb -> /my/path?aaa=000&bbb=111 */
+export function addParameterToUrlPath(path, key: string, value: string): string {
+  const url = new URL('http://a.com' + path)
+  const params = new URLSearchParams(url.search)
+  params.set(key, value)
+  return `${url.pathname}?${params.toString()}`
+}
+
+export function removeParameterFromUrlPath(path, key: string): string {
+  const url = new URL('http://a.com' + path)
+  const params = new URLSearchParams(url.search)
+  params.delete(key)
+  let paramsString = params.toString()
+  if (paramsString) {
+    paramsString = `?${paramsString}`
+  }
+  return `${url.pathname}${paramsString}`
 }

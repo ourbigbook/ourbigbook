@@ -254,6 +254,12 @@ function isTruthy(s) {
   return !!s
 }
 
+// ID, slug and topic conversions
+
+function slugToTopic(slug) {
+  return slug.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+}
+
 function idToSlug(id) {
   return id.slice(ourbigbook.AT_MENTION_CHAR.length)
 }
@@ -296,7 +302,9 @@ module.exports = {
   isTypeOrArrayOf,
   isTruthy,
   modifyEditorInput,
+  slugToTopic,
   typecastBoolean,
   typecastInteger,
   uidTopicIdToId,
+  uidTopicIdToSlug,
 }

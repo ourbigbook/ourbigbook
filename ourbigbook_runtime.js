@@ -29,6 +29,20 @@ const TOC_CONTAINER_CLASS = 'toc-container'
 // max-mobile-width
 const CSS_MAX_MOBILE_WIDTH = 635
 
+export function toplevelMouseleave(targetElem) {
+  const firstChild = targetElem.children[0]
+  if (
+    // Not sure why but this could be undefined on OurBigBook Web
+    // when clicking from e.g. /go/articles to an article and hovering
+    // off from the element that you were hovered on to by the page change.
+    // Would be good to understand better, but no patience now.
+    firstChild !== undefined &&
+    firstChild.className === SELFLINK_CLASS
+  ) {
+    targetElem.removeChild(firstChild)
+  }
+}
+
 // toplevel: if given, is an Element (not document) under which OurBigBook Markup runtime will take effect.
 export function ourbigbook_runtime(toplevel, opts={}) {
   if (toplevel === undefined) {
@@ -261,11 +275,22 @@ export function ourbigbook_runtime(toplevel, opts={}) {
   for (const elem of toplevel.querySelectorAll('.ourbigbook > *')) {
     if (elem.id) {
       elem.addEventListener('mouseenter', (e) => {
-        if (CSS_MAX_MOBILE_WIDTH < window.innerWidth) {
+        const t = e.target
+        const firstChild = t.children[0]
+        if (
+          CSS_MAX_MOBILE_WIDTH < window.innerWidth &&
+          // Ensure that we have at most one self link.
+          // This might matter on Web with the + sign to open a modal,
+          // which can fail to trigger mouseleave.
+          (
+            firstChild === undefined ||
+            firstChild.className !== SELFLINK_CLASS
+          )
+        ) {
           const a = myDocument.createElement('a')
-          a.href = `#${e.target.id}`
+          a.href = `#${t.id}`
           a.className = SELFLINK_CLASS
-          e.target.prepend(a)
+          t.prepend(a)
           a.title = 'Copy link'
           a.addEventListener('click', (e) => {
             navigator.clipboard.writeText(a.href)
@@ -274,18 +299,7 @@ export function ourbigbook_runtime(toplevel, opts={}) {
         }
       })
       elem.addEventListener('mouseleave', (e) => {
-        const t = e.target
-        const firstChild = t.children[0]
-        if (
-          // Not sure why but this could be undefined on OurBigBook Web
-          // when clicking from e.g. /go/articles to an article and hovering
-          // off from the element that you were hoevered on to by the page change.
-          // Would be good to understand better, but no patiecnse now.
-          firstChild !== undefined &&
-          firstChild.className === SELFLINK_CLASS
-        ) {
-          t.removeChild(firstChild)
-        }
+        toplevelMouseleave(e.target)
       })
     }
   }

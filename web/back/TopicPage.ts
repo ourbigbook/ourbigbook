@@ -85,7 +85,7 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
       }
       return { props }
     } else {
-      throw new TypeError
+      return { notFound: true }
     }
   }
 }

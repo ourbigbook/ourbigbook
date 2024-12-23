@@ -1060,6 +1060,7 @@ WHERE
       article.parentId = parentId
       article.idid = articleId.idid
       article.parentArticle = parentId.toplevelId.articles[0]
+      article.parentArticle.file = parentId.toplevelId
       const previousSiblingRef = parentId.from[0]
       if (previousSiblingRef) {
         article.previousSiblingRef = previousSiblingRef

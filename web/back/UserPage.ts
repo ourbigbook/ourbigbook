@@ -264,7 +264,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       }
       return { props }
     } else {
-      throw new TypeError
+      return { notFound: true }
     }
   }
 }

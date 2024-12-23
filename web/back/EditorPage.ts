@@ -1,21 +1,33 @@
-import ourbigbook from 'ourbigbook'
+import ourbigbook, { titleToId } from 'ourbigbook'
 
 import { getLoggedInUser } from 'back'
 import routes from 'front/routes'
 import { EditorPageProps } from 'front/EditorPage'
 import { MyGetServerSideProps } from 'front/types'
+import { uidTopicIdToSlug } from 'front/js'
+import { ArticleType } from 'front/types/ArticleType'
+
+function getTitleSourceOrBailOnCustomId(article: ArticleType): string {
+  const titleSource = article.file.titleSource
+  const topicId = article.topicId
+  if (titleToId(titleSource) === topicId) {
+    return titleSource
+  } else {
+    return topicId
+  }
+}
 
 export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSideProps => {
   return async ({ params, query, req, res }) => {
     const title = query.title
-    const parentTitle = query['parent-title']
-    const previousSiblingTitle = query['previous-sibling']
+    const parentTopicId = query['parent']
+    const previousSiblingTopicId = query['previous-sibling']
     if (
       title instanceof Array ||
-      parentTitle instanceof Array ||
-      previousSiblingTitle instanceof Array
+      parentTopicId instanceof Array ||
+      previousSiblingTopicId instanceof Array
     ) {
-      throw new TypeError
+      return { notFound: true }
     } else {
       const slug = params ? params.slug : undefined
       const slugString = slug instanceof Array ? slug.join('/') : undefined
@@ -41,8 +53,8 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
           loggedInUser,
           loggedInUser
             ? isIssue
-                ? sequelize.models.Issue.count({ where: { authorId: loggedInUser.id } })
-                : sequelize.models.File.count({ where: { authorId: loggedInUser.id } })
+              ? sequelize.models.Issue.count({ where: { authorId: loggedInUser.id } })
+              : sequelize.models.File.count({ where: { authorId: loggedInUser.id } })
             : null,
         ])),
       ])
@@ -66,6 +78,7 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
         articleJson,
         issueArticleJson,
         loggedInUserJson,
+        parentArticle,
         previousSiblingArticle,
       ] = await Promise.all([
         isIssue
@@ -77,12 +90,32 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
           : null
         ,
         loggedInUser.toJson(),
-        previousSiblingTitle ? sequelize.models.Article.getArticle({
-          includeParentAndPreviousSibling: true,
-          sequelize,
-          slug: `${loggedInUser.username}/${ourbigbook.titleToId(previousSiblingTitle)}`,
-        }) : null,
+        parentTopicId
+          ? sequelize.models.Article.getArticle({
+              sequelize,
+              slug: uidTopicIdToSlug(loggedInUser.username, parentTopicId),
+            })
+          : null
+        ,
+        previousSiblingTopicId
+          ? sequelize.models.Article.getArticle({
+              includeParentAndPreviousSibling: true,
+              sequelize,
+              slug: uidTopicIdToSlug(loggedInUser.username, previousSiblingTopicId),
+            })
+          : null
+        ,
       ])
+      if (parentTopicId && !parentArticle) {
+        return {
+          notFound: true
+        }
+      }
+      if (previousSiblingTopicId && !previousSiblingArticle) {
+        return {
+          notFound: true
+        }
+      }
       const props: EditorPageProps = {
         article: articleJson,
         articleCountByLoggedInUser,
@@ -98,12 +131,12 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
           props.previousSiblingTitle = article.previousSiblingId.toplevelId.titleSource
         }
       }
-      if (previousSiblingTitle) {
-        props.previousSiblingTitle = previousSiblingTitle
-        props.parentTitle = previousSiblingArticle.parentId.toplevelId.titleSource
+      if (previousSiblingTopicId) {
+        props.previousSiblingTitle = getTitleSourceOrBailOnCustomId(previousSiblingArticle)
+        props.parentTitle = getTitleSourceOrBailOnCustomId(previousSiblingArticle.parentArticle)
       } else {
-        if (parentTitle) {
-          props.parentTitle = parentTitle
+        if (parentTopicId) {
+          props.parentTitle = getTitleSourceOrBailOnCustomId(parentArticle)
         }
       }
       if (title) {

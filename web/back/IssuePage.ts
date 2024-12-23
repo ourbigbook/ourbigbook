@@ -75,7 +75,7 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
       }
       return { props }
     } else {
-      throw new TypeError
+      return { notFound: true }
     }
   }
 }

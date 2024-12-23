@@ -1,4 +1,5 @@
 import React from 'react'
+import Link from 'next/link'
 import { createRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import Router, { useRouter } from 'next/router'
@@ -34,6 +35,8 @@ import {
   getShortFragFromLong,
   getShortFragFromLongForPath,
   shortFragGoTo,
+  addParameterToUrlPath,
+  removeParameterFromUrlPath,
 } from 'front'
 import CommentList from 'front/CommentList'
 import CommentInput from 'front/CommentInput'
@@ -54,6 +57,7 @@ import {
   H_WEB_CLASS,
   Macro,
   HTML_PARENT_MARKER,
+  OURBIGBOOK_CSS_CLASS,
   SYNONYM_LINKS_ID_UNRESERVED,
   SYNONYM_LINKS_MARKER,
   TAGGED_ID_UNRESERVED,
@@ -67,9 +71,13 @@ import {
 // This also worked. But using the packaged one reduces the need to replicate
 // or factor out the webpack setup of the ourbigbook package.
 //import { ourbigbook_runtime } from 'ourbigbook/ourbigbook_runtime.js';
-import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js'
+import { ourbigbook_runtime, toplevelMouseleave } from 'ourbigbook/dist/ourbigbook_runtime.js'
 import { encodeGetParams } from 'ourbigbook/web_api'
 import { ArticleType } from 'front/types/ArticleType'
+import { slugToTopic, uidTopicIdToSlug } from './js'
+
+const NEW_QUERY_PARAM = 'new'
+const NEW_MODAL_BUTTON_CLASS = 'new-modal'
 
 function LinkListNoTitle({
   articles,
@@ -126,6 +134,7 @@ function WebMeta({
   isIssue,
   issueArticle,
   loggedInUser,
+  router,
   toplevel,
 }) {
   let mySlug
@@ -179,6 +188,7 @@ function WebMeta({
           <a
             href={isIssue ? routes.issueEdit(issueArticle.slug, curArticle.number) : routes.articleEdit(curArticle.slug)}
             className="btn edit"
+            title="Edit article"
           >
             <EditArticleIcon />{toplevel && <> <span className="shortcut">E</span>dit</>}
           </a>
@@ -190,23 +200,58 @@ function WebMeta({
           // cannot add children.
           loggedInUser.username === curArticle.author.username
         ) &&
-          <>
-            <a href={routes.articleNew({ 'parent-title': curArticle.titleSource })} className="btn new" title="Create a new article that is the first child of this one">
-              {' '}<NewArticleIcon title={null}/>
-              {/* TODO spacing too large on non toplevel, not sure what's the difference*/ toplevel ? ' ' : ''}
-              <ChildrenIcon title={null} />{toplevel ? <> Add child<span className="mobile-hide"> article</span></> : ''}{' '}
-            </a>
-            {' '}
-            {!isIndex &&
-              <a
-                href={routes.articleNew({ 'parent-title': curArticle.parentTitle, 'previous-sibling': curArticle.titleSource })}
-                className="btn new"
-                title="Create a new article that is the next sibling of this one"
+          <>{toplevel
+            ? <>
+                <a 
+                  href={routes.articleNew(curArticle.topicId ? { 'parent': curArticle.topicId } : {})}
+                  className="btn new"
+                  title="Create a new article that is the first child of this one"
+                >
+                  {' '}
+                  <NewArticleIcon title={null}/>
+                  {' '}
+                  <ChildrenIcon title={null} />
+                  {' '}
+                  Add<span className="mobile-hide"> article</span> under
+                  {' '}
+                </a>
+                {' '}
+                {!isIndex &&
+                  <a
+                    href={routes.articleNew({
+                      'previous-sibling': curArticle.topicId
+                    })}
+                    className="btn new"
+                    title="Create a new article that is the next sibling of this one"
+                  >
+                    {' '}
+                    <NewArticleIcon title={null}/>
+                    {' '}
+                    <ArrowRightIcon title={null} />
+                    {' '}
+                    Add<span className="mobile-hide"> article</span> after
+                    {' '}
+                  </a>
+                }
+              </>
+            : <a
+                className={`btn ${NEW_MODAL_BUTTON_CLASS} wider`}
+                href={addParameterToUrlPath(router.asPath, NEW_QUERY_PARAM, slugToTopic(curArticle.slug))}
+                onClick={(e) => {
+                  e.preventDefault()
+                  const a = e.currentTarget
+                  // TODO: mouseleave does not fire after the modal opens. And I can't reproduce on pure JS:
+                  // https://cirosantilli.com/_file/js/mouseleave-after-click.html
+                  // Without this the onhover selflink does not go away after the modal is closed,
+                  // unless we hover and leave again.
+                  toplevelMouseleave(a.closest(`.${OURBIGBOOK_CSS_CLASS} > *`))
+                  Router.push(a.href, undefined, { scroll: false })
+                }}
+                title="New..."
               >
-                {' '}<NewArticleIcon title={null}/>{toplevel ? ' ' : ''}<ArrowRightIcon />{toplevel ? <> Add sibling<span className="mobile-hide"> article</span></> : ''}{' '}
+                <NewArticleIcon title={null}/>
               </a>
-            }
-          </>
+          }</>
         }
       </>
     }
@@ -273,18 +318,45 @@ export default function Article({
   const [curComments, setComments] = React.useState(comments)
   const [curCommentsCount, setCommentsCount] = React.useState(commentsCount)
   const router = useRouter()
+  const queryNew = router.query[NEW_QUERY_PARAM]
+  const [showNew, setShowNew] = React.useState(queryNew)
+  const [showNewListener, setShowNewListener] = React.useState(undefined)
   const getParamString = encodeGetParams(router.query)
   React.useEffect(() => {
     // Otherwise comments don't change on page changes.
     setComments(comments)
     setCommentsCount(commentsCount)
   }, [getParamString, comments, commentsCount])
+  React.useEffect(() => {
+    setShowNew(queryNew)
+  }, [queryNew])
+  // Close modal on ESC keypress
+  React.useEffect(() => {
+    function listener(e) {
+      if (e.keyCode === 27) {
+        setShowNew(undefined)
+        Router.push(removeParameterFromUrlPath(router.asPath, NEW_QUERY_PARAM), undefined, { scroll: false })
+      }
+    }
+    if (showNew) {
+      setShowNewListener(() => listener)
+      document.addEventListener('keydown', listener);
+      return () => {
+        document.removeEventListener('keydown', listener);
+      }
+    } else {
+      document.removeEventListener('keydown', showNewListener);
+      setShowNewListener(undefined)
+    }
+  }, [showNew, router.asPath, showNewListener])
   let seeAllCreateNew
   if (!isIssue) {
     seeAllCreateNew = <>
       {latestIssues.length > 0 &&
         <>
-          <CustomLink href={routes.articleIssues(article.slug)} className="btn"><SeeIcon /> See all ({ article.issueCount })</CustomLink>
+          <CustomLink href={routes.articleIssues(article.slug)} className="btn">
+            <SeeIcon /> See all ({ article.issueCount })
+          </CustomLink>
           {' '}
         </>
       }
@@ -302,16 +374,22 @@ export default function Article({
     linkPref = '../'.repeat(article.slug.split('/').length - 1)
   }
   const articlesInSamePageMap = {}
+  const articlesInSamePageMapForToc = {}
   if (!isIssue) {
     for (const article of articlesInSamePage) {
       articlesInSamePageMap[article.slug] = article
     }
     articlesInSamePageMap[article.slug] = article
+    for (const article of articlesInSamePageForToc) {
+      articlesInSamePageMapForToc[article.slug] = article
+    }
+    articlesInSamePageMapForToc[article.slug] = article
   }
   const hasArticlesInSamePage = articlesInSamePage !== undefined && !!articlesInSamePage.length
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
   const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
   const aElemToMetaMap = React.useRef(new Map())
+  const showNewArticle = showNew === undefined ? undefined : articlesInSamePageMapForToc[uidTopicIdToSlug(authorUsername, showNew)]
 
   // Input state: browser bar contains a short fragment like algebra in page /username/mathematics#algebra
   // Output state: browser still contains the unchanged short input fragment, #algebra but everything else works as if
@@ -320,18 +398,19 @@ export default function Article({
   // The actual IDs on HTML are fully scoped like "username/algebra", but using Js hacks
   // we always manipulate the browse to show and use the shortest fragments possible.
   //
-  // The way this is implemented is that we switch to the long fragment that is present in the HTML, and then quickly
-  // edit the URL back to the short fragment.
+  // The way this is implemented is that we momentarily switch to the long fragment that is present in the HTML
+  // so that the browser will jump to the element and highlight it (we couldn't find a cleaner alternative)
+  // and then quickly edit the URL back to the short fragment.
   //
   // Things you have to test:
   // * open new browser tab on http://localhost:3000/barack-obama#mathematics should stay there and highlight
-  // * open new browser tab on http://localhost:3000/barack-obama#barack-obama/mathematics should stay on #barck-obama/barack-obama/mathematics (second barack-obama is a edge case test scope)
+  // * open new browser tab on http://localhost:3000/barack-obama#barack-obama/mathematics should stay on #barack-obama/barack-obama/mathematics (second barack-obama is a edge case test scope)
   //    TODO: not staying at /barack-obama/barack-obama/mathematics. Something is making it scroll back to /barack-obama/mathematics after window.location.replace
   //    and it does not seem to be window.history.replaceState (tested by putting debugger; statements to stop execution) Whatever it is seems to be happening
   //    between location.replace and history.replaceState...
   // * open new browser tab on http://localhost:3000/barack-obama#_toc/mathematics
   // * http://localhost:3000/barack-obama then by typing on URL bar: #mathematics -> #algebra then go back on back button
-  // * http://localhost:3000/barack-obama then by typing on URL bar: #barack-obama/mathematics should to to barck-obama/barack-obama/mathematics
+  // * http://localhost:3000/barack-obama then by typing on URL bar: #barack-obama/mathematics should to to barack-obama/barack-obama/mathematics
   // * http://localhost:3000/barack-obama -> toc click ->
   //   /barack-obama#mathematics -> header on hover self link ->
   //   /barack-obama#algebra -> header split link ->
@@ -356,6 +435,7 @@ export default function Article({
   //     The @ is added to make sure an absolute path is used and remove otherwise inevitable ambiguity with short frags.
   //   * http://localhost:3000/barack-obama/test-data#@donald-trump/equation-my-favorite-equation should scroll to and highlight the correct header
   //   * http://localhost:3000/barack-obama/mathematics@donald-trump/physics should redirect to http://localhost:3000/donald-trump/physics because that abs id is not in page
+  // * click on the + link of ToC to add new articles before/after. Then click on a non _toc then on a _toc/ link.
   // We are not in the intermediate point where the URL is momentarily long.
   React.useEffect(
     () => {
@@ -368,7 +448,7 @@ export default function Article({
         let frag
         if (window.location.href.slice(-1) === '#') {
           // window.location.hash is empty for '#' with empty frag
-          // new URL(window.location.href).hash is aslo empty for '#' with empty frag
+          // new URL(window.location.href).hash is also empty for '#' with empty frag
           frag = '#'
         } else {
           frag = window.location.hash
@@ -453,9 +533,9 @@ export default function Article({
             // https://github.com/vercel/next.js/discussions/18072
             let newUrl
             if (handleShortFragmentCurrentFragType === 'long') {
-              newUrl = window.location.pathname + '#' + getShortFragFromLong(fragNoHash)
+              newUrl = window.location.pathname + window.location.search + '#' + getShortFragFromLong(fragNoHash)
             } else if (handleShortFragmentCurrentFragType === 'abs') {
-              newUrl = window.location.pathname + '#' + AT_MENTION_CHAR + fragNoHash
+              newUrl = window.location.pathname + window.location.search + '#' + AT_MENTION_CHAR + fragNoHash
             }
             window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
             // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
@@ -485,32 +565,39 @@ export default function Article({
 
   // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
   const staticHtmlRef = React.useRef(null)
+  const staticHtmlRefMap = React.useRef(new WeakMap())
   React.useEffect(() => {
     const elem = staticHtmlRef.current
     if (elem) {
-      ourbigbook_runtime(
-        elem,
-        {
-          hoverSelfLinkCallback: (a) => {
-            if (!isIssue) {
-              // We are certain that these links are of form #barack-obama/mathematics
-              // and that they point to something present in the current page.
-              // E.g. barack-obama/mathematics. So the handling can be a bit simplified.
-              const frag = new URL(a.href).hash.substring(1)
-              const shortFrag = getShortFragFromLong(frag)
-              a.href = '#' + shortFrag
-              a.addEventListener(
-                'click',
-                (ev) => {
-                  if (!ev.ctrlKey) {
-                    shortFragGoTo(handleShortFragmentSkipOnce, shortFrag, frag, document.getElementById(frag))
+      // Without this check, the callbacks do get added twice after
+      // pressing the + button which opens a modal. This was noticed with
+      // console.log on the selflink mouseenter and mouseleave.
+      if (!staticHtmlRefMap.current.get(elem)) {
+        staticHtmlRefMap.current.set(elem, true)
+        ourbigbook_runtime(
+          elem,
+          {
+            hoverSelfLinkCallback: (a) => {
+              if (!isIssue) {
+                // We are certain that these links are of form #barack-obama/mathematics
+                // and that they point to something present in the current page.
+                // E.g. barack-obama/mathematics. So the handling can be a bit simplified.
+                const frag = new URL(a.href).hash.substring(1)
+                const shortFrag = getShortFragFromLong(frag)
+                a.href = '#' + shortFrag
+                a.addEventListener(
+                  'click',
+                  (ev) => {
+                    if (!ev.ctrlKey) {
+                      shortFragGoTo(handleShortFragmentSkipOnce, shortFrag, frag, document.getElementById(frag))
+                    }
                   }
-                }
-              )
+                )
+              }
             }
           }
-        }
-      )
+        )
+      }
     }
   }, [
     isIssue,
@@ -562,6 +649,7 @@ export default function Article({
             isIssue,
             issueArticle,
             loggedInUser,
+            router,
             toplevel,
           }}/>)
           webElem.replaceChildren(tmp)
@@ -576,7 +664,7 @@ export default function Article({
       // If we are e.g. under /username/scope and articleid is present, no need
       // for changing the page at all, just jump inside page.
       if (!isIssue) {
-        for (const a of elem.getElementsByTagName('a')) {
+        for (const a of elem.querySelectorAll('a')) {
           if (!aElemToMetaMap.current.has(a)) {
             const href = a.href
             aElemToMetaMap.current.set(a, href)
@@ -602,10 +690,12 @@ export default function Article({
               const shortFrag = getShortFragFromLong(frag)
               if (
                 targetElem &&
-                // h2 self link, we want those to actually go to the separated page.
+                // h2 self link, we want those to actually go to the separate page.
                 a.parentElement.tagName !== 'H2' &&
-                // Because otherwise a matching ID of an article in the same topic could confuse us, search only under our known toplevel.
-                elem.contains(targetElem)
+                // Because otherwise a matching ID of an article in the same topic could confuse us,
+                // search only under our known toplevel.
+                elem.contains(targetElem) &&
+                !url.search
               ) {
                 goToTargetInPage = true
                 a.href = '#' + shortFrag
@@ -634,7 +724,11 @@ export default function Article({
                     if (goToTargetInPage) {
                       shortFragGoTo(handleShortFragmentSkipOnce, shortFrag, frag, targetElem)
                     } else {
-                      Router.push(a.href)
+                      let opts: { scroll?: boolean } ={}
+                      if (a.classList.contains(NEW_MODAL_BUTTON_CLASS)) {
+                        opts.scroll = false
+                      }
+                      Router.push(a.href, undefined, opts)
                     }
                   }
                 }
@@ -691,6 +785,7 @@ export default function Article({
         isIssue,
         issueArticle,
         loggedInUser,
+        router,
         toplevel: true,
       }}/>)
     }
@@ -729,7 +824,13 @@ export default function Article({
         parent_content = article.titleRender
       }
       levelToHeader[level] = { href, content }
-      entry_list.push({
+      const entry = {
+        addLink: loggedInUser
+          ? ` <a href="${addParameterToUrlPath(router.asPath, NEW_QUERY_PARAM, slugToTopic(a.slug))}" title="New..." class="btn abs ${NEW_MODAL_BUTTON_CLASS}">` +
+            `${renderToString(<NewArticleIcon title={null}/>)}` +
+            `</a>`
+          : undefined
+        ,
         content,
         href: ` href="/${href}"`,
         level,
@@ -741,10 +842,17 @@ export default function Article({
         parent_href: ` href="#${parent_href ? tocId(parent_href) : Macro.TOC_ID}"`,
         parent_content,
         target_id: a.slug,
-      })
+      }
+      entry_list.push(entry)
     }
     if (entry_list.length) {
-      html += htmlToplevelChildModifierById(renderTocFromEntryList({ entry_list, hasSearch: false }), Macro.TOC_ID) 
+      html += htmlToplevelChildModifierById(
+        renderTocFromEntryList({
+          entry_list,
+          hasSearch: false
+        }),
+        Macro.TOC_ID
+      )
       if (articlesInSamePageForTocCount > maxArticlesFetchToc) {
         html += renderToString(
           <div className="toc-limited">
@@ -780,6 +888,7 @@ export default function Article({
         isIssue,
         issueArticle,
         loggedInUser,
+        router,
         toplevel: false,
       }}/>)
       html += elem.outerHTML + a.render
@@ -798,6 +907,49 @@ export default function Article({
     }
   }
   return <>
+    {showNewArticle &&
+      <div
+        className="modal-page"
+        onClick={(e) => {
+          if (e.target === e.currentTarget) {
+            setShowNew(undefined)
+            Router.push(removeParameterFromUrlPath(router.asPath, NEW_QUERY_PARAM), undefined, { scroll: false })
+          }
+        }}
+      >
+        <div
+          className="modal-container"
+        >
+          <div className="modal-title ourbigbook-title">
+            <span dangerouslySetInnerHTML={{ __html: showNewArticle.titleRender }} />
+          </div>
+          <a
+            href={routes.articleNew({ 'parent': slugToTopic(showNewArticle.slug) })}
+            className="btn new"
+            title="Create a new article that is the first child of this one"
+          >
+            <NewArticleIcon title={null}/>
+            {' '}
+            <ChildrenIcon title={null} />
+            {' '}
+            Add article under
+          </a>
+          <a 
+            href={routes.articleNew({
+              'previous-sibling': slugToTopic(showNewArticle.slug),
+            })}
+            className="btn new"
+            title="Create a new article that is the first child of this one"
+          >
+            <NewArticleIcon title={null}/>
+            {' '}
+            <ArrowRightIcon title={null} />
+            {' '}
+            Add<span className="mobile-hide"> article</span> after
+          </a>
+        </div>
+      </div>
+    }
     <div
       dangerouslySetInnerHTML={{ __html: html }}
       className="ourbigbook"

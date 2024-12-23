@@ -145,13 +145,19 @@ export function FontAwesomeIcon(
   if (_opts === undefined) {
     _opts = {}
   }
+  let _title = _opts.title
+  if (_title === null) {
+    title = undefined
+  } else if (_title !== undefined) {
+    title = _title
+  }
   classes.push(cls)
   if (clsExtra === undefined) {
     clsExtra = []
   }
   classes.push(...clsExtra)
   return <span
-    title={_opts.title !== null ? _opts.title : title}
+    title={title}
     className={classes.join(' ')}
    >
     {String.fromCharCode(code)}
@@ -222,8 +228,12 @@ export function MoreIcon(opts) {
   return FontAwesomeIcon(0xf05a, { opts, title: "More" })
 }
 
+let logging = false
 export function NewArticleIcon(opts) {
-  return FontAwesomeIcon(0x2b, { opts, title: "New" })
+  logging = true
+  const ret = FontAwesomeIcon(0x2b, { opts, title: "New" })
+  logging = false
+  return ret
 }
 
 export function OkIcon(opts) {
@@ -258,7 +268,7 @@ export function TagIcon() {
 }
 
 export function TimeIcon(opts) {
-  return FontAwesomeIcon(0xf017, { cls: 'fa-regular-400 '})
+  return FontAwesomeIcon(0xf017, { cls: 'fa-regular-400'})
 }
 
 export function TopicIcon(opts) {

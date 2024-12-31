@@ -226,35 +226,35 @@ export function ourbigbook_runtime(toplevel, opts={}) {
       elem.title = title
     }
   }
-  setTitles('.c', 'link to this ToC entry')
-  setTitles('.u', 'parent ToC entry')
+  setTitles('.c', 'Link to this ToC entry')
+  setTitles('.u', 'Parent ToC entry')
   for (const e of toplevel.querySelectorAll('span.wcntr')) {
-    e.title = 'word count for this article + all descendants'
+    e.title = 'Word count for this article + all descendants'
   }
   for (const e of toplevel.querySelectorAll('span.wcnt')) {
-    e.title = 'word count for this article'
+    e.title = 'Word count for this article'
   }
   for (const e of toplevel.querySelectorAll('span.dcnt')) {
-    e.title = 'descendant article count'
+    e.title = 'Descendant article count'
   }
   for (const e of toplevel.querySelectorAll('a.split')) {
-    e.title = 'view one header per page'
+    e.title = 'View one header per page'
   }
   for (const e of toplevel.querySelectorAll('a.nosplit')) {
-    e.title = 'view all headers in a single page'
+    e.title = 'View all headers in a single page'
   }
   for (const e of toplevel.querySelectorAll('.h-nav .toc')) {
-    e.title = 'table of contents entry for this header'
+    e.title = 'Table of contents entry for this header'
   }
   for (const e of toplevel.querySelectorAll('.h-nav .u')) {
     // .u for Up
-    e.title = 'parent header'
+    e.title = 'Parent header'
   }
   for (const e of toplevel.querySelectorAll('.h-nav .wiki')) {
     e.title = 'Wikipedia article about the same topic as this header'
   }
   for (const e of toplevel.querySelectorAll('.h-nav .tags')) {
-    e.title = 'tags this header is tagged with'
+    e.title = 'Tags this header is tagged with'
   }
 
   // On-hover links.

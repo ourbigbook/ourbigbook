@@ -131,7 +131,7 @@ word-wrap: break-word;
 a {
   &.split {
     &::after {
-      content: " split";
+      content: " Split";
     }
     &::before {
       color: $color;
@@ -144,7 +144,7 @@ a {
   }
   &.nosplit {
     &::after {
-      content: " nosplit";
+      content: " Nosplit";
     }
     &::before {
       color: $color;
@@ -356,7 +356,7 @@ div.h {
           content: "\f266";
         }
         &::after {
-          content: " wiki"
+          content: " Wiki"
         }
       }
     }
@@ -368,7 +368,7 @@ div.h {
       content: "\f02c";
     }
     .toc::after {
-      content: " toc";
+      content: " Toc";
     }
   }
 }
@@ -570,7 +570,7 @@ ol, ul {
         @include link-icon;
       }
       .c::after {
-        content: " link";
+        content: " Link";
       }
       // Up
       .u::before {

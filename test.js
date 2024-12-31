@@ -4980,10 +4980,13 @@ assert_lib(
         // So we revert to instrumentation instead then.
         //`//x:h2[@id='_incoming-links']/following:://x:a[@href='#h2']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='#h2' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='1']`,
+        // Check that incoming links are capitalized, e.g. here to "H2 2".
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']` +
+          `//x:a[@href='#h2' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='1' and text()='H2']`,
         // https://github.com/ourbigbook/ourbigbook/issues/155
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='notindex.html' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='2']`,
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='#h2-2']`,
+        // Check that tagged are capitalized, e.g. here to "H2 2".
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='#h2-2' and text()='H2 2']`,
       ],
       'h2.html': [
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html']`,
@@ -5054,7 +5057,7 @@ assert_lib(
     },
     assert_xpath: {
       'index.html': [
-        `//x:a[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged-not-toplevel_h2-1_notindex-h2']`,
+        `//x:a[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged-not-toplevel_h2-1_notindex-h2' and text()='Notindex h2']`,
         `//x:a[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged-not-toplevel_h2-1_notindex-h2-2']`,
         `//x:a[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged-not-toplevel_h2-2_notindex-h2']`,
       ],
@@ -5329,7 +5332,7 @@ assert_lib('scope: hierarchy resolution works across files with directories and 
     assert_xpath: {
       'subdir/notindex.html': [
         "//x:div[@class='p']//x:a[@href='notindex2.html#notindex2-h2' and text()='toplevel to notindex2 h2']",
-        "//x:div[@id='notindex-h2']//x:span[@class='tags']//x:a[@href='notindex2.html']",
+        "//x:div[@id='notindex-h2']//x:span[@class='tags']//x:a[@href='notindex2.html' and text()='Notindex2']",
         "//x:div[@id='notindex-h2']//x:span[@class='tags']//x:a[@href='notindex2.html#notindex2-h2']",
       ],
       'subdir/notindex2.html': [

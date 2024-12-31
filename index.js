@@ -1453,6 +1453,7 @@ Macro.ID_ARGUMENT_NAME = 'id';
 Macro.TEST_DATA_ARGUMENT_NAME = 'ourbigbookTestData';
 Macro.TEST_DATA_HTML_PROP = 'data-ourbigbook-test';
 Macro.SYNONYM_ARGUMENT_NAME = 'synonym';
+Macro.CAPITALIZE_ARGUMENT_NAME = 'c';
 Macro.COMMON_ARGNAMES = [
   Macro.ID_ARGUMENT_NAME,
   Macro.DISAMBIGUATE_ARGUMENT_NAME,
@@ -3837,7 +3838,7 @@ function getDescendantCountHtml(context, tree_node, options) {
     // - we already have one before for the icon
     // - can't have multiple befores with different styles: https://stackoverflow.com/questions/11998593/can-i-have-multiple-before-pseudo-elements-for-the-same-element
     // - can't be an after because the count comes after
-    const longStr = long_style ? `${longName}: ` : ''
+    const longStr = long_style ? `${capitalizeFirstLetter(longName)}: ` : ''
     // Word Count Recursive.
     word_count_html += `<span class="${cls}"> ${longStr}`
     if (add_test_instrumentation) {
@@ -8783,7 +8784,7 @@ const DEFAULT_MACRO_LIST = [
       id_prefix: '',
       named_args: [
         new MacroArgument({
-          name: 'c',
+          name: Macro.CAPITALIZE_ARGUMENT_NAME,
           boolean: true,
         }),
         new MacroArgument({
@@ -9212,7 +9213,7 @@ const DEFAULT_MACRO_LIST = [
     {
       named_args: [
         new MacroArgument({
-          name: 'c',
+          name: Macro.CAPITALIZE_ARGUMENT_NAME,
           boolean: true,
         }),
         new MacroArgument({
@@ -9399,7 +9400,7 @@ function createLinkList(context, ast, id, title, target_ids) {
         //  counts_str = '';
         //}
         const xArgs = {
-          'c': new AstArgument(),
+          [Macro.CAPITALIZE_ARGUMENT_NAME]: new AstArgument(),
           'href': new AstArgument(
             [
               new PlaintextAstNode(target_id),
@@ -9822,6 +9823,7 @@ const OUTPUT_FORMATS_LIST = [
                 AstType.MACRO,
                 Macro.X_MACRO_NAME,
                 {
+                  [Macro.CAPITALIZE_ARGUMENT_NAME]: new AstArgument(),
                   'href': new AstArgument(
                     [
                       new PlaintextAstNode(target_id),
@@ -9835,7 +9837,7 @@ const OUTPUT_FORMATS_LIST = [
               );
               tag_ids_html_array.push(x_ast.render(new_context));
             }
-            tag_ids_html = `<span class="tags"> tags: ${tag_ids_html_array.join(', ')}</span>`
+            tag_ids_html = `<span class="tags"> Tags: ${tag_ids_html_array.join(', ')}</span>`
           }
 
           let toc_link_html;
@@ -10081,6 +10083,7 @@ const OUTPUT_FORMATS_LIST = [
                           [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
                             tagged.map(t => {
                               const arg = {
+                                [Macro.CAPITALIZE_ARGUMENT_NAME]: new AstArgument(),
                                 'href': new AstArgument([ new PlaintextAstNode(t) ]),
                               }
                               if (context.options.add_test_instrumentation) {
@@ -10265,7 +10268,7 @@ const OUTPUT_FORMATS_LIST = [
                   //  counts_str = '';
                   //}
                   const xArgs = {
-                    'c': new AstArgument(),
+                    [Macro.CAPITALIZE_ARGUMENT_NAME]: new AstArgument(),
                     'href': new AstArgument(
                       [
                         new PlaintextAstNode(ancestor.id),

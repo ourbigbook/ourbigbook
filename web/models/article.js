@@ -1337,6 +1337,7 @@ WHERE
   Article.getArticlesInSamePage = async ({
     article,
     getCount,
+    getTagged,
     loggedInUser,
     // Get just the article itself. This is just as a way to get the number of
     // articles on same topic + discussion count which we already get the for the h2,
@@ -1354,6 +1355,9 @@ WHERE
     toplevelId,
     sequelize,
   }) => {
+    if (getTagged) {
+      toplevelId = true
+    }
     if (toc === undefined) {
       toc = false
     }
@@ -1586,6 +1590,54 @@ LIMIT ${limit}` : ''}`}
         }
         delete row['author.id']
         delete row['author.username']
+      }
+    }
+    if (getTagged) {
+      // TODO move this in with the rest of the query a single query under getArticlesInSamePage
+      // I'm a bit concerned it will store the same column multiple times in memory.
+      // but perhaps that was just a bad early optimization, who knows.
+      const idToArticleMap = {}
+      for (const article of rows) {
+        idToArticleMap[article.toplevel_id] = article
+      }
+      // TODO limit to n tags. This can be done with ROW_NUMBER() in a raw query.
+      const refs = await Ref.findAll({
+        where: {
+          from_id: rows.map(a => a.toplevel_id),
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_CHILD],
+        },
+        include: [{
+          model: Id,
+          as: 'to',
+          required: true,
+          //attributes: [],
+          include: [{
+            model: File,
+            as: 'toplevelId',
+            required: true,
+            // No you can't because bugs: https://github.com/sequelize/sequelize/issues/16436
+            //attributes: [],
+            include: [{
+              model: Article,
+              as: 'articles',
+              required: true,
+              attributes: ['slug', 'titleRender'],
+            }],
+          }],
+        }],
+      })
+      for (const ref of refs) {
+        const article = idToArticleMap[ref.from_id]
+        let taggedArticles = article.taggedArticles
+        if (taggedArticles === undefined) {
+          taggedArticles = []
+          article.taggedArticles = taggedArticles
+        }
+        const toArticle = ref.to.toplevelId.articles[0]
+        taggedArticles.push({
+          slug: toArticle.slug,
+          titleRender: toArticle.titleRender,
+        })
       }
     }
     if (getCount) {

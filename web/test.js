@@ -368,17 +368,29 @@ it('Article.getArticlesInSamePage', async function test_Article__getArticlesInSa
 
   // Create some articles.
   await createArticle(sequelize, user0, { titleSource: 'Title 0' })
-  await createArticle(sequelize, user0, { titleSource: 'Title 0 1', parentId: '@user0/title-0'  })
-  await createArticle(sequelize, user0, { titleSource: 'Title 0 0', parentId: '@user0/title-0' })
+  await createArticle(sequelize, user0, { titleSource: 'Title 0 1', parentId: '@user0/title-0' })
+  await createArticle(sequelize, user0, {
+    titleSource: 'Title 0 0',
+    parentId: '@user0/title-0',
+    bodySource: '{tag=Title 0 1}\n'
+  })
   await createArticle(sequelize, user0, { titleSource: 'Title 0 0 0', parentId: '@user0/title-0-0'  })
 
   // Single user tests.
   article = await Article.getArticle({ sequelize, slug: 'user0/title-0' })
-  rows = await Article.getArticlesInSamePage({ sequelize, article, loggedInUser: user0 })
+  rows = await Article.getArticlesInSamePage({
+    article,
+    getTagged: true,
+    loggedInUser: user0,
+    sequelize,
+  })
   assertRows(rows, [
     { slug: 'user0/title-0-0',   topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
     { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
     { slug: 'user0/title-0-1',   topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+  ])
+  assertRows(rows[2].taggedArticles, [
+    { slug: 'user0/title-0-0' },
   ])
 
   // Hidden articles don't show by default.

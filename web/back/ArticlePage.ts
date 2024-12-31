@@ -141,59 +141,12 @@ export const getServerSidePropsArticleHoc = ({
         Article.getArticlesInSamePage({
           article,
           getCount: true,
+          getTagged: true,
           loggedInUser,
           limit: maxArticlesFetch,
           list: true,
           sequelize,
           toplevelId: true,
-        }).then(async (articles) => {
-          // TODO move this into a single query under getArticlesInSamePage
-          // I'm a bit concerned it will store the same column multiple times in memory.
-          // but perhaps that was just a bad early optimization, who knows.
-          const idToArticleMap = {}
-          for (const article of articles) {
-            idToArticleMap[article.toplevel_id] = article
-          }
-          // TODO limit to n tags. This can be done with ROW_NUMBER() in a raw query.
-          const refs = await Ref.findAll({
-            where: {
-              from_id: articles.map(a => a.toplevel_id),
-              type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_CHILD],
-            },
-            include: [{
-              model: Id,
-              as: 'to',
-              required: true,
-              //attributes: [],
-              include: [{
-                model: File,
-                as: 'toplevelId',
-                required: true,
-                // No you can't because bugs: https://github.com/sequelize/sequelize/issues/16436
-                //attributes: [],
-                include: [{
-                  model: Article,
-                  as: 'articles',
-                  required: true,
-                  attributes: ['slug', 'titleRender'],
-                }],
-              }],
-            }],
-          })
-          for (const ref of refs) {
-            const article = idToArticleMap[ref.from_id]
-            let taggedArticles = article.taggedArticles
-            if (taggedArticles === undefined) {
-              taggedArticles = []
-              article.taggedArticles = taggedArticles
-            }
-            const toArticle = ref.to.toplevelId.articles[0]
-            taggedArticles.push({
-              slug: toArticle.slug,
-              titleRender: toArticle.titleRender,
-            })
-          }
-          return articles
         }),
         // articlesInSamePageForToc
         Article.getArticlesInSamePage({

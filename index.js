@@ -10050,7 +10050,7 @@ const OUTPUT_FORMATS_LIST = [
             level_int !== context.header_tree_top_level &&
             !ast.from_include
           ) {
-            const tagged = Array.from(context.db_provider.get_refs_to_as_ids(REFS_TABLE_X_CHILD, ast.id, true))
+            const tagged = Array.from(context.db_provider.get_refs_to_as_ids(REFS_TABLE_X_CHILD, ast.id, true)).sort()
             if (tagged.length) {
               context_old.renderBeforeNextHeader.push(htmlToplevelChildModifierById(
                 new AstNode(

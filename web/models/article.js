@@ -1625,6 +1625,7 @@ LIMIT ${limit}` : ''}`}
             }],
           }],
         }],
+        order: [['to_id', 'ASC']],
       })
       for (const ref of refs) {
         const article = idToArticleMap[ref.from_id]

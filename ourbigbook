@@ -1477,6 +1477,10 @@ if (cli.helpMacros) {
   }
 
   let split_headers, publish_uses_git;
+  // Content will become publicly visible after publishing. For example:
+  // - publish to github pages: yes
+  // - publish a local file to then ZIP: no
+  let publishIsPublic
   const publish_create_files = {}
   const publish_target = cli.publishTarget
   if (publish) {
@@ -1486,6 +1490,7 @@ if (cli.helpMacros) {
         split_headers = true;
         publish_uses_git = true;
         publishTargetIsWebsite = true
+        publishIsPublic = true
 
         // Otherwise _* paths are not added to the website, notably _raw/* and _file/*.
         publish_create_files['.nojekyll'] = ''
@@ -1499,6 +1504,7 @@ if (cli.helpMacros) {
         htmlXExtension = true;
         publish_uses_git = false;
         publishTargetIsWebsite = false
+        publishIsPublic = false
         break;
       default:
         cli_error(`unknown publish target: ${publish_target}`)
@@ -2522,9 +2528,8 @@ if (cli.helpMacros) {
 
         // Publish the converted output if build succeeded.
         if (publish && !nonOurbigbookOptions.had_error) {
-
           // Push the original source.
-          if (!cli.dryRunPush) {
+          if (publishIsPublic && !cli.dryRunPush) {
             runCmd('git', ['-C', inputPathCwd, 'push'], cmdOpts);
           }
 

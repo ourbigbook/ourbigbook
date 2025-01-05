@@ -10752,6 +10752,60 @@ assert_cli(
   }
 )
 assert_cli(
+  'publish: --publish-target local sets publishTargetIsWebsite to false',
+  {
+    args: ['--dry-run', '--split-headers', '--publish', '--publish-target', 'local', '.'],
+    filesystem: {
+      'index.bigb': `= Toplevel
+`,
+  'ourbigbook.json': `{}\n`,
+      'ourbigbook.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+</head>
+<body>
+{% unless publishTargetIsWebsite %}<div id="dut"></div>{% endunless %}
+</body>
+</html>
+` ,
+},
+    pre_exec: publish_pre_exec,
+    assert_xpath: {
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/local/index.html`]: [
+        "//x:div[@id='dut']",
+      ],
+    },
+  }
+)
+assert_cli(
+  'publish: publishTargetIsWebsite is true without --publish-target local',
+  {
+    args: ['--dry-run', '--split-headers', '--publish'],
+    filesystem: {
+      'index.bigb': `= Toplevel
+`,
+  'ourbigbook.json': `{}\n`,
+      'ourbigbook.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+</head>
+<body>
+{% if publishTargetIsWebsite %}<div id="dut"></div>{% endif %}
+</body>
+</html>
+` ,
+},
+    pre_exec: publish_pre_exec,
+    assert_xpath: {
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/index.html`]: [
+        "//x:div[@id='dut']",
+      ],
+    },
+  }
+)
+assert_cli(
   'json: web.linkFromStaticHeaderMetaToWeb = true with publish',
   {
     args: ['--dry-run', '--split-headers', '--publish', '.'],

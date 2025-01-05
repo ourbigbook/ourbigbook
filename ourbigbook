@@ -43,10 +43,6 @@ const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 const MESSAGE_PREFIX_EXTRACT_IDS = 'extract_ids'
 const MESSAGE_PREFIX_RENDER = 'render'
 const MESSAGE_SKIP_BY_TIMESTAMP = `skipped by timestamp`
-const PUBLISH_TARGETS = {
-  'github-pages': 'github-pages',
-  local: 'local',
-}
 const WEB_MAX_RETRIES = 5
 
 class DbProviderDbAdapter {
@@ -1353,7 +1349,7 @@ cli_parser.option('-O, --output-format <output-format>', 'https://docs.ourbigboo
 cli_parser.option('-p --publish', 'https://docs.ourbigbook.com#publish', false);
 cli_parser.option('--publish-no-convert', 'Attempt to publish without converting. Implies --publish: conversion https://docs.ourbigbook.com#publish-no-convert', false);
 cli_parser.option('-P, --publish-commit <commit-message>', 'https://docs.ourbigbook.com#publish-commit');
-cli_parser.option('--publish-target <target>', 'https://docs.ourbigbook.com#publish-target', PUBLISH_TARGETS['github-pages']);
+cli_parser.option('--publish-target <target>', 'https://docs.ourbigbook.com#publish-target', 'github-pages');
 cli_parser.option('--format-source', 'https://docs.ourbigbook.com#format-source');
 cli_parser.option('-S, --split-headers', 'https://docs.ourbigbook.com#split-headers');
 cli_parser.option('--stdout', 'also print output to stdout in addition to saving to a file https://docs.ourbigbook.com#stdout', false);
@@ -1395,6 +1391,7 @@ if (cli.helpMacros) {
   let output;
   let publish = cli.publish || cli.publishCommit !== undefined || cli.publishNoConvert
   let htmlXExtension;
+  let publishTargetIsWebsite
   let input_dir;
   const web = cli.web || cli.webTest || cli.nestedSet
   if (inputPaths.length === 0) {
@@ -1484,10 +1481,11 @@ if (cli.helpMacros) {
   const publish_target = cli.publishTarget
   if (publish) {
     switch (publish_target) {
-      case PUBLISH_TARGETS['github-pages']:
+      case 'github-pages':
         htmlXExtension = false;
         split_headers = true;
         publish_uses_git = true;
+        publishTargetIsWebsite = true
 
         // Otherwise _* paths are not added to the website, notably _raw/* and _file/*.
         publish_create_files['.nojekyll'] = ''
@@ -1497,9 +1495,10 @@ if (cli.helpMacros) {
           publish_create_files['CNAME'] = fs.readFileSync(cname_path, ourbigbook_nodejs_webpack_safe.ENCODING)
         }
         break;
-      case PUBLISH_TARGETS.local:
+      case 'local':
         htmlXExtension = true;
         publish_uses_git = false;
+        publishTargetIsWebsite = false
         break;
       default:
         cli_error(`unknown publish target: ${publish_target}`)
@@ -2397,7 +2396,7 @@ if (cli.helpMacros) {
 
         if (publish) {
           // Clone the source to ensure that only git tracked changes get built and published.
-          ourbigbook_options.template_vars.publishTargetIsWebsite = true
+          ourbigbook_options.template_vars.publishTargetIsWebsite = publishTargetIsWebsite
           if (!isInGitRepo) {
             cli_error('--publish must point to a path inside a git repository');
           }

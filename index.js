@@ -9768,6 +9768,11 @@ const OUTPUT_FORMATS_LIST = [
               pathArg.push(
                 new PlaintextAstNode(' '),
                 new AstNode(AstType.MACRO,
+                  // TODO ideally we should link to the corresponding _file entry here
+                  // rather than _raw. We always generate the _file for the file, even in
+                  // non split header mode. To implement this we'd just need to use {extern}
+                  // and calculate the directory offset correctly, much as done for _dir. Lazy now.
+                  // _dir is already linking to _file by default.
                   Macro.LINK_MACRO_NAME,
                   {
                     [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([

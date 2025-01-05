@@ -1202,7 +1202,13 @@ We originally wanted to place these listings under `_raw` itself, but this leads
 = `_file` directory
 {synonym}
 
-Analogous to the <`_raw` directory>, but for the <`\H` `file` argument>.
+Analogous to the <`_raw` directory>, but contains an HTML page that displays the contents of the file inside of it.
+
+As such, unlike in the <`_raw` directory> which just contains the file raw, the page can also contain useful metadata about the file, such as:
+* its location in the file tree pointing to the <_dir directory>
+* <ourbigbook.liquid.html> elements such as a commenting system like <#Giscus> and analytics like <#Google Analytics>
+
+If the file has a corresponding <`\H` `file` argument> section, and when using <--split-headers>, then the content of the corresponding section are shown. Otherwise, only the file is shown.
 
 = `_raw` directory
 {parent=a `external` argument}

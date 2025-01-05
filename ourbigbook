@@ -274,11 +274,14 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
   await convert_directory_extract_ids(input_dir, ourbigbook_options, nonOurbigbookOptions)
 
   if (!nonOurbigbookOptions.had_error) {
-    if (ourbigbook_options.split_headers) {
-      // Auto-generate a {file} page for each file in the project that does not have one already.
-      // Auto-generate source, and convert it on the fly, a bit like for _dir conversion.
-      const ourbigbook_paths_converted = nonOurbigbookOptions.ourbigbook_paths_converted
-      await convert_directory_callback(input_dir, ourbigbook_options, nonOurbigbookOptions, async (onePath, ourbigbook_options, nonOurbigbookOptions) => {
+    // Auto-generate a {file} page for each file in the project that does not have one already.
+    // Auto-generate source, and convert it on the fly, a bit like for _dir conversion.
+    const ourbigbook_paths_converted = nonOurbigbookOptions.ourbigbook_paths_converted
+    await convert_directory_callback(
+      input_dir,
+      ourbigbook_options,
+      nonOurbigbookOptions,
+      async (onePath, ourbigbook_options, nonOurbigbookOptions) => {
         const messagePrefix = 'file'
         if (
           // TODO move dir conversion here, remove this check:
@@ -297,7 +300,18 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
             skip = true
           } else {
             const sequelize = nonOurbigbookOptions.sequelize
-            if (!sequelize || (await ourbigbook_nodejs_webpack_safe.get_noscopes_base_fetch_rows(sequelize, [ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson])).length === 0) {
+            if (
+              // Without --split-headers, we create a dummy {file} for the file even if it has a .bigb ID.
+              // This allows _dir listings and the bigb section to link to it to see full txt if too large.
+              !ourbigbook_options.split_headers ||
+              !sequelize ||
+              (
+                await ourbigbook_nodejs_webpack_safe.get_noscopes_base_fetch_rows(
+                  sequelize,
+                  [ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson]
+                )
+              ).length === 0
+            ) {
               const pathSplit = inputPathRelativeToOurbigbookJson.split(ourbigbook.URL_SEP)
               const src = `${ourbigbook.INSANE_HEADER_CHAR} ${ourbigbook.ourbigbookEscapeNotStart(pathSplit[pathSplit.length - 1])}\n{file}\n`
               const inputPath = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson + '.' + ourbigbook.OURBIGBOOK_EXT
@@ -323,10 +337,10 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
           }
           convert_path_to_file_print_finish(ourbigbook_options, onePath, outpath, { skip, message_prefix: messagePrefix, t0: msgRet.t0 })
         }
-      })
-      // Not ideal, but we'll do it simple for now. This needs to be restored or a test fails.
-      nonOurbigbookOptions.ourbigbook_paths_converted = ourbigbook_paths_converted
-    }
+      }
+    )
+    // Not ideal, but we'll do it simple for now. This needs to be restored or a test fails.
+    nonOurbigbookOptions.ourbigbook_paths_converted = ourbigbook_paths_converted
 
     if (
       !nonOurbigbookOptions.had_error &&
@@ -730,7 +744,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
             breadcrumbDir = ''
           }
           const new_options_dir = { ...new_options }
-          const pref = new_options_dir.split_headers ? ourbigbook.FILE_PREFIX : ourbigbook.RAW_PREFIX 
+          const pref = ourbigbook.FILE_PREFIX
           new_options_dir.auto_generated_source = true
           if (input_path_relative_to_ourbigbook_json === '') {
             new_options_dir.title = ourbigbook.FILE_ROOT_PLACEHOLDER

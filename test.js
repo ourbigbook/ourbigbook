@@ -12604,13 +12604,24 @@ assert_cli(
   }
 )
 assert_cli(
-  'raw: directory listings link to _raw when split pages are turned off',
+  'raw: directory listings link to _file when split pages are turned off',
   {
     args: ['.'],
     filesystem: {
+      'index.bigb': `= Toplevel
+
+== hasbigb.txt
+{file}
+
+Some content
+`,
       'myfile.txt': `myfile.txt line1
 
 myfile.txt line2
+`,
+      'hasbigb.txt': `hasbigb.txt line1
+
+hasbigb.txt line2
 `,
       'subdir/myfile-subdir.txt': `myfile-subdir.txt line1
 
@@ -12620,10 +12631,8 @@ myfile-subdir.txt line2
     assert_exists: [
       `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/myfile.txt`,
       `${TMP_DIRNAME}/html/${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt`,
-    ],
-    assert_not_exists: [
-      // Don't auto-generate {file} without split
       `${TMP_DIRNAME}/html/${ourbigbook.FILE_PREFIX}/myfile.txt.html`,
+      `${TMP_DIRNAME}/html/${ourbigbook.FILE_PREFIX}/hasbigb.txt.html`,
       `${TMP_DIRNAME}/html/${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html`,
     ],
     assert_xpath: {
@@ -12631,10 +12640,10 @@ myfile-subdir.txt line2
         // Link to _raw without split. This is a simple behaviour to work reasonably when {file} headers
         // don't get their own separate file. The other possibility would be to always autogen without split,
         // but then we would have to worry about not adding autogen to db to avoid ID conflicts. Doable as well,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt.html' and text()='myfile.txt']`,
+        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/myfile.txt.html' and text()='myfile.txt']`,
       ],
       [`${TMP_DIRNAME}/html/${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
-        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt.html' and text()='myfile-subdir.txt']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html' and text()='myfile-subdir.txt']`,
       ],
     },
   }

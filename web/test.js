@@ -755,7 +755,11 @@ it('api: create an article and see it on global feed', async () => {
       article = createArticleArg({ i: 0 })
       ;({data, status} = await createArticleApi(test, article))
       assertStatus(status, data)
-      assertRows(data.articles, [{ titleRender: 'Title 0' }])
+      assertRows(data.articles, [{
+        // New articles are listed by default.
+        list: true,
+        titleRender: 'Title 0',
+      }])
 
     // Create article errors
 

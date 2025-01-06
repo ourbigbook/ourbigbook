@@ -215,7 +215,8 @@ router.put('/', auth.required, async function(req, res, next) {
 async function createOrUpdateArticle(req, res, opts) {
   const forceNew = opts.forceNew
   const sequelize = req.app.get('sequelize')
-  const loggedInUser = await sequelize.models.User.findByPk(req.payload.id);
+  const { Article, File, User } = sequelize.models
+  const loggedInUser = await User.findByPk(req.payload.id);
 
   // API params.
   const body = lib.validateParam(req, 'body')
@@ -237,7 +238,7 @@ async function createOrUpdateArticle(req, res, opts) {
     front.isString ], defaultValue: undefined })
   const render = lib.validateParam(body, 'render', {
     validators: [front.isBoolean], defaultValue: true})
-  const list = lib.validateParam(body, 'list', {
+  let list = lib.validateParam(body, 'list', {
     validators: [front.isBoolean], defaultValue: undefined})
   const updateNestedSetIndex = lib.validateParam(body, 'updateNestedSetIndex', {
     validators: [front.isBoolean], defaultValue: true})
@@ -268,22 +269,22 @@ async function createOrUpdateArticle(req, res, opts) {
     if (msg) {
       throw new lib.ValidationError([msg], 403)
     }
-    author = await sequelize.models.User.findOne({ where: { username: owner } })
+    author = await User.findOne({ where: { username: owner } })
     if (!author) {
       throw new lib.ValidationError(`owner: there is no user with username owner="${owner}"`)
     }
   }
-
-  // Skip conversion if unchanged.
   let articles = []
   let sourceNewerThanRender = true
-  if (
-    path !== undefined
-  ) {
-    const file = await sequelize.models.File.findOne({
+  if (path !== undefined) {
+    const file = await File.findOne({
       where: {
         path: `${ourbigbook.AT_MENTION_CHAR}${author.username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${path}.${ourbigbook.OURBIGBOOK_EXT}`
       },
+      include: {
+        model: Article,
+        as: 'articles',
+      }
     })
     if (file) {
       if (render) {
@@ -292,6 +293,9 @@ async function createOrUpdateArticle(req, res, opts) {
         }
         if (titleSource === undefined) {
           titleSource = file.titleSource
+        }
+        if (list === undefined) {
+          list = file.articles[0].list
         }
       }
     }

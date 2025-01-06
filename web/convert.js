@@ -224,9 +224,6 @@ async function convertArticle({
   updateHash,
   updateTree,
 }) {
-  if (list === undefined) {
-    list = true
-  }
   if (updateNestedSetIndex === undefined) {
     updateNestedSetIndex = true
   }
@@ -380,7 +377,7 @@ async function convertArticle({
       updateHash,
     }
     if (updateHash) {
-      update_database_after_convert_arg.hash = articleHash({ parentId, previousSiblingId, source })
+      update_database_after_convert_arg.hash = articleHash({ list, parentId, previousSiblingId, source })
     }
     const { file: newFile } = await update_database_after_convert(update_database_after_convert_arg)
 

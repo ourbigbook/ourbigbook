@@ -2283,6 +2283,7 @@ if (cli.helpMacros) {
             }
             const articleHashProps = {
               source: articleMeta.source,
+              list: true,
             }
             const parentId = addUsername(articleMeta.parentId, username)
             if (parentId !== null) {

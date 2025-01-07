@@ -899,14 +899,6 @@ The links don't show without JavaScript, this can be seen by disabling Js.
 
 The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
 
-=== Allow creating new pages under scope on web
-{tag=Scope}
-{tag=Web}
-
-We likely just have to set the `path:` API argument based on the has scope status of the parent article.
-
-As of the commit that adds this line, it should likely be possible to do it on the backend. On the frontend however we convert `/` to `-` so it doesn't work on the existence checks. We need a more accurate ID conversion there.
-
 === Allow disambiguate and id header arguments on web
 {tag=Scope}
 {tag=Web}
@@ -1055,6 +1047,16 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== Allow creating new pages under scope on web
+{tag=Scope}
+{tag=Web}
+
+This casually started working without us noticing much after 3f4e7594ea5d28c3b30a0b7e874ca4627849cbea made parent selection a bit more accurate for scopes. Hurray.
+
+We likely just have to set the `path:` API argument based on the has scope status of the parent article.
+
+As of the commit that adds this line, it should likely be possible to do it on the backend. On the frontend however we convert `/` to `-` so it doesn't work on the existence checks. We need a more accurate ID conversion there.
 
 === Show tagged list of non toplevel pages
 {tag=Tag}

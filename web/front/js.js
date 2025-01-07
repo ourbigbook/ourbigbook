@@ -264,6 +264,10 @@ function idToSlug(id) {
   return id.slice(ourbigbook.AT_MENTION_CHAR.length)
 }
 
+function idToTopic(id) {
+  return slugToTopic(idToSlug(id))
+}
+
 function uidTopicIdToId(uid, topicId) {
   return ourbigbook.AT_MENTION_CHAR + uidTopicIdToSlug(uid, topicId)
 }
@@ -291,6 +295,7 @@ module.exports = {
   hasReachedMaxItemCount,
   idToSlug,
   slugToId,
+  idToTopic,
   isArrayOf,
   isBoolean,
   isEmail,

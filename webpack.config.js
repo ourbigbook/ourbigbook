@@ -86,6 +86,7 @@ module.exports = {
     new CopyPlugin({
       patterns: [
         { from: 'editor.html' },
+        { from: 'logo.svg' },
       ],
     }),
   ],

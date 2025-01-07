@@ -4,10 +4,10 @@ import { getLoggedInUser } from 'back'
 import routes from 'front/routes'
 import { EditorPageProps } from 'front/EditorPage'
 import { MyGetServerSideProps } from 'front/types'
-import { uidTopicIdToSlug } from 'front/js'
+import { idToTopic, uidTopicIdToSlug } from 'front/js'
 import { ArticleType } from 'front/types/ArticleType'
 
-function getTitleSourceOrBailOnCustomId(article: ArticleType): string {
+function getTitleSourceOrBailOnCustomIdFromArticle(article: ArticleType): string {
   const titleSource = article.file.titleSource
   const topicId = article.topicId
   if (titleToId(titleSource) === topicId) {
@@ -15,6 +15,24 @@ function getTitleSourceOrBailOnCustomId(article: ArticleType): string {
   } else {
     return topicId
   }
+}
+
+function getTitleSourceOrBailOnCustomIdFromId(id: any): string {
+  const topicId = idToTopic(id.idid)
+  const titleSource = id.toplevelId.titleSource
+  const topicSplit = topicId.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+  const idScope = topicSplit.slice(0, -1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+  const idBasename = topicSplit[topicSplit.length - 1]
+  let ret
+  if (titleToId(titleSource) === idBasename) {
+    ret = titleSource
+  } else {
+    ret = idBasename
+  }
+  if (idScope) {
+    ret = idScope + ourbigbook.Macro.HEADER_SCOPE_SEPARATOR + ret
+  }
+  return ret
 }
 
 export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSideProps => {
@@ -90,6 +108,7 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
           : null
         ,
         loggedInUser.toJson(),
+        // parentArticle
         parentTopicId
           ? sequelize.models.Article.getArticle({
               sequelize,
@@ -97,6 +116,7 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
             })
           : null
         ,
+        // previousSiblingArticle
         previousSiblingTopicId
           ? sequelize.models.Article.getArticle({
               includeParentAndPreviousSibling: true,
@@ -125,18 +145,18 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
         props.issueArticle = issueArticleJson
       } else if (article) {
         if (article.parentId) {
-          props.parentTitle = article.parentId.toplevelId.titleSource
+          props.parentTitle = getTitleSourceOrBailOnCustomIdFromId(article.parentId)
         }
         if (article.previousSiblingId) {
-          props.previousSiblingTitle = article.previousSiblingId.toplevelId.titleSource
+          props.previousSiblingTitle = getTitleSourceOrBailOnCustomIdFromId(article.previousSiblingId)
         }
       }
       if (previousSiblingTopicId) {
-        props.previousSiblingTitle = getTitleSourceOrBailOnCustomId(previousSiblingArticle)
-        props.parentTitle = getTitleSourceOrBailOnCustomId(previousSiblingArticle.parentArticle)
+        props.previousSiblingTitle = getTitleSourceOrBailOnCustomIdFromArticle(previousSiblingArticle)
+        props.parentTitle = getTitleSourceOrBailOnCustomIdFromArticle(previousSiblingArticle.parentArticle)
       } else {
         if (parentTopicId) {
-          props.parentTitle = getTitleSourceOrBailOnCustomId(parentArticle)
+          props.parentTitle = getTitleSourceOrBailOnCustomIdFromArticle(parentArticle)
         }
       }
       if (title) {

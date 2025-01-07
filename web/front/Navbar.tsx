@@ -38,6 +38,7 @@ const NavLink = ({ href, onClick, children, className, newTab=false }: NavLinkPr
       onClick,
       className: classes.join(' '),
       newTab,
+      newTabIcon: false,
     }} >
       {children}
     </CustomLink>
@@ -52,7 +53,7 @@ const Navbar = ({ clearScoreDelta, isEditor, loggedInUser }) => {
   return (
     <nav className={`navbar${loggedInUser ? ' logged-in' : ''}`}>
       <div className="brand-group">
-        <CustomLink href={routes.home()} className="brand" newTab={isEditor}>
+        <CustomLink href={routes.home()} className="brand" newTab={isEditor} newTabIcon={false}>
           <CustomImage src="/logo.svg" className="logo"/>
           <span className="appname">{appNameShort}</span>
         </CustomLink>

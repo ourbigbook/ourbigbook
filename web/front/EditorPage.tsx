@@ -6,7 +6,7 @@ import Link from 'next/link'
 import lodash from 'lodash'
 import pluralize from 'pluralize'
 
-import ourbigbook from 'ourbigbook'
+import ourbigbook, { TXT_HOME_MARKER } from 'ourbigbook'
 import ourbigbook_tex from 'ourbigbook/default.tex'
 import web_api from 'ourbigbook/web_api'
 import { preload_katex } from 'ourbigbook/nodejs_front'
@@ -26,18 +26,22 @@ import {
   OkIcon,
   slugFromArray,
   useWindowEventListener,
+  TopicIcon,
+  IssueIcon,
+  NewArticleIcon,
 } from 'front'
 import ErrorList from 'front/ErrorList'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { MyHead, useCtrlEnterSubmit } from 'front'
-import { hasReachedMaxItemCount, modifyEditorInput } from 'front/js'
+import { hasReachedMaxItemCount, idToTopic, modifyEditorInput } from 'front/js'
 import Label from 'front/Label'
 
 import { ArticleType } from 'front/types/ArticleType'
 import { CommonPropsType } from 'front/types/CommonPropsType'
 import { IssueType } from 'front/types/IssueType'
 import { displayAndUsernameText } from 'front/user'
+import CustomLink from './CustomLink'
 
 export interface EditorPageProps extends CommonPropsType {
   article: ArticleType & IssueType;
@@ -181,6 +185,12 @@ export default function EditorPageHoc({
     }
     let initialFileState
     let initialFile
+    let isIndex
+    if (!isNew && !isIssue) {
+      isIndex = initialArticle.topicId === ''
+    } else {
+      isIndex = false
+    }
     if (initialArticle && !(isNew && isIssue)) {
       initialFile = isIssue ? initialArticle : initialArticle.file
       bodySource = initialFile.bodySource
@@ -188,7 +198,7 @@ export default function EditorPageHoc({
         bodySource += `${ourbigbook.PARAGRAPH_SEP}Adapted from: \\x[${ourbigbook.AT_MENTION_CHAR}${slugString}].`
       }
       initialFileState = {
-        titleSource: initialFile.titleSource || titleSource,
+        titleSource: isIndex ? TXT_HOME_MARKER : initialFile.titleSource || titleSource,
       }
     } else {
       bodySource = ""
@@ -196,22 +206,18 @@ export default function EditorPageHoc({
         titleSource: titleSource || '',
       }
     }
-    let isIndex
-    if (!isNew && !isIssue) {
-      isIndex = initialArticle.topicId === ''
-    } else {
-      isIndex = false
-    }
     const itemType = isIssue ? 'discussion' : 'article'
 
     // State
     const [isLoading, setLoading] = useState(false)
+    const [topicId, setTopicId] = useState(undefined)
     const [editorLoaded, setEditorLoading] = useState(false)
     // TODO titleErrors can be undefined immediately after this call,
     // if the server gives 500 after update. It is some kind of race condition
     // and then it blows up at a later titleErrors.length. It is some kind of race
     // condition that needs debugging at some point.
     const [titleErrors, setTitleErrors] = useState([])
+    const [convertTitleErrors, setConvertTitleErrors] = useState([])
     const [parentErrors, setParentErrors] = useState([])
     const [hasConvertError, setHasConvertError] = useState(false)
     const [file, setFile] = useState(initialFileState)
@@ -234,37 +240,8 @@ export default function EditorPageHoc({
     }
     async function checkTitle(titleSource) {
       let titleErrors = []
-      if (titleSource) {
-        if (!isIssue) {
-          let newTopicId = ourbigbook.titleToId(titleSource)
-          let showToUserNew
-          if (newTopicId === ourbigbook.INDEX_BASENAME_NOEXT) {
-            // Maybe there is a more factored out way of dealing with this edge case.
-            newTopicId = ''
-            showToUserNew = ourbigbook.INDEX_BASENAME_NOEXT
-          } else {
-            showToUserNew = newTopicId
-          }
-          if (isNew) {
-            // finalConvertOptions.input_path
-            const id = `${ourbigbook.AT_MENTION_CHAR}${ownerUsername}/${newTopicId}`
-            if (await cachedIdExists(id)) {
-              titleErrors.push(`Article ID already taken: "${id}" `)
-            }
-          } else if (!isIssue && initialArticle.topicId !== newTopicId) {
-            let showToUserOld
-            if (initialArticle?.topicId === '') {
-              showToUserOld = ourbigbook.INDEX_BASENAME_NOEXT
-            } else {
-              showToUserOld = initialArticle?.topicId
-            }
-            titleErrors.push(`ID changed from "${showToUserOld}" to "${showToUserNew}", this is not currently allowed`)
-          }
-        }
-      } else {
-        if (!isIndex) {
-          titleErrors.push('Title cannot be empty')
-        }
+      if (!titleSource && !isIndex) {
+        titleErrors.push('Title cannot be empty')
       }
       setTitleErrors(titleErrors)
     }
@@ -290,27 +267,25 @@ export default function EditorPageHoc({
     }
     useWindowEventListener('beforeunload', beforeUnloadConfirm)
 
-    useEffect(() => {
-      if (
-        // Can fail on maximum number of articles reached.
-        saveButtonElem.current
-      ) {
-        if (hasConvertError || titleErrors.length || parentErrors.length) {
-          disableButton(saveButtonElem.current)
-        } else {
-          enableButton(saveButtonElem.current)
-        }
+    const hasError = hasConvertError ||
+      titleErrors.length ||
+      convertTitleErrors.length ||
+      parentErrors.length
+    if (
+      // Can fail on maximum number of articles reached.
+      saveButtonElem.current
+    ) {
+      if (hasError) {
+        disableButton(saveButtonElem.current)
+      } else {
+        enableButton(saveButtonElem.current)
       }
-    }, [
-      hasConvertError,
-      titleErrors,
-      parentErrors
-    ])
+    }
     const handleSubmit = async (e) => {
       if (e) {
         e.preventDefault()
       }
-      if (hasConvertError || titleErrors.length) {
+      if (hasError) {
         // Although the button should be disabled from clicks,
         // this could still be reached via the Ctrl shortcut.
         return
@@ -344,7 +319,10 @@ export default function EditorPageHoc({
         if (isNew) {
           ;({ data, status } = await webApi.articleCreate(file, opts))
         } else {
-          const path = slugFromArray(ourbigbook.pathSplitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR), { username: false })
+          const path = slugFromArray(
+            ourbigbook.pathSplitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR),
+            { username: false }
+          )
           if (path) {
             opts.path = path
           }
@@ -406,8 +384,40 @@ export default function EditorPageHoc({
               handleSubmit,
               initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,
               modifyEditorInput: (oldInput) => modifyEditorInput(initialFileState.titleSource, oldInput),
-              postBuildCallback: (extra_returns) => {
+              postBuildCallback: async (extra_returns) => {
                 setHasConvertError(extra_returns.errors.length > 0)
+
+                let titleErrors = []
+                if (!isIssue) {
+                  const newId = extra_returns.context.header_tree.children[0].ast.id
+                  let newTopicId = idToTopic(newId)
+                  setTopicId(newTopicId)
+                  let showToUserNew
+                  if (newTopicId === ourbigbook.INDEX_BASENAME_NOEXT) {
+                    // Maybe there is a more factored out way of dealing with this edge case.
+                    newTopicId = ''
+                    showToUserNew = ourbigbook.INDEX_BASENAME_NOEXT
+                  } else {
+                    showToUserNew = newTopicId
+                  }
+                  if (isNew) {
+                    // finalConvertOptions.input_path
+                    const id = `${ourbigbook.AT_MENTION_CHAR}${ownerUsername}/${newTopicId}`
+                    if (await cachedIdExists(id)) {
+                      titleErrors.push(`ID already taken: "${id}" `)
+                    }
+                  } else if (!isIssue && initialArticle.topicId !== newTopicId) {
+                    let showToUserOld
+                    if (initialArticle?.topicId === '') {
+                      showToUserOld = ourbigbook.INDEX_BASENAME_NOEXT
+                    } else {
+                      showToUserOld = initialArticle?.topicId
+                    }
+                    titleErrors.push(`ID changed from "${showToUserOld}" to "${showToUserNew}", this is not currently allowed`)
+                  }
+                }
+                setConvertTitleErrors(titleErrors)
+
                 const first_header = extra_returns.context.header_tree.children[0]
                 if (isNew && first_header) {
                   const id = first_header.ast.id
@@ -537,7 +547,7 @@ export default function EditorPageHoc({
         ourbigbookEditorElem.current.ourbigbookEditor
       ) {
         ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
-          oldInput => modifyEditorInput(isIndex ? 'Home' : file.titleSource, oldInput))
+          oldInput => modifyEditorInput(isIndex ? TXT_HOME_MARKER : file.titleSource, oldInput))
       }
     }, [file, editorLoaded])
     useCtrlEnterSubmit(handleSubmit)
@@ -557,8 +567,9 @@ export default function EditorPageHoc({
       : `Editing ${isIssue
           ? `discussion #${initialFile.number} "${initialFile.titleSource}" on ${issueArticle.titleSource} by ${issueArticle.author.displayName}`
           : isIndex
-            ? 'Home'
-            : `"${initialFile.titleSource}"${initialArticle.author.id === loggedInUser.id
+            ? TXT_HOME_MARKER
+            : `"${initialFile.titleSource}"` +
+              `${initialArticle.author.id === loggedInUser.id
                 ? ''
                 : `by ${displayAndUsernameText(initialArticle.author)}`
               }`
@@ -601,20 +612,39 @@ export default function EditorPageHoc({
                 <h1>
                   {isNew
                     ? <>
-                        <EditArticleIcon /> New {itemType}
+                        <NewArticleIcon /> New {itemType}
+                        {(!isIssue && topicId) && <>
+                          {' '}on <span className="meta">
+                            <CustomLink href={routes.topic(topicId)} newTab={true}><TopicIcon /> {topicId}</CustomLink>
+                          </span>
+                        </>}
                       </>
                     : <>
                         <EditArticleIcon /> Editing
                         {' '}
                         {isIssue
-                          ? <a href={isIssue ? routes.issue(issueArticle.slug, initialArticle.number) : routes.article(initialArticle.slug)} target="_blank">
-                              {isIssue ? `discussion #${initialArticle.number} ` : ''}"{initialFile?.titleSource}"
-                            </a>
-                          : <ArticleBy
-                              article={initialArticle}
+                          ? <CustomLink
+                              href={
+                                isIssue
+                                  ? routes.issue(issueArticle.slug, initialArticle.number)
+                                  : routes.article(initialArticle.slug)
+                              }
                               newTab={true}
-                              showAuthor={initialArticle.author.id !== loggedInUser.id}
-                            />
+                            >
+                              <IssueIcon /> Discussion #{initialArticle.number} "{initialFile?.titleSource}"
+                            </CustomLink>
+                          : <>
+                              <ArticleBy
+                                article={initialArticle}
+                                newTab={true}
+                                showAuthor={initialArticle.author.id !== loggedInUser.id}
+                                showArticleIcon={!isIndex}
+                                showTopicId={
+                                  !isIndex &&
+                                  ourbigbook.titleToId(initialFile.titleSource) !== initialArticle.topicId
+                                }
+                              />
+                            </>
                         }
                       </>
                   }
@@ -648,27 +678,32 @@ export default function EditorPageHoc({
                     type="text"
                   />
                 </Label>
-                <ErrorList errors={titleErrors}/>
+                <ErrorList
+                  errors={titleErrors.concat(convertTitleErrors)}
+                  //oks={hasError ? undefined : ['Title looks good.']}
+                />
                 <div className="tab-list">
-                  <Link
-                    className={`tab-item${tab === 'editor' ? ' active' : ''}`}
-                    href={'#' /* TODO don't know how to make this empty. Like this it makes the URL be '#' which is ugly, but it works. */}
-                    onClick={(ev) => {
-                      ev.preventDefault()
-                      window.location.hash = '' }}
-                  >
-                    <EditArticleIcon /> Editor
-                  </Link>
-                  <Link
-                    className={`tab-item${tab === 'metadata' ? ' active' : ''}`}
-                    href={`#${metadataTabId}`}
-                    onClick={(ev) => {
-                      ev.preventDefault()
-                      window.location.hash = `#${metadataTabId}`
-                    }}
-                  >
-                    <MoreIcon /> Metadata
-                  </Link>
+                  {(!isIssue) && <>
+                    <Link
+                      className={`tab-item${tab === 'editor' ? ' active' : ''}`}
+                      href={'#' /* TODO don't know how to make this empty. Like this it makes the URL be '#' which is ugly, but it works. */}
+                      onClick={(ev) => {
+                        ev.preventDefault()
+                        window.location.hash = '' }}
+                    >
+                      <EditArticleIcon /> Editor
+                    </Link>
+                    <Link
+                      className={`tab-item${tab === 'metadata' ? ' active' : ''}`}
+                      href={`#${metadataTabId}`}
+                      onClick={(ev) => {
+                        ev.preventDefault()
+                        window.location.hash = `#${metadataTabId}`
+                      }}
+                    >
+                      <MoreIcon /> Metadata
+                    </Link>
+                  </>}
                   {' '}
                   <button
                     className="btn"
@@ -693,7 +728,14 @@ export default function EditorPageHoc({
               </div>
               <div className="tabs">
                 <div className={`editor-tab${tab === 'editor' ? '' : ' hide'}`}>
-                  <div className="help"><a href={`${docsUrl}#ourbigbook-markup-quick-start`} target="_blank"><HelpIcon /> Learn how to write with our OurBigBook Markup format here!</a></div>
+                  <div className="help">
+                    <CustomLink
+                      href={`${docsUrl}#ourbigbook-markup-quick-start`}
+                      newTab={true}
+                    >
+                      <HelpIcon /> Learn how to write with our OurBigBook Markup format here!
+                    </CustomLink>
+                  </div>
                   <div
                     className="ourbigbook-editor"
                     ref={ourbigbookEditorElem}
@@ -703,6 +745,14 @@ export default function EditorPageHoc({
                 <div className={`metadata-tab${tab === 'metadata' ? '' : ' hide'}`}>
                   {(!isIssue && !isIndex) &&
                     <div ref={ourbigbookParentIdContainerElem}>
+                      <Label label="ID" >
+                        <input
+                          type="text"
+                          className="title"
+                          value={topicId}
+                          disabled={true}
+                        />
+                      </Label>
                       <Label label="Parent" >
                         <input
                           type="text"

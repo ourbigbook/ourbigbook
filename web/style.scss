@@ -231,7 +231,7 @@ div.list-container {
         // But it breaks down if the page becomes narrow and title goes in different
         // line than the other elements. Related:
         // https://stackoverflow.com/questions/44707141/how-to-force-flex-columns-to-stay-on-the-same-line-if-container-flex-wrap-is-s
-        //align-items:center;  
+        //align-items:center;
         //display: flex;
         //flex-wrap: wrap;
         //column-gap: 7px;
@@ -322,22 +322,17 @@ div.list-container {
 }
 */
 
-h1, h2, h3, h4, h5, h6 {
-  color: $h-color;
-  a {
-    color: $h-color;
-  }
-  .meta {
-    color: $color-slightly-discreet;
-  }
-}
+h1, h2, h3, h4, h5, h6,
 .h1, .h2, .h3, .h4, .h5, .h6 {
   color: $h-color;
   a {
     color: $h-color;
   }
-  .meta {
+  &.meta, .meta {
     color: $color-slightly-discreet;
+  }
+  &.inline {
+    display: inline;
   }
 }
 
@@ -552,6 +547,9 @@ span.shortcut {
     @include h1-only;
     margin-top: 0;
     margin-bottom: 0.2em;
+    &.inline {
+      display: inline;
+    }
   }
   .h2, .h2-nocolor {
     @include h-common;
@@ -649,6 +647,12 @@ span.shortcut {
       position: absolute;
       transform: translate(-50%, -50%);
     }
+  }
+}
+
+.topic-page {
+  .h1-container {
+    margin-bottom: 0.1em;
   }
 }
 

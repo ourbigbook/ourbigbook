@@ -4,7 +4,7 @@
 
 import Link from 'next/link'
 import React from 'react'
-import { AppContext } from 'front'
+import { AppContext, LinkOpensInNewTabIcon } from 'front'
 
 interface CustomLinkProps {
   href?: string;
@@ -13,6 +13,7 @@ interface CustomLinkProps {
   children: React.ReactNode;
   shallow?: boolean;
   newTab?: boolean;
+  newTabIcon?: boolean;
   updatePreviousPage?: boolean;
 }
 
@@ -21,6 +22,7 @@ const CustomLink = ({
   className,
   href,
   newTab=false,
+  newTabIcon=true,
   onClick,
   shallow,
   // This should be === true on buttons such as "create new article". These pages would 300 redirect the user,
@@ -47,7 +49,10 @@ const CustomLink = ({
     innerProps.href = href
     innerProps.target = '_blank'
   }
-  const inner = <a {...innerProps}>{children}</a>
+  const inner = <a {...innerProps}>
+    {children}
+    {(newTab && newTabIcon) && <> <LinkOpensInNewTabIcon /></>}
+  </a>
   if (newTab) {
     return inner
   } else {

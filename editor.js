@@ -1,3 +1,5 @@
+const { INDEX_BASENAME_NOEXT } = require(".")
+
 class OurbigbookEditor {
   constructor(root_elem, initial_content, monaco, ourbigbook, ourbigbook_runtime, options) {
     this.ourbigbook = ourbigbook
@@ -205,11 +207,50 @@ class OurbigbookEditor {
     let ok = true
     try {
       this.modifyEditorInputRet = this.modifyEditorInput(this.getValue())
+      const input = this.modifyEditorInputRet.new
+
+      // Calculate possibly new input path based on conversion. This considers e.g.
+      // disambiguate= and id= \H arguments that may have changed.
+      let input_path
+      const convertOptions = this.options.convertOptions
+      const inputPathOrig = convertOptions.input_path
+      if (inputPathOrig) {
+        const parts = inputPathOrig.split(this.ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+        if (parts.length === 2 && parts[parts.length - 1] === this.ourbigbook.INDEX_BASENAME) {
+          input_path = inputPathOrig
+        } else {
+          const getInputPathConvertOptions = Object.assign({}, convertOptions, {
+            h1Only: true,
+            splitHeaders: false,
+            render: false,
+          })
+          // Keep only directory of input_path, ignore the basename.
+          // The basename can be modified in the editor, but the directory not yet.
+          delete getInputPathConvertOptions.input_path
+          await this.ourbigbook.convert(
+            input,
+            getInputPathConvertOptions,
+            extra_returns
+          )
+          input_path = this.ourbigbook.idToScope(inputPathOrig)
+          const newId = extra_returns.context.header_tree.children[0].ast.id
+          let newBasename
+          if (newId) {
+            newBasename = newId
+          } else {
+            newBasename = this.ourbigbook.INDEX_BASENAME_NOEXT
+          }
+          input_path += this.ourbigbook.Macro.HEADER_SCOPE_SEPARATOR + newBasename + '.' + this.ourbigbook.OURBIGBOOK_EXT
+        }
+      }
+
+      const convertOptionsCopy = Object.assign({}, convertOptions)
+      convertOptionsCopy.input_path = input_path
       this.output_elem.innerHTML = await this.ourbigbook.convert(
-        this.modifyEditorInputRet.new,
-        this.options.convertOptions,
+        input,
+        convertOptionsCopy,
         extra_returns
-      );
+      )
     } catch(e) {
       // TODO clearly notify user on UI that they found a Ourbigbook crash bug for the current input.
       console.error(e);
@@ -263,7 +304,7 @@ class OurbigbookEditor {
         })
       );
 
-      this.options.postBuildCallback(extra_returns)
+      await this.options.postBuildCallback(extra_returns)
     }
   }
 

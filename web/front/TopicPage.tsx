@@ -43,7 +43,6 @@ export const TopicPage = ({
   list,
   loggedInUser,
   order,
-  orderAscDesc,
   page,
   topic,
   what
@@ -57,14 +56,26 @@ export const TopicPage = ({
     titleText = idToTitle(topicId)
   }
   if (router.isFallback) { return <LoadingSpinner />; }
+  const topicIdDisplay = <div className="h2-container">
+    <h2 className="meta inline" title="Topic ID">ID: {topicId}</h2>
+  </div>
   return <>
     <MyHead title={titleText} />
     <div className="topic-page">
       {topic
         ? <>
             <div className="content-not-ourbigbook">
-              <h1><a href=""><TopicIcon /> <span className="ourbigbook-title" dangerouslySetInnerHTML={{ __html: topic.titleRender }} /></a></h1>
-              <TopicsHelp />
+              <div className="h1-container h1">
+                <h1 className="inline">
+                  <TopicIcon />
+                  {' '}
+                  <span
+                    className="ourbigbook-title"
+                    dangerouslySetInnerHTML={{ __html: topic.titleRender }}
+                  />
+                </h1>
+              </div>
+              {topicIdDisplay}
               <div className="tab-list">
                 <CustomLink
                   className={`tab-item${order === 'score' ? ' active' : ''}`}
@@ -110,10 +121,14 @@ export const TopicPage = ({
           </>
         : <>
             <div className="content-not-ourbigbook">
-              <h1><TopicIcon /> {titleText}</h1>
+              <div className="h1-container h1">
+                <TopicIcon /> 
+                {' '}
+                <h1 className="inline">{titleText}</h1>
+              </div>
+              {topicIdDisplay}
               <p>There are no articles in this topic.</p>
-              <p>Topic ID: <b>{topicId}</b></p>
-              <div>
+              <p>
                 <CustomLink
                   className="btn new"
                   href={routes.articleNew({ 'title': titleText })}
@@ -121,12 +136,14 @@ export const TopicPage = ({
                 >
                   <NewArticleIcon title={null}/>{' '}Create the first article for this topic
                 </CustomLink>
-              </div>
-              <TopicsHelp className="p" />
+              </p>
             </div>
           </>
       }
     </div>
+    <p className="content-not-ourbigbook">
+      <TopicsHelp />
+    </p>
   </>
 }
 

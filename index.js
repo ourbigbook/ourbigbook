@@ -2555,8 +2555,16 @@ function calculateId(
     if (idArg && idArg.length()) {
       parseError(
         state,
-        'the home article cannot have non-empty id= explicitly set as its ID is always empty and the argument is ignored, consider using synonyms instead',
+        `the home article cannot have a non-empty "${Macro.ID_ARGUMENT_NAME}" argument as its ID is always empty and the argument is ignored, consider using synonyms instead`,
         idArg.source_location
+      )
+    }
+    const disambiguateArg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME]
+    if (disambiguateArg) {
+      parseError(
+        state,
+        `the home article cannot have the "${Macro.DISAMBIGUATE_ARGUMENT_NAME}" explicitly set as its ID is always empty and the argument is ignored`,
+        disambiguateArg.source_location
       )
     }
   } else {
@@ -3385,6 +3393,13 @@ function convertInitOptions(options) {
     // If true, reserve an empty metadata line for web injected elements
     // such as like count and date modified.
     options.h_web_metadata = false;
+  }
+  if (!('h1Only' in options)) {
+    // Only parse the first element inside toplevel, assumed to be the unique H1 of the file.
+    // This is a minor performance optimization.
+    // This option was added to be able to decide the path to be used
+    // in conversion from header properties a little bit faster.
+    options.h1Only = false
   }
   if (!('input_path' in options)) { options.input_path = undefined; }
   if (!('internalLinkMetadata' in options)) { options.internalLinkMetadata = false }
@@ -5822,6 +5837,9 @@ async function parse(tokens, options, context, extra_returns={}) {
         }`, ast.source_location)
       }
       isFirstAst = false
+      if (context.options.h1Only) {
+        break
+      }
     }
   }
   if (isFirstAst && lintStartsWithH1Header) {
@@ -7022,6 +7040,8 @@ function removeToplevelScope(id, toplevel_ast, context) {
 // https://docs.ourbigbook.com#index-files
 const INDEX_BASENAME_NOEXT = 'index';
 exports.INDEX_BASENAME_NOEXT = INDEX_BASENAME_NOEXT;
+const INDEX_BASENAME = INDEX_BASENAME_NOEXT + '.' + OURBIGBOOK_EXT
+exports.INDEX_BASENAME = INDEX_BASENAME
 const INDEX_FILE_BASENAMES_NOEXT = new Set([
   INDEX_BASENAME_NOEXT,
 ]);
@@ -7370,9 +7390,15 @@ exports.titleToId = titleToId
 
 /** Heuristic only. */
 function idToTitle(id) {
-  return capitalizeFirstLetter(id).replace(ID_SEPARATOR, ' ')
+  return capitalizeFirstLetter(id).replaceAll(ID_SEPARATOR, ' ')
 }
 exports.idToTitle = idToTitle
+
+/** mathematics/calculus/limit -> mathematics/calculus */
+function idToScope(id) {
+  return id.split(Macro.HEADER_SCOPE_SEPARATOR).slice(0, -1).join(Macro.HEADER_SCOPE_SEPARATOR)
+}
+exports.idToScope = idToScope
 
 /** Factored out calculations of the ID that is given to each TOC entry.
  *
@@ -8230,7 +8256,9 @@ const INCOMING_LINKS_MARKER = '<span title="Incoming links" class="fa-solid-900 
 exports.INCOMING_LINKS_MARKER = INCOMING_LINKS_MARKER
 const SYNONYM_LINKS_MARKER = '<span title="Synonyms" class="fa-solid-900 icon">\u{f07e}</span>'
 exports.SYNONYM_LINKS_MARKER = SYNONYM_LINKS_MARKER
-const HTML_HOME_MARKER = '<span title="Home" class="fa-solid-900 icon">\u{f015}</span> Home'
+const TXT_HOME_MARKER = 'Home'
+exports.TXT_HOME_MARKER = TXT_HOME_MARKER
+const HTML_HOME_MARKER = `<span title="${TXT_HOME_MARKER}" class="fa-solid-900 icon">\u{f015}</span> ${TXT_HOME_MARKER}`
 exports.HTML_HOME_MARKER = HTML_HOME_MARKER
 const INCOMING_LINKS_ID_UNRESERVED = 'incoming-links'
 exports.INCOMING_LINKS_ID_UNRESERVED = INCOMING_LINKS_ID_UNRESERVED

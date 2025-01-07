@@ -20,26 +20,40 @@ const {
 } = require('./front/config')
 const { hasReachedMaxItemCount, idToSlug, slugToId, modifyEditorInput } = require('./front/js')
 
-function getConvertOpts({ authorUsername, input_path, sequelize, parentId, render, splitHeaders, type, transaction, }) {
+function getConvertOpts({
+  authorUsername,
+  extraOptions={},
+  input_path,
+  sequelize,
+  parentId,
+  render,
+  splitHeaders,
+  type,
+  transaction,
+}) {
   const db_provider = new SqlDbProvider(sequelize)
   return {
     db_provider,
-    convertOptions: lodash.merge({
-      db_provider,
-      input_path,
-      ourbigbook_json: {
-        h: {
-          splitDefault: false,
-          splitDefaultNotToplevel: true,
+    convertOptions: lodash.merge(
+      {
+        db_provider,
+        input_path,
+        ourbigbook_json: {
+          h: {
+            splitDefault: false,
+            splitDefaultNotToplevel: true,
+          },
         },
+        parent_id: parentId,
+        read_include: read_include_web(async (idid) => (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0),
+        ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${authorUsername}`,
+        render,
+        split_headers: splitHeaders === undefined ? true : splitHeaders,
+        h_web_ancestors: type === 'article',
       },
-      parent_id: parentId,
-      read_include: read_include_web(async (idid) => (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0),
-      ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${authorUsername}`,
-      render,
-      split_headers: splitHeaders === undefined ? true : splitHeaders,
-      h_web_ancestors: type === 'article',
-    }, convertOptions)
+      extraOptions,
+      convertOptions
+    )
   }
 }
 
@@ -77,12 +91,13 @@ async function convert({
       // Do one pre-conversion to determine the file path.
       // All we need from it is the toplevel header.
       // E.g. this finds the correct path from {id= and {disambiguate=
-      // We should likely just forbid those cases instead however
-      // and let ID determination be exclusively outside of source on web:
       // https://github.com/ourbigbook/ourbigbook/issues/304
       const extra_returns = {}
       const { convertOptions } = getConvertOpts({
         authorUsername: author.username,
+        extraOptions: {
+          h1Only: true,
+        },
         input_path: undefined,
         parentId,
         render: false,

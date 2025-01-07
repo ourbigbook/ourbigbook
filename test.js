@@ -549,7 +549,7 @@ function assert_cli(
     }
 
     const tmpdir = path.join(testdir, this.test.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'));
-    // These slighty modified titles should still be unique, but who knows.
+    // These slightly modified titles should still be unique, but who knows.
     // Not modifying them would require cd quoting.
     assert(!fs.existsSync(tmpdir));
     fs.mkdirSync(tmpdir);
@@ -7204,6 +7204,15 @@ asdf
 assert_lib_error('header: home article cannot have non-empty id',
   `= My home
 {id=asdf}
+`,
+  2, 1, 'index.bigb',
+  {
+    input_path_noext: 'index',
+  }
+)
+assert_lib_error('header: home article cannot have disambiguate',
+  `= My home
+{disambiguate=asdf}
 `,
   2, 1, 'index.bigb',
   {

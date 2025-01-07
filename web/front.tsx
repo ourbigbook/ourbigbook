@@ -57,28 +57,35 @@ export function ArticleBy(
   {
     article,
     newTab=false,
+    showArticleIcon=false,
     showAuthor=true,
+    showTopicId=false,
   }: {
     article?: ArticleType,
     newTab?: boolean,
-    showAuthor?: boolean
+    showArticleIcon?: boolean,
+    showAuthor?: boolean,
+    showTopicId?: boolean,
   }
 ) {
   const isIndex = article.topicId === ''
+  const quote = (!isIndex && showAuthor) ? '"' : ''
   const inner = <>
-    {!isIndex && '"'}<span
+    {showArticleIcon && <><ArticleIcon /> </>}
+    {quote}<span
       className="ourbigbook-title"
       dangerouslySetInnerHTML={{ __html: article.titleRender }}
-    />{!isIndex && '"'}{showAuthor && <>
+    />{quote}{showAuthor && <>
       {' '}by <UserLinkWithImageInner {...{
         user: article.author,
         showUsername: true,
       }} />
     </>}
+    {showTopicId && <> <span className="meta">({article.topicId})</span></>}
   </>
   const href = routes.article(article.slug)
   if (newTab) {
-    return <a href={href} target="_blank">{inner}</a>
+    return <a href={href} target="_blank">{inner} <LinkOpensInNewTabIcon /></a>
   } else {
     return <CustomLink href={href}>{inner}</CustomLink>
   }
@@ -199,6 +206,10 @@ export function ErrorIcon(opts) {
   return FontAwesomeIcon(0xf00d, { clsExtra: ['icon-error'], opts, title: "Error" })
 }
 
+export function LinkOpensInNewTabIcon(opts) {
+  return FontAwesomeIcon(0xf08e, { opts, title: "Link opens in a new tab" })
+}
+
 export function FollowIcon(opts) {
   // https://fontawesome.com/icons/eye?f=classic&s=regular
   return FontAwesomeIcon(0xf06e, { opts, title: "Follow" })
@@ -206,6 +217,10 @@ export function FollowIcon(opts) {
 
 export function HelpIcon(opts) {
   return FontAwesomeIcon(0xf05a, { opts, title: "Help" })
+}
+
+export function IdIcon(opts) {
+  return FontAwesomeIcon(0xf2c1, { opts, title: "Discussion" })
 }
 
 export function IncomingIcon() {
@@ -305,7 +320,11 @@ export function SignupOrLogin(
 }
 
 export function TopicsHelp({ className=undefined }) {
-  return <div className={className ? className : ''}><HelpIcon /> New to <b>topics</b>? <a href={`${docsUrl}/ourbigbook-web-topics`}>Read the documentation here!</a></div>
+  return <span className={className ? className : ''}>
+    <HelpIcon /> New to <b>topics</b>?
+    {' '}
+    <a href={`${docsUrl}/ourbigbook-web-topics`}>Read the docs here!</a>
+  </span>
 }
 
 export function disableButton(btn, msg='Cannot submit due to errors') {

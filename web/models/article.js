@@ -762,7 +762,7 @@ WHERE
     for (const child of children) {
       let inc_orig = this.slug
       if (!isToplevelIndex) {
-        inc_orig = inc_orig.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(0, -1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+        inc_orig = ourbigbook.idToScope(inc_orig)
       }
       include_source += `\\Include[${path.relative(inc_orig, child.slug)}]\n`
     }

@@ -4269,7 +4269,6 @@ it('api: editor/fetch-files', async () => {
     // Fetch and check some files.
     ;({data, status} =  await test.webApi.editorFetchFiles([ '@user0/mathematics.bigb', '@user0/calculus.bigb' ]))
     assertStatus(status, data)
-    console.error();
     assertRows(data.files, [
       { path: '@user0/calculus.bigb', toplevel_id: '@user0/calculus' },
       { path: '@user0/mathematics.bigb', toplevel_id: '@user0/mathematics' },

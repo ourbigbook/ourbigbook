@@ -7,6 +7,26 @@ Significant entries will have a corresponding announcement on the following <off
 * <twitter.com OurBigBook>
 * <mastodon.social @OurBigBook>
 
+= Create new articles from table of contents
+{parent=News}
+{tag=Web}
+
+Previously, to create a new article that is a child or sibling of another article, you'd need to navigate to the article itself.
+
+Now you can also do it from the table of contents. This is an intuitive place to do it from, since you can browse the article tree and decide the best location to insert a new article from there.
+
+\Image[feature/new-from-toc/hover-arrow.png]
+{title=You can add a new article under or after another on <OurBigBook Web> from the table of contents}
+{provider=github}
+{border}
+{height=694}
+
+\Image[feature/new-from-toc/modal.png]
+{title=After clicking the plus sign, a popup appears that allows you to add the new article}
+{provider=github}
+{border}
+{height=694}
+
 = Profile picture upload
 {parent=News}
 {tag=Web}

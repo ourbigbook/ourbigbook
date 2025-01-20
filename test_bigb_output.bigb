@@ -193,6 +193,18 @@ x = 1
 ``
 {description=My code}
 
+Block code description is not literal by default:
+
+``
+000
+``
+{description=
+aaa\$bbb
+
+* ccc
+ddd
+}
+
 Inline math: $\sqrt{2}$ after.
 
 Block math:

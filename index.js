@@ -10670,9 +10670,9 @@ function ourbigbookCodeMathInline(c) {
 
 function ourbigbookCodeMathBlock(c) {
   return function(ast, context) {
-    context = cloneAndSet(context, 'in_literal', true)
-    const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
-    const content = renderArg(ast.args.content, context)
+    const contextInLiteral = cloneAndSet(context, 'in_literal', true)
+    const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, contextInLiteral))
+    const content = renderArg(ast.args.content, contextInLiteral)
     let delim = c + c
     while (content.indexOf(delim) !== -1) {
       delim += c

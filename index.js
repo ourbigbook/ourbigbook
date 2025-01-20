@@ -11194,7 +11194,11 @@ OUTPUT_FORMATS_LIST.push(
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
           const href = renderArg(ast.args.href, context)
           if (protocolIsKnown(href)) {
-            return `${href}${ourbigbookConvertArgs(ast, context, { skip: new Set(['href']) }).join('')}`
+            const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
+            if (dolog && newline) {
+              console.log(`Macro.LINK_MACRO_NAME newline: ${require('util').inspect(newline, { depth: null })}`)
+            }
+            return `${newline}${href}${ourbigbookConvertArgs(ast, context, { skip: new Set(['href']) }).join('')}`
           } else {
             return ourbigbookConvertSimpleElem(ast, context)
           }
@@ -11347,7 +11351,11 @@ OUTPUT_FORMATS_LIST.push(
             }
           }
 
-          return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + ourbigbookEscape(text)
+          const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
+          if (dolog) {
+            console.log(`Macro.PLAINTEXT_MACRO_NAME: newline=${require('util').inspect(newline)} text=${require('util').inspect(text)}`)
+          }
+          return  newline + ourbigbookEscape(text)
         },
         [capitalizeFirstLetter(Macro.PASSTHROUGH_MACRO_NAME)]: ourbigbookConvertSimpleElem,
         [Macro.PASSTHROUGH_MACRO_NAME]: ourbigbookConvertSimpleElem,
@@ -11374,6 +11382,7 @@ OUTPUT_FORMATS_LIST.push(
         [Macro.X_MACRO_NAME]: function(ast, context) {
           let href = renderArg(ast.args.href, context)
           let hasLinkEndChar = false
+          const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
           if (ast.validation_output.topic.boolean) {
             for (const c of href) {
               if (INSANE_LINK_END_CHARS.has(c)) {
@@ -11386,6 +11395,9 @@ OUTPUT_FORMATS_LIST.push(
             if (nextAst) {
               nextAstRender = nextAst.render(context)
             }
+            if (dolog && newline) {
+              console.log(`Macro.X_MACRO_NAME newline: ${require('util').inspect(newline, { depth: null })}`)
+            }
             if (
               !hasLinkEndChar &&
               // Check that what immediately follows does not start with a character
@@ -11395,9 +11407,9 @@ OUTPUT_FORMATS_LIST.push(
               // #abcd
               !(nextAstRender && !INSANE_LINK_END_CHARS.has(nextAstRender[0]))
             ) {
-              return `${INSANE_TOPIC_CHAR}${href}`
+              return `${newline}${INSANE_TOPIC_CHAR}${href}`
             } else {
-              return `${INSANE_X_START}${INSANE_TOPIC_CHAR}${href}${INSANE_X_END}`
+              return `${newline}${INSANE_X_START}${INSANE_TOPIC_CHAR}${href}${INSANE_X_END}`
             }
           }
           //if (AstType.PLAINTEXT === ast.args.href[0] === INSANE_TOPIC_CHAR) {
@@ -11431,7 +11443,10 @@ OUTPUT_FORMATS_LIST.push(
             return override_href
           }
           href = href.replace(/[ >]+/g, ' ')
-          return `${INSANE_X_START}${href}${INSANE_X_END}${ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
+          if (dolog && newline) {
+            console.log(`Macro.X_MACRO_NAME newline: ${require('util').inspect(newline, { depth: null })}`)
+          }
+          return `${newline}${INSANE_X_START}${href}${INSANE_X_END}${ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
         },
         'Video': ourbigbookConvertSimpleElem,
         [Macro.TEST_SANE_ONLY]: ourbigbookConvertSimpleElem,

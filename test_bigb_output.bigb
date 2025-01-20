@@ -319,6 +319,26 @@ List immediately in list item:
 * * first
   * second
 
+Link immediately after list:
+* first
+* second
+http://example.com
+
+One-word topic immediately after list:
+* first
+* second
+#mathematics
+
+Multi-word topic immediately after list:
+* first
+* second
+<#linear algebra>
+
+Internal link immediately after list:
+* first
+* second
+<dog>
+
 Quote in paragraph:
 > My quote in paragraph
 
@@ -330,6 +350,11 @@ On insane quote after another in the same paragraph:
 
 > insane quote 1
 > insane quote 2
+
+One-word topic immediately after quote:
+
+> My quote
+#mathematics
 
 Table:
 

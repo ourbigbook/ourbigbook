@@ -15,6 +15,9 @@ if (typeof performance === 'undefined') {
 }
 
 const katex = require('katex');
+// This tells webpack to pull in the KaTeX mhchem extension
+// https://github.com/KaTeX/KaTeX/tree/main/contrib/mhchem
+require('katex/contrib/mhchem');
 const lodash = require('lodash');
 const path = require('path');
 const pluralize = require('pluralize');

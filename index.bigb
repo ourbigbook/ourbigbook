@@ -4015,7 +4015,9 @@ $$
 
 Our goal is to collect the most popular macros from the most popular pre-existing LaTeX packages and make them available with this mechanism.
 
-The built-in macros are currently only available on <OurBigBook CLI> and <OurBigBook Web>, not when using the <JavaScript API> directly. We should likely make that possible as well at some point.
+These built-in macros are currently only available on <OurBigBook CLI> and <OurBigBook Web>, not when using the <JavaScript API> directly. We should likely make that possible as well at some point.
+
+In addition to \a[default.tex], the https://github.com/KaTeX/KaTeX/tree/main/contrib/mhchem[KaTeX mhchem extension] is also enabled to facilitate typesetting of chemical formulae with the `\ce` and `\pu` macros.
 
 = User-defined LaTeX macros
 {parent=LaTeX macros}

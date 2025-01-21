@@ -4,38 +4,12 @@
 
 == Issues
 
-=== Vs Code symbol provider
-{tag=Visual Studio Code}
-
-Allow you to Ctrl + Click on any internal link such as `\x[]` and jump to the corresponding header.
-
-https://code.visualstudio.com/api/language-extensions/programmatic-language-feature
-
-We'd just use the SQLite database with some exiting wrapper function most likely. Hardest part is likely calculating the target ID.
-
 === Encrypted client hello
 {tag=Web}
 
 One day we'll enable it, e.g. with Cloudfare:
 * https://developers.cloudflare.com/support/third-party-software/others/configure-cloudflare-and-heroku-over-https/
 * https://developers.cloudflare.com/ssl/edge-certificates/ech/
-
-=== Move articles deleted locally to under a trash article on web
-{tag=Web}
-
-During `--web` upload.
-
-The exact name of that article is a somewhat difficult question, if we go non-magical then:
-\Q[My deleted articles]
-will do. But we could go more magical:
-``
-_my/trash
-``
-or polluting a bit without `_`:
-``
-my/trash
-``
-Perhaps such a namespace would be useful for stuff like `my/contact`, `my/body`, `my/hardware` and so on.
 
 === Add button on web to move article to trash on web
 {tag=Web}
@@ -284,15 +258,13 @@ after:
 ``
 Gotta try to make a minimal test reproduction for this mess.
 
-=== split and nosplit links missing from cirosantilli.com
-
-https://cirosantilli.com/brazilian-music-split doesn't have nosplit
-
 === Like and unlike requests are very slow
 {tag=Performance}
 {tag=Web}
 
 On ourbigbook.com like and unlike takes 4s-10s! Something is wrong. It must be because of the complex side effects like topic updating? Maybe those should be deferred? This only appears noticeable on a larger database.
+
+Edit: as of today it was taking 500 ms, so likely some index was added that improved it a lot.
 
 === Incoming links and tagged metadata does not show synonyms
 {tag=Metadata section}
@@ -992,6 +964,8 @@ E.g. https://cirosantilli.com/x86-paging#toc-x86-paging/sample-code should inste
 
 On web will require extra caution after we decided to initially stop culling scopes: <missing header metadata such as like button, same topic and issue link on headers under a scope>.
 
+Edit: this was fixed on web after we did the insane and amazing dynamic tree JavaScript redirects: https://ourbigbook.com/cirosantilli/x86-paging#_toc/sample-code But we never got round to fixing it on static where it still goes to the bad https://cirosantilli.com/x86-paging#_toc/x86-paging/sample-code
+
 === LIKE metadata on JOIN on
 
 * web descendants
@@ -1047,6 +1021,38 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== split and nosplit links missing from cirosantilli.com
+
+https://cirosantilli.com/brazilian-music-split doesn't have nosplit
+
+=== Move articles deleted locally to under a trash article on web
+{tag=Web}
+
+During `--web` upload.
+
+The exact name of that article is a somewhat difficult question, if we go non-magical then:
+\Q[My deleted articles]
+will do. But we could go more magical:
+``
+_my/trash
+``
+or polluting a bit without `_`:
+``
+my/trash
+``
+Perhaps such a namespace would be useful for stuff like `my/contact`, `my/body`, `my/hardware` and so on.
+
+Edit: we decided to create unlisted articles rather than doing this.
+
+=== Vs Code symbol provider
+{tag=Visual Studio Code}
+
+Allow you to Ctrl + Click on any internal link such as `\x[]` and jump to the corresponding header.
+
+https://code.visualstudio.com/api/language-extensions/programmatic-language-feature
+
+We'd just use the SQLite database with some exiting wrapper function most likely. Hardest part is likely calculating the target ID.
 
 === Allow creating new pages under scope on web
 {tag=Scope}

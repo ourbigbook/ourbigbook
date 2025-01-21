@@ -10661,7 +10661,11 @@ function ourbigbookCodeMathInline(c) {
   return function(ast, context) {
     const content = renderArg(ast.args.content, cloneAndSet(context, 'in_literal', true))
     if (content.indexOf(c) === -1) {
-      return `${c}${content}${c}`
+      const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
+      if (dolog) {
+        console.log(`ourbigbookCodeMathInline: newline=${require('util').inspect(newline)}`)
+      }
+      return `${newline}${c}${content}${c}`
     } else {
       return ourbigbookConvertSimpleElem(ast, context)
     }

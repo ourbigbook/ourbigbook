@@ -351,6 +351,16 @@ Internal link immediately after list:
 * second
 <dog>
 
+Inline code immediately after list:
+* first
+* second
+`my code`
+
+Inline math immediately after list:
+* first
+* second
+$\sqrt{2}$
+
 Quote in paragraph:
 > My quote in paragraph
 

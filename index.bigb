@@ -102,6 +102,12 @@ A full blown showcase knowledge base can be seen at:
   {border}
   {disambiguate=intro}
 
+  \Image[feature/web-editor/topic-link.png]
+  {title=Creating a new article on the web editor}
+  {border}
+  {height=457}
+  {provider=github}
+
   \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
   {title=Edit locally and <publish> demo}
   {disambiguate=intro}

@@ -10,6 +10,26 @@ Significant entries will have a corresponding announcement on the following <off
 * https://www.facebook.com/OurBigBook
 * https://www.instagram.com/ourbigbook
 
+= Topic ID shows on web editor when creating a new article
+{parent=News}
+{tag=Web}
+
+This give a chance for users to see what else is present in that <topic> to better decide if it is a good fit for the article.
+
+Also, the topic ID now shows more clearly on each topic page to help users understand that each topic has its own ID that determines which articles will show up in the topic.
+
+\Image[feature/web-editor/topic-link-arrow.png]
+{title=<Topic> link showing while creating a new article on the <web editor>}
+{border}
+{height=457}
+{provider=github}
+
+\Image[feature/topics/topic-id-arrow.png]
+{title=<Topic> ID showing on the topic page}
+{border}
+{height=500}
+{provider=github}
+
 = Create new articles from table of contents
 {parent=News}
 {tag=Web}

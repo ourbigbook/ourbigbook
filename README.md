@@ -60,6 +60,8 @@ You can also edit directly on OurBigBook.com with the [Web Editor](https://docs.
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-editor/cirosantilli-derivative.png)
 
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/web-editor/topic-link.png)
+
 [Tags](https://docs.ourbigbook.com/#h-tag-argument) are just headers:
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/tag/non-toplevel-documentary-sell.png)

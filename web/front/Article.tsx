@@ -825,7 +825,7 @@ export default function Article({
       }
       levelToHeader[level] = { href, content }
       const entry = {
-        addLink: loggedInUser
+        addLink: (loggedInUser && loggedInUser.username === article.author.username)
           ? ` <a href="${addParameterToUrlPath(router.asPath, NEW_QUERY_PARAM, slugToTopic(a.slug))}" title="New..." class="btn abs ${NEW_MODAL_BUTTON_CLASS}">` +
             `${renderToString(<NewArticleIcon title={null}/>)}` +
             `</a>`

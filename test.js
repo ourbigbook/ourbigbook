@@ -9203,6 +9203,7 @@ assert_lib_stdin('bigb output: converts plaintext literal arguments to arguments
 `,
   {
     assert_bigb_stdout: `\\TestSaneOnly[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
+
 \\TestSaneOnly[\\* *]
 
 \\TestSaneOnly[\\= =]

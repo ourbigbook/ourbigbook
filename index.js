@@ -4633,12 +4633,23 @@ function macroList(addTestInstrumentation) {
                   count_words: true,
                   mandatory: false,
                 }),
+                new MacroArgument({
+                  name: 'preferLiteralPositional',
+                  count_words: true,
+                  ourbigbook_output_prefer_literal: true,
+                  mandatory: false,
+                }),
               ],
               {
                 named_args: [
                   new MacroArgument({
                     name: 'named',
                     count_words: true,
+                  }),
+                  new MacroArgument({
+                    name: 'preferLiteral',
+                    count_words: true,
+                    ourbigbook_output_prefer_literal: true,
                   }),
                 ],
               }
@@ -4654,6 +4665,13 @@ function macroList(addTestInstrumentation) {
               ],
               {
                 inline: true,
+                named_args: [
+                  new MacroArgument({
+                    name: 'preferLiteral',
+                    count_words: true,
+                    ourbigbook_output_prefer_literal: true,
+                  }),
+                ],
               }
             ),
           ]
@@ -10997,15 +11015,18 @@ function ourbigbookPreferLiteral(ast, context, ast_arg, arg, open, close) {
     const text = ast_arg.asts[0].text
     if (
       // Prefer literals if any escapes would be needed.
-      arg.ourbigbook_output_prefer_literal ||
-      (
-        ourbigbookEscape(text) !== text &&
-        !(
-          macroArg.elide_link_only &&
-          protocolIsKnown(text) &&
-          !hasInsaneLinkEndChars(text)
-        )
-      )
+      arg.ourbigbook_output_prefer_literal
+      // In the past we had more complicated rules here that would consider
+      // how many escapes wre needed. But I've been feeling that I never want
+      // literals except for specific arguments where I always want a literal.
+      //|| (
+      //  ourbigbookEscape(text) !== text &&
+      //  !(
+      //    macroArg.elide_link_only &&
+      //    protocolIsKnown(text) &&
+      //    !hasInsaneLinkEndChars(text)
+      //  )
+      //)
     ) {
       rendered_arg = ast_arg.asts[0].text
       delim_repeat = 2
@@ -11450,7 +11471,8 @@ OUTPUT_FORMATS_LIST.push(
           if (dolog && newline) {
             console.log(`Macro.X_MACRO_NAME newline: ${require('util').inspect(newline, { depth: null })}`)
           }
-          return `${newline}${INSANE_X_START}${href}${INSANE_X_END}${ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')}`
+          return `${newline}${INSANE_X_START}${href}${INSANE_X_END}` +
+            ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')
         },
         'Video': ourbigbookConvertSimpleElem,
         [Macro.TEST_SANE_ONLY]: ourbigbookConvertSimpleElem,

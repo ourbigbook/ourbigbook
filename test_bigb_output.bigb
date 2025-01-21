@@ -28,9 +28,9 @@ Test sane only block:
 
 \TestSaneOnly[inside TestSaneOnly block]
 
-Test sane only literal with subelement: \testSaneOnly[[a \testSaneOnly[b] c]]
+Test sane only literal with subelement: \testSaneOnly[a \\testSaneOnly\[b\] c]{{preferLiteral=a \testSaneOnly[b] c}}
 
-Test sane only literal with http escape: \testSaneOnly[[a http://example.com c]]
+Test sane only literal with http escape: \testSaneOnly[a \http://example.com c]{{preferLiteral=a http://example.com c}}
 
 Insane link http://example.com after.
 
@@ -58,7 +58,7 @@ Topic link without spaces must have delimiters if followed by non-whitespace: <#
 
 Same but followed by insane link: <#RareTopic>http://example.com
 
-Sane xref that cannot be converted to insane: \x[[$]]
+Sane xref that cannot be converted to insane: \x[\$]
 
 Insane ref with greater than: <greater than>
 
@@ -134,11 +134,13 @@ and something after.
 
 Literal block that renders as sane:
 
-\TestSaneOnly[[To be \i[or] maybe not.]]
+\TestSaneOnly[To be \\i\[or\] maybe not.]
+{{preferLiteral=To be \i[or] maybe not.}}
 
 Literal block with escaped leading and trailing:
 
-\TestSaneOnly[[\[asdf\]]]
+\TestSaneOnly[\[asdf\]]
+{{preferLiteral=\{asdf\}}}
 
 \TestSaneOnly[
 \TestSaneOnly[inside double TestSaneOnly]
@@ -146,13 +148,14 @@ Literal block with escaped leading and trailing:
 
 Literal block with multiple lines starting in \[ and ending in \]:
 
-\TestSaneOnly[[
+\TestSaneOnly[]
+[[
 [
 ]
 ]]
 
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
-{{description=\{asdf\}}}
+{description=\{asdf\}}
 
 Insane block together with paragraph:
 ``
@@ -497,7 +500,7 @@ World
 {tag=My Tag}
 
 == Dollar
-{{id=$}}
+{id=\$}
 
 == Greater > than
 

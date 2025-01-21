@@ -9180,8 +9180,29 @@ assert_lib('bigb output: adds newlines around named arguments that contain block
 `,
   }
 )
-assert_lib_stdin('bigb output: converts plaintext arguments with escapes to literal arguments when possible',
-  `\\TestSaneOnly[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
+assert_lib_stdin('bigb output: converts plaintext literal arguments to arguments with escapes when possible',
+  `\\TestSaneOnly[[\\ [ ] { } < \` $]]
+
+\\TestSaneOnly[[* *]]
+
+\\TestSaneOnly[[= =]]
+
+\\TestSaneOnly[[|| ||]]
+
+\\TestSaneOnly[[| |]]
+
+\\TestSaneOnly[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$ \\i[asdf]]
+
+\\TestSaneOnly[\\* \\i[asdf]]
+
+\\TestSaneOnly[\\= \\i[asdf]]
+
+\\TestSaneOnly[\\|| \\i[asdf]]
+
+\\TestSaneOnly[\\| \\i[asdf]]
+`,
+  {
+    assert_bigb_stdout: `\\TestSaneOnly[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
 
 \\TestSaneOnly[\\* *]
 
@@ -9201,27 +9222,6 @@ assert_lib_stdin('bigb output: converts plaintext arguments with escapes to lite
 
 \\TestSaneOnly[\\| \\i[asdf]]
 `,
-  {
-    assert_bigb_stdout: `\\TestSaneOnly[[\\ [ ] { } < \` $]]
-
-\\TestSaneOnly[[* *]]
-
-\\TestSaneOnly[[= =]]
-
-\\TestSaneOnly[[|| ||]]
-
-\\TestSaneOnly[[| |]]
-
-\\TestSaneOnly[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$ \\i[asdf]]
-
-\\TestSaneOnly[\\* \\i[asdf]]
-
-\\TestSaneOnly[\\= \\i[asdf]]
-
-\\TestSaneOnly[\\|| \\i[asdf]]
-
-\\TestSaneOnly[\\| \\i[asdf]]
-`
   },
 )
 assert_lib_stdin('bigb output: converts sane refs to insane ones',

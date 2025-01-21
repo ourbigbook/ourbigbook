@@ -954,18 +954,6 @@ Newlines just add complexity to our codebase, and are not even getting removed f
 === parentId dropdown autocomplete
 {tag=Web}
 
-=== Remove scope from toc entry IDs
-{tag=Scope}
-{tag=CLI}
-
-Happens on CLI and Web, though the web one is a bit artificial.
-
-E.g. https://cirosantilli.com/x86-paging#toc-x86-paging/sample-code should instead be just: https://cirosantilli.com/x86-paging#toc-sample-code[]. Links from headers to currently work however, 
-
-On web will require extra caution after we decided to initially stop culling scopes: <missing header metadata such as like button, same topic and issue link on headers under a scope>.
-
-Edit: this was fixed on web after we did the insane and amazing dynamic tree JavaScript redirects: https://ourbigbook.com/cirosantilli/x86-paging#_toc/sample-code But we never got round to fixing it on static where it still goes to the bad https://cirosantilli.com/x86-paging#_toc/x86-paging/sample-code
-
 === LIKE metadata on JOIN on
 
 * web descendants
@@ -1021,6 +1009,18 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== Remove scope from toc entry IDs
+{tag=Scope}
+{tag=CLI}
+
+Happens on CLI and Web, though the web one is a bit artificial.
+
+E.g. https://cirosantilli.com/x86-paging#toc-x86-paging/sample-code should instead be just: https://cirosantilli.com/x86-paging#toc-sample-code[]. Links from headers to currently work however.
+
+On web will require extra caution after we decided to initially stop culling scopes: <missing header metadata such as like button, same topic and issue link on headers under a scope>.
+
+Edit: this was fixed on web after we did the insane and amazing dynamic tree JavaScript redirects: https://ourbigbook.com/cirosantilli/x86-paging#_toc/sample-code But we never got round to fixing it on static where it still goes to the bad https://cirosantilli.com/x86-paging#_toc/x86-paging/sample-code
 
 === split and nosplit links missing from cirosantilli.com
 

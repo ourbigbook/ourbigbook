@@ -7408,6 +7408,80 @@ assert_lib_ast('toc: split headers have correct table of contents',
     convert_before_norender: ['index.bigb', 'notindex.bigb'],
   },
 )
+assert_lib('toc: toplevel scope is removed from table of content IDs',
+  {
+    convert_opts: { split_headers: true },
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]
+`,
+      'notindex.bigb': `= h1
+{scope}
+
+== h1 1
+
+== h1 2
+
+=== h1 2 1
+
+==== h1 2 1 1
+`,
+    },
+    assert_xpath: {
+      'notindex.html': [
+        // There is a self-link to the Toc.
+        "//*[@id='_toc']",
+        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
+
+        // ToC links have parent toc entry links.
+        // Toplevel entries point to the ToC toplevel.
+        `//*[@id='_toc']//*[@id='_toc/h1-1']//x:a[@href='#_toc' and text()=' h1']`,
+        `//*[@id='_toc']//*[@id='_toc/h1-2']//x:a[@href='#_toc' and text()=' h1']`,
+        // Inner entries point to their parent entries.
+        `//*[@id='_toc']//*[@id='_toc/h1-2-1']//x:a[@href='#_toc/h1-2' and text()=' h1 2']`,
+
+        // The ToC numbers look OK.
+        "//*[@id='_toc']//x:a[@href='#h1-2' and text()='h1 2']",
+
+        // The headers have ToC links.
+        `${xpath_header(2, 'h1-1')}//x:a[@href='#_toc/h1-1' and @class='toc']`,
+        `${xpath_header(2, 'h1-2')}//x:a[@href='#_toc/h1-2' and @class='toc']`,
+        `${xpath_header(3, 'h1-2-1')}//x:a[@href='#_toc/h1-2-1' and @class='toc']`,
+
+        // Descendant count.
+        "//*[@id='_toc']//*[@class='title-div']//*[@class='descendant-count' and text()='4']",
+        "//*[@id='_toc']//*[@id='_toc/h1-2']//*[@class='descendant-count' and text()='2']",
+      ],
+      'notindex-split.html': [
+        // Split output files get their own ToCs.
+        "//*[@id='_toc']",
+        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
+      ],
+      'notindex/h1-2.html': [
+        // Split output files get their own ToCs.
+        "//*[@id='_toc']",
+        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
+
+        // The Toc entries of split output headers automatically cull out a level
+        // of the full number tree. E.g this entry is `2.1` on the toplevel ToC,
+        // but on this sub-ToC it is just `1.`.
+        "//*[@id='_toc']//x:a[@href='../notindex.html#h1-2-1' and text()='h1 2 1']",
+        "//*[@id='_toc']//x:a[@href='../notindex.html#h1-2-1-1' and text()='h1 2 1 1']",
+
+        // We have gone a bit back and forth on split vs nosplit here.
+        // Related: https://github.com/ourbigbook/ourbigbook/issues/146
+        `//*[@id='_toc']//*[@id='_toc/h1-2-1']//x:a[@href='#_toc' and text()=' h1 2']`,
+        `//*[@id='_toc']//*[@id='_toc/h1-2-1-1']//x:a[@href='#_toc/h1-2-1' and text()=' h1 2 1']`,
+
+        // Descendant count.
+        "//*[@id='_toc']//*[@class='title-div']//*[@class='descendant-count' and text()='2']",
+        "//*[@id='_toc']//*[@id='_toc/h1-2-1']//*[@class='descendant-count' and text()='1']",
+      ],
+    },
+  },
+)
 assert_lib_error('toc: _toc is a reserved id',
   `= h1
 

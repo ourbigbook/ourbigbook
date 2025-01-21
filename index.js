@@ -7108,6 +7108,7 @@ function renderErrorXUndefined(ast, context, target_id, options={}) {
  */
 function renderTocFromEntryList({
   add_test_instrumentation,
+  context,
   entry_list,
   descendant_count_html,
   hasSearch,
@@ -7167,7 +7168,7 @@ function renderTocFromEntryList({
       ret += htmlClassAttr([TOC_HAS_CHILD_CLASS]);
     }
     ret += '>'
-    const my_toc_id = tocId(target_id);
+    const my_toc_id = tocIdWithScopeRemoval(target_id, context);
     let id_to_toc = htmlAttr(Macro.ID_ARGUMENT_NAME, htmlEscapeAttr(my_toc_id));
     let linear_count_str
     if (add_test_instrumentation) {
@@ -7276,7 +7277,7 @@ function renderToc(context) {
         ) {
           parent_href_target = context.options.tocIdPrefix + Macro.TOC_ID;
         } else {
-          parent_href_target = tocId(parent_ast.id);
+          parent_href_target = tocIdWithScopeRemoval(parent_ast.id, context);
         }
         entry.parent_href = htmlAttr('href', '#' + parent_href_target);
         entry.parent_content = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
@@ -7294,6 +7295,7 @@ function renderToc(context) {
     entry_list.push(entry)
   }
   return renderTocFromEntryList({
+    context,
     entry_list,
     descendant_count_html,
     add_test_instrumentation: context.options.add_test_instrumentation,
@@ -7429,6 +7431,13 @@ function tocId(id) {
   return Macro.TOC_PREFIX + id;
 }
 exports.tocId = tocId
+
+function tocIdWithScopeRemoval(id, context) {
+  if (context && id !== undefined) {
+    id = removeToplevelScope(id, context.toplevel_ast, context)
+  }
+  return tocId(id)
+}
 
 function unconvertible(ast, context) {
   const msg = `macro "${ast.macro_name}" must never render`
@@ -9918,9 +9927,14 @@ const OUTPUT_FORMATS_LIST = [
               if (fixedScopeRemoval !== undefined) {
                 // This is hacky, maybe we shouldn't overload fixedScopeRemoval for this...
                 // it is used only on web so... lazy to think now.
-                id = id.slice(fixedScopeRemoval)
+                id = tocId(id.slice(fixedScopeRemoval))
+              } else {
+                id = tocIdWithScopeRemoval(id, context)
               }
-              toc_link_html = `<a${htmlAttr('href', '#' + htmlEscapeAttr(tocId(id)))} class="${TOC_LINK_ELEM_CLASS_NAME}"></a>`
+              toc_link_html = `<a${htmlAttr(
+                'href',
+                '#' + htmlEscapeAttr(id)
+              )} class="${TOC_LINK_ELEM_CLASS_NAME}"></a>`
             }
           }
 

@@ -1,4 +1,4 @@
-import { getLoggedInUser } from 'back'
+import { getLoggedInUser, querySearchToTopicId } from 'back'
 import { articleLimit } from 'front/config'
 import { getOrderAndPage } from 'front/js'
 import { IndexPageProps } from 'front/IndexPage'
@@ -69,7 +69,7 @@ export const getServerSidePropsIndexHoc = ({
                 offset,
                 order,
                 orderAscDesc: ascDesc,
-                searchTopicId: query.search,
+                searchTopicId: querySearchToTopicId(query.search),
                 sequelize,
               })
               articles = await Promise.all(articlesAndCounts.rows.map(
@@ -101,7 +101,7 @@ export const getServerSidePropsIndexHoc = ({
               offset,
               order,
               orderAscDesc: ascDesc,
-              searchTopicId: query.search,
+              searchTopicId: querySearchToTopicId(query.search),
               sequelize,
             })
             articles = await Promise.all(articlesAndCounts.rows.map(

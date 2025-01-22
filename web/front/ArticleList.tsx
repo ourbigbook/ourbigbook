@@ -22,7 +22,6 @@ import {
 } from 'front'
 import {
   articleLimit,
-  convertContext,
 } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
@@ -36,7 +35,6 @@ import { encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web
 import {
   AT_MENTION_CHAR,
   UNICODE_SEARCH_CHAR,
-  titleToId,
 } from 'ourbigbook'
 import {
   USER_FINISHED_TYPING_MS
@@ -206,7 +204,7 @@ const ArticleList = ({
     const url = new URL(window.location.href)
     const query = Object.fromEntries(url.searchParams)
     if (search) {
-      query.search = titleToId(search, undefined, convertContext)
+      query.search = search
     } else {
       delete query.search
     }

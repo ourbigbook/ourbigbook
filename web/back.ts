@@ -3,6 +3,11 @@ import { AUTH_COOKIE_NAME } from 'front/js'
 import { verify } from 'jsonwebtoken'
 import { secret } from 'front/config'
 
+import { convertContext } from 'front/config'
+import {
+  titleToId,
+} from 'ourbigbook'
+
 export async function getLoggedInUser(req, res, loggedInUser?) {
   if (loggedInUser !== undefined) {
     return loggedInUser
@@ -66,4 +71,8 @@ export async function getLoggedInUser(req, res, loggedInUser?) {
     }
     return user
   }
+}
+
+export function querySearchToTopicId(search) {
+  return search === undefined ? undefined : titleToId(search, undefined, convertContext)
 }

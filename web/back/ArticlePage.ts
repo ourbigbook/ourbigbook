@@ -1,9 +1,8 @@
-import ourbigbook, { convertInitContext, validateAst } from 'ourbigbook'
-
 import { getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
 import {
   articleLimitSmall,
+  convertContext,
   log,
   maxArticlesFetch,
   maxArticlesFetchToc,
@@ -13,6 +12,8 @@ import { idToSlug } from 'front/js'
 import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 import routes from 'front/routes'
+
+import ourbigbook from 'ourbigbook'
 
 async function getIncomingLinks(sequelize, article, { type, from, to }) {
   return sequelize.models.Article.findAll({
@@ -226,11 +227,10 @@ export const getServerSidePropsArticleHoc = ({
         articleJson.topicCount = h1ArticleInSamePage.topicCount
         articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
       }
-      const context = convertInitContext()
       const props: ArticlePageProps = {
         ancestors: ancestors.map((a, i) => {
           return {
-            hasScope: i !== 0 && ourbigbook.AstNode.fromJSON(a.file.toplevelId.ast_json, context)
+            hasScope: i !== 0 && ourbigbook.AstNode.fromJSON(a.file.toplevelId.ast_json, convertContext)
               .validation_output.scope.given,
             slug: a.slug,
             titleRender: a.titleRender,

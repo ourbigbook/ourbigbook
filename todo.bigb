@@ -871,14 +871,6 @@ The links don't show without JavaScript, this can be seen by disabling Js.
 
 The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
 
-=== Allow disambiguate and id header arguments on web
-{tag=Scope}
-{tag=Web}
-
-Currently these do not affect the article's ID as there is a fundamental limitation of the `convert` function, which determines the "file path" based solely on the title content, and ignores the title arguments such as `disambiguate`. The ID of the first header, the toplevel ID, then just gets fixed to that (as is meant to happen, first toplevel gets Id fixed), ignoring `disambiguate`.
-
-This is worked around on web upload by passing the `id` as the `path` explicitly as an argument. But this argument is not available on web UI, and it would be ugly anyways, what we want is for it to "just work" by default without the user having to explicitly set an ID on web UI.
-
 == Make rendered issue and comment fragments as short as possible
 {tag=Comment}
 {tag=Web}
@@ -1009,6 +1001,16 @@ The main issue with that is the possibly changing `_raw/js/matterjs/examples.htm
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
 
 == Closed issues
+
+=== Allow disambiguate and id header arguments on web
+{tag=Scope}
+{tag=Web}
+
+Currently these do not affect the article's ID as there is a fundamental limitation of the `convert` function, which determines the "file path" based solely on the title content, and ignores the title arguments such as `disambiguate`. The ID of the first header, the toplevel ID, then just gets fixed to that (as is meant to happen, first toplevel gets Id fixed), ignoring `disambiguate`.
+
+This is worked around on web upload by passing the `id` as the `path` explicitly as an argument. But this argument is not available on web UI, and it would be ugly anyways, what we want is for it to "just work" by default without the user having to explicitly set an ID on web UI.
+
+Fixed at: 56e8d17aa1b716ce69689c6b8aaae0acf4804421 web: fix editing for articles with ID modifiers like scope or disambiguate
 
 === Remove scope from toc entry IDs
 {tag=Scope}

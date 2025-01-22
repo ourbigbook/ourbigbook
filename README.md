@@ -26,6 +26,7 @@ cd template
 npm install
 npx ourbigbook .
 firefox _out/html/index.html
+firefox _out/html/not-index.html
 ```
 
 The generated HTML is published at: https://ourbigbook.github.io/template

@@ -1559,9 +1559,15 @@ Welcome to my home page hacked!
         assertStatus(status, data)
 
         // Article links
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesChildren('user0', ''), ))
+        assertStatus(status, data)
         ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesChildren('user0', 'title-0'), ))
         assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesIncoming('user0', ''), ))
+        assertStatus(status, data)
         ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesIncoming('user0', 'title-0'), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesTagged('user0', ''), ))
         assertStatus(status, data)
         ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesTagged('user0', 'title-0'), ))
         assertStatus(status, data)
@@ -3535,6 +3541,9 @@ it('api: child articles inherit scope from parent', async () => {
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
     assertStatus(status, data)
 
+    ;({data, status} = await test.webApi.issueCreate('user0/mathematics/calculus', createIssueArg(0, 0, 0)))
+    assertStatus(status, data)
+
     article = createArticleArg({ i: 0, titleSource: 'Derivative' })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics/calculus' }))
     assertStatus(status, data)
@@ -3547,7 +3556,34 @@ it('api: child articles inherit scope from parent', async () => {
     assertStatus(status, data)
     assert_xpath("//x:a[@href='/user0/mathematics/calculus' and text()='calculus']", data.articles[0].render)
     assert_xpath("//x:a[@href='/user0/mathematics/calculus/derivative' and text()='derivative']", data.articles[0].render)
-  })
+
+    if (testNext) {
+      // Tests with the same result for logged in or off.
+      async function testNextLoggedInOrOff(loggedInUser) {
+        // Article
+        ;({data, status} = await test.sendJsonHttp('GET', routes.article('user0/mathematics/calculus'), ))
+        assertStatus(status, data)
+
+        // Article links
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesChildren('user0', 'mathematics/calculus'), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesIncoming('user0', 'mathematics/calculus'), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesTagged('user0', 'mathematics/calculus'), ))
+        assertStatus(status, data)
+
+        // Issue
+        ;({data, status} = await test.sendJsonHttp('GET', routes.issue('user0/mathematics/calculus', 1), ))
+        assertStatus(status, data)
+      }
+      // Logged in.
+      await testNextLoggedInOrOff(true)
+      // Logged out.
+      test.disableToken()
+      await testNextLoggedInOrOff(false)
+      test.loginUser(user)
+    }
+  }, { canTestNext: true })
 })
 
 it('api: synonym rename', async () => {

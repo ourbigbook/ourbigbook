@@ -1,1 +1,1 @@
-[parentTopicId].tsx
+[...parentTopicId].tsx

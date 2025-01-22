@@ -10,6 +10,10 @@ import { UserPageProps } from 'front/UserPage'
 export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
   return async (context) => {
     const { params: { uid, parentTopicId }, query, req, res } = context
+    const parentTopicIdString = parentTopicId === undefined ? undefined : (
+      // Not sure how this can be a string which is the reason for the cast.
+      parentTopicId as string[]
+    ).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
     if (
       typeof uid === 'string'
     ) {
@@ -77,14 +81,14 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           // not in the mood right now.
           defaultOrder = 'nestedSetIndex',
           itemType = 'article'
-          parentId = uidTopicIdToId(uid, parentTopicId)
+          parentId = uidTopicIdToId(uid, parentTopicIdString)
           parentType = Ref.Types[ourbigbook.REFS_TABLE_PARENT]
           break
         case 'user-incoming-articles':
           author = uid
           defaultOrder = 'slug',
           itemType = 'article'
-          parentId = uidTopicIdToId(uid, parentTopicId)
+          parentId = uidTopicIdToId(uid, parentTopicIdString)
           parentFromTo = 'from'
           parentType = Ref.Types[ourbigbook.REFS_TABLE_X]
           break
@@ -92,7 +96,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           author = uid
           defaultOrder = 'slug',
           itemType = 'article'
-          parentId = uidTopicIdToId(uid, parentTopicId)
+          parentId = uidTopicIdToId(uid, parentTopicIdString)
           parentType = Ref.Types[ourbigbook.REFS_TABLE_X_CHILD]
           break
         case 'user-comments':
@@ -208,7 +212,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         usersPromise,
         updateNewScoreLastCheckPromise,
       ])
-      if (parentTopicId && !parentArticle) {
+      if (parentTopicIdString && !parentArticle) {
         return {
           notFound: true
         }

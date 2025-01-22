@@ -10,6 +10,34 @@ Significant entries will have a corresponding announcement on the following <off
 * https://www.facebook.com/OurBigBook
 * https://www.instagram.com/ourbigbook
 
+= Scope ancestors show on toplevel header and page title
+{parent=News}
+{tag=Static website}
+{tag=Web}
+
+Starting now, if you have something like:
+``
+= x86 Paging
+{scope}
+
+== Sample code
+``
+
+then if you visit either the <dynamic> or <static website>:
+* https://cirosantilli.com/x86-paging/sample-code
+* https://ourbigbook.com/cirosantilli/x86-paging/sample-code
+the title now shows something like:
+``
+x86 Paging / Sample code
+``
+instead of just:
+``
+Sample code
+``
+as before.
+
+This makes it easier to identify what scoped pages are about.
+
 = Topic ID shows on web editor when creating a new article
 {parent=News}
 {tag=Web}

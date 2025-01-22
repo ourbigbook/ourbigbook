@@ -985,6 +985,10 @@ WHERE
         as: 'file',
         required: true,
         where: { authorId: this.file.authorId },
+        include: [{
+          model: sequelize.models.Id,
+          as: 'toplevelId',
+        }]
       }],
       order: [['nestedSetIndex', 'ASC']],
     })

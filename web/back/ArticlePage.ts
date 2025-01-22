@@ -1,4 +1,4 @@
-import ourbigbook from 'ourbigbook'
+import ourbigbook, { convertInitContext, validateAst } from 'ourbigbook'
 
 import { getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
@@ -135,6 +135,7 @@ export const getServerSidePropsArticleHoc = ({
         tagged,
         topIssues
       ] = await Promise.all([
+        // ancestors
         article.treeFindAncestors({ attributes: ['slug', 'titleRender'] }),
         article.toJson(loggedInUser),
         // articlesInSamePage
@@ -225,8 +226,17 @@ export const getServerSidePropsArticleHoc = ({
         articleJson.topicCount = h1ArticleInSamePage.topicCount
         articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
       }
+      const context = convertInitContext()
       const props: ArticlePageProps = {
-        ancestors: ancestors.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
+        ancestors: ancestors.map((a, i) => {
+          return {
+            hasScope: i !== 0 && ourbigbook.AstNode.fromJSON(a.file.toplevelId.ast_json, context)
+              .validation_output.scope.given,
+            slug: a.slug,
+            titleRender: a.titleRender,
+            titleSource: a.file.titleSource,
+          }
+        }),
         article: articleJson,
         articleInTopicByLoggedInUser,
         articlesInSamePage,

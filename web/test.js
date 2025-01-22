@@ -1558,6 +1558,14 @@ Welcome to my home page hacked!
         ;({data, status} = await test.sendJsonHttp('GET', routes.articleIssues('user0/title-0', { sort: 'comments' }), ))
         assertStatus(status, data)
 
+        // Article links
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesChildren('user0', 'title-0'), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesIncoming('user0', 'title-0'), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userArticlesTagged('user0', 'title-0'), ))
+        assertStatus(status, data)
+
         // Issues
         ;({data, status} = await test.sendJsonHttp('GET', routes.issues(), ))
         assertStatus(status, data)

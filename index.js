@@ -9693,7 +9693,7 @@ const OUTPUT_FORMATS_LIST = [
             self_link_context = context
             self_link_ast = ast
           }
-          ret += `<div class="notnav"><h${level_int_capped}${attrs}><a${xHrefAttr(self_link_ast, self_link_context)}>`;
+          ret += `<div class="notnav"><h${level_int_capped}${attrs}>`;
 
           let x_text_options = {
             addNumberDiv: true,
@@ -9721,6 +9721,16 @@ const OUTPUT_FORMATS_LIST = [
               rendered_outputs_entry.titleSourceLocation = title_arg.source_location
             }
           }
+          let ancestors
+          if (first_header) {
+            ancestors = ast.ancestors(context)
+            for (const ancestor of ancestors.toReversed()) {
+              if (ancestor.validation_output.scope.given) {
+                ret += `<a${xHrefAttr(ancestor, context)}>${renderTitlePossibleHomeMarker(ancestor, context)}</a><span class="meta"> ${Macro.HEADER_SCOPE_SEPARATOR} </span>`
+              }
+            }
+          }
+          ret += `<a${xHrefAttr(self_link_ast, self_link_context)}>`
           ret += x_text_base_ret.full;
           ret += `</a>`;
           ret += `</h${level_int_capped}>`;
@@ -9946,7 +9956,6 @@ const OUTPUT_FORMATS_LIST = [
             header_meta_file.push(fileLinkHtml);
           }
           if (first_header) {
-            const ancestors = ast.ancestors(context)
             const nAncestors = ancestors.length
             if (!context.options.h_web_metadata) {
               if (nAncestors) {
@@ -10320,6 +10329,7 @@ const OUTPUT_FORMATS_LIST = [
             body += renderToc(context)
           }
           body += context.renderBeforeNextHeader.map(s => htmlToplevelChildModifierById(s)).join('')
+          const ancestors = context.toplevel_ast.ancestors(context)
           if (
             context.toplevel_ast !== undefined &&
             context.options.render_metadata
@@ -10332,7 +10342,6 @@ const OUTPUT_FORMATS_LIST = [
 
             // Ancestors
             {
-              const ancestors = context.toplevel_ast.ancestors(context)
               if (ancestors.length !== 0) {
                 // TODO factor this out more with real headers.
                 body += htmlToplevelChildModifierById(`<h2 id="${ANCESTORS_ID}"><a href="#${ANCESTORS_ID}">${HTML_PARENT_MARKER} Ancestors <span class="meta">(${ancestors.length})</span></a></h2>`, ANCESTORS_ID)
@@ -10455,7 +10464,14 @@ const OUTPUT_FORMATS_LIST = [
             const render_env = {
               body,
               root_page,
-              title: renderArg(title, context),
+              title:
+                ancestors.toReversed().map(a =>
+                  a.validation_output.scope.given ?
+                    renderArg(a.args[Macro.TITLE_ARGUMENT_NAME], context) + ` ${Macro.HEADER_SCOPE_SEPARATOR} ` :
+                    ''
+                ).join('') +
+                renderArg(title, context)
+              ,
             };
             if (context.options.auto_generated_source) {
               render_env.input_path = ''

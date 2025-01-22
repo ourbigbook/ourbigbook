@@ -28,7 +28,7 @@
     "start-prod": "./prod.sh npm start",
     "test": "NEXT_PUBLIC_NODE_ENV=test mocha test --ignore-leaks --timeout 4000 test.js",
     "test-deploy": "npm run test-next && npm run test-pg-next && cd .. && npm run test-release",
-    "test-next-nobuild": "NODE_ENV_NEXT_SERVER_ONLY=production OURBIGBOOK_TEST_NEXT=true npm test -- --timeout 100000",
+    "test-next-nobuild": "OURBIGBOOK_TEST_NEXT=true npm test -- --timeout 100000",
     "test-next": "npm run build-dev-nodeps && npm run test-next-nobuild --",
     "test-pg": "bin/pg-setup ourbigbook_cli && OURBIGBOOK_POSTGRES=1 npm test --",
     "test-pg-next-nobuild": "NODE_ENV_NEXT_SERVER_ONLY=production OURBIGBOOK_TEST_NEXT=true npm run test-pg -- --timeout 100000",

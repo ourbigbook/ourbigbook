@@ -20,14 +20,16 @@ import {
 import { cant } from 'front/cant'
 import { log } from 'front/config'
 import routes from 'front/routes'
-import { ArticleType, ArticleLinkType  } from 'front/types/ArticleType'
+import { ArticleType, ArticleLinkType, ArticleAncestorType  } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { CommonPropsType } from 'front/types/CommonPropsType'
 import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
 
+import { Macro } from 'ourbigbook'
+
 export interface ArticlePageProps extends CommonPropsType {
-  ancestors?: ArticleLinkType[];
+  ancestors?: ArticleAncestorType[];
   article: ArticleType & IssueType;
   articleInTopicByLoggedInUser?: ArticleType,
   articlesInSamePage?: ArticleType[];
@@ -85,7 +87,10 @@ const ArticlePageHoc = (isIssue=false) => {
     }
     const handleShortFragmentSkipOnce = React.useRef(false)
     const ret = <>
-      <MyHead title={`${article.titleSource} - ${displayAndUsernameText(author)}`} />
+      <MyHead title={
+        isIssue ? '' : ancestors.map(a => a.hasScope ? a.titleSource + ` ${Macro.HEADER_SCOPE_SEPARATOR} ` : '').join('') +
+          `${article.titleSource} - ${displayAndUsernameText(author)}`
+      } />
       <div className="article-page">
         <div className="content-not-ourbigbook article-meta">
           {isIssue && <DiscussionAbout article={issueArticle} span={true}/>}

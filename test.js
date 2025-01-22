@@ -4892,6 +4892,38 @@ assert_lib_ast('scope: toplevel scope gets removed from IDs in the file',
   }
 )
 assert_lib(
+  'scope: scope of toplevel header shows up on h1 render and on page title',
+  {
+    convert_opts: {
+      body_only: false,
+      split_headers: true,
+    },
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== Scope 1
+{scope}
+
+=== No scope 1
+
+==== Scope 2
+{scope}
+
+===== No scope 2
+`,
+    },
+    assert_xpath: {
+      'scope-1/scope-2/no-scope-2.html': [
+        "//x:h1//x:a[@href='../../index.html#scope-1' and text()='Scope 1']",
+        "//x:h1//x:a[@href='../../index.html#scope-1/scope-2' and text()='Scope 2']",
+        "//x:h1//x:a[@href='' and text()='No scope 2']",
+        "//x:head//x:title[text()='Scope 1 / Scope 2 / No scope 2']",
+      ],
+    },
+  }
+)
+assert_lib(
   'incoming links: internal link incoming links and other children simple',
   {
     convert_opts: {

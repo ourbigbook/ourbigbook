@@ -8752,6 +8752,9 @@ It is by both <OurBigBook CLI> and <OurBigBook Web>.
 {synonym}
 {title2}
 
+= Dynamic
+{synonym}
+
 OurBigBook Web is the software program that powers https://OurBigBook.com[], its official flagship instance, see also: <OurBigBook.com>{full}. <OurBigBook Web> is currently the main tool developed by the <OurBigBook Project>.
 
 This section contains both <OurBigBook Web user manual>[end user documentation] and <OurBigBook Web development>[developer documentation].

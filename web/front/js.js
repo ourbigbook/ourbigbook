@@ -151,27 +151,6 @@ function hasReachedMaxItemCount(loggedInUser, itemCount, itemType) {
   }
 }
 
-function modifyEditorInput(title, body) {
-  let ret = ''
-  if (title !== undefined) {
-    ret += `${ourbigbook.INSANE_HEADER_CHAR} ${title}\n`
-  }
-  let offsetOffset = 0
-  // Append title to body. Add a newline if the body doesn's start
-  // with a header argument like `{c}` in:
-  //
-  // = h1
-  // {c}
-  if (body) {
-    if (title !== undefined && body[0] !== ourbigbook.START_NAMED_ARGUMENT_CHAR) {
-      ret += '\n'
-      offsetOffset = 1
-    }
-    ret += body
-  }
-  return { offset: 1 + offsetOffset, new: ret }
-}
-
 function typecastBoolean(s) {
   let b
   let ok = true
@@ -306,7 +285,6 @@ module.exports = {
   isString,
   isTypeOrArrayOf,
   isTruthy,
-  modifyEditorInput,
   slugToTopic,
   typecastBoolean,
   typecastInteger,

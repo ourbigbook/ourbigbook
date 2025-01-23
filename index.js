@@ -8645,6 +8645,32 @@ function macroImageVideoResolveParamsWithSource(ast, context) {
   return ret;
 }
 
+/**
+ * 'My title', 'My body' => '= My title\n\nMy body'
+ * 'My title', '{c}\n{tag=My tag}\n\nMy body' => '= My title\n{c}\n{tag=My tag}\n\nMy body'
+ */
+function modifyEditorInput(title, body) {
+  let ret = ''
+  if (title !== undefined) {
+    ret += `${INSANE_HEADER_CHAR} ${title}\n`
+  }
+  let offsetOffset = 0
+  // Append title to body. Add a newline if the body doesn't start
+  // with a header argument like `{c}` in:
+  //
+  // = h1
+  // {c}
+  if (body) {
+    if (title !== undefined && body[0] !== START_NAMED_ARGUMENT_CHAR) {
+      ret += '\n'
+      offsetOffset = 1
+    }
+    ret += body
+  }
+  return { offset: 1 + offsetOffset, new: ret }
+}
+exports.modifyEditorInput = modifyEditorInput
+
 const MACRO_IMAGE_VIDEO_OPTIONS = {
   captionNumberVisible: function (ast, context) {
     return Macro.DESCRIPTION_ARGUMENT_NAME in ast.args ||

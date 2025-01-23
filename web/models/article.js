@@ -755,7 +755,7 @@ WHERE
   // written to a local file if we were to export it.
   Article.prototype.getSourceExport = async function() {
     const file = await this.getFileCached()
-    let ret = front_js.modifyEditorInput(file.titleSource, file.bodySource).new
+    let ret = ourbigbook.modifyEditorInput(file.titleSource, file.bodySource).new
     const children = await this.getChildren()
     let include_source = ''
     const isToplevelIndex = this.isToplevelIndex()

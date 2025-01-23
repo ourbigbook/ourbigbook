@@ -18,7 +18,7 @@ const {
   maxArticleTitleSize,
   read_include_web
 } = require('./front/config')
-const { hasReachedMaxItemCount, idToSlug, slugToId, modifyEditorInput } = require('./front/js')
+const { hasReachedMaxItemCount, idToSlug, slugToId } = require('./front/js')
 
 function getConvertOpts({
   authorUsername,
@@ -80,7 +80,7 @@ async function convert({
     console.error('perf: convert.start');
   }
   const extra_returns = {};
-  const source = modifyEditorInput(titleSource, bodySource).new
+  const source = ourbigbook.modifyEditorInput(titleSource, bodySource).new
   let input_path
   let input_path_given
   if (path === undefined) {

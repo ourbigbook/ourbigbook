@@ -8,11 +8,12 @@ import {
 } from 'front'
 import { cant } from 'front/cant'
 import routes from 'front/routes'
-import { modifyEditorInput } from 'front/js';
 
 import { ArticleType  } from 'front/types/ArticleType'
 import { CommonPropsType } from 'front/types/CommonPropsType'
 import { IssueType } from 'front/types/IssueType'
+
+import { modifyEditorInput } from 'ourbigbook';
 
 export interface ArticleSourcePageProps extends CommonPropsType {
   article: ArticleType & IssueType;

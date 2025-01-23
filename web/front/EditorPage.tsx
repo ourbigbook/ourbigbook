@@ -34,7 +34,7 @@ import ErrorList from 'front/ErrorList'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { MyHead, useCtrlEnterSubmit } from 'front'
-import { hasReachedMaxItemCount, idToTopic, modifyEditorInput } from 'front/js'
+import { hasReachedMaxItemCount, idToTopic } from 'front/js'
 import Label from 'front/Label'
 
 import { ArticleType } from 'front/types/ArticleType'
@@ -210,7 +210,7 @@ export default function EditorPageHoc({
 
     // State
     const [isLoading, setLoading] = useState(false)
-    const [topicId, setTopicId] = useState(undefined)
+    const [topicId, setTopicId] = useState('')
     const [editorLoaded, setEditorLoading] = useState(false)
     // TODO titleErrors can be undefined immediately after this call,
     // if the server gives 500 after update. It is some kind of race condition
@@ -383,8 +383,9 @@ export default function EditorPageHoc({
               convertOptions: finalConvertOptions,
               handleSubmit,
               initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,
-              modifyEditorInput: (oldInput) => modifyEditorInput(initialFileState.titleSource, oldInput),
-              postBuildCallback: async (extra_returns) => {
+              modifyEditorInput: ourbigbook.modifyEditorInput,
+              titleSource: initialFileState.titleSource,
+              postBuildCallback: async (extra_returns, ourbigbookEditor) => {
                 setHasConvertError(extra_returns.errors.length > 0)
 
                 let titleErrors = []
@@ -401,10 +402,15 @@ export default function EditorPageHoc({
                     showToUserNew = newTopicId
                   }
                   if (isNew) {
-                    // finalConvertOptions.input_path
-                    const id = `${ourbigbook.AT_MENTION_CHAR}${ownerUsername}/${newTopicId}`
-                    if (await cachedIdExists(id)) {
-                      titleErrors.push(`ID already taken: "${id}" `)
+                    if (newTopicId) {
+                      const id = `${ourbigbook.AT_MENTION_CHAR}${ownerUsername}/${newTopicId}`
+                      if (await cachedIdExists(id)) {
+                        titleErrors.push(`ID already taken: "${id}" `)
+                      }
+                    } else {
+                      if (ourbigbookEditor.titleSource) {
+                        titleErrors.push(`ID cannot be empty`)
+                      }
                     }
                   } else if (!isIssue && initialArticle.topicId !== newTopicId) {
                     let showToUserOld
@@ -546,8 +552,7 @@ export default function EditorPageHoc({
         // Can fail is user starts editing title quickly after page load before editor had time to load.
         ourbigbookEditorElem.current.ourbigbookEditor
       ) {
-        ourbigbookEditorElem.current.ourbigbookEditor.setModifyEditorInput(
-          oldInput => modifyEditorInput(isIndex ? TXT_HOME_MARKER : file.titleSource, oldInput))
+        ourbigbookEditorElem.current.ourbigbookEditor.setTitleSource(file.titleSource)
       }
     }, [file, editorLoaded])
     useCtrlEnterSubmit(handleSubmit)

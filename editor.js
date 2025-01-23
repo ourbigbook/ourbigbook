@@ -32,8 +32,12 @@ class OurbigbookEditor {
     if (!('scrollPreviewToSourceLineCallback' in options)) {
       options.scrollPreviewToSourceLineCallback = (opts) => {}
     }
+    if (!('titleSource' in options)) {
+      options.titleSource = undefined
+    }
     this.options = options
     this.handleSubmit = this.options.handleSubmit
+    this.titleSource = options.titleSource
 
     // Create input and output elems.
     const input_elem = document.createElement('div');
@@ -206,7 +210,7 @@ class OurbigbookEditor {
     let extra_returns = {};
     let ok = true
     try {
-      this.modifyEditorInputRet = this.modifyEditorInput(this.getValue())
+      this.modifyEditorInputRet = this.modifyEditorInput(this.titleSource, this.getValue())
       const input = this.modifyEditorInputRet.new
 
       // Calculate possibly new input path based on conversion. This considers e.g.
@@ -304,7 +308,7 @@ class OurbigbookEditor {
         })
       );
 
-      await this.options.postBuildCallback(extra_returns)
+      await this.options.postBuildCallback(extra_returns, this)
     }
   }
 
@@ -367,8 +371,8 @@ class OurbigbookEditor {
     this.options.scrollPreviewToSourceLineCallback({ ourbigbook_editor: this, line_number, line_number_orig })
   }
 
-  async setModifyEditorInput(modifyEditorInput) {
-    this.modifyEditorInput = modifyEditorInput
+  async setTitleSource(titleSource) {
+    this.titleSource = titleSource
     await this.convertInput()
   }
 }

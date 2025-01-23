@@ -212,7 +212,9 @@ Link to topic: <#mathematics>
         ['Test data unlisted listed child', []],
         ['Test data unlisted unlisted child', [], { list: false }],
       ], { body: `This article is unlisted.\n\nIt shouldn't appear on ToCs, topics and most other listings by default.`, list: false }],
-      ['Test data with title2', [], { body: `{title2=My title 2}` }]
+      ['Test data with title2', [], { body: `{title2=My title 2}` }],
+      ['Test data with math on title $\\frac{1}{\\sqrt{2}}$', []],
+      ['Test data with code on title `int main() { return 0; }`', []],
     ],
     {
       body: `Block math: <equation My favorite equation>

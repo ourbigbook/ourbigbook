@@ -21,7 +21,7 @@ html {
 height: 100%;
 
 body {
-@include body;
+@include ourbigbook-body;
 background-color: $background-color;
 margin: 0;
 height: 100%;
@@ -39,6 +39,18 @@ flex-direction: column;
 
 // Everything outside of navbar.
 div.main {
+// We import ourbigbookbook stuff here.
+//
+// We do this internally rather than at toplevel so that ourbigbook styles will
+// take higher priority than other non-ourbigbook specific styles. E.g. on toplevel
+// the issue static toc search bar was broken with width: 100%; from unrelated stuff.
+@import 'ourbigbook/ourbigbook';
+@import 'ourbigbook/editor';
+// A subset of .ourbigbook used for titles-only renders which appear often on article lists on OurBigBook Web.
+.ourbigbook-title {
+  @include ourbigbook-title;
+}
+
 flex: 1 0 auto;
 overflow: auto;
 @media only screen and (max-width: $max-mobile-width) {
@@ -861,7 +873,6 @@ img.profile-thumb {
 .username {
   font-weight: bold;
 }
-
 } // div.main
 
 footer {

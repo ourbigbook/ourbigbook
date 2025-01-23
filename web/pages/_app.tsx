@@ -22,7 +22,6 @@ import routes from 'front/routes'
 
 // Css
 // migrating the local ourbigbook to webpack: https://github.com/ourbigbook/ourbigbook/issues/157
-import 'ourbigbook/dist/ourbigbook.css'
 import 'ourbigbook/editor.scss'
 import 'style.scss'
 

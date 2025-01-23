@@ -395,7 +395,10 @@ export function useEEdit(
 ) {
   React.useEffect(() => {
     function listener(e) {
-      if (e.code === 'KeyE') {
+      if (
+        e.code === 'KeyE' &&
+        document.activeElement === document.body
+      ) {
         if (canEdit) {
           Router.push(routes.articleEdit(slug))
         }
@@ -417,7 +420,10 @@ export function useEEditIssue(
 ) {
   React.useEffect(() => {
     function listener(e) {
-      if (e.code === 'KeyE') {
+      if (
+        e.code === 'KeyE' &&
+        document.activeElement === document.body
+      ) {
         if (canEdit) {
           Router.push(routes.issueEdit(slug, number))
         }

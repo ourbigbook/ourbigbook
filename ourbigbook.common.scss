@@ -72,6 +72,12 @@ $footer-color: $color;
     &:hover {
       text-decoration: underline;
     }
+    &.selflink::before {
+      @include link-icon;
+      font-size: $font-size;
+      position: absolute;
+      left: -0.1em;
+    }
   }
   .fa-regular-400, .fa-brands-400, .fa-solid-900 {
     font-size: $icon-font-size;
@@ -140,6 +146,14 @@ $footer-color: $color;
   }
   // Unable to make it work for password fields.
   // https://stackoverflow.com/questions/55131944/how-to-remove-blue-background-on-chrome-autocomplete
+}
+
+@mixin link-icon {
+  font-family: "fa-solid-900";
+  font-weight: 900;
+  font-size: $icon-font-size;
+  // link https://fontawesome.com/v5/icons/link?f=classic&s=solid
+  content: "\f0c1";
 }
 
 @mixin search {

@@ -39,14 +39,6 @@ $sep-width: 1ch;
   box-sizing: border-box;
 }
 
-@mixin link-icon {
-  font-family: "fa-solid-900";
-  font-weight: 900;
-  font-size: $icon-font-size;
-  // link https://fontawesome.com/v5/icons/link?f=classic&s=solid
-  content: "\f0c1";
-}
-
 @mixin multiline-caption {
   border-left: 1px solid $color;
   padding-left: 8px;
@@ -725,12 +717,6 @@ video {
     // https://stackoverflow.com/questions/10487292/position-absolute-but-relative-to-parent
     position: relative;
   }
-}
-a.selflink::before {
-  @include link-icon;
-  font-size: $font-size;
-  position: absolute;
-  left: -0.1em;
 }
 
 .ourbigbook-body {

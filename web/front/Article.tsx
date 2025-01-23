@@ -46,6 +46,7 @@ import routes from 'front/routes'
 import { cant } from 'front/cant'
 import CustomLink from 'front/CustomLink'
 import FollowArticleButton from 'front/FollowArticleButton'
+import { htmlEscapeAttr } from 'ourbigbook'
 
 import {
   ANCESTORS_ID,
@@ -202,7 +203,7 @@ function WebMeta({
         ) &&
           <>{toplevel
             ? <>
-                <a 
+                <a
                   href={routes.articleNew(curArticle.topicId ? { 'parent': curArticle.topicId } : {})}
                   className="btn new"
                   title="Create a new article that is the first child of this one"
@@ -755,26 +756,43 @@ export default function Article({
     let h1Render = article.h1Render
     const h1RenderElem = parse(h1Render)
 
-    //Ancestors
+    // Inject dynamic stuff into the h1 render.
     {
+      if (!isIssue) {
+        const ancestorHtmls = []
+        for (const ancestor of ancestors) {
+          if (ancestor.hasScope) {
+            ancestorHtmls.push(renderToString(
+              <a
+                href={`${linkPref}${ancestor.slug}`}
+                dangerouslySetInnerHTML={{ __html: ancestor.titleRender }}
+              />
+            ))
+            ancestorHtmls.push(renderToString(
+              <span> {Macro.HEADER_SCOPE_SEPARATOR} </span>
+            ))
+          }
+        }
+        h1RenderElem.querySelector(`h1`).insertAdjacentHTML('afterbegin', ancestorHtmls.join(''))
+      }
+
+      //Ancestors
       const elem = h1RenderElem.querySelector(`.${H_ANCESTORS_CLASS}`)
       if (elem) {
-        let htmlFrag: string|undefined
         if (ancestors.length) {
-          const ancestorLinks = ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
-            href: ` href="${linkPref}${a.slug}"`,
-            content: a.titleRender,
-          }})
-          htmlFrag = htmlAncestorLinks(
-            ancestorLinks,
+          elem.innerHTML = htmlAncestorLinks(
+            ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
+              content: a.titleRender,
+              href: ` href="${linkPref}${htmlEscapeAttr(a.slug)}"`,
+            }}),
             ancestors.length,
           )
-          elem.innerHTML = htmlFrag
         } else {
           elem.innerHTML = `<span><span>${renderToString(<HelpIcon />)} Ancestors will show here when the tree index is updated</span></span>`
         }
       }
 
+      // Web-specific meta like likes and discussion.
       h1RenderElem.querySelector(`.${H_WEB_CLASS}`).innerHTML = renderToString(<WebMeta {...{
         article,
         canDelete,
@@ -826,7 +844,9 @@ export default function Article({
       levelToHeader[level] = { href, content }
       const entry = {
         addLink: (loggedInUser && loggedInUser.username === article.author.username)
-          ? ` <a href="${addParameterToUrlPath(router.asPath, NEW_QUERY_PARAM, slugToTopic(a.slug))}" title="New..." class="btn abs ${NEW_MODAL_BUTTON_CLASS}">` +
+          ? ` <a href="${
+              htmlEscapeAttr(addParameterToUrlPath(router.asPath, NEW_QUERY_PARAM, slugToTopic(a.slug)))
+            }" title="New..." class="btn abs ${NEW_MODAL_BUTTON_CLASS}">` +
             `${renderToString(<NewArticleIcon title={null}/>)}` +
             `</a>`
           : undefined
@@ -934,7 +954,7 @@ export default function Article({
             {' '}
             Add article under
           </a>
-          <a 
+          <a
             href={routes.articleNew({
               'previous-sibling': slugToTopic(showNewArticle.slug),
             })}

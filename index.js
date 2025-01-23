@@ -4335,6 +4335,7 @@ function htmlEscapeAttr(str) {
     .replace(/'/g, '&#039;')
   ;
 }
+exports.htmlEscapeAttr = htmlEscapeAttr
 
 
 /* This does some extra percent encoding conversions that are not
@@ -9724,9 +9725,17 @@ const OUTPUT_FORMATS_LIST = [
           let ancestors
           if (first_header) {
             ancestors = ast.ancestors(context)
-            for (const ancestor of ancestors.toReversed()) {
-              if (ancestor.validation_output.scope.given) {
-                ret += `<a${xHrefAttr(ancestor, context)}>${renderTitlePossibleHomeMarker(ancestor, context)}</a><span class="meta"> ${Macro.HEADER_SCOPE_SEPARATOR} </span>`
+            if (
+              // We'll inject this dynamically at runtime. We already do this for the breakcrumb
+              // so the data is already there. Also full ancestors are not being fetched on render on web,
+              // only direct parent, so that would need generalizing as well.
+              !context.options.webMode
+            ) {
+              for (const ancestor of ancestors.toReversed()) {
+                if (ancestor.validation_output.scope.given) {
+                  ret += `<a${xHrefAttr(ancestor, context)}>${renderTitlePossibleHomeMarker(ancestor, context)}</a>` +
+                    `<span class="meta"> ${Macro.HEADER_SCOPE_SEPARATOR} </span>`
+                }
               }
             }
           }

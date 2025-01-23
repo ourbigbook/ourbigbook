@@ -3544,6 +3544,10 @@ it('api: child articles inherit scope from parent', async () => {
     ;({data, status} = await test.webApi.issueCreate('user0/mathematics/calculus', createIssueArg(0, 0, 0)))
     assertStatus(status, data)
 
+    ;({data, status} = await test.webApi.article('user0/mathematics/calculus'))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Calculus')
+
     article = createArticleArg({ i: 0, titleSource: 'Derivative' })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics/calculus' }))
     assertStatus(status, data)

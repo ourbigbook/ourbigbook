@@ -23,9 +23,9 @@ Starting now, if you have a <scoped> header such as `Sample code` in:
 
 == Sample code
 ``
-then if you visit either the <dynamic> or <static website>:
-* https://cirosantilli.com/x86-paging/sample-code
-* https://ourbigbook.com/cirosantilli/x86-paging/sample-code
+then if you visit either the 
+* <static website>: https://cirosantilli.com/x86-paging/sample-code
+* <dynamic website>: https://ourbigbook.com/cirosantilli/x86-paging/sample-code
 the title now shows something like:
 ``
 x86 Paging / Sample code
@@ -44,6 +44,13 @@ This makes it easier to identify what scoped pages are about.
 {height=499}
 {provider=github}
 {source=https://ourbigbook.com/cirosantilli/x86-paging/sample-code}
+
+Announcements:
+* https://mastodon.social/@ourbigbook/113883643054093455
+* https://x.com/OurBigBook/status/1882788838315340010
+* https://www.linkedin.com/feed/update/urn:li:share:7288553515919003649
+* https://www.facebook.com/OurBigBook/posts/pfbid0aWgAJwVdRgkBggDRZ9XVnowEHtUC9fFL769pCH5tXU8tX3dVXDFnNMLQCWK1m8hZl
+* https://www.instagram.com/p/DFNe62pt5Bj/
 
 = Topic ID shows on web editor when creating a new article
 {parent=News}

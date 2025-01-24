@@ -159,6 +159,10 @@ async function start(port, startNext, cb) {
     })
     server.on('close', async function () {
       if (startNext) {
+        // Didn't help either.
+        // https://github.com/ourbigbook/ourbigbook/issues/353
+        //const server = await nextApp.getServer()
+        //await server.close()
         await nextApp.close()
       }
       await sequelize.close()

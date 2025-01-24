@@ -9809,6 +9809,8 @@ Note that Next.js tests are just present inside other tests, e.g. `api: create a
 
 These tests can only be run in production mode, and so our scripts automatically rebuild every time before running the tests, which makes things quite slow. This required because in development mode, Next.js is extremelly soft, and e.g. does not raise 500 instead returning a 200 page with error messages. Bad default.
 
+TODO:: the tests hang after running with Next.js enabled: https://github.com/ourbigbook/ourbigbook/issues/353
+
 = OurBigBook Web static analysis
 {parent=OurBigBook Web development}
 

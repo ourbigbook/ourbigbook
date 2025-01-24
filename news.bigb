@@ -13,16 +13,16 @@ Significant entries will have a corresponding announcement on the following <off
 = Scope ancestors show on toplevel header and page title
 {parent=News}
 {tag=Static website}
+{tag=Scope}
 {tag=Web}
 
-Starting now, if you have something like:
+Starting now, if you have a <scoped> header such as `Sample code` in:
 ``
 = x86 Paging
 {scope}
 
 == Sample code
 ``
-
 then if you visit either the <dynamic> or <static website>:
 * https://cirosantilli.com/x86-paging/sample-code
 * https://ourbigbook.com/cirosantilli/x86-paging/sample-code
@@ -37,6 +37,13 @@ Sample code
 as before.
 
 This makes it easier to identify what scoped pages are about.
+
+\Image[feature/scope/h1-breadcrumb-arrow.png]
+{title=When a page under a <scope> is at toplevel, the scope prefix is clearly shown}
+{border}
+{height=499}
+{provider=github}
+{source=https://ourbigbook.com/cirosantilli/x86-paging/sample-code}
 
 = Topic ID shows on web editor when creating a new article
 {parent=News}

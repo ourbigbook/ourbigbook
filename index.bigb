@@ -172,6 +172,12 @@ A full blown showcase knowledge base can be seen at:
   {provider=github}
   {border}
   {height=950}
+* \Image[feature/scope/h1-breadcrumb-arrow.png]
+  {title=If your ID prefixes are getting too large, we have <scopes> for you.}
+  {border}
+  {height=499}
+  {provider=github}
+  {source=https://ourbigbook.com/cirosantilli/x86-paging/sample-code}
 * \b[infinitely deep table of contents]: never again be limited to only 6 levels of HTML `h6` legacy limitations! With <OurBigBook>, the sky is the limit!
 
   Furthermore, with our <dynamic article tree> of <OurBigBook Web>, every header can be the toplevel header for better SEO and user experience e.g. both the following pages show all their ancestors:
@@ -2257,6 +2263,9 @@ Ciro later "invented" (?) <\H parent argument>, which he feels reaches the perfe
 {parent=H arguments}
 
 = Scope
+{synonym}
+
+= Scoped
 {synonym}
 
 In some use cases, the sections under a section describe inseparable parts of something.

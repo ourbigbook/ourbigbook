@@ -69,6 +69,10 @@ You can also edit directly on OurBigBook.com with the [Web Editor](https://docs.
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/tagged-list/tagged.png)
 
+If ID prefixes are getting too repetitive, we have [ID scopes for you](https://docs.ourbigbook.com/#h-scope-argument):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/scope/h1-breadcrumb-arrow-title.png)
+
 Experience infinitely deep [tables of contents](https://docs.ourbigbook.com/#table-of-contents):
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/dynamic-article-tree/demo.png)

@@ -12,9 +12,10 @@ import UserLinkWithImage from 'front/UserLinkWithImage'
 import {
   ArticleCreatedUpdatedPills,
   ArticleIcon,
-  IssueIcon,
+  DiscussionIcon,
   LikeIcon,
   TimeIcon,
+  TopicIcon,
   UnlistedIcon,
   UserIcon,
   getShortFragFromLongForPath,
@@ -180,7 +181,7 @@ const ArticleList = ({
         }
         break
       default:
-        emptyMessage = `There are currently no matching ${isIssue ? 'discussions' : 'articles'}.`
+        emptyMessage = `There are currently no matching ${isIssue ? 'discussions' : itemType === 'like' ? 'likes' : 'articles'}.`
     }
   } else {
     if (showControls) {
@@ -381,7 +382,7 @@ const ArticleList = ({
                               </>
                             }
                             {itemType === 'topic' &&
-                              <th className="shrink right">Articles</th>
+                              <th className="shrink right"><ArticleIcon /> Articles</th>
                             }
                             {(() => {
                                 const score = itemType === 'topic'
@@ -393,7 +394,14 @@ const ArticleList = ({
                                       <span className="icon">#</span> id
                                     </th>
                                   }
-                                  <th className="expand">{ itemType === 'discussion' ? <IssueIcon /> : <ArticleIcon /> } Title</th>
+                                  <th className="expand">
+                                    { itemType === 'discussion' ? <DiscussionIcon /> :
+                                      itemType === 'topic' ? <TopicIcon /> :
+                                      <ArticleIcon />
+                                    }
+                                    {' '}
+                                    Title
+                                  </th>
                                 </>
                                 if (itemType === 'like') {
                                   return <>{title}{score}</>
@@ -402,11 +410,14 @@ const ArticleList = ({
                                 }
                               })()
                             }
+                            {itemType === 'topic' &&
+                              <th className="shrink center"><TopicIcon /> Id</th>
+                            }
                             {showAuthor &&
                               <th className="shrink"><UserIcon /> Author</th>
                             }
                             {(itemType !== 'topic') &&
-                              <th className="shrink"><IssueIcon /> { isIssue ? 'Comments' : 'Discussions' }</th>
+                              <th className="shrink"><DiscussionIcon /> { isIssue ? 'Comments' : 'Discussions' }</th>
                             }
                             <th className="shrink"><TimeIcon /> Created</th>
                             <th className="shrink"><TimeIcon /> Updated</th>
@@ -481,6 +492,11 @@ const ArticleList = ({
                                 <td className="shrink">
                                   <UserLinkWithImage showUsername={false} user={article.author} />
                                 </td>
+                              }
+                              {itemType === 'topic' &&
+                                <th className="shrink left">
+                                  <CustomLink href={mainHref}>{article.topicId}</CustomLink>
+                                </th>
                               }
                               {(itemType !== 'topic') &&
                                 <td className="shrink right bold">

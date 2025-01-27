@@ -9,7 +9,7 @@ import {
   ChildrenIcon,
   CommentIcon,
   IncomingIcon,
-  IssueIcon,
+  DiscussionIcon,
   LikeIcon,
   MyHead,
   SettingsIcon,
@@ -18,6 +18,10 @@ import {
   TagIcon,
   orderToPageTitle,
   useEEdit,
+  TimeIcon,
+  FollowIcon,
+  ArrowRightIcon,
+  ArrowLeftIcon,
 } from 'front'
 import ArticleList from 'front/ArticleList'
 import CommentList from 'front/CommentList'
@@ -180,7 +184,7 @@ export default function UserPage({
             <div className="user-actions">
               <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
               <CustomLink className="btn" href={routes.issueNew(`${user.username}`)}>
-                <IssueIcon /> Message
+                <DiscussionIcon /> Message
               </CustomLink>
               <Maybe test={!cant.viewUserSettings(loggedInUser, user)}>
                 <CustomLink
@@ -221,95 +225,135 @@ export default function UserPage({
                 </Link>
               </h2>
             </div>
-          : <div className="tab-list">
-              <CustomLink
-                href={routes.userArticles(username, { sort: 'score' })}
-                className={`tab-item${what === 'user-articles' && order === 'score' ? ' active' : ''}`}
-              >
-                <ArticleIcon /> Top<span className="mobile-hide"> articles</span>
-              </CustomLink>
-              <CustomLink
-                href={routes.userArticles(username, { sort: 'created' })}
-                className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
-              >
-                <ArticleIcon /> New<span className="mobile-hide"> articles</span>
-              </CustomLink>
-              <CustomLink
-                href={routes.userArticles(username, { sort: 'updated' })}
-                className={`tab-item${what === 'user-articles' && order === 'updatedAt' ? ' active' : ''}`}
-              >
-                <ArticleIcon /> Updated<span className="mobile-hide"> articles</span>
-              </CustomLink>
-              <CustomLink
-                href={routes.userIssues(user.username, { sort: 'created' })}
-                className={`tab-item${what === 'user-issues' && order === 'createdAt' ? ' active' : ''}`}
-              >
-                <IssueIcon /> New<span className="mobile-hide"> discussions</span>
-              </CustomLink>
-              <CustomLink
-                href={routes.userIssues(user.username, { sort: 'score' })}
-                className={`tab-item${what === 'user-issues' && order === 'score' ? ' active' : ''}`}
-              >
-                <IssueIcon /> Top<span className="mobile-hide"> discussions</span>
-              </CustomLink>
-              <CustomLink
-                href={routes.userComments(user.username, { sort: 'created' })}
-                className={`tab-item${what === 'user-comments' && order === 'createdAt' ? ' active' : ''}`}
-              >
-                <CommentIcon /> New<span className="mobile-hide"> comments</span>
-              </CustomLink>
-              <CustomLink
-                href={routes.userFollows(username)}
-                className={`tab-item${what === 'follows' ? ' active' : ''}`}
-              >
-                <UserIcon /> Follows
-              </CustomLink>
-              <CustomLink
-                href={routes.userFollowed(username)}
-                className={`tab-item${what === 'followed' ? ' active' : ''}`}
-              >
-                <UserIcon /> Followed by
-              </CustomLink>
-              <CustomLink
-                href={routes.userLikes(username)}
-                className={`tab-item${what === 'likes' ? ' active' : ''}`}
-              >
-                <ArticleIcon /> Liked<span className="mobile-hide"> articles</span>
-              </CustomLink>
-              <CustomLink
-                href={routes.userFollowsArticles(username)}
-                className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
-              >
-                <ArticleIcon /> Followed<span className="mobile-hide"> articles</span>
-              </CustomLink>
-              <CustomLink
-                href={routes.userLikesDiscussions(username)}
-                className={`tab-item${what === 'likes-discussions' ? ' active' : ''}`}
-              >
-                <IssueIcon /> Liked<span className="mobile-hide"> discussions</span>
-              </CustomLink>
-              <CustomLink
-                href={routes.userFollowsDiscussions(username)}
-                className={`tab-item${what === 'followed-discussions' ? ' active' : ''}`}
-              >
-                <IssueIcon /> Followed<span className="mobile-hide"> discussions</span>
-              </CustomLink>
-              <CustomLink
-                href={routes.userLiked(username)}
-                className={`tab-item${what === 'liked' ? ' active' : ''}`}
-              >
-                <LikeIcon /> Received<span className="mobile-hide"> likes</span>
-              </CustomLink>
-              {false &&
-                // TODO https://github.com/ourbigbook/ourbigbook/issues/313
+          : <>
+              <div className="tab-list">
                 <CustomLink
-                  href={routes.userLikedDiscussions(username)}
-                  className={`tab-item${what === 'liked-discussions' ? ' active' : ''}`}
+                  href={routes.userArticles(username, { sort: 'created' })}
+                  className={`tab-item${itemType === 'article' ? ' active' : ''}`}
                 >
-                  <LikeIcon /><IssueIcon /> Received<span className="mobile-hide"> discussion likes</span>
+                  <ArticleIcon /> Articles
                 </CustomLink>
-              }
-            </div>
+                <CustomLink
+                  href={routes.userIssues(user.username, { sort: 'created' })}
+                  className={`tab-item${itemType === 'discussion' ? ' active' : ''}`}
+                >
+                  <DiscussionIcon /> Discussions
+                </CustomLink>
+                <CustomLink
+                  href={routes.userComments(user.username, { sort: 'created' })}
+                  className={`tab-item${itemType === 'comment' ? ' active' : ''}`}
+                >
+                  <CommentIcon /> Comments
+                </CustomLink>
+                <CustomLink
+                  href={routes.userFollows(username)}
+                  className={`tab-item${itemType === 'user' ? ' active' : ''}`}
+                >
+                  <UserIcon /> Follows
+                </CustomLink>
+                <CustomLink
+                  href={routes.userLiked(username)}
+                  className={`tab-item${what === 'liked' ? ' active' : ''}`}
+                >
+                  <LikeIcon /> Received<span className="mobile-hide"> likes</span>
+                </CustomLink>
+                {false &&
+                  // TODO https://github.com/ourbigbook/ourbigbook/issues/313
+                  <CustomLink
+                    href={routes.userLikedDiscussions(username)}
+                    className={`tab-item${what === 'liked-discussions' ? ' active' : ''}`}
+                  >
+                    <LikeIcon /><DiscussionIcon /> Received<span className="mobile-hide"> discussion likes</span>
+                  </CustomLink>
+                }
+              </div>
+              <div className="tab-list">
+                {itemType === 'article' && <>
+                  <CustomLink
+                    href={routes.userArticles(username, { sort: 'created' })}
+                    className={`tab-item${what === 'user-articles' && order === 'createdAt' ? ' active' : ''}`}
+                  >
+                    <TimeIcon /> New
+                  </CustomLink>
+                  <CustomLink
+                    href={routes.userArticles(username, { sort: 'updated' })}
+                    className={`tab-item${what === 'user-articles' && order === 'updatedAt' ? ' active' : ''}`}
+                  >
+                    <TimeIcon /> Updated
+                  </CustomLink>
+                  <CustomLink
+                    href={routes.userArticles(username, { sort: 'score' })}
+                    className={`tab-item${what === 'user-articles' && order === 'score' ? ' active' : ''}`}
+                  >
+                    <StarIcon /> Top
+                  </CustomLink>
+                  <CustomLink
+                    className={`tab-item${order === 'topicId' ? ' active' : ''}`}
+                    href={routes.userArticles(username, { sort: 'id' })}
+                  >
+                    <UserIcon /> A-Z
+                  </CustomLink>
+                  <CustomLink
+                    href={routes.userLikes(username)}
+                    className={`tab-item${what === 'likes' ? ' active' : ''}`}
+                  >
+                    <LikeIcon /> Liked
+                  </CustomLink>
+                  <CustomLink
+                    href={routes.userFollowsArticles(username)}
+                    className={`tab-item${what === 'followed-articles' ? ' active' : ''}`}
+                  >
+                    <FollowIcon /> Followed
+                  </CustomLink>
+                </>}
+                {itemType === 'discussion' && <>
+                  <CustomLink
+                    href={routes.userIssues(user.username, { sort: 'created' })}
+                    className={`tab-item${what === 'user-issues' && order === 'createdAt' ? ' active' : ''}`}
+                  >
+                    <TimeIcon /> New
+                  </CustomLink>
+                  <CustomLink
+                    href={routes.userIssues(user.username, { sort: 'updated' })}
+                    className={`tab-item${what === 'user-issues' && order === 'updatedAt' ? ' active' : ''}`}
+                  >
+                    <TimeIcon /> Updated
+                  </CustomLink>
+                  <CustomLink
+                    href={routes.userIssues(user.username, { sort: 'score' })}
+                    className={`tab-item${what === 'user-issues' && order === 'score' ? ' active' : ''}`}
+                  >
+                    <StarIcon /> Top
+                  </CustomLink>
+                  <CustomLink
+                    href={routes.userLikesDiscussions(username)}
+                    className={`tab-item${what === 'likes-discussions' ? ' active' : ''}`}
+                  >
+                    <LikeIcon /> Liked
+                  </CustomLink>
+                  <CustomLink
+                    href={routes.userFollowsDiscussions(username)}
+                    className={`tab-item${what === 'followed-discussions' ? ' active' : ''}`}
+                  >
+                    <FollowIcon /> Followed
+                  </CustomLink>
+                </>}
+                {itemType === 'user' && <>
+                  <CustomLink
+                    href={routes.userFollows(username)}
+                    className={`tab-item${what === 'follows' ? ' active' : ''}`}
+                  >
+                    <ArrowRightIcon /> Follows
+                  </CustomLink>
+                  <CustomLink
+                    href={routes.userFollowed(username)}
+                    className={`tab-item${what === 'followed' ? ' active' : ''}`}
+                  >
+                    <ArrowLeftIcon /> Followed by
+                  </CustomLink>
+                </>}
+              </div>
+            </>
           }
       </div>
       {what === 'home' &&

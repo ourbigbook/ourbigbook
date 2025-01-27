@@ -7,12 +7,14 @@ import {
   capitalize,
   CommentIcon,
   DiscussionAbout,
-  IssueIcon,
+  DiscussionIcon,
   MyHead,
   NewArticleIcon,
   orderToPageTitle,
   PinnedArticleIcon,
   SettingsIcon,
+  StarIcon,
+  TimeIcon,
   TopicIcon,
   UserIcon,
 } from 'front'
@@ -91,85 +93,53 @@ function IndexPageHoc({
           </div>
         }
         <div className="tab-list content-not-ourbigbook">
-          {isHomepage &&
-            <>
-              <CustomLink
-                className={`tab-item${itemType === 'topic' ? ' active' : ''}`}
-                href={routes.topics({ loggedInUser, sort: 'article-count' })}
-              >
-                <TopicIcon /> Topics
-              </CustomLink>
-              {loggedInUser &&
-                <>
-                  <CustomLink
-                    className={`tab-item${itemType === 'article' && order === 'createdAt' && followed ? ' active' : ''}`}
-                    href={routes.articlesFollowed()}
-                  >
-                    <ArticleIcon /> New followed
-                  </CustomLink>
-                  <CustomLink
-                    className={`tab-item${itemType === 'article' && order === 'updatedAt' && followed ? ' active' : ''}`}
-                    href={routes.articlesFollowed({ sort: 'updated' })}
-                  >
-                    <ArticleIcon /> Updated followed
-                  </CustomLink>
-                  <CustomLink
-                    className={`tab-item${itemType === 'article' && order === 'score' && followed ? ' active' : ''}`}
-                    href={routes.articlesFollowed({ sort: 'score' })}
-                  >
-                    <ArticleIcon /> Top followed
-                  </CustomLink>
-                </>
-              }
-              <CustomLink
-                className={`tab-item${itemType === 'article' && order === 'score' && !followed ? ' active' : ''}`}
-                href={(!isHomepage) ? routes.articleIssues(issueArticle.slug, { sort: 'score' }) : routes.articles({ sort: 'score' })}
-              >
-                <ArticleIcon /> Top<span className="mobile-hide"> articles</span>
-              </CustomLink>
-              <CustomLink
-                className={`tab-item${itemType === 'article' && order === 'createdAt' && !followed ? ' active' : ''}`}
-                href={(!isHomepage) ? routes.articleIssues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
-              >
-                <ArticleIcon /> New<span className="mobile-hide"> articles</span>
-              </CustomLink>
-              <CustomLink
-                className={`tab-item${itemType === 'article' && order === 'updatedAt' && !followed ? ' active' : ''}`}
-                href={(!isHomepage) ? routes.articleIssues(issueArticle.slug, { sort: 'updated' }) : routes.articles({ sort: 'updated' })}
-              >
-                <ArticleIcon /> Updated<span className="mobile-hide"> articles</span>
-              </CustomLink>
-              <CustomLink
-                className={`tab-item${itemType === 'user' && order === 'score' ? ' active' : ''}`}
-                href={routes.users({ sort: 'score' })}
-              >
-                <UserIcon /> Top users
-              </CustomLink>
-              <CustomLink
-                className={`tab-item${itemType === 'user' && order === 'createdAt' ? ' active' : ''}`}
-                href={routes.users({ sort: 'created' })}
-              >
-                <UserIcon /> New users
-              </CustomLink>
-            </>
+          {isHomepage
+            ? <>
+                <CustomLink
+                  className={`tab-item${itemType === 'topic' ? ' active' : ''}`}
+                  href={routes.topics({ loggedInUser, sort: 'article-count' })}
+                >
+                  <TopicIcon /> Topics
+                </CustomLink>
+                <CustomLink
+                  className={`tab-item${itemType === 'article' ? ' active' : ''}`}
+                  href={loggedInUser ? routes.articlesFollowed() : routes.articles()}
+                >
+                  <ArticleIcon /> Articles
+                </CustomLink>
+                <CustomLink
+                  className={`tab-item${itemType === 'user' ? ' active' : ''}`}
+                  href={routes.users({ sort: 'score' })}
+                >
+                  <UserIcon /> Users
+                </CustomLink>
+                <CustomLink
+                  className={`tab-item${itemType === 'discussion' ? ' active' : ''}`}
+                  href={isHomepage ? routes.issues() : routes.articleIssues(issueArticle.slug)}
+                >
+                  <DiscussionIcon /> Discussions
+                </CustomLink>
+              </>
+            : <>
+                <CustomLink
+                  className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
+                  href={isHomepage ? routes.issues() : routes.articleIssues(issueArticle.slug)}
+                >
+                  <DiscussionIcon /> New<span className="mobile-hide"> discussions</span>
+                </CustomLink>
+                <CustomLink
+                  className={`tab-item${order === 'score' ? ' active' : ''}`}
+                  href={isHomepage ? routes.issues({ sort: 'score' }) : routes.articleIssues(issueArticle.slug, { sort: 'score' })}
+                >
+                  <DiscussionIcon /> Top<span className="mobile-hide"> discussions</span>
+                </CustomLink>
+              </>
           }
-          <CustomLink
-            className={`tab-item${itemType === 'discussion' && order === 'createdAt' ? ' active' : ''}`}
-            href={isHomepage ? routes.issues() : routes.articleIssues(issueArticle.slug)}
-          >
-            <IssueIcon /> New<span className="mobile-hide"> discussions</span>
-          </CustomLink>
-          <CustomLink
-            className={`tab-item${itemType === 'discussion' && order === 'score' ? ' active' : ''}`}
-            href={isHomepage ? routes.issues({ sort: 'score' }) : routes.articleIssues(issueArticle.slug, { sort: 'score' })}
-          >
-            <IssueIcon /> Top<span className="mobile-hide"> discussions</span>
-          </CustomLink>
           <CustomLink
             className={`tab-item${itemType === 'comment' && order === 'createdAt' ? ' active' : ''}`}
             href={isHomepage ? routes.comments({ sort: 'created' }) : routes.articleComments(issueArticle.slug, { sort: 'created' })}
           >
-            <CommentIcon /> New<span className="mobile-hide"> comments</span>
+            <CommentIcon /> Comments
           </CustomLink>
           {!isHomepage &&
             <span className='tab-item'>
@@ -190,6 +160,111 @@ function IndexPageHoc({
             <NewArticleIcon /> New {(pageType === 'articleIssues' || pageType === 'articleComments') ? 'discussion' : 'article'}
           </CustomLink>
         </div>
+        {isHomepage &&
+          <div className="tab-list content-not-ourbigbook">
+            {itemType === 'topic' && <>
+              <CustomLink
+                className={`tab-item${order === 'articleCount' ? ' active' : ''}`}
+                href={routes.topics({ loggedInUser, sort: 'article-count' })}
+              >
+                <StarIcon /> Top
+              </CustomLink>
+              <CustomLink
+                className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
+                href={routes.topics({ loggedInUser, sort: 'created' })}
+              >
+                <TimeIcon /> New
+              </CustomLink>
+              <CustomLink
+                className={`tab-item${order === 'topicId' ? ' active' : ''}`}
+                href={routes.topics({ loggedInUser, sort: 'id' })}
+              >
+                <UserIcon /> A-Z
+              </CustomLink>
+            </>}
+            {isHomepage && <>
+              {itemType === 'article' && <>
+                {loggedInUser &&
+                  <>
+                    <CustomLink
+                      className={`tab-item${order === 'createdAt' && followed ? ' active' : ''}`}
+                      href={routes.articlesFollowed()}
+                    >
+                      <TimeIcon /> New followed
+                    </CustomLink>
+                    <CustomLink
+                      className={`tab-item${order === 'updatedAt' && followed ? ' active' : ''}`}
+                      href={routes.articlesFollowed({ sort: 'updated' })}
+                    >
+                      <TimeIcon /> Updated followed
+                    </CustomLink>
+                    <CustomLink
+                      className={`tab-item${order === 'score' && followed ? ' active' : ''}`}
+                      href={routes.articlesFollowed({ sort: 'score' })}
+                    >
+                      <StarIcon /> Top followed
+                    </CustomLink>
+                  </>
+                }
+                <CustomLink
+                  className={`tab-item${order === 'createdAt' && !followed ? ' active' : ''}`}
+                  href={(!isHomepage) ? routes.articleIssues(issueArticle.slug, { sort: 'created' }) : routes.articles()}
+                >
+                  <TimeIcon /> New
+                </CustomLink>
+                <CustomLink
+                  className={`tab-item${order === 'updatedAt' && !followed ? ' active' : ''}`}
+                  href={(!isHomepage) ? routes.articleIssues(issueArticle.slug, { sort: 'updated' }) : routes.articles({ sort: 'updated' })}
+                >
+                  <TimeIcon /> Updated
+                </CustomLink>
+                <CustomLink
+                  className={`tab-item${order === 'score' && !followed ? ' active' : ''}`}
+                  href={(!isHomepage) ?
+                    routes.articleIssues(issueArticle.slug, { sort: 'score' }) :
+                    routes.articles({ sort: 'score' })
+                  }
+                >
+                  <StarIcon /> Top
+                </CustomLink>
+              </>}
+              {itemType === 'user' && <>
+                <CustomLink
+                  className={`tab-item${order === 'score' ? ' active' : ''}`}
+                  href={routes.users({ sort: 'score' })}
+                >
+                  <StarIcon /> Top
+                </CustomLink>
+                <CustomLink
+                  className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
+                  href={routes.users({ sort: 'created' })}
+                >
+                  <TimeIcon /> New
+                </CustomLink>
+                <CustomLink
+                  className={`tab-item${order === 'username' ? ' active' : ''}`}
+                  href={routes.users({ sort: 'username' })}
+                >
+                  <UserIcon /> A-Z
+                </CustomLink>
+              </>}
+            </>}
+            {itemType === 'discussion' && <>
+              <CustomLink
+                className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
+                href={isHomepage ? routes.issues() : routes.articleIssues(issueArticle.slug)}
+              >
+                <TimeIcon /> New
+              </CustomLink>
+              <CustomLink
+                className={`tab-item${order === 'score' ? ' active' : ''}`}
+                href={isHomepage ? routes.issues({ sort: 'score' }) : routes.articleIssues(issueArticle.slug, { sort: 'score' })}
+              >
+                <StarIcon /> Top
+              </CustomLink>
+            </>}
+          </div>
+        }
         {itemType === 'user'
           ? <UserList {...{
               loggedInUser,
@@ -215,17 +290,15 @@ function IndexPageHoc({
               showAuthor: true,
             }}/>
         }
-        {pinnedArticle &&
-          <>
-            <div className="content-not-ourbigbook pinned-article">
-              <PinnedArticleIcon /> Pinned article: <CustomLink href={routes.article(pinnedArticle.slug)}>{pinnedArticle.slug}</CustomLink>
-            </div>
-            <div
-              className="ourbigbook"
-              dangerouslySetInnerHTML={{ __html: pinnedArticle.render }}
-            />
-          </>
-        }
+        {pinnedArticle && <>
+          <div className="content-not-ourbigbook pinned-article">
+            <PinnedArticleIcon /> Pinned article: <CustomLink href={routes.article(pinnedArticle.slug)}>{pinnedArticle.slug}</CustomLink>
+          </div>
+          <div
+            className="ourbigbook"
+            dangerouslySetInnerHTML={{ __html: pinnedArticle.render }}
+          />
+        </>}
         {isHomepage &&
           <div className="content-not-ourbigbook site-settings">
             <CustomLink href={routes.siteSettings()}>

@@ -1671,6 +1671,12 @@ Welcome to my home page hacked!
         assertStatus(status, data)
         ;({data, status} = await test.sendJsonHttp('GET', routes.userLikes('user0', { sort: 'score' }), ))
         assert.strictEqual(status, 422)
+
+        // User follows
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userFollows('user0'), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp('GET', routes.userFollowed('user0'), ))
+        assertStatus(status, data)
       }
 
       // Logged in.

@@ -27,7 +27,7 @@ import {
   slugFromArray,
   useWindowEventListener,
   TopicIcon,
-  IssueIcon,
+  DiscussionIcon,
   NewArticleIcon,
 } from 'front'
 import ErrorList from 'front/ErrorList'
@@ -636,7 +636,7 @@ export default function EditorPageHoc({
                               }
                               newTab={true}
                             >
-                              <IssueIcon /> Discussion #{initialArticle.number} "{initialFile?.titleSource}"
+                              <DiscussionIcon /> Discussion #{initialArticle.number} "{initialFile?.titleSource}"
                             </CustomLink>
                           : <>
                               <ArticleBy

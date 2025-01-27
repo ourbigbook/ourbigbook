@@ -16,7 +16,7 @@ import {
   AppContextProvider,
   FontAwesomeIcon,
   HelpIcon,
-  IssueIcon,
+  DiscussionIcon,
 } from 'front'
 import routes from 'front/routes'
 
@@ -92,7 +92,7 @@ const MyApp = ({ Component, pageProps }) => {
             <a href={donateUrl}>$ Donate</a>
             <a href={`${docsUrl}#ourbigbook-com-content-license`}>{FontAwesomeIcon(0xf15c)} Content license: CC BY-SA 4.0 unless noted</a>
             <a href="https://github.com/ourbigbook/ourbigbook/tree/master/web">{FontAwesomeIcon(0xf09b, { cls: 'fa-brands-400' })} Website source code</a>
-            <a href={contactUrl}><IssueIcon /> Contact, bugs, suggestions, abuse reports</a>
+            <a href={contactUrl}><DiscussionIcon /> Contact, bugs, suggestions, abuse reports</a>
             <a href="https://mastodon.social/@ourbigbook">{FontAwesomeIcon(0xf4f6, { cls: 'fa-brands-400' })} @ourbigbook</a>
             <a href="https://twitter.com/OurBigBook">{FontAwesomeIcon(0xf099, { cls: 'fa-brands-400' })} @OurBigBook</a>
             <a href="https://www.youtube.com/@OurBigBook">{FontAwesomeIcon(0xf167, { cls: 'fa-brands-400' })} @OurBigBook</a>

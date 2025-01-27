@@ -108,7 +108,7 @@ export function DiscussionAbout(
   { article?: ArticleType; children?: React.ReactNode, span?: boolean }
 ) {
   const inner = <>
-      <IssueIcon />{' '}
+      <DiscussionIcon />{' '}
       Discussion on{' '}
       <ArticleBy {...{article}} />
       {children}
@@ -175,12 +175,16 @@ export function ArticleIcon(opts) {
   return FontAwesomeIcon(0xf518, { opts, title: "Article" })
 }
 
-export function ArrowUpIcon(opts) {
-  return FontAwesomeIcon(0xf062, { opts })
+export function ArrowLeftIcon(opts) {
+  return FontAwesomeIcon(0xf060, { opts })
 }
 
 export function ArrowRightIcon(opts) {
   return FontAwesomeIcon(0xf061, { opts })
+}
+
+export function ArrowUpIcon(opts) {
+  return FontAwesomeIcon(0xf062, { opts })
 }
 
 export function CancelIcon(opts) {
@@ -227,7 +231,7 @@ export function IncomingIcon() {
   return <span dangerouslySetInnerHTML={{ __html: INCOMING_LINKS_MARKER }} />
 }
 
-export function IssueIcon(opts) {
+export function DiscussionIcon(opts) {
   return FontAwesomeIcon(0xf075, { opts, title: "Discussion" })
 }
 

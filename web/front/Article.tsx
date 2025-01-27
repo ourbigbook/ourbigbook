@@ -23,7 +23,7 @@ import {
   DeleteIcon,
   EditArticleIcon,
   HelpIcon,
-  IssueIcon,
+  DiscussionIcon,
   NewArticleIcon,
   SeeIcon,
   SeeMyOwnVersionOfThisTopic,
@@ -166,7 +166,7 @@ function WebMeta({
         }
         {' '}
         <a className="issues btn" href={routes.articleIssues(curArticle.slug)} title="Discussions">
-          <IssueIcon title={null} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
+          <DiscussionIcon title={null} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
       </>
     }
     {toplevel &&
@@ -1075,7 +1075,7 @@ export default function Article({
               </div>
               <h2>
                 <CustomLink href={routes.articleIssues(article.slug)}>
-                  <IssueIcon /> Discussion <span className="meta">({ article.issueCount })</span>
+                  <DiscussionIcon /> Discussion <span className="meta">({ article.issueCount })</span>
                 </CustomLink>
                 {' '}
                 <FollowArticleButton {...{
@@ -1091,7 +1091,7 @@ export default function Article({
             <div>
               { latestIssues.length > 0 ?
                   <>
-                    <h3 className="content-not-ourbigbook"><IssueIcon /> <TimeIcon /> Latest discussions</h3>
+                    <h3 className="content-not-ourbigbook"><DiscussionIcon /> <TimeIcon /> Latest discussions</h3>
                     <ArticleList {...{
                       articles: latestIssues,
                       articlesCount: article.issueCount,
@@ -1103,7 +1103,7 @@ export default function Article({
                       showControls: false,
                       what: 'discussion',
                     }}/>
-                    <h3 className="content-not-ourbigbook"><IssueIcon /> <ArrowUpIcon /> Top discussions</h3>
+                    <h3 className="content-not-ourbigbook"><DiscussionIcon /> <ArrowUpIcon /> Top discussions</h3>
                     <ArticleList {...{
                       articles: topIssues,
                       articlesCount: article.issueCount,

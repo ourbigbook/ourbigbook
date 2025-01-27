@@ -8,7 +8,7 @@ import ArticleList from 'front/ArticleList'
 import {
   CreateMyOwnVersionOfThisTopic,
   DiscussionAbout,
-  IssueIcon,
+  DiscussionIcon,
   MyHead,
   NewArticleIcon,
   SeeIcon,
@@ -107,7 +107,7 @@ const ArticlePageHoc = (isIssue=false) => {
             {isIssue &&
               <>
                 {' '}
-                <CustomLink href={routes.articleIssues(issueArticle.slug)} className="btn"><IssueIcon /> See all ({issuesCount})</CustomLink>
+                <CustomLink href={routes.articleIssues(issueArticle.slug)} className="btn"><DiscussionIcon /> See all ({issuesCount})</CustomLink>
                 {' '}
                 <CustomLink
                   className="btn"

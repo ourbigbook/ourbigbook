@@ -8,7 +8,7 @@ import Comment from 'front/Comment'
 import Pagination from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import {
-  IssueIcon,
+  DiscussionIcon,
   TimeIcon,
   UserIcon,
 } from 'front'
@@ -109,7 +109,7 @@ const CommentList = ({
                           }
                           <th className="shrink"><span className="icon">#</span> id</th>
                           {showFullSlug &&
-                            <th className="expand"><IssueIcon /> Issue</th>
+                            <th className="expand"><DiscussionIcon /> Issue</th>
                           }
                           <th className="shrink"><TimeIcon /> Created</th>
                         </tr>

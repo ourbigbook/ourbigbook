@@ -192,14 +192,20 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         parentArticle,
         users,
       ] = await Promise.all([
+        // articles
         articlesPromise,
+        // comments
         itemType === 'comment'
           ? Comment.getComments({ authorId: user.id, limit: articleLimit, offset })
           : {}
         ,
+        // userJson
         user.toJson(loggedInUser),
+        // loggedInUserJson
         loggedInUser ? loggedInUser.toJson() : undefined,
+        // likes
         likesPromise,
+        // unlistedArticles
         itemType === 'article'
           ? Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false }))
           : {}
@@ -207,8 +213,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         // parentArticle
         (parentId !== undefined)
           ? Article.getArticle({ slug: idToSlug(parentId), sequelize })
-          : null,
+          : null
         ,
+        // users
         usersPromise,
         updateNewScoreLastCheckPromise,
       ])

@@ -10,6 +10,24 @@ Significant entries will have a corresponding announcement on the following <off
 * https://www.facebook.com/OurBigBook
 * https://www.instagram.com/ourbigbook
 
+= Web navigation two level tab cleanup
+{parent=News}
+{tag=Web}
+
+We have now cleaned up the tab navigation on <OurBigBook Web> pages such as:
+* index page: https://ourbigbook.com/
+* user articles page: https://ourbigbook.com/go/user/cirosantilli/articles
+to have two levels organized by:
+* "object type" on the top row, e.g. articles, users, etc.
+* "further specifiers" on the bottom row, e.g. sorting and filtering
+
+\Image[feature/web-nav/articles-nobody-crop-arrow.png]
+{title=Two-level tab navigation on <OurBigBook Web>}
+{border}
+{height=451}
+{provider=github}
+{source=https://ourbigbook.com/go/articles?body=false}
+
 = Scope ancestors show on toplevel header and page title
 {parent=News}
 {tag=Static website}

@@ -227,6 +227,15 @@ function IndexPageHoc({
                 >
                   <StarIcon /> Top
                 </CustomLink>
+                <CustomLink
+                  className={`tab-item${order === 'topicId' && !followed ? ' active' : ''}`}
+                  href={(!isHomepage) ?
+                    routes.articleIssues(issueArticle.slug, { sort: 'score' }) :
+                    routes.articles({ sort: 'id' })
+                  }
+                >
+                  <ArticleIcon /> A-Z
+                </CustomLink>
               </>}
               {itemType === 'user' && <>
                 <CustomLink

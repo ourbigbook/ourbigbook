@@ -291,7 +291,7 @@ export default function UserPage({
                     className={`tab-item${order === 'topicId' ? ' active' : ''}`}
                     href={routes.userArticles(username, { sort: 'id' })}
                   >
-                    <UserIcon /> A-Z
+                    <ArticleIcon /> A-Z
                   </CustomLink>
                   <CustomLink
                     href={routes.userLikes(username)}

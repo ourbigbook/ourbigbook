@@ -179,7 +179,7 @@ function IndexPageHoc({
                 className={`tab-item${order === 'topicId' ? ' active' : ''}`}
                 href={routes.topics({ loggedInUser, sort: 'id' })}
               >
-                <UserIcon /> A-Z
+                <TopicIcon /> A-Z
               </CustomLink>
             </>}
             {isHomepage && <>

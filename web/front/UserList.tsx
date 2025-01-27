@@ -9,6 +9,7 @@ import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
+import { FollowIcon, LikeIcon, TimeIcon, UserIcon } from 'front'
 
 export type UserListProps = {
   loggedInUser?: UserType;
@@ -25,9 +26,6 @@ const UserList = ({
   users,
   usersCount,
 }: UserListProps) => {
-  const router = useRouter();
-  const { asPath, pathname, query } = router;
-  const { like, follow, tag, uid } = query;
   if (users.length === 0) {
     return <div className="article-preview">
       There are no users on the website.
@@ -39,11 +37,11 @@ const UserList = ({
         <table className="list">
           <thead>
             <tr>
-              <th className="shrink">Score</th>
-              <th className="shrink">User</th>
-              <th className="shrink">Username</th>
-              <th className="shrink">Followers</th>
-              <th className="shrink">Joined</th>
+              <th className="shrink"><LikeIcon /> Score</th>
+              <th className="shrink"><UserIcon /> User</th>
+              <th className="shrink"><UserIcon /> Username</th>
+              <th className="shrink"><FollowIcon /> Followers</th>
+              <th className="shrink"><TimeIcon /> Joined</th>
             </tr>
           </thead>
           <tbody>

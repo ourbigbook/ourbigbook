@@ -377,8 +377,8 @@ const ArticleList = ({
                           <tr>
                             {itemType === 'like' &&
                               <>
-                                <th className="shrink"><LikeIcon /><TimeIcon /> Liked</th>
-                                <th className="shrink"><LikeIcon /><UserIcon /> Liked By</th>
+                                <th className="shrink"><TimeIcon /> Date</th>
+                                <th className="shrink"><UserIcon /> Liked by</th>
                               </>
                             }
                             {itemType === 'topic' &&

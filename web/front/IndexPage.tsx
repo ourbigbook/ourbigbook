@@ -266,6 +266,12 @@ function IndexPageHoc({
                 <TimeIcon /> New
               </CustomLink>
               <CustomLink
+                className={`tab-item${order === 'updatedAt' ? ' active' : ''}`}
+                href={isHomepage ? routes.issues({ sort: 'updated' }) : routes.articleIssues(issueArticle.slug, { sort: 'updated' })}
+              >
+                <TimeIcon /> Updated
+              </CustomLink>
+              <CustomLink
                 className={`tab-item${order === 'score' ? ' active' : ''}`}
                 href={isHomepage ? routes.issues({ sort: 'score' }) : routes.articleIssues(issueArticle.slug, { sort: 'score' })}
               >

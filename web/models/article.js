@@ -118,12 +118,15 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: true,
       },
-
       // Duplicated from File for Indices.
       authorId: {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      announcedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      }
     },
     {
       indexes: [
@@ -135,6 +138,7 @@ module.exports = (sequelize) => {
         { fields: ['list', 'createdAt'], },
         // For WHERE list = 1 ORDER BY updatedAt
         { fields: ['list', 'updatedAt', 'createdAt'], },
+        { fields: ['list', 'announcedAt'], },
         { fields: ['list', 'issueCount', 'createdAt'], },
         { fields: ['list', 'followerCount', 'createdAt'], },
         // - Top articles in a given topic.
@@ -158,6 +162,7 @@ module.exports = (sequelize) => {
         { fields: ['authorId', 'nestedSetIndex', 'nestedSetNextSibling'], },
         { fields: ['authorId', 'list', 'createdAt'], },
         { fields: ['authorId', 'list', 'updatedAt', 'createdAt'], },
+        { fields: ['authorId', 'list', 'announcedAt'], },
         { fields: ['authorId', 'list', 'score', 'createdAt'], },
         { fields: ['authorId', 'list', 'followerCount', 'createdAt'], },
         { fields: ['authorId', 'list', 'issueCount', 'createdAt'], },
@@ -853,6 +858,9 @@ WHERE
       'issueCount',
       'topicCount'
     ])
+    if (this.announcedAt) {
+      ret.announcedAt = this.announcedAt.toISOString()
+    }
     if (this.createdAt) {
       ret.createdAt = this.createdAt.toISOString()
     }
@@ -1149,6 +1157,7 @@ WHERE
 
   // Helper for common queries.
   Article.getArticles = async function getArticles({
+    // Author username string.
     author,
     count,
     excludeIds,
@@ -1193,6 +1202,9 @@ WHERE
     }
     if (searchTopicId !== undefined) {
       where.topicId = sequelizeWhereStartsWith(sequelize, searchTopicId, '"Article"."topicId"')
+    }
+    if (order === 'announcedAt') {
+      where.announcedAt = { [Op.ne]: null }
     }
     const authorInclude = {
       model: User,
@@ -1897,6 +1909,7 @@ LIMIT ${limit}` : ''}`}
   Article.slugTransform = slugTransform
 
   Article.ALLOWED_SORTS_EXTRA = {
+    'announced': 'announcedAt',
     'follower-count': 'followerCount',
     'id': 'topicId',
     'issues': 'issueCount',

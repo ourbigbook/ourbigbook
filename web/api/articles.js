@@ -2,22 +2,28 @@ const router = require('express').Router()
 const Op = require('sequelize').Op
 
 const ourbigbook = require('ourbigbook')
+const { htmlEscapeAttr, htmlEscapeContent } = ourbigbook
 const webApi = require('ourbigbook/web_api')
+const { sequelizeIterateOverPagination } = require('ourbigbook/nodejs_webpack_safe')
 
 const auth = require('../auth')
 const { cant } = require('../front/cant')
 const front = require('../front/js')
 const convert = require('../convert')
 const lib = require('./lib')
-const { checkMaxNewPerTimePeriod } = lib
+const { MILLIS_PER_MONTH, oneMonthAgo } = lib
 const config = require('../front/config')
+const { maxArticleAnnouncesPerMonth } = config
+const { host, user } = require('../front/routes')
+
+const ANNOUNCE_YOU_ARE_RECEIVING_MESSAGE = 'You are receiving this email because a user you follow has announced their article.'
 
 // Get multiple articles at once. If ?id= is specified once however, the returned
 // list will necessarily contain at most one item as id is unique (or zero, not an error
 // if the id does not exist), so this function can also
-// be used to get just one article. Epxress.js also allows parameters to be specified
+// be used to get just one article. Express.js also allows parameters to be specified
 // multiple times, which generate arrays, so if ?id= is given multiple times, it
-// specifies a precies list of multiple articles to fetch.
+// specifies a precise list of multiple articles to fetch.
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
@@ -195,8 +201,6 @@ router.get('/feed', auth.required, async function(req, res, next) {
 // Create File and corresponding Articles. The File must not already exist.
 router.post('/', auth.required, async function(req, res, next) {
   try {
-    const sequelize = req.app.get('sequelize')
-    const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
     return await createOrUpdateArticle(req, res, { forceNew: true })
   } catch(error) {
     next(error);
@@ -207,6 +211,113 @@ router.post('/', auth.required, async function(req, res, next) {
 router.put('/', auth.required, async function(req, res, next) {
   try {
     return await createOrUpdateArticle(req, res, { forceNew: false })
+  } catch(error) {
+    next(error);
+  }
+})
+
+router.post('/announce', auth.required, async function(req, res, next) {
+  try {
+    // Check that article can be announced.
+    const sequelize = req.app.get('sequelize')
+    const { Article, User } = sequelize.models
+    const [[article, lastAnnouncedArticlesInMonth], loggedInUser] = await Promise.all([
+      lib.getArticle(req, res).then(async (article) => {
+        return [
+          article,
+          await Article.getArticles({
+            count: false,
+            limit: maxArticleAnnouncesPerMonth,
+            order: 'announcedAt',
+            sequelize,
+            where: {
+              announcedAt: { [Op.gt]: oneMonthAgo() },
+              authorId: article.authorId,
+            },
+          })
+        ]
+      }),
+      User.findByPk(req.payload.id),
+    ])
+    if (article.announcedAt) {
+      throw new lib.ValidationError(`the article ${article.slug} has already been announced`)
+    }
+    const author = article.file.author
+    const msg = cant.announceArticle(loggedInUser, author.username)
+    if (msg) {
+      throw new lib.ValidationError([msg], 403)
+    }
+    let nextAnnounceAllowedAt = loggedInUser.nextAnnounceAllowedAt
+    if (nextAnnounceAllowedAt) {
+      if (new Date() < new Date(nextAnnounceAllowedAt)) {
+        throw new lib.ValidationError(
+          `Maximum number of article publishes reached for the last month (${maxArticleAnnouncesPerMonth}), ` +
+          `you can publish again on ${nextAnnounceAllowedAt}`
+        )
+      }
+    }
+    const body = lib.validateParam(req, 'body')
+    const message = lib.validateParam(body, 'message', {
+      validators: [
+        front.isString,
+        front.isLengthSmallerOrEqualTo(config.maxArticleAnnounceMessageLength),
+      ],
+      defaultValue: undefined,
+    })
+
+    // Database modification side-effects.
+    article.announcedAt = new Date()
+    const savePromises = [
+      article.save(),
+    ]
+    const nLastAnnouncedArticlesInMonth = lastAnnouncedArticlesInMonth.length
+    if (nLastAnnouncedArticlesInMonth >= maxArticleAnnouncesPerMonth - 1) {
+      loggedInUser.nextAnnounceAllowedAt = new Date(
+        new Date(lastAnnouncedArticlesInMonth[nLastAnnouncedArticlesInMonth - 1].announcedAt).getTime() +
+        MILLIS_PER_MONTH
+      )
+      savePromises.push(loggedInUser.save())
+    }
+    await Promise.all(savePromises)
+
+    // Send the emails.
+    const articleLink = `${host(req)}/${article.slug}`
+    const messageTxt = `Check out my article: `
+    const titleSource = article.file.titleSource
+    let text = `${messageTxt}"${titleSource}" ${articleLink}\n`
+    let html = `<p>${htmlEscapeContent(messageTxt)}` +
+      `<a href="${htmlEscapeAttr(articleLink)}">${htmlEscapeContent(titleSource)}</a>` +
+      `</p>\n`
+    if (message) {
+      text += `\n${message}\n`
+      html += message.split('\n\n').map(l => `<p>${htmlEscapeContent(l)}</p>\n`).join('')
+    }
+    text += `\n${ANNOUNCE_YOU_ARE_RECEIVING_MESSAGE}\n`
+    html += `<p>${htmlEscapeContent(ANNOUNCE_YOU_ARE_RECEIVING_MESSAGE)}</p>\n`
+    const sendEmailsPromises = []
+    for await (const follower of sequelizeIterateOverPagination(
+      User.getUsers,
+      {
+        count: false,
+        following: author.username,
+        sequelize,
+      },
+      config.maxUsersInMemory,
+    )) {
+      if (follower.emailNotificationsForArticleAnnouncement) {
+        sendEmailsPromises.push(lib.sendEmailToUser({
+          fromName: author.displayName,
+          html,
+          req,
+          subject: `Announcement: ${titleSource}`,
+          text,
+          to: follower,
+        }))
+      }
+    }
+    await Promise.all(sendEmailsPromises)
+
+    return res.json({ article: await article.toJson(loggedInUser) })
   } catch(error) {
     next(error);
   }
@@ -265,7 +376,7 @@ async function createOrUpdateArticle(req, res, opts) {
   if (owner === undefined) {
     author = loggedInUser
   } else {
-    const  msg = cant.editArticle(loggedInUser, owner)
+    const msg = cant.editArticle(loggedInUser, owner)
     if (msg) {
       throw new lib.ValidationError([msg], 403)
     }

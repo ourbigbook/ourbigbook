@@ -24,9 +24,10 @@ export type ArticleAncestorType = ArticleLinkType & {
 }
 
 export type ArticleType = {
+  announcedAt?: number,
   author: UserType,
   body: string;
-  createdAt: number;
+  createdAt: string;
   depth: number;
   file: {
     titleSource: string,
@@ -38,7 +39,7 @@ export type ArticleType = {
   issueCount?: number;
   liked: boolean;
   likedBy?: UserType;
-  likedByDate?: number;
+  likedByDate?: string;
   list?: boolean;
   followed?: boolean;
   followerCount?: number;
@@ -52,5 +53,5 @@ export type ArticleType = {
   titleSourceLine: number;
   topicCount?: number;
   topicId: string;
-  updatedAt: number;
+  updatedAt: string;
 };

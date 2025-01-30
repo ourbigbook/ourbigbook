@@ -7,11 +7,11 @@ export interface Comments {
 
 export type CommentType = {
   author?: UserType;
-  createdAt: number;
+  createdAt: string;
   id: string;
   issue?: IssueType;
   number: number;
   render: string;
   source: string;
-  updatedAt: number;
+  updatedAt: string;
 };

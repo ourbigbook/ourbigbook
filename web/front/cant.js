@@ -10,6 +10,9 @@ const permissions = [
   ['viewUserSettings', (loggedInUser, user) => loggedInUser.id !== user.id],
 
   // Articles
+  ['announceArticle', (loggedInUser, articleUsername) => {
+    return loggedInUser.username !== articleUsername
+  }],
   ['editArticle', (loggedInUser, articleUsername) => {
     return loggedInUser.username !== articleUsername
   }],

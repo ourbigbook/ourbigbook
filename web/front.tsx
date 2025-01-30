@@ -28,6 +28,10 @@ export const AUTH_LOCAL_STORAGE_NAME = 'user'
 export const LOGIN_ACTION = 'Sign in'
 export const REGISTER_ACTION = 'Sign up'
 
+export function AlphabeticalOrderTabTitle() {
+  return <>A-Z</>
+}
+
 /** https://stackoverflow.com/questions/2901102/how-to-format-a-number-with-commas-as-thousands-separators */
 export function addCommasToInteger(i: number): string {
   return i.toLocaleString('en-US', { maximumFractionDigits: 0 })
@@ -135,6 +139,7 @@ type FontAwesomeIconOptsType = {
   title?: string|null
 }
 
+// Icon IDs can be found by searching under: https://fontawesome.com/search
 export function FontAwesomeIcon(
   code,
   opts: {
@@ -169,6 +174,10 @@ export function FontAwesomeIcon(
    >
     {String.fromCharCode(code)}
   </span>
+}
+
+export function AnnounceIcon(opts) {
+  return FontAwesomeIcon(0xf0a1, { opts, title: "Announce" })
 }
 
 export function ArticleIcon(opts) {

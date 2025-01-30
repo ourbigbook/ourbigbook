@@ -260,8 +260,9 @@ function sortByKey(arr, key) {
 
 function testApp(cb, opts={}) {
   const canTestNext = opts.canTestNext === undefined ? false : opts.canTestNext
-  return app.start(0, canTestNext && testNext, async (server, sequelize) => {
+  return app.start(0, canTestNext && testNext, async (server, sequelize, app) => {
     const test = {
+      app,
       sequelize
     }
     test.user = undefined
@@ -4642,8 +4643,22 @@ it(`api: user validation`, async () => {
       assertStatus(status, data)
       const user0 = data.user
       assert.strictEqual(data.user.username, 'john-smith')
+      assert.strictEqual(data.user.emailNotifications, true)
+      assert.strictEqual(data.user.emailNotificationsForArticleAnnouncement, true)
+
+      // Logged off get.
       ;({ data, status } = await test.webApi.user('john-smith'))
       assert.strictEqual(data.username, 'john-smith')
+      assert.strictEqual(data.emailNotifications, undefined)
+      assert.strictEqual(data.emailNotificationsForArticleAnnouncement, undefined)
+
+      // Logged in get.
+      test.loginUser(user0)
+      ;({ data, status } = await test.webApi.user('john-smith'))
+      assert.strictEqual(data.username, 'john-smith')
+      assert.strictEqual(data.emailNotifications, true)
+      assert.strictEqual(data.emailNotificationsForArticleAnnouncement, true)
+      test.loginUser()
 
       // Username taken.
       ;({ data, status } = await test.webApi.userCreate({
@@ -4728,12 +4743,20 @@ it(`api: user validation`, async () => {
       test.loginUser(user0)
       ;({ data, status } = await test.webApi.userUpdate(
         'john-smith',
-        { displayName: 'John Smith 2', },
+        {
+          displayName: 'John Smith 2',
+          emailNotifications: false,
+          emailNotificationsForArticleAnnouncement: false,
+        },
       ))
       assertStatus(status, data)
       assert.strictEqual(data.user.displayName, 'John Smith 2')
+      assert.strictEqual(data.user.emailNotifications, false)
+      assert.strictEqual(data.user.emailNotificationsForArticleAnnouncement, false)
       ;({ data, status } = await test.webApi.user('john-smith'))
       assert.strictEqual(data.displayName, 'John Smith 2')
+      assert.strictEqual(data.emailNotifications, false)
+      assert.strictEqual(data.emailNotificationsForArticleAnnouncement, false)
 
       // Empty display name.
       test.loginUser(user0)
@@ -4953,6 +4976,89 @@ it(`api: article: create with disambiguate`, async () => {
     assertStatus(status, data)
     assert.strictEqual(data.titleRender, 'Title 0 (that type)')
     assert.strictEqual(data.titleSource, 'Title 0')
+  })
+})
+
+it(`api: article: announce`, async () => {
+  await testApp(async (test) => {
+    let data, status
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    // user1 follows user0
+    test.loginUser(user1)
+    ;({data, status} = await test.webApi.userFollow('user0'))
+    test.loginUser(user0)
+
+    // Create article user0/title-0
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
+    assertStatus(status, data)
+
+    // Announcement date is empty before announce.
+    ;({data, status} = await test.webApi.article('user0/title-0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.announcedAt, undefined)
+
+    // Can't announce with message that is too long.
+    ;({data, status} = await test.webApi.articleAnnounce(
+      'user0/title-0', 'a'.repeat(config.maxArticleAnnounceMessageLength + 1)))
+    assert.strictEqual(status, 422)
+
+    // Can't announce other person's article.
+    test.loginUser(user1)
+    ;({data, status} = await test.webApi.articleAnnounce('user0/title-0', 'My message.'))
+    assert.strictEqual(status, 403)
+    test.loginUser(user0)
+
+    // Can't announce article that does not exist
+    ;({data, status} = await test.webApi.articleAnnounce('user0/not-exists', 'My message.'))
+    assert.strictEqual(status, 404)
+
+    // Can announce the first time.
+    ;({data, status} = await test.webApi.articleAnnounce('user0/title-0', 'My message.'))
+    assertStatus(status, data)
+    // Followers receive an email notification.
+    const emails = test.app.get('emails')
+    const lastEmail = emails[emails.length - 1]
+    assert.strictEqual(lastEmail.to, 'user1@mail.com')
+    assert.strictEqual(lastEmail.subject, 'Announcement: Title 0')
+
+    // Announcement date is not empty anymore.
+    ;({data, status} = await test.webApi.article('user0/title-0'))
+    assertStatus(status, data)
+    assert.notStrictEqual(data.announcedAt, undefined)
+
+    // Can't announce the second time.
+    ;({data, status} = await test.webApi.articleAnnounce('user0/title-0', 'My message.'))
+    assert.strictEqual(status, 422)
+
+    // Followers don't receive an email notification if their notification setting is off.
+    test.loginUser(user1)
+    ;({ data, status } = await test.webApi.userUpdate(
+      'user1',
+      { emailNotificationsForArticleAnnouncement: false, },
+    ))
+    assertStatus(status, data)
+    test.loginUser(user0)
+    assert.strictEqual(emails.length, 1)
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 1 })))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.articleAnnounce(`user0/title-1`, 'My message.'))
+    assertStatus(status, data)
+    assert.strictEqual(emails.length, 1)
+
+    // The announcement limit prevents new announcements if hit.
+    for (let i = 2; i < config.maxArticleAnnouncesPerMonth; i++) {
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i })))
+      assertStatus(status, data)
+      ;({data, status} = await test.webApi.articleAnnounce(`user0/title-${i}`, 'My message.'))
+      assertStatus(status, data)
+    }
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: config.maxArticleAnnouncesPerMonth })))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.articleAnnounce(`user0/title-${config.maxArticleAnnouncesPerMonth}`, 'My message.'))
+    assert.strictEqual(status, 422)
   })
 })
 

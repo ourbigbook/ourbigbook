@@ -9114,6 +9114,17 @@ If you don't want the article to be the first child of a parent, you can also se
 {width=1000}
 {description=Note that <video OurBigBook Web parent selection on the web UI> is not present on this video as the feature wasn't present when the video was made, but the error reporting remains valid.}
 
+= Article announcement
+{parent=OurBigBook Web user manual}
+
+Once you've created a particularly notable article, you can announce it to your followers by clicking the "Announce to followers" button under the article page.
+
+Once clicked, this will send an email with a link to the article to all your followers. You can also optionally add a short message to the announcement to help your followers know why it was announced.
+
+In order to reduce the risk of spam and going over email quotas, the following restrictions are in place:
+* you can only announce each article once
+* each user can only announce up to 5 articles in the last 30 days. Each user can check their quotas under the <user settings page>.
+
 = OurBigBook Web page renaming
 {parent=OurBigBook Web user manual}
 
@@ -9161,6 +9172,17 @@ This is not super user friendly, and could be made better by:
 
 There are currently a few constructs that are legal in <OurBigBook CLI> but forbidden in Web and will lead to upload errors. TODO we should just make those forbidden on CLI by default with a flag to re-enable if users really want to make their source incompatible with web:
 * IDs with uppercase characters as per <JavaScript case conversion>
+
+= OurBigBook Web page
+{c}
+{parent=OurBigBook Web user manual}
+
+= User settings page
+{parent=OurBigBook Web page}
+
+Path: `/go/settings/<username>`
+
+Contains profile and account settings for each user, including limits such as the maximum number of articles that each user may publish.
 
 = OurBigBook.com
 {c}

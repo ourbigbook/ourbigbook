@@ -37,7 +37,11 @@ import {
   shortFragGoTo,
   addParameterToUrlPath,
   removeParameterFromUrlPath,
+  AnnounceIcon,
+  ArticleIcon,
+  OkIcon,
 } from 'front'
+import { webApi } from 'front/api'
 import CommentList from 'front/CommentList'
 import CommentInput from 'front/CommentInput'
 import LikeArticleButton from 'front/LikeArticleButton'
@@ -73,10 +77,12 @@ import {
 // or factor out the webpack setup of the ourbigbook package.
 //import { ourbigbook_runtime } from 'ourbigbook/ourbigbook_runtime.js';
 import { ourbigbook_runtime, toplevelMouseleave } from 'ourbigbook/dist/ourbigbook_runtime.js'
-import { encodeGetParams } from 'ourbigbook/web_api'
+import { encodeGetParams, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
 import { ArticleType } from 'front/types/ArticleType'
 import { slugToTopic, uidTopicIdToSlug } from './js'
+import { formatDate } from './date'
 
+const ANNOUNCE_QUERY_PARAM = 'announce'
 const NEW_QUERY_PARAM = 'new'
 const NEW_MODAL_BUTTON_CLASS = 'new-modal'
 
@@ -96,6 +102,50 @@ function LinkListNoTitle({
       ></a></li>
     )}
   </ul>
+}
+
+function AnnounceModal({
+  article,
+  router,
+  setShowAnnounce,
+}) {
+  const [announceMessage, setAnnounceMessage] = React.useState('')
+  return <div
+    className="modal-page"
+    onClick={(e) => {
+      if (e.target === e.currentTarget) {
+        setShowAnnounce(false)
+        Router.push(removeParameterFromUrlPath(router.asPath, ANNOUNCE_QUERY_PARAM), undefined, { scroll: false })
+      }
+    }}
+  >
+    <div
+      className="modal-container"
+    >
+      <div className="modal-title ourbigbook-title">
+        <AnnounceIcon title={null}/>
+        {' '}
+        Announce article to followers by email
+      </div>
+      <textarea
+        className="not-monaco"
+        rows={5}
+        placeholder="Add a message (optional)"
+        onChange={e => {
+          e.stopPropagation()
+          setAnnounceMessage(e.target.value)
+        }}
+      >
+      </textarea>
+      <button onClick={() => {
+        webApi.articleAnnounce(article.slug, announceMessage)
+        setShowAnnounce(false)
+        Router.push(removeParameterFromUrlPath(router.asPath, ANNOUNCE_QUERY_PARAM), undefined, { scroll: false })
+      }}>
+        <OkIcon /> Send
+      </button>
+    </div>
+  </div>
 }
 
 function LinkList(
@@ -127,6 +177,7 @@ function LinkList(
 
 function WebMeta({
   article,
+  canAnnounce,
   canEdit,
   canDelete,
   curArticle,
@@ -156,31 +207,27 @@ function WebMeta({
       loggedInUser,
       showText: toplevel,
     }} />
-    {!isIssue &&
-      <>
-        {' '}
-        {!isIndex &&
-          <a className="by-others btn" href={routes.topic(curArticle.topicId)} title="Articles by others on the same topic">
-            <TopicIcon title={null} /> {curArticle.topicCount - 1}{toplevel ? <> By others<span className="mobile-hide"> on same topic</span></> : ''}
-          </a>
-        }
-        {' '}
-        <a className="issues btn" href={routes.articleIssues(curArticle.slug)} title="Discussions">
-          <DiscussionIcon title={null} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
-      </>
-    }
-    {toplevel &&
-      <>
-        {' '}
-        <ArticleCreatedUpdatedPills article={article} />
-        {article.list === false &&
-          <>
-            {' '}
-            <span className="pill"><a href={`${docsUrl}/ourbigbook-web-unlisted-articles`}><UnlistedIcon /> Unlisted</a></span>
-          </>
-        }
-      </>
-    }
+    {!isIssue && <>
+      {' '}
+      {!isIndex &&
+        <a className="by-others btn" href={routes.topic(curArticle.topicId)} title="Articles by others on the same topic">
+          <TopicIcon title={null} /> {curArticle.topicCount - 1}{toplevel ? <> By others<span className="mobile-hide"> on same topic</span></> : ''}
+        </a>
+      }
+      {' '}
+      <a className="issues btn" href={routes.articleIssues(curArticle.slug)} title="Discussions">
+        <DiscussionIcon title={null} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
+    </>}
+    {toplevel && <>
+      {' '}
+      <ArticleCreatedUpdatedPills article={article} />
+      {article.list === false &&
+        <>
+          {' '}
+          <span className="pill"><a href={`${docsUrl}/ourbigbook-web-unlisted-articles`}><UnlistedIcon /> Unlisted</a></span>
+        </>
+      }
+    </>}
     {canEdit &&
       <>
         {' '}
@@ -208,16 +255,14 @@ function WebMeta({
                   className="btn new"
                   title="Create a new article that is the first child of this one"
                 >
-                  {' '}
                   <NewArticleIcon title={null}/>
                   {' '}
                   <ChildrenIcon title={null} />
                   {' '}
                   Add<span className="mobile-hide"> article</span> under
-                  {' '}
                 </a>
                 {' '}
-                {!isIndex &&
+                {!isIndex && <>
                   <a
                     href={routes.articleNew({
                       'previous-sibling': curArticle.topicId
@@ -225,15 +270,14 @@ function WebMeta({
                     className="btn new"
                     title="Create a new article that is the next sibling of this one"
                   >
-                    {' '}
                     <NewArticleIcon title={null}/>
                     {' '}
                     <ArrowRightIcon title={null} />
                     {' '}
                     Add<span className="mobile-hide"> article</span> after
-                    {' '}
                   </a>
-                }
+                  {' '}
+                </>}
               </>
             : <a
                 className={`btn ${NEW_MODAL_BUTTON_CLASS} wider`}
@@ -256,6 +300,41 @@ function WebMeta({
         }
       </>
     }
+    {toplevel && <>
+      {' '}
+      {canAnnounce
+        ? (() => {
+          const nextAnnounceAllowedAt = article.author.nextAnnounceAllowedAt
+          const maxAnnouncesReached = nextAnnounceAllowedAt && new Date() < new Date(article.author.nextAnnounceAllowedAt)
+          return <a
+              className={`btn${article.announcedAt || maxAnnouncesReached ? ' disabled' : ''}`}
+              href={addParameterToUrlPath(router.asPath, ANNOUNCE_QUERY_PARAM, QUERY_TRUE_VAL)}
+              title={
+                article.announcedAt
+                  ? "You have already announced this article, it can only be done once"
+                  : maxAnnouncesReached
+                    ? `You have reached the maximum number of article announcements until ${nextAnnounceAllowedAt}`
+                    : "Send a link to this article to all your followers by email"
+              }
+            >
+              <AnnounceIcon title={null}/>
+              {' '}
+              {article.announcedAt
+                ? <><span className="mobile-hide">Announced </span>{formatDate(article.announcedAt)}</>
+                : <>Announce<span className="mobile-hide"> to followers by email</span></>
+              }
+            </a>
+          })()
+        : <>{article.announcedAt &&
+            <span className="pill" title="Announced">
+              <AnnounceIcon />
+              <span className="mobile-hide"> Announced</span>
+              {' '}
+              {formatDate(article.updatedAt)}
+            </span>
+          }</>
+      }
+    </>}
     {!(isIssue || isIndex) &&
       <>
         {(curArticle.hasSameTopic)
@@ -321,6 +400,8 @@ export default function Article({
   const router = useRouter()
   const queryNew = router.query[NEW_QUERY_PARAM]
   const [showNew, setShowNew] = React.useState(queryNew)
+  const queryAnnounce = router.query[ANNOUNCE_QUERY_PARAM]
+  const [showAnnounce, setShowAnnounce] = React.useState(queryAnnounce === QUERY_TRUE_VAL)
   const [showNewListener, setShowNewListener] = React.useState(undefined)
   const getParamString = encodeGetParams(router.query)
   React.useEffect(() => {
@@ -334,6 +415,7 @@ export default function Article({
   // Close modal on ESC keypress
   React.useEffect(() => {
     function listener(e) {
+      // ESC
       if (e.keyCode === 27) {
         setShowNew(undefined)
         Router.push(removeParameterFromUrlPath(router.asPath, NEW_QUERY_PARAM), undefined, { scroll: false })
@@ -387,7 +469,8 @@ export default function Article({
     articlesInSamePageMapForToc[article.slug] = article
   }
   const hasArticlesInSamePage = articlesInSamePage !== undefined && !!articlesInSamePage.length
-  const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
+  const canAnnounce = isIssue ? false : !cant.announceArticle(loggedInUser, authorUsername)
+  const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, authorUsername)
   const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
   const aElemToMetaMap = React.useRef(new Map())
   const showNewArticle = showNew === undefined ? undefined : articlesInSamePageMapForToc[uidTopicIdToSlug(authorUsername, showNew)]
@@ -642,6 +725,7 @@ export default function Article({
           const root = createRoot(tmp)
           root.render(<WebMeta {...{
             article,
+            canAnnounce,
             canEdit,
             canDelete,
             curArticle,
@@ -795,6 +879,7 @@ export default function Article({
       // Web-specific meta like likes and discussion.
       h1RenderElem.querySelector(`.${H_WEB_CLASS}`).innerHTML = renderToString(<WebMeta {...{
         article,
+        canAnnounce,
         canDelete,
         canEdit,
         curArticle: article,
@@ -901,6 +986,7 @@ export default function Article({
       const elem = parse(a.h2Render)
       elem.querySelector(`.${H_WEB_CLASS}`).innerHTML = renderToString(<WebMeta {...{
         article,
+        canAnnounce: false,
         canDelete,
         canEdit,
         curArticle: a,
@@ -941,6 +1027,8 @@ export default function Article({
           className="modal-container"
         >
           <div className="modal-title ourbigbook-title">
+            <ArticleIcon />
+            {' '}
             <span dangerouslySetInnerHTML={{ __html: showNewArticle.titleRender }} />
           </div>
           <a
@@ -970,6 +1058,11 @@ export default function Article({
         </div>
       </div>
     }
+    {showAnnounce && <AnnounceModal {...{
+      article,
+      router,
+      setShowAnnounce,
+    }} />}
     <div
       dangerouslySetInnerHTML={{ __html: html }}
       className="ourbigbook"

@@ -63,7 +63,7 @@ const LikeArticleButton = ({
   };
   let count = score;
   if (showText) {
-    count = (<span className="counter">({count})</span>)
+    count = <span className="counter">{count}</span>
   }
   let buttonClassNames = ['modal']
   let title;
@@ -82,8 +82,9 @@ const LikeArticleButton = ({
       onClick={handleClickLike}
       title={title}
     >
-      <LikeIcon />{showText ? ' ' : ''}{buttonText}
+      <LikeIcon />
       {' '}{count}
+      {showText ? ' ' : ''}{buttonText}
     </button>
   )
 }

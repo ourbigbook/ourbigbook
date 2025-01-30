@@ -129,6 +129,8 @@ module.exports = {
   maxArticlesInMemory: 1000,
   maxArticlesFetch: 100,
   maxArticlesFetchToc: 1000,
+  maxArticleAnnounceMessageLength: 1000,
+  maxArticleAnnouncesPerMonth: 5,
   maxIssuesPerMinute: 6,
   maxIssuesPerHour: 60,
   // After this timeout, assume network is slow and start showing loading messages.
@@ -152,6 +154,7 @@ module.exports = {
       ext: '',
     })
   },
+  maxUsersInMemory: 1000,
   port: process.env.PORT || 3000,
   postgres: ourbigbook_nodejs_front.postgres,
   profilePictureMaxUploadSize: 2000000,

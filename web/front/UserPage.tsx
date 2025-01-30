@@ -22,6 +22,8 @@ import {
   FollowIcon,
   ArrowRightIcon,
   ArrowLeftIcon,
+  AlphabeticalOrderTabTitle,
+  AnnounceIcon,
 } from 'front'
 import ArticleList from 'front/ArticleList'
 import CommentList from 'front/CommentList'
@@ -288,10 +290,16 @@ export default function UserPage({
                     <StarIcon /> Top
                   </CustomLink>
                   <CustomLink
+                    href={routes.userArticles(username, { sort: 'announced' })}
+                    className={`tab-item${what === 'user-articles' && order === 'announced' ? ' active' : ''}`}
+                  >
+                    <AnnounceIcon /> Announced
+                  </CustomLink>
+                  <CustomLink
                     className={`tab-item${order === 'topicId' ? ' active' : ''}`}
                     href={routes.userArticles(username, { sort: 'id' })}
                   >
-                    <ArticleIcon /> A-Z
+                    <ArticleIcon /> <AlphabeticalOrderTabTitle />
                   </CustomLink>
                   <CustomLink
                     href={routes.userLikes(username)}

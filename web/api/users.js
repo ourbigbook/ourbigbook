@@ -99,6 +99,7 @@ router.post('/reset-password-request', async function(req, res, next) {
     await Promise.all([
       user.saveSideEffects(),
       lib.sendEmail({
+        req,
         to: user.email,
         subject: `Change your OurBigBook.com password`,
         html:
@@ -284,6 +285,7 @@ router.post('/users', async function(req, res, next) {
     const verifyUrl = `${routes.host(req)}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`
     const sendEmailsPromises = []
     sendEmailsPromises.push(lib.sendEmail({
+      req,
       to: user.email,
       subject: `Verify your new OurBigBook.com account`,
       html:
@@ -299,8 +301,9 @@ Please click this link to verify your account: ${verifyUrl}
     if (admins) {
       for (const admin of admins) {
         sendEmailsPromises.push(lib.sendEmail({
+          req,
           to: admin.email,
-          subject: `A new user signed up: ${user.displayName} (@${user.username}, ${user.email})!`,
+          subject: `A new user signed up: ${user.displayName} (@${user.username}, ${user.email}, ${user.ip})!`,
           html: `<p><a href="${profileUrl}">${profileUrl}</a></p><p>Another step towards world domination is taken!</p>`,
           text: `${profileUrl}
 
@@ -359,6 +362,13 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
       })
       if (emailNotifications !== undefined) {
         user.emailNotifications = userArg.emailNotifications
+      }
+      const emailNotificationsForArticleAnnouncement = validateParam(userArg, 'emailNotificationsForArticleAnnouncement', {
+        validators: [front.isBoolean],
+        defaultValue: undefined,
+      })
+      if (emailNotificationsForArticleAnnouncement !== undefined) {
+        user.emailNotificationsForArticleAnnouncement = userArg.emailNotificationsForArticleAnnouncement
       }
       const hideArticleDates = validateParam(userArg, 'hideArticleDates', {
         validators: [front.isBoolean],

@@ -121,6 +121,18 @@ class WebApi {
     return this.req('get', `articles${encodeGetParamsWithOffset(opts)}`)
   }
 
+  async articleAnnounce(slug, message, opts={}) {
+    const body = {}
+    if (message) {
+      body.message = message
+    }
+    return this.req(
+      'post',
+      `articles/announce?id=${slug}${encodeGetParamsWithOffset(opts)}`,
+      { body },
+    )
+  }
+
   async articlesHash(opts={}) {
     return this.req('get', `articles/hash${encodeGetParamsWithOffset(opts)}`)
   }

@@ -111,9 +111,10 @@ button, a.btn {
   }
       //background-color: #BB1070;
   &.disabled, &:disabled {
-    cursor: default;
     background-color: #444;
     color: white;
+    cursor: default;
+    text-decoration: none;
   }
   &.small {
     // A button that can be placed side-by-side with text taking up a comparable height.
@@ -340,6 +341,9 @@ h1, h2, h3, h4, h5, h6,
   color: $h-color;
   a {
     color: $h-color;
+  }
+  .link {
+    color: $a-color;
   }
   &.meta, .meta {
     color: $color-slightly-discreet;
@@ -727,6 +731,7 @@ span.shortcut {
   .modal-container {
     padding: 1em;
     background-color: $background-color;
+    box-sizing: border-box;
     position: fixed;
     //height: 50%;
     //width: 50%;
@@ -745,8 +750,12 @@ span.shortcut {
       &:not(:last-child) {
         margin-bottom: 0.5em;
       }
+      box-sizing: border-box;
       text-align: center;
       width: 100%;
+    }
+    & > textarea {
+      text-align: left;
     }
   }
 }

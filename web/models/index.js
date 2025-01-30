@@ -6,7 +6,7 @@ const { DatabaseError, Sequelize, DataTypes } = require('sequelize')
 
 const ourbigbook_models = require('ourbigbook/models')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
-const { sequelizeCreateTrigger, sequeliezeCreateTriggerUpdateCount } = ourbigbook_nodejs_webpack_safe
+const { sequelizeCreateTrigger, sequelizeCreateTriggerUpdateCount } = ourbigbook_nodejs_webpack_safe
 
 const config = require('../front/config')
 
@@ -379,13 +379,13 @@ async function sync(sequelize, opts={}) {
     const UserFollowIssue = sequelize.models.UserFollowIssue
     const UserFollowUser = sequelize.models.UserFollowUser
 
-    await sequeliezeCreateTriggerUpdateCount(sequelize, Article, UserLikeArticle, 'score', 'articleId')
-    await sequeliezeCreateTriggerUpdateCount(sequelize, Article, UserFollowArticle, 'followerCount', 'articleId')
-    await sequeliezeCreateTriggerUpdateCount(sequelize, Issue, UserLikeIssue, 'score', 'issueId')
-    await sequeliezeCreateTriggerUpdateCount(sequelize, Issue, UserFollowIssue, 'followerCount', 'issueId')
-    await sequeliezeCreateTriggerUpdateCount(sequelize, User, UserFollowUser, 'followerCount', 'followId')
-    await sequeliezeCreateTriggerUpdateCount(sequelize, Issue, Comment, 'commentCount', 'issueId')
-    await sequeliezeCreateTriggerUpdateCount(sequelize, Article, Issue, 'issueCount', 'articleId')
+    await sequelizeCreateTriggerUpdateCount(sequelize, Article, UserLikeArticle, 'score', 'articleId')
+    await sequelizeCreateTriggerUpdateCount(sequelize, Article, UserFollowArticle, 'followerCount', 'articleId')
+    await sequelizeCreateTriggerUpdateCount(sequelize, Issue, UserLikeIssue, 'score', 'issueId')
+    await sequelizeCreateTriggerUpdateCount(sequelize, Issue, UserFollowIssue, 'followerCount', 'issueId')
+    await sequelizeCreateTriggerUpdateCount(sequelize, User, UserFollowUser, 'followerCount', 'followId')
+    await sequelizeCreateTriggerUpdateCount(sequelize, Issue, Comment, 'commentCount', 'issueId')
+    await sequelizeCreateTriggerUpdateCount(sequelize, Article, Issue, 'issueCount', 'articleId')
 
     // Article
     await sequelizeCreateTrigger(sequelize, Article, 'delete',

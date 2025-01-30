@@ -10,7 +10,7 @@ export type IssueType = {
   author: UserType;
   bodySource: string;
   commentCount: number;
-  createdAt: number;
+  createdAt: string;
   followerCount: number;
   id: string;
   number: number;
@@ -18,5 +18,5 @@ export type IssueType = {
   score: number;
   titleRender: string;
   titleSource: string;
-  updatedAt: number;
+  updatedAt: string;
 };

@@ -163,6 +163,19 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: false,
       },
+      nextAnnounceAllowedAt: {
+        // Next point in time at which the user will be allowed to announce an article again.
+        // This is a cache row to prevent us from having to add a new query for every logged in article page load
+        // to decide if the user can announce or not. This number can be calculated from
+        // the latest articles by the user as well.
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      emailNotificationsForArticleAnnouncement: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
     },
     {
       hooks: {
@@ -232,6 +245,9 @@ module.exports = (sequelize) => {
       maxIssuesPerHour: this.maxIssuesPerHour,
       verified: this.verified,
     }
+    if (this.nextAnnounceAllowedAt) {
+      ret.nextAnnounceAllowedAt = this.nextAnnounceAllowedAt.toISOString()
+    }
     if (this.scoreDelta !== undefined) {
       ret.scoreDelta = this.scoreDelta
     }
@@ -242,6 +258,7 @@ module.exports = (sequelize) => {
         ret.ip = this.ip
         ret.email = this.email
         ret.emailNotifications = this.emailNotifications
+        ret.emailNotificationsForArticleAnnouncement = this.emailNotificationsForArticleAnnouncement
         ret.hideArticleDates = this.hideArticleDates
         if (loggedInUser.token) {
           ret.token = loggedInUser.token
@@ -494,6 +511,7 @@ module.exports = (sequelize) => {
   User.defaultIndexBody = 'Welcome to my home page!\n'
 
   User.getUsers = async function({
+    count,
     limit,
     following,
     followedBy,
@@ -503,13 +521,20 @@ module.exports = (sequelize) => {
     sequelize,
     username,
   }) {
-    const include = []
+    if (count === undefined) {
+      count = true
+    }
+    if (order === undefined) {
+      order = 'createdAt'
+    }
     if (orderAscDesc === undefined) {
       orderAscDesc = 'DESC'
     }
+    const { User } = sequelize.models
+    const include = []
     if (following) {
       include.push({
-        model: sequelize.models.User,
+        model: User,
         as: 'follows',
         where: { username: following },
         attributes: [],
@@ -518,7 +543,7 @@ module.exports = (sequelize) => {
     }
     if (followedBy) {
       include.push({
-        model: sequelize.models.User,
+        model: User,
         as: 'followed',
         where: { username: followedBy },
         attributes: [],
@@ -534,14 +559,19 @@ module.exports = (sequelize) => {
       // To make results deterministic.
       orderList.push(['createdAt', 'DESC'])
     }
-    return sequelize.models.User.findAndCountAll({
+    const args = {
       include,
       limit,
       offset,
       order: orderList,
       subQuery: false,
       where,
-    })
+    }
+    if (count) {
+      return User.findAndCountAll(args)
+    } else {
+      return User.findAll(args)
+    }
   }
 
   User.validPassword = function(user, password) {

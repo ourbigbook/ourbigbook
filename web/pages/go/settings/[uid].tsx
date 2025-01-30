@@ -70,6 +70,7 @@ const Settings = ({
   const maxIssuesPerMinuteLabel = "Maximum issues/comments per minute (maxIssuesPerMinute)"
   const maxIssuesPerHourLabel = "Maximum issues/comments per hour (maxIssuesPerHour)"
   const title = "Account settings"
+  const emailNotificationsForArticleAnnouncementRef = React.useRef(null)
   return <>
     <MyHead title={`${title} - ${displayAndUsernameText(userInfo)}`} />
     <div className="settings-page content-not-ourbigbook">
@@ -163,9 +164,29 @@ const Settings = ({
             <input
               type="checkbox"
               defaultChecked={userInfo.emailNotifications}
+              onChange={() => {
+                setUserInfo((state) => {
+                  const newState = !state.emailNotifications
+                  const emailNotificationsForArticleAnnouncementElem = emailNotificationsForArticleAnnouncementRef.current
+                  if (emailNotificationsForArticleAnnouncementElem) {
+                    emailNotificationsForArticleAnnouncementElem.disabled = !newState
+                  }
+                  return {
+                    ...state,
+                    emailNotifications: newState
+                  }}
+                )
+              }}
+            />
+          </Label>
+          <Label label="Email notifications for article announcements" inline={true}>
+            <input
+              type="checkbox"
+              defaultChecked={userInfo.emailNotificationsForArticleAnnouncement}
+              ref={emailNotificationsForArticleAnnouncementRef}
               onChange={() => setUserInfo((state) => { return {
                 ...state,
-                emailNotifications: !state.emailNotifications
+                emailNotificationsForArticleAnnouncement: !state.emailNotificationsForArticleAnnouncement
               }})}
             />
           </Label>
@@ -196,6 +217,9 @@ const Settings = ({
                   <li>{maxArticlesLabel}: <b>{userInfo.maxArticles}</b></li>
                   <li>{maxIssuesPerMinuteLabel}: <b>{userInfo.maxIssuesPerMinute}</b></li>
                   <li>{maxIssuesPerHourLabel}: <b>{userInfo.maxIssuesPerHour}</b></li>
+                  {userInfo.nextAnnounceAllowedAt &&
+                    <li>Next article announce allowed at: <b>{userInfo.nextAnnounceAllowedAt}</b></li>
+                  }
                 </ul>
                 <div>You may <a href={contactUrl}><b>ask an admin</b></a> to raise any of those limits for you.</div>
               </>
@@ -245,6 +269,7 @@ export default Settings;
 
 import { getLoggedInUser } from 'back'
 import { cant } from 'front/cant'
+import { formatDate } from 'front/date'
 
 export async function getServerSideProps(context) {
   const { params: { uid }, req, res } = context

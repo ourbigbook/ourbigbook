@@ -43,6 +43,9 @@ async function start(port, startNext, cb) {
   })
 
   app.set('sequelize', sequelize)
+  if (config.isTest) {
+    app.set('emails', [])
+  }
   passport.use(
     new passport_local.Strategy(
       {
@@ -150,7 +153,7 @@ async function start(port, startNext, cb) {
   return new Promise((resolve, reject) => {
     const server = app.listen(port, async function () {
       try {
-        cb && (await cb(server, sequelize))
+        cb && (await cb(server, sequelize, app))
       } catch (e) {
         reject(e)
         this.close()

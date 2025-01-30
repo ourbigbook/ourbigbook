@@ -8,6 +8,7 @@ const pluralize = require('pluralize')
 
 const config = require('../front/config')
 const front = require('../front/js')
+const routes = require('../front/routes')
 
 function checkMaxNewPerTimePeriod({
   errs,
@@ -142,6 +143,8 @@ function getLimitAndOffset(req, res, opts={}) {
 
 const MILLIS_PER_MINUTE = 1000 * 60
 const MILLIS_PER_HOUR = 60 * MILLIS_PER_MINUTE
+const MILLIS_PER_DAY = 24 * MILLIS_PER_HOUR
+const MILLIS_PER_MONTH = 30 * MILLIS_PER_DAY
 
 /**
  * https://stackoverflow.com/questions/19700283/how-to-convert-time-in-milliseconds-to-hours-min-sec-format-in-javascript/32180863#32180863
@@ -175,6 +178,10 @@ function oneHourAgo() {
   return new Date(new Date - MILLIS_PER_HOUR)
 }
 
+function oneMonthAgo() {
+  return new Date(new Date - MILLIS_PER_MONTH)
+}
+
 /** https://stackoverflow.com/questions/11335460/how-do-i-parse-a-data-url-in-node 
  * With regex is extremely slow.
  */
@@ -194,24 +201,27 @@ function parseDataUriBase64(s) {
 async function sendEmail({
   fromName='OurBigBook.com',
   html,
+  req,
   subject,
   text,
   to,
 }) {
-  if (!config.isTest) {
+  const msg = {
+    to,
+    from: {
+      email: 'notification@ourbigbook.com',
+      name: fromName,
+    },
+    subject,
+    text,
+    html,
+  }
+  if (config.isTest) {
+    req.app.get('emails').push(msg)
+  } else {
     if (process.env.OURBIGBOOK_SEND_EMAIL === '1' || config.isProduction) {
       const sgMail = require('@sendgrid/mail')
       sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-      const msg = {
-        to,
-        from: {
-          email: 'notification@ourbigbook.com',
-          name: fromName,
-        },
-        subject,
-        text,
-        html,
-      }
       await sgMail.send(msg)
     } else {
       console.log(`Email sent:
@@ -224,6 +234,47 @@ html: ${html}`)
   }
 }
 
+/**
+ * Higher level wrapper around sendEmail.
+ * 
+ * Takes a User object as input rather than the raw email string.
+ * 
+ * Factors out things such as:
+ * * check if the recipient has email notifications enabled  
+ * * add the unsubscribe from all emails message
+ */
+async function sendEmailToUser({
+  fromName='OurBigBook.com',
+  html,
+  req,
+  subject,
+  text,
+  to,
+}) {
+  if (to.emailNotifications) {
+    const settingsUrl = `${routes.host(req)}${routes.userEdit(to.username)}`
+    if (html === undefined) {
+      html = ''
+    }
+    html += `<p>To unsubscribe from all ${config.appName} emails` +
+      `<a href="${settingsUrl}">change the email settings on your profile page</a>.</p>\n`
+    if (text === undefined) {
+      text = ''
+    }
+    if (text) {
+      text += '\n'
+    }
+    text += `To unsubscribe from all ${config.appName} emails change the email settings on your profile page: ${settingsUrl}\n`
+    return sendEmail ({
+      fromName,
+      html,
+      req,
+      subject,
+      text,
+      to: to.email,
+    })
+  }
+}
 // When this class is thrown and would blows up on toplevel, we catch it instead
 // and gracefully return the specified error to the client instead of doing a 500.
 class ValidationError extends Error {
@@ -305,11 +356,14 @@ module.exports = {
   logPerf,
   oneHourAgo,
   oneMinuteAgo,
+  oneMonthAgo,
   MILLIS_PER_HOUR,
   MILLIS_PER_MINUTE,
+  MILLIS_PER_MONTH,
   msToRoundedTime,
   parseDataUriBase64,
   sendEmail,
+  sendEmailToUser,
   validate,
   validateBodySize,
   validateParam,

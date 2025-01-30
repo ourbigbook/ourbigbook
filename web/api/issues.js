@@ -21,7 +21,6 @@ const {
 function issueCommentEmailBody({
   body,
   childUrl,
-  settingsUrl,
   whatChild,
   whatParent,
   whatParentUnsub,
@@ -38,7 +37,6 @@ function issueCommentEmailBody({
   htmlArr.push(
     `<p>A new ${whatChild} has been created on a ${whatParent} that you follow</a>!</p>`,
     `<p>To unsubscribe from this ${whatParent} click the <a href="${unsubThisUrl}">unsubscribe button on the ${whatParentUnsub} page.</p>`,
-    `<p>To unsubscribe from all ${config.appName} emails <a href="${settingsUrl}">change the email settings on your profile page</a>.</p>`,
   )
   return {
     html: htmlArr.join(''),
@@ -47,8 +45,6 @@ ${textBody}
 A new ${whatChild} has been created on an ${whatParent} that you follow!
 
 To unsubscribe from this ${whatParent} click the unsubscribe button on the ${whatParentUnsub} page: ${unsubThisUrl}
-
-To unsubscribe from all ${config.appName} emails change the email settings on your profile page: ${settingsUrl}
 `,
   }
 }
@@ -185,25 +181,20 @@ router.post('/', auth.required, async function(req, res, next) {
     ])
     for (const follower of followers) {
       if (loggedInUser.id !== follower.id) {
-        if (
-          follower.id !== loggedInUser.id &&
-          follower.emailNotifications
-        ) {
-          const emailBody = issueCommentEmailBody({
-            body: issue.bodySource,
-            childUrl: `${routes.host(req)}${routes.issue(article.slug, issue.number)}`,
-            settingsUrl: `${routes.host(req)}${routes.userEdit(loggedInUser.username)}`,
-            whatParent: 'article',
-            whatParentUnsub: 'article discussions',
-            whatChild: 'discussion',
-            unsubThisUrl: `${routes.host(req)}${routes.articleIssues(article.slug)}`,
-          })
-          lib.sendEmail(Object.assign({
-            to: follower.email,
-            fromName: loggedInUser.displayName,
-            subject: `[${article.slug}#${issue.number}] ${issue.titleSource}`,
-          }, emailBody))
-        }
+        const emailBody = issueCommentEmailBody({
+          body: issue.bodySource,
+          childUrl: `${routes.host(req)}${routes.issue(article.slug, issue.number)}`,
+          whatParent: 'article',
+          whatParentUnsub: 'article discussions',
+          whatChild: 'discussion',
+          unsubThisUrl: `${routes.host(req)}${routes.articleIssues(article.slug)}`,
+        })
+        lib.sendEmailToUser(Object.assign({
+          fromName: loggedInUser.displayName,
+          req,
+          subject: `[${article.slug}#${issue.number}] ${issue.titleSource}`,
+          to: follower,
+        }, emailBody))
       }
     }
     res.json({ issue: issueJson })
@@ -455,22 +446,17 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
         const emailBody = issueCommentEmailBody({
           body: comment.source,
           childUrl: `${routes.host(req)}${routes.issueComment(article.slug, issue.number, comment.number)}`,
-          settingsUrl: `${routes.host(req)}${routes.userEdit(loggedInUser.username)}`,
           whatParent,
           whatParentUnsub: whatParent,
           whatChild: 'comment',
           unsubThisUrl: `${routes.host(req)}${routes.issueComments(article.slug, issue.number)}`,
         })
-        if (
-          follower.id !== loggedInUser.id &&
-          follower.emailNotifications
-        ) {
-          lib.sendEmail(Object.assign({
-            to: follower.email,
-            fromName: loggedInUser.displayName,
-            subject: `[${article.slug}#${issue.number}] ${issue.titleSource}`,
-          }, emailBody))
-        }
+        lib.sendEmailToUser(Object.assign({
+          fromName: loggedInUser.displayName,
+          req,
+          subject: `[${article.slug}#${issue.number}] ${issue.titleSource}`,
+          to: follower,
+        }, emailBody))
       }
     }
     res.json({ comment: commentJson })

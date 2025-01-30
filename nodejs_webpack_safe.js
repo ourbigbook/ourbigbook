@@ -1243,7 +1243,7 @@ CREATE TRIGGER IF NOT EXISTS ${triggerName}
 }
 
 /** Create triggers to keep counts such as user likes article counts on article table in sync. */
-async function sequeliezeCreateTriggerUpdateCount(sequelize, articleTable, likeTable, articleTableCountField, likeTableArticleIdField) {
+async function sequelizeCreateTriggerUpdateCount(sequelize, articleTable, likeTable, articleTableCountField, likeTableArticleIdField) {
   const articleTableName = articleTable.tableName
   await sequelizeCreateTrigger(sequelize, likeTable, 'insert',
     `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" + 1 WHERE NEW."${likeTableArticleIdField}" = "${articleTableName}"."id"`
@@ -1282,6 +1282,23 @@ function findOurbigbookJsonDir(curdir, opts={}) {
   }
 }
 
+/** Iterate over multiple paginated calls to avoid overloading
+ * server memory when there can be too many results.
+ * https://stackoverflow.com/questions/57164242/perform-sequelize-findall-in-a-huge-array
+ */
+async function *sequelizeIterateOverPagination(fetchFunc, fetchFuncArgs, limit) {
+  let offset = 0
+  let rows
+  do {
+    rows = await fetchFunc({ ...fetchFuncArgs, offset, limit })
+    if (rows.length === 0)
+      return
+    for (const row of rows)
+      yield row
+    offset += limit
+  } while (true)
+}
+
 module.exports = {
   SqlDbProvider,
   check_db,
@@ -1295,7 +1312,8 @@ module.exports = {
   preload_katex_from_file,
   remove_duplicates_sorted_array,
   sequelizeCreateTrigger,
-  sequeliezeCreateTriggerUpdateCount,
+  sequelizeCreateTriggerUpdateCount,
+  sequelizeIterateOverPagination,
   update_database_after_convert,
   SQLITE_MAGIC_MEMORY_NAME,
   TMP_DIRNAME: ourbigbook.Macro.RESERVED_ID_PREFIX + 'out',

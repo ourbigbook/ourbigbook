@@ -1,7 +1,7 @@
 export type UserType = {
   admin?: string;
   bio: string;
-  createdAt: number;
+  createdAt: string;
   displayName: string;
   effectiveImage: string;
   email?: string;
@@ -10,6 +10,7 @@ export type UserType = {
   id: number;
   image: string;
   ip?: string;
+  nextAnnounceAllowedAt?: string;
   password?: string;
   score: number;
   scoreDelta?: number;
@@ -17,6 +18,7 @@ export type UserType = {
 
   // For logged in user only.
   emailNotifications?: boolean;
+  emailNotificationsForArticleAnnouncement?: boolean;
   hideArticleDates?: boolean;
   maxArticles?: number;
   maxArticleSize?: number;

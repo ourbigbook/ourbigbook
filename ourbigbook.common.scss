@@ -442,7 +442,7 @@ div.float-wrap {
   // https://docs.ourbigbook.com#background-color-of-transparent-images
   img {
     background-color: white;
-    // Otherwise we get some extra vertical space related to line height, insane!
+    // Otherwise we get some extra vertical space related to line height, shorthand!
     // https://stackoverflow.com/questions/38091547/height-of-div-is-greater-than-image
     vertical-align: middle;
     @include responsive-img;

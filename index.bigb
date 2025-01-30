@@ -690,13 +690,13 @@ It aims to be <features>[more powerful] and <saner> and than Markdown and Asciid
 
 Originally, OurBigBook was is meant to be both saner and more powerful than Markdown and Asciidoctor.
 
-But alas, as Ciro started implementing and using it, he started to bring some Markdown <insane macro shortcut>[insanity he missed back in].
+But alas, as Ciro started implementing and using it, he started to bring some Markdown <macro shorthand syntax>[syntax sugar he missed back in].
 
 And so this "degraded" slightly into a language slightly saner than Asciidoctor but with an amazing Node.js implementation that makes it better for book writing and website publishing.
 
 Notably, we hope that our escaping will be a bit saner backslash escapes everything instead of Asciidoctor's "different escapes for every case" approach: https://github.com/asciidoctor/asciidoctor/issues/901
 
-But hopefully, having starting from a saner point will still produce a saner end result, e.g. there are sane constructs for every insane one.
+But hopefully, having starting from a saner point will still produce a saner end result, e.g. there are explicit constructs for every shorthand one.
 
 It is intended that this will be an acceptable downside as OurBigBook will be used primarily large complex content such as books rather than forum posts, and will therefore primarily written either:
 * in text editors locally, where users have more features than in random browser textareas
@@ -706,7 +706,7 @@ For example, originally OurBigBook had exactly five magic characters, with simil
 * `\` backslash to start a macro, like LaTeX
 * `{` and `}`: left and right square brackets to delimit <positional vs named arguments>[optional macro arguments]
 * `[` and `]`: left and right curly braces bracket to start an optional arguments
-and double blank newlines for <paragraphs> if you are pedantic, but this later degenerated into many more with <insane macro shortcuts>.
+and double blank newlines for <paragraphs> if you are pedantic, but this later degenerated into many more with <macro shorthand syntaxes>.
 
 We would like to have only square brackets for both optional and mandatory to have even less magic characters, but that would make the language difficult to parse for computer and humans. LaTeX was right for once!
 
@@ -1043,14 +1043,14 @@ This section documents all OurBigBook macros.
 
 Macros are magic commands that do cool stuff, e.g. `\Image` to create an image.
 
-The most common macros also have <insane macro shortcuts> to keep the syntax shorter.
+The most common macros also have <macro shorthand syntaxes> to keep the syntax shorter.
 
 The general macro syntax is described at <OurBigBook Markup syntax>{full}.
 
 = Link
 {parent=Macro}
 {tag=Inline macro}
-{tag=Macro with insane shortcut}
+{tag=Macro with shorthand syntax}
 
 = `\a`
 {synonym}
@@ -1059,13 +1059,13 @@ The general macro syntax is described at <OurBigBook Markup syntax>{full}.
 = `\a` macro
 {synonym}
 
-<Insane> autolink, i.e. the link text is the same as the link address:
+<Shorthand> autolink, i.e. the link text is the same as the link address:
 \OurBigBookExample[[
 The website http://example.com is cool. See also:
 
 \Q[http://example.com/2]
 ]]
-Exact parsing rules described at: <insane link parsing rules>{full}.
+Exact parsing rules described at: <shorthand link parsing rules>{full}.
 
 Note that the prefixes `http://` and `https://` are automatically removed from the displayed link, since they are so common that they woudly simply add noise.
 
@@ -1076,7 +1076,7 @@ The website \a[http://example.com] is cool.
 \Q[\a[http://example.com/2]]
 ]]]
 
-Insane link with custom text:
+Shorthand link with custom text:
 \OurBigBookExample[[The website http://example.com[example.com] is cool.]]
 Equivalent sane version:
 \OurBigBookExample[[The website \a[http://example.com][example.com] is cool.]]
@@ -1301,10 +1301,13 @@ The following aren't:
 
   For simplicity's sake, we just consider it as a URL without protocol.
 
-= Insane link parsing rules
+= Shorthand link parsing rules
 {parent=Link}
 
-Insane start at any of the recognized protocols are the ones shown at: <known URL protocols>{full}.
+= Insane link parsing rules
+{synonym}
+
+Shorthand start at any of the recognized protocols are the ones shown at: <known URL protocols>{full}.
 * `http://`
 * `https://`
 absolutely anywhere if not escaped, e.g.:
@@ -1328,9 +1331,9 @@ don't becomes links however. But this one does:
 http://a
 ``
 
-Insane links end when any <insane link termination character> is found.
+Shorthand links end when any <shorthand link termination character> is found.
 
-As a consequence, to have an insane link followed immediately by a punctuation like a period you should use an empty argument as in:
+As a consequence, to have an shorthand link followed immediately by a punctuation like a period you should use an empty argument as in:
 \OurBigBookExample[[Check out this website: http://example.com[].]]
 otherwise the punctuation will go in it. Another common use case is:
 \OurBigBookExample[[As mentioned on the tutorial (http://example.com[see this link]).]]
@@ -1349,15 +1352,18 @@ This magic can be observed with <--help-macros> by seeing that the `href` argume
 "elide_link_only": true,
 ``
 
-= Insane link termination character
-{parent=Insane link parsing rules}
+= Shorthand link termination character
+{parent=Shorthand link parsing rules}
 
-The following characters are the "insane link termination characters":
+= Insane link termination character
+{synonym}
+
+The following characters are the "shorthand link termination characters":
 * space ` `
 * newline `\n`
 * open or close square bracket `[` or `]`
 * open or close curly braces `{` or `}`
-<Insane internal links> and <insane topic links with a single word> terminate if any of these characters are found, see also: <insane link parsing rules>{full}.
+<Shorthand internal links> and <shorthand topic links with a single word> terminate if any of these characters are found, see also: <shorthand link parsing rules>{full}.
 
 = Link percent encoding
 {parent=Link}
@@ -1390,7 +1396,7 @@ ab\br[]cd
 ]]
 Note that here `[]` is an <empty macro argument> used for convenience to separate the `\br` from the `cd` text that immediately follows.
 
-The recommended syntax is the insane version which simply uses a newline as in:
+The recommended syntax is the shorthand version which simply uses a newline as in:
 \OurBigBookExample[[
 ab
 cd
@@ -1418,10 +1424,10 @@ Saith that the world hath ending with thy life.
 
 = Code block
 {parent=Macro}
-{tag=Macro with insane shortcut}
+{tag=Macro with shorthand syntax}
 {title2=\c[[``]], \c[[`]], `\C`, `\c`}
 
-Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) <insane macro shortcut>:
+Inline code (code that should appear in the middle of a paragraph rather than on its own line) is done with a single backtick (\c[[`]]) <macro shorthand syntax>:
 \OurBigBookExample[[My inline `x = 'hello\n'` is awesome.]]
 and block code (code that should appear on their own line) is done with two or more backticks (\c[[``]]):
 \OurBigBookExample[[
@@ -1572,7 +1578,7 @@ My inline \comment[[inside comment]] is awesome.
 {tag=Block macro}
 {title2=`\H`}
 
-<Insane> with `= ` (equal sign space):
+<Shorthand syntax> with `= ` (equal sign followed by a space):
 ``
 = My h1
 
@@ -1580,7 +1586,7 @@ My inline \comment[[inside comment]] is awesome.
 
 === My h3
 ``
-Insane headers end at the first newline found. They cannot therefore contain raw newline tokens.
+Shorthand headers end at the first newline found. They cannot therefore contain raw newline tokens.
 
 Equivalent sane:
 ``
@@ -1591,7 +1597,7 @@ Equivalent sane:
 \H[3][My h3]
 ``
 
-Custom ID for <internal links> on insane headers:
+Custom ID for <internal links> on shorthand headers:
 ``
 = My h1
 {id=h1}
@@ -1615,16 +1621,16 @@ Sane equivalent:
 = Unlimited header levels
 {parent=Header}
 
-There is no limit to how many levels we can have, for either sane or insane headers!
+There is no limit to how many levels we can have, for either sane or shorthand headers!
 
 HTML is randomly limited to `h6`, so OurBigBook just renders higher levels as an `h6` with a `data-level` attribute to indicate the actual level for possible CSS styling:
 ``
 <h6 data-level="7">My title</h6>
 ``
 
-The recommended style is to use insane headers up to `h6`, and then move to sane one for higher levels though, otherwise it becomes very hard to count the `=` signs.
+The recommended style is to use shorthand headers up to `h6`, and then move to sane one for higher levels though, otherwise it becomes very hard to count the `=` signs.
 
-To avoid this, we considered making the insane syntax be instead:
+To avoid this, we considered making the shorthand syntax be instead:
 ``
 = 1 My h1
 = 2 My h2
@@ -2582,7 +2588,7 @@ Implemented at: https://github.com/ourbigbook/ourbigbook/issues/114
 {parent=H synonym argument}
 {tag=`title` argument}
 
-Contains the main content of the header. The <insane syntax>:
+Contains the main content of the header. The <shorthand syntax>:
 ``
 = My title
 ``
@@ -2927,14 +2933,14 @@ Note that in this case, you either need a <literal argument> `{{}}` or to explic
 = History of Tiananmen Square
 {wiki=Tiananmen_Square\#History}
 ``
-to avoid the creation of an <insane topic link with a single word>.
+to avoid the creation of an <shorthand topic links with a single word>.
 
 Also note that Wikipedia subsections are not completely stable, so generally you would rather want to link to a permalink with a full URL as in:
 ``
 = Artificial general intelligence
 {wiki=https://en.wikipedia.org/w/index.php?title=Artificial_general_intelligence&oldid=1192191193#Tests_for_human-level_AGI}
 ``
-Note that in this case escaping the `#` is not necessary because it is part of the <insane> <link> that starts at `https://`.
+Note that in this case escaping the `#` is not necessary because it is part of the <shorthand> <link> that starts at `https://`.
 
 = Table of contents
 {parent=Header}
@@ -3572,7 +3578,7 @@ Here is an example of inclusion of the files `not-index.bigb` and `not-index-2.b
 \Include[not-index-2]
 \Include[not-index-with-scope]
 ``
-The above is the recommended and slightly <insane macro shortcut>[insaner] version of:
+The above is the recommended and slightly more <shorthand> version of:
 ``
 \Include[not-index]
 
@@ -3580,7 +3586,7 @@ The above is the recommended and slightly <insane macro shortcut>[insaner] versi
 
 \Include[not-index-with-scope]
 ``
-The insaner version is a bit insaner because the `\Include` magically discards the following newline node that follows it if it just a plaintext node containing exactly a newline. With a double newline, the newline would already have been previously taken out on the lexing stage as part of a paragraph.
+The shorthand version is a bit shorter because the `\Include` magically discards the following newline node that follows it if it just a plaintext node containing exactly a newline. With a double newline, the newline would already have been previously taken out on the lexing stage as part of a paragraph.
 
 <\Include example>{full} shows what those actually render like.
 
@@ -3775,10 +3781,10 @@ void main() {
 
 = List
 {parent=Macro}
-{tag=Macro with insane shortcut}
+{tag=Macro with shorthand syntax}
 {title2=`* `, `\L`, `\Ul`, `\Ol`}
 
-<Insane> with `* ` (asterisk space):
+<Shorthand> with `* ` (asterisk space):
 \OurBigBookExample[[
 * a
 * b
@@ -3822,7 +3828,7 @@ It is also required if you want ordered lists:
 ]
 ]]
 
-Insane nested list with two space indentation:
+Shorthand nested list with two space indentation:
 \OurBigBookExample[[
 * a
   * a1
@@ -3845,7 +3851,7 @@ a
 \L[c]
 ]]
 
-Insane list item with a paragraph inside of it:
+Shorthand list item with a paragraph inside of it:
 \OurBigBookExample[[
 * a
 * I have
@@ -3875,10 +3881,10 @@ Multiple paragraphs.
 \L[c]
 ]]
 
-Insane lists may be escaped with a backslash as usual:
+Shorthand lists may be escaped with a backslash as usual:
 \OurBigBookExample[[\* paragraph starting with an asterisk.]]
 
-You can also start insane lists immediately at the start of a <positional vs named arguments>[positional or named argument], e.g.:
+You can also start shorthand lists immediately at the start of a <positional vs named arguments>[positional or named argument], e.g.:
 \OurBigBookExample[[
 \P[* a
 * b
@@ -3894,12 +3900,12 @@ And now a list outside of <\OurBigBookExample> to test how it looks directly und
 
 = Mathematics
 {parent=Macro}
-{tag=Macro with insane shortcut}
+{tag=Macro with shorthand syntax}
 {title2=`$$`, `$`, `\M`, `\m`}
 
 Via https://katex.org/[KaTeX] server side, oh yes!
 
-Inline math is done with the dollar sign (`$`) <insane macro shortcut>:
+Inline math is done with the dollar sign (`$`) <macro shorthand syntax>:
 \OurBigBookExample[[My inline $\sqrt{1 + 1}$ is awesome.]]
 and block math is done with two or more dollar signs (`$$`):
 \OurBigBookExample[[
@@ -3935,12 +3941,12 @@ $$
 $$
 ]]
 
-Equation IDs and titles and linking to equations works identically to <images>, see that section for full details. Here is one equation reference example that links to the following insane syntax equation: <equation My first insane equation>:
+Equation IDs and titles and linking to equations works identically to <images>, see that section for full details. Here is one equation reference example that links to the following shorthand syntax equation: <equation My first shorthand equation>:
 \OurBigBookExample[[
 $$
 \sqrt{1 + 1}
 $$
-{title=My first insane equation}
+{title=My first shorthand equation}
 ]]
 and the sane equivalent <equation My first sane equation>:
 \OurBigBookExample[[[
@@ -4118,10 +4124,10 @@ This macro is used extensively in the OurBigBook documentation.
 
 = Paragraph
 {parent=Macro}
-{tag=Macro with insane shortcut}
+{tag=Macro with shorthand syntax}
 {title2=`\P`}
 
-OK, this is too common, so we opted for some <insanity> here: double newline is a paragraph!
+The <shorthand> syntax is simply to leave a blank line with two consecutive newlines. For example:
 \OurBigBookExample[[
 Paragraph 1.
 
@@ -4170,7 +4176,7 @@ And for an inline passthrough:
 = Quotation
 {parent=Macro}
 {tag=Block macro}
-{tag=Macro with insane shortcut}
+{tag=Macro with shorthand syntax}
 {title2=`\Q`}
 
 <Explicit macro>:
@@ -4254,10 +4260,10 @@ See the: <quote Julius Caesar star implicit>.
 
 = Table
 {parent=Macro}
-{tag=Macro with insane shortcut}
+{tag=Macro with shorthand syntax}
 {title2=`|| `, `| `, `\Table`, `\Tr`, `\Th` and `\Td`}
 
-The <insane syntax> marks:
+The <shorthand syntax> marks:
 * headers with `|| ` (pipe, pipe space) at the start of a line
 * regular cells with `| ` (pipe, space) at the start of a line
 * separates rows with double newline
@@ -4320,7 +4326,7 @@ To pass further arguments to an implicit table such as `title` or `id`, you need
 ]]
 We would like to remove that explicit toplevel requirement as per: https://github.com/ourbigbook/ourbigbook/issues/186[] The rules of when the caption shows up or not similar to those of <images> as mentioned at <image caption>{full}.
 
-Multiple source lines, including paragraphs, can be added to a single cell with insane syntax by indenting the cell with exactly two spaces just as for <lists>, e.g.:
+Multiple source lines, including paragraphs, can be added to a single cell with shorthand syntax by indenting the cell with exactly two spaces just as for <lists>, e.g.:
 \OurBigBookExample[[
 || h1
 || h2
@@ -4370,7 +4376,7 @@ And now a table outside of <\OurBigBookExample> to test how it looks directly un
 ]
 {title=My table title}
 
-And a fully insane one:
+And a fully shorthand one:
 
 || Header 1
 || Header 2
@@ -4574,7 +4580,7 @@ The time to start playing the video at in seconds. Works for both `youtube` and 
 
 = Internal link
 {parent=Macro}
-{tag=Macro with insane shortcut}
+{tag=Macro with shorthand syntax}
 
 = Cross reference
 {synonym}
@@ -4590,9 +4596,9 @@ Every macro in OurBigBook can have an optional `id` and many also have a reserve
 
 When a macro in the document has a `title` argument but no `id` argument given, get an auto-generated ID from the title: <automatic ID from title>.
 
-Usually, the most convenient way to write <internal links> is with the insane syntax with delimited angled braces:
+Usually, the most convenient way to write <internal links> is with the shorthand syntax with delimited angled braces:
 \OurBigBookExample[[<internal links> are awesome.]]
-More details at: <insane internal link>.
+More details at: <shorthand internal link>.
 
 The sane equivalent to this is:
 \OurBigBookExample[[\x[internal-link]{c}{p} are awesome section.]]
@@ -4601,15 +4607,23 @@ Note how that is more verbose, especially because here we use both the <\x c arg
 Another sane equivalent would be to add an explicit link body as in:
 \OurBigBookExample[[\x[internal-link][Internal link] are awesome.]]
 
-= Insane internal link
+= Shorthand internal link
 {parent=Internal link}
-{tag=Insane macro shortcut}
+{tag=Shorthand macro syntax}
 {title2=`<>`}
+
+= Shorthand cross reference
+{parent=Internal link}
+{tag=Shorthand macro syntax}
+{title2=`<>`}
+
+= Insane internal link
+{synonym}
 
 = Insane cross reference
 {synonym}
 
-When you use an <insane internal link> (`<>`) such as in:
+When you use an <shorthand internal link> (`<>`) such as in:
 \OurBigBookExample[[<Internal links> are awesome.]]
 it gets expanded exactly to the sane equivalent:
 ``
@@ -4617,7 +4631,7 @@ it gets expanded exactly to the sane equivalent:
 ``
 so we see that the <\x magic argument> gets added. It is that argument that for example adds the missing `-`, and removes the pluralization to find the correct ID `internal-link`.  For more details, see the documentation of the <\x magic argument>.
 
-Like other <insane> constructs, <insane internal links> are exactly equivalent to the sane version, so you can just add other arguments after the construct, e.g.:
+Like other <shorthand> constructs, <shorthand internal links> are exactly equivalent to the sane version, so you can just add other arguments after the construct, e.g.:
 \OurBigBookExample[[<Internal links>{full} are awesome.]]
 which gets converted to exact the same as the sane:
 \OurBigBookExample[[\x[internal-link]{full} are awesome.]]
@@ -4628,7 +4642,7 @@ which gets converted to exact the same as the sane:
 = Cross reference title inflection
 {synonym}
 
-In most cases it is generally more convenient to simply use the <\x magic argument> through <insane internal links> instead of the `c` and `p` arguments as described on the rest of this section, see also: <inflection vs magic>{full}.
+In most cases it is generally more convenient to simply use the <\x magic argument> through <shorthand internal links> instead of the `c` and `p` arguments as described on the rest of this section, see also: <inflection vs magic>{full}.
 
 A common usage pattern is that we want to use <header> titles in <\x full argument>[non-full] <internal links> as the definition of a concept without repeating the title, for example:
 ``
@@ -4778,7 +4792,7 @@ The <\x magic argument> was introduced later, and basically became a better alte
   ``
   it would just lead to Id not found, as we would try the plural vs singular on `animal` only.
 
-  Maybe one day we can implement an even insaner system that understands that parenthesis should skipped for the inflection as in:
+  Maybe one day we can implement an even more shorthand system that understands that parenthesis should skipped for the inflection as in:
   ``
   I like <pythons (animal)>.
   ``
@@ -5282,7 +5296,7 @@ This is because the number "Section 1.2" might already have been used in the cur
 = Magic link
 {synonym}
 
-This argument makes writing many <internal links> more convenient, and it was notably introduced because it serves as the sane version of <insane internal links>.
+This argument makes writing many <internal links> more convenient, and it was notably introduced because it serves as the sane version of <shorthand internal links>.
 
 If given e.g. as in:
 ``
@@ -5322,9 +5336,12 @@ the link treated magically as follows:
 
 There may be some cases where you might still want to use <internal link title inflection> however, see: <inflection vs magic>{full}.
 
-= Insane magic link
+= Shorthand magic link
 {parent=`\x` `magic` argument}
-{tag=Insane macro shortcut}
+{tag=Shorthand macro syntax}
+
+= Insane magic link
+{synonym}
 
 A <magic link> can be created more succinctly by surrounding the link with "angle brackets" (`<>`), e.g.:
 ``
@@ -5395,12 +5412,15 @@ The <OurBigBook Web> instance linked to can be configured with <ourbigbook.json/
 
 Those links also work on <OurBigBook Web> rendering of course, and point to the current Web instance.
 
-= Insane topic link
+= Shorthand topic link
 {parent=`\x` `topic` argument}
-{tag=Insane macro shortcut}
+{tag=Shorthand macro syntax}
 {title2=`<#Albert Einstein>`}
 
-If an <insane magic link> starts with a hash sign (`#`), then it is converted to a <topic link> instead of a <magic link>.
+= Insane topic link
+{synonym}
+
+If an <shorthand magic link> starts with a hash sign (`#`), then it is converted to a <topic link> instead of a <magic link>.
 
 For example:
 \OurBigBookExample[[
@@ -5411,15 +5431,15 @@ is equivalent to:
 \x[Albert Einstein]{topic}
 ``
 
-= Insane topic link with a single word
-{parent=Insane topic link}
-{tag=Insane macro shortcut}
+= Shorthand topic links with a single word
+{parent=Shorthand topic link}
+{tag=Shorthand macro syntax}
 {title2=`#star`}
 
 = Insane topic links with a single word
 {synonym}
 
-If an <insane topic link> is made up of a single word then it can be written in the following even succincter notation, without the need for angle brackets:
+If an <shorthand topic link> is made up of a single word then it can be written in the following even succincter notation, without the need for angle brackets:
 \OurBigBookExample[[
 I like #dogs
 ]]
@@ -5428,13 +5448,13 @@ is equivalent to:
 I like <#dogs>
 ``
 
-Word separation is defined analogously to <Insane link parsing rules>, i.e.:
+Word separation is defined analogously to <shorthand link parsing rules>, i.e.:
 * `#` can start from anywhere, including the middle of words, e.g.:
   \OurBigBookExample[[
   abc#mytopic
   ]]
   would produce a link immediately preceded by the characters `abc`.
-* `#` ends at any <insane link termination character>, e.g.:
+* `#` ends at any <shorthand link termination character>, e.g.:
   * Topic is `mytopic`:
     \OurBigBookExample[[
     #mytopic is cool
@@ -5487,8 +5507,20 @@ For more details, see: <internal link title inflection>{full}.
 {c}
 {parent=OurBigBook Markup}
 
-= Insane macro shortcut
+= Macro shorthand syntax
 {parent=OurBigBook Markup syntax}
+
+= Shorthand macro syntax
+{synonym}
+
+= Shorthand syntax
+{synonym}
+
+= Shorthand
+{synonym}
+
+= Insane macro shortcut
+{synonym}
 
 = Insane syntax
 {synonym}
@@ -5511,44 +5543,68 @@ For more details, see: <internal link title inflection>{full}.
 = Explicit macro
 {synonym}
 
-Certain commonly used macros have insane macro shortcuts that do not start with backslash (`\`).
+Certain commonly used macros have a shorthand macro syntax that do not start with backslash (`\`). It is a form of <#syntactic sugar>.
+
+For example, you could write <code blocks> as:
+\OurBigBookExample[[[
+I like my code:
+\C[[
+print("hello world")
+]]
+]]]
+but that is very verbose and annoying to read and write. Therefore, in addition to the <explicit> `\C` syntax, most people will prefer the backtick shorthand syntax:
+\OurBigBookExample[[[
+I like my code:
+``
+print("hello world")
+``
+]]]
 
 Originally, <design goals>[Ciro wanted to avoid those], but they just feel too good to avoid.
 
-Every insane syntax does however have an equivalent sane syntax.
+Every shorthand syntax does however have an equivalent sane syntax.
 
-The style recommendation is: use the insane version which is shorter, unless you have a specific reason to use the sane version.
+Our style recommendation is: use the shorthand version which is shorter, unless you have a specific reason to use the sane version.
 
-Insane in our context does not mean worse. It just mean "harder for the computer to understand". But it is more important that humans can understand in the first place! It is find to make the computer work a bit more for us when we are able to.
+Shorthand in our context does not mean worse. It just mean "harder for the computer to understand". But it is more important that humans can understand in the first place! It is find to make the computer work a bit more for us when we are able to.
+
+= Macro with shorthand syntax
+{parent=Macro shorthand syntax}
+
+= Macros with shorthand syntax
+{synonym}
 
 = Macro with insane shortcut
-{parent=Insane macro shortcut}
+{synonym}
 
 = Macros with insane shortcut
 {synonym}
 
 * <paragraph>{full}: `\n\n` (double newline)
 * <link>{full}: `a http://example.com b` (space followed by `http://`)
-* <internal link>{full}: `<Internal links>` (angle brackets), see: <insane internal link>{full}
-* <mathematics>{full}: `$`, described at: <insane code and math shortcuts>
-* <code block>{full}: \c[[`]], described at: <insane code and math shortcuts>
+* <internal link>{full}: `<Internal links>` (angle brackets), see: <shorthand internal link>{full}
+* <mathematics>{full}: `$`, described at: <code and math shorthands>
+* <code block>{full}: \c[[`]], described at: <code and math shorthands>
 * <list>{full}: `* ` and indentation
 * <table>{full}: `|| `, `| ` and indentation
 * <quotation>{full}: `> `
 
+= Code and math shorthands
+{parent=Macro with shorthand syntax}
+
 = Insane code and math shortcuts
-{parent=Macro with insane shortcut}
+{synonym}
 
-The insane code and math shortcuts work very analogously and are therefore described together in this section.
+The shorthand code and math shortcuts work very analogously and are therefore described together in this section.
 
-The insane inline code syntax:
+The shorthand inline code syntax:
 \OurBigBookExample[[a `b c` d]]
 and is equivalent to the sane:
 ``
 a \c[[b c]] d
 ``
 
-The insane block code:
+The shorthand block code:
 \OurBigBookExample[[
 a
 
@@ -5569,15 +5625,18 @@ b c
 d
 ``
 
-= Insane macro shortcut extra arguments
-{parent=Macro with insane shortcut}
+= Shorthand syntax extra arguments
+{parent=Macro with shorthand syntax}
 
-Insane arguments always work by abbreviating:
+= Insane macro shortcut extra arguments
+{synonym}
+
+Shorthand arguments always work by abbreviating:
 * the macro name
-* one or more of its positional arguments, which are fixed as either <literal arguments>[literal or non-literal] for a given insane construct
+* one or more of its positional arguments, which are fixed as either <literal arguments>[literal or non-literal] for a given shorthand construct
 This means that you can add further arguments as usual.
 
-For example, an insane code block with an id can be written as:
+For example, an shorthand code block with an id can be written as:
 ``
 a `b c`{id=ef} g
 ``
@@ -5585,20 +5644,23 @@ because that is the same as:
 \OurBigBookExample[[a \c[b c]{id=ef} g]]
 So we see that the `b c` argument is the very first argument of `\c`.
 
-Extra arguments must come after the insane opening, e.g. the following does not work:
+Extra arguments must come after the shorthand opening, e.g. the following does not work:
 ``
 a {id=ef}`b c` g
 ``
 
 This restriction things easy to parse for humans and machines alike.
 
+= Escapes in macro shorthands
+{parent=Macro with shorthand syntax}
+
 = Escapes in insane macro shortcuts
-{parent=Macro with insane shortcut}
+{synonym}
 
 Literal backticks and dollar signs can be produced witha backslash escape as in:
 \OurBigBookExample[[a \` \$ b]]
 
-It is not possible to escape backticks (\c[[`]]) inside an insane inline code, or dollar signs (`$`) in insane math.
+It is not possible to escape backticks (\c[[`]]) inside an shorthand inline code, or dollar signs (`$`) in shorthand math.
 
 The design reason for that is because multiple backticks produce block code.
 
@@ -5650,7 +5712,7 @@ For example, in a <header> definition with an ID:
 {id=asdf qwer}
 {scope}
 ``
-which is equivalent to the <insane macro shortcut>[sane] version:
+which is equivalent to the <explicit> version:
 ``
 \H[1][My asdf]
 {id=asdf qwer}
@@ -5997,14 +6059,14 @@ b
 ``
 This is extremely convenient to improve the readability of code blocks and similar constructs.
 
-The newline is however considered if it would be part of some <insane macro shortcut>. For example, we can start an <list>[insane list] inside a <quotations> as in:
+The newline is however considered if it would be part of some <macro shorthand syntax>. For example, we can start an <list>[shorthand list] inside a <quotations> as in:
 \OurBigBookExample[[
 \Q[
 * a
 * b
 ]
 ]]
-where the insane list requires a leading newline `\n* ` to work. That newline is not ignored, even though it comes immediately after the `\Q[` opening.
+where the shorthand list requires a leading newline `\n* ` to work. That newline is not ignored, even though it comes immediately after the `\Q[` opening.
 
 = Argument newlines between arguments removal
 {parent=Newline removal}
@@ -6027,7 +6089,7 @@ which is also equivalent to:
 ``
 This allows to greatly improve the readability of long argument lists by having them one per line.
 
-There is one exception to this however: inside an <header>[insane header], any newline is interpreted as the end of the insane header. This is why the following works as expected:
+There is one exception to this however: inside an <header>[shorthand header], any newline is interpreted as the end of the shorthand header. This is why the following works as expected:
 ``
 == My header 2 `some code`
 {id=asdf}
@@ -6052,20 +6114,20 @@ But in <literal arguments>[non-literal macro arguments], you have to use a backs
 * `\`: backslashes start macros
 * `\[` and `\]`: open and close <positional vs named arguments>[positional macro arguments]
 * `\{` and `\}`: open and close <positional vs named arguments>[optional macro arguments]
-* escapes for <macros with insane shortcut>:
-  * `<` (open angle brackets, less than sign): <insane macro shortcut> for <insane internal links>
-  * `$` (dollar sign): <insane macro shortcut> for <mathematics>
-  * \c[[`]] (backtick): <insane macro shortcut> for <code blocks>
-  * `#` (hash): <insane topic links>
+* escapes for <macros with shorthand syntax>:
+  * `<` (open angle brackets, less than sign): <macro shorthand syntax> for <shorthand internal links>
+  * `$` (dollar sign): <macro shorthand syntax> for <mathematics>
+  * \c[[`]] (backtick): <macro shorthand syntax> for <code blocks>
+  * `#` (hash): <shorthand topic links>
 
 Furthermore, only at:
 * at the start of the document
 * after a newline
 * at the start of a new argument
-you must also escape the following <macros with insane shortcut>:
-* `* ` for insane <lists>
-* `| ` and `|| ` for insane <tables>
-* `= ` for insane <headers>
+you must also escape the following <macros with shorthand syntax>:
+* `* ` for shorthand <lists>
+* `| ` and `|| ` for shorthand <tables>
+* `= ` for shorthand <headers>
 
 The escape rules for literal arguments are described at: <literal arguments>{full}.
 
@@ -6264,7 +6326,7 @@ The currently known protocols are:
 * `https://`
 
 Effects of known protocols include:
-* <insane link parsing rules>: mark the start of insane links
+* <shorthand link parsing rules>: mark the start of shorthand links
 * <store images in a separate media repository>: mark an image `src` to ignore `provider`
 
 = JavaScript case conversion
@@ -7073,7 +7135,7 @@ Give multiple times to enable a list of certain types of logs to stderr help deb
 ``
 ./ourbigbook --log ast tokens -- index.bigb
 ``
-Note that this follows https://github.com/tj/commander.js/tree/e0e723810357e915210af38ccf5098ffe1fb8e65#variadic-option[commander.js' insane variadic argumentso syntax], and thus the `--` is required above. If you want to omit it for a single value you have to add the `=` sign as in:
+Note that this follows https://github.com/tj/commander.js/tree/e0e723810357e915210af38ccf5098ffe1fb8e65#variadic-option[commander.js' shorthand variadic argumentso syntax], and thus the `--` is required above. If you want to omit it for a single value you have to add the `=` sign as in:
 ``
 ./ourbigbook --log=ast index.bigb
 ``
@@ -11593,7 +11655,7 @@ A conversion follows the following steps done for each file to be converted:
   * <synonym> and <scope>
   * <\OurBigBookExample> and <--embed-includes>: they are stitched into the main AST
 * ast post process pass 2: we now do every other post process operation that was not done in pass 1, e.g.:
-  * <insane> paragraphs, lists and tables
+  * <shorthand> paragraphs, lists and tables
 * ast post process pass 3: this does some minimal tree hierarchy linking between parents and children. TODO could it be merged into 2? Feels likely
 * render, which converts our AST tree into a output string. This is run once for the toplevel, and once for every header of the document if <split headers> are enabled. We need to do this because header renders are different from their toplevel counterparts, e.g. their first paragraph has id `p-1` and not `p-283`. All of those renders are done from the same parsed tree however, parsing happens only once.
 

@@ -26,7 +26,7 @@ const SQLITE_MAGIC_MEMORY_NAME = ':memory:'
 // These must be used for both for consistency, e.g. freezeTableName would lead
 // to different able names in the database, which could break manually written queries.
 // Yes, we could work around that by using model properties like models.Id.tableName,
-// but having different tables in both cases would be too insane.
+// but having different tables in both cases would be too shorthand.
 const DB_OPTIONS = {
   define: {
     freezeTableName: true,
@@ -824,7 +824,7 @@ async function update_database_after_convert({
  * the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
  * Having this single query at the end also be slightly more efficient than doing each query separately per file conversion.
  *
- * Quite insanely, this also modifies the database by deleting unused flexion references, and therefore must be called
+ * Quite shorthandly, this also modifies the database by deleting unused flexion references, and therefore must be called
  * before render for a correct conversion. I wasted 2 hours of my life by forgetting that.
  */
 async function check_db(sequelize, paths_converted, opts={}) {

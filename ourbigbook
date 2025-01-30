@@ -313,7 +313,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
               ).length === 0
             ) {
               const pathSplit = inputPathRelativeToOurbigbookJson.split(ourbigbook.URL_SEP)
-              const src = `${ourbigbook.INSANE_HEADER_CHAR} ${ourbigbook.ourbigbookEscapeNotStart(pathSplit[pathSplit.length - 1])}\n{file}\n`
+              const src = `${ourbigbook.SHORTHAND_HEADER_CHAR} ${ourbigbook.ourbigbookEscapeNotStart(pathSplit[pathSplit.length - 1])}\n{file}\n`
               const inputPath = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson + '.' + ourbigbook.OURBIGBOOK_EXT
               const newOptions = {
                 ...ourbigbook_options,
@@ -1984,7 +1984,7 @@ if (cli.helpMacros) {
       ourbigbook_options.split_headers = true
       ourbigbook_options.render_include = false
       ourbigbook_options.forbid_multi_h1 = true
-      const titleRegex = new RegExp(`${ourbigbook.INSANE_HEADER_CHAR} (.*)`)
+      const titleRegex = new RegExp(`${ourbigbook.SHORTHAND_HEADER_CHAR} (.*)`)
       // We create this quick and dirty separate database to store information for upload.
       // Technically much of this information is part of Article, but factoring that would be risky/hard,
       // it is not worth it.
@@ -2077,7 +2077,7 @@ if (cli.helpMacros) {
                   // currently forces "Index" (TODO "index" et al. are likely also possible and would break this hack).
                   // Ideally we should actually alter the file under _out/web/index.bigb
                   // but that would be slightly more involved (a new option to convert?) so lazy.
-                  source = source.replace(titleRegex, `${ourbigbook.INSANE_HEADER_CHAR} ${title}`)
+                  source = source.replace(titleRegex, `${ourbigbook.SHORTHAND_HEADER_CHAR} ${title}`)
                   await sequelizeWebIndexId.upsert({ idid: header_ast.id, uniqueHack: 0 })
                   isToplevelIndex = true
                 }

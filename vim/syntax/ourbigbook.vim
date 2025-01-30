@@ -58,9 +58,9 @@ syntax match ourbigbookArgumentXAngleOrHash /[^>]\+/ contained nextgroup=ourbigb
 syntax match ourbigbookArgumentXAngle /[^>]\+/ contained nextgroup=ourbigbookDelimiterXAngleClose contains=@NoSpell
 syntax match ourbigbookDelimiterXAngleClose '>' contained contains=@NoSpell
 syntax match ourbigbookArgumentParent /[^}]\+/ contained contains=@NoSpell
-" Insane link.
-syntax match ourbigbookMacroXHashInsane '#' nextgroup=ourbigbookArgumentXInsane contains=@NoSpell
-syntax match ourbigbookArgumentXInsane '[^[{\] \n]\+' contained contains=@NoSpell
+" Shorthand link.
+syntax match ourbigbookMacroXHashShorthand '#' nextgroup=ourbigbookArgumentXShorthand contains=@NoSpell
+syntax match ourbigbookArgumentXShorthand '[^[{\] \n]\+' contained contains=@NoSpell
 
 highlight link ourbigbookMacro  Label
 highlight link ourbigbookMacroX Label
@@ -69,9 +69,9 @@ syntax match ourbigbookUrl 'https\?://[^[{\] \n]\+' contains=@NoSpell
 highlight link ourbigbookUrl            Special
 highlight link ourbigbookArgumentX      Special
 highlight link ourbigbookArgumentXAngle Special
-highlight link ourbigbookArgumentXInsane Special
+highlight link ourbigbookArgumentXShorthand Special
 highlight link ourbigbookArgumentParent Special
-highlight link ourbigbookMacroXHashInsane Label
+highlight link ourbigbookMacroXHashShorthand Label
 highlight link ourbigbookMacroXHashSane Label
 
 " Backslash escapes of magic chars.

@@ -32,23 +32,23 @@ Test sane only literal with subelement: \testSaneOnly[a \\testSaneOnly\[b\] c]{{
 
 Test sane only literal with http escape: \testSaneOnly[a \http://example.com c]{{preferLiteral=a http://example.com c}}
 
-Insane link http://example.com after.
+Shorthand link http://example.com after.
 
-Insane link http://example.com[], with comma immediately following.
+Shorthand link http://example.com[], with comma immediately following.
 
-Escaped insane link: \http://example.com
+Escaped shorthand link: \http://example.com
 
-Insane ref to toplevel: <>.
+Shorthand ref to toplevel: <>.
 
-Insane ref: <black cat>.
+Shorthand ref: <black cat>.
 
-Insane ref capital: <Black cat>.
+Shorthand ref capital: <Black cat>.
 
-Insane ref plural: <black cats>.
+Shorthand ref plural: <black cats>.
 
-Insane ref tuberculosis bug https://github.com/plurals/pluralize/issues/172[]: <tuberculosis>.
+Shorthand ref tuberculosis bug https://github.com/plurals/pluralize/issues/172[]: <tuberculosis>.
 
-Insane ref full: <black cats>{full}.
+Shorthand ref full: <black cats>{full}.
 
 Topic link with spaces: <#rare topic with spaces>.
 
@@ -56,11 +56,11 @@ Topic link without spaces: #RareTopic
 
 Topic link without spaces must have delimiters if followed by non-whitespace: <#RareTopic>after
 
-Same but followed by insane link: <#RareTopic>http://example.com
+Same but followed by shorthand link: <#RareTopic>http://example.com
 
-Sane xref that cannot be converted to insane: \x[\$]
+Sane xref that cannot be converted to shorthand: \x[\$]
 
-Insane ref with greater than: <greater than>
+Shorthand ref with greater than: <greater than>
 
 Inline code block: `f(x + 1)[]` after.
 
@@ -157,7 +157,7 @@ Literal block with multiple lines starting in \[ and ending in \]:
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {description=\{asdf\}}
 
-Insane block together with paragraph:
+Shorthand block together with paragraph:
 ``
 x = 1
 ``
@@ -189,7 +189,7 @@ x = 1
 x = x + 1
 ````
 
-Insane code block with attribute:
+Shorthand code block with attribute:
 
 ``
 x = 1
@@ -281,7 +281,7 @@ List with ID:
 ]
 {id=my-list}
 
-Insane ordered list:
+Shorthand ordered list:
 
 \Ol[
 * p1
@@ -371,10 +371,10 @@ Quote on next paragraph:
 
 > My quote on next paragraph
 
-On insane quote after another in the same paragraph:
+On shorthand quote after another in the same paragraph:
 
-> insane quote 1
-> insane quote 2
+> shorthand quote 1
+> shorthand quote 2
 
 One-word topic immediately after quote:
 
@@ -515,7 +515,7 @@ World
 == not-index.bigb
 {file}
 
-Hyphens are not removed from insane links to file: <not-index.bigb>{file}
+Hyphens are not removed from shorthand links to file: <not-index.bigb>{file}
 
 == Header with args
 {c}

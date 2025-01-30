@@ -825,7 +825,7 @@ After this changes, the rendered size of cirosantilli.com fell from 216 MiB to 1
 {parent=News}
 {tag=OurBigBook Web}
 
-In previous updates we added <insane topic links> which allow you to write `#mathematics` to link to <OurBigBook Web topics> such as: https://ourbigbook.com/go/topic/mathematics
+In previous updates we added <shorthand topic links> which allow you to write `#mathematics` to link to <OurBigBook Web topics> such as: https://ourbigbook.com/go/topic/mathematics
 
 The outcome of that however is that it is also easy and correct to create links to topics that don't yet exist on the <OurBigBook Web> instance.
 

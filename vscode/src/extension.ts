@@ -12,7 +12,7 @@ const { OURBIGBOOK_EXT } = ourbigbook
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
 
-const INSANE_HEADER_START_REGEXP = new RegExp(`^${ourbigbook.INSANE_HEADER_CHAR}+ `)
+const SHORTHAND_HEADER_START_REGEXP = new RegExp(`^${ourbigbook.SHORTHAND_HEADER_CHAR}+ `)
 const MAX_IDS = 100
 const OURBIGBOOK_LANGUAGE_ID = 'ourbigbook'
 
@@ -425,8 +425,8 @@ export async function activate(context: vscode.ExtensionContext) {
         //    endColumn,
         //  )
         //  let line = document.lineAt(json.source_location.line - 1).text
-        //  if (line.startsWith(INSANE_HEADER_START)) {
-        //    line = line.substring(INSANE_HEADER_START.length)
+        //  if (line.startsWith(SHORTHAND_HEADER_START)) {
+        //    line = line.substring(SHORTHAND_HEADER_START.length)
         //  }
         //  ret.push(new vscode.DocumentSymbol(
         //    line,
@@ -458,7 +458,7 @@ export async function activate(context: vscode.ExtensionContext) {
         function getName(lineNum: number) {
           //channel.appendLine(`provideDocumentSymbols.getName lineNum=${lineNum} document.lineAt(lineNum)=${document.lineAt(lineNum).text}`)
           const text = document.lineAt(lineNum).text
-          const ret = text.replace(INSANE_HEADER_START_REGEXP, '')
+          const ret = text.replace(SHORTHAND_HEADER_START_REGEXP, '')
           if (ret !== text) {
             return ret
           } else {
@@ -658,7 +658,7 @@ export async function activate(context: vscode.ExtensionContext) {
         }
       }
       if (!find) {
-        // Search for insane #topic links without <>.
+        // Search for shorthand #topic links without <>.
         for (const match of line.matchAll(/#[^\[\]{} \n]+/g)) {
           if (col >= match.index && col <= match.index + match[0].length) {
             find = match[0]
@@ -669,7 +669,7 @@ export async function activate(context: vscode.ExtensionContext) {
       const ret = []
       if (find) {
         const textId = ourbigbook.titleToId(find)
-        if (find[0] === ourbigbook.INSANE_TOPIC_CHAR) {
+        if (find[0] === ourbigbook.SHORTHAND_TOPIC_CHAR) {
           open(`https://${ourbigbook.OURBIGBOOK_DEFAULT_HOST}${ourbigbook.URL_SEP}${ourbigbook.WEB_TOPIC_PATH}${ourbigbook.URL_SEP}${ourbigbook.pluralizeWrap(textId, 1)}`)
         } else {
           let oldOurbigbookJsonDir = ourbigbookJsonDir

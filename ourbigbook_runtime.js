@@ -1,4 +1,4 @@
-// https://docs.ourbigbook.com#insane-link-parsing-rules
+// https://docs.ourbigbook.com#shorthand-link-parsing-rules
 
 // We got these to work perfectly at one point with webpack style-loader.
 // But we just want the separate .css.

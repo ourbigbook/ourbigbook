@@ -74,20 +74,20 @@ class OurbigbookEditor {
           [/{{/, 'argumentDelim', 'argumentNameLiteral'],
           [/{/, 'argumentDelim', 'argumentName'],
 
-          [/\$\$\$/, 'literalStart', 'insaneMath3'],
-          [/\$\$/, 'literalStart', 'insaneMath2'],
-          [/\$/, 'literalStart', 'insaneMath'],
+          [/\$\$\$/, 'literalStart', 'shorthandMath3'],
+          [/\$\$/, 'literalStart', 'shorthandMath2'],
+          [/\$/, 'literalStart', 'shorthandMath'],
 
-          [/````/, 'literalStart', 'insaneCode4'],
-          [/```/, 'literalStart', 'insaneCode3'],
-          [/``/, 'literalStart', 'insaneCode2'],
-          [/`/, 'literalStart', 'insaneCode'],
+          [/````/, 'literalStart', 'shorthandCode4'],
+          [/```/, 'literalStart', 'shorthandCode3'],
+          [/``/, 'literalStart', 'shorthandCode2'],
+          [/`/, 'literalStart', 'shorthandCode'],
 
-          [/^=+ .*/, 'insaneHeader'],
+          [/^=+ .*/, 'shorthandHeader'],
 
-          // Insane list.
+          // Shorthand list.
           [/^(  )*\*( |$)/, 'argumentDelim'],
-          // Insane table.
+          // Shorthand table.
           [/^(  )*\|\|( |$)/, 'argumentDelim'],
           [/^(  )*\|( |$)/, 'argumentDelim'],
         ],
@@ -110,31 +110,31 @@ class OurbigbookEditor {
           [/=/, 'argumentDelim', '@pop'],
           [/}}/, 'argumentDelim', '@pop'],
         ],
-        insaneCode: [
+        shorthandCode: [
           [/`/, 'literalStart', '@pop'],
           [/./, 'literalInside'],
         ],
-        insaneCode2: [
+        shorthandCode2: [
           [/``/, 'literalStart', '@pop'],
           [/./, 'literalInside'],
         ],
-        insaneCode3: [
+        shorthandCode3: [
           [/```/, 'literalStart', '@pop'],
           [/./, 'literalInside'],
         ],
-        insaneCode4: [
+        shorthandCode4: [
           [/````/, 'literalStart', '@pop'],
           [/./, 'literalInside'],
         ],
-        insaneMath: [
+        shorthandMath: [
           [/\$/, 'literalStart', '@pop'],
           [/./, 'literalInside'],
         ],
-        insaneMath2: [
+        shorthandMath2: [
           [/\$\$/, 'literalStart', '@pop'],
           [/./, 'literalInside'],
         ],
-        insaneMath3: [
+        shorthandMath3: [
           [/\$\$\$/, 'literalStart', '@pop'],
           [/./, 'literalInside'],
         ],
@@ -146,7 +146,7 @@ class OurbigbookEditor {
       rules: [
         { token: 'argumentDelim', foreground: 'FFFFFF', fontStyle: 'bold' },
         { token: 'argumentName', foreground: 'FFAAFF', fontStyle: 'bold'},
-        { token: 'insaneHeader', foreground: 'FFFF00', fontStyle: 'bold' },
+        { token: 'shorthandHeader', foreground: 'FFFF00', fontStyle: 'bold' },
         { token: 'literalStart', foreground: 'FFFF00', fontStyle: 'bold' },
         { token: 'literalInside', foreground: 'FFFF88' },
         { token: 'macro', foreground: 'FF8800', fontStyle: 'bold' },

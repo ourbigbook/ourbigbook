@@ -1071,8 +1071,11 @@ As of the commit that adds this line, it should likely be possible to do it on t
 
 Both web and CLI.
 
-=== Insane block quotes
+=== Shorthand block quotes
 {tag=Web}
+
+= Insane block quotes
+{synonym}
 
 OK, I need that, let's go. `__` like Asciidoctor?
 ``

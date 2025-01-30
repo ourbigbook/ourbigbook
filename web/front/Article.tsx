@@ -678,7 +678,7 @@ export default function Article({
               let frag
               if (url.hash) {
                 // This could happen with a raw link like \a[#barack-obama/mathematics]...
-                // Insane, but someone Will do it.
+                // Shorthand, but someone Will do it.
                 frag = url.hash.slice(1)
               } else {
                 // + 1 for the '/' that prefixes every link.

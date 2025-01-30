@@ -837,7 +837,7 @@ assert_lib_ast('p: three paragraphs',
     a('P', [t('p3')]),
   ]
 )
-assert_lib_ast('p: insane paragraph at start of sane quote',
+assert_lib_ast('p: shorthand paragraph at start of sane quote',
   '\\Q[\n\naa]\n',
   [
     a('Q', [
@@ -893,7 +893,7 @@ gh
 `,
   l_with_explicit_ul_expect
 )
-assert_lib_ast('list: insane with empty line after spaces',
+assert_lib_ast('list: shorthand with empty line after spaces',
   `ab
 
 * cd
@@ -923,7 +923,7 @@ gh
 `,
   l_with_explicit_ul_expect
 )
-assert_lib_ast('list: with implicit ul insane simple',
+assert_lib_ast('list: with implicit ul shorthand simple',
   `ab
 
 * cd
@@ -933,7 +933,7 @@ gh
 `,
   l_with_explicit_ul_expect
 )
-assert_lib_ast('list: with implicit ul insane and title',
+assert_lib_ast('list: with implicit ul shorthand and title',
   `ab
 
 * cd
@@ -949,7 +949,7 @@ ef
     a('P', [t('ef')]),
   ]
 )
-assert_lib_ast('list: empty insane item without a space',
+assert_lib_ast('list: empty shorthand item without a space',
   `* ab
 *
 * cd
@@ -997,7 +997,7 @@ bb
     ]),
   ]
 )
-assert_lib_ast('list: with paragraph insane',
+assert_lib_ast('list: with paragraph shorthand',
   `* aa
 
   bb
@@ -1011,7 +1011,7 @@ assert_lib_ast('list: with paragraph insane',
     ]),
   ]
 )
-assert_lib_ast('list: with multiline paragraph insane',
+assert_lib_ast('list: with multiline paragraph shorthand',
   `* aa
 
   bb
@@ -1031,7 +1031,7 @@ assert_lib_ast('list: with multiline paragraph insane',
   ]
 )
 // https://github.com/ourbigbook/ourbigbook/issues/54
-assert_lib_ast('list: insane list with literal no error',
+assert_lib_ast('list: shorthand list with literal no error',
   `* aa
 
   \`\`
@@ -1048,7 +1048,7 @@ assert_lib_ast('list: insane list with literal no error',
     ]),
   ]
 )
-assert_lib_error('list: insane list with literal with error',
+assert_lib_error('list: shorthand list with literal with error',
   `* aa
 
   \`\`
@@ -1058,7 +1058,7 @@ cc
 `,
   4, 1
 )
-assert_lib_ast('list: insane list with literal with double newline is not an error',
+assert_lib_ast('list: shorthand list with literal with double newline is not an error',
   `* aa
 
   \`\`
@@ -1077,7 +1077,7 @@ assert_lib_ast('list: insane list with literal with double newline is not an err
   ]
 )
 // https://github.com/ourbigbook/ourbigbook/issues/53
-assert_lib_ast('list: insane list with element with newline separated arguments',
+assert_lib_ast('list: shorthand list with element with newline separated arguments',
   `* aa
 
   \`\`
@@ -1094,7 +1094,7 @@ assert_lib_ast('list: insane list with element with newline separated arguments'
     ]),
   ]
 )
-assert_lib_ast('list: insane list inside paragraph',
+assert_lib_ast('list: shorthand list inside paragraph',
   `aa
 * bb
 * cc
@@ -1111,7 +1111,7 @@ dd
     ]),
   ]
 )
-assert_lib_ast('list: insane list at start of positional argument with newline',
+assert_lib_ast('list: shorthand list at start of positional argument with newline',
   `\\Q[
 * bb
 * cc
@@ -1126,7 +1126,7 @@ assert_lib_ast('list: insane list at start of positional argument with newline',
     ]),
   ]
 )
-assert_lib_ast('list: insane list at start of positional argument without newline',
+assert_lib_ast('list: shorthand list at start of positional argument without newline',
   `\\Q[* bb
 * cc
 ]
@@ -1140,7 +1140,7 @@ assert_lib_ast('list: insane list at start of positional argument without newlin
     ]),
   ]
 )
-assert_lib_ast('list: insane list at end of positional argument without newline',
+assert_lib_ast('list: shorthand list at end of positional argument without newline',
   `\\Q[
 * bb
 * cc]
@@ -1154,7 +1154,7 @@ assert_lib_ast('list: insane list at end of positional argument without newline'
     ]),
   ]
 )
-assert_lib_ast('list: insane list at start of named argument with newline',
+assert_lib_ast('list: shorthand list at start of named argument with newline',
   `\\Image[http://example.com]
 {description=
 * bb
@@ -1172,7 +1172,7 @@ assert_lib_ast('list: insane list at start of named argument with newline',
     }),
   ]
 )
-assert_lib_ast('list: insane list at start of named argument without newline',
+assert_lib_ast('list: shorthand list at start of named argument without newline',
   `\\Image[http://example.com]
 {description=* bb
 * cc
@@ -1189,7 +1189,7 @@ assert_lib_ast('list: insane list at start of named argument without newline',
     }),
   ]
 )
-//assert_lib_ast('list: insane list at end of named argument without newline',
+//assert_lib_ast('list: shorthand list at end of named argument without newline',
 //  // TODO https://github.com/ourbigbook/ourbigbook/issues/246
 //  `\\Image[http://example.com]
 //{description=
@@ -1207,7 +1207,7 @@ assert_lib_ast('list: insane list at start of named argument without newline',
 //    }),
 //  ]
 //);
-assert_lib_ast('list: nested list insane',
+assert_lib_ast('list: nested list shorthand',
   `* aa
   * bb
 `,
@@ -1244,11 +1244,11 @@ assert_lib_ast('list: extra nesting inside of list does not create a list',
     ]),
   ]
 )
-assert_lib_ast('list: escape insane list at start of document',
+assert_lib_ast('list: escape shorthand list at start of document',
   '\\* a',
   [a('P', [t('* a')])],
 )
-assert_lib_ast('list: escape insane list after a newline',
+assert_lib_ast('list: escape shorthand list after a newline',
   `a
 \\* b`,
   [a('P', [
@@ -1257,7 +1257,7 @@ assert_lib_ast('list: escape insane list after a newline',
     t('* b'),
   ])],
 )
-assert_lib_ast('list: escape insane list inside list indent',
+assert_lib_ast('list: escape shorthand list inside list indent',
   `* a
   \\* b`,
   [
@@ -1275,7 +1275,7 @@ assert_lib_ast('list: asterisk in the middle of line does not need to be escaped
   [a('P', [t('a * b')])],
 )
 // https://github.com/ourbigbook/ourbigbook/issues/81
-assert_lib_ast('list: insane list immediately inside insane list',
+assert_lib_ast('list: shorthand list immediately inside shorthand list',
   `* * aa
   * bb
   * cc
@@ -1383,7 +1383,7 @@ gh
 `,
   tr_with_explicit_table_expect
 )
-assert_lib_ast('table: insane table inside insane list inside insane table',
+assert_lib_ast('table: shorthand table inside shorthand list inside shorthand table',
   `| 00
 | 01
 
@@ -1431,7 +1431,7 @@ assert_lib_ast('table: insane table inside insane list inside insane table',
   ]
 )
 // https://github.com/ourbigbook/ourbigbook/issues/81
-assert_lib_ast('table: insane table immediately inside insane list',
+assert_lib_ast('table: shorthand table immediately inside shorthand list',
   `* | 00
   | 01
 
@@ -1455,7 +1455,7 @@ assert_lib_ast('table: insane table immediately inside insane list',
     ])
   ]
 )
-assert_lib_ast('table: insane table body with empty cell and no space',
+assert_lib_ast('table: shorthand table body with empty cell and no space',
   `| 00
 |
 | 02
@@ -1469,7 +1469,7 @@ assert_lib_ast('table: insane table body with empty cell and no space',
   ]),
 ],
 )
-assert_lib_ast('table: insane table head with empty cell and no space',
+assert_lib_ast('table: shorthand table head with empty cell and no space',
   `|| 00
 ||
 || 02
@@ -2342,7 +2342,7 @@ ab
 `,
   newline_between_arguments_expect
 )
-assert_lib_ast('yes insane literal argument with argument after newline',
+assert_lib_ast('yes shorthand literal argument with argument after newline',
   `\`\`
 ab
 \`\`
@@ -2373,7 +2373,7 @@ assert_lib_ast('link: auto sane',
     ]),
   ]
 )
-assert_lib_ast('link: auto insane space start and end',
+assert_lib_ast('link: auto shorthand space start and end',
   'a http://example.com b\n',
   [
     a('P', [
@@ -2401,41 +2401,41 @@ assert_lib_error('link: simple to local file that does not exist give an error w
 assert_lib_stdin('link: simple to local file that does not exist does not give an error with external',
   'a \\a[local-path.txt]{external} b\n',
 )
-assert_lib_ast('link: auto insane start end document',
+assert_lib_ast('link: auto shorthand start end document',
   'http://example.com',
   [a('P', [a('a', undefined, {'href': [t('http://example.com')]})])],
 )
-assert_lib_ast('link: auto insane start end square brackets',
+assert_lib_ast('link: auto shorthand start end square brackets',
   '\\P[http://example.com]\n',
   [a('P', [a('a', undefined, {'href': [t('http://example.com')]})])],
 )
-assert_lib_ast('link: auto insane with alpha character before it',
+assert_lib_ast('link: auto shorthand with alpha character before it',
   'ahttp://example.com',
   [a('P', [
     t('a'),
     a('a', undefined, {'href': [t('http://example.com')]})
   ])]
 )
-assert_lib_ast('link: auto insane with literal square brackets around it',
+assert_lib_ast('link: auto shorthand with literal square brackets around it',
   '\\[http://example.com\\]\n',
   [a('P', [
     t('['),
     a('a', undefined, {'href': [t('http://example.com]')]})
   ])]
 )
-assert_lib_ast('link: auto insane can be escaped with a backslash',
+assert_lib_ast('link: auto shorthand can be escaped with a backslash',
   '\\http://example.com\n',
   [a('P', [t('http://example.com')])],
 )
-assert_lib_ast('link: auto insane is not a link if the domain is empty at eof',
+assert_lib_ast('link: auto shorthand is not a link if the domain is empty at eof',
   'http://\n',
   [a('P', [t('http://')])],
 )
-assert_lib_ast('link: auto insane is not a link if the domain is empty at space',
+assert_lib_ast('link: auto shorthand is not a link if the domain is empty at space',
   'http:// a\n',
   [a('P', [t('http:// a')])],
 )
-assert_lib_ast('link: auto insane start end named argument',
+assert_lib_ast('link: auto shorthand start end named argument',
   '\\Image[aaa.jpg]{description=http://example.com}\n',
   [a('Image', undefined, {
     description: [a('a', undefined, {'href': [t('http://example.com')]})],
@@ -2443,7 +2443,7 @@ assert_lib_ast('link: auto insane start end named argument',
   })],
   { filesystem: { 'aaa.jpg': '' } }
 )
-assert_lib_ast('link: auto insane start end named argument',
+assert_lib_ast('link: auto shorthand start end named argument',
   '\\Image[aaa.jpg]{source=http://example.com}\n',
   [a('Image', undefined, {
     source: [t('http://example.com')],
@@ -2451,7 +2451,7 @@ assert_lib_ast('link: auto insane start end named argument',
   })],
   { filesystem: { 'aaa.jpg': '' } }
 )
-assert_lib_ast('link: auto insane newline',
+assert_lib_ast('link: auto shorthand newline',
   `a
 
 http://example.com
@@ -2464,7 +2464,7 @@ b
     a('P', [t('b')]),
   ]
 )
-assert_lib_ast('link: insane with custom body no newline',
+assert_lib_ast('link: shorthand with custom body no newline',
   'http://example.com[aa]',
   [
     a('P', [
@@ -2472,7 +2472,7 @@ assert_lib_ast('link: insane with custom body no newline',
     ]),
   ]
 )
-assert_lib_ast('link: insane with custom body with newline',
+assert_lib_ast('link: shorthand with custom body with newline',
   'http://example.com\n[aa]',
   [
     a('P', [
@@ -2532,7 +2532,7 @@ assert_lib_ast('link: auto sane http https removal',
     ]
   }
 )
-assert_lib_ast('link: auto insane http https removal',
+assert_lib_ast('link: auto shorthand http https removal',
   'http://example.com https://example.com',
   [
     a('P', [
@@ -2777,7 +2777,7 @@ assert_lib_error('nest: H inside H gives and error',
 )
 assert_lib_error('nest: Video inside a gives an error',
   // Invalid HTML, <video> is interactive when controls is given which we do.
-  // And is insane for YouTube videos too, so just forbid it as well.
+  // And is shorthand for YouTube videos too, so just forbid it as well.
   '\\a[http://example2.com][\\Video[http://example1.com]]{external}\n',
   1,
   // This points to the '\\' of \\Video
@@ -3891,7 +3891,7 @@ assert_lib_ast('x: internal link magic simple sane',
     ],
   }
 )
-assert_lib_ast('x: internal link magic simple insane',
+assert_lib_ast('x: internal link magic simple shorthand',
   `= Notindex
 
 == My header
@@ -3922,7 +3922,7 @@ assert_lib_ast('x: internal link magic in title',
     ],
   }
 )
-assert_lib_ast('x: internal link magic insane escape',
+assert_lib_ast('x: internal link magic shorthand escape',
   `a\\<>b`,
   undefined,
   {
@@ -4046,7 +4046,7 @@ assert_lib('x: internal link magic detects capitalization and plural on output',
     },
   },
 )
-assert_lib_ast('x: internal link magic insane to scope',
+assert_lib_ast('x: internal link magic shorthand to scope',
   `= Notindex
 
 \\Q[<My scope/In scope>]{id=same}
@@ -4067,7 +4067,7 @@ assert_lib_ast('x: internal link magic insane to scope',
     ],
   }
 )
-assert_lib_ast('x: internal link magic insane to header file argument',
+assert_lib_ast('x: internal link magic shorthand to header file argument',
   `= Notindex
 
 <path/to/my_file.jpg>{file}
@@ -4085,7 +4085,7 @@ assert_lib_ast('x: internal link magic insane to header file argument',
     },
   }
 )
-assert_lib_ast('x: topic link: basic insane',
+assert_lib_ast('x: topic link: basic shorthand',
   `a #Dogs b\n`,
   [
     a('P', [
@@ -4119,7 +4119,7 @@ assert_lib_ast('x: topic link: at start of document does not blow up',
     ]
   },
 )
-assert_lib_ast('x: topic link: insane escape',
+assert_lib_ast('x: topic link: shorthand escape',
   'a \\#Dogs b\n',
   [
     a('P', [
@@ -4141,14 +4141,14 @@ assert_lib('x: topic link: sane',
 
 \\x[Many Cats]{topic}{p=1}
 
-<#Insane Link>
+<#Shorthand Link>
 `
     },
     assert_xpath: {
       'index.html': [
         "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/sane-link' and text()='Sane Link']",
         "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/sane-link-with-content' and text()='My Content']",
-        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/insane-link' and text()='Insane Link']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/shorthand-link' and text()='Shorthand Link']",
         "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/many-dog' and text()='Many Dogs']",
         "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/many-cats' and text()='Many Cats']",
       ],
@@ -5778,7 +5778,7 @@ assert_lib_ast('header: 7 sane',
 `,
   header_7_expect
 )
-assert_lib_ast('header: 7 insane',
+assert_lib_ast('header: 7 shorthand',
   // https://github.com/ourbigbook/ourbigbook/issues/32
   `= 1
 
@@ -6159,11 +6159,11 @@ assert_lib_ast('header id new line sane',
   '\\H[1][aa]\n{id=bb}',
   header_id_new_line_expect,
 )
-assert_lib_ast('header id new line insane no trailing elment',
+assert_lib_ast('header id new line shorthand no trailing elment',
   '= aa\n{id=bb}',
   header_id_new_line_expect,
 )
-assert_lib_ast('header id new line insane trailing element',
+assert_lib_ast('header id new line shorthand trailing element',
   '= aa \\c[bb]\n{id=cc}',
   [a('H', undefined, {
       level: [t('1')],
@@ -6567,7 +6567,7 @@ assert_lib_error('header: file argument to a toplevel file that does not exist f
 == dont-exist
 {file}
 `, 3, 1);
-assert_lib_ast('header: escape insane header at start of document',
+assert_lib_ast('header: escape shorthand header at start of document',
   '\\= a',
   [a('P', [t('= a')])],
 )
@@ -6958,7 +6958,7 @@ assert_lib_ast('code: inline sane',
     ]),
   ],
 )
-assert_lib_ast('code: inline insane simple',
+assert_lib_ast('code: inline shorthand simple',
   'a `b c` d\n',
   [
     a('P', [
@@ -6969,7 +6969,7 @@ assert_lib_ast('code: inline insane simple',
   ]
 )
 // https://github.com/ourbigbook/ourbigbook/issues/171
-assert_lib_ast('code: inline insane with only a backslash',
+assert_lib_ast('code: inline shorthand with only a backslash',
   'a `\\` d\n',
   [
     a('P', [
@@ -6979,7 +6979,7 @@ assert_lib_ast('code: inline insane with only a backslash',
     ]),
   ]
 )
-assert_lib_ast('code: inline insane escape backtick',
+assert_lib_ast('code: inline shorthand escape backtick',
   'a \\`b c\n',
   [a('P', [t('a `b c')])]
 )
@@ -6999,7 +6999,7 @@ d
     a('P', [t('d')]),
   ]
 )
-assert_lib_ast('code: block insane',
+assert_lib_ast('code: block shorthand',
   `a
 
 \`\`
@@ -7925,7 +7925,7 @@ assert_lib_ast('math: inline sane',
   '\\m[[\\sqrt{1 + 1}]]\n',
   [a('P', [a('m', [t('\\sqrt{1 + 1}')])])],
 )
-assert_lib_ast('math: inline insane simple',
+assert_lib_ast('math: inline shorthand simple',
   '$\\sqrt{1 + 1}$\n',
   [a('P', [a('m', [t('\\sqrt{1 + 1}')])])],
 )
@@ -7937,7 +7937,7 @@ assert_lib_ast('math: block sane',
   '\\M[[\\sqrt{1 + 1}]]',
   [a('M', [t('\\sqrt{1 + 1}')])],
 )
-assert_lib_ast('math: block insane',
+assert_lib_ast('math: block shorthand',
   '$$\\sqrt{1 + 1}$$',
   [a('M', [t('\\sqrt{1 + 1}')])],
 )
@@ -7993,7 +7993,7 @@ assert_lib_ast('quotation: generates valid HTML with title sane',
     ],
   }
 )
-assert_lib_ast('quotation: generates valid HTML with title insane',
+assert_lib_ast('quotation: generates valid HTML with title shorthand',
   `> My quote
 {title=My title}
 `,
@@ -8004,7 +8004,7 @@ assert_lib_ast('quotation: generates valid HTML with title insane',
     ],
   }
 )
-assert_lib_ast('quotation: insane simple',
+assert_lib_ast('quotation: shorthand simple',
   `Before quote
 
 > My quote
@@ -8017,7 +8017,7 @@ After quote
     a('P', [t('After quote')]),
   ],
 )
-assert_lib_ast('quotation: insane with paragraph',
+assert_lib_ast('quotation: shorthand with paragraph',
   `Before quote
 
 > My quote
@@ -9132,8 +9132,8 @@ assert_lib_error('stray positional argument end', 'a]b', 1, 2);
 assert_lib_error('stray named argument end}', 'a}b', 1, 2);
 assert_lib_error('unterminated literal positional argument', '\\c[[\n', 1, 3);
 assert_lib_error('unterminated literal named argument', '\\Image[img.png]{external}{description=\n', 1, 26);
-assert_lib_error('unterminated insane inline code', '`\n', 1, 1);
-assert_lib_error('unterminated insane link', '<ab', 1, 1);
+assert_lib_error('unterminated shorthand inline code', '`\n', 1, 1);
+assert_lib_error('unterminated shorthand link', '<ab', 1, 1);
 assert_lib_error('unescaped trailing backslash', '\\', 1, 1);
 
 // API minimal tests.
@@ -9330,7 +9330,7 @@ assert_lib_stdin('bigb output: converts plaintext literal arguments to arguments
 `,
   },
 )
-assert_lib_stdin('bigb output: converts sane refs to insane ones',
+assert_lib_stdin('bigb output: converts sane refs to shorthand ones',
   `= Animal
 
 \\x[black-cat]
@@ -10064,7 +10064,7 @@ cd]`,
     error_message: 'cannot place \\br inside of \\H',
   }
 )
-assert_lib('bigb output: x convert parent, tag and child IDs to insane magic',
+assert_lib('bigb output: x convert parent, tag and child IDs to shorthand magic',
   {
     filesystem: {
       'index.bigb': `= Toplevel
@@ -10203,7 +10203,7 @@ Paragraph in notindex 3.
     }
   }
 )
-assert_lib('bigb output: sane quotes to insane quotes',
+assert_lib('bigb output: sane quotes to shorthand quotes',
   {
     convert_opts: { split_headers: true },
     convert_dir: true,

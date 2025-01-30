@@ -331,7 +331,7 @@ class AstNode {
     }
     if (this.node_type === AstType.PARAGRAPH || this.node_type === AstType.NEWLINE) {
       // Possible for AstType === PARAGRAPH which can happen for
-      // insane paragraph inside header or ID during post processing.
+      // shorthand paragraph inside header or ID during post processing.
       // Not the nicest solution, but prevents the crash, so so be it.
       // https://github.com/ourbigbook/ourbigbook/issues/143
       return ' '
@@ -1233,7 +1233,7 @@ class MacroArgument {
       //
       // Goal: to allow the use to write both \a[http://example.com] and
       // \p[http://example.com] and get what a sane person expects, see also:
-      // https://docs.ourbigbook.com#insane-link-parsing-rules
+      // https://docs.ourbigbook.com#shorthand-link-parsing-rules
       options.elide_link_only = false;
     }
     if (!('boolean' in options)) {
@@ -1466,8 +1466,8 @@ Macro.COMMON_ARGNAMES_SET = new Set(Macro.COMMON_ARGNAMES)
 Macro.CONTENT_ARGUMENT_NAME = 'content';
 Macro.DESCRIPTION_ARGUMENT_NAME = 'description';
 // A simple test-only macro that only has a sane form.
-// Because we keep adding insane versions of everything,
-// adding an insane version of \Q which was used extensively
+// Because we keep adding shorthand versions of everything,
+// adding an shorthand version of \Q which was used extensively
 // in tests was a motivation for this.
 Macro.TEST_SANE_ONLY = 'TestSaneOnly';
 Macro.HEADER_MACRO_NAME = 'H';
@@ -1585,8 +1585,8 @@ class Tokenizer {
     this.extra_returns = extra_returns;
     this.extra_returns.errors = [];
     this.i = 0;
-    this.in_insane_header = false;
-    this.in_escape_insane_link = false;
+    this.in_shorthand_header = false;
+    this.in_escape_shorthand_link = false;
     this.list_level = 0;
     this.tokens = [];
     this.show_tokenize = show_tokenize;
@@ -1607,9 +1607,9 @@ class Tokenizer {
     for (let done = 0; done < n; done++) {
       this.log_debug(`consume ${JSON.stringify(this.cur_c)}`);
       if (this.chars[this.i] === '\n') {
-        if (this.in_insane_header) {
+        if (this.in_shorthand_header) {
           this.error(
-            `insane header cannot contain newlines`,
+            `shorthand header cannot contain newlines`,
             new SourceLocation(
               this.source_location.line,
               this.source_location.column,
@@ -1643,10 +1643,10 @@ class Tokenizer {
     if (this.i === 0 || this.chars[this.i - 1] === '\n') {
       let new_list_level = 0;
       while (
-        arrayContainsArrayAt(this.chars, this.i, INSANE_LIST_INDENT) &&
+        arrayContainsArrayAt(this.chars, this.i, SHORTHAND_LIST_INDENT) &&
         new_list_level < this.list_level
       ) {
-        for (const c in INSANE_LIST_INDENT) {
+        for (const c in SHORTHAND_LIST_INDENT) {
           this.consume();
         }
         new_list_level += 1;
@@ -1683,12 +1683,12 @@ class Tokenizer {
       this.cur_c === '\n' &&
       (
         literal ||
-        // Insane constructs that start with a newline prevent the skip.
+        // Shorthand constructs that start with a newline prevent the skip.
         (
           // Pararaph.
           this.peek() !== '\n' &&
-          // Insane start.
-          this.tokenize_insane_start(this.i + 1) === undefined
+          // Shorthand start.
+          this.tokenize_shorthand_start(this.i + 1) === undefined
         )
       )
     ) {
@@ -1702,9 +1702,9 @@ class Tokenizer {
     if (
       !this.is_end() &&
       this.cur_c === '\n' &&
-      !this.in_insane_header
+      !this.in_shorthand_header
     ) {
-      const full_indent = INSANE_LIST_INDENT.repeat(this.list_level);
+      const full_indent = SHORTHAND_LIST_INDENT.repeat(this.list_level);
       if (
         arrayContainsArrayAt(this.chars, this.i + 1, full_indent + START_POSITIONAL_ARGUMENT_CHAR) ||
         arrayContainsArrayAt(this.chars, this.i + 1, full_indent + START_NAMED_ARGUMENT_CHAR)
@@ -1808,8 +1808,8 @@ class Tokenizer {
     let start_source_location;
     while (!this.is_end()) {
       this.log_debug(`loop ${JSON.stringify(this.cur_c)}`);
-      if (this.in_insane_header && this.cur_c === '\n') {
-        this.in_insane_header = false;
+      if (this.in_shorthand_header && this.cur_c === '\n') {
+        this.in_shorthand_header = false;
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         this.consume_optional_newline_after_argument()
       }
@@ -1822,15 +1822,15 @@ class Tokenizer {
         } else if (!charIsIdentifier(this.cur_c)) {
           this.consume_plaintext_char();
         } else {
-          // Insane link.
+          // Shorthand link.
           for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
             if (arrayContainsArrayAt(this.chars, this.i, known_url_protocol)) {
-              this.in_escape_insane_link = true;
+              this.in_escape_shorthand_link = true;
               break;
             }
           }
           // Macro.
-          if (!this.in_escape_insane_link) {
+          if (!this.in_escape_shorthand_link) {
             let macro_name = this.tokenize_func(charIsIdentifier);
             this.consume_optional_newline_after_argument();
             this.push_token(
@@ -1908,15 +1908,15 @@ class Tokenizer {
         this.consume_optional_newline_after_argument();
       } else if (this.cur_c in MAGIC_CHAR_ARGS) {
         const source_location = this.source_location.clone();
-        // Insane shortcuts e.g. $$ math, `` code and <> magic \x.
+        // Shorthands e.g. $$ math, `` code and <> magic \x.
         const open_char = this.cur_c;
         const open_length = this.tokenize_func(c => c === open_char).length;
         let close_char
         let isTopic = false
-        if (open_char === INSANE_X_START) {
-          close_char = INSANE_X_END
-          if (this.cur_c === INSANE_TOPIC_CHAR) {
-            this.consume(INSANE_TOPIC_CHAR.length)
+        if (open_char === SHORTHAND_X_START) {
+          close_char = SHORTHAND_X_END
+          if (this.cur_c === SHORTHAND_TOPIC_CHAR) {
+            this.consume(SHORTHAND_TOPIC_CHAR.length)
             isTopic = true
           }
         } else {
@@ -1933,7 +1933,7 @@ class Tokenizer {
           unterminated_literal = true;
         }
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
-        if (open_char === INSANE_X_START) {
+        if (open_char === SHORTHAND_X_START) {
           this.push_token(TokenType.NAMED_ARGUMENT_START, START_NAMED_ARGUMENT_CHAR, source_location);
           this.push_token(TokenType.NAMED_ARGUMENT_NAME, isTopic ? 'topic' : 'magic', source_location);
           this.push_token(TokenType.NAMED_ARGUMENT_END, END_NAMED_ARGUMENT_CHAR, source_location);
@@ -1969,7 +1969,7 @@ class Tokenizer {
             this.consumeListIndentClose()
             this.push_token(TokenType.NEWLINE)
           } else if (nNewlines >= 2) {
-            if (arrayContainsArrayAt(this.chars, this.i, INSANE_LIST_INDENT.repeat(this.list_level) + '\n')) {
+            if (arrayContainsArrayAt(this.chars, this.i, SHORTHAND_LIST_INDENT.repeat(this.list_level) + '\n')) {
               // Paragraph comes before list close:
               //
               // * aa
@@ -1996,11 +1996,11 @@ class Tokenizer {
           continue
         }
 
-        // Insane link.
-        if (this.in_escape_insane_link) {
-          this.in_escape_insane_link = false;
+        // Shorthand link.
+        if (this.in_escape_shorthand_link) {
+          this.in_escape_shorthand_link = false;
         } else {
-          let is_insane_link = false;
+          let is_shorthand_link = false;
           for (const known_url_protocol of KNOWN_URL_PROTOCOLS) {
             if (
               arrayContainsArrayAt(this.chars, this.i, known_url_protocol)
@@ -2008,18 +2008,18 @@ class Tokenizer {
               const pos_char_after = this.i + known_url_protocol.length;
               if (
                 pos_char_after < this.chars.length &&
-                !INSANE_LINK_END_CHARS.has(this.chars[pos_char_after])
+                !SHORTHAND_LINK_END_CHARS.has(this.chars[pos_char_after])
               ) {
-                is_insane_link = true;
+                is_shorthand_link = true;
                 break;
               }
             }
           }
-          if (is_insane_link) {
+          if (is_shorthand_link) {
             this.push_token(TokenType.MACRO_NAME, Macro.LINK_MACRO_NAME);
             this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
             while (this.consume_plaintext_char()) {
-              if (INSANE_LINK_END_CHARS.has(this.cur_c)) {
+              if (SHORTHAND_LINK_END_CHARS.has(this.cur_c)) {
                 break
               }
               if (this.cur_c === ESCAPE_CHAR) {
@@ -2032,14 +2032,14 @@ class Tokenizer {
           }
         }
 
-        // Insane topic link.
-        if (this.cur_c === INSANE_TOPIC_CHAR) {
+        // Shorthand topic link.
+        if (this.cur_c === SHORTHAND_TOPIC_CHAR) {
           const source_location = this.source_location.clone()
           this.push_token(TokenType.MACRO_NAME, Macro.X_MACRO_NAME, source_location)
           this.push_token(TokenType.POSITIONAL_ARGUMENT_START, START_POSITIONAL_ARGUMENT_CHAR, source_location)
-          this.consume(INSANE_TOPIC_CHAR.length)
+          this.consume(SHORTHAND_TOPIC_CHAR.length)
           while (this.consume_plaintext_char()) {
-            if (INSANE_LINK_END_CHARS.has(this.cur_c)) {
+            if (SHORTHAND_LINK_END_CHARS.has(this.cur_c)) {
               break
             }
             if (this.cur_c === ESCAPE_CHAR) {
@@ -2053,7 +2053,7 @@ class Tokenizer {
           continue
         }
 
-        // Insane lists, tables and quotes.
+        // Shorthand lists, tables and quotes.
         if (
           this.i === 0 ||
           this.chars[this.i - 1] === '\n' ||
@@ -2074,43 +2074,43 @@ class Tokenizer {
           if (this.cur_c === '\n') {
             i += 1;
           }
-          let insane_start_return = this.tokenize_insane_start(i);
-          if (insane_start_return !== undefined) {
-            const [insane_start, insane_start_length] = insane_start_return;
+          let shorthand_start_return = this.tokenize_shorthand_start(i);
+          if (shorthand_start_return !== undefined) {
+            const [shorthand_start, shorthand_start_length] = shorthand_start_return;
             if (this.cur_c === '\n') {
               this.consume();
             }
-            this.push_token(TokenType.MACRO_NAME, INSANE_STARTS_TO_MACRO_NAME[insane_start]);
+            this.push_token(TokenType.MACRO_NAME, SHORTHAND_STARTS_TO_MACRO_NAME[shorthand_start]);
             this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
             this.list_level += 1;
             this.log_debug(`loop list_level=${this.list_level}`);
-            for (let i = 0; i < insane_start_length; i++) {
+            for (let i = 0; i < shorthand_start_length; i++) {
               this.consume();
             }
             continue
           }
         }
 
-        // Insane headers.
+        // Shorthand headers.
         if (
           this.i === 0 ||
           this.chars[this.i - 1] === '\n'
         ) {
           let i = this.i;
           let new_header_level = 0;
-          while (this.chars[i] === INSANE_HEADER_CHAR) {
+          while (this.chars[i] === SHORTHAND_HEADER_CHAR) {
             i += 1;
             new_header_level += 1;
           }
           if (new_header_level > 0 && this.chars[i] === ' ') {
             this.push_token(TokenType.MACRO_NAME, Macro.HEADER_MACRO_NAME);
-            this.push_token(TokenType.POSITIONAL_ARGUMENT_START, INSANE_HEADER_CHAR.repeat(new_header_level));
+            this.push_token(TokenType.POSITIONAL_ARGUMENT_START, SHORTHAND_HEADER_CHAR.repeat(new_header_level));
             this.push_token(TokenType.PLAINTEXT, new_header_level.toString());
             this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
             this.push_token(TokenType.POSITIONAL_ARGUMENT_START);
             for (let i = 0; i <= new_header_level; i++)
               this.consume();
-            this.in_insane_header = true;
+            this.in_shorthand_header = true;
             continue
           }
         }
@@ -2125,7 +2125,7 @@ class Tokenizer {
     }
 
     // Close any open headers at the end of the document.
-    if (this.in_insane_header) {
+    if (this.in_shorthand_header) {
       this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
     }
 
@@ -2157,32 +2157,32 @@ class Tokenizer {
   }
 
   /**
-   * Determine if we are at the start of an insane indented sequence
-   * like an insane list '* ' or table '| '
+   * Determine if we are at the start of an shorthand indented sequence
+   * like an shorthand list '* ' or table '| '
    *
    * @return {Union[[String,Number],undefined]} -
-   *         - [insane_start, length] if any is found. For an empty table or list without space,
-   *           length is insane_start.length - 1. Otherwise it equals insane_start.length.
+   *         - [shorthand_start, length] if any is found. For an empty table or list without space,
+   *           length is shorthand_start.length - 1. Otherwise it equals shorthand_start.length.
    *         - undefined if none found.
    */
-  tokenize_insane_start(i) {
-    for (const insane_start in INSANE_STARTS_TO_MACRO_NAME) {
+  tokenize_shorthand_start(i) {
+    for (const shorthand_start in SHORTHAND_STARTS_TO_MACRO_NAME) {
       if (
-        arrayContainsArrayAt(this.chars, i, insane_start)
+        arrayContainsArrayAt(this.chars, i, shorthand_start)
       ) {
-        // Full insane start match.
-        return [insane_start, insane_start.length];
+        // Full shorthand start match.
+        return [shorthand_start, shorthand_start.length];
       }
       // Empty table or list without space.
-      let insane_start_nospace = insane_start.substring(0, insane_start.length - 1);
+      let shorthand_start_nospace = shorthand_start.substring(0, shorthand_start.length - 1);
       if (
-        arrayContainsArrayAt(this.chars, i, insane_start_nospace) &&
+        arrayContainsArrayAt(this.chars, i, shorthand_start_nospace) &&
         (
           i === this.chars.length - 1 ||
-          this.chars[i + insane_start.length - 1] === '\n'
+          this.chars[i + shorthand_start.length - 1] === '\n'
         )
       ) {
-        return [insane_start, insane_start.length - 1];
+        return [shorthand_start, shorthand_start.length - 1];
       }
     }
     return undefined;
@@ -2248,17 +2248,17 @@ class Tokenizer {
       append = '';
     }
 
-    // Remove insane list indents.
+    // Remove shorthand list indents.
     let plaintext = '';
     {
       let i = start_i;
       while (true) {
         if (this.chars[i - 1] === '\n') {
           if (this.chars[i] === '\n') {
-          } else if (arrayContainsArrayAt(this.chars, i, INSANE_LIST_INDENT.repeat(this.list_level))) {
-            i += INSANE_LIST_INDENT.length * this.list_level;
+          } else if (arrayContainsArrayAt(this.chars, i, SHORTHAND_LIST_INDENT.repeat(this.list_level))) {
+            i += SHORTHAND_LIST_INDENT.length * this.list_level;
           } else {
-            this.error(`literal argument with indent smaller than current insane list`, start_source_location);
+            this.error(`literal argument with indent smaller than current shorthand list`, start_source_location);
           }
         }
         if (i < end_i) {
@@ -2381,7 +2381,7 @@ class HeaderTreeNode {
     while (todo_visit.length > 0) {
       const cur_node = todo_visit.pop();
       const level = cur_node.get_level();
-      ret.push(`${INSANE_HEADER_CHAR.repeat(level)} h${level} ${cur_node.get_nested_number(1)} ${cur_node.ast.id}`);
+      ret.push(`${SHORTHAND_HEADER_CHAR.repeat(level)} h${level} ${cur_node.get_nested_number(1)} ${cur_node.ast.id}`);
       todo_visit.push(...cur_node.children.slice().reverse());
     }
     return ret.join('\n');
@@ -4127,9 +4127,9 @@ function checkHasToc(context) {
   return root_node.children.length > 0
 }
 
-function hasInsaneLinkEndChars(s) {
+function hasShorthandLinkEndChars(s) {
   for (const c of s) {
-    if (INSANE_LINK_END_CHARS.has(c)) {
+    if (SHORTHAND_LINK_END_CHARS.has(c)) {
       return true
     }
   }
@@ -5804,7 +5804,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             const href_arg = ast.args.href
             const last_ast = href_arg.get(href_arg.length() - 1);
             if (
-              // Possible for unterminated insane link.
+              // Possible for unterminated shorthand link.
               last_ast &&
               last_ast.node_type === AstType.PLAINTEXT
             ) {
@@ -5887,7 +5887,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     // Post process the AST pre-order depth-first search after
     // inclusions are resolved to support things like:
     //
-    // - the insane but necessary paragraphs double newline syntax
+    // - the shorthand but necessary paragraphs double newline syntax
     // - automatic ul parent to li and table to tr
     // - remove whitespace only text children from ul
     // - extract all IDs into an ID index
@@ -8255,8 +8255,8 @@ exports.OURBIGBOOK_CSS_CLASS = OURBIGBOOK_CSS_CLASS
 const FILE_ROOT_PLACEHOLDER = '(root)'
 exports.FILE_ROOT_PLACEHOLDER = FILE_ROOT_PLACEHOLDER
 const HTML_REF_MARKER = '<sup class="ref">[ref]</sup>'
-const INSANE_TOPIC_CHAR = '#';
-exports.INSANE_TOPIC_CHAR = INSANE_TOPIC_CHAR
+const SHORTHAND_TOPIC_CHAR = '#';
+exports.SHORTHAND_TOPIC_CHAR = SHORTHAND_TOPIC_CHAR
 const WEB_API_PATH = 'api';
 exports.WEB_API_PATH = WEB_API_PATH;
 const WEB_TOPIC_PATH = 'go/topic';
@@ -8305,15 +8305,15 @@ const SYNONYM_LINKS_ID_UNRESERVED = 'synonyms'
 exports.SYNONYM_LINKS_ID_UNRESERVED = SYNONYM_LINKS_ID_UNRESERVED
 const ID_SEPARATOR = runtime_common.ID_SEPARATOR
 exports.ID_SEPARATOR = ID_SEPARATOR
-const INSANE_LIST_START = '* ';
-const INSANE_TD_START = '| ';
-const INSANE_TH_START = '|| ';
-const INSANE_LIST_INDENT = '  ';
-const INSANE_HEADER_CHAR = '=';
-exports.INSANE_HEADER_CHAR = INSANE_HEADER_CHAR
-const INSANE_QUOTE_CHAR = '>'
-const INSANE_QUOTE_START = `${INSANE_QUOTE_CHAR} `
-exports.INSANE_QUOTE_START = INSANE_QUOTE_START
+const SHORTHAND_LIST_START = '* ';
+const SHORTHAND_TD_START = '| ';
+const SHORTHAND_TH_START = '|| ';
+const SHORTHAND_LIST_INDENT = '  ';
+const SHORTHAND_HEADER_CHAR = '=';
+exports.SHORTHAND_HEADER_CHAR = SHORTHAND_HEADER_CHAR
+const SHORTHAND_QUOTE_CHAR = '>'
+const SHORTHAND_QUOTE_START = `${SHORTHAND_QUOTE_CHAR} `
+exports.SHORTHAND_QUOTE_START = SHORTHAND_QUOTE_START
 const LOG_OPTIONS = new Set([
   'ast-inside',
   'ast-inside-simple',
@@ -8419,20 +8419,20 @@ const UL_OL_OPTS = {
   wrapAttrs: { 'class': 'list' },
   wrap: true,
 }
-const INSANE_X_START = '<';
-const INSANE_X_END = '>';
-const INSANE_CODE_CHAR = '`'
-const INSANE_MATH_CHAR = '$'
+const SHORTHAND_X_START = '<';
+const SHORTHAND_X_END = '>';
+const SHORTHAND_CODE_CHAR = '`'
+const SHORTHAND_MATH_CHAR = '$'
 const MAGIC_CHAR_ARGS = {
-  [INSANE_MATH_CHAR]: Macro.MATH_MACRO_NAME,
-  [INSANE_CODE_CHAR]: Macro.CODE_MACRO_NAME,
-  [INSANE_X_START]: Macro.X_MACRO_NAME,
+  [SHORTHAND_MATH_CHAR]: Macro.MATH_MACRO_NAME,
+  [SHORTHAND_CODE_CHAR]: Macro.CODE_MACRO_NAME,
+  [SHORTHAND_X_START]: Macro.X_MACRO_NAME,
 }
 const NAMED_ARGUMENT_EQUAL_CHAR = '=';
 const START_NAMED_ARGUMENT_CHAR = '{';
 exports.START_NAMED_ARGUMENT_CHAR = START_NAMED_ARGUMENT_CHAR;
 const START_POSITIONAL_ARGUMENT_CHAR = '[';
-const INSANE_LINK_END_CHARS = new Set([
+const SHORTHAND_LINK_END_CHARS = new Set([
   ' ',
   '\n',
   START_POSITIONAL_ARGUMENT_CHAR,
@@ -8440,11 +8440,11 @@ const INSANE_LINK_END_CHARS = new Set([
   END_POSITIONAL_ARGUMENT_CHAR,
   END_NAMED_ARGUMENT_CHAR,
 ]);
-const INSANE_STARTS_TO_MACRO_NAME = {
-  [INSANE_LIST_START]:  Macro.LIST_ITEM_MACRO_NAME,
-  [INSANE_QUOTE_START]: Macro.QUOTE_MACRO_NAME,
-  [INSANE_TD_START]: Macro.TD_MACRO_NAME,
-  [INSANE_TH_START]: Macro.TH_MACRO_NAME,
+const SHORTHAND_STARTS_TO_MACRO_NAME = {
+  [SHORTHAND_LIST_START]:  Macro.LIST_ITEM_MACRO_NAME,
+  [SHORTHAND_QUOTE_START]: Macro.QUOTE_MACRO_NAME,
+  [SHORTHAND_TD_START]: Macro.TD_MACRO_NAME,
+  [SHORTHAND_TH_START]: Macro.TH_MACRO_NAME,
 };
 const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS = [
   `\\${ESCAPE_CHAR}`,
@@ -8452,10 +8452,10 @@ const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS = [
   `\\${END_POSITIONAL_ARGUMENT_CHAR}`,
   START_NAMED_ARGUMENT_CHAR,
   END_NAMED_ARGUMENT_CHAR,
-  INSANE_X_START,
-  INSANE_CODE_CHAR,
-  INSANE_MATH_CHAR,
-  INSANE_TOPIC_CHAR,
+  SHORTHAND_X_START,
+  SHORTHAND_CODE_CHAR,
+  SHORTHAND_MATH_CHAR,
+  SHORTHAND_TOPIC_CHAR,
   // \br
   '\n',
 ].join('')
@@ -8471,10 +8471,10 @@ const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS = [
   '=',
   '\\|\\|',
   '\\|',
-  `\\${INSANE_QUOTE_CHAR}`,
+  `\\${SHORTHAND_QUOTE_CHAR}`,
 ].join('|')
 const MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS_REGEX = new RegExp(`(^|\n)(${MUST_ESCAPE_CHARS_AT_START_REGEX_CHAR_CLASS})`, 'g')
-const INSANE_STARTS_MACRO_NAMES = new Set(Object.values(INSANE_STARTS_TO_MACRO_NAME))
+const SHORTHAND_STARTS_MACRO_NAMES = new Set(Object.values(SHORTHAND_STARTS_TO_MACRO_NAME))
 const AstType = makeEnum([
   // An in-output error message.
   'ERROR',
@@ -8660,7 +8660,7 @@ function macroImageVideoResolveParamsWithSource(ast, context) {
 function modifyEditorInput(title, body) {
   let ret = ''
   if (title !== undefined) {
-    ret += `${INSANE_HEADER_CHAR} ${title}\n`
+    ret += `${SHORTHAND_HEADER_CHAR} ${title}\n`
   }
   let offsetOffset = 0
   // Append title to body. Add a newline if the body doesn't start
@@ -10294,7 +10294,7 @@ const OUTPUT_FORMATS_LIST = [
         },
         'Ol': htmlRenderSimpleElem('ol', UL_OL_OPTS),
         [Macro.PARAGRAPH_MACRO_NAME]: htmlRenderSimpleElem(
-          // Paragraph. Can't be p because p can only contain phrasing it is insane:
+          // Paragraph. Can't be p because p can only contain phrasing it is shorthand:
           // https://stackoverflow.com/questions/7168723/unordered-list-in-a-paragraph-element
           'div',
           {
@@ -10991,7 +10991,7 @@ function ourbigbookLi(marker, opts={}) {
 }
 
 /** How many newlines to add before each macro.
- * This is by far the hardest part of -O bigb output to insane macros!
+ * This is by far the hardest part of -O bigb output to shorthand macros!
  * Countless hours have spent on this function.
  *
  * @return {Number}
@@ -11100,7 +11100,7 @@ function ourbigbookPreferLiteral(ast, context, ast_arg, arg, open, close) {
       //  !(
       //    macroArg.elide_link_only &&
       //    protocolIsKnown(text) &&
-      //    !hasInsaneLinkEndChars(text)
+      //    !hasShorthandLinkEndChars(text)
       //  )
       //)
     ) {
@@ -11285,7 +11285,7 @@ function ourbigbookConvertSimpleElem(ast, context, opts={}) {
 
 OUTPUT_FORMATS_LIST.push(
   new OutputFormat(
-    // This is hard, especially for insane constructs and in particular newline placement.
+    // This is hard, especially for shorthand constructs and in particular newline placement.
     // A general principle is: each macro optionally outputs newlines only before itself,
     // and never after.
     OUTPUT_FORMAT_OURBIGBOOK,
@@ -11322,8 +11322,8 @@ OUTPUT_FORMATS_LIST.push(
             return '\n'
           }
         },
-        [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbookCodeMathBlock(INSANE_CODE_CHAR),
-        [Macro.CODE_MACRO_NAME]: ourbigbookCodeMathInline(INSANE_CODE_CHAR),
+        [Macro.CODE_MACRO_NAME.toUpperCase()]: ourbigbookCodeMathBlock(SHORTHAND_CODE_CHAR),
+        [Macro.CODE_MACRO_NAME]: ourbigbookCodeMathInline(SHORTHAND_CODE_CHAR),
         [Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME]: ourbigbookConvertSimpleElem,
         'Comment': ourbigbookConvertSimpleElem,
         'comment': ourbigbookConvertSimpleElem,
@@ -11387,7 +11387,7 @@ OUTPUT_FORMATS_LIST.push(
           if (titleRender.indexOf('\n') > -1) {
             return ourbigbookConvertSimpleElem(ast, context)
           }
-          return `${ast.parent_argument_index === 0 ? '' : '\n\n'}${INSANE_HEADER_CHAR.repeat(output_level)} ${titleRender}${args_string ? '\n' : '' }${args_string}`
+          return `${ast.parent_argument_index === 0 ? '' : '\n\n'}${SHORTHAND_HEADER_CHAR.repeat(output_level)} ${titleRender}${args_string ? '\n' : '' }${args_string}`
         },
         'Hr': ourbigbookConvertSimpleElem,
         'i': ourbigbookConvertSimpleElem,
@@ -11397,9 +11397,9 @@ OUTPUT_FORMATS_LIST.push(
           return ourbigbookConvertSimpleElem(ast, context, { onelineArg: true })
         },
         'JsCanvasDemo': ourbigbookConvertSimpleElem,
-        [Macro.LIST_ITEM_MACRO_NAME]: ourbigbookLi(INSANE_LIST_START),
-        [Macro.MATH_MACRO_NAME.toUpperCase()]: ourbigbookCodeMathBlock(INSANE_MATH_CHAR),
-        [Macro.MATH_MACRO_NAME]: ourbigbookCodeMathInline(INSANE_MATH_CHAR),
+        [Macro.LIST_ITEM_MACRO_NAME]: ourbigbookLi(SHORTHAND_LIST_START),
+        [Macro.MATH_MACRO_NAME.toUpperCase()]: ourbigbookCodeMathBlock(SHORTHAND_MATH_CHAR),
+        [Macro.MATH_MACRO_NAME]: ourbigbookCodeMathInline(SHORTHAND_MATH_CHAR),
         'Ol': ourbigbookConvertSimpleElem,
         [Macro.PARAGRAPH_MACRO_NAME]: function(ast, context) {
           if (!ast.args.content || Object.keys(ast.args).length !== 1) {
@@ -11445,7 +11445,7 @@ OUTPUT_FORMATS_LIST.push(
               if (
                 macroArg.elide_link_only &&
                 protocolIsKnown(text) &&
-                !hasInsaneLinkEndChars(text)
+                !hasShorthandLinkEndChars(text)
               ) {
                 return text
               }
@@ -11460,11 +11460,11 @@ OUTPUT_FORMATS_LIST.push(
         },
         [capitalizeFirstLetter(Macro.PASSTHROUGH_MACRO_NAME)]: ourbigbookConvertSimpleElem,
         [Macro.PASSTHROUGH_MACRO_NAME]: ourbigbookConvertSimpleElem,
-        [Macro.QUOTE_MACRO_NAME]: ourbigbookLi(INSANE_QUOTE_START, { oneNewlineMax: false }),
+        [Macro.QUOTE_MACRO_NAME]: ourbigbookLi(SHORTHAND_QUOTE_START, { oneNewlineMax: false }),
         'sub': ourbigbookConvertSimpleElem,
         'sup': ourbigbookConvertSimpleElem,
         [Macro.TABLE_MACRO_NAME]: ourbigbookUl,
-        [Macro.TD_MACRO_NAME]: ourbigbookLi(INSANE_TD_START),
+        [Macro.TD_MACRO_NAME]: ourbigbookLi(SHORTHAND_TD_START),
         [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) {
           let ret = renderArg(ast.args[Macro.CONTENT_ARGUMENT_NAME], context)
           let newline = ''
@@ -11477,7 +11477,7 @@ OUTPUT_FORMATS_LIST.push(
           }
           return ret + newline
         },
-        [Macro.TH_MACRO_NAME]: ourbigbookLi(INSANE_TH_START),
+        [Macro.TH_MACRO_NAME]: ourbigbookLi(SHORTHAND_TH_START),
         [Macro.TR_MACRO_NAME]: ourbigbookUl,
         [Macro.UNORDERED_LIST_MACRO_NAME]: ourbigbookUl,
         [Macro.X_MACRO_NAME]: function(ast, context) {
@@ -11486,7 +11486,7 @@ OUTPUT_FORMATS_LIST.push(
           const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
           if (ast.validation_output.topic.boolean) {
             for (const c of href) {
-              if (INSANE_LINK_END_CHARS.has(c)) {
+              if (SHORTHAND_LINK_END_CHARS.has(c)) {
                 hasLinkEndChar = true
                 break
               }
@@ -11506,21 +11506,21 @@ OUTPUT_FORMATS_LIST.push(
               // <#ab>cd
               // cannot be:
               // #abcd
-              !(nextAstRender && !INSANE_LINK_END_CHARS.has(nextAstRender[0]))
+              !(nextAstRender && !SHORTHAND_LINK_END_CHARS.has(nextAstRender[0]))
             ) {
-              return `${newline}${INSANE_TOPIC_CHAR}${href}`
+              return `${newline}${SHORTHAND_TOPIC_CHAR}${href}`
             } else {
-              return `${newline}${INSANE_X_START}${INSANE_TOPIC_CHAR}${href}${INSANE_X_END}`
+              return `${newline}${SHORTHAND_X_START}${SHORTHAND_TOPIC_CHAR}${href}${SHORTHAND_X_END}`
             }
           }
-          //if (AstType.PLAINTEXT === ast.args.href[0] === INSANE_TOPIC_CHAR) {
+          //if (AstType.PLAINTEXT === ast.args.href[0] === SHORTHAND_TOPIC_CHAR) {
           //  return `<${href}>`
           //}
           // Remove any > from the ref. There's currently no way to escape them, would cut argument short.
           let { target_id, target_ast } = xGetTargetAst(ast, context)
           const magic = ast.validation_output.magic.boolean
           if (!magic && href !== magicTitleToId(href, context)) {
-            // Explicit IDs with weird characters weird cannot be converted to insane, e.g.
+            // Explicit IDs with weird characters weird cannot be converted to shorthand, e.g.
             //
             // = Dollar
             // {{id=$}}
@@ -11547,7 +11547,7 @@ OUTPUT_FORMATS_LIST.push(
           if (dolog && newline) {
             console.log(`Macro.X_MACRO_NAME newline: ${require('util').inspect(newline, { depth: null })}`)
           }
-          return `${newline}${INSANE_X_START}${href}${INSANE_X_END}` +
+          return `${newline}${SHORTHAND_X_START}${href}${SHORTHAND_X_END}` +
             ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')
         },
         'Video': ourbigbookConvertSimpleElem,

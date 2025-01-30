@@ -9,8 +9,12 @@
 	],
 	"settings": {
 		"cSpell.words": [
-			"Ourbigbook"
-		],
+            "Asciidoctor",
+            "featureful",
+            "Ourbigbook",
+            "Pandoc",
+            "Transpiles"
+        ],
         "files.exclude": {
             "**/.git/**": true,
             "**/_out/**": true,

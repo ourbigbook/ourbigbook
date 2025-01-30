@@ -4,12 +4,12 @@
 	"scopeName": "source.ourbigbook",
 	"patterns": [
 		{ "include": "#escape" },
-		{ "include": "#insaneCode" },
-		{ "include": "#insaneHeader" },
-		{ "include": "#insaneList" },
-		{ "include": "#insaneMath" },
-		{ "include": "#insaneRef" },
-		{ "include": "#insaneRefNoBracket" },
+		{ "include": "#shorthandCode" },
+		{ "include": "#shorthandHeader" },
+		{ "include": "#shorthandList" },
+		{ "include": "#shorthandMath" },
+		{ "include": "#shorthandRef" },
+		{ "include": "#shorthandRefNoBracket" },
 		{ "include": "#macro" },
 		{ "include": "#named" },
 		{ "include": "#namedLiteral2" },
@@ -31,7 +31,7 @@
 				}
 			]
 		},
-		"insaneCode": {
+		"shorthandCode": {
 			"patterns": [
 				{
 					"begin": "(`+)",
@@ -41,7 +41,7 @@
 				}
 			]
 		},
-		"insaneHeader": {
+		"shorthandHeader": {
 			"patterns": [
 				{
 					"name": "markup.heading.bigb",
@@ -49,7 +49,7 @@
 				}
 			]
 		},
-		"insaneList": {
+		"shorthandList": {
 			"patterns": [
 				{
 					"name": "entity.name.tag.bigb",
@@ -58,7 +58,7 @@
 				}
 			]
 		},
-		"insaneMath": {
+		"shorthandMath": {
 			"patterns": [
 				{
 					"begin": "(\\$+)",
@@ -69,7 +69,7 @@
 				}
 			]
 		},
-		"insaneRefNoBracket": {
+		"shorthandRefNoBracket": {
 			"patterns": [
 				{
 					"match": "(#)([^\\[\\]{} \n]+)",
@@ -80,7 +80,7 @@
 				}
 			]
 		},
-		"insaneRef": {
+		"shorthandRef": {
 			"patterns": [
 				{
 					"begin": "(<)(#?)",

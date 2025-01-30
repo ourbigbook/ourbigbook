@@ -807,7 +807,7 @@ it('api: create an article and see it on global feed', async () => {
       }))
       assert.strictEqual(status, 422)
 
-      // Title ending in backslash is an error because it adds newline to insane header
+      // Title ending in backslash is an error because it adds newline to shorthand header
       ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
         titleSource: 'ab\\',
         bodySource: 'cd',

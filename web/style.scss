@@ -94,6 +94,7 @@ button, a.btn {
     }
     &:hover, &.active {
       background-color: $button-hover-background-color;
+      text-decoration: none;
       .icon-heart {
         color: white;
       }

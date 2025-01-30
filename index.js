@@ -5784,7 +5784,12 @@ async function parse(tokens, options, context, extra_returns={}) {
           if (fetch_plural) {
             target_id = magicTitleToId(target_id, context)
           }
-          const cur_scope = options.cur_header ? options.cur_header.calculate_scope() : ''
+          const cur_scope = options.cur_header
+            ? options.cur_header.calculate_scope()
+            // This came up when converting comments on Web. Another option might be
+            // to use the input_path instead.
+            // https://github.com/ourbigbook/ourbigbook/issues/277
+            : context.options.toplevel_parent_scope
           for (const target_id_with_scope of getAllPossibleScopeResolutions(cur_scope, target_id, context)) {
             options.refs_to_x.push({
               ast,
@@ -6299,6 +6304,9 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
           if (cur_header_tree_node !== undefined) {
             ast.scope = cur_header_tree_node.ast.calculate_scope();
+          } else {
+            // https://github.com/ourbigbook/ourbigbook/issues/277
+            ast.scope = context.options.toplevel_parent_scope
           }
 
           // Header IDs already previously calculated for parent= so we don't redo it in that case.

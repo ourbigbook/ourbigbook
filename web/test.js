@@ -1508,13 +1508,11 @@ Welcome to my home page hacked!
 
     // No more comment index gets from now on.
 
-      //// Link to article by comment author.
-      // TODO https://github.com/ourbigbook/ourbigbook/issues/277
-      // Changing titleSource: undefined, in convertComment to titleSource: 'asdf' makes it not fail,
-      // but adds the title to the render.
-      //;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, '<Title 1>'))
-      //assertStatus(status, data)
-      //assert_xpath("//x:a[@href='/user0/title-1' and text()='Title 1']", data.comment.render)
+      // Link to article by comment author.
+      // https://github.com/ourbigbook/ourbigbook/issues/277
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, '<Title 1>'))
+      assertStatus(status, data)
+      assert_xpath("//x:a[@href='/user0/title-1' and text()='Title 1']", data.comment.render)
 
     if (testNext) {
       // Tests with the same result for logged in or off.

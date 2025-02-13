@@ -107,6 +107,7 @@ function LinkListNoTitle({
 function AnnounceModal({
   article,
   router,
+  setArticle,
   setShowAnnounce,
 }) {
   const [announceMessage, setAnnounceMessage] = React.useState('')
@@ -137,8 +138,9 @@ function AnnounceModal({
         }}
       >
       </textarea>
-      <button onClick={() => {
-        webApi.articleAnnounce(article.slug, announceMessage)
+      <button onClick={async () => {
+        const ret = await webApi.articleAnnounce(article.slug, announceMessage)
+        setArticle(ret.data.article)
         setShowAnnounce(false)
         Router.push(removeParameterFromUrlPath(router.asPath, ANNOUNCE_QUERY_PARAM), undefined, { scroll: false })
       }}>
@@ -373,7 +375,7 @@ function WebMeta({
 /** The name of this element is not very accurate, it should likely be ArticleDescendantsAndMeta or something like that. */
 export default function Article({
   ancestors,
-  article,
+  article: articleInit,
   articlesInSamePage,
   articlesInSamePageCount,
   articlesInSamePageForToc,
@@ -394,6 +396,10 @@ export default function Article({
   topIssues,
 }) {
   let t0
+  // Initially putting this under state for the announce to articles modal to show "announced"
+  // as soon as you finish announcing. In general we need to use this pattern whenever the data
+  // is modified and we want to show an update to user immediately on the same page.
+  const [article, setArticle] = React.useState(articleInit)
   const authorUsername = article.author.username
   const [curComments, setComments] = React.useState(comments)
   const [curCommentsCount, setCommentsCount] = React.useState(commentsCount)
@@ -405,10 +411,11 @@ export default function Article({
   const [showNewListener, setShowNewListener] = React.useState(undefined)
   const getParamString = encodeGetParams(router.query)
   React.useEffect(() => {
+    setArticle(articleInit)
     // Otherwise comments don't change on page changes.
     setComments(comments)
     setCommentsCount(commentsCount)
-  }, [getParamString, comments, commentsCount])
+  }, [getParamString, articleInit, comments, commentsCount])
   React.useEffect(() => {
     setShowNew(queryNew)
   }, [queryNew])
@@ -1061,6 +1068,7 @@ export default function Article({
     {showAnnounce && <AnnounceModal {...{
       article,
       router,
+      setArticle,
       setShowAnnounce,
     }} />}
     <div

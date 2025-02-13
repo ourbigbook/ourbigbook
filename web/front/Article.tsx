@@ -10,6 +10,7 @@ import {
   commentsHeaderId,
   docsUrl,
   log,
+  maxArticleAnnounceMessageLength,
   maxArticlesFetch,
   maxArticlesFetchToc,
 } from 'front/config'
@@ -40,6 +41,7 @@ import {
   AnnounceIcon,
   ArticleIcon,
   OkIcon,
+  ErrorIcon,
 } from 'front'
 import { webApi } from 'front/api'
 import CommentList from 'front/CommentList'
@@ -110,7 +112,8 @@ function AnnounceModal({
   setArticle,
   setShowAnnounce,
 }) {
-  const [announceMessage, setAnnounceMessage] = React.useState('')
+  const [message, setMessage] = React.useState('')
+  const messageOk = message.length <= maxArticleAnnounceMessageLength
   return <div
     className="modal-page"
     onClick={(e) => {
@@ -134,16 +137,25 @@ function AnnounceModal({
         placeholder="Add a message (optional)"
         onChange={e => {
           e.stopPropagation()
-          setAnnounceMessage(e.target.value)
+          setMessage(e.target.value)
         }}
       >
       </textarea>
-      <button onClick={async () => {
-        const ret = await webApi.articleAnnounce(article.slug, announceMessage)
-        setArticle(ret.data.article)
-        setShowAnnounce(false)
-        Router.push(removeParameterFromUrlPath(router.asPath, ANNOUNCE_QUERY_PARAM), undefined, { scroll: false })
-      }}>
+      <div>
+        {message.length} / {maxArticleAnnounceMessageLength}
+        {!messageOk && <> <ErrorIcon /></>}
+      </div>
+      <button
+        disabled={!messageOk}
+        onClick={async () => {
+          const { data, status } = await webApi.articleAnnounce(article.slug, message)
+          if (status === 200) {
+            setArticle(data.article)
+          }
+          setShowAnnounce(false)
+          Router.push(removeParameterFromUrlPath(router.asPath, ANNOUNCE_QUERY_PARAM), undefined, { scroll: false })
+        }}
+      >
         <OkIcon /> Send
       </button>
     </div>

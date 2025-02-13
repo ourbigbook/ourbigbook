@@ -10,6 +10,26 @@ Significant entries will have a corresponding announcement on the following <off
 * https://www.facebook.com/OurBigBook
 * https://www.instagram.com/ourbigbook
 
+= Article announcement
+{parent=News}
+{tag=Web}
+
+It is now possible to send a link to one of your articles to all of your followers on <OurBigBook Web> with the </Article announcement> feature. You can also add a short custom message to the announcement.
+
+\Image[feature/announce/button-arrow.png]
+{title=</Article announcement> button on <OurBigBook Web>}
+{border}
+{height=712}
+{provider=github}
+{source=https://ourbigbook.com/cirosantilli/chain-rule}
+
+\Image[feature/announce/modal.png]
+{title=Modal that opens up after clicking the </article announcement> button on <OurBigBook Web>}
+{border}
+{height=349}
+{provider=github}
+{source=https://ourbigbook.com/cirosantilli/chain-rule}
+
 = Web navigation two level tab cleanup
 {parent=News}
 {tag=Web}

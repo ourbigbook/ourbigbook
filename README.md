@@ -88,3 +88,7 @@ Every single section [gets its own discussion section](https://docs.ourbigbook.c
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_by_Barack_Obama_discussions.png)
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png)
+
+Send an email with a link to your articles to your followers with the [article announcement feature](https://docs.ourbigbook.com/article-announcement):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/announce/button-arrow.png)

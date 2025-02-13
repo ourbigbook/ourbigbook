@@ -256,7 +256,7 @@ async function sendEmailToUser({
     if (html === undefined) {
       html = ''
     }
-    html += `<p>To unsubscribe from all ${config.appName} emails` +
+    html += `<p>To unsubscribe from all ${config.appName} emails ` +
       `<a href="${settingsUrl}">change the email settings on your profile page</a>.</p>\n`
     if (text === undefined) {
       text = ''

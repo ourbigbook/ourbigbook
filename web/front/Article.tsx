@@ -860,7 +860,7 @@ export default function Article({
               />
             ))
             ancestorHtmls.push(renderToString(
-              <span> {Macro.HEADER_SCOPE_SEPARATOR} </span>
+              <span className="meta"> {Macro.HEADER_SCOPE_SEPARATOR} </span>
             ))
           }
         }

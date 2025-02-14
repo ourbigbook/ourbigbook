@@ -18,6 +18,7 @@ const ourbigbook = require('./index');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const web_api = require('./web_api');
 const models = require('./models');
+const ID_FTS_POSTGRESL_LANGUAGE = 'simple'
 
 const ENCODING = 'utf8'
 const SQLITE_MAGIC_MEMORY_NAME = ':memory:'
@@ -1265,6 +1266,17 @@ async function sequelizeCreateTriggerUpdateCount(sequelize, articleTable, likeTa
   )
 }
 
+/** Safely consume a user provided query string to a prefix search tsquery Sequelize literal.
+ * For example, 'rabbit bee' gets converted to 'rabbit & bee:*' and therefore matches strings
+ * that contain both the full word "rabbit" and the prefix bee.*.
+ * https://stackoverflow.com/questions/16020164/psqlexception-error-syntax-error-in-tsquery/79437030#79437030
+ */
+function sequelizePostgresqlUserQueryToTsqueryPrefixLiteral(sequelize, q) {
+  return sequelize.literal(
+    `regexp_replace(plainto_tsquery('${ID_FTS_POSTGRESL_LANGUAGE}', ${sequelize.escape(q)})::text || ':*', '^..$', '')::tsquery`
+  )
+}
+
 function findOurbigbookJsonDir(curdir, opts={}) {
   const { fakeroot } = opts
   while (true) {
@@ -1309,11 +1321,13 @@ module.exports = {
   fetch_header_tree_ids,
   findOurbigbookJsonDir,
   get_noscopes_base_fetch_rows,
+  ID_FTS_POSTGRESL_LANGUAGE,
   preload_katex_from_file,
   remove_duplicates_sorted_array,
   sequelizeCreateTrigger,
   sequelizeCreateTriggerUpdateCount,
   sequelizeIterateOverPagination,
+  sequelizePostgresqlUserQueryToTsqueryPrefixLiteral,
   update_database_after_convert,
   SQLITE_MAGIC_MEMORY_NAME,
   TMP_DIRNAME: ourbigbook.Macro.RESERVED_ID_PREFIX + 'out',

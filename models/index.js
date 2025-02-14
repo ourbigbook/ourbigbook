@@ -47,13 +47,13 @@ function addModels(sequelize, { web, cli }={}) {
   Ref.hasMany(Ref, { as: 'duplicate', foreignKey: 'to_id', sourceKey: 'to_id', constraints: false });
 }
 
-function sequelizeWhereStartsWith(sequelize, searchTopicId, col) {
+function sequelizeWhereStartsWith(sequelize, topicIdSearch, col) {
   if (sequelize.options.dialect === 'postgres') {
-    return { [sequelize.Sequelize.Op.startsWith]: searchTopicId }
+    return { [sequelize.Sequelize.Op.startsWith]: topicIdSearch }
   } else {
     // explicit col is terrible here, but I can't find a way around it in v6:
     // https://stackoverflow.com/questions/52397419/sequelize-custom-operators/79233911#79233911
-    return sequelize.literal(`${col} GLOB ${sequelize.escape(searchTopicId + '*')}`)
+    return sequelize.literal(`${col} GLOB ${sequelize.escape(topicIdSearch + '*')}`)
   }
 }
 

@@ -1,6 +1,11 @@
-const { sequelizeWhereStartsWith } = require('ourbigbook/models')
-
 const { DataTypes, Op } = require('sequelize')
+
+const { sequelizeWhereStartsWith } = require('ourbigbook/models')
+const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
+const { sequelizePostgresqlUserQueryToTsqueryPrefixLiteral } = ourbigbook_nodejs_webpack_safe
+
+const front_js = require('../front/js')
+const { querySearchToTopicId } = front_js
 
 module.exports = (sequelize) => {
   const Topic = sequelize.define(
@@ -40,28 +45,41 @@ module.exports = (sequelize) => {
     offset,
     order,
     orderAscDesc,
-    searchTopicId,
     sequelize,
+    topicIdSearch,
   }) => {
+    const { Article, File, Topic } = sequelize.models
     if (count === undefined) {
       count = true
     }
     if (orderAscDesc === undefined) {
       orderAscDesc = 'DESC'
     }
+
+    // where
     const where = {}
+    let whereFts
     /** Get a starts with that will be accelerated both in SQLite and PostgreSQL.
      * In sequelize we need GLOB: https://stackoverflow.com/questions/8584499/should-like-searchstr-use-an-index/76512019#76512019
      * In PostgreSQL GLOB doe not exist and we setup the DB so that LIKE will work: https://dba.stackexchange.com/questions/53811/why-would-you-index-text-pattern-ops-on-a-text-column/343887#343887
      */
-    if (searchTopicId !== undefined) {
-      where.topicId = sequelizeWhereStartsWith(sequelize, searchTopicId, '"Topic"."topicId"')
+    if (topicIdSearch !== undefined) {
+      const topicIdSearchArgs = querySearchToTopicId(topicIdSearch)
+      if (sequelize.options.dialect === 'postgres') {
+        whereFts = {
+          ...where,
+          [Op.not]: { topicId: sequelizeWhereStartsWith(sequelize, topicIdSearchArgs, '"Topic"."topicId"') },
+          topicId_tsvector: { [Op.match]: sequelizePostgresqlUserQueryToTsqueryPrefixLiteral(sequelize, topicIdSearch) },
+        }
+      }
+      where.topicId = sequelizeWhereStartsWith(sequelize, topicIdSearchArgs, '"Topic"."topicId"')
     }
+
     const includeArticle = {
-      model: sequelize.models.Article,
+      model: Article,
       as: 'article',
       include: [{
-        model: sequelize.models.File,
+        model: File,
         as: 'file',
       }]
     }
@@ -73,30 +91,64 @@ module.exports = (sequelize) => {
       order = 'articleCount'
     }
     const orderList = []
-    if (searchTopicId === undefined) {
+    if (topicIdSearch === undefined) {
       orderList.push([order, orderAscDesc])
       if (order !== 'createdAt') {
         orderList.push(['createdAt', 'DESC'])
       }
       if (articleOrder !== undefined) {
-        orderList.push([{model: sequelize.models.Article, as: 'article'}, articleOrder, 'DESC'])
+        orderList.push([{model: Article, as: 'article'}, articleOrder, 'DESC'])
       }
     } else {
       // See comments under getArticles why we don't do other orders with this one.
       orderList.push(['topicId', 'ASC'])
     }
-    const args = {
+    const findArgs = {
       include,
       limit,
       offset,
       order: orderList,
       where,
     }
-    if (count) {
-      return sequelize.models.Topic.findAndCountAll(args)
-    } else {
-      return sequelize.models.Topic.findAll(args)
+    const findArgss = [findArgs]
+    if (whereFts) {
+      findArgss.push({
+        ...findArgs,
+        where: whereFts,
+      })
     }
+
+    // Do the searches.
+    const rets = await Promise.all(findArgss.map(async (findArgs) => {
+      if (count) {
+        return Topic.findAndCountAll(findArgs)
+      } else {
+        return Topic.findAll(findArgs)
+      }
+    }))
+
+    // Consolidate prefix and fts searches if search is being done.
+    let topics = []
+    let retCount = 0
+    for (const ret of rets) {
+      const { rows, count } = ret
+      if (rows !== undefined) {
+        topics.push(...rows)
+      }
+      if (count !== undefined) {
+        retCount += count
+      }
+    }
+    if (limit) {
+      topics = topics.slice(0, limit)
+    }
+    let ret
+    if (count) {
+      ret = { rows: topics, count: retCount }
+    } else {
+      ret = topics
+    }
+    return ret
   }
 
   Topic.prototype.toJson = async function(loggedInUser) {

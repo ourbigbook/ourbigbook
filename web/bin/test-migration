@@ -64,7 +64,7 @@ schema old
 git checkout -
 if [ "$db" = postgres ]; then
   export NODE_ENV=production
-  "${script_dir}/psql" -c 'SELECT * FROM "SequelizeMeta";'
+  "${script_dir}/psql" -P pager=off -c 'SELECT * FROM "SequelizeMeta";'
 fi
 "${script_dir}/sync-db.js"
 schema new-migration

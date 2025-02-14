@@ -4,9 +4,14 @@ const path = require('path')
 
 const { DatabaseError, Sequelize, DataTypes } = require('sequelize')
 
+const ourbigbook = require('ourbigbook')
 const ourbigbook_models = require('ourbigbook/models')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
-const { sequelizeCreateTrigger, sequelizeCreateTriggerUpdateCount } = ourbigbook_nodejs_webpack_safe
+const {
+  ID_FTS_POSTGRESL_LANGUAGE,
+  sequelizeCreateTrigger,
+  sequelizeCreateTriggerUpdateCount
+} = ourbigbook_nodejs_webpack_safe
 
 const config = require('../front/config')
 
@@ -368,16 +373,19 @@ async function sync(sequelize, opts={}) {
 
   // Database triggers.
 
-    const Article = sequelize.models.Article
-    const Comment = sequelize.models.Comment
-    const File = sequelize.models.File
-    const Issue = sequelize.models.Issue
-    const User = sequelize.models.User
-    const UserLikeArticle = sequelize.models.UserLikeArticle
-    const UserFollowArticle = sequelize.models.UserFollowArticle
-    const UserLikeIssue = sequelize.models.UserLikeIssue
-    const UserFollowIssue = sequelize.models.UserFollowIssue
-    const UserFollowUser = sequelize.models.UserFollowUser
+    const {
+      Article,
+      Comment,
+      File,
+      Issue,
+      Topic,
+      User,
+      UserLikeArticle,
+      UserFollowArticle,
+      UserLikeIssue,
+      UserFollowIssue,
+      UserFollowUser,
+    } = sequelize.models
 
     await sequelizeCreateTriggerUpdateCount(sequelize, Article, UserLikeArticle, 'score', 'articleId')
     await sequelizeCreateTriggerUpdateCount(sequelize, Article, UserFollowArticle, 'followerCount', 'articleId')
@@ -405,6 +413,7 @@ async function sync(sequelize, opts={}) {
         when: 'OLD."score" <> NEW."score"',
       }
     )
+  const articleFtsCol = 'topicId'
   if (!dbExists || opts.force) {
     await Promise.all([
       sequelize.models.SequelizeMeta.bulkCreate(
@@ -413,12 +422,20 @@ async function sync(sequelize, opts={}) {
         )
       ),
       sequelize.models.Site.create(),
+      ...(sequelize.options.dialect === 'postgres'
+        ? [Article.tableName, Topic.tableName].map(t => sequelize.query(`ALTER TABLE "${t}"
+  ADD COLUMN "${articleFtsCol}_tsvector" TSVECTOR
+  GENERATED ALWAYS AS (to_tsvector('${ID_FTS_POSTGRESL_LANGUAGE}', replace("${articleFtsCol}", '${ourbigbook.ID_SEPARATOR}', ' '))) STORED`).then(() =>
+        sequelize.query(`CREATE INDEX "${t}_${articleFtsCol}_gin_idx"
+  ON "${t}" USING GIN ("${articleFtsCol}_tsvector")`)))
+        : []
+      )
     ])
   }
   return dbExists
 }
 
-/** Optional check, print and update any of our denormaliezd in-database caches. */
+/** Optional check, print and update any of our denormalized in-database caches. */
 async function normalize({
   check,
   fix,

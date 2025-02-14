@@ -4,10 +4,12 @@ const { DataTypes, Op } = require('sequelize')
 
 const ourbigbook = require('ourbigbook')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
+const { sequelizePostgresqlUserQueryToTsqueryPrefixLiteral } = ourbigbook_nodejs_webpack_safe
 const { sequelizeWhereStartsWith } = require('ourbigbook/models')
 
 const config = require('../front/config')
 const front_js = require('../front/js')
+const { querySearchToTopicId } = front_js
 const convert = require('../convert')
 const e = require('cors')
 
@@ -1176,7 +1178,21 @@ WHERE
     parentFromTo='to',
     parentType,
     rows=true,
-    searchTopicId,
+    // This does two types of search:
+    // - prefix matching from topic ID start. The input string is first converted to an ID,
+    //   e.g. 'fundamental theo' matches 'fundamental-theorem-of-calculus', but 'theo' does not
+    //   These results are prioritized and returned first.
+    // - prefix matching from any word of the topic for the last word of the query. Previous query words
+    //   are mandatory but can appear anywhere. For example:
+    //   - 'calculus theo' matches 'fundamental-theorem-of-calculus' because:
+    //     - calculus is not the last word of the query, but it appears as a whole word
+    //     - theo is the last word of the query, and appears as a prefix to the word "calc"
+    //   - 'theo calculus' does not 'fundamental-theorem-of-calculus' because:
+    //     - calculus appears as a whole word so that's fine
+    //     - theo is not the last word of the query, so it only matches whole words,
+    //       but there is no full word "theo" in the search
+    // limit applies to both of these taken together.
+    topicIdSearch,
     sequelize,
     slug,
     topicId,
@@ -1193,19 +1209,41 @@ WHERE
       excludeIds = []
     }
 
+    // Setup where
     let where = {}
+    let whereFts
     if (excludeIds.length) {
       where.id = { [Op.notIn]: excludeIds }
     }
     if (list !== undefined) {
       where.list = list
     }
-    if (searchTopicId !== undefined) {
-      where.topicId = sequelizeWhereStartsWith(sequelize, searchTopicId, '"Article"."topicId"')
-    }
     if (order === 'announcedAt') {
       where.announcedAt = { [Op.ne]: null }
     }
+    if (slug) {
+      where.slug = slug
+    }
+    if (topicId) {
+      where.topicId = topicId
+    }
+    if (topicIdSearch !== undefined) {
+      const topicIdSearchArgs = querySearchToTopicId(topicIdSearch)
+      if (sequelize.options.dialect === 'postgres') {
+        whereFts = {
+          ...where,
+          [Op.not]: { topicId: sequelizeWhereStartsWith(sequelize, topicIdSearchArgs, '"Article"."topicId"') },
+          topicId_tsvector: { [Op.match]: sequelizePostgresqlUserQueryToTsqueryPrefixLiteral(sequelize, topicIdSearch) },
+        }
+      }
+      where.topicId = sequelizeWhereStartsWith(
+        sequelize, topicIdSearchArgs, '"Article"."topicId"'
+      )
+    }
+    if (Object.keys(where).length === 0) {
+      where = undefined;
+    }
+
     const authorInclude = {
       model: User,
       as: 'author',
@@ -1266,14 +1304,8 @@ WHERE
         where: { username: likedBy },
       })
     }
-    if (slug) {
-      where.slug = slug
-    }
-    if (topicId) {
-      where.topicId = topicId
-    }
     const orderList = []
-    if (searchTopicId === undefined) {
+    if (topicIdSearch === undefined) {
       if (order !== undefined) {
         orderList.push([order, orderAscDesc])
       }
@@ -1290,9 +1322,6 @@ WHERE
       // https://stackoverflow.com/questions/2256364/what-is-a-spatial-index-and-when-should-i-use-it/76685445#76685445
       orderList.push(['topicId', 'ASC'])
     }
-    if (Object.keys(where).length === 0) {
-      where = undefined;
-    }
     const findArgs = {
       include,
       limit,
@@ -1305,24 +1334,59 @@ WHERE
     if (logging !== undefined) {
       findArgs.logging = logging
     }
-    let ret, articles
-    if (count) {
-      if (rows) {
-        ret = await Article.findAndCountAll(findArgs)
-        articles = ret.rows
-      } else {
-        ret = { count: await Article.count(findArgs) }
-      }
-    } else {
-      ret = await Article.findAll(findArgs)
-      articles = ret
+    const findArgss = [findArgs]
+    if (whereFts) {
+      findArgss.push({
+        ...findArgs,
+        where: whereFts,
+      })
     }
+
+    // Do the searches
+    const rets = await Promise.all(findArgss.map(async (findArgs) => {
+      if (count) {
+        if (rows) {
+          return Article.findAndCountAll(findArgs)
+        } else {
+          return { count: await Article.count(findArgs) }
+        }
+      } else {
+        return { rows: await Article.findAll(findArgs) }
+      }
+    }))
+
+    // Consolidate prefix and fts searches if search is being done.
+    let articles = []
+    let retCount = 0
+    for (const ret of rets) {
+      const { rows, count } = ret
+      if (rows !== undefined) {
+        articles.push(...rows)
+      }
+      if (count !== undefined) {
+        retCount += count
+      }
+    }
+    if (limit) {
+      articles = articles.slice(0, limit)
+    }
+
     if (includeParentAndPreviousSibling) {
       for (const article of articles) {
         Article.getArticleIncludeParentAndPreviousSiblingAddShortcuts(article)
       }
     }
-    return ret;
+    let ret
+    if (count) {
+      if (rows) {
+        ret = { rows: articles, count: retCount }
+      } else {
+        ret = { count: retCount }
+      }
+    } else {
+      ret = articles
+    }
+    return ret
   }
 
   Article.getArticleJsonInTopicBy = async (user, topicId) => {

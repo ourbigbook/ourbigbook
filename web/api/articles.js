@@ -43,7 +43,6 @@ router.get('/', auth.optional, async function(req, res, next) {
         rows: articles
       },
       loggedInUser,
-      redirects,
     ] = await Promise.all([
       Article.getArticles({
         sequelize,
@@ -53,11 +52,12 @@ router.get('/', auth.optional, async function(req, res, next) {
         followedBy: req.query.followedBy,
         includeParentAndPreviousSibling,
         likedBy: req.query.likedBy,
-        topicId: req.query.topicId,
         order: lib.getOrder(req, {
           allowedSortsExtra: Article.ALLOWED_SORTS_EXTRA,
         }),
         slug,
+        topicId: req.query.topicId,
+        topicIdSearch: req.query.search,
       }),
       req.payload ? User.findByPk(req.payload.id) : null,
     ])

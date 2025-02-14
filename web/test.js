@@ -5062,6 +5062,94 @@ it(`api: article: announce`, async () => {
   })
 })
 
+it(`api: article: search`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // Create 10 articles
+    for (let i = 0; i < 2; i++) {
+      ;({data, status} = await createOrUpdateArticleApi(test,
+        createArticleArg({ i, titleSource: `Prefix anywhere suffix ${i}` })))
+      assertStatus(status, data)
+    }
+    for (let i = 0; i < 2; i++) {
+      ;({data, status} = await createOrUpdateArticleApi(test,
+        createArticleArg({ i, titleSource: `Anywhere middle suffix ${i}` })))
+      assertStatus(status, data)
+    }
+
+    ;({data, status} = await createOrUpdateArticleApi(test,
+      createArticleArg({ i: 0, titleSource: `Oneword` })))
+    assertStatus(status, data)
+
+    for (const [apiGet, items, field, pref] of [
+      [test.webApi.articles.bind(test.webApi), 'articles', 'slug', 'user0/'],
+      [test.webApi.topics.bind(test.webApi), 'topics', 'topicId', ''],
+    ]) {
+      ;({data, status} = await apiGet({ search: 'pref' }))
+      assertStatus(status, data)
+      assertRows(data[items], [
+        { [field]: `${pref}prefix-anywhere-suffix-0` },
+        { [field]: `${pref}prefix-anywhere-suffix-1` },
+      ])
+      
+      // Spaces are converted to hyphen
+      ;({data, status} = await apiGet({ search: 'prefix anywh' }))
+      assertStatus(status, data)
+      assertRows(data[items], [
+        { [field]: `${pref}prefix-anywhere-suffix-0` },
+        { [field]: `${pref}prefix-anywhere-suffix-1` },
+      ])
+
+      if (test.sequelize.options.dialect === 'postgres') {
+        // Check that:
+        // - prefix search is working
+        // - full prefix hits come first
+        ;({data, status} = await apiGet({ search: 'anyw' }))
+        assertStatus(status, data)
+        assertRows(data[items], [
+          { [field]: `${pref}anywhere-middle-suffix-0` },
+          { [field]: `${pref}anywhere-middle-suffix-1` },
+          { [field]: `${pref}prefix-anywhere-suffix-0` },
+          { [field]: `${pref}prefix-anywhere-suffix-1` },
+        ])
+
+        // Limit is respected when joining up FTS and non FTS. Prefix still gets preferred.
+        ;({data, status} = await apiGet({ limit: 3, search: 'anyw' }))
+        assertStatus(status, data)
+        assertRows(data[items], [
+          { [field]: `${pref}anywhere-middle-suffix-0` },
+          { [field]: `${pref}anywhere-middle-suffix-1` },
+          { [field]: `${pref}prefix-anywhere-suffix-0` },
+        ])
+
+        ;({data, status} = await apiGet({ search: 'middle anyw' }))
+        assertStatus(status, data)
+        assertRows(data[items], [
+          { [field]: `${pref}anywhere-middle-suffix-0` },
+          { [field]: `${pref}anywhere-middle-suffix-1` },
+        ])
+      }
+
+      // Single word does ID not get repeated twice
+      ;({data, status} = await apiGet({ search: 'oneword' }))
+      assertStatus(status, data)
+      assertRows(data[items], [
+        { [field]: `${pref}oneword` },
+      ])
+
+      // Single word does ID not get repeated twice with trailing space on search
+      ;({data, status} = await apiGet({ search: 'oneword ' }))
+      assertStatus(status, data)
+      assertRows(data[items], [
+        { [field]: `${pref}oneword` },
+      ])
+    }
+  })
+})
+
 it(`api: article: create simple`, async () => {
   await testApp(async (test) => {
     let data, status, article

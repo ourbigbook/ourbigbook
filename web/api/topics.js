@@ -1,12 +1,7 @@
 const router = require('express').Router()
-const Op = require('sequelize').Op
 
 const auth = require('../auth')
-const { cant } = require('../front/cant')
-const front = require('../front/js')
-const convert = require('../convert')
 const lib = require('./lib')
-const config = require('../front/config')
 
 router.get('/', auth.optional, async function(req, res, next) {
   try {
@@ -29,6 +24,7 @@ router.get('/', auth.optional, async function(req, res, next) {
         }),
         sequelize,
         topicId: req.query.topicId,
+        topicIdSearch: req.query.search,
       }),
       req.payload ? User.findByPk(req.payload.id) : null
     ])

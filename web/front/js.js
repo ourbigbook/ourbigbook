@@ -3,8 +3,10 @@
 // Maybe this should just be merged with ./config.js
 
 const ourbigbook = require('ourbigbook')
+const { titleToId } = ourbigbook
 
 const config = require('./config')
+const { convertContext } = config
 
 const web_api = require('ourbigbook/web_api');
 const { QUERY_FALSE_VAL, QUERY_TRUE_VAL } = web_api
@@ -263,6 +265,10 @@ function slugToId(slug) {
   return ourbigbook.AT_MENTION_CHAR + slug
 }
 
+function querySearchToTopicId(search) {
+  return search === undefined ? undefined : titleToId(search, undefined, convertContext)
+}
+
 module.exports = {
   AUTH_COOKIE_NAME: 'auth',
   getClientIp,
@@ -273,7 +279,6 @@ module.exports = {
   getPage,
   hasReachedMaxItemCount,
   idToSlug,
-  slugToId,
   idToTopic,
   isArrayOf,
   isBoolean,
@@ -283,8 +288,10 @@ module.exports = {
   isPositiveInteger,
   isSmallerOrEqualTo,
   isString,
-  isTypeOrArrayOf,
   isTruthy,
+  isTypeOrArrayOf,
+  querySearchToTopicId,
+  slugToId,
   slugToTopic,
   typecastBoolean,
   typecastInteger,

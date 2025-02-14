@@ -1,6 +1,6 @@
 import ourbigbook from 'ourbigbook'
 
-import { getLoggedInUser, querySearchToTopicId } from 'back'
+import { getLoggedInUser } from 'back'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { articleLimit  } from 'front/config'
 import { getList, getOrderAndPage, idToSlug, uidTopicIdToId } from 'front/js'
@@ -148,7 +148,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         parentFromTo,
         parentId,
         parentType,
-        searchTopicId: querySearchToTopicId(query.search),
+        topicIdSearch: query.search,
         sequelize,
       }
       const articlesPromise =

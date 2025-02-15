@@ -9086,9 +9086,17 @@ OurBigBook Web supports basic search for <ID> prefixes of articles and <topics>.
 {border}
 {height=650}
 
+\Image[feature/search/full-text-calculus-fun-arrow.png]
+{title=<OurBigBook Web search> highlighting full text search}
+{border}
+{height=738}
+{provider=github}
+{source=https://ourbigbook.com/go/articles?body=false&search=calculus%20fun}
+
 Related:
 * https://github.com/ourbigbook/ourbigbook/issues/263
-* <news/Article and topic ID prefix search>
+* <News/Article and topic ID prefix search>
+* <News/Web searches find words inside title on PostgreSQL>
 
 = OurBigBook Web editor
 {c}

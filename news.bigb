@@ -10,6 +10,37 @@ Significant entries will have a corresponding announcement on the following <off
 * https://www.facebook.com/OurBigBook
 * https://www.instagram.com/ourbigbook
 
+= Web searches find words inside title on PostgreSQL
+{parent=News}
+{tag=Web}
+{tag=OurBigBook Web Postgresql}
+
+When searching articles and topics on <OurBigBook Web Postgresql>, which is the case for <OurBigBook.com>:
+* each searched word can match exactly within any word of article <IDs>
+* the last word is considered as a prefix, and matches the start of any word of the ID
+Previously, searches would only work if they were exactly a prefix of the title ID.
+
+For example, if you search:
+``
+calculus fun
+``
+then it will match titles such as:
+``
+Fundamental theorem of calculus
+``
+since it contains both:
+* the full word `calculus`
+* `fundamental` which contains the prefix `fun`
+
+This feature implemented efficiently by using PostgreSQL's built-in full text search module.
+
+\Image[feature/search/full-text-calculus-fun-arrow.png]
+{title=<OurBigBook Web search> highlighting full text search}
+{border}
+{height=738}
+{provider=github}
+{source=https://ourbigbook.com/go/articles?body=false&search=calculus%20fun}
+
 = Article announcement
 {parent=News}
 {tag=Web}

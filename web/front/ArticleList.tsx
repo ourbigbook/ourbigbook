@@ -314,10 +314,17 @@ const ArticleList = ({
                                         if (!aElemToMetaMap.current.has(a)) {
                                           const href = a.href
                                           aElemToMetaMap.current.add(a)
-                                          const url = new URL(href, document.baseURI)
+                                          let url
+                                          let urlOrigin
+                                          try {
+                                            url = new URL(href, document.baseURI)
+                                            urlOrigin = new URL(document.baseURI)
+                                          } catch(e) {}
                                           if (
+                                            url &&
+                                            urlOrigin &&
                                             // Don't do processing for external links.
-                                            url.origin === new URL(document.baseURI).origin
+                                            url.origin === urlOrigin.origin
                                           ) {
                                             let frag
                                             let longFrag

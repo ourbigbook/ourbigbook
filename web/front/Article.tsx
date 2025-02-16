@@ -772,10 +772,16 @@ export default function Article({
           if (!aElemToMetaMap.current.has(a)) {
             const href = a.href
             aElemToMetaMap.current.set(a, href)
-            const url = new URL(href, document.baseURI)
+            let url, urlOrigin
+            try {
+              url = new URL(href, document.baseURI)
+              urlOrigin = new URL(document.baseURI)
+            } catch(e) {}
             if (
+              url &&
+              urlOrigin &&
               // Don't do processing for external links.
-              url.origin === new URL(document.baseURI).origin
+              url.origin === urlOrigin.origin
             ) {
               // E.g. barack-obama/mathematics
               let frag

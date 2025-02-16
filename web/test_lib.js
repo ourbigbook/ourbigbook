@@ -234,6 +234,8 @@ $$
 Ourbigbook defined LaTeX macro: $\\abs{x}$
 
 Empty link to home page: <>
+
+Link followed by nbsp literal: http://example.com\u{00A0}asdf qwer
 `
     }
   ],

@@ -2789,61 +2789,54 @@ it('api: article tree: single user', async () => {
 
       // parentId errors
 
-        // Parent ID that doesn't exist gives an error on new article.
-        article = createArticleArg({ i: 0, titleSource: 'Physics' })
-        ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/dontexist' }))
-        assert.strictEqual(status, 422)
+        // The convert function has some massive if(render) cases, so let's test all error cases for both
+        for (const render of [false, true]) {
+          // Parent ID that doesn't exist gives an error on new article.
+          article = createArticleArg({ i: 0, titleSource: 'Physics' })
+          ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/dontexist', render }))
+          assert.strictEqual(status, 422)
 
-        // Parent ID that doesn't exist gives an error on existing article.
-        article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
-        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/dontexist' }))
-        assert.strictEqual(status, 422)
+          // Parent ID that doesn't exist gives an error on existing article.
+          article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+          ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/dontexist', render }))
+          assert.strictEqual(status, 422)
 
-        // It is not possible to change the index parentId.
-        article = createArticleArg({ i: 0, titleSource: '' })
-        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
-        assert.strictEqual(status, 422)
+          // It is not possible to change the index parentId.
+          article = createArticleArg({ i: 0, titleSource: '' })
+          ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render }))
+          assert.strictEqual(status, 422)
 
-        // Also doesn't work with render: false
-        article = createArticleArg({ i: 0, titleSource: '' })
-        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render: false }))
-        assert.strictEqual(status, 422)
+          // It it not possible to set the parentId to an article of another user.
+          article = createArticleArg({ i: 0, titleSource: 'Physics' })
+          ;({data, status} = await createArticleApi(test, article, { parentId: '@user1', render }))
+          assert.strictEqual(status, 422)
 
-        // It it not possible to set the parentId to an article of another user.
-        article = createArticleArg({ i: 0, titleSource: 'Physics' })
-        ;({data, status} = await createArticleApi(test, article, { parentId: '@user1' }))
-        assert.strictEqual(status, 422)
+          // Circular parent loops fail gracefully.
+          // Related:
+          // * https://github.com/ourbigbook/ourbigbook/issues/204
+          // * https://github.com/ourbigbook/ourbigbook/issues/319#issuecomment-2662912799
+          article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+          ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', render }))
+          assert.strictEqual(status, 422)
+          {
+            const article = await sequelize.models.Article.getArticle({
+              includeParentAndPreviousSibling: true,
+              sequelize,
+              slug: 'user0/mathematics',
+            })
+            assert.strictEqual(article.parentId.idid, '@user0')
+          }
 
-        // Circular parent loops fail gracefully.
-        article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
-        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus' }))
-        assert.strictEqual(status, 422)
+          // This is where it might go infinite if it hadn't been prevented above.
+          article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+          ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render }))
+          assertStatus(status, data)
 
-        // Circular parent loops fail gracefully with render: false.
-        // Related: https://github.com/ourbigbook/ourbigbook/issues/204
-        article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
-        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', render: false }))
-        // TODO bad.
-        assert.strictEqual(status, 422)
-        // OK at least DB seems consistent.
-        {
-          const article = await sequelize.models.Article.getArticle({
-            includeParentAndPreviousSibling: true,
-            sequelize,
-            slug: 'user0/mathematics',
-          })
-          assert.strictEqual(article.parentId.idid, '@user0')
+          // Circular parent loops to self fail gracefully.
+          article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+          ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics', render }))
+          assert.strictEqual(status, 422)
         }
-
-        // This is where it might go infinite if it hadn't been prevented above.
-        article = createArticleArg({ i: 0, titleSource: 'Calculus' })
-        ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
-        assertStatus(status, data)
-
-        // Circular parent loops to self fail gracefully.
-        article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
-        ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics' }))
-        assert.strictEqual(status, 422)
 
       // previousSiblingId
 
@@ -3239,26 +3232,28 @@ it('api: article tree: single user', async () => {
 
       // previousSiblingId errors
 
-        // previousSiblingId that does not exist fails
-        ;({data, status} = await createOrUpdateArticleApi(test,
-          createArticleArg({ i: 0, titleSource: 'Limit' }),
-          { parentId: undefined, previousSiblingId: '@user0/dontexist' }
-        ))
-        assert.strictEqual(status, 422)
+        for (const render of [false, true]) {
+          // previousSiblingId that does not exist fails
+          ;({data, status} = await createOrUpdateArticleApi(test,
+            createArticleArg({ i: 0, titleSource: 'Limit' }),
+            { parentId: undefined, previousSiblingId: '@user0/dontexist', render }
+          ))
+          assert.strictEqual(status, 422)
 
-        // previousSiblingId empty string fails
-        ;({data, status} = await createOrUpdateArticleApi(test,
-          createArticleArg({ i: 0, titleSource: 'Limit' }),
-          { parentId: undefined, previousSiblingId: '' }
-        ))
-        assert.strictEqual(status, 422)
+          // previousSiblingId empty string fails
+          ;({data, status} = await createOrUpdateArticleApi(test,
+            createArticleArg({ i: 0, titleSource: 'Limit' }),
+            { parentId: undefined, previousSiblingId: '', render }
+          ))
+          assert.strictEqual(status, 422)
 
-        // previousSiblingId that is not a child of parentId fails
-        ;({data, status} = await createOrUpdateArticleApi(test,
-          createArticleArg({ i: 0, titleSource: 'Limit' }),
-          { parentId: '@user0/mathematics', previousSiblingId: '@user0/derivative' }
-        ))
-        assert.strictEqual(status, 422)
+          // previousSiblingId that is not a child of parentId fails
+          ;({data, status} = await createOrUpdateArticleApi(test,
+            createArticleArg({ i: 0, titleSource: 'Limit' }),
+            { parentId: '@user0/mathematics', previousSiblingId: '@user0/derivative', render }
+          ))
+          assert.strictEqual(status, 422)
+        }
 
       // Forbidden elements
 

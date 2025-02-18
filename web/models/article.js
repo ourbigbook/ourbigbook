@@ -93,6 +93,15 @@ module.exports = (sequelize) => {
         defaultValue: 0,
       },
       // To fetch the tree recursively on the fly.
+      //
+      // This together with nestedSetNextSibling are an index for Ref parent relations.
+      // to speed up linear queries, i.e. they duplicate Ref parent date.
+      //
+      // Also note that this "index" is not always necessarily up to date with the canonical
+      // Ref representations because updating it is very slow, and it is much faster to only
+      // do it once after you update all articles rather than after updating each article.
+      // as done with updateNestedSetIndex=false.
+      //
       // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/42781302#42781302
       nestedSetIndex: {
         type: DataTypes.INTEGER,

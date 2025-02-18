@@ -2,6 +2,7 @@ const lodash = require('lodash')
 
 const ourbigbook = require('ourbigbook')
 const {
+  fetch_ancestors,
   update_database_after_convert,
   remove_duplicates_sorted_array,
   SqlDbProvider,
@@ -304,65 +305,9 @@ async function convertArticle({
       throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
     }
 
-    // Index conversion check.
-    const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
-    const isIndex = toplevelId === idPrefix
-    if (isIndex && parentId !== undefined) {
-      // As of writing, this will be caught and thrown on the ancestors part of conversion:
-      // as changing the Index to anything else always leads to infinite loop.
-      throw new ValidationError(`cannot give parentId for index conversion, received "${toplevelId}"`)
-    }
-
+    // Synonym handling part 1
     const synonymHeadersArr = Array.from(extra_returns.context.synonym_headers)
     const synonymIds = synonymHeadersArr.map(h => h.id)
-
-    let oldRef
-    if (render) {
-      oldRef = await sequelize.models.Ref.findOne({
-        where: {
-          to_id: [toplevelId],
-          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-        },
-        include: [
-          {
-            model: sequelize.models.Id,
-            as: 'to',
-            include: [
-              {
-                model: sequelize.models.File,
-                as: 'toplevelId',
-                include: [
-                  {
-                    model: sequelize.models.Article,
-                    as: 'articles',
-                  }
-                ],
-              }
-            ]
-          },
-          {
-            model: sequelize.models.Id,
-            as: 'from',
-            include: [
-              {
-                model: sequelize.models.File,
-                as: 'toplevelId',
-                include: [
-                  {
-                    model: sequelize.models.Article,
-                    as: 'articles',
-                  }
-                ],
-              }
-            ]
-          },
-        ],
-        transaction,
-      })
-    }
-
-    // Synonym handling part 1
-
     const synonymArticles = await sequelize.models.Article.getArticles({
       count: false,
       includeParentAndPreviousSibling: true,
@@ -376,6 +321,170 @@ async function convertArticle({
         synonymArticles.map(a => a.file.path),
         transaction,
       )
+    }
+
+    // Determine the correct parentId from parentId and previousSiblingId
+    // It is kind of ugly that we do this after convert, meaning that convert()
+    // gets the wrong parentId as input. But it doesn't seem to matter and there were some
+    // dependency issues linked to the fact that toplevelId is calculated during convert()
+    // as it needs access to the h1 content. So let's keep this after for now.
+    const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+    const isIndex = toplevelId === idPrefix
+    let newParentId = parentId
+    let newParentArticle
+    let refWhere = {
+      to_id: previousSiblingId,
+      type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+    }
+    if (newParentId !== undefined) {
+      refWhere.from_id = newParentId
+    }
+    const oldRef = await sequelize.models.Ref.findOne({
+      where: {
+        to_id: [toplevelId],
+        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      },
+      include: [
+        {
+          model: sequelize.models.Id,
+          as: 'to',
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'toplevelId',
+              include: [
+                {
+                  model: sequelize.models.Article,
+                  as: 'articles',
+                }
+              ],
+            }
+          ]
+        },
+        {
+          model: sequelize.models.Id,
+          as: 'from',
+          include: [
+            {
+              model: sequelize.models.File,
+              as: 'toplevelId',
+              include: [
+                {
+                  model: sequelize.models.Article,
+                  as: 'articles',
+                }
+              ],
+            }
+          ]
+        },
+      ],
+      transaction,
+    })
+    if (!isIndex) {
+      // Non-index conversion.
+      if (newParentId === undefined) {
+        if (oldRef) {
+          // Happens when updating a page.
+          newParentId = oldRef.from.idid
+        } else if (previousSiblingId === undefined) {
+          throw new ValidationError(`missing parentId argument is mandatory for new articles and article ID "${toplevelId}" does not exist yet so it is new`)
+        }
+      }
+    }
+    let parentIdRow
+    let previousSiblingRef
+    ;[parentIdRow, previousSiblingRef] = await Promise.all([
+      newParentId === undefined
+        ? null
+        : sequelize.models.Id.findOne({
+            where: { idid: newParentId },
+            include: [
+              {
+                model: sequelize.models.File,
+                as: 'toplevelId',
+                include: [
+                  {
+                    model: sequelize.models.Article,
+                    as: 'articles',
+                  }
+                ],
+              },
+            ],
+            transaction
+          })
+      ,
+      previousSiblingId === undefined
+        ? null
+        : sequelize.models.Ref.findOne({
+            where: refWhere,
+            include: [
+              {
+                model: sequelize.models.Id,
+                as: 'to',
+                where: {
+                  macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
+                },
+                include: [
+                  {
+                    model: sequelize.models.File,
+                    as: 'toplevelId',
+                    include: [
+                      {
+                        model: sequelize.models.Article,
+                        as: 'articles',
+                      }
+                    ],
+                  }
+                ],
+              },
+              {
+                model: sequelize.models.Id,
+                as: 'from',
+                include: [
+                  {
+                    model: sequelize.models.File,
+                    as: 'toplevelId',
+                    include: [
+                      {
+                        model: sequelize.models.Article,
+                        as: 'articles',
+                      }
+                    ],
+                  }
+                ],
+              },
+            ],
+            transaction,
+          })
+    ])
+    if (previousSiblingRef) {
+      // Deduce parent from given sibling.
+      parentIdRow = previousSiblingRef.from
+      newParentId = parentIdRow.idid
+      newParentArticle = parentIdRow.toplevelId.articles[0]
+    }
+
+    // Error checking on parentId and previousSiblingId
+    if (parentId && !parentIdRow) {
+      throw new ValidationError(`parentId does not exist: "${newParentId}"`)
+    }
+    if (parentIdRow && parentIdRow.macro_name !== ourbigbook.Macro.HEADER_MACRO_NAME) {
+      throw new ValidationError(`parentId is not a header: "${newParentId}"`)
+    }
+    // Index conversion check.
+    if (isIndex && parentId !== undefined) {
+      // As of writing, this will be caught and thrown on the ancestors part of conversion:
+      // as changing the Index to anything else always leads to infinite loop.
+      throw new ValidationError(`cannot give parentId for index conversion, received "${toplevelId}"`)
+    }
+    if (previousSiblingId && !previousSiblingRef) {
+      throw new ValidationError(`previousSiblingId "${previousSiblingId}" does not exist, is not a header or is not a child of parentId "${newParentId}"`)
+    }
+    if (newParentId) {
+      const ancestors = await fetch_ancestors(sequelize, newParentId, { onlyIncludeId: toplevelId, stopAt: toplevelId, transaction })
+      if (ancestors.length) {
+        throw new ValidationError(`parentId="${toplevelId}" would lead to infinite parent loop"`)
+      }
     }
 
     const update_database_after_convert_arg = {
@@ -404,13 +513,10 @@ async function convertArticle({
     // article instances returned by this function do not have the correct final value for it.
     if (render) {
       let nestedSetSize
-
       let newDepth = 0
       let newNestedSetIndex = 0
       let newNestedSetIndexParent
       let newNestedSetNextSibling = 1
-      let newParentArticle
-      let newParentId = parentId
       let new_to_id_index
       let oldArticle
       let oldDepth
@@ -421,95 +527,8 @@ async function convertArticle({
       let oldParentId
       let old_to_id_index
 
-      let refWhere = {
-        to_id: previousSiblingId,
-        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-      }
-      if (newParentId !== undefined) {
-        refWhere.from_id = newParentId
-      }
-      if (!isIndex) {
-        // Non-index conversion.
-        if (newParentId === undefined) {
-          if (oldRef) {
-            // Happens when updating a page.
-            newParentId = oldRef.from.idid
-          } else if (previousSiblingId === undefined) {
-            throw new ValidationError(`missing parentId argument is mandatory for new articles and article ID "${toplevelId}" does not exist yet so it is new`)
-          }
-        }
-      }
-      let parentIdRow, previousSiblingRef
-      ;[parentIdRow, previousSiblingRef] = await Promise.all([
-        newParentId === undefined
-          ? null
-          : sequelize.models.Id.findOne({
-              where: { idid: newParentId },
-              include: [
-                {
-                  model: sequelize.models.File,
-                  as: 'toplevelId',
-                  include: [
-                    {
-                      model: sequelize.models.Article,
-                      as: 'articles',
-                    }
-                  ],
-                },
-              ],
-              transaction
-            })
-        ,
-        previousSiblingId === undefined
-          ? null
-          : sequelize.models.Ref.findOne({
-              where: refWhere,
-              include: [
-                {
-                  model: sequelize.models.Id,
-                  as: 'to',
-                  where: {
-                    macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
-                  },
-                  include: [
-                    {
-                      model: sequelize.models.File,
-                      as: 'toplevelId',
-                      include: [
-                        {
-                          model: sequelize.models.Article,
-                          as: 'articles',
-                        }
-                      ],
-                    }
-                  ],
-                },
-                {
-                  model: sequelize.models.Id,
-                  as: 'from',
-                  include: [
-                    {
-                      model: sequelize.models.File,
-                      as: 'toplevelId',
-                      include: [
-                        {
-                          model: sequelize.models.Article,
-                          as: 'articles',
-                        }
-                      ],
-                    }
-                  ],
-                },
-              ],
-              transaction,
-            })
-      ])
       if (previousSiblingRef) {
         newNestedSetIndex = previousSiblingRef.to.toplevelId.articles[0].nestedSetNextSibling
-        // Deduce parent from given sibling.
-        parentIdRow = previousSiblingRef.from
-        newParentId = parentIdRow.idid
-        newParentArticle = parentIdRow.toplevelId.articles[0]
       }
       if (parentIdRow) {
         if (!previousSiblingRef) {
@@ -544,16 +563,6 @@ async function convertArticle({
         oldNestedSetNextSibling = newNestedSetNextSibling
         oldDepth = newDepth
       }
-      if (
-        oldNestedSetIndex !== undefined &&
-        newNestedSetIndex > oldNestedSetIndex &&
-        newNestedSetIndex < oldNestedSetNextSibling
-      ) {
-        throw new ValidationError(`the parent choice "${newParentId}" would create an infinite loop`)
-      }
-      if (!previousSiblingRef && previousSiblingId) {
-        throw new ValidationError(`previousSiblingId "${previousSiblingId}" does not exist, is not a header or is not a child of parentId "${newParentId}"`)
-      }
       if (previousSiblingRef) {
         new_to_id_index = previousSiblingRef.to_id_index + 1
       } else {
@@ -575,12 +584,6 @@ async function convertArticle({
         // Fails only for the index page which has no parent.
         newParentId !== undefined
       ) {
-        if (!parentIdRow) {
-          throw new ValidationError(`parentId does not exist: "${newParentId}"`)
-        }
-        if (parentIdRow.macro_name !== ourbigbook.Macro.HEADER_MACRO_NAME) {
-          throw new ValidationError(`parentId is not a header: "${newParentId}"`)
-        }
         if (!oldRef && updateTree) {
           // If the article is new, create space to insert it there.
           // For the moving of existing articles however, we leave the space opening up to the Article.treeMoveRangeTo function instead.

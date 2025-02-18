@@ -431,11 +431,10 @@ class AstNode {
         break
       }
       if (ancestor_id_set.has(cur_ast.id)) {
-        // TODO should throw Error instead. The check should be done in
-        // a nicer way earlier on parse, not just render. This is currently exercised on web.
-        //throw new Error(`parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`)
-        const message = `parent IDs lead to infinite ancestor loop: ${ancestors.map(a => a.id).join(' -> ')} -> ${cur_ast.id}`;
-        renderError(context, message, this.source_location);
+        // TODO currently only exercised on web, e.g. when setting a parentId on index article.
+        // In that case this is because we render in "convert" before  we know if it is index
+        // or not, because we determine if it is index or not in the h1Only conversion inside convert.
+        // This should be refactored a bit and then we can remove this, but lazy now.
         break
       } else {
         ancestor_id_set.add(cur_ast.id)

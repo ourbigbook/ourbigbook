@@ -134,6 +134,9 @@ function assertStatus(status, data) {
   }
 }
 
+/** We set the parent to index by default. To leave it unset,
+ * e.g. to set it implicitly via previousSiblingId you need to explicitly set
+ * parentId to undefined. It's quite bad. */
 async function createArticleApi(test, article, opts={}) {
   if (!opts.hasOwnProperty('parentId') && test.user) {
     opts = Object.assign({ parentId: `${ourbigbook.AT_MENTION_CHAR}${test.user.username}` }, opts)
@@ -508,7 +511,7 @@ $$
       assertStatus(status, data)
 
       article = createArticleArg({ i: 0, titleSource: 'Physics' })
-      ;({data, status} = await createArticleApi(test, article, { previousSiblingId: '@user0/mathematics' }))
+      ;({data, status} = await createArticleApi(test, article, { parentId: undefined, previousSiblingId: '@user0/mathematics' }))
       assertStatus(status, data)
       const physicsHash = data.articles[0].file.hash
 
@@ -569,7 +572,7 @@ it('normalize nested-set', async function() {
       assertStatus(status, data)
 
       article = createArticleArg({ i: 0, titleSource: 'Physics' })
-      ;({data, status} = await createArticleApi(test, article, { previousSiblingId: '@user0/mathematics' }))
+      ;({data, status} = await createArticleApi(test, article, { parentId: undefined, previousSiblingId: '@user0/mathematics' }))
       assertStatus(status, data)
 
     // The nested-set for the API is correctly normalized.
@@ -2821,7 +2824,7 @@ it('api: article tree: single user', async () => {
         article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
         ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/calculus', render: false }))
         // TODO bad.
-        //assert.strictEqual(status, 422)
+        assert.strictEqual(status, 422)
         // OK at least DB seems consistent.
         {
           const article = await sequelize.models.Article.getArticle({
@@ -3525,6 +3528,71 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assertStatus(status, data)
     assert.strictEqual(data.nestedSetNeedsUpdate, false)
+  })
+})
+
+it('api: article tree: updateNestedSetIndex=false circular loop check is done with Ref and not nested set index', async () => {
+  // Reproduction for: https://github.com/ourbigbook/ourbigbook/issues/319#issuecomment-2662912799
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+      article = createArticleArg({
+        i: 0,
+        titleSource: 'Mathematics',
+      })
+      ;({data, status} = await createArticleApi(test, article))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Physics' })
+      ;({data, status} = await createArticleApi(test, article, { parentId: undefined, previousSiblingId: '@user0/mathematics' }))
+      assertStatus(status, data)
+      const physicsHash = data.articles[0].file.hash
+
+    // New articles with updateNestedSetIndex=false
+
+      // Create.
+      // 0
+      //  1
+      //   2
+      //   3
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 1 }), { updateNestedSetIndex: false }))
+      assertStatus(status, data)
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 2 }), { parentId: '@user0/title-1', updateNestedSetIndex: false }))
+      assertStatus(status, data)
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 3 }), { parentId: undefined, previousSiblingId: '@user0/title-2', updateNestedSetIndex: false }))
+      assertStatus(status, data)
+      //;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 4 }), { previousSiblingId: '@user0/title-3', updateNestedSetIndex: false }))
+      //assertStatus(status, data)
+      ;({data, status} = await test.webApi.articleUpdatedNestedSet('user0'))
+      assertStatus(status, data)
+
+      //;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 5 }), { previousSiblingId: '@user0/title-4', updateNestedSetIndex: false }))
+      //assertStatus(status, data)
+      //;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 1 }), { parentId: '@user0/title-5', updateNestedSetIndex: false }))
+      //assertStatus(status, data)
+
+      // Move to.
+      // 0
+      //  1
+      //   3
+      //  2
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 2 }), { parentId: undefined, previousSiblingId: '@user0/title-1', updateNestedSetIndex: false }))
+      assertStatus(status, data)
+
+      // Move to.
+      // 0
+      //  2
+      //   1
+      //    3
+      // This is the main initial point of this test
+      // At one point this was blowing up on an incorrect safety check because were checking
+      // for parentId loops based on nested set, which is out of date relative to the canonical Ref.
+      // The database was semi-safe because we also did a check for this at render time, but it was horrendous.
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 1 }), { parentId: '@user0/title-2', updateNestedSetIndex: false }))
+      assertStatus(status, data)
   })
 })
 
@@ -5094,7 +5162,7 @@ it(`api: article: search`, async () => {
         { [field]: `${pref}prefix-anywhere-suffix-0` },
         { [field]: `${pref}prefix-anywhere-suffix-1` },
       ])
-      
+
       // Spaces are converted to hyphen
       ;({data, status} = await apiGet({ search: 'prefix anywh' }))
       assertStatus(status, data)

@@ -128,6 +128,55 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
 }
 
 /**
+ * @param {string} id to search ancestors for
+ * @return {Object[]} Id-like objects starting from index root article
+ *   and going down all up to the parent of id. Does not include id itself.
+ */
+async function fetch_ancestors(sequelize, id, opts={}) {
+  const { onlyIncludeId, stopAt, transaction } = opts
+  const { Id, Ref } = sequelize.models
+  ;const [rows, meta] = await sequelize.query(`
+SELECT * FROM "${Id.tableName}"
+INNER JOIN (
+WITH RECURSIVE
+  tree_search (to_id, level, from_id) AS (
+    SELECT
+      to_id,
+      0,
+      from_id
+    FROM "${Ref.tableName}"
+    WHERE to_id = :id AND type = :type
+
+    UNION ALL
+
+    SELECT
+      ts.from_id,
+      ts.level + 1,
+      t.from_id
+    FROM "${Ref.tableName}" t, tree_search ts
+    WHERE t.to_id = ts.from_id AND type = :type${stopAt === undefined ? '' : ' AND ts.from_id <> :stopAt'}
+  )
+  SELECT * FROM tree_search
+) AS "RecRefs"
+ON "${Id.tableName}".idid = "RecRefs"."from_id"${onlyIncludeId === undefined ? '' : `
+  AND "${Id.tableName}".idid = :onlyIncludeId
+`}
+ORDER BY "RecRefs".level DESC
+`,
+    {
+      replacements: {
+        id,
+        onlyIncludeId,
+        stopAt,
+        type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      },
+      transaction,
+    }
+  )
+  return rows
+}
+
+/**
  * @param {string[]} starting_ids
  * @return {Object[]} Id-like objects sorted in breadth first order representing the
  *                    entire subtree of IDs under starting_ids, considering only
@@ -494,38 +543,7 @@ class SqlDbProvider extends web_api.DbProviderBase {
   // Recursively fetch all ancestors of a given ID from the database.
   async fetch_ancestors(toplevel_id) {
     if (toplevel_id) {
-      ;const [rows, meta] = await this.sequelize.query(`
-SELECT * FROM "${this.sequelize.models.Id.tableName}"
-INNER JOIN (
-WITH RECURSIVE
-  tree_search (to_id, level, from_id) AS (
-    SELECT
-      to_id,
-      0,
-      from_id
-    FROM "${this.sequelize.models.Ref.tableName}"
-    WHERE to_id = :toplevel_id AND type = :type
-
-    UNION ALL
-
-    SELECT
-      ts.from_id,
-      ts.level + 1,
-      t.from_id
-    FROM "${this.sequelize.models.Ref.tableName}" t, tree_search ts
-    WHERE t.to_id = ts.from_id AND type = :type
-  )
-  SELECT * FROM tree_search
-) AS "RecRefs"
-ON "${this.sequelize.models.Id.tableName}".idid = "RecRefs"."from_id"
-ORDER BY "RecRefs".level DESC
-`,
-        { replacements: {
-          toplevel_id,
-          type: this.sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-        } }
-      )
-      return rows
+      return fetch_ancestors(this.sequelize, toplevel_id)
     } else {
       return []
     }
@@ -1318,6 +1336,7 @@ module.exports = {
   DB_OPTIONS,
   destroy_sequelize,
   ENCODING,
+  fetch_ancestors,
   fetch_header_tree_ids,
   findOurbigbookJsonDir,
   get_noscopes_base_fetch_rows,

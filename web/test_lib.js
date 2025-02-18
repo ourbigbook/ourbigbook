@@ -686,7 +686,7 @@ async function generateDemoData(params) {
       for (var j = 0; j < (i % (nMaxIssuesPerArticle + 1)); j++) {
         if (verbose) console.error(`${article.slug}#${articleIssueIdx}`)
         const [titleSource, bodySource] = issueData[issueIdx % issueData.length]
-        const issue = await convert.convertIssue({
+        const issue = await convert.convertDiscussion({
           article,
           bodySource,
           date: ISSUE_DATE,
@@ -736,7 +736,7 @@ async function generateDemoData(params) {
       for (let i = 0; i < config.articleLimit + 2; i++) {
         const article =  articleManyDiscussions
         if (verbose) console.error(`${article.slug}#${i}`)
-        const issue = await convert.convertIssue({
+        const issue = await convert.convertDiscussion({
           article,
           bodySource: `Many discussions body ${i}.`,
           date: ISSUE_DATE,

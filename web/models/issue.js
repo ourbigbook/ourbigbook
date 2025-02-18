@@ -88,7 +88,7 @@ module.exports = (sequelize) => {
       ignoreErrors = false
     await sequelize.transaction({ transaction }, async (transaction) => {
       try {
-        await convert.convertIssue({
+        await convert.convertDiscussion({
           issue: this,
           sequelize,
           transaction,

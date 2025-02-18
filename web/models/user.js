@@ -159,6 +159,23 @@ module.exports = (sequelize) => {
         allowNull: true,
       },
       nestedSetNeedsUpdate: {
+        // This is currently not used anywhere.
+        // 
+        // Its intention is to denote that the
+        // nested set index is out of date with the Ref tree.
+        // Ideally this would then inform CLI that a full nested set index update
+        // is needed at the end of conversion, especially if an earlier conversion
+        // stopped early.
+        // 
+        // However, the indexes necessarily fall out of sync
+        // during render=false because we store the set in Article, and Article
+        // does not exist on render=false, and the nested set is necessarily out of date.
+        //
+        // And for incremental nested set updates with --no-web-nested-set-bulk, we
+        // don't need to do a full re-index at the end.
+        //
+        // So for now, this flag just denotes "the API explicitly required a --web-nested-set-bulk"
+        // in the past, and gets cleared later. The index may still be out of sync due to render=false.
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false,

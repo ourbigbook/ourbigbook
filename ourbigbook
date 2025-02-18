@@ -1298,7 +1298,6 @@ async function webCreateOrUpdate({
   webApi,
   webDry,
 }) {
-  console.log(`updateNestedSetIndex: ${require('util').inspect(updateNestedSetIndex, { depth: null })}`)
   const render = extraArgs.render
   printStatus({ i, cleanupDeleted, inpath, render })
   const t0 = now()
@@ -1329,7 +1328,7 @@ async function webCreateOrUpdate({
   }
   const t1 = now()
   printStatus({ i, title, inpath, render, cleanupDeleted, t0, t1 })
-  return { nestedSetNeedsUpdate: data. nestedSetNeedsUpdate}
+  return { nestedSetNeedsUpdate: data.nestedSetNeedsUpdate }
 }
 
 // CLI options.

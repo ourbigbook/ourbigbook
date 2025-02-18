@@ -2,6 +2,11 @@ const lodash = require('lodash')
 
 const ourbigbook = require('ourbigbook')
 const {
+  AT_MENTION_CHAR,
+  INDEX_BASENAME_NOEXT,
+  OURBIGBOOK_EXT,
+} = ourbigbook
+const {
   fetch_ancestors,
   update_database_after_convert,
   remove_duplicates_sorted_array,
@@ -47,7 +52,7 @@ function getConvertOpts({
         },
         parent_id: parentId,
         read_include: read_include_web(async (idid) => (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0),
-        ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${authorUsername}`,
+        ref_prefix: `${AT_MENTION_CHAR}${authorUsername}`,
         render,
         split_headers: splitHeaders === undefined ? true : splitHeaders,
         h_web_ancestors: type === 'article',
@@ -62,16 +67,14 @@ function getConvertOpts({
 // This is a much simpler procedure as it does not alter the File/Article database.
 async function convert({
   author,
-  bodySource,
   convertOptionsExtra,
-  fakeUsernameDir,
   parentId,
   path,
   perf,
   render,
   sequelize,
+  source,
   splitHeaders,
-  titleSource,
   transaction,
   type,
 }) {
@@ -80,99 +83,9 @@ async function convert({
     t0 = performance.now();
     console.error('perf: convert.start');
   }
-  const extra_returns = {};
-  const source = ourbigbook.modifyEditorInput(titleSource, bodySource).new
-  let input_path
-  let input_path_given
-  if (path === undefined) {
-    if (titleSource === undefined) {
-      // titleSource can be undefined for comments
-      path = 'comment-path-placeholder'
-    } else {
-      // Do one pre-conversion to determine the file path.
-      // All we need from it is the toplevel header.
-      // E.g. this finds the correct path from {id= and {disambiguate=
-      // https://github.com/ourbigbook/ourbigbook/issues/304
-      const extra_returns = {}
-      const { convertOptions } = getConvertOpts({
-        authorUsername: author.username,
-        extraOptions: {
-          h1Only: true,
-        },
-        input_path: undefined,
-        parentId,
-        render: false,
-        sequelize,
-        splitHeaders: false,
-        transaction,
-        type,
-      })
-      await ourbigbook.convert(
-        source,
-        lodash.merge(convertOptions, convertOptionsExtra),
-        extra_returns,
-      )
-      path = extra_returns.context.header_tree.children[0].ast.id
-    }
-    input_path_given = false
-  } else {
-    input_path_given = true
-  }
-  if (parentId) {
-    let parentIdRow = await sequelize.models.Id.findOne({
-      where: { idid: parentId },
-      include: [
-        {
-          model: sequelize.models.Ref,
-          as: 'from',
-          required: false,
-          where: {
-            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
-          },
-          include: [{
-            model: sequelize.models.Id,
-            as: 'to',
-          }]
-        }
-      ]
-    })
-    if (!parentIdRow) {
-      throw new ValidationError(`parentId did not match any known parent: "${parentId}"`)
-    }
-    {
-      const from = parentIdRow.from
-      if (from.length) {
-        // This is a synonym. Use the non-synonym target instead.
-        parentIdRow = from[0].to
-        parentId = parentIdRow.idid
-      }
-    }
-    let scope
-    if (input_path_given) {
-      scope = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
-    } else {
-      const context = ourbigbook.convertInitContext()
-      const parentH1Ast = ourbigbook.AstNode.fromJSON(parentIdRow.ast_json, context)
-      parentH1Ast.id = parentIdRow.idid
-      const parentScope = parentH1Ast.calculate_scope()
-      // Inherit scope from parent. In particular, this forces every article by a
-      // user to be scoped under @username due to this being recursive from the index page.
-      scope = parentScope
-    }
-    input_path = scopeIdToPath(scope, path)
-  } else {
-    let usernameDir
-    if (fakeUsernameDir) {
-      usernameDir = fakeUsernameDir
-    } else {
-      usernameDir = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
-    }
-    // Index page. Hardcode input path.
-    input_path = scopeIdToPath(usernameDir, path)
-  }
   const { db_provider, convertOptions } = getConvertOpts({
     authorUsername: author.username,
-    input_path,
+    input_path: path,
     parentId,
     render,
     sequelize,
@@ -180,6 +93,7 @@ async function convert({
     transaction,
     type,
   })
+  const extra_returns = {}
   await ourbigbook.convert(
     source,
     lodash.merge(convertOptions, convertOptionsExtra),
@@ -199,11 +113,6 @@ async function convert({
   return {
     db_provider,
     extra_returns,
-    input_path,
-    // Potentially updated to point to the target synonym.
-    // Caller should use this from then on.
-    parentId,
-    source,
   }
 }
 
@@ -216,10 +125,20 @@ async function convert({
  *
  * This is how Articles should always be created and updated.
  *
+ * Regarding the article tree:
+ * - unless updateTree=false, which is not exposed to end users, the Ref parent tree
+ *   is always up-to-date and consistent, including with render=false
+ * - the nested set index can become out of date in a few different cases including:
+ *   - render=false
+ *   - updateNestedSetIndex=false
+ *   both of which are exposed to users and exercized by the ourbigbook CLI.
+ *
  * @param {string} parentId - Required for h2Render to render correctly. Otherwise it looks like an h1Render.
  * @param {boolean} updateTree - If false, don't change the position of the article in the tree.
  *   This also prevents the creation of new articles, only content updates are allowed in that case.
  *   This option can massively save time by skipping unnecessary nested set tree updates.
+ *   This option is just an optimization, originally introduced for rerender.
+ *   It is not exposed to end users, for which we always update the tree.
  */
 async function convertArticle({
   author,
@@ -240,6 +159,9 @@ async function convertArticle({
   updateHash,
   updateTree,
 }) {
+  if (render === undefined) {
+    render = true
+  }
   if (updateNestedSetIndex === undefined) {
     updateNestedSetIndex = true
   }
@@ -250,11 +172,14 @@ async function convertArticle({
     updateTree = true
   }
   let t0
+  const { Article, File, Id, Issue, Ref, Topic, UserLikeArticle } = sequelize.models
   if (perf) {
     t0 = performance.now();
     console.error(`perf: convertArticle.start titleSource="${titleSource}"`);
   }
-  let articles, extra_returns
+  let articles
+  let extra_returns
+  const convertType = 'article'
   if (enforceMaxArticles === undefined) {
     enforceMaxArticles = true
   }
@@ -262,14 +187,290 @@ async function convertArticle({
     convertOptionsExtra = {}
   }
   let nestedSetNeedsUpdate = true
+  const source = ourbigbook.modifyEditorInput(titleSource, bodySource).new
+  const idPrefix = `${AT_MENTION_CHAR}${author.username}`
   await sequelize.transaction({ transaction }, async (transaction) => {
-    if (render === undefined) {
-      render = true
+    // Determine the correct parentId from parentId and previousSiblingId
+    let newParentId = parentId
+    let newParentArticle
+    let parentIdRow
+    const parentAndPreviousSiblingPromises = []
+    if (newParentId !== undefined) {
+      const findParent = async (isSynonym) => {
+        let include
+        const idInclude = {
+          model: File,
+          required: false,
+          as: 'toplevelId',
+          include: [
+            {
+              model: Article,
+              as: 'articles',
+            }
+          ],
+        }
+        if (isSynonym) {
+          include = [{
+            model: Ref,
+            as: 'from',
+            required: true,
+            where: {
+              type: Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
+            },
+            include: [{
+              model: Id,
+              as: 'to',
+              include: [idInclude]
+            }]
+          }]
+        } else {
+          include = [idInclude]
+          if (newParentId !== idPrefix) {
+            // This ID is not the index and has a parent point to it.
+            // Therefore it cannot be a synonym.
+            include.push({
+              model: Ref,
+              as: 'to',
+              required: true,
+              where: {
+                type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+              },
+            })
+          }
+        }
+        return Id.findOne({
+          include,
+          subQuery: false,
+          where: {
+            idid: newParentId,
+            macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
+          },
+        })
+      }
+      parentAndPreviousSiblingPromises.push(...[
+        findParent(false),
+        findParent(true),
+      ])
+    } else {
+      parentAndPreviousSiblingPromises.push(null, null)
     }
-    let db_provider, input_path
-    ;({ db_provider, extra_returns, input_path, parentId, source } = await convert({
+    if (previousSiblingId !== undefined) {
+      let refWhere = {
+        to_id: previousSiblingId,
+        type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      }
+      if (newParentId !== undefined) {
+        refWhere.from_id = newParentId
+      }
+      parentAndPreviousSiblingPromises.push(
+        Ref.findOne({
+          where: refWhere,
+          include: [
+            {
+              model: Id,
+              as: 'to',
+              where: {
+                macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
+              },
+              include: [
+                {
+                  model: File,
+                  as: 'toplevelId',
+                  include: [
+                    {
+                      model: Article,
+                      as: 'articles',
+                    }
+                  ],
+                }
+              ],
+            },
+            {
+              model: Id,
+              as: 'from',
+              include: [
+                {
+                  model: File,
+                  as: 'toplevelId',
+                  include: [
+                    {
+                      model: Article,
+                      as: 'articles',
+                    }
+                  ],
+                }
+              ],
+            },
+          ],
+          transaction,
+        })
+      )
+    } else {
+      parentAndPreviousSiblingPromises.push(null)
+    }
+    const [
+      parentIdNoSynonym,
+      parentIdSynonym,
+      previousSiblingRef,
+    ] = await Promise.all(parentAndPreviousSiblingPromises)
+    if (parentIdNoSynonym) {
+      // We prefer the non-synonym header if there is one.
+      parentIdRow = parentIdNoSynonym
+    } else {
+      if (parentIdSynonym) {
+        // If there is no non-synonym header, we just pick one of the synonym headers at random.
+        // There can be more than one at the render: false phase before we are checking for duplicates.
+        const from = parentIdSynonym.from
+        if (from.length) {
+          // This is a synonym. Use the non-synonym target instead.
+          parentIdRow = from[0].to
+          newParentId = parentIdRow.idid
+        }
+      }
+    }
+    if (previousSiblingRef) {
+      // Deduce parent from given sibling.
+      parentIdRow = previousSiblingRef.from
+      newParentId = parentIdRow.idid
+      newParentArticle = parentIdRow.toplevelId.articles[0]
+    }
+
+    // Determine the input_path and toplevelId
+    let input_path
+    let toplevelId
+    {
+      let scope
+      // Do one pre-conversion to determine the file path.
+      // All we need from it is the toplevel header.
+      // E.g. this finds the correct path from {id= and {disambiguate=
+      // https://github.com/ourbigbook/ourbigbook/issues/304
+      // We do this even when path is known in order to catch
+      // the 'index' -> '' path to ID conversion.
+      const extra_returns = {}
+      const { convertOptions } = getConvertOpts({
+        authorUsername: author.username,
+        extraOptions: {
+          h1Only: true,
+        },
+        input_path: path === undefined ? undefined : `${path}.${OURBIGBOOK_EXT}`,
+        render: false,
+        sequelize,
+        splitHeaders: false,
+        transaction,
+        type: convertType,
+      })
+      await ourbigbook.convert(
+        source,
+        lodash.merge(convertOptions, convertOptionsExtra),
+        extra_returns,
+      )
+      const toplevelIdNoUsername = extra_returns.context.header_tree.children[0].ast.id
+      if (path === undefined && parentIdRow) {
+        const context = ourbigbook.convertInitContext()
+        const parentH1Ast = ourbigbook.AstNode.fromJSON(parentIdRow.ast_json, context)
+        parentH1Ast.id = parentIdRow.idid
+        const parentScope = parentH1Ast.calculate_scope()
+        // Inherit scope from parent. In particular, this forces every article by a
+        // user to be scoped under @username due to this being recursive from the index page.
+        scope = parentScope
+      }
+      if (scope === undefined) {
+        scope = idPrefix
+      }
+      input_path = `${scope}/${toplevelIdNoUsername ? toplevelIdNoUsername : INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`
+      toplevelId = `${scope}${toplevelIdNoUsername ? '/' + toplevelIdNoUsername : ''}`
+    }
+
+    // Check if the article already existed. If it did and
+    // if we are still missing parentId and previousSiblingId,
+    // take them from the old article.
+    const oldRef = await Ref.findOne({
+      where: {
+        to_id: [toplevelId],
+        type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      },
+      include: [
+        {
+          model: Id,
+          as: 'to',
+          include: [
+            {
+              model: File,
+              as: 'toplevelId',
+              include: [
+                {
+                  model: Article,
+                  as: 'articles',
+                }
+              ],
+            }
+          ]
+        },
+        {
+          model: Id,
+          as: 'from',
+          include: [
+            {
+              model: File,
+              as: 'toplevelId',
+              include: [
+                {
+                  model: Article,
+                  as: 'articles',
+                }
+              ],
+            }
+          ]
+        },
+      ],
+      transaction,
+    })
+    if (newParentId === undefined && oldRef) {
+      parentIdRow = oldRef.from
+    }
+    if (parentIdRow) {
+      // Happens when updating a page.
+      newParentId = parentIdRow.idid
+      newParentArticle = parentIdRow.toplevelId.articles[0]
+    }
+
+    // Error checking on parentId and previousSiblingId
+    if (parentId && !parentIdRow) {
+      throw new ValidationError(`parentId does not exist: "${newParentId}"`)
+    }
+    if (parentIdRow && parentIdRow.macro_name !== ourbigbook.Macro.HEADER_MACRO_NAME) {
+      throw new ValidationError(`parentId is not a header: "${newParentId}"`)
+    }
+    // Index conversion check.
+    const isIndex = toplevelId === idPrefix
+    if (isIndex && parentId !== undefined) {
+      // As of writing, this will be caught and thrown on the ancestors part of conversion:
+      // as changing the Index to anything else always leads to infinite loop.
+      throw new ValidationError(`cannot give parentId for index conversion, received "${toplevelId}"`)
+    }
+    if (previousSiblingId && !previousSiblingRef) {
+      throw new ValidationError(`previousSiblingId "${previousSiblingId}" does not exist, is not a header or is not a child of parentId "${newParentId}"`)
+    }
+    if (newParentId) {
+      if (
+        newParentId === toplevelId ||
+        (await fetch_ancestors(sequelize, newParentId, {
+          onlyIncludeId: toplevelId,
+          stopAt: toplevelId,
+          transaction,
+        })).length
+      ) {
+        throw new ValidationError(`parentId="${toplevelId}" would lead to infinite parent loop"`)
+      }
+    } else {
+      if (!isIndex) {
+        throw new ValidationError(`parent ID was not specified for new article "${toplevelId}", it is mandatory for new articles`)
+      }
+    }
+
+    let db_provider
+    ;({ db_provider, extra_returns } = await convert({
       author,
-      bodySource,
       convertOptionsExtra: Object.assign({
         forbid_multiheader: forbidMultiheaderMessage,
         // 1 to remove the @ from every single ID, but still keep the `username` prefix.
@@ -282,33 +483,32 @@ async function convertArticle({
         // the @username prefix, which is implemented as a scope. This does have an advantage: we can use the same
         // rendering on topic pages, and in the future on collections, which require elements by different users
         // to show fine under a single page.
-        fixedScopeRemoval: ourbigbook.AT_MENTION_CHAR.length,
+        fixedScopeRemoval: AT_MENTION_CHAR.length,
         h_web_metadata: true,
         prefixNonIndexedIdsWithParentId: true,
       }, convertOptionsExtra),
       forceNew,
       parentId,
-      path,
+      path: input_path,
       perf,
       render,
       sequelize,
-      titleSource,
+      source,
       transaction,
-      type: 'article',
+      type: convertType,
     }))
     const toplevelAst = extra_returns.context.header_tree.children[0].ast
-    const toplevelId = toplevelAst.id
     if (toplevelId !== toplevelId.toLowerCase() && !toplevelAst.validation_output.file.given) {
       throw new ValidationError(`Article ID cannot contain uppercase characters: "${toplevelId}"`)
     }
-    if (forceNew && (await sequelize.models.File.findOne({ where: { path: input_path }, transaction }))) {
+    if (forceNew && (await File.findOne({ where: { path: input_path }, transaction }))) {
       throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
     }
 
     // Synonym handling part 1
     const synonymHeadersArr = Array.from(extra_returns.context.synonym_headers)
     const synonymIds = synonymHeadersArr.map(h => h.id)
-    const synonymArticles = await sequelize.models.Article.getArticles({
+    const synonymArticles = await Article.getArticles({
       count: false,
       includeParentAndPreviousSibling: true,
       sequelize,
@@ -323,177 +523,13 @@ async function convertArticle({
       )
     }
 
-    // Determine the correct parentId from parentId and previousSiblingId
-    // It is kind of ugly that we do this after convert, meaning that convert()
-    // gets the wrong parentId as input. But it doesn't seem to matter and there were some
-    // dependency issues linked to the fact that toplevelId is calculated during convert()
-    // as it needs access to the h1 content. So let's keep this after for now.
-    const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
-    const isIndex = toplevelId === idPrefix
-    let newParentId = parentId
-    let newParentArticle
-    let refWhere = {
-      to_id: previousSiblingId,
-      type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-    }
-    if (newParentId !== undefined) {
-      refWhere.from_id = newParentId
-    }
-    const oldRef = await sequelize.models.Ref.findOne({
-      where: {
-        to_id: [toplevelId],
-        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-      },
-      include: [
-        {
-          model: sequelize.models.Id,
-          as: 'to',
-          include: [
-            {
-              model: sequelize.models.File,
-              as: 'toplevelId',
-              include: [
-                {
-                  model: sequelize.models.Article,
-                  as: 'articles',
-                }
-              ],
-            }
-          ]
-        },
-        {
-          model: sequelize.models.Id,
-          as: 'from',
-          include: [
-            {
-              model: sequelize.models.File,
-              as: 'toplevelId',
-              include: [
-                {
-                  model: sequelize.models.Article,
-                  as: 'articles',
-                }
-              ],
-            }
-          ]
-        },
-      ],
-      transaction,
-    })
-    if (!isIndex) {
-      // Non-index conversion.
-      if (newParentId === undefined) {
-        if (oldRef) {
-          // Happens when updating a page.
-          newParentId = oldRef.from.idid
-        } else if (previousSiblingId === undefined) {
-          throw new ValidationError(`missing parentId argument is mandatory for new articles and article ID "${toplevelId}" does not exist yet so it is new`)
-        }
-      }
-    }
-    let parentIdRow
-    let previousSiblingRef
-    ;[parentIdRow, previousSiblingRef] = await Promise.all([
-      newParentId === undefined
-        ? null
-        : sequelize.models.Id.findOne({
-            where: { idid: newParentId },
-            include: [
-              {
-                model: sequelize.models.File,
-                as: 'toplevelId',
-                include: [
-                  {
-                    model: sequelize.models.Article,
-                    as: 'articles',
-                  }
-                ],
-              },
-            ],
-            transaction
-          })
-      ,
-      previousSiblingId === undefined
-        ? null
-        : sequelize.models.Ref.findOne({
-            where: refWhere,
-            include: [
-              {
-                model: sequelize.models.Id,
-                as: 'to',
-                where: {
-                  macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
-                },
-                include: [
-                  {
-                    model: sequelize.models.File,
-                    as: 'toplevelId',
-                    include: [
-                      {
-                        model: sequelize.models.Article,
-                        as: 'articles',
-                      }
-                    ],
-                  }
-                ],
-              },
-              {
-                model: sequelize.models.Id,
-                as: 'from',
-                include: [
-                  {
-                    model: sequelize.models.File,
-                    as: 'toplevelId',
-                    include: [
-                      {
-                        model: sequelize.models.Article,
-                        as: 'articles',
-                      }
-                    ],
-                  }
-                ],
-              },
-            ],
-            transaction,
-          })
-    ])
-    if (previousSiblingRef) {
-      // Deduce parent from given sibling.
-      parentIdRow = previousSiblingRef.from
-      newParentId = parentIdRow.idid
-      newParentArticle = parentIdRow.toplevelId.articles[0]
-    }
-
-    // Error checking on parentId and previousSiblingId
-    if (parentId && !parentIdRow) {
-      throw new ValidationError(`parentId does not exist: "${newParentId}"`)
-    }
-    if (parentIdRow && parentIdRow.macro_name !== ourbigbook.Macro.HEADER_MACRO_NAME) {
-      throw new ValidationError(`parentId is not a header: "${newParentId}"`)
-    }
-    // Index conversion check.
-    if (isIndex && parentId !== undefined) {
-      // As of writing, this will be caught and thrown on the ancestors part of conversion:
-      // as changing the Index to anything else always leads to infinite loop.
-      throw new ValidationError(`cannot give parentId for index conversion, received "${toplevelId}"`)
-    }
-    if (previousSiblingId && !previousSiblingRef) {
-      throw new ValidationError(`previousSiblingId "${previousSiblingId}" does not exist, is not a header or is not a child of parentId "${newParentId}"`)
-    }
-    if (newParentId) {
-      const ancestors = await fetch_ancestors(sequelize, newParentId, { onlyIncludeId: toplevelId, stopAt: toplevelId, transaction })
-      if (ancestors.length) {
-        throw new ValidationError(`parentId="${toplevelId}" would lead to infinite parent loop"`)
-      }
-    }
-
     const update_database_after_convert_arg = {
       authorId: author.id,
       bodySource,
       extra_returns,
       db_provider,
       sequelize,
-      synonymHeaderPaths: Array.from(extra_returns.context.synonym_headers).map(h => `${h.id}.${ourbigbook.OURBIGBOOK_EXT}`),
+      synonymHeaderPaths: Array.from(extra_returns.context.synonym_headers).map(h => `${h.id}.${OURBIGBOOK_EXT}`),
       path: input_path,
       render,
       titleSource,
@@ -505,119 +541,139 @@ async function convertArticle({
     }
     const { file: newFile } = await update_database_after_convert(update_database_after_convert_arg)
 
+    // Set the article of the parent. The previously existing ref, if there was one,
+    // has already been necessarily removed during update_database_after_convert.
+    let new_to_id_index
+    if (previousSiblingRef) {
+      new_to_id_index = previousSiblingRef.to_id_index + 1
+    } else {
+      new_to_id_index = 0
+    }
+
     // Update nestedSetIndex and other things that can only be updated after the initial non-render pass.
     //
     // nestedSetIndex requires the initial non-render pass because it can only be calculated correctly
     //
     // Note however that nestedSetIndex is also calculated incrementally on the render pass, and as a result,
     // article instances returned by this function do not have the correct final value for it.
-    if (render) {
-      let nestedSetSize
-      let newDepth = 0
-      let newNestedSetIndex = 0
-      let newNestedSetIndexParent
-      let newNestedSetNextSibling = 1
-      let new_to_id_index
-      let oldArticle
-      let oldDepth
-      let oldNestedSetIndex
-      let oldNestedSetIndexParent
-      let oldNestedSetNextSibling
-      let oldParentArticle
-      let oldParentId
-      let old_to_id_index
-
-      if (previousSiblingRef) {
-        newNestedSetIndex = previousSiblingRef.to.toplevelId.articles[0].nestedSetNextSibling
+    let nestedSetSize
+    let newDepth = 0
+    let newNestedSetIndex = 0
+    let newNestedSetIndexParent
+    let newNestedSetNextSibling = 1
+    let oldArticle
+    let oldDepth
+    let oldNestedSetIndex
+    let oldNestedSetIndexParent
+    let oldParentArticle
+    let oldParentId
+    let old_to_id_index
+    if (previousSiblingRef) {
+      const article = previousSiblingRef.to.toplevelId.articles[0]
+      if (article) {
+        newNestedSetIndex = article.nestedSetNextSibling
       }
-      if (parentIdRow) {
-        if (!previousSiblingRef) {
-          newParentArticle = parentIdRow.toplevelId.articles[0]
-        }
+    }
+    if (parentIdRow) {
+      if (!previousSiblingRef) {
+        newParentArticle = parentIdRow.toplevelId.articles[0]
       }
-      if (newParentArticle) {
-        newDepth = newParentArticle.depth + 1
-        if (!previousSiblingRef) {
-          newNestedSetIndex = newParentArticle.nestedSetIndex + 1
-        }
-        newNestedSetIndexParent = newParentArticle.nestedSetIndex
+    }
+    if (newParentArticle) {
+      newDepth = newParentArticle.depth + 1
+      if (!previousSiblingRef) {
+        newNestedSetIndex = newParentArticle.nestedSetIndex + 1
       }
-      if (oldRef) {
-        oldArticle = oldRef.to.toplevelId.articles[0]
+      newNestedSetIndexParent = newParentArticle.nestedSetIndex
+    }
+    if (oldRef) {
+      oldParentArticle = oldRef.from.toplevelId.articles[0]
+      oldParentId = oldRef.from_id
+      old_to_id_index = oldRef.to_id_index
+      oldArticle = oldRef.to.toplevelId.articles[0]
+      if (oldArticle) {
         oldNestedSetIndex = oldArticle.nestedSetIndex
-        oldNestedSetNextSibling = oldArticle.nestedSetNextSibling
         nestedSetSize = oldArticle.nestedSetNextSibling - oldArticle.nestedSetIndex
-        oldParentArticle = oldRef.from.toplevelId.articles[0]
-        oldParentId = oldRef.from_id
-        old_to_id_index = oldRef.to_id_index,
         oldNestedSetIndexParent = oldParentArticle.nestedSetIndex
         oldDepth = oldArticle.depth
-      } else {
-        nestedSetSize = 1
       }
-      newNestedSetNextSibling = newNestedSetIndex + nestedSetSize
-      if (isIndex) {
-        // It would be better to handle this by oldArticle to the old article.
-        // But we don't have it in this case because there is no oldRef. So let's fake it until things blow up somehow.
-        oldNestedSetIndex = newNestedSetIndex
-        oldNestedSetNextSibling = newNestedSetNextSibling
-        oldDepth = newDepth
-      }
-      if (previousSiblingRef) {
-        new_to_id_index = previousSiblingRef.to_id_index + 1
-      } else {
-        new_to_id_index = 0
-      }
-      nestedSetNeedsUpdate = !updateNestedSetIndex && (newParentId !== oldParentId || new_to_id_index !== old_to_id_index)
-      if (nestedSetNeedsUpdate) {
-        author.update({ nestedSetNeedsUpdate: true })
-      }
+    } else if (isIndex) {
+      old_to_id_index = 0
+    }
+    const doUpdateNestedSetIndex =
+      updateNestedSetIndex &&
+      // Don't update if not rendering, as articles might not exist and we store
+      // nested information set in Article columns.
+      // It would have been cleaner if the nested set was not a part of articles directly.
+      // then we wouldn't have to think about this kind of issue.
+      render &&
+      // Can happen if the new position does not have an article yet.
+      newNestedSetIndex !== undefined
+    if (!oldArticle) {
+      nestedSetSize = 1
+    }
+    newNestedSetNextSibling = newNestedSetIndex + nestedSetSize
+    if (isIndex) {
+      // It would be better to handle this by oldArticle to the old article.
+      // But we don't have it in this case because there is no oldRef. So let's fake it until things blow up somehow.
+      oldNestedSetIndex = newNestedSetIndex
+      oldDepth = newDepth
+    }
+    nestedSetNeedsUpdate = !doUpdateNestedSetIndex &&
+      (
+        newParentId !== oldParentId ||
+        new_to_id_index !== old_to_id_index
+      )
+    if (nestedSetNeedsUpdate && !author.nestedSetNeedsUpdate) {
+      await author.update({ nestedSetNeedsUpdate: true }, { transaction })
+    }
 
-      //const whereAuthorInclude = {
-      //  model: sequelize.models.File,
-      //  as: 'file',
-      //  where: {
-      //    authorId: author.id,
-      //  },
-      //}
+    if (
+      // Fails only for the index page which has no parent.
+      newParentId !== undefined &&
+      // If the article is new, create space to insert it there.
+      // For the moving of existing articles however, we leave the space opening up to the
+      // Article.treeMoveRangeTo function instead.
+      updateTree
+    ) {
+      const openSpaceForNestedSet = doUpdateNestedSetIndex && !oldArticle
+      await Article.treeOpenSpace({
+        parentNestedSetIndex: newNestedSetIndexParent,
+        perf,
+        nestedSetIndex: newNestedSetIndex,
+        parentId: newParentId,
+        shiftNestedSetBy: nestedSetSize,
+        shiftRefBy: 1,
+        to_id_index: new_to_id_index,
+        transaction,
+        updateRef: !oldRef,
+        updateNestedSetIndex: openSpaceForNestedSet,
+        username: author.username,
+      })
       if (
-        // Fails only for the index page which has no parent.
-        newParentId !== undefined
+        openSpaceForNestedSet &&
+        newNestedSetIndex <= oldNestedSetIndexParent
       ) {
-        if (!oldRef && updateTree) {
-          // If the article is new, create space to insert it there.
-          // For the moving of existing articles however, we leave the space opening up to the Article.treeMoveRangeTo function instead.
-          await sequelize.models.Article.treeOpenSpace({
-            parentNestedSetIndex: newNestedSetIndexParent,
-            perf,
-            nestedSetIndex: newNestedSetIndex,
-            parentId: newParentId,
-            shiftNestedSetBy: nestedSetSize,
-            shiftRefBy: 1,
-            to_id_index: new_to_id_index,
-            transaction,
-            updateNestedSetIndex,
-            username: author.username,
-          })
-          if (newNestedSetIndex <= oldNestedSetIndexParent) {
-            oldNestedSetIndexParent += nestedSetSize
-          }
-          // Set the article of the parent. The previously existing ref, if there was one,
-          // has already been necessarily removed during update_database_after_convert.
-          await sequelize.models.Ref.create(
-            {
-              type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-              to_id: toplevelId,
-              from_id: newParentId,
-              inflected: false,
-              to_id_index: new_to_id_index,
-              defined_at: null,
-            },
-            { transaction }
-          )
-        }
+        oldNestedSetIndexParent += nestedSetSize
       }
+    }
 
+    if (!isIndex && !oldRef) {
+      // Must come after the previous treeOpenSpace call.
+      await Ref.create(
+        {
+          type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          to_id: toplevelId,
+          from_id: newParentId,
+          inflected: false,
+          to_id_index: new_to_id_index,
+          defined_at: null,
+        },
+        { transaction }
+      )
+    }
+
+    if (render) {
       // Actual rendering.
       const [check_db_errors, file] = await Promise.all([
         ourbigbook_nodejs_webpack_safe.check_db(
@@ -629,7 +685,7 @@ async function convertArticle({
             transaction,
           },
         ),
-        sequelize.models.File.findOne({ where: { path: input_path }, transaction }),
+        File.findOne({ where: { path: input_path }, transaction }),
       ])
       if (check_db_errors.length > 0) {
         throw new ValidationError(check_db_errors)
@@ -639,7 +695,7 @@ async function convertArticle({
         const rendered_output = extra_returns.rendered_outputs[outpath]
         const renderFull = rendered_output.full
         const topicId = outpath.slice(
-          ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1,
+          AT_MENTION_CHAR.length + author.username.length + 1,
           -ourbigbook.HTML_EXT.length - 1
         )
         const articleArg = {
@@ -648,7 +704,7 @@ async function convertArticle({
           h1Render: renderFull.substring(0, rendered_output.h1RenderLength),
           h2Render: rendered_output.h2Render,
           render: renderFull.substring(rendered_output.h1RenderLength),
-          slug: outpath.slice(ourbigbook.AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
+          slug: outpath.slice(AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
           titleRender: rendered_output.title,
           titleSource: rendered_output.titleSource,
           titleSourceLine:
@@ -661,10 +717,8 @@ async function convertArticle({
         if (list !== undefined) {
           articleArg.list = list
         }
-        if (updateNestedSetIndex) {
+        if (doUpdateNestedSetIndex) {
           articleArg.depth = newDepth
-        } else {
-          articleArg.depth = oldDepth
         }
         if (author.hideArticleDates) {
           articleArg.createdAt = hideArticleDatesDate
@@ -676,14 +730,11 @@ async function convertArticle({
         }
       }
       const articleArgs0 = articleArgs[0]
-      if (updateNestedSetIndex) {
+      if (doUpdateNestedSetIndex) {
         // Due to this limited setup, nested set ordering currently only works on one article per source setups.
         // https://docs.ourbigbook.com/todo#web-create-multiple-headers
         articleArgs0.nestedSetIndex = newNestedSetIndex
         articleArgs0.nestedSetNextSibling = newNestedSetNextSibling
-      } else {
-        articleArgs0.nestedSetIndex = oldNestedSetIndex
-        articleArgs0.nestedSetNextSibling = oldNestedSetNextSibling
       }
 
       const updateOnDuplicate = [
@@ -708,7 +759,7 @@ async function convertArticle({
       if (list !== undefined) {
         updateOnDuplicate.push('list')
       }
-      await sequelize.models.Article.bulkCreate(
+      await Article.bulkCreate(
         articleArgs,
         {
           updateOnDuplicate,
@@ -721,161 +772,164 @@ async function convertArticle({
 
       // Find here because upsert not yet supported in SQLite, so above updateOnDuplicate wouldn't work.
       // https://stackoverflow.com/questions/29063232/how-to-get-the-id-of-an-inserted-or-updated-record-in-sequelize-upsert
-      articles = await sequelize.models.Article.getArticles({
+      articles = await Article.getArticles({
         count: false,
         order: 'slug',
         orderAscDesc: 'ASC',
         sequelize,
-        slug: articleArgs.map(arg => sequelize.models.Article.slugTransform(arg.slug)),
+        slug: articleArgs.map(arg => Article.slugTransform(arg.slug)),
         transaction,
       })
-      if (updateTree) {
-        await Promise.all([
-          // Check file limit
-          sequelize.models.File.count({ where: { authorId: author.id }, transaction }).then(articleCountByLoggedInUser => {
-            if (enforceMaxArticles) {
-              const err = hasReachedMaxItemCount(author, articleCountByLoggedInUser - 1, 'articles')
-              if (err) { throw new ValidationError(err, 403) }
-            }
-          }),
-          (async () => {
-            if (oldRef) {
-              // Move an existing article to the new location determined by the user via API parentId field.
-              await sequelize.models.Article.treeMoveRangeTo({
-                logging: false,
-                depthDelta: newDepth - oldDepth,
-                // Total toplevel sibling articles to be moved, excluding their descendants.
-                nArticlesToplevel: 1,
-                // Total articles to be moved, including toplevel siblings and their descendants.
-                nArticles: nestedSetSize,
-                newNestedSetIndex,
-                newNestedSetIndexParent,
-                newParentId,
-                new_to_id_index,
-                oldNestedSetIndex,
-                oldNestedSetIndexParent,
-                oldParentId,
-                old_to_id_index,
-                perf,
-                transaction,
-                updateNestedSetIndex,
-                username: author.username,
-              })
-            }
-
-            // Synonym handling part 2
-            // Now that we have the new article we merge any pre-existing synonyms into it.
-            // All issues are moved into this new article, and then
-            // the synonym articles are destroyed.
-            if (synonymIds.length) {
-              const article = articles[0]
-              // TODO this find could be replaced with manual updating of the prefetched articles
-              // to account for things moving around.
-              const synonymArticles = await sequelize.models.Article.getArticles({
-                count: false,
-                includeParentAndPreviousSibling: true,
-                sequelize,
-                slug: synonymIds.map(id => idToSlug(id)),
-                transaction,
-              })
-              const synonymIdsToArticles = {}
-              for (const article of synonymArticles) {
-                synonymIdsToArticles[slugToId(article.slug)] = article
-              }
-
-              let synonymNewNestedSetIndex = newNestedSetIndex + nestedSetSize
-              let [lastIssue, synonym_new_to_id_index_ref] = await Promise.all([
-                sequelize.models.Issue.findOne({
-                  order: [['number', 'DESC']],
-                  where: { articleId: article.id, },
-                  transaction,
-                }),
-                sequelize.models.Ref.findOne({
-                  where: {
-                    from_id: toplevelId,
-                    type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-                    to_id_index: {[sequelize.Sequelize.Op.ne]: null},
-                  },
-                  order: [['to_id_index', 'DESC']],
-                  transaction
-                }),
-                sequelize.models.UserLikeArticle.destroy({
-                  where: { articleId: synonymArticles.map(a => a.id) },
-                  transaction
-                }),
-              ])
-              let synonym_new_to_id_index = synonym_new_to_id_index_ref === null ? 0 : synonym_new_to_id_index_ref.to_id_index + 1
-              let issueNumberDelta = lastIssue ? lastIssue.number : 0
-              for (const synonymId of synonymIds) {
-                const synonymArticle = synonymIdsToArticles[synonymId]
-                if (synonymArticle) {
-                  const synonymNDescendantArticles = synonymArticle.nestedSetNextSibling - synonymArticle.nestedSetIndex - 1
-                  const synonymNChildArticles = await sequelize.models.Ref.count({
-                    where: {
-                      from_id: synonymArticle.idid,
-                      type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-                    },
-                    transaction
-                  })
-                  const [[synonymNIssues], _] = await Promise.all([
-                    // Move issues of synonym to new article.
-                    sequelize.models.Issue.update(
-                      {
-                        number: sequelize.fn(`${issueNumberDelta} + `, sequelize.col('number')),
-                        articleId: article.id,
-                      },
-                      {
-                        where: { articleId: synonymArticle.id, },
-                        transaction,
-                      }
-                    ),
-                    // Move all children of deleted synonym to its new parent.
-                    sequelize.models.Article.treeMoveRangeTo({
-                      logging: false,
-                      depthDelta: article.depth - synonymArticle.depth,
-                      nArticlesToplevel: synonymNChildArticles,
-                      nArticles: synonymNDescendantArticles,
-                      newNestedSetIndex: synonymNewNestedSetIndex,
-                      newNestedSetIndexParent: article.nestedSetIndex,
-                      newParentId: toplevelId,
-                      new_to_id_index: synonym_new_to_id_index,
-                      oldNestedSetIndex: synonymArticle.nestedSetIndex + 1,
-                      oldNestedSetIndexParent: synonymArticle.nestedSetIndex,
-                      oldParentId: synonymArticle.idid,
-                      old_to_id_index: 0,
-                      transaction,
-                      updateNestedSetIndex,
-                      username: author.username,
-                    })
-                  ])
-
-                  // Account for changes in position due to descendant moving since we fetched this from DB.
-                  let forceNestedSetIndex
-                  if (
-                    synonymArticle.parentId.idid === newParentId &&
-                    new_to_id_index <= synonym_new_to_id_index
-                  ) {
-                    synonymArticle.nestedSetIndex += synonymNDescendantArticles
-                  }
-                  synonymArticle.nestedSetNextSibling = synonymArticle.nestedSetIndex + 1
-
-                  await synonymArticle.destroySideEffects({
-                    logging: false,
-                    transaction,
-                  })
-                  synonymNewNestedSetIndex += synonymNDescendantArticles
-                  synonym_new_to_id_index += synonymNChildArticles
-                  issueNumberDelta += synonymNIssues
-                }
-              }
-            }
-          })(),
-          !oldRef && sequelize.models.Topic.updateTopics(articles, { newArticles: true, transaction }),
-          !oldRef && Promise.all(articles.map(article => author.addArticleFollowSideEffects(article, { transaction }))),
-        ])
-      }
     } else {
       articles = []
+    }
+    if (updateTree) {
+      await Promise.all([
+        // Check file limit
+        render && File.count({ where: { authorId: author.id }, transaction }).then(articleCountByLoggedInUser => {
+          if (enforceMaxArticles) {
+            const err = hasReachedMaxItemCount(author, articleCountByLoggedInUser - 1, 'articles')
+            if (err) { throw new ValidationError(err, 403) }
+          }
+        }),
+        (async () => {
+          if (oldRef) {
+            // Move an existing article to the new location determined by the user via API parentId field.
+            await Article.treeMoveRangeTo({
+              logging: false,
+              depthDelta: newDepth - oldDepth,
+              // Total toplevel sibling articles to be moved, excluding their descendants.
+              nArticlesToplevel: 1,
+              // Total articles to be moved, including toplevel siblings and their descendants.
+              nArticles: nestedSetSize,
+              newNestedSetIndex,
+              newNestedSetIndexParent,
+              newParentId,
+              new_to_id_index,
+              oldNestedSetIndex,
+              oldNestedSetIndexParent,
+              oldParentId,
+              old_to_id_index,
+              perf,
+              transaction,
+              updateNestedSetIndex: doUpdateNestedSetIndex && oldArticle !== undefined,
+              username: author.username,
+            })
+          }
+
+          // Synonym handling part 2
+          // Now that we have the new article we merge any pre-existing synonyms into it.
+          // All issues are moved into this new article, and then
+          // the synonym articles are destroyed.
+          if (render && synonymIds.length) {
+            const article = articles[0]
+            // TODO this find could be replaced with manual updating of the prefetched articles
+            // to account for things moving around.
+            const synonymArticles = await Article.getArticles({
+              count: false,
+              includeParentAndPreviousSibling: true,
+              sequelize,
+              slug: synonymIds.map(id => idToSlug(id)),
+              transaction,
+            })
+            const synonymIdsToArticles = {}
+            for (const article of synonymArticles) {
+              synonymIdsToArticles[slugToId(article.slug)] = article
+            }
+
+            let synonymNewNestedSetIndex = newNestedSetIndex + nestedSetSize
+            let [lastIssue, synonym_new_to_id_index_ref] = await Promise.all([
+              Issue.findOne({
+                order: [['number', 'DESC']],
+                where: { articleId: article.id, },
+                transaction,
+              }),
+              Ref.findOne({
+                where: {
+                  from_id: toplevelId,
+                  type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+                  to_id_index: {[sequelize.Sequelize.Op.ne]: null},
+                },
+                order: [['to_id_index', 'DESC']],
+                transaction
+              }),
+              UserLikeArticle.destroy({
+                where: { articleId: synonymArticles.map(a => a.id) },
+                transaction
+              }),
+            ])
+            let synonym_new_to_id_index = synonym_new_to_id_index_ref === null ? 0 : synonym_new_to_id_index_ref.to_id_index + 1
+            let issueNumberDelta = lastIssue ? lastIssue.number : 0
+            for (const synonymId of synonymIds) {
+              const synonymArticle = synonymIdsToArticles[synonymId]
+              if (synonymArticle) {
+                const synonymNDescendantArticles = synonymArticle.nestedSetNextSibling - synonymArticle.nestedSetIndex - 1
+                const synonymNChildArticles = await Ref.count({
+                  where: {
+                    from_id: synonymArticle.idid,
+                    type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+                  },
+                  transaction
+                })
+                const [[synonymNIssues], _] = await Promise.all([
+                  // Move issues of synonym to new article.
+                  Issue.update(
+                    {
+                      number: sequelize.fn(`${issueNumberDelta} + `, sequelize.col('number')),
+                      articleId: article.id,
+                    },
+                    {
+                      where: { articleId: synonymArticle.id, },
+                      transaction,
+                    }
+                  ),
+                  // Move all children of deleted synonym to its new parent.
+                  Article.treeMoveRangeTo({
+                    logging: false,
+                    depthDelta: article.depth - synonymArticle.depth,
+                    nArticlesToplevel: synonymNChildArticles,
+                    nArticles: synonymNDescendantArticles,
+                    newNestedSetIndex: synonymNewNestedSetIndex,
+                    newNestedSetIndexParent: article.nestedSetIndex,
+                    newParentId: toplevelId,
+                    new_to_id_index: synonym_new_to_id_index,
+                    oldNestedSetIndex: synonymArticle.nestedSetIndex + 1,
+                    oldNestedSetIndexParent: synonymArticle.nestedSetIndex,
+                    oldParentId: synonymArticle.idid,
+                    old_to_id_index: 0,
+                    transaction,
+                    updateNestedSetIndex: doUpdateNestedSetIndex,
+                    username: author.username,
+                  })
+                ])
+
+                // Account for changes in position due to descendant moving since we fetched this from DB.
+                let forceNestedSetIndex
+                if (
+                  synonymArticle.parentId.idid === newParentId &&
+                  new_to_id_index <= synonym_new_to_id_index
+                ) {
+                  synonymArticle.nestedSetIndex += synonymNDescendantArticles
+                }
+                synonymArticle.nestedSetNextSibling = synonymArticle.nestedSetIndex + 1
+
+                await synonymArticle.destroySideEffects({
+                  logging: false,
+                  transaction,
+                })
+                synonymNewNestedSetIndex += synonymNDescendantArticles
+                synonym_new_to_id_index += synonymNChildArticles
+                issueNumberDelta += synonymNIssues
+              }
+            }
+          }
+        })(),
+        render && !oldArticle && Topic.updateTopics(articles, { newArticles: true, transaction }),
+        render &&
+          !oldArticle && Promise.all(articles.map(
+            article => author.addArticleFollowSideEffects(article, { transaction })
+          )),
+      ])
     }
   })
   if (perf) {
@@ -902,14 +956,14 @@ async function convertComment({
   return sequelize.transaction({ transaction }, async (transaction) => {
     const { extra_returns } = await convert({
       author: user,
-      bodySource: source,
       convertOptionsExtra: {
         fixedScopeRemoval: 0,
         tocIdPrefix: `${commentIdPrefix}${number}-`,
       },
-      fakeUsernameDir: `@${user.username}/${commentIdPrefix}${number}`,
+      path: `@${user.username}/${commentIdPrefix}${number}/${INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`,
       render: true,
       sequelize,
+      source,
       splitHeaders: false,
       titleSource: undefined,
       transaction,
@@ -947,7 +1001,7 @@ async function convertComment({
   })
 }
 
-async function convertIssue({
+async function convertDiscussion({
   article,
   bodySource,
   date,
@@ -976,25 +1030,22 @@ async function convertIssue({
       article = issue.article
     }
   }
-  if (titleSource.length > maxArticleTitleSize) {
-    //throw new ValidationError(`Title source too long: ${titleSource.length} bytes, maximum: ${maxArticleTitleSize} bytes, title: ${titleSource}`)
-  }
+  const source = ourbigbook.modifyEditorInput(titleSource, bodySource).new
   return sequelize.transaction({ transaction }, async (transaction) => {
     // We use routes here to achieve a path that matches the exact length of what the issue will render to,
     // so that the internal links will render with the correct number of ../
     const { extra_returns } = await convert({
       author: user,
-      bodySource,
       convertOptionsExtra: {
         fixedScopeRemoval: 0,
         h_web_metadata: true,
       },
-      fakeUsernameDir: `@${user.username}/_issue-${article.slug}/${number}`,
+      path: `@${user.username}/_issue-${article.slug}/${number}/${INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`,
       render: true,
       sequelize,
+      source,
       splitHeaders: false,
       transaction,
-      titleSource,
       type: 'issue',
     })
     const outpath = Object.keys(extra_returns.rendered_outputs)[0]
@@ -1035,14 +1086,10 @@ async function convertIssue({
   })
 }
 
-function scopeIdToPath(scope, id) {
-  return `${scope}/${id ? id : ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`
-}
-
 module.exports = {
   convert,
   convertArticle,
   convertComment,
-  convertIssue,
+  convertDiscussion,
   getConvertOpts,
 }

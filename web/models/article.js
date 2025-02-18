@@ -103,8 +103,14 @@ module.exports = (sequelize) => {
       // as done with updateNestedSetIndex=false.
       //
       // https://stackoverflow.com/questions/192220/what-is-the-most-efficient-elegant-way-to-parse-a-flat-table-into-a-tree/42781302#42781302
+      //
+      // A cleaner approach would be to have this outside of web as a separate table that points to Id,
+      // as there's no reason why it shouldn't exist outside of web. That would also allow us to
+      // add articles of other users on any users's trees. One day.
       nestedSetIndex: {
         type: DataTypes.INTEGER,
+        // Can be NULL when we create an article without updating
+        // the nested set index at the same time, e.g. with updateNestedSetIndex=false
         allowNull: true,
       },
       // Points to the nestedSetIndex of the next sibling, or where the
@@ -228,6 +234,7 @@ module.exports = (sequelize) => {
       // Log previous nested set state, and the queries done on it.
       logging = false
     }
+    const { Article, Ref } = sequelize.models
     if (logging) {
       console.log('Article.treeMoveRangeTo');
       console.log({
@@ -247,110 +254,115 @@ module.exports = (sequelize) => {
       })
     }
     return sequelize.transaction({ transaction }, async (transaction) => {
-      if (
         // As an optimization, skip move it position didn't change.
-        oldParentId !== newParentId ||
+      const updateRef = oldParentId !== newParentId ||
         old_to_id_index !== new_to_id_index
-      ) {
-        // Open up destination space.
-        await sequelize.models.Article.treeOpenSpace({
-          logging,
-          parentNestedSetIndex: newNestedSetIndexParent,
-          nestedSetIndex: newNestedSetIndex,
-          parentId: newParentId,
-          perf,
-          shiftNestedSetBy: nArticles,
-          shiftRefBy: nArticlesToplevel,
-          to_id_index: new_to_id_index,
-          transaction,
-          updateNestedSetIndex,
-          username,
-        })
+      const doUpdateNestedSetIndex = updateNestedSetIndex &&
+        (
+          oldNestedSetIndex !== newNestedSetIndex ||
+          oldNestedSetIndexParent !== newNestedSetIndexParent
+        )
 
-        // Update indices to account for space opened upbefore insertion.
-        let nestedSetDelta = newNestedSetIndex - oldNestedSetIndex
-        if (newNestedSetIndex <= oldNestedSetIndex) {
-          oldNestedSetIndex += nArticles
-          nestedSetDelta -= nArticles
-          if (oldParentId === newParentId) {
-            old_to_id_index += nArticlesToplevel
-          }
-        }
-        if (newNestedSetIndex <= oldNestedSetIndexParent) {
-          oldNestedSetIndexParent += nArticles
-        }
+      // Open up destination space.
+      await Article.treeOpenSpace({
+        logging,
+        parentNestedSetIndex: newNestedSetIndexParent,
+        nestedSetIndex: newNestedSetIndex,
+        parentId: newParentId,
+        perf,
+        shiftNestedSetBy: nArticles,
+        shiftRefBy: nArticlesToplevel,
+        to_id_index: new_to_id_index,
+        transaction,
+        updateRef,
+        updateNestedSetIndex: doUpdateNestedSetIndex,
+        username,
+      })
 
-        // Move articles to new location
-        if (logging) {
-          console.log('Article.treeMoveRangeTo move');
-          console.log(await Article.treeToString({ transaction }))
+      // Update indices to account for space opened up before insertion.
+      let nestedSetDelta = newNestedSetIndex - oldNestedSetIndex
+      if (newNestedSetIndex <= oldNestedSetIndex) {
+        oldNestedSetIndex += nArticles
+        nestedSetDelta -= nArticles
+        if (oldParentId === newParentId) {
+          old_to_id_index += nArticlesToplevel
         }
-        await Promise.all([
-          updateNestedSetIndex && sequelize.query(`
-UPDATE "Article" SET
-  "nestedSetIndex" = "nestedSetIndex" + :nestedSetDelta,
-  "nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetDelta,
-  "depth" = "depth" + :depthDelta
-WHERE
-  "nestedSetIndex" >= :oldNestedSetIndex AND
-  "nestedSetIndex" < :oldNestedSetNextSibling AND
-  "id" IN (
-    SELECT "Article"."id" from "Article"
-    INNER JOIN "File"
-      ON "Article"."fileId" = "File"."id"
-    INNER JOIN "User"
-      ON "File"."authorId" = "User"."id"
-    WHERE "User"."username" = :username
-  )
-`,
-            {
-              logging: logging ? console.log : false,
-              transaction,
-              replacements: {
-                depthDelta,
-                oldNestedSetIndex,
-                oldNestedSetNextSibling: oldNestedSetIndex + nArticles,
-                nestedSetDelta,
-                newNestedSetIndex,
-                username,
-              },
-            },
-          ),
-          sequelize.models.Ref.update(
-            {
-              from_id: newParentId,
-              to_id_index: sequelize.fn(`${new_to_id_index - old_to_id_index} + `, sequelize.col('to_id_index')),
-            },
-            {
-              logging: logging ? console.log : false,
-              where: {
-                from_id: oldParentId,
-                type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-                to_id_index: {
-                  [Op.gte]: old_to_id_index,
-                  [Op.lt]: old_to_id_index + nArticlesToplevel,
-                },
-              },
-              transaction,
-            }
-          )
-        ])
-
-        // Close up space where articles were removed from.
-        await sequelize.models.Article.treeOpenSpace({
-          logging,
-          nestedSetIndex: oldNestedSetIndex,
-          parentNestedSetIndex: oldNestedSetIndexParent,
-          perf,
-          parentId: oldParentId,
-          shiftNestedSetBy: -nArticles,
-          shiftRefBy: -nArticlesToplevel,
-          to_id_index: old_to_id_index,
-          transaction,
-          updateNestedSetIndex,
-          username,
-        })
       }
+      if (newNestedSetIndex <= oldNestedSetIndexParent) {
+        oldNestedSetIndexParent += nArticles
+      }
+
+      // Move articles to new location
+      if (logging) {
+        console.log('Article.treeMoveRangeTo move');
+        console.log(await Article.treeToString({ transaction }))
+      }
+      await Promise.all([
+        doUpdateNestedSetIndex && sequelize.query(`
+UPDATE "Article" SET
+"nestedSetIndex" = "nestedSetIndex" + :nestedSetDelta,
+"nestedSetNextSibling" = "nestedSetNextSibling" + :nestedSetDelta,
+"depth" = "depth" + :depthDelta
+WHERE
+"nestedSetIndex" >= :oldNestedSetIndex AND
+"nestedSetIndex" < :oldNestedSetNextSibling AND
+"id" IN (
+  SELECT "Article"."id" from "Article"
+  INNER JOIN "File"
+    ON "Article"."fileId" = "File"."id"
+  INNER JOIN "User"
+    ON "File"."authorId" = "User"."id"
+  WHERE "User"."username" = :username
+)
+`,
+          {
+            logging: logging ? console.log : false,
+            transaction,
+            replacements: {
+              depthDelta,
+              oldNestedSetIndex,
+              oldNestedSetNextSibling: oldNestedSetIndex + nArticles,
+              nestedSetDelta,
+              newNestedSetIndex,
+              username,
+            },
+          },
+        ),
+        updateRef && Ref.update(
+          {
+            from_id: newParentId,
+            to_id_index: sequelize.fn(`${new_to_id_index - old_to_id_index} + `, sequelize.col('to_id_index')),
+          },
+          {
+            logging: logging ? console.log : false,
+            where: {
+              from_id: oldParentId,
+              type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+              to_id_index: {
+                [Op.gte]: old_to_id_index,
+                [Op.lt]: old_to_id_index + nArticlesToplevel,
+              },
+            },
+            transaction,
+          }
+        )
+      ])
+
+      // Close up space where articles were removed from.
+      await Article.treeOpenSpace({
+        logging,
+        nestedSetIndex: oldNestedSetIndex,
+        parentNestedSetIndex: oldNestedSetIndexParent,
+        perf,
+        parentId: oldParentId,
+        shiftNestedSetBy: -nArticles,
+        shiftRefBy: -nArticlesToplevel,
+        to_id_index: old_to_id_index,
+        transaction,
+        updateNestedSetIndex: doUpdateNestedSetIndex,
+        updateRef,
+        username,
+      })
     })
   }
 
@@ -588,11 +600,15 @@ WHERE
     to_id_index,
     transaction,
     updateNestedSetIndex,
+    updateRef,
     username,
   }) {
     if (logging === undefined) {
       // Log previous nested set state, and the queries done on it.
       logging = false
+    }
+    if (updateRef === undefined) {
+      updateRef = true
     }
     if (updateNestedSetIndex === undefined) {
       updateNestedSetIndex = true
@@ -623,7 +639,7 @@ WHERE
       await sequelize.transaction({ transaction }, async (transaction) => {
         return Promise.all([
           // Increment sibling indexes after point we are inserting from.
-          sequelize.models.Ref.increment('to_id_index', {
+          updateRef && sequelize.models.Ref.increment('to_id_index', {
             logging: logging ? console.log : false,
             by: shiftRefBy,
             where: {
@@ -1428,6 +1444,7 @@ WHERE
     article,
     getCount,
     getTagged,
+    logging,
     loggedInUser,
     // Get just the article itself. This is just as a way to get the number of
     // articles on same topic + discussion count which we already get the for the h2,
@@ -1447,6 +1464,9 @@ WHERE
   }) => {
     if (getTagged) {
       toplevelId = true
+    }
+    if (logging === undefined) {
+      logging = false
     }
     if (toc === undefined) {
       toc = false
@@ -1617,8 +1637,8 @@ WHERE
 FROM
   "Article"${!toc ? `
 INNER JOIN "User" AS "Article.Author" ON "Article"."authorId" = "Article.Author"."id"
-INNER JOIN "Topic" ON "Article"."topicId" = "Topic"."topicId"${toplevelId ? `INNER JOIN "${File.tableName}" ON "Article"."fileId" = "${File.tableName}"."id"
-` : ''}${loggedInUser ? `
+INNER JOIN "Topic" ON "Article"."topicId" = "Topic"."topicId"${toplevelId ? `
+INNER JOIN "${File.tableName}" ON "Article"."fileId" = "${File.tableName}"."id"` : ''}${loggedInUser ? `
 LEFT OUTER JOIN "Article" as "ArticleSameTopicByLoggedIn"
   ON "ArticleSameTopicByLoggedIn"."authorId" = :loggedInUserId AND
      "ArticleSameTopicByLoggedIn"."topicId" = "Article"."topicId"
@@ -1637,6 +1657,7 @@ LIMIT ${limit}` : ''}`}
 `
     }
     const queryOpts = {
+      logging,
       replacements: {
         authorUsername: article.author.username,
         loggedInUserId: loggedInUser ? loggedInUser.id : null,

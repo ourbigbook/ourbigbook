@@ -155,6 +155,7 @@ export const getServerSidePropsArticleHoc = ({
           article,
           getCount: true,
           loggedInUser,
+          logging: console.log,
           // This 10x made this be the dominating query on /wikibot when we last benchmarked.
           // (lots or empty articles) On /cirosantilli it didn't matter as much.
           limit: maxArticlesFetchToc,

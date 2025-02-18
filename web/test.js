@@ -164,6 +164,7 @@ async function createArticles(sequelize, author, opts) {
     bodySource: articleArg.bodySource,
     path: opts.path,
     parentId: articleArg.parentId || `${ourbigbook.AT_MENTION_CHAR}${author.username}`,
+    render: opts.render,
     sequelize,
     titleSource: articleArg.titleSource,
   })
@@ -362,7 +363,7 @@ it('User.findAndCountArticlesByFollowed', async function() {
   assert.strictEqual(count, 8)
 })
 
-it('Article.getArticlesInSamePage', async function test_Article__getArticlesInSamePage() {
+it('Article.getArticlesInSamePage simple', async function test_Article__getArticlesInSamePage() {
   let rows
   let article_0_0, article_0_0_0, article_1_0, article
   const sequelize = this.test.sequelize
@@ -437,7 +438,7 @@ it('Article.getArticlesInSamePage', async function test_Article__getArticlesInSa
   await user1.addArticleLikeSideEffects(article_0_0_0)
 
   // Add an issue to Title 0 0 0.
-  await convert.convertIssue({
+  await convert.convertDiscussion({
     article: article_0_0_0,
     bodySource: '',
     number: 1,
@@ -486,6 +487,44 @@ it('Article.getArticlesInSamePage', async function test_Article__getArticlesInSa
     { slug: 'user1/title-0-0',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
     { slug: 'user1/title-0-1',   topicCount: 2, issueCount: 0, hasSameTopic: true, liked: false },
     { slug: 'user1/title-0-1-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+  ])
+})
+
+it('Article.getArticlesInSamePage with render=false then render=true', async function test_Article__getArticlesInSamePageRenderFalse() {
+  let rows
+  let article_0_0, article_0_0_0, article_1_0, article
+  const sequelize = this.test.sequelize
+  const { Article } = sequelize.models
+  const user0 = await createUser(sequelize, 0)
+
+  // Create some articles.
+  for (const render of [false, true]) {
+    await createArticle(sequelize, user0, { render, titleSource: 'Title 0' })
+    await createArticle(sequelize, user0, { render, titleSource: 'Title 0 1', parentId: '@user0/title-0' })
+    await createArticle(sequelize, user0, {
+      titleSource: 'Title 0 0',
+      bodySource: '{tag=Title 0 1}\n',
+      parentId: '@user0/title-0',
+      render,
+    })
+    await createArticle(sequelize, user0, { render, titleSource: 'Title 0 0 0', parentId: '@user0/title-0-0'  })
+  }
+
+  // Test it.
+  article = await Article.getArticle({ sequelize, slug: 'user0/title-0' })
+  rows = await Article.getArticlesInSamePage({
+    article,
+    getTagged: true,
+    loggedInUser: user0,
+    sequelize,
+  })
+  assertRows(rows, [
+    { slug: 'user0/title-0-0',   topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+    { slug: 'user0/title-0-1',   topicCount: 1, issueCount: 0, hasSameTopic: true, liked: false },
+  ])
+  assertRows(rows[2].taggedArticles, [
+    { slug: 'user0/title-0-0' },
   ])
 })
 
@@ -2639,7 +2678,7 @@ it('api: resource limits', async () => {
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
       assertStatus(status, data)
 
-      // maxArticleSize resource limit is enforced for all users.
+      // maxArticleTitleSize resource limit is enforced for all users.
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(
         0, 0, 0, { titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })))
       assert.strictEqual(status, 422)
@@ -2834,7 +2873,7 @@ it('api: article tree: single user', async () => {
 
           // Circular parent loops to self fail gracefully.
           article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
-          ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics', render }))
+          ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render }))
           assert.strictEqual(status, 422)
         }
 
@@ -3252,8 +3291,7 @@ it('api: article tree: single user', async () => {
             createArticleArg({ i: 0, titleSource: 'Limit' }),
             { parentId: '@user0/mathematics', previousSiblingId: '@user0/derivative', render }
           ))
-          assert.strictEqual(status, 422)
-        }
+          assert.strictEqual(status, 422) }
 
       // Forbidden elements
 
@@ -3274,8 +3312,6 @@ it('api: article tree: update first sibling to become a child', async () => {
     let data, status, article
     const sequelize = test.sequelize
     const user = await test.createUserApi(0)
-    // Create a second user and index to ensure that the nested set indexes are independent for each user.
-    // Because of course we didn't do this when originally implementing.
     test.loginUser(user)
 
     await assertNestedSets(sequelize, [
@@ -3389,19 +3425,191 @@ it('api: article tree render=false', async () => {
   // in order to handle circular references without having one massive
   // server-side operation.
   await testApp(async (test) => {
-    let data, status, article
+    let data, status, article, ref
     const sequelize = test.sequelize
+    const { Ref } = sequelize.models
     const user = await test.createUserApi(0)
     test.loginUser(user)
-    for (const render of [false, true]) {
+
+    let render
+
+    render = false
+
+      // Create user0/mathematics
       article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: '<calculus>' })
       ;({data, status} = await createOrUpdateArticleApi(test, article, { render }))
       assertStatus(status, data)
 
+      // Parent Ref is setup correctly even with render=false.
+      ref = await Ref.findOne({
+        where: {
+          from_id: '@user0',
+          to_id: '@user0/mathematics',
+          type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+        },
+      })
+      assert.strictEqual(ref.to_id_index, 0)
+
+      // Create user0/calculus
       article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: '<mathematics>' })
-      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }, { render }))
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render }))
       assertStatus(status, data)
-    }
+
+      // Parent Ref is setup correctly even with render=false.
+      ref = await Ref.findOne({
+        where: {
+          from_id: '@user0/mathematics',
+          to_id: '@user0/calculus',
+          type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+        },
+      })
+      assert.strictEqual(ref.to_id_index, 0)
+
+      // Create user0/physics
+      article = createArticleArg({ i: 0, titleSource: 'Physics' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: undefined, previousSiblingId: '@user0/mathematics', render }))
+      assertStatus(status, data)
+
+      // Parent Ref is setup correctly even with render=false.
+      ref = await Ref.findOne({
+        where: {
+          from_id: '@user0',
+          to_id: '@user0/physics',
+          type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+        },
+      })
+      assert.strictEqual(ref.to_id_index, 1)
+
+    // Now the same sequence with render=true
+    render = true
+
+      await assertNestedSets(sequelize, [
+        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
+      ])
+
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: '<calculus>' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { render }))
+      assertStatus(status, data)
+
+        // The author is following the article.
+        ;({data, status} = await test.webApi.article('user0/mathematics'))
+        assertStatus(status, data)
+        assert.strictEqual(data.followerCount, 1)
+
+        // Topics are created.
+        ;({data, status} = await test.webApi.topics({ topicId: 'mathematics' }))
+        assertStatus(status, data)
+        assert.strictEqual(data.topics[0].topicId, 'mathematics')
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+        ])
+
+      article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: '<mathematics>' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render }))
+      assertStatus(status, data)
+
+        // The author is following the article.
+        ;({data, status} = await test.webApi.article('user0/calculus'))
+        assertStatus(status, data)
+        assert.strictEqual(data.followerCount, 1)
+
+        // Topics are created.
+        ;({data, status} = await test.webApi.topics({ topicId: 'calculus' }))
+        assertStatus(status, data)
+        assert.strictEqual(data.topics[0].topicId, 'calculus')
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/calculus' },
+        ])
+
+      article = createArticleArg({ i: 0, titleSource: 'Physics' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: undefined, previousSiblingId: '@user0/mathematics', render }))
+      assertStatus(status, data)
+
+        // The author is following the article.
+        ;({data, status} = await test.webApi.article('user0/physics'))
+        assertStatus(status, data)
+        assert.strictEqual(data.followerCount, 1)
+
+        // Topics are created.
+        ;({data, status} = await test.webApi.topics({ topicId: 'physics' }))
+        assertStatus(status, data)
+        assert.strictEqual(data.topics[0].topicId, 'physics')
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 4, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/calculus' },
+          { nestedSetIndex: 3, nestedSetNextSibling: 4, depth: 1, to_id_index: 1, slug: 'user0/physics' },
+        ])
+  })
+})
+
+it('api: article tree render=true on parent that only has render=false does not blow up', async () => {
+  await testApp(async (test) => {
+    let data, status, article, ref
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    let render
+
+    render = false
+
+      // Create user0/mathematics
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { render }))
+      assertStatus(status, data)
+
+      // Create user0/calculus
+      article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render }))
+      assertStatus(status, data)
+
+    // Now the same sequence with render=true
+    render = true
+
+      article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render }))
+      assertStatus(status, data)
+  })
+})
+
+it('api: article tree render=true on previousSiblingId that only has render=false does not blow up', async () => {
+  await testApp(async (test) => {
+    let data, status, article, ref
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    let render
+
+    render = false
+
+      // Create user0/mathematics
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { render }))
+      assertStatus(status, data)
+
+      // Create user0/calculus
+      article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render }))
+      assertStatus(status, data)
+
+      // Create user0/calculus
+      article = createArticleArg({ i: 0, titleSource: 'Algebra' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: undefined, previousSiblingId: '@user0/calculus', render }))
+      assertStatus(status, data)
+
+    // Now the same sequence with render=true
+    render = true
+
+      article = createArticleArg({ i: 0, titleSource: 'Algebra' })
+      ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: undefined, previousSiblingId: '@user0/calculus', render }))
+      assertStatus(status, data)
   })
 })
 
@@ -3423,45 +3631,50 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
       assertStatus(status, data)
       assert.strictEqual(data.nestedSetNeedsUpdate, false)
 
-      article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
-      ;({data, status} = await createOrUpdateArticleApi(test, article, { updateNestedSetIndex: false }))
-      assertStatus(status, data)
-      assert.strictEqual(data.nestedSetNeedsUpdate, true)
+      // Conversion with updateNestedSetIndex: false makes nestedSetNeedsUpdate true.
 
-      // user.nestedSetNeedsUpdate becomes true after the nested set is updated
-      ;({data, status} = await test.webApi.user('user0'))
-      assertStatus(status, data)
-      assert.strictEqual(data.nestedSetNeedsUpdate, true)
+        article = createArticleArg({ i: 0, titleSource: 'Mathematics' })
+        ;({data, status} = await createOrUpdateArticleApi(test, article, { updateNestedSetIndex: false }))
+        assertStatus(status, data)
+        assert.strictEqual(data.nestedSetNeedsUpdate, true)
 
-      await assertNestedSets(sequelize, [
-        { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/mathematics' },
-        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
-      ])
+        ;({data, status} = await test.webApi.user('user0'))
+        assertStatus(status, data)
+        assert.strictEqual(data.nestedSetNeedsUpdate, true)
 
-      article = createArticleArg({ i: 0, titleSource: 'Calculus' })
-      ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics', updateNestedSetIndex: false }))
-      assertStatus(status, data)
-      assert.strictEqual(data.nestedSetNeedsUpdate, true)
+        // The new article simply does not have nested set index position.
+        // The parent Ref is correct however.
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/mathematics' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
+        ])
 
-      await assertNestedSets(sequelize, [
-        { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/calculus' },
-        { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/mathematics' },
-        { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
-      ])
+        article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+        ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics', updateNestedSetIndex: false }))
+        assertStatus(status, data)
+        assert.strictEqual(data.nestedSetNeedsUpdate, true)
 
-      ;({data, status} = await test.webApi.articleUpdatedNestedSet('user0'))
-      assertStatus(status, data)
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/calculus' },
+          { nestedSetIndex: null, nestedSetNextSibling: null, depth: null, to_id_index: 0, slug: 'user0/mathematics' },
+          { nestedSetIndex: 0, nestedSetNextSibling: 1, depth: 0, to_id_index: null, slug: 'user0' },
+        ])
 
-      await assertNestedSets(sequelize, [
-        { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
-        { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
-        { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/calculus' },
-      ])
+      // articleUpdatedNestedSet fixes the tree and updates the nested set index
 
-      // user.nestedSetNeedsUpdate becomes false after the nested se is updated
-      ;({data, status} = await test.webApi.user('user0'))
-      assertStatus(status, data)
-      assert.strictEqual(data.nestedSetNeedsUpdate, false)
+        ;({data, status} = await test.webApi.articleUpdatedNestedSet('user0'))
+        assertStatus(status, data)
+
+        await assertNestedSets(sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+          { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0, slug: 'user0/calculus' },
+        ])
+
+        // User.nestedSetNeedsUpdate becomes false after the nested se is updated
+        ;({data, status} = await test.webApi.user('user0'))
+        assertStatus(status, data)
+        assert.strictEqual(data.nestedSetNeedsUpdate, false)
 
     // Update existing articles with updateNestedSetIndex=false
 
@@ -3485,23 +3698,32 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
         { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/mathematics' },
       ])
 
-    // nestedSetNeedsUpdate is false when there are no tree changes.
+    // nestedSetNeedsUpdate remains false when there are no tree changes.
     article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: 'Hacked' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assertStatus(status, data)
     assert.strictEqual(data.nestedSetNeedsUpdate, false)
+    ;({data, status} = await test.webApi.user('user0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.nestedSetNeedsUpdate, false)
 
-    // nestedSetNeedsUpdate is true when there are tree changes and render=false.
+    // nestedSetNeedsUpdate becomes true when there are tree changes and render=false.
     article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: 'Hacked' })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
     assertStatus(status, data)
     assert.strictEqual(data.nestedSetNeedsUpdate, true)
+    ;({data, status} = await test.webApi.user('user0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.nestedSetNeedsUpdate, true)
 
-    // nestedSetNeedsUpdate is false when there are no tree changes and render=false.
-    // TODO: false would be better here. But would require a bit of refactoring, and wouldn't
-    // help much on the CLI, so lazy now. For now it always returns "true" when render=false.
+    // createOrUpdateArticleApi nestedSetNeedsUpdate return is false when there are no tree changes and render=false.
+    // It does not consider the current user.nestedSetNeedsUpdate state, it only informs if the
+    // current change would have modified that state or not.
     article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: 'Hacked 2' })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
+    assertStatus(status, data)
+    assert.strictEqual(data.nestedSetNeedsUpdate, false)
+    ;({data, status} = await test.webApi.user('user0'))
     assertStatus(status, data)
     assert.strictEqual(data.nestedSetNeedsUpdate, true)
 
@@ -3511,6 +3733,9 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
     assertStatus(status, data)
     ;({data, status} = await test.webApi.articleUpdatedNestedSet('user0'))
     assertStatus(status, data)
+    ;({data, status} = await test.webApi.user('user0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.nestedSetNeedsUpdate, false)
 
     await assertNestedSets(sequelize, [
       { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
@@ -3518,9 +3743,12 @@ it('api: article tree: updateNestedSetIndex=false and /article/update-nested-set
       { nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 1, to_id_index: 1, slug: 'user0/calculus' },
     ])
 
-    // nestedSetNeedsUpdate is false when there are tree changes, but we are updating the index;
+    // nestedSetNeedsUpdate remains false when there are tree changes, but we are updating the index;
     article = createArticleArg({ i: 0, titleSource: 'Calculus', bodySource: 'Hacked 2' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+    assert.strictEqual(data.nestedSetNeedsUpdate, false)
+    ;({data, status} = await test.webApi.user('user0'))
     assertStatus(status, data)
     assert.strictEqual(data.nestedSetNeedsUpdate, false)
   })
@@ -3656,6 +3884,36 @@ it('api: child articles inherit scope from parent', async () => {
       test.loginUser(user)
     }
   }, { canTestNext: true })
+})
+
+it('api: child articles inherit scope from previousSiblingId', async () => {
+  // Parent is calculated from previousSiblingId, and then its scope
+  // is used as if parentId had been passed. Yes it is that bad, this was once broken.
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: '{scope}' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+
+    article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics' }))
+    assertStatus(status, data)
+
+    article = createArticleArg({ i: 0, titleSource: 'Algebra' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { 
+      parentId: undefined,
+      previousSiblingId: '@user0/mathematics/calculus'
+    }))
+    assertStatus(status, data)
+
+    ;({data, status} = await test.webApi.article('user0/mathematics/algebra'))
+    assertStatus(status, data)
+    assert.strictEqual(data.titleRender, 'Algebra')
+  })
 })
 
 it('api: synonym rename', async () => {
@@ -3996,7 +4254,10 @@ it('api: synonym rename', async () => {
 
     // extract_ids without render of header with synonym does not blow up.
     // Yes, everything breaks everything.
-    article = createArticleArg({ i: 0, titleSource: 'Calculus 3', bodySource: `= Calculus
+    article = createArticleArg({
+      i: 0,
+      titleSource: 'Calculus 3',
+      bodySource: `= Calculus
 {synonym}
 
 = Calculus 2
@@ -4005,7 +4266,7 @@ it('api: synonym rename', async () => {
 \\Image[http://jpg]{title=My image}
 `
     })
-    ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: undefined, render: false }))
     assertStatus(status, data)
 
     // Current tree state:
@@ -4319,6 +4580,14 @@ it('api: uppercase article IDs are forbidden', async () => {
     assertStatus(status, data)
     assert.notStrictEqual(data, undefined)
 
+    // Also works without explicit path.
+    article = createArticleArg({ i: 0, titleSource: 'path/to/main2.S', bodySource: '{file}' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.article('user0/_file/path/to/main2.S'))
+    assertStatus(status, data)
+    assert.notStrictEqual(data, undefined)
+
     await models.normalize({
       check: true,
       sequelize,
@@ -4445,8 +4714,6 @@ it('api: parent and child to unrelated synonyms with updateNestedSetIndex', asyn
     let data, status, article
     const sequelize = test.sequelize
     const user = await test.createUserApi(0)
-    // Create a second user and index to ensure that the nested set indexes are independent for each user.
-    // Because of course we didn't do this when originally implementing.
     test.loginUser(user)
 
     article = createArticleArg({ i: 0, titleSource: 'h2' })
@@ -4531,8 +4798,6 @@ it('api: article create with synonym parent uses the synonym target', async () =
     let data, status, article
     const sequelize = test.sequelize
     const user = await test.createUserApi(0)
-    // Create a second user and index to ensure that the nested set indexes are independent for each user.
-    // Because of course we didn't do this when originally implementing.
     test.loginUser(user)
 
     // Create an article with synonym.
@@ -4561,6 +4826,72 @@ it('api: article create with synonym parent uses the synonym target', async () =
       })
       assert.strictEqual(article.parentId.idid, '@user0/h2')
     }
+  })
+})
+
+it('api: circular parent loop to self synonym fails gracefully', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    article = createArticleArg({ i: 0, titleSource: 'h2', bodySource: '= h2 2\n{synonym}\n' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
+    assertStatus(status, data)
+
+    article = createArticleArg({ i: 0, titleSource: 'h2', bodySource: '= h2 2\n{synonym}\n' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/h2-2', render: false }))
+    assert.strictEqual(status, 422)
+
+    article = createArticleArg({ i: 0, titleSource: 'h2' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/h2-2', render: false }))
+    assert.strictEqual(status, 422)
+  })
+})
+
+it('api: article split synonym to descendant does not go into infinite loop', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    // user0
+    //   h2 (h2 2)
+    article = createArticleArg({ i: 0, titleSource: 'h2', bodySource: '= h2 2\n{synonym}' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
+    assertStatus(status, data)
+
+    // We need render=false here because we are temporarily duplicating the ID,
+    // h2-2, and duplicate checks run on render=true only.
+    //
+    // user0
+    //   h2 2
+    //   h2 (h2 2)
+    article = createArticleArg({ i: 0, titleSource: 'h2 2' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false }))
+    assertStatus(status, data)
+
+    // user0
+    //   h2 2
+    //     h2
+    article = createArticleArg({ i: 0, titleSource: 'h2' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false, parentId: '@user0/h2-2' }))
+    assertStatus(status, data)
+
+    // This is where it was going infinite, because when we set h2's parent to h2-2,
+    // at one point it was picking up that h2-2 is still a synonym of h2, which made
+    // h2 the parent of itself. Then when adding h3 below it, the h3 parent loop check
+    // went into an infinite loop.
+    //
+    // user0
+    //   h2 2
+    //     h2
+    //       h3
+    article = createArticleArg({ i: 0, titleSource: 'h3' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { render: false, parentId: '@user0/h2' }))
+    assertStatus(status, data)
   })
 })
 

@@ -7,7 +7,7 @@ const config = require('../front/config')
 const { cant } = require('../front/cant')
 const front = require('../front/js')
 const routes = require('../front/routes')
-const { convertIssue, convertComment } = require('../convert')
+const { convertDiscussion, convertComment } = require('../convert')
 const lib = require('./lib')
 const {
   ValidationError,
@@ -166,7 +166,7 @@ router.post('/', auth.required, async function(req, res, next) {
     const titleSource = lib.validateParam(issueData, 'titleSource', {
       validators: [front.isString, front.isTruthy]
     })
-    const issue = await convertIssue({
+    const issue = await convertDiscussion({
       article,
       bodySource,
       number: lastIssue ? lastIssue.number + 1 : 1,
@@ -228,7 +228,7 @@ router.put('/:number', auth.required, async function(req, res, next) {
       validators: [front.isString, front.isTruthy],
       defaultValue: undefined,
     })
-    const newIssue = await convertIssue({
+    const newIssue = await convertDiscussion({
       article,
       bodySource,
       issue,

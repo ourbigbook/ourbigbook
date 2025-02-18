@@ -46,6 +46,7 @@ module.exports = (sequelize) => {
     order,
     orderAscDesc,
     sequelize,
+    topicId,
     topicIdSearch,
   }) => {
     const { Article, File, Topic } = sequelize.models
@@ -73,6 +74,9 @@ module.exports = (sequelize) => {
         }
       }
       where.topicId = sequelizeWhereStartsWith(sequelize, topicIdSearchArgs, '"Topic"."topicId"')
+    }
+    if (topicId) {
+      where.topicId = topicId
     }
 
     const includeArticle = {

@@ -133,7 +133,7 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
  *   and going down all up to the parent of id. Does not include id itself.
  */
 async function fetch_ancestors(sequelize, id, opts={}) {
-  const { onlyIncludeId, stopAt, transaction } = opts
+  const { limit, onlyIncludeId, stopAt, transaction } = opts
   const { Id, Ref } = sequelize.models
   ;const [rows, meta] = await sequelize.query(`
 SELECT * FROM "${Id.tableName}"
@@ -154,7 +154,9 @@ WITH RECURSIVE
       ts.level + 1,
       t.from_id
     FROM "${Ref.tableName}" t, tree_search ts
-    WHERE t.to_id = ts.from_id AND type = :type${stopAt === undefined ? '' : ' AND ts.from_id <> :stopAt'}
+    WHERE t.to_id = ts.from_id AND type = :type${
+stopAt === undefined ? '' : ' AND ts.from_id <> :stopAt'}${
+limit === undefined ? '' : ' AND ts.level < :limit'}
   )
   SELECT * FROM tree_search
 ) AS "RecRefs"
@@ -166,6 +168,7 @@ ORDER BY "RecRefs".level DESC
     {
       replacements: {
         id,
+        limit,
         onlyIncludeId,
         stopAt,
         type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],

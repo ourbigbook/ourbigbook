@@ -9922,6 +9922,8 @@ These tests are currently very basic, and only check page status. In the future,
 * add some HTML parsing to check for page contents as a reponse to GET, just as we already do in the <test system> of the <OurBigBook Library>
 * go all in an use a JavaScript enabled test system like Selenium to also test login and data modification from the browser
 
+TODO: `npm run test-next` https://github.com/ourbigbook/ourbigbook/issues/354 is currently broken and always blows up on the second test that uses Next.js. So it works if you run one by one with `-g`, but not if you try to run all of them in one go.
+
 If you are not making any changes to the website itself, e.g. only to the test system, then you can skip the slow rebuild with:
 ``
 test-next-nobuild

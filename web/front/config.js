@@ -89,6 +89,7 @@ module.exports = {
   convertOptions,
   docsUrl,
   docsAdminUrl: `${docsUrl}/ourbigbook-web-admin`,
+  docsAccountLockingUrl: `${docsUrl}/account-locking`,
   donateUrl: `${docsUrl}#donate`,
   defaultProfileImage: `/default-profile-image.svg`,
   disableFrontend: process.env.OURBIGBOOK_DISABLE_FRONTEND === env_true,

@@ -319,7 +319,7 @@ Another step towards world domination is taken!
   }
 })
 
-// Modify information about the currently logged in user.
+// Modify information about the given logged user.
 // Backend for settings page on the web UI.
 router.put('/users/:username', auth.required, async function(req, res, next) {
   try {
@@ -328,7 +328,7 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
     const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
     const msg = cant.editUser(loggedInUser, user)
     if (msg) {
-      throw new ValidationError( [msg], 403)
+      throw new ValidationError([msg], 403)
     }
     const userArg = req.body.user
     if (userArg) {
@@ -377,40 +377,60 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
       if (hideArticleDates !== undefined) {
         user.hideArticleDates = userArg.hideArticleDates
       }
-      if (!cant.setUserLimits(loggedInUser)) {
-        const maxArticles = validateParam(userArg, 'maxArticles', {
-          typecast: front.typecastInteger,
-          validators: [front.isPositiveInteger],
-          defaultValue: undefined,
-        })
-        if (maxArticles !== undefined) {
-          user.maxArticles = maxArticles
+
+      // User limits
+      {
+        const msg = cant.setUserLimits(loggedInUser)
+        function set(val, key) {
+          if (val !== undefined) {
+            if (msg) {
+              throw new ValidationError([msg], 403)
+            } else {
+              user[key] = val
+            }
+          }
         }
-        const maxArticleSize = validateParam(userArg, 'maxArticleSize', {
-          typecast: front.typecastInteger,
-          validators: [front.isPositiveInteger],
-          defaultValue: undefined,
-        })
-        if (maxArticleSize !== undefined) {
-          user.maxArticleSize = maxArticleSize
-        }
-        const maxIssuesPerMinute = validateParam(userArg, 'maxIssuesPerMinute', {
-          typecast: front.typecastInteger,
-          validators: [front.isPositiveInteger],
-          defaultValue: undefined,
-        })
-        if (maxIssuesPerMinute !== undefined) {
-          user.maxIssuesPerMinute = maxIssuesPerMinute
-        }
-        const maxIssuesPerHour = validateParam(userArg, 'maxIssuesPerHour', {
-          typecast: front.typecastInteger,
-          validators: [front.isPositiveInteger],
-          defaultValue: undefined,
-        })
-        if (maxIssuesPerHour !== undefined) {
-          user.maxIssuesPerHour = maxIssuesPerHour
-        }
+        set(
+          validateParam(userArg, 'maxArticles', {
+            typecast: front.typecastInteger,
+            validators: [front.isPositiveInteger],
+            defaultValue: undefined,
+          }),
+          'maxArticles',
+        )
+        set(
+          validateParam(userArg, 'maxArticleSize', {
+            typecast: front.typecastInteger,
+            validators: [front.isPositiveInteger],
+            defaultValue: undefined,
+          }),
+          'maxArticleSize',
+        )
+        set(
+          validateParam(userArg, 'maxIssuesPerMinute', {
+            typecast: front.typecastInteger,
+            validators: [front.isPositiveInteger],
+            defaultValue: undefined,
+          }),
+          'maxIssuesPerMinute',
+        )
+        set(
+          validateParam(userArg, 'maxIssuesPerHour', {
+            typecast: front.typecastInteger,
+            validators: [front.isPositiveInteger],
+            defaultValue: undefined,
+          }),
+          'maxIssuesPerHour',
+        )
+        set(
+          validateParam(userArg, 'locked', {
+            validators: [front.isBoolean],
+            defaultValue: undefined,
+          }),
+          'locked',
+        )
       }
+
       if (typeof userArg.password !== 'undefined') {
         sequelize.models.User.setPassword(user, userArg.password)
       }
@@ -482,10 +502,10 @@ router.put('/users/:username/profile-picture', auth.required, async function(req
 
 // Follow
 
-async function validateFollow(req, res, user, isFollow) {
-  if ((await user.hasFollow(req.user)) === isFollow) {
+async function validateFollow(user, loggedInUser, isFollow) {
+  if ((await loggedInUser.hasFollow(user)) === isFollow) {
     throw new ValidationError(
-      [`User '${user.username}' ${isFollow ? 'already follows' : 'does not follow'} user '${req.user.username}'`],
+      [`User '${loggedInUser.username}' ${isFollow ? 'already follows' : 'does not follow'} user '${user.username}'`],
       403,
     )
   }
@@ -494,28 +514,40 @@ async function validateFollow(req, res, user, isFollow) {
 // Follow user.
 router.post('/users/:username/follow', auth.required, async function(req, res, next) {
   try {
-    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    await validateFollow(req, res, user, true)
-    await user.addFollowSideEffects(req.user)
-    const newUser = await req.app.get('sequelize').models.User.findOne({
-      where: { username: user.username } })
-    return res.json({ user: await req.user.toJson(newUser) })
+    const sequelize = req.app.get('sequelize')
+    const { User } = sequelize.models
+    const loggedInUser = await User.findByPk(req.payload.id)
+    const user = req.user
+    const msg = cant.followUser(loggedInUser, user)
+    if (msg) {
+      throw new ValidationError([msg], 403)
+    }
+    await validateFollow(user, loggedInUser, true)
+    await loggedInUser.addFollowSideEffects(user)
+    const newUser = await User.findOne({ where: { username: loggedInUser.username } })
+    return res.json({ user: await user.toJson(newUser) })
   } catch(error) {
-    next(error);
+    next(error)
   }
 })
 
 // Unfollow user.
 router.delete('/users/:username/follow', auth.required, async function(req, res, next) {
   try {
-    const user = await req.app.get('sequelize').models.User.findByPk(req.payload.id)
-    await validateFollow(req, res, user, false)
-    await user.removeFollowSideEffects(req.user)
-    const newUser = await req.app.get('sequelize').models.User.findOne({
-      where: { username: user.username } })
-    return res.json({ user: await req.user.toJson(user) })
+    const sequelize = req.app.get('sequelize')
+    const { User } = sequelize.models
+    const loggedInUser = await User.findByPk(req.payload.id)
+    const user = req.user
+    const msg = cant.followUser(loggedInUser, user)
+    if (msg) {
+      throw new ValidationError([msg], 403)
+    }
+    await validateFollow(user, loggedInUser, false)
+    await loggedInUser.removeFollowSideEffects(req.user)
+    const newUser = await User.findOne({ where: { username: user.username } })
+    return res.json({ user: await req.user.toJson(newUser) })
   } catch(error) {
-    next(error);
+    next(error)
   }
 })
 

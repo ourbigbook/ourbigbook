@@ -1,10 +1,13 @@
 import Router from 'next/router'
 import React from 'react'
 
+import lodash from 'lodash'
+
 import {
   allowedImageContentTypes,
   allowedImageContentTypesSimplifiedArr,
   contactUrl,
+  docsAccountLockingUrl,
   profilePicturePath,
   profilePictureMaxUploadSize,
 } from 'front/config'
@@ -13,7 +16,10 @@ import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
 import {
   addCommasToInteger,
+  HelpIcon,
+  LockIcon,
   MyHead,
+  OkIcon,
   SettingsIcon,
   setupUserLocalStorage,
   useCtrlEnterSubmit
@@ -25,6 +31,12 @@ import { UserType } from 'front/types/UserType'
 import { displayAndUsernameText } from 'front/user'
 import { formatNumberApprox } from 'ourbigbook'
 
+const maxArticleSizeLabel = "Maximum number of articles, issues and comments (maxArticles)"
+const maxArticlesLabel = "Maximum article/issue/comment size (maxArticleSize)"
+const maxIssuesPerMinuteLabel = "Maximum issues/comments per minute (maxIssuesPerMinute)"
+const maxIssuesPerHourLabel = "Maximum issues/comments per hour (maxIssuesPerHour)"
+const title = "Account settings"
+
 interface SettingsProps extends CommonPropsType {
   user?: UserType;
 }
@@ -35,22 +47,31 @@ const Settings = ({
 }: SettingsProps) => {
   const [isLoading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState([]);
-  const [userInfo, setUserInfo] = React.useState(user0);
+  const username = user0.username
+  const [userInfo, setUserInfo] = React.useState(lodash.pick(
+    user0,
+    [
+      'displayName',
+      'emailNotifications',
+      'hideArticleDates',
+      'password',
+    ]
+  ))
   const profileImageRef = React.useRef<HTMLImageElement|null>(null)
   const updateState = (field) => (e) => {
     const state = userInfo;
     const newState = { ...state, [field]: e.target.value };
     setUserInfo(newState);
-  };
+  }
   const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    const user = { ...userInfo };
+    e.preventDefault()
+    setLoading(true)
+    const user = { ...userInfo }
     if (!user.password) {
-      delete user.password;
+      delete user.password
     }
-    const { data, status } = await webApi.userUpdate(user.username, user)
-    setLoading(false);
+    const { data, status } = await webApi.userUpdate(user0.username, user)
+    setLoading(false)
     if (status === 200) {
       if (
         data.user &&
@@ -59,18 +80,43 @@ const Settings = ({
       ) {
         await setupUserLocalStorage(data.user, setErrors)
       }
-      Router.push(routes.user(data.user.username));
+      Router.push(routes.user(data.user.username))
     } else {
-      setErrors(data.errors);
+      setErrors(data.errors)
     }
-  };
+  }
   useCtrlEnterSubmit(handleSubmit)
-  const maxArticleSizeLabel = "Maximum number of articles, issues and comments (maxArticles)"
-  const maxArticlesLabel = "Maximum article/issue/comment size (maxArticleSize)"
-  const maxIssuesPerMinuteLabel = "Maximum issues/comments per minute (maxIssuesPerMinute)"
-  const maxIssuesPerHourLabel = "Maximum issues/comments per hour (maxIssuesPerHour)"
-  const title = "Account settings"
+
+  // Limits.
+  const [userInfoLimits, setUserInfoLimits] = React.useState(lodash.pick(
+    user0,
+    [
+      'locked',
+      'maxArticleSize',
+      'maxArticles',
+      'maxIssuesPerHour',
+      'maxIssuesPerMinute',
+    ]
+  ))
+  const updateStateLimits = (field) => (e) => {
+    const state = userInfoLimits
+    const newState = { ...state, [field]: e.target.value }
+    setUserInfoLimits(newState)
+  }
+  const handleSubmitLimits = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    const { data, status } = await webApi.userUpdate(user0.username, userInfoLimits)
+    setLoading(false)
+    if (status === 200) {
+      Router.push(routes.user(data.user.username))
+    } else {
+      setErrors(data.errors)
+    }
+  }
+
   const emailNotificationsForArticleAnnouncementRef = React.useRef(null)
+  const cantSetUserLimit = !!cant.setUserLimits(loggedInUser)
   return <>
     <MyHead title={`${title} - ${displayAndUsernameText(userInfo)}`} />
     <div className="settings-page content-not-ourbigbook">
@@ -83,7 +129,7 @@ const Settings = ({
               type="text"
               disabled={true}
               placeholder="Username"
-              value={userInfo.username}
+              value={user0.username}
               title="Cannot be currently modified"
               autoComplete="username"
               //onChange={updateState("username")}
@@ -114,11 +160,11 @@ const Settings = ({
                     reader.readAsDataURL(file)
                     reader.onload = async (readerEvent) => {
                       const { data, status } = await webApi.userUpdateProfilePicture(
-                        userInfo.username,
+                        user0.username,
                         readerEvent.target.result,
                       )
                       if (status === 200) {
-                        profileImageRef.current.src = `${profilePicturePath}/${userInfo.id}`
+                        profileImageRef.current.src = `${profilePicturePath}/${user0.id}`
                       } else {
                         let msg = `Upload failed with status: ${status}`
                         if (data.errors) {
@@ -135,7 +181,7 @@ const Settings = ({
               <CustomImage
                 className="profile-picture"
                 imgRef={profileImageRef}
-                src={userInfo.effectiveImage}
+                src={user0.effectiveImage}
               />
               <span className="profile-picture-caption">Click to update</span>
             </span>
@@ -144,7 +190,7 @@ const Settings = ({
             <input
               type="email"
               placeholder="Email"
-              value={userInfo.email}
+              value={user0.email}
               onChange={updateState("email")}
               // https://github.com/ourbigbook/ourbigbook/issues/268
               disabled={true}
@@ -155,7 +201,7 @@ const Settings = ({
             <input
               type="password"
               placeholder="New Password"
-              value={userInfo.password}
+              value={userInfoLimits.password}
               onChange={updateState("password")}
               autoComplete="new-password"
             />
@@ -163,7 +209,7 @@ const Settings = ({
           <Label label="Email notifications" inline={true}>
             <input
               type="checkbox"
-              defaultChecked={userInfo.emailNotifications}
+              defaultChecked={userInfoLimits.emailNotifications}
               onChange={() => {
                 setUserInfo((state) => {
                   const newState = !state.emailNotifications
@@ -206,60 +252,74 @@ const Settings = ({
             type="submit"
             disabled={isLoading}
           >
-            Update Settings
+            <OkIcon /> Update settings
           </button>
-          <h2>Extra information</h2>
-          {cant.setUserLimits(loggedInUser)
-            ? <>
-                <p><b>Limits:</b></p>
-                <ul>
-                  <li>{maxArticleSizeLabel}: <b>{userInfo.maxArticleSize}</b></li>
-                  <li>{maxArticlesLabel}: <b>{userInfo.maxArticles}</b></li>
-                  <li>{maxIssuesPerMinuteLabel}: <b>{userInfo.maxIssuesPerMinute}</b></li>
-                  <li>{maxIssuesPerHourLabel}: <b>{userInfo.maxIssuesPerHour}</b></li>
-                  {userInfo.nextAnnounceAllowedAt &&
-                    <li>Next article announce allowed at: <b>{userInfo.nextAnnounceAllowedAt}</b></li>
-                  }
-                </ul>
-                <div>You may <a href={contactUrl}><b>ask an admin</b></a> to raise any of those limits for you.</div>
-              </>
-            : <>
-                <Label label={maxArticlesLabel}>
-                  <input
-                    type="number"
-                    value={userInfo.maxArticleSize}
-                    onChange={updateState("maxArticleSize")}
-                  />
-                </Label>
-                <Label label={maxArticleSizeLabel}>
-                  <input
-                    type="number"
-                    value={userInfo.maxArticles}
-                    onChange={updateState("maxArticles")}
-                  />
-                </Label>
-                <Label label={maxIssuesPerMinuteLabel}>
-                  <input
-                    type="number"
-                    value={userInfo.maxIssuesPerMinute}
-                    onChange={updateState("maxIssuesPerMinute")}
-                  />
-                </Label>
-                <Label label={maxIssuesPerHourLabel}>
-                  <input
-                    type="number"
-                    value={userInfo.maxIssuesPerHour}
-                    onChange={updateState("maxIssuesPerHour")}
-                  />
-                </Label>
-              </>
-          }
-          <p>Signup IP: <b>{userInfo.ip || 'not set'}</b></p>
-          <p>nestedSetNeedsUpdate: <b>{userInfo.nestedSetNeedsUpdate.toString()}</b></p>
-          {loggedInUser.admin &&
-            <p>Verified: <b>{userInfo.verified.toString()}</b></p>
-          }
         </form>
+        <h2><LockIcon /> Limits</h2>
+        <p>You must <a href={contactUrl}><b>ask an admin</b></a> to change the following limits for you:</p>
+        <form onSubmit={handleSubmitLimits}>
+          <Label label={maxArticlesLabel}>
+            <input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxArticleSize}
+              onChange={updateStateLimits("maxArticleSize")}
+            />
+          </Label>
+          <Label label={maxArticleSizeLabel}>
+            <input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxArticles}
+              onChange={updateStateLimits("maxArticles")}
+            />
+          </Label>
+          <Label label={maxIssuesPerMinuteLabel}>
+            <input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxIssuesPerMinute}
+              onChange={updateStateLimits("maxIssuesPerMinute")}
+            />
+          </Label>
+          <Label label={maxIssuesPerHourLabel}>
+            <input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxIssuesPerHour}
+              onChange={updateStateLimits("maxIssuesPerHour")}
+            />
+          </Label>
+          <Label
+            label="Account locked"
+            helpUrl={`${docsAccountLockingUrl}/account-locking`}
+            inline={true}
+          >
+            <input
+              disabled={cantSetUserLimit}
+              type="checkbox"
+              defaultChecked={userInfoLimits.locked}
+              onChange={() => setUserInfoLimits((state) => { return {
+                ...state,
+                locked: !state.locked
+              }})}
+            />
+            {' '}
+          </Label>
+          <button
+            className="btn"
+            type="submit"
+            disabled={isLoading}
+          >
+            <OkIcon /> Update limits
+          </button>
+        </form>
+        <h2><HelpIcon /> Extra information</h2>
+        <p>Signup IP: <b>{userInfo.ip || 'not set'}</b></p>
+        <p>Nested set needs update (nestedSetNeedsUpdate): <b>{user0.nestedSetNeedsUpdate.toString()}</b></p>
+        {loggedInUser.admin &&
+          <p>Verified: <b>{user0.verified.toString()}</b></p>
+        }
       </>
     </div>
   </>

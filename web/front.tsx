@@ -211,6 +211,11 @@ export function CommentIcon(opts) {
 export function DeleteIcon(opts) {
   return FontAwesomeIcon(0xf2ed, { clsExtra: ['icon-delete'], opts, title: "Delete" })
 }
+
+export function DiscussionIcon(opts) {
+  return FontAwesomeIcon(0xf075, { opts, title: "Discussion" })
+}
+
 export function EditArticleIcon(opts) {
   return FontAwesomeIcon(0xf044, { opts, title: "Edit" })
 }
@@ -224,7 +229,6 @@ export function LinkOpensInNewTabIcon(opts) {
 }
 
 export function FollowIcon(opts) {
-  // https://fontawesome.com/icons/eye?f=classic&s=regular
   return FontAwesomeIcon(0xf06e, { opts, title: "Follow" })
 }
 
@@ -240,8 +244,9 @@ export function IncomingIcon() {
   return <span dangerouslySetInnerHTML={{ __html: INCOMING_LINKS_MARKER }} />
 }
 
-export function DiscussionIcon(opts) {
-  return FontAwesomeIcon(0xf075, { opts, title: "Discussion" })
+export function LockIcon(opts) {
+  // https://fontawesome.com/icons/lock?s=solid
+  return FontAwesomeIcon(0xf023, { opts })
 }
 
 export function LikeIcon(opts) {

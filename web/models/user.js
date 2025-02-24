@@ -193,6 +193,12 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: true,
       },
+      locked: {
+        // https://docs.ourbigbook.com/account-locking
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
     },
     {
       hooks: {
@@ -225,6 +231,7 @@ module.exports = (sequelize) => {
         { fields: ['followerCount'] },
         { fields: ['score'] },
         { fields: ['username'] },
+        { fields: ['locked', 'username'] },
       ]
     }
   )
@@ -245,21 +252,24 @@ module.exports = (sequelize) => {
 
   User.prototype.toJson = async function(loggedInUser) {
     const ret = {
-      id: this.id,
-      username: this.username,
-      displayName: this.displayName,
-      image: this.image,
-      effectiveImage: this.image || config.defaultProfileImage,
-      followerCount: this.followerCount,
-      score: this.score,
       admin: this.admin,
       createdAt: this.createdAt.toISOString(),
+      displayName: this.displayName,
+      effectiveImage: this.image || config.defaultProfileImage,
+      followerCount: this.followerCount,
+      id: this.id,
+      image: this.image,
+      locked: this.locked,
+
       // Until there are ever private articles/paid plans, you can always get
       // a lower bound on their capacities. Let's just make them public for now then.
       maxArticles: this.maxArticles,
       maxArticleSize: this.maxArticleSize,
       maxIssuesPerMinute: this.maxIssuesPerMinute,
       maxIssuesPerHour: this.maxIssuesPerHour,
+
+      score: this.score,
+      username: this.username,
       verified: this.verified,
     }
     if (this.nextAnnounceAllowedAt) {

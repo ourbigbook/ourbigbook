@@ -10,6 +10,7 @@ export type UserType = {
   id: number;
   image: string;
   ip?: string;
+  locked: boolean,
   nextAnnounceAllowedAt?: string;
   password?: string;
   score: number;

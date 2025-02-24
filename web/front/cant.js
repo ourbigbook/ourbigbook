@@ -1,5 +1,5 @@
-// Permissions that require being logged in.
-const permissions = [
+// Permissions that involve modifying the database.
+const editPermissions = [
   // Users
   ['editUser', (loggedInUser, user) => {
     if (loggedInUser.id !== user.id) {
@@ -7,9 +7,11 @@ const permissions = [
     }
   }],
   ['setUserLimits', (loggedInUser) => true],
-  ['viewUserSettings', (loggedInUser, user) => loggedInUser.id !== user.id],
+  ['followUser', (loggedInUser, user) => { return false }],
+  ['unfollowUser', (loggedInUser, user) => { return false }],
 
   // Articles
+  ['createArticle', (loggedInUser) => { return false }],
   ['announceArticle', (loggedInUser, articleUsername) => {
     return loggedInUser.username !== articleUsername
   }],
@@ -36,14 +38,35 @@ const permissions = [
   ['deleteArticle', (loggedInUser, article) => true],
 
   // Issues
+  ['createIssue', (loggedInUser) => { return false }],
   ['editIssue', (loggedInUser, issueUsername) => loggedInUser.username !== issueUsername],
-  ['deleteIssue', (loggedInUser, article) => true],
+  ['deleteIssue', (loggedInUser, issue) => true],
+  ['followIssue', (loggedInUser, issue) => { return false }],
+  ['unfollowIssue', (loggedInUser, issue) => { return false }],
 
   // Comments
+  ['createComment', (loggedInUser) => { return false }],
   ['deleteComment', (loggedInUser, comment) => true],
 
   // SiteSettings
   ['updateSiteSettings', (loggedInUser, comment) => true],
+]
+editPermissions.forEach((permission, i, permissions) => {
+  permissions[i] = [
+    permission[0],
+    (loggedInUser, ...args) => {
+      if (loggedInUser.locked) {
+        return 'Your account is locked and cannot create or edit anything'
+      }
+      return permission[1](loggedInUser, ...args)
+    }
+  ]
+})
+
+// Permissions that require being logged in.
+const permissions = [
+  ...editPermissions,
+  ['viewUserSettings', (loggedInUser, user) => loggedInUser.id !== user.id],
 ]
 permissions.forEach((permission, i, permissions) => {
   permissions[i] = [

@@ -328,6 +328,12 @@ async function createOrUpdateArticle(req, res, opts) {
   const sequelize = req.app.get('sequelize')
   const { Article, File, User } = sequelize.models
   const loggedInUser = await User.findByPk(req.payload.id);
+  if (forceNew) {
+    const msg = cant.createArticle(loggedInUser)
+    if (msg) {
+      throw new lib.ValidationError([msg], 403)
+    }
+  }
 
   // API params.
   const body = lib.validateParam(req, 'body')

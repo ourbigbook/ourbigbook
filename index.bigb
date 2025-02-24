@@ -10002,6 +10002,13 @@ The same command works in a <Heroku deployment> where you can run:
 heroku run -a ourbigbook web/bin/make-admin -f barack-obama
 ``
 
+= Account locking
+{parent=OurBigBook Web admin}
+
+When an account is locked, the locked user can login into it and view the account, but they cannot take any action sthat would lead to changes to the database, including:
+* creating or editing articles and discussions
+* liking, unliking articles or following or unfollowing users
+
 = OurBigBook Web database
 {c}
 {parent=OurBigBook Web deployment}

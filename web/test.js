@@ -2547,28 +2547,43 @@ it('api: resource limits', async () => {
     // Non-admin users cannot edit their own resource limits.
     ;({data, status} = await test.webApi.userUpdate('user0', {
       maxArticles: 1,
-      maxArticleSize: 2,
     }))
+    assert.strictEqual(status, 403)
+    ;({data, status} = await test.webApi.user('user0'))
     assertStatus(status, data)
-    assertRows([data.user], [{
-      username: 'user0',
-      maxArticles: config.maxArticles,
-      maxArticleSize: config.maxArticleSize,
-    }])
+    assert.strictEqual(data.maxArticles, config.maxArticles)
 
     // Admin users can edit other users' resource limits.
-    test.loginUser(admin)
-    ;({data, status} = await test.webApi.userUpdate('user0', {
-      maxArticles: 3,
-      maxArticleSize: 3,
-    }))
-    assertStatus(status, data)
-    assertRows([data.user], [{
-      username: 'user0',
-      maxArticles: 3,
-      maxArticleSize: 3,
-    }])
-    test.loginUser(user)
+
+      test.loginUser(admin)
+      ;({data, status} = await test.webApi.userUpdate('user0', {
+        maxArticles: 3,
+        maxArticleSize: 3,
+        maxIssuesPerMinute: 3,
+        maxIssuesPerHour: 3,
+        locked: true,
+      }))
+      assertStatus(status, data)
+      test.loginUser(user)
+
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assertRows([data], [{
+        username: 'user0',
+        maxArticles: 3,
+        maxArticleSize: 3,
+        maxIssuesPerMinute: 3,
+        maxIssuesPerHour: 3,
+        locked: true,
+      }])
+
+      // Restore locked to false because this will cause problems with the following tests.
+      test.loginUser(admin)
+      ;({data, status} = await test.webApi.userUpdate('user0', {
+        locked: false,
+      }))
+      assertStatus(status, data)
+      test.loginUser(user)
 
     // Article.
 
@@ -2662,6 +2677,7 @@ it('api: resource limits', async () => {
         maxArticleSize: 3,
       }))
       assertStatus(status, data)
+      ;({data, status} = await test.webApi.user('user0'))
       test.loginUser(user)
 
       // maxArticleSize resource limit is enforced for non-admins.
@@ -2746,6 +2762,130 @@ it('api: resource limits', async () => {
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
       assertStatus(status, data)
       test.loginUser(user)
+  })
+})
+
+it(`api: user: locked users can't do much`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    const admin = await test.createUserApi(2)
+    await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user2' } })
+
+    // Create a test article and issue by user1.
+
+      test.loginUser(user1)
+
+      article = createArticleArg({ i: 0 })
+      ;({data, status} = await createArticleApi(test, article))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 1 })
+      ;({data, status} = await createArticleApi(test, article))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.issueCreate('user1/title-0', createIssueArg(1, 0, 0)))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.issueCreate('user1/title-0', createIssueArg(1, 0, 0)))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.commentCreate('user1/title-0', 1, '= The header\n\n==The body\n'))
+      assertStatus(status, data)
+
+    // Create some items by user0.
+
+      test.loginUser(user0)
+
+      article = createArticleArg({ i: 0 })
+      ;({data, status} = await createArticleApi(test, article))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(1, 0, 0)))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.articleLike('user1/title-0'))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.articleFollow('user1/title-0'))
+      assertStatus(status, data)
+
+      ;({data, status} = await test.webApi.issueFollow('user1/title-0', 1))
+      assertStatus(status, data)
+
+    // Lock user0
+    test.loginUser(admin)
+    ;({data, status} = await test.webApi.userUpdate('user0', {
+      locked: true,
+    }))
+    assertStatus(status, data)
+
+    // Check that user0 cannot do stuff.
+
+      test.loginUser(user0)
+
+      // Locked users cannot edit their own profile
+      ;({ data, status } = await test.webApi.userUpdate(
+        'user0', { displayName: 'hacked', },
+      ))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot follow users.
+      ;({data, status} = await test.webApi.userFollow('user0'))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot create articles.
+      article = createArticleArg({ i: 1 })
+      ;({data, status} = await createArticleApi(test, article))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot edit their own articles.
+      article = createArticleArg({ i: 0, body: 'hacked' })
+      ;({data, status} = await createArticleApi(test, article))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot announce their own articles.
+      ;({data, status} = await test.webApi.articleAnnounce('user0/title-0', 'My message.'))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot unlike articles.
+      ;({data, status} = await test.webApi.articleUnlike('user1/title-0'))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot like articles.
+      ;({data, status} = await test.webApi.articleLike('user1/title-1'))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot unfollow articles.
+      ;({data, status} = await test.webApi.articleUnfollow('user1/title-0'))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot follow articles.
+      ;({data, status} = await test.webApi.articleFollow('user1/title-1'))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot create discussions.
+      article = createArticleArg({ i: 1 })
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(1, 0, 0)))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot edit their own discussions.
+      ;({data, status} = await test.webApi.issueEdit('user0/title-0', 1, { bodySource: 'hacked' }))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot unfollow discussions
+      ;({data, status} = await test.webApi.issueUnfollow('user1/title-0', 1))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot follow discussions
+      ;({data, status} = await test.webApi.issueFollow('user1/title-0', 2))
+      assert.strictEqual(status, 403)
+
+      // Locked users cannot create comments.
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, '= The header\n\n==The body\n'))
+      assert.strictEqual(status, 403)
   })
 })
 

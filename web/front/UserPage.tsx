@@ -24,6 +24,7 @@ import {
   ArrowLeftIcon,
   AlphabeticalOrderTabTitle,
   AnnounceIcon,
+  LockIcon,
 } from 'front'
 import ArticleList from 'front/ArticleList'
 import CommentList from 'front/CommentList'
@@ -174,6 +175,13 @@ export default function UserPage({
 
   const handleShortFragmentSkipOnce = React.useRef(false)
   if (router.isFallback) { return <LoadingSpinner />; }
+  const statuses = []
+  if (user.admin) {
+    statuses.push(<a href={`${config.docsAdminUrl}`}><StarIcon /> Admin</a>)
+  }
+  if (user.locked) {
+    statuses.push(<a href={`${config.docsAccountLockingUrl}`}><LockIcon /> Locked</a>)
+  }
   return <>
     <MyHead title={title} />
     <div className="profile-page">
@@ -181,8 +189,13 @@ export default function UserPage({
         <div className="name-and-image">
           <div className="no-image">
             <h1>
-              <a href={routes.user(user.username)}><DisplayAndUsername user={user} showParenthesis={false} /></a>
+              <a href={routes.user(user.username)}>
+                <DisplayAndUsername user={user} showParenthesis={false} />
+              </a>
             </h1>
+            {statuses.length !== 0 && <div className="statuses">{
+              statuses.map((status, i) => <div className="h2 inline" key={i}>{status}</div>)}
+            </div>}
             <div className="user-actions">
               <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
               <CustomLink className="btn" href={routes.issueNew(`${user.username}`)}>
@@ -199,7 +212,6 @@ export default function UserPage({
               {isCurrentUser &&
                 <LogoutButton />
               }
-              {user.admin && <span className="h2 inline"><a href={`${config.docsAdminUrl}`}><StarIcon /> Admin <StarIcon /></a></span>}
             </div>
           </div>
           <a href={routes.user(user.username)}>

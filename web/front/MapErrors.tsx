@@ -1,7 +1,7 @@
 import React from 'react'
 
-const MapErrors = ({ errors }) => (
-  <ul className="error-messages">
+const MapErrors = ({ errors }) => {
+  return <ul className="error-messages">
     {Object.keys(errors).map((key) => {
       return (
         <li key={key}>
@@ -13,6 +13,6 @@ const MapErrors = ({ errors }) => (
       );
     })}
   </ul>
-);
+}
 
 export default MapErrors;

@@ -145,6 +145,10 @@ router.post('/', auth.required, async function(req, res, next) {
       }),
       sequelize.models.User.findByPk(req.payload.id),
     ])
+    const msg = cant.createIssue(loggedInUser)
+    if (msg) {
+      throw new lib.ValidationError([msg], 403)
+    }
     const errs = []
     let err = front.hasReachedMaxItemCount(loggedInUser, issueCountByLoggedInUser, 'issues')
     if (err) { errs.push(err) }
@@ -243,7 +247,7 @@ router.put('/:number', auth.required, async function(req, res, next) {
   }
 })
 
-async function validateFollow(req, res, user, article, create) {
+async function validateFollow(user, article, create) {
   if (!article) {
     throw new ValidationError(
       ['Article not found'],
@@ -274,7 +278,11 @@ router.post('/:number/follow', auth.required, async function(req, res, next) {
       getIssue(req, res),
       req.app.get('sequelize').models.User.findByPk(req.payload.id),
     ])
-    await validateFollow(req, res, loggedInUser, article, true)
+    const msg = cant.followIssue(loggedInUser, article)
+    if (msg) {
+      throw new lib.ValidationError([msg], 403)
+    }
+    await validateFollow(loggedInUser, article, true)
     await loggedInUser.addIssueFollowSideEffects(article)
     const newArticle = await lib.getArticle(req, res)
     return res.json({ article: await newArticle.toJson(loggedInUser) })
@@ -290,7 +298,11 @@ router.delete('/:number/follow', auth.required, async function(req, res, next) {
       getIssue(req, res),
       req.app.get('sequelize').models.User.findByPk(req.payload.id),
     ])
-    await validateFollow(req, res, loggedInUser, article, false)
+    const msg = cant.unfollowIssue(loggedInUser, article)
+    if (msg) {
+      throw new lib.ValidationError([msg], 403)
+    }
+    await validateFollow(loggedInUser, article, false)
     await loggedInUser.removeIssueFollowSideEffects(article)
     const newArticle = await lib.getArticle(req, res)
     return res.json({ article: await newArticle.toJson(loggedInUser) })
@@ -410,6 +422,10 @@ router.post('/:number/comments', auth.required, async function(req, res, next) {
       sequelize.models.User.findByPk(req.payload.id),
     ])
 
+    const msg = cant.createComment(loggedInUser)
+    if (msg) {
+      throw new lib.ValidationError([msg], 403)
+    }
     const errs = []
     let err = front.hasReachedMaxItemCount(loggedInUser, commentCountByLoggedInUser, 'comments')
     if (err) { errs.push(err) }

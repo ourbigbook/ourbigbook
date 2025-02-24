@@ -32,6 +32,14 @@ async function start(port, startNext, cb) {
   // req.protocol was fixed to HTTP instead of HTTPS, leading to emails sent from HTTPS having HTTP links.
   app.enable('trust proxy')
 
+  app.use(function (req, res, next) {
+    const referrer = req.get('referrer')
+    if (referrer && !referrer.match(new RegExp(`^https?://${req.headers.host}/`))) {
+      console.log(`path=${req.originalUrl} referrer=${referrer} ip=${front.getClientIp(req)}`)
+    }
+    next()
+  })
+
   // Enforce HTTPS.
   // https://github.com/ourbigbook/ourbigbook/issues/258
   app.use(function (req, res, next) {

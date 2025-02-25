@@ -4,7 +4,7 @@ set -eux
 
 reset() (
   if [ "$db" = sqlite3 ]; then
-    rm -f "${script_dir}/db.sqlite3"
+    rm -f "${script_dir}/../db.sqlite3"
   else
     "${script_dir}/pg-setup"
   fi

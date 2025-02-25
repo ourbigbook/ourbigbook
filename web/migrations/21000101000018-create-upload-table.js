@@ -42,7 +42,6 @@ module.exports = {
     await queryInterface.addIndex('Upload', ['contentType', 'path'], { transaction })
     await queryInterface.addIndex('Upload', ['createdAt'], { transaction })
     await queryInterface.addIndex('Upload', ['size'], { transaction })
-    await queryInterface.addIndex('Upload', ['updatedAt'], { transaction })
   }),
   down: async (queryInterface, Sequelize) => queryInterface.sequelize.transaction(async transaction => {
     await queryInterface.dropTable('Upload', { transaction })

@@ -34,8 +34,43 @@ async function start(port, startNext, cb) {
 
   app.use(function (req, res, next) {
     const referrer = req.get('referrer')
-    if (referrer && !referrer.match(new RegExp(`^https?://${req.headers.host}/`))) {
-      console.log(`path=${req.originalUrl} referrer=${referrer} ip=${front.getClientIp(req)}`)
+    if (
+      referrer &&
+      !referrer.match(new RegExp(`^https?://${req.headers.host}/`))
+    ) {
+      const path = req.originalUrl
+      const ip = front.getClientIp(req)
+      const userAgent = req.get('user-agent')
+      const { Request } = sequelize.models
+      if (sequelize.options.dialect !== 'sqlite') {
+        // No await here intentionally, don't want this for fun thing
+        // to slow anything else down for now. If it fails it's fine.
+        sequelize.transaction(async (transaction) => {
+          try {
+            //if (sequelize.options.dialect === 'sqlite') {
+            //  // This does seem to solve the massive slowdowns seen on SQLite
+            //  // due to write contention as especially in dev the client makes
+            //  // a ton of simultaneous HTTP requests fetches that get blocked by
+            //  // the following writes. However, it's a bit scarry to turn WAL on
+            //  // only after these requests and there's no clean way currently.
+            //  // So let's just leave it off. PostgreSQL seemed fine.
+            //  // https://github.com/sequelize/sequelize/issues/5245
+            //  // https://github.com/sequelize/sequelize/issues/12487
+            //  // https://www.sqlite.org/wal.html
+            //  sequelize.query("PRAGMA journal_mode=WAL;")
+            //}
+            const count = await Request.count({ transaction })
+            const max = 10000
+            if (count >= max) {
+              await Request.destroy({ where: {}, limit: ((count - max) + 1), order: [['createdAt', 'ASC']], transaction })
+            }
+            await Request.create({ ip, path, referrer, userAgent }, { transaction })
+          } catch(e) {
+            // A bunch of database locks on SQLite.
+            //console.log(e)
+          }
+        })
+      }
     }
     next()
   })

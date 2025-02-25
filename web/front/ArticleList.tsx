@@ -177,7 +177,17 @@ const ArticleList = ({
         } else {
           emptyMessage = <>
             There are no matching {isIssue ? 'discussions' : 'articles'}{isIssue ? ' on this article' : ''}.
-            Why don't you <CustomLink href={isIssue ? routes.issueNew(issueArticle.slug) : routes.articleNew()}>create a new one</CustomLink>?
+            {((!isIssue) || (isIssue && issueArticle)) &&
+              <>
+                Why don't you
+                {' '}
+                <CustomLink
+                  href={isIssue ? routes.issueNew(issueArticle.slug) : routes.articleNew()}
+                >
+                  create a new one
+                </CustomLink>?
+              </>
+            }
           </>
         }
         break

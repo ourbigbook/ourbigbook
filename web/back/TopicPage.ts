@@ -17,6 +17,7 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
     if (err) { res.statusCode = 422 }
     const loggedInUser = await getLoggedInUser(req, res)
     const sequelize = req.sequelize
+    const { Article, Topic } = sequelize.models
     if (
       id instanceof Array
     ) {
@@ -37,13 +38,17 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
         topicJson,
         unlistedArticles,
       ] = await Promise.all([
-        sequelize.models.Article.getArticleJsonInTopicBy(loggedInUser, topicId),
-        sequelize.models.Article.getArticles(getArticlesOpts),
+        // articleInTopicByLoggedInUser
+        Article.getArticleJsonInTopicBy(loggedInUser, topicId),
+        // articles
+        Article.getArticles(getArticlesOpts),
+        // loggedInUserJson
         loggedInUser ? loggedInUser.toJson(loggedInUser) : null,
-        sequelize.models.Topic.getTopics({
+        // topicJson
+        Topic.getTopics({
+          articleWhere: { topicId },
           count: false,
           sequelize,
-          articleWhere: { topicId },
         }).then(topics => {
           if (topics.length) {
             return topics[0].toJson(loggedInUser)
@@ -51,14 +56,15 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
             return null;
           }
         }),
-        sequelize.models.Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false })),
-        //sequelize.models.Topic.findOne({
+        // unlistedArticles
+        Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false })),
+        //Topic.findOne({
         //  include: [{
-        //    model: sequelize.models.Article,
+        //    model: Article,
         //    as: 'article',
         //    where: { topicId },
         //    include: [{
-        //      model: sequelize.models.File,
+        //      model: File,
         //      as: 'file',
         //    }]
         //  }]

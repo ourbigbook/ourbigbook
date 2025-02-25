@@ -127,7 +127,7 @@ module.exports = (sequelize) => {
       if (count) {
         return Topic.findAndCountAll(findArgs)
       } else {
-        return Topic.findAll(findArgs)
+        return { rows: await Topic.findAll(findArgs) }
       }
     }))
 

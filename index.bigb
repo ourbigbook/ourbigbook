@@ -9215,6 +9215,49 @@ Path: `/go/settings/<username>`
 
 Contains profile and account settings for each user, including limits such as the maximum number of articles that each user may publish.
 
+= OurBigBook Web moderation
+{parent=OurBigBook Web user manual}
+
+= OurBigBook Web admin
+{parent=OurBigBook Web moderation}
+
+Each user has an `admin` property which when set to `true` allows the user to basically view and change anything for themselves and other users. E.g. admins can see private data of any user such as emails, or modify users usernames.
+
+Some actions are not possible currently because they were originally hardcoded for "do action for the current user" rather than "do action for target user", but all of those are intended to be converted. E.g. that is currently the case for like/unlike, follow/unfollow from the API.
+
+In order to mark a user as admin, direct DB acceess is required.
+
+For example, to make user `barack-obama` admin on a development run the \a[web/bin/make-admin] script:
+``
+web/bin/make-admin barack-obama
+``
+Admin priviledges can be revoked with the `-f` (`--false`) flag:
+``
+web/bin/make-admin -f barack-obama
+``
+
+The same command works in a <Heroku deployment> where you can run:
+``
+heroku run -a ourbigbook web/bin/make-admin -f barack-obama
+``
+
+= Account locking
+{parent=OurBigBook Web admin}
+
+When an account is locked, the locked user can login into it and view the account, but they cannot take any action sthat would lead to changes to the database, including:
+* creating or editing articles and discussions
+* liking, unliking articles or following or unfollowing users
+
+= OurBigBook Web analytics
+{parent=OurBigBook Web admin}
+
+<OurBigBook Web> supports the following types of analytics:
+* Google Analytics. TODO: the Google Analytics ID is currently hardcoded under \a[web/front/config.js] `googleAnalyticsId: 'G-R721ZZTW7L'`, we should instead take it from an environment variable
+* our simple built-in analytics to better view referrers. At some point Google Analytics stopped showing clear referrers, and so we started storing out own real quick. There is currently no UI for it, you just have to query the database e.g. with:
+  ``
+  ./heroku psql -c 'SELECT * FROM "Request" ORDER BY "createdAt" DESC LIMIT 1000'
+  ``
+
 = OurBigBook.com
 {c}
 {parent=OurBigBook Web user manual}
@@ -9979,35 +10022,8 @@ npx eslint front/Article.tsx
 {c}
 {parent=OurBigBook Web development}
 
-= OurBigBook Web admin
+= OurBigBook Web administration
 {parent=OurBigBook Web deployment}
-
-Each user has an `admin` property which when set to `true` allows the user to basically view and change anything for themselves and other users. E.g. admins can see private data of any user such as emails, or modify users usernames.
-
-Some actions are not possible currently because they were originally hardcoded for "do action for the current user" rather than "do action for target user", but all of those are intended to be converted. E.g. that is currently the case for like/unlike, follow/unfollow from the API.
-
-In order to mark a user as admin, direct DB acceess is required.
-
-For example, to make user `barack-obama` admin on a development run the \a[web/bin/make-admin] script:
-``
-web/bin/make-admin barack-obama
-``
-Admin priviledges can be revoked with the `-f` (`--false`) flag:
-``
-web/bin/make-admin -f barack-obama
-``
-
-The same command works in a <Heroku deployment> where you can run:
-``
-heroku run -a ourbigbook web/bin/make-admin -f barack-obama
-``
-
-= Account locking
-{parent=OurBigBook Web admin}
-
-When an account is locked, the locked user can login into it and view the account, but they cannot take any action sthat would lead to changes to the database, including:
-* creating or editing articles and discussions
-* liking, unliking articles or following or unfollowing users
 
 = OurBigBook Web database
 {c}

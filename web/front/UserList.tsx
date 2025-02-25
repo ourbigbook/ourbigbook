@@ -27,7 +27,7 @@ const UserList = ({
   usersCount,
 }: UserListProps) => {
   if (users.length === 0) {
-    return <div className="article-preview">
+    return <div className="article-preview content-not-ourbigbook">
       There are no users on the website.
     </div>;
   }

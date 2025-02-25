@@ -571,7 +571,7 @@ async function generateDemoData(params) {
     // Create an article in a topic that exists only for user0. All other articles exist for all users.
     // This is useful to test that case which hsa UI implications such as "show create new vs view mine".
     let articleManyDiscussions
-    {
+    if (users.length) {
       const parentId = `${ourbigbook.AT_MENTION_CHAR}${users[0].username}/${await titleToId('Test data')}`
       const parentIdObj = await Id.findOne({ where: { idid: parentId } })
       let articleUser0Only

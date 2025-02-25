@@ -411,7 +411,16 @@ export default function Article({
   // Initially putting this under state for the announce to articles modal to show "announced"
   // as soon as you finish announcing. In general we need to use this pattern whenever the data
   // is modified and we want to show an update to user immediately on the same page.
-  const [article, setArticle] = React.useState(articleInit)
+  let [article, setArticle] = React.useState(articleInit)
+  if (articleInit.id !== article.id) {
+    // We moved between articles, and haven't updated yet.
+    // articlesInSamePageForToc could be out-of-sync with article
+    // which led to a negative level blowup in renderTocFromEntryList
+    // when moving e.g.
+    // - from: /pioyi/ion-selective-electrodes/response-of-the-glass-electrode
+    // - to: /pioyi/ion-selective-electrodes
+    article = articleInit
+  }
   const authorUsername = article.author.username
   const [curComments, setComments] = React.useState(comments)
   const [curCommentsCount, setCommentsCount] = React.useState(commentsCount)
@@ -423,8 +432,9 @@ export default function Article({
   const [showNewListener, setShowNewListener] = React.useState(undefined)
   const getParamString = encodeGetParams(router.query)
   React.useEffect(() => {
+    // Otherwise these don't change on page changes.
+    // https://stackoverflow.com/questions/63143334/how-to-not-persist-state-between-next-js-dynamic-routes
     setArticle(articleInit)
-    // Otherwise comments don't change on page changes.
     setComments(comments)
     setCommentsCount(commentsCount)
   }, [getParamString, articleInit, comments, commentsCount])

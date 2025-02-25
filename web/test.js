@@ -626,12 +626,18 @@ it('normalize nested-set', async function() {
 it('Article.updateTopicsNewArticles', async function() {
   const sequelize = this.test.sequelize
 
-  async function getTopicIds(topicIds) {
-    return (await sequelize.models.Topic.getTopics({
+  async function getTopicIds(topicIds, count=true) {
+    const ret = await sequelize.models.Topic.getTopics({
       sequelize,
       articleOrder: 'topicId',
       articleWhere: { topicId: topicIds },
-    })).rows
+      count,
+    })
+    if (count) {
+      return ret.rows
+    } else {
+      return ret
+    }
   }
 
   const nArticles = config.topicConsiderNArticles + 1
@@ -644,6 +650,11 @@ it('Article.updateTopicsNewArticles', async function() {
   articles.push(await createArticle(sequelize, users[0], { i: 0 }))
   assertRows(
     await getTopicIds(['title-0']),
+    [{ articleId: articles[0].id, articleCount: 1 }]
+  )
+  // Also check that count: false works.
+  assertRows(
+    await getTopicIds(['title-0'], false),
     [{ articleId: articles[0].id, articleCount: 1 }]
   )
 

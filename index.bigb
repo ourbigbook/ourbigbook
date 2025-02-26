@@ -10052,7 +10052,14 @@ npx eslint front/Article.tsx
 {c}
 {parent=OurBigBook Web development}
 
-* `OURBIGBOOK_DEV_IP`: pretend that all requests come from this IP during development
+* `OURBIGBOOK_IPAPI_IS_KEY`: <OurBigBook VPN blocking>
+
+= `OURBIGBOOK_DEV_IP`
+{parent=OurBigBook Web environment variable}
+
+Pretend that all requests come from this IP during development.
+
+If this is not set then `ip` is empty in development.
 
 = OurBigBook Web deployment
 {c}
@@ -10225,7 +10232,7 @@ Related configurations:
     ``
     Then, to verify that the email sending is actually working run;
     ``
-    OURBIGBOOK_SEND_EMAIL=1 npm run dev
+    env $(cat .env | xargs) OURBIGBOOK_SEND_EMAIL=1 npm run dev
     ``
     and try to register some of your real emails. You should actually receive the email at this step. The email appears as sent from:
     ``
@@ -10238,8 +10245,8 @@ Related configurations:
 
 Go to https://www.google.com/recaptcha/about/[], setup a new domain, and save the values given e.g. to Heroku for <Heroku deployment>:
 ``
-heroku config:set -a ourbigbook RECAPTCHA_SECRET_KEY=secret_key
-heroku config:set -a ourbigbook NEXT_PUBLIC_RECAPTCHA_SITE_KEY=site_key
+./heroku config:set RECAPTCHA_SECRET_KEY=secret_key
+./heroku config:set NEXT_PUBLIC_RECAPTCHA_SITE_KEY=site_key
 ``
 
 Aditionally, also setup a separate localhost reCAPTCHA to test that it is working:
@@ -10257,6 +10264,23 @@ Although it is possible to use a single reCAPTCHA for both production and develo
 
 If the `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` variable is not set, then reCAPTCHA is simply not used in the website.
 
+= OurBigBook VPN blocking
+{parent=OurBigBook Web deployment}
+
+<OurBigBook Web> supports blocking VPN users from signing up in order to reduce SPAM.
+
+This is currently done by making API calls to https://ipapi.is/ after the <OurBigBook Web reCAPTCHA setup>[reCAPTCHA] check.
+
+To enable this, you must set the `OURBIGBOOK_IPAPI_IS_API_KEY` environment variable to contain your API key, which can be obtained by signing up to the freemium service:
+``
+./heroku config:set OURBIGBOOK_IPAPI_IS_API_KEY=api_key
+``
+To test locally, the checks ca be enabled with:
+``
+OURBIGBOOK_IPAPI_IS_API_KEY=api_key OURBIGBOOK_DEV_IP=123.456.789.1 npm run dev
+``
+which also fakes an IP with <OURBIGBOOK_DEV_IP>.
+
 = Heroku deployment
 {c}
 {parent=OurBigBook Web deployment}
@@ -10267,19 +10291,20 @@ Initial setup for a Heroku project called `ourbigbook`:
 ``
 sudo snap install --classic heroku
 heroku login
-heroku git:remote -a ourbigbook
+./heroku git:remote
 git remote rename heroku prod
 # Automatically sets DATABASE_URL.
-heroku addons:create -a ourbigbook heroku-postgresql:hobby-dev
+./heroku addons:create heroku-postgresql:hobby-dev
 # We need this to be able to require("ourbigbook")
-heroku config:set -a ourbigbook SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
+./heroku config:set SECRET="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 256)"
 # Password of users generated with ./web/bin/generate-demo-data
-heroku config:set -a ourbigbook OURBIGBOOK_DEMO_USER_PASSWORD="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 20)"
+./heroku config:set OURBIGBOOK_DEMO_USER_PASSWORD="$(tr -dc A-Za-z0-9 </dev/urandom | head -c 20)"
 # You can get it later to login with the demo users from the Heroku web interface
 ``
 To finish things off, you must now:
 * setup <OurBigBook Web email sending>, e.g. with <OurBigBook Web email sending with Sendgrid>. We haven't found a free method integrated with Heroku currently, so using this separate Sendgrid setup initially.
-* setup reCAPTCHA: <OurBigBook Web reCAPTCHA setup>
+* optional but highly recommended: setup reCAPTCHA: <OurBigBook Web reCAPTCHA setup>{full}
+* optional: setup <OurBigBook VPN blocking>{full}
 
 Additionally, you also need to setup the PostgreSQL test database for both OurBigBook CLI and OurBigBook Web as documented at <OurBigBook Web PostgreSQL setup>{full}:
 ``

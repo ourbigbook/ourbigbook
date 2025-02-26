@@ -2,6 +2,7 @@ const url = require('url');
 
 const { sendJsonHttp } = require('ourbigbook/web_api')
 
+const axios = require('axios')
 const router = require('express').Router()
 const passport = require('passport')
 const sharp = require('sharp')
@@ -251,6 +252,29 @@ router.post('/users', async function(req, res, next) {
       if (ipBlockPrefix) {
         throw new ValidationError([ipBlockedForSignupMessage(ip, ipBlockPrefix.ip)])
       }
+
+      // Check if VPN and block if yes.
+      if (
+        ip &&
+        config.ipapiIsApiKey
+      ) {
+        const response = await axios.get(`https://api.ipapi.is?q=${ip}&key=${config.ipapiIsApiKey}`)
+        if (response.status === 200) {
+          const data = response.data
+          if (data.is_vpn) {
+            console.log(`ipapi.js VPN detected: ${JSON.stringify(data)}`)
+            throw new ValidationError([
+              `Your IP ${ip} is from a VPN according to https://ipapi.is ` +
+              `which is not allowed due to past abuse. Please try again ` +
+              `from another network, or contact a site admin to create the account for you.`
+            ])
+          }
+        } else {
+          console.log('ipapi error')
+          console.log(response.data)
+        }
+      }
+
       // We fetch the existing account by email.
       // https://github.com/ourbigbook/ourbigbook/issues/329
       const existingUser = await User.findOne({ where: { email }, transaction})

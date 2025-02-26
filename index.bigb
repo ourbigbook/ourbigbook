@@ -9248,8 +9248,42 @@ When an account is locked, the locked user can login into it and view the accoun
 * creating or editing articles and discussions
 * liking, unliking articles or following or unfollowing users
 
+= Database access-only admin
+{parent=OurBigBook Web moderation}
+
+This section is about <OurBigBook Web> features that currently require either:
+* direct database access
+* environment variable access
+They could at some point be exposed to <OurBigBook Web admins>, but we were just lazy to do so for now.
+
+= OurBigBook Web signup IP blacklist
+{parent=Database access-only admin}
+
+It is possible to blacklist IP and IP prefixes by adding them to the database with:
+``
+./heroku run web/bin/blacklist-signup-ip 123.456.789.1
+``
+
+IP prefixes can also be added to block entire ranges e.g.:
+``
+./heroku run web/bin/blacklist-signup-ip 123.456.789
+./heroku run web/bin/blacklist-signup-ip 123.456
+./heroku run web/bin/blacklist-signup-ip 123
+``
+would block respectively all of:
+``
+123.456.789.*
+123.456.*
+123.*
+``
+
+You can also add a note as:
+``
+./heroku run web/bin/blacklist-signup-ip 123.456.789.1 'IP blocked because asdf is ugly'
+``
+
 = OurBigBook Web analytics
-{parent=OurBigBook Web admin}
+{parent=Database access-only admin}
 
 <OurBigBook Web> supports the following types of analytics:
 * Google Analytics. TODO: the Google Analytics ID is currently hardcoded under \a[web/front/config.js] `googleAnalyticsId: 'G-R721ZZTW7L'`, we should instead take it from an environment variable
@@ -10018,12 +10052,11 @@ npx eslint front/Article.tsx
 {c}
 {parent=OurBigBook Web development}
 
+* `OURBIGBOOK_DEV_IP`: pretend that all requests come from this IP during development
+
 = OurBigBook Web deployment
 {c}
 {parent=OurBigBook Web development}
-
-= OurBigBook Web administration
-{parent=OurBigBook Web deployment}
 
 = OurBigBook Web database
 {c}

@@ -8,6 +8,37 @@
 // Edit: this is a not a webpack issue. Doing:
 //   path.dirname(require.resolve(path.join('ourbigbook', 'package.json'))
 // from web/app.js also blows up.
+//
+// Edit 2: Despite its name, this file doesn't actually work nicely from Webpack inside web...
+// So we've created web/back/webpack_safe
+// E.g. adding an import of any random function of this file to any .ts or .tsx file in web
+// like web/back/LoginPage.ts:
+//
+//     import { preload_katex_from_file } from 'ourbigbook/nodejs_webpack_safe'
+//
+// leads to a warning:
+//
+//    ⚠ ../node_modules/sequelize/dist/lib/dialects/abstract/connection-manager.js
+//   Critical dependency: the request of a dependency is an expression
+//
+//   Import trace for requested module:
+//   ../node_modules/sequelize/dist/lib/dialects/abstract/connection-manager.js
+//   ../node_modules/sequelize/dist/lib/dialects/mariadb/connection-manager.js
+//   ../node_modules/sequelize/dist/lib/dialects/mariadb/index.js
+//   ../node_modules/sequelize/dist/lib/sequelize.js
+//   ../node_modules/sequelize/dist/index.js
+//   ../nodejs_webpack_safe.js
+//   ./back/LoginPage.ts
+//   ./pages/go/register.tsx
+//
+// It appears that sequelize is unsurprisingly fundamentally not webpack safe...
+// * https://stackoverflow.com/questions/76239621/critical-dependency-the-request-of-a-dependency-sequelize-is-an-expression-in
+//   The workaround:
+//     experimental: {
+//        serverComponentsExternalPackages: ['sequelize'],
+//      },
+//   didn't work for us.
+// * https://stackoverflow.com/questions/42908116/webpack-critical-dependency-the-request-of-a-dependency-is-an-expression
 
 const { Sequelize } = require('sequelize')
 

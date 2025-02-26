@@ -14,8 +14,10 @@ const {
 } = lib
 const { cant } = require('../front/cant')
 const front = require('../front/js')
+const { ipBlockedForSignupMessage } = front
 const config = require('../front/config')
 const routes = require('../front/routes')
+const { isIpBlockedForSignup } = require('../back/webpack_safe')
 
 async function authenticate(req, res, next, opts={}) {
   const { forceVerify } = opts
@@ -237,83 +239,94 @@ router.post('/users', async function(req, res, next) {
       validators: [front.isString, front.isTruthy],
       defaultValue: undefined,
     })
-    await validateCaptcha(config, req, res)
     const sequelize = req.app.get('sequelize')
-    const User = sequelize.models.User
-    // We fetch the existing account by email.
-    // https://github.com/ourbigbook/ourbigbook/issues/329
-    const existingUser = await User.findOne({ where: { email }})
+    const { User } = sequelize.models
     let user
-    let adminsPromise
-    if (existingUser) {
-      user = existingUser
-      if (user.verified) {
-        throw new ValidationError([`email already taken: ${email}`])
+    const ip = front.getClientIp(req)
+    await sequelize.transaction(async (transaction) => {
+      const [ipBlockPrefix,] = await Promise.all([
+        isIpBlockedForSignup(sequelize, ip),
+        validateCaptcha(config, req, res),
+      ])
+      if (ipBlockPrefix) {
+        throw new ValidationError([ipBlockedForSignupMessage(ip, ipBlockPrefix.ip)])
       }
-      // Re-send the email if enough time passed.
-      const timeToWaitMs = getTimeToWaitForNextEmailMs(user)
-      if (timeToWaitMs > 0) {
-        throw new ValidationError([`Email already registered but not verified. You can re-send a confirmation email in: ${lib.msToRoundedTime(timeToWaitMs)}`])
-      }
-      user.verificationCode = User.generateVerificationCode()
-      user.verificationCodeN += 1
-      adminsPromise = null
-    } else {
-      user = new (User)()
-      // username is set only in this else.
+      // We fetch the existing account by email.
       // https://github.com/ourbigbook/ourbigbook/issues/329
-      user.username = username
-      user.verificationCodeN = 1
-      user.email = email
-      user.ip = front.getClientIp(req)
-      if (config.isTest) {
-        // Authenticate all users automatically.
-        user.verified = true
+      const existingUser = await User.findOne({ where: { email }, transaction})
+      let adminsPromise
+      if (existingUser) {
+        user = existingUser
+        if (user.verified) {
+          throw new ValidationError([`email already taken: ${email}`])
+        }
+        // Re-send the email if enough time passed.
+        const timeToWaitMs = getTimeToWaitForNextEmailMs(user)
+        if (timeToWaitMs > 0) {
+          throw new ValidationError([`Email already registered but not verified. You can re-send a confirmation email in: ${lib.msToRoundedTime(timeToWaitMs)}`])
+        }
+        user.verificationCode = User.generateVerificationCode()
+        user.verificationCodeN += 1
+        adminsPromise = null
+      } else {
+        user = new (User)()
+        // username is set only in this else.
+        // https://github.com/ourbigbook/ourbigbook/issues/329
+        user.username = username
+        user.verificationCodeN = 1
+        user.email = email
+        user.ip = ip
+        if (config.isTest) {
+          // Authenticate all users automatically.
+          user.verified = true
+        }
+        adminsPromise = User.findAll({ where: { admin: true }, transaction })
       }
-      adminsPromise = User.findAll({ where: { admin: true }})
-    }
-    user.displayName = displayName
-    User.setPassword(user, password)
-    user.verificationCodeSent = new Date()
-    const [, admins] = await Promise.all([
-      user.saveSideEffects(),
-      adminsPromise,
-    ])
-    if (config.isTest) {
-      return authenticate(req, res, next, { forceVerify: true })
-    }
-    const verifyUrl = `${routes.host(req)}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`
-    const sendEmailsPromises = []
-    sendEmailsPromises.push(lib.sendEmail({
-      req,
-      to: user.email,
-      subject: `Verify your new OurBigBook.com account`,
-      html:
-        `<p>Welcome to OurBigBook.com, ${user.displayName}!</p>` +
-        `<p>Please <a href="${verifyUrl}">click this link to verify your account</a>.</p>`
-      ,
-      text: `Welcome to OurBigBook.com, ${user.displayName}!
+      user.displayName = displayName
+      User.setPassword(user, password)
+      user.verificationCodeSent = new Date()
+      const [, admins] = await Promise.all([
+        user.saveSideEffects({ transaction }),
+        adminsPromise,
+      ])
+      const verifyUrl = `${routes.host(req)}${routes.userVerify()}?email=${encodeURIComponent(user.email)}&code=${user.verificationCode}`
+      const sendEmailsPromises = []
+      sendEmailsPromises.push(lib.sendEmail({
+        req,
+        to: user.email,
+        subject: `Verify your new OurBigBook.com account`,
+        html:
+          `<p>Welcome to OurBigBook.com, ${user.displayName}!</p>` +
+          `<p>Please <a href="${verifyUrl}">click this link to verify your account</a>.</p>`
+        ,
+        text: `Welcome to OurBigBook.com, ${user.displayName}!
 
 Please click this link to verify your account: ${verifyUrl}
 `,
-    }))
-    const profileUrl = `${routes.host(req)}${routes.user(user.username)}`
-    if (admins) {
-      for (const admin of admins) {
-        sendEmailsPromises.push(lib.sendEmail({
-          req,
-          to: admin.email,
-          subject: `A new user signed up: ${user.displayName} (@${user.username}, ${user.email}, ${user.ip})!`,
-          html: `<p><a href="${profileUrl}">${profileUrl}</a></p><p>Another step towards world domination is taken!</p>`,
-          text: `${profileUrl}
+      }))
+      const profileUrl = `${routes.host(req)}${routes.user(user.username)}`
+      if (admins) {
+        for (const admin of admins) {
+          sendEmailsPromises.push(lib.sendEmail({
+            req,
+            to: admin.email,
+            subject: `A new user signed up: ${user.displayName} (@${user.username}, ${user.email}, ${user.ip})!`,
+            html: `<p><a href="${profileUrl}">${profileUrl}</a></p><p>Another step towards world domination is taken!</p>`,
+            text: `${profileUrl}
 
 Another step towards world domination is taken!
 `,
-        }))
+          }))
+        }
       }
+      await Promise.all(sendEmailsPromises)
+    })
+    if (config.isTest) {
+      // TODO get rid of this horror.
+      return authenticate(req, res, next, { forceVerify: true })
+    } else {
+      return res.json({ user: await user.toJson(user) })
     }
-    await Promise.all(sendEmailsPromises)
-    return res.json({ user: await user.toJson(user) })
   } catch(error) {
     next(error);
   }

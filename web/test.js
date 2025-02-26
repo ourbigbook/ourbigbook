@@ -5586,12 +5586,14 @@ it(`api: article: announce`, async () => {
     ))
     assertStatus(status, data)
     test.loginUser(user0)
-    assert.strictEqual(emails.length, 1)
+    assert.strictEqual(lastEmail.to, 'user1@mail.com')
+    assert.strictEqual(lastEmail.subject, 'Announcement: Title 0')
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 1 })))
     assertStatus(status, data)
     ;({data, status} = await test.webApi.articleAnnounce(`user0/title-1`, 'My message.'))
     assertStatus(status, data)
-    assert.strictEqual(emails.length, 1)
+    assert.strictEqual(lastEmail.to, 'user1@mail.com')
+    assert.strictEqual(lastEmail.subject, 'Announcement: Title 0')
 
     // The announcement limit prevents new announcements if hit.
     for (let i = 2; i < config.maxArticleAnnouncesPerMonth; i++) {

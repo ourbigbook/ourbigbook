@@ -50,6 +50,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   const Issue = require('./issue')(sequelize)
   const Request = require('./request')(sequelize)
   const SequelizeMeta = require('./sequelize_meta')(sequelize)
+  const SignupBlacklistIp = require('./signup_blacklist_ip')(sequelize)
   const Site = require('./site')(sequelize)
   const User = require('./user')(sequelize)
   const Upload = require('./upload')(sequelize)

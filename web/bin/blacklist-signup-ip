@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// https://docs.ourbigbook.com/ourbigbook-web-admin
+// https://docs.ourbigbook.com/ourbigbook-web-signup-ip-blacklist
 
 const path = require('path')
 
@@ -8,26 +8,21 @@ const commander = require('commander')
 
 const models = require('../models')
 
-// CLI arguments
+// cli arguments
 const program = commander.program
 program.allowExcessArguments(false)
-program.option('-f, --false', 'remove admin instead of giving it')
-program.argument('<username>', 'username')
+program.argument('<ip>', 'ip')
+program.argument('[note]', 'note')
 program.parse(process.argv)
-const opts = program.opts()
-const [username] = program.processedArgs
+const [ip, note] = program.processedArgs
 
 // main
 const sequelize = models.getSequelize(path.dirname(__dirname))
 ;(async () => {
-await sequelize.models.User.update(
+await sequelize.models.SignupBlacklistIp.create(
   {
-    admin: !opts.false
+    ip,
+    note,
   },
-  {
-    where: {
-      username,
-    }
-  }
 )
 })().finally(() => { return sequelize.close() })

@@ -14,7 +14,11 @@ const { QUERY_FALSE_VAL, QUERY_TRUE_VAL } = web_api
 // https://stackoverflow.com/questions/14382725/how-to-get-the-correct-ip-address-of-a-client-into-a-node-socket-io-app-hosted-o/14382990#14382990
 // Works on Heroku 2021.
 function getClientIp(req) {
-  return req.header('x-forwarded-for')
+  if (!config.isProduction && config.devIp) {
+    return config.devIp
+  } else {
+    return req.header('x-forwarded-for')
+  }
 }
 
 function getCommentSlug(comment) {
@@ -196,6 +200,11 @@ function isTypeOrArrayOf(cb) {
   }
 }
 
+function ipBlockedForSignupMessage(ip, ipBlockPrefix) {
+  return `You cannot sign up from your current IP ${ip} because ` +
+  `the IP prefix ${ipBlockPrefix} was blocked by admins due to abuse`
+}
+
 function isArrayOf(cb) {
   return (a) => {
     if (!(a instanceof Array)) {
@@ -280,6 +289,7 @@ module.exports = {
   hasReachedMaxItemCount,
   idToSlug,
   idToTopic,
+  ipBlockedForSignupMessage,
   isArrayOf,
   isBoolean,
   isEmail,

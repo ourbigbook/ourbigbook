@@ -94,6 +94,8 @@ module.exports = {
   defaultProfileImage: `/default-profile-image.svg`,
   disableFrontend: process.env.OURBIGBOOK_DISABLE_FRONTEND === env_true,
   defaultUserScoreTitle: 'Sum of likes of all articles authored by user',
+  // Pretend all requests come from this IP during development.
+  devIp: process.env.OURBIGBOOK_DEV_IP,
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
   /** @type {boolean | 'blocking'} */

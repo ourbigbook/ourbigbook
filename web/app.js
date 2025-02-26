@@ -32,6 +32,10 @@ async function start(port, startNext, cb) {
   // req.protocol was fixed to HTTP instead of HTTPS, leading to emails sent from HTTPS having HTTP links.
   app.enable('trust proxy')
 
+  // While fun, this is completely useless, because browsers are not sending path by default anymore.
+  // So we get a ton of SPAM, which Google Analytics removes automatically for us, but no extra information.
+  // But it is fun.
+  // https://stackoverflow.com/questions/6762258/when-browser-sets-the-referrer-in-http-request-header/79469565#79469565
   app.use(function (req, res, next) {
     const referrer = req.get('referrer')
     if (

@@ -36,7 +36,8 @@ async function start(port, startNext, cb) {
     const referrer = req.get('referrer')
     if (
       referrer &&
-      !referrer.match(new RegExp(`^https?://${req.headers.host}/`))
+      // Don't store internal links from OurBigBook.com to itself.
+      !referrer.match(new RegExp(`^(https?://)?${req.headers.host}(/|?|$)`, 'i'))
     ) {
       const path = req.originalUrl
       const ip = front.getClientIp(req)

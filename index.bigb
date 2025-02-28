@@ -9287,10 +9287,17 @@ You can also add a note as:
 
 <OurBigBook Web> supports the following types of analytics:
 * Google Analytics. TODO: the Google Analytics ID is currently hardcoded under \a[web/front/config.js] `googleAnalyticsId: 'G-R721ZZTW7L'`, we should instead take it from an environment variable
-* our simple built-in analytics to better view referrers. At some point Google Analytics stopped showing clear referrers, and so we started storing out own real quick. There is currently no UI for it, you just have to query the database e.g. with:
+* our simple built-in analytics to better view referrers. At some point Google Analytics stopped showing clear referrer paths, and so we started storing out own real quick. There is currently no UI for it, you just have to query the database e.g. with:
   ``
   ./heroku psql -c 'SELECT * FROM "Request" ORDER BY "createdAt" DESC LIMIT 1000'
   ``
+  You can also blacklist domains to reduce referrer spam with \a[web/bin/blacklist-referrer-domain]:
+  ``
+  web/bin/blacklist-referrer-domain binance.com
+  ``
+  Here's a small open database that might help: https://github.com/matomo-org/referrer-spam-list[].
+
+  We later learned that this feature is completely useless because https://stackoverflow.com/questions/6762258/when-browser-sets-the-referrer-in-http-request-header/79469565#79469565[browsers are actually not sending paths anymore]. But it's fun.
 
 = OurBigBook.com
 {c}

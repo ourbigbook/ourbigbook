@@ -10,6 +10,54 @@ Significant entries will have a corresponding announcement on the following <off
 * https://www.facebook.com/OurBigBook
 * https://www.instagram.com/ourbigbook
 
+= Signup IP blacklist, VPN detection and account locking
+{parent=News}
+{tag=Web}
+{tag=OurBigBook VPN blocking}
+{tag=OurBigBook Web signup IP blacklist}
+{tag=Account locking}
+
+As described at: https://github.com/ourbigbook/ourbigbook/issues/346[], starting December 2024 and increasingly so through January and February 2025, <OurBigBook.com> has been increasingly targeted by a SAPMmer group.
+
+About half of the SPAM posts were advertising cryptocurrency recovery services, but other scammy products were also advertized.
+
+They usually create a few posts every day, but they are very persistent and keep coming back day after day.
+
+The spammers were rather sophisticated:
+* almost always one SPAM post per account
+* all accounts use gmail addresses, presumably bought in bulk
+* the SPAMers use one of a variety of free VPN, most notably ExpressVPN, NordVPN and PIA
+
+At first we were rather amused that there would be human labor so cheap as to make such a work economically feasible.
+
+Adding SPAM to a website that has zero users and almost no views. Amazing!
+
+And it has to be manual work because the website is already protected by <OurBigBook Web reCAPTCHA setup>.
+
+Furthermore all of the above strongly indicate a well organized SPAM operation that spams across a variety of websites for a variety of clients.
+
+But what really impressed us the most was https://ourbigbook.com/alannakennedy/top-ways-to-recover-funds-from-cryptocurrency-scam-iforce-hacker-recovery They actually upvoted a single post from 13 other accounts, making it by far the top article on <OurBigBook.com> as visible at: https://ourbigbook.com/go/articles?sort=score
+
+\Image[feature/spam/crypto.png]
+{title=Screenshot showing voting manipulated SPAM as the most highly upvoted article on <OurBigBook.com>}
+{border}
+{height=971}
+{provider=github}
+{source=https://web.archive.org/web/20250228110911/https://ourbigbook.com/go/articles?sort=score}
+
+Initially Ciro was debating to himself if he should allow this to continue or not. It is kind of fun to see them work and build a database of compromised gmail addresses.
+
+But finally, Ciro decided to put a stop to it mostly because:
+* they create so many accounts that it would take a lot of effort to go over all of them to decide which accounts are legit or not if in the future we wanted to nuke the SPAM accounts
+* manipulating the voting system was a step to far
+
+As a result, we have implemented the following features on the website, which should completely kill off this wave of SPAM, while hopefully having little impact to legitimate users:
+* <OurBigBook VPN blocking>: we now detect and forbid users from signing up from IPs of well known VPNs. The detection is done via API calls to https://ipapi.is/ which allows fo 1000 free daily requests. We only make the requests after <OurBigBook Web reCAPTCHA setup>[reCAPTCHA], and if that service is ever down for some reason, we just skip the check instead
+* <OurBigBook Web signup IP blacklist>: additionally, a small percentage of the SPAM was coming from Pakistani IPs which were not marked as part of a VPN. So we have also given the ability for admins to block some IPs manually to cover those
+* <Account locking>: for SPAM that goes through, we intend to use this new feature to <account locking>[lock] the SPAM accounts, which prevents them from further editing the database in any way, e.g. creating articles
+
+Furthermore, we will also use the pre-existing <unlisted> article feature to unlist any particularly noisy spam such as the vote manipulated post.
+
 = Web searches find words inside title on PostgreSQL
 {parent=News}
 {tag=Web}

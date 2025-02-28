@@ -58,6 +58,12 @@ As a result, we have implemented the following features on the website, which sh
 
 Furthermore, we will also use the pre-existing <unlisted> article feature to unlist any particularly noisy spam such as the vote manipulated post.
 
+Announcements:
+* https://mastodon.social/@ourbigbook/114081249345123512
+* https://x.com/OurBigBook/status/1895434750376165482
+* https://www.linkedin.com/feed/update/urn:li:share:7301200741862420480
+* https://www.facebook.com/OurBigBook/posts/pfbid0QPh3kRDe4bA99MpsVNEXX6LqURKooYMjWX3wC6phGrs2vv7PswyTs2GpwX3KTxUCl
+
 = Web searches find words inside title on PostgreSQL
 {parent=News}
 {tag=Web}

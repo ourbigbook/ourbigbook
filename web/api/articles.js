@@ -27,7 +27,7 @@ const ANNOUNCE_YOU_ARE_RECEIVING_MESSAGE = 'You are receiving this email because
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
-    const { Article, User } = sequelize.models
+    const { Article, Ref, User } = sequelize.models
     const [limit, offset] = lib.getLimitAndOffset(req, res)
     // TODO Make it optional because it is generally very broken now.
     // There could however be performance advantages to this as well.
@@ -37,6 +37,14 @@ router.get('/', auth.optional, async function(req, res, next) {
       defaultValue: false,
     })
     const slug = req.query.id
+    const parentTypeString = req.query['parent-type']
+    let parentType
+    if (parentTypeString) {
+      parentType = Ref.Types[parentTypeString]
+      if (parentType === undefined) {
+        throw new lib.ValidationError(`unknown parent-type argument: ${parentTypeString}`)
+      }
+    }
     const [
       {
         count: articlesCount,
@@ -56,6 +64,8 @@ router.get('/', auth.optional, async function(req, res, next) {
           allowedSortsExtra: Article.ALLOWED_SORTS_EXTRA,
         }),
         slug,
+        parentId: req.query['parent'],
+        parentType,
         topicId: req.query.topicId,
         topicIdSearch: req.query.search,
       }),

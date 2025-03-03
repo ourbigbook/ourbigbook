@@ -977,7 +977,7 @@ WHERE
     }
     const where = {}
     if (
-      // These happen on "updateNestedNsetIndex=false updates"
+      // These happen on "updateNestedSetIndex=false updates"
       !opts.includeNulls
     ) {
       where.nestedSetIndex = {[Op.ne]: null}
@@ -1232,6 +1232,9 @@ WHERE
     }
     if (excludeIds === undefined) {
       excludeIds = []
+    }
+    if (parentType === undefined) {
+      parentType = Ref.Types[ourbigbook.REFS_TABLE_PARENT]
     }
 
     // Setup where

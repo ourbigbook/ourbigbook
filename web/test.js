@@ -5697,6 +5697,55 @@ it(`api: article: search`, async () => {
   })
 })
 
+it('api: article: parent and parent-type', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    // Create articles
+
+      article = createArticleArg({ i: 0, titleSource: 'Good' })
+      ;({data, status} = await createArticleApi(test, article))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Mathematics', bodySource: '{tag=Good}' })
+      ;({data, status} = await createArticleApi(test, article))
+      assertStatus(status, data)
+
+      article = createArticleArg({ i: 0, titleSource: 'Calculus' })
+      ;({data, status} = await createArticleApi(test, article, { parentId: '@user0/mathematics' }))
+      assertStatus(status, data)
+
+    // Test parent and parent-type
+
+      // Calculus is a direct child of mathematics
+      ;({data, status} = await test.webApi.articles({ parent: '@user0/mathematics' }))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { slug: 'user0/calculus' },
+      ])
+
+      // Mathematics is tagged as good
+      ;({data, status} = await test.webApi.articles({
+        parent: '@user0/good',
+        'parent-type': ourbigbook.REFS_TABLE_X_CHILD }
+      ))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { slug: 'user0/mathematics' },
+      ])
+
+      // Unknown parent-type blows up gracefully.
+      ;({data, status} = await test.webApi.articles({
+        parent: '@user0/good',
+        'parent-type': 'i-dont-exist' }
+      ))
+      assert.strictEqual(status, 422)
+  })
+})
+
 it(`api: article: create simple`, async () => {
   await testApp(async (test) => {
     let data, status, article

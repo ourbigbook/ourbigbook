@@ -9302,7 +9302,7 @@ You can also add a note as:
   ``
   You can also blacklist domains to reduce referrer spam with \a[web/bin/blacklist-referrer-domain]:
   ``
-  web/bin/blacklist-referrer-domain binance.com
+  ./heroku web/bin/blacklist-referrer-domain binance.com
   ``
   Here's a small open database that might help: https://github.com/matomo-org/referrer-spam-list[].
 

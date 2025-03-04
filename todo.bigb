@@ -253,7 +253,7 @@ after:
 = 3D rigid body dynamics
   = 3D rigid body dynamics simulator (3D physics engine)
     = PhysX
-  = 3D ridig body dynamics benchmark (3D physics engine benchmark)
+  = 3D rigid body dynamics benchmark (3D physics engine benchmark)
     = SimBenchmark
 ``
 Gotta try to make a minimal test reproduction for this mess.
@@ -665,7 +665,7 @@ This construct should just be forbidden by linting instead forcing the preferred
 zxcv
 ``
 
-Similar problem with preceeding paragraph:
+Similar problem with preceding paragraph:
 
 README.bigb
 
@@ -678,7 +678,7 @@ zxcv
 
 The root failure case in both cases is that the header goes inside the paragraph.
 
-Hmm, perhaps that is not a bad behaviour... OK so going back a bit further, the problem is the outcome of:
+Hmm, perhaps that is not a bad behavior... OK so going back a bit further, the problem is the outcome of:
 ``
 ourbigbook --web .
 ``

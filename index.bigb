@@ -9291,6 +9291,11 @@ You can also add a note as:
 ./heroku run web/bin/blacklist-signup-ip 123.456.789.1 'IP blocked because asdf is ugly'
 ``
 
+The list of blacklisted IPs can be obtained with:
+``
+./heroku psql -c 'SELECT * FROM "SignupBlacklistIp"'
+``
+
 = OurBigBook Web analytics
 {parent=Database access-only admin}
 
@@ -9298,13 +9303,22 @@ You can also add a note as:
 * Google Analytics. TODO: the Google Analytics ID is currently hardcoded under \a[web/front/config.js] `googleAnalyticsId: 'G-R721ZZTW7L'`, we should instead take it from an environment variable
 * our simple built-in analytics to better view referrers. At some point Google Analytics stopped showing clear referrer paths, and so we started storing out own real quick. There is currently no UI for it, you just have to query the database e.g. with:
   ``
-  ./heroku psql -c 'SELECT * FROM "Request" ORDER BY "createdAt" DESC LIMIT 1000'
+  printf '\\a\nSELECT referrer,path,ip,"createdAt" FROM "Request" ORDER BY "createdAt" DESC LIMIT 1000' | ./heroku psql DATABASE_URL
   ``
   You can also blacklist domains to reduce referrer spam with \a[web/bin/blacklist-referrer-domain]:
   ``
   ./heroku web/bin/blacklist-referrer-domain binance.com
   ``
+  You can list the blacklisted domains with:
+  ``
+  ./heroku psql -c 'SELECT domain FROM "ReferrerDomainBlacklist" ORDER BY domain ASC'
+  ``
   Here's a small open database that might help: https://github.com/matomo-org/referrer-spam-list[].
+
+  Local testing can be done on <OurBigBook Web PostgreSQL>[PostgreSQL] with the help of:
+  ``
+  curl -H 'Referrer:http://exmaple.com' http://localhost:3000/qwer &>/dev/null && web/bin/psql 'select * from "Request"'
+  ``
 
   We later learned that this feature is completely useless because https://stackoverflow.com/questions/6762258/when-browser-sets-the-referrer-in-http-request-header/79469565#79469565[browsers are actually not sending paths anymore]. But it's fun.
 

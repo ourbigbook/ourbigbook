@@ -53,7 +53,7 @@ async function start(port, startNext, cb) {
             sequelize.transaction(async (transaction) => {
               const { ReferrerDomainBlacklist, Request } = sequelize.models
               const referrerBlacklist = await ReferrerDomainBlacklist.findOne({
-                where: { domain: referrerUrl.hostname.toLowerCase() },
+                where: { domain: referrerUrl.hostname.split('.').slice(-2).join('.').toLowerCase() },
                 transaction,
               })
               if (!referrerBlacklist) {

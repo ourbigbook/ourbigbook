@@ -749,6 +749,8 @@ export default function Article({
           // Minimal example of this "technique".
           // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
           // https://stackoverflow.com/questions/78892868/how-to-inject-a-react-component-inside-static-pre-rendered-html-coming-from-the
+          // TODO this still flickers no matter how hard I try:
+          // https://github.com/ourbigbook/ourbigbook/issues/361
           const tmp = document.createElement('div')
           tmp.classList.add('tmp')
           const root = createRoot(tmp)

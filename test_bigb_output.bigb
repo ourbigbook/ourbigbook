@@ -479,10 +479,22 @@ Hello
 {titleFromSrc}
 ]]
 
+Preferred literal arguments:
+
 \Comment[[
 Hello
 
 World
+]]
+
+\JsCanvasDemo[[
+new class extends OurbigbookCanvasDemo {
+  init() {
+    super.init('hello');
+  }
+  draw() {
+  }
+}
 ]]
 
 \Include[test-bigb-output-2]{parent=dog}
@@ -508,7 +520,7 @@ World
 
 == Scope conflict
 
-== My scope.With Bling
+== My scope.With>Bling
 {scope}
 
 === Scope conflict

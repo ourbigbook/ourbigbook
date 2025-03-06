@@ -9048,6 +9048,7 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
         mandatory: true,
+        ourbigbook_output_prefer_literal: true,
       }),
     ],
     {

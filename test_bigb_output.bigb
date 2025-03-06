@@ -62,6 +62,8 @@ Sane xref that cannot be converted to shorthand: \x[\$]
 
 Shorthand ref with greater than: <greater than>
 
+Shorthand ref with scope: <My scope.With Bling/Inside The.scope>
+
 Inline code block: `f(x + 1)[]` after.
 
 Inline code block with backtick: \c[[a ` b]] after.
@@ -504,10 +506,16 @@ World
 
 == Greater > than
 
-== My scope
+== Scope conflict
+
+== My scope.With Bling
 {scope}
 
-=== h1
+=== Scope conflict
+
+</scope conflict>
+
+=== Inside The.scope
 
 == Tank_man_standing_in_front_of_some_tanks.jpg
 {file}

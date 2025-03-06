@@ -10806,6 +10806,7 @@ function ourbigbookGetXHref({
   target_ast,
   target_id,
 }) {
+  const hrefOrig = href
   if (!file) {
     href = href.replaceAll(ID_SEPARATOR, ' ')
     const href_plural = pluralizeWrap(href, 2)
@@ -10933,26 +10934,11 @@ function ourbigbookGetXHref({
         }
         let target_scope = target_ast.scope
         if (target_scope) {
-          if (ast.scope) {
-            const target_scope_split = target_scope.split(Macro.HEADER_SCOPE_SEPARATOR)
-            const scope_split = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
-            let last_common = 0
-            while (
-              last_common < target_scope_split.length &&
-              last_common < scope_split.length
-            ) {
-              if (target_scope_split[last_common] !== scope_split[last_common]) {
-                break
-              }
-              last_common++
-            }
-            target_scope = target_scope_split.slice(last_common).join(Macro.HEADER_SCOPE_SEPARATOR)
+          let scopeSrc = hrefOrig.split(Macro.HEADER_SCOPE_SEPARATOR).slice(0, -1).join(Macro.HEADER_SCOPE_SEPARATOR)
+          if (scopeSrc) {
+            scopeSrc += Macro.HEADER_SCOPE_SEPARATOR
           }
-          if (target_scope) {
-            target_scope = `${target_scope}${Macro.HEADER_SCOPE_SEPARATOR}`
-          }
-          target_scope = target_scope.replaceAll(ID_SEPARATOR, ' ')
-          href = `${target_scope}${href}`
+          href = `${scopeSrc}${href}`
         }
       }
       if (isAbsoluteXref(target_id, context)) {

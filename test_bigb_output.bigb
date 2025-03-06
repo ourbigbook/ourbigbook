@@ -64,6 +64,10 @@ Shorthand ref with greater than: <greater than>
 
 Shorthand ref with scope: <My scope.With Bling/Inside The.scope>
 
+Shorthand link to math on header: <math x^2 on header>. TODO: get the dollars in there: https://github.com/ourbigbook/ourbigbook/issues/362
+
+Shorthand link to math on header: <Sane only on header>
+
 Inline code block: `f(x + 1)[]` after.
 
 Inline code block with backtick: \c[[a ` b]] after.
@@ -515,6 +519,10 @@ new class extends OurbigbookCanvasDemo {
 
 == Dollar
 {id=\$}
+
+== Math $x^2$ on header
+
+== Sane only \testSaneOnly[on] header
 
 == Greater > than
 

@@ -10744,8 +10744,8 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           }
         },
         'Video': function(ast, context) { return ''; },
-        [Macro.TEST_SANE_ONLY]: idConvertSimpleElem,
-        [decapitalizeFirstLetter(Macro.TEST_SANE_ONLY)]: idConvertSimpleElem,
+        [Macro.TEST_SANE_ONLY]: idConvertSimpleElem(),
+        [decapitalizeFirstLetter(Macro.TEST_SANE_ONLY)]: idConvertSimpleElem(),
       }
     }
   ),

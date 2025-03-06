@@ -11184,6 +11184,11 @@ function ourbigbookConvertArgs(ast, context, options={}) {
     orderedNamedArgs.push(Macro.TITLE_ARGUMENT_NAME)
     named_args.splice(titleIdx, 1)
   }
+  const idIdx = named_args.indexOf(Macro.ID_ARGUMENT_NAME)
+  if (idIdx !== -1) {
+    orderedNamedArgs.push(Macro.ID_ARGUMENT_NAME)
+    named_args.splice(idIdx, 1)
+  }
   orderedNamedArgs.push(...named_args.sort())
   for (const argname of orderedNamedArgs) {
     const arg = macro.named_args[argname]

@@ -11179,15 +11179,16 @@ function ourbigbookConvertArgs(ast, context, options={}) {
     }
   }
   const orderedNamedArgs = []
-  const titleIdx = named_args.indexOf(Macro.TITLE_ARGUMENT_NAME)
-  if (titleIdx !== -1) {
-    orderedNamedArgs.push(Macro.TITLE_ARGUMENT_NAME)
-    named_args.splice(titleIdx, 1)
-  }
-  const idIdx = named_args.indexOf(Macro.ID_ARGUMENT_NAME)
-  if (idIdx !== -1) {
-    orderedNamedArgs.push(Macro.ID_ARGUMENT_NAME)
-    named_args.splice(idIdx, 1)
+  for (const argname of [
+    Macro.TITLE_ARGUMENT_NAME,
+    Macro.ID_ARGUMENT_NAME,
+    Macro.DISAMBIGUATE_ARGUMENT_NAME,
+  ]) {
+    const idx = named_args.indexOf(argname)
+    if (idx !== -1) {
+      orderedNamedArgs.push(argname)
+      named_args.splice(idx, 1)
+    }
   }
   orderedNamedArgs.push(...named_args.sort())
   for (const argname of orderedNamedArgs) {

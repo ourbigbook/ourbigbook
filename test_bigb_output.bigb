@@ -68,6 +68,14 @@ Shorthand link to math on header: <math x^2 on header>. TODO: get the dollars in
 
 Shorthand link to math on header: <Sane only on header>
 
+https://github.com/plurals/pluralize/pull/209 bug: <Germans>
+
+https://github.com/plurals/pluralize/pull/209 bug: <The Germans>
+
+== German
+
+== The German
+
 Inline code block: `f(x + 1)[]` after.
 
 Inline code block with backtick: \c[[a ` b]] after.
@@ -85,6 +93,7 @@ Sane block with a single line.
 
 No, actually multiple lines.
 ]
+
 
 \TestSaneOnly[
 \TestSaneOnly[Nested sane block]

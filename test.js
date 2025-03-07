@@ -4005,6 +4005,42 @@ assert_lib('x: tuberculosis hysteresis bug',
     },
   }
 )
+assert_lib('x: pluralize uses plural given for user in case of differences',
+  // https://github.com/plurals/pluralize/pull/209
+  // pluralize does germans -> german -> germen
+  // If user does a sane link \x[german]{p} then it blows up as germen
+  // and there's nothing we can do besides patching
+  // However, if user does insane link <Germans>, then we can just keep it
+  // as the user gave.
+  {
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+<Germans>{id=short-german}
+
+\\x[german]{c}{p}{id=long-german}
+
+<The Germans>{id=short-the-german}
+
+<The germans>{id=short-tolower-the-german}
+
+== German
+
+== The German
+`,
+    },
+    convert_dir: true,
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@id='short-german' and text()='Germans']",
+        "//x:a[@id='short-the-german' and text()='The Germans']",
+        "//x:a[@id='short-tolower-the-german' and text()='The Germans']",
+        // Fails unless we patch, no way around it.
+        "//x:a[@id='long-german' and text()='Germen']",
+      ]
+    },
+  }
+)
 assert_lib('x: internal link magic detects capitalization and plural on output',
   {
     convert_dir: true,

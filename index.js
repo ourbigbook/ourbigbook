@@ -3773,6 +3773,31 @@ function errorMessageInOutput(msg, context) {
   return `[OURBIGBOOK_ERROR: ${escaped_msg}]`
 }
 
+// To overcome wrong pluralize plurals.
+// https://github.com/plurals/pluralize/pull/209
+function forceLastWordReplace(text, forceLastWord) {
+  if (forceLastWord) {
+    const words = text.split(PLURALIZE_WORD_SPLIT_REGEX)
+    const lastWord = words[words.length - 1]
+    const forceLastWordCap = []
+    for (let i = 0; i < forceLastWord.length; i++) {
+      const forceLastWordC = forceLastWord[i]
+      if (i < lastWord.length) {
+        const titleC = lastWord[i]
+        if (titleC === titleC.toLowerCase()) {
+          forceLastWordCap.push(forceLastWordC.toLowerCase())
+        } else {
+          forceLastWordCap.push(forceLastWordC.toUpperCase())
+        }
+      } else {
+        forceLastWordCap.push(forceLastWordC)
+      }
+    }
+    text = text.slice(0, -lastWord.length) + forceLastWordCap.join('')
+  }
+  return text
+}
+
 // https://stackoverflow.com/questions/9461621/format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900
 const FORMAT_NUMBER_APPROX_MAP = [
   { value: 1, symbol: "" },
@@ -7701,10 +7726,14 @@ function xGetHrefContent(ast, context, opts={}) {
             // Due to buggy pluralize behaviour, it can be different from both.
             // So let's check and abort otherwise just using what is actually in the ref
             // https://github.com/plurals/pluralize/issues/172
-            // for those weirder cases. This covers
+            // for those weirder cases.
             text === pluralizeWrap(text, 2)
           ) {
             x_text_options.pluralize = true
+          }
+          if (ast.validation_output.magic.boolean) {
+            const words = text.split(PLURALIZE_WORD_SPLIT_REGEX)
+            x_text_options.forceLastWord = words[words.length - 1]
           }
         }
       }
@@ -8053,6 +8082,12 @@ function xTextBase(ast, context, options={}) {
   if (!('show_caption_prefix' in options)) {
     options.show_caption_prefix = true;
   }
+  let forceLastWord
+  if ('forceLastWord' in options) {
+    forceLastWord = options.forceLastWord
+  } else {
+    forceLastWord = undefined
+  }
   const macro = context.macros[ast.macro_name];
   let inner
   let innerWithDisambiguate
@@ -8172,8 +8207,13 @@ function xTextBase(ast, context, options={}) {
         ) {
           title_arg = lodash.clone(title_arg)
           title_arg.asts = lodash.clone(title_arg.asts)
-          title_arg.set(title_arg.length() - 1, new PlaintextAstNode(last_ast.text, last_ast.source_location));
-          title_arg.get(title_arg.length() - 1).text = pluralizeWrap(last_ast.text, options.pluralize ? 2 : 1);
+          let text = forceLastWordReplace(last_ast.text, forceLastWord)
+          title_arg.set(
+            title_arg.length() - 1,
+            new PlaintextAstNode(
+              pluralizeWrap(text, options.pluralize ? 2 : 1), last_ast.source_location
+            )
+          )
         }
       }
       if (ast.file) {
@@ -8262,6 +8302,7 @@ const WEB_TOPIC_PATH = 'go/topic';
 exports.WEB_TOPIC_PATH = WEB_TOPIC_PATH
 const PARAGRAPH_SEP = '\n\n';
 exports.PARAGRAPH_SEP = PARAGRAPH_SEP;
+const PLURALIZE_WORD_SPLIT_REGEX = /[^a-zA-Z]/
 const REFS_TABLE_PARENT = 'PARENT';
 exports.REFS_TABLE_PARENT = REFS_TABLE_PARENT;
 const REFS_TABLE_X = 'X';
@@ -10833,7 +10874,6 @@ function ourbigbookGetXHref({
     }
     let was_magic_plural, was_magic_uppercase
     if (magic && !for_header_parent) {
-      const href_singular = pluralizeWrap(href, 1)
       if (
         !target_ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME] &&
         href === href_plural
@@ -10894,7 +10934,14 @@ function ourbigbookGetXHref({
           was_magic_plural ||
           p
         ) {
-          const href_plural = pluralizeWrap(href, 2)
+          const words = hrefOrig.split(PLURALIZE_WORD_SPLIT_REGEX)
+          const lastWordOrig = words[words.length - 1]
+          let href_plural
+          if (magic) {
+            href_plural = forceLastWordReplace(href, lastWordOrig)
+          } else {
+            href_plural = pluralizeWrap(href, 2)
+          }
           let disambiguate_sep
           if (disambiguate) {
             disambiguate_sep = ID_SEPARATOR + disambiguate

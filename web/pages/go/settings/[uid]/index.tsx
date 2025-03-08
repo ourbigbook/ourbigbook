@@ -315,7 +315,7 @@ const Settings = ({
           </button>
         </form>
         <h2><HelpIcon /> Extra information</h2>
-        <p>Signup IP: <b>{userInfo.ip || 'not set'}</b></p>
+        <p>Signup IP: <b>{user0.ip || 'not set'}</b></p>
         <p>Nested set needs update (nestedSetNeedsUpdate): <b>{user0.nestedSetNeedsUpdate.toString()}</b></p>
         {loggedInUser.admin &&
           <p>Verified: <b>{user0.verified.toString()}</b></p>

@@ -94,7 +94,6 @@ Sane block with a single line.
 No, actually multiple lines.
 ]
 
-
 \TestSaneOnly[
 \TestSaneOnly[Nested sane block]
 tight.

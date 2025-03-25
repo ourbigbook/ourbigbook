@@ -34,19 +34,18 @@ import CustomLink from 'front/CustomLink'
 import CustomImage from 'front/CustomImage'
 import LoadingSpinner from 'front/LoadingSpinner'
 import LogoutButton from 'front/LogoutButton'
-import Maybe from 'front/Maybe'
 import FollowUserButton from 'front/FollowUserButton'
 import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import routes from 'front/routes'
 import Article from 'front/Article'
 import UserList from 'front/UserList'
-
 import { ArticleType, ArticleLinkType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { CommonPropsType } from 'front/types/CommonPropsType'
 import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
+import LockUserButton from 'front/LockUserButton'
 
 export interface UserPageProps extends CommonPropsType {
   ancestors?: ArticleLinkType[];
@@ -189,7 +188,7 @@ export default function UserPage({
         <div className="name-and-image">
           <div className="no-image">
             <h1>
-              <a href={routes.user(user.username)}>
+              <a href={routes.user(username)}>
                 <DisplayAndUsername user={user} showParenthesis={false} />
               </a>
             </h1>
@@ -198,23 +197,26 @@ export default function UserPage({
             </div>}
             <div className="user-actions">
               <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
-              <CustomLink className="btn" href={routes.issueNew(`${user.username}`)}>
+              <CustomLink className="btn" href={routes.issueNew(`${username}`)}>
                 <DiscussionIcon /> Message
               </CustomLink>
-              <Maybe test={!cant.viewUserSettings(loggedInUser, user)}>
+              {!cant.viewUserSettings(loggedInUser, user) &&
                 <CustomLink
-                  href={routes.userEdit(user.username)}
+                  href={routes.userEdit(username)}
                   className="btn btn-sm btn-outline-secondary action-btn"
                 >
                   <SettingsIcon /> Settings
                 </CustomLink>
-              </Maybe>
+              }
+              {!cant.setUserLimits(loggedInUser, user) &&
+                <LockUserButton {...{ username, on: user.locked }} />
+              }
               {isCurrentUser &&
                 <LogoutButton />
               }
             </div>
           </div>
-          <a href={routes.user(user.username)}>
+          <a href={routes.user(username)}>
             <CustomImage
               src={user.effectiveImage}
               alt="User's profile image"
@@ -248,13 +250,13 @@ export default function UserPage({
                   <ArticleIcon /> Articles
                 </CustomLink>
                 <CustomLink
-                  href={routes.userIssues(user.username, { sort: 'created' })}
+                  href={routes.userIssues(username, { sort: 'created' })}
                   className={`tab-item${itemType === 'discussion' ? ' active' : ''}`}
                 >
                   <DiscussionIcon /> Discussions
                 </CustomLink>
                 <CustomLink
-                  href={routes.userComments(user.username, { sort: 'created' })}
+                  href={routes.userComments(username, { sort: 'created' })}
                   className={`tab-item${itemType === 'comment' ? ' active' : ''}`}
                 >
                   <CommentIcon /> Comments
@@ -328,19 +330,19 @@ export default function UserPage({
                 </>}
                 {itemType === 'discussion' && <>
                   <CustomLink
-                    href={routes.userIssues(user.username, { sort: 'created' })}
+                    href={routes.userIssues(username, { sort: 'created' })}
                     className={`tab-item${what === 'user-issues' && order === 'createdAt' ? ' active' : ''}`}
                   >
                     <TimeIcon /> New
                   </CustomLink>
                   <CustomLink
-                    href={routes.userIssues(user.username, { sort: 'updated' })}
+                    href={routes.userIssues(username, { sort: 'updated' })}
                     className={`tab-item${what === 'user-issues' && order === 'updatedAt' ? ' active' : ''}`}
                   >
                     <TimeIcon /> Updated
                   </CustomLink>
                   <CustomLink
-                    href={routes.userIssues(user.username, { sort: 'score' })}
+                    href={routes.userIssues(username, { sort: 'score' })}
                     className={`tab-item${what === 'user-issues' && order === 'score' ? ' active' : ''}`}
                   >
                     <StarIcon /> Top

@@ -249,6 +249,11 @@ export function LockIcon(opts) {
   return FontAwesomeIcon(0xf023, { opts })
 }
 
+export function UnlockIcon(opts) {
+  // https://fontawesome.com/icons/lock-open?f=classic&s=solid
+  return FontAwesomeIcon(0xf3c1, { opts })
+}
+
 export function LikeIcon(opts) {
   return FontAwesomeIcon(0xf004, { clsExtra: ['icon-heart'], opts, title: "Like" })
 }

@@ -10,10 +10,10 @@ const LockUserButton = ({
 }) => {
   return <ToggleButton {...{
     callbackOff: async () => {
-      const { data, status } = await webApi.userUpdate(username, { locked: true })
+      return webApi.userUpdate(username, { locked: true })
     },
     callbackOn: async () => {
-      const { data, status } = await webApi.userUpdate(username, { locked: false })
+      return webApi.userUpdate(username, { locked: false })
     },
     contentOff: <><LockIcon /> Lock</>,
     contentOn: <><UnlockIcon /> Unlock</>,

@@ -25,11 +25,18 @@ const ToggleButton = ({
       className={buttonClassNames.join(' ')}
       onClick={(e) => {
         e.preventDefault()
+        let ret
         if (on) {
-          callbackOn()
+          ret = callbackOn()
         } else {
-          callbackOff()
+          ret = callbackOff()
         }
+        ret.then(ret => {
+          const { data, status } = ret
+          if (status !== 200) {
+            alert(`error operation failed with status=${status} data=${JSON.stringify(data)}`)
+          }
+        })
         setOn((on) => !on)
       }}
     >

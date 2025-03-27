@@ -2747,33 +2747,79 @@ assert_lib(
 // Forbidden nestings
 assert_lib_error('nest: a inside a gives an error explicit',
   // Invalid HTML
-  '\\a[http://example2.com][\\a[http://example1.com][example1.com]{external}]{external}\n',
+  '\\a[http://example2.com][\\a[http://example1.com][example1.com]]\n',
   1,
   // This points to the '\\' in the second \\a
   25,
+  undefined, { convert_opts: { render: false } }
+)
+assert_lib_error('nest: a inside x content gives an error explicit',
+  // Invalid HTML
+  `= Toplevel
+
+\\x[not-toplevel][\\a[http://example2.com]]
+
+== Not toplevel
+`,
+  3,
+  // This points to the '\\' in the \\a
+  18,
+  undefined, { convert_opts: { render: false } }
+)
+assert_lib_error('nest: x inside a content gives an error explicit',
+  // Invalid HTML
+  `= Toplevel
+
+\\a[http://example2.com][\\x[not-toplevel]
+
+== Not toplevel
+`,
+  3,
+  // This points to the '\\' in the \\x
+  24,
+  undefined, { convert_opts: { render: false } }
+)
+assert_lib_error('nest: x inside x content gives an error explicit',
+  // Invalid HTML
+  `= Toplevel
+
+\\x[not-toplevel][\\x[not-toplevel]
+
+== Not toplevel
+`,
+  3,
+  // This points to the '\\' in the \\x
+  17,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: a inside a gives an error implicit',
   // Invalid HTML
   '\\a[http://example2.com][http://example1.com]{external}\n',
   1,
   // This points to the 'h' in "http://example1.com"
-  25
+  25,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: a inside H gives an error explicit',
   // Invalid HTML because we put <h> contents inside <a> for self link
   '\\H[1][\\a[http://example.com][my content]]\n',
-  1, 7
+  1, 7,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: a inside H gives an error implicit',
   // Invalid HTML because we put <h> contents inside <a> for self link
   '= http://example.com\n',
-  1, 3
+  1, 3,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: H inside H gives and error',
   `= \\H[2]
 `,
   1, 3, 'index.bigb',
-  { input_path_noext: 'index' }
+  {
+    convert_opts: { render: false },
+    input_path_noext: 'index',
+  }
 )
 assert_lib_error('nest: Video inside a gives an error',
   // Invalid HTML, <video> is interactive when controls is given which we do.
@@ -2782,12 +2828,14 @@ assert_lib_error('nest: Video inside a gives an error',
   1,
   // This points to the '\\' of \\Video
   25,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: Video inside H gives an error',
   // Invalid HTML, <video> is interactive and we put <h> contents inside <a>.
   '= a \\Video[http://example.com]\n',
   1,
   5,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: Image inside a gives an error',
   // This could be allowed, but then we'd need to worry about not creating sublinks on
@@ -2796,49 +2844,57 @@ assert_lib_error('nest: Image inside a gives an error',
   `\\a[http://mylink.com][\\Image[http://myimg.com]]`,
   1,
   // Points to '\\' in '\\Image'
-  23
+  23,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: text inside Ul gives an error',
   `\\Ul[asdf]`,
   1,
   // Points to 'a' in 'asdf'
-  5
+  5,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: non-L inside Ul gives an error',
   `\\Ul[\\Q[asdf]]`,
   1,
   // Points to \ in '\Q'
-  5
+  5,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: non-L inside Ol gives an error',
   `\\Ol[\\Q[asdf]]`,
   1,
   // Points to \ in \Q
-  5
+  5,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: text inside Table gives an error',
   `\\Table[asdf]`,
   1,
   // Points to 'a' in 'asdf'
-  8
+  8,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: non-Tr inside Table gives an error',
   `\\Table[\\Q[asdf]]`,
   1,
   // Points to \ in \Q
-  8
+  8,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: text inside Tr gives an error',
   `\\Table[\\Tr[asdf]]`,
   1,
   // Points to 'a' in 'asdf'
-  12
+  12,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: non-Td non-Th inside Tr gives an error',
   `\\Table[\\Tr[\\Q[asdf]]]`,
   1,
   // Points to \ in \Q
-  12
+  12 ,
+  undefined, { convert_opts: { render: false } }
 )
 assert_lib_ast('nest: image inside a is allowed and does not create nested a',
   `\\a[http://mylink.com][\\image[http://myimg.com]]`,
@@ -2855,47 +2911,39 @@ assert_lib_ast('nest: image inside a is allowed and does not create nested a',
 assert_lib_error('nest: Image inside H gives an error',
   // We add div and other block stuff to block images, which is invalid HTML.
   '= a \\Image[http://example.com]\n',
-  1,
-  5,
+  1, 5, undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: image inside H gives an error',
   // Valid HTML, but feels like a bad idea, especially for web, as it would generate
   // extra requests on places like indices and ToC, where it is not expected.
   '= a \\image[http://example.com]\n',
-  1,
-  5,
+  1, 5, undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: any block macro inside H gives an error explicit',
   '= a \\Hr\n',
-  1,
-  5,
+  1, 5, undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: any block macro inside H gives an error implicit paragraph',
   '\\H[1][a\n\nb]',
-  1,
-  7,
+  1, 7, undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: br inside H gives an error',
   '= a \\br b',
-  1,
-  5,
+  1, 5, undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: inline macros can only contain inline macros explicit',
   '\\i[ab \\Hr cd]\n',
-  1,
-  7,
+  1, 7, undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: inline macros can only contain inline macros implicit paragraph',
   '\\i[ab \\Hr cd]\n',
-  1,
-  7,
+  1, 7, undefined, { convert_opts: { render: false } }
 )
 assert_lib_error('nest: header source cannot contain newlines',
   // While this could be allowed in principle, it requires better implementation on web
   // to avoid serious issues related to title splitting. So let's just forbid for now.
   '= a `b\nc` d',
-  1,
-  7,
+  1, 7, undefined, { convert_opts: { render: false } }
 )
 
 // Line break and Horizontal lines
@@ -5915,18 +5963,6 @@ assert_lib_error('header: header inside parent',
   6, 1, undefined,
   {
     error_message: 'headers (\\H) must be directly at document toplevel, not as children of other elements. Parent was instead: \\H'
-  }
-)
-assert_lib_error('header: implicit line break inside parent',
-  `= ab cd
-
-= 2
-{parent=ab
-cd}
-`,
-  5, 1, undefined,
-  {
-    error_message: 'cannot place \\br inside of \\H'
   }
 )
 assert_lib_error('header: child argument to id that does not exist gives an error',
@@ -10097,7 +10133,7 @@ cd]`,
   2, 1, undefined,
   {
     convert_opts: { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK },
-    error_message: 'cannot place \\br inside of \\H',
+    error_message: 'argument "title" of macro \\H cannot contain the macro \\br',
   }
 )
 assert_lib('bigb output: x convert parent, tag and child IDs to shorthand magic',

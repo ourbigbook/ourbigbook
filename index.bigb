@@ -3164,7 +3164,7 @@ Have a look at this amazing image: \x[image-my-test-image-2].
 \Image[Tank_man_standing_in_front_of_some_tanks.jpg]
 {id=image-my-test-image-2}
 ]]
-This works because <\x full argument>[`full` is the default <internal link> style for `Image`], otherwise the link text would be empty since there is no `title`, and OurBigBook would raise an error.
+This works because <\x full argument>[`full` is the default internal link style for `Image`], otherwise the link text would be empty since there is no `title`, and OurBigBook would raise an error.
 
 OurBigBook can optionally deduce the title from the basename of the `src` argument if the `titleFromSrc` <boolean argument> is given, or if `title-from-src` is set as the default <ourbigbook.json/media-providers>[media provider] for the media type:
 \OurBigBookExample[[
@@ -6163,6 +6163,16 @@ Some macro arguments are disabled by default.
 These are typicially arguments which felt like a good idea one day, but which we ended up regretting.
 
 They can be enabled via <ourbigbook.json> options TODO, but doing so will make the project incompatible with <OurBigBook Web>, so it is not advised.
+
+= `cannotContains` macro argument
+{parent=Macro argument property}
+
+A set of strings. Each one is a macro that this argument cannot contain.
+
+The prototypical use case of this is to prevent nesting of HTML `<a>` elements which is illegal in HTML and doesn't make much sense anyways, e.g.:
+``
+\a[http://example.com][\a[http://example2.com]]
+``
 
 = `empty` macro argument
 {parent=Macro argument property}

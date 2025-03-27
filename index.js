@@ -209,6 +209,11 @@ class AstNode {
     // inherits from parent if the arg is not given on parent.
     this.validated = false
 
+    // string. If set, the ast will render as this string and nothing else.
+    // This was originally introduced to prevent invalid HTML output e.g.
+    // in errors such as \a inside \a. We never want invalid HTML even when
+    // such errors are detected.
+    this.renderAsError = undefined
 
     this.count_words = options.count_words
     if (this.node_type === AstType.PLAINTEXT) {
@@ -275,7 +280,7 @@ class AstNode {
       context.ignore_errors = false;
     }
     if (!('in_a' in context)) {
-      context.in_a = false;
+      context.in_a = undefined
     }
     if (!('in_literal' in context)) {
       context.in_literal = false;
@@ -288,6 +293,9 @@ class AstNode {
     }
     //if (!('last_render' in context)) {
     //}
+    if (this.renderAsError) {
+      return errorMessageInOutput(this.renderAsError)
+    }
     if (!('macros' in context)) {
       throw new Error('context does not have a mandatory .macros property');
     }
@@ -1239,6 +1247,11 @@ class MacroArgument {
       // https://docs.ourbigbook.com#boolean-argument
       options.boolean = false;
     }
+    if (!('cannotContain' in options)) {
+      // Set of strings, each one is a macro name that cannot be
+      // recursively contained inside this argument.
+      options.cannotContain = new Set()
+    }
     if (!('count_words' in options)) {
       options.count_words = false;
     }
@@ -1275,18 +1288,19 @@ class MacroArgument {
       // https://docs.ourbigbook.com#remove-whitespace-children
       options.remove_whitespace_children = false;
     }
-    this.boolean = options.boolean;
-    this.count_words = options.count_words;
-    this.disabled = options.disabled;
-    this.empty = options.empty;
-    this.multiple = options.multiple;
-    this.default = options.default;
-    this.elide_link_only = options.elide_link_only;
-    this.mandatory = options.mandatory;
+    this.boolean = options.boolean
+    this.cannotContain = options.cannotContain
+    this.count_words = options.count_words
+    this.disabled = options.disabled
+    this.empty = options.empty
+    this.multiple = options.multiple
+    this.default = options.default
+    this.elide_link_only = options.elide_link_only
+    this.mandatory = options.mandatory
     this.name = name
-    this.positive_nonzero_integer = options.positive_nonzero_integer;
-    this.remove_whitespace_children = options.remove_whitespace_children;
-    this.ourbigbook_output_prefer_literal = options.ourbigbook_output_prefer_literal;
+    this.positive_nonzero_integer = options.positive_nonzero_integer
+    this.remove_whitespace_children = options.remove_whitespace_children
+    this.ourbigbook_output_prefer_literal = options.ourbigbook_output_prefer_literal
   }
 }
 
@@ -4027,10 +4041,8 @@ function getLinkHtml({
   if (extraReturns === undefined) {
     extraReturns = {}
   }
-  const in_a = context.in_a
   if (
-    context.x_parents.size === 0 &&
-    !context.in_a
+    context.x_parents.size === 0
   ) {
     if (attrs === undefined) {
       attrs = ''
@@ -4052,16 +4064,8 @@ function getLinkHtml({
     }
     return `<a${htmlAttr('href', href)}${attrs}${testData}>${content}</a>${error}`;
   } else {
-    let errorMessage
-    if (in_a) {
-      const error = cannotPlaceXInYErrorMessage(ast.macro_name, in_a)
-      errorMessage = ' ' + errorMessageInOutput(error)
-      renderError(context, error, ast.source_location)
-    } else {
-      errorMessage = ''
-    }
     // Don't create a link if we are a child of another link, as that is invalid HTML.
-    return content + errorMessage
+    return content
   }
 }
 
@@ -4743,60 +4747,47 @@ function macroImageVideoBlockConvertFunction(ast, context) {
     src,
     is_url
   } = macroImageVideoResolveParamsWithSource(ast, context);
-  const in_a = context.in_a
-  if (in_a) {
-    let errorMessage
-    if (in_a) {
-      const error = cannotPlaceXInYErrorMessage(ast.macro_name, in_a)
-      errorMessage = ' ' + errorMessageInOutput(error)
-      renderError(context, error, ast.source_location)
-    } else {
-      errorMessage = ''
-    }
-    return src + errorMessage
-  } else {
-    if (error_message !== undefined) {
-      return error_message;
-    }
-    if (source !== '') {
-      force_separator = true;
-      source = `<a${htmlAttr('href', source)}>Source</a>.`;
-    }
-    let alt_val;
-    const has_caption = (ast.id !== undefined) && captionNumberVisible(ast, context);
-    if (ast.args.alt === undefined) {
-      if (has_caption) {
-        alt_val = undefined;
-      } else {
-        alt_val = src;
-      }
-    } else {
-      alt_val = renderArgNoescape(ast.args.alt, context)
-    }
-    let alt;
-    if (alt_val === undefined) {
-      alt = '';
-    } else {
-      alt = htmlAttr('alt', htmlEscapeAttr(alt_val));
-    }
-    ret += context.macros[ast.macro_name].options.image_video_content_func({
-      alt,
-      ast,
-      context,
-      is_url,
-      media_provider_type,
-      relpath_prefix,
-      rendered_attrs,
-      src,
-    });
-    if (has_caption) {
-      const { full: title, inner, innerNoDiv } = xTextBase(ast, context, { addTitleDiv: true, href_prefix, force_separator })
-      const title_and_description = getTitleAndDescription({ title, description, source, inner, innerNoDiv })
-      ret += `<figcaption>${title_and_description}</figcaption>`;
-    }
-    ret += '</figure></div>';
-    return ret;
+  if (error_message !== undefined) {
+    return error_message;
   }
+  if (source !== '') {
+    force_separator = true;
+    source = `<a${htmlAttr('href', source)}>Source</a>.`;
+  }
+  let alt_val;
+  const has_caption = (ast.id !== undefined) && captionNumberVisible(ast, context);
+  if (ast.args.alt === undefined) {
+    if (has_caption) {
+      alt_val = undefined;
+    } else {
+      alt_val = src;
+    }
+  } else {
+    alt_val = renderArgNoescape(ast.args.alt, context)
+  }
+  let alt;
+  if (alt_val === undefined) {
+    alt = '';
+  } else {
+    alt = htmlAttr('alt', htmlEscapeAttr(alt_val));
+  }
+  ret += context.macros[ast.macro_name].options.image_video_content_func({
+    alt,
+    ast,
+    context,
+    is_url,
+    media_provider_type,
+    relpath_prefix,
+    rendered_attrs,
+    src,
+  });
+  if (has_caption) {
+    const { full: title, inner, innerNoDiv } = xTextBase(ast, context, { addTitleDiv: true, href_prefix, force_separator })
+    const title_and_description = getTitleAndDescription({ title, description, source, inner, innerNoDiv })
+    ret += `<figcaption>${title_and_description}</figcaption>`;
+  }
+  ret += '</figure></div>';
+  return ret;
 }
 
 /** Convert args such as tag= or \x[]{magic} to their final target ID. */
@@ -6276,10 +6267,10 @@ async function parse(tokens, options, context, extra_returns={}) {
     // made in previous steps.
     perfPrint(context, 'post_process_3')
     {
-      const todo_visit = [[ast_toplevel, undefined]]
+      const todo_visit = [[ast_toplevel, undefined, []]]
       let cur_header_tree_node
       while (todo_visit.length > 0) {
-        const [ast, inlineOnly] = todo_visit.pop();
+        const [ast, inlineOnly, ancestorArgs] = todo_visit.pop();
         const macro_name = ast.macro_name;
         const macro = context.macros[macro_name];
 
@@ -6291,19 +6282,16 @@ async function parse(tokens, options, context, extra_returns={}) {
             ast.source_location,
           )
         }
-        // It would be better to have a more generalized version of this check,
-        // and one that can detect which argument we are in. But this will do for now.
-        if (
-          ast.in_header && (
-            macro_name === Macro.LINE_BREAK_MACRO_NAME ||
-            macro_name === 'image'
-          )
-        ) {
-          parseError(
-            state,
-            cannotPlaceXInYErrorMessage(macro_name, Macro.HEADER_MACRO_NAME),
-            ast.source_location,
-          )
+        for (const [ancestorArg, ancestorMacroName] of ancestorArgs) {
+          if (ancestorArg !== undefined) {
+            if (ancestorArg.cannotContain.has(macro_name)) {
+              const msg = `argument "${ancestorArg.name}" of macro ` +
+                `${ESCAPE_CHAR}${ancestorMacroName} cannot contain ` +
+                `the macro ${ESCAPE_CHAR}${macro_name}`
+              ast.renderAsError = msg
+              parseError( state, msg, ast.source_location)
+            }
+          }
         }
         if (macro_name === Macro.HEADER_MACRO_NAME) {
           // TODO start with the toplevel.
@@ -6365,6 +6353,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           const arg = ast.args[arg_name];
           for (let i = arg.length() - 1; i >= 0; i--) {
             let newInlineOnly
+            let newAncestorArgs = [...ancestorArgs]
             if (inlineOnly) {
               newInlineOnly = inlineOnly
             } else {
@@ -6374,6 +6363,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               } else if (macro.inline) {
                 newInlineOnly = `${ESCAPE_CHAR}${macro.name} is an inline macro, and inline macros can only contain inline macros`
               }
+              newAncestorArgs.push([macro_arg, macro_name])
             }
             const childAst = arg.get(i)
             const childMacroName = childAst.macro_name
@@ -6415,7 +6405,7 @@ async function parse(tokens, options, context, extra_returns={}) {
               )
             }
             childAst.in_header = children_in_header
-            todo_visit.push([childAst, newInlineOnly])
+            todo_visit.push([childAst, newInlineOnly, newAncestorArgs])
           }
         }
       }
@@ -8782,6 +8772,11 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
+        cannotContain: new Set([
+          Macro.LINK_MACRO_NAME,
+          Macro.X_MACRO_NAME,
+          'Image',
+        ]),
       }),
     ],
     {
@@ -8910,6 +8905,13 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: Macro.TITLE_ARGUMENT_NAME,
         count_words: true,
+        cannotContain: new Set([
+          Macro.LINK_MACRO_NAME,
+          Macro.X_MACRO_NAME,
+          Macro.LINE_BREAK_MACRO_NAME,
+          'image',
+          'br',
+        ]),
       }),
     ],
     {
@@ -9352,6 +9354,10 @@ const DEFAULT_MACRO_LIST = [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
         count_words: true,
+        cannotContain: new Set([
+          Macro.LINK_MACRO_NAME,
+          Macro.X_MACRO_NAME,
+        ]),
       }),
     ],
     {

@@ -5746,6 +5746,70 @@ it('api: article: parent and parent-type', async () => {
   })
 })
 
+//it(`api: article: automatic topic linking`, async () => {
+//  // https://github.com/ourbigbook/ourbigbook/issues/356
+//  await testApp(async (test) => {
+//    let data, status, article
+//
+//    // Create users
+//    const user0 = await test.createUserApi(0)
+//    test.loginUser(user0)
+//
+//    // Create some pre-existing articles.
+//    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'aa1', i: 0 })))
+//    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'aa2 bb2', i: 0 })))
+//    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'aa3 bb3 cc3', i: 0 })))
+//    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'common1', i: 0 })))
+//    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'common1 common2', i: 0 })))
+//    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'common1 common2 common3', i: 0 })))
+//    assertStatus(status, data)
+//
+//    // Create the final article title0
+//    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+//      bodySource: `> XXX aa1 YYY
+//{id=1}
+//
+//> XXX aa2 bb2 YYY
+//{id=2}
+//
+//> XXX aa3 bb3 cc3 YYY
+//{id=3}
+//
+//> XXX aa2.bb2 YYY
+//{id=punct}
+//
+//> XXX aa2 \\i[bb2] YYY
+//{id=inline}
+//
+//> XXX common1 YYY
+//{id=common1}
+//
+//> XXX common1 common2 YYY
+//{id=common2}
+//
+//> XXX common1 common2 common3 YYY
+//{id=common3}
+//
+//> XXX http://example.com[aa1] YYY
+//{id=inlink}
+//`,
+//      i: 0,
+//    })))
+//    assertStatus(status, data)
+//    ;({data, status} = await test.webApi.article('user0/title-0'))
+//    assertStatus(status, data)
+//    //assert_xpath(`//x:blockquote[@id='user0/1']//x:blockquote//x:a[@href='/go/topic/aa1' and text()='aa1']`, data.render)
+//    //assert_xpath(`//x:blockquote[@id='user0/2']//x:blockquote//x:a[@href='/go/topic/aa2-bb2' and text()='aa2-bb2']`, data.render)
+//    //assert_xpath(`//x:blockquote[@id='user0/3']//x:blockquote//x:a[@href='/go/topic/aa3-bb3-cc3' and text()='aa3-bb3-cc3']`, data.render)
+//    //assert_xpath(`//x:div[@id='user0/punct']//x:blockquote[text()='XXX aa2.bb2 YYY']`, data.render)
+//    //assert_xpath(`//x:blockquote[@id='user0/2']//x:blockquote//x:a[@href='/go/topic/aa2-bb2']`, data.render, { count: 0 })
+//    //assert_xpath(`//x:blockquote[@id='user0/common1']//x:blockquote//x:a[@href='/go/topic/common1' and text()='common1']`, data.render)
+//    //assert_xpath(`//x:blockquote[@id='user0/common2']//x:blockquote//x:a[@href='/go/topic/common1-common2' and text()='common1 common2']`, data.render)
+//    //assert_xpath(`//x:blockquote[@id='user0/common3']//x:blockquote//x:a[@href='/go/topic/common1-common2-common3' and text()='common1 common2 common3']`, data.render)
+//    //assert_xpath(`//x:blockquote[@id='user0/inlink']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
+//  })
+//})
+
 it(`api: article: create simple`, async () => {
   await testApp(async (test) => {
     let data, status, article

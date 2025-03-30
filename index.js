@@ -1330,6 +1330,7 @@ class Macro {
    *                 otherwise that would confuse readers.
    */
   constructor(name, positional_args, options={}) {
+    options = { ...options }
     if (!('auto_parent' in options)) {
       // https://docs.ourbigbook.com#auto_parent
     }

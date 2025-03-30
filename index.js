@@ -50,6 +50,7 @@ class AstNode {
    *                 {String} text - the text content of an AstType.PLAINTEXT, undefined for other types
    */
   constructor(node_type, macro_name, args, source_location, options={}) {
+    options = { ...options }
     if (!('count_words' in options)) {
       options.count_words = true;
     }

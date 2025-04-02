@@ -198,7 +198,7 @@ export default function EditorPageHoc({
         bodySource += `${ourbigbook.PARAGRAPH_SEP}Adapted from: \\x[${ourbigbook.AT_MENTION_CHAR}${slugString}].`
       }
       initialFileState = {
-        titleSource: isIndex ? TXT_HOME_MARKER : initialFile.titleSource || titleSource,
+        titleSource: isIndex ? '' : initialFile.titleSource || titleSource,
       }
     } else {
       bodySource = ""

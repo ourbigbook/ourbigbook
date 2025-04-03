@@ -1426,14 +1426,6 @@ if (cli.helpMacros) {
     input_dir = undefined;
     input_path_is_file = false;
   } else {
-    inputPathCwd = relpathCwd(inputPaths[0])
-    inputPath = inputPaths[0]
-    input_path_is_file = fs.lstatSync(inputPath).isFile();
-    if (input_path_is_file) {
-      input_dir = path.dirname(inputPath);
-    } else {
-      input_dir = inputPath;
-    }
     for (const inputPath of inputPaths) {
       if (!fs.existsSync(inputPath)) {
         cli_error('input path does not exist: ' + inputPath);
@@ -1441,6 +1433,14 @@ if (cli.helpMacros) {
       if (input_path_is_file && !fs.lstatSync(inputPath).isFile()) {
         cli_error(`the first input path is a file, but one of the other ones isn't: "{inputPath}"`);
       }
+    }
+    inputPathCwd = relpathCwd(inputPaths[0])
+    inputPath = inputPaths[0]
+    input_path_is_file = fs.lstatSync(inputPath).isFile();
+    if (input_path_is_file) {
+      input_dir = path.dirname(inputPath);
+    } else {
+      input_dir = inputPath;
     }
   }
 

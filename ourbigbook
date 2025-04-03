@@ -2187,7 +2187,6 @@ if (cli.helpMacros) {
         header_tree = header_tree.concat(await ourbigbook_options.db_provider.fetch_header_tree_ids(
           [treeToplevelId],
           {
-            to_id_index_order: 'ASC',
             definedAtFileId: treeToplevelFileId,
           }
         ))

@@ -247,10 +247,10 @@ async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
   }
   if (starting_ids.length > 0) {
     let definedAtString
-    if (definedAtFileId) {
-      definedAtString = ' AND "defined_at" = :definedAtFileId'
-    } else {
+    if (definedAtFileId === undefined) {
       definedAtString = ''
+    } else {
+      definedAtString = ' AND "defined_at" = :definedAtFileId'
     }
     let startingFileIds
     if (!crossFileBoundaries) {
@@ -304,7 +304,12 @@ INNER JOIN (
   SELECT * FROM tree_search
 ) AS "RecRefs"
 ON "${Id.tableName}".idid = "RecRefs"."to_id"
-  AND "${Id.tableName}"."macro_name" = '${ourbigbook.Macro.HEADER_MACRO_NAME}'${crossFileBoundaries ? '' : `\n  AND "${Id.tableName}"."defined_at" IN (:startingFileIds)`}
+  AND "${Id.tableName}"."macro_name" = '${ourbigbook.Macro.HEADER_MACRO_NAME}'${
+crossFileBoundaries ? '' : `
+  AND "${Id.tableName}"."defined_at" IN (:startingFileIds)
+`}${definedAtFileId === undefined ? '' : `
+  AND "${Id.tableName}"."defined_at" = :definedAtFileId`
+}
 ${unreachableFiles ? ')' : `ORDER BY ${unreachableFiles ? '' : '"RecRefs"."level" ASC, '}"RecRefs"."from_id" ASC, "RecRefs"."to_id_index" ${to_id_index_order}`}
 `,
       {

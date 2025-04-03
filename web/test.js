@@ -2,7 +2,8 @@ const assert = require('assert');
 
 const { WebApi } = require('ourbigbook/web_api')
 const {
-  assert_xpath
+  assertRows,
+  assert_xpath,
 } = require('ourbigbook/test_lib')
 const ourbigbook = require('ourbigbook')
 
@@ -58,49 +59,6 @@ async function assertNestedSets(sequelize, expects) {
         articleObjs.map(a => `${a.nestedSetIndex}, ${a.nestedSetNextSibling}, ${a.depth}, ${a.to_id_index}, ${a.slug}, ${a.parentId}`).join('\n')
     }
   )
-}
-
-function assertRows(rows, rowsExpect, opts={}) {
-  const msgFn = opts.msgFn
-  assert.strictEqual(rows.length, rowsExpect.length, `wrong number of rows: ${rows.length}, expected: ${rowsExpect.length}`)
-  function printMsg(i, key) {
-    if (msgFn) console.error(msgFn())
-    console.error({ i, key })
-  }
-  for (let i = 0; i < rows.length; i++) {
-    let row = rows[i]
-    let rowExpect = rowsExpect[i]
-    for (let key in rowExpect) {
-      let val
-      if (typeof row.get === 'function') {
-        val = row.get(key)
-      } else {
-        val = row[key]
-      }
-      if (val === undefined) {
-        assert(false, `key "${key}" not found in available keys: ${Object.keys(row).join(', ')}`)
-      }
-      const expect = rowExpect[key]
-      if (expect instanceof RegExp) {
-        if (!val.match(expect)) {
-          printMsg(i, key)
-        }
-        assert.match(val, expect)
-      } else {
-        if (typeof expect === 'function') {
-          if (!expect(val)) {
-            printMsg(i, key)
-            assert(false)
-          }
-        } else {
-          if (val !== expect) {
-            printMsg(i, key)
-          }
-          assert.strictEqual(val, expect)
-        }
-      }
-    }
-  }
 }
 
 // assertRows helpers.

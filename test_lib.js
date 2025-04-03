@@ -11,12 +11,47 @@ const xpath = require('xpath');
 
 const assert = require('assert');
 
-function xpath_html(html, xpathStr) {
-  const document = parse5.parse(html);
-  const xhtml = xmlserializer.serializeToString(document);
-  const doc = new xmldom().parseFromString(xhtml);
-  const select = xpath.useNamespaces({"x": "http://www.w3.org/1999/xhtml"});
-  return select(xpathStr, doc);
+function assertRows(rows, rowsExpect, opts={}) {
+  const msgFn = opts.msgFn
+  assert.strictEqual(rows.length, rowsExpect.length, `wrong number of rows: ${rows.length}, expected: ${rowsExpect.length}`)
+  function printMsg(i, key) {
+    if (msgFn) console.error(msgFn())
+    console.error({ i, key })
+  }
+  for (let i = 0; i < rows.length; i++) {
+    let row = rows[i]
+    let rowExpect = rowsExpect[i]
+    for (let key in rowExpect) {
+      let val
+      if (typeof row.get === 'function') {
+        val = row.get(key)
+      } else {
+        val = row[key]
+      }
+      if (val === undefined) {
+        assert(false, `key "${key}" not found in available keys: ${Object.keys(row).join(', ')}`)
+      }
+      const expect = rowExpect[key]
+      if (expect instanceof RegExp) {
+        if (!val.match(expect)) {
+          printMsg(i, key)
+        }
+        assert.match(val, expect)
+      } else {
+        if (typeof expect === 'function') {
+          if (!expect(val)) {
+            printMsg(i, key)
+            assert(false)
+          }
+        } else {
+          if (val !== expect) {
+            printMsg(i, key)
+          }
+          assert.strictEqual(val, expect)
+        }
+      }
+    }
+  }
 }
 
 function assert_xpath(xpath_expr, html, options={}) {
@@ -86,12 +121,21 @@ function xpath_header_split(n, id, href, marker) {
   return `${xpath_header(n, id)}//x:a[${href_xpath}@class='${marker}']`;
 }
 
+function xpath_html(html, xpathStr) {
+  const document = parse5.parse(html);
+  const xhtml = xmlserializer.serializeToString(document);
+  const doc = new xmldom().parseFromString(xhtml);
+  const select = xpath.useNamespaces({"x": "http://www.w3.org/1999/xhtml"});
+  return select(xpathStr, doc);
+}
+
 // xpath to match the parent link inside of a header.
 function xpath_header_parent(n, id, href, title) {
   return `${xpath_header(n, id)}${n === 1 ? `//x:div[@class='nav ancestors']` : ''}//x:a[@href='${href}' and text()=' ${title}']`;
 }
 
 module.exports = {
+  assertRows,
   assert_xpath,
   xpath_header,
   xpath_header_split,

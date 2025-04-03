@@ -5,7 +5,6 @@ const path = require('path');
 const util = require('util');
 
 const lodash = require('lodash')
-const { Sequelize } = require('sequelize')
 
 const ourbigbook = require('./index')
 const ourbigbook_nodejs = require('./nodejs');
@@ -14,6 +13,7 @@ const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const { TMP_DIRNAME } = ourbigbook_nodejs_webpack_safe
 const { read_include } = require('./web_api');
 const {
+  assertRows,
   assert_xpath,
   xpath_header,
   xpath_header_split,
@@ -156,6 +156,11 @@ function assert_lib(
     }
     if (!('path_sep' in options.convert_opts)) {
       options.convert_opts.path_sep = PATH_SEP;
+    }
+    if (!('postConvert' in options)) {
+      // Custom arbitrary asserts that run after all conversions.
+      // These can be used for example to check the database status.
+      options.postConvert = undefined
     }
     if (!('read_include' in options.convert_opts)) {
       options.convert_opts.read_include = read_include({
@@ -433,6 +438,12 @@ function assert_lib(
       }
       for (const key of options.assert_not_exists) {
         assert.ok(!(key in rendered_outputs))
+      }
+      if (options.postConvert) {
+        await options.postConvert({
+          convertOpts: new_convert_opts,
+          sequelize,
+        })
       }
     } catch(e) {
       exception = e
@@ -10304,6 +10315,43 @@ After:
 
 And at last.
 `,
+    }
+  }
+)
+
+// Internals
+assert_lib('SqlDbProvider.fetch_header_tree_ids definedAtFileId argument',
+  {
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]
+
+== Toplevel 2
+
+=== Toplevel 3
+`,
+     'notindex.bigb': `= Notindex
+
+== Notindex 2
+
+=== Notindex 3
+`,
+    },
+    postConvert: async ({ convertOpts, sequelize }) => {
+      const file = await sequelize.models.File.findOne({ path: 'index.bigb' })
+      const ids = await convertOpts.db_provider.fetch_header_tree_ids(
+        [''],
+        {
+          definedAtFileId: file.id,
+        }
+      )
+      assert.strictEqual(ids.length, 2)
+      assertRows(ids, [
+        { idid: 'toplevel-2' },
+        { idid: 'toplevel-3' },
+      ])
     }
   }
 )

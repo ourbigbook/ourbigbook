@@ -255,45 +255,7 @@ class AstNode {
    * @param {Object} context
    * @return {String}
    */
-  render(context) {
-    if (context === undefined) {
-      context = {};
-    }
-    if (!('errors' in context)) {
-      context.errors = [];
-    }
-    if (!('html_escape' in context)) {
-      context.html_escape = true;
-    }
-    if (!('html_is_attr' in context)) {
-      context.html_is_attr = false;
-    }
-    if (!('html_is_href' in context)) {
-      context.html_is_href = false
-    }
-    if (!('db_provider' in context)) {
-      context.db_provider = {};
-    }
-    if (!('id_conversion' in context)) {
-      context.id_conversion = false;
-    }
-    if (!('ignore_errors' in context)) {
-      context.ignore_errors = false;
-    }
-    if (!('in_a' in context)) {
-      context.in_a = undefined
-    }
-    if (!('in_literal' in context)) {
-      context.in_literal = false;
-    }
-    if (!('katex_macros' in context)) {
-      context.katex_macros = {};
-    }
-    if (!('arg_depth' in context)) {
-      context.arg_depth = 0;
-    }
-    //if (!('last_render' in context)) {
-    //}
+  render(context={}) {
     if (this.renderAsError) {
       return errorMessageInOutput(this.renderAsError)
     }
@@ -3649,16 +3611,30 @@ function convertInitContext(options={}, extra_returns={}) {
   extra_returns.errors = [];
   extra_returns.rendered_outputs = {};
   const context = {
-    katex_macros: { ...options.katex_macros },
-    in_split_headers: false,
-    in_parse: false,
     errors: [],
     extra_returns,
     forceHeaderHasToc: false,
+    katex_macros: { ...options.katex_macros },
+    html_escape: true,
+    html_is_attr: false,
+    html_is_href: false,
+    id_conversion: false,
+    ignore_errors: false,
+    /* String? If set, it means that we are inside a argument that will render as a link.
+     * Therefore, children must not render as links because nested links are not allowed in HTML.
+     * One major use case is to have a link inside a header, possibly with {file}:
+     * = http://example.com
+     * {file}
+     */
+    in_a: undefined,
+    in_header: false,
+    in_literal: false,
+    in_parse: false,
+    in_split_headers: false,
     include_path_set: new Set(options.include_path_set),
     input_dir,
-    in_header: false,
     isToplevelIndex,
+    last_render: undefined,
     macros: macroListToMacros(options.add_test_instrumentation),
     options,
     // Shifts in local \a links due to either:

@@ -3625,6 +3625,8 @@ function convertInitContext(options={}, extra_returns={}) {
      * One major use case is to have a link inside a header, possibly with {file}:
      * = http://example.com
      * {file}
+     * The actual string may give further information as to which ancestor has marked the context
+     * as in_a, but it is not currently used.
      */
     in_a: undefined,
     in_header: false,
@@ -4020,6 +4022,7 @@ function getLinkHtml({
     extraReturns = {}
   }
   if (
+    context.in_a === undefined &&
     context.x_parents.size === 0
   ) {
     if (attrs === undefined) {
@@ -4560,13 +4563,20 @@ function idIsSuffix(suffix, full) {
 }
 
 // @return [href: string, content: string], both XSS safe.
-function linkGetHrefAndContent(ast, context) {
+function linkGetHrefAndContent(ast, context, opts={}) {
+  let { removeProtocol } = opts
+  if (removeProtocol === undefined) {
+    removeProtocol = true
+  }
   const href = renderArg(ast.args.href, cloneAndSet(context, 'html_is_href', true))
   const hrefNoEscape = renderArgNoescape(ast.args.href, context)
   let content = renderArg(ast.args.content, context)
   if (content === '') {
     content = renderArg(ast.args.href, context)
-    if (!context.id_conversion) {
+    if (
+      removeProtocol &&
+      !context.id_conversion
+    ) {
       content = content.replace(/^https?:\/\//, '')
     }
   }
@@ -8884,7 +8894,6 @@ const DEFAULT_MACRO_LIST = [
         name: Macro.TITLE_ARGUMENT_NAME,
         count_words: true,
         cannotContain: new Set([
-          Macro.LINK_MACRO_NAME,
           Macro.X_MACRO_NAME,
           Macro.LINE_BREAK_MACRO_NAME,
           'image',
@@ -9634,7 +9643,11 @@ const OUTPUT_FORMATS_LIST = [
       },
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
-          let [href, content, hrefNoEscape] = linkGetHrefAndContent(ast, cloneAndSet(context, 'in_a', Macro.LINK_MACRO_NAME))
+          let [href, content, hrefNoEscape] = linkGetHrefAndContent(
+            ast,
+            cloneAndSet(context, 'in_a', Macro.LINK_MACRO_NAME),
+            { removeProtocol: !context.in_a }
+          )
           if (ast.validation_output.ref.boolean) {
             content = `${HTML_REF_MARKER}`;
           }

@@ -2811,17 +2811,26 @@ assert_lib_error('nest: a inside a gives an error implicit',
   25,
   undefined, { convert_opts: { render: false } }
 )
-assert_lib_error('nest: a inside H gives an error explicit',
-  // Invalid HTML because we put <h> contents inside <a> for self link
+assert_lib_stdin('nest: a inside H content renders as text without link explicit',
   '\\H[1][\\a[http://example.com][my content]]\n',
-  1, 7,
-  undefined, { convert_opts: { render: false } }
+  {
+    assert_xpath_stdout: [
+      // This has no use case, perhaps we should lint it out,
+      // as the href example.com is never used anywhere when content is there.
+      xpath_header(1, '', "x:a[@href='' and text()='my content']"),
+    ],
+  }
 )
-assert_lib_error('nest: a inside H gives an error implicit',
-  // Invalid HTML because we put <h> contents inside <a> for self link
-  '= http://example.com\n',
-  1, 3,
-  undefined, { convert_opts: { render: false } }
+assert_lib_stdin('nest: a inside H content renders as text without link implicit',
+  '\\H[1][http://example.com]\n',
+  {
+    assert_xpath_stdout: [
+      // We could be strict and forbid this forcing users to escape the link instead \http
+      // But let's not be a pain, just let people write what they want and
+      // make it automatically work for them.
+      xpath_header(1, '', "x:a[@href='' and text()='http://example.com']"),
+    ],
+  }
 )
 assert_lib_error('nest: H inside H gives and error',
   `= \\H[2]

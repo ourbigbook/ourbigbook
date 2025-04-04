@@ -46,6 +46,7 @@ import { IssueType } from 'front/types/IssueType'
 import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 import LockUserButton from 'front/LockUserButton'
+import BlacklistSignupIpButton from './BlacklistSignupIpButton'
 
 export interface UserPageProps extends CommonPropsType {
   ancestors?: ArticleLinkType[];
@@ -71,6 +72,8 @@ export interface UserPageProps extends CommonPropsType {
   // For when listed articles are relative to another article,
   // e.g. tagged by, incoming links or children.
   parentArticle?: ArticleLinkType;
+  // Always false if its not admin querying.
+  signupIpIsBlacklisted: boolean;
   synonymLinks?: ArticleLinkType[];
   tagged?: ArticleLinkType[];
   topIssues?: IssueType[];
@@ -119,6 +122,7 @@ export default function UserPage({
   orderAscDesc,
   page,
   parentArticle,
+  signupIpIsBlacklisted,
   synonymLinks,
   tagged,
   topIssues,
@@ -210,6 +214,9 @@ export default function UserPage({
               }
               {!cant.setUserLimits(loggedInUser, user) &&
                 <LockUserButton {...{ username, on: user.locked }} />
+              }
+              {(!cant.setUserLimits(loggedInUser, user) && user.ip) &&
+                <BlacklistSignupIpButton {...{ ip: user.ip, on: signupIpIsBlacklisted }} />
               }
               {isCurrentUser &&
                 <LogoutButton />

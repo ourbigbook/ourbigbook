@@ -1,5 +1,5 @@
 // Provide the information that the editor needs to render the input.
-// The editor will minimally request what it might need, and cache agressively,
+// The editor will minimally request what it might need, and cache aggressively,
 // this API ust provides generously as asked.
 
 const router = require('express').Router()

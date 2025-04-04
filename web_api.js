@@ -315,6 +315,18 @@ class WebApi {
     )
   }
 
+  async siteSettingsBlacklistSignupIpGet(opts={}, reqOpts={}) {
+    return this.req('get', `site/blacklist-signup-ip`, Object.assign({ body: opts }, reqOpts))
+  }
+
+  async siteSettingsBlacklistSignupIpCreate(opts={}, reqOpts={}) {
+    return this.req('put', `site/blacklist-signup-ip`, Object.assign({ body: opts }, reqOpts))
+  }
+
+  async siteSettingsBlacklistSignupIpDelete(opts={}, reqOpts={}) {
+    return this.req('delete', `site/blacklist-signup-ip`, Object.assign({ body: opts }, reqOpts))
+  }
+
   async topics(opts={}) {
     return this.req('get', `topics${encodeGetParamsWithOffset(opts)}`)
   }

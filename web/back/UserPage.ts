@@ -6,6 +6,7 @@ import { articleLimit  } from 'front/config'
 import { getList, getOrderAndPage, idToSlug, uidTopicIdToId } from 'front/js'
 import { MyGetServerSideProps } from 'front/types'
 import { UserPageProps } from 'front/UserPage'
+import { cant } from 'front/cant'
 
 export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
   return async (context) => {
@@ -18,7 +19,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       typeof uid === 'string'
     ) {
       const sequelize = req.sequelize
-      const { Article, Comment, Ref, Issue, User } = sequelize.models
+      const { Article, Comment, Issue, Ref, SignupBlacklistIp, User } = sequelize.models
       const [loggedInUser, user] = await Promise.all([
         getLoggedInUser(req, res),
         User.findOne({
@@ -191,6 +192,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         unlistedArticles,
         parentArticle,
         users,
+        signupIpIsBlacklisted,
       ] = await Promise.all([
         // articles
         articlesPromise,
@@ -217,6 +219,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         ,
         // users
         usersPromise,
+        // signupIpIsBlacklisted
+        cant.updateSiteSettings(loggedInUser) ? false : SignupBlacklistIp.findOne({ where: { ip: user.ip } }).then(ip => !!ip),
         updateNewScoreLastCheckPromise,
       ])
       if (parentTopicIdString && !parentArticle) {
@@ -232,6 +236,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         order,
         orderAscDesc: ascDesc,
         page,
+        signupIpIsBlacklisted,
         user: userJson,
         what,
       }

@@ -11,6 +11,15 @@ const xpath = require('xpath');
 
 const assert = require('assert');
 
+function assertArraysEqual(array, arrayExpect) {
+  assert.strictEqual(array.length, arrayExpect.length, `wrong number of elements: ${array.length}, expected: ${arrayExpect.length}`)
+  for (let i = 0; i < array.length; i++) {
+    let a = array[i]
+    let aExpect = arrayExpect[i]
+    assert.strictEqual(a, aExpect)
+  }
+}
+
 function assertRows(rows, rowsExpect, opts={}) {
   const msgFn = opts.msgFn
   assert.strictEqual(rows.length, rowsExpect.length, `wrong number of rows: ${rows.length}, expected: ${rowsExpect.length}`)
@@ -135,6 +144,7 @@ function xpath_header_parent(n, id, href, title) {
 }
 
 module.exports = {
+  assertArraysEqual,
   assertRows,
   assert_xpath,
   xpath_header,

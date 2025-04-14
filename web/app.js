@@ -36,9 +36,9 @@ async function start(port, startNext, cb) {
   // So we get a ton of SPAM, which Google Analytics removes automatically for us, but no extra information.
   // But it is fun.
   // https://stackoverflow.com/questions/6762258/when-browser-sets-the-referrer-in-http-request-header/79469565#79469565
-  app.use(function (req, res, next) {
+  app.use(async function (req, res, next) {
     try {
-      if (sequelize.options.dialect !== 'sqlite') {
+      if (config.trackRequests) {
         const referrer = req.get('referrer')
         if (referrer) {
           let referrerUrlString = referrer
@@ -50,7 +50,7 @@ async function start(port, startNext, cb) {
           if (referrerUrl.host.toLowerCase() !== req.headers.host.toLowerCase()) {
             // No await here intentionally, don't want this for fun thing
             // to slow anything else down for now. If it fails it's fine.
-            sequelize.transaction(async (transaction) => {
+            const requestPromise = sequelize.transaction(async (transaction) => {
               const { ReferrerDomainBlacklist, Request } = sequelize.models
               const referrerBlacklist = await ReferrerDomainBlacklist.findOne({
                 where: { domain: referrerUrl.hostname.split('.').slice(-2).join('.').toLowerCase() },
@@ -90,6 +90,9 @@ async function start(port, startNext, cb) {
                 }
               }
             })
+            if (config.isTest) {
+              await requestPromise
+            }
           }
         }
       }

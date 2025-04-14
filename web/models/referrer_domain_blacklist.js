@@ -1,6 +1,6 @@
 const Sequelize = require('sequelize')
 
-const { DataTypes, NOW } = Sequelize
+const { DataTypes } = Sequelize
 
 module.exports = (sequelize) => {
   const ReferrerDomainBlacklist = sequelize.define(

@@ -5777,23 +5777,87 @@ it(`api: blacklist signup ip`, async () => {
   )
 })
 
-it(`api: article: create simple`, async () => {
+it(`api: requests`, async () => {
   await testApp(async (test) => {
     let data, status, article
 
-    // Create users
+    const sequelize = test.sequelize
+    const { ReferrerDomainBlacklist, Request } = sequelize.models
+    config.trackRequests = true
+
+    // Requests without referrer are not tracked.
+    config.devIp = '123.123.123.1'
     const user0 = await test.createUserApi(0)
-    test.loginUser(user0)
+    assertRows(
+      await Request.findAll({ order: [['createdAt', 'ASC']] }),
+      []
+    )
 
-    // Create article user0/title-0
-    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
-    assertStatus(status, data)
+    // Requests with referrer are tracked.
+    config.devIp = '123.123.123.1'
+    ;({data, status} = await test.webApi.article('user0', {}, { headers: { referrer: 'http://example.com' } }))
+    assertRows(
+      await Request.findAll({ order: [['createdAt', 'ASC']] }),
+      [
+        { ip: '123.123.123.1', path: '/api/articles?id=user0', referrer: 'http://example.com' },
+      ]
+    )
 
-    // Check that the article is there
-    ;({data, status} = await test.webApi.article('user0/title-0'))
-    assertStatus(status, data)
-    assert.strictEqual(data.titleRender, 'Title 0')
-    assert.strictEqual(data.titleSource, 'Title 0')
-    assert.match(data.render, /Body 0\./)
+    // Again to repeat
+    config.devIp = '123.123.123.1'
+    ;({data, status} = await test.webApi.article('user0', {}, { headers: { referrer: 'http://example.com' } }))
+    assertRows(
+      await Request.findAll({ order: [['createdAt', 'ASC']] }),
+      [
+        { ip: '123.123.123.1', path: '/api/articles?id=user0', referrer: 'http://example.com' },
+        { ip: '123.123.123.1', path: '/api/articles?id=user0', referrer: 'http://example.com' },
+      ]
+    )
+
+    // Another IP
+    config.devIp = '123.123.123.2'
+    ;({data, status} = await test.webApi.article('user0', {}, { headers: { referrer: 'http://example.com' } }))
+    assertRows(
+      await Request.findAll({ order: [['createdAt', 'ASC']] }),
+      [
+        { ip: '123.123.123.1', path: '/api/articles?id=user0', referrer: 'http://example.com' },
+        { ip: '123.123.123.1', path: '/api/articles?id=user0', referrer: 'http://example.com' },
+        { ip: '123.123.123.2', path: '/api/articles?id=user0', referrer: 'http://example.com' },
+      ]
+    )
+
+    // Add to blacklist and check it does not get added anymore
+    await ReferrerDomainBlacklist.create({ domain: 'example.com' })
+    config.devIp = '123.123.123.1'
+    ;({data, status} = await test.webApi.article('user0', {}, { headers: { referrer: 'http://example.com' } }))
+    assertRows(
+      await Request.findAll({ order: [['createdAt', 'ASC']] }),
+      [
+        { ip: '123.123.123.1', path: '/api/articles?id=user0', referrer: 'http://example.com' },
+        { ip: '123.123.123.1', path: '/api/articles?id=user0', referrer: 'http://example.com' },
+        { ip: '123.123.123.2', path: '/api/articles?id=user0', referrer: 'http://example.com' },
+      ]
+    )
   })
+})
+
+it(`api: article: create simple`, async () => {
+  await testApp(
+    async (test) => {
+      let data, status, article
+
+      // Create users
+      const user0 = await test.createUserApi(0)
+      test.loginUser(user0)
+
+      // Create article user0/title-0
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
+
+      // Check that the article is there
+      ;({data, status} = await test.webApi.article('user0/title-0'))
+      assert.strictEqual(data.titleSource, 'Title 0')
+      assert.match(data.render, /Body 0\./)
+    },
+    { defaultExpectStatus: 200 }
+  )
 })

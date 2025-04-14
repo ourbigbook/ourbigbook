@@ -171,6 +171,7 @@ module.exports = {
   revalidate: 10,
   secret: ourbigbook_nodejs_front.isProduction ? process.env.SECRET : 'secret',
   sureLeaveMessage: 'Your change may be unsaved, are you sure you want to leave this page?',
+  trackRequests: dbSettings.dialect !== 'sqlite',
   uploadPath,
   useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !ourbigbook_nodejs_front.isTest,
   usernameMinLength: 3,

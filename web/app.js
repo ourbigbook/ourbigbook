@@ -36,60 +36,86 @@ async function start(port, startNext, cb) {
   // So we get a ton of SPAM, which Google Analytics removes automatically for us, but no extra information.
   // But it is fun.
   // https://stackoverflow.com/questions/6762258/when-browser-sets-the-referrer-in-http-request-header/79469565#79469565
-  app.use(function (req, res, next) {
+  app.use(async function (req, res, next) {
     try {
-      if (sequelize.options.dialect !== 'sqlite') {
-        const referrer = req.get('referrer')
+      if (config.trackRequests) {
+        let referrer = req.get('referrer')
+        let referrerUrl
         if (referrer) {
           let referrerUrlString = referrer
           if (referrer.search('://') === -1) {
             referrerUrlString = 'http://' + referrerUrlString
           }
-          const referrerUrl = new URL(referrerUrlString)
-          // Don't store internal links from OurBigBook.com to itself.
-          if (referrerUrl.host.toLowerCase() !== req.headers.host.toLowerCase()) {
-            // No await here intentionally, don't want this for fun thing
-            // to slow anything else down for now. If it fails it's fine.
-            sequelize.transaction(async (transaction) => {
-              const { ReferrerDomainBlacklist, Request } = sequelize.models
-              const referrerBlacklist = await ReferrerDomainBlacklist.findOne({
-                where: { domain: referrerUrl.hostname.split('.').slice(-2).join('.').toLowerCase() },
-                transaction,
-              })
-              if (!referrerBlacklist) {
-                const path = req.originalUrl
-                const ip = front.getClientIp(req)
-                const userAgent = req.get('user-agent')
-                try {
-                  //if (sequelize.options.dialect === 'sqlite') {
-                  //  // This does seem to solve the massive slowdowns seen on SQLite
-                  //  // due to write contention as especially in dev the client makes
-                  //  // a ton of simultaneous HTTP requests fetches that get blocked by
-                  //  // the following writes. However, it's a bit scarry to turn WAL on
-                  //  // only after these requests and there's no clean way currently.
-                  //  // So let's just leave it off. PostgreSQL seemed fine.
-                  //  // https://github.com/sequelize/sequelize/issues/5245
-                  //  // https://github.com/sequelize/sequelize/issues/12487
-                  //  // https://www.sqlite.org/wal.html
-                  //  sequelize.query("PRAGMA journal_mode=WAL;")
-                  //}
-                  const count = await Request.count({ transaction })
-                  const max = 10000
-                  if (count >= max) {
-                    await Request.destroy({
-                      limit: ((count - max) + 1),
-                      order: [['createdAt', 'ASC']],
-                      transaction,
-                      where: {},
-                    })
-                  }
-                  await Request.create({ ip, path, referrer, userAgent }, { transaction })
-                } catch(e) {
-                  // A bunch of database locks on SQLite.
-                  //console.log(e)
+          referrerUrl = new URL(referrerUrlString)
+        }
+        // Don't store internal links from OurBigBook.com to itself.
+        if (!(
+          referrer &&
+          referrerUrl.host.toLowerCase() === req.headers.host.toLowerCase()
+        )) {
+          // No await here intentionally, don't want this for fun thing
+          // to slow anything else down for now. If it fails it's fine.
+          const requestPromise = sequelize.transaction(async (transaction) => {
+            const { ReferrerDomainBlacklist, Request } = sequelize.models
+            const ip = front.getClientIp(req)
+            const [
+              knownIp,
+              referrerBlacklist,
+            ] = await Promise.all([
+              ip
+                ? Request.findOne({
+                    where: { ip },
+                    transaction,
+                  })
+                : null
+              ,
+              referrer
+                ? ReferrerDomainBlacklist.findOne({
+                    where: { domain: referrerUrl.hostname.split('.').slice(-2).join('.').toLowerCase() },
+                    transaction,
+                  })
+                : null
+              ,
+            ])
+            if (
+              // Get each IP at least once, its cute.
+              !knownIp ||
+              (referrer && !referrerBlacklist)
+            ) {
+              const path = req.originalUrl
+              const userAgent = req.get('user-agent')
+              try {
+                //if (sequelize.options.dialect === 'sqlite') {
+                //  // This does seem to solve the massive slowdowns seen on SQLite
+                //  // due to write contention as especially in dev the client makes
+                //  // a ton of simultaneous HTTP requests fetches that get blocked by
+                //  // the following writes. However, it's a bit scarry to turn WAL on
+                //  // only after these requests and there's no clean way currently.
+                //  // So let's just leave it off. PostgreSQL seemed fine.
+                //  // https://github.com/sequelize/sequelize/issues/5245
+                //  // https://github.com/sequelize/sequelize/issues/12487
+                //  // https://www.sqlite.org/wal.html
+                //  sequelize.query("PRAGMA journal_mode=WAL;")
+                //}
+                const count = await Request.count({ transaction })
+                const max = 10000
+                if (count >= max) {
+                  await Request.destroy({
+                    limit: ((count - max) + 1),
+                    order: [['createdAt', 'ASC']],
+                    transaction,
+                    where: {},
+                  })
                 }
+                await Request.create({ ip, path, referrer, userAgent }, { transaction })
+              } catch(e) {
+                // A bunch of database locks on SQLite.
+                //console.log(e)
               }
-            })
+            }
+          })
+          if (config.isTest) {
+            await requestPromise
           }
         }
       }

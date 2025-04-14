@@ -6,7 +6,7 @@ const crypto = require('crypto')
 
 const axios = require('axios')
 
-const ourbigbook = require('./index');
+const ourbigbook = require('./index')
 
 function articleHash(opts={}) {
   const jsonStr = JSON.stringify(Object.fromEntries(Object.entries(opts).sort()))
@@ -22,7 +22,7 @@ function encodeGetParams(p) {
       params.push(`${encodeURIComponent(key)}=${encodeURIComponent(val)}`)
     }
   }
-  let ret = params.join('&');
+  let ret = params.join('&')
   if (ret) {
     ret = '?' + ret
   }
@@ -46,13 +46,13 @@ function read_include({exists, read, path_sep, ext}) {
     ext = `.${ourbigbook.OURBIGBOOK_EXT}`
   }
   return async (id, input_dir) => {
-    let found = undefined;
+    let found = undefined
     let test
-    let basename = id + ext;
+    let basename = id + ext
     if (basename[0] === path_sep) {
       test = id.substring(1)
       if (await exists(test)) {
-        found = test;
+        found = test
       }
     } else {
       const input_dir_with_sep = input_dir + path_sep
@@ -60,41 +60,41 @@ function read_include({exists, read, path_sep, ext}) {
         if (input_dir_with_sep[i] === path_sep) {
           test = input_dir_with_sep.slice(0, i + 1) + basename
           if (await exists(test)) {
-            found = test;
+            found = test
             break
           }
         }
       }
       if (found === undefined && await exists(basename)) {
-        found = basename;
+        found = basename
       }
     }
     if (found === undefined) {
-      test = join(id, ourbigbook.INDEX_BASENAME_NOEXT + ext);
+      test = join(id, ourbigbook.INDEX_BASENAME_NOEXT + ext)
       if (input_dir !=='') {
         test = join(input_dir, test)
       }
       if (await exists(test)) {
-        found = test;
+        found = test
       }
       if (found === undefined) {
         const [dir, basename] = ourbigbook.pathSplit(id, path_sep)
         const [basename_noext, ext] = ourbigbook.pathSplitext(basename)
         if (basename_noext === ourbigbook.INDEX_BASENAME_NOEXT) {
           for (let index_basename_noext of ourbigbook.INDEX_FILE_BASENAMES_NOEXT) {
-            test = join(dir, index_basename_noext + ext);
+            test = join(dir, index_basename_noext + ext)
             if (await exists(test)) {
-              found = test;
-              break;
+              found = test
+              break
             }
           }
         }
       }
     }
     if (found !== undefined) {
-      return [found, await read(found)];
+      return [found, await read(found)]
     }
-    return undefined;
+    return undefined
   }
 }
 
@@ -112,16 +112,16 @@ class WebApi {
     return sendJsonHttp(method, `/${ourbigbook.WEB_API_PATH}/${path}`, newopts)
   }
 
-  async article(slug, opts={}) {
-    const { data, status } = await this.articles(Object.assign({ id: slug }, opts))
+  async article(slug, opts={}, reqOpts={}) {
+    const { data, status } = await this.articles(Object.assign({ id: slug }, opts), reqOpts)
     return { data: data.articles[0], status }
   }
 
-  async articles(opts={}) {
-    return this.req('get', `articles${encodeGetParamsWithOffset(opts)}`)
+  async articles(opts={}, reqOpts={}) {
+    return this.req('get', `articles${encodeGetParamsWithOffset(opts)}`, reqOpts)
   }
 
-  async articleAnnounce(slug, message, opts={}) {
+  async articleAnnounce(slug, message, opts={}, reqOpts={}) {
     const body = {}
     if (message) {
       body.message = message
@@ -129,188 +129,199 @@ class WebApi {
     return this.req(
       'post',
       `articles/announce?id=${slug}${encodeGetParamsWithOffset(opts)}`,
-      { body },
+      { body, ...reqOpts },
     )
   }
 
-  async articlesHash(opts={}) {
-    return this.req('get', `articles/hash${encodeGetParamsWithOffset(opts)}`)
+  async articlesHash(opts={}, reqOpts={}) {
+    return this.req('get', `articles/hash${encodeGetParamsWithOffset(opts)}`, reqOpts)
   }
 
-  async articleCreate(article, opts={}) {
+  async articleCreate(article, opts={}, reqOpts={}) {
     const { path, parentId, previousSiblingId, render } = opts
     return this.req('post',
       `articles`,
-      { body: Object.assign({ article }, opts)},
-    );
+      { body: Object.assign({ article }, opts), ...reqOpts },
+    )
   }
 
-  async articleCreateOrUpdate(article, opts={}) {
+  async articleCreateOrUpdate(article, opts={}, reqOpts={}) {
     return this.req('put',
       `articles`,
-      { body: Object.assign({ article }, opts)},
-    );
+      { body: Object.assign({ article }, opts), ...reqOpts },
+    )
   }
 
-  async articleDelete(slug) {
-    return this.req('delete', `articles?id=${slug}`)
+  async articleDelete(slug, reqOpts={}) {
+    return this.req('delete', `articles?id=${slug}`, reqOpts)
   }
 
-  async articleLike(slug) {
-    return this.req('post', `articles/like?id=${slug}`)
+  async articleLike(slug, reqOpts={}) {
+    return this.req('post', `articles/like?id=${slug}`, reqOpts)
   }
 
-  async articleFeed(opts={}) {
-    return this.req('get', `articles/feed${encodeGetParamsWithOffset(opts)}`)
+  async articleFeed(opts={}, reqOpts={}) {
+    return this.req('get', `articles/feed${encodeGetParamsWithOffset(opts)}`, reqOpts)
   }
 
-  async articleFollow(slug) {
-    return this.req('post', `articles/follow?id=${slug}`)
+  async articleFollow(slug, reqOpts={}) {
+    return this.req('post', `articles/follow?id=${slug}`, reqOpts)
   }
 
-  async articleRedirects(opts={}) {
-    return this.req('get', `articles/redirects${encodeGetParamsWithOffset(opts)}`)
+  async articleRedirects(opts={}, reqOpts={}) {
+    return this.req('get', `articles/redirects${encodeGetParamsWithOffset(opts)}`, reqOpts)
   }
 
-  async articleUnfollow(slug) {
-    return this.req('delete', `articles/follow?id=${slug}`)
+  async articleUnfollow(slug, reqOpts={}) {
+    return this.req('delete', `articles/follow?id=${slug}`, reqOpts)
   }
 
-  async articleUnlike(slug) {
-    return this.req('delete', `articles/like?id=${encodeURIComponent(slug)}`)
+  async articleUnlike(slug, reqOpts={}) {
+    return this.req('delete', `articles/like?id=${encodeURIComponent(slug)}`, reqOpts)
   }
 
-  async articleUpdatedNestedSet(user) {
-    return this.req('put', `articles/update-nested-set/${encodeURIComponent(user)}`)
+  async articleUpdatedNestedSet(user, reqOpts={}) {
+    return this.req('put', `articles/update-nested-set/${encodeURIComponent(user)}`, reqOpts)
   }
 
-  async editorFetchFiles(paths) {
+  async editorFetchFiles(paths, reqOpts={}) {
     return this.req('post',
       `editor/fetch-files`,
       {
         body: {
           paths,
-        }
+        },
+        ...reqOpts,
       },
     )
   }
 
-  async editorGetNoscopesBaseFetch(ids, ignore_paths_set) {
+  async editorGetNoscopesBaseFetch(ids, ignore_paths_set, reqOpts={}) {
     return this.req('post',
       `editor/get-noscopes-base-fetch`,
       {
         body: {
           ids,
           ignore_paths_set
-        }
+        },
+        ...reqOpts,
       },
     )
   }
 
-  async editorIdExists(idid) {
+  async editorIdExists(idid, reqOpts={}) {
     const ret = await this.req('post',
       `editor/id-exists`,
       {
         body: {
           idid,
-        }
+        },
+        ...reqOpts
       },
     )
     return ret.data.exists
   }
 
-  async issue(slug, number) {
+  async issue(slug, number, reqOpts={}) {
     const { data, status } = await this.issues({ id: slug, number })
     return { data: data.issues[0], status }
   }
 
-  async issues(opts) {
+  async issues(opts, reqOpts={}) {
     return this.req('get',
       `issues${encodeGetParamsWithOffset(opts)}`,
+      reqOpts
     )
   }
 
-  async issueCreate(slug, issue) {
+  async issueCreate(slug, issue, reqOpts={}) {
     return this.req('post',
       `issues?id=${encodeURIComponent(slug)}`,
       {
         body: { issue },
+        reqOpts,
       },
     )
   }
 
-  async issueDelete(slug, issueNumber) {
-    return this.req('delete', `issues/${issueNumber}?id=${encodeURIComponent(slug)}`)
+  async issueDelete(slug, issueNumber, reqOpts={}) {
+    return this.req('delete', `issues/${issueNumber}?id=${encodeURIComponent(slug)}`, reqOpts)
   }
 
-  async issueEdit(slug, issueNumber, issue) {
+  async issueEdit(slug, issueNumber, issue, reqOpts={}) {
     return this.req('put',
       `issues/${issueNumber}?id=${encodeURIComponent(slug)}`,
       {
         body: { issue },
+        ...reqOpts,
       },
     )
   }
 
-  async issueFollow(slug, issueNumber) {
-    return this.req('post', `issues/${issueNumber}/follow?id=${slug}`)
+  async issueFollow(slug, issueNumber, reqOpts={}) {
+    return this.req('post', `issues/${issueNumber}/follow?id=${slug}`, reqOpts)
   }
 
-  async issueUnfollow(slug, issueNumber) {
-    return this.req('delete', `issues/${issueNumber}/follow?id=${encodeURIComponent(slug)}`)
+  async issueUnfollow(slug, issueNumber, reqOpts={}) {
+    return this.req('delete', `issues/${issueNumber}/follow?id=${encodeURIComponent(slug)}`, reqOpts)
   }
 
-  async issueLike(slug, issueNumber) {
-    return this.req('post', `issues/${issueNumber}/like?id=${slug}`)
+  async issueLike(slug, issueNumber, reqOpts={}) {
+    return this.req('post', `issues/${issueNumber}/like?id=${slug}`, reqOpts)
   }
 
-  async issueUnlike(slug, issueNumber) {
-    return this.req('delete', `issues/${issueNumber}/like?id=${encodeURIComponent(slug)}`)
+  async issueUnlike(slug, issueNumber, reqOpts={}) {
+    return this.req('delete', `issues/${issueNumber}/like?id=${encodeURIComponent(slug)}`, reqOpts)
   }
 
-  async comments(slug, issueNumber) {
+  async comments(slug, issueNumber, reqOpts={}) {
     return this.req('get',
       `issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
+      reqOpts,
     )
   }
 
-  async comment(slug, issueNumber, commentNumber) {
+  async comment(slug, issueNumber, commentNumber, reqOpts={}) {
     return this.req('get',
       `issues/${issueNumber}/comment/${commentNumber}?id=${encodeURIComponent(slug)}`,
+      reqOpts,
     )
   }
 
-  async commentCreate(slug, issueNumber, source) {
+  async commentCreate(slug, issueNumber, source, reqOpts={}) {
     return this.req('post',
       `issues/${issueNumber}/comments?id=${encodeURIComponent(slug)}`,
       {
         body: { comment: { source } },
+        ...reqOpts
       },
     )
   }
 
-  async commentUpdate(slug, issueNumber, comentNumber, source) {
+  async commentUpdate(slug, issueNumber, comentNumber, source, reqOpts={}) {
     return this.req('put',
       `issues/${issueNumber}/comments${commentNumber}?id=${encodeURIComponent(slug)}`,
       {
         body: { comment: { source } },
+        ...reqOpts
       },
     )
   }
 
-  async commentDelete(slug, issueNumber, commentNumber) {
-    return this.req('delete', `issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`)
+  async commentDelete(slug, issueNumber, commentNumber, reqOpts={}) {
+    return this.req('delete', `issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`, reqOpts)
   }
 
-  async min(opts={}) {
-    return this.req('get', `min${encodeGetParams(opts)}`)
+  async min(opts={}, reqOpts={}) {
+    return this.req('get', `min${encodeGetParams(opts)}`, reqOpts)
   }
 
-  async siteSettingsUpdate(opts={}) {
+  async siteSettingsUpdate(opts={}, reqOpts={}) {
     return this.req('put',
       `site`,
       {
         body: opts,
+        ...reqOpts,
       },
     )
   }
@@ -327,73 +338,75 @@ class WebApi {
     return this.req('delete', `site/blacklist-signup-ip`, Object.assign({ body: opts }, reqOpts))
   }
 
-  async topics(opts={}) {
-    return this.req('get', `topics${encodeGetParamsWithOffset(opts)}`)
+  async topics(opts={}, reqOpts={}) {
+    return this.req('get', `topics${encodeGetParamsWithOffset(opts)}`, reqOpts)
   }
 
-  async resetPassword(email, password, code) {
+  async resetPassword(email, password, code, reqOpts={}) {
     return this.req(
       'post',
       `reset-password`,
-      { body: { email, password, code } }
+      { body: { email, password, code }, ...reqOpts }
     )
   }
 
-  async resetPasswordRequest(emailOrUsername, recaptchaToken) {
+  async resetPasswordRequest(emailOrUsername, recaptchaToken, reqOpts={}) {
     return this.req(
       'post',
       `reset-password-request`,
-      { body: { emailOrUsername, recaptchaToken } }
+      { body: { emailOrUsername, recaptchaToken }, ...reqOpts }
     )
   }
 
-  async users(opts) {
+  async users(opts, reqOpts={}) {
     return this.req('get', `users${encodeGetParamsWithOffset(opts)}`)
   }
 
-  async userCreate(attrs, recaptchaToken) {
+  async userCreate(attrs, recaptchaToken, reqOpts={}) {
     return this.req('post',
       `users`,
-      { body: { user: attrs, recaptchaToken } },
-    );
+      { body: { user: attrs, recaptchaToken }, ...reqOpts },
+    )
   }
 
-  async userFollow(username){
+  async userFollow(username, reqOpts={}){
     return this.req('post',
       `users/${username}/follow`,
-    );
+      reqOpts
+    )
   }
 
-  async user(username) {
-    const { data, status } = await this.users({ username })
+  async user(username, reqOpts={}) {
+    const { data, status } = await this.users({ username }, reqOpts)
     return { data: data.users[0], status }
   }
 
-  async userLogin(attrs) {
+  async userLogin(attrs, reqOpts={}) {
     return this.req('post',
       `login`,
-      { body: { user: attrs } },
-    );
+      { body: { user: attrs }, ...reqOpts },
+    )
   }
 
-  async userUpdate(username, user) {
+  async userUpdate(username, user, reqOpts={}) {
     return this.req('put',
       `users/${username}`,
-      { body: { user } },
+      { body: { user }, reqOpts },
     )
   }
 
-  async userUpdateProfilePicture(username, bytes) {
+  async userUpdateProfilePicture(username, bytes, reqOpts={}) {
     return this.req('put',
       `users/${username}/profile-picture`,
-      { body: { bytes } },
+      { body: { bytes }, reqOpts },
     )
   }
 
-  async userUnfollow(username) {
+  async userUnfollow(username, reqOpts={}) {
     return this.req('delete',
       `users/${username}/follow`,
-    );
+      reqOpts
+    )
   }
 }
 

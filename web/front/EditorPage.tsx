@@ -748,36 +748,38 @@ export default function EditorPageHoc({
                   </div>
                 </div>
                 <div className={`metadata-tab${tab === 'metadata' ? '' : ' hide'}`}>
-                  {(!isIssue && !isIndex) &&
+                  {!isIssue &&
                     <div ref={ourbigbookParentIdContainerElem}>
-                      <Label label="ID" >
-                        <input
-                          type="text"
-                          className="title"
-                          value={topicId}
-                          disabled={true}
-                        />
-                      </Label>
-                      <Label label="Parent" >
-                        <input
-                          type="text"
-                          className="title"
-                          placeholder={parentTitleDisplay}
-                          value={parentTitle}
-                          onChange={handleParentTitle}
-                          ref={parentInputElem}
-                        />
-                      </Label>
-                      <Label label={previousSiblingTitleDisplay} >
-                        <input
-                          type="text"
-                          className="title"
-                          placeholder={`Article with same parent that comes before this one. Empty means first child.`}
-                          value={previousSiblingTitle}
-                          onChange={handlePreviousSiblingTitle}
-                        />
-                      </Label>
-                      <ErrorList errors={parentErrors}/>
+                      {!isIndex && <>
+                        <Label label="ID" >
+                          <input
+                            type="text"
+                            className="title"
+                            value={topicId}
+                            disabled={true}
+                          />
+                        </Label>
+                        <Label label="Parent" >
+                          <input
+                            type="text"
+                            className="title"
+                            placeholder={parentTitleDisplay}
+                            value={parentTitle}
+                            onChange={handleParentTitle}
+                            ref={parentInputElem}
+                          />
+                        </Label>
+                        <Label label={previousSiblingTitleDisplay} >
+                          <input
+                            type="text"
+                            className="title"
+                            placeholder={`Article with same parent that comes before this one. Empty means first child.`}
+                            value={previousSiblingTitle}
+                            onChange={handlePreviousSiblingTitle}
+                          />
+                        </Label>
+                        <ErrorList errors={parentErrors}/>
+                      </>}
                       <Label label="Unlisted" inline={true}>
                         <input
                           type="checkbox"

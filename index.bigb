@@ -8994,6 +8994,32 @@ There are a few ways to do that.
 {height=300}
 {description=If you click do any of the above links, you will be redirected to the editor page, and the title will be preset. By simply using that exact same title to create your new article, your article will then appear in the correct "Fundamental theorem of calculus" topic where others might see it. https://ourbigbook.com/go/new?title=Proof%20of%20the%20fundamental%20theorem%20of%20calculus[].}
 
+= Automatic topic linking
+{c}
+{parent=OurBigBook Web topics}
+
+<OurBigBook Web> can automatically create links to topics from regular plaintext. For example, if the following topics exist:
+* `/go/topic/quantum-mechanics`
+* `/go/topic/mathematicsl-physics`
+then writing:
+> I like mathematical physics and quantum mechanics.
+will automatically be converted to something like:
+``
+I like <a href="/go/topic/mathematical-physics">mathematical physics</a> <a href="/go/topic/quantum-mechanics">quantum mechanics</a>.
+``
+This reduces the burden on writers of having to manually create topic links themselves.
+
+This conversion currently has the following limitations:
+* because it would lead to too many false postives and be too distracting, auto-generated links currently just have the exact same color as regular text, and users only notice them when mouse hovering
+* for performance reasons, only topics with a given maximum number of words are considered. The maximum length is configurable by the <OurBigBook Web admin> under <site settings> via the `automaticTopicLinksMaxWords`, and currently defaults to 3. Setting it to 0 turns off the automatic link generation
+
+Topic autolinking becomes especially interesting with auto-generated data to populate a large number of topics, as was done with the <wikibot> on <OurBigBook.com>.
+
+This feature is available only on <OurBigBook Web>. While it would be possible to implement it for <static website> generation, it would require downloading information from the server which we don't currently want to implement.
+
+Related:
+* https://github.com/ourbigbook/ourbigbook/issues/356
+
 = OurBigBook Web dynamic article tree
 {c}
 {parent=OurBigBook Web user manual}
@@ -9245,16 +9271,37 @@ There are currently a few constructs that are legal in <OurBigBook CLI> but forb
 
 = User settings page
 {parent=OurBigBook Web page}
+{title2=`/go/settings/<username>`}
 
-Path: `/go/settings/<username>`
+Example: https://ourbigbook.com/go/settings/barack-obama
 
 Contains profile and account settings for each user, including limits such as the maximum number of articles that each user may publish.
+
+This page is only visible to user themselves and <admins>. The limits can only be modified by <admins>.
+
+= Site settings page
+{parent=OurBigBook Web page}
+{title2=`/go/site-settings`}
+
+= Site settings
+{synonym}
+
+Example: https://ourbigbook.com/go/site-settings
+
+The <site settings page> contains global site settings that apply to the entire <OurBigBook Web> instance.
+
+Its values can be viewed by all users, but only <admins> can modify their values.
+
+The page can be reached via the "Site Settings" button at the bottom of each index page e.g. https://ourbigbook.com[].
 
 = OurBigBook Web moderation
 {parent=OurBigBook Web user manual}
 
 = OurBigBook Web admin
 {parent=OurBigBook Web moderation}
+
+= Admin
+{synonym}
 
 Each user has an `admin` property which when set to `true` allows the user to basically view and change anything for themselves and other users. E.g. admins can see private data of any user such as emails, or modify users usernames.
 
@@ -9532,7 +9579,10 @@ For frontend, changes are automatically recompiled by the webpack development se
 
 = Wikipedia bot
 {parent=Generated data}
-{title2=wikibot}
+
+= wikibot
+{synonym}
+{title2}
 
 * <OurBigBook.com> user: https://ourbigbook.com/wikibot
 * <Static website> render: https://wikibot.ourbigbook.com
@@ -10611,6 +10661,7 @@ and test both on <Heroku deployment> and locally.
 
 Local tests are always on optimized PostgresQL. Remote tests always on powerful home wifi, never 4G. Measuremnts are taken on browser Network tab in developer tools with cache enabled. Each URL is ran randomly a few times, which gives an idea of cache warmup effects. Logged-in is logged-in as `cirosantilli`.
 
+Visit article:
 * ae4d0e3a0964f3c00a7e1ec0d561ebd6f2d2f44f (show tagged headers under non-toplevel headers) TTFB logged off local:
   * /barack-obama: 60 - 75
   * /cirosantilli: 200 - 300
@@ -10656,6 +10707,13 @@ Local tests are always on optimized PostgresQL. Remote tests always on powerful 
     * /cirosantilli: 1100 - 1500
     * /wikibot: 3500 - 4500
   This suggests a database scaling issue like a missing index.
+
+Update article:
+* f2d48c4b6eaa6264017d3ef506a58167802730f3 Lenovo ThinkPad P14s Ubuntu 24.10 postgresql 16.8 and cirosantilli.github.io at 858d7eb936b541979660e3aecb7abf96541fc06c
+  * /cirosantilli 380 ms
+  * /cirosantilli/x86-paging and descendants 1900 ms
+  * /cirosantilli/cool-data-embedded-in-the-bitcoin-blockchain and descendants 4400
+  * /cirosantilli/cia-2010-covert-communication-websites and descendants 4700
 
 Related:
 * <todo/Reach the same performance as static website with dynamic tree>
@@ -12511,7 +12569,7 @@ GitHub account: https://github.com/ourbigbook-admin
 
 The typical use case of this feature is to facilitate user onboarding, and it could also be used for general server announcemnets.
 
-To modify the pinned article, admins must visit the "Site Settings" page under: https://ourbigbook.com/go/site-settings[]. That page can be accessed via the "Site Settings" button at the bottom of each index page.
+To modify the pinned article, admins must visit the <site settings page>.
 
 \Image[feature/pinned-article/site-settings-button-on-topics-page-arrow.png]
 {title=Site Settings link under the <topics> page}

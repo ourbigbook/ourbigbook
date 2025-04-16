@@ -23,6 +23,7 @@ const path = require('path');
 const pluralize = require('pluralize');
 
 const runtime_common = require('./runtime_common');
+const { kMaxLength } = require('buffer');
 
 // consts used by classes.
 const HTML_PARENT_MARKER = '<span class="fa-solid-900 icon">\u{f062}</span>';
@@ -215,6 +216,10 @@ class AstNode {
     // in errors such as \a inside \a. We never want invalid HTML even when
     // such errors are detected.
     this.renderAsError = undefined
+
+    // Should automatic topic links be applied to this ast.
+    // Only makes sense for plaintext nodes.
+    this.automaticTopicLinks = false
 
     this.count_words = options.count_words
     if (this.node_type === AstType.PLAINTEXT) {
@@ -1196,6 +1201,11 @@ class MacroArgument {
    */
   constructor(options) {
     options = { ...options }
+    if (!('automaticTopicLinks' in options)) {
+      // If true, automatic topic links can be generated inside this argument,
+      // so long as count_words is also true.
+      options.automaticTopicLinks = true;
+    }
     if (!('elide_link_only' in options)) {
       // If the only thing contained in this argument is a single
       // Macro.LINK_MACRO_NAME macro, AST post processing instead extracts
@@ -1251,6 +1261,7 @@ class MacroArgument {
       // https://docs.ourbigbook.com#remove-whitespace-children
       options.remove_whitespace_children = false;
     }
+    this.automaticTopicLinks = options.automaticTopicLinks
     this.boolean = options.boolean
     this.cannotContain = options.cannotContain
     this.count_words = options.count_words
@@ -2444,6 +2455,202 @@ function arrayEquals(arr1, arr2) {
   return true;
 }
 
+// Blacklist some overly common English words.
+// Sources:
+// * https://en.wikipedia.org/wiki/Most_common_words_in_English
+// * https://www.ef.co.uk/english-resources/english-vocabulary/top-100-words/
+//const AUTOMATIC_TOPIC_LINK_WORD_BLACKLIST = new Set([
+//  // Don't blacklist these:
+//  //'day',
+//  //'people',
+//  //'time',
+//  //'two',
+//  //'year',
+//  'a',
+//  'about',
+//  'above',
+//  'across',
+//  'against',
+//  'all',
+//  'along',
+//  'also',
+//  'am',
+//  'among',
+//  'an',
+//  'and',
+//  'any',
+//  'anyone',
+//  'anything',
+//  'around',
+//  'as',
+//  'at',
+//  'be',
+//  'because',
+//  'before',
+//  'behind',
+//  'below',
+//  'beneath',
+//  'beside',
+//  'between',
+//  'but',
+//  'by',
+//  'can',
+//  'come',
+//  'could',
+//  'did',
+//  'didn-t',
+//  'do',
+//  'does',
+//  'done',
+//  'down',
+//  'each-other',
+//  'each',
+//  'either',
+//  'even',
+//  'everybody',
+//  'everyone',
+//  'everything',
+//  'find',
+//  'first',
+//  'for',
+//  'from',
+//  'get',
+//  'gets',
+//  'gave',
+//  'give',
+//  'given',
+//  'gives',
+//  'giving',
+//  'go',
+//  'got',
+//  'had',
+//  'has',
+//  'have',
+//  'he',
+//  'her',
+//  'here',
+//  'hers',
+//  'herself',
+//  'him',
+//  'himself',
+//  'his',
+//  'how',
+//  'i',
+//  'if',
+//  'in',
+//  'into',
+//  'is',
+//  'it',
+//  'its',
+//  'itself',
+//  'just',
+//  'knew',
+//  'know',
+//  'knows',
+//  'like',
+//  'look',
+//  'made',
+//  'make',
+//  'makes',
+//  'man',
+//  'many',
+//  'me',
+//  'mine',
+//  'more',
+//  'my',
+//  'myself',
+//  'near',
+//  'neither',
+//  'new',
+//  'no-one',
+//  'no',
+//  'nobody',
+//  'not',
+//  'nothing',
+//  'now',
+//  'of',
+//  'off',
+//  'on',
+//  'one-another',
+//  'one',
+//  'only',
+//  'or',
+//  'other',
+//  'our',
+//  'ours',
+//  'ourselves',
+//  'out',
+//  'said',
+//  'say',
+//  'says',
+//  'see',
+//  'she',
+//  'so',
+//  'some',
+//  'someone',
+//  'something',
+//  'take',
+//  'tell',
+//  'than',
+//  'that',
+//  'the',
+//  'their',
+//  'theirs',
+//  'them',
+//  'themselves',
+//  'then',
+//  'there',
+//  'these',
+//  'they',
+//  'thing',
+//  'think',
+//  'this',
+//  'those',
+//  'to',
+//  'toward',
+//  'under',
+//  'up',
+//  'upon',
+//  'us',
+//  'use',
+//  'used',
+//  'uses',
+//  'very',
+//  'want',
+//  'was',
+//  'way',
+//  'we',
+//  'well',
+//  'what',
+//  'when',
+//  'which',
+//  'who',
+//  'whom',
+//  'whose',
+//  'will',
+//  'with',
+//  'within',
+//  'would',
+//  'you',
+//  'your',
+//  'yours',
+//  'yourself',
+//  'yourselves',
+//])
+function automaticTopicLinkConsiderId(s) {
+  //if (s.length === 1) {
+  //  // Catches some crap like:
+  //  // - initials like e.g.
+  //  // - possessive 's
+  //  // - a
+  //  return false
+  //}
+  //if (AUTOMATIC_TOPIC_LINK_WORD_BLACKLIST.has(s.toLowerCase())) {
+  //  return false
+  //}
+  return true
+}
+
 function basename(str, sep) {
   return pathSplit(str, sep)[1];
 }
@@ -3314,6 +3521,14 @@ function convertInitOptions(options) {
     lodash.merge(options, options.ourbigbook_json.publishOptions)
   }
   if (!('add_test_instrumentation' in options)) { options.add_test_instrumentation = false; }
+  if (!('automaticTopicLinksMaxWords' in options)) {
+    // 0 means turned off.
+    // Values > 0 produce more and more complete results with longer matches
+    // at the cost of greater computational usage.
+    // TODO one day maybe add -1.
+    // https://github.com/ourbigbook/ourbigbook/issues/356
+    options.automaticTopicLinksMaxWords = 0
+  }
   if (!('body_only' in options)) { options.body_only = false; }
   if (!('db_provider' in options)) { options.db_provider = undefined; }
   if (!('fixedScopeRemoval' in options)) {
@@ -3611,6 +3826,13 @@ function convertInitContext(options={}, extra_returns={}) {
   extra_returns.errors = [];
   extra_returns.rendered_outputs = {};
   const context = {
+    // Plaintexts for which we want to check if topic IDs exists
+    automaticTopicLinkPlaintexts: [],
+    // Topic Ids of interest that we have checked do exist
+    automaticTopicLinkIds: new Set(), 
+    katex_macros: { ...options.katex_macros },
+    in_split_headers: false,
+    in_parse: false,
     errors: [],
     extra_returns,
     forceHeaderHasToc: false,
@@ -6270,8 +6492,16 @@ async function parse(tokens, options, context, extra_returns={}) {
             ast.source_location,
           )
         }
+        let fetchPlaintextArgs = true
         for (const [ancestorArg, ancestorMacroName] of ancestorArgs) {
           if (ancestorArg !== undefined) {
+            if (
+              !ancestorArg.automaticTopicLinks ||
+              !ancestorArg.count_words ||
+              ancestorArg.cannotContain.has(Macro.X_MACRO_NAME)
+            ) {
+              fetchPlaintextArgs = false
+            }
             if (ancestorArg.cannotContain.has(macro_name)) {
               const msg = `argument "${ancestorArg.name}" of macro ` +
                 `${ESCAPE_CHAR}${ancestorMacroName} cannot contain ` +
@@ -6293,6 +6523,14 @@ async function parse(tokens, options, context, extra_returns={}) {
             )
           }
         } else {
+          if (
+            context.options.automaticTopicLinksMaxWords &&
+            macro_name === Macro.PLAINTEXT_MACRO_NAME &&
+            fetchPlaintextArgs
+          ) {
+            context.automaticTopicLinkPlaintexts.push(ast.text)
+            ast.automaticTopicLinks = true
+          }
           ast.header_tree_node = new HeaderTreeNode(ast, cur_header_tree_node);
           if (ast.in_header) {
             children_in_header = true;
@@ -6341,17 +6579,16 @@ async function parse(tokens, options, context, extra_returns={}) {
           const arg = ast.args[arg_name];
           for (let i = arg.length() - 1; i >= 0; i--) {
             let newInlineOnly
-            let newAncestorArgs = [...ancestorArgs]
+            const macro_arg = macro.name_to_arg[arg_name]
+            let newAncestorArgs = [...ancestorArgs, [macro_arg, macro_name]]
             if (inlineOnly) {
               newInlineOnly = inlineOnly
             } else {
-              const macro_arg = macro.name_to_arg[arg_name]
               if (macro_arg && macro_arg.inlineOnly) {
                 newInlineOnly = `argument "${arg_name}" of macro ${ESCAPE_CHAR}${macro.name} can only contain inline macros`
               } else if (macro.inline) {
                 newInlineOnly = `${ESCAPE_CHAR}${macro.name} is an inline macro, and inline macros can only contain inline macros`
               }
-              newAncestorArgs.push([macro_arg, macro_name])
             }
             const childAst = arg.get(i)
             const childMacroName = childAst.macro_name
@@ -6536,15 +6773,34 @@ async function parse(tokens, options, context, extra_returns={}) {
             prefetch_ids.add(id)
           }
         }
+        let automaticTopicLinkIdsToFetch = new Set()
+        if (options.automaticTopicLinksMaxWords) {
+          for (const plaintext of context.automaticTopicLinkPlaintexts) {
+            const plaintextSplitPunct = plaintext.split(AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX)
+            for (const p of plaintextSplitPunct) {
+              const idComps = titleToIdContext(p, undefined, context).split(ID_SEPARATOR)
+              for (let i = 0; i < idComps.length; i++) {
+                for (let j = 1; j <= options.automaticTopicLinksMaxWords; j++) {
+                  const id = idComps.slice(i, i + j).join(ID_SEPARATOR)
+                  if (automaticTopicLinkConsiderId(id)) {
+                    automaticTopicLinkIdsToFetch.add(id)
+                    automaticTopicLinkIdsToFetch.add(pluralizeWrap(id, 1))
+                  }
+                }
+              }
+            }
+          }
+        }
 
         // QUERRY EVERYTHING AT ONCE NOW!
-        let get_noscopes_base_fetch, get_refs_to_fetch, get_refs_to_fetch_reverse
+        let get_noscopes_base_fetch, get_refs_to_fetch, get_refs_to_fetch_reverse, topicIds
         ;[
           get_noscopes_base_fetch,
           get_refs_to_fetch,
           get_refs_to_fetch_reverse,
           fetch_header_tree_ids_rows,
           fetch_ancestors_rows,
+          automaticTopicLinkIds,
         ] = await Promise.all([
           options.db_provider.get_noscopes_base_fetch(
             Array.from(prefetch_ids),
@@ -6595,8 +6851,13 @@ async function parse(tokens, options, context, extra_returns={}) {
             : []
           ,
           options.db_provider.fetch_ancestors(context.toplevel_id, context),
+          // topicIds
+          options.automaticTopicLinksMaxWords
+            ? options.db_provider.fetchTopics(automaticTopicLinkIdsToFetch)
+            : []
         ])
-      };
+        context.automaticTopicLinkIds = new Set(automaticTopicLinkIds)
+      }
 
       // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
       // * patch the ID of the include headers.
@@ -8255,6 +8516,9 @@ function xText(ast, context, options={}) {
 
 // consts
 
+const AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX_STR = '[.,:;!?"]+'
+const AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX = new RegExp(AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX_STR)
+const AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX_CAPTURE = new RegExp(`(${AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX_STR})`)
 const ANCESTORS_ID_UNRESERVED = 'ancestors'
 const ANCESTORS_ID = `${Macro.RESERVED_ID_PREFIX}${ANCESTORS_ID_UNRESERVED}`
 exports.ANCESTORS_ID = ANCESTORS_ID
@@ -8811,6 +9075,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
+        automaticTopicLinks: false,
         count_words: true,
         ourbigbook_output_prefer_literal: true,
       }),
@@ -8839,6 +9104,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
+        automaticTopicLinks: false,
         count_words: true,
         ourbigbook_output_prefer_literal: true,
       }),
@@ -9104,6 +9370,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
+        automaticTopicLinks: false,
         count_words: true,
         ourbigbook_output_prefer_literal: true,
       }),
@@ -9140,6 +9407,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
+        automaticTopicLinks: false,
         count_words: true,
         ourbigbook_output_prefer_literal: true,
       }),
@@ -9304,6 +9572,7 @@ const DEFAULT_MACRO_LIST = [
     [
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
+        automaticTopicLinks: false,
         count_words: true,
       }),
     ],
@@ -10340,7 +10609,107 @@ const OUTPUT_FORMATS_LIST = [
           }
         ),
         [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {
-          return htmlEscapeContext(context, ast.text);
+          const text = ast.text
+          if (ast.automaticTopicLinks) {
+            let ret = ''
+            const plaintextSplitPunct = text.split(AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX_CAPTURE)
+            for (const [i, p] of plaintextSplitPunct.entries()) {
+              if (i % 2 === 0) {
+                // Add the preceeding separator part. After this one,
+                // all others will be id text + separator pairs (except possibly the last id text).
+                let j = 0
+                while (
+                  j < p.length &&
+                  titleToIdContext(p[j], undefined, context) === ''
+                ) {
+                  j++
+                }
+                ret += p.slice(0, j)
+
+                // Calculate idComponents and textComponents.
+                // The dog is blue.
+                // ['the', 'dog', 'is', 'blue']
+                let idComponents = []
+                // ['The', ' ', 'dog', ' ', 'is', ' ', 'blue', '.']
+                let textComponents = []
+                while (j < p.length) {
+                  let start = j
+                  while (
+                    j < p.length &&
+                    titleToIdContext(p[j], undefined, context) !== ''
+                  ) {
+                    j++
+                  }
+                  let curComp = p.slice(start, j)
+                  textComponents.push(curComp)
+                  idComponents.push(titleToIdContext(curComp, undefined, context))
+                  start = j
+                  while (
+                    j < p.length &&
+                    titleToIdContext(p[j], undefined, context) === ''
+                  ) {
+                    j++
+                  }
+                  if (start < j) {
+                    textComponents.push(p.slice(start, j))
+                  }
+                }
+
+                // Now using idComponents and textComponents and the previously fetched
+                // topic IDs, do the final text calculation.
+                let idComponentsI = 0
+                let textComponentsI = 0
+                while (idComponentsI < idComponents.length) {
+                  let k
+                  for (k = context.options.automaticTopicLinksMaxWords; k > 0; k--) {
+                    let topicIdNoInflection = idComponents.slice(idComponentsI, idComponentsI + k).join(ID_SEPARATOR)
+                    let topicId
+                    if (context.automaticTopicLinkIds.has(topicIdNoInflection)) {
+                      topicId = topicIdNoInflection
+                    } else {
+                      const singular = pluralizeWrap(topicIdNoInflection, 1)
+                      if (
+                        singular !== topicIdNoInflection &&
+                        context.automaticTopicLinkIds.has(singular)
+                      ) {
+                        topicId = singular
+                      }
+                    }
+                    if (topicId) {
+                      const textComponentsAdvance = k * 2 - 1
+                      let xContent = textComponents.slice(textComponentsI, textComponentsI + textComponentsAdvance).join('')
+                      ret += `<a href="${htmlEscapeHrefAttr(`/${WEB_TOPIC_PATH}/${topicId}`)}" class="t">` +
+                        `${htmlEscapeContent(xContent)}` +
+                      `</a>`
+                      // Topic found, wrap it into a topic link.
+                      idComponentsI += k
+                      textComponentsI += textComponentsAdvance
+                      break
+                    }
+                  }
+                  // Topic not found, add the first word and separator as is
+                  // and move on to the next word.
+                  if (k === 0) {
+                    ret += textComponents[textComponentsI]
+                    textComponentsI++
+                    idComponentsI++
+                    j++
+                  }
+                  // Add the separator after that last considered text.
+                  if (textComponentsI < textComponents.length) {
+                    ret += textComponents[textComponentsI]
+                    textComponentsI++
+                  }
+                }
+              } else {
+                // Punctuation. Add as is.
+                ret += p
+              }
+            }
+            return ret
+          } else {
+            return htmlEscapeContext(context, text)
+          }
         },
         [capitalizeFirstLetter(Macro.PASSTHROUGH_MACRO_NAME)]: function(ast, context) {
           return `<div class="float-wrap">${renderArgNoescape(ast.args.content, context)}</div>`

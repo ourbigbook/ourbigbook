@@ -417,6 +417,14 @@ class SqlDbProvider extends web_api.DbProviderBase {
     return this.rows_to_asts(rows, context)
   }
 
+  async fetchTopics(ids, context) {
+    const topics = await this.sequelize.models.Topic.findAll({
+      order: [['topicId', 'ASC']],
+      where: { topicId: Array.from(ids) },
+    })
+    return topics.map(topic => topic.topicId)
+  }
+
   async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set, context }) {
     if (reversed === undefined) {
       reversed = false

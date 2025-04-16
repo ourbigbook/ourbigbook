@@ -15,43 +15,69 @@ const {
   validateParam,
 } = lib
 
+router.get('/', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const { Site, User } = sequelize.models
+    res.json(
+      await sequelize.transaction(async (transaction) => {
+        const [loggedInUser, site] = await Promise.all([
+          User.findByPk(req.payload.id, { transaction }),
+          Site.findOne({ transaction }),
+        ])
+        return await site.toJson(loggedInUser)
+      })
+    )
+  } catch(error) {
+    next(error);
+  }
+})
+
 router.put('/', auth.optional, async function(req, res, next) {
   try {
-    let query
-    const q = req.query.q
-    if (q) {
-      try {
-        query = JSON.parse(q)
-      } catch(error) {
-        throw new ValidationError(['Invalid query JSON'], 403)
-      }
-    } else {
-      query = {}
-    }
     const sequelize = req.app.get('sequelize')
-    const body = validateParam(req, 'body')
-    const pinnedArticle = validateParam(body, 'pinnedArticle', {
-      validators: [front.isString],
-    })
-    const [article, loggedInUser, site] = await Promise.all([
-      pinnedArticle ? sequelize.models.Article.findOne({ where: { slug: pinnedArticle } }) : null,
-      sequelize.models.User.findByPk(req.payload.id),
-      sequelize.models.Site.findOne(),
-    ])
-    const msg = cant.updateSiteSettings(loggedInUser)
-    if (msg) {
-      throw new ValidationError([msg], 403)
-    }
-    if (pinnedArticle) {
-      if (!article) {
-        throw new ValidationError([`article does not exist: "${pinnedArticle}"`], 404)
-      }
-      site.pinnedArticleId = article.id
-    } else {
-      site.pinnedArticleId = null
-    }
-    await site.save()
-    res.json(await site.toJson(loggedInUser))
+    res.json(
+      await sequelize.transaction(async (transaction) => {
+        const body = validateParam(req, 'body')
+        const automaticTopicLinksMaxWords = validateParam(body, 'automaticTopicLinksMaxWords', {
+          defaultValue: undefined,
+          validators: [front.isNonNegativeInteger],
+        })
+        const pinnedArticle = validateParam(body, 'pinnedArticle', {
+          defaultValue: undefined,
+          validators: [front.isString],
+        })
+        const [article, loggedInUser, site] = await Promise.all([
+          pinnedArticle
+            ? sequelize.models.Article.findOne({
+                where: { slug: pinnedArticle },
+                transaction
+              })
+            : null,
+          sequelize.models.User.findByPk(req.payload.id, { transaction }),
+          sequelize.models.Site.findOne({ transaction }),
+        ])
+        const msg = cant.updateSiteSettings(loggedInUser)
+        if (msg) {
+          throw new ValidationError([msg], 403)
+        }
+        if (automaticTopicLinksMaxWords !== undefined) {
+          site.automaticTopicLinksMaxWords = automaticTopicLinksMaxWords
+        }
+        if (pinnedArticle !== undefined) {
+          if (pinnedArticle) {
+            if (!article) {
+              throw new ValidationError([`article does not exist: "${pinnedArticle}"`], 404)
+            }
+            site.pinnedArticleId = article.id
+          } else {
+            site.pinnedArticleId = null
+          }
+        }
+        await site.save({ transaction })
+        return await site.toJson(loggedInUser, { transaction })
+      })
+    )
   } catch(error) {
     next(error);
   }

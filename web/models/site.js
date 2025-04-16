@@ -6,12 +6,21 @@ const { DataTypes } = require('sequelize')
 module.exports = (sequelize) => {
   const Site = sequelize.define(
     'Site',
-    {},
+    {
+      automaticTopicLinksMaxWords: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 3,
+      },
+    },
   )
 
-  Site.prototype.toJson = async function(loggedInUser) {
-    const pinnedArticle = this.pinnedArticle ? this.pinnedArticle : await this.getPinnedArticle()
-    const ret = {}
+  Site.prototype.toJson = async function(loggedInUser, opts={}) {
+    const { transaction } = opts
+    const pinnedArticle = this.pinnedArticle ? this.pinnedArticle : await this.getPinnedArticle({ transaction })
+    const ret = {
+      automaticTopicLinksMaxWords: this.automaticTopicLinksMaxWords,
+    }
     if (pinnedArticle) {
       ret.pinnedArticle = pinnedArticle?.slug
     }

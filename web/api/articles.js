@@ -379,159 +379,160 @@ router.post('/announce', auth.required, async function(req, res, next) {
 })
 
 async function createOrUpdateArticle(req, res, opts) {
-  const forceNew = opts.forceNew
   const sequelize = req.app.get('sequelize')
-  const { Article, File, User } = sequelize.models
-  const loggedInUser = await User.findByPk(req.payload.id);
-  if (forceNew) {
-    const msg = cant.createArticle(loggedInUser)
-    if (msg) {
-      throw new lib.ValidationError([msg], 403)
-    }
-  }
+  return res.json(
+    await sequelize.transaction(async (transaction) => {
+      const forceNew = opts.forceNew
+      const { Article, File, Site, User } = sequelize.models
+      const [loggedInUser, site] = await Promise.all([
+        User.findByPk(req.payload.id, { transaction }),
+        Site.findOne({ transaction }),
+      ])
+      if (forceNew) {
+        const msg = cant.createArticle(loggedInUser)
+        if (msg) {
+          throw new lib.ValidationError([msg], 403)
+        }
+      }
 
-  // API params.
-  const body = lib.validateParam(req, 'body')
-  const articleData = lib.validateParam(body, 'article')
-  let bodySource = lib.validateParam(articleData, 'bodySource', {
-    validators: [front.isString],
-    defaultValue: undefined,
-  })
-  if (bodySource !== undefined) {
-    lib.validateBodySize(loggedInUser, bodySource)
-  }
-  let titleSource = lib.validateParam(articleData, 'titleSource', {
-    validators: [front.isString],
-    defaultValue: undefined,
-  })
-  const path = lib.validateParam(body, 'path', { validators: [
-    front.isString, front.isTruthy ], defaultValue: undefined })
-  const owner = lib.validateParam(body, 'owner', { validators: [
-    front.isString ], defaultValue: undefined })
-  const render = lib.validateParam(body, 'render', {
-    validators: [front.isBoolean], defaultValue: true})
-  let list = lib.validateParam(body, 'list', {
-    validators: [front.isBoolean], defaultValue: undefined})
-  const updateNestedSetIndex = lib.validateParam(body, 'updateNestedSetIndex', {
-    validators: [front.isBoolean], defaultValue: true})
-  const parentId = lib.validateParam(body,
-    // ID of article that will be the parent of this article, including the @username/ part.
-    // However, at least to start with, @username/ will have to match your own username to
-    // simplify things a bit.
-    'parentId',
-    // If undefined:
-    // - if previousSiblingId is given, deduce parentId from it
-    // - else if article already exists (i.e. this is an update), keep existing parent
-    // - else (article does not already exist and previousSiblingId not given): throw an error
-    {
-      validators: [front.isString],
-      defaultValue: undefined
-    }
+      // API params.
+      const body = lib.validateParam(req, 'body')
+      const articleData = lib.validateParam(body, 'article')
+      let bodySource = lib.validateParam(articleData, 'bodySource', {
+        validators: [front.isString],
+        defaultValue: undefined,
+      })
+      if (bodySource !== undefined) {
+        lib.validateBodySize(loggedInUser, bodySource)
+      }
+      let titleSource = lib.validateParam(articleData, 'titleSource', {
+        validators: [front.isString],
+        defaultValue: undefined,
+      })
+      const path = lib.validateParam(body, 'path', { validators: [
+        front.isString, front.isTruthy ], defaultValue: undefined })
+      const owner = lib.validateParam(body, 'owner', { validators: [
+        front.isString ], defaultValue: undefined })
+      const render = lib.validateParam(body, 'render', {
+        validators: [front.isBoolean], defaultValue: true})
+      let list = lib.validateParam(body, 'list', {
+        validators: [front.isBoolean], defaultValue: undefined})
+      const updateNestedSetIndex = lib.validateParam(body, 'updateNestedSetIndex', {
+        validators: [front.isBoolean], defaultValue: true})
+      const parentId = lib.validateParam(body,
+        // ID of article that will be the parent of this article, including the @username/ part.
+        // However, at least to start with, @username/ will have to match your own username to
+        // simplify things a bit.
+        'parentId',
+        // If undefined:
+        // - if previousSiblingId is given, deduce parentId from it
+        // - else if article already exists (i.e. this is an update), keep existing parent
+        // - else (article does not already exist and previousSiblingId not given): throw an error
+        {
+          validators: [front.isString],
+          defaultValue: undefined
+        }
+      )
+      if (!render && titleSource === undefined) {
+        // When rendering we can just take from DB from the previous ID extraction step.
+        throw new lib.ValidationError(`titleSource param is mandatory when not rendering`)
+      }
+
+      let author
+      if (owner === undefined) {
+        author = loggedInUser
+      } else {
+        const msg = cant.editArticle(loggedInUser, owner)
+        if (msg) {
+          throw new lib.ValidationError([msg], 403)
+        }
+        author = await User.findOne({ where: { username: owner }, transaction })
+        if (!author) {
+          throw new lib.ValidationError(`owner: there is no user with username owner="${owner}"`)
+        }
+      }
+      if (path !== undefined) {
+        const file = await File.findOne({
+          where: {
+            path: `${ourbigbook.AT_MENTION_CHAR}${author.username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${path}.${ourbigbook.OURBIGBOOK_EXT}`
+          },
+          include: {
+            model: Article,
+            as: 'articles',
+          },
+          transaction,
+        })
+        if (file) {
+          if (render) {
+            if (bodySource === undefined) {
+              bodySource = file.bodySource
+            }
+            if (titleSource === undefined) {
+              titleSource = file.titleSource
+            }
+            if (list === undefined) {
+              list = file.articles[0].list
+            }
+          }
+        }
+      }
+
+      // Check that we got titleSource and bodySource from either input parameters, or from an existing path on database.
+      let missingName
+      if (titleSource === undefined) {
+        missingName = 'titleSource'
+      }
+      if (bodySource === undefined) {
+        missingName = 'bodySource'
+      }
+      if (missingName) {
+        throw new lib.ValidationError(`param "${missingName}" is mandatory when not rendering or when "path" to an existing article is not given. path="${path}"`)
+      }
+
+      // Render.
+      let articles = []
+      let nestedSetNeedsUpdate
+      const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+      if (!(
+        parentId === undefined ||
+        parentId === idPrefix ||
+        parentId.startsWith(`${idPrefix}/`)
+      )) {
+        throw new lib.ValidationError(`parentId="${parentId}" cannot belong to another user: "${parentId}"`)
+      }
+      const previousSiblingId = lib.validateParam(body,
+        'previousSiblingId',
+        // If undefined, make it the first child. This happens even on update:
+        // the previous value is not kept, since undefined is the only way to indicate parent.
+        { defaultValue: undefined }
+      )
+      const ret = await convert.convertArticle({
+        author,
+        bodySource,
+        convertOptionsExtra: {
+          automaticTopicLinksMaxWords: site.automaticTopicLinksMaxWords,
+        },
+        forceNew,
+        list,
+        sequelize,
+        // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
+        path,
+        parentId,
+        previousSiblingId,
+        perf: config.log.perf,
+        render,
+        titleSource,
+        transaction,
+        updateNestedSetIndex,
+      })
+      articles = ret.articles
+      nestedSetNeedsUpdate = ret.nestedSetNeedsUpdate
+      return {
+        articles: await Promise.all(articles.map(article => article.toJson(loggedInUser))),
+        nestedSetNeedsUpdate,
+      }
+    })
   )
-  if (!render && titleSource === undefined) {
-    // When rendering we can just take from DB from the previous ID extraction step.
-    throw new lib.ValidationError(`titleSource param is mandatory when not rendering`)
-  }
-
-  let author
-  if (owner === undefined) {
-    author = loggedInUser
-  } else {
-    const msg = cant.editArticle(loggedInUser, owner)
-    if (msg) {
-      throw new lib.ValidationError([msg], 403)
-    }
-    author = await User.findOne({ where: { username: owner } })
-    if (!author) {
-      throw new lib.ValidationError(`owner: there is no user with username owner="${owner}"`)
-    }
-  }
-  let articles = []
-  let sourceNewerThanRender = true
-  if (path !== undefined) {
-    const file = await File.findOne({
-      where: {
-        path: `${ourbigbook.AT_MENTION_CHAR}${author.username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${path}.${ourbigbook.OURBIGBOOK_EXT}`
-      },
-      include: {
-        model: Article,
-        as: 'articles',
-      }
-    })
-    if (file) {
-      if (render) {
-        if (bodySource === undefined) {
-          bodySource = file.bodySource
-        }
-        if (titleSource === undefined) {
-          titleSource = file.titleSource
-        }
-        if (list === undefined) {
-          list = file.articles[0].list
-        }
-      }
-    }
-  }
-
-  // Check that we got titleSource and bodySource from either input parameters, or from an existing path on database.
-  let missingName
-  if (titleSource === undefined) {
-    missingName = 'titleSource'
-  }
-  if (bodySource === undefined) {
-    missingName = 'bodySource'
-  }
-  if (missingName) {
-    throw new lib.ValidationError(`param "${missingName}" is mandatory when not rendering or when "path" to an existing article is not given. path="${path}"`)
-  }
-
-  // Render.
-  let nestedSetNeedsUpdate
-  if (
-    render ||
-    sourceNewerThanRender
-  ) {
-    const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
-    if (!(
-      parentId === undefined ||
-      parentId === idPrefix ||
-      parentId.startsWith(`${idPrefix}/`)
-    )) {
-      throw new lib.ValidationError(`parentId="${parentId}" cannot belong to another user: "${parentId}"`)
-    }
-    const previousSiblingId = lib.validateParam(body,
-      'previousSiblingId',
-      // If undefined, make it the first child. This happens even on update:
-      // the previous value is not kept, since undefined is the only way to indicate parent.
-      { defaultValue: undefined }
-    )
-    const ret = await convert.convertArticle({
-      author,
-      bodySource,
-      forceNew,
-      list,
-      sequelize,
-      // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
-      path,
-      parentId,
-      previousSiblingId,
-      perf: config.log.perf,
-      render,
-      titleSource,
-      updateNestedSetIndex,
-    })
-    articles = ret.articles
-    nestedSetNeedsUpdate = ret.nestedSetNeedsUpdate
-  }
-  return res.json({
-    articles: await Promise.all(articles.map(article => article.toJson(loggedInUser))),
-    nestedSetNeedsUpdate,
-    // bool: is the source newer than the render output? Could happen if we
-    // just extracted IDs but didn't render later on for some reason, e.g.
-    // ourbigbook --web crashed half way through ID extraction. false means
-    // either not, or there was no
-    sourceNewerThanRender,
-  })
 }
 
 //// delete article

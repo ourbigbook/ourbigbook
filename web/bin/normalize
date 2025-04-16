@@ -20,9 +20,10 @@ program.option(
   (value, previous) => previous.concat([value]),
   [],
 );
+program.argument('[whats...]', 'list of things to normalize, e.g. "nested-set" or "article-issue-count"')
 program.parse(process.argv);
 const opts = program.opts()
-const whats = program.args
+let [whats] = program.processedArgs
 const sequelize = models.getSequelize(path.dirname(__dirname))
 ;(async () => {
   await models.normalize({

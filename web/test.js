@@ -5717,7 +5717,166 @@ it('api: article: parent and parent-type', async () => {
   })
 })
 
-it(`api: blacklist signup ip`, async () => {
+it(`api: article: automatic topic linking`, async () => {
+  // https://github.com/ourbigbook/ourbigbook/issues/356
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user0' } })
+    test.loginUser(user0)
+
+    // Fix the max just in case the default chances one day.
+    ;({ data, status } = await test.webApi.siteSettingsUpdate({
+      automaticTopicLinksMaxWords: 3
+    }))
+
+    // Create some pre-existing articles.
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'aa1', i: 0 })))
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'aa2 bb2', i: 0 })))
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'aa3 bb3 cc3', i: 0 })))
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'dog', i: 0 })))
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'common1 common2 common3 common4 common5', i: 0 })))
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'common1 common2 common3 common4', i: 0 })))
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'common1 common2 common3', i: 0 })))
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'common1 common2', i: 0 })))
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'common1', i: 0 })))
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'i', i: 0 })))
+    assertStatus(status, data)
+
+    // Create the final article title0
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      bodySource: `> XXX aa1 YYY
+{id=1}
+
+> XXX aa2 bb2 YYY
+{id=2}
+
+> XXX aa3 bb3 cc3 YYY
+{id=3}
+
+> XXX aa2  bb2 YYY
+{id=two-spaces}
+
+> XXX aa2.bb2 YYY
+{id=punct}
+
+> XXX aa2. bb2 YYY
+{id=punct-space}
+
+> XXX aa2 \\i[bb2] YYY
+{id=inline}
+
+> XXX common1 YYY
+{id=test-common-1}
+
+> XXX common1 common2 YYY
+{id=test-common-1-2}
+
+> XXX common1 common2 common3 YYY
+{id=test-common-1-3}
+
+> XXX common1 common2 common3 common4 YYY
+{id=test-common-1-4}
+
+> XXX common1 common2 common3 common4 common5 YYY
+{id=test-common-1-5}
+
+> XXX common2 YYY
+{id=test-common-2}
+
+> XXX common2 common3 YYY
+{id=test-common-2-3}
+
+> XXX common2 common3 common4 YYY
+{id=test-common-2-4}
+
+> XXX common2 common3 common5 YYY
+{id=test-common-2-5}
+
+> XXX common3 YYY
+{id=test-common-3}
+
+> XXX common3 common4 YYY
+{id=test-common-3-4}
+
+> XXX common3 common4 common5 YYY
+{id=test-common-3-5}
+
+> XXX http://example.com[aa1] YYY
+{id=inlink}
+
+> XXX <inxto>[aa2 bb2] YYY
+{id=inx}
+
+> aa1
+{id=inxto}
+
+> \\c[aa1]
+{id=incode}
+
+> \\m[aa1]
+{id=inmath}
+
+|| aa1
+| 11
+{id=in-table-header}
+
+> http://aa1.com
+{id=in-a}
+
+> \\b[http://aa1.com]
+{id=in-a-in-b}
+
+> I
+{id=single-letter-word}
+
+> He and I are nice.
+{id=single-letter-word-in-sentence}
+
+> me
+{id=blacklisted-word}
+
+> dog
+{id=singular}
+
+> dogs
+{id=plural}
+`,
+      i: 0,
+    })))
+    ;({data, status} = await test.webApi.article('user0/title-0'))
+    assert_xpath(`//x:div[@id='user0/1']//x:blockquote//x:a[@href='/go/topic/aa1' and text()='aa1']`, data.render)
+    assert_xpath(`//x:div[@id='user0/2']//x:blockquote//x:a[@href='/go/topic/aa2-bb2' and text()='aa2 bb2']`, data.render)
+    assert_xpath(`//x:div[@id='user0/3']//x:blockquote//x:a[@href='/go/topic/aa3-bb3-cc3' and text()='aa3 bb3 cc3']`, data.render)
+    assert_xpath(`//x:div[@id='user0/two-spaces']//x:blockquote//x:a[@href='/go/topic/aa2-bb2' and text()='aa2  bb2']`, data.render)
+    assert_xpath(`//x:div[@id='user0/punct']//x:blockquote[text()='XXX aa2.bb2 YYY']`, data.render)
+    assert_xpath(`//x:div[@id='user0/punct-space']//x:blockquote[text()='XXX aa2. bb2 YYY']`, data.render)
+    // This could be potentially changed one day. But for now it's hard and rare so leave it.
+    assert_xpath(`//x:div[@id='user0/inline']//x:blockquote//x:a[@href='/go/topic/aa2-bb2']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/test-common-1']//x:blockquote//x:a[@href='/go/topic/common1' and text()='common1']`, data.render)
+    assert_xpath(`//x:div[@id='user0/test-common-1-2']//x:blockquote//x:a[@href='/go/topic/common1-common2' and text()='common1 common2']`, data.render)
+    assert_xpath(`//x:div[@id='user0/test-common-1-3']//x:blockquote//x:a[@href='/go/topic/common1-common2-common3' and text()='common1 common2 common3']`, data.render)
+    assert_xpath(`//x:div[@id='user0/inlink']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/inx']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/incode']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/inmath']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/in-table-header']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/in-a']//x:blockquote//x:a[@href='http://aa1.com' and text()='aa1.com']`, data.render)
+    assert_xpath(`//x:div[@id='user0/in-a-in-b']//x:blockquote//x:b//x:a[@href='http://aa1.com' and text()='aa1.com']`, data.render)
+
+    // These can be debated. We had removed them earlier, but decided to restore when we made the links invisible.
+    assert_xpath(`//x:div[@id='user0/single-letter-word']//x:blockquote//x:a[@href='/go/topic/i' and text()='I']`, data.render)
+    assert_xpath(`//x:div[@id='user0/single-letter-word-in-sentence']//x:blockquote//x:a[@href='/go/topic/i' and text()='I']`, data.render)
+
+    assert_xpath(`//x:div[@id='user0/blacklisted-word']//x:blockquote//x:a[@href='/go/topic/me' and text()='Me']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/singular']//x:blockquote//x:a[@href='/go/topic/dog' and text()='dog']`, data.render)
+    assert_xpath(`//x:div[@id='user0/plural']//x:blockquote//x:a[@href='/go/topic/dog' and text()='dogs']`, data.render)
+  }, { defaultExpectStatus: 200 })
+})
+
+it(`api: site settings`, async () => {
   await testApp(
     async (test) => {
       let data, status, article
@@ -5729,49 +5888,85 @@ it(`api: blacklist signup ip`, async () => {
       const user1 = await test.createUserApi(1)
       test.loginUser(user0)
 
-      // OK create
-      ;({ data, status } = await webApi.siteSettingsBlacklistSignupIpCreate(
-        { ips: ['11.22.111.222'] },
-      ))
-      ;({ data, status } = await webApi.siteSettingsBlacklistSignupIpGet({ ips: ['11.22.111.222'] }))
-      assertArraysEqual(data.ips, 
-        ['11.22.111.222']
-      )
+      // Create article user0/title-0
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
+      // Create article user0/title-1
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 1 })))
 
-      // OK destroy
-      ;({ data, status } = await webApi.siteSettingsBlacklistSignupIpDelete(
-        { ips: ['11.22.111.222'] },
-      ))
-      ;({ data, status } = await webApi.siteSettingsBlacklistSignupIpGet({ ips: ['11.22.111.222'] }))
-      assertRows(data.ips, [])
-      assertArraysEqual(data.ips, [])
+      // Update automaticTopicLinksMaxWords
 
-      // Not a valid ip prefix.
-      ;({ data, status } = await webApi.siteSettingsBlacklistSignupIpCreate(
-        { ips: ['11.22.111.'] },
-        { expectStatus: 422 },
-      ))
-      ;({ data, status } = await webApi.siteSettingsBlacklistSignupIpGet({ ips: ['11.22.111.'] }))
-      assertArraysEqual(data.ips, [])
+        ;({ data, status } = await webApi.siteSettingsUpdate({
+          automaticTopicLinksMaxWords: 1
+        }))
+        ;({ data, status } = await webApi.siteSettingsGet())
+        assert.strictEqual(data.automaticTopicLinksMaxWords, 1)
 
-      // Non-admin cannot view blacklist IP list
-      test.loginUser(user1)
-      ;({ data, status } = await webApi.siteSettingsBlacklistSignupIpGet(
-        { ips: ['11.22.111.222'] },
-        { expectStatus: 403 },
-      ))
-      assert.strictEqual(data.ips, undefined)
-      test.loginUser(user0)
+        ;({ data, status } = await webApi.siteSettingsUpdate({
+          automaticTopicLinksMaxWords: 2
+        }))
+        ;({ data, status } = await webApi.siteSettingsGet())
+        assert.strictEqual(data.automaticTopicLinksMaxWords, 2)
 
-      // Non-admin cannot modify blacklist IP list
-      test.loginUser(user1)
-      ;({ data, status } = await webApi.siteSettingsBlacklistSignupIpCreate(
-        { ips: ['11.22.111.222'] },
-        { expectStatus: 403 },
-      ))
-      test.loginUser(user0)
-      ;({ data, status } = await webApi.siteSettingsBlacklistSignupIpGet({ ips: ['11.22.111.222'] }))
-      assertArraysEqual(data.ips, [])
+        // Zero is fine.
+        ;({ data, status } = await webApi.siteSettingsUpdate({
+          automaticTopicLinksMaxWords: 0
+        }))
+        ;({ data, status } = await webApi.siteSettingsGet())
+        assert.strictEqual(data.automaticTopicLinksMaxWords, 0)
+
+        // Negative is not fine.
+        ;({ data, status } = await webApi.siteSettingsUpdate(
+          { automaticTopicLinksMaxWords: -1 },
+          { expectStatus: 422 },
+        ))
+        ;({ data, status } = await webApi.siteSettingsGet())
+        assert.strictEqual(data.automaticTopicLinksMaxWords, 0)
+
+        // Has to be integer, string is not fine.
+        ;({ data, status } = await webApi.siteSettingsUpdate(
+          { automaticTopicLinksMaxWords: '1' },
+          { expectStatus: 422 },
+        ))
+        ;({ data, status } = await webApi.siteSettingsGet())
+        assert.strictEqual(data.automaticTopicLinksMaxWords, 0)
+
+        // Non-admin cannot edit site settings
+        test.loginUser(user1)
+        ;({ data, status } = await webApi.siteSettingsUpdate(
+          { automaticTopicLinksMaxWords: 1 },
+          { expectStatus: 403 },
+        ))
+        test.loginUser(user0)
+        ;({ data, status } = await webApi.siteSettingsGet())
+        assert.strictEqual(data.automaticTopicLinksMaxWords, 0)
+
+        // Non-admin can read site settings
+        test.loginUser(user1)
+        ;({ data, status } = await webApi.siteSettingsGet())
+        assert.strictEqual(data.automaticTopicLinksMaxWords, 0)
+        test.loginUser(user0)
+
+      // Update pinned article.
+
+        ;({ data, status } = await webApi.siteSettingsUpdate({
+          pinnedArticle: 'user0/title-0'
+        }))
+        ;({ data, status } = await webApi.siteSettingsGet())
+        assert.strictEqual(data.pinnedArticle, 'user0/title-0')
+
+        ;({ data, status } = await webApi.siteSettingsUpdate({
+          pinnedArticle: 'user0/title-1'
+        }))
+        ;({ data, status } = await webApi.siteSettingsGet())
+        assert.strictEqual(data.pinnedArticle, 'user0/title-1')
+
+        // Article that does not exit fails gracefully.
+        ;({ data, status } = await webApi.siteSettingsUpdate(
+          { pinnedArticle: 'user0/title-2' },
+          { expectStatus: 404 },
+        ))
+        ;({ data, status } = await webApi.siteSettingsGet())
+        assert.strictEqual(data.pinnedArticle, 'user0/title-1')
     },
     { defaultExpectStatus: 200 }
   )
@@ -5864,6 +6059,7 @@ it(`api: article: bulk update`, async () => {
     ;({ data, status } = await test.webApi.articlesBulkUpdate(
       { username: 'user1' },
       { list: false },
+      { expectStatus: 403 },
     ))
     ;({data, status} = await test.webApi.articles())
     assertRows(data.articles, [

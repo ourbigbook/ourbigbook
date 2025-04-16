@@ -40,6 +40,7 @@ if (ourbigbook_nodejs_front.postgres) {
 
 const convertOptions = {
   add_test_instrumentation: ourbigbook_nodejs_front.isTest,
+  automaticTopicLinksMaxWords: 3,
   body_only: true,
   forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
   htmlXExtension: false,

@@ -940,6 +940,7 @@ async function convertArticle({
 
 async function convertComment({
   comment,
+  convertOptionsExtra,
   date,
   issue,
   number,
@@ -956,10 +957,10 @@ async function convertComment({
   return sequelize.transaction({ transaction }, async (transaction) => {
     const { extra_returns } = await convert({
       author: user,
-      convertOptionsExtra: {
+      convertOptionsExtra: Object.assign({
         fixedScopeRemoval: 0,
         tocIdPrefix: `${commentIdPrefix}${number}-`,
-      },
+      }, convertOptionsExtra),
       path: `@${user.username}/${commentIdPrefix}${number}/${INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`,
       render: true,
       sequelize,
@@ -1004,6 +1005,7 @@ async function convertComment({
 async function convertDiscussion({
   article,
   bodySource,
+  convertOptionsExtra,
   date,
   issue,
   number,
@@ -1036,10 +1038,10 @@ async function convertDiscussion({
     // so that the internal links will render with the correct number of ../
     const { extra_returns } = await convert({
       author: user,
-      convertOptionsExtra: {
+      convertOptionsExtra: Object.assign({
         fixedScopeRemoval: 0,
         h_web_metadata: true,
-      },
+      }, convertOptionsExtra),
       path: `@${user.username}/_issue-${article.slug}/${number}/${INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`,
       render: true,
       sequelize,

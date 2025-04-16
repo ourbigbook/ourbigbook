@@ -1877,6 +1877,7 @@ LIMIT ${limit}` : ''}`}
   Article.rerender = async ({
     authors,
     convertOptionsExtra,
+    descendants,
     ignoreErrors,
     log,
     skipAuthors,
@@ -1891,10 +1892,32 @@ LIMIT ${limit}` : ''}`}
     if (log === undefined) {
       log = false
     }
+    const { Article, File, Id, Ref, Site, User } = sequelize.models
+
+    // Calculate where
     const where = {}
     if (slugs.length) {
-      where.slug = slugs
+      if (descendants) {
+        const articles = await Article.findAll({
+          where: { slug: slugs },
+          attributes: ['authorId', 'nestedSetIndex', 'nestedSetNextSibling'],
+        })
+        const nestedSetIndexes = []
+        where[Op.or] = nestedSetIndexes
+        for (const article of articles) {
+          nestedSetIndexes.push({
+            authorId: article.authorId,
+            nestedSetIndex: {
+              [Op.gte]: article.nestedSetIndex,
+              [Op.lt]: article.nestedSetNextSibling,
+            }
+          })
+        }
+      } else {
+        where.slug = slugs
+      }
     }
+
     const authorWhere = {}
     if (authors.length) {
       authorWhere.username = authors
@@ -1902,19 +1925,24 @@ LIMIT ${limit}` : ''}`}
       authorWhere.username = { [Op.notIn]: skipAuthors }
     }
     let offset = 0
+    const site = await Site.findOne()
+    convertOptionsExtra = {...convertOptionsExtra}
+    if (convertOptionsExtra.automaticTopicLinksMaxWords === undefined) {
+      convertOptionsExtra.automaticTopicLinksMaxWords = site.automaticTopicLinksMaxWords
+    }
     while (true) {
-      const articles = await sequelize.models.Article.findAll({
+      const articles = await Article.findAll({
         where,
         subQuery: false,
         include: [
           {
-            model: sequelize.models.File,
+            model: File,
             as: 'file',
             subQuery: false,
             required: true,
             include: [
               {
-                model: sequelize.models.User,
+                model: User,
                 as: 'author',
                 subQuery: false,
                 required: true,
@@ -1922,18 +1950,18 @@ LIMIT ${limit}` : ''}`}
               },
               // Also get the parent ID in one go which is used in rendering.
               {
-                model: sequelize.models.Id,
+                model: Id,
                 as: 'toplevelId',
                 subQuery: false,
                 // false otherwise we skip over the index article which has no parent.
                 required: false,
                 include: [{
-                  model: sequelize.models.Ref,
+                  model: Ref,
                   as: 'to',
                   subQuery: false,
-                  where: { type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
+                  where: { type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
                   include: [{
-                    model: sequelize.models.Id,
+                    model: Id,
                     as: 'from',
                     subQuery: false,
                     required: true,
@@ -1950,9 +1978,14 @@ LIMIT ${limit}` : ''}`}
       if (articles.length === 0)
         break
       for (const article of articles) {
-        if (log)
+        if (log) {
           console.log(article.slug)
+        }
+        let t0 = performance.now()
         await article.rerender({ convertOptionsExtra, ignoreErrors })
+        if (log) {
+          console.log(`${article.slug} finished in ${performance.now() - t0} ms`)
+        }
       }
       offset += config.maxArticlesInMemory
     }

@@ -27,6 +27,7 @@ import { UserLinkWithImageInner } from 'front/UserLinkWithImage'
 export const AUTH_LOCAL_STORAGE_NAME = 'user'
 export const LOGIN_ACTION = 'Sign in'
 export const REGISTER_ACTION = 'Sign up'
+export const NON_NEGATIVE_INPUT_RE = /^([0-9]+|)$/
 
 export function AlphabeticalOrderTabTitle() {
   return <>A-Z</>
@@ -244,14 +245,13 @@ export function IncomingIcon() {
   return <span dangerouslySetInnerHTML={{ __html: INCOMING_LINKS_MARKER }} />
 }
 
+export function InformationIcon(opts) {
+  return FontAwesomeIcon(0xf05a, { opts, title: "Note" })
+}
+
 export function LockIcon(opts) {
   // https://fontawesome.com/icons/lock?s=solid
   return FontAwesomeIcon(0xf023, { opts })
-}
-
-export function UnlockIcon(opts) {
-  // https://fontawesome.com/icons/lock-open?f=classic&s=solid
-  return FontAwesomeIcon(0xf3c1, { opts })
 }
 
 export function LikeIcon(opts) {
@@ -323,6 +323,15 @@ export function UnfollowIcon(opts) {
 
 export function UnlistedIcon(opts) {
   return FontAwesomeIcon(0xf070, { opts, title: "Unlisted" })
+}
+
+export function UnlockIcon(opts) {
+  // https://fontawesome.com/icons/lock-open?f=classic&s=solid
+  return FontAwesomeIcon(0xf3c1, { opts })
+}
+
+export function WarningIcon(opts) {
+  return FontAwesomeIcon(0xf071, { clsExtra: ['icon-warning'], opts })
 }
 
 export function SignupOrLogin(

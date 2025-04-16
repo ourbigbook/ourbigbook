@@ -323,14 +323,12 @@ class WebApi {
     return this.req('get', `min${encodeGetParams(opts)}`, reqOpts)
   }
 
+  async siteSettingsGet(opts={}, reqOpts={}) {
+    return this.req('get', `site`, { body: opts, ...reqOpts })
+  }
+
   async siteSettingsUpdate(opts={}, reqOpts={}) {
-    return this.req('put',
-      `site`,
-      {
-        body: opts,
-        ...reqOpts,
-      },
-    )
+    return this.req('put', `site`, { body: opts, ...reqOpts })
   }
 
   async siteSettingsBlacklistSignupIpGet(opts={}, reqOpts={}) {
@@ -419,7 +417,17 @@ class WebApi {
 
 // https://stackoverflow.com/questions/6048504/synchronous-request-in-node-js/53338670#53338670
 async function sendJsonHttp(method, path, opts={}) {
-  let { body, contentType, getToken, headers, https, hostname, port, validateStatus } = opts
+  let {
+    body,
+    contentType,
+    expectStatus,
+    getToken,
+    headers,
+    https,
+    hostname,
+    port,
+    validateStatus
+  } = opts
   let http
   if (https) {
     http = 'https'
@@ -453,10 +461,17 @@ async function sendJsonHttp(method, path, opts={}) {
     url,
     validateStatus,
   })
+  const status = response.status
+  if (
+    expectStatus !== undefined &&
+    status !== expectStatus
+  ) {
+    throw new Error(`status=${status} expected=${expectStatus}`)
+  }
   return {
     data: response.data,
     headers: response.headers,
-    status: response.status,
+    status,
   }
 }
 

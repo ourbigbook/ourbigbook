@@ -116,6 +116,7 @@ async function getIssue(req, res, options={}) {
 router.post('/', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
+    const { Article, Issue, Site, User } = sequelize.models
     const slug = validateParam(req.query, 'id')
     const [
       article,
@@ -123,27 +124,29 @@ router.post('/', auth.required, async function(req, res, next) {
       issueCountByLoggedInUserLastMinute,
       issueCountByLoggedInUserLastHour,
       lastIssue,
-      loggedInUser
+      loggedInUser,
+      site,
     ] = await Promise.all([
       getArticle(req, res),
-      sequelize.models.Issue.count({ where: { authorId: req.payload.id } }),
-      sequelize.models.Issue.count({ where: {
+      Issue.count({ where: { authorId: req.payload.id } }),
+      Issue.count({ where: {
         authorId: req.payload.id,
         createdAt: { [sequelize.Sequelize.Op.gt]: oneMinuteAgo() }
       }}),
-      sequelize.models.Issue.count({ where: {
+      Issue.count({ where: {
         authorId: req.payload.id,
         createdAt: { [sequelize.Sequelize.Op.gt]: oneHourAgo() }
       }}),
-      sequelize.models.Issue.findOne({
+      Issue.findOne({
         order: [['number', 'DESC']],
         include: [{
-          model: sequelize.models.Article,
+          model: Article,
           as: 'article',
           where: { slug },
         }]
       }),
-      sequelize.models.User.findByPk(req.payload.id),
+      User.findByPk(req.payload.id),
+      Site.findOne(),
     ])
     const msg = cant.createIssue(loggedInUser)
     if (msg) {
@@ -173,6 +176,9 @@ router.post('/', auth.required, async function(req, res, next) {
     const issue = await convertDiscussion({
       article,
       bodySource,
+      convertOptionsExtra: {
+        automaticTopicLinksMaxWords: site.automaticTopicLinksMaxWords,
+      },
       number: lastIssue ? lastIssue.number + 1 : 1,
       sequelize,
       titleSource,

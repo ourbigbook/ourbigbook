@@ -185,11 +185,11 @@ function typecastInteger(s) {
 }
 
 function isNonNegativeInteger(i) {
-  return i >= 0
+  return Number.isInteger(i) && i >= 0
 }
 
 function isPositiveInteger(i) {
-  return i > 0
+  return Number.isInteger(i) && i > 0
 }
 
 // Elements either match cb, or is an array where each type matches cb.

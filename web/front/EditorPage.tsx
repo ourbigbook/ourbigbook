@@ -376,6 +376,7 @@ export default function EditorPageHoc({
             read_include: read_include_web(cachedIdExists),
             ref_prefix: `${ourbigbook.AT_MENTION_CHAR}${ownerUsername}`,
           }, convertOptions)
+          finalConvertOptions.automaticTopicLinksMaxWords = 0
           finalConvertOptions.x_external_prefix = '../'.repeat(window.location.pathname.match(/\//g).length - 1)
           editor = new OurbigbookEditor(
             ourbigbookEditorElem.current,

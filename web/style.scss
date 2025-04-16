@@ -314,12 +314,14 @@ div.list-container {
   }
   &.icon-cancel,
   &.icon-delete,
-  &.icon-error
-  {
+  &.icon-error {
     color: $ourbigbook-error-color;
   }
   &.icon-ok {
     color: $ourbigbook-ok-color;
+  }
+  &.icon-warning {
+    color: $ourbigbook-warning-color;
   }
 }
 
@@ -513,6 +515,15 @@ div.editor-page {
   }
 }
 
+div.submit-container {
+  display: flex;
+  //justify-content: center;
+  align-items: center;
+  span.message {
+    margin-left: 1em;
+  }
+}
+
 /** Paragraph-like vertical spacing. */
 div.p {
   margin-bottom: $p-margin-vert;
@@ -619,6 +630,13 @@ span.shortcut {
     border-radius: 4px;
     font-weight: 600;
     background: rgba(240, 45, 45, 0.1);
+  }
+  &.inline {
+    display: inline;
+    margin-left: 1em;
+    div {
+      display: inline;
+    }
   }
 }
 .error-messages {

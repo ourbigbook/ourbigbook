@@ -5838,26 +5838,84 @@ it(`api: requests`, async () => {
         { ip: '123.123.123.2', path: '/api/articles?id=user0', referrer: 'http://example.com' },
       ]
     )
-  })
+  }, { defaultExpectStatus: 200 })
+})
+
+it(`api: article: bulk update`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    await test.sequelize.models.User.update({ admin: true }, { where: { username: 'user0' } })
+
+    // Create article user1/title-0
+    test.loginUser(user1)
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
+    ;({data, status} = await test.webApi.articles())
+    assertRows(data.articles, [
+      { slug: 'user1/title-0', list: true },
+      { slug: 'user1', list: true },
+      { slug: 'user0', list: true },
+    ])
+
+    // Non-admin users cannot do bulk update.
+    ;({ data, status } = await test.webApi.articlesBulkUpdate(
+      { username: 'user1' },
+      { list: false },
+    ))
+    ;({data, status} = await test.webApi.articles())
+    assertRows(data.articles, [
+      { slug: 'user1/title-0', list: true },
+      { slug: 'user1', list: true },
+      { slug: 'user0', list: true },
+    ])
+
+    // Admin can do bulk update
+    test.loginUser(user0)
+    ;({ data, status } = await test.webApi.articlesBulkUpdate(
+      { username: 'user1' },
+      { list: false },
+    ))
+    assert.strictEqual(data.count, 2)
+    ;({data, status} = await test.webApi.articles())
+    assertRows(data.articles, [
+      { slug: 'user1/title-0', list: false },
+      { slug: 'user1', list: false },
+      { slug: 'user0', list: true },
+    ])
+
+    // Admin can do bulk update without username
+    test.loginUser(user0)
+    ;({ data, status } = await test.webApi.articlesBulkUpdate(
+      { },
+      { list: false },
+    ))
+    assert.strictEqual(data.count, 3)
+    ;({data, status} = await test.webApi.articles())
+    assertRows(data.articles, [
+      { slug: 'user1/title-0', list: false },
+      { slug: 'user1', list: false },
+      { slug: 'user0', list: false },
+    ])
+  }, { defaultExpectStatus: 200 })
 })
 
 it(`api: article: create simple`, async () => {
-  await testApp(
-    async (test) => {
-      let data, status, article
+  await testApp(async (test) => {
+    let data, status, article
 
-      // Create users
-      const user0 = await test.createUserApi(0)
-      test.loginUser(user0)
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
 
-      // Create article user0/title-0
-      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
+    // Create article user0/title-0
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
 
-      // Check that the article is there
-      ;({data, status} = await test.webApi.article('user0/title-0'))
-      assert.strictEqual(data.titleSource, 'Title 0')
-      assert.match(data.render, /Body 0\./)
-    },
-    { defaultExpectStatus: 200 }
-  )
+    // Check that the article is there
+    ;({data, status} = await test.webApi.article('user0/title-0'))
+    assert.strictEqual(data.titleSource, 'Title 0')
+    assert.match(data.render, /Body 0\./)
+  }, { defaultExpectStatus: 200 })
 })

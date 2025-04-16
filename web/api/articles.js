@@ -11,6 +11,7 @@ const { cant } = require('../front/cant')
 const front = require('../front/js')
 const convert = require('../convert')
 const lib = require('./lib')
+const { ValidationError, validateParam } = lib
 const { MILLIS_PER_MONTH, oneMonthAgo } = lib
 const config = require('../front/config')
 const { maxArticleAnnouncesPerMonth } = config
@@ -221,6 +222,50 @@ router.post('/', auth.required, async function(req, res, next) {
 router.put('/', auth.required, async function(req, res, next) {
   try {
     return await createOrUpdateArticle(req, res, { forceNew: false })
+  } catch(error) {
+    next(error);
+  }
+})
+
+router.put('/bulk-update', auth.required, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    res.json(
+      await sequelize.transaction(async (transaction) => {
+        const body = validateParam(req, 'body')
+        const bodyWhere = validateParam(body, 'where')
+        const username = validateParam(bodyWhere, 'username', {
+          validators: [front.isString], defaultValue: undefined})
+        const what = validateParam(body, 'what')
+        const list = validateParam(what, 'list', {
+          validators: [front.isBoolean], defaultValue: undefined})
+        const { Article, User } = sequelize.models
+        const [
+          author,
+          loggedInUser,
+        ] = await Promise.all([
+          username === undefined ? null : User.findOne({ where: { username }}),
+          User.findByPk(req.payload.id, { transaction }),
+        ])
+        // Admin only for now due to blowup potential.
+        const msg = cant.updateSiteSettings(loggedInUser)
+        if (msg) {
+          throw new ValidationError([msg], 403)
+        }
+        const where = {}
+        if (username !== undefined) {
+          if (author === null) {
+            throw new ValidationError(`the user "${username}" does not exist`)
+          }
+          where.authorId = author.id
+        }
+        if (list !== undefined) {
+          what.list = list
+        }
+        const ret = await Article.update(what, { where, transaction })
+        return { count: ret[0] }
+      })
+    )
   } catch(error) {
     next(error);
   }

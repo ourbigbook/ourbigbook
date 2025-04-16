@@ -346,7 +346,11 @@ export default function EditorPageHoc({
         }
         Router.push(redirTarget, null, { scroll: true })
       } else {
-        setTitleErrors(data.errors)
+        let errors = data.errors
+        if (!errors) {
+          errors = [`An error ocurred: ${status}`]
+        }
+        setTitleErrors(errors)
       }
     }
     // https://github.com/ourbigbook/ourbigbook/issues/222
@@ -766,8 +770,7 @@ export default function EditorPageHoc({
                             placeholder={parentTitleDisplay}
                             value={parentTitle}
                             onChange={handleParentTitle}
-                            ref={parentInputElem}
-                          />
+                            ref={parentInputElem} />
                         </Label>
                         <Label label={previousSiblingTitleDisplay} >
                           <input

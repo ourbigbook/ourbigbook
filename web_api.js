@@ -137,6 +137,13 @@ class WebApi {
     return this.req('get', `articles/hash${encodeGetParamsWithOffset(opts)}`, reqOpts)
   }
 
+  async articlesBulkUpdate(where, what, reqOpts={}) {
+    return this.req('put',
+      `articles/bulk-update`,
+      { body: { where, what }, ...reqOpts },
+    )
+  }
+
   async articleCreate(article, opts={}, reqOpts={}) {
     const { path, parentId, previousSiblingId, render } = opts
     return this.req('post',

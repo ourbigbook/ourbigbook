@@ -187,6 +187,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         articles,
         comments,
         userJson,
+        hasListedArticle,
         loggedInUserJson,
         likes,
         unlistedArticles,
@@ -203,6 +204,11 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         ,
         // userJson
         user.toJson(loggedInUser),
+        // hasListedArticle
+        cant.updateSiteSettings(loggedInUser) ? false : Article.findOne({
+          where: { authorId: user.id, list: true },
+          attributes: ['id', 'slug']
+        }),
         // loggedInUserJson
         loggedInUser ? loggedInUser.toJson() : undefined,
         // likes
@@ -239,6 +245,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         signupIpIsBlacklisted,
         user: userJson,
         what,
+      }
+      if (!cant.updateSiteSettings(loggedInUser)) {
+        props.hasListedArticle = !!hasListedArticle
       }
       if (loggedInUser) {
         props.loggedInUser = loggedInUserJson

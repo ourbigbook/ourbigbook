@@ -47,6 +47,7 @@ import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 import LockUserButton from 'front/LockUserButton'
 import BlacklistSignupIpButton from './BlacklistSignupIpButton'
+import UnlistAllArticlesButton from './UnlistAllArticlesButton'
 
 export interface UserPageProps extends CommonPropsType {
   ancestors?: ArticleLinkType[];
@@ -60,6 +61,7 @@ export interface UserPageProps extends CommonPropsType {
   commentCountByLoggedInUser?: number;
   comments?: CommentType[];
   commentsCount?: number;
+  hasListedArticle?: boolean;
   hasUnlisted?: boolean;
   incomingLinks?: ArticleLinkType[];
   issuesCount?: number;
@@ -111,6 +113,7 @@ export default function UserPage({
   comments,
   commentsCount,
   commentCountByLoggedInUser,
+  hasListedArticle,
   hasUnlisted,
   incomingLinks,
   issuesCount,
@@ -217,6 +220,9 @@ export default function UserPage({
               }
               {(!cant.setUserLimits(loggedInUser, user) && user.ip) &&
                 <BlacklistSignupIpButton {...{ ip: user.ip, on: signupIpIsBlacklisted }} />
+              }
+              {!cant.setUserLimits(loggedInUser, user) &&
+                <UnlistAllArticlesButton {...{ username, on: !hasListedArticle }} />
               }
               {isCurrentUser &&
                 <LogoutButton />

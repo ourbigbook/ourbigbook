@@ -92,3 +92,9 @@ Every single section [gets its own discussion section](https://docs.ourbigbook.c
 Send an email with a link to your articles to your followers with the [article announcement feature](https://docs.ourbigbook.com/article-announcement):
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/announce/button-arrow.png)
+
+Send an email with a link to your articles to your followers with the [article announcement feature](https://docs.ourbigbook.com/article-announcement):
+
+You can create OurBigBook articles that talk about specific files such as images or source code with the [file feature](https://docs.ourbigbook.com/h-file-argument):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/file.png)

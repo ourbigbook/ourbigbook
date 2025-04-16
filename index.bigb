@@ -244,6 +244,13 @@ A full blown showcase knowledge base can be seen at:
   {source=https://ourbigbook.com/cirosantilli/chain-rule}
 ]
 
+\Image[feature/file.png]
+{title=OurBigBook <`\H` `file` argument>[file feature]}
+{description=You can create OurBigBook articles that talk about specific files such as images or source code. Such articles appear inside the global <table of contents> like other articles,. A preview of the file is automatically shown in the article when possible. Directory listings are also automatically generated to allow readers to navigate through all your files.}
+{height=785}
+{provider=github}
+{source=https://cirosantilli.com/_dir/nodejs/}
+
 \Image[github_com_ourbigbook_ourbigbook.png]
 {title=OurBigBook GitHub repository}
 {source=https://github.com/ourbigbook/ourbigbook}

@@ -246,7 +246,9 @@ A full blown showcase knowledge base can be seen at:
 
 \Image[feature/file.png]
 {title=OurBigBook <`\H` `file` argument>[file feature]}
+{disambiguate=intro}
 {description=You can create OurBigBook articles that talk about specific files such as images or source code. Such articles appear inside the global <table of contents> like other articles,. A preview of the file is automatically shown in the article when possible. Directory listings are also automatically generated to allow readers to navigate through all your files.}
+{border}
 {height=785}
 {provider=github}
 {source=https://cirosantilli.com/_dir/nodejs/}
@@ -1863,6 +1865,13 @@ The <\H tag argument> does the same as the <\x child argument> but in the opposi
 {parent=H arguments}
 
 If given, the current section contains metadata about file or other resource with the given URL.
+
+\Image[feature/file.png]
+{title=OurBigBook <`\H` `file` argument>[file feature]}
+{border}
+{height=785}
+{provider=github}
+{source=https://cirosantilli.com/_dir/nodejs/}
 
 If empty, the URL of the file is extracted directly from the header. Otherwise, the given URL is used.
 

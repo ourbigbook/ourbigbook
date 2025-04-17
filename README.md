@@ -98,3 +98,11 @@ Send an email with a link to your articles to your followers with the [article a
 You can create OurBigBook articles that talk about specific files such as images or source code with the [file feature](https://docs.ourbigbook.com/h-file-argument):
 
 ![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/file.png)
+
+You can create OurBigBook articles that talk about specific files such as images or source code with the [file feature](https://docs.ourbigbook.com/h-file-argument):
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/file.png)
+
+With [automatic topic linking](https://docs.ourbigbook.com/automatic-topic-linking), regular text gets automatically converted to links to topics if part of the text matches an existing topic:
+
+![](https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/topics/automatic-link.png)

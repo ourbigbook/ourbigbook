@@ -9020,6 +9020,13 @@ This feature is available only on <OurBigBook Web>. While it would be possible t
 Related:
 * https://github.com/ourbigbook/ourbigbook/issues/356
 
+\Image[feature/topics/automatic-link.png]
+{title=<Automatic topic linking> demo}
+{border}
+{height=1181}
+{provider=github}
+{source=https://ourbigbook.com/cirosantilli/things-that-i-like}
+
 = OurBigBook Web dynamic article tree
 {c}
 {parent=OurBigBook Web user manual}

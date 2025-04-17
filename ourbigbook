@@ -21,6 +21,7 @@ const ourbigbook = require('ourbigbook');
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
+const { cliInt } = ourbigbook_nodejs_webpack_safe
 const { ARTICLE_HASH_LIMIT_MAX, articleHash, WebApi, read_include } = require('ourbigbook/web_api');
 
 const DEFAULT_TEMPLATE_BASENAME = 'ourbigbook.liquid.html';
@@ -1376,7 +1377,7 @@ cli_parser.option('--web-dry', 'web dry run, skip any --web operations that woul
 cli_parser.option('--web-force-id-extraction', "Force ID extraction on Web: https://docs.ourbigbook.com#web-force-id-extraction");
 cli_parser.option('--web-force-render', "same as --force-render but for --web upload: https://docs.ourbigbook.com#web-force-render");
 cli_parser.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id');
-cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered: https://docs.ourbigbook.com#web-max-renders', ourbigbook_nodejs.cliInt);
+cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered: https://docs.ourbigbook.com#web-max-renders', cliInt);
 cli_parser.option('--web-nested-set', `only update the nested set index, don't do anything else. Implies --web: https://docs.ourbigbook.com#web-nested-set-option`, false);
 cli_parser.option('--no-web-nested-set-bulk', `only update the nested set index after all articles have been uploaded: https://docs.ourbigbook.com#web-nested-set-bulk`);
 cli_parser.option('--web-password <password>', 'Set password from CLI. Really bad idea for non-test users due e.g. to Bash history: https://docs.ourbigbook.com#web-user');

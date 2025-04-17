@@ -6,15 +6,9 @@ const path = require('path')
 
 const commander = require('commander');
 
-const config = require('../front/config')
+const { cliInt } = require('ourbigbook/nodejs_webpack_safe')
 
-function cliInt(value, dummyPrevious) {
-  const parsedValue = parseInt(value);
-  if (isNaN(parsedValue)) {
-    throw new commander.InvalidOptionArgumentError('Not a number.');
-  }
-  return parsedValue;
-}
+const config = require('../front/config')
 
 const program = commander.program
 program.allowExcessArguments(false)

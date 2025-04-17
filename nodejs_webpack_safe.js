@@ -1376,9 +1376,18 @@ async function *sequelizeIterateOverPagination(fetchFunc, fetchFuncArgs, limit) 
   } while (true)
 }
 
+function cliInt(value, dummyPrevious) {
+  const parsedValue = parseInt(value)
+  if (isNaN(parsedValue)) {
+    throw new commander.InvalidArgumentError('Not a number.')
+  }
+  return parsedValue
+}
+
 module.exports = {
   SqlDbProvider,
   check_db,
+  cliInt,
   createSequelize,
   DB_OPTIONS,
   destroy_sequelize,

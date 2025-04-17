@@ -10,7 +10,7 @@ const commander = require('commander')
 const PACKAGE_NAME = 'ourbigbook'
 exports.PACKAGE_NAME = PACKAGE_NAME
 
-// This does not work in webpack.
+// This does not work in webpack. It also does not work in web/bin executables on Heroku.
 // https://stackoverflow.com/questions/10111163/in-node-js-how-can-i-get-the-path-of-a-module-i-have-loaded-via-require-that-is
 const PACKAGE_PATH = path.dirname(require.resolve(path.join(PACKAGE_NAME, 'package.json')))
 exports.PACKAGE_PATH = PACKAGE_PATH
@@ -59,12 +59,3 @@ exports.PACKAGE_SASS_BASENAME = PACKAGE_SASS_BASENAME
 
 const DEFAULT_TEX_PATH = path.join(PACKAGE_PATH, 'default.tex')
 exports.DEFAULT_TEX_PATH = DEFAULT_TEX_PATH
-
-function cliInt(value, dummyPrevious) {
-  const parsedValue = parseInt(value)
-  if (isNaN(parsedValue)) {
-    throw new commander.InvalidArgumentError('Not a number.')
-  }
-  return parsedValue
-}
-exports.cliInt = cliInt

@@ -6,7 +6,7 @@ const commander = require('commander')
 
 const models = require('../models')
 const back_js = require('../back/js')
-const { cliInt } = require('ourbigbook/nodejs')
+const { cliInt } = require('ourbigbook/nodejs_webpack_safe')
 
 const program = commander.program
 program.description('Re-render articles https://docs.ourbigbook.com/_file/web/bin/rerender-articles.js')

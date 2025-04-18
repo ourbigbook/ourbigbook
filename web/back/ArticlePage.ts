@@ -17,7 +17,7 @@ import ourbigbook from 'ourbigbook'
 
 async function getIncomingLinks(sequelize, article, { type, from, to }) {
   return sequelize.models.Article.findAll({
-    attributes: ['slug', 'titleRender'],
+    attributes: ['slug', 'titleRenderWithScope'],
     order: [['slug', 'ASC']],
     include: [{
       model: sequelize.models.File,
@@ -243,7 +243,7 @@ export const getServerSidePropsArticleHoc = ({
         articlesInSamePageCount,
         articlesInSamePageForToc,
         articlesInSamePageForTocCount,
-        incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
+        incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRenderWithScope: a.titleRenderWithScope } }),
         isIndex,
         loggedInUser,
         otherArticlesInTopic: await Promise.all(otherArticlesInTopic.rows.map(article => article.toJson(loggedInUser))),
@@ -254,7 +254,7 @@ export const getServerSidePropsArticleHoc = ({
           // https://docs.ourbigbook.com/todo/list-synonyms-on-metadata-section
           //titleRender: ourbigbook.renderAstFromOpts(i.ast_json, getConvertOpts({ render: true, sequelize })),
         }}),
-        tagged: tagged.map(a => { return { slug: a.slug, titleRender: a.titleRender } }),
+        tagged: tagged.map(a => { return { slug: a.slug, titleRenderWithScope: a.titleRenderWithScope } }),
       }
       if (loggedInUser) {
         props.loggedInUser = await loggedInUser.toJson(loggedInUser)

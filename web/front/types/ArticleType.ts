@@ -49,6 +49,7 @@ export type ArticleType = {
   tagList: string[];
   taggedArticles?: ArticleLinkType[];
   titleRender: string;
+  titleRenderWithScope: string;
   titleSource: string;
   titleSourceLine: number;
   topicCount?: number;

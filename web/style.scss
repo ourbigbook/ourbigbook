@@ -64,6 +64,12 @@ overflow: auto;
   }
 }
 
+a {
+  span.meta {
+    color: $color-slightly-discreet;
+  }
+}
+
 button, a.btn {
   $button-fg-color: #E8E6E3;
   border-radius: 3px;

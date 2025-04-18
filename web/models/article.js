@@ -49,6 +49,10 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      titleRenderWithScope: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
       // This was stored here as well as in addition to in File because we previously allowed
       // multiple articles per file, just like is done locally. This was later forbidden on Web.
       // With multiple articles per file, we may have multiple title sources. And then these can
@@ -878,6 +882,7 @@ WHERE
       'hash',
       'topicId',
       'titleRender',
+      'titleRenderWithScope',
       'titleSource',
       'titleSourceLine',
       'score',
@@ -1735,7 +1740,7 @@ LIMIT ${limit}` : ''}`}
               model: Article,
               as: 'articles',
               required: true,
-              attributes: ['slug', 'titleRender'],
+              attributes: ['slug', 'titleRenderWithScope'],
             }],
           }],
         }],
@@ -1751,7 +1756,7 @@ LIMIT ${limit}` : ''}`}
         const toArticle = ref.to.toplevelId.articles[0]
         taggedArticles.push({
           slug: toArticle.slug,
-          titleRender: toArticle.titleRender,
+          titleRenderWithScope: toArticle.titleRenderWithScope,
         })
       }
     }

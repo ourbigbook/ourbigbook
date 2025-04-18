@@ -179,6 +179,7 @@ const ArticleList = ({
             There are no matching {isIssue ? 'discussions' : 'articles'}{isIssue ? ' on this article' : ''}.
             {((!isIssue) || (isIssue && issueArticle)) &&
               <>
+                {' '}
                 Why don't you
                 {' '}
                 <CustomLink
@@ -289,7 +290,9 @@ const ArticleList = ({
                               >
                                 <span
                                   className="ourbigbook-title title"
-                                  dangerouslySetInnerHTML={{ __html: article.titleRender }}
+                                  dangerouslySetInnerHTML={{
+                                    __html: itemType === 'article' ? article.titleRenderWithScope : article.titleRender
+                                  }}
                                 />
                               </CustomLink>
                               {' '}
@@ -496,14 +499,18 @@ const ArticleList = ({
                                 const title = <>
                                   {isIssue &&
                                     <td className="shrink bold">
-                                      <CustomLink href={mainHref}>{issueArticle ? '' : curIssueArticle.slug }#{article.number}</CustomLink>
+                                      <CustomLink href={mainHref}>
+                                        {issueArticle ? '' : curIssueArticle.slug }#{article.number}
+                                      </CustomLink>
                                     </td>
                                   }
                                   <td className="expand bold">
                                     <CustomLink href={mainHref} >
                                       <span
                                         className="ourbigbook-title"
-                                        dangerouslySetInnerHTML={{ __html: article.titleRender }}
+                                        dangerouslySetInnerHTML={{
+                                          __html: itemType === 'article' ? article.titleRenderWithScope : article.titleRender
+                                        }}
                                       />
                                     </CustomLink>
                                   </td>

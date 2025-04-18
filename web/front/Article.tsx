@@ -100,7 +100,7 @@ function LinkListNoTitle({
       <li key={a.slug}><a
         href={`${linkPref}${a.slug}`}
         className="ourbigbook-title"
-        dangerouslySetInnerHTML={{ __html: a.titleRender}}
+        dangerouslySetInnerHTML={{ __html: a.titleRenderWithScope }}
       ></a></li>
     )}
   </ul>
@@ -1188,7 +1188,7 @@ export default function Article({
                       // Don't need href=../a.slug because this section cannot appear on the index page.
                       <li key={a.slug}><a
                         href={`${linkPref}${a.slug}`}
-                        dangerouslySetInnerHTML={{ __html: a.titleRender}}
+                        dangerouslySetInnerHTML={{ __html: a.titleRender }}
                       ></a></li>
                     )}
                   </ol>

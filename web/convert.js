@@ -4,7 +4,9 @@ const ourbigbook = require('ourbigbook')
 const {
   AT_MENTION_CHAR,
   INDEX_BASENAME_NOEXT,
+  Macro,
   OURBIGBOOK_EXT,
+  renderArg,
 } = ourbigbook
 const {
   fetch_ancestors,
@@ -243,7 +245,7 @@ async function convertArticle({
           subQuery: false,
           where: {
             idid: newParentId,
-            macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
+            macro_name: Macro.HEADER_MACRO_NAME,
           },
         })
       }
@@ -270,7 +272,7 @@ async function convertArticle({
               model: Id,
               as: 'to',
               where: {
-                macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
+                macro_name: Macro.HEADER_MACRO_NAME,
               },
               include: [
                 {
@@ -351,7 +353,7 @@ async function convertArticle({
         let scope
         // Do one pre-conversion to determine the file path.
         // All we need from it is the toplevel header.
-        // E.g. this finds the correct path from {id= and {disambiguate=
+        // E.g. this finds the correct path from id= and {disambiguate=
         // https://github.com/ourbigbook/ourbigbook/issues/304
         // We do this even when path is known in order to catch
         // the 'index' -> '' path to ID conversion.
@@ -373,7 +375,8 @@ async function convertArticle({
           lodash.merge(convertOptions, convertOptionsExtra),
           extra_returns,
         )
-        const toplevelIdNoUsername = extra_returns.context.header_tree.children[0].ast.id
+        const toplevelAst = extra_returns.context.header_tree.children[0].ast
+        const toplevelIdNoUsername = toplevelAst.id
         if (path === undefined && parentIdRow) {
           const context = ourbigbook.convertInitContext()
           const parentH1Ast = ourbigbook.AstNode.fromJSON(parentIdRow.ast_json, context)
@@ -388,6 +391,12 @@ async function convertArticle({
         }
         input_path = `${scope}/${toplevelIdNoUsername ? toplevelIdNoUsername : INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`
         toplevelId = `${scope}${toplevelIdNoUsername ? '/' + toplevelIdNoUsername : ''}`
+        if (toplevelId !== toplevelId.toLowerCase() && !toplevelAst.validation_output.file.given) {
+          throw new ValidationError(`Article ID cannot contain uppercase characters: "${toplevelId}"`)
+        }
+      }
+      if (forceNew && (await File.findOne({ where: { path: input_path }, transaction }))) {
+        throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
       }
     }
 
@@ -448,7 +457,7 @@ async function convertArticle({
     if (parentId && !parentIdRow) {
       throw new ValidationError(`parentId does not exist: "${newParentId}"`)
     }
-    if (parentIdRow && parentIdRow.macro_name !== ourbigbook.Macro.HEADER_MACRO_NAME) {
+    if (parentIdRow && parentIdRow.macro_name !== Macro.HEADER_MACRO_NAME) {
       throw new ValidationError(`parentId is not a header: "${newParentId}"`)
     }
     // Index conversion check.
@@ -508,12 +517,6 @@ async function convertArticle({
       type: convertType,
     }))
     const toplevelAst = extra_returns.context.header_tree.children[0].ast
-    if (toplevelId !== toplevelId.toLowerCase() && !toplevelAst.validation_output.file.given) {
-      throw new ValidationError(`Article ID cannot contain uppercase characters: "${toplevelId}"`)
-    }
-    if (forceNew && (await File.findOne({ where: { path: input_path }, transaction }))) {
-      throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
-    }
 
     // Synonym handling part 1
     const synonymHeadersArr = Array.from(extra_returns.context.synonym_headers)
@@ -685,6 +688,21 @@ async function convertArticle({
 
     if (render) {
       // Actual rendering.
+      const ancestorsWithScopeRenders = []
+      const ancestors = await fetch_ancestors(sequelize, toplevelId, {
+        transaction,
+      })
+      const context = extra_returns.context
+      for (const ancestor of ancestors.slice(1)) {
+        const ast = ourbigbook.AstNode.fromJSON(
+          ancestor.ast_json, context
+        )
+        if (ast.validation_output.scope.given) {
+          ancestorsWithScopeRenders.push(
+            renderArg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)
+          )
+        }
+      }
       const [check_db_errors, file] = await Promise.all([
         ourbigbook_nodejs_webpack_safe.check_db(
           sequelize,
@@ -716,6 +734,11 @@ async function convertArticle({
           render: renderFull.substring(rendered_output.h1RenderLength),
           slug: outpath.slice(AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
           titleRender: rendered_output.title,
+          titleRenderWithScope: [
+              ...ancestorsWithScopeRenders,
+              rendered_output.title,
+            ].join(` <span class="meta">${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}</span> `)
+          ,
           titleSource: rendered_output.titleSource,
           titleSourceLine:
             rendered_output.titleSourceLocation
@@ -751,6 +774,7 @@ async function convertArticle({
         'h1Render',
         'h2Render',
         'titleRender',
+        'titleRenderWithScope',
         'titleSource',
         'titleSourceLine',
         'render',

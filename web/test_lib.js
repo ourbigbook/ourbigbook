@@ -137,19 +137,35 @@ const articleData = [
     [
       ['Test scope', [
         ['Test scope 1', [
-          ['Test scope 1 1', []],
-          ['Test scope 1 2', []],
-        ]],
+            ['Test scope 1 1', []],
+            ['Test scope 1 2', []],
+          ],
+          {
+            headerArgs: '{tag=Test subscope 1/Test subscope 1 1}',
+            body: '<Test subscope 1/Test subscope 1 1>',
+          }
+        ],
         ['Test scope 2', []],
         ['Test subscope 1', [
-          ['Test subscope 1 1', []],
-          ['Test subscope 1 2', []],
-        ], { headerArgs: '{scope}' }],
+            ['Test subscope 1 2', [
+              ['Test subscope 1 1', [], {
+                headerArgs: '{tag=Test outside scope}\n{tag=Test scope 1}',
+                body: '<Test outside scope>\n\n<Test scope 1>\n',
+              }],
+            ]],
+          ],
+          {
+            headerArgs: '{scope}'
+          }
+        ],
         ['Test subscope 2', [
           ['Test subscope 2 1', []],
           ['Test subscope 2 2', []],
         ], { headerArgs: '{scope}' }],
       ], { headerArgs: '{scope}' }],
+      ['Test outside scope', [], {
+        headerArgs: '{tag=Test scope/Test subscope 1/Test subscope 1 1}'
+      }],
       ['Barack Obama',
         [
           ['Mathematics', []],
@@ -236,6 +252,8 @@ Ourbigbook defined LaTeX macro: $\\abs{x}$
 Empty link to home page: <>
 
 Link followed by nbsp literal: http://example.com\u{00A0}asdf qwer
+
+Link to self: <test data>
 `
     }
   ],

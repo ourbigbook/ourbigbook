@@ -11402,7 +11402,7 @@ There are two versions of this editor:
 * <static editor>: a browser-only toy/demo with no persistent storage
 * <web editor>: this is editor present in <OurBigBook Web>. It is linked to the database, and has further features added on top of the <static editor>.
 
-Issues for the editor are being tracked under: https://github.com/ourbigbook/ourbigbook/labels/editor
+Issues for the editor are being tracked under: https://github.com/ourbigbook/ourbigbook/labels/web-editor
 
 We must achieve an editor setup with synchronized live side-by-side preview.
 

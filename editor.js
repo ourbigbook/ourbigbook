@@ -196,6 +196,7 @@ class OurbigbookEditor {
     this.convertInput();
     this.ourbigbook_runtime(this.output_elem)
 
+    // https://github.com/cirosantilli/cirosantilli.github.io/issues/200
     // https://stackoverflow.com/questions/7317273/warn-user-before-leaving-web-page-with-unsaved-changes
     this.beforeunload = (e) => {
       if (this.modified) {

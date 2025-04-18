@@ -339,46 +339,56 @@ async function convertArticle({
     let input_path
     let toplevelId
     {
-      let scope
-      // Do one pre-conversion to determine the file path.
-      // All we need from it is the toplevel header.
-      // E.g. this finds the correct path from {id= and {disambiguate=
-      // https://github.com/ourbigbook/ourbigbook/issues/304
-      // We do this even when path is known in order to catch
-      // the 'index' -> '' path to ID conversion.
-      const extra_returns = {}
-      const { convertOptions } = getConvertOpts({
-        authorUsername: author.username,
-        extraOptions: {
-          h1Only: true,
-        },
-        input_path: path === undefined ? undefined : `${path}.${OURBIGBOOK_EXT}`,
-        render: false,
-        sequelize,
-        splitHeaders: false,
-        transaction,
-        type: convertType,
-      })
-      await ourbigbook.convert(
-        source,
-        lodash.merge(convertOptions, convertOptionsExtra),
-        extra_returns,
-      )
-      const toplevelIdNoUsername = extra_returns.context.header_tree.children[0].ast.id
-      if (path === undefined && parentIdRow) {
-        const context = ourbigbook.convertInitContext()
-        const parentH1Ast = ourbigbook.AstNode.fromJSON(parentIdRow.ast_json, context)
-        parentH1Ast.id = parentIdRow.idid
-        const parentScope = parentH1Ast.calculate_scope()
-        // Inherit scope from parent. In particular, this forces every article by a
-        // user to be scoped under @username due to this being recursive from the index page.
-        scope = parentScope
+      if (
+        // This case could likely be handled more elegantly inside the else
+        // by correctly adding username as a prefix to input_path there. But I'm
+        // lazy to think now on possible ramifications.
+        path === INDEX_BASENAME_NOEXT
+      ) {
+        input_path = `${AT_MENTION_CHAR}${author.username}/${INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`
+        toplevelId = `${AT_MENTION_CHAR}${author.username}`
+      } else {
+        let scope
+        // Do one pre-conversion to determine the file path.
+        // All we need from it is the toplevel header.
+        // E.g. this finds the correct path from {id= and {disambiguate=
+        // https://github.com/ourbigbook/ourbigbook/issues/304
+        // We do this even when path is known in order to catch
+        // the 'index' -> '' path to ID conversion.
+        const extra_returns = {}
+        const { convertOptions } = getConvertOpts({
+          authorUsername: author.username,
+          extraOptions: {
+            h1Only: true,
+          },
+          input_path: path === undefined ? undefined : `${path}.${OURBIGBOOK_EXT}`,
+          render: false,
+          sequelize,
+          splitHeaders: false,
+          transaction,
+          type: convertType,
+        })
+        await ourbigbook.convert(
+          source,
+          lodash.merge(convertOptions, convertOptionsExtra),
+          extra_returns,
+        )
+        const toplevelIdNoUsername = extra_returns.context.header_tree.children[0].ast.id
+        if (path === undefined && parentIdRow) {
+          const context = ourbigbook.convertInitContext()
+          const parentH1Ast = ourbigbook.AstNode.fromJSON(parentIdRow.ast_json, context)
+          parentH1Ast.id = parentIdRow.idid
+          const parentScope = parentH1Ast.calculate_scope()
+          // Inherit scope from parent. In particular, this forces every article by a
+          // user to be scoped under @username due to this being recursive from the index page.
+          scope = parentScope
+        }
+        if (scope === undefined) {
+          scope = idPrefix
+        }
+        input_path = `${scope}/${toplevelIdNoUsername ? toplevelIdNoUsername : INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`
+        toplevelId = `${scope}${toplevelIdNoUsername ? '/' + toplevelIdNoUsername : ''}`
       }
-      if (scope === undefined) {
-        scope = idPrefix
-      }
-      input_path = `${scope}/${toplevelIdNoUsername ? toplevelIdNoUsername : INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`
-      toplevelId = `${scope}${toplevelIdNoUsername ? '/' + toplevelIdNoUsername : ''}`
     }
 
     // Check if the article already existed. If it did and

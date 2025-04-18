@@ -96,14 +96,14 @@ function assertStatus(status, data) {
 /** We set the parent to index by default. To leave it unset,
  * e.g. to set it implicitly via previousSiblingId you need to explicitly set
  * parentId to undefined. It's quite bad. */
-async function createArticleApi(test, article, opts={}) {
+async function createArticleApi(test, article, opts={}, reqOpts={}) {
   if (!opts.hasOwnProperty('parentId') && test.user) {
     opts = Object.assign({ parentId: `${ourbigbook.AT_MENTION_CHAR}${test.user.username}` }, opts)
   }
-  return test.webApi.articleCreate(article, opts)
+  return test.webApi.articleCreate(article, opts, reqOpts)
 }
 
-async function createOrUpdateArticleApi(test, article, opts={}) {
+async function createOrUpdateArticleApi(test, article, opts={}, reqOpts={}) {
   if (
     !opts.hasOwnProperty('parentId') &&
     test.user &&
@@ -113,7 +113,7 @@ async function createOrUpdateArticleApi(test, article, opts={}) {
   ) {
     opts = Object.assign({ parentId: `${ourbigbook.AT_MENTION_CHAR}${test.user.username}` }, opts)
   }
-  return test.webApi.articleCreateOrUpdate(article, opts)
+  return test.webApi.articleCreateOrUpdate(article, opts, reqOpts)
 }
 
 async function createArticles(sequelize, author, opts) {
@@ -809,12 +809,6 @@ it('api: create an article and see it on global feed', async () => {
 
       // Wrong field type.
       ;({data, status} = await createArticleApi(test, { titleSource: 1, bodySource: 'Body 1' }))
-      assert.strictEqual(status, 422)
-
-      // Empty path.
-      ;({data, status} = await createOrUpdateArticleApi(test, {
-        titleSource: 'Empty path attempt', bodySource: 'Body 1' }, { path: '' }
-      ))
       assert.strictEqual(status, 422)
 
       // Missing title and no path existing article to take it from
@@ -5407,12 +5401,14 @@ it(`api: min`, async () => {
   })
 })
 
+// Closely related: https://github.com/ourbigbook/ourbigbook/issues/334
 it(`api: link to home article`, async () => {
   await testApp(async (test) => {
     let data, status, article
 
     // Create users
     const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
     test.loginUser(user0)
 
     // Index creation does not create an extra dummy ID.
@@ -5434,10 +5430,9 @@ it(`api: link to home article`, async () => {
         parentId: undefined,
       }
     ))
-    assertStatus(status, data)
-
     ;({data, status} = await test.webApi.article('user0'))
-    assertStatus(status, data)
+    // titleSource actually changed on DB.
+    assert.strictEqual(data.titleSource, 'My custom home')
     assert_xpath(`//x:div[@class='p']//x:a[@href='' and text()='My custom home']`, data.render)
     assert_xpath(`//x:div[@class='p']//x:a[@href='' and text()=' Home']`, data.render)
 
@@ -5449,13 +5444,102 @@ it(`api: link to home article`, async () => {
 <My custom home>
 `,
     })))
-    assertStatus(status, data)
-
     ;({data, status} = await test.webApi.article('user0/title-0'))
-    assertStatus(status, data)
     assert_xpath(`//x:div[@class='p']//x:a[@href='/user0' and text()='My custom home']`, data.render)
     assert_xpath(`//x:div[@class='p']//x:a[@href='/user0' and text()=' Home']`, data.render)
-  })
+
+    // Can also edit the index with path and without {id=}
+    test.loginUser(user1)
+    ;({data, status} = await createOrUpdateArticleApi(test, {
+      titleSource: 'My custom home 2',
+      bodySource: `<>
+
+<My custom home 2>
+`,
+      },
+      {
+        parentId: undefined,
+        path: 'index',
+      }
+    ))
+    ;({data, status} = await test.webApi.article('user1'))
+    // titleSource actually changed on DB.
+    assert.strictEqual(data.titleSource, 'My custom home 2')
+    assert_xpath(`//x:div[@class='p']//x:a[@href='' and text()='My custom home 2']`, data.render)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='' and text()=' Home']`, data.render)
+  }, { defaultExpectStatus: 200 })
+})
+
+it(`api: article path argument`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // path takes precedence over title and id=
+    ;({data, status} = await createOrUpdateArticleApi(test, {
+        titleSource: 'fromtitle',
+        bodySource: `{id=fromid}\n`
+      },
+      { path: 'frompath' }
+    ))
+    ;({data, status} = await test.webApi.article('user0/frompath'))
+    assert.notStrictEqual(data, undefined)
+    ;({data, status} = await test.webApi.article('user0/fromid'))
+    assert.strictEqual(data, undefined)
+    ;({data, status} = await test.webApi.article('user0/fromtitle'))
+    assert.strictEqual(data, undefined)
+
+    // Without path, id= wins
+    ;({data, status} = await createOrUpdateArticleApi(test, {
+        titleSource: 'fromtitle',
+        bodySource: `{id=fromid}\n`
+      },
+      { path: undefined }
+    ))
+    ;({data, status} = await test.webApi.article('user0/fromid'))
+    assert.notStrictEqual(data, undefined)
+    ;({data, status} = await test.webApi.article('user0/fromtitle'))
+    assert.strictEqual(data, undefined)
+
+    // Without path and id, title wins
+    ;({data, status} = await createOrUpdateArticleApi(test, {
+        titleSource: 'fromtitle',
+        bodySource: ``
+      },
+      { path: undefined }
+    ))
+    ;({data, status} = await test.webApi.article('user0/fromtitle'))
+    assert.notStrictEqual(data, undefined)
+
+    // Path cannot be empty
+    ;({data, status} = await createOrUpdateArticleApi(test,
+      { titleSource: 'given' },
+      { path: '' },
+      { expectStatus: 422 },
+    ))
+
+    // path equals possibly special value of "index".
+    // TODO we need to think about this. Arguably this should force empty id=''
+    // as being the home article.
+    // Closely related is: https://github.com/ourbigbook/ourbigbook/issues/334
+    // perhaps is we made this be recognized that would be immediately solved.
+    ;({data, status} = await createOrUpdateArticleApi(test, {
+        titleSource: 'My custom home',
+        bodySource: `hacked`
+      },
+      {
+        path: 'index',
+        parentId: undefined,
+      }
+    ))
+    ;({data, status} = await test.webApi.article('user0'))
+    assert.strictEqual(data.titleSource, 'My custom home')
+    ;({data, status} = await test.webApi.article('user0/my-custom-home'))
+    assert.strictEqual(data, undefined)
+  }, { defaultExpectStatus: 200 })
 })
 
 it(`api: article: with named argument`, async () => {

@@ -466,7 +466,7 @@ async function sendJsonHttp(method, path, opts={}) {
     expectStatus !== undefined &&
     status !== expectStatus
   ) {
-    throw new Error(`status=${status} expected=${expectStatus}`)
+    throw new Error(`status=${status} expected=${expectStatus} data=${JSON.stringify(response.data)}`)
   }
   return {
     data: response.data,
@@ -499,7 +499,7 @@ class DbProviderBase extends ourbigbook.DbProvider {
     ) {
       if (
         // We have to do this if here because otherwise it would overwrite the reconciled header
-        // we have stiched into the tree with Include.
+        // we have stitched into the tree with Include.
         !this.id_cache[toplevelId.idid]
       ) {
         this.add_row_to_id_cache(toplevelId, context)

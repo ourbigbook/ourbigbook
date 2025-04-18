@@ -3796,7 +3796,6 @@ function convertInitContext(options={}, extra_returns={}) {
       if (input_dir === '') {
         // https://docs.ourbigbook.com#the-toplevel-index-file
         options.toplevel_id = undefined;
-        isToplevelIndex = true
       } else {
         // https://docs.ourbigbook.com#the-id-of-the-first-header-is-derived-from-the-filename
         options.toplevel_id = input_dir;

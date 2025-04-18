@@ -197,8 +197,12 @@ export default function EditorPageHoc({
       if (slugString && isNew && !isIssue) {
         bodySource += `${ourbigbook.PARAGRAPH_SEP}Adapted from: \\x[${ourbigbook.AT_MENTION_CHAR}${slugString}].`
       }
+      let curTitleSource = initialFile.titleSource
+      if (curTitleSource === undefined) {
+        curTitleSource = titleSource
+      }
       initialFileState = {
-        titleSource: isIndex ? '' : initialFile.titleSource || titleSource,
+        titleSource: curTitleSource
       }
     } else {
       bodySource = ""

@@ -308,8 +308,8 @@ function IndexPageHoc({
               showAuthor: true,
             }}/>
         }
-        {pinnedArticle && <>
-          <h2 className="content-not-ourbigbook pinned-article">
+        {pinnedArticle && <div className="pinned-article">
+          <h2 className="content-not-ourbigbook">
             <PinnedArticleIcon />
             {' '}
             Pinned article:
@@ -325,7 +325,7 @@ function IndexPageHoc({
             className="ourbigbook"
             dangerouslySetInnerHTML={{ __html: pinnedArticle.render }}
           />
-        </>}
+        </div>}
         {isHomepage &&
           <div className="content-not-ourbigbook site-settings">
             <CustomLink href={routes.siteSettings()}>

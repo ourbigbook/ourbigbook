@@ -658,9 +658,14 @@ span.shortcut {
 
 .home-page {
   .pinned-article {
-    color: $h-color;
-    font-weight: bold;
-    margin-top: 1em;
+    border-top: 1px solid $color;
+    padding-top: 1em;
+    margin-top: 3em;
+    h2 {
+      color: $h-color;
+      font-weight: bold;
+      margin-top: 1em;
+    }
   }
   .site-settings {
     font-weight: bold;

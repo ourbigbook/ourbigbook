@@ -160,6 +160,7 @@ async function convertArticle({
   updateNestedSetIndex,
   updateHash,
   updateTree,
+  updateUpdatedAt,
 }) {
   if (render === undefined) {
     render = true
@@ -172,6 +173,9 @@ async function convertArticle({
   }
   if (updateTree === undefined) {
     updateTree = true
+  }
+  if (updateUpdatedAt === undefined) {
+    updateUpdatedAt = true
   }
   let t0
   const { Article, File, Id, Issue, Ref, Topic, UserLikeArticle } = sequelize.models
@@ -779,7 +783,6 @@ async function convertArticle({
         'titleSourceLine',
         'render',
         'topicId',
-        'updatedAt',
         'authorId',
         // We intentionally skip:
         // * depth
@@ -787,6 +790,9 @@ async function convertArticle({
         // * nestedSetNextSibling
         // as those will be updated in bulk soon afterwards together with all descendants.
       ]
+      if (updateUpdatedAt) {
+        updateOnDuplicate.push('updatedAt')
+      }
       if (author.hideArticleDates) {
         updateOnDuplicate.push('createdAt')
       }

@@ -503,6 +503,7 @@ it('Article.rerender', async function() {
   await testApp(async (test) => {
     let data, status, article
     const sequelize = test.sequelize
+    const { Article } = sequelize.models
     const user = await test.createUserApi(0)
     test.loginUser(user)
 
@@ -523,7 +524,8 @@ $$
       article = createArticleArg({ i: 0, titleSource: 'Physics' })
       ;({data, status} = await createArticleApi(test, article, { parentId: undefined, previousSiblingId: '@user0/mathematics' }))
       assertStatus(status, data)
-      const physicsHash = data.articles[0].file.hash
+      const physicsArticle = data.articles[0]
+      const physicsHash = physicsArticle.file.hash
 
       // Sanity check.
       await assertNestedSets(sequelize, [
@@ -533,7 +535,7 @@ $$
       ])
 
     // Rerender does not set previousSibligId to undefined (thus moving article as first child).
-    await sequelize.models.Article.rerender({ slugs: ['user0/physics'] })
+    await Article.rerender({ slugs: ['user0/physics'] })
     await assertNestedSets(sequelize, [
       { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
       { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
@@ -544,10 +546,12 @@ $$
     // with previousSiblingId undefined https://github.com/ourbigbook/ourbigbook/issues/322
     ;({data, status} = await test.webApi.article('user0/physics'))
     assertStatus(status, data)
-    assert.strictEqual(physicsHash, data.file.hash)
+    assert.strictEqual(data.file.hash, physicsHash)
+    // It also does not modify updatedAt.
+    assert.strictEqual(data.updatedAt, physicsArticle.updatedAt)
 
     // Works with OurBigBook predefined macros.
-    await sequelize.models.Article.rerender({ slugs: ['user0/mathematics'] })
+    await Article.rerender({ slugs: ['user0/mathematics'] })
     await assertNestedSets(sequelize, [
       { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
       { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
@@ -555,7 +559,7 @@ $$
     ])
 
     // Works for root article.
-    await sequelize.models.Article.rerender({ slugs: ['user0'] })
+    await Article.rerender({ slugs: ['user0'] })
     await assertNestedSets(sequelize, [
       { nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null, slug: 'user0' },
       { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },

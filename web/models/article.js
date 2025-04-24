@@ -936,6 +936,7 @@ WHERE
           // This way we don't have to calculate the previousSiblingId to leave the hash unchanged.
           updateHash: false,
           updateTree: false,
+          updateUpdatedAt: false,
         })
       } catch(e) {
         if (ignoreErrors) {

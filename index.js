@@ -93,6 +93,9 @@ class AstNode {
       // The header tree is currently not even connected via arguments.
       options.parent_ast = undefined;
     }
+    if (!('parent_ast_index' in options)) {
+      options.parent_ast_index = undefined
+    }
     if (!('split_default' in options)) {
       options.split_default = false;
     }
@@ -6569,6 +6572,40 @@ async function parse(tokens, options, context, extra_returns={}) {
             // currently leaves abc without toplevel_id. This would make it impossible to link from other files to it.
             // Not fixing it now because this is forbidden in Web articles.
             ast.toplevel_id = header_ast.toplevel_id
+          }
+
+          // Ensure that all rows have the same number of columns.
+          if (macro_name === Macro.TR_MACRO_NAME) {
+            const tableAst = ast.parent_ast
+            if (tableAst.macro_name === Macro.TABLE_MACRO_NAME) {
+              const firstRow = tableAst.args[Macro.CONTENT_ARGUMENT_NAME].asts[0]
+              if (firstRow.macro_name === Macro.TR_MACRO_NAME) {
+                const nCols = ast.args[Macro.CONTENT_ARGUMENT_NAME].asts.length
+                const firstNCols = firstRow.args[Macro.CONTENT_ARGUMENT_NAME].asts.length
+                if (nCols !== firstNCols) {
+                  parseError(
+                    state,
+                    `${ESCAPE_CHAR}${Macro.TABLE_MACRO_NAME} row has ${nCols} columns but the first row in table has ${firstNCols}`,
+                    ast.source_location,
+                  )
+                }
+              }
+            }
+          }
+
+          // TH must be the first thing in table.
+          if (macro_name === Macro.TH_MACRO_NAME) {
+            const rowAst = ast.parent_ast
+            if (rowAst.macro_name === Macro.TR_MACRO_NAME) {
+              const argIdx = rowAst.parent_argument_index
+              if (argIdx !== 0) {
+                parseError(
+                  state,
+                  `${ESCAPE_CHAR}${Macro.TH_MACRO_NAME} row can only be the first row of a table was ${argIdx}`,
+                  ast.source_location,
+                )
+              }
+            }
           }
         }
 

@@ -1646,6 +1646,50 @@ assert_lib_ast('table: without id, title, nor description does not increment the
     ],
   },
 )
+assert_lib_error('table: row with less columns than th',
+  `|| 1 1
+|| 1 2
+
+| 2 1
+| 2 2
+
+| 3 1
+
+| 4 1
+| 4 2
+`,
+  7, 1
+)
+assert_lib_error('table: row with less columns than first tr without th',
+  `| 1 1
+| 1 2
+
+| 2 1
+| 2 2
+
+| 3 1
+
+| 4 1
+| 4 2
+`,
+  7, 1
+)
+assert_lib_error('table: forbid th in the middle of td',
+  // We add thead and tbody automatically and thead is not allowed after tbody
+  `| 1 1
+| 1 2
+
+| 2 1
+| 2 2
+
+|| 3 1
+|| 3 2
+
+| 4 1
+| 4 2
+`,
+  7, 1
+)
 
 // Images.
 // \Image

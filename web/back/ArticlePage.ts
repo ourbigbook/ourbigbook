@@ -1,4 +1,4 @@
-import { getLoggedInUser } from 'back'
+import { findSynonymOr404, getLoggedInUser } from 'back'
 import { ArticlePageProps } from 'front/ArticlePage'
 import {
   articleLimitSmall,
@@ -105,20 +105,7 @@ export const getServerSidePropsArticleHoc = ({
         getLoggedInUser(req, res, loggedInUserCache),
       ])
       if (!article) {
-        const redirects = await Article.findRedirects([slugString], { limit: 1 })
-        const newSlug = redirects[slugString]
-        if (newSlug) {
-          return {
-            redirect: {
-              destination: routes.article(newSlug),
-              permanent: false,
-            },
-          }
-        } else {
-          return {
-            notFound: true
-          }
-        }
+        return await findSynonymOr404(sequelize, slugString, routes.article)
       }
       const isIndex = article.isIndex()
       const [

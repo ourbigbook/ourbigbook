@@ -1561,8 +1561,14 @@ Welcome to my home page hacked!
         // Article
         ;({data, status} = await test.sendJsonHttp('GET', routes.article('user0/title-0'), ))
         assertStatus(status, data)
+        // Article source
+        ;({data, status} = await test.sendJsonHttp('GET', routes.articleSource('user0/title-0'), ))
+        assertStatus(status, data)
         // Article that doesn't exist.
         ;({data, status} = await test.sendJsonHttp('GET', routes.article('user0/dontexist'), ))
+        assert.strictEqual(status, 404)
+        // Article source that doesn't exist.
+        ;({data, status} = await test.sendJsonHttp('GET', routes.articleSource('user0/dontexist'), ))
         assert.strictEqual(status, 404)
 
         // Article issues
@@ -4968,6 +4974,49 @@ it('api: circular parent loop to self synonym fails gracefully', async () => {
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/h2-2', render: false }))
     assert.strictEqual(status, 422)
   })
+})
+
+it('api: synonyms lead to o sensible redirects', async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+
+    article = createArticleArg({ i: 0, titleSource: 'h2', bodySource: '= h2 2\n{synonym}\n' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    assertStatus(status, data)
+
+    if (testNext) {
+      // Tests with the same result for logged in or off.
+      async function testNextLoggedInOrOff(loggedInUser) {
+        // Non-synonym sanity check. 
+        ;({data, status} = await test.sendJsonHttp('GET', routes.article('user0/h2')))
+        assertStatus(status, data)
+
+        // Article page synonym redirect
+        ;({data, status} = await test.sendJsonHttp('GET', routes.article('user0/h2-2')))
+        assert.strictEqual(status, 308)
+        assert.strictEqual(data, routes.article('user0/h2'))
+
+        // Article source page synonym redirect
+        ;({data, status} = await test.sendJsonHttp('GET', routes.articleSource('user0/h2-2')))
+        assert.strictEqual(status, 308)
+        assert.strictEqual(data, routes.articleSource('user0/h2'))
+
+        // Discussion page synonym redirect
+        ;({data, status} = await test.sendJsonHttp('GET', routes.articleIssues('user0/h2-2')))
+        assert.strictEqual(status, 308)
+        assert.strictEqual(data, routes.articleIssues('user0/h2'))
+      }
+      // Logged in.
+      await testNextLoggedInOrOff(true)
+      // Logged out.
+      test.disableToken()
+      await testNextLoggedInOrOff(false)
+      test.loginUser(user)
+    }
+  }, { canTestNext: true })
 })
 
 it('api: article split synonym to descendant does not go into infinite loop', async () => {

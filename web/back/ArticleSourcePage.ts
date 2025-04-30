@@ -1,8 +1,9 @@
 import ourbigbook from 'ourbigbook'
 
-import { getLoggedInUser } from 'back'
+import { findSynonymOr404, getLoggedInUser } from 'back'
 import { ArticleSourcePageProps } from 'front/ArticleSourcePage'
 import { MyGetServerSideProps } from 'front/types'
+import routes from 'front/routes'
 
 export const getServerSidePropsArticleSourceHoc = (
   {}
@@ -11,13 +12,14 @@ export const getServerSidePropsArticleSourceHoc = (
     if (slug instanceof Array) {
       const slugString = slug.join('/')
       const sequelize = req.sequelize
+      const { Article } = sequelize.models
       const [article, loggedInUser] = await Promise.all([
-        sequelize.models.Article.getArticle({
-          sequelize,
-          slug: slugString,
-        }),
+        Article.getArticle({ sequelize, slug: slugString }),
         getLoggedInUser(req, res),
       ])
+      if (!article) {
+        return await findSynonymOr404(sequelize, slugString, routes.articleSource)
+      }
       const [articleJson, loggedInUserJson] = await Promise.all([
         article.toJson(loggedInUser),
         loggedInUser ? loggedInUser.toJson(loggedInUser) : undefined,

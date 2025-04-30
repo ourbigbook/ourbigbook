@@ -1,7 +1,31 @@
+import { GetServerSidePropsResult } from 'next';
+
 import { getCookieFromReq } from 'front'
 import { AUTH_COOKIE_NAME } from 'front/js'
 import { verify } from 'jsonwebtoken'
 import { secret } from 'front/config'
+
+export async function findSynonymOr404(
+  sequelize,
+  slugString: string,
+  routeCb: (string) => string
+): Promise<GetServerSidePropsResult<{ [key: string]: any; }>> {
+  const { Article } = sequelize.models
+  const redirects = await Article.findRedirects([slugString], { limit: 1 })
+  const newSlug = redirects[slugString]
+  if (newSlug) {
+    return {
+      redirect: {
+        destination: routeCb(newSlug),
+        permanent: true,
+      },
+    }
+  } else {
+    return {
+      notFound: true
+    }
+  }
+}
 
 export async function getLoggedInUser(req, res, loggedInUser?) {
   if (loggedInUser !== undefined) {

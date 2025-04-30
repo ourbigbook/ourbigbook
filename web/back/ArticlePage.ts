@@ -172,6 +172,7 @@ export const getServerSidePropsArticleHoc = ({
               topicId: article.topicId,
             })
         ,
+        // synonymIds
         Id.findAll({
           include: [{
             model: Ref,
@@ -194,7 +195,9 @@ export const getServerSidePropsArticleHoc = ({
                   as: 'articles',
                   required: true,
                   attributes: [],
-                  where: { slug: article.slug },
+                  where: {
+                    slug: article.slug
+                  },
                 }],
               }],
             }]
@@ -236,7 +239,7 @@ export const getServerSidePropsArticleHoc = ({
         otherArticlesInTopic: await Promise.all(otherArticlesInTopic.rows.map(article => article.toJson(loggedInUser))),
         synonymLinks: synonymIds.map(i => { return {
           slug: idToSlug(i.idid),
-          titleRender: idToSlug(i.idid),
+          titleRenderWithScope: idToSlug(i.idid),
           // TODO does not blow up, but returns empty.
           // https://docs.ourbigbook.com/todo/list-synonyms-on-metadata-section
           //titleRender: ourbigbook.renderAstFromOpts(i.ast_json, getConvertOpts({ render: true, sequelize })),

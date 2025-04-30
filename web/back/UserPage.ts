@@ -255,7 +255,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       if (parentArticle) {
         props.parentArticle = { 
           slug: parentArticle.slug,
-          titleRender: parentArticle.titleRender,
+          titleRenderWithScope: parentArticle.titleRenderWithScope,
         }
       }
       if (itemType === 'user') {

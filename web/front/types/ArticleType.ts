@@ -11,7 +11,7 @@ export interface Article {
 /** Just enough to be able to link to the article title. */
 export type ArticleLinkType = {
   slug: string;
-  titleRender: string;
+  titleRenderWithScope: string;
 }
 
 /** Add some stuff to link that we need on ancestors listings:

@@ -249,7 +249,7 @@ export default function UserPage({
                 <Link href={routes.article(parentArticle.slug)}>
                   <span
                     className="ourbigbook-title title"
-                    dangerouslySetInnerHTML={{ __html: parentArticle.titleRender }}
+                    dangerouslySetInnerHTML={{ __html: parentArticle.titleRenderWithScope }}
                   />
                 </Link>
               </h2>

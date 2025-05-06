@@ -11922,7 +11922,8 @@ OUTPUT_FORMATS_LIST.push(
         [Macro.TR_MACRO_NAME]: ourbigbookUl,
         [Macro.UNORDERED_LIST_MACRO_NAME]: ourbigbookUl,
         [Macro.X_MACRO_NAME]: function(ast, context) {
-          let href = renderArg(ast.args.href, context)
+          const hrefArg = ast.args.href
+          let href = renderArg(hrefArg, context)
           let hasLinkEndChar = false
           const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
           if (ast.validation_output.topic.boolean) {
@@ -11969,6 +11970,7 @@ OUTPUT_FORMATS_LIST.push(
             // \x[[$]]
             return ourbigbookConvertSimpleElem(ast, context)
           }
+          href = renderArg(hrefArg, cloneAndSet(context, 'in_literal', true))
           let override_href
           ;({ href, override_href } = ourbigbookGetXHref({
             ast,

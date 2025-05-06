@@ -553,6 +553,18 @@ new class extends OurbigbookCanvasDemo {
 
 Hyphens are not removed from shorthand links to file: <not-index.bigb>{file}
 
+== file_demo/hello_world.js
+{file}
+
+Slashes are not removed from shorthand links to file: <file_demo/hello_world.js>{file}
+
+== http://example.com
+{file}
+
+http is not escaped from shorthand links to file: <http://example.com>{file}
+
+Double check same for inline code: `http://example.com`
+
 == Header with args
 {id=tmp-2}
 {c}

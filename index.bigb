@@ -7773,7 +7773,44 @@ If no template is present, the default template at one point was:
 ``
 This will get out of sync sooner or later with the code, but this should still serve as a good base example for this documentation.
 
-Defined variables:
+The the above example, you can see a few or our predefined <template variables>:
+* `title`: the title based on the toplevel header of the page
+* `style`: our default stylesheet
+* `body`: the main rendered body
+
+We chose Liquid as our template language because it is server-side safe. This allows you to to download the OurBigBook repository of anyone and just compile it yourself without the fear that it will install malware in your computer, see also <--unsafe-ace>{full}.
+
+Also, if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
+
+= ourbigbook.liquid.html
+{c}
+{parent=--template}
+
+`ourbigbook.liquid.html` is the default template file name used for <--template> as mentioned at <ourbigbook.json/template>.
+
+= `rel="canonical"`
+{parent=ourbigbook.liquid.html}
+
+The `rel="canonical"` HTML `<head>` tag tells Google the new preferred search result for each page.
+
+You might want to set this up for example if you decide to publish your website both as:
+* a <static> website e.g. under `https://cirosantilli.com`
+* on <OurBigBook Web> e.g. under `https://ourbigbook.com/cirosantilli`
+but you'd like the <OurBigBook Web> one to take precedence.
+
+You can set this up by adding something like the following code to the `<head>` element in your <ourbigbook.liquid.html>:
+``
+<link rel="canonical" href="https://ourbigbook.com/cirosantilli/{{ toplevel_id }}">
+``
+you might also want to do that for all pages except your homepage with:
+``
+{% unless is_index_article %}<link rel="canonical" href="https://ourbigbook.com/cirosantilli/{{ toplevel_id }}">{% endunless %}
+``
+
+= Template variable
+{parent=--template}
+
+The following variables are defined for usage inside your <ourbigbook.liquid.html> file:
 * `body`: the rendered body
 * `dir_relpath`: relative path from the rendered output to the <`_dir` directory>. Sample usage to link to the root directory listing:
   ``
@@ -7809,7 +7846,7 @@ Defined variables:
   <div>Source code for this page: <a href="{{ raw_relpath }}/{{ input_path }}">{{ input_path }}</a></div>
   {% endif %}
   ``
-* `is_root_relpath`. Boolean. True if the toplevel being rendered on this output file is the <the index article>. E.g. in:
+* `is_index_article`. Boolean. True if the toplevel being rendered on this output file is the <the index article>. E.g. in:
 
   index.bigb
 
@@ -7818,7 +7855,7 @@ Defined variables:
 
   == Mathematics
   ``
-  with <split header> conversion, the value of `is_root_relpath` would be:
+  with <split header> conversion, the value of `is_index_article` would be:
   * `index.html`: true
   * `split.html`: true
   * `mathematics.html`: false
@@ -7854,17 +7891,20 @@ Defined variables:
 * `file_relpath`: similar to `raw_relpath`, but link to the <_file output directory> instead
 * `style`: default OurBigBook stylesheets
 * `title`
+* `toplevel_id`: ID of <the toplevel header> ofa page, e.g. given and <split headers>:
+  ``
+  = My homepage
 
-We pick Liquid because it is server-side safe: if we ever some day offer a compilation service, Liquid is designed to prevent arbitrary code execution and infinite loops in templates.
+  == Mathematics
+  {scope}
 
-= ourbigbook.liquid.html
-{c}
-{parent=--template}
-
-`ourbigbook.liquid.html` is the default template file name used for <--template> as mentioned at <ourbigbook.json/template>.
-
-= Template variable
-{parent=--template}
+  === Chain rule
+  ``
+  we'd get;
+  * `/`: empty string
+  * `/split`: empty string
+  * `/mathematics`: `mathematics`
+  * `/mathematics/chain-rule`: `mathematics/chain-rule`
 
 = `publishTargetIsWebsite`
 {parent=Template variable}
@@ -8752,17 +8792,37 @@ and not:
 <a href="https://mynewsite.com/notindex2.html">
 ``
 
-= Redirect from a static website to a dynamic website
+= Make all links of a static website point to another deployment of the website
 {c}
 {parent=OurBigBook CLI}
 
-This section describes how to generate mass redirects from a <static website> such as https://cirosantilli.com to a <OurBigBook Web> dynamic website such as https://ougbook.com/cirosantilli[].
+= Redirect from a static website to a dynamic website
+{synonym}
 
-The use case of this is if you are migrating from one domain to another, and want to keep old files around to not break links, but would rather redirect users to the new preferred pages instead to gather PageRank there.
+This section describes how to make all links of one deployment of your <static> OurBigBook publication to another location. For example, if you have a:
 
-This happened in our case when Ciro felt that <OurBigBook Web> had reach enough maturity to be a reasonable reader alternative to the static website.
+The use case of this is if you are migrating from one domain to another, but you want to keep your old pages around to not break any links, and you also don't want to redirect users across domains.
 
-Basically what you want to do in that case is to use the following options:
+For example, this happened Ciro felt that <OurBigBook Web> had reach enough maturity to be a reasonable reader alternative to the static website and so considered redirecting:
+* static https://cirosantilli.com[]
+* to <OurBigBook Web> dynamic the website under https://ougbook.com/cirosantilli[]
+
+By doing this setup, for example a link in `https://cirosantilli.com` :
+``
+= Mathematics
+
+<physics>
+``
+rather than pointing to:
+``
+https://cirosantilli.com/physics
+``
+would instead point to;
+``
+https://ourbigbook.com/cirosantilli/physics
+``
+
+To achieve this, you should use the following options
 * <ourbigbook.json/toSplitHeaders>
 * <ourbigbook.json/htmlXExtension>
 * <ourbigbook.json/xPrefix>

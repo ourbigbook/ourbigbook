@@ -3375,7 +3375,8 @@ function renderAstList({ asts, context, first_toplevel, header_count, split }) {
       },
       first_ast.source_location,
     );
-    context.toplevel_id = first_ast.id;
+    const toplevel_id = first_ast.id
+    context.toplevel_id = toplevel_id
     context.in_split_headers = split;
 
     let rendered_outputs_entry = {}
@@ -3392,6 +3393,7 @@ function renderAstList({ asts, context, first_toplevel, header_count, split }) {
       options.template_vars.file_relpath = path.join(new_root_relpath, FILE_PREFIX)
       options.template_vars.dir_relpath = path.join(new_root_relpath, DIR_PREFIX)
       options.template_vars.file_relpath = path.join(new_root_relpath, FILE_PREFIX)
+      options.template_vars.toplevel_id = toplevel_id
       context.extra_returns.rendered_outputs[output_path] = rendered_outputs_entry
     }
     // Do the conversion.

@@ -7443,7 +7443,7 @@ function renderTocFromEntryList({
     `${TOC_ARROW_HTML}<span class="not-arrow">` +
     `<a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}"> Table of contents</a>`
   if (hasSearch) {
-    ret += `<input class="search" placeholder="${UNICODE_SEARCH_CHAR} Search. Shortcut: / (slash)"></input>`
+    ret += `<input class="search" placeholder="${UNICODE_SEARCH_CHAR} Search. Shortcut: / (slash)">`
   }
   if (descendant_count_html) {
     ret += `<span class="hover-metadata">${descendant_count_html}</span>`
@@ -10198,7 +10198,7 @@ const OUTPUT_FORMATS_LIST = [
               p = `${URL_SEP}${ast.id}`
             }
             ourbigbookLink = `<a href="${context.webUrl}${context.options.ourbigbook_json.web.username}${p}">` +
-              `<img src="${logoPath}" class="logo" /> ${newContext.options.ourbigbook_json.web.hostCapitalized}</a>`;
+              `<img src="${logoPath}" class="logo" alt=""> ${newContext.options.ourbigbook_json.web.hostCapitalized}</a>`;
           }
 
           // file handling 1

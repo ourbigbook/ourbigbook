@@ -748,3 +748,7 @@ export function removeParameterFromUrlPath(path, key: string): string {
   }
   return `${url.pathname}${paramsString}`
 }
+
+export function booleanToStringForTable(tf: boolean): string {
+  return tf ? '1' : '0'
+}

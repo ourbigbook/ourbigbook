@@ -9,7 +9,7 @@ import { articleLimit } from 'front/config'
 import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
-import { FollowIcon, LikeIcon, TimeIcon, UserIcon } from 'front'
+import { booleanToStringForTable, FollowIcon, LikeIcon, LockIcon, OkIcon, TimeIcon, UserIcon } from 'front'
 
 export type UserListProps = {
   loggedInUser?: UserType;
@@ -42,6 +42,8 @@ const UserList = ({
               <th className="shrink"><UserIcon /> Username</th>
               <th className="shrink"><FollowIcon /> Followers</th>
               <th className="shrink"><TimeIcon /> Joined</th>
+              <th className="shrink"><OkIcon /> Email verified</th>
+              <th className="shrink"><LockIcon /> Locked</th>
             </tr>
           </thead>
           <tbody>
@@ -54,6 +56,8 @@ const UserList = ({
                 <td className="shrink"><UserLink user={user}>@{user.username}</UserLink></td>
                 <td className="shrink right bold"><CustomLink href={routes.userFollowed(user.username)}>{user.followerCount}</CustomLink></td>
                 <td className="shrink">{formatDate(user.createdAt)}</td>
+                <td className="shrink right">{booleanToStringForTable(user.verified)}</td>
+                <td className="shrink right">{booleanToStringForTable(user.locked)}</td>
               </tr>
             ))}
           </tbody>

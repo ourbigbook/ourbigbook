@@ -10393,7 +10393,7 @@ assert_lib('SqlDbProvider.fetch_header_tree_ids definedAtFileId argument',
 `,
     },
     postConvert: async ({ convertOpts, sequelize }) => {
-      const file = await sequelize.models.File.findOne({ path: 'index.bigb' })
+      const file = await sequelize.models.File.findOne({ where: { path: 'index.bigb' }})
       const ids = await convertOpts.db_provider.fetch_header_tree_ids(
         [''],
         {

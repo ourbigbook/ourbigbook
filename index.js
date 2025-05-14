@@ -3375,7 +3375,12 @@ function renderAstList({ asts, context, first_toplevel, header_count, split }) {
       },
       first_ast.source_location,
     );
-    const toplevel_id = first_ast.id
+    let toplevel_id
+    if (context.options.toplevelId) {
+      toplevel_id = context.options.toplevelId
+    } else {
+      toplevel_id = first_ast.id
+    }
     context.toplevel_id = toplevel_id
     context.in_split_headers = split;
 
@@ -3683,6 +3688,9 @@ function convertInitOptions(options) {
     if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
     if (!('style' in options.template_vars)) { options.template_vars.style = ''; }
+  if (!'toplevelId' in options) {
+    options.toplevelId = undefined
+  }
   if (!(Macro.TITLE_ARGUMENT_NAME in options)) {
     //options[Macro.TITLE_ARGUMENT_NAME] = undefined
   }

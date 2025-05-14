@@ -11772,6 +11772,58 @@ assert_cli(
   }
 )
 assert_cli(
+  'template: toplevelId',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]
+\\Include[subdir/notindex]
+`,
+      'subdir/notindex.bigb': `= Notindex\n`,
+      'notindex.bigb': `= Notindex\n`,
+      'notbigb.txt': `asdf`,
+      'subdir/notbigb.txt': `asdf`,
+      'ourbigbook.json': `{}
+`,
+      'ourbigbook.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+</head>
+<body>
+<a id="dut" href="{{ toplevel_id }}">Root relpath</a>
+</body>
+</html>
+`
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/index.html`]: [
+        "//x:a[@id='dut' and @href='']",
+      ],
+      [`${TMP_DIRNAME}/html/notindex.html`]: [
+        "//x:a[@id='dut' and @href='notindex']",
+      ],
+      [`${TMP_DIRNAME}/html/subdir/notindex-split.html`]: [
+        "//x:a[@id='dut' and @href='subdir/notindex']",
+      ],
+      [`${TMP_DIRNAME}/html/_file/notbigb.txt.html`]: [
+        "//x:a[@id='dut' and @href='_file/notbigb.txt']",
+      ],
+      [`${TMP_DIRNAME}/html/_file/subdir/notbigb.txt.html`]: [
+        "//x:a[@id='dut' and @href='_file/subdir/notbigb.txt']",
+      ],
+      [`${TMP_DIRNAME}/html/_dir/index.html`]: [
+        "//x:a[@id='dut' and @href='_dir']",
+      ],
+      [`${TMP_DIRNAME}/html/_dir/subdir/index.html`]: [
+        "//x:a[@id='dut' and @href='_dir/subdir']",
+      ],
+    }
+  }
+)
+assert_cli(
   'template: a custom template can be selected from ourbigbook.json',
   {
     args: ['.'],

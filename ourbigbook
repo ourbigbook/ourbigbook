@@ -18,6 +18,7 @@ const { Liquid } = require('liquidjs');
 const { DataTypes, Op, Sequelize } = require('sequelize')
 
 const ourbigbook = require('ourbigbook');
+const { DIR_PREFIX, RAW_PREFIX } = ourbigbook
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
@@ -37,8 +38,8 @@ const SASS_EXT = '.scss';
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
-  ourbigbook.RAW_PREFIX,
-  ourbigbook.DIR_PREFIX,
+  RAW_PREFIX,
+  DIR_PREFIX,
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 const MESSAGE_PREFIX_EXTRACT_IDS = 'extract_ids'
@@ -653,7 +654,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   }
 
   let output_path_noext = path.join(
-    is_directory ? ourbigbook.DIR_PREFIX : ourbigbook.RAW_PREFIX,
+    is_directory ? DIR_PREFIX : RAW_PREFIX,
     path.relative(
       nonOurbigbookOptions.ourbigbook_json_dir,
       path.join(
@@ -744,14 +745,19 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
           if (breadcrumbDir === '.') {
             breadcrumbDir = ''
           }
-          const new_options_dir = { ...new_options }
+          const new_options_dir = {
+            ...new_options,
+            auto_generated_source: true,
+          }
           const pref = ourbigbook.FILE_PREFIX
-          new_options_dir.auto_generated_source = true
+          let toplevelId = DIR_PREFIX
           if (input_path_relative_to_ourbigbook_json === '') {
             new_options_dir.title = ourbigbook.FILE_ROOT_PLACEHOLDER
           } else {
             new_options_dir.title = input_path_relative_to_ourbigbook_json
+            toplevelId += ourbigbook.Macro.HEADER_SCOPE_SEPARATOR + input_path_relative_to_ourbigbook_json
           }
+          new_options_dir.toplevelId = toplevelId
           const newNonOurbigbookOptions = { ...nonOurbigbookOptions }
           // Needed the path to be able to find the relatively placed CSS under _raw.
           // notindex.bigb instead of index.bigb because this will be placed at subdir/index.html, unlike the .bigb

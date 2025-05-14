@@ -8158,7 +8158,9 @@ function xHrefParts(target_ast, context) {
         context.to_split_headers !== undefined &&
         context.to_split_headers
       ) &&
-      context.toplevel_id === target_ast.toplevel_id
+      context.toplevel_id === target_ast.toplevel_id &&
+      // https://github.com/ourbigbook/ourbigbook/issues/365
+      !context.options.webMode
     ) ||
     (
       // Split header link to image in current header.
@@ -8166,7 +8168,11 @@ function xHrefParts(target_ast, context) {
       target_ast.macro_name !== Macro.HEADER_MACRO_NAME &&
       target_ast.get_header_parent_ids(context).has(context.toplevel_id)
     ) ||
-    to_current_toplevel
+    (
+      to_current_toplevel &&
+      // https://github.com/ourbigbook/ourbigbook/issues/365
+      !context.options.webMode
+    )
   ) {
     // The output path is the same as the current path. Stop.
     // Everything else is basically handled by outputPathBase.
@@ -8204,7 +8210,11 @@ function xHrefParts(target_ast, context) {
       }
     }
     // The target path is the same as the current path being output.
-    if (full_output_path === context.toplevel_output_path) {
+    if (
+      full_output_path === context.toplevel_output_path &&
+      // https://github.com/ourbigbook/ourbigbook/issues/365
+      !context.options.webMode
+    ) {
       href_path = ''
     } else {
       let href_path_dirname_rel

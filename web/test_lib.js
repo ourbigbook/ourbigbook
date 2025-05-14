@@ -253,7 +253,9 @@ Empty link to home page: <>
 
 Link followed by nbsp literal: http://example.com\u{00A0}asdf qwer
 
-Link to self: <test data>
+Link to self: <test data>{id=x-link-to-self-header}
+
+Link to child: <test child>{id=x-link-to-child}
 `
     }
   ],
@@ -335,7 +337,9 @@ while (todo_visit.length > 0) {
   let [parentEntry, entry] = todo_visit.pop()
   const { children, opts } = expandArticleDataEntry(entry)
   entry[2] = opts
-  opts.parentEntry = parentEntry
+  if (parentEntry) {
+    opts.parentEntry = parentEntry
+  }
   for (let i = children.length - 1; i >= 0; i--) {
     const child = children[i]
     todo_visit.push([entry, child]);
@@ -359,7 +363,7 @@ class ArticleDataProvider {
   }
 
   // Pre order depth first transversal to ensure that parents are created before children.
-  get() {
+  pop() {
     if (this.todo_visit.length === 0) {
       this.todo_visit = articleData.slice()
       this.gen++
@@ -399,7 +403,7 @@ async function generateDemoData(params) {
 
   const nArticles = nUsers * nArticlesPerUser
   const sequelize = models.getSequelize(directory, basename);
-  const { Id } = sequelize.models
+  const { Article, Id, User } = sequelize.models
   const katex_macros = back_js.preloadKatex()
   await models.sync(sequelize, { force: empty || clear })
   if (!empty) {
@@ -426,24 +430,24 @@ async function generateDemoData(params) {
       if (image) {
         userArg.image = image
       }
-      sequelize.models.User.setPassword(userArg, process.env.OURBIGBOOK_DEMO_USER_PASSWORD || 'asdf')
+      User.setPassword(userArg, process.env.OURBIGBOOK_DEMO_USER_PASSWORD || 'asdf')
       userArgs.push(userArg)
     }
     const users = []
     const userIdToUser = {}
     for (const userArg of userArgs) {
-      let user = await sequelize.models.User.findOne({ where: { username: userArg.username } })
+      let user = await User.findOne({ where: { username: userArg.username } })
       if (user) {
         Object.assign(user, userArg)
         await user.save()
       } else {
-        user = await sequelize.models.User.create(userArg)
+        user = await User.create(userArg)
       }
       userIdToUser[user.id] = user
       users.push(user)
     }
     // TODO started livelocking after we started creating index articles on hooks.
-    //const users = await sequelize.models.User.bulkCreate(
+    //const users = await User.bulkCreate(
     //  userArgs,
     //  {
     //    validate: true,
@@ -477,7 +481,7 @@ async function generateDemoData(params) {
     const articleArgs = [];
     const toplevelTopicIds = new Set()
     let dateI = 0
-    async function makeArticleArg(articleDataEntry, forceToplevel, i, authorId) {
+    async function makeArticleArg(articleDataEntry, i, authorId) {
       const date = addDays(date0, dateI)
       dateI++
       articleDataEntry.articleIdx = i
@@ -504,17 +508,32 @@ async function generateDemoData(params) {
         opts,
       }
     }
-    let i
-    for (i = 0; i < nArticlesPerUser; i++) {
-      for (let userIdx = 0; userIdx < nUsers; userIdx++) {
-        const authorId = users[userIdx].id
-        const articleDataProvider = articleDataProviders[authorId]
-        const articleDataEntry = articleDataProvider.get()
-        const articleArg = await makeArticleArg(articleDataEntry, false, i, authorId)
+    for (let userIdx = 0; userIdx < nUsers; userIdx++) {
+      const authorId = users[userIdx].id
+      const articleDataProvider = articleDataProviders[authorId]
+
+      // All other articles.
+      for (let i = 0; i < nArticlesPerUser; i++) {
+        const articleArg = await makeArticleArg(articleDataProvider.pop(), i, authorId)
         if (articleArg) {
           articleArgs.push(articleArg)
         }
       }
+
+      // Custom home message.
+      articleArgs.push({
+        titleSource: '',
+        authorId,
+        createdAt: date0,
+        // TODO not taking effect. Appears to be because of the hook.
+        updatedAt: date0,
+        bodySource: `${User.defaultIndexBody}
+Link to home: <>
+
+Link to test data: <test data>
+`,
+        opts: { parentEntry: undefined },
+      })
     }
 
     //// Sort first by topic id, and then by user id to mix up votes a little:
@@ -548,7 +567,10 @@ async function generateDemoData(params) {
         const msg = `${pref}: ${i + 1}/${articleArgs.length}: ${userIdToUser[articleArg.authorId].username}/${articleArg.titleSource}`
         if (verbose) console.error(msg);
         const author = userIdToUser[articleArg.authorId]
-        const opts = articleArg.opts
+        let opts = articleArg.opts
+        if (opts === undefined) {
+          opts = {}
+        }
 
         let parentId
         {
@@ -557,7 +579,9 @@ async function generateDemoData(params) {
             ;({ opts: parentOpts } = expandArticleDataEntry(parentEntry))
             parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${parentOpts.topicId}`
           } else {
-            parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+            if (!opts.hasOwnProperty('parentEntry')) {
+              parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+            }
           }
         }
         const before = now();
@@ -622,7 +646,7 @@ async function generateDemoData(params) {
     // Write files to filesystem.
     // https://docs.ourbigbook.com/demo-data-local-file-output
     for (const user of users) {
-      const articles = (await sequelize.models.Article.getArticles({
+      const articles = (await Article.getArticles({
         author: user.username,
         count: false,
         sequelize,
@@ -648,7 +672,7 @@ async function generateDemoData(params) {
     // TODO This was livelocking (taking a very long time, live queries)
     // due to update_database_after_convert on the hook it would be good to investigate it.
     // Just converted to the regular for loop above instead.
-    //const articles = await sequelize.models.Article.bulkCreate(
+    //const articles = await Article.bulkCreate(
     //  articleArgs,
     //  {
     //    validate: true,

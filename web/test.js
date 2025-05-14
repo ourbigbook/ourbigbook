@@ -4806,7 +4806,7 @@ $$
   })
 })
 
-it(`api: topic links dont have the domain name`, async () => {
+it(`api: topic links don't have the domain name`, async () => {
   await testApp(async (test) => {
     let data, status, article
     const sequelize = test.sequelize
@@ -5486,8 +5486,8 @@ it(`api: link to home article`, async () => {
     ;({data, status} = await test.webApi.article('user0'))
     // titleSource actually changed on DB.
     assert.strictEqual(data.titleSource, 'My custom home')
-    assert_xpath(`//x:div[@class='p']//x:a[@href='' and text()='My custom home']`, data.render)
-    assert_xpath(`//x:div[@class='p']//x:a[@href='' and text()=' Home']`, data.render)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='/user0' and text()='My custom home']`, data.render)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='/user0' and text()=' Home']`, data.render)
 
     // Create article user0/title-0
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
@@ -5518,8 +5518,36 @@ it(`api: link to home article`, async () => {
     ;({data, status} = await test.webApi.article('user1'))
     // titleSource actually changed on DB.
     assert.strictEqual(data.titleSource, 'My custom home 2')
-    assert_xpath(`//x:div[@class='p']//x:a[@href='' and text()='My custom home 2']`, data.render)
-    assert_xpath(`//x:div[@class='p']//x:a[@href='' and text()=' Home']`, data.render)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='/user1' and text()='My custom home 2']`, data.render)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='/user1' and text()=' Home']`, data.render)
+  }, { defaultExpectStatus: 200 })
+})
+
+// Closely related: https://github.com/ourbigbook/ourbigbook/issues/364
+it(`api: link to self`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    ;({data, status} = await createOrUpdateArticleApi(test, {
+      titleSource: 'Test data 0',
+      bodySource: '',
+    }))
+    ;({data, status} = await createOrUpdateArticleApi(test, {
+      titleSource: 'Test data',
+      bodySource: `<test-data>
+
+<test data>{id=dut}
+
+<test data 0>{id=sanity}
+`,
+    }))
+    ;({data, status} = await test.webApi.article('user0/test-data'))
+    assert_xpath(`//x:a[@id='user0/dut' and @href='/user0/test-data']`, data.render)
+    assert_xpath(`//x:a[@id='user0/sanity' and @href='/user0/test-data-0']`, data.render)
   }, { defaultExpectStatus: 200 })
 })
 

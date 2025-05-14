@@ -192,6 +192,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         likes,
         unlistedArticles,
         parentArticle,
+        totalArticlesByUser,
+        totalCommentsByUser,
+        totalDiscussionsByUser,
         users,
         signupIpIsBlacklisted,
       ] = await Promise.all([
@@ -223,6 +226,12 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           ? Article.getArticle({ slug: idToSlug(parentId), sequelize })
           : null
         ,
+        // totalArticlesByUser
+        Article.count({ where: { authorId: user.id, list: true } }),
+        // totalCommentsByUser
+        Comment.count({ where: { authorId: user.id } }),
+        // totalDiscussionsByUser
+        Issue.count({ where: { authorId: user.id } }),
         // users
         usersPromise,
         // signupIpIsBlacklisted
@@ -243,6 +252,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         orderAscDesc: ascDesc,
         page,
         signupIpIsBlacklisted,
+        totalArticlesByUser,
+        totalCommentsByUser,
+        totalDiscussionsByUser,
         user: userJson,
         what,
       }

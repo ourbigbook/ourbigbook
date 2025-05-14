@@ -4,6 +4,8 @@ import React from 'react'
 
 import pluralize from 'pluralize'
 
+import { formatNumberApprox } from 'ourbigbook'
+
 import {
   ArticleIcon,
   ChildrenIcon,
@@ -79,6 +81,9 @@ export interface UserPageProps extends CommonPropsType {
   synonymLinks?: ArticleLinkType[];
   tagged?: ArticleLinkType[];
   topIssues?: IssueType[];
+  totalArticlesByUser: number;
+  totalCommentsByUser: number;
+  totalDiscussionsByUser: number;
   user: UserType;
   users?: UserType[];
   usersCount?: number;
@@ -129,6 +134,9 @@ export default function UserPage({
   synonymLinks,
   tagged,
   topIssues,
+  totalArticlesByUser,
+  totalCommentsByUser,
+  totalDiscussionsByUser,
   user,
   users,
   usersCount,
@@ -260,19 +268,19 @@ export default function UserPage({
                   href={routes.userArticles(username, { sort: 'created' })}
                   className={`tab-item${itemType === 'article' ? ' active' : ''}`}
                 >
-                  <ArticleIcon /> Articles
+                  <ArticleIcon /> Articles<span className="mobile-hide"> ({ formatNumberApprox(totalArticlesByUser) })</span>
                 </CustomLink>
                 <CustomLink
                   href={routes.userIssues(username, { sort: 'created' })}
                   className={`tab-item${itemType === 'discussion' ? ' active' : ''}`}
                 >
-                  <DiscussionIcon /> Discussions
+                  <DiscussionIcon /> Discussions<span className="mobile-hide"> ({ formatNumberApprox(totalDiscussionsByUser) })</span>
                 </CustomLink>
                 <CustomLink
                   href={routes.userComments(username, { sort: 'created' })}
                   className={`tab-item${itemType === 'comment' ? ' active' : ''}`}
                 >
-                  <CommentIcon /> Comments
+                  <CommentIcon /> Comments<span className="mobile-hide"> ({ formatNumberApprox(totalCommentsByUser) })</span>
                 </CustomLink>
                 <CustomLink
                   href={routes.userFollows(username)}

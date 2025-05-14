@@ -27,7 +27,7 @@ export const getServerSidePropsIndexHoc = ({
       allowedSortsExtra?: any;
     } = {}
     const sequelize = req.sequelize
-    const { Article, Issue, Topic } = sequelize.models
+    const { Article, Comment, Issue, Site, Topic, User } = sequelize.models
     switch (itemTypeEff) {
       case 'article':
         getOrderAndPageOpts.allowedSortsExtra = Article.ALLOWED_SORTS_EXTRA
@@ -49,7 +49,12 @@ export const getServerSidePropsIndexHoc = ({
     const [
       [articles, articlesCount],
       commentsAndCount,
-      pinnedArticle
+      pinnedArticle,
+      totalArticles,
+      totalComments,
+      totalDiscussions,
+      totalTopics,
+      totalUsers,
     ] = await Promise.all([
       (async () => {
         let articles
@@ -81,7 +86,7 @@ export const getServerSidePropsIndexHoc = ({
             articles = null
             articlesCount = null
           case 'discussion':
-            articlesAndCounts = await sequelize.models.Issue.getIssues({
+            articlesAndCounts = await Issue.getIssues({
               sequelize,
               includeArticle: true,
               offset,
@@ -96,7 +101,7 @@ export const getServerSidePropsIndexHoc = ({
             articlesCount = articlesAndCounts.count
             break
           case 'topic':
-            articlesAndCounts = await sequelize.models.Topic.getTopics({
+            articlesAndCounts = await Topic.getTopics({
               limit,
               offset,
               order,
@@ -113,11 +118,13 @@ export const getServerSidePropsIndexHoc = ({
         }
         return [articles, articlesCount]
       })(),
+      // commentsAndCount
       itemType === 'comment'
-        ? sequelize.models.Comment.getComments({ limit, offset })
+        ? Comment.getComments({ limit, offset })
         : {}
       ,
-      sequelize.models.Site.findOne({ include:
+      // pinnedArticle
+      Site.findOne({ include:
         [{
           model: Article,
           as: 'pinnedArticle',
@@ -130,6 +137,16 @@ export const getServerSidePropsIndexHoc = ({
           return null
         }
       }),
+      // totalArticles
+      Article.count({ where: { list: true } }),
+      // totalComments
+      Comment.count(),
+      // totalDiscussions
+      Issue.count(),
+      // totalTopics
+      Topic.count(),
+      // totalUsers
+      User.count(),
     ])
     const props: IndexPageProps = {
       followed: followedEff,
@@ -138,6 +155,11 @@ export const getServerSidePropsIndexHoc = ({
       orderAscDesc: ascDesc,
       page,
       pinnedArticle,
+      totalArticles,
+      totalDiscussions,
+      totalComments,
+      totalTopics,
+      totalUsers,
     }
     if (itemType === 'comment') {
       props.comments = await Promise.all(commentsAndCount.rows.map(comment => comment.toJson(loggedInUser)))

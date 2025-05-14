@@ -2,6 +2,8 @@ import React from 'react'
 
 import pluralize from 'pluralize'
 
+import { formatNumberApprox } from 'ourbigbook'
+
 import {
   AlphabeticalOrderTabTitle,
   AnnounceIcon,
@@ -46,6 +48,11 @@ export interface IndexPageProps extends CommonPropsType {
   orderAscDesc: string;
   page: number;
   pinnedArticle?: ArticleType;
+  totalArticles?: number,
+  totalComments?: number,
+  totalDiscussions?: number,
+  totalTopics?: number,
+  totalUsers?: number,
   users?: UserType[];
   usersCount?: number;
 }
@@ -69,6 +76,11 @@ function IndexPageHoc({
     orderAscDesc,
     page,
     pinnedArticle,
+    totalArticles,
+    totalComments,
+    totalDiscussions,
+    totalTopics,
+    totalUsers,
     users,
     usersCount,
   }: IndexPageProps) {
@@ -86,6 +98,7 @@ function IndexPageHoc({
     } else {
       title = `${ issueArticle.titleSource } by ${ issueArticle.author.displayName } - Discussion`
     }
+    const isDiscussionIndex = pageType === 'articleDiscussions' || pageType === 'articleComments'
     return <>
       <MyHead title={title} />
       <div className="home-page">
@@ -101,25 +114,25 @@ function IndexPageHoc({
                   className={`tab-item${itemType === 'topic' ? ' active' : ''}`}
                   href={routes.topics({ loggedInUser, sort: 'article-count' })}
                 >
-                  <TopicIcon /> Topics
+                  <TopicIcon /> Topics<span className="mobile-hide"> ({ formatNumberApprox(totalTopics) })</span>
                 </CustomLink>
                 <CustomLink
                   className={`tab-item${itemType === 'article' ? ' active' : ''}`}
                   href={loggedInUser ? routes.articlesFollowed() : routes.articles()}
                 >
-                  <ArticleIcon /> Articles
+                  <ArticleIcon /> Articles<span className="mobile-hide"> ({ formatNumberApprox(totalArticles) })</span>
                 </CustomLink>
                 <CustomLink
                   className={`tab-item${itemType === 'user' ? ' active' : ''}`}
                   href={routes.users({ sort: 'score' })}
                 >
-                  <UserIcon /> Users
+                  <UserIcon /> Users<span className="mobile-hide">  ({ formatNumberApprox(totalUsers) })</span>
                 </CustomLink>
                 <CustomLink
                   className={`tab-item${itemType === 'discussion' ? ' active' : ''}`}
                   href={routes.issues()}
                 >
-                  <DiscussionIcon /> Discussions
+                  <DiscussionIcon /> Discussions<span className="mobile-hide"> ({ formatNumberApprox(totalDiscussions) })</span>
                 </CustomLink>
               </>
             : <>
@@ -144,7 +157,9 @@ function IndexPageHoc({
               : routes.articleComments(issueArticle.slug, { sort: 'created' })
             }
           >
-            <CommentIcon /> Comments
+            <CommentIcon /> Comments{!isDiscussionIndex && <>
+              <span className="mobile-hide"> ({formatNumberApprox(totalComments)})</span>
+            </>}
           </CustomLink>
           {!isHomepage &&
             <span className='tab-item'>
@@ -162,7 +177,7 @@ function IndexPageHoc({
             href={(!isHomepage) ? routes.issueNew(issueArticle.slug) : routes.articleNew()}
             updatePreviousPage={true}
           >
-            <NewArticleIcon /> New {(pageType === 'articleIssues' || pageType === 'articleComments') ? 'discussion' : 'article'}
+            <NewArticleIcon /> New {isDiscussionIndex ? 'discussion' : 'article'}
           </CustomLink>
         </div>
         {isHomepage &&

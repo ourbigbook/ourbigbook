@@ -22,17 +22,38 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
   const sequelize = req.sequelize
   if (err) { res.statusCode = 422 }
   const offset = page * articleLimit
-  const [{ count: usersCount, rows: userRows }, site] = await Promise.all([
-    await sequelize.models.User.findAndCountAll({
+  const { Article, Comment, Issue, Site, Topic, User } = sequelize.models
+  const [
+    site,
+    totalArticles,
+    totalComments,
+    totalDiscussions,
+    totalTopics,
+    totalUsers,
+    { count: usersCount, rows: userRows },
+  ] = await Promise.all([
+    // site
+    Site.findOne({ include:
+      [{
+        model: Article,
+        as: 'pinnedArticle',
+      }]
+    }),
+    // totalArticles
+    Article.count({ where: { list: true } }),
+    // totalComments
+    Comment.count(),
+    // totalDiscussions
+    Issue.count(),
+    // totalTopics
+    Topic.count(),
+    // totalUsers
+    User.count(),
+    // users
+    User.findAndCountAll({
       offset,
       order: [[order, ascDesc]],
       limit: articleLimit,
-    }),
-    sequelize.models.Site.findOne({ include:
-      [{
-        model: sequelize.models.Article,
-        as: 'pinnedArticle',
-      }]
     }),
   ])
   const [users, pinnedArticle] = await Promise.all([
@@ -53,6 +74,11 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     orderAscDesc: ascDesc,
     page,
     pinnedArticle,
+    totalArticles,
+    totalDiscussions,
+    totalComments,
+    totalTopics,
+    totalUsers,
     users,
     usersCount,
   }

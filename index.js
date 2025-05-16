@@ -10109,7 +10109,11 @@ const OUTPUT_FORMATS_LIST = [
             self_link_context = context
             self_link_ast = ast
           }
-          ret += `<div class="notnav"><h${level_int_capped}${attrs}>`;
+          ret += `<div class="notnav">`
+          if (ast.file) {
+            ret += `<span class="file" title="This article is about a file." />`
+          }
+          ret += `<h${level_int_capped}${attrs}>`
 
           let x_text_options = {
             addNumberDiv: true,

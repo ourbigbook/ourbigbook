@@ -560,6 +560,12 @@ div.h {
       content: " Toc";
     }
   }
+  .notnav {
+    .file::before {
+      @include file-icon;
+      margin-right: 0.5em;
+    }
+  }
 }
 
 

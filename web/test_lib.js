@@ -231,6 +231,10 @@ Link to topic: <#mathematics>
       ['Test data with title2', [], { body: `{title2=My title 2}` }],
       ['Test data with math on title $\\frac{1}{\\sqrt{2}}$', []],
       ['Test data with code on title `int main() { return 0; }`', []],
+      ['test/subdir/myfile.txt', [], { body: `{file}
+
+This is about my amazing file \\a[myfile.txt]
+` }],
     ],
     {
       body: `Block math: <equation My favorite equation>

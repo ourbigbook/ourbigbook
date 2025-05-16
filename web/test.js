@@ -6263,6 +6263,26 @@ it(`api: article: bulk update`, async () => {
   }, { defaultExpectStatus: 200 })
 })
 
+it(`api: article with {file}`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // Create article user0/_file/subdir/myfile.txt
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `subdir/myfile.txt`,
+      bodySource: `{file}`
+    })))
+
+    // Check that the article is there
+    ;({data, status} = await test.webApi.article('user0/_file/subdir/myfile.txt'))
+    assert.strictEqual(data.titleRender, 'subdir/myfile.txt')
+  }, { defaultExpectStatus: 200 })
+})
+
 it(`api: article: create simple`, async () => {
   await testApp(async (test) => {
     let data, status, article

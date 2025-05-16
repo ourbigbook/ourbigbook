@@ -2842,13 +2842,31 @@ function calculateId(
       ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
     }
     if (file_header && ast.scope) {
-      // TODO we should use the input directory here, not scope. {file} should ignore scope most likely
-      // and care only about the input directory.
-      let scopeSplit = ast.scope.split(Macro.HEADER_SCOPE_SEPARATOR)
-      if (scopeSplit[0] === FILE_PREFIX) {
-        scopeSplit = scopeSplit.slice(1)
+      const [input_path, ext] = pathSplitext(context.options.input_path)
+      let inputPathNoRefPrefix = input_path
+      if (context.options.ref_prefix) {
+        inputPathNoRefPrefix = inputPathNoRefPrefix.substring(
+          context.options.ref_prefix.length + 1,
+        )
       }
-      ast.file = (scopeSplit.length ? scopeSplit.join(Macro.HEADER_SCOPE_SEPARATOR) + Macro.HEADER_SCOPE_SEPARATOR : '') + ast.file
+      if (inputPathNoRefPrefix.startsWith(FILE_PREFIX + context.options.path_sep)) {
+        // This is e.g. for for _file/programming/hello.py
+        // In that case, the header contents are completely ignored and we just use the filename.
+        ast.file = inputPathNoRefPrefix.substring(FILE_PREFIX.length + 1)
+      } else {
+        // This is to prepend the current directory only in when {file} is used
+        // inside of a directory e.g.: programming/python.bigb
+        // = Python
+        //
+        // == hello.py
+        // {file}
+        //
+        // but not for _file/programming/hello.py
+        const [inputDirNoPrefix, basename] = pathSplit(inputPathNoRefPrefix, context.options.path_sep)
+        if (inputDirNoPrefix.length) {
+          ast.file = inputDirNoPrefix + Macro.HEADER_SCOPE_SEPARATOR + ast.file
+        }
+      }
     }
     ast.index_id = index_id;
     if (ast.id !== undefined && !ast.force_no_index) {

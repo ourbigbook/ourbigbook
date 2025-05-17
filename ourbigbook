@@ -18,12 +18,24 @@ const { Liquid } = require('liquidjs');
 const { DataTypes, Op, Sequelize } = require('sequelize')
 
 const ourbigbook = require('ourbigbook');
-const { DIR_PREFIX, RAW_PREFIX, URL_SEP } = ourbigbook
+const {
+  DIR_PREFIX,
+  FILE_TYPE_FILE,
+  FILE_TYPE_DIRECTORY,
+  RAW_PREFIX,
+  URL_SEP,
+} = ourbigbook
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
 const { cliInt } = ourbigbook_nodejs_webpack_safe
-const { ARTICLE_HASH_LIMIT_MAX, articleHash, WebApi, read_include } = require('ourbigbook/web_api');
+const {
+  ARTICLE_HASH_LIMIT_MAX,
+  articleHash,
+  hashToHex,
+  read_include,
+  WebApi,
+} = require('ourbigbook/web_api');
 
 const DEFAULT_TEMPLATE_BASENAME = 'ourbigbook.liquid.html';
 const OURBIGBOOK_TEX_BASENAME = 'ourbigbook.tex';
@@ -213,6 +225,8 @@ async function check_db(nonOurbigbookOptions) {
         sequelize,
         nonOurbigbookOptions.ourbigbook_paths_converted,
         {
+          filterFilesThatDontExist: (aRefs) => aRefs.filter(
+            aRef => !fs.existsSync(path.join(nonOurbigbookOptions.ourbigbook_json_dir, aRef.to))),
           options: nonOurbigbookOptions.options,
           perf: false,
         }
@@ -368,6 +382,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
       nonOurbigbookOptions.cli.render &&
       !nonOurbigbookOptions.had_error
     ) {
+      nonOurbigbookOptions.nonBigbPathsConverted = new Set()
       const newNonOurbigbookOptions = ourbigbook.cloneAndSet(nonOurbigbookOptions, 'is_render_after_extract', true)
       await convert_directory(
         input_dir,
@@ -861,6 +876,9 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
       }
     }
   }
+  if (!is_directory && !isbigb && nonOurbigbookOptions.nonBigbPathsConverted !== undefined) {
+    nonOurbigbookOptions.nonBigbPathsConverted.add(input_path)
+  }
   if (!nonOurbigbookOptions.had_error && (isbigb || convertNonBigb)) {
     if (showFinish) {
       convert_path_to_file_print_finish(ourbigbook_options, input_path, first_output_path, { message_prefix, skip, t0: msg_ret ? msg_ret.t0 : undefined })
@@ -1224,20 +1242,29 @@ function printStatus({
   cleanupDeleted,
   i,
   inpath,
+  isUpload,
   render,
   t0,
   t1,
   title,
 }={}) {
   let pref
-  if (render) {
+  if (isUpload) {
     if (cleanupDeleted) {
-      pref = 'delete'
+      pref = 'delete_upload'
     } else {
-      pref = MESSAGE_PREFIX_RENDER
+      pref = 'upload'
     }
   } else {
-    pref = MESSAGE_PREFIX_EXTRACT_IDS
+    if (render) {
+      if (cleanupDeleted) {
+        pref = 'delete'
+      } else {
+        pref = MESSAGE_PREFIX_RENDER
+      }
+    } else {
+      pref = MESSAGE_PREFIX_EXTRACT_IDS
+    }
   }
   msg = `web_${pref}: ${i}: ${title ? `${title} ` : ''}${inpath ? `(${inpath})` : ''}`
   if (t0 !== undefined) {
@@ -1246,16 +1273,12 @@ function printStatus({
   console.error(msg)
 }
 
-async function tryCreateOrUpdate(webApi, articleArgs, extraArgs) {
+async function tryCreateOrUpdate(fn) {
   let tries = 0
-  let ret
   while (true) {
     let retry = false
     try {
-      return webApi.articleCreateOrUpdate(
-        articleArgs,
-        extraArgs,
-      )
+      return fn()
     } catch(err) {
       if (tries < WEB_MAX_RETRIES || (
         // Happens if the server is restarted in the middle of a conversion after it was killed by nodemon.
@@ -1327,36 +1350,23 @@ function* walk_directory_recursively(
 }
 
 async function webCreateOrUpdate({
-  title,
-  articleArgs,
   cleanupDeleted,
-  extraArgs,
-  inpath,
+  fn,
   i,
-  updateNestedSetIndex,
-  webApi,
+  inpath,
+  isUpload,
+  render,
+  title,
   webDry,
 }) {
-  const render = extraArgs.render
-  printStatus({ i, cleanupDeleted, inpath, render })
+  printStatus({ i, cleanupDeleted, inpath, isUpload, render })
   const t0 = now()
+  let data, status
   if (!webDry) {
     // Retry the transaction a few times. This designed to work well during development when nodemon
     // restarts the server after a file update that adds some logging, often for perf. This way
     // you can just turn logs on and off during a large conversion and it will just keep running fine.
-    ;({ data, status } = await tryCreateOrUpdate(
-      webApi,
-      articleArgs,
-      Object.assign(
-        {
-          list: true,
-        },
-        extraArgs,
-        {
-          updateNestedSetIndex,
-        }
-      )
-    ))
+    ;({ data, status } = await tryCreateOrUpdate(fn))
     assertApiStatus(status, data)
     //if (render && i % 100 == 0) {
     //  runCmd('bin/pg', ['bin/normalize', '-c', '-u', 'cirosantilli', 'nested-set'], {
@@ -1366,8 +1376,8 @@ async function webCreateOrUpdate({
     //}
   }
   const t1 = now()
-  printStatus({ i, title, inpath, render, cleanupDeleted, t0, t1 })
-  return { nestedSetNeedsUpdate: data.nestedSetNeedsUpdate }
+  printStatus({ i, title, inpath, isUpload, render, cleanupDeleted, t0, t1 })
+  return { nestedSetNeedsUpdate: data ? data.nestedSetNeedsUpdate : true }
 }
 
 // CLI options.
@@ -1587,6 +1597,13 @@ if (cli.helpMacros) {
   const ourbigbook_options = {
     add_test_instrumentation: cli.addTestInstrumentation,
     body_only: cli.bodyOnly,
+    getAFileTypes: (aRefs) => {
+      let ret = {}
+      for (const a of aRefs) {
+        ret[a] = fs.lstatSync(path.join(ourbigbook_json_dir,a)).isFile() ? FILE_TYPE_FILE : FILE_TYPE_DIRECTORY
+      }
+      return ret
+    },
     ourbigbook_json,
     embed_includes: cli.embedIncludes,
     fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
@@ -1600,7 +1617,7 @@ if (cli.helpMacros) {
       read: (inpath) => fs.readFileSync(path.join(ourbigbook_json_dir, inpath), ourbigbook_nodejs_webpack_safe.ENCODING),
       path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
     }),
-    read_file: (readpath, context) => {
+    read_file: (readpath, context, opts={}) => {
       readpath = path.join(path.join(ourbigbook_json_dir, readpath))
       if (
         // Let's prevent path transversal a bit by default.
@@ -1608,14 +1625,7 @@ if (cli.helpMacros) {
         fs.existsSync(readpath)
       ) {
         if (fs.lstatSync(readpath).isFile()) {
-          return {
-            type: 'file',
-            content: fs.readFileSync(readpath, ourbigbook_nodejs_webpack_safe.ENCODING),
-          }
-        } else {
-          return {
-            type: 'directory',
-          }
+          return fs.readFileSync(readpath, ourbigbook_nodejs_webpack_safe.ENCODING)
         }
       } else {
         return undefined
@@ -1779,6 +1789,8 @@ if (cli.helpMacros) {
     file_rows_dict: {},
     encoding: ourbigbook_nodejs_webpack_safe.ENCODING,
     external_css_and_js: false,
+    filterFilesThatDontExist: (aRefs) => aRefs.filter(
+      aRef => !fs.existsSync(path.join(ourbigbook_json_dir, aRef.to))),
     had_error: false,
     is_render_after_extract: false,
     ignore_path_regexps: options.ourbigbook_json.ignore.map(p => RegExp(`^${p}($|${path.sep})`)),
@@ -1786,6 +1798,8 @@ if (cli.helpMacros) {
     ignore_paths: new Set(),
     input_path_is_file,
     log: nonOurbigbookOptions_log,
+    // undefined: don't collect. Set(): collect.
+    nonBigbPathsConverted: undefined,
     // Resolved options.
     options,
     out_css_path: ourbigbook_nodejs.DIST_CSS_PATH,
@@ -2109,7 +2123,7 @@ if (cli.helpMacros) {
                     // This would be ideal, allowing us to store all information about the article in the body itself.
                     // But it was hard to implement, since now the input path is an important input of conversion.
                     // So to start with we will just always provide the input path as a separate parameter.
-                    // {id= for toplevel was ignored as of writing, which is bad, should be either used or error.
+                    // id= for toplevel was ignored as of writing, which is bad, should be either used or error.
                     //addId = dirPathParse.name
                   }
                   if (dirPathParse.dir) {
@@ -2188,7 +2202,7 @@ if (cli.helpMacros) {
             }
           }
         }
-      }
+      } // post_convert_callback
       let treeToplevelId, treeToplevelFileId
       if (input_path_is_file) {
         await convert_path_to_file(inputPath, ourbigbook_options, nonOurbigbookOptions)
@@ -2264,6 +2278,52 @@ if (cli.helpMacros) {
         inputPath === '.' &&
         !cli.webId
       ) {
+        // Handle uploads
+        {
+          const uploadHashes = {}
+          const serverOnlyUploads = []
+          let i = 0
+          if (!cli.webDry) {
+            do {
+              ;({ data, status } = await webApi.uploadHash({ author: username, offset: i }))
+              assertApiStatus(status, data)
+              const uploads = data.uploads
+              for (const upload of uploads) {
+                const pathNoUsername = upload.path.substring(username.length + URL_SEP.length)
+                uploadHashes[pathNoUsername] = upload.hash
+                if (!nonOurbigbookOptions.nonBigbPathsConverted.has(pathNoUsername)) {
+                  serverOnlyUploads.push(pathNoUsername)
+                }
+              }
+              i += uploads.length
+            } while (data.uploads.length === ARTICLE_HASH_LIMIT_MAX)
+          }
+          i = 0
+          for (const p of serverOnlyUploads) {
+            await webCreateOrUpdate({
+              cleanupDeleted: true,
+              fn: async () => webApi.uploadDelete(`${username}${URL_SEP}${p}`),
+              i: i++,
+              isUpload: true,
+              title: p,
+              webDry: cli.webDry,
+            })
+          }
+          for (const p of nonOurbigbookOptions.nonBigbPathsConverted) {
+            const content = fs.readFileSync(p)
+            if (hashToHex(content) !== uploadHashes[p]) {
+              await webCreateOrUpdate({
+                cleanupDeleted: false,
+                fn: async () => webApi.uploadCreateOrUpdate(`${username}${URL_SEP}${p}`, content),
+                i: i++,
+                isUpload: true,
+                title: p,
+                webDry: cli.webDry,
+              })
+            }
+          }
+        }
+
         // https://docs.ourbigbook.com/todo/make-articles-removed-locally-empty-on-web-upload
         const serverOnlyPaths = new Set(Object.keys(webPathToArticle))
         for (const header_tree_entry of header_tree) {
@@ -2272,20 +2332,23 @@ if (cli.helpMacros) {
         let i = 0
         for (const path of serverOnlyPaths) {
           if (webPathToArticle[path].cleanupIfDeleted) {
+            const render = true
             const ret = await webCreateOrUpdate({
-              inpath: path,
-              articleArgs: {
-                bodySource: '',
-              },
               cleanupDeleted: true,
-              extraArgs: {
-                path: pathNoUsernameNoext(path),
-                render: true,
-                list: false,
-              },
+              fn: async () => webApi.articleCreateOrUpdate(
+                {
+                  bodySource: '',
+                },
+                {
+                  path: pathNoUsernameNoext(path),
+                  render,
+                  list: false,
+                  updateNestedSetIndex: !cli.webNestedSetBulk,
+                },
+              ),
               i: i++,
-              updateNestedSetIndex: !cli.webNestedSetBulk,
-              webApi,
+              inpath: path,
+              render,
               webDry: cli.webDry,
             })
             if (ret.nestedSetNeedsUpdate) {
@@ -2369,14 +2432,14 @@ if (cli.helpMacros) {
               if (previousSiblingId) {
                 extraArgs.previousSiblingId = previousSiblingId
               }
+              extraArgs.updateNestedSetIndex = !cli.webNestedSetBulk
+              extraArgs.list = true
               const ret = await webCreateOrUpdate({
-                title: article.title,
-                inpath: article.inpath,
-                articleArgs,
-                extraArgs,
+                fn: async () => webApi.articleCreateOrUpdate(articleArgs, extraArgs),
                 i: i++,
-                updateNestedSetIndex: !cli.webNestedSetBulk,
-                webApi,
+                inpath: article.inpath,
+                render,
+                title: article.title,
                 webDry: cli.webDry,
               })
               if (render && ret.nestedSetNeedsUpdate) {

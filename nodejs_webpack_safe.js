@@ -681,7 +681,24 @@ class SqlDbProvider extends web_api.DbProviderBase {
     }
 
     return Promise.all([
-      sequelize.models.Id.bulkCreate(create_ids, { transaction }),
+      sequelize.models.Id.bulkCreate(create_ids, { transaction }).then((ids) => {
+        const ididToId = {}
+        for (const id of ids) {
+          ididToId[id.idid] = id.id
+        }
+        sequelize.models.ARef.bulkCreate(
+          context.aRefs.map(r => {
+            return {
+              from: ididToId[r.from],
+              to: r.to,
+              defined_at: newFile.id,
+              defined_at_line: r.sourceLocation.line,
+              defined_at_col: r.sourceLocation.column,
+            }
+          }),
+          { transaction }
+        )
+      }),
       sequelize.models.Ref.bulkCreate(refs, { transaction }),
     ])
   }
@@ -811,9 +828,10 @@ async function update_database_after_convert({
   // and instead of doing INSERT one by one we would do a single insert with a bunch of data.
   // The move to Sequelize made that easier with bulkCreate. But keeping the transaction just in case
   let newFile
+  const { File, Render } = sequelize.models
   await sequelize.transaction({ transaction }, async (transaction) => {
     file_bulk_create_opts.transaction = transaction
-     await sequelize.models.File.bulkCreate(
+     await File.bulkCreate(
       [
         {
           authorId,
@@ -827,7 +845,7 @@ async function update_database_after_convert({
       ],
       file_bulk_create_opts,
     )
-    newFile = await sequelize.models.File.findOne({ where: { path }, transaction})
+    newFile = await File.findOne({ where: { path }, transaction})
     const promises = []
     if (
       // This is not just an optimization, but actually required, because otherwise the second database
@@ -846,10 +864,10 @@ async function update_database_after_convert({
     }
     await Promise.all(promises)
     // Re-find here until SQLite RETURNING gets used by sequelize.
-    const file = await sequelize.models.File.findOne({ where: { path }, transaction })
+    const file = await File.findOne({ where: { path }, transaction })
     if (!render) {
       // Mark all existing renderings as outdated.
-      await sequelize.models.Render.update(
+      await Render.update(
         {
           outdated: true,
         },
@@ -862,10 +880,10 @@ async function update_database_after_convert({
       )
     }
     // Create a rendering for the current type if one does not exist.
-    await sequelize.models.Render.upsert(
+    await Render.upsert(
       {
         outdated: !render || !!had_error,
-        type: sequelize.models.Render.Types[renderType],
+        type: Render.Types[renderType],
         fileId: file.id,
       },
       {
@@ -878,7 +896,7 @@ async function update_database_after_convert({
 }
 
 /** Do various post ID extraction checks to verify database integrity after the database is updated by the ID extraction step:
- *
+ re are frequent short-term opportunities in gold futures. Many investors are paying attention to this T+0 *
  * - refs to IDs that don't exist
  * - duplicate IDs
  * - https://docs.ourbigbook.com/x-within-title-restrictions
@@ -900,7 +918,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
   //   * directory based scopes
   //   * \x magic pluralization variants
   // * ensure that all \x targets exist
-  let { perf, options, ref_prefix, transaction, web } = opts
+  let { filterFilesThatDontExist, perf, options, ref_prefix, transaction, web } = opts
   if (ref_prefix === undefined) {
     ref_prefix = ''
   }
@@ -908,7 +926,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
     options = {}
   }
   const { Op } = sequelize.Sequelize
-  const { File, Id, Ref } = sequelize.models
+  const { ARef, File, Id, Ref } = sequelize.models
   let t0
   if (perf) {
     t0 = performance.now();
@@ -928,6 +946,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
     unreachableFiles,
     duplicate_rows,
     invalid_title_title_rows,
+    aRefs,
   ] = await Promise.all([
     Ref.findAll({
       order: [
@@ -1067,6 +1086,15 @@ async function check_db(sequelize, paths_converted, opts={}) {
     ,
     Id.findDuplicates(paths_converted, transaction),
     Id.findInvalidTitleTitle(paths_converted, transaction),
+    // aRefs
+    ARef.findAll({
+      include: [{
+        model: File,
+        as: 'aRefDefinedAt',
+        where: paths_converted === undefined ? {} : { path: paths_converted },
+      }],
+      transaction,
+    })
   ])
   if (perf) {
     console.error(`perf: check_db.after_finds: ${performance.now() - t0} ms`);
@@ -1173,6 +1201,15 @@ async function check_db(sequelize, paths_converted, opts={}) {
   }
   if (delete_unused_inflection_ids.length) {
     await sequelize.models.Ref.destroy({ where: { id: delete_unused_inflection_ids }, transaction })
+  }
+
+  if (filterFilesThatDontExist) {
+    for (const a of await filterFilesThatDontExist(aRefs)) {
+      error_messages.push(
+        `${a.aRefDefinedAt.path}:${a.defined_at_line}:${a.defined_at_col}: link ` +
+        `to file that does not exist: "${a.to}"`
+      )
+    }
   }
 
   if (duplicate_rows.length > 0) {

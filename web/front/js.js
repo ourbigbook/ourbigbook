@@ -153,7 +153,8 @@ function getPage(page='1') {
 
 function hasReachedMaxItemCount(loggedInUser, itemCount, itemType) {
   if (!loggedInUser.admin && itemCount >= loggedInUser.maxArticles) {
-    return `You have reached your maximum number of ${itemType}: ${loggedInUser.maxArticles}. Please ask an admin to raise it for you: ${config.contactUrl}`
+    return `You have reached your maximum number of ${itemType}: ${loggedInUser.maxArticles}. ` +
+           `Please ask an admin to raise it for you: ${config.contactUrl}`
   }
 }
 

@@ -1953,7 +1953,21 @@ and it would be associated to the file:
 path/to/myfile.txt
 ``
 
-The content of the header `= myfile.txt` is arbitrary, as it can be fully inferenced from the file path `_file/path/to/myfile.txt.bigb`. TODO add linting for it. Perhaps we should make adding a header be optional and auto-generate that header instead. But having at least an optional header is good as a way of being able to set header properties like <tags>.
+The content of the header `= myfile.txt` is arbitrary, as it can be fully inferred from the file path `_file/path/to/myfile.txt.bigb`. TODO add linting for it. Perhaps we should make adding a header be optional and auto-generate that header instead. But having at least an optional header is good as a way of being able to set header properties like <tags>.
+
+ID's defined under `_file/path/to/myfile.txt.bigb` don't have any scope, e.g.:
+``
+= myfile.txt
+{file}
+
+\Image[dog.png]
+{title=dog}
+``
+would simply have ID `image-dog`. <Scopes> only count if they come above `_file` e.g.:
+``
+my-scope/_file/path/to/myfile.txt.bigb
+``
+would have scope `my-scope`.
 
 = `_file` input directory
 {parent=H file argument}

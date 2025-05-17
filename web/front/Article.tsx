@@ -793,7 +793,8 @@ export default function Article({
               url &&
               urlOrigin &&
               // Don't do processing for external links.
-              url.origin === urlOrigin.origin
+              url.origin === urlOrigin.origin &&
+              !href.match(/\/[^/]+\/_raw\//)
             ) {
               // E.g. barack-obama/mathematics
               let frag

@@ -57,9 +57,9 @@ const convertOptions = {
 }
 
 const apiPath = '/' + ourbigbook.WEB_API_PATH
-const uploadPath = apiPath + '/upload'
+const uploadPathComponent = 'upload'
 const profilePicturePathComponent = 'profile'
-const profilePicturePath = uploadPath + '/' + profilePicturePathComponent
+const profilePicturePath = apiPath + '/upload/' + profilePicturePathComponent
 const allowedImageContentTypesArr = [
   'image/jpeg',
   'image/png',
@@ -131,6 +131,9 @@ module.exports = {
   // https://archive.ph/cH0Rk
   maxArticleSize: 50000,
   maxArticles: 10000,
+  maxUploads: 100,
+  maxUploadSize: 2000000,
+  maxArticles: 10000,
   maxArticlesInMemory: 1000,
   maxArticlesFetch: 100,
   maxArticlesFetchToc: 1000,
@@ -173,8 +176,8 @@ module.exports = {
   secret: ourbigbook_nodejs_front.isProduction ? process.env.SECRET : 'secret',
   sureLeaveMessage: 'Your change may be unsaved, are you sure you want to leave this page?',
   trackRequests: dbSettings.dialect !== 'sqlite',
-  uploadPath,
   useCaptcha: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY !== undefined && !ourbigbook_nodejs_front.isTest,
+  uploadPathComponent,
   usernameMinLength: 3,
   usernameMaxLength: 40,
   topicConsiderNArticles: 10,

@@ -26,10 +26,45 @@ const {
   maxArticleTitleSize,
   read_include_web
 } = require('./front/config')
+const { path_sep } = convertOptions
 const { hasReachedMaxItemCount, idToSlug, slugToId } = require('./front/js')
 
+async function getActualPaths(sequelize, aRefs, author, transaction) {
+  const { Upload, User } = sequelize.models
+  const usernameIds = {
+    [author.username]: author.id
+  }
+  const authorUsernames = aRefs.map(
+    a => a.substring(ourbigbook.AT_MENTION_CHAR.length).split(
+      path_sep)[0]
+  ).filter(u => u != author.username)
+  if (authorUsernames.length) {
+    const authors = await User.findAll({
+      where: { username: authorUsernames },
+      transaction,
+    })
+    for (const author of authors) {
+      usernameIds[author.username] = author.id
+    }
+  }
+  const actualPaths = []
+  const pathToActualPath = {}
+  for (const aRef of aRefs) {
+    const split = aRef.substring(ourbigbook.AT_MENTION_CHAR.length).split(
+      path_sep
+    )
+    const actualPath = Upload.uidAndPathToUploadPath(
+      usernameIds[split[0]],
+      split.slice(1).join(path_sep)
+    )
+    actualPaths.push(actualPath)
+    pathToActualPath[aRef] = actualPath
+  }
+  return { actualPaths, pathToActualPath }
+}
+
 function getConvertOpts({
-  authorUsername,
+  author,
   extraOptions={},
   input_path,
   sequelize,
@@ -45,6 +80,22 @@ function getConvertOpts({
     convertOptions: lodash.merge(
       {
         db_provider,
+        getAFileTypes: async (aRefs) => {
+          const { Upload } = sequelize.models
+          const { actualPaths, pathToActualPath } = await getActualPaths(
+            sequelize, aRefs, author, transaction)
+          const uploads = await Upload.findAll({
+            where: { path: actualPaths },
+            transaction,
+          })
+          const exists = new Set(uploads.map(upload => upload.path))
+          let ret = {}
+          for (const aRef of aRefs) {
+            ret[aRef] = exists.has(pathToActualPath[aRef])
+              ? ourbigbook.FILE_TYPE_FILE : ourbigbook.FILE_TYPE_DIRECTORY
+          }
+          return ret
+        },
         input_path,
         ourbigbook_json: {
           h: {
@@ -54,7 +105,7 @@ function getConvertOpts({
         },
         parent_id: parentId,
         read_include: read_include_web(async (idid) => (await sequelize.models.Id.count({ where: { idid }, transaction })) > 0),
-        ref_prefix: `${AT_MENTION_CHAR}${authorUsername}`,
+        ref_prefix: `${AT_MENTION_CHAR}${author.username}`,
         render,
         split_headers: splitHeaders === undefined ? true : splitHeaders,
         h_web_ancestors: type === 'article',
@@ -86,7 +137,7 @@ async function convert({
     console.error('perf: convert.start');
   }
   const { db_provider, convertOptions } = getConvertOpts({
-    authorUsername: author.username,
+    author,
     input_path: path,
     parentId,
     render,
@@ -363,7 +414,7 @@ async function convertArticle({
         // the 'index' -> '' path to ID conversion.
         const extra_returns = {}
         const { convertOptions } = getConvertOpts({
-          authorUsername: author.username,
+          author,
           extraOptions: {
             h1Only: true,
           },
@@ -712,6 +763,24 @@ async function convertArticle({
           sequelize,
           [input_path],
           {
+            // All paths here are the fully qualified paths, e.g. @user0/subdir/myfile.txt
+            filterFilesThatDontExist: async (aRefs) => {
+              const { Upload, UploadDirectory } = sequelize.models
+              const { actualPaths, pathToActualPath } = await getActualPaths(
+                sequelize, aRefs.map(a => a.to), author, transaction)
+              const [uploads, uploadDirectories] = await Promise.all([
+                Upload.findAll({
+                  where: { path: actualPaths },
+                  transaction,
+                }),
+                UploadDirectory.findAll({
+                  where: { path: actualPaths },
+                  transaction,
+                }),
+              ])
+              const exists = new Set(uploads.concat(uploadDirectories).map(upload => upload.path))
+              return aRefs.filter(aRef => !(exists.has(pathToActualPath[aRef.to])))
+            },
             web: true,
             perf,
             transaction,

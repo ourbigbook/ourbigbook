@@ -23,7 +23,6 @@ const path = require('path');
 const pluralize = require('pluralize');
 
 const runtime_common = require('./runtime_common');
-const { kMaxLength } = require('buffer');
 
 // consts used by classes.
 const HTML_PARENT_MARKER = '<span class="fa-solid-900 icon">\u{f062}</span>';
@@ -844,7 +843,7 @@ class AstNode {
 exports.AstNode = AstNode;
 
 class AstArgument {
-  /** @param {List[AstNode]} nodes
+  /** @param {List[AstNode]} asts
    *  @ param {SourceLocation} source_location
    */
   constructor(asts, source_location, opts={}) {
@@ -2853,7 +2852,7 @@ function calculateId(
     if (ast.id && ast.subdir && !skip_scope) {
       ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
     }
-    if (file_header && ast.scope) {
+    if (file_header && context.options.input_path !== undefined) {
       const [input_path, ext] = pathSplitext(context.options.input_path)
       let inputPathNoRefPrefix = input_path
       if (context.options.ref_prefix) {
@@ -3609,6 +3608,7 @@ function convertInitOptions(options) {
     // don't show "source code of this page" on templates.
     options.auto_generated_source = false;
   }
+  if (!('getAFileTypes' in options)) { options.getAFileTypes = aRefs => { return {} } }
   if (!('html_embed' in options)) { options.html_embed = false; }
   if (!('hFileShowLarge' in options)) { options.hFileShowLarge = false }
   if (!('h_parse_level_offset' in options)) {
@@ -3751,7 +3751,8 @@ function convertInitOptions(options) {
   }
   if (!('x_leading_at_to_web' in options)) {
     // If \x href starts with @ as in \x[@username] link to OBB Web
-    // https://ourbigbook.com/username instead of treating it as a regular ID.
+    // https://ourbigbook.com/username from both web and local static
+    // renders instead of treating it as a regular localID.
     options.x_leading_at_to_web = true
   }
   if (!('x_remove_leading_at' in options)) {
@@ -3861,7 +3862,12 @@ function convertInitContext(options={}, extra_returns={}) {
     if (input_dir === '') {
       options.toplevel_parent_scope = undefined;
     } else {
-      options.toplevel_parent_scope = input_dir
+      let inputDirSplit = input_dir.split(options.path_sep)
+      const fileIdx = inputDirSplit.findIndex(s => s === FILE_PREFIX)
+      if (fileIdx !== -1) {
+        inputDirSplit = inputDirSplit.slice(0, fileIdx)
+      }
+      options.toplevel_parent_scope = inputDirSplit.join(Macro.HEADER_SCOPE_SEPARATOR)
     }
   } else {
     input_dir = ''
@@ -3874,6 +3880,11 @@ function convertInitContext(options={}, extra_returns={}) {
   extra_returns.errors = [];
   extra_returns.rendered_outputs = {};
   const context = {
+    // path -> { 'directory', 'file' }
+    aFileTypes: {},
+    // List of references to filesystem files e.g. by \a[myfile.txt].
+    // [{ path: string, sourceLocation: SourceLocation }]
+    aRefs: [],
     // Plaintexts for which we want to check if topic IDs exists
     automaticTopicLinkPlaintexts: [],
     // Topic Ids of interest that we have checked do exist
@@ -3969,7 +3980,8 @@ function convertInitOurbigbookJson(ourbigbook_json={}) {
         media_providers.local.path = '';
       }
       if (media_providers.github && !('remote' in media_providers.github)) {
-        media_providers.github.remote = 'TODO determine from git remote origin if any';
+        // TODO determine from git remote origin if any
+        media_providers.github.remote = undefined
       }
       for (const media_provider_name in media_providers) {
         const media_provider = media_providers[media_provider_name];
@@ -4179,84 +4191,6 @@ function getDescendantCountHtml(context, tree_node, options) {
   return ret;
 }
 
-/**
- *
- * @return - inputDirectory: input directory with prefix _file removed if present
- */
-function checkAndUpdateLocalLink({
-  context,
-  hrefNoEscape,
-  external,
-  media_provider_type,
-  source_location,
-}) {
-  const was_protocol_given = protocolIsGiven(hrefNoEscape)
-
-  let inputDirectory
-  const input_path = context.options.input_path
-  if (input_path !== undefined) {
-    inputDirectory = dirname(
-      input_path,
-      context.options.path_sep
-    )
-  } else {
-    inputDirectory = '.'
-  }
-
-  const is_absolute = hrefNoEscape[0] === URL_SEP
-  const is_external = (external !== undefined && external) || (
-    external === undefined && was_protocol_given
-  )
-
-  // Check existence.
-  let error = ''
-  if (!is_external) {
-    if (hrefNoEscape.length !== 0) {
-      let check_path;
-      if (is_absolute) {
-        check_path = hrefNoEscape.slice(1)
-      } else {
-        check_path = path.join(inputDirectory, hrefNoEscape)
-      }
-      if (
-        context.options.fs_exists_sync &&
-        !context.options.fs_exists_sync(check_path)
-      ) {
-        error = `link to inexistent local file: ${hrefNoEscape}`;
-        renderError(context, error, source_location);
-        error = errorMessageInOutput(error, context)
-      } else {
-        const readFileRet = context.options.read_file(check_path, context)
-        if (
-          // Fails on web before we implement files on web.
-          readFileRet !== undefined
-        ) {
-          const { type } = context.options.read_file(check_path, context)
-          if (type === 'directory') {
-            if (context.options.htmlXExtension) {
-              hrefNoEscape = path.join(hrefNoEscape, 'index.html')
-            }
-          }
-          // Modify external paths to account for scope + --split-headers
-          let pref = context.root_relpath_shift
-          if (media_provider_type === 'local') {
-            if (type === 'directory') {
-              pref = path.join(pref, DIR_PREFIX)
-            } else {
-              pref = path.join(pref, RAW_PREFIX)
-            }
-          }
-          if (!is_absolute) {
-            pref = path.join(pref, inputDirectory)
-          }
-          hrefNoEscape = path.join(pref, hrefNoEscape)
-        }
-      }
-    }
-  }
-  return { href: htmlEscapeHrefAttr(hrefNoEscape), error, inputDirectory }
-}
-
 // Get description and other closely related attributes.
 function getDescription(description_arg, context) {
   let description = renderArg(description_arg, context);
@@ -4292,8 +4226,8 @@ function getLinkHtml({
   content,
   context,
   external,
+  href,
   hrefNoEscape,
-  source_location,
   extraReturns,
 }) {
   if (extraReturns === undefined) {
@@ -4303,15 +4237,16 @@ function getLinkHtml({
     if (attrs === undefined) {
       attrs = ''
     }
-    Object.assign(extraReturns, checkAndUpdateLocalLink({
+    Object.assign(extraReturns, resolveLinkToFileGetHref({
       context,
       external,
-      hrefNoEscape,
+      href: hrefNoEscape,
       // The only one available for now. One day we could add: \a[some/path]{provider=github}
       media_provider_type: 'local',
-      source_location,
     }))
-    let { href, error } = extraReturns
+    // TODO
+    let error = ''
+    ;({ href } = extraReturns)
     let testData
     if (ast) {
       testData = getTestData(ast, context)
@@ -4398,8 +4333,10 @@ function getTitleAndDescription({
 
 function githubProviderPrefix(context) {
   const github = context.options.ourbigbook_json['media-providers'].github
-  if (github) {
+  if (github && github.remote) {
     return `https://raw.githubusercontent.com/${github.remote}/master`;
+  } else {
+    return undefined
   }
 }
 
@@ -4688,16 +4625,15 @@ function htmlImg({
   // string, unescaped
   src,
 }) {
-  let error
+  // TODO
+  let error = ''
   ;({
-    error,
     href: src,
-  } = checkAndUpdateLocalLink({
+  } = resolveLinkToFileGetHref({
     context,
     external,
-    hrefNoEscape: src,
+    href: src,
     media_provider_type,
-    source_location: ast.args.src.source_location,
   }))
 
   const classes = []
@@ -5412,7 +5348,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         parseError(state, options.forbid_include, ast.source_location);
       } else {
         const href = renderArgNoescape(ast.args.href, context);
-        let input_dir, input_basename
+        let input_dir
         if (options.input_path) {
           ;[input_dir, input_basename] = pathSplit(options.input_path, options.path_sep)
         } else {
@@ -6085,6 +6021,49 @@ async function parse(tokens, options, context, extra_returns={}) {
               }
             }
           }
+        }
+      }
+      if (
+        macro_name === Macro.LINK_MACRO_NAME ||
+        macro_name === 'Image' ||
+        macro_name === 'image' ||
+        macro_name === 'Video' ||
+        ( macro_name === Macro.HEADER_MACRO_NAME && ast.validation_output.file.given )
+      ) {
+        let external, href
+        // Not in love with this duplication of logic from render-time calculation
+        // but it's a bit hard to factor out.
+        if (macro_name === Macro.HEADER_MACRO_NAME) {
+          href = ast.file
+          if (options.ref_prefix) {
+            href = options.ref_prefix + URL_SEP + href
+          }
+          if (protocolIsGiven(href)) {
+            external = true
+          } else {
+            external = false
+          }
+        } else {
+          validateAst(ast, context)
+          if (macro_name === Macro.LINK_MACRO_NAME) {
+            href = convertIdArg(ast.args.href, context)
+          } else {
+            ;({ src: href } = macroImageVideoResolveParams(ast, context))
+          }
+          ;({ external, href } = resolveLinkToFile({
+            context,
+            external: ast.validation_output.external &&
+              ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined,
+            href,
+          }))
+        }
+        if (!external) {
+          const cur_header = options.cur_header
+          context.aRefs.push({
+            from: cur_header ? cur_header.id : undefined,
+            to: href,
+            sourceLocation: ast.source_location,
+          })
         }
       }
 
@@ -6870,6 +6849,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           fetch_header_tree_ids_rows,
           fetch_ancestors_rows,
           automaticTopicLinkIds,
+          aFileTypes,
         ] = await Promise.all([
           options.db_provider.get_noscopes_base_fetch(
             Array.from(prefetch_ids),
@@ -6923,9 +6903,12 @@ async function parse(tokens, options, context, extra_returns={}) {
           // topicIds
           options.automaticTopicLinksMaxWords
             ? options.db_provider.fetchTopics(automaticTopicLinkIdsToFetch)
-            : []
+            : [],
+          // aFileTypes
+          context.options.getAFileTypes(context.aRefs.map(aRef => aRef.to)),
         ])
         context.automaticTopicLinkIds = new Set(automaticTopicLinkIds)
+        context.aFileTypes = aFileTypes
       }
 
       // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
@@ -7642,6 +7625,97 @@ function renderToc(context) {
     add_test_instrumentation: context.options.add_test_instrumentation,
     tocIdPrefix: context.options.tocIdPrefix,
   })
+}
+
+/**
+ * Resolve the href of an \a[] link to the full path from toplevel dir. This considers
+ * - if we are inside a directory subdir
+ *   - then \a[myfile.txt] resolves to `subdir/myfile.txt`
+ *   - but \a[/myfile.txt] is absolute because it starts with / and so resolves
+ * - \a[http://example.com] has a protocol http://, so it is external, so we don't touch it
+ * @return - inputDirectory: input directory with prefix _file removed if present
+ */
+function resolveLinkToFile({
+  context,
+  external,
+  href,
+}) {
+  external = (external !== undefined && external) || (
+    external === undefined && protocolIsGiven(href)
+  )
+  let inputDirectory
+  let input_path = context.options.input_path
+  if (input_path !== undefined) {
+    if (context.options.ref_prefix) {
+      input_path = input_path.substring(context.options.ref_prefix.length + context.options.path_sep.length)
+    }
+    const split = input_path.split(context.options.path_sep)
+    inputDirectory = split.slice(split[0] === FILE_PREFIX ? 1 : 0, -1).join(context.options.path_sep)
+    if (context.options.ref_prefix) {
+      inputDirectory = context.options.ref_prefix + context.options.path_sep + inputDirectory
+    }
+  } else {
+    inputDirectory = '.'
+  }
+  if (!external && href.length !== 0) {
+    if (context.options.x_remove_leading_at && href[0] === AT_MENTION_CHAR ) {
+    } else if (href[0] === URL_SEP) {
+      if (context.options.ref_prefix) {
+        href = context.options.ref_prefix + href
+      } else {
+        href = href.slice(URL_SEP.length)
+      }
+    } else {
+      href = path.join(inputDirectory, href)
+    }
+  }
+  return { href, external, inputDirectory }
+}
+
+/** Do what resolveLinkToFileGetHref does but also:
+ * - add _dir or _raw for local files
+ * - HTML escape the result
+ */
+function resolveLinkToFileGetHref({
+  context,
+  href,
+  external,
+  media_provider_type,
+}) {
+  let inputDirectory
+  ;({ external, href, inputDirectory, } = resolveLinkToFile({
+    context,
+    external,
+    href,
+    media_provider_type,
+  }))
+  if (!external) {
+    const type = context.aFileTypes[href]
+    if (context.options.webMode) {
+      const hrefSplit = href.split(URL_SEP)
+      href = URL_SEP +
+        hrefSplit[0].substring(AT_MENTION_CHAR.length) +
+        URL_SEP +
+        (type === FILE_TYPE_DIRECTORY ? DIR_PREFIX : RAW_PREFIX) +
+        URL_SEP +
+        hrefSplit.slice(1).join(URL_SEP)
+    } else {
+      if (type === FILE_TYPE_DIRECTORY && context.options.htmlXExtension) {
+        href = path.join(href, 'index.html')
+      }
+      // Modify external paths to account for scope + --split-headers
+      let pref = context.root_relpath_shift
+      if (media_provider_type === 'local') {
+        if (type === FILE_TYPE_DIRECTORY) {
+          pref = path.join(pref, DIR_PREFIX)
+        } else {
+          pref = path.join(pref, RAW_PREFIX)
+        }
+      }
+      href = path.join(pref, href)
+    }
+  }
+  return { href: htmlEscapeHrefAttr(href), inputDirectory }
 }
 
 function perfPrint(context, name) {
@@ -8612,6 +8686,10 @@ const OURBIGBOOK_CSS_CLASS = 'ourbigbook'
 exports.OURBIGBOOK_CSS_CLASS = OURBIGBOOK_CSS_CLASS
 const FILE_ROOT_PLACEHOLDER = '(root)'
 exports.FILE_ROOT_PLACEHOLDER = FILE_ROOT_PLACEHOLDER
+const FILE_TYPE_FILE = 'f'
+exports.FILE_TYPE_FILE = FILE_TYPE_FILE
+const FILE_TYPE_DIRECTORY = 'd'
+exports.FILE_TYPE_DIRECTORY = FILE_TYPE_DIRECTORY
 const HTML_REF_MARKER = '<sup class="ref">[ref]</sup>'
 const SHORTHAND_TOPIC_CHAR = '#';
 exports.SHORTHAND_TOPIC_CHAR = SHORTHAND_TOPIC_CHAR
@@ -8704,6 +8782,7 @@ exports.OURBIGBOOK_DEFAULT_HOST = OURBIGBOOK_DEFAULT_HOST
 const OURBIGBOOK_DEFAULT_DOCS_URL = `https://docs.${OURBIGBOOK_DEFAULT_HOST}`
 const OPTION_DEFAULTS = {
   embed_includes: false,
+  getAFileTypes: aRefs => { return {} },
   htmlXExtension: true,
   h: {
     numbered: false,
@@ -8928,12 +9007,12 @@ exports.UNICODE_SEARCH_CHAR = UNICODE_SEARCH_CHAR
 function macroImageVideoResolveParams(ast, context) {
   let error_message;
   let media_provider_type;
-  let src = renderArgNoescape(ast.args.src, context);
+  let src = renderArgNoescape(ast.args.src, cloneAndSet(context, 'id_conversion', true));
   let is_url;
 
   // Provider explicitly given by user on macro.
   if (ast.validation_output.provider.given) {
-    const provider_name = renderArgNoescape(ast.args.provider, cloneAndSet(context, 'id_conversion', true));
+    const provider_name = renderArgNoescape(ast.args.provider, cloneAndSet(context, 'id_conversion', true))
     if (MEDIA_PROVIDER_TYPES.has(provider_name)) {
       media_provider_type = provider_name;
     } else {
@@ -8994,7 +9073,12 @@ function macroImageVideoResolveParams(ast, context) {
       relpath_prefix = path.relative('.', context.options.outdir)
       src = `${github_path}/${src}`
     } else {
-      src = `${githubProviderPrefix(context)}/${src}`;
+      let githubPrefix = githubProviderPrefix(context)
+      if (githubPrefix === undefined) {
+        error_message = `github provider selected but provider prefix not set in settings`
+        renderError(context, error_message, ast.args.provider.source_location)
+      }
+      src = `${githubPrefix}/${src}`;
     }
   }
 
@@ -9822,13 +9906,13 @@ const DEFAULT_MACRO_LIST = [
             return `<div class="float-wrap"><iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${htmlEscapeHrefAttr(video_id)}${start}" ` +
                   `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
           } else {
-            let error
-            ;({ error, href: src } = checkAndUpdateLocalLink({
+            // TODO
+            let error = ''
+            ;({ href: src } = resolveLinkToFileGetHref({
               context,
               external: ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined,
-              hrefNoEscape: src,
+              href: src,
               media_provider_type,
-              source_location: ast.args.src.source_location,
             }))
             let start;
             if ('start' in ast.args) {
@@ -10005,7 +10089,6 @@ const OUTPUT_FORMATS_LIST = [
           if (ast.validation_output.ref.boolean) {
             content = `${HTML_REF_MARKER}`;
           }
-          const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
           let attrs = htmlRenderAttrsId(ast, context);
           if (context.options.ourbigbook_json.openLinksOnNewTabs) {
             attrs += ' target="_blank"'
@@ -10015,7 +10098,7 @@ const OUTPUT_FORMATS_LIST = [
             attrs,
             content,
             context,
-            external,
+            external: ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined,
             href,
             hrefNoEscape,
             source_location: ast.args.href.source_location,
@@ -10259,12 +10342,8 @@ const OUTPUT_FORMATS_LIST = [
           const renderPostAstsContext = cloneAndSet(context, 'validateAst', true)
           renderPostAstsContext.source_location = ast.source_location
           if (ast.file) {
-            if (ast.file.match(media_provider_type_youtube_re)) {
-            } else {
-              const readFileRet = context.options.read_file(ast.file, context)
-              if (readFileRet) {
-                ;({ [Macro.CONTENT_ARGUMENT_NAME]: fileContent } = readFileRet)
-              }
+            if (!ast.file.match(media_provider_type_youtube_re)) {
+              fileContent = context.options.read_file(ast.file, context)
             }
             // This section is about.
             const pathArg = []
@@ -10301,12 +10380,16 @@ const OUTPUT_FORMATS_LIST = [
                   }
                 ),
               )
+              context.aFileTypes[''] = FILE_TYPE_DIRECTORY
               for (const p of ast.file.split(URL_SEP)) {
                 pathArg.push(new PlaintextAstNode(' ' + URL_SEP + ' '))
                 if (curp !== '') {
                   curp += URL_SEP
                 }
                 curp += p
+                if (!(curp in context.aFileTypes)) {
+                  context.aFileTypes[curp] = FILE_TYPE_DIRECTORY
+                }
                 const astNodeArgs = {
                   [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([
                     new PlaintextAstNode(p)
@@ -11787,7 +11870,7 @@ OUTPUT_FORMATS_LIST.push(
       ext: OURBIGBOOK_EXT,
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
-          const href = renderArg(ast.args.href, context)
+          let href = renderArg(ast.args.href, context)
           if (protocolIsKnown(href)) {
             const newline = '\n'.repeat(ourbigbookNewlinesBefore(ast, context))
             if (dolog && newline) {
@@ -11795,7 +11878,15 @@ OUTPUT_FORMATS_LIST.push(
             }
             return `${newline}${href}${ourbigbookConvertArgs(ast, context, { skip: new Set(['href']) }).join('')}`
           } else {
-            return ourbigbookConvertSimpleElem(ast, context)
+            if (
+              !protocolIsGiven(href) &&
+              !(context.options.x_remove_leading_at && href[0] === AT_MENTION_CHAR) &&
+              !(href[0] === URL_SEP) &&
+              context.root_relpath_shift
+            ) {
+              href = context.root_relpath_shift + URL_SEP + href
+            }
+            return ourbigbookConvertSimpleElem(ast, context, { modify_callbacks: { href: () => href } })
           }
         },
         [Macro.BOLD_MACRO_NAME]: ourbigbookConvertSimpleElem,

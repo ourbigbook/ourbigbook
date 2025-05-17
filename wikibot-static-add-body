@@ -27,10 +27,11 @@ do
   echo "$f"
   last_body=
   cat "$indir/$f" | while IFS="" read -r l; do
-    if printf '%s' "$l" | grep -Eq '^='; then
+    if printf '%s' "$l" | grep -Eq '^(=|\\Include)'; then
       if [ -n "$last_body" ]; then
         printf '%s\n\n' "$last_body"
       fi
+      last_body=
     fi
     printf '%s\n' "$l"
     if printf '%s' "$l" | grep -Eq '^='; then
@@ -41,6 +42,8 @@ do
         sed -r 's/ +/ /g' |
         perl -lape 's/(.*[.!?]).*/\1/' |
         perl -lape 's/([.!?])[^.!?]+\b(I|you)\b[^.!?]+[.!?]$/\1/' |
+        perl -lape 's/([.!?:"]) \d+\.$/\1/' |
+        perl -lape 's/(.*[.!?]).*/\1/' |
         ourbigbook --escape-literal |
         sed -r 's/.$//'
       )"

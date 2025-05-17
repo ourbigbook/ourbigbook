@@ -31,8 +31,10 @@ import { UserType } from 'front/types/UserType'
 import { displayAndUsernameText } from 'front/user'
 import { formatNumberApprox } from 'ourbigbook'
 
-const maxArticleSizeLabel = "Maximum number of articles, issues and comments (maxArticles)"
-const maxArticlesLabel = "Maximum article/issue/comment size (maxArticleSize)"
+const maxArticlesLabel = "Maximum number of articles, issues and comments (maxArticles)"
+const maxArticleSizeLabel = "Maximum article/issue/comment size (maxArticleSize)"
+const maxUploadsLabel = "Maximum number of uploads (maxUploads)"
+const maxUploadSizeLabel = "Maximum upload size (maxUploadSize)"
 const maxIssuesPerMinuteLabel = "Maximum issues/comments per minute (maxIssuesPerMinute)"
 const maxIssuesPerHourLabel = "Maximum issues/comments per hour (maxIssuesPerHour)"
 const title = "Account settings"
@@ -85,15 +87,16 @@ const Settings = ({
       setErrors(data.errors)
     }
   }
-  useCtrlEnterSubmit(handleSubmit)
 
   // Limits.
   const [userInfoLimits, setUserInfoLimits] = React.useState(lodash.pick(
     user0,
     [
       'locked',
-      'maxArticleSize',
       'maxArticles',
+      'maxArticleSize',
+      'maxUploads',
+      'maxUploadSize',
       'maxIssuesPerHour',
       'maxIssuesPerMinute',
     ]
@@ -262,16 +265,32 @@ const Settings = ({
             <input
               disabled={cantSetUserLimit}
               type="number"
-              value={userInfoLimits.maxArticleSize}
-              onChange={updateStateLimits("maxArticleSize")}
+              value={userInfoLimits.maxArticles}
+              onChange={updateStateLimits("maxArticles")}
             />
           </Label>
           <Label label={maxArticleSizeLabel}>
             <input
               disabled={cantSetUserLimit}
               type="number"
-              value={userInfoLimits.maxArticles}
-              onChange={updateStateLimits("maxArticles")}
+              value={userInfoLimits.maxArticleSize}
+              onChange={updateStateLimits("maxArticleSize")}
+            />
+          </Label>
+          <Label label={maxUploadsLabel}>
+            <input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxUploads}
+              onChange={updateStateLimits("maxUploads")}
+            />
+          </Label>
+          <Label label={maxUploadSizeLabel}>
+            <input
+              disabled={cantSetUserLimit}
+              type="number"
+              value={userInfoLimits.maxUploadSize}
+              onChange={updateStateLimits("maxUploadSize")}
             />
           </Label>
           <Label label={maxIssuesPerMinuteLabel}>

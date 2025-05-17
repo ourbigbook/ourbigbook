@@ -129,6 +129,16 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: config.maxArticleSize,
       },
+      maxUploads: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: config.maxUploads,
+      },
+      maxUploadSize: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: config.maxUploadSize,
+      },
       hideArticleDates: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -265,6 +275,8 @@ module.exports = (sequelize) => {
       // a lower bound on their capacities. Let's just make them public for now then.
       maxArticles: this.maxArticles,
       maxArticleSize: this.maxArticleSize,
+      maxUploads: this.maxUploads,
+      maxUploadSize: this.maxUploadSize,
       maxIssuesPerMinute: this.maxIssuesPerMinute,
       maxIssuesPerHour: this.maxIssuesPerHour,
 

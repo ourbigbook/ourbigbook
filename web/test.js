@@ -2533,10 +2533,8 @@ it('api: resource limits', async () => {
     // Non-admin users cannot edit their own resource limits.
     ;({data, status} = await test.webApi.userUpdate('user0', {
       maxArticles: 1,
-    }))
-    assert.strictEqual(status, 403)
+    }, { expectStatus: 403 }))
     ;({data, status} = await test.webApi.user('user0'))
-    assertStatus(status, data)
     assert.strictEqual(data.maxArticles, config.maxArticles)
 
     // Admin users can edit other users' resource limits.
@@ -2545,19 +2543,21 @@ it('api: resource limits', async () => {
       ;({data, status} = await test.webApi.userUpdate('user0', {
         maxArticles: 3,
         maxArticleSize: 3,
+        maxUploads: 2,
+        maxUploadSize: 2,
         maxIssuesPerMinute: 3,
         maxIssuesPerHour: 3,
         locked: true,
       }))
-      assertStatus(status, data)
       test.loginUser(user)
 
       ;({data, status} = await test.webApi.user('user0'))
-      assertStatus(status, data)
       assertRows([data], [{
         username: 'user0',
         maxArticles: 3,
         maxArticleSize: 3,
+        maxUploads: 2,
+        maxUploadSize: 2,
         maxIssuesPerMinute: 3,
         maxIssuesPerHour: 3,
         locked: true,
@@ -2568,67 +2568,56 @@ it('api: resource limits', async () => {
       ;({data, status} = await test.webApi.userUpdate('user0', {
         locked: false,
       }))
-      assertStatus(status, data)
       test.loginUser(user)
 
     // Article.
 
       // maxArticleSize resource limit is enforced for non-admins.
       article = createArticleArg({ i: 0, bodySource: 'abcd' })
-      ;({data, status} = await createArticleApi(test, article))
-      assert.strictEqual(status, 403)
+      ;({data, status} = await createArticleApi(test, article, {}, { expectStatus: 403 }))
 
       // maxArticleSize resource limit is not enforced for admins.
       test.loginUser(admin)
       article = createArticleArg({ i: 0, bodySource: 'abcd' })
       ;({data, status} = await createArticleApi(test, article))
-      assertStatus(status, data)
       test.loginUser(user)
 
       // OK, second article including Index.
       article = createArticleArg({ i: 0, bodySource: 'abc' })
       ;({data, status} = await createArticleApi(test, article))
-      assertStatus(status, data)
 
       // maxArticleSize resource limit is enforced for all users.
       article = createArticleArg({ titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })
-      ;({data, status} = await createArticleApi(test, article))
-      assert.strictEqual(status, 422)
+      ;({data, status} = await createArticleApi(test, article, {}, { expectStatus: 422 }))
 
       // Even admin.
       test.loginUser(admin)
       article = createArticleArg({ titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })
-      ;({data, status} = await createArticleApi(test, article))
-      assert.strictEqual(status, 422)
+      ;({data, status} = await createArticleApi(test, article, {}, { expectStatus: 422 }))
       test.loginUser(user)
 
       // OK 2, third article including Index.
       article = createArticleArg({ titleSource: '0'.repeat(config.maxArticleTitleSize), bodySource: 'abc' })
       ;({data, status} = await createArticleApi(test, article))
-      assertStatus(status, data)
 
       // maxArticles resource limit is enforced for non-admins.
       article = createArticleArg({ i: 2, bodySource: 'abc' })
-      ;({data, status} = await createArticleApi(test, article))
-      assert.strictEqual(status, 403)
+      ;({data, status} = await createArticleApi(test, article, {}, { expectStatus: 403 }))
 
       // maxArticles resource limit is enforced for non-admins when creating article with PUT.
       article = createArticleArg({ i: 2, bodySource: 'abc' })
-      ;({data, status} = await createOrUpdateArticleApi(test, article))
-      assert.strictEqual(status, 403)
+      ;({data, status} = await createOrUpdateArticleApi(test, article, {}, { expectStatus: 403 }))
 
       // OK 2 for admin.
       test.loginUser(admin)
       article = createArticleArg({ i: 1, bodySource: 'abc' })
       ;({data, status} = await createArticleApi(test, article))
-      assertStatus(status, data)
       test.loginUser(user)
 
       // maxArticles resource limit is not enforced for admins.
       test.loginUser(admin)
       article = createArticleArg({ i: 2, bodySource: 'abc' })
       ;({data, status} = await createArticleApi(test, article))
-      assertStatus(status, data)
       test.loginUser(user)
 
     // Multiheader articles count as just one article.
@@ -2640,19 +2629,16 @@ it('api: resource limits', async () => {
 //        maxArticles: 5,
 //        maxArticleSize: 100,
 //      }))
-//      assertStatus(status, data)
 //      test.loginUser(user)
 //
 //      // This should count as just one, totalling 4.
 //      article = createArticleArg({ i: 2, bodySource: `== Title 2 1
 //` })
 //      ;({data, status} = await createArticleApi(test, article))
-//      assertStatus(status, data)
 //
 //      // So now we can still do one more, totalling 5.
 //      article = createArticleArg({ i: 3, bodySource: `abc`})
 //      ;({data, status} = await createArticleApi(test, article))
-//      assertStatus(status, data)
 
     // Issue.
 
@@ -2662,93 +2648,100 @@ it('api: resource limits', async () => {
         maxArticles: 2,
         maxArticleSize: 3,
       }))
-      assertStatus(status, data)
       ;({data, status} = await test.webApi.user('user0'))
       test.loginUser(user)
 
       // maxArticleSize resource limit is enforced for non-admins.
-      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abcd' })))
-      assert.strictEqual(status, 403)
+      ;({data, status} = await test.webApi.issueCreate('user0/title-0',
+        createIssueArg(0, 0, 0, { bodySource: 'abcd' }),
+        { expectStatus: 403 }
+      ))
 
       // maxArticleSize resource limit is not enforced for admins.
       test.loginUser(admin)
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abcd' })))
-      assertStatus(status, data)
       test.loginUser(user)
 
       // OK.
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
-      assertStatus(status, data)
 
       // maxArticleTitleSize resource limit is enforced for all users.
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(
-        0, 0, 0, { titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })))
-      assert.strictEqual(status, 422)
+        0, 0, 0, { titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' }),
+        { expectStatus: 422 }
+      ))
 
       // Even admin.
       test.loginUser(admin)
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(
-        0, 0, 0, { titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' })))
-      assert.strictEqual(status, 422)
+        0, 0, 0, { titleSource: '0'.repeat(config.maxArticleTitleSize + 1), bodySource: 'abc' }),
+        { expectStatus: 422 }
+      ))
       test.loginUser(user)
 
       // OK 2.
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(
         0, 0, 0, { titleSource: '0'.repeat(config.maxArticleTitleSize), bodySource: 'abc' })))
-      assertStatus(status, data)
 
       // maxArticles resource limit is enforced for non-admins.
-      ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
-      assert.strictEqual(status, 403)
+      ;({data, status} = await test.webApi.issueCreate(
+        'user0/title-0',
+        createIssueArg(0, 0, 0, { bodySource: 'abc' }),
+        { expectStatus: 403 }
+      ))
 
       // OK 2 for admin.
       test.loginUser(admin)
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
-      assertStatus(status, data)
       test.loginUser(user)
 
       // maxArticles resource limit is not enforced for admins.
       test.loginUser(admin)
       ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(0, 0, 0, { bodySource: 'abc' })))
-      assertStatus(status, data)
       test.loginUser(user)
 
     // Comment.
 
       // maxArticleSize resource limit is enforced for non-admins.
-      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abcd'))
-      assert.strictEqual(status, 403)
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abcd', { expectStatus: 403 }))
 
       // maxArticleSize resource limit is not enforced for admins.
       test.loginUser(admin)
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abcd'))
-      assertStatus(status, data)
       test.loginUser(user)
 
       // OK.
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
-      assertStatus(status, data)
 
       // OK 2.
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
-      assertStatus(status, data)
 
       // maxArticles resource limit is enforced for non-admins.
-      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
-      assert.strictEqual(status, 403)
+      ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc', { expectStatus: 403 }))
 
       // OK 2 for admin.
       test.loginUser(admin)
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
-      assertStatus(status, data)
       test.loginUser(user)
 
       // maxArticles resource limit is not enforced for admins.
       test.loginUser(admin)
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'abc'))
-      assertStatus(status, data)
       test.loginUser(user)
-  })
+
+    // Upload.
+
+      // Max upload size is enforced for non-admins.
+      ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/myfile1.txt', '000', { expectStatus: 403 }))
+
+      // Max uploads is enforced for non-admins.
+      ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/myfile1.txt', '11'))
+      ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/myfile2.txt', '22'))
+      // Update does not blow up the max.
+      ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/myfile2.txt', '23'))
+      ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/myfile3.txt', '33', { expectStatus: 403 }))
+
+  }, { defaultExpectStatus: 200 })
 })
 
 it(`api: user: locked users can't do much`, async () => {
@@ -4699,6 +4692,7 @@ it('api: uppercase article IDs are forbidden', async () => {
     //assert.strictEqual(status, 422)
 
     // Uppercase is allowed with {file} however.
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/path/to/main.S', 'content-0'))
     article = createArticleArg({ i: 0, titleSource: 'path/to/main.S', bodySource: '{file}' })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { path: '_file/path/to/main.S' }))
     assertStatus(status, data)
@@ -4707,6 +4701,7 @@ it('api: uppercase article IDs are forbidden', async () => {
     assert.notStrictEqual(data, undefined)
 
     // Also works without explicit path.
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/path/to/main2.S', 'content-0'))
     article = createArticleArg({ i: 0, titleSource: 'path/to/main2.S', bodySource: '{file}' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assertStatus(status, data)
@@ -6271,6 +6266,8 @@ it(`api: article with {file}`, async () => {
     const user0 = await test.createUserApi(0)
     test.loginUser(user0)
 
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/subdir/myfile.txt', 'content-0'))
+
     // Create article user0/_file/subdir/myfile.txt
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
       titleSource: `subdir/myfile.txt`,
@@ -6280,6 +6277,21 @@ it(`api: article with {file}`, async () => {
     // Check that the article is there
     ;({data, status} = await test.webApi.article('user0/_file/subdir/myfile.txt'))
     assert.strictEqual(data.titleRender, 'subdir/myfile.txt')
+    assert_xpath(
+      `//x:a[@href='/user0/_dir' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}' and ` +
+        `@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='@user0/${ourbigbook.FILE_PREFIX}/subdir/myfile.txt__']`,
+      data.h1Render
+    )
+    assert_xpath(
+      `//x:a[@href='/user0/_dir/subdir' and text()='subdir' and ` +
+        `@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='@user0/${ourbigbook.FILE_PREFIX}/subdir/myfile.txt__subdir']`,
+      data.h1Render
+    )
+    assert_xpath(
+      `//x:a[@href='/user0/_raw/subdir/myfile.txt' and text()='myfile.txt' and ` +
+        `@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='@user0/${ourbigbook.FILE_PREFIX}/subdir/myfile.txt__subdir/myfile.txt']`,
+      data.h1Render
+    )
   }, { defaultExpectStatus: 200 })
 })
 
@@ -6318,6 +6330,315 @@ it(`api: article {synonymNoScope}`, async () => {
 
     ;({data, status} = await test.webApi.articleRedirects({ id: 'user1/with-synonymnoscope' }))
     assert.strictEqual(data.redirects['user1/with-synonymnoscope'], 'user1/with-scope')
+  }, { defaultExpectStatus: 200 })
+})
+
+it(`api: upload simple`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const { Upload, UploadDirectory } = test.sequelize.models
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    test.loginUser(user0)
+
+    // Creation errors
+
+      // Logged off user can't create uploads.
+      test.disableToken()
+      ;({data, status} = await test.webApi.uploadCreateOrUpdate(
+        'user0/upload-0.png',
+        'content-0',
+        { expectStatus: 401 },
+      ))
+      test.loginUser(user0)
+
+      // Cannot create upload for another user.
+      ;({data, status} = await test.webApi.uploadCreateOrUpdate(
+        'user1/upload-0.png',
+        'content-0',
+        { expectStatus: 403 },
+      ))
+
+    // Access errors
+
+      // User exists path does not exist.
+      ;({data, headers, status} = await test.webApi.upload('user0/i-dont-exist', { expectStatus: 404 }))
+
+      // User does not exist.
+      ;({data, headers, status} = await test.webApi.upload('i-dont-exist/somepath', { expectStatus: 404 }))
+
+      // Empty
+      ;({data, headers, status} = await test.webApi.upload('', { expectStatus: 422 }))
+
+      // Empty path
+      ;({data, headers, status} = await test.webApi.upload('user0', { expectStatus: 404 }))
+
+      // Empty path with slash
+      ;({data, headers, status} = await test.webApi.upload('user0/', { expectStatus: 404 }))
+
+    // Create upload upload-0
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/upload-0.png', 'content-0'))
+
+    // Check that the upload is there
+    ;({data, headers, status} = await test.webApi.upload('user0/upload-0.png'))
+    assert.strictEqual(data, 'content-0')
+    assert.strictEqual(headers['content-type'], 'image/png')
+
+    // Logged off user can view uploads.
+    test.disableToken()
+    ;({data, status} = await test.webApi.upload('user0/upload-0.png'))
+    assert.strictEqual(data, 'content-0')
+    assert.strictEqual(headers['content-type'], 'image/png')
+    test.loginUser(user0)
+
+    // Unknown mime type does not blow up
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/upload-0.asdfqwer', 'content-0'))
+
+    // Check that the upload is there
+    ;({data, headers, status} = await test.webApi.upload('user0/upload-0.asdfqwer'))
+    assert.strictEqual(data, 'content-0')
+    assert.strictEqual(headers['content-type'], 'application/octet-stream')
+
+    // Create upload upload-0 for user1 as well
+    test.loginUser(user1)
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user1/upload-0.png', 'content-0'))
+    test.loginUser(user0)
+
+    // Check that the upload is there
+    ;({data, headers, status} = await test.webApi.upload('user1/upload-0.png'))
+    assert.strictEqual(data, 'content-0')
+    assert.strictEqual(headers['content-type'], 'image/png')
+
+    // Subdir upload.
+    ;({data, headers, status} = await test.webApi.uploadCreateOrUpdate('user0/subdir/myfile.txt', `line 1\n\nline 2\n`))
+    ;({data, headers, status} = await test.webApi.upload('user0/subdir/myfile.txt'))
+    assert.strictEqual(data, `line 1\n\nline 2\n`)
+    assert.strictEqual(headers['content-type'], 'text/plain; charset=utf-8')
+    // An UploadDirectory was created with the new file.
+    assert.notStrictEqual(await UploadDirectory.findOne({ where:
+      { path: Upload.uidAndPathToUploadPath(user0.id, 'subdir') }
+    }), null)
+
+    // Hash
+    ;({data, status} = await test.webApi.uploadHash({ author: 'user0' }))
+    assertRows(data.uploads, [
+      { path: 'user0/subdir/myfile.txt' },
+      { path: 'user0/upload-0.asdfqwer' },
+      { path: 'user0/upload-0.png' },
+    ])
+
+    // Subdir 2
+    ;({data, headers, status} = await test.webApi.uploadCreateOrUpdate('user0/subdir/subdir2/myfile.txt', `subdir/subdir2/myfile.txt contents`))
+    ;({data, headers, status} = await test.webApi.upload('user0/subdir/subdir2/myfile.txt'))
+    assert.strictEqual(data, `subdir/subdir2/myfile.txt contents`)
+    assert.notStrictEqual(await UploadDirectory.findOne({ where:
+      { path: Upload.uidAndPathToUploadPath(user0.id, 'subdir/subdir2') }
+    }), null)
+
+    // Link to file that doesn't exist blows up.
+    ;({data, status} = await createOrUpdateArticleApi(test,
+      createArticleArg({
+        titleSource: `Link to file that does not exist`,
+        bodySource: `\\a[i-dont-exist]`
+      }),
+      {},
+      { expectStatus: 422 },
+    ))
+
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `Link to another file same user`,
+      bodySource: `\\a[subdir/myfile.txt]{id=link-to-another-file-same-user-dut}\n`
+    })))
+    ;({data, status} = await test.webApi.article('user0/link-to-another-file-same-user'))
+    assert_xpath(`//x:a[@id='user0/link-to-another-file-same-user-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+
+    // Ignored and does not blow up. An error message might be wise. But at least no blow up.
+    ;({data, status} = await createOrUpdateArticleApi(test,
+      createArticleArg({
+        titleSource: `Link to another file same user provider github`,
+        bodySource: `\\Image[subdir/myfile.txt]{id=link-to-another-file-same-user-provider-github-dut}{provider=github}\n`
+      }),
+      {},
+      { expectStatus: 422 },
+    ))
+    // One day we can add a setting on web maybe to make this work. Ideally pick it up from ourbigbook.json.
+    //;({data, status} = await test.webApi.article('user0/link-to-another-file-same-user-provider-github'))
+    //assert_xpath(`//x:figure[@id='user0/link-to-another-file-same-user-provider-github-dut']//x:img[@src='https://github.com/TODO/subdir/myfile.txt']`, data.render)
+
+    // Scope also creates a subdir for relative \a links.
+    article = createArticleArg({ i: 0, titleSource: 'subdir', bodySource: '{scope}' })
+    ;({data, status} = await createOrUpdateArticleApi(test, article))
+    article = createArticleArg({ i: 0, titleSource: 'child', bodySource: `\\a[myfile.txt]{id=child-dut}
+
+\\a[../upload-0.png]{id=child-dut-up}
+` })
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/subdir' }))
+    ;({data, status} = await test.webApi.article('user0/subdir/child'))
+    assert_xpath(`//x:a[@id='user0/subdir/child-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+    assert_xpath(`//x:a[@id='user0/subdir/child-dut-up' and @href='/user0/_raw/upload-0.png']`, data.render)
+
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `Link to directory same user`,
+      bodySource: `\\a[subdir]{id=link-to-directory-same-user-dut}\n`
+    })))
+    ;({data, status} = await test.webApi.article('user0/link-to-directory-same-user'))
+    assert_xpath(`//x:a[@id='user0/link-to-directory-same-user-dut' and @href='/user0/_dir/subdir']`, data.render)
+
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `Link to another file same user abs`,
+      bodySource: `\\a[/subdir/myfile.txt]{id=link-to-another-file-same-user-abs-dut}\n`
+    })))
+    ;({data, status} = await test.webApi.article('user0/link-to-another-file-same-user-abs'))
+    assert_xpath(`//x:a[@id='user0/link-to-another-file-same-user-abs-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `Link to another file same user at`,
+      bodySource: `\\a[@user0/subdir/myfile.txt]{id=link-to-another-file-same-user-at-dut}\n`
+    })))
+    ;({data, status} = await test.webApi.article('user0/link-to-another-file-same-user-at'))
+    assert_xpath(`//x:a[@id='user0/link-to-another-file-same-user-at-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+
+    test.loginUser(user1)
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `Link to another file another user`,
+      bodySource: `\\a[@user0/subdir/myfile.txt]{id=link-to-another-file-another-user-dut}\n`
+    })))
+    ;({data, status} = await test.webApi.article('user1/link-to-another-file-another-user'))
+    assert_xpath(`//x:a[@id='user1/link-to-another-file-another-user-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+    test.loginUser(user0)
+
+    // Create corresponding file articles.
+
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+        titleSource: `upload-0.asdfqwer`,
+        bodySource: `{file}
+
+\\a[upload-0.asdfqwer]{id=upload-0.asdfqwer-dut}
+`
+      })))
+      ;({data, status} = await test.webApi.article('user0/_file/upload-0.asdfqwer'))
+      assert_xpath(`//x:a[@id='user0/upload-0.asdfqwer-dut' and @href='/user0/_raw/upload-0.asdfqwer']`, data.render)
+
+      ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+        titleSource: `subdir/myfile.txt`,
+        bodySource: `{file}
+
+\\a[myfile.txt]{id=subdir-myfile.txt-dut}
+
+\\a[../subdir/myfile.txt]{id=up-subdir-myfile.txt-dut}
+`
+      })))
+      ;({data, status} = await test.webApi.article('user0/_file/subdir/myfile.txt'))
+      assert_xpath(`//x:a[@id='user0/subdir-myfile.txt-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+
+    // Delete errors
+
+      // Cannot delete upload by another user
+      test.loginUser(user1)
+      ;({data, status} = await test.webApi.uploadDelete(
+        'user0/upload-0.png',
+        { expectStatus: 403 },
+      ))
+      test.loginUser(user0)
+
+      // Cannot delete upload that does not exist
+      ;({data, status} = await test.webApi.uploadDelete(
+        'user0/i-dont-exist',
+        { expectStatus: 404 },
+      ))
+
+    // Delete
+    ;({data, status} = await test.webApi.uploadDelete('user0/upload-0.png'))
+
+    // It's gone.
+    ;({data, headers, status} = await test.webApi.upload('user0/upload-0.png',
+      { expectStatus: 404 }))
+
+  // Directories get removed when all files and directories are removed
+
+    // Subdir upload.
+    ;({data, headers, status} = await test.webApi.uploadDelete('user0/subdir/myfile.txt'))
+    // Directory still exists because of subdir/subdir2
+    assert.notStrictEqual(await UploadDirectory.findOne({ where:
+      { path: Upload.uidAndPathToUploadPath(user0.id, 'subdir') }
+    }), null)
+    ;({data, headers, status} = await test.webApi.uploadDelete('user0/subdir/subdir2/myfile.txt'))
+    // Now both subdir and subdir2 are gone.
+    assert.strictEqual(await UploadDirectory.findOne({ where:
+      { path: Upload.uidAndPathToUploadPath(user0.id, 'subdir') }
+    }), null)
+    assert.strictEqual(await UploadDirectory.findOne({ where:
+      { path: Upload.uidAndPathToUploadPath(user0.id, 'subdir') }
+    }), null)
+
+  }, { defaultExpectStatus: 200 })
+})
+
+it(`api: upload delete automatically clears up associated _file`, async () => {
+  // This is needed otherwise you are then unable to clean
+  // the _file as conversion will fail due to missing \a.
+  await testApp(async (test) => {
+    let data, status, article
+    const { Upload, UploadDirectory } = test.sequelize.models
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    // Create upload upload-0
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/myfile.txt', 'content-0'))
+
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `myfile.txt`,
+      bodySource: `{file}
+
+\\i[asdf]{id=asdf}
+`
+    })))
+
+    // Delete
+    ;({data, status} = await test.webApi.uploadDelete('user0/myfile.txt'))
+
+    // Can't edit it anymore because the file is gone.
+    ;({data, status} = await createOrUpdateArticleApi(
+      test,
+      createArticleArg({
+        titleSource: `myfile.txt`,
+        bodySource: `{file}\n`
+      }),
+      {},
+      { expectStatus: 422 },
+    ))
+
+    // The _file was cleared when the upload was deleted, freeing up ID 'asdf'
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `qwer`,
+      bodySource: `\\i[asdf]{id=asdf}\n`
+    })))
+  }, { defaultExpectStatus: 200 })
+})
+
+it(`api: article: duplicate IDs don't lead to infinite DB loop`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `notindex`,
+    }), { parentId: '@user0' }))
+    // Was going infinite here because we were doing fetch_ancestors before check_db.
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `notindex2`,
+      bodySource: `\\i[a]{id=notindex}`,
+    }), { parentId: '@user0/notindex' }, { expectStatus: 422 }))
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `notindex2`,
+    }), { parentId: '@user0/notindex' }))
   }, { defaultExpectStatus: 200 })
 })
 

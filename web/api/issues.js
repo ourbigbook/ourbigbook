@@ -145,6 +145,7 @@ router.post('/', auth.required, async function(req, res, next) {
           where: { slug },
         }]
       }),
+      // loggedInUser
       User.findByPk(req.payload.id),
       Site.findOne(),
     ])

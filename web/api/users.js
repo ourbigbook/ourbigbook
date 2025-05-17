@@ -1,6 +1,6 @@
 const url = require('url');
 
-const { sendJsonHttp } = require('ourbigbook/web_api')
+const { hashToHex, sendJsonHttp } = require('ourbigbook/web_api')
 
 const axios = require('axios')
 const router = require('express').Router()
@@ -444,6 +444,22 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
           'maxArticleSize',
         )
         set(
+          validateParam(userArg, 'maxUploads', {
+            typecast: front.typecastInteger,
+            validators: [front.isPositiveInteger],
+            defaultValue: undefined,
+          }),
+          'maxUploads',
+        )
+        set(
+          validateParam(userArg, 'maxUploadSize', {
+            typecast: front.typecastInteger,
+            validators: [front.isPositiveInteger],
+            defaultValue: undefined,
+          }),
+          'maxUploadSize',
+        )
+        set(
           validateParam(userArg, 'maxIssuesPerMinute', {
             typecast: front.typecastInteger,
             validators: [front.isPositiveInteger],
@@ -490,7 +506,8 @@ router.put('/users/:username/profile-picture', auth.required, async function(req
     }
     const sequelize = req.app.get('sequelize')
     const user = req.user
-    const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
+    const { Upload, User } = sequelize.models
+    const loggedInUser = await User.findByPk(req.payload.id)
     const msg = cant.editUser(loggedInUser, user)
     if (msg) {
       throw new ValidationError([msg], 403)
@@ -519,12 +536,13 @@ router.put('/users/:username/profile-picture', auth.required, async function(req
     user.image = `${config.profilePicturePath}/${user.id}`
     t0 = lib.logPerf(t0, 'PUT /users/:username/profile-picture before transaction')
     await sequelize.transaction(async (transaction) => {
-      await sequelize.models.Upload.upsert(
+      await Upload.upsertSideEffects(
         {
           bytes,
           contentType,
           path: `${config.profilePicturePathComponent}/${user.id}`,
           size: bytes.length,
+          hash: hashToHex(bytes),
         },
         { transaction }
       )

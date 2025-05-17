@@ -24,6 +24,17 @@ We are better than HTML, we have arguments! This is just a style matter, HTML wa
 === Allow linking to auto-generated files
 {tag=File autogen}
 
+It would be cool if we could do:
+``
+<myfile.txt>{file}
+``
+when there is a file `myfile.txt` without a corresponding `{file}` header such as:
+``
+= myfile.txt
+{file}
+``
+As of writing, on static we already autogenerate such `_file` pages for all files (not yet on web but we should too), so it's just a matter of checking if the target file exists when the ID doesn't for error checking, and linking to the _file.
+
 === Link to _file rather than _raw if there's split pages
 {tag=File autogen}
 
@@ -32,7 +43,7 @@ E.g.:
 = path/to/myfile.txt
 {file}
 ``
-whould generate a breadcrumb like:
+would generate a breadcrumb like:
 ``
 (root)/path/to/<myfile.txt>{file}{split}
 ``
@@ -459,6 +470,15 @@ Same for tags.
 Currently there is some confusion in the code on treating the `<>{file}` like the file in `= Header{file}`: one if about pointing to things, the other is about the current thing. We will disambiguate with `parentFile`.
 
 Same for `tag` and `tagFile`.
+
+It is currently possible however to just do:
+``
+= .gitignore
+
+= child
+{parent=_file/.gitignore}
+``
+I need to think why it works.
 
 === Show likers list on article page
 {tag=Web}

@@ -1,5 +1,6 @@
 const assert = require('assert')
 
+const a_ref = require('./a_ref')
 const file = require('./file')
 const id = require('./id')
 const ref = require('./ref')
@@ -7,6 +8,7 @@ const render = require('./render')
 const cliModel = require('./cli')
 
 function addModels(sequelize, { web, cli }={}) {
+  const ARef = a_ref(sequelize)
   const File = file(sequelize, web)
   const Id = id(sequelize)
   const Ref = ref(sequelize)
@@ -35,6 +37,16 @@ function addModels(sequelize, { web, cli }={}) {
   Ref.belongsTo(File, { as: 'definedAt', foreignKey: 'defined_at', onDelete: 'CASCADE' })
   File.hasMany(Ref, { as: 'definedAt', foreignKey: 'defined_at', onDelete: 'CASCADE' })
 
+  // ARef <-> Id. Under which ID ARef is defined at.
+  ARef.belongsTo(Id, { as: 'fromId', foreignKey: 'from', onDelete: 'CASCADE' })
+  Id.hasMany(ARef, { as: 'fromId', foreignKey: 'from', onDelete: 'CASCADE' })
+
+  // ARef <-> File. Under which File ARef is defined at. This can be deduced from
+  // the Id as well, but we add it as well to cover the edge semi-supported case of
+  // files without toplevel header.
+  ARef.belongsTo(File, { as: 'aRefDefinedAt', foreignKey: 'defined_at', onDelete: 'CASCADE' })
+  File.hasMany(ARef, { as: 'aRefDefinedAt', foreignKey: 'defined_at', onDelete: 'CASCADE' })
+
   Render.belongsTo(File, { foreignKey: { name: 'fileId', allowNull: false }, onDelete: 'CASCADE' })
   File.hasOne(Render, { foreignKey: { name: 'fileId', allowNull: false }, onDelete: 'CASCADE' })
 
@@ -47,7 +59,7 @@ function addModels(sequelize, { web, cli }={}) {
   Ref.hasMany(Ref, { as: 'duplicate', foreignKey: 'to_id', sourceKey: 'to_id', constraints: false });
 }
 
-/** Find rows where column col start with the string topicIdSearch using the index. */
+/** Find rows where column col start with the string "startWith" using the index. */
 function sequelizeWhereStartsWith(sequelize, startWith, col) {
   if (sequelize.options.dialect === 'postgres') {
     return { [sequelize.Sequelize.Op.startsWith]: startWith }

@@ -90,6 +90,9 @@ function assert_lib(
       // This is analogous to stdout output on the CLI.
       options.assert_xpath_stdout = [];
     }
+    if (!('assert_not_exists' in options)) {
+      options.assert_not_exists = [];
+    }
     if (!('assert_not_xpath_stdout' in options)) {
       options.assert_not_xpath_stdout = [];
     }
@@ -107,6 +110,7 @@ function assert_lib(
     //  options.assert_bigb_stdout = undefined;
     //}
     if (!('assert_bigb' in options)) {
+      // Assert that bigb output of each file exactly matches a given string.
       options.assert_bigb = {};
     }
     if (!('convert_before' in options)) {
@@ -151,9 +155,6 @@ function assert_lib(
     if (!('invalid_title_titles' in options)) {
       options.invalid_title_titles = []
     }
-    if (!('assert_not_exists' in options)) {
-      options.assert_not_exists = [];
-    }
     if (!('path_sep' in options.convert_opts)) {
       options.convert_opts.path_sep = PATH_SEP;
     }
@@ -169,20 +170,22 @@ function assert_lib(
         path_sep: PATH_SEP,
       })
     }
+    options.convert_opts.getAFileTypes = (paths) => {
+      const ret = {}
+      for (const path of paths) {
+        if (path in filesystem_dirs) {
+          ret[path] = ourbigbook.FILE_TYPE_DIRECTORY
+        } else {
+          ret[path] = ourbigbook.FILE_TYPE_FILE
+        }
+      }
+      return ret
+    }
     options.convert_opts.fs_exists_sync = (my_path) => {
       return options.filesystem.hasOwnProperty(my_path) || filesystem_dirs.hasOwnProperty(my_path)
     }
     options.convert_opts.read_file = (readpath, context) => {
-      if (readpath in filesystem_dirs) {
-        return {
-          type: 'directory',
-        }
-      } else {
-        return {
-          type: 'file',
-          content: options.filesystem[readpath],
-        }
-      }
+      return options.filesystem[readpath]
     }
     let filesystem = options.filesystem
     const filesystem_dirs = {'': {}}
@@ -296,6 +299,8 @@ function assert_lib(
         {
           ref_prefix: new_convert_opts.ref_prefix,
           options: convertOptions,
+          filterFilesThatDontExist: (aRefs) => aRefs.filter(
+            aRef => !(aRef.to in filesystem))
         }
       )
       // TODO create a way to check location of these errors. This would require returning ErrorMessage objects
@@ -524,6 +529,13 @@ function assert_cli(
     if (!('assert_bigb' in options)) {
       options.assert_bigb = {};
     }
+    if (!('assert_contains' in options)) {
+      // Assert that given output file contain the given strings.
+      // string -> [string|RegExp]
+      // string matches: exact
+      // RegExp matches: regexp matches at least once
+      options.assert_contains = {};
+    }
     if (!('assert_exists' in options)) {
       options.assert_exists = [];
     }
@@ -640,11 +652,30 @@ function assert_cli(
         out, cmd, args, cwd, 'path should exist: ' + relpath));
     }
     for (const relpath in options.assert_bigb) {
-      const assert_msg_bigb = `path should contain: ${relpath}\n\n` + assert_msg;
       const fullpath = path.join(tmpdir, relpath);
       assert.ok(fs.existsSync(fullpath), `path does not exist: ${fullpath}`);
       const content = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING);
-      assert.strictEqual(options.assert_bigb[relpath], content, assert_msg_bigb);
+      assert.strictEqual(options.assert_bigb[relpath], content, `path should contain: ${relpath}\n\n` + assert_msg);
+    }
+    for (const relpath in options.assert_contains) {
+      const fullpath = path.join(tmpdir, relpath);
+      assert.ok(fs.existsSync(fullpath), `path does not exist: ${fullpath}\n\n` + assert_msg)
+      const content = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING)
+      for (const contains of options.assert_contains[relpath]) {
+        if (typeof contains === 'string') {
+          assert.notStrictEqual(
+            content.indexOf(contains),
+            -1,
+            `"${relpath}" should contain "${contains}". Contents:\n\`\`\`${content}\`\`\`\n\n` + assert_msg
+          )
+        } else if (contains.constructor === RegExp) {
+          assert.notStrictEqual(
+            content.match(contains),
+            null,
+            `"${relpath}" should match "${contains}". Contents:\n\`\`\`${content}\`\`\`\n\n` + assert_msg
+          )
+        }
+      }
     }
     if (!ourbigbook_nodejs_front.postgres) {
       for (const relpath of options.assert_exists_sqlite) {
@@ -663,7 +694,7 @@ function assert_cli(
 
 /** Determine if a given Ast argument has a subset.
  *
- * For each lement of the array, only the subset of each object is checked.
+ * For each element of the array, only the subset of each object is checked.
  *
  * @param {Array[AstNode]} unmodified array of AstNode as output by convert
  * @param {Array[Object]} lightweight AstNode notation containing only built-in JavaScript objects
@@ -2449,9 +2480,17 @@ assert_lib_ast('link: simple to local file that exists',
   ],
   { filesystem: { 'local-path.txt': '' } }
 )
-assert_lib_error('link: simple to local file that does not exist give an error without external',
-  'a \\a[local-path.txt] b\n',
-  1, 5,
+assert_lib('link: simple to local file that does not exist gives an error without external',
+  {
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+a \\a[local-path.txt] b
+`,
+    },
+    convert_dir: true,
+    assert_check_db_errors: 1,
+  }
 )
 assert_lib_stdin('link: simple to local file that does not exist does not give an error with external',
   'a \\a[local-path.txt]{external} b\n',
@@ -2612,81 +2651,91 @@ assert_lib_ast('link: xss: content and href',
     ]
   }
 )
-assert_lib_error(
-  // {check} local file existence of \a and \Image and local link automodifications.
-  'link: relative reference to nonexistent file leads to failure in link',
-  `\\a[i-dont-exist]
-`, 1, 3, 'index.bigb',
-  {
-    input_path_noext: 'index',
-  }
-)
-assert_lib_error(
+assert_lib(
   'link: relative reference to nonexistent file leads to failure in image',
-  `\\Image[i-dont-exist]
-`, 1, 7, 'index.bigb',
   {
-    input_path_noext: 'index',
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Image[i-dont-exist]
+`,
+    },
+    convert_dir: true,
+    assert_check_db_errors: 1,
   }
 )
-assert_lib_ast(
+assert_lib(
   'link: relative reference to existent file does not lead to failure in link',
-  `\\a[i-exist]
-`,
-  undefined,
   {
-    input_path_noext: 'index',
     filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Image[i-exist]
+`,
       'i-exist': '',
-    }
+    },
+    convert_dir: true,
   }
 )
-assert_lib_ast(
+assert_lib(
   'link: relative reference to existent file does not lead to failure in image',
-  `\\Image[i-exist]
-`,
-  undefined,
   {
-    input_path_noext: 'index',
     filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Image[i-exist]
+`,
       'i-exist': '',
-    }
+    },
+    convert_dir: true,
   }
 )
-assert_lib_ast(
+assert_lib(
   'link: external prevents existence checks in link',
-  `\\a[i-dont-exist]{external}
-`,
-  undefined,
   {
-    input_path_noext: 'index',
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\a[i-dont-exist]{external}
+`,
+    },
+    convert_dir: true,
   }
 )
-assert_lib_ast(
+assert_lib(
   'link: external prevents existence checks in block image',
-  `\\Image[i-dont-exist]{external}
-`,
-  undefined,
   {
-    input_path_noext: 'index',
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Image[i-dont-exist]{external}
+`,
+    },
+    convert_dir: true,
   }
 )
-assert_lib_ast(
+assert_lib(
   'link: external prevents existence checks in inline image',
-  `\\image[i-dont-exist]{external}
-`,
-  undefined,
   {
-    input_path_noext: 'index',
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\image[i-dont-exist]{external}
+`,
+    },
+    convert_dir: true,
   }
 )
-assert_lib_ast(
+assert_lib(
   'link: existence checks are skipped when media provider converts them to absolute url',
-  `\\Image[i-dont-exist]
-`,
-  undefined,
   {
-    input_path_noext: 'index',
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Image[i-dont-exist]
+`,
+    },
+    convert_dir: true,
     convert_opts: {
       ourbigbook_json: {
         "media-providers": {
@@ -6668,16 +6717,20 @@ My Line 2
     },
     assert_xpath: {
       'index.html': [
+        // == path/to breadcrumb and contents
+        `//x:a[@href='_dir/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__']`,
         `//x:a[@href='_dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__path']`,
         `//x:a[@href='_dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__path/to']`,
         "//x:div[@class='p' and text()='My directory']",
 
-        "//x:a[@href='_raw/path/to/my-file.txt' and text()='my-file.txt']",
-        "//x:div[@class='p' and text()='My txt']",
-        // Don't know how to include newlines in xPath!
-        "//x:code[starts-with(text(), 'My Line 1')]",
+        // == path/to/my-file.txt breadcrumb and contents
+        `//x:a[@href='_dir/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__']`,
         `//x:a[@href='_dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path']`,
         `//x:a[@href='_dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to']`,
+        `//x:a[@href='_raw/path/to/my-file.txt' and text()='my-file.txt' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to/my-file.txt']`,
+        // Don't know how to include newlines in xPath!
+        "//x:code[starts-with(text(), 'My Line 1')]",
+        "//x:div[@class='p' and text()='My txt']",
 
         "//x:a[@href='_raw/path/to/my-file.png' and text()='my-file.png']",
         "//x:img[@src='_raw/path/to/my-file.png']",
@@ -6799,6 +6852,8 @@ My txt.
 {file}
 
 My png txt.
+
+\\a[my-file.png]
 `,
       'path/to/my-file.txt': `My Line 1
 
@@ -6829,12 +6884,45 @@ My Line 2
     }
   },
 )
-assert_lib_error('header: file argument to a toplevel file that does not exist fails gracefully',
-  `= h1
+assert_lib('header: ID defined inside _file directory does not receive _file scope',
+  {
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\x[dut-to]{id=dut-from}
+
+\\Include[_file/path/to/myfile.txt]
+`,
+      [`${ourbigbook.FILE_PREFIX}/path/to/myfile.txt.bigb`]: `= myfile.txt
+{file}
+
+\\i[dut to]{id=dut-to}
+`,
+      'path/to/myfile.txt': `file content\n`,
+    },
+    assert_xpath: {
+      [`index.html`]: [
+        `//x:a[@id='dut-from' and @href='${ourbigbook.FILE_PREFIX}/path/to/myfile.txt.html#dut-to']`,
+      ],
+    }
+  },
+)
+assert_lib(
+  'header: file argument to a toplevel file that does not exist fails gracefully',
+  {
+    filesystem: {
+      'index.bigb': `= Toplevel
 
 == dont-exist
 {file}
-`, 3, 1);
+`,
+    },
+    convert_dir: true,
+    assert_check_db_errors: 1,
+  }
+)
+
 assert_lib_ast('header: escape shorthand header at start of document',
   '\\= a',
   [a('P', [t('= a')])],
@@ -9447,6 +9535,17 @@ assert_lib('bigb output: format is unchanged for the preferred format',
     filesystem: {
       'test-bigb-output-2.bigb': '= Test bigb output 2\n',
       'test-bigb-output-3.bigb': '= Test bigb output 3\n',
+      'Tank_man_standing_in_front_of_some_tanks.jpg': '',
+      'not-index.bigb': '',
+      'file_demo/hello_world.js': '',
+      'ourbigbook.json': `{
+  "media-providers": {
+    "github": {
+      "remote": "mygithubusername/media"
+    }
+  }
+}
+`
     }
   },
 )
@@ -12806,6 +12905,38 @@ assert_cli(
   }
 )
 assert_cli(
+  'raw: link simple',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\a[myfile.txt]
+`,
+      'myfile.txt': `asdf
+`,
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/index.html`]: [
+        `//x:a[@href='${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt']`,
+      ],
+    },
+  }
+)
+assert_cli(
+  'raw: link does not exist',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\a[myfile.txt]
+`,
+    },
+    assert_exit_status: 1,
+  }
+)
+assert_cli(
   'raw: directory listings simple',
   {
     args: ['-S', '.'],
@@ -12813,6 +12944,8 @@ assert_cli(
       'index.bigb': `= Toplevel
 
 \\a[.][link to root]
+
+\\a[/][link to root abs]
 
 \\a[subdir][link to subdir]
 
@@ -12836,6 +12969,8 @@ assert_cli(
       'subdir/index.bigb': `= Subdir
 
 \\a[..][link to root]
+
+\\a[/][link to root abs]
 
 \\a[.][link to subdir]
 
@@ -12904,6 +13039,7 @@ myfile-subdir.txt line2
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='subdir' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir__subdir']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='subdir2' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir/subdir2__subdir/subdir2']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root abs']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='link to subdir']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
 
@@ -12913,6 +13049,7 @@ myfile-subdir.txt line2
       ],
       [`${TMP_DIRNAME}/html/subdir.html`]: [
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root']`,
+        `//x:a[@href='${ourbigbook.DIR_PREFIX}/index.html' and text()='link to root abs']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='link to subdir']`,
         `//x:a[@href='${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
       ],
@@ -13471,7 +13608,7 @@ assert_cli(
 assert_cli(
   'git: .gitignore is used in --web conversion',
   {
-    args: ['--web', '--web-dry', '.'],
+    args: ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer', '.'],
     pre_exec: MAKE_GIT_REPO_PRE_EXEC,
     filesystem: {
       'index.bigb': `= Toplevel
@@ -13511,7 +13648,7 @@ assert_cli(
 assert_cli(
   '--web-dry on simple repository',
   {
-    args: ['--web', '--web-dry', '.'],
+    args: ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer', '.'],
     filesystem: {
       'index.bigb': `= Toplevel
 `,
@@ -13522,15 +13659,101 @@ assert_cli(
   }
 )
 assert_cli(
+  '--web does not autogenerate _file, _raw, _dir and nosplit',
+  {
+    args: ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer', '.'],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== subdir/myfile2.txt
+{file}
+`,
+      'ourbigbook.json': `{}\n`,
+      'subdir/myfile.txt': `hello\n`,
+      'subdir/myfile2.txt': `hello 2\n`,
+    },
+    assert_exists: [
+      // Sanity check.
+      `${TMP_DIRNAME}/web/index.bigb`,
+      `${TMP_DIRNAME}/web/${ourbigbook.FILE_PREFIX}/subdir/myfile2.txt.bigb`,
+    ],
+    assert_not_exists: [
+      // Actual test.
+      `${TMP_DIRNAME}/web/nosplit.bigb`,
+      `${TMP_DIRNAME}/web/split.bigb`,
+      `${TMP_DIRNAME}/web/${ourbigbook.FILE_PREFIX}/index.bigb.html`,
+      `${TMP_DIRNAME}/web/${ourbigbook.FILE_PREFIX}/ourbigbook.json.html`,
+      `${TMP_DIRNAME}/web/${ourbigbook.RAW_PREFIX}`,
+      `${TMP_DIRNAME}/web/${ourbigbook.RAW_PREFIX}/subdir`,
+      `${TMP_DIRNAME}/web/${ourbigbook.RAW_PREFIX}/subdir/myfile.txt`,
+      `${TMP_DIRNAME}/web/${ourbigbook.DIR_PREFIX}`,
+      `${TMP_DIRNAME}/web/${ourbigbook.DIR_PREFIX}/subdir`,
+    ],
+  }
+)
+assert_cli(
   '--web-dry on single file',
   {
-    args: ['--web', '--web-dry', 'index.bigb'],
+    args: ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer', 'index.bigb'],
     filesystem: {
       'index.bigb': `= Toplevel
 `,
       'ourbigbook.json': `{
 }
 `,
+    },
+  }
+)
+assert_cli(
+  '--web fixes up links to files inside scopes',
+  {
+    args: ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer', '.'],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[_file/subdir/myfile.txt]
+
+== h2
+{scope}
+
+=== h3
+
+\\a[ourbigbook.json]{id=rel}
+
+\\a[/ourbigbook.json]{id=abs}
+
+== subdir/myfile2.txt
+{file}
+
+\\a[subdir/myfile2.txt]{id=toplevel-to-subdir}
+`,
+      [`${ourbigbook.FILE_PREFIX}/subdir/myfile.txt.bigb`]: `= myfile.txt
+{file}
+
+My txt.
+
+\\a[../ourbigbook.json]
+`,
+      'ourbigbook.json': `{}\n`,
+      'subdir/myfile.txt': `file contents\n`,
+      'subdir/myfile2.txt': `file contents 2\n`,
+    },
+    assert_contains: {
+      [`${TMP_DIRNAME}/web/h2/h3.bigb`]: [
+        '\\a[../ourbigbook.json]{id=rel}',
+        '\\a[/ourbigbook.json]{id=abs}',
+      ],
+      [`${TMP_DIRNAME}/web/${ourbigbook.FILE_PREFIX}/subdir/myfile.txt.bigb`]: [
+        // We want full paths here so that web uploads can work without
+        // the path external parameter, plus shows nicer on web UI.
+        /^= subdir\/myfile\.txt\n/,
+        '\\a[../ourbigbook.json]',
+      ],
+      [`${TMP_DIRNAME}/web/${ourbigbook.FILE_PREFIX}/subdir/myfile2.txt.bigb`]: [
+        /^= subdir\/myfile2\.txt/,
+        // TODO even better here would be to resolve down to \\a[myfile.txt].
+        '\\a[../subdir/myfile2.txt]{id=toplevel-to-subdir}',
+      ],
     },
   }
 )
@@ -13871,6 +14094,49 @@ assert_cli(
       [`${TMP_DIRNAME}/html/notindex.html`]: [
         "//x:a[@id='dut' and @href='index.html#asdf-qwer-zxcv' and text()='asdf qwer zxcv']",
       ],
+    },
+  }
+)
+assert_cli(
+  // At one point we were doing {file} conversions before check_db on CLI,
+  // which could lead to infinite recursion of SQL RECURSE queries.
+  'file conversion does not go infinite on duplicate ID',
+  {
+    args: ['.'],
+    // TODO: we want 0 here. There's a bug.
+    // https://github.com/ourbigbook/ourbigbook/issues/368
+    assert_exit_status: 1,
+    pre_exec: [
+      {
+        // This was going infinite previously.
+        cmd: ['ourbigbook', ['.']],
+        status: 1,
+      },
+      {
+        // And then this was not automatically recovering so we fixed it too.
+        filesystem_update: {
+          'notindex2.bigb': `= Notindex2
+`,
+        }
+      },
+    ],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]
+`,
+      'notindex.bigb': `= Notindex
+
+\\Include[notindex2]
+
+== ourbigbook.json
+{file}
+`,
+      'notindex2.bigb': `= Notindex2
+
+== Notindex
+`,
+      'ourbigbook.json': `{}\n`,
     },
   }
 )

@@ -232,13 +232,31 @@ Link to topic: <#mathematics>
       ['Test data with title2', [], { body: `{title2=My title 2}` }],
       ['Test data with math on title $\\frac{1}{\\sqrt{2}}$', []],
       ['Test data with code on title `int main() { return 0; }`', []],
+      ['File links', [], { body: `\`\\a\` to file: \\a[test/subdir/myfile.txt]
+
+\`\\a\` to directory: \\a[test/subdir]
+
+\`\\a\` to file without bigb: \\a[test/nobigb.txt]
+`     }],
       ['test/subdir/myfile.txt', [], { body: `{file}
 
-This is about my amazing file \\a[myfile.txt]
-` }],
+\`\\a\` to file: \\a[myfile.txt]
+`     }],
+      ['test.html', [], { body: `{file}
+
+\`\\a\` to file: \\a[test.html]
+`     }],
+      ['test.jpg', [], { body: `{file}
+
+\`\\a\` to file: \\a[test.jpg]
+`     }],
+      ['test.svg', [], { body: `{file}
+
+\`\\a\` to file: \\a[test.svg]
+`     }],
     ],
     {
-      body: `Block math: <equation My favorite equation>
+      body: (titles) => `Block math: <equation My favorite equation>
 
 $$
 \\frac{1}{\\sqrt{2}}
@@ -258,15 +276,16 @@ Empty link to home page: <>
 
 Link followed by nbsp literal: http://example.com\u{00A0}asdf qwer
 
-Link to self: <test data>{id=x-link-to-self-header}
+Link to self: <test data>{id=x-link-to-self-header}${titles.has('Test child') ? `
 
-Link to child: <test child>{id=x-link-to-child}
+Link to child: <test child>{id=x-link-to-child}` : ''}
 `
     }
   ],
 ]
+
 const issueData = [
-  ['Test issue', `Link to article: <test data>
+  ['Test issue', (titles) => `Link to article: <test data>
 
 Link to ID in this issue: <test issue 2>
 
@@ -278,8 +297,8 @@ Link to ID in this issue: <test issue 2>
 
 Conflict resolution between issue IDs and article IDs:
 
-* to issue: <test child>
-* to article: </test child>
+* to issue: <test child>${titles.has('Test child') ? `
+* to article: </test child>` : ''}
 `],
   ['There\'s a typo in this article at "mathmatcs"', ``],
   ['Add mention of the fundamental theorem of calculus', `The fundamental theorem of calculus is very important to understanding this subject.
@@ -298,8 +317,9 @@ As an added bonus, a mention of Newton's rule would also be very useful.
   ['$\\sqrt{1 + 1} = 3$, not 2 as mentioned', 'I can\'t believe you got such a basic fact wrong!'],
   ['The code `f(x) + 1` should be `f(x) + 2`', 'Zero indexing always gets me too.'],
 ]
+
 const commentData = [
-  `= My test comment
+  (titles) => `= My test comment
 
 Link to ID in comment: <My test comment 2>
 
@@ -313,8 +333,8 @@ Link to article: <test data>
 
 Conflict resolution between issue IDs and article IDs:
 
-* to issue: <test child>
-* to article: </test child>
+* to issue: <test child>${titles.has('Test child') ? `
+* to article: </test child>` : ''}
 `,
 //  `My test comment without a header
 //
@@ -336,6 +356,51 @@ f() + 3*g()
 is enough to make the loop terminate?
 `,
 ]
+
+const uploadData = [
+  {
+    path: 'test/subdir/myfile.txt',
+    bytes: `My text
+
+Has two nice paragraphs.
+`,
+  },
+  {
+    path: 'test/nobigb.txt',
+    bytes: `I don't have a corresponding
+
+bigb article.
+`,
+  },
+  {
+    path: 'test.html',
+    bytes: `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>Min sane</title>
+<script>alert('xss');</script>
+</head>
+<body>
+<p>This HTML file attempts to execute a script. If a popup did not show, we correctly managed to prevent that and prevent an XSS attack.</p>
+</body>
+</html>
+`
+  },
+  {
+    path: 'test.svg',
+    bytes: `<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256">
+  <rect x="0" y="0" width="100%" height="100%" fill="black" />
+  <path d="M32 32v188h188v-188zM64 64h128v128h-128z" fill="red" />
+</svg>
+`
+  },
+  {
+    path: 'test.jpg',
+    bytes: fs.readFileSync(path.join(path.dirname(__dirname), 'Tank_man_standing_in_front_of_some_tanks.jpg')),
+  },
+]
+
 let todo_visit = articleData.map(a => [null, a])
 let articleDataCount = 0
 while (todo_visit.length > 0) {
@@ -358,7 +423,7 @@ while (todo_visit.length > 0) {
 }
 
 class ArticleDataProvider {
-  constructor(articleData, userIdx) {
+  constructor(articleData) {
     // These store the current tree transversal state across .get calls.
     this.gen = 0
     this.todo_visit = articleData.slice()
@@ -408,7 +473,7 @@ async function generateDemoData(params) {
 
   const nArticles = nUsers * nArticlesPerUser
   const sequelize = models.getSequelize(directory, basename);
-  const { Article, Id, User } = sequelize.models
+  const { Article, Id, Upload, User } = sequelize.models
   const katex_macros = back_js.preloadKatex()
   await models.sync(sequelize, { force: empty || clear })
   if (!empty) {
@@ -475,13 +540,43 @@ async function generateDemoData(params) {
 
     if (verbose) printTime()
 
+    if (verbose) console.error('Upload');
+    for (let uid = 0; uid < nUsers; uid++) {
+      const username = users[uid].username
+      for (const upload of uploadData) {
+        if (verbose) console.error(`${users[uid].username}/${upload.path}`)
+        await Upload.upsertSideEffects(
+          Upload.getCreateObj({
+            bytes: upload.bytes,
+            path: Upload.uidAndPathToUploadPath(uid + 1, upload.path),
+          })
+        )
+        // Write files to filesystem.
+        // https://docs.ourbigbook.com/demo-data-local-file-output
+        const outpath = path.join(sourceRoot, username, upload.path)
+        fs.mkdirSync(path.dirname(outpath), { recursive: true })
+        fs.writeFileSync(outpath, upload.bytes);
+      }
+    }
+
+    if (verbose) printTime()
+
     if (verbose) console.error('Article');
+    // Article titles that will be present in our conversion based on -a<n>
+    // so we can decide to add certain links or not and not blow things up
+    // if the link targets are not present. Notably this fixes -a0 which is
+    // useful for test-migration.
+    // TODO would be better to store IDs here but it would require doing
+    // a pre-conversion to resolve scopes and the lik and I'm lazy now.
+    let titles = new Set()
+    const provider = new ArticleDataProvider(articleData)
+    for (let i = 0; i < nArticlesPerUser; i++) {
+      titles.add(provider.pop()[0])
+    }
     const articleDataProviders = {}
     const articleIdToArticle = {}
     for (let userIdx = 0; userIdx < nUsers; userIdx++) {
-      let authorId = users[userIdx].id
-      articleDataProvider = new ArticleDataProvider(articleData, userIdx)
-      articleDataProviders[authorId] = articleDataProvider
+      articleDataProviders[users[userIdx].id] = new ArticleDataProvider(articleData)
     }
     const articleArgs = [];
     const toplevelTopicIds = new Set()
@@ -500,6 +595,8 @@ async function generateDemoData(params) {
       let body = opts.body
       if (body === undefined) {
         body = makeBody(titleSource)
+      } else if (typeof body === 'function') {
+        body = body(titles)
       }
       const id_noscope = await titleToId(titleSource)
       toplevelTopicIds.add(id_noscope)
@@ -533,9 +630,9 @@ async function generateDemoData(params) {
         // TODO not taking effect. Appears to be because of the hook.
         updatedAt: date0,
         bodySource: `${User.defaultIndexBody}
-Link to home: <>
+Link to home: <>${titles.has('Test data') ? `
 
-Link to test data: <test data>
+Link to test data: <test data>` : ''}
 `,
         opts: { parentEntry: undefined },
       })
@@ -732,7 +829,10 @@ Link to test data: <test data>
       const article = articles[i]
       for (var j = 0; j < (i % (nMaxIssuesPerArticle + 1)); j++) {
         if (verbose) console.error(`${article.slug}#${articleIssueIdx}`)
-        const [titleSource, bodySource] = issueData[issueIdx % issueData.length]
+        let [titleSource, bodySource] = issueData[issueIdx % issueData.length]
+        if (typeof bodySource === 'function') {
+          bodySource = bodySource(titles)
+        }
         const issue = await convert.convertDiscussion({
           article,
           bodySource,
@@ -760,7 +860,10 @@ Link to test data: <test data>
       const issue = issues[i]
       for (var j = 0; j < (i % (nMaxCommentsPerIssue + 1)); j++) {
         if (verbose) console.error(`${articleIdToArticle[issue.articleId].slug}#${issue.number}#${issueCommentIdx}`)
-        const source = commentData[commentIdx % commentData.length]
+        let source = commentData[commentIdx % commentData.length]
+        if (typeof source === 'function') {
+          source = source(titles)
+        }
         const comment = await convert.convertComment({
           date: ISSUE_DATE,
           issue,

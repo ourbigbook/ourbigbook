@@ -9,8 +9,7 @@ const axios = require('axios')
 const ourbigbook = require('./index')
 
 function articleHash(opts={}) {
-  const jsonStr = JSON.stringify(Object.fromEntries(Object.entries(opts).sort()))
-  return crypto.createHash('sha256').update(jsonStr).digest('hex')
+  return hashToHex(JSON.stringify(Object.fromEntries(Object.entries(opts).sort())))
 }
 
 // https://stackoverflow.com/questions/8135132/how-to-encode-url-parameters/50288717#50288717
@@ -36,6 +35,11 @@ const encodeGetParamsWithOffset = (opts) => {
   }
   delete opts.page
   return encodeGetParams(opts)
+}
+
+/* bytes -> hex string representing the hash */
+function hashToHex(s) {
+  return crypto.createHash('sha256').update(s).digest('hex')
 }
 
 function read_include({exists, read, path_sep, ext}) {
@@ -246,7 +250,7 @@ class WebApi {
       `issues?id=${encodeURIComponent(slug)}`,
       {
         body: { issue },
-        reqOpts,
+        ...reqOpts,
       },
     )
   }
@@ -363,6 +367,30 @@ class WebApi {
     )
   }
 
+  async upload(path, reqOpts={}) {
+    return this.req('get', `uploads${encodeGetParamsWithOffset({ path })}`, reqOpts)
+  }
+
+  async uploadCreateOrUpdate(path, bytes, reqOpts={}) {
+    return this.req(
+      'put',
+      `uploads${encodeGetParamsWithOffset({ path })}`,
+      {
+        body: bytes,
+        contentType: 'application/octet-stream',
+        ...reqOpts
+      }
+    )
+  }
+
+  async uploadDelete(path, reqOpts={}) {
+    return this.req('delete', `uploads${encodeGetParamsWithOffset({ path })}`, { ...reqOpts })
+  }
+
+  async uploadHash(opts={}, reqOpts={}) {
+    return this.req('get', `uploads/hash${encodeGetParamsWithOffset(opts)}`, reqOpts)
+  }
+
   async users(opts, reqOpts={}) {
     return this.req('get', `users${encodeGetParamsWithOffset(opts)}`)
   }
@@ -396,14 +424,14 @@ class WebApi {
   async userUpdate(username, user, reqOpts={}) {
     return this.req('put',
       `users/${username}`,
-      { body: { user }, reqOpts },
+      { body: { user }, ...reqOpts },
     )
   }
 
   async userUpdateProfilePicture(username, bytes, reqOpts={}) {
     return this.req('put',
       `users/${username}/profile-picture`,
-      { body: { bytes }, reqOpts },
+      { body: { bytes }, ...reqOpts },
     )
   }
 
@@ -627,6 +655,7 @@ module.exports = {
   WebApi,
   DbProviderBase,
   encodeGetParams,
+  hashToHex,
   read_include,
   sendJsonHttp,
 }

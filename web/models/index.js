@@ -55,6 +55,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   const Site = require('./site')(sequelize)
   const User = require('./user')(sequelize)
   const Upload = require('./upload')(sequelize)
+  const UploadDirectory = require('./upload_directory')(sequelize)
   const Topic = require('./topic')(sequelize)
   ourbigbook_models.addModels(sequelize, { web: true })
   const File = sequelize.models.File
@@ -356,6 +357,12 @@ function getSequelize(toplevelDir, toplevelBasename) {
   Site.belongsTo(Article, { as: 'pinnedArticle', foreignKey: 'pinnedArticleId', allowNull: true })
 
   //Article.hasMany(Article, { as: 'sameTopic', foreignKey: 'topicId', sourceKey: 'topicId', constraints: false })
+
+  // Parent relationships
+  Upload.belongsTo(UploadDirectory, { as: 'fileParentDirectory', foreignKey: 'parentId' })
+  UploadDirectory.hasMany(Upload, { as: 'childFiles', foreignKey: 'parentId' })
+  UploadDirectory.belongsTo(UploadDirectory, { as: 'directoryParentDirectory', foreignKey: 'parentId' })
+  UploadDirectory.hasMany(UploadDirectory, { as: 'childDirectories', foreignKey: 'parentId' })
 
   return sequelize;
 }

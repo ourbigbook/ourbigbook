@@ -122,7 +122,7 @@ router.get('/hash', auth.optional, async function(req, res, next) {
     if (author) {
       authorInclude.where = { username: author }
     }
-    const { count: filesCount, rows: files} = await sequelize.models.File.findAndCountAll({
+    const { count: filesCount, rows: files } = await sequelize.models.File.findAndCountAll({
       subQuery: false,
       include: [
         authorInclude,

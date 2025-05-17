@@ -86,7 +86,8 @@ function logPerf(t0, s) {
 function validateBodySize(loggedInUser, bodySource) {
   if (!loggedInUser.admin && bodySource.length > loggedInUser.maxArticleSize) {
     throw new ValidationError(
-      `The body size (${bodySource.length} bytes) was larger than you maximum article size (${loggedInUser.maxArticleSize} bytes). bodySource:\n${bodySource}`,
+      `The body size (${bodySource.length} bytes) was larger than your maximum article size ` +
+      `(${loggedInUser.maxArticleSize} bytes). bodySource:\n${bodySource}`,
       403,
     )
   }

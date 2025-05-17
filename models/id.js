@@ -63,10 +63,11 @@ module.exports = (sequelize) => {
     if (paths !== undefined) {
       where.path = paths
     }
-    return sequelize.models.Id.findAll({
+    const { File, Id } = sequelize.models
+    return Id.findAll({
       include: [
         {
-          model: sequelize.models.Id,
+          model: Id,
           as: 'duplicate',
           required: true,
           on: {
@@ -75,7 +76,7 @@ module.exports = (sequelize) => {
           },
         },
         {
-          model: sequelize.models.File,
+          model: File,
           as: 'idDefinedAt',
           required: true,
           where,

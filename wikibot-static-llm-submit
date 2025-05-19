@@ -1,0 +1,42 @@
+
+#!/usr/bin/env bash
+
+set -eux
+
+indir=../wikibot
+outdir=_out/wikibot-llm
+
+mkdir -p "$outdir"
+git -C "$indir" grep -h --no-line-number '^=' | sed -r 's/^=+ //' | sort > "$outdir/titles.txt"
+jq -aR <"$outdir/titles.txt" | sed -r '
+  s|^"|{"custom_id": "request-1", "method": "POST", "url": "/v1/chat/completions", "body": {"model": "gpt-4o-mini", "messages": [{"role": "user", "content": "What is |
+  s|"$|?"}],"max_tokens": 100}}|
+' | awk '{gsub("request-1", sprintf("request-%d", NR)); print}' > "$outdir/oai_in.jsonl"
+split --additional-suffix .jsonl -l 50000 --numeric-suffixes "$outdir/oai_in.jsonl" "$outdir/oai_in_"
+
+for in in "$outdir/oai_in_"*; do
+  i="${in#$outdir/oai_in_}"
+  i="${i%.jsonl}"
+  echo "$i"
+
+  res="$(
+  curl https://api.openai.com/v1/files \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -F purpose="batch" \
+    -F file="@$in"
+  )"
+  FILE_ID="$(printf '%s' "$res" | jq -r .id)"
+  
+  res="$(
+  curl https://api.openai.com/v1/batches \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{
+    "input_file_id": "'$FILE_ID'",
+    "endpoint": "/v1/chat/completions",
+    "completion_window": "24h"
+  }'
+  )"
+  BATCH_ID="$(printf '%s' "$res" | jq -r .id)"
+  printf '%s\n' "$BATCH_ID" > "$outdir/oai_batch_id_$i"
+done

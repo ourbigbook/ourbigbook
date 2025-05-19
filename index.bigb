@@ -6981,6 +6981,21 @@ Otherwise, `include` only adds the headers of the other file to the table of con
 
 You may want to use this option together with <--embed-resources> to produce fully self-contained individual HTML files for your project.
 
+= `--escape-literal`
+{parent=OurBigBook CLI options}
+
+Take input from stdin as a plaintext string and produce output escaping the input string so that OurBigBook conversion will result in a single output string. E.g.:
+``
+printf '\\a[`\n' | ourbigbook --escape-literal
+``
+outputs:
+``
+\\a\[\`\
+``
+so that every <escape characters>[character that needed to be escaped] was fully escaped to produce plaintext output.
+
+Note that newlines are also currently escaped even when that is not strictly needed, e.g. in the case of double newlines it would be needed but not for single newlines. But we are keeping it simple for now.
+
 = `--embed-resources`
 {parent=OurBigBook CLI options}
 
@@ -7403,11 +7418,6 @@ because with `--outfile` we know where the output is going, and so we can genera
 
 Default: <html output format>.
 
-= `html` output format
-{parent=output format}
-
-The default output format. Web pages!!!
-
 = `bigb` output format
 {parent=output format}
 
@@ -7435,6 +7445,11 @@ diff -u _out/html/old.html _out/html/index.html
 ``
 
 This was tracked at: https://github.com/ourbigbook/ourbigbook/issues/83
+
+= `html` output format
+{parent=output format}
+
+The default output format. Web pages!!!
 
 = `id` output format
 {parent=output format}
@@ -9806,6 +9821,48 @@ Allowing for unlimited depth on Mathematics:
 ./sqlite_preorder.py -D3 -Obigb -m -N enwiki.sqlite Mathematics
 ``
 leads seems to reach all ~9M articles + categories , or most of them. We gave up around 8.6M, when things got really really slow, possibly due to heavy duplicate removal. We didn't log it properly, but depths of 3k+ were seen... so not setting depth is just pointless unless you want the entire Wiki.
+
+= Wikibot LLM body population
+{parent=Wikipedia bot}
+
+Mostly for fun we've populated the body of wikibot-generated sections on <OurBigBook.com> with some LLM-generated content.
+
+At first we considered using Ollama with something like llama3.2, but because each prompt took 5 seconds on a laptop it would take about 5 days to do all 100k articles and so we decided to try existing API providers.
+
+We finally ended up going with the cheapest model that seemed easy to use and chose OpenAI gpt-4o-mini. We managed to complete the generation for 100 output tokens per section with only 3 dollars. To help reduce costs we also:
+* used batch jobs, which can take up to 24 hours to complete and sometimes just fail after 24 hours
+* enabled data collection to get some extra credits.
+
+We just took the Wikipedia titles and prompted directly:
+``
+What is TITLE?
+``
+
+It is a bit of shame that many of the replies end in crap like "Let me know if you need more help on this subject"-type output. We could have prevented those with a role=system prompt, but there seems to be no way to factor out a single system prompt for multiple queries, so the input token could would have increased.
+
+Our pipeline is as follows. First clone the wikibot repo:
+``
+cd ..
+git clone https://github.com/ourbigbook/wikibot
+cd -
+``
+
+Then:
+``
+export OPENAI_API_KEY=...
+./wikibot-static-llm-submit
+
+# Wait 24 hours and pray.
+# Check completion with:
+./wikibot-static-llm-list-batches
+
+./wikibot-static-jsonl-to-sqlite
+./wikibot-static-add-body
+``
+The generated repository with bodies added should now be present under:
+``
+_out/wikibot-llm/repo/
+``
 
 = Demo data
 {parent=Generated data}

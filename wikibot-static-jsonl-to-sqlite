@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+set -eux
+
+d=_out/wikibot-llm
+db="$d/db.sqlite"
+
+# https://stackoverflow.com/questions/19529688/how-to-merge-2-json-objects-from-2-files-using-jq/79650707#79650707
+paste <(jq -R <"$d/titles.txt") "$d/oai_out.jsonl" |
+  jq -c '{title: ., body: input.response.body.choices[0].message.content}' |
+  jq -s \
+> "$d/title-body.json"
+
+rm -f "$db"
+sqlite3 "$db" 'CREATE TABLE "t" ("title" TEXT, "body" TEXT)'
+# https://stackoverflow.com/questions/46407770/how-to-convert-a-json-file-to-an-sqlite-database
+cat <<EOF | sqlite3 "$db"
+INSERT INTO t SELECT 
+  json_extract(value, '$.title'), 
+  json_extract(value, '$.body')
+FROM json_each(readfile('$d/title-body.json'));
+EOF
+sqlite3 "$db" 'CREATE UNIQUE INDEX t_title_idx ON t(title)'

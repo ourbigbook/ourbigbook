@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+set -eux
+
+for id in "$@"; do
+  curl https://api.openai.com/v1/batches/$id/cancel \
+    -H "Authorization: Bearer $OPENAI_API_KEY" \
+    -H "Content-Type: application/json" \
+    -X POST
+done

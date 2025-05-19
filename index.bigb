@@ -4847,32 +4847,38 @@ The <\x magic argument> was introduced later, and basically became a better alte
 = `\x` within `title` restrictions
 {parent=Internal link}
 
-If you use `\x` within a `title`, which most commonly happens for <image>[image titles], that can generate complex dependencies between IDs, which would either be harder to implement, or lead to infinite recursion.
+If you use an <internal link> within a <title argument>, that can generate complex dependencies between IDs, which would either be harder to implement, or lead to infinite recursion.
 
-To prevent such problems, OurBigBook emits an error if you use an `\x` without content in the `title` of one of the following elements:
-* any <header>. For example, the following gives an error:
-  ``
-  = h1
-  {id=myh1}
+To prevent such problems:
+* for the case of <headers>:
+  * if the <internal link> text is explicitly given, then it is used to calculate the ID of the title element and on render output
+  * otherwise, the href argument is used for the ID and the render output. This generally works best when you use <magic links>.
+* for non-<headers> such as <images>, you you can link to headers, and the rendered target gets used for both ID and rendered content
 
-  == \x[myh1]
-  ``
+Here are some example:
+* ``
+  = Hello \x[h2-id][the content]
 
-  This could be solved by either adding a content to the reference:
+  == H2 title
+  {id=h2-id}
   ``
-  = h1
-  {id=myh1}
+  * h1 id: `hello-the-content`
+  * h1 render content: `Hello the content`
+* ``
+  = Hello \x[h2-id]
 
-  == \x[myh1][mycontent]
+  == H2 title
+  {id=h2-id}
   ``
-  or by adding an explicit ID to the header:
-  ``
-  = h1
-  {id=myh1}
+  * h1 id: `hello-h2-id`
+  * h1 render content: `Hello h2-id`. Note that this is not very nice due to the `-`, but it can be made nicer without repetition with a <magic link> as in the following example
+* ``
+  = Hello <blue dog>
 
-  == \x[myh1]
-  {id=myh2}
+  == Blue dog
   ``
+  * h1 id: `hello-blue-dog`
+  * h1 render content: `Hello blue dog`
 * non-header (e.g. an <image>) that links to the title of another non-header
 
   For non-headers, things are a bit more relaxed, and we can link to headers, e.g.:

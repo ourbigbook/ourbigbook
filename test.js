@@ -2856,23 +2856,69 @@ assert_lib_error('nest: a inside a gives an error implicit',
   undefined, { convert_opts: { render: false } }
 )
 assert_lib_stdin('nest: a inside H content renders as text without link explicit',
-  '\\H[1][\\a[http://example.com][my content]]\n',
+  `\\H[1][asdf \\a[http://example.com][my content]]
+
+\\x[asdf-my-content]
+`,
   {
     assert_xpath_stdout: [
       // This has no use case, perhaps we should lint it out,
       // as the href example.com is never used anywhere when content is there.
-      xpath_header(1, '', "x:a[@href='' and text()='my content']"),
+      xpath_header(1, '', "x:a[@href='' and text()='asdf my content']"),
     ],
   }
 )
 assert_lib_stdin('nest: a inside H content renders as text without link implicit',
-  '\\H[1][http://example.com]\n',
+  `\\H[1][asdf http://example.com]
+
+\\x[asdf-http-example-com]
+`,
   {
     assert_xpath_stdout: [
       // We could be strict and forbid this forcing users to escape the link instead \http
       // But let's not be a pain, just let people write what they want and
       // make it automatically work for them.
-      xpath_header(1, '', "x:a[@href='' and text()='http://example.com']"),
+      xpath_header(1, '', "x:a[@href='' and text()='asdf http://example.com']"),
+    ],
+  }
+)
+assert_lib_stdin('nest: x inside H content renders as text without link with content and no magic',
+  `= asdf \\x[qwer][my h2]
+
+\\x[asdf-my-h2]
+
+== qwer
+`,
+  {
+    assert_xpath_stdout: [
+      xpath_header(1, '', "x:a[@href='' and text()='asdf my h2']"),
+    ],
+  }
+)
+assert_lib_stdin('nest: x inside H content renders as text without link without content and no magic',
+  `= asdf \\x[qwer]
+
+\\x[asdf-qwer]
+
+== My h2
+{id=qwer}
+`,
+  {
+    assert_xpath_stdout: [
+      xpath_header(1, '', "x:a[@href='' and text()='asdf qwer']"),
+    ],
+  }
+)
+assert_lib_stdin('nest: x inside H content renders as text without link magic',
+  `= asdf <my dogs> qwer
+
+\\x[asdf-my-dogs-qwer]
+
+== My dog
+`,
+  {
+    assert_xpath_stdout: [
+      xpath_header(1, '', "x:a[@href='' and text()='asdf my dogs qwer']"),
     ],
   }
 )
@@ -4507,16 +4553,6 @@ assert_lib(
 
 // Infinite recursion.
 // failing https://github.com/ourbigbook/ourbigbook/issues/34
-assert_lib_error('x: internal link from header title to following header is not allowed',
-  `= \\x[h2] aa
-
-== h2
-`, 1, 3);
-assert_lib_error('x: internal link from header title to previous header is not allowed',
-  `= h1
-
-== \\x[h1] aa
-`, 3, 4);
 assert_lib('x: internal link from image title to previous non-header without content is not allowed',
   {
     filesystem: {
@@ -4584,18 +4620,27 @@ assert_lib('x: internal link from image title to following non-header is not all
     assert_check_db_errors: 1,
   }
 )
-assert_lib_error('x: internal link infinite recursion with explicit IDs fails gracefully',
+assert_lib('x: circular x in title does not lead to infinite recursion',
   `= \\x[h2]
 {id=h1}
 
 == \\x[h1]
 {id=h2}
-`, 1, 3);
-assert_lib_error('x: internal link infinite recursion to self IDs fails gracefully',
-  `= \\x[tmp]
-`, 1, 3, 'tmp.bigb',
+`,
   {
-    input_path_noext: 'tmp',
+    assert_xpath_stdout: [
+      xpath_header(1, '', "x:a[@id='h1' and text()='h2']"),
+      xpath_header(1, '', "x:a[@id='h2' and text()='h1']"),
+    ],
+  }
+)
+assert_lib('x: internal link self ID does not lead to infinite recursion',
+  `= \\x[tmp]
+`,
+  {
+    assert_xpath_stdout: [
+      xpath_header(1, '', "x:a[@id='tmp' and text()='tmp']"),
+    ],
     // TODO https://github.com/ourbigbook/ourbigbook/issues/342
     convert_opts: { ourbigbook_json: { lint: { filesAreIncluded: false } } },
   }
@@ -9116,7 +9161,7 @@ assert_lib_ast('id autogen: with disambiguate',
 )
 assert_lib_error('id autogen: with undefined reference in title fails gracefully',
   `= \\x[reserved_undefined]
-`, 1, 3);
+`, 1, 5);
 // https://github.com/ourbigbook/ourbigbook/issues/45
 assert_lib_ast('id autogen: with nested elements does an id conversion and works',
   `= ab \`cd\` ef

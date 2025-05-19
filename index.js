@@ -6019,15 +6019,6 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         is_first_header = false
       } else if (macro_name === Macro.X_MACRO_NAME) {
-        if (header_title_ast_ancestors.length > 0 && ast.args.content === undefined) {
-          const message = `x without content inside title of a header: ${OURBIGBOOK_DEFAULT_DOCS_URL}/x-within-title-restrictions`
-          ast.args.content = new AstArgument(
-            [ new PlaintextAstNode(' ' + errorMessageInOutput(message), ast.source_location) ],
-            ast.source_location
-          );
-          parseError(state, message, ast.source_location);
-        }
-
         // refs database updates.
         validateAst(ast, context)
         let target_id = convertFileIdArg(ast, ast.args.href, context)
@@ -7993,69 +7984,76 @@ function xGetHrefContent(ast, context, opts={}) {
     if (target_id === context.options.ref_prefix) {
       content = HTML_HOME_MARKER
     } else {
-      // No explicit content given, deduce content from target ID title.
-      if (context.x_parents.has(ast)) {
-        // Prevent render infinite loops.
-        let message = `x with infinite recursion`;
-        renderError(context, message, ast.source_location);
-        return [href, errorMessageInOutput(message, context)];
-      }
-      let x_text_options = {
-        caption_prefix_span: false,
-        capitalize: ast.validation_output.c.boolean,
-        from_x: true,
-        quote: true,
-        pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
-      };
-      if (ast.validation_output.magic.boolean) {
-        const first_ast = href_arg.get(0);
-        if (first_ast.node_type === AstType.PLAINTEXT) {
-          const sep_idx = first_ast.text.lastIndexOf(Macro.HEADER_SCOPE_SEPARATOR)
-          const idx = sep_idx === -1 ? 0 : sep_idx + 1
-          const c = first_ast.text[idx]
-          if (
-            // Possible on home article on web, which has empty ID.
-            c !== undefined &&
-            c !== c.toLowerCase()
-          ) {
-            x_text_options.capitalize = true
+      if (context.in_a === undefined) {
+        // No explicit content given, deduce content from target ID title.
+        if (context.x_parents.has(ast)) {
+          // Prevent render infinite loops.
+          let message = `x with infinite recursion`;
+          renderError(context, message, ast.source_location);
+          return [href, errorMessageInOutput(message, context)];
+        }
+        let x_text_options = {
+          caption_prefix_span: false,
+          capitalize: ast.validation_output.c.boolean,
+          from_x: true,
+          quote: true,
+          pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
+        };
+        if (ast.validation_output.magic.boolean) {
+          const first_ast = href_arg.get(0);
+          if (first_ast.node_type === AstType.PLAINTEXT) {
+            const sep_idx = first_ast.text.lastIndexOf(Macro.HEADER_SCOPE_SEPARATOR)
+            const idx = sep_idx === -1 ? 0 : sep_idx + 1
+            const c = first_ast.text[idx]
+            if (
+              // Possible on home article on web, which has empty ID.
+              c !== undefined &&
+              c !== c.toLowerCase()
+            ) {
+              x_text_options.capitalize = true
+            }
+          }
+          const last_ast = href_arg.get(href_arg.length() - 1);
+          if (last_ast.node_type === AstType.PLAINTEXT) {
+            const text = first_ast.text
+            if (
+              text !== pluralizeWrap(text, 1) &&
+              // Due to buggy pluralize behaviour, it can be different from both.
+              // So let's check and abort otherwise just using what is actually in the ref
+              // https://github.com/plurals/pluralize/issues/172
+              // for those weirder cases.
+              text === pluralizeWrap(text, 2)
+            ) {
+              x_text_options.pluralize = true
+            }
+            if (ast.validation_output.magic.boolean) {
+              const words = text.split(PLURALIZE_WORD_SPLIT_REGEX)
+              x_text_options.forceLastWord = words[words.length - 1]
+            }
           }
         }
-        const last_ast = href_arg.get(href_arg.length() - 1);
-        if (last_ast.node_type === AstType.PLAINTEXT) {
-          const text = first_ast.text
-          if (
-            text !== pluralizeWrap(text, 1) &&
-            // Due to buggy pluralize behaviour, it can be different from both.
-            // So let's check and abort otherwise just using what is actually in the ref
-            // https://github.com/plurals/pluralize/issues/172
-            // for those weirder cases.
-            text === pluralizeWrap(text, 2)
-          ) {
-            x_text_options.pluralize = true
-          }
-          if (ast.validation_output.magic.boolean) {
-            const words = text.split(PLURALIZE_WORD_SPLIT_REGEX)
-            x_text_options.forceLastWord = words[words.length - 1]
-          }
+        if (ast.validation_output.full.given) {
+          x_text_options.style_full = ast.validation_output.full.boolean
+          x_text_options.style_full_from_x = true
         }
-      }
-      if (ast.validation_output.full.given) {
-        x_text_options.style_full = ast.validation_output.full.boolean
-        x_text_options.style_full_from_x = true
-      }
-      const x_parents_new = new Set(context.x_parents);
-      x_parents_new.add(ast);
-      const xTextBaseRet = xTextBase(target_ast, cloneAndSet(context, 'x_parents', x_parents_new), x_text_options);
-      if (showDisambiguate) {
-         content = xTextBaseRet.innerWithDisambiguate
+        const x_parents_new = new Set(context.x_parents);
+        x_parents_new.add(ast);
+        const xTextBaseRet = xTextBase(target_ast, cloneAndSet(context, 'x_parents', x_parents_new), x_text_options);
+        if (showDisambiguate) {
+          content = xTextBaseRet.innerWithDisambiguate
+        } else {
+          content = xTextBaseRet.full
+        }
+        if (content === ``) {
+          let message = `empty internal link body: "${target_id}"`;
+          renderError(context, message, ast.source_location);
+          return errorMessageInOutput(message, context);
+        }
       } else {
-         content = xTextBaseRet.full
-      }
-      if (content === ``) {
-        let message = `empty internal link body: "${target_id}"`;
-        renderError(context, message, ast.source_location);
-        return errorMessageInOutput(message, context);
+        // Inside H: just use href. Also caught when inside a, which is a weird case.
+        // We perhaps don't want to come here in that case, but lazy to code a fix now,
+        // it would require separating in_a from an "in_h" properly.
+        content = renderArg(href_arg, context)
       }
     }
   } else {
@@ -9234,7 +9232,6 @@ const DEFAULT_MACRO_LIST = [
         name: Macro.TITLE_ARGUMENT_NAME,
         count_words: true,
         cannotContain: new Set([
-          Macro.X_MACRO_NAME,
           Macro.LINE_BREAK_MACRO_NAME,
           'image',
           'br',
@@ -11132,7 +11129,10 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           } else if (ast.validation_output.ref.boolean) {
             content = HTML_REF_MARKER;
           }
-          if (context.x_parents.size === 0) {
+          if (
+            context.in_a === undefined &&
+            context.x_parents.size === 0
+          ) {
             // Counts.
             let counts_str;
             if (
@@ -11172,7 +11172,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
              getTestData(ast, context) +
              `>${content}</a>`
           } else {
-            return content;
+            return content
           }
         },
         'Video': macroImageVideoBlockConvertFunction,

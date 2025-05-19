@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+set -eu
+
+d=_out/wikibot-llm
+db="$d/db.sqlite"
+indir=../wikibot
+outdir=_out/wikibot-llm/repo
+if [ $# -gt 0 ]; then
+  last="$1"
+else
+  last=
+  rm -rf "$outdir"
+fi
+mkdir -p "$outdir"
+cp \
+  "$indir/.gitignore" \
+  "$indir/CNAME" \
+  "$indir/main.scss" \
+  "$indir/ourbigbook.json" \
+  "$indir/ourbigbook.liquid.html" \
+"$outdir"
+git -C "$indir" ls-files | grep '\.bigb' |
+  ( if [ -n "$last" ]; then printf '%s\n' "$last"; sed "0,/^$last/d"; else cat; fi ) |
+  while IFS="" read -r f
+do
+  echo "$f"
+  last_body=
+  cat "$indir/$f" | while IFS="" read -r l; do
+    if printf '%s' "$l" | grep -Eq '^='; then
+      if [ -n "$last_body" ]; then
+        printf '%s\n\n' "$last_body"
+      fi
+    fi
+    printf '%s\n' "$l"
+    if printf '%s' "$l" | grep -Eq '^='; then
+      title="$(printf '%s' "$l" | sed -r 's/^=+ //')"
+      last_body="$(
+        sqlite3 _out/wikibot-llm/db.sqlite "select body from t where title = '$(sed "s/'/''/g" <<<$title)'" |
+        tr '\n' ' ' |
+        sed -r 's/ +/ /g' |
+        perl -lape 's/(.*[.!?]).*/\1/' |
+        perl -lape 's/([.!?])[^.!?]+\b(I|you)\b[^.!?]+[.!?]$/\1/' |
+        ourbigbook --escape-literal |
+        sed -r 's/.$//'
+      )"
+    fi
+  done > "$outdir/$f"
+done

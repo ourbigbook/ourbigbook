@@ -1379,6 +1379,7 @@ cli_parser.option('--embed-includes', 'https://docs.ourbigbook.com#embed-include
 cli_parser.option('--embed-resources', 'https://docs.ourbigbook.com#embed-resources', false);
 // Originally added for testing, this allows the test filesystems to be put under the repository itself,
 // otherwise they would pickup our toplevel ourbigbook.json.
+cli_parser.option('--escape-literal', 'https://docs.ourbigbook.com#escape-literal', false);
 cli_parser.option('--fakeroot <fakeroot>', 'Stop searching for ourbigbook.json at this directory rather than at the filesystem root');
 cli_parser.option('--generate <name>', 'https://docs.ourbigbook.com#generate', false);
 cli_parser.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://docs.ourbigbook.com#help-macros', false);
@@ -1850,7 +1851,11 @@ if (cli.helpMacros) {
     // Input from stdin.
     title = 'stdin';
     input = await readStdin();
-    output = await convert_input(input, ourbigbook_options, nonOurbigbookOptions);
+    if (cli.escapeLiteral) {
+      output = ourbigbook.ourbigbookEscape(input)
+    } else {
+      output = await convert_input(input, ourbigbook_options, nonOurbigbookOptions);
+    }
   } else {
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);

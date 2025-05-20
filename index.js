@@ -4275,6 +4275,7 @@ function getLinkHtml({
   }
   if (
     context.in_a === undefined &&
+    !context.in_x_text &&
     context.x_parents.size === 0
   ) {
     if (attrs === undefined) {
@@ -11131,6 +11132,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           }
           if (
             context.in_a === undefined &&
+            !context.in_x_text &&
             context.x_parents.size === 0
           ) {
             // Counts.

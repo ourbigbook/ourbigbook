@@ -2882,6 +2882,20 @@ assert_lib_stdin('nest: a inside H content renders as text without link implicit
     ],
   }
 )
+assert_lib_stdin('nest: a inside H child parent link renders as text only',
+  `= Toplevel
+
+== asdf http://example.com
+
+=== qwer
+`,
+  {
+    assert_xpath_stdout: [
+      xpath_header(2, 'asdf-http-example-com', "x:a[@href='#asdf-http-example-com' and text()='asdf http://example.com']"),
+      xpath_header_parent(3, 'qwer', '#asdf-http-example-com', 'asdf example.com'),
+    ],
+  }
+)
 assert_lib_stdin('nest: x inside H content renders as text without link with content and no magic',
   `= asdf \\x[qwer][my h2]
 
@@ -2892,6 +2906,20 @@ assert_lib_stdin('nest: x inside H content renders as text without link with con
   {
     assert_xpath_stdout: [
       xpath_header(1, '', "x:a[@href='' and text()='asdf my h2']"),
+    ],
+  }
+)
+assert_lib_stdin('nest: x inside H child parent link renders as text only',
+  `= Toplevel
+
+== asdf \\x[qwer][my h2]
+
+=== qwer
+`,
+  {
+    assert_xpath_stdout: [
+      xpath_header(2, 'asdf-my-h2', "x:a[@href='#asdf-my-h2' and text()='asdf my h2']"),
+      xpath_header_parent(3, 'qwer', '#asdf-my-h2', 'asdf my h2'),
     ],
   }
 )

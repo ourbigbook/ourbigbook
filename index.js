@@ -1264,6 +1264,9 @@ class MacroArgument {
       // https://docs.ourbigbook.com#remove-whitespace-children
       options.remove_whitespace_children = false;
     }
+    if (!('renderLinksAsPlaintext' in options)) {
+      options.renderLinksAsPlaintext = false
+    }
     this.automaticTopicLinks = options.automaticTopicLinks
     this.boolean = options.boolean
     this.cannotContain = options.cannotContain
@@ -1277,6 +1280,7 @@ class MacroArgument {
     this.name = name
     this.positive_nonzero_integer = options.positive_nonzero_integer
     this.remove_whitespace_children = options.remove_whitespace_children
+    this.renderLinksAsPlaintext = options.renderLinksAsPlaintext
     this.ourbigbook_output_prefer_literal = options.ourbigbook_output_prefer_literal
   }
 }
@@ -6526,7 +6530,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             if (
               !ancestorArg.automaticTopicLinks ||
               !ancestorArg.count_words ||
-              ancestorArg.cannotContain.has(Macro.X_MACRO_NAME)
+              ancestorArg.renderLinksAsPlaintext
             ) {
               fetchPlaintextArgs = false
             }
@@ -8060,6 +8064,7 @@ function xGetHrefContent(ast, context, opts={}) {
         // Inside H: just use href. Also caught when inside a, which is a weird case.
         // We perhaps don't want to come here in that case, but lazy to code a fix now,
         // it would require separating in_a from an "in_h" properly.
+        // Another option is to use renderLinksAsPlaintext here.
         content = renderArg(href_arg, context)
       }
     }
@@ -9110,6 +9115,7 @@ const DEFAULT_MACRO_LIST = [
           Macro.X_MACRO_NAME,
           'Image',
         ]),
+        renderLinksAsPlaintext: true,
       }),
     ],
     {
@@ -9245,6 +9251,7 @@ const DEFAULT_MACRO_LIST = [
           'image',
           'br',
         ]),
+        renderLinksAsPlaintext: true,
       }),
     ],
     {
@@ -9694,6 +9701,7 @@ const DEFAULT_MACRO_LIST = [
           Macro.LINK_MACRO_NAME,
           Macro.X_MACRO_NAME,
         ]),
+        renderLinksAsPlaintext: true,
       }),
     ],
     {

@@ -1,4 +1,5 @@
 {
+  "generateSitemap": true,
   "ignoreConvert": [
     "ourbigbook.common.scss",
     "ourbigbook.scss",
@@ -21,5 +22,7 @@
   "publishCommitDate": "2000-01-01T00:00:00",
   "publishCommitAuthorSameAsSource": true,
   "publishRemoteUrl": "git@github.com:ourbigbook/ourbigbook.git",
+  "publishRootUrl": "https://docs.ourbigbook.com",
+  "sitemap": true,
   "unsafeXss": true
 }

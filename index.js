@@ -3790,6 +3790,12 @@ function convertInitOptions(options) {
   ) {
     options.h.numbered = options.ourbigbook_json.h.numbered
   }
+  if (
+    options.ourbigbook_json.generateSitemap &&
+    !options.ourbigbook_json.publishRootUrl
+  ) {
+    throw new Error(`generateSitemap requires publishRootUrl to be set`)
+  }
   return options
 }
 exports.convertInitOptions = convertInitOptions
@@ -8713,6 +8719,7 @@ const OURBIGBOOK_JSON_DEFAULT = {
   dontIgnoreConvert: [],
   enableArg: {},
   fromOurBigBookExample: false,
+  generateSitemap: false,
   h: {
     splitDefault: false,
     splitDefaultNotToplevel: false,
@@ -8733,6 +8740,7 @@ const OURBIGBOOK_JSON_DEFAULT = {
   },
   openLinksOnNewTabs: false,
   redirects: [],
+  publishRootUrl: undefined,
   'unsafeXss': false,
   web: {
     host: OURBIGBOOK_DEFAULT_HOST,

@@ -18,7 +18,7 @@ const { Liquid } = require('liquidjs');
 const { DataTypes, Op, Sequelize } = require('sequelize')
 
 const ourbigbook = require('ourbigbook');
-const { DIR_PREFIX, RAW_PREFIX } = ourbigbook
+const { DIR_PREFIX, RAW_PREFIX, URL_SEP } = ourbigbook
 const ourbigbook_nodejs = require('ourbigbook/nodejs');
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
@@ -291,8 +291,19 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
           !fs.lstatSync(onePath).isDirectory()
         ) {
           const inputPathRelativeToOurbigbookJson = path.relative(nonOurbigbookOptions.ourbigbook_json_dir, onePath);
-          const outpath = path.join(nonOurbigbookOptions.outdir, ourbigbook.FILE_PREFIX, inputPathRelativeToOurbigbookJson + '.' + ourbigbook.HTML_EXT)
+          const outputPathRelativeToOutdir = path.join(
+            ourbigbook.FILE_PREFIX,
+            inputPathRelativeToOurbigbookJson + '.' + ourbigbook.HTML_EXT
+          )
+          const outpath = path.join(nonOurbigbookOptions.outdir, outputPathRelativeToOutdir)
           const msgRet = convert_path_to_file_print_starting(ourbigbook_options, onePath, messagePrefix)
+          if (
+            nonOurbigbookOptions.publish &&
+            ourbigbook_options.ourbigbook_json.generateSitemap &&
+            ourbigbook_options.render
+          ) {
+            nonOurbigbookOptions.sitemap.push(outputPathRelativeToOutdir)
+          }
           let skip
           if (
             fs.existsSync(outpath) &&
@@ -607,6 +618,13 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
               first_output_path = output_path
             }
             fs.mkdirSync(path.dirname(output_path), { recursive: true });
+            if (
+              ourbigbook_options.render &&
+              nonOurbigbookOptions.publish &&
+              ourbigbook_options.ourbigbook_json.generateSitemap
+            ) {
+              nonOurbigbookOptions.sitemap.push(outpath)
+            }
             fs.writeFileSync(output_path, extra_returns.rendered_outputs[outpath].full);
           }
         }
@@ -664,6 +682,13 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
     ),
   )
   if (is_directory) {
+    if (
+      nonOurbigbookOptions.publish &&
+      ourbigbook_options.ourbigbook_json.generateSitemap &&
+      ourbigbook_options.render
+    ) {
+      nonOurbigbookOptions.sitemap.push(output_path_noext + URL_SEP)
+    }
     output_path_noext = path.join(output_path_noext, 'index')
   }
   if (ourbigbook_options.outfile === undefined) {
@@ -1483,7 +1508,7 @@ if (cli.helpMacros) {
     }
   }
   if (web) {
-    let jsonH = ourbigbook_json.h 
+    let jsonH = ourbigbook_json.h
     if (jsonH === undefined) {
       jsonH = {}
       ourbigbook_json.h = jsonH
@@ -1761,6 +1786,7 @@ if (cli.helpMacros) {
     post_convert_callback: undefined,
     publish,
     renderType,
+    sitemap: [],
   };
   if (publish) {
     ourbigbook_options.logoPath = ourbigbook_nodejs.LOGO_ROOT_RELPATH
@@ -2547,7 +2573,10 @@ if (cli.helpMacros) {
         }
 
         // Publish the converted output if build succeeded.
-        if (publish && !nonOurbigbookOptions.had_error) {
+        if (
+          publish &&
+          !nonOurbigbookOptions.had_error
+        ) {
           // Push the original source.
           if (publishIsPublic && !cli.dryRunPush) {
             runCmd('git', ['-C', inputPathCwd, 'push'], cmdOpts);
@@ -2597,6 +2626,38 @@ if (cli.helpMacros) {
             } catch(error) {
               cli_error(`${ourbigbook.OURBIGBOOK_JSON_BASENAME} prepublish command exited non-zero, aborting`);
             }
+          }
+
+          if (
+            options.ourbigbook_json.generateSitemap &&
+            options.ourbigbook_json.publishRootUrl
+          ) {
+            let sitemap = nonOurbigbookOptions.sitemap
+            if (!nonOurbigbookOptions.options.htmlXExtension) {
+              for (let i = 0; i < sitemap.length; i++) {
+                let p = sitemap[i]
+                let pSplit = p.split(URL_SEP)
+                if (pSplit[pSplit.length - 1] === 'index.html') {
+                  p = pSplit.slice(0, -1).join(URL_SEP)
+                }
+                if (p.endsWith('.' + ourbigbook.HTML_EXT)) {
+                  p = p.slice(0, - (ourbigbook.HTML_EXT.length + 1))
+                }
+                sitemap[i] = p
+              }
+            }
+            fs.writeFileSync(
+              path.join(publish_out_publish_obb_dir, 'sitemap.txt'),
+              sitemap
+                // Not ideal to remove duplicates here, but there were some
+                // duplicate _file cases that would require some thought.
+                .sort()
+                .filter((elem, index, arr) =>
+                  index === arr.length - 1 || arr[index + 1] !== elem
+                ).map(p =>
+                  `${options.ourbigbook_json.publishRootUrl}${p ? URL_SEP : ''}${p}`
+                ).join('\n')
+            )
           }
 
           // Copy runtime assets from _obb/ into the output repository.

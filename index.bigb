@@ -8231,6 +8231,16 @@ Note however that if an upper directory is ignored, then we don't recurse into i
 
 Analogous to <dontIgnore> but acts on <ignoreRender> rather than <ignore>.
 
+= `generateSitemap`
+{parent=ourbigbook.json}
+
+If `true`, generate a https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#text[text sitemap] and place it in the <`_obb` directory> when publishing at path:
+``
+_obb/sitemap.txt
+``
+
+This options requires you to also set <publishRootUrl>.
+
 = `ignore`
 {parent=ourbigbook.json}
 
@@ -8597,9 +8607,20 @@ If given these options override pre-existing options on the published output.
 = `publishRemoteUrl`
 {parent=ourbigbook.json}
 
-A custom `remoteUrl` to push build outputs to.
+A custom `remoteUrl` to upload the publish to, e.g.:
+``
+"publishRemoteUrl": "git@github.com:ourbigbook/ourbigbook.git"
+``
 
 If not given this value is extracted by default from the `origin` remote of the Git repository were the source code is located in.
+
+= `publishRootUrl`
+{parent=ourbigbook.json}
+
+The root URL at which the website will be published, e.g.:
+``
+"publishRootUrl": "https://docs.ourbigbook.com"
+``
 
 = `redirects`
 {parent=ourbigbook.json}

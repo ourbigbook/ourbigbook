@@ -2628,6 +2628,7 @@ if (cli.helpMacros) {
             }
           }
 
+          fs.mkdirSync(publish_out_publish_obb_dir, { recursive: true })
           if (
             options.ourbigbook_json.generateSitemap &&
             options.ourbigbook_json.publishRootUrl
@@ -2669,7 +2670,6 @@ if (cli.helpMacros) {
               path.join(publishOutPublishDistDir, dirent.name)
             )
           }
-          fs.mkdirSync(publish_out_publish_obb_dir, { recursive: true })
           if (options.ourbigbook_json.web && options.ourbigbook_json.web.linkFromStaticHeaderMetaToWeb) {
             fs.copyFileSync(
               ourbigbook_nodejs.LOGO_PATH,

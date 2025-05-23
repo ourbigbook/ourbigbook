@@ -2615,8 +2615,40 @@ which contains a redirection from `gdb.html` to `gnu-debugger.html`.
 
 Implemented at: https://github.com/ourbigbook/ourbigbook/issues/114
 
+= `\H` `synonymNoScope` argument
+{parent=H arguments}
+
+= `synonymNoScope`
+{synonym}
+
+The `synonymNoScope` argument works like the <`\H` `synonym` argument>, except that it ignores any scopes of the synonym target and instead places it at toplevel.
+
+This can be useful if you initially placed a header under a scope, but then decide that some of its descendants would also make sense outside of the scope.
+
+For example consider:
+
+``
+= My dog blog
+
+I know a lot about the <history of dog food>.
+
+== Dog food
+{scope}
+
+=== History
+
+= History of dog food
+{synonymNoScope}
+``
+
+In this example, the ID of `History of dog food` is just `history-of-dog-food`, not `dog-food/history-of-dog-food` and therefore we can link to it simply with:
+``
+<history of dog food>
+``
+from outside the scope.
+
 = `\H` `title` argument
-{parent=H synonym argument}
+{parent=H arguments}
 {tag=`title` argument}
 
 Contains the main content of the header. The <shorthand syntax>:
@@ -2711,38 +2743,12 @@ TODO:
 
 = ID target from title
 {c}
-{parent=H synonym argument}
+{parent=H title argument}
 
 This conversion type is similar to <Automatic ID from title>, but it is used in certain cases where we are targeting IDs rather than setting them, notably:
 * <\H parent argument>
 * <\H child argument>
 * <\H tag argument>
-
-= `\H` `title2` argument of a synonym header
-{parent=H synonym argument}
-
-Unlike <\H title2 argument>, the synonym does not show up by default next to the title. This is because we sometimes want that, and sometimes not. To make the title appear, you can simply add an empty `title2` argument to the synonym header as in:
-``
-= GNU Debugger
-{c}
-
-= GDB
-{c}
-{synonym}
-{title2}
-
-= Quantum computing
-
-= Quantum computer
-{synonym}
-``
-which renders something like:
-``
-= GNU Debugger (GDB)
-
-= Quantum computing
-``
-Note how we added the synonym to the title only when it is not just a simple flexion variant, since `Quantum computing (Quantum computer)` would be kind of useless would be kind of useless.
 
 = `\H` `tag` argument
 {c}
@@ -2852,8 +2858,35 @@ The `title2` argument has a special meaning when applied to a <header> with the 
 {parent=h-arguments}
 {tag=boolean-argument}
 
-This option is a convenience helper for the common use case of "writting a tutorial". The same would also apply to a report, or an article.
+This option is a convenience helper for the common use case of "writing a tutorial". The same would also apply to a report, or an article.
 ]]
+
+= `\H` `title2` argument of a synonym header
+{parent=H title2 argument}
+{tag=Synonym}
+
+Unlike <\H title2 argument>, the synonym does not show up by default next to the title. This is because we sometimes want that, and sometimes not. To make the title appear, you can simply add an empty `title2` argument to the synonym header as in:
+``
+= GNU Debugger
+{c}
+
+= GDB
+{c}
+{synonym}
+{title2}
+
+= Quantum computing
+
+= Quantum computer
+{synonym}
+``
+which renders something like:
+``
+= GNU Debugger (GDB)
+
+= Quantum computing
+``
+Note how we added the synonym to the title only when it is not just a simple flexion variant, since `Quantum computing (Quantum computer)` would be kind of useless would be kind of useless.
 
 = `\H` `toplevel` argument
 {parent=H arguments}

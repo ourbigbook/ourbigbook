@@ -5654,6 +5654,39 @@ assert_lib('scope: link from non subdir scope to subdir scope works',
     },
   }
 )
+assert_lib('scope: synonymNoScope',
+  {
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+<Under scope>{id=toplevel-to-under-scope}
+
+<Another synonym>{id=toplevel-to-another-synonym}
+
+== My scope
+{scope}
+
+=== Under scope
+
+= In Scope
+{synonymNoScope}
+
+= Under scope
+{synonymNoScope}
+
+= Another synonym
+{synonymNoScope}
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//x:a[@id='toplevel-to-under-scope' and @href='#my-scope/under-scope' and text()='Under scope']",
+        "//x:a[@id='toplevel-to-another-synonym' and @href='#my-scope/under-scope' and text()='Another synonym']",
+      ]
+    },
+  }
+)
 assert_lib('x: ref_prefix gets appended to absolute targets',
   {
     convert_dir: true,

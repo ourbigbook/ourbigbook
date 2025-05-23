@@ -564,6 +564,11 @@ class AstNode {
     return this.parent_argument_index === this.parent_argument.length() - 1
   }
 
+  isSynonym() {
+    return this.validation_output.synonym.boolean ||
+      this.validation_output.synonymNoScope.boolean
+  }
+
   /** Manual implementation. There must be a better way, but I can't find it... */
   static fromJSON(ast_json, context) {
     // Post order depth first convert the AST JSON tree.
@@ -2702,7 +2707,6 @@ function calculateId(
   macro_count_global,
   macro_counts_visible,
   state,
-  is_header,
   line_to_id_array,
   opts={},
 ) {
@@ -2721,7 +2725,7 @@ function calculateId(
   }
 
   let index_id = true;
-  let skip_scope = false
+  let skip_scope = !!(ast.validation_output.synonymNoScope && ast.validation_output.synonymNoScope.boolean)
   let idIsEmpty = false
   let id
   let file_header = ast.macro_name === Macro.HEADER_MACRO_NAME &&
@@ -2742,7 +2746,7 @@ function calculateId(
   }
   if (isHomeHeader) {
     id = TOPLEVEL_INDEX_ID
-    if (ast.scope !== undefined && !skip_scope) {
+    if (ast.scope !== undefined) {
       id = ast.scope
     }
     const idArg = ast.args[Macro.ID_ARGUMENT_NAME]
@@ -3207,7 +3211,7 @@ async function convert(
           // Just ignore extra added include headers, these
           // were overwriting index-split.html output.
           !child_ast.from_include &&
-          !child_ast.validation_output.synonym.boolean
+          !child_ast.isSynonym()
         ) {
           renderAstList({ asts, context, header_count, split: true });
           asts = [];
@@ -5693,7 +5697,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
         if (
           !is_first_header &&
-          !ast.validation_output.synonym.boolean &&
+          !ast.isSynonym() &&
           options.forbid_multiheader
         ) {
           parseError(
@@ -5704,7 +5708,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           parent_arg.push(new PlaintextAstNode(options.forbid_multiheader, ast.source_location));
         }
 
-        let is_synonym = ast.validation_output.synonym.boolean;
+        let is_synonym = ast.isSynonym()
         const header_level = ast.validation_output.level.positive_nonzero_integer
 
         // splitDefault propagation to children.
@@ -5787,7 +5791,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         // lint['h-parent']
         if (
           context.options.ourbigbook_json.lint['h-parent'] &&
-          !ast.validation_output.synonym.boolean
+          !ast.isSynonym()
         ) {
           let message;
           if (
@@ -5900,7 +5904,6 @@ async function parse(tokens, options, context, extra_returns={}) {
           macro_count_global,
           macro_counts_visible,
           state,
-          true,
           line_to_id_array,
           {
             isHomeHeader,
@@ -5913,7 +5916,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           !is_first_header &&
           options.forbid_multi_h1 &&
           //!ast.synonym
-          !ast.validation_output.synonym.boolean
+          !ast.isSynonym()
         ) {
           const msg = `only one level 1 header is allowed in this conversion, extra header has ID: "${ast.id}"`
           parseError(state, msg, ast.source_location);
@@ -5945,7 +5948,6 @@ async function parse(tokens, options, context, extra_returns={}) {
             macro_count_global,
             macro_counts_visible,
             state,
-            true,
             line_to_id_array,
             {
               ignoreEmptyId: true,
@@ -6581,7 +6583,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
           // Header IDs already previously calculated for parent= so we don't redo it in that case.
           let ret = calculateId(ast, context, options.non_indexed_ids, options.indexed_ids, macro_counts,
-            macro_count_global, macro_counts_visible, state, false, line_to_id_array);
+            macro_count_global, macro_counts_visible, state, line_to_id_array);
           macro_count_global = ret.macro_count_global
 
           // Propagate some header properties to non-header children.
@@ -9306,6 +9308,10 @@ const DEFAULT_MACRO_LIST = [
           boolean: true,
         }),
         new MacroArgument({
+          name: 'synonymNoScope',
+          boolean: true,
+        }),
+        new MacroArgument({
           name: Macro.HEADER_TAG_ARGNAME,
           multiple: true,
         }),
@@ -10054,7 +10060,7 @@ const OUTPUT_FORMATS_LIST = [
           context = cloneAndSet(context, 'in_header', true)
           const children = ast.args[Macro.HEADER_CHILD_ARGNAME]
           const tags = ast.args[Macro.HEADER_TAG_ARGNAME]
-          if (ast.validation_output.synonym.boolean) {
+          if (ast.isSynonym()) {
             if (children !== undefined) {
               const message = `"synonym" and "child" are incompatible`;
               renderError(context, message, children.source_location);
@@ -11861,7 +11867,7 @@ OUTPUT_FORMATS_LIST.push(
           let output_level
           if (
             ast.validation_output.parent.given ||
-            ast.validation_output.synonym.boolean
+            ast.isSynonym()
           ) {
             output_level = 1
           } else {

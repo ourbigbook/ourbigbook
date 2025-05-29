@@ -701,7 +701,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   const convertNonBigb = ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
   if (ourbigbook_options.render) {
     fs.mkdirSync(path.dirname(output_path_noext), { recursive: true });
-    if (convertNonBigb && !ignore_convert_path) {
+    if (!isbigb && convertNonBigb && !ignore_convert_path) {
       // Convert non-OurBigBook files and directories.
       let isSass = false
       let knownType = true
@@ -866,7 +866,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
       convert_path_to_file_print_finish(ourbigbook_options, input_path, first_output_path, { message_prefix, skip, t0: msg_ret ? msg_ret.t0 : undefined })
     }
 
-    if (convertNonBigb) {
+    if (convertNonBigb && !nonOurbigbookOptions.ourbigbook_paths_converted_only) {
       // Copy the raw file over into _raw.
       if (!is_directory && ourbigbook_options.render) {
         const output_path = output_path_noext + input_path_parse.ext;

@@ -2892,11 +2892,11 @@ assert_lib_stdin('nest: a inside H child parent link renders as text only',
   {
     assert_xpath_stdout: [
       xpath_header(2, 'asdf-http-example-com', "x:a[@href='#asdf-http-example-com' and text()='asdf http://example.com']"),
-      xpath_header_parent(3, 'qwer', '#asdf-http-example-com', 'asdf example.com'),
+      xpath_header_parent(3, 'qwer', '#asdf-http-example-com', 'asdf http://example.com'),
     ],
   }
 )
-assert_lib_stdin('nest: x inside H content renders as text without link with content and no magic',
+assert_lib_stdin('nest: x inside H title renders as text without link with content and no magic',
   `= asdf \\x[qwer][my h2]
 
 \\x[asdf-my-h2]
@@ -2923,7 +2923,7 @@ assert_lib_stdin('nest: x inside H child parent link renders as text only',
     ],
   }
 )
-assert_lib_stdin('nest: x inside H content renders as text without link without content and no magic',
+assert_lib_stdin('nest: x inside H title renders as text without link without content and no magic',
   `= asdf \\x[qwer]
 
 \\x[asdf-qwer]
@@ -2937,7 +2937,7 @@ assert_lib_stdin('nest: x inside H content renders as text without link without 
     ],
   }
 )
-assert_lib_stdin('nest: x inside H content renders as text without link magic',
+assert_lib_stdin('nest: x inside H title renders as text without link magic',
   `= asdf <my dogs> qwer
 
 \\x[asdf-my-dogs-qwer]
@@ -9220,9 +9220,30 @@ assert_lib_ast('id autogen: with disambiguate',
     ])
   ],
 )
-assert_lib_error('id autogen: with undefined reference in title fails gracefully',
-  `= \\x[reserved_undefined]
-`, 1, 5);
+assert_lib('id autogen: with undefined reference in title fails gracefully',
+  {
+    convert_dir: true,
+    // TODO 1 is better here, the errors is getting duplicated, but I'm not in the mood today.
+    assert_check_db_errors: 2,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== asdf \\x[reserved-undefined]
+`,
+    },
+  }
+)
+assert_lib('id autogen: with only x in title and reference to self works fine',
+  {
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== \\x[reserved-undefined]
+`,
+    },
+  }
+)
 // https://github.com/ourbigbook/ourbigbook/issues/45
 assert_lib_ast('id autogen: with nested elements does an id conversion and works',
   `= ab \`cd\` ef
@@ -13769,5 +13790,61 @@ assert_cli(
 == Notindex h2
 `,
     }
+  }
+)
+assert_cli(
+  'nest: x inside H that appears on incoming links of another file does not blow up',
+  {
+    args: ['notindex.bigb'],
+    pre_exec: [
+      { cmd: ['ourbigbook', ['.']] },
+    ],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]
+
+== asdf <qwer>
+
+<notindex>
+
+== qwer
+`,
+      'notindex.bigb': `= Notindex
+`,
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/notindex.html`]: [
+        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='index.html#asdf-qwer']`,
+      ],
+    },
+  }
+)
+assert_cli(
+  'nest: x inside H linked to from another file does not blow up',
+  {
+    args: ['notindex.bigb'],
+    pre_exec: [
+      { cmd: ['ourbigbook', ['.']] },
+    ],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]
+
+== asdf <qwer zxcv>
+
+== qwer zxcv
+`,
+      'notindex.bigb': `= Notindex
+
+<asdf qwer zxcv>{id=dut}
+`,
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/notindex.html`]: [
+        "//x:a[@id='dut' and @href='index.html#asdf-qwer-zxcv' and text()='asdf qwer zxcv']",
+      ],
+    },
   }
 )

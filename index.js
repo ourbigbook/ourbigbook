@@ -258,7 +258,6 @@ class AstNode {
    *                 - 'prefix': prefix to add for a  full reference, e.g. `Figure 1`, `Section 2`, etc.
    *                 - {AstArgument} 'title': the title of the element linked to
    *        - {bool} in_caption_number_visible
-   *        - {Set[AstNode]} x_parents: set of all parent x elements.
    *        - {String} root_relpath_shift - relative path introduced due to a scope in split header mode
    * @param {Object} context
    * @return {String}
@@ -281,9 +280,6 @@ class AstNode {
       // This allows for less verbose manual construction of trees with
       // a single dummy source_location.
       context.validateAst = false;
-    }
-    if (!('x_parents' in context)) {
-      context.x_parents = new Set();
     }
     if (
       (
@@ -3886,15 +3882,13 @@ function convertInitContext(options={}, extra_returns={}) {
     html_is_href: false,
     id_conversion: false,
     ignore_errors: false,
-    /* String? If set, it means that we are inside a argument that will render as a link.
+    /* If true, it means that we are inside a argument that will render as a link.
      * Therefore, children must not render as links because nested links are not allowed in HTML.
      * One major use case is to have a link inside a header, possibly with {file}:
      * = http://example.com
      * {file}
-     * The actual string may give further information as to which ancestor has marked the context
-     * as in_a, but it is not currently used.
      */
-    in_a: undefined,
+    in_a: false,
     in_header: false,
     in_literal: false,
     in_parse: false,
@@ -3905,6 +3899,12 @@ function convertInitContext(options={}, extra_returns={}) {
     last_render: undefined,
     macros: macroListToMacros(options.add_test_instrumentation),
     options,
+    // refs_to[false][to_id][type]{from_id: { defined_at: Set[defined_at], child_index: Number }
+    // refs_to[to][from_id][type]{to_id: { defined_at: Set[defined_at], child_index: Number }
+    refs_to: {
+      false: {},
+      true: {},
+    },
     // Shifts in local \a links due to either:
     // - scope + split headers e.g. scope/notindex.html
     // - subdirectories
@@ -3914,6 +3914,10 @@ function convertInitContext(options={}, extra_returns={}) {
     // This HTML is added before the next header is rendered, or at the end of conversion after
     // the tailing toc if there are no header following. It is then automatically cleared.
     renderBeforeNextHeader: [],
+    // Inside \H we must render X as its href when content is not explicitly given.
+    // in order to simplify things and not require fetching a graph of IDs.
+    // But it works quite well with {magic}
+    renderXAsHref: false,
     skipOutputEntry: false,
     // Set of all the headers that have synonym set on them.
     // Originally used to generate redirects to the heade they point to.
@@ -4287,11 +4291,7 @@ function getLinkHtml({
   if (extraReturns === undefined) {
     extraReturns = {}
   }
-  if (
-    context.in_a === undefined &&
-    !context.in_x_text &&
-    context.x_parents.size === 0
-  ) {
+  if (!context.in_a) {
     if (attrs === undefined) {
       attrs = ''
     }
@@ -5322,13 +5322,6 @@ async function parse(tokens, options, context, extra_returns={}) {
   let is_first_header = true;
   extra_returns.ids = options.indexed_ids;
 
-  // Format:
-  // refs_to[false][to_id][type]{from_id: { defined_at: Set[defined_at], child_index: Number }
-  // refs_to[to][from_id][type]{to_id: { defined_at: Set[defined_at], child_index: Number }
-  context.refs_to = {
-    false: {},
-    true: {},
-  };
   let local_db_provider = new DictDbProvider(
     options.indexed_ids,
     context.refs_to,
@@ -7983,12 +7976,9 @@ function xGetHrefContent(ast, context, opts={}) {
   }
 
   // href
-  let href;
+  let href
   if (target_ast) {
-    href = xHrefAttr(target_ast, context);
-  } else {
-    const message = renderErrorXUndefined(ast, context, target_id)
-    return [href, message];
+    href = xHrefAttr(target_ast, context)
   }
 
   // content
@@ -7997,13 +7987,11 @@ function xGetHrefContent(ast, context, opts={}) {
     if (target_id === context.options.ref_prefix) {
       content = HTML_HOME_MARKER
     } else {
-      if (context.in_a === undefined) {
-        // No explicit content given, deduce content from target ID title.
-        if (context.x_parents.has(ast)) {
-          // Prevent render infinite loops.
-          let message = `x with infinite recursion`;
-          renderError(context, message, ast.source_location);
-          return [href, errorMessageInOutput(message, context)];
+      if (context.renderXAsHref) {
+        content = renderArg(href_arg, context)
+      } else {
+        if (!target_ast) {
+          return [href, renderErrorXUndefined(ast, context, target_id)];
         }
         let x_text_options = {
           caption_prefix_span: false,
@@ -8049,9 +8037,7 @@ function xGetHrefContent(ast, context, opts={}) {
           x_text_options.style_full = ast.validation_output.full.boolean
           x_text_options.style_full_from_x = true
         }
-        const x_parents_new = new Set(context.x_parents);
-        x_parents_new.add(ast);
-        const xTextBaseRet = xTextBase(target_ast, cloneAndSet(context, 'x_parents', x_parents_new), x_text_options);
+        const xTextBaseRet = xTextBase(target_ast, context, x_text_options);
         if (showDisambiguate) {
           content = xTextBaseRet.innerWithDisambiguate
         } else {
@@ -8062,12 +8048,6 @@ function xGetHrefContent(ast, context, opts={}) {
           renderError(context, message, ast.source_location);
           return errorMessageInOutput(message, context);
         }
-      } else {
-        // Inside H: just use href. Also caught when inside a, which is a weird case.
-        // We perhaps don't want to come here in that case, but lazy to code a fix now,
-        // it would require separating in_a from an "in_h" properly.
-        // Another option is to use renderLinksAsPlaintext here.
-        content = renderArg(href_arg, context)
       }
     }
   } else {
@@ -8373,7 +8353,7 @@ function xHrefAttr(target_ast, context) {
  *         {string} innerWithDisambiguate: 'Python (programming language)'. Note no .meta span on the disambiguate.
  */
 function xTextBase(ast, context, options={}) {
-  context = cloneAndSet(context, 'in_x_text', true)
+  context = cloneAndSet(context, 'in_a', true)
   if  (!('addNumberDiv' in options)) {
     options.addNumberDiv = false;
   }
@@ -8544,6 +8524,9 @@ function xTextBase(ast, context, options={}) {
       if (ast.file) {
         innerNoDiv = ast.file
       } else {
+        if (ast.macro_name === Macro.HEADER_MACRO_NAME) {
+          context = cloneAndSet(context, 'renderXAsHref', true)
+        }
         innerNoDiv = renderArg(title_arg, context);
       }
     }
@@ -10008,7 +9991,7 @@ const OUTPUT_FORMATS_LIST = [
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
           let [href, content, hrefNoEscape] = linkGetHrefAndContent(
             ast,
-            cloneAndSet(context, 'in_a', Macro.LINK_MACRO_NAME),
+            cloneAndSet(context, 'in_a', true),
             { removeProtocol: !context.in_a }
           )
           if (ast.validation_output.ref.boolean) {
@@ -10140,7 +10123,7 @@ const OUTPUT_FORMATS_LIST = [
             show_caption_prefix: false,
             style_full: true,
           };
-          const x_text_base_ret = xTextBase(ast, cloneAndSet(context, 'in_a', Macro.HEADER_MACRO_NAME), x_text_options);
+          const x_text_base_ret = xTextBase(ast, cloneAndSet(context, 'in_a', true), x_text_options);
           if (context.toplevel_output_path) {
             const rendered_outputs_entry = context.extra_returns.rendered_outputs[context.toplevel_output_path]
             if (
@@ -11152,11 +11135,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           } else if (ast.validation_output.ref.boolean) {
             content = HTML_REF_MARKER;
           }
-          if (
-            context.in_a === undefined &&
-            !context.in_x_text &&
-            context.x_parents.size === 0
-          ) {
+          if (!context.in_a) {
             // Counts.
             let counts_str;
             if (
@@ -11191,10 +11170,10 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
             }
 
             return `<a${href}${attrs}` +
-             (context.options.internalLinkMetadata ? htmlAttr('title', 'internal link' + counts_str) : '') +
-             target +
-             getTestData(ast, context) +
-             `>${content}</a>`
+              (context.options.internalLinkMetadata ? htmlAttr('title', 'internal link' + counts_str) : '') +
+              target +
+              getTestData(ast, context) +
+              `>${content}</a>`
           } else {
             return content
           }

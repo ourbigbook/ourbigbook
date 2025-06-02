@@ -162,6 +162,7 @@ const articleData = [
           ['Test subscope 2 1', []],
           ['Test subscope 2 2', []],
         ], { headerArgs: '{scope}' }],
+        ['Test synonymNoScope inside', [], { body: '= Test synonymNoScope outside\n{synonymNoScope}\n' }],
       ], { headerArgs: '{scope}' }],
       ['Test outside scope', [], {
         headerArgs: '{tag=Test scope/Test subscope 1/Test subscope 1 1}'

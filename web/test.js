@@ -6283,6 +6283,44 @@ it(`api: article with {file}`, async () => {
   }, { defaultExpectStatus: 200 })
 })
 
+it(`api: article {synonymNoScope}`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+
+    // Create users
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+
+    test.loginUser(user0)
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `With scope`,
+      bodySource: `{scope}
+
+= With synonymNoScope
+{synonymNoScope}
+`
+    })))
+
+    ;({data, status} = await test.webApi.articleRedirects({ id: 'user0/with-synonymnoscope' }))
+    assert.strictEqual(data.redirects['user0/with-synonymnoscope'], 'user0/with-scope')
+
+    // Previously the @username/ scope was being removed and
+    // this would blow up with duplicate id "with-synonymNoScope".
+    test.loginUser(user1)
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: `With scope`,
+      bodySource: `{scope}
+
+= With synonymNoScope
+{synonymNoScope}
+`
+    })))
+
+    ;({data, status} = await test.webApi.articleRedirects({ id: 'user1/with-synonymnoscope' }))
+    assert.strictEqual(data.redirects['user1/with-synonymnoscope'], 'user1/with-scope')
+  }, { defaultExpectStatus: 200 })
+})
+
 it(`api: article: create simple`, async () => {
   await testApp(async (test) => {
     let data, status, article

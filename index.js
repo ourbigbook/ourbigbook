@@ -2833,8 +2833,16 @@ function calculateId(
         }
         idIsEmpty = true
       }
-      if (id && ast.scope !== undefined && !skip_scope) {
-        id = ast.scope + Macro.HEADER_SCOPE_SEPARATOR + id
+      if (id) {
+        let scope
+        if (skip_scope) {
+          scope = new_context.options.ref_prefix
+        } else if (ast.scope !== undefined) {
+          scope = ast.scope 
+        }
+        if (scope) {
+          id = scope + Macro.HEADER_SCOPE_SEPARATOR + id
+        }
       }
     }
   }

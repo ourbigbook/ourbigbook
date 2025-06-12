@@ -7621,7 +7621,7 @@ function renderToc(context) {
           parent_href_target = tocIdWithScopeRemoval(parent_ast.id, context);
         }
         entry.parent_href = htmlAttr('href', '#' + parent_href_target);
-        entry.parent_content = renderArg(parent_ast.args[Macro.TITLE_ARGUMENT_NAME], context);
+        entry.parent_content = xText(parent_ast, context, { show_caption_prefix: false })
       }
       // The inner <div></div> inside arrow is so that:
       // - outter div: takes up space to make clicking easy

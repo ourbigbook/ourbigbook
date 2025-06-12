@@ -2950,6 +2950,32 @@ assert_lib_stdin('nest: x inside H title renders as text without link magic',
     ],
   }
 )
+assert_lib('nest: x inside H with child to non descendant synonym does not blow up',
+  // Talk about specific reproduction conditions!
+  {
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[notindex]
+\\Include[notindex2]
+`,
+      'notindex.bigb': `= Notindex
+
+== <Notindex2 h2 syn> 2
+
+=== Notindex2 h3
+`,
+      'notindex2.bigb': `= Notindex2
+
+== Notindex2 h2
+
+= Notindex2 h2 syn
+{synonym}
+`,
+    },
+    convert_dir: true,
+  }
+)
 assert_lib_error('nest: H inside H gives and error',
   `= \\H[2]
 `,

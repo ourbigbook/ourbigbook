@@ -16,7 +16,7 @@ Significant entries will have a corresponding announcement on the following <off
 
 We've used gpt-4o-mini to automatically populate the 100k+ <wikibot> articles. The process is described at: <Wikibot LLM body population>{full}. The entire generation was completed for only \$3.
 
-Some of the abstracts can be seen e.g. under Wikibot's user page: https://ourbigbook.com/wikibot or under specific topics such as: https://ourbigbook.com/go/topic/qijue
+Some of the abstracts can be seen e.g. under Wikibot's user page: https://ourbigbook.com/wikibot#mathematics or under specific topics such as: https://ourbigbook.com/go/topic/qijue
 
 We've limited the output to 100 tokens each, and for each topic X simply queried"
 ``
@@ -44,6 +44,12 @@ Hopefully it will also kick some of our pages out of Google's "Soft 404" limbo; 
 {height=683}
 {provider=github}
 {source=https://ourbigbook.com/wikibot#mathematics}
+
+Announced at:
+* https://mastodon.social/@ourbigbook/114692187180281143
+* https://x.com/OurBigBook/status/1934534494834274759
+* https://www.linkedin.com/feed/update/urn:li:activity:7340300952983203842/
+* https://www.facebook.com/OurBigBook/posts/pfbid0oYpPGYe4ZzpKTtpcSSzui8f6DdjxUc9PCgwKeR6uHzw4py1tp5QJwQavPVuUMqekl
 
 = Automatic topic linking
 {parent=News}

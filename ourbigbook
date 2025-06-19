@@ -379,7 +379,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
   }
 }
 
-/** Convert input from a string to output and return the output as a string.
+/** Convert OurBigBook input from a string to output and return the output as a string.
  *
  * Wraps ourbigbook.convert with CLI usage convenience.
  *
@@ -882,6 +882,13 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
             skip_str = ''
           }
           console.log(`copy: ${path.relative(process.cwd(), input_path)} -> ${path.relative(process.cwd(), output_path)}${skip_str}`)
+          if (
+            nonOurbigbookOptions.publish &&
+            ourbigbook_options.ourbigbook_json.generateSitemap &&
+            ourbigbook_options.render
+          ) {
+            nonOurbigbookOptions.sitemap.push(path.relative(nonOurbigbookOptions.outdir, output_path))
+          }
           if (!skip_str) {
             fs.copyFileSync(input_path, output_path)
           }
@@ -2652,8 +2659,10 @@ if (cli.helpMacros) {
                 sitemap[i] = p
               }
             }
+            const sitemapPath = path.join(publish_out_publish_obb_dir, 'sitemap.txt')
+            console.log(`sitemap: ${relpathCwd(sitemapPath)}`)
             fs.writeFileSync(
-              path.join(publish_out_publish_obb_dir, 'sitemap.txt'),
+              sitemapPath,
               sitemap
                 // Not ideal to remove duplicates here, but there were some
                 // duplicate _file cases that would require some thought.

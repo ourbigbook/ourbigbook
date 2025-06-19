@@ -656,9 +656,14 @@ export function shortFragGoTo(
 }
 
 export function orderToPageTitle(order: string): string {
+  console.log(`order: ${require('util').inspect(order, { depth: null })}`)
   switch(order) {
+    case 'announcedAt':
+      return 'Announced'
     case 'createdAt':
       return 'New'
+    case 'topicId':
+      return 'Alphabetically sorted'
     case 'score':
       return 'Top'
     case 'updatedAt':

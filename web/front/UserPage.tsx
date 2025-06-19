@@ -326,7 +326,7 @@ export default function UserPage({
                   </CustomLink>
                   <CustomLink
                     href={routes.userArticles(username, { sort: 'announced' })}
-                    className={`tab-item${what === 'user-articles' && order === 'announced' ? ' active' : ''}`}
+                    className={`tab-item${what === 'user-articles' && order === 'announcedAt' ? ' active' : ''}`}
                   >
                     <AnnounceIcon /> Announced
                   </CustomLink>

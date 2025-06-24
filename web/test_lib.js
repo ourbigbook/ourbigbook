@@ -470,12 +470,15 @@ async function generateDemoData(params) {
   const verbose = params.verbose === undefined ? false : params.verbose
   const empty = params.empty === undefined ? false : params.empty
   const clear = params.clear === undefined ? false : params.clear
+  // This should not exist, instead this stuff should be split out of web and have a dedicated tool.
+  const onlyGenerateFilesystem = params.onlyGenerateFilesystem === undefined ? false : params.onlyGenerateFilesystem
 
   const nArticles = nUsers * nArticlesPerUser
   const sequelize = models.getSequelize(directory, basename);
   const { Article, Id, Upload, User } = sequelize.models
   const katex_macros = back_js.preloadKatex()
-  await models.sync(sequelize, { force: empty || clear })
+  if (!onlyGenerateFilesystem)
+    await models.sync(sequelize, { force: empty || clear })
   if (!empty) {
     const sourceRoot = path.join(__dirname, 'tmp', 'demo')
     fs.rmSync(sourceRoot, { recursive: true, force: true });
@@ -483,6 +486,7 @@ async function generateDemoData(params) {
     if (verbose) printTimeNow = now()
     if (verbose) console.error('User');
     const userArgs = [];
+    const userIdToUserArg = {}
     for (let i = 0; i < nUsers; i++) {
       let [displayName, image] = userData[i % userData.length]
       let username = ourbigbook.titleToId(displayName)
@@ -502,19 +506,22 @@ async function generateDemoData(params) {
       }
       User.setPassword(userArg, process.env.OURBIGBOOK_DEMO_USER_PASSWORD || 'asdf')
       userArgs.push(userArg)
+      userIdToUserArg[i] = userArg
     }
     const users = []
     const userIdToUser = {}
-    for (const userArg of userArgs) {
-      let user = await User.findOne({ where: { username: userArg.username } })
-      if (user) {
-        Object.assign(user, userArg)
-        await user.save()
-      } else {
-        user = await User.create(userArg)
+    if (!onlyGenerateFilesystem) {
+      for (const userArg of userArgs) {
+        let user = await User.findOne({ where: { username: userArg.username } })
+        if (user) {
+          Object.assign(user, userArg)
+          await user.save()
+        } else {
+          user = await User.create(userArg)
+        }
+        userIdToUser[user.id] = user
+        users.push(user)
       }
-      userIdToUser[user.id] = user
-      users.push(user)
     }
     // TODO started livelocking after we started creating index articles on hooks.
     //const users = await User.bulkCreate(
@@ -526,31 +533,34 @@ async function generateDemoData(params) {
     //)
     if (verbose) printTime()
 
-    if (verbose) console.error('UserFollowUser');
-    for (let i = 0; i < nUsers; i++) {
-      let nFollowsPerUserEffective = nUsers < nFollowsPerUser ? nUsers : nFollowsPerUser
-      for (var j = 0; j < nFollowsPerUserEffective; j++) {
-        const follower = users[i]
-        const followed = users[(i + 1 + j) % nUsers]
-        if (!(await follower.hasFollow(followed))) {
-          await follower.addFollowSideEffects(followed)
+    if (verbose) console.error('UserFollowUser')
+    if (!onlyGenerateFilesystem) {
+      for (let i = 0; i < nUsers; i++) {
+        let nFollowsPerUserEffective = nUsers < nFollowsPerUser ? nUsers : nFollowsPerUser
+        for (var j = 0; j < nFollowsPerUserEffective; j++) {
+          const follower = users[i]
+          const followed = users[(i + 1 + j) % nUsers]
+          if (!(await follower.hasFollow(followed))) {
+            await follower.addFollowSideEffects(followed)
+          }
         }
       }
     }
-
     if (verbose) printTime()
 
     if (verbose) console.error('Upload');
     for (let uid = 0; uid < nUsers; uid++) {
-      const username = users[uid].username
+      const username = userIdToUserArg[uid].username
       for (const upload of uploadData) {
-        if (verbose) console.error(`${users[uid].username}/${upload.path}`)
-        await Upload.upsertSideEffects(
-          Upload.getCreateObj({
-            bytes: upload.bytes,
-            path: Upload.uidAndPathToUploadPath(uid + 1, upload.path),
-          })
-        )
+        if (verbose) console.error(`${username}/${upload.path}`)
+        if (!onlyGenerateFilesystem) {
+          await Upload.upsertSideEffects(
+            Upload.getCreateObj({
+              bytes: upload.bytes,
+              path: Upload.uidAndPathToUploadPath(uid + 1, upload.path),
+            })
+          )
+        }
         // Write files to filesystem.
         // https://docs.ourbigbook.com/demo-data-local-file-output
         const outpath = path.join(sourceRoot, username, upload.path)
@@ -576,7 +586,7 @@ async function generateDemoData(params) {
     const articleDataProviders = {}
     const articleIdToArticle = {}
     for (let userIdx = 0; userIdx < nUsers; userIdx++) {
-      articleDataProviders[users[userIdx].id] = new ArticleDataProvider(articleData)
+      articleDataProviders[userIdx] = new ArticleDataProvider(articleData)
     }
     const articleArgs = [];
     const toplevelTopicIds = new Set()
@@ -601,18 +611,18 @@ async function generateDemoData(params) {
       const id_noscope = await titleToId(titleSource)
       toplevelTopicIds.add(id_noscope)
       return {
-        titleSource,
         authorId,
+        bodySource: `${headerArgs}${body}`,
         createdAt: date,
+        opts,
+        titleSource,
         // TODO not taking effect. Appears to be because of the hook.
         updatedAt: date,
-        bodySource: `${headerArgs}${body}`,
-        opts,
       }
     }
     for (let userIdx = 0; userIdx < nUsers; userIdx++) {
       const authorId = users[userIdx].id
-      const articleDataProvider = articleDataProviders[authorId]
+      const articleDataProvider = articleDataProviders[userIdx]
 
       // All other articles.
       for (let i = 0; i < nArticlesPerUser; i++) {
@@ -653,95 +663,97 @@ Link to test data: <test data>` : ''}
     //    return 0;
     //  }
     //})
-    const articles = []
-    for (const render of [false, true]) {
-      let articleId = 0
-      let i = 0
-      let pref
-      if (verbose) {
-        if (render) {
-          pref = 'render'
-        } else {
-          pref = 'extract_ids'
-        }
-      }
-      for (const articleArg of articleArgs) {
-        const msg = `${pref}: ${i + 1}/${articleArgs.length}: ${userIdToUser[articleArg.authorId].username}/${articleArg.titleSource}`
-        if (verbose) console.error(msg);
-        const author = userIdToUser[articleArg.authorId]
-        let opts = articleArg.opts
-        if (opts === undefined) {
-          opts = {}
-        }
-
-        let parentId
-        {
-          const parentEntry = opts.parentEntry
-          if (parentEntry) {
-            ;({ opts: parentOpts } = expandArticleDataEntry(parentEntry))
-            parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${parentOpts.topicId}`
+    if (!onlyGenerateFilesystem) {
+      const articles = []
+      for (const render of [false, true]) {
+        let articleId = 0
+        let i = 0
+        let pref
+        if (verbose) {
+          if (render) {
+            pref = 'render'
           } else {
-            if (!opts.hasOwnProperty('parentEntry')) {
-              parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
-            }
+            pref = 'extract_ids'
           }
         }
-        const before = now();
-        const { articles: newArticles, extra_returns } = await convert.convertArticle({
-          author,
-          bodySource: articleArg.bodySource,
-          convertOptionsExtra: { katex_macros },
-          enforceMaxArticles: false,
-          list: opts.list,
-          parentId,
-          path: opts.path,
-          render,
-          sequelize,
-          titleSource: articleArg.titleSource,
-        })
-        const after = now();
-        opts.topicId = extra_returns.context.header_tree.children[0].ast.id.substring(
-          ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1)
-        if (verbose) console.error(`${msg} finished in ${after - before}ms`);
-        for (const article of newArticles) {
-          articleIdToArticle[article.id] = article
-          articles.push(article)
-          articleId++
-        }
-        i++
-      }
-    }
+        for (const articleArg of articleArgs) {
+          const msg = `${pref}: ${i + 1}/${articleArgs.length}: ${userIdToUser[articleArg.authorId].username}/${articleArg.titleSource}`
+          if (verbose) console.error(msg);
+          const author = userIdToUser[articleArg.authorId]
+          let opts = articleArg.opts
+          if (opts === undefined) {
+            opts = {}
+          }
 
-    // Create an article in a topic that exists only for user0. All other articles exist for all users.
-    // This is useful to test that case which hsa UI implications such as "show create new vs view mine".
-    let articleManyDiscussions
-    if (users.length) {
-      const parentId = `${ourbigbook.AT_MENTION_CHAR}${users[0].username}/${await titleToId('Test data')}`
-      const parentIdObj = await Id.findOne({ where: { idid: parentId } })
-      let articleUser0Only
-      if (parentIdObj) {
-        const { articles } = await convert.convertArticle({
-          author: users[0],
-          bodySource: 'This topic only exists for the first user.\n',
-          convertOptionsExtra: { katex_macros },
-          parentId,
-          render: true,
-          sequelize,
-          titleSource: 'Test data user0 only',
-        })
-        articleUser0Only = articles[0]
+          let parentId
+          {
+            const parentEntry = opts.parentEntry
+            if (parentEntry) {
+              ;({ opts: parentOpts } = expandArticleDataEntry(parentEntry))
+              parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}/${parentOpts.topicId}`
+            } else {
+              if (!opts.hasOwnProperty('parentEntry')) {
+                parentId = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+              }
+            }
+          }
+          const before = now();
+          const { articles: newArticles, extra_returns } = await convert.convertArticle({
+            author,
+            bodySource: articleArg.bodySource,
+            convertOptionsExtra: { katex_macros },
+            enforceMaxArticles: false,
+            list: opts.list,
+            parentId,
+            path: opts.path,
+            render,
+            sequelize,
+            titleSource: articleArg.titleSource,
+          })
+          const after = now();
+          opts.topicId = extra_returns.context.header_tree.children[0].ast.id.substring(
+            ourbigbook.AT_MENTION_CHAR.length + author.username.length + 1)
+          if (verbose) console.error(`${msg} finished in ${after - before}ms`);
+          for (const article of newArticles) {
+            articleIdToArticle[article.id] = article
+            articles.push(article)
+            articleId++
+          }
+          i++
+        }
       }
-      if (articleUser0Only) {
-        const { articles } = await convert.convertArticle({
-          author: users[0],
-          bodySource: 'This article has many discussions. To test article discussion pagination.',
-          convertOptionsExtra: { katex_macros },
-          parentId: `${ourbigbook.AT_MENTION_CHAR}${articleUser0Only.slug}`,
-          render: true,
-          sequelize,
-          titleSource: 'Test data article with many discussions',
-        })
-        articleManyDiscussions = articles[0]
+
+      // Create an article in a topic that exists only for user0. All other articles exist for all users.
+      // This is useful to test that case which hsa UI implications such as "show create new vs view mine".
+      let articleManyDiscussions
+      if (users.length) {
+        const parentId = `${ourbigbook.AT_MENTION_CHAR}${users[0].username}/${await titleToId('Test data')}`
+        const parentIdObj = await Id.findOne({ where: { idid: parentId } })
+        let articleUser0Only
+        if (parentIdObj) {
+          const { articles } = await convert.convertArticle({
+            author: users[0],
+            bodySource: 'This topic only exists for the first user.\n',
+            convertOptionsExtra: { katex_macros },
+            parentId,
+            render: true,
+            sequelize,
+            titleSource: 'Test data user0 only',
+          })
+          articleUser0Only = articles[0]
+        }
+        if (articleUser0Only) {
+          const { articles } = await convert.convertArticle({
+            author: users[0],
+            bodySource: 'This article has many discussions. To test article discussion pagination.',
+            convertOptionsExtra: { katex_macros },
+            parentId: `${ourbigbook.AT_MENTION_CHAR}${articleUser0Only.slug}`,
+            render: true,
+            sequelize,
+            titleSource: 'Test data article with many discussions',
+          })
+          articleManyDiscussions = articles[0]
+        }
       }
     }
 
@@ -784,131 +796,133 @@ Link to test data: <test data>` : ''}
 
     if (verbose) printTime()
 
-    if (verbose) console.error('Like');
-    let articleIdx = 0
-    for (let i = 0; i < nUsers; i++) {
-      const user = users[i]
-      for (let j = 0; j < nLikesPerUser; j++) {
-        const article = articles[(i * j) % nArticles];
-        if (
-          article
-          && article.file.authorId !== user.id
-        ) {
-          if (!(await user.hasLikedArticle(article))) {
-            await user.addArticleLikeSideEffects(article)
+    if (!onlyGenerateFilesystem) {
+      if (verbose) console.error('Like');
+      let articleIdx = 0
+      for (let i = 0; i < nUsers; i++) {
+        const user = users[i]
+        for (let j = 0; j < nLikesPerUser; j++) {
+          const article = articles[(i * j) % nArticles];
+          if (
+            article
+            && article.file.authorId !== user.id
+          ) {
+            if (!(await user.hasLikedArticle(article))) {
+              await user.addArticleLikeSideEffects(article)
+            }
+            if (!(await user.hasFollowedArticle(article))) {
+              await user.addArticleFollowSideEffects(article)
+            }
           }
-          if (!(await user.hasFollowedArticle(article))) {
-            await user.addArticleFollowSideEffects(article)
+        }
+      }
+
+      // 0.5s faster than the addArticleLikeSideEffects version, total run 7s.
+      //let articleIdx = 0
+      //const likeArgs = []
+      //for (let i = 0; i < nUsers; i++) {
+      //  const userId = users[i].id
+      //  for (var j = 0; j < nLikesPerUser; j++) {
+      //    likeArgs.push({
+      //      userId: userId,
+      //      articleId: articles[articleIdx % nArticles].id,
+      //    })
+      //    articleIdx += 1
+      //  }
+      //}
+      //await sequelize.models.UserLikeArticle.bulkCreate(likeArgs)
+      if (verbose) printTime()
+
+      if (verbose) console.error('Issue');
+      const issues = [];
+      let issueIdx = 0;
+      await sequelize.models.Issue.destroy({ where: { authorId: users.map(user => user.id) } })
+      for (let i = 0; i < nArticles; i++) {
+        let articleIssueIdx = 0;
+        const article = articles[i]
+        for (var j = 0; j < (i % (nMaxIssuesPerArticle + 1)); j++) {
+          if (verbose) console.error(`${article.slug}#${articleIssueIdx}`)
+          let [titleSource, bodySource] = issueData[issueIdx % issueData.length]
+          if (typeof bodySource === 'function') {
+            bodySource = bodySource(titles)
+          }
+          const issue = await convert.convertDiscussion({
+            article,
+            bodySource,
+            date: ISSUE_DATE,
+            number: articleIssueIdx + 1,
+            sequelize,
+            titleSource,
+            user: users[issueIdx % nUsers],
+          })
+          issue.article = article
+          issues.push(issue)
+          issueIdx++
+          articleIssueIdx++
+        }
+      }
+      const nIssues = issueIdx
+      if (verbose) printTime()
+
+      if (verbose) console.error('Comment');
+      const comments = [];
+      let commentIdx = 0;
+      await sequelize.models.Comment.destroy({ where: { authorId: users.map(user => user.id) } })
+      for (let i = 0; i < nIssues; i++) {
+        let issueCommentIdx = 0;
+        const issue = issues[i]
+        for (var j = 0; j < (i % (nMaxCommentsPerIssue + 1)); j++) {
+          if (verbose) console.error(`${articleIdToArticle[issue.articleId].slug}#${issue.number}#${issueCommentIdx}`)
+          let source = commentData[commentIdx % commentData.length]
+          if (typeof source === 'function') {
+            source = source(titles)
+          }
+          const comment = await convert.convertComment({
+            date: ISSUE_DATE,
+            issue,
+            source,
+            number: issueCommentIdx + 1,
+            sequelize,
+            user: users[commentIdx % nUsers],
+          })
+          comments.push(comment)
+          commentIdx++
+          issueCommentIdx++
+        }
+      }
+      if (verbose) printTime()
+
+      // Create an article in a topic that exists only for user0. All other articles exist for all users.
+      // This is useful to test that case which hsa UI implications such as "show create new vs view mine".
+      if (articleManyDiscussions) {
+        let issueManyComments
+        for (let i = 0; i < config.articleLimit + 2; i++) {
+          const article =  articleManyDiscussions
+          if (verbose) console.error(`${article.slug}#${i}`)
+          const issue = await convert.convertDiscussion({
+            article,
+            bodySource: `Many discussions body ${i}.`,
+            date: ISSUE_DATE,
+            number: i + 1,
+            sequelize,
+            titleSource: `Many discussions title ${i}`,
+            user: users[0],
+          })
+          if (i === 0) {
+            issueManyComments = issue
           }
         }
-      }
-    }
-
-    // 0.5s faster than the addArticleLikeSideEffects version, total run 7s.
-    //let articleIdx = 0
-    //const likeArgs = []
-    //for (let i = 0; i < nUsers; i++) {
-    //  const userId = users[i].id
-    //  for (var j = 0; j < nLikesPerUser; j++) {
-    //    likeArgs.push({
-    //      userId: userId,
-    //      articleId: articles[articleIdx % nArticles].id,
-    //    })
-    //    articleIdx += 1
-    //  }
-    //}
-    //await sequelize.models.UserLikeArticle.bulkCreate(likeArgs)
-    if (verbose) printTime()
-
-    if (verbose) console.error('Issue');
-    const issues = [];
-    let issueIdx = 0;
-    await sequelize.models.Issue.destroy({ where: { authorId: users.map(user => user.id) } })
-    for (let i = 0; i < nArticles; i++) {
-      let articleIssueIdx = 0;
-      const article = articles[i]
-      for (var j = 0; j < (i % (nMaxIssuesPerArticle + 1)); j++) {
-        if (verbose) console.error(`${article.slug}#${articleIssueIdx}`)
-        let [titleSource, bodySource] = issueData[issueIdx % issueData.length]
-        if (typeof bodySource === 'function') {
-          bodySource = bodySource(titles)
+        for (let i = 0; i < config.articleLimit + 2; i++) {
+          if (verbose) console.error(`${articleManyDiscussions.slug}#${issueManyComments.number}#${i}`)
+          await convert.convertComment({
+            date: ISSUE_DATE,
+            issue: issueManyComments,
+            source: `Many comments body ${i}.`,
+            number: i + 1,
+            sequelize,
+            user: users[0],
+          })
         }
-        const issue = await convert.convertDiscussion({
-          article,
-          bodySource,
-          date: ISSUE_DATE,
-          number: articleIssueIdx + 1,
-          sequelize,
-          titleSource,
-          user: users[issueIdx % nUsers],
-        })
-        issue.article = article
-        issues.push(issue)
-        issueIdx++
-        articleIssueIdx++
-      }
-    }
-    const nIssues = issueIdx
-    if (verbose) printTime()
-
-    if (verbose) console.error('Comment');
-    const comments = [];
-    let commentIdx = 0;
-    await sequelize.models.Comment.destroy({ where: { authorId: users.map(user => user.id) } })
-    for (let i = 0; i < nIssues; i++) {
-      let issueCommentIdx = 0;
-      const issue = issues[i]
-      for (var j = 0; j < (i % (nMaxCommentsPerIssue + 1)); j++) {
-        if (verbose) console.error(`${articleIdToArticle[issue.articleId].slug}#${issue.number}#${issueCommentIdx}`)
-        let source = commentData[commentIdx % commentData.length]
-        if (typeof source === 'function') {
-          source = source(titles)
-        }
-        const comment = await convert.convertComment({
-          date: ISSUE_DATE,
-          issue,
-          source,
-          number: issueCommentIdx + 1,
-          sequelize,
-          user: users[commentIdx % nUsers],
-        })
-        comments.push(comment)
-        commentIdx++
-        issueCommentIdx++
-      }
-    }
-    if (verbose) printTime()
-
-    // Create an article in a topic that exists only for user0. All other articles exist for all users.
-    // This is useful to test that case which hsa UI implications such as "show create new vs view mine".
-    if (articleManyDiscussions) {
-      let issueManyComments
-      for (let i = 0; i < config.articleLimit + 2; i++) {
-        const article =  articleManyDiscussions
-        if (verbose) console.error(`${article.slug}#${i}`)
-        const issue = await convert.convertDiscussion({
-          article,
-          bodySource: `Many discussions body ${i}.`,
-          date: ISSUE_DATE,
-          number: i + 1,
-          sequelize,
-          titleSource: `Many discussions title ${i}`,
-          user: users[0],
-        })
-        if (i === 0) {
-          issueManyComments = issue
-        }
-      }
-      for (let i = 0; i < config.articleLimit + 2; i++) {
-        if (verbose) console.error(`${articleManyDiscussions.slug}#${issueManyComments.number}#${i}`)
-        await convert.convertComment({
-          date: ISSUE_DATE,
-          issue: issueManyComments,
-          source: `Many comments body ${i}.`,
-          number: i + 1,
-          sequelize,
-          user: users[0],
-        })
       }
     }
   }

@@ -16,6 +16,7 @@ program.option('-a, --articles-per-user <n>', 'n articles per user', cliInt);
 program.option('-i, --max-issues-per-article <n>', 'maximum number of issues per article', cliInt);
 program.option('-c, --max-comments-per-article <n>', 'maximum number of comments per issues', cliInt);
 program.option('-f, --follows-per-user <n>', 'n follows per user', cliInt);
+program.option('--only-generate-filesystem', 'only generate the local test filesystem, don\'t add it to the web database', false)
 program.option('-l, --likes-per-user <n>', 'n likes per user', cliInt);
 program.option('--force-production', 'allow running in production, DELETES ALL DATA', false);
 program.option('-C, --clear', 'clear the database and create demo data from scratch instead of just updating existing entries', false);
@@ -38,6 +39,7 @@ const sequelize = await test_lib.generateDemoData({
   nMaxIssuesPerArticle: opts.maxIssuesPerArticle,
   nLikesPerUser: opts.likesPerUser,
   nFollowsPerUser: opts.followsPerUser,
+  onlyGenerateFilesystem: opts.onlyGenerateFilesystem,
   nUsers: opts.users,
   verbose: true,
 })

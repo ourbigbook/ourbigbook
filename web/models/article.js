@@ -1887,7 +1887,8 @@ LIMIT ${limit}` : ''}`}
     ignoreErrors,
     log,
     skipAuthors,
-    slugs
+    slugs,
+    startFrom,
   }={}) => {
     if (authors === undefined) {
       authors = []
@@ -1921,6 +1922,10 @@ LIMIT ${limit}` : ''}`}
         }
       } else {
         where.slug = slugs
+      }
+    } else {
+      if (startFrom) {
+        where.slug = { [Op.gte]: startFrom }
       }
     }
 

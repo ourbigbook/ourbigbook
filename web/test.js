@@ -14,12 +14,19 @@ const routes = require('./front/routes')
 const convert = require('./convert')
 const models = require('./models')
 const test_lib = require('./test_lib')
+const { INVALID_UTF8_BUFFER } = test_lib
 const { AUTH_COOKIE_NAME } = require('./front/js')
 
 const web_api = require('ourbigbook/web_api');
 const { QUERY_TRUE_VAL } = web_api
 
 const testNext = process.env.OURBIGBOOK_TEST_NEXT === 'true'
+
+// Generated with:
+// convert -size 1x1 xc:white empty.png
+// od -t x1 -An empty.png | tr -d '\n '
+const PNG_1X1_WHITE = '89504e470d0a1a0a0000000d4948445200000001000000010100000000376ef924000000206348524d00007a26000080840000fa00000080e8000075300000ea6000003a98000017709cba513c00000002624b47440001dd8a13a40000000774494d4507e80c10123327ede92e940000000a4944415408d76368000000820081dd436af40000000049454e44ae426082'
+const PNG_1X1_WHITE_BUFFER = Buffer.from(PNG_1X1_WHITE, 'hex')
 
 async function assertNestedSets(sequelize, expects) {
   const articles = await sequelize.models.Article.treeFindInOrder({
@@ -5326,18 +5333,13 @@ it(`api: user validation`, async () => {
   })
 })
 
-// Generated with:
-// convert -size 1x1 xc:white empty.png
-// od -t x1 -An empty.png | tr -d '\n '
-const PNG_1X1_WHITE = '89504e470d0a1a0a0000000d4948445200000001000000010100000000376ef924000000206348524d00007a26000080840000fa00000080e8000075300000ea6000003a98000017709cba513c00000002624b47440001dd8a13a40000000774494d4507e80c10123327ede92e940000000a4944415408d76368000000820081dd436af40000000049454e44ae426082'
-
 it(`api: profile picture`, async () => {
   await testApp(async (test) => {
     let data, status, article
     const user0 = await test.createUserApi(0)
     test.loginUser(user0)
 
-    const base64 = Buffer.from(PNG_1X1_WHITE, 'hex').toString('base64')
+    const base64 = PNG_1X1_WHITE_BUFFER.toString('base64')
 
     // Success.
     ;({ data, status } = await test.webApi.userUpdateProfilePicture(
@@ -6379,42 +6381,53 @@ it(`api: upload simple`, async () => {
       ;({data, headers, status} = await test.webApi.upload('user0/', { expectStatus: 404 }))
 
     // Create upload upload-0
-    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/upload-0.png', 'content-0'))
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/upload-0.png', PNG_1X1_WHITE_BUFFER))
 
     // Check that the upload is there
     ;({data, headers, status} = await test.webApi.upload('user0/upload-0.png'))
-    assert.strictEqual(data, 'content-0')
+    assert.strictEqual(data.equals(PNG_1X1_WHITE_BUFFER), true)
     assert.strictEqual(headers['content-type'], 'image/png')
 
     // Logged off user can view uploads.
     test.disableToken()
     ;({data, status} = await test.webApi.upload('user0/upload-0.png'))
-    assert.strictEqual(data, 'content-0')
+    assert.strictEqual(data.equals(PNG_1X1_WHITE_BUFFER), true)
     assert.strictEqual(headers['content-type'], 'image/png')
     test.loginUser(user0)
 
-    // Unknown mime type does not blow up
-    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/upload-0.asdfqwer', 'content-0'))
+    // Unknown extension type does not blow up
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate(
+      'user0/not-utf8.asdfqwer',
+      INVALID_UTF8_BUFFER
+    ))
 
     // Check that the upload is there
-    ;({data, headers, status} = await test.webApi.upload('user0/upload-0.asdfqwer'))
-    assert.strictEqual(data, 'content-0')
+    ;({data, headers, status} = await test.webApi.upload('user0/not-utf8.asdfqwer'))
+    assert.strictEqual(data.equals(INVALID_UTF8_BUFFER), true)
+    // If not UTF-8, gets considered as octet-stream.
     assert.strictEqual(headers['content-type'], 'application/octet-stream')
+
+    // If valid UTF-8, getes considered as text/utf-8.
+    const utf8Buffer = Buffer.from('my utf8 content \u{00E9}\n')
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/utf8.asdfqwer', utf8Buffer))
+    ;({data, headers, status} = await test.webApi.upload('user0/utf8.asdfqwer'))
+    assert.strictEqual(data.equals(utf8Buffer), true)
+    assert.strictEqual(headers['content-type'], 'text/plain; charset=utf-8')
 
     // Create upload upload-0 for user1 as well
     test.loginUser(user1)
-    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user1/upload-0.png', 'content-0'))
+    ;({data, status} = await test.webApi.uploadCreateOrUpdate('user1/upload-0.png', PNG_1X1_WHITE_BUFFER))
     test.loginUser(user0)
 
     // Check that the upload is there
     ;({data, headers, status} = await test.webApi.upload('user1/upload-0.png'))
-    assert.strictEqual(data, 'content-0')
+    assert.strictEqual(data.equals(PNG_1X1_WHITE_BUFFER), true)
     assert.strictEqual(headers['content-type'], 'image/png')
 
     // Subdir upload.
-    ;({data, headers, status} = await test.webApi.uploadCreateOrUpdate('user0/subdir/myfile.txt', `line 1\n\nline 2\n`))
+    ;({data, headers, status} = await test.webApi.uploadCreateOrUpdate('user0/subdir/myfile.txt', utf8Buffer))
     ;({data, headers, status} = await test.webApi.upload('user0/subdir/myfile.txt'))
-    assert.strictEqual(data, `line 1\n\nline 2\n`)
+    assert.strictEqual(data.equals(utf8Buffer), true)
     assert.strictEqual(headers['content-type'], 'text/plain; charset=utf-8')
     // An UploadDirectory was created with the new file.
     assert.notStrictEqual(await UploadDirectory.findOne({ where:
@@ -6424,15 +6437,17 @@ it(`api: upload simple`, async () => {
     // Hash
     ;({data, status} = await test.webApi.uploadHash({ author: 'user0' }))
     assertRows(data.uploads, [
+      { path: 'user0/not-utf8.asdfqwer' },
       { path: 'user0/subdir/myfile.txt' },
-      { path: 'user0/upload-0.asdfqwer' },
       { path: 'user0/upload-0.png' },
+      { path: 'user0/utf8.asdfqwer' },
     ])
 
     // Subdir 2
-    ;({data, headers, status} = await test.webApi.uploadCreateOrUpdate('user0/subdir/subdir2/myfile.txt', `subdir/subdir2/myfile.txt contents`))
+    const subdir2Buffer = Buffer.from(`subdir/subdir2/myfile.txt contents`)
+    ;({data, headers, status} = await test.webApi.uploadCreateOrUpdate('user0/subdir/subdir2/myfile.txt', subdir2Buffer))
     ;({data, headers, status} = await test.webApi.upload('user0/subdir/subdir2/myfile.txt'))
-    assert.strictEqual(data, `subdir/subdir2/myfile.txt contents`)
+    assert.strictEqual(data.equals(subdir2Buffer), true)
     assert.notStrictEqual(await UploadDirectory.findOne({ where:
       { path: Upload.uidAndPathToUploadPath(user0.id, 'subdir/subdir2') }
     }), null)
@@ -6481,10 +6496,14 @@ it(`api: upload simple`, async () => {
 
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
       titleSource: `Link to directory same user`,
-      bodySource: `\\a[subdir]{id=link-to-directory-same-user-dut}\n`
+      bodySource: `\\a[subdir]{id=link-to-directory-same-user-dut}
+
+\\a[subdir/]{id=link-to-directory-same-user-slash-dut}
+`
     })))
     ;({data, status} = await test.webApi.article('user0/link-to-directory-same-user'))
-    assert_xpath(`//x:a[@id='user0/link-to-directory-same-user-dut' and @href='/user0/_dir/subdir']`, data.render)
+    assert_xpath(`//x:a[@id='user0/link-to-directory-same-user-dut' and @href='/user0/_dir/subdir' and text()='subdir']`, data.render)
+    assert_xpath(`//x:a[@id='user0/link-to-directory-same-user-slash-dut' and @href='/user0/_dir/subdir' and text()='subdir/']`, data.render)
 
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
       titleSource: `Link to another file same user abs`,
@@ -6512,14 +6531,14 @@ it(`api: upload simple`, async () => {
     // Create corresponding file articles.
 
       ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
-        titleSource: `upload-0.asdfqwer`,
+        titleSource: `not-utf8.asdfqwer`,
         bodySource: `{file}
 
-\\a[upload-0.asdfqwer]{id=upload-0.asdfqwer-dut}
+\\a[not-utf8.asdfqwer]{id=not-utf8.asdfqwer-dut}
 `
       })))
-      ;({data, status} = await test.webApi.article('user0/_file/upload-0.asdfqwer'))
-      assert_xpath(`//x:a[@id='user0/upload-0.asdfqwer-dut' and @href='/user0/_raw/upload-0.asdfqwer']`, data.render)
+      ;({data, status} = await test.webApi.article('user0/_file/not-utf8.asdfqwer'))
+      assert_xpath(`//x:a[@id='user0/not-utf8.asdfqwer-dut' and @href='/user0/_raw/not-utf8.asdfqwer']`, data.render)
 
       ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
         titleSource: `subdir/myfile.txt`,

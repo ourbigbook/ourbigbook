@@ -42,5 +42,20 @@ module.exports = (sequelize) => {
       ]
     }
   )
+
+  UploadDirectory.prototype.toJson = function() {
+    return {
+      createdAt: this.createdAt.toISOString(),
+      path: this.path,
+      updatedAt: this.updatedAt.toISOString(),
+    }
+  }
+
+  UploadDirectory.prototype.toEntryJson = function() {
+    return {
+      path: this.path,
+    }
+  }
+
   return UploadDirectory
 }

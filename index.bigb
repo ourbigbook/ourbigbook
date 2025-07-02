@@ -6289,6 +6289,34 @@ There are two main rationales for enforcing these rules:
 * the HTML `h1` - `h6` header HTML elements can only contain phrasing content (analogout to our <inline macros>) for the HTML to be valid. We could chose to use styled `div`s instead of `h` elements, but this could have a negative SEO impact. All other HTML elements could be replaced by `div`s without issue however, the problem really is only `h`.
 * on <OurBigBook Web>, where multiple users are working together and many titles from multiple users show on index pages, it is saner to be more restrictive on what is allowed on titles and to prevent visually very large things from being added in order to prevent bad actors or accidents from disrupting other users too much
 
+= `multiple` argument
+{parent=Macro argument property}
+
+By default, arguments can be given only once.
+
+However, arguments with the `multiple` <macro argument property> set to `true` can be given multiple times, and each time the argument is given, the new value is appended to a list containing all the values.
+
+An example is the <H tag argument>.
+
+<internals API>[Internally], multiple is implemented by creating a new level in the <abstract syntax tree>, and storing each argument separately under a newly generated dummy nodes as in:
+``
+AstNode: H
+  AstArgument: child
+    AstNode: Comment
+      AstArgument: content
+        AstNode: plaintext
+        AstNode: x
+    AstNode: Comment
+      AstArgument: content
+        AstNode: plaintext
+        AstNode: x
+``
+
+= `notEmpty` macro argument
+{parent=Macro argument property}
+
+This property is the opposite of the <empty macro argument>: the argument cannot be empty or else that is error.
+
 = `remove_whitespace_children`
 {parent=Macro argument property}
 
@@ -6320,28 +6348,6 @@ also does not include the newline between the list items.
 
 The definition of whitespace is the same as the ASCII whitespace definition of HTML5: ` \r\n\f\t`.
 
-= `multiple` argument
-{parent=Macro argument property}
-
-By default, arguments can be given only once.
-
-However, arguments with the `multiple` <macro argument property> set to `true` can be given multiple times, and each time the argument is given, the new value is appended to a list containing all the values.
-
-An example is the <H tag argument>.
-
-<internals API>[Internally], multiple is implemented by creating a new level in the <abstract syntax tree>, and storing each argument separately under a newly generated dummy nodes as in:
-``
-AstNode: H
-  AstArgument: child
-    AstNode: Comment
-      AstArgument: content
-        AstNode: plaintext
-        AstNode: x
-    AstNode: Comment
-      AstArgument: content
-        AstNode: plaintext
-        AstNode: x
-``
 
 = Pseudo-macro argument property
 {parent=Macro argument}
@@ -9901,6 +9907,8 @@ The generated repository with bodies added should now be present under:
 _out/wikibot-llm/repo/
 ``
 
+The key intermediate file `oai_out.jsonl.zip` which contains the prompt outputs has been backed up to: https://github.com/ourbigbook/ourbigbook-media/blob/master/oai_out.jsonl.zip
+
 = Demo data
 {parent=Generated data}
 
@@ -12729,7 +12737,7 @@ If changes are made only to the extension, it is also possible to release a new 
 = OurBigBook media repository
 {parent=Developing OurBigBook}
 
-The repository https://cirosantilli.com/ourbigbook-media[] contains media for the project such as for documentation and <publicity>
+The repository https://github.com/ourbigbook/ourbigbook-media[] contains media for the project such as for documentation and <publicity>
 
 It was created to keep blobs out of this repository.
 

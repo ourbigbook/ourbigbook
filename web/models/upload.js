@@ -8,6 +8,16 @@ const { hashToHex } = require('ourbigbook/web_api')
 
 const { uploadPathComponent } = require('../front/config')
 
+// https://stackoverflow.com/a/77861877/895245
+function isValidUtf8(bytes) {
+  try {
+    (new TextDecoder('utf8', { fatal: true })).decode(bytes)
+  } catch {
+    return false
+  }
+  return true
+}
+
 module.exports = (sequelize) => {
   const Upload = sequelize.define(
     'Upload',
@@ -148,22 +158,28 @@ module.exports = (sequelize) => {
 
   /** 1, 'path/to/myfile.txt' => 'uploads/1/path/to/myfile.txt' */
   Upload.uidAndPathToUploadPath = function (uid, path) {
-    return `${uploadPathComponent}/${uid}/${path}`
+    return `${uploadPathComponent}${URL_SEP}${uid}${path ? URL_SEP : ''}${path}`
   }
 
-  /** 'uploads/1/path/to/myfile.txt' => 'path/to/myfile.txt' */
-  Upload.uploadPathToPath = function (uid, path) {
-    return `${uploadPathComponent}/${uid}/${path}`
-  }
-
-  Upload.getCreateObj = function({ bytes, path }) {
-      return {
-        path: path,
-        bytes,
-        contentType: mime.getType(path) || 'application/octet-stream',
-        hash: hashToHex(bytes),
-        size: bytes.length,
+  Upload.getCreateObj = function ({ bytes, path }) {
+    let contentType
+    const mimeType = mime.getType(path)
+    if (mimeType) {
+      contentType = mimeType
+    } else {
+      if (isValidUtf8(bytes)) {
+        contentType = 'text/plain; charset=utf-8'
+      } else {
+        contentType = 'application/octet-stream'
       }
+    }
+    return {
+      path: path,
+      bytes,
+      contentType,
+      hash: hashToHex(bytes),
+      size: bytes.length,
+    }
   }
 
   Upload.pathToActualPath = async function(path, User, Upload, opts={})  {
@@ -181,6 +197,23 @@ module.exports = (sequelize) => {
       // Cannot be derived from author when author ID does not exist.
       authorUsername,
       path: actualPath,
+    }
+  }
+
+  Upload.prototype.toJson = function(loggedInUser) {
+    return {
+      createdAt: this.createdAt.toISOString(),
+      contentType: this.contentType,
+      hash: this.hash,
+      path: this.path,
+      size: this.size,
+      updatedAt: this.updatedAt.toISOString(),
+    }
+  }
+
+  Upload.prototype.toEntryJson = function() {
+    return {
+      path: this.path,
     }
   }
 

@@ -20,6 +20,10 @@ const now = performance.now.bind(performance)
 const ISSUE_DATE = new Date(2000, 0, 1, 2, 3, 4, 5)
 const NTAGS = 21
 
+// https://stackoverflow.com/questions/1301402/example-invalid-utf8-string
+const INVALID_UTF8_BUFFER = Buffer.from([0x80])
+exports.INVALID_UTF8_BUFFER = INVALID_UTF8_BUFFER
+
 let printTimeNow;
 function printTime() {
   const newNow = now()
@@ -357,24 +361,27 @@ is enough to make the loop terminate?
 `,
 ]
 
+function stringToBuffer(s) {
+  return Buffer.from(s)
+}
 const uploadData = [
   {
     path: 'test/subdir/myfile.txt',
-    bytes: `My text
+    bytes: stringToBuffer(`My text
 
 Has two nice paragraphs.
-`,
+`),
   },
   {
     path: 'test/nobigb.txt',
-    bytes: `I don't have a corresponding
+    bytes: stringToBuffer(`I don't have a corresponding
 
 bigb article.
-`,
+`),
   },
   {
     path: 'test.html',
-    bytes: `<!doctype html>
+    bytes: stringToBuffer(`<!doctype html>
 <html lang=en>
 <head>
 <meta charset=utf-8>
@@ -385,15 +392,23 @@ bigb article.
 <p>This HTML file attempts to execute a script. If a popup did not show, we correctly managed to prevent that and prevent an XSS attack.</p>
 </body>
 </html>
-`
+`)
   },
   {
     path: 'test.svg',
-    bytes: `<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256">
+    bytes: stringToBuffer(`<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="256" height="256">
   <rect x="0" y="0" width="100%" height="100%" fill="black" />
   <path d="M32 32v188h188v-188zM64 64h128v128h-128z" fill="red" />
 </svg>
-`
+`)
+  },
+  {
+    path: 'utf8.asdfqwer',
+    bytes: stringToBuffer('my utf8 content \u{00E9}\n'),
+  },
+  {
+    path: 'not-utf8.asdfqwer',
+    bytes: INVALID_UTF8_BUFFER,
   },
   {
     path: 'test.jpg',

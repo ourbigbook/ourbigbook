@@ -27,6 +27,7 @@ import {
   AlphabeticalOrderTabTitle,
   AnnounceIcon,
   LockIcon,
+  DirectoryIcon,
 } from 'front'
 import ArticleList from 'front/ArticleList'
 import CommentList from 'front/CommentList'
@@ -293,6 +294,12 @@ export default function UserPage({
                   className={`tab-item${what === 'liked' ? ' active' : ''}`}
                 >
                   <LikeIcon /> Received<span className="mobile-hide"> likes</span>
+                </CustomLink>
+                <CustomLink
+                  href={routes.dir(username)}
+                  className={`tab-item`}
+                >
+                  <DirectoryIcon /> Files
                 </CustomLink>
                 {false &&
                   // TODO https://github.com/ourbigbook/ourbigbook/issues/313

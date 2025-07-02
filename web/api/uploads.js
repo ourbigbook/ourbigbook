@@ -95,7 +95,6 @@ router.put('/', auth.required, async function(req, res, next) {
       if (msg) {
         throw new lib.ValidationError([msg], 403)
       }
-      const bytes = req.body
       const [existing, count] = await Promise.all([
         Upload.count({ where: { path: actualPath } }, { transaction }),
         Upload.count({
@@ -120,6 +119,7 @@ router.put('/', auth.required, async function(req, res, next) {
           403
         )
       }
+      const bytes = req.body
       if (!loggedInUser.admin && bytes.length > loggedInUser.maxUploadSize) {
         throw new ValidationError(
           `The upload size (${bytes.length} bytes) was larger than your maximum ` +

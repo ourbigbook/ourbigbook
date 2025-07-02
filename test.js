@@ -2439,6 +2439,10 @@ ab
 
 // Links.
 // \a
+assert_lib_error('link: href cannot be empty', '\\a[]\n', 1, 3)
+assert_lib_error('image: src cannot be empty block', '\\Image[]\n', 1, 7)
+assert_lib_error('image: src cannot be empty inline', '\\image[]\n', 1, 7)
+assert_lib_error('video: src cannot be empty inline', '\\Video[]\n', 1, 7)
 assert_lib_ast('link: simple to external URL',
   'a \\a[http://example.com][example link] b\n',
   [

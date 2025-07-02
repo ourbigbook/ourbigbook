@@ -1244,6 +1244,10 @@ class MacroArgument {
       // https://docs.ourbigbook.com/empty-macro-argument
       options.empty = false;
     }
+    if (!('notEmpty' in options)) {
+      // https://docs.ourbigbook.com/notempty-macro-argument
+      options.notEmpty = false
+    }
     const name = options.name
     let inlineOnly = options.inlineOnly
     this.inlineOnly = (inlineOnly === undefined) ? (options.name === Macro.TITLE_ARGUMENT_NAME) : inlineOnly
@@ -1272,17 +1276,18 @@ class MacroArgument {
     this.boolean = options.boolean
     this.cannotContain = options.cannotContain
     this.count_words = options.count_words
-    this.disabled = options.disabled
-    this.empty = options.empty
-    this.multiple = options.multiple
     this.default = options.default
+    this.disabled = options.disabled
     this.elide_link_only = options.elide_link_only
+    this.empty = options.empty
     this.mandatory = options.mandatory
+    this.multiple = options.multiple
     this.name = name
+    this.notEmpty = options.notEmpty
+    this.ourbigbook_output_prefer_literal = options.ourbigbook_output_prefer_literal
     this.positive_nonzero_integer = options.positive_nonzero_integer
     this.remove_whitespace_children = options.remove_whitespace_children
     this.renderLinksAsPlaintext = options.renderLinksAsPlaintext
-    this.ourbigbook_output_prefer_literal = options.ourbigbook_output_prefer_literal
   }
 }
 
@@ -6073,6 +6078,9 @@ async function parse(tokens, options, context, extra_returns={}) {
           }))
         }
         if (!external) {
+          if (href[href.length - 1] === URL_SEP) {
+            href = href.substring(0, href.length - 1)
+          }
           const cur_header = options.cur_header
           context.aRefs.push({
             from: cur_header ? cur_header.id : undefined,
@@ -7711,6 +7719,9 @@ function resolveLinkToFileGetHref({
     media_provider_type,
   }))
   if (!external) {
+    if (href[href.length - 1] === URL_SEP) {
+      href = href.substring(0, href.length - 1)
+    }
     const type = context.aFileTypes[href]
     if (context.options.webMode) {
       const hrefSplit = href.split(URL_SEP)
@@ -7912,6 +7923,12 @@ function validateAst(ast, context) {
         ast.validation_error = [
           `empty argument "${argname}" of macro "${macro_name}" was not empty: https://docs.ourbigbook.com/empty-macro-argument`,
           arg.asts[0].source_location,
+        ]
+      }
+      if (macro_arg.notEmpty && !arg.asts.length) {
+        ast.validation_error = [
+          `notEmpty argument "${argname}" of macro "${macro_name}" was empty: https://docs.ourbigbook.com/notempty-macro-argument`,
+          arg.source_location,
         ]
       }
       if (
@@ -9188,6 +9205,7 @@ const MACRO_IMAGE_VIDEO_POSITIONAL_ARGUMENTS = [
     name: 'src',
     elide_link_only: true,
     mandatory: true,
+    notEmpty: true,
   }),
   new MacroArgument({
     name: 'alt',
@@ -9204,6 +9222,7 @@ const DEFAULT_MACRO_LIST = [
         name: 'href',
         elide_link_only: true,
         mandatory: true,
+        notEmpty: true,
       }),
       new MacroArgument({
         name: Macro.CONTENT_ARGUMENT_NAME,
@@ -10381,6 +10400,7 @@ const OUTPUT_FORMATS_LIST = [
                 ),
               )
             } else {
+              // File directory breadcrumb
               let curp = ''
               const astNodeArgs = {
                 [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument([

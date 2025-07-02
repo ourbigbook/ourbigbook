@@ -1,6 +1,7 @@
 const { commentsHeaderId, commentIdPrefix, escapeUsername } = require('./config');
 
 const { encodeGetParams } = require('ourbigbook/web_api');
+const { DIR_PREFIX } = require('ourbigbook');
 
 function getPage(page) {
   return page === undefined || page === 1 ? '' : `/${page}`
@@ -35,6 +36,7 @@ module.exports = {
   articleSource: (slug) => `/${escapeUsername}/source/${slug}`,
   article: slug => `/${slug}`,
   comments: (opts={}) => `/${escapeUsername}/comments${encodeGetParamsWithPage(opts)}`,
+  dir: (username, dir) => `/${username}/${DIR_PREFIX}${dir ? `/${dir}` : ''}`,
   host: req => `${req.protocol}://${req.get('host')}`,
   issueComment: (slug, issueNumber, commentNumber) => `${issue(slug, issueNumber)}#${commentIdPrefix}${commentNumber}`,
   issueComments: (slug, number) => `${issue(slug, number)}#${commentsHeaderId}`,

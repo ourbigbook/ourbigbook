@@ -15,6 +15,7 @@ program.option('--automatic-topic-links-max-words <val>', 'maximum number of wor
 program.option('-A, --skip-author <username>', "don't convert articles by this author", (v, p) => p.concat([v]), [])
 program.option('-d, --descendants', 'rerender all descendants of input slugs in addition to the articles themselves. Has no effect if no slugs are given as input (everything gets converted regardless in that case).')
 program.option('-i, --ignore-errors', 'ignore errors', false)
+program.option('-s, --start-from <start-from>', 'start from this article and continue alphabetically to the end', false)
 program.argument('[slugs...]', 'list of slugs to convert, e.g. "barack-obama/quantum-mechanics". If not given, convert all articles matching the criteria of other options.')
 program.parse(process.argv);
 const opts = program.opts()
@@ -32,5 +33,6 @@ await sequelize.models.Article.rerender({
   ignoreErrors: opts.ignoreErrors,
   slugs,
   skipAuthors: opts.skipAuthor,
+  startFrom: opts.startFrom,
 })
 })().finally(() => { return sequelize.close() });

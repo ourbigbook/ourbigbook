@@ -105,11 +105,31 @@ $footer-color: $color;
 }
 
 @mixin file-icon {
+  color: $color;
   font-family: "fa-solid-900";
   font-weight: 900;
   font-size: $icon-font-size;
   // up arrow https://fontawesome.com/v5/icons/file?f=classic&s=solid
   content: "\f15b";
+}
+.file-icon {
+  &::before {
+    @include file-icon;
+  }
+}
+
+@mixin directory-icon {
+  color: $color;
+  font-family: "fa-solid-900";
+  font-weight: 900;
+  font-size: $icon-font-size;
+  // folder open https://fontawesome.com/icons/folder-open?f=classic&s=regular
+  content: "\f07c";
+}
+.directory-icon {
+  &::before {
+    @include directory-icon;
+  }
 }
 
 @mixin h-common {
@@ -173,6 +193,18 @@ $footer-color: $color;
   font-size: $icon-font-size;
   // link https://fontawesome.com/v5/icons/link?f=classic&s=solid
   content: "\f0c1";
+}
+
+@mixin list {
+  li {
+    // https://github.com/ourbigbook/ourbigbook/issues/68
+    &:not(:last-child) {
+      margin-bottom: $p-margin-vert;
+    }
+    &:not(:first-child) {
+      margin-top: $p-margin-vert;
+    }
+  }
 }
 
 @mixin search {
@@ -701,16 +733,7 @@ pre {
 }
 
 ol, ul {
-  padding-left: 30px;
-  li {
-    // https://github.com/ourbigbook/ourbigbook/issues/68
-    &:not(:last-child) {
-      margin-bottom: $p-margin-vert;
-    }
-    &:not(:first-child) {
-      margin-top: $p-margin-vert;
-    }
-  }
+  @include list;
 }
 
 // Table of contents.

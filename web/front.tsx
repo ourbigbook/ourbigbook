@@ -9,6 +9,7 @@ import ourbigbook, {
   Macro,
   INCOMING_LINKS_MARKER,
   TAGS_MARKER,
+  URL_SEP,
 } from 'ourbigbook'
 
 import { webApi } from 'front/api'
@@ -173,7 +174,7 @@ export function FontAwesomeIcon(
     title={title}
     className={classes.join(' ')}
    >
-    {String.fromCharCode(code)}
+    {code && String.fromCharCode(code)}
   </span>
 }
 
@@ -211,6 +212,11 @@ export function CommentIcon(opts) {
 
 export function DeleteIcon(opts) {
   return FontAwesomeIcon(0xf2ed, { clsExtra: ['icon-delete'], opts, title: "Delete" })
+}
+
+export function DirectoryIcon(opts) {
+  // https://fontawesome.com/icons/folder-open?f=classic&s=regular
+  return FontAwesomeIcon(undefined, { opts, clsExtra: ['directory-icon'], title: "Directory" })
 }
 
 export function DiscussionIcon(opts) {
@@ -730,6 +736,10 @@ export function RecaptchaScript() {
   } else {
     return <></>
   }
+}
+
+export function uploadPathWithoutUser(path)  {
+  return path.split(URL_SEP).slice(2).join(URL_SEP)
 }
 
 // URL operations.

@@ -5,15 +5,20 @@ const path = require('path')
 const { DatabaseError, Sequelize, DataTypes } = require('sequelize')
 
 const ourbigbook = require('ourbigbook')
+const { URL_SEP } = ourbigbook
+const { sequelizeWhereStartsWith } = require('ourbigbook/models')
+
 const ourbigbook_models = require('ourbigbook/models')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
 const {
   ID_FTS_POSTGRESL_LANGUAGE,
   sequelizeCreateTrigger,
-  sequelizeCreateTriggerUpdateCount
+  sequelizeCreateTriggerUpdateCount,
+  sequelizeIterateOverPagination,
 } = ourbigbook_nodejs_webpack_safe
 
 const config = require('../front/config')
+const { uploadPathComponent } = config
 
 function getSequelize(toplevelDir, toplevelBasename) {
   const sequelizeParams = Object.assign(
@@ -465,7 +470,7 @@ async function normalize({
   if (usernames === undefined) {
     usernames = []
   }
-  const { Article, Comment, Issue, File, User } = sequelize.models
+  const { Article, Comment, Issue, File, Upload, User } = sequelize.models
   if (usernames.length === 0) {
     usernames = (await User.findAll({
       attributes: ['username'],
@@ -484,268 +489,290 @@ async function normalize({
   for (const what of whats) {
     if (log)
       console.log(what);
-    for (const username of usernames) {
-      if (what === 'nested-set') {
-        if (fix) {
-          await Article.updateNestedSets(username, { transaction })
-        }
-        const articles = await Article.treeFindInOrder({ username, transaction })
-        if (check) {
-          const nestedSetsFromRefs = await Article.getNestedSetsFromRefs(username, { transaction })
-          for (let i = 0; i < nestedSetsFromRefs.length; i++) {
-            const article = articles[i]
-            const fromRef = nestedSetsFromRefs[i]
-            const msg = `${what}: (slug, nestedSetIndex, nestedSetNextSibling, depth): actual: (${article.slug}, ${article.nestedSetIndex}, ${article.nestedSetNextSibling}, ${article.depth}) !== expected: (${fromRef.id}, ${fromRef.nestedSetIndex}, ${fromRef.nestedSetNextSibling}, ${fromRef.depth})`
-            assert.strictEqual(article.nestedSetIndex, fromRef.nestedSetIndex, msg)
-            assert.strictEqual(article.nestedSetNextSibling, fromRef.nestedSetNextSibling, msg)
-            assert.strictEqual(article.depth, fromRef.depth, msg)
-            assert.strictEqual(`@${article.slug}`, fromRef.id, msg)
+    if (
+      // The Upload contentType can be deduced from the filename and content of the upload.
+      // UTF-8 content checks could be "slow" however, so we cache it.
+      // TODO move into username loop below. Lazy now.
+      what === 'upload-content-type'
+    ) {
+      for await (const upload of sequelizeIterateOverPagination(
+        Upload.findAll.bind(Upload),
+        {
+          attributes: ['id', 'bytes', 'path'],
+          order: [['path', 'ASC']],
+          where: { path: sequelizeWhereStartsWith(sequelize, uploadPathComponent + URL_SEP, '"Upload"."path"' ) },
+        },
+        config.maxArticlesInMemory,
+      )) {
+        if (log)
+          console.log(`${what} ${upload.path}`);
+        upload.contentType = Upload.getCreateObj({ bytes: upload.bytes, path: upload.path }).contentType
+        await upload.save()
+      }
+    } else {
+      for (const username of usernames) {
+        if (what === 'nested-set') {
+          if (fix) {
+            await Article.updateNestedSets(username, { transaction })
           }
-        }
-        if (print) {
-          throw new Error('-p is broken for nested-set, does not show new would-be updated value as desired');
-          for (const article of articles) {
-            console.log(`${what} ${article.nestedSetIndex} ${article.nestedSetNextSibling} ${article.slug}`)
+          const articles = await Article.treeFindInOrder({ username, transaction })
+          if (check) {
+            const nestedSetsFromRefs = await Article.getNestedSetsFromRefs(username, { transaction })
+            for (let i = 0; i < nestedSetsFromRefs.length; i++) {
+              const article = articles[i]
+              const fromRef = nestedSetsFromRefs[i]
+              const msg = `${what}: (slug, nestedSetIndex, nestedSetNextSibling, depth): actual: (${article.slug}, ${article.nestedSetIndex}, ${article.nestedSetNextSibling}, ${article.depth}) !== expected: (${fromRef.id}, ${fromRef.nestedSetIndex}, ${fromRef.nestedSetNextSibling}, ${fromRef.depth})`
+              assert.strictEqual(article.nestedSetIndex, fromRef.nestedSetIndex, msg)
+              assert.strictEqual(article.nestedSetNextSibling, fromRef.nestedSetNextSibling, msg)
+              assert.strictEqual(article.depth, fromRef.depth, msg)
+              assert.strictEqual(`@${article.slug}`, fromRef.id, msg)
+            }
           }
-        }
-      } else if (
-        what === 'article-issue-count' ||
-        what === 'article-follower-count' ||
-        what === 'issue-comment-count' ||
-        what === 'issue-follower-count'
-      ) {
-        let parentModel, childModel, as, emptyThrough
-        if (what === 'article-issue-count') {
-          parentModel = Article
-          childModel = Issue
-          as = 'issues'
-          checkField = 'issueCount'
-          emptyThrough = false
-        } else if(what === 'article-follower-count') {
-          parentModel = Article
-          childModel = User
-          as = 'followers'
-          checkField = 'followerCount'
-          emptyThrough = true
-        } else if (what === 'issue-comment-count') {
-          parentModel = Issue
-          childModel = Comment
-          as = 'comments'
-          checkField = 'commentCount'
-          emptyThrough = false
-        } else if (what === 'issue-follower-count') {
-          parentModel = Issue
-          childModel = User
-          as = 'followers'
-          checkField = 'followerCount'
-          emptyThrough = true
-        }
-        const includeChild = {
-          model: childModel,
-          as,
-          required: false,
-          attributes: [],
-        }
-        if (emptyThrough) {
-          // OMG sequelize
-          includeChild.through = { attributes: [] }
-        }
-        const include = [
-          includeChild,
-        ]
-        if (parentModel === Issue) {
-          // Ideally, but PostgreSQL won't let us due to GROUP BY.
-          //include.push({
-          //  model: Article,
-          //  as: 'article',
-          //  attributes: ['slug'],
-          //})
-          slugAttr = 'number'
-          include.push({
-            model: User,
-            as: 'author',
-            where: { username },
-            required: true,
+          if (print) {
+            throw new Error('-p is broken for nested-set, does not show new would-be updated value as desired');
+            for (const article of articles) {
+              console.log(`${what} ${article.nestedSetIndex} ${article.nestedSetNextSibling} ${article.slug}`)
+            }
+          }
+        } else if (
+          what === 'article-issue-count' ||
+          what === 'article-follower-count' ||
+          what === 'issue-comment-count' ||
+          what === 'issue-follower-count'
+        ) {
+          let parentModel, childModel, as, emptyThrough
+          if (what === 'article-issue-count') {
+            parentModel = Article
+            childModel = Issue
+            as = 'issues'
+            checkField = 'issueCount'
+            emptyThrough = false
+          } else if(what === 'article-follower-count') {
+            parentModel = Article
+            childModel = User
+            as = 'followers'
+            checkField = 'followerCount'
+            emptyThrough = true
+          } else if (what === 'issue-comment-count') {
+            parentModel = Issue
+            childModel = Comment
+            as = 'comments'
+            checkField = 'commentCount'
+            emptyThrough = false
+          } else if (what === 'issue-follower-count') {
+            parentModel = Issue
+            childModel = User
+            as = 'followers'
+            checkField = 'followerCount'
+            emptyThrough = true
+          }
+          const includeChild = {
+            model: childModel,
+            as,
+            required: false,
             attributes: [],
-          })
-        } else {
-          slugAttr = 'slug'
-          include.push({
-            model: File,
-            as: 'file',
-            attributes: [],
-            subQuery: false,
-            required: true,
-            include: {
+          }
+          if (emptyThrough) {
+            // OMG sequelize
+            includeChild.through = { attributes: [] }
+          }
+          const include = [
+            includeChild,
+          ]
+          if (parentModel === Issue) {
+            // Ideally, but PostgreSQL won't let us due to GROUP BY.
+            //include.push({
+            //  model: Article,
+            //  as: 'article',
+            //  attributes: ['slug'],
+            //})
+            slugAttr = 'number'
+            include.push({
               model: User,
               as: 'author',
               where: { username },
               required: true,
               attributes: [],
-            }
-          })
-        }
-        const counts = await parentModel.findAll({
-          attributes: [
-            'id',
-            slugAttr,
-            [checkField, 'checkField'],
-            [sequelize.fn('COUNT', sequelize.col(`${as}.id`)), 'count'],
-          ],
-          subQuery: false,
-          include,
-          group: [`${parentModel.name}.id`],
-          order: [['id', 'ASC']],
-          transaction,
-        })
-        if (parentModel === Issue) {
-          const countsArticle = await parentModel.findAll({
-            include: [
-              {
-                model: Article,
-                as: 'article',
-                attributes: ['slug'],
-              },
-              {
+            })
+          } else {
+            slugAttr = 'slug'
+            include.push({
+              model: File,
+              as: 'file',
+              attributes: [],
+              subQuery: false,
+              required: true,
+              include: {
                 model: User,
                 as: 'author',
                 where: { username },
                 required: true,
                 attributes: [],
               }
+            })
+          }
+          const counts = await parentModel.findAll({
+            attributes: [
+              'id',
+              slugAttr,
+              [checkField, 'checkField'],
+              [sequelize.fn('COUNT', sequelize.col(`${as}.id`)), 'count'],
             ],
+            subQuery: false,
+            include,
+            group: [`${parentModel.name}.id`],
             order: [['id', 'ASC']],
             transaction,
           })
-          for (let i = 0; i < countsArticle.length; i++) {
-            counts[i].article = countsArticle[i].article
-          }
-        }
-        for (const count of counts) {
-          count.countInt = parseInt(count.get('count'), 10)
-        }
-        if (check) {
-          for (const count of counts) {
-            const msg = `${what} ${count.getSlug()} ${count.countInt} !== ${count.get('checkField')}`
-            assert.strictEqual(count.countInt, count.get('checkField'), msg)
-          }
-        }
-        if (print) {
-          for (const count of counts) {
-            console.log(`${what} ${count.getSlug()} ${count.get('checkField')}`);
-          }
-        }
-        if (fix) {
-          for (const count of counts) {
-            if (log)
-              console.log(`${what} ${count.getSlug()} ${count.countInt}`);
-            await Promise.all([
-              parentModel.update(
-                { [checkField]: count.countInt },
+          if (parentModel === Issue) {
+            const countsArticle = await parentModel.findAll({
+              include: [
                 {
-                  // Oopsie I did nuke timestamps once because of this O_O
-                  silent: true,
-                  transaction,
-                  where: { id: count.id }
+                  model: Article,
+                  as: 'article',
+                  attributes: ['slug'],
+                },
+                {
+                  model: User,
+                  as: 'author',
+                  where: { username },
+                  required: true,
+                  attributes: [],
                 }
-              )
-            ])
+              ],
+              order: [['id', 'ASC']],
+              transaction,
+            })
+            for (let i = 0; i < countsArticle.length; i++) {
+              counts[i].article = countsArticle[i].article
+            }
           }
-        }
-      } else if (
-        // Not a normalization.
-        what === 'follow-authored-articles'
-      ) {
-        const [articles, user] = await Promise.all([
-          Article.getArticles({
-            author: username,
-            count: false,
-            sequelize,
-            transaction,
-          }),
-          User.findOne({
-            where: { username },
-            transaction,
-          }),
-        ])
-        if (fix) {
-          const promises = []
-          for (const article of articles) {
-            if (log)
-              console.log(`${what} ${username} ${article.getSlug()}`);
-            promises.push(user.addArticleFollowSideEffects(article, { transaction }))
+          for (const count of counts) {
+            count.countInt = parseInt(count.get('count'), 10)
           }
-          await Promise.all(promises)
-        }
-      } else if (
-        // Not a normalization.
-        what === 'follow-authored-issues'
-      ) {
-        const [{ rows: issues }, user] = await Promise.all([
-          Issue.getIssues({
-            author: username,
-            includeArticle: true,
-            sequelize,
-            transaction,
-          }),
-          User.findOne({
-            where: { username },
-            transaction,
-          }),
-        ])
-        if (fix) {
-          const promises = []
-          for (const issue of issues) {
-            if (log)
-              console.log(`${what} ${username} ${issue.getSlug()}`);
-            promises.push(user.addIssueFollowSideEffects(issue, { transaction }))
+          if (check) {
+            for (const count of counts) {
+              const msg = `${what} ${count.getSlug()} ${count.countInt} !== ${count.get('checkField')}`
+              assert.strictEqual(count.countInt, count.get('checkField'), msg)
+            }
           }
-          await Promise.all(promises)
-        }
-      } else if (
-        what === 'file-has-article'
-      ) {
-        // Check that all files have articles. This could fail notably due to a bug in the complex synonym renaming mechanism.
-        // TODO known to not work on SQLite due to case insensitive, se need to change the as: 'file" to as: 'article' in the join..
-        const rows = await File.findAll({
-          attributes: [
-            'id',
-            'path',
-            [sequelize.fn('COUNT', sequelize.col('file.id')), 'count'],
-          ],
-          include: [
-            {
-              model: Article,
-              as: 'file',
-              required: false,
-              attributes: [],
-            },
-            {
-              model: User,
-              as: 'author',
-              required: true,
-              attributes: [],
+          if (print) {
+            for (const count of counts) {
+              console.log(`${what} ${count.getSlug()} ${count.get('checkField')}`);
+            }
+          }
+          if (fix) {
+            for (const count of counts) {
+              if (log)
+                console.log(`${what} ${count.getSlug()} ${count.countInt}`);
+              await Promise.all([
+                parentModel.update(
+                  { [checkField]: count.countInt },
+                  {
+                    // Oopsie I did nuke timestamps once because of this O_O
+                    silent: true,
+                    transaction,
+                    where: { id: count.id }
+                  }
+                )
+              ])
+            }
+          }
+        } else if (
+          // Not a normalization.
+          what === 'follow-authored-articles'
+        ) {
+          const [articles, user] = await Promise.all([
+            Article.getArticles({
+              author: username,
+              count: false,
+              sequelize,
+              transaction,
+            }),
+            User.findOne({
               where: { username },
-            },
-          ],
-          group: ['File.id'],
-          order: [[sequelize.col('count'), 'DESC']],
-          having: sequelize.where(sequelize.fn('COUNT', sequelize.col('file.id')), 0)
-        })
-        for (const row of rows) {
-          console.error(row.path)
-          if (fix)
-            await row.destroy()
+              transaction,
+            }),
+          ])
+          if (fix) {
+            const promises = []
+            for (const article of articles) {
+              if (log)
+                console.log(`${what} ${username} ${article.getSlug()}`);
+              promises.push(user.addArticleFollowSideEffects(article, { transaction }))
+            }
+            await Promise.all(promises)
+          }
+        } else if (
+          // Not a normalization.
+          what === 'follow-authored-issues'
+        ) {
+          const [{ rows: issues }, user] = await Promise.all([
+            Issue.getIssues({
+              author: username,
+              includeArticle: true,
+              sequelize,
+              transaction,
+            }),
+            User.findOne({
+              where: { username },
+              transaction,
+            }),
+          ])
+          if (fix) {
+            const promises = []
+            for (const issue of issues) {
+              if (log)
+                console.log(`${what} ${username} ${issue.getSlug()}`);
+              promises.push(user.addIssueFollowSideEffects(issue, { transaction }))
+            }
+            await Promise.all(promises)
+          }
+        } else if (
+          what === 'file-has-article'
+        ) {
+          // Check that all files have articles. This could fail notably due to a bug in the complex synonym renaming mechanism.
+          // TODO known to not work on SQLite due to case insensitive, se need to change the as: 'file" to as: 'article' in the join..
+          const rows = await File.findAll({
+            attributes: [
+              'id',
+              'path',
+              [sequelize.fn('COUNT', sequelize.col('file.id')), 'count'],
+            ],
+            include: [
+              {
+                model: Article,
+                as: 'file',
+                required: false,
+                attributes: [],
+              },
+              {
+                model: User,
+                as: 'author',
+                required: true,
+                attributes: [],
+                where: { username },
+              },
+            ],
+            group: ['File.id'],
+            order: [[sequelize.col('count'), 'DESC']],
+            having: sequelize.where(sequelize.fn('COUNT', sequelize.col('file.id')), 0)
+          })
+          for (const row of rows) {
+            console.error(row.path)
+            if (fix)
+              await row.destroy()
+          }
+          if (check && rows.length)
+            throw new Error(`there were files without a corresponding article`)
+        } else if (
+          what === 'topic-count' ||
+          what === 'user-follower-count'
+        ) {
+          throw new Error(`unimplemented: ${what}`)
+        } else {
+          throw new Error(`unknown what: ${what}`)
         }
-        if (check && rows.length)
-          throw new Error(`there were files without a corresponding article`)
-      } else if (
-        what === 'topic-count' ||
-        what === 'user-follower-count'
-      ) {
-        throw new Error(`unimplemented: ${what}`)
-      } else {
-        throw new Error(`unknown what: ${what}`)
       }
     }
   }

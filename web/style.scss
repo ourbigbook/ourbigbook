@@ -355,6 +355,9 @@ h1, h2, h3, h4, h5, h6,
   }
   &.meta, .meta {
     color: $color-slightly-discreet;
+    &.small {
+      font-size: $h1-font-size * 0.8;
+    }
   }
   &.inline {
     display: inline;
@@ -435,28 +438,6 @@ div.parent-article {
 
 div.article-page {
   div.article-meta {
-    div.article-info {
-      @media only screen and (max-width: $max-mobile-width) {
-        margin-bottom: 10px;
-      }
-      @media only screen and (min-width: $max-mobile-width + 1) {
-        margin-bottom: 20px;
-      }
-      .username {
-        font-size: 1.2em;
-        img.profile-thumb {
-          $size: 1.5em;
-          height: $size;
-          width: $size;
-        }
-      }
-      .by-others {
-        font-weight: bold;
-        .icon {
-          font-size: 1.5em;
-        }
-      }
-    }
     div.article-info-3 {
       margin-bottom: 10px;
       button, a.btn {
@@ -472,6 +453,41 @@ div.article-page {
   }
   .see-all {
     font-weight: bold;
+  }
+}
+
+div.article-info {
+  @media only screen and (max-width: $max-mobile-width) {
+    margin-bottom: 10px;
+  }
+  @media only screen and (min-width: $max-mobile-width + 1) {
+    margin-bottom: 20px;
+  }
+  .username {
+    font-size: 1.2em;
+    img.profile-thumb {
+      $size: 1.5em;
+      height: $size;
+      width: $size;
+    }
+  }
+  .by-others {
+    font-weight: bold;
+    .icon {
+      font-size: 1.5em;
+    }
+  }
+}
+
+div.dir-page {
+  .meta {
+    &:not(:last-child) {
+      margin-right: 0.1em;
+    }
+    margin-left: 0.1em;
+  }
+  ul {
+    @include list;
   }
 }
 

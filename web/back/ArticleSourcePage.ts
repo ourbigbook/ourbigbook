@@ -1,5 +1,3 @@
-import ourbigbook from 'ourbigbook'
-
 import { findSynonymOr404, getLoggedInUser } from 'back'
 import { ArticleSourcePageProps } from 'front/ArticleSourcePage'
 import { MyGetServerSideProps } from 'front/types'

@@ -108,12 +108,15 @@ class WebApi {
   }
 
   async req(method, path, opts={}) {
-    const newopts = Object.assign(
-      {},
-      this.opts,
-      opts
+    return sendJsonHttp(
+      method,
+      `/${ourbigbook.WEB_API_PATH}/${path}`,
+      Object.assign(
+        {},
+        this.opts,
+        opts
+      )
     )
-    return sendJsonHttp(method, `/${ourbigbook.WEB_API_PATH}/${path}`, newopts)
   }
 
   async article(slug, opts={}, reqOpts={}) {
@@ -368,7 +371,11 @@ class WebApi {
   }
 
   async upload(path, reqOpts={}) {
-    return this.req('get', `uploads${encodeGetParamsWithOffset({ path })}`, reqOpts)
+    return this.req(
+      'get',
+      `uploads${encodeGetParamsWithOffset({ path })}`,
+      Object.assign({}, { responseType: 'arraybuffer' }, reqOpts),
+    )
   }
 
   async uploadCreateOrUpdate(path, bytes, reqOpts={}) {
@@ -454,6 +461,7 @@ async function sendJsonHttp(method, path, opts={}) {
     https,
     hostname,
     port,
+    responseType,
     validateStatus
   } = opts
   let http
@@ -486,6 +494,7 @@ async function sendJsonHttp(method, path, opts={}) {
     headers,
     maxRedirects: 0,
     method,
+    responseType,
     url,
     validateStatus,
   })

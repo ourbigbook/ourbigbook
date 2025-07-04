@@ -14,7 +14,6 @@ import { CommonPropsType } from 'front/types/CommonPropsType'
 import { UploadDirectoryEntryType } from 'front/types/UploadDirectoryType'
 import { UploadEntryType } from 'front/types/UploadType'
 import { UserType } from 'front/types/UserType'
-import { displayAndUsernameText } from 'front/user'
 import { dir } from 'front/routes'
 
 export interface DirPageProps extends CommonPropsType {
@@ -44,10 +43,10 @@ const DirPageHoc = (isIssue=false) => {
             let curp = ''
             let i = 0
             for (const p of [author.username, ...pathSplit]) {
-              ret.push(<>
-                <Link href={dir(author.username, curp)}>{p}</Link>
-                <span className="meta">{URL_SEP}</span>
-              </>)
+              ret.push(
+                <Link href={dir(author.username, curp)} key={i}>{p}</Link>,
+                <span className="meta" key={-i-1}>{URL_SEP}</span>
+              )
               if (i !== 0) {
                 curp += URL_SEP
               }

@@ -827,6 +827,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
               const breadcrumbParse = path.parse(breadcrumbDir)
               let bname = breadcrumbParse.name
               if (breadcrumbDir === '') {
+                // TODO https://github.com/ourbigbook/ourbigbook/issues/372
                 bname = ourbigbook.FILE_ROOT_PLACEHOLDER
               }
               if (upcount === 0) {

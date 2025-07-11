@@ -6348,7 +6348,6 @@ also does not include the newline between the list items.
 
 The definition of whitespace is the same as the ASCII whitespace definition of HTML5: ` \r\n\f\t`.
 
-
 = Pseudo-macro argument property
 {parent=Macro argument}
 

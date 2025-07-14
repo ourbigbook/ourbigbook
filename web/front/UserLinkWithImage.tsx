@@ -4,7 +4,10 @@ import CustomImage from 'front/CustomImage'
 import { DisplayAndUsername, DisplayAndUsernameProps, UserLink } from 'front/user'
 
 export const UserLinkWithImageInner = ({
-  user, showScore, showUsername, showUsernameMobile
+  showScore,
+  showUsername,
+  showUsernameMobile,
+  user,
 }: DisplayAndUsernameProps) => {
   if (!user) return null;
   return (

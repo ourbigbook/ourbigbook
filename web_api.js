@@ -655,16 +655,21 @@ function boolToQueryVal(b) {
   return b ? QUERY_TRUE_VAL : QUERY_FALSE_VAL
 }
 
+function queryValToBool(s) {
+  return s === QUERY_TRUE_VAL
+}
+
 module.exports = {
   ARTICLE_HASH_LIMIT_MAX: 10000,
+  DbProviderBase,
+  QUERY_FALSE_VAL,
+  QUERY_TRUE_VAL,
+  WebApi,
   articleHash,
   boolToQueryVal,
-  QUERY_TRUE_VAL,
-  QUERY_FALSE_VAL,
-  WebApi,
-  DbProviderBase,
   encodeGetParams,
   hashToHex,
+  queryValToBool,
   read_include,
   sendJsonHttp,
 }

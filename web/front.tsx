@@ -26,6 +26,7 @@ import { ArticleType } from 'front/types/ArticleType'
 import { UserLinkWithImageInner } from 'front/UserLinkWithImage'
 
 export const AUTH_LOCAL_STORAGE_NAME = 'user'
+export const SHOW_PINNED_LOCAL_STORAGE_NAME = 'showPinned'
 export const LOGIN_ACTION = 'Sign in'
 export const REGISTER_ACTION = 'Sign up'
 export const NON_NEGATIVE_INPUT_RE = /^([0-9]+|)$/
@@ -243,6 +244,11 @@ export function HelpIcon(opts) {
   return FontAwesomeIcon(0xf05a, { opts, title: "Help" })
 }
 
+export function HideIcon(opts) {
+  // https://fontawesome.com/icons/eye-slash
+  return FontAwesomeIcon(0xf070, { opts, title: "Hide" })
+}
+
 export function IdIcon(opts) {
   return FontAwesomeIcon(0xf2c1, { opts, title: "Discussion" })
 }
@@ -328,6 +334,7 @@ export function UnfollowIcon(opts) {
 }
 
 export function UnlistedIcon(opts) {
+  // https://fontawesome.com/icons/eye-slash
   return FontAwesomeIcon(0xf070, { opts, title: "Unlisted" })
 }
 

@@ -12,11 +12,14 @@ import {
   CommentIcon,
   DiscussionAbout,
   DiscussionIcon,
+  HideIcon,
   MyHead,
   NewArticleIcon,
   orderToPageTitle,
   PinnedArticleIcon,
+  SeeIcon,
   SettingsIcon,
+  SHOW_PINNED_LOCAL_STORAGE_NAME,
   StarIcon,
   TimeIcon,
   TopicIcon,
@@ -35,6 +38,7 @@ import { CommonPropsType } from 'front/types/CommonPropsType'
 import { IssueType } from 'front/types/IssueType'
 import { UserType } from 'front/types/UserType'
 import { TopicType } from 'front/types/TopicType'
+import { boolToQueryVal, queryValToBool } from 'ourbigbook/web_api'
 
 export interface IndexPageProps extends CommonPropsType {
   articles?: (ArticleType & IssueType & TopicType)[];
@@ -99,6 +103,15 @@ function IndexPageHoc({
       title = `${ issueArticle.titleSource } by ${ issueArticle.author.displayName } - Discussion`
     }
     const isDiscussionIndex = pageType === 'articleDiscussions' || pageType === 'articleComments'
+    const [showPinned, setShowPinned] = React.useState(true)
+    React.useEffect(() => {
+      if (typeof window !== "undefined") {
+        const storage = localStorage.getItem(SHOW_PINNED_LOCAL_STORAGE_NAME)
+        if (storage) {
+          setShowPinned(queryValToBool(storage))
+        }
+      }
+    }, []);
     return <>
       <MyHead title={title} />
       <div className="home-page">
@@ -333,13 +346,29 @@ function IndexPageHoc({
               className={'link'}
               href={routes.article(pinnedArticle.slug)}
             >
-              {pinnedArticle.slug}
+              <span
+                className="ourbigbook-title"
+                dangerouslySetInnerHTML={{ __html: pinnedArticle.titleRender }}
+              />
             </CustomLink>
+            {' '}
+            <button onClick={() => {
+              queryValToBool
+              window.localStorage.setItem(
+                SHOW_PINNED_LOCAL_STORAGE_NAME,
+                boolToQueryVal(!showPinned)
+              )
+              setShowPinned(showPinned => {
+                return !showPinned
+              })
+            }}>
+              {showPinned ? <><HideIcon /> Hide</> : <><SeeIcon /> Show</>}
+            </button>
           </h2>
-          <div
+          {showPinned && <div
             className="ourbigbook"
             dangerouslySetInnerHTML={{ __html: pinnedArticle.render }}
-          />
+          />}
         </div>}
         {isHomepage &&
           <div className="content-not-ourbigbook site-settings">

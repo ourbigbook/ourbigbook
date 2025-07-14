@@ -17,6 +17,7 @@ It is now possible to have create file uploads on <OurBigBook Web>, e.g.:
 * https://ourbigbook.com/cirosantilli/_dir
 * https://ourbigbook.com/cirosantilli/_dir/c
 * https://ourbigbook.com/cirosantilli/_raw/c/segfault.c
+You can upload images, source code, or any other type of file.
 
 Previously, you'd just get broken links when publishing to <OurBigBook Web> if you linked to your files with the <a macro> or other related constructs.
 
@@ -47,6 +48,12 @@ The current implementation has a few limitations which should be fixed one day:
 {height=153}
 {provider=github}
 {source=https://ourbigbook.com/cirosantilli/_file/c/segfault.c}
+
+Announced at:
+* https://mastodon.social/@ourbigbook/114851233133955275
+* https://x.com/OurBigBook/status/1944713518474744230
+* https://www.linkedin.com/feed/update/urn:li:ugcPost:7350479547579961347
+* https://www.facebook.com/OurBigBook/posts/pfbid02AH8MfRBf4Dc3LzoeGPnZkKp9GffS8qr2hF4FoqC9g1eq1EcGHV1ABcFiPniF4pual
 
 = LLM-generated <wikibot> abstracts
 {parent=News}

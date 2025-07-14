@@ -10,6 +10,44 @@ Significant entries will have a corresponding announcement on the following <off
 * https://www.facebook.com/OurBigBook
 * https://www.instagram.com/ourbigbook
 
+= File upload on Web
+{parent=News}
+
+It is now possible to have create file uploads on <OurBigBook Web>, e.g.:
+* https://ourbigbook.com/cirosantilli/_dir
+* https://ourbigbook.com/cirosantilli/_dir/c
+* https://ourbigbook.com/cirosantilli/_raw/c/segfault.c
+
+Previously, you'd just get broken links when publishing to <OurBigBook Web> if you linked to your files with the <a macro> or other related constructs.
+
+The implementation attempts to follow what already existed for <static websites> as closely as possible.
+
+The current implementation has a few limitations which should be fixed one day:
+* there is no web UI for file upload, it is exposed via CLI only
+* file previews don't show under corresponding `_file` articles as they do on static
+* `_file` articles are not properly auto-generated for files that don's have explicit articles, we just show `_raw` under `_file`
+
+\Image[feature/web-files/user-page-arrow.png]
+{title=User home pages have a link to the root file directory of the user}
+{border}
+{height=536}
+{provider=github}
+{source=https://ourbigbook.com/cirosantilli}
+
+\Image[feature/web-files/directory-listing.png]
+{title=Sample directory listing}
+{border}
+{height=533}
+{provider=github}
+{source=https://ourbigbook.com/cirosantilli/_dir/c}
+
+\Image[feature/web-files/raw.png]
+{title=Sample raw listing}
+{border}
+{height=153}
+{provider=github}
+{source=https://ourbigbook.com/cirosantilli/_file/c/segfault.c}
+
 = LLM-generated <wikibot> abstracts
 {parent=News}
 {tag=Wikibot LLM body population}

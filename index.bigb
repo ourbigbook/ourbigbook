@@ -13,7 +13,7 @@ The \b[OurBigBook Project] is creating the ultimate https://github.com/ourbigboo
 {height=150}
 {title=<project logo>[Logo of] the <OurBigBook Project>}
 
-<OurBigBook CLI quick start> using our template project https://github.com/ourbigbook/template[] with <#Node.js>{p} installed run:
+This is the <OurBigBook CLI quick start> using our <template project> https://github.com/ourbigbook/template[]. After https://nodejs.org/en/download[installing Node.js], run:
 ``
 git clone https://github.com/ourbigbook/template
 cd template
@@ -22,7 +22,7 @@ npx ourbigbook .
 firefox _out/html/index.html
 firefox _out/html/not-index.html
 ``
-The HTML output is visible at: https://ourbigbook.github.io/template
+This HTML output is also visible at: https://ourbigbook.github.io/template Tested on <OurBigBook CLI test matrix>[Linux and MacOS].
 
 To <publish>[publish your project as a static website to GitHub Pages], first create a GitHub repository for it, e.g. `johnsmith/mybrain` and then:
 ```
@@ -8991,6 +8991,16 @@ git ls-files | grep -E '\.bigb$' | parallel -X ourbigbook --no-check-db '{}'
 Observed `--no-render`  speedup on 1k small files from the <Wikipedia bot> and 8 cores: 3x. So not bad.
 
 Observed render speedup on 1k small files from the <Wikipedia bot> and 8 cores: none. TODO. Is this because of database contention?
+
+= OurBigBook CLI test matrix
+{c}
+{parent=OurBigBook CLI}
+
+This section lists versions at which the basic `npm install` followed by basic <template repo> conversion is known to work. Reports of other working systems are welcome and will be added here.
+
+* v0.9.35:
+  * Ubuntu: 25.04
+  * MacOS: 11, 15
 
 = OurBigBook Library
 {c}

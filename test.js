@@ -8179,6 +8179,27 @@ assert_lib('toc: toplevel scope gets removed on table of contents of included he
     },
   },
 )
+assert_lib('toc: disambiguate shows on toc but title2 does not',
+  // Previously we were showing title2. But it can get a bit dirty. So we have opted
+  // to go for the philosophy of "only show on ToC if it matters for the ID" for now.
+  {
+    convert_dir: true,
+    convert_opts: { split_headers: true },
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== Asdf
+{disambiguate=zxcv}
+{title2=qwer}
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//*[@id='_toc']//x:a[@href='#asdf-zxcv' and text()='Asdf (zxcv)']",
+      ],
+    },
+  },
+)
 
 assert_lib_ast('toc: the toc is added before the first h1 when there are multiple toplevel h1',
   `aa

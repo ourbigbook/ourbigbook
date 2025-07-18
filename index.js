@@ -7609,6 +7609,7 @@ function renderToc(context) {
         addNumberClass: 'n',
         show_caption_prefix: false,
         style_full: true,
+        style_full_from_x: true,
       });
       entry.href = xHrefAttr(target_ast, context);
       entry.target_id = target_ast.id

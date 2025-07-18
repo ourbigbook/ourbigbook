@@ -27,7 +27,7 @@ export type ArticleType = {
   announcedAt?: number,
   author: UserType,
   body: string;
-  createdAt: string;
+  createdAt?: string;
   depth: number;
   file: {
     titleSource: string,
@@ -54,5 +54,5 @@ export type ArticleType = {
   titleSourceLine: number;
   topicCount?: number;
   topicId: string;
-  updatedAt: string;
+  updatedAt?: string;
 };

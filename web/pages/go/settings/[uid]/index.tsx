@@ -7,6 +7,7 @@ import {
   allowedImageContentTypes,
   allowedImageContentTypesSimplifiedArr,
   contactUrl,
+  docsUrl,
   docsAccountLockingUrl,
   profilePicturePath,
   profilePictureMaxUploadSize,
@@ -239,11 +240,14 @@ const Settings = ({
               }})}
             />
           </Label>
-          <Label label="Hide article dates" inline={true}>
+          <Label
+            label="Hide article dates"
+            inline={true}
+            helpUrl={`${docsUrl}/ourbigbook-web-hide-article-dates`}
+          >
             <input
               type="checkbox"
               defaultChecked={userInfo.hideArticleDates}
-              title="Hardcode the created and updated date of every edited or created article to January 1st 1970. That fake date is stored in the database instead of the real dates which are lost forever. Sequential IDs are still stored in the database, which would allos for a subpoena to infer dates from nearby ID ranges."
               onChange={() => setUserInfo((state) => { return {
                 ...state,
                 hideArticleDates: !state.hideArticleDates
@@ -311,7 +315,7 @@ const Settings = ({
           </Label>
           <Label
             label="Account locked"
-            helpUrl={`${docsAccountLockingUrl}/account-locking`}
+            helpUrl={docsAccountLockingUrl}
             inline={true}
           >
             <input

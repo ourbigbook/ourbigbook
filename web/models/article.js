@@ -147,9 +147,18 @@ module.exports = (sequelize) => {
       announcedAt: {
         type: DataTypes.DATE,
         allowNull: true,
-      }
+      },
+      createdAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
+      updatedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+      },
     },
     {
+      timestamps: false,
       indexes: [
         // For ORDER BY createdAt without list specified
         { fields: ['createdAt'], },

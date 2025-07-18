@@ -130,7 +130,11 @@ function getOrder(req, opts={}) {
   } else {
     ret = default_
   }
-  return [ret, err, ascDesc ? ascDesc : SORT_WITH_DEFAULT_ASC.has(ret) ? 'ASC' : 'DESC']
+  return [
+    ret, 
+    err,
+    (ascDesc ? ascDesc : SORT_WITH_DEFAULT_ASC.has(ret) ? 'ASC' : 'DESC') + ' NULLS LAST'
+  ]
 }
 
 /**

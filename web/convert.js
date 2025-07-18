@@ -826,9 +826,10 @@ async function convertArticle({
         if (doUpdateNestedSetIndex) {
           articleArg.depth = newDepth
         }
-        if (author.hideArticleDates) {
-          articleArg.createdAt = hideArticleDatesDate
-          articleArg.updatedAt = hideArticleDatesDate
+        if (!author.hideArticleDates) {
+          const d = new Date()
+          articleArg.createdAt = d
+          articleArg.updatedAt = d
         }
         articleArgs.push(articleArg)
         if (titleSource.length > maxArticleTitleSize) {
@@ -861,9 +862,6 @@ async function convertArticle({
       ]
       if (updateUpdatedAt) {
         updateOnDuplicate.push('updatedAt')
-      }
-      if (author.hideArticleDates) {
-        updateOnDuplicate.push('createdAt')
       }
       if (list !== undefined) {
         updateOnDuplicate.push('list')

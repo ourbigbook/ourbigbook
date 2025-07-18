@@ -7256,6 +7256,9 @@ and the second one to uppercasing the reference to the image title:
 = Template project
 {synonym}
 
+= Template repo
+{synonym}
+
 The project templates are simple ourbigbook project directories that serve as good starting point for new ourbigbook projects.
 
 They also contain useful examples of <OurBigBook Markup> usage to help users get started quickly.
@@ -9512,6 +9515,20 @@ The <site settings page> contains global site settings that apply to the entire 
 Its values can be viewed by all users, but only <admins> can modify their values.
 
 The page can be reached via the "Site Settings" button at the bottom of each index page e.g. https://ourbigbook.com[].
+
+= OurBigBook Web user settings
+{parent=OurBigBook Web user manual}
+
+= OurBigBook Web hide article dates
+{parent=OurBigBook Web user manual}
+
+By default, when you publish on <OurBigBook Web>, either via the <web editor> or via <Web upload> from the command line, the server will store and display the date at which articles were created and updated.
+
+To prevent that, you can set the "Hide article dates" user option, which prevents storage of such information on the database entirely.
+
+This makes <OurBigBook Web> behave a little more like <static websites>, where the publish date is only shown if you explicitly set it for the article with the <H created argument> or <H updated argument>.
+
+When articles are created or updated with this option is selected, articles created will always appear last when listing articles by newest or latest.
 
 = OurBigBook Web moderation
 {parent=OurBigBook Web user manual}

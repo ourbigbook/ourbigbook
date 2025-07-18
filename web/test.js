@@ -4731,35 +4731,33 @@ it('api: hideArticleDates', async () => {
     const user = await test.createUserApi(0)
     test.loginUser(user)
 
-    // New articles created with hideArticleDates=false don't have the dummy date.
+    // New articles created with hideArticleDates=false don't have empty date.
     article = createArticleArg({ i: 0, titleSource: 'Before' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
-    assertStatus(status, data)
-    assert.notStrictEqual(data.articles[0].createdAt, config.hideArticleDatesDate)
-    assert.notStrictEqual(data.articles[0].updatedAt, config.hideArticleDatesDate)
+    ;({data, status} = await test.webApi.article('user0/before'))
+    console.log(`data.createdAt: ${require('util').inspect(data.createdAt, { depth: null })}`)
+    assert.notStrictEqual(data.createdAt, undefined)
+    assert.notStrictEqual(data.updatedAt, undefined)
 
     // Set hideArticleDates to true.
     ;({data, status} = await test.webApi.userUpdate('user0', {
       hideArticleDates: true,
     }))
 
-    // New articles created after hideArticleDates=true have the dummy date.
+    // New articles created after hideArticleDates=true have empty date.
     article = createArticleArg({ i: 0, titleSource: 'After' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
-    assertStatus(status, data)
-    assert.strictEqual(data.articles[0].createdAt, config.hideArticleDatesDate)
-    assert.strictEqual(data.articles[0].updatedAt, config.hideArticleDatesDate)
+    ;({data, status} = await test.webApi.article('user0/after'))
+    assert.strictEqual(data.createdAt, undefined)
+    assert.strictEqual(data.updatedAt, undefined)
 
-    // Updates change the createdAt and updatedAt dates of existing articles.
+    // Updates hide the updatedAt date of existing articles.
     article = createArticleArg({ i: 0, titleSource: 'Before' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
-    assertStatus(status, data)
-    // TODO would be slightly better if this were also reset. However it appears
-    // that bulkCreate doesn't set createdAt even if if is passed explicitly on
-    // updateOnDuplicate.
-    assert.notStrictEqual(data.articles[0].createdAt, config.hideArticleDatesDate)
-    assert.strictEqual(data.articles[0].updatedAt, config.hideArticleDatesDate)
-  })
+    ;({data, status} = await test.webApi.article('user0/before'))
+    assert.notStrictEqual(data.createdAt, undefined)
+    assert.strictEqual(data.updatedAt, undefined)
+  }, { defaultExpectStatus: 200 })
 })
 
 it('api: editor/fetch-files', async () => {

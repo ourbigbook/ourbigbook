@@ -1018,7 +1018,7 @@ Reasonable results can already be obtained with:
 ]]
 The main issue with that is the possibly changing `_raw/js/matterjs/examples.html` path depending on scopes, and it is also not very nice to have to write `_raw` explicitly.
 
-Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on thes paths.
+Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on these paths.
 
 == Closed issues
 

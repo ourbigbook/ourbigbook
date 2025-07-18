@@ -104,11 +104,40 @@ $footer-color: $color;
   }
 }
 
-@mixin file-icon {
+// Icons
+
+@mixin icon {
   color: $color;
+  font-size: $icon-font-size;
+}
+
+@mixin directory-icon {
+  @include icon;
   font-family: "fa-solid-900";
   font-weight: 900;
-  font-size: $icon-font-size;
+  // folder open https://fontawesome.com/icons/folder-open?f=classic&s=regular
+  content: "\f07c";
+}
+.directory-icon {
+  &::before {
+    @include directory-icon;
+  }
+}
+
+.edit-icon {
+  &::before {
+    @include icon;
+    font-family: "fa-solid-900";
+    font-weight: 900;
+    // pen to square https://fontawesome.com/icons/pen-to-square?f=classic&s=solid
+    content: "\f044";
+  }
+}
+
+@mixin file-icon {
+  @include icon;
+  font-family: "fa-solid-900";
+  font-weight: 900;
   // up arrow https://fontawesome.com/v5/icons/file?f=classic&s=solid
   content: "\f15b";
 }
@@ -118,17 +147,23 @@ $footer-color: $color;
   }
 }
 
-@mixin directory-icon {
-  color: $color;
-  font-family: "fa-solid-900";
-  font-weight: 900;
-  font-size: $icon-font-size;
-  // folder open https://fontawesome.com/icons/folder-open?f=classic&s=regular
-  content: "\f07c";
-}
-.directory-icon {
+.new-article-icon {
   &::before {
-    @include directory-icon;
+    @include icon;
+    font-family: "fa-solid-900";
+    font-weight: 900;
+    // plus https://fontawesome.com/icons/plus?f=classic&s=solid
+    content: "\2b";
+  }
+}
+
+.time-icon {
+  &::before {
+    @include icon;
+    font-family: "fa-regular-400";
+    font-weight: 900;
+    // clock https://fontawesome.com/icons/clock?f=classic&s=solid
+    content: "\f017";
   }
 }
 
@@ -328,6 +363,30 @@ $toc-arrow-width: 0.7em;
     // For on-hover links.
     // https://stackoverflow.com/questions/10487292/position-absolute-but-relative-to-parent
     position: relative;
+  }
+}
+
+span.pill {
+  border-radius: 0.8em;
+  border: 1px solid $color-discreet;
+  display: inline-block;
+  font-weight: bold;
+  line-height: 1em;
+  padding: 0.2em 0.5em;
+  white-space: pre;
+  a {
+    color: $color;
+  }
+}
+
+@media only screen and (max-width: $max-mobile-width) {
+  .mobile-hide {
+    display: none;
+  }
+}
+@media only screen and (min-width: $max-mobile-width + 1) {
+  .desktop-hide {
+    display: none;
   }
 }
 

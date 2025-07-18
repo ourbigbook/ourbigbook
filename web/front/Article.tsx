@@ -208,12 +208,17 @@ function WebMeta({
     mySlug = `${loggedInUser.username}/${curArticle.topicId}`
   }
   return <>
-    {(toplevel && hasArticlesInSamePage) &&
-      <>
-        <a href={'#' + Macro.TOC_ID} className={TOC_LINK_ELEM_CLASS_NAME} />
-        {' '}
-      </>
-    }
+    {toplevel && <>
+      {' '}
+      <ArticleCreatedUpdatedPills article={article} />
+      {article.list === false &&
+        <>
+          {' '}
+          <span className="pill"><a href={`${docsUrl}/ourbigbook-web-unlisted-articles`}><UnlistedIcon /> Unlisted</a></span>
+        </>
+      }
+      {' '}
+    </>}
     <LikeArticleButton {...{
       article: curArticle,
       issueArticle,
@@ -232,16 +237,12 @@ function WebMeta({
       <a className="issues btn" href={routes.articleIssues(curArticle.slug)} title="Discussions">
         <DiscussionIcon title={null} /> {curArticle.issueCount}{toplevel ? ' Discussions' : ''}</a>
     </>}
-    {toplevel && <>
-      {' '}
-      <ArticleCreatedUpdatedPills article={article} />
-      {article.list === false &&
-        <>
-          {' '}
-          <span className="pill"><a href={`${docsUrl}/ourbigbook-web-unlisted-articles`}><UnlistedIcon /> Unlisted</a></span>
-        </>
-      }
-    </>}
+    {(toplevel && hasArticlesInSamePage) &&
+      <>
+        {' '}
+        <a href={'#' + Macro.TOC_ID} className={TOC_LINK_ELEM_CLASS_NAME} />
+      </>
+    }
     {canEdit &&
       <>
         {' '}

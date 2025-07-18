@@ -14,10 +14,10 @@ import {
 } from 'front'
 import { getCommentSlug } from 'front/js'
 import { articleLimit } from 'front/config'
-import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import ShowBody from 'front/ShowBody'
 
+import { formatDate } from 'ourbigbook'
 import { encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
 
 import { CommentType } from 'front/types/CommentType'

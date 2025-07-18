@@ -10,6 +10,7 @@ import ourbigbook, {
   INCOMING_LINKS_MARKER,
   TAGS_MARKER,
   URL_SEP,
+  htmlCreatedUpdatedPills,
 } from 'ourbigbook'
 
 import { webApi } from 'front/api'
@@ -20,7 +21,6 @@ import {
 } from 'front/config'
 import { AUTH_COOKIE_NAME } from 'front/js'
 import CustomLink from 'front/CustomLink'
-import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { UserLinkWithImageInner } from 'front/UserLinkWithImage'
@@ -225,7 +225,7 @@ export function DiscussionIcon(opts) {
 }
 
 export function EditArticleIcon(opts) {
-  return FontAwesomeIcon(0xf044, { opts, title: "Edit" })
+  return FontAwesomeIcon(undefined, { opts, clsExtra: ['edit-icon'], title: "Edit" })
 }
 
 export function ErrorIcon(opts) {
@@ -278,22 +278,16 @@ export function MoreIcon(opts) {
   return FontAwesomeIcon(0xf05a, { opts, title: "More" })
 }
 
-let logging = false
 export function NewArticleIcon(opts) {
-  logging = true
-  const ret = FontAwesomeIcon(0x2b, { opts, title: "New" })
-  logging = false
-  return ret
+  return FontAwesomeIcon(undefined, { opts, clsExtra: ['new-article-icon'], title: "New" })
 }
 
 export function OkIcon(opts) {
   return FontAwesomeIcon(0xf00c, { clsExtra: ['icon-ok'], opts, title: "Submit" })
-  
 }
 
 export function PinnedArticleIcon(opts) {
   return FontAwesomeIcon(0xf08d, { opts, title: "Pin" })
-  
 }
 
 export function SeeIcon(opts) {
@@ -318,7 +312,7 @@ export function TagIcon() {
 }
 
 export function TimeIcon(opts) {
-  return FontAwesomeIcon(0xf017, { cls: 'fa-regular-400'})
+  return FontAwesomeIcon(undefined, { cls: 'time-icon'})
 }
 
 export function TopicIcon(opts) {
@@ -694,35 +688,13 @@ export function MyHead({ title }) {
 }
 
 export function ArticleCreatedUpdatedPills({ article }) {
-  return <>
-    <span className="pill" title="Last updated">
-      <TimeIcon />
-      {' '}
-      {article.createdAt !== article.updatedAt && <>
-        <span className="desktop-hide"><EditArticleIcon /></span>
-        <span className="mobile-hide">Updated</span>
-        {' '}
-      </>}
-      <span className="article-dates">
-        {formatDate(article.updatedAt)}
-      </span>
-    </span>
-    {article.createdAt !== article.updatedAt &&
-      <>
-        {' '}
-        <span className="pill" title="Created">
-          <TimeIcon />
-          {' '}
-          <span className="desktop-hide"><NewArticleIcon /></span>
-          <span className="mobile-hide">Created</span>
-          {' '}
-          <span className="article-dates">
-            {formatDate(article.createdAt)}
-          </span>
-        </span>
-      </>
-    }
-  </>
+  return <span dangerouslySetInnerHTML={{ __html:
+    htmlCreatedUpdatedPills({
+      createdAt: article.createdAt,
+      space: true,
+      updatedAt: article.updatedAt,
+    })
+  }}/>
 }
 
 export async function getRecaptchaToken() : Promise<string|undefined> {

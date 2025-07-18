@@ -1232,6 +1232,10 @@ class MacroArgument {
     if (!('count_words' in options)) {
       options.count_words = false;
     }
+    if (!('date' in options)) {
+      // https://docs.ourbigbook.com#date-argument
+      options.date = false
+    }
     if (!('default' in options)) {
       // https://docs.ourbigbook.com#boolean-named-arguments
       options.default = undefined;
@@ -1276,6 +1280,7 @@ class MacroArgument {
     this.boolean = options.boolean
     this.cannotContain = options.cannotContain
     this.count_words = options.count_words
+    this.date = options.date
     this.default = options.default
     this.disabled = options.disabled
     this.elide_link_only = options.elide_link_only
@@ -2843,7 +2848,7 @@ function calculateId(
         if (skip_scope) {
           scope = new_context.options.ref_prefix
         } else if (ast.scope !== undefined) {
-          scope = ast.scope 
+          scope = ast.scope
         }
         if (scope) {
           id = scope + Macro.HEADER_SCOPE_SEPARATOR + id
@@ -3909,7 +3914,7 @@ function convertInitContext(options={}, extra_returns={}) {
     // Plaintexts for which we want to check if topic IDs exists
     automaticTopicLinkPlaintexts: [],
     // Topic Ids of interest that we have checked do exist
-    automaticTopicLinkIds: new Set(), 
+    automaticTopicLinkIds: new Set(),
     katex_macros: { ...options.katex_macros },
     in_split_headers: false,
     in_parse: false,
@@ -4103,6 +4108,17 @@ function forceLastWordReplace(text, forceLastWord) {
   }
   return text
 }
+
+const zeroPad = (num, places) => String(num).padStart(places, '0')
+/**
+ * @param {string} dateString - any string that new Date() likes.
+ * @return {string} - YYYY-MM-DD
+ */
+function formatDate(dateString) {
+  const date = new Date(dateString)
+  return `${date.getFullYear()}-${zeroPad(date.getMonth() + 1, 2)}-${zeroPad(date.getDate(), 2)}`
+}
+exports.formatDate = formatDate
 
 // https://stackoverflow.com/questions/9461621/format-a-number-as-2-5k-if-a-thousand-or-more-otherwise-900
 const FORMAT_NUMBER_APPROX_MAP = [
@@ -4456,6 +4472,52 @@ function htmlClassesAttr(classes) {
     return ''
   }
 }
+
+/** @param opts
+ *    createdAt: String of format (new Date(argString)).toISOString()
+ *    updatedAt: String of format (new Date(argString)).toISOString()
+ */
+function htmlCreatedUpdatedPills({
+  createdAt,
+  space,
+  updatedAt
+}) {
+  if (space === undefined) {
+    space = false
+  }
+  let ret = ''
+  if (updatedAt !== undefined) {
+    ret += `<span class="pill" title="Last updated">`
+    ret += '<span class="time-icon"></span>'
+    ret += ' '
+    if (createdAt !== updatedAt) {
+      ret += '<span class="desktop-hide edit-icon"></span>'
+      ret += '<span class="mobile-hide">Updated</span>'
+      ret += ' '
+    }
+    ret += `<span>${formatDate(updatedAt)}</span>`
+    ret += `</span>`
+  }
+  if (
+    createdAt !== undefined &&
+    createdAt !== updatedAt
+  ) {
+    ret +=
+      ((space && updatedAt !== undefined) ? ' ' : '') +
+      '<span class="pill" title="Created">' +
+        '<span class="time-icon"></span>' +
+        ' '
+    if (updatedAt !== undefined) {
+      ret += '<span class="desktop-hide new-article-icon"></span>' +
+        '<span class="mobile-hide">Created</span>' +
+        ' '
+    }
+    ret += `<span>${formatDate(createdAt)}</span>` +
+      '</span>'
+  }
+  return ret
+}
+exports.htmlCreatedUpdatedPills = htmlCreatedUpdatedPills
 
 function htmlCode(content, attrs) {
   return htmlElem('pre', htmlElem('code', content), attrs);
@@ -8003,6 +8065,21 @@ function validateAst(ast, context) {
           break;
         }
       }
+      if (macro_arg.date) {
+        const argString = renderArgNoescape(arg, cloneAndSet(context, 'id_conversion', true));
+        let dateString
+        try {
+          dateString = (new Date(argString)).toISOString()
+        } catch(error) {
+          dateString = argString
+          ast.validation_error = [
+            `argument "${argname}" of macro "${ast.macro_name}" must be a valid date https://docs.ourbigbook.com#date-argument got: ${argString}`,
+            arg.source_location
+          ];
+          break;
+        }
+        ast.validation_output[argname].date = dateString
+      }
     }
   }
 }
@@ -10575,6 +10652,18 @@ const OUTPUT_FORMATS_LIST = [
             }
           }
           if (first_header) {
+            if (
+              !context.options.webMode &&
+              (
+                ast.validation_output.created.given ||
+                ast.validation_output.updated.given
+              )
+            ) {
+              header_meta.push(htmlCreatedUpdatedPills({
+                createdAt: ast.validation_output.created.given ? ast.validation_output.created.date : undefined,
+                updatedAt: ast.validation_output.updated.given ? ast.validation_output.updated.date : undefined,
+              }))
+            }
             if (checkHasToc(context)) {
               header_meta.push(`<a${htmlAttr('href', `#${context.options.tocIdPrefix}${Macro.TOC_ID}`)} class="${TOC_LINK_ELEM_CLASS_NAME}"></a>`);
             }

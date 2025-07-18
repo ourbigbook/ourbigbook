@@ -7622,6 +7622,15 @@ assert_lib_ast('header: home article can have empty id',
     input_path_noext: 'index',
   }
 )
+assert_lib_error('header: invalid date argument fails gracefully',
+  `= My home
+{created=asdf}
+`,
+  2, 1, 'index.bigb',
+  {
+    input_path_noext: 'index',
+  }
+)
 
 // Word counts.
 assert_lib_ast('word count simple',

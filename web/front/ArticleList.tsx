@@ -25,7 +25,6 @@ import {
 import {
   articleLimit,
 } from 'front/config'
-import { formatDate } from 'front/date'
 import routes from 'front/routes'
 import { ArticleType } from 'front/types/ArticleType'
 import { ItemBody } from 'front/ItemBody'
@@ -37,6 +36,7 @@ import { encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web
 import {
   AT_MENTION_CHAR,
   UNICODE_SEARCH_CHAR,
+  formatDate,
 } from 'ourbigbook'
 import {
   USER_FINISHED_TYPING_MS

@@ -236,6 +236,7 @@ Link to topic: <#mathematics>
       ['Test data with title2', [], { body: `{title2=My title 2}` }],
       ['Test data with math on title $\\frac{1}{\\sqrt{2}}$', []],
       ['Test data with code on title `int main() { return 0; }`', []],
+      ['Test data with date', [], { body: `{created=2000-01-02}\n{updated=2010-03-04}\n` }],
       ['File links', [], { body: `\`\\a\` to file: \\a[test/subdir/myfile.txt]
 
 \`\\a\` to directory: \\a[test/subdir]

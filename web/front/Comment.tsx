@@ -1,6 +1,7 @@
 import React from 'react'
 import { useRouter } from 'next/router'
-import Link from 'next/link'
+
+import { formatDate } from 'ourbigbook'
 
 import { CommentIcon, DeleteIcon, TimeIcon } from 'front'
 import { getCommentSlug } from 'front/js'
@@ -9,7 +10,6 @@ import { webApi } from 'front/api'
 import config from 'front/config'
 import CustomLink from 'front/CustomLink'
 import { cant } from 'front/cant'
-import { formatDate } from 'front/date'
 import { ItemBody } from 'front/ItemBody'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import routes from 'front/routes'

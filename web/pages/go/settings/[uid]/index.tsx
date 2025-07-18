@@ -348,7 +348,6 @@ export default Settings;
 
 import { getLoggedInUser } from 'back'
 import { cant } from 'front/cant'
-import { formatDate } from 'front/date'
 
 export async function getServerSideProps(context) {
   const { params: { uid }, req, res } = context

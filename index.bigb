@@ -1861,6 +1861,16 @@ The header `child` syntax is generally preferred because at some point while edi
 
 The <\H tag argument> does the same as the <\x child argument> but in the opposite direction.
 
+= `\H` `created` argument
+{parent=H arguments}
+{tag=Date argument}
+
+Date at which the content of this section was originally published.
+
+This argument currently does not affect <OurBigBook Web>: https://github.com/ourbigbook/ourbigbook/issues/203
+
+See also: <H updated argument>.
+
 = `\H` `file` argument
 {parent=H arguments}
 
@@ -2979,6 +2989,16 @@ dog.bigb
 Or in other words: <the toplevel header> of each source file gets `{toplevel}` set implicitly for it by default.
 
 This design choice might change some day. Arguably, the most awesome setup is on in which source files and outputs are completely decoupled. <OurBigBook Web> also essentially wants this, as ideally we want to store one source per header there in each DB entry. We shall see.
+
+= `\H` `updated` argument
+{parent=H arguments}
+{tag=Date argument}
+
+Date at which the content of this section was last modified.
+
+This argument currently does not affect <OurBigBook Web>: https://github.com/ourbigbook/ourbigbook/issues/203
+
+See also: <H created argument>.
 
 = `\H` `wiki` argument
 {parent=H arguments}
@@ -5933,6 +5953,11 @@ The `full=0` version is useful in the case of reference targets that unlike <hea
 \OurBigBookExample[[\x[boolean-argument]{full=1}]]
 
 The name "boolean argument" is given by analogy to the https://stackoverflow.com/questions/16109358/what-is-the-correct-readonly-attribute-syntax-for-input-text-elements/24588427#24588427["boolean attribute" concept in HTML5].
+
+= Date argument
+{parent=Macro argument type}
+
+The value of this argument must be a valid date string as accepted by JavaScript `new Date()` e.g. 2000-01-02.
 
 = Positive nonzero integer argument
 {parent=Macro argument type}

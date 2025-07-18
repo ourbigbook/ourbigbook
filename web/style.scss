@@ -53,16 +53,6 @@ div.main {
 
 flex: 1 0 auto;
 overflow: auto;
-@media only screen and (max-width: $max-mobile-width) {
-  .mobile-hide {
-    display: none;
-  }
-}
-@media only screen and (min-width: $max-mobile-width + 1) {
-  .desktop-hide {
-    display: none;
-  }
-}
 
 a {
   span.meta {
@@ -364,19 +354,6 @@ h1, h2, h3, h4, h5, h6,
   }
 }
 
-span.pill {
-  border-radius: 0.8em;
-  border: 1px solid $color-discreet;
-  display: inline-block;
-  font-weight: bold;
-  line-height: 1em;
-  padding: 0.2em 0.5em;
-  white-space: pre;
-  a {
-    color: $color;
-  }
-}
-
 // For elements that are injected into the rendered OurBigBook HTML.
 .ourbigbook {
   .web {
@@ -442,9 +419,6 @@ div.article-page {
       margin-bottom: 10px;
       button, a.btn {
         margin-right: 3px;
-      }
-      span.article-dates {
-        font-weight: bold;
       }
     }
   }

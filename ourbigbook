@@ -1664,6 +1664,7 @@ if (cli.helpMacros) {
       }
     },
     render: cli.render,
+    showSplitOnToc: ourbigbook_json.showSplitOnToc,
     split_headers: split_headers,
     template_vars: {
       publishTargetIsWebsite: false,

@@ -7459,6 +7459,7 @@ function renderTocFromEntryList({
   entry_list,
   descendant_count_html,
   hasSearch,
+  showSplitOnToc,
   tocHasSelflinks,
   tocIdPrefix,
 }) {
@@ -7468,6 +7469,9 @@ function renderTocFromEntryList({
   }
   if (hasSearch === undefined) {
     hasSearch = true
+  }
+  if (showSplitOnToc === undefined) {
+    showSplitOnToc = false
   }
   if (tocHasSelflinks === undefined) {
     // There is currently no code that sets this to true. Previously it was fixed at true,
@@ -7532,7 +7536,7 @@ function renderTocFromEntryList({
       // c for current
       ret += `<a${toc_href}${htmlAttr('class', 'c')}></a>`
     }
-    if (link_to_split) {
+    if (showSplitOnToc && link_to_split) {
       ret += `${link_to_split}`;
     }
     if (parent_href) {
@@ -7642,10 +7646,11 @@ function renderToc(context) {
     entry_list.push(entry)
   }
   return renderTocFromEntryList({
-    context,
-    entry_list,
-    descendant_count_html,
     add_test_instrumentation: context.options.add_test_instrumentation,
+    context,
+    descendant_count_html,
+    entry_list,
+    showSplitOnToc: context.options.showSplitOnToc,
     tocIdPrefix: context.options.tocIdPrefix,
   })
 }
@@ -8828,6 +8833,7 @@ const OPTION_DEFAULTS = {
   // If true, this means that this is a ourbigbook --publish run rather
   // than a regular development compilation.
   publish: false,
+  showSplitOnToc: false,
 }
 const OURBIGBOOK_JSON_DEFAULT = {
   dontIgnore: [],
@@ -9395,6 +9401,10 @@ const DEFAULT_MACRO_LIST = [
           disabled: true,
         }),
         new MacroArgument({
+          name: 'created',
+          date: true,
+        }),
+        new MacroArgument({
           name: 'file',
         }),
         new MacroArgument({
@@ -9437,6 +9447,10 @@ const DEFAULT_MACRO_LIST = [
         new MacroArgument({
           name: Macro.TITLE2_ARGUMENT_NAME,
           multiple: true,
+        }),
+        new MacroArgument({
+          name: 'updated',
+          date: true,
         }),
         // Should I?
         //new MacroArgument({

@@ -15,6 +15,7 @@ const commander = require('commander');
 const is_installed_globally = require('is-installed-globally');
 const readCb = require('read');
 const { Liquid } = require('liquidjs');
+const lodash = require('lodash')
 const { DataTypes, Op, Sequelize } = require('sequelize')
 
 const ourbigbook = require('ourbigbook');
@@ -1819,7 +1820,8 @@ if (cli.helpMacros) {
     cli,
     db_options: {},
     dont_ignore_path_regexps: options.ourbigbook_json.dontIgnore.map(p => RegExp(`^${p}$`)),
-    dont_ignore_convert_path_regexps: options.ourbigbook_json.dontIgnoreConvert.map(p => RegExp(`^${p}($|${path.sep})`)),
+    dont_ignore_convert_path_regexps: options.ourbigbook_json.dontIgnoreConvert.map(p => RegExp(
+      `^${p}($|${lodash.escapeRegExp(path.sep)})`)),
     file_rows_dict: {},
     encoding: ourbigbook_nodejs_webpack_safe.ENCODING,
     external_css_and_js: false,
@@ -1827,8 +1829,10 @@ if (cli.helpMacros) {
       aRef => !fs.existsSync(path.join(ourbigbook_json_dir, aRef.to))),
     had_error: false,
     is_render_after_extract: false,
-    ignore_path_regexps: options.ourbigbook_json.ignore.map(p => RegExp(`^${p}($|${path.sep})`)),
-    ignore_convert_path_regexps: options.ourbigbook_json.ignoreConvert.map(p => RegExp(`^${p}($|${path.sep})`)),
+    ignore_path_regexps: options.ourbigbook_json.ignore.map(p => RegExp(
+      `^${p}($|${lodash.escapeRegExp(path.sep)})`)),
+    ignore_convert_path_regexps: options.ourbigbook_json.ignoreConvert.map(p => RegExp(
+      `^${p}($|${lodash.escapeRegExp(path.sep)})`)),
     ignore_paths: new Set(),
     input_path_is_file,
     log: nonOurbigbookOptions_log,

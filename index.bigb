@@ -10589,13 +10589,13 @@ select "Article"."updatedAt" from "Article" inner join "File" on "Article"."file
 = OurBigBook Web email sending
 {parent=OurBigBook Web deployment}
 
-OurBigBook is currently hardcoded to send emails with Sendgrid. That provider was very easy to get started with, and has a free plan suitable for testing. Setup is described at: <OurBigBook Web email sending with Sendgrid>. Patches supporting other providers in a configurable way are welcome.
+To send emails, you have to set the environment variable `OURBIGBOOK_SEND_EMAIL` to select which provider you want to use:
+``
+OURBIGBOOK_SEND_EMAIL=cloudmailin
+``
+and then use provider specific variables for each provider documented under <OurBigBook Web email sending with>{full}.
 
-In development mode, emails are all logged to the server stdout and not actually sent, unless you run as:
-``
-OURBIGBOOK_SEND_EMAIL=1 npm run dev
-``
-This can be used to test the email integration locally.
+This setup can be used to test the email integration locally.
 
 Some research of different methods is shown at: https://cirosantilli.com/send-free-emails-from-heroku
 
@@ -10610,8 +10610,54 @@ Related configurations:
   ``
   to the domain, which Google marked as verified. Let's see if helps.
 
-= OurBigBook Web email sending with Sendgrid
+= web/bin/send-email
+{parent=OurBigBook Web deployment}
+{tag=Web CLI utils}
+
+This utilit serves as a quick test to check if email sending is working, without you having to click a bunch of buttons on the web UI such as creating a new user:
+``
+cd web
+OURBIGBOOK_SEND_EMAIL=ses \
+    OURBIGBOOK_SEND_EMAIL_SES_REGION=us-east-1 \
+    OURBIGBOOK_SEND_EMAIL_SES_USERNAME=access-key \
+    OURBIGBOOK_SEND_EMAIL_SES_API_KEY=secret-access-key \
+    bin/send-email user@mail.com 'My subject' 'My body'
+``
+
+= OurBigBook Web email sending with
 {parent=OurBigBook Web email sending}
+
+= OurBigBook Web email sending with AWS SES
+{parent=OurBigBook Web email sending with}
+
+``
+OURBIGBOOK_SEND_EMAIL=ses \
+    OURBIGBOOK_SEND_EMAIL_SES_REGION=us-east-1 \
+    OURBIGBOOK_SEND_EMAIL_SES_USERNAME=access-key \
+    OURBIGBOOK_SEND_EMAIL_SES_API_KEY=secret-access-key \
+    npm run dev
+``
+
+= OurBigBook Web email sending with cloudmailin
+{parent=OurBigBook Web email sending with}
+
+This is the current method used on <OurBigBook.com>.
+
+We set them up as a Heroku plugin, and the login into cloudmailin is done through heroku.
+
+Username and API keys are the same as the SMTP values.
+
+You need to setup a domain to take the account out of test mode.
+
+TODO failed to do that with:
+``
+Domain has already been taken
+Mta domain has already been taken
+``
+when we input `ourbigbook.com`.
+
+= OurBigBook Web email sending with Sendgrid
+{parent=OurBigBook Web email sending with}
 
 * ensure that you have a working email address in the hosted domain such as `notification@ourbigbook.com`. E.g. on our <custom domain name setup> with Porkbun. We achieved this by redirecting `notification@ourbigbook.com` to your personal email initially.
 * create a Sendgrid account
@@ -10625,15 +10671,15 @@ Related configurations:
 * integrate using web API
   * create an API key, and then save it on Heroku:
     ``
-    heroku config:set -a ourbigbook SENDGRID_API_KEY=thekey
+    heroku config:set -a ourbigbook OURBIGBOOK_SEND_EMAIL_SENDGRID_API_KEY=thekey
     ``
     Also set it locally to be able to test email sending integration locally:
     ``
-    echo ourbigbook SENDGRID_API_KEY=thekey >> web/.env
+    echo ourbigbook OURBIGBOOK_SEND_EMAIL_SENDGRID_API_KEY=thekey >> web/.env
     ``
     Then, to verify that the email sending is actually working run;
     ``
-    env $(cat .env | xargs) OURBIGBOOK_SEND_EMAIL=1 npm run dev
+    env $(cat .env | xargs) OURBIGBOOK_SEND_EMAIL=cloudmailin npm run dev
     ``
     and try to register some of your real emails. You should actually receive the email at this step. The email appears as sent from:
     ``

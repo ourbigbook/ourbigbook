@@ -97,6 +97,8 @@ module.exports = {
   defaultUserScoreTitle: 'Sum of likes of all articles authored by user',
   // Pretend all requests come from this IP during development.
   devIp: process.env.OURBIGBOOK_DEV_IP,
+  emailFromEmail: 'noreply@ourbigbook.com',
+  emailFromName: 'OurBigBook.com',
   // Reserved username to have URLs like /username/my-article and /view/editor/my-article.
   escapeUsername,
   /** @type {boolean | 'blocking'} */

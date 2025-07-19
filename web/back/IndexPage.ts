@@ -110,7 +110,7 @@ export const getServerSidePropsIndexHoc = ({
               sequelize,
             })
             articles = await Promise.all(articlesAndCounts.rows.map(
-              (article) => {return article.toJson(loggedInUser) }))
+              (article) => { return article.toJson(loggedInUser) }))
             articlesCount = articlesAndCounts.count
             break
           default:

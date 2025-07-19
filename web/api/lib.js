@@ -5,6 +5,8 @@
 // immediately and return an error from subcalls.
 
 const pluralize = require('pluralize')
+const nodemailer = require("nodemailer");
+const { SESv2Client, SendEmailCommand } = require('@aws-sdk/client-sesv2')
 
 const config = require('../front/config')
 const front = require('../front/js')
@@ -199,38 +201,90 @@ function parseDataUriBase64(s) {
   return [contentType, Buffer.from(content, 'base64')]
 }
 
+let nodemailerTransport
+let cloudmailinClient
+if (process.env.OURBIGBOOK_SEND_EMAIL === 'cloudmailin') {
+  const { MessageClient } = require('cloudmailin')
+  cloudmailinClient = new MessageClient({
+    username: process.env.OURBIGBOOK_SEND_EMAIL_CLOUDMAILIN_USERNAME,
+    apiKey: process.env.OURBIGBOOK_SEND_EMAIL_CLOUDMAILIN_API_KEY,
+  })
+} else if (process.env.OURBIGBOOK_SEND_EMAIL === 'ses') {
+  nodemailerTransport = nodemailer.createTransport({
+    SES: {
+      sesClient:
+        new SESv2Client({
+          region: process.env.OURBIGBOOK_SEND_EMAIL_SES_REGION,
+            credentials: {
+              accessKeyId: process.env.OURBIGBOOK_SEND_EMAIL_SES_USERNAME,
+              secretAccessKey: process.env.OURBIGBOOK_SEND_EMAIL_SES_API_KEY,
+            },
+        })
+      ,
+      SendEmailCommand,
+    },
+  })
+}
+
 async function sendEmail({
-  fromName='OurBigBook.com',
+  fromName=config.emailFromName,
   html,
   req,
   subject,
   text,
   to,
 }) {
-  const msg = {
-    to,
-    from: {
-      email: 'notification@ourbigbook.com',
-      name: fromName,
-    },
-    subject,
-    text,
-    html,
-  }
   if (config.isTest) {
-    req.app.get('emails').push(msg)
+    req.app.get('emails').push({
+      from: {
+        email: config.emailFromEmail,
+        name: fromName,
+      },
+      html,
+      subject,
+      text,
+      to,
+    })
   } else {
-    if (process.env.OURBIGBOOK_SEND_EMAIL === '1' || config.isProduction) {
-      const sgMail = require('@sendgrid/mail')
-      sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-      await sgMail.send(msg)
+    if (nodemailerTransport) {
+      await nodemailerTransport.sendMail({
+        from: `"${config.emailFromName}" <${config.emailFromEmail}>`,
+        to,
+        subject,
+        text,
+        html,
+      })
     } else {
-      console.log(`Email sent:
+      if (process.env.OURBIGBOOK_SEND_EMAIL === 'sendgrid') {
+        const sgMail = require('@sendgrid/mail')
+        sgMail.setApiKey(process.env.OURBIGBOOK_SEND_EMAIL_SENDGRID_API_KEY)
+        await sgMail.send({
+          to,
+          from: {
+            email: config.emailFromEmail,
+            name: fromName,
+          },
+          subject,
+          text,
+          html,
+        })
+      } else if (process.env.OURBIGBOOK_SEND_EMAIL === 'cloudmailin') {
+        const response = await cloudmailinClient.sendMessage({
+          to,
+          from: fromName,
+          plain: text,
+          html,
+          subject,
+        })
+        console.log(response)
+      } else {
+        console.log(`Email sent:
 to: ${to}
 fromName: ${fromName}
 subject: ${subject}
 text: ${text}
 html: ${html}`)
+      }
     }
   }
 }

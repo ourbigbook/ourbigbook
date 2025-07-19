@@ -4735,7 +4735,6 @@ it('api: hideArticleDates', async () => {
     article = createArticleArg({ i: 0, titleSource: 'Before' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     ;({data, status} = await test.webApi.article('user0/before'))
-    console.log(`data.createdAt: ${require('util').inspect(data.createdAt, { depth: null })}`)
     assert.notStrictEqual(data.createdAt, undefined)
     assert.notStrictEqual(data.updatedAt, undefined)
 

@@ -6235,6 +6235,11 @@ If the document ends one newline, it is ignored.
 
 If it is two or more, then that generates an error.
 
+= CRLF
+{parent=Macro argument}
+
+OurBigBook treats CRLF newlines exactly as LF, to help with Windows interoperability.
+
 = Escape characters
 {parent=Macro argument}
 
@@ -9027,8 +9032,14 @@ Observed render speedup on 1k small files from the <Wikipedia bot> and 8 cores: 
 This section lists versions at which the basic `npm install` followed by basic <template repo> conversion is known to work. Reports of other working systems are welcome and will be added here.
 
 * v0.9.35:
-  * Ubuntu: 25.04
-  * MacOS: 11, 15
+  * working:
+    * Ubuntu: 25.04
+    * MacOS: 11, 15
+  * broken:
+    * Windows 10: https://github.com/ourbigbook/ourbigbook/issues/373
+      ``
+      C:\Users\Quickemu\ourbigbook\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node is not a valid Win32 application
+      ``
 
 = OurBigBook Library
 {c}

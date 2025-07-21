@@ -1585,7 +1585,7 @@ class Tokenizer {
     start_line=1,
     input_path=undefined
   ) {
-    this.chars = Array.from(input_string);
+    this.chars = Array.from(input_string.replaceAll('\r\n', '\n'))
     this.cur_c = this.chars[0];
     this.source_location = new SourceLocation(start_line, 1, input_path);
     this.extra_returns = extra_returns;

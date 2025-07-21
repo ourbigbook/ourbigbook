@@ -858,6 +858,15 @@ function update_filesystem(filesystem, tmpdir) {
 // Empty document.
 assert_lib_ast('empty document', '', []);
 
+// Tokenizer
+assert_lib_ast('tokenizer: CRLF',
+  `p1\r\n\r\np2\r\n`,
+  [
+    a('P', [t('p1')]),
+    a('P', [t('p2')]),
+  ]
+)
+
 // Paragraphs.
 assert_lib_ast('p: one paragraph implicit no split headers', 'ab\n',
   [a('P', [t('ab')])],

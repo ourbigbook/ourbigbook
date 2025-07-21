@@ -1711,8 +1711,8 @@ LIMIT ${limit}` : ''}`}
     //`)
     if (!toc) {
       for (const row of rows) {
-        row.hasSameTopic = row.hasSameTopic === null ? false : true
-        row.liked = row.liked === null ? false : true
+        row.hasSameTopic = row.hasSameTopic ? true : false
+        row.liked = row.liked ? true : false
         row.author = {
           id: row['author.id'],
           username: row['author.username'],

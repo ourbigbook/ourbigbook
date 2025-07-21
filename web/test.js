@@ -376,6 +376,19 @@ it('Article.getArticlesInSamePage simple', async function test_Article__getArtic
     { slug: 'user0/title-0-0' },
   ])
 
+  // Logged off
+  rows = await Article.getArticlesInSamePage({
+    article,
+    getTagged: true,
+    loggedInUser: undefined,
+    sequelize,
+  })
+  assertRows(rows, [
+    { slug: 'user0/title-0-0',   topicCount: 1, issueCount: 0, hasSameTopic: false, liked: false },
+    { slug: 'user0/title-0-0-0', topicCount: 1, issueCount: 0, hasSameTopic: false, liked: false },
+    { slug: 'user0/title-0-1',   topicCount: 1, issueCount: 0, hasSameTopic: false, liked: false },
+  ])
+
   // Hidden articles don't show by default.
   await Article.update({ list: false }, { where: { slug: 'user0/title-0-0' } })
   article = await Article.getArticle({ sequelize, slug: 'user0/title-0' })

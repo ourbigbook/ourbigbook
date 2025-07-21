@@ -191,7 +191,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         loggedInUserJson,
         likes,
         unlistedArticles,
-        parentArticle,
+        parentArticleJson,
         totalArticlesByUser,
         totalCommentsByUser,
         totalDiscussionsByUser,
@@ -221,9 +221,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           ? Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false }))
           : {}
         ,
-        // parentArticle
+        // parentArticleJson
         (parentId !== undefined)
-          ? Article.getArticle({ slug: idToSlug(parentId), sequelize })
+          ? Article.getArticle({ slug: idToSlug(parentId), sequelize }).then(article => article ? article.toJson(loggedInUser) : null)
           : null
         ,
         // totalArticlesByUser
@@ -238,7 +238,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         cant.updateSiteSettings(loggedInUser) ? false : SignupBlacklistIp.findOne({ where: { ip: user.ip } }).then(ip => !!ip),
         updateNewScoreLastCheckPromise,
       ])
-      if (parentTopicIdString && !parentArticle) {
+      if (parentTopicIdString && !parentArticleJson) {
         return {
           notFound: true
         }
@@ -264,11 +264,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       if (loggedInUser) {
         props.loggedInUser = loggedInUserJson
       }
-      if (parentArticle) {
-        props.parentArticle = { 
-          slug: parentArticle.slug,
-          titleRenderWithScope: parentArticle.titleRenderWithScope,
-        }
+      if (parentArticleJson) {
+        props.parentArticle = parentArticleJson 
       }
       if (itemType === 'user') {
         props.users = await Promise.all(users.rows.map(user => user.toJson(loggedInUser)))

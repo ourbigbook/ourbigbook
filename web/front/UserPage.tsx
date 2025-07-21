@@ -76,7 +76,7 @@ export interface UserPageProps extends CommonPropsType {
   page: number;
   // For when listed articles are relative to another article,
   // e.g. tagged by, incoming links or children.
-  parentArticle?: ArticleLinkType;
+  parentArticle?: ArticleType;
   // Always false if its not admin querying.
   signupIpIsBlacklisted: boolean;
   synonymLinks?: ArticleLinkType[];
@@ -162,31 +162,48 @@ export default function UserPage({
 
   // title
   const displayAndUsername = displayAndUsernameText(user)
-  let title2
-  switch (what) {
-    case 'followed':
-      title2 = 'Newly followed by'
-      break;
-    case 'follows':
-      title2 = 'New follows'
-      break;
-    case 'liked':
-      title2 = `New received likes`
-      break;
-    case 'likes':
-    case 'likes-discussions':
-      title2 = `Newly liked ${pluralize(itemType)}`
-      break;
-    case 'followed-articles':
-    case 'followed-discussions':
-      title2 = `Newly followed ${pluralize(itemType)}`
-      break;
-    default:
-      if (itemType) {
-        title2 = `${orderToPageTitle(order)} ${pluralize(itemType)}`
-      }
+  let title
+  let parentArticlePref
+  if (parentArticle) {
+    switch (what) {
+      case 'user-child-articles':
+        parentArticlePref = 'Children'
+      break
+      case 'user-incoming-articles':
+        parentArticlePref = 'Incoming links'
+      break
+      case 'user-tagged-articles':
+        parentArticlePref = 'Tagged'
+      break
+    }
+    title = `${parentArticlePref} - ${parentArticle.titleSource} - ${displayAndUsername}`
+  } else {
+    let title2
+    switch (what) {
+      case 'followed':
+        title2 = 'Newly followed by'
+        break;
+      case 'follows':
+        title2 = 'New follows'
+        break;
+      case 'liked':
+        title2 = `New received likes`
+        break;
+      case 'likes':
+      case 'likes-discussions':
+        title2 = `Newly liked ${pluralize(itemType)}`
+        break;
+      case 'followed-articles':
+      case 'followed-discussions':
+        title2 = `Newly followed ${pluralize(itemType)}`
+        break;
+      default:
+        if (itemType) {
+          title2 = `${orderToPageTitle(order)} ${pluralize(itemType)}`
+        }
+    }
+    title = `${displayAndUsername} ${title2 ? ` - ${title2}` : ''}`
   }
-  const title = `${displayAndUsername} ${title2 ? ` - ${title2}` : ''}`
 
   const handleShortFragmentSkipOnce = React.useRef(false)
   if (router.isFallback) { return <LoadingSpinner />; }
@@ -249,11 +266,11 @@ export default function UserPage({
         {parentArticle
           ? <div className="parent-article">
               <h2>{
-                  what === 'user-child-articles' ? <><ChildrenIcon /> Children</> :
-                  what === 'user-incoming-articles' ? <><IncomingIcon /> Incoming links</> :
-                  what === 'user-tagged-articles' ? <><TagIcon /> Tagged</> :
+                  what === 'user-child-articles' ? <ChildrenIcon /> :
+                  what === 'user-incoming-articles' ? <IncomingIcon /> :
+                  what === 'user-tagged-articles' ? <TagIcon /> :
                   (() => { throw new Error("TODO shit's bugged") })()
-                }:
+                }{' '}{parentArticlePref}:
                 {' '}
                 <Link href={routes.article(parentArticle.slug)}>
                   <span

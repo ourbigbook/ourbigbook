@@ -4486,33 +4486,33 @@ function htmlCreatedUpdatedPills({
     space = false
   }
   let ret = ''
-  if (updatedAt !== undefined) {
-    ret += `<span class="pill" title="Last updated">`
+  if (createdAt !== undefined) {
+    ret += `<span class="pill" title="Created date">`
     ret += '<span class="time-icon"></span>'
     ret += ' '
     if (createdAt !== updatedAt) {
-      ret += '<span class="desktop-hide edit-icon"></span>'
-      ret += '<span class="mobile-hide">Updated</span>'
+      ret += '<span class="desktop-hide new-article-icon"></span>'
+      ret += '<span class="mobile-hide">Created</span>'
       ret += ' '
     }
-    ret += `<span>${formatDate(updatedAt)}</span>`
+    ret += `<span>${formatDate(createdAt)}</span>`
     ret += `</span>`
   }
   if (
-    createdAt !== undefined &&
-    createdAt !== updatedAt
+    updatedAt !== undefined &&
+    updatedAt !== createdAt
   ) {
     ret +=
-      ((space && updatedAt !== undefined) ? ' ' : '') +
-      '<span class="pill" title="Created">' +
+      ((space && createdAt !== undefined) ? ' ' : '') +
+      '<span class="pill" title="Updated at">' +
         '<span class="time-icon"></span>' +
         ' '
     if (updatedAt !== undefined) {
-      ret += '<span class="desktop-hide new-article-icon"></span>' +
-        '<span class="mobile-hide">Created</span>' +
+      ret += '<span class="desktop-hide edit-icon"></span>' +
+        '<span class="mobile-hide">Updated</span>' +
         ' '
     }
-    ret += `<span>${formatDate(createdAt)}</span>` +
+    ret += `<span>${formatDate(updatedAt)}</span>` +
       '</span>'
   }
   return ret

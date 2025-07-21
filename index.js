@@ -4417,7 +4417,9 @@ function headerCheckChildTagExists(ast, context, childrenOrTags, type) {
  * @return {string}
  * */
 function htmlAncestorLinks(entries, nAncestors, opts={}) {
-  let { addTestInstrumentation } = opts
+  let { addTestInstrumentation, addSpaceBeforeFirst } = opts
+  if (addSpaceBeforeFirst === undefined)
+    addSpaceBeforeFirst = false
   const ret = []
   let i = 0
   if (nAncestors > ANCESTORS_MAX) {
@@ -4431,7 +4433,7 @@ function htmlAncestorLinks(entries, nAncestors, opts={}) {
   for (const entry of entries) {
     ret.push(`<a${entry.href}` +
       `${addTestInstrumentation ? htmlAttr(Macro.TEST_DATA_HTML_PROP, i.toString()) : ''}` +
-      `>${i > 0 ? ' ' : ''}${entry.content}</a>`
+      `>${i > 0 || addSpaceBeforeFirst ? ' ' : ''}${entry.content}</a>`
     )
     i++
   }

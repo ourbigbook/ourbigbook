@@ -92,34 +92,31 @@ const ArticlePageHoc = (isIssue=false) => {
           `${article.titleSource} - ${displayAndUsernameText(author)}`
       } />
       <div className="article-page">
-        <div className="content-not-ourbigbook article-meta">
-          {isIssue && <DiscussionAbout article={issueArticle} span={true}/>}
-          <div className="article-info">
-            {isIssue &&
+        {isIssue &&
+          <div className="content-not-ourbigbook article-meta">
+            <DiscussionAbout article={issueArticle} span={true}/>
+            <div className="article-info">
               <span className="h2-nocolor inline">
                 #{article.number}
                 {' '}
               </span>
-            }
-            by
-            {' '}
-            <UserLinkWithImage user={author} showUsername={true} />
-            {isIssue &&
-              <>
-                {' '}
-                <CustomLink href={routes.articleIssues(issueArticle.slug)} className="btn"><DiscussionIcon /> See all ({issuesCount})</CustomLink>
-                {' '}
-                <CustomLink
-                  className="btn"
-                  href={routes.issueNew(issueArticle.slug)}
-                  updatePreviousPage={true}
-                >
-                  <NewArticleIcon /> New discussion
-                </CustomLink>
-              </>
-            }
+              {isIssue &&
+                <>
+                  {' '}
+                  <CustomLink href={routes.articleIssues(issueArticle.slug)} className="btn"><DiscussionIcon /> See all ({issuesCount})</CustomLink>
+                  {' '}
+                  <CustomLink
+                    className="btn"
+                    href={routes.issueNew(issueArticle.slug)}
+                    updatePreviousPage={true}
+                  >
+                    <NewArticleIcon /> New discussion
+                  </CustomLink>
+                </>
+              }
+            </div>
           </div>
-        </div>
+        }
         <div className="container page">
           <Article {...{
             ancestors,

@@ -1,5 +1,4 @@
 import React from 'react'
-import Link from 'next/link'
 import { createRoot } from 'react-dom/client'
 import { renderToString } from 'react-dom/server'
 import Router, { useRouter } from 'next/router'
@@ -80,6 +79,7 @@ import {
 //import { ourbigbook_runtime } from 'ourbigbook/ourbigbook_runtime.js';
 import { ourbigbook_runtime, toplevelMouseleave } from 'ourbigbook/dist/ourbigbook_runtime.js'
 import { encodeGetParams, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
+import UserLinkWithImage from 'front/UserLinkWithImage'
 import { ArticleType } from 'front/types/ArticleType'
 import { slugToTopic, uidTopicIdToSlug } from './js'
 import { formatDate } from './date'
@@ -209,7 +209,7 @@ function WebMeta({
   }
   return <>
     {toplevel && <>
-      {' '}
+      {isIssue && <><UserLinkWithImage user={article.author} showUsername={true} /> </>}
       <ArticleCreatedUpdatedPills article={article} />
       {article.list === false &&
         <>
@@ -903,12 +903,14 @@ export default function Article({
       const elem = h1RenderElem.querySelector(`.${H_ANCESTORS_CLASS}`)
       if (elem) {
         if (ancestors.length) {
-          elem.innerHTML = htmlAncestorLinks(
-            ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 0)).map(a => { return {
+          elem.innerHTML = renderToString(<UserLinkWithImage user={article.author} showUsername={true} />) +
+          htmlAncestorLinks(
+            ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 1)).map(a => { return {
               content: a.titleRender,
               href: ` href="${linkPref}${htmlEscapeAttr(a.slug)}"`,
             }}),
             ancestors.length,
+            { addSpaceBeforeFirst: true }
           )
         } else {
           elem.innerHTML = `<span><span>${renderToString(<HelpIcon />)} Ancestors will show here when the tree index is updated</span></span>`

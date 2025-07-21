@@ -20,6 +20,7 @@ const { DataTypes, Op, Sequelize } = require('sequelize')
 
 const ourbigbook = require('ourbigbook');
 const {
+  cssEscapeDoubleQuotedString,
   DIR_PREFIX,
   FILE_TYPE_FILE,
   FILE_TYPE_DIRECTORY,
@@ -475,7 +476,7 @@ async function convert_input(input, ourbigbook_options, nonOurbigbookOptions={})
     }
 
     for (const include of includes) {
-      includes_str += `@import "${include}";\n`;
+      includes_str += `@import "${cssEscapeDoubleQuotedString(include)}";\n`;
     }
     for (const script of scripts) {
       scripts_str += `<script src="${script}"></script>\n`

@@ -3007,6 +3007,17 @@ function closingToken(token) {
   throw new Error('token does not have a close: ' + token);
 }
 
+/**
+ * Escape a string so that it can be safely placed in a CSS double quoted string.
+ * As documented at: https://developer.mozilla.org/en-US/docs/Web/CSS/string
+ * In particular, this is necessary for Windows, which uses \ as a path separator,
+ * which needs escaping.
+ */
+function cssEscapeDoubleQuotedString(s) {
+  return s.replaceAll('\\', '\\\\').replaceAll('"', '\\"')
+}
+exports.cssEscapeDoubleQuotedString = cssEscapeDoubleQuotedString
+
 function decapitalizeFirstLetter(string) {
   return string.charAt(0).toLowerCase() + string.slice(1);
 }

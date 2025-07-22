@@ -22,7 +22,7 @@ npx ourbigbook .
 firefox _out/html/index.html
 firefox _out/html/not-index.html
 ``
-This HTML output is also visible at: https://ourbigbook.github.io/template Tested on <OurBigBook CLI test matrix>[Linux and MacOS].
+This HTML output is also visible at: https://ourbigbook.github.io/template Tested on <OurBigBook CLI test matrix>[Linux, MacOS and Windows].
 
 To <publish>[publish your project as a static website to GitHub Pages], first create a GitHub repository for it, e.g. `johnsmith/mybrain` and then:
 ```
@@ -9032,14 +9032,9 @@ Observed render speedup on 1k small files from the <Wikipedia bot> and 8 cores: 
 This section lists versions at which the basic `npm install` followed by basic <template repo> conversion is known to work. Reports of other working systems are welcome and will be added here.
 
 * v0.9.35:
-  * working:
-    * Ubuntu: 25.04
-    * MacOS: 11, 15
-  * broken:
-    * Windows 10: https://github.com/ourbigbook/ourbigbook/issues/373
-      ``
-      C:\Users\Quickemu\ourbigbook\node_modules\sqlite3\lib\binding\napi-v3-win32-x64\node_sqlite3.node is not a valid Win32 application
-      ``
+  * Ubuntu: 25.04
+  * MacOS: 11, 15
+  * Windows 10: https://github.com/ourbigbook/ourbigbook/issues/373
 
 = OurBigBook Library
 {c}

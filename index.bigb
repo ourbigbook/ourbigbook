@@ -9034,7 +9034,7 @@ This section lists versions at which the basic `npm install` followed by basic <
 * v0.9.35:
   * Ubuntu: 25.04
   * MacOS: 11, 15
-  * Windows 10: https://github.com/ourbigbook/ourbigbook/issues/373
+  * Windows 10
 
 = OurBigBook Library
 {c}

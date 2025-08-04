@@ -10611,7 +10611,7 @@ Related configurations:
   to the domain, which Google marked as verified. Let's see if helps.
 
 = web/bin/send-email
-{parent=OurBigBook Web deployment}
+{parent=OurBigBook Web email sending}
 {tag=Web CLI utils}
 
 This utilit serves as a quick test to check if email sending is working, without you having to click a bunch of buttons on the web UI such as creating a new user:
@@ -10630,6 +10630,8 @@ OURBIGBOOK_SEND_EMAIL=ses \
 = OurBigBook Web email sending with AWS SES
 {parent=OurBigBook Web email sending with}
 
+This is the current method used on <OurBigBook.com>. They currenly offer pay as you go mailing at 1\$ / 10,000 emails sent, which feels reasonable.
+
 ``
 OURBIGBOOK_SEND_EMAIL=ses \
     OURBIGBOOK_SEND_EMAIL_SES_REGION=us-east-1 \
@@ -10638,12 +10640,18 @@ OURBIGBOOK_SEND_EMAIL=ses \
     npm run dev
 ``
 
+The initial setup is slightly annoying as you have to write to support for them to enable your account, much like other AWS products, but once that is done we managed to get it working fine.
+
+Announced at: 
+* https://mastodon.social/@ourbigbook/114970958914849281
+* https://x.com/OurBigBook/status/1952376470849859661
+* https://www.linkedin.com/feed/update/urn:li:share:7358142308652838912
+* https://www.facebook.com/OurBigBook/posts/pfbid034bsRDjfp6aRsG8EwBQnBxBrm5yPe9uaEWeHHJoyVUjEzJDTAREyApcNPzMhBpSkGl
+
 = OurBigBook Web email sending with cloudmailin
 {parent=OurBigBook Web email sending with}
 
-This is the current method used on <OurBigBook.com>.
-
-We set them up as a Heroku plugin, and the login into cloudmailin is done through heroku.
+We set them up as a Heroku plugin, and the login into cloudmailin is done through Heroku.
 
 Username and API keys are the same as the SMTP values.
 

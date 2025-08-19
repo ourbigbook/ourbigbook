@@ -15,6 +15,8 @@ if (!databaseName) {
   databaseName = ourbigbook_nodejs_front.isTest ? 'ourbigbook_test' : 'ourbigbook'
 }
 
+// Ideally we'd want to get this automatically from Next.js,
+// but it is so hard to do, so starting out simple for now.
 const appDomain = 'ourbigbook.com'
 const appNameShort  = 'OurBigBook'
 const appProtocol = 'https'

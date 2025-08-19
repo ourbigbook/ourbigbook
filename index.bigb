@@ -10657,7 +10657,13 @@ Username and API keys are the same as the SMTP values.
 
 You need to setup a domain to take the account out of test mode.
 
-TODO failed to do that with:
+After a day they sent an email saying the DNS entries that neede to be changed:
+``
+mta.ourbigbook.com CNAME feedback-smtp.cloudmta.net
+e210040093cm.ourbigbook.com	TXT long-thing-in-attachment
+``
+
+But TODO even after that it still failed with:
 ``
 Domain has already been taken
 Mta domain has already been taken

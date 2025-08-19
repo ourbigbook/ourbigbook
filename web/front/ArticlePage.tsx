@@ -87,10 +87,14 @@ const ArticlePageHoc = (isIssue=false) => {
     }
     const handleShortFragmentSkipOnce = React.useRef(false)
     const ret = <>
-      <MyHead title={
-        isIssue ? '' : ancestors.map(a => a.hasScope ? a.titleSource + ` ${Macro.HEADER_SCOPE_SEPARATOR} ` : '').join('') +
-          `${article.titleSource} - ${displayAndUsernameText(author)}`
-      } />
+      <MyHead
+        title={
+          isIssue ? '' : ancestors.map(a => a.hasScope ? a.titleSource + ` ${Macro.HEADER_SCOPE_SEPARATOR} ` : '').join('') +
+            `${article.titleSource} - ${displayAndUsernameText(author)}`
+        }
+        // TODO one day extract the first image from the article to DB and use that here.
+        previewImage={author.effectiveImage}
+      />
       <div className="article-page">
         {isIssue &&
           <div className="content-not-ourbigbook article-meta">

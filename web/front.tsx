@@ -15,7 +15,10 @@ import ourbigbook, {
 
 import { webApi } from 'front/api'
 import {
+  appName,
+  appUrl,
   docsUrl,
+  logoPath,
   sureLeaveMessage,
   useCaptcha
 } from 'front/config'
@@ -677,13 +680,40 @@ export function orderToPageTitle(order: string): string {
   }
 }
 
-export function MyHead({ title }) {
+export function MyHead({
+  previewImage=undefined,
+  title,
+}) {
+  let titleEffective = (title ? `${title} - ` : '') + appName
+  if (previewImage === undefined) {
+    // SVG here is not ideal as some sites like LinkedIn 2025 don't pick up SVG.
+    // The perfect solution would be to allow admins to select an upload from
+    // the upload database, and auto-generate the PNG there by default and use that
+    // as a default.
+    previewImage = logoPath
+  }
   return <Head>
+    <title>{titleEffective}</title>
     <meta
       name="viewport"
       content="width=device-width, initial-scale=1, maximum-scale=1"
     />
-    <title>{(title ? `${title} - ` : '') + 'OurBigBook.com'}</title>
+    {/* Setting this because otherwise LinkedIn 2025 uses h1 instead of <head> which:
+      * - can contain more general HTML that shows as garbage. One notable
+           example where this was noticed was on home page where the home icon shows
+        - does not contain "by Username"
+      */}
+    <meta property="og:title" content={titleEffective}></meta>
+    {/* Otherwise Twitter 2025 doesn't pick the image up
+      * https://stackoverflow.com/questions/44355062/twitter-cards-no-card-found-card-error */}
+    <meta property="og:type" content="website"></meta>
+    {/* Seems required so why not: https://ogp.me/
+        but it is insanely hard to get the current URL in Next.js so I'm lazy. 
+        <meta property="og:url" content={`${appUrl}/${Router.pathname}`}></meta> */}
+    <meta
+      property="og:image"
+      content={`${previewImage[0] === '/' ? appUrl : ''}${previewImage}`}>
+    </meta>
   </Head>
 }
 

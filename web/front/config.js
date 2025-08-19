@@ -17,6 +17,8 @@ if (!databaseName) {
 
 const appDomain = 'ourbigbook.com'
 const appNameShort  = 'OurBigBook'
+const appProtocol = 'https'
+const appUrl = `${appProtocol}://${appDomain}`
 const docsUrl = `https://docs.${appDomain}`
 
 let dbSettings
@@ -74,6 +76,8 @@ module.exports = {
   appDomain,
   appNameShort,
   appName: `${appNameShort}.com`,
+  appUrl,
+  appProtocol: 'https',
   // For things like "article in same topic on topic page"
   articleLimitSmall: 5,
   // Default.
@@ -125,6 +129,7 @@ module.exports = {
     db: process.env.OURBIGBOOK_LOG_DB === ourbigbook_nodejs_front.env_true,
     perf: process.env.NEXT_PUBLIC_OURBIGBOOK_LOG_PERF === env_true || process.env.OURBIGBOOK_LOG_PERF === env_true,
   },
+  logoPath: "/logo.svg",
   // Per user limit defaults.
   maxArticleTitleSize: 1024,
   // Wikipedia also seems to start complaining at about that size:

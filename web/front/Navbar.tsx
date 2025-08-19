@@ -11,7 +11,7 @@ import {
   REGISTER_ACTION,
   UserIcon,
 } from 'front'
-import { appNameShort, aboutUrl, donateUrl } from 'front/config'
+import { appNameShort, aboutUrl, donateUrl, logoPath } from 'front/config'
 import routes from 'front/routes'
 
 interface NavLinkProps {
@@ -54,7 +54,7 @@ const Navbar = ({ clearScoreDelta, isEditor, loggedInUser }) => {
     <nav className={`navbar${loggedInUser ? ' logged-in' : ''}`}>
       <div className="brand-group">
         <CustomLink href={routes.home()} className="brand" newTab={isEditor} newTabIcon={false}>
-          <CustomImage src="/logo.svg" className="logo"/>
+          <CustomImage src={logoPath} className="logo"/>
           <span className="appname">{appNameShort}</span>
         </CustomLink>
         <a href={aboutUrl} className="about" target={ isEditor ? '_blank' : '_self' }><HelpIcon />&nbsp;About</a>

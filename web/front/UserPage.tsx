@@ -202,7 +202,7 @@ export default function UserPage({
           title2 = `${orderToPageTitle(order)} ${pluralize(itemType)}`
         }
     }
-    title = `${displayAndUsername} ${title2 ? ` - ${title2}` : ''}`
+    title = `${displayAndUsername}${title2 ? ` - ${title2}` : ''}`
   }
 
   const handleShortFragmentSkipOnce = React.useRef(false)
@@ -215,7 +215,7 @@ export default function UserPage({
     statuses.push(<a href={`${config.docsAccountLockingUrl}`}><LockIcon /> Locked</a>)
   }
   return <>
-    <MyHead title={title} />
+    <MyHead previewImage={user.effectiveImage} title={title} />
     <div className="profile-page">
       <div className="user-info content-not-ourbigbook">
         <div className="name-and-image">

@@ -12119,6 +12119,63 @@ assert_cli(
   }
 )
 assert_cli(
+  'template: varaible expansion escapes special HTML characters',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== Escape \\< "
+`,
+      'ourbigbook.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>{{ title }}</title>
+</head>
+<body>
+</body>
+</html>
+`
+    },
+    assert_contains: {
+      [`${TMP_DIRNAME}/html/escape.html`]: [
+        // TODO " should be escaped as well.
+        // https://github.com/ourbigbook/ourbigbook/issues/375
+        '<title>Escape &lt; "</title>',
+      ],
+    }
+  }
+)
+assert_cli(
+  'template: title does not contain HTML tags',
+  {
+    args: ['-S', '.'],
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== \`asdf\` $qw^{er}$
+`,
+      'ourbigbook.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>{{ title }}</title>
+</head>
+<body>
+</body>
+</html>
+`
+    },
+    assert_contains: {
+      [`${TMP_DIRNAME}/html/asdf-qw-er.html`]: [
+        // Maybe we do want the actual source here: "`asdf` $qw^{er}$". Not sure.
+        '<title>asdf qw^{er}</title>',
+      ],
+    }
+  }
+)
+assert_cli(
   'template: a custom template can be selected from ourbigbook.json',
   {
     args: ['.'],

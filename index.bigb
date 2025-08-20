@@ -7945,6 +7945,7 @@ The following variables are defined for usage inside your <ourbigbook.liquid.htm
   ``
   <div><a href="{{ dir_relpath }}{{ html_index }}">Website source code</a></div>
   ``
+* `file_relpath`: similar to `raw_relpath`, but link to the <_file output directory> instead
 * `git_sha`: SHA of the latest git commit of the source code if in a git repository
 * `github_prefix`: this variable is set only if if the "github" <ourbigbook.json/media-providers>[media provider]. It points to the URL prefix of the provider, e.g. if you have in your <ourbigbook.json>:
   ``
@@ -7988,6 +7989,14 @@ The following variables are defined for usage inside your <ourbigbook.liquid.htm
   * `index.html`: true
   * `split.html`: true
   * `mathematics.html`: false
+* `json`: exposes the entire <ourbigbook.json> to the template. This is useful for example to obtain <ourbigbook.json/publishRootUrl> as in:
+  ``
+  <meta property="og:image" content="{{ json.publishRootUrl }}/{{ raw_relpath }}/logo.svg">
+  ``
+* `raw_relpath`: relative path from the rendered output to the <`_raw` directory>. Should be used to prefix all non-<OurBigBook Markup> output resources, which is the directory where such files are placed during conversion, e.g.
+  ``
+  <link rel="shortcut icon" href="{{ raw_relpath }}/logo.svg" />
+  ``
 * `root_page`: relative path to the toplevel page, e.g. either `index.html`, `../index.html` locally or `./`, `../` on server oriented rendereing
 * `root_relpath`: relative path from the rendered output to the toplevel directory.
 
@@ -8013,13 +8022,8 @@ The following variables are defined for usage inside your <ourbigbook.liquid.htm
   ``
 
   This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/ourbigbook/ourbigbook/issues/135
-* `raw_relpath`: relative path from the rendered output to the <`_raw` directory>. Should be used to prefix all non-<OurBigBook Markup> output resources, which is the directory where such files are placed during conversion, e.g.
-  ``
-  <link rel="shortcut icon" href="{{ raw_relpath }}/logo.svg" />
-  ``
-* `file_relpath`: similar to `raw_relpath`, but link to the <_file output directory> instead
 * `style`: default OurBigBook stylesheets
-* `title`
+* `title`: a plaintext version of the page title without any HTML tags which will is suitable for the `<title>` element
 * `toplevel_id`: ID of <the toplevel header> ofa page, e.g. given and <split headers>:
   ``
   = My homepage
@@ -8034,6 +8038,8 @@ The following variables are defined for usage inside your <ourbigbook.liquid.htm
   * `/split`: empty string
   * `/mathematics`: `mathematics`
   * `/mathematics/chain-rule`: `mathematics/chain-rule`
+
+Template variable expansion automatically escape special HTML characters such as `<`. TODO: `"` however is not currently escaped: https://github.com/ourbigbook/ourbigbook/issues/375 but it would be better if it were.
 
 = `publishTargetIsWebsite`
 {parent=Template variable}

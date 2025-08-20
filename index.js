@@ -11252,6 +11252,7 @@ const OUTPUT_FORMATS_LIST = [
             }
             const render_env = {
               body,
+              json: context.options.ourbigbook_json,
               root_page,
               title:
                 ancestors.toReversed().map(a =>
@@ -11296,14 +11297,21 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
             render_env.is_index_article = !!(context.options.isindex && context.toplevel_ast.is_first_header_in_input_file && !toplevel_scope)
 
             const { Liquid } = require('liquidjs');
-            ret = (new Liquid()).parseAndRenderSync(
+            ret = (new Liquid({
+              lenientIf: true,
+              // TODO we want to enable this, as it escapes both < and ".
+              // However, ourbigbook is currently already escaping < so enabling it
+              // leads to double escapes.
+              // https://github.com/ourbigbook/ourbigbook/issues/375
+              //outputEscape: 'escape',
+            })).parseAndRenderSync(
               template,
               render_env,
               {
                 strictFilters: true,
                 strictVariables: true,
               }
-            );
+            )
           }
           return ret;
         },

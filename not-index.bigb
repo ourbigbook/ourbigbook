@@ -2,6 +2,8 @@
 
 This file is, surprisingly, not the index. It is used for multifile tests. It is also smaller and therefore compiles faster.
 
+== mymath $a^2$
+
 == h2 in not the index
 
 \Image[https://raw.githubusercontent.com/cirosantilli/media/master/Chrysanthemum_Xi_Jinping_with_black_red_liusi_added_by_Ciro_Santilli.jpg]

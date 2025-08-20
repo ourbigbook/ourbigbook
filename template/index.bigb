@@ -82,8 +82,8 @@ Nice!
 And here's an example of named `title=` argument with multiple curly brackets `{` which makes its content literal:
 $$
 x = \frac{1}{\sqrt{2}}
-$$
-{{title=My \notAMacro is nice.}}
+$${% raw %}
+{{title=My \notAMacro is nice.}}{% endraw %}
 
 == Lists, tables, quotations
 

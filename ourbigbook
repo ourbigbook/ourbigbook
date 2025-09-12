@@ -305,7 +305,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
     }
 
     if (ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML) {
-      // Auto-generate a {file} page for each file in the project that does not have one already.
+      // Auto-generate a {file} _file page for each file in the project that does not have one already.
       // Auto-generate source, and convert it on the fly, a bit like for _dir conversion.
       const ourbigbook_paths_converted = nonOurbigbookOptions.ourbigbook_paths_converted
       // Not ideal, but we'll do it simple for now. This needs to be restored or a test fails.
@@ -356,8 +356,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
                   )
                 ).length === 0
               ) {
-                const pathSplit = inputPathRelativeToOurbigbookJson.split(ourbigbook.URL_SEP)
-                const src = `${ourbigbook.SHORTHAND_HEADER_CHAR} ${ourbigbook.ourbigbookEscapeNotStart(pathSplit[pathSplit.length - 1])}\n{file}\n`
+                const src = `${ourbigbook.SHORTHAND_HEADER_CHAR} ${ourbigbook.ourbigbookEscapeNotStart(inputPathRelativeToOurbigbookJson)}\n{file}\n`
                 const inputPath = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson + '.' + ourbigbook.OURBIGBOOK_EXT
                 const newOptions = {
                   ...ourbigbook_options,
@@ -701,7 +700,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
     return
   }
 
-  // _file, _raw and _dir auto-generation. --split-headers on explicit headers with {file}
+  // _raw and _dir auto-generation. --split-headers on explicit headers with {file}
   // still happens outside of this, this is just for auto-generation.
   const convertNonBigb = ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
   let output_path_noext

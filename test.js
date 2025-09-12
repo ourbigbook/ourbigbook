@@ -13188,6 +13188,7 @@ myfile-subdir.txt line2
         `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/myfile.txt__myfile.txt']`,
       ],
       [`${TMP_DIRNAME}/html/${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html`]: [
+        "//x:title[text()='subdir/myfile-subdir.txt']",
         "//x:h1//x:a[text()='subdir/myfile-subdir.txt']",
         "//x:code[starts-with(text(), 'myfile-subdir.txt line1')]",
         `//x:a[@href='../../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,

@@ -263,7 +263,9 @@ const Settings = ({
           </button>
         </form>
         <h2><LockIcon /> Limits</h2>
-        <p>You must <a href={contactUrl}><b>ask an admin</b></a> to change the following limits for you:</p>
+        {cantSetUserLimit &&
+          <p>You must <a href={contactUrl}><b>ask an admin</b></a> to change the following limits for you:</p>
+        }
         <form onSubmit={handleSubmitLimits}>
           <Label label={maxArticlesLabel}>
             <input

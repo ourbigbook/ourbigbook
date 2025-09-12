@@ -1,5 +1,4 @@
-= subdir index
-{scope}
+= Subdir
 
 This file is in a subdirectory.
 
@@ -13,8 +12,8 @@ Link to toplevel "ourbigbook" section: </OurBigBook>
 
 \Include[included-by-index]
 
-== h2
+== H2
 
 TODO
 
-== ourbigbook
+== Ourbigbook

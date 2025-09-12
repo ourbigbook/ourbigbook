@@ -5238,6 +5238,48 @@ assert_lib(
   }
 )
 assert_lib(
+  // https://github.com/ourbigbook/ourbigbook/issues/376
+  'scope: scope of toplevel header shows up on h1 render and on page title with directory based scopes',
+  {
+    convert_opts: {
+      body_only: false,
+      split_headers: true,
+    },
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Include[scope-1]
+`,
+      'scope-1/index.bigb': `= Scope 1
+
+== No scope 1
+
+\\Include[scope-2]
+`,
+    'scope-1/scope-2/index.bigb': `= Scope 2
+
+== No scope 2
+`,
+    },
+    assert_xpath: {
+      'scope-1.html': [
+        "//x:h1//x:a[@href='scope-1/split.html' and text()='Scope 1']",
+      ],
+      'scope-1/no-scope-1.html': [
+        "//x:h1//x:a[@href='../scope-1.html' and text()='Scope 1']",
+        "//x:h1//x:a[@href='' and text()='No scope 1']",
+      ],
+      'scope-1/scope-2/no-scope-2.html': [
+        "//x:h1//x:a[@href='../../scope-1.html' and text()='Scope 1']",
+        "//x:h1//x:a[@href='../scope-2.html' and text()='Scope 2']",
+        "//x:h1//x:a[@href='' and text()='No scope 2']",
+        "//x:head//x:title[text()='Scope 1 / Scope 2 / No scope 2']",
+      ],
+    },
+  }
+)
+assert_lib(
   'incoming links: internal link incoming links and other children simple',
   {
     convert_opts: {

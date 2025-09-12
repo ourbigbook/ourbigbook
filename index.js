@@ -3715,6 +3715,14 @@ function convertInitOptions(options) {
     // This is notable disabled on Web, where metadata is fetched on the fly at page load.
     options.render_metadata = true;
   }
+  if (!('rootRelpathPref' in options)) {
+    // This is a nasty option that it seems we had to add in order to be able to make
+    // _dir renderings work, because we are generating them from source code and rendering,
+    // and their virtual source path wants to be /_dir/path/to/index.bigb
+    // but unlike /_dir/path/to/index.bigb it renders to /_dir/path/to/index.html
+    // instead of /_dir/path/to.html so a change in relative path is needed to find _raw.
+    options.rootRelpathPref = undefined
+  }
   if (!('start_line' in options)) { options.start_line = 1; }
   if (!('show_descendant_count' in options)) { options.show_descendant_count = true; }
   if (!('split_headers' in options)) {
@@ -4342,6 +4350,9 @@ function getRootRelpath(output_path, context) {
   let root_relpath = path.relative(output_path_dir, '.')
   if (root_relpath !== '') {
     root_relpath += URL_SEP;
+  }
+  if (context.options.rootRelpathPref) {
+    root_relpath = context.options.rootRelpathPref + root_relpath
   }
   return root_relpath
 }

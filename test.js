@@ -7,6 +7,11 @@ const util = require('util');
 const lodash = require('lodash')
 
 const ourbigbook = require('./index')
+const {
+  DIR_PREFIX,
+  FILE_PREFIX,
+  RAW_PREFIX,
+} = ourbigbook
 const ourbigbook_nodejs = require('./nodejs');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
@@ -11903,6 +11908,7 @@ assert_cli(
       'index.bigb': `= Toplevel
 
 \\Include[notindex]
+\\Include[subdir/subdir2/notindex]
 
 == h2
 `,
@@ -11912,6 +11918,8 @@ assert_cli(
 {scope}
 
 === h3
+`,
+      'subdir/subdir2/notindex.bigb': `= Notindex
 `,
       'ourbigbook.json': `{}
 `,
@@ -11923,6 +11931,7 @@ assert_cli(
 <body>
 <a id="root-relpath" href="{{ root_relpath }}">Root relpath</a>
 <a id="root-page" href="{{ root_page }}">Root page</a>
+<a id="raw-relpath" href="{{ raw_relpath }}">Raw relpath</a>
 {{ post_body }}
 </body>
 </html>
@@ -11956,6 +11965,15 @@ assert_cli(
       [`${TMP_DIRNAME}/html/notindex-h2/h3.html`]: [
         "//x:a[@id='root-relpath' and @href='../']",
         "//x:a[@id='root-page' and @href='../index.html']",
+      ],
+      [`${TMP_DIRNAME}/html/subdir/subdir2/notindex.html`]: [
+        "//x:a[@id='root-relpath' and @href='../../']",
+        "//x:a[@id='root-page' and @href='../../index.html']",
+      ],
+      [`${TMP_DIRNAME}/html/${DIR_PREFIX}/subdir/subdir2/index.html`]: [
+        "//x:a[@id='root-relpath' and @href='../../../']",
+        "//x:a[@id='root-page' and @href='../../../index.html']",
+        `//x:a[@id='raw-relpath' and @href='../../../${RAW_PREFIX}']`,
       ],
     }
   }
@@ -12255,7 +12273,8 @@ assert_cli(
 <body>
 </body>
 </html>
-`
+`,
+      'subdir/subdir2/myfile.txt': `My content\n`,
     },
     assert_xpath: {
       [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/index.html`]: [
@@ -12266,6 +12285,14 @@ assert_cli(
       ],
       [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/my-scope/in-scope.html`]: [
         "//x:title[text()='/my-scope/in-scope']",
+      ],
+      // Auto-generated _file
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/${FILE_PREFIX}/subdir/subdir2/myfile.txt.html`]: [
+        `//x:title[text()='/${FILE_PREFIX}/subdir/subdir2/myfile.txt']`,
+      ],
+      // Auto-generated _dir
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/${DIR_PREFIX}/subdir/subdir2/index.html`]: [
+        `//x:title[text()='/${DIR_PREFIX}/subdir/subdir2']`,
       ],
     }
   }

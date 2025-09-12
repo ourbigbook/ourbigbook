@@ -22,8 +22,11 @@ const ourbigbook = require('ourbigbook');
 const {
   cssEscapeDoubleQuotedString,
   DIR_PREFIX,
+  FILE_PREFIX,
   FILE_TYPE_FILE,
   FILE_TYPE_DIRECTORY,
+  INDEX_BASENAME_NOEXT,
+  OURBIGBOOK_EXT,
   RAW_PREFIX,
   URL_SEP,
 } = ourbigbook
@@ -806,8 +809,8 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
             const new_options_dir = {
               ...new_options,
               auto_generated_source: true,
+              rootRelpathPref: '../',
             }
-            const pref = ourbigbook.FILE_PREFIX
             let toplevelId = DIR_PREFIX
             if (input_path_relative_to_ourbigbook_json === '') {
               new_options_dir.title = ourbigbook.FILE_ROOT_PLACEHOLDER
@@ -821,7 +824,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
             // notindex.bigb instead of index.bigb because this will be placed at subdir/index.html, unlike the .bigb
             // convention that places subdir/index.bigb at subdir.html rather than subdir/index.html so a different
             // number of up levels is needed.
-            newNonOurbigbookOptions.input_path = path.join(pref, input_path_relative_to_ourbigbook_json, 'notindex.bigb');
+            newNonOurbigbookOptions.input_path = path.join(DIR_PREFIX, input_path_relative_to_ourbigbook_json, `${INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`);
             const htmlXExtension = newNonOurbigbookOptions.options.htmlXExtension
             const indexHtml = htmlXExtension ? 'index.html' : ''
             while (true) {
@@ -859,7 +862,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
               } else {
                 targetHref = path.join(
                   path.relative(input_path_relative_to_ourbigbook_json, '..'),
-                  pref,
+                  FILE_PREFIX,
                   input_path_relative_to_ourbigbook_json,
                   target
                 ) + (htmlXExtension ? '.' + ourbigbook.HTML_EXT : '')

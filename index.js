@@ -7481,6 +7481,7 @@ function removeToplevelScope(id, toplevel_ast, context) {
 }
 
 // https://docs.ourbigbook.com#index-files
+const HTML_INDEX_BASENAME_NOEXT = 'index'
 const INDEX_BASENAME_NOEXT = 'index';
 exports.INDEX_BASENAME_NOEXT = INDEX_BASENAME_NOEXT;
 const INDEX_BASENAME = INDEX_BASENAME_NOEXT + '.' + OURBIGBOOK_EXT
@@ -7814,7 +7815,7 @@ function resolveLinkToFileGetHref({
         (basename ? (URL_SEP + basename) : '')
     } else {
       if (type === FILE_TYPE_DIRECTORY && context.options.htmlXExtension) {
-        href = path.join(href, 'index.html')
+        href = path.join(href, `${HTML_INDEX_BASENAME_NOEXT}.${HTML_EXT}`)
       }
       // Modify external paths to account for scope + --split-headers
       let pref = context.root_relpath_shift
@@ -11234,9 +11235,10 @@ const OUTPUT_FORMATS_LIST = [
             }
 
             let root_page;
+            let server_path = context.toplevel_output_path
             if (context.options.htmlXExtension) {
-              context.options.template_vars.html_ext = '.html';
-              context.options.template_vars.html_index = '/index.html';
+              context.options.template_vars.html_ext = `.${HTML_EXT}`
+              context.options.template_vars.html_index = `/index.${HTML_EXT}`
               root_page = context.options.template_vars.root_relpath + INDEX_BASENAME_NOEXT + '.' + HTML_EXT;
             } else {
               context.options.template_vars.html_ext = '';
@@ -11246,7 +11248,15 @@ const OUTPUT_FORMATS_LIST = [
               } else {
                 root_page = context.options.template_vars.root_relpath;
               }
+              server_path = server_path.substring(0, server_path.length - (HTML_EXT.length + 1))
+              if (basename(server_path, URL_SEP) === HTML_INDEX_BASENAME_NOEXT) {
+                server_path = server_path.substring(0, server_path.length - (HTML_INDEX_BASENAME_NOEXT + 1))
+              }
             }
+            if (server_path) {
+              server_path = URL_SEP + server_path
+            }
+            context.options.template_vars.server_path = server_path
             if (root_page === context.toplevel_output_path) {
               root_page = '';
             }

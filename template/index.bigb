@@ -276,3 +276,21 @@ Put pig thermometer in pig ear.
 ===== Results
 
 The pig was cold.
+
+=== Files
+
+You can create headers that specifically refer to file that you want to talk about.
+
+This allows you to add metadata to your files, as well as displaying a preview of files on your HTML output.
+
+==== ourbigbook.json
+{file}
+
+The file `ourbigbook.json` is very important, as it specifies custom style for our website.{% if generate == "default" %}
+
+==== logo.svg
+{file}
+
+This is logo of our website!
+
+It is written in SVG because SVG is awesome!{% endif %}

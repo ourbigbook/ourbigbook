@@ -12230,6 +12230,46 @@ asdf
     }
   }
 )
+assert_cli(
+  'template: server_path',
+  {
+    args: ['--dry-run', '--publish', '.'],
+    pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== My h2
+
+== My scope
+{scope}
+
+=== In scope
+`,
+      'ourbigbook.json': `{}`,
+      'ourbigbook.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>{{ server_path }}</title>
+</head>
+<body>
+</body>
+</html>
+`
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/index.html`]: [
+        "//x:title[not(text())]",
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/my-h2.html`]: [
+        "//x:title[text()='/my-h2']",
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/my-scope/in-scope.html`]: [
+        "//x:title[text()='/my-scope/in-scope']",
+      ],
+    }
+  }
+)
 
 assert_cli(
   "multiple incoming child and parent links don't blow up",

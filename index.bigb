@@ -8022,9 +8022,28 @@ The following variables are defined for usage inside your <ourbigbook.liquid.htm
   ``
 
   This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/ourbigbook/ourbigbook/issues/135
+* `server_path`: path part of the URL at which the output of this template will be visible on the server. For example:
+  * `index.bigb`:
+    * <ourbigbook.json/htmlXExtension> is true:
+      * nosplit: `/index.html`
+      * split: `/split.html`
+    * <ourbigbook.json/htmlXExtension> is false
+      * nosplit: (empty string)
+      * split: `/split`
+  * `notindex.bigb`:
+    * <ourbigbook.json/htmlXExtension> is true:
+      * nosplit: `/notindex.html`
+      * split: `/notindex-split.html`
+    * <ourbigbook.json/htmlXExtension> is false
+      * nosplit: `/notindex`
+      * split: `/notindex-split`
+  This variable can be useful if you need to generate the full path to a given page for an insane system such as `og:url`:
+  ``
+  <meta property="og:url" content="{{ json.publishRootUrl }}{{ server_path }}">
+  ``
 * `style`: default OurBigBook stylesheets
 * `title`: a plaintext version of the page title without any HTML tags which will is suitable for the `<title>` element
-* `toplevel_id`: ID of <the toplevel header> ofa page, e.g. given and <split headers>:
+* `toplevel_id`: ID of <the toplevel header> of a page, e.g. given and <split headers>:
   ``
   = My homepage
 

@@ -1,15 +1,20 @@
+{%- if is_index_article -%}
+{%- assign full_title = title -%}
+{%- else -%}
+{%- assign full_title = title | append: " - Ciro Santilli" -%}
+{%- endif -%}
 <!doctype html>
 <html lang=en>
 <head>
 <meta charset=utf-8>
-<title>{{ title }}{% unless is_index_article %} - OurBigBook Docs{% endunless %}</title>
+<title>{{ full_title }}</title>
 {% if is_index_article %}{% if json.publishRootUrl %}<script type="application/ld+json">{"name":"OurBigBook Docs","url":"{{ json.publishRootUrl }}"}</script>
-{% endif %}{% endif %}<meta name="viewport" content="width=device-width, initial-scale=1">
-{% if publishTargetIsWebsite %}<meta property="og:title" content="{{ title }}">
+{% endif %}{% endif %}{% if publishTargetIsWebsite %}<meta property="og:title" content="{{ full_title }}">
 <meta property="og:type" content="website">
 {% if json.publishRootUrl %}<meta property="og:image" content="{{ json.publishRootUrl }}/_raw/logo.svg">
 <meta property="og:url" content="{{ json.publishRootUrl }}{{ server_path }}">
-{% endif %}{% endif %}<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
+{% endif %}{% endif %}<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.10.1/css/all.min.css" integrity="sha512-9my9Mb2+0YO+I4PUCSwUYO7sEK21Y0STBAiFEYoWtd2VzLEZZ4QARDrZ30hdM1GlioHJ8o8cWQiy8IAb1hy/Hg==" crossorigin="anonymous" referrerpolicy="no-referrer">
 <style>{{ style }}</style>
 <link rel="stylesheet" type="text/css" href="{{ raw_relpath }}/main.css">
 <link rel="shortcut icon" href="{{ raw_relpath }}/logo.svg">

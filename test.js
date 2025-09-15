@@ -12339,6 +12339,117 @@ assert_cli(
     }
   }
 )
+assert_cli(
+  'template: image',
+  {
+    args: ['--dry-run', '--publish', '.'],
+    pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+\\Image[local/image.png]
+
+\\Image[local/image-2.png]
+
+\\Include[notindex]
+\\Include[no-image-on-h1]
+\\Include[subdir]
+
+== H2
+
+\\Image[local/image-h2.png]
+
+=== No image
+
+== Provider
+
+\\Image[my/image.png]
+{provider=github}
+`,
+      'notindex.bigb': `= Notindex
+
+\\Image[http://example.com/image.png]
+`,
+      'no-image-on-h1.bigb': `= No image on h1
+
+== No image on h1 h2 without image
+
+== No image on h1 h2
+
+\\Image[local/image.png]
+`,
+      'subdir/index.bigb': `= Subdir
+
+\\Image[relative.png]
+
+\\Include[notindex]
+`,
+      'subdir/notindex.bigb': `= Notindex
+
+\\Image[relative.png]
+`,
+      'ourbigbook.json': `{
+  "media-providers": {
+    "github": {
+      "remote": "my-username/my-repo"
+    }
+  },
+  "publishRootUrl": "https://docs.ourbigbook.com"
+}
+`,
+      'local/image.png': 'a',
+      'local/image-2.png': 'a',
+      'local/image-h2.png': 'a',
+      'subdir/relative.png': 'a',
+      'ourbigbook.liquid.html': `<!doctype html>
+<html lang=en>
+<head>
+<meta charset=utf-8>
+<title>{% if image %}{{ image }}{% endif %}</title>
+</head>
+<body>
+</body>
+</html>
+`,
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/index.html`]: [
+        `//x:title[text()='https://docs.ourbigbook.com/${RAW_PREFIX}/local/image.png']`,
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/h2.html`]: [
+        `//x:title[text()='https://docs.ourbigbook.com/${RAW_PREFIX}/local/image-h2.png']`,
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/notindex.html`]: [
+        "//x:title[text()='http://example.com/image.png']",
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/no-image.html`]: [
+        "//x:title[not(text())]",
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/no-image-on-h1.html`]: [
+        // One could argue to leave this empty, or to add the image on split. But lazy now.
+        `//x:title[text()='https://docs.ourbigbook.com/${RAW_PREFIX}/local/image.png']`,
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/no-image-on-h1-split.html`]: [
+        "//x:title[not(text())]",
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/no-image-on-h1-h2-without-image.html`]: [
+        "//x:title[not(text())]",
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/no-image-on-h1-h2.html`]: [
+        `//x:title[text()='https://docs.ourbigbook.com/${RAW_PREFIX}/local/image.png']`,
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/provider.html`]: [
+        `//x:title[text()='https://raw.githubusercontent.com/my-username/my-repo/master/my/image.png']`,
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/subdir.html`]: [
+        `//x:title[text()='https://docs.ourbigbook.com/${RAW_PREFIX}/subdir/relative.png']`,
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/subdir/notindex.html`]: [
+        `//x:title[text()='https://docs.ourbigbook.com/${RAW_PREFIX}/subdir/relative.png']`,
+      ],
+    }
+  }
+)
 
 assert_cli(
   "multiple incoming child and parent links don't blow up",

@@ -3937,6 +3937,7 @@ function convertInitContext(options={}, extra_returns={}) {
     katex_macros: { ...options.katex_macros },
     in_split_headers: false,
     in_parse: false,
+    firstImageSrc: undefined,
     errors: [],
     extra_returns,
     forceHeaderHasToc: false,
@@ -4735,8 +4736,10 @@ function htmlImg({
 }) {
   // TODO
   let error = ''
+  let hrefNoShift
   ;({
     href: src,
+    hrefNoShift,
   } = resolveLinkToFileGetHref({
     context,
     external,
@@ -4771,6 +4774,7 @@ function htmlImg({
   }
   return {
     html: `${html}${error}`,
+    srcNoShift: hrefNoShift,
     src,
   };
 }
@@ -5076,7 +5080,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
   } else {
     alt = htmlAttr('alt', htmlEscapeAttr(alt_val));
   }
-  ret += context.macros[ast.macro_name].options.image_video_content_func({
+  const { html, src: resolvedSrc, srcNoShift } = context.macros[ast.macro_name].options.image_video_content_func({
     alt,
     ast,
     context,
@@ -5085,14 +5089,25 @@ function macroImageVideoBlockConvertFunction(ast, context) {
     relpath_prefix,
     rendered_attrs,
     src,
-  });
+  })
+  if (
+    context.firstImageSrc === undefined &&
+    ast.macro_name === 'Image'
+  ) {
+    let firstImageSrc = srcNoShift
+    if (media_provider_type === 'local' && context.options.ourbigbook_json.publishRootUrl) {
+      firstImageSrc = context.options.ourbigbook_json.publishRootUrl + URL_SEP + firstImageSrc
+    }
+    context.firstImageSrc = firstImageSrc
+  }
+  ret += html
   if (has_caption) {
     const { full: title, inner, innerNoDiv } = xTextBase(ast, context, { addTitleDiv: true, href_prefix, force_separator })
     const title_and_description = getTitleAndDescription({ title, description, source, inner, innerNoDiv })
     ret += `<figcaption>${title_and_description}</figcaption>`;
   }
   ret += '</figure></div>';
-  return ret;
+  return ret
 }
 
 /** Convert args such as tag= or \x[]{magic} to their final target ID. */
@@ -7804,7 +7819,7 @@ function resolveLinkToFileGetHref({
   external,
   media_provider_type,
 }) {
-  let inputDirectory
+  let inputDirectory, hrefNoShift
   ;({ external, href, inputDirectory, } = resolveLinkToFile({
     context,
     external,
@@ -7824,6 +7839,7 @@ function resolveLinkToFileGetHref({
         URL_SEP +
         (type === FILE_TYPE_DIRECTORY ? DIR_PREFIX : RAW_PREFIX) +
         (basename ? (URL_SEP + basename) : '')
+      hrefNoShift = href
     } else {
       if (type === FILE_TYPE_DIRECTORY && context.options.htmlXExtension) {
         href = path.join(href, `${HTML_INDEX_BASENAME_NOEXT}.${HTML_EXT}`)
@@ -7831,16 +7847,23 @@ function resolveLinkToFileGetHref({
       // Modify external paths to account for scope + --split-headers
       let pref = context.root_relpath_shift
       if (media_provider_type === 'local') {
+        let filetypeString 
         if (type === FILE_TYPE_DIRECTORY) {
-          pref = path.join(pref, DIR_PREFIX)
+          filetypeString = DIR_PREFIX
         } else {
-          pref = path.join(pref, RAW_PREFIX)
+          filetypeString = RAW_PREFIX
         }
+        pref = path.join(pref, filetypeString)
+        hrefNoShift = path.join(filetypeString, href)
+      } else {
+        hrefNoShift = href
       }
       href = path.join(pref, href)
     }
+  } else {
+    hrefNoShift = href
   }
-  return { href: htmlEscapeHrefAttr(href), inputDirectory }
+  return { href: htmlEscapeHrefAttr(href), hrefNoShift: htmlEscapeHrefAttr(hrefNoShift), inputDirectory }
 }
 
 function perfPrint(context, name) {
@@ -9603,7 +9626,7 @@ const DEFAULT_MACRO_LIST = [
           src,
         }) {
           let img_html
-          ;({ html: img_html, src } = htmlImg({
+          ;({ html: img_html, src, srcNoShift } = htmlImg({
             alt,
             ast,
             context,
@@ -9613,7 +9636,11 @@ const DEFAULT_MACRO_LIST = [
             src,
             relpath_prefix,
           }))
-          return img_html
+          return {
+            html: img_html,
+            src,
+            srcNoShift,
+          }
         },
         named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(IMAGE_INLINE_BLOCK_NAMED_ARGUMENTS),
         source_func: function (ast, context, src, media_provider_type, is_url) {
@@ -10026,7 +10053,9 @@ const DEFAULT_MACRO_LIST = [
                 } else {
                   let message = `youtube URL without video ID "${src}"`;
                   renderError(context, message, ast.source_location);
-                  return errorMessageInOutput(message, context);
+                  return {
+                    html: errorMessageInOutput(message, context),
+                  }
                 }
               } else {
                 // youtu.be/<ID> and path is "/<ID>" so get rid of "/".
@@ -10060,8 +10089,15 @@ const DEFAULT_MACRO_LIST = [
               const DEFAULT_VIDEO_WIDTH = 560
               width = Math.floor(DEFAULT_VIDEO_WIDTH * height / DEFAULT_MEDIA_HEIGHT)
             }
-            return `<div class="float-wrap"><iframe width="${width}" height="${height}" loading="lazy" src="https://www.youtube.com/embed/${htmlEscapeHrefAttr(video_id)}${start}" ` +
-                  `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+            const finalSrc = `https://www.youtube.com/embed/${htmlEscapeHrefAttr(video_id)}${start}`
+            return {
+              src: finalSrc,
+              html:
+                `<div class="float-wrap"><iframe width="${width}" height="${height}" loading="lazy" ` +
+                `src="${finalSrc}" ` +
+                `allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
+              ,
+            }
           } else {
             // TODO
             let error = ''
@@ -10078,7 +10114,11 @@ const DEFAULT_MACRO_LIST = [
             } else {
               start = '';
             }
-            return `<video${htmlAttr('src', src + start)}${rendered_attrs} preload="none" controls${alt}></video>${error}`;
+            src += start
+            return {
+              html: `<video${htmlAttr('src', src)}${rendered_attrs} preload="none" controls${alt}></video>${error}`,
+              src,
+            }
           }
         },
         named_args: IMAGE_VIDEO_BLOCK_NAMED_ARGUMENTS.concat(
@@ -11274,6 +11314,7 @@ const OUTPUT_FORMATS_LIST = [
             const render_env = {
               body,
               json: context.options.ourbigbook_json,
+              image: context.firstImageSrc,
               root_page,
               title:
                 ancestors.toReversed().map(a =>

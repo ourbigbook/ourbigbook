@@ -20,6 +20,72 @@ const config = require('../front/config')
 const routes = require('../front/routes')
 const { isIpBlockedForSignup } = require('../back/webpack_safe')
 
+async function checkVpn(ip, config) {
+  const provider = config.vpnCheck
+  
+  if (provider === 'ipapi.is') {
+    if (!config.vpnCheckIpapiIsApiKey) {
+      return { isVpn: false, provider: 'ipapi.is', data: null }
+    }
+    
+    try {
+      const response = await axios.get(`https://api.ipapi.is?q=${ip}&key=${config.vpnCheckIpapiIsApiKey}`)
+      if (response.status === 200) {
+        const data = response.data
+        return {
+          isVpn: data.is_vpn,
+          provider: 'ipapi.is',
+          providerUrl: 'https://ipapi.is',
+          data: data
+        }
+      } else {
+        console.log('ipapi.is error')
+        console.log(response.data)
+        return { isVpn: false, provider: 'ipapi.is', data: response.data }
+      }
+    } catch (error) {
+      console.log('ipapi.is error:', error.message)
+      return { isVpn: false, provider: 'ipapi.is', data: null }
+    }
+  } else if (provider === 'spur.us') {
+    if (!config.vpnCheckSpurUsApiKey) {
+      return { isVpn: false, provider: 'spur.us', data: null }
+    }
+    
+    try {
+      const response = await axios.get(`https://api.spur.us/v2/context/${ip}`, {
+        headers: {
+          'Token': config.vpnCheckSpurUsApiKey
+        }
+      })
+      if (response.status === 200) {
+        const data = response.data
+        // Based on common spur.us API structure, check for VPN indicators
+        const isVpn = data.client?.types?.includes('VPN') || 
+                     data.client?.types?.includes('PROXY') ||
+                     data.risks?.includes('VPN') ||
+                     data.risks?.includes('PROXY')
+        return {
+          isVpn: isVpn,
+          provider: 'spur.us',
+          providerUrl: 'https://spur.us',
+          data: data
+        }
+      } else {
+        console.log('spur.us error')
+        console.log(response.data)
+        return { isVpn: false, provider: 'spur.us', data: response.data }
+      }
+    } catch (error) {
+      console.log('spur.us error:', error.message)
+      return { isVpn: false, provider: 'spur.us', data: null }
+    }
+  } else {
+    console.log(`Unknown VPN provider: ${provider}`)
+    return { isVpn: false, provider: provider, data: null }
+  }
+}
+
 async function authenticate(req, res, next, opts={}) {
   const { forceVerify } = opts
   passport.authenticate('local', { session: false }, async function(err, user, info) {
@@ -254,24 +320,15 @@ router.post('/users', async function(req, res, next) {
       }
 
       // Check if VPN and block if yes.
-      if (
-        ip &&
-        config.ipapiIsApiKey
-      ) {
-        const response = await axios.get(`https://api.ipapi.is?q=${ip}&key=${config.ipapiIsApiKey}`)
-        if (response.status === 200) {
-          const data = response.data
-          if (data.is_vpn) {
-            console.log(`ipapi.js VPN detected: ${JSON.stringify(data)}`)
-            throw new ValidationError([
-              `Your IP ${ip} is from a VPN according to https://ipapi.is ` +
-              `which is not allowed due to past abuse. Please try again ` +
-              `from another network, or contact a site admin to create the account for you.`
-            ])
-          }
-        } else {
-          console.log('ipapi error')
-          console.log(response.data)
+      if (ip) {
+        const vpnResult = await checkVpn(ip, config)
+        if (vpnResult.isVpn) {
+          console.log(`VPN detected (${vpnResult.provider}): ${JSON.stringify(vpnResult.data)}`)
+          throw new ValidationError([
+            `Your IP ${ip} is from a VPN according to ${vpnResult.providerUrl} ` +
+            `which is not allowed due to past abuse. Please try again ` +
+            `from another network, or contact a site admin to create the account for you.`
+          ])
         }
       }
 

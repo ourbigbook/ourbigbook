@@ -29,8 +29,7 @@ function mockVpnApiResponses() {
         return Promise.resolve({
           status: 200,
           data: { 
-            client: { types: ['VPN'] },
-            risks: [],
+            tunnels: [{ type: 'VPN' }],
             ip: '10.0.0.1'
           }
         });
@@ -38,8 +37,7 @@ function mockVpnApiResponses() {
         return Promise.resolve({
           status: 200,
           data: { 
-            client: { types: ['RESIDENTIAL'] },
-            risks: [],
+            tunnels: [],
             ip: '8.8.8.8'
           }
         });
@@ -73,14 +71,11 @@ async function checkVpn(ip, config) {
           providerUrl: 'https://ipapi.is',
           data: data
         }
-      } else {
-        console.log('ipapi.is error')
-        console.log(response.data)
-        return { isVpn: false, provider: 'ipapi.is', data: response.data }
       }
+      console.log('ipapi.is error')
+      console.log(response.data)
     } catch (error) {
       console.log('ipapi.is error:', error.message)
-      return { isVpn: false, provider: 'ipapi.is', data: null }
     }
   } else if (provider === 'spur.us') {
     if (!config.vpnCheckSpurUsApiKey) {
@@ -95,30 +90,26 @@ async function checkVpn(ip, config) {
       })
       if (response.status === 200) {
         const data = response.data
-        // Based on common spur.us API structure, check for VPN indicators
-        const isVpn = data.client?.types?.includes('VPN') || 
-                     data.client?.types?.includes('PROXY') ||
-                     data.risks?.includes('VPN') ||
-                     data.risks?.includes('PROXY')
+        // Check for VPN based on spur.us API structure - using tunnels.type instead of client.types
+        const isVpn = data.tunnels?.some(tunnel => tunnel.type === 'VPN')
         return {
           isVpn: isVpn,
           provider: 'spur.us',
           providerUrl: 'https://spur.us',
           data: data
         }
-      } else {
-        console.log('spur.us error')
-        console.log(response.data)
-        return { isVpn: false, provider: 'spur.us', data: response.data }
       }
+      console.log('spur.us error')
+      console.log(response.data)
     } catch (error) {
       console.log('spur.us error:', error.message)
-      return { isVpn: false, provider: 'spur.us', data: null }
     }
   } else {
     console.log(`Unknown VPN provider: ${provider}`)
-    return { isVpn: false, provider: provider, data: null }
   }
+  
+  // Default fallback - allow if we reach here (no API key, error, or unknown provider)
+  return { isVpn: false, provider: provider, data: null }
 }
 
 async function runIntegrationTests() {

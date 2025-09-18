@@ -115,8 +115,6 @@ module.exports = {
   vpnCheck: process.env.OURBIGBOOK_VPN_CHECK || 'ipapi.is',
   vpnCheckIpapiIsApiKey: process.env.OURBIGBOOK_VPN_CHECK_IPAPI_IS_API_KEY || process.env.OURBIGBOOK_IPAPI_IS_API_KEY,
   vpnCheckSpurUsApiKey: process.env.OURBIGBOOK_VPN_CHECK_SPUR_US_API_KEY,
-  // Legacy support - deprecated
-  ipapiIsApiKey: process.env.OURBIGBOOK_VPN_CHECK_IPAPI_IS_API_KEY || process.env.OURBIGBOOK_IPAPI_IS_API_KEY,
   // An ID separator that should be used or all IDs in the website to avoid conflicts with OurBigBook Markup output,
   // of which users can control IDs to some extent. Usage is like: prefix + sep + number.
   isTest: ourbigbook_nodejs_front.isTest,

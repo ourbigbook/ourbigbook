@@ -7325,6 +7325,7 @@ Values not documented in other sections:
   node --expose-gc $(which ourbigbook) myfile.bigb
   ``
 * `parse`: parsing steps
+* `split-headers`: log which split header is currently being rendered. This can be extremelly helpful to identify which logs that we've added that come from the header of interest.
 * `tokenize`: tokenization steps
 * `tokens`: final parsed token stream
 * `tokens-inside`: like `ast-inside` but for tokens.

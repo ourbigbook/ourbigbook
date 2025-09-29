@@ -4131,10 +4131,12 @@ function forceLastWordReplace(text, forceLastWord) {
 
 const zeroPad = (num, places) => String(num).padStart(places, '0')
 /**
- * @param {string} dateString - any string that new Date() likes.
- * @return {string} - YYYY-MM-DD
+ * @param {string} [dateString] - any string that new Date() likes.
+ * @return {string} - YYYY-MM-DD or empty string '' if dateString is undefined
  */
 function formatDate(dateString) {
+  if (dateString === undefined)
+    return ''
   const date = new Date(dateString)
   return `${date.getFullYear()}-${zeroPad(date.getMonth() + 1, 2)}-${zeroPad(date.getDate(), 2)}`
 }

@@ -11026,7 +11026,7 @@ const OUTPUT_FORMATS_LIST = [
                 ) {
                   j++
                 }
-                ret += p.slice(0, j)
+                ret += htmlEscapeContext(context, p.slice(0, j))
 
                 // Calculate idComponents and textComponents.
                 // The dog is blue.
@@ -11092,20 +11092,20 @@ const OUTPUT_FORMATS_LIST = [
                   // Topic not found, add the first word and separator as is
                   // and move on to the next word.
                   if (k === 0) {
-                    ret += textComponents[textComponentsI]
+                    ret += htmlEscapeContext(context, textComponents[textComponentsI])
                     textComponentsI++
                     idComponentsI++
                     j++
                   }
                   // Add the separator after that last considered text.
                   if (textComponentsI < textComponents.length) {
-                    ret += textComponents[textComponentsI]
+                    ret += htmlEscapeContext(context, textComponents[textComponentsI])
                     textComponentsI++
                   }
                 }
               } else {
                 // Punctuation. Add as is.
-                ret += p
+                ret += htmlEscapeContext(context, p)
               }
             }
             return ret

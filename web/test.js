@@ -6671,6 +6671,17 @@ it(`api: article: duplicate IDs don't lead to infinite DB loop`, async () => {
   }, { defaultExpectStatus: 200 })
 })
 
+it(`api: article: create escapes less than`, async () => {
+  await testApp(async (test) => {
+    let data, status, article
+    const user0 = await test.createUserApi(0)
+    test.loginUser(user0)
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, bodySource: 'ab\\<cd' })))
+    ;({data, status} = await test.webApi.article('user0/title-0'))
+    assert.match(data.render, /ab&lt;cd/)
+  }, { defaultExpectStatus: 200 })
+})
+
 it(`api: article: create simple`, async () => {
   await testApp(async (test) => {
     let data, status, article

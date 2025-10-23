@@ -207,10 +207,6 @@ Link to external: http://example.com
 Link to topic: <#mathematics>
 ` }],
         ['Test child 2', [], { body: `Link to synonym: <Test child with synonym 2>\n` }],
-        ['Test child 2 \\b[header] with link to <test child> and escape \\<', []],
-        ['Test child 2 \\b[header] with link to <test child>', []],
-        ['Test child 2 with \\< escape', []],
-        ['Test child 2 with escape at end \\<', []],
         ['Test child with synonym', [], {
           body: `= Test child with synonym 2
 {synonym}
@@ -240,6 +236,10 @@ Link to topic: <#mathematics>
       ['Test data with math on title $\\frac{1}{\\sqrt{2}}$', []],
       ['Test data with code on title `int main() { return 0; }`', []],
       ['Test data with date', [], { body: `{created=2000-01-02}\n{updated=2010-03-04}\n` }],
+      ['Test data with local image', [], { body: `\\Image[test.svg]\n` }],
+      ['Test data \\b[header] link to <test child>', []],
+      ['Test data \\< escape in middle', []],
+      ['Test data escape at end \\<', []],
       ['File links', [], { body: `\`\\a\` to file: \\a[test/subdir/myfile.txt]
 
 \`\\a\` to directory: \\a[test/subdir]
@@ -261,6 +261,8 @@ Link to topic: <#mathematics>
       ['test.svg', [], { body: `{file}
 
 \`\\a\` to file: \\a[test.svg]
+
+\`\\Image\` to file: \\Image[test.svg]
 `     }],
     ],
     {

@@ -93,7 +93,7 @@ const ArticlePageHoc = (isIssue=false) => {
             `${article.titleRenderPlaintext} - ${displayAndUsernameText(author)}`
         }
         // TODO one day extract the first image from the article to DB and use that here.
-        previewImage={author.effectiveImage}
+        previewImage={article.image || author.effectiveImage}
       />
       <div className="article-page">
         {isIssue &&

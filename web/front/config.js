@@ -48,6 +48,9 @@ const convertOptions = {
   body_only: true,
   forbid_include: '\\Include is not allowed on OurBigBook Web, the article tree can be manipulated directly via the UI',
   htmlXExtension: false,
+  ourbigbook_json: {
+    publishRootUrl: appUrl,
+  },
   renderH2: true,
   path_sep: '/',
   // https://docs.ourbigbook.com/todo/word-count-on-web
@@ -149,9 +152,15 @@ module.exports = {
   maxArticleAnnouncesPerMonth: 5,
   maxIssuesPerMinute: 6,
   maxIssuesPerHour: 60,
+  maxUsersInMemory: 1000,
   // After this timeout, assume network is slow and start showing loading messages.
   // This is to reduce flickering.
   networkSlowMs: 500,
+  port: process.env.PORT || 3000,
+  postgres: ourbigbook_nodejs_front.postgres,
+  profilePictureMaxUploadSize: 2000000,
+  profilePicturePath,
+  profilePicturePathComponent,
   read_include_web: function(id_exists) {
     return read_include({
       exists: async (inpath) => {
@@ -170,12 +179,6 @@ module.exports = {
       ext: '',
     })
   },
-  maxUsersInMemory: 1000,
-  port: process.env.PORT || 3000,
-  postgres: ourbigbook_nodejs_front.postgres,
-  profilePictureMaxUploadSize: 2000000,
-  profilePicturePath,
-  profilePicturePathComponent,
   reservedUsernames: new Set([
     ourbigbook.WEB_API_PATH,
     escapeUsername,

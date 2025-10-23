@@ -43,6 +43,10 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      image: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
     },
     {
       indexes: [
@@ -117,6 +121,7 @@ module.exports = (sequelize) => {
       commentCount: this.commentCount,
       followerCount: this.followerCount,
       followed,
+      image: this.image,
       liked,
       titleSource: this.titleSource,
       bodySource: this.bodySource,

@@ -802,6 +802,7 @@ async function convertArticle({
         const articleArg = {
           authorId: author.id,
           fileId: file.id,
+          image: rendered_output.image,
           h1Render: renderFull.substring(0, rendered_output.h1RenderLength),
           h2Render: rendered_output.h2Render,
           render: renderFull.substring(rendered_output.h1RenderLength),
@@ -848,6 +849,7 @@ async function convertArticle({
       const updateOnDuplicate = [
         'h1Render',
         'h2Render',
+        'image',
         'titleRender',
         'titleRenderPlaintext',
         'titleRenderWithScope',
@@ -1161,6 +1163,7 @@ async function convertDiscussion({
     })
     const outpath = Object.keys(extra_returns.rendered_outputs)[0]
     const renders = extra_returns.rendered_outputs[outpath]
+    const image = renders.image
     const titleRender = renders.title
     const titleRenderPlaintext = renders.titleRenderPlaintext
     const render = renders.full
@@ -1168,6 +1171,7 @@ async function convertDiscussion({
       const attrs = {
         bodySource,
         date,
+        image,
         number,
         render,
         titleRender,
@@ -1188,6 +1192,7 @@ async function convertDiscussion({
         },
       )
     } else {
+      issue.image = image
       issue.titleRender = titleRender
       issue.titleRenderPlaintext = titleRenderPlaintext
       issue.render = render

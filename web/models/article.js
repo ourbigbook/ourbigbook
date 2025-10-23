@@ -160,6 +160,10 @@ module.exports = (sequelize) => {
         type: DataTypes.DATE,
         allowNull: true,
       },
+      image: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+      },
     },
     {
       timestamps: false,
@@ -893,6 +897,7 @@ WHERE
       'list',
       'slug',
       'hash',
+      'image',
       'topicId',
       'titleRender',
       'titleRenderPlaintext',

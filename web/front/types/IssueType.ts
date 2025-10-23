@@ -13,6 +13,7 @@ export type IssueType = {
   createdAt: string;
   followerCount: number;
   id: string;
+  image?: string;
   number: number;
   render: string;
   score: number;

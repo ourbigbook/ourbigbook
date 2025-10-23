@@ -43,6 +43,7 @@ export type ArticleType = {
   list?: boolean;
   followed?: boolean;
   followerCount?: number;
+  image?: string;
   render: string;
   score: number;
   slug: string;

@@ -3469,6 +3469,7 @@ function renderAstList({ asts, context, first_toplevel, header_count, split }) {
       rendered_outputs_entry.split = split
       rendered_outputs_entry.header_ast = first_ast
       rendered_outputs_entry.split_suffix = split_suffix
+      rendered_outputs_entry.image = context.firstImageSrc
       if (
         options.renderH2 &&
         first_ast.macro_name === Macro.HEADER_MACRO_NAME
@@ -5098,7 +5099,9 @@ function macroImageVideoBlockConvertFunction(ast, context) {
   ) {
     let firstImageSrc = srcNoShift
     if (media_provider_type === 'local' && context.options.ourbigbook_json.publishRootUrl) {
-      firstImageSrc = context.options.ourbigbook_json.publishRootUrl + URL_SEP + firstImageSrc
+      firstImageSrc = context.options.ourbigbook_json.publishRootUrl +
+        (firstImageSrc[0] === URL_SEP ? '' : URL_SEP) +
+        firstImageSrc
     }
     context.firstImageSrc = firstImageSrc
   }

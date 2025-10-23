@@ -30,7 +30,7 @@ const ArticleSourcePageHoc = (isIssue=false) => {
     const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
     useEEdit(canEdit, article.slug)
     return <>
-      <MyHead title={`${article.titleSource} (source code) - ${displayAndUsernameText(author)}`} />
+      <MyHead title={`${article.titleRenderPlaintext} (source code) - ${displayAndUsernameText(author)}`} />
       <div className="article-source-page content-not-ourbigbook">
         <h1>
           <SourceIcon />

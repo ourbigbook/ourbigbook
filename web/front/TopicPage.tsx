@@ -51,7 +51,7 @@ export const TopicPage = ({
   const topicId = slugFromArray(router.query.id)
   let titleText
   if (topic) {
-    titleText = topic.titleSource
+    titleText = topic.titleRenderPlaintext
   } else {
     titleText = idToTitle(topicId)
   }

@@ -17,6 +17,7 @@ export type IssueType = {
   render: string;
   score: number;
   titleRender: string;
+  titleRenderPlaintext: string;
   titleSource: string;
   updatedAt: string;
 };

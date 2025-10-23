@@ -206,8 +206,11 @@ Link to external: http://example.com
 
 Link to topic: <#mathematics>
 ` }],
-        ['Test child 2', [], { body: `Link to synonym: <Test child with synonym 2>
-` }],
+        ['Test child 2', [], { body: `Link to synonym: <Test child with synonym 2>\n` }],
+        ['Test child 2 \\b[header] with link to <test child> and escape \\<', []],
+        ['Test child 2 \\b[header] with link to <test child>', []],
+        ['Test child 2 with \\< escape', []],
+        ['Test child 2 with escape at end \\<', []],
         ['Test child with synonym', [], {
           body: `= Test child with synonym 2
 {synonym}

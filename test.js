@@ -12229,7 +12229,10 @@ assert_cli(
     },
     assert_contains: {
       [`${TMP_DIRNAME}/html/asdf-qw-er.html`]: [
-        // Maybe we do want the actual source here: "`asdf` $qw^{er}$". Not sure.
+        // There was some argument to having the actual source here: "`asdf` $qw^{er}$"
+        // But it clearly feels like too heavy especially in the following cases:
+        // * macros without shorthand: "The \b[bold] text"
+        // * <>: "The <dog> is on the <table>"
         '<title>asdf qw^{er}</title>',
       ],
     }

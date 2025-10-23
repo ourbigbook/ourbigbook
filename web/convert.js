@@ -807,6 +807,7 @@ async function convertArticle({
           render: renderFull.substring(rendered_output.h1RenderLength),
           slug: outpath.slice(AT_MENTION_CHAR.length, -ourbigbook.HTML_EXT.length - 1),
           titleRender: rendered_output.title,
+          titleRenderPlaintext: rendered_output.titleRenderPlaintext,
           titleRenderWithScope: [
               ...ancestorsWithScopeRenders,
               rendered_output.title,
@@ -848,6 +849,7 @@ async function convertArticle({
         'h1Render',
         'h2Render',
         'titleRender',
+        'titleRenderPlaintext',
         'titleRenderWithScope',
         'titleSource',
         'titleSourceLine',
@@ -1160,6 +1162,7 @@ async function convertDiscussion({
     const outpath = Object.keys(extra_returns.rendered_outputs)[0]
     const renders = extra_returns.rendered_outputs[outpath]
     const titleRender = renders.title
+    const titleRenderPlaintext = renders.titleRenderPlaintext
     const render = renders.full
     if (issue === undefined) {
       const attrs = {
@@ -1168,6 +1171,7 @@ async function convertDiscussion({
         number,
         render,
         titleRender,
+        titleRenderPlaintext,
         titleSource,
       }
       if (date) {
@@ -1185,6 +1189,7 @@ async function convertDiscussion({
       )
     } else {
       issue.titleRender = titleRender
+      issue.titleRenderPlaintext = titleRenderPlaintext
       issue.render = render
       if (date) {
         issue.createdAt = date

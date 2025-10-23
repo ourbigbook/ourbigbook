@@ -16,11 +16,11 @@ export type ArticleLinkType = {
 
 /** Add some stuff to link that we need on ancestors listings:
  *  * hasScope: to decide if something need to be shown due to scope on <h1>/<title>
- *  * titleSource: to show it on <title> if needed
+ *  * titleRenderPlaintext: to show it on <title> if needed
  */
 export type ArticleAncestorType = ArticleLinkType & {
   hasScope: boolean;
-  titleSource: string;
+  titleRenderPlaintext: string;
 }
 
 export type ArticleType = {
@@ -49,6 +49,7 @@ export type ArticleType = {
   tagList: string[];
   taggedArticles?: ArticleLinkType[];
   titleRender: string;
+  titleRenderPlaintext: string;
   titleRenderWithScope: string;
   titleSource: string;
   titleSourceLine: number;

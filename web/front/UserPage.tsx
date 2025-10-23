@@ -176,7 +176,7 @@ export default function UserPage({
         parentArticlePref = 'Tagged'
       break
     }
-    title = `${parentArticlePref} - ${parentArticle.titleSource} - ${displayAndUsername}`
+    title = `${parentArticlePref} - ${parentArticle.titleRenderPlaintext} - ${displayAndUsername}`
   } else {
     let title2
     switch (what) {

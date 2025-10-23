@@ -124,7 +124,7 @@ export const getServerSidePropsArticleHoc = ({
         topIssues
       ] = await Promise.all([
         // ancestors
-        article.treeFindAncestors({ attributes: ['slug', 'titleRender'] }),
+        article.treeFindAncestors({ attributes: ['slug', 'titleRender', 'titleRenderPlaintext'] }),
         article.toJson(loggedInUser),
         // articlesInSamePage
         Article.getArticlesInSamePage({
@@ -224,7 +224,7 @@ export const getServerSidePropsArticleHoc = ({
               .validation_output.scope.given,
             slug: a.slug,
             titleRender: a.titleRender,
-            titleSource: a.file.titleSource,
+            titleRenderPlaintext: a.titleRenderPlaintext,
           }
         }),
         article: articleJson,

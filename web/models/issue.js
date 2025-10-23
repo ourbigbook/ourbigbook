@@ -22,6 +22,7 @@ module.exports = (sequelize) => {
       bodySource: DataTypes.TEXT,
       // Rendered toplevel header title.
       titleRender: DataTypes.TEXT,
+      titleRenderPlaintext: DataTypes.TEXT,
       // Full rendered output including toplevel h1.
       render: DataTypes.TEXT,
       // User-visible numeric identifier for the issue. 1-based.
@@ -121,6 +122,7 @@ module.exports = (sequelize) => {
       bodySource: this.bodySource,
       score: this.score,
       titleRender: this.titleRender,
+      titleRenderPlaintext: this.titleRenderPlaintext,
       render: this.render,
       createdAt: this.createdAt.toISOString(),
       updatedAt: this.updatedAt.toISOString(),

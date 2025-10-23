@@ -100,7 +100,7 @@ function IndexPageHoc({
         title = pluralize(capitalize(itemType))
       }
     } else {
-      title = `${ issueArticle.titleSource } by ${ issueArticle.author.displayName } - Discussion`
+      title = `${ issueArticle.titleRenderPlaintext } by ${ issueArticle.author.displayName } - Discussion`
     }
     const isDiscussionIndex = pageType === 'articleDiscussions' || pageType === 'articleComments'
     const [showPinned, setShowPinned] = React.useState(true)

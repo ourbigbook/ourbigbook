@@ -10431,6 +10431,12 @@ const OUTPUT_FORMATS_LIST = [
                   cloneAndSet(context.options, 'output_format', OUTPUT_FORMAT_OURBIGBOOK)
                 )
               )
+              rendered_outputs_entry.titleRenderPlaintext = renderArg(
+                title_arg,
+                cloneAndSet(context, 'options',
+                  cloneAndSet(context.options, 'output_format', OUTPUT_FORMAT_ID)
+                )
+              )
               rendered_outputs_entry.titleSourceLocation = title_arg.source_location
             }
           }

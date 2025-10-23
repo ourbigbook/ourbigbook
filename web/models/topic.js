@@ -160,6 +160,7 @@ module.exports = (sequelize) => {
       articleCount: this.articleCount,
       createdAt: this.createdAt.toISOString(),
       titleRender: this.article.titleRender,
+      titleRenderPlaintext: this.article.titleRenderPlaintext,
       titleSource: this.article.titleSource,
       topicId: this.article.topicId,
       updatedAt: this.updatedAt.toISOString(),

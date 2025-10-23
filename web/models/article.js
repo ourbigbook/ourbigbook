@@ -53,6 +53,10 @@ module.exports = (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false,
       },
+      titleRenderPlaintext: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
       // This was stored here as well as in addition to in File because we previously allowed
       // multiple articles per file, just like is done locally. This was later forbidden on Web.
       // With multiple articles per file, we may have multiple title sources. And then these can
@@ -891,6 +895,7 @@ WHERE
       'hash',
       'topicId',
       'titleRender',
+      'titleRenderPlaintext',
       'titleRenderWithScope',
       'titleSource',
       'titleSourceLine',

@@ -16,7 +16,7 @@ schema() (
     sqlite3 db.sqlite3 .schema > "$out"
   else
     #"${script_dir}/pg_dump" -s
-    PGPASSWORD=a pg_dump -U ourbigbook_user -h localhost ourbigbook -s | grep -E -v -- '^(--|$)' > "$out"
+    PGPASSWORD=a pg_dump -U ourbigbook_user -h localhost ourbigbook -s | grep -E -v -- '^(--|\\(un)?restrict |$)' > "$out"
   fi
 )
 

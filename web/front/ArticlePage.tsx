@@ -89,8 +89,8 @@ const ArticlePageHoc = (isIssue=false) => {
     const ret = <>
       <MyHead
         title={
-          isIssue ? '' : ancestors.map(a => a.hasScope ? a.titleSource + ` ${Macro.HEADER_SCOPE_SEPARATOR} ` : '').join('') +
-            `${article.titleSource} - ${displayAndUsernameText(author)}`
+          isIssue ? '' : ancestors.map(a => a.hasScope ? a.titleRenderPlaintext + ` ${Macro.HEADER_SCOPE_SEPARATOR} ` : '').join('') +
+            `${article.titleRenderPlaintext} - ${displayAndUsernameText(author)}`
         }
         // TODO one day extract the first image from the article to DB and use that here.
         previewImage={author.effectiveImage}

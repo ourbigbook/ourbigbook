@@ -114,7 +114,10 @@ module.exports = {
   fallback: 'blocking',
   forbidMultiheaderMessage: 'headers are not allowed in OurBigBook Web Articles. Instead create a new article with the "New" button and set its parent to the current article.',
   googleAnalyticsId: 'G-R721ZZTW7L',
-  ipapiIsApiKey: process.env.OURBIGBOOK_IPAPI_IS_API_KEY,
+  // VPN checking configuration
+  vpnCheck: process.env.OURBIGBOOK_VPN_CHECK || 'ipapi.is',
+  vpnCheckIpapiIsApiKey: process.env.OURBIGBOOK_VPN_CHECK_IPAPI_IS_API_KEY || process.env.OURBIGBOOK_IPAPI_IS_API_KEY,
+  vpnCheckSpurUsApiKey: process.env.OURBIGBOOK_VPN_CHECK_SPUR_US_API_KEY,
   // An ID separator that should be used or all IDs in the website to avoid conflicts with OurBigBook Markup output,
   // of which users can control IDs to some extent. Usage is like: prefix + sep + number.
   isTest: ourbigbook_nodejs_front.isTest,

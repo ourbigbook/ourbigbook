@@ -3024,6 +3024,66 @@ function decapitalizeFirstLetter(string) {
 exports.decapitalizeFirstLetter = decapitalizeFirstLetter
 
 /**
+ * Find the first PLAINTEXT node recursively within an AST node.
+ * Recurses into the first element of 'content' arguments of macro nodes.
+ * Returns the PLAINTEXT node if found, null otherwise.
+ */
+function findFirstPlaintextRecursive(ast) {
+  if (ast.node_type === AstType.PLAINTEXT) {
+    return ast
+  }
+  if (ast.node_type === AstType.MACRO) {
+    const contentArg = ast.args[Macro.CONTENT_ARGUMENT_NAME]
+    if (contentArg && contentArg.length() > 0) {
+      return findFirstPlaintextRecursive(contentArg.get(0))
+    }
+  }
+  return null
+}
+
+/**
+ * Deep clone an AST argument, recursively cloning the first macro chain
+ * until we reach a PLAINTEXT node whose text we want to modify.
+ * This ensures we don't mutate the original AST when changing capitalization.
+ *
+ * @param {AstArgument} arg - The argument to clone
+ * @param {Function} textModifier - Function to modify the PLAINTEXT text
+ * @returns {AstArgument|null} - The cloned argument with modified text, or null if no PLAINTEXT found
+ */
+function cloneAndModifyFirstPlaintext(arg, textModifier) {
+  if (arg.length() === 0) {
+    return null
+  }
+  const first_ast = arg.get(0)
+  if (first_ast.node_type === AstType.PLAINTEXT) {
+    // Simple case: first element is PLAINTEXT - use existing logic
+    const clonedArg = lodash.clone(arg)
+    clonedArg.asts = lodash.clone(arg.asts)
+    const newText = textModifier(first_ast.text)
+    clonedArg.set(0, new PlaintextAstNode(newText, first_ast.source_location))
+    return clonedArg
+  }
+  if (first_ast.node_type === AstType.MACRO) {
+    const contentArg = first_ast.args[Macro.CONTENT_ARGUMENT_NAME]
+    if (contentArg && contentArg.length() > 0) {
+      // Recursively try to modify the content of this macro
+      const modifiedContentArg = cloneAndModifyFirstPlaintext(contentArg, textModifier)
+      if (modifiedContentArg !== null) {
+        // Clone the current arg and the first macro
+        const clonedArg = lodash.clone(arg)
+        clonedArg.asts = lodash.clone(arg.asts)
+        const clonedMacro = cloneObject(first_ast)
+        clonedMacro.args = { ...first_ast.args }
+        clonedMacro.args[Macro.CONTENT_ARGUMENT_NAME] = modifiedContentArg
+        clonedArg.set(0, clonedMacro)
+        return clonedArg
+      }
+    }
+  }
+  return null
+}
+
+/**
  * Main ourbigbook input to HTML/LaTeX/etc. output JavaScript API.
  *
  * The CLI interface basically just feeds this.
@@ -8734,29 +8794,26 @@ function xTextBase(ast, context, options={}) {
       if (options.from_x) {
 
         // {c}
-        let first_ast = title_arg.get(0);
+        // Find the first PLAINTEXT recursively (handles cases like \i[Case] inner)
+        const firstPlaintext = findFirstPlaintextRecursive(title_arg.get(0));
         if (
           ast.macro_name === Macro.HEADER_MACRO_NAME &&
           !ast.validation_output.c.boolean &&
           !style_full &&
-          first_ast.node_type === AstType.PLAINTEXT
+          firstPlaintext !== null
         ) {
-          // https://stackoverflow.com/questions/41474986/how-to-clone-a-javascript-es6-class-instance
-          title_arg = lodash.clone(title_arg)
-          title_arg.asts = lodash.clone(title_arg.asts)
-          // This is not amazing, as it can change some properties of the node,
-          // as we are not copying anything besides text and source_location.
-          // This almost had an impact on {toplevel} rendering, but it dien't matter
-          // so we didn't try to sanitize it further for now.
-          title_arg.set(0, new PlaintextAstNode(first_ast.text, first_ast.source_location))
-          let txt = title_arg.get(0).text;
-          let first_c = txt[0];
-          if (options.capitalize) {
-            first_c = first_c.toUpperCase();
-          } else {
-            first_c = first_c.toLowerCase();
+          const modifiedArg = cloneAndModifyFirstPlaintext(title_arg, (txt) => {
+            let first_c = txt[0];
+            if (options.capitalize) {
+              first_c = first_c.toUpperCase();
+            } else {
+              first_c = first_c.toLowerCase();
+            }
+            return first_c + txt.substring(1);
+          });
+          if (modifiedArg !== null) {
+            title_arg = modifiedArg;
           }
-          title_arg.get(0).text = first_c + txt.substring(1);
         }
 
         // {p}

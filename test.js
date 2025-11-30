@@ -4498,8 +4498,8 @@ assert_lib_ast('x: internal link p simple',
     ],
   }
 )
-assert_lib_ast('x: internal link c ignores non plaintext first argument',
-  // Maybe we should go deep into the first argument tree. But let's KISS for now.
+assert_lib_ast('x: internal link c handles non plaintext first argument',
+  // Go deep into the first argument tree to find the first text element.
   `= Tmp
 
 == \\i[Good] dog
@@ -4509,7 +4509,22 @@ assert_lib_ast('x: internal link c ignores non plaintext first argument',
   undefined,
   {
     assert_xpath_stdout: [
-      "//x:div[@class='p']//x:a[@href='#good-dog']//x:i[text()='Good']",
+      "//x:div[@class='p']//x:a[@href='#good-dog']//x:i[text()='good']",
+    ],
+  }
+)
+assert_lib_ast('x: internal link c handles nested macros',
+  // Test that we recursively find plaintext inside nested macros.
+  `= Tmp
+
+== \\b[\\i[Case]] inner
+
+\\x[case-inner]
+`,
+  undefined,
+  {
+    assert_xpath_stdout: [
+      "//x:div[@class='p']//x:a[@href='#case-inner']//x:b//x:i[text()='case']",
     ],
   }
 )

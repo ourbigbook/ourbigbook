@@ -3026,7 +3026,12 @@ exports.decapitalizeFirstLetter = decapitalizeFirstLetter
 /**
  * Find the first PLAINTEXT node recursively within an AST node.
  * Recurses into the first element of 'content' arguments of macro nodes.
- * Returns the PLAINTEXT node if found, null otherwise.
+ *
+ * @param {AstNode} ast - The AST node to search within
+ * @returns {AstNode|null} - The first PLAINTEXT node found, or null if:
+ *   - The node is not PLAINTEXT or MACRO
+ *   - The MACRO has no content argument or empty content
+ *   - No PLAINTEXT is found in the recursive search
  */
 function findFirstPlaintextRecursive(ast) {
   if (ast.node_type === AstType.PLAINTEXT) {
@@ -3047,8 +3052,13 @@ function findFirstPlaintextRecursive(ast) {
  * This ensures we don't mutate the original AST when changing capitalization.
  *
  * @param {AstArgument} arg - The argument to clone
- * @param {Function} textModifier - Function to modify the PLAINTEXT text
- * @returns {AstArgument|null} - The cloned argument with modified text, or null if no PLAINTEXT found
+ * @param {Function} textModifier - Function that takes a string and returns a modified string
+ * @returns {AstArgument|null} - The cloned argument with modified text, or null if:
+ *   - The argument is empty
+ *   - The first element is not PLAINTEXT or MACRO
+ *   - The MACRO has no content argument or empty content
+ *   - No PLAINTEXT is found in the recursive search
+ *   - The PLAINTEXT text is empty or undefined
  */
 function cloneAndModifyFirstPlaintext(arg, textModifier) {
   if (arg.length() === 0) {
@@ -3057,6 +3067,10 @@ function cloneAndModifyFirstPlaintext(arg, textModifier) {
   const first_ast = arg.get(0)
   if (first_ast.node_type === AstType.PLAINTEXT) {
     // Simple case: first element is PLAINTEXT - use existing logic
+    // Check that text exists and is non-empty before modification
+    if (!first_ast.text || first_ast.text.length === 0) {
+      return null
+    }
     const clonedArg = lodash.clone(arg)
     clonedArg.asts = lodash.clone(arg.asts)
     const newText = textModifier(first_ast.text)

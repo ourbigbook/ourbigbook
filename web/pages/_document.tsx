@@ -17,7 +17,7 @@ class MyDocument extends Document<IProps> {
     return (
       <Html lang="en">
         <Head>
-          <link rel="shortcut icon" href="/favicon.svg" />
+          <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
           {isProduction &&
             <>
               <script async src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}></script>

@@ -2949,6 +2949,61 @@ assert_lib_stdin('nest: a inside H content renders as text without link implicit
     ],
   }
 )
+assert_lib_stdin('nest: a inside Image title renders as link',
+  `\\Image[aa]{title=https://example.com}{external}
+`,
+  {
+    assert_xpath_stdout: [
+      "//x:figcaption//x:div[@class='title']/x:a[@href='https://example.com' and text()='example.com']",
+    ],
+  }
+)
+assert_lib_stdin('nest: x inside Image title renders as link',
+  `= Toplevel
+
+== H2
+
+\\Image[aa]{title=My <h2>}{external}
+`,
+  {
+    assert_xpath_stdout: [
+      "//x:figcaption//x:div[@class='title']/x:a[@href='#h2' and text()='h2']",
+    ],
+  }
+)
+assert_lib_stdin('nest: a inside quotation title renders as link',
+  `\\Q[My quote]{title=https://example.com}
+`,
+  {
+    assert_xpath_stdout: [
+      "//x:div[@id='quote-https-example-com']//x:div[@class='caption']//x:div[@class='title']/x:a[@href='https://example.com' and text()='example.com']",
+    ],
+  }
+)
+assert_lib_stdin('nest: a inside table title renders as link',
+  `\\Table{title=https://example.com}
+[
+| 00
+]
+`,
+  {
+    assert_xpath_stdout: [
+      "//x:div[@id='table-https-example-com']//x:div[@class='caption']//x:div[@class='title']/x:a[@href='https://example.com' and text()='example.com']",
+    ],
+  }
+)
+assert_lib_stdin('nest: a inside code title renders as link',
+  `\`\`
+aa
+\`\`
+{title=\\a[https://example.com]}
+`,
+  {
+    assert_xpath_stdout: [
+      "//x:div[@class='code']//x:div[@class='caption']//x:div[@class='title']/x:a[@href='https://example.com' and text()='example.com']",
+    ],
+  }
+)
 assert_lib_stdin('nest: a inside H child parent link renders as text only',
   `= Toplevel
 

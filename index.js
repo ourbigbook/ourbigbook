@@ -8284,109 +8284,6 @@ function xGetTargetAst(ast, context) {
   return ret
 }
 
-/**
- * @param {AstNode} ast \x ast node
- * @return {[String, String]} [href, content] pair for the x node.
- */
-function xGetHrefContent(ast, context, opts={}) {
-  const { showDisambiguate } = opts
-  const { href_arg, target_id, target_id_raw, target_ast } = xGetTargetAst(ast, context)
-  const content_arg = ast.args.content;
-  if (ast.validation_output.topic.boolean) {
-    let topicTitle = target_id_raw
-    let topicTitleSingular = topicTitle
-    if (!ast.validation_output.p.boolean) {
-      topicTitleSingular = pluralizeWrap(topicTitleSingular, 1)
-    }
-    const topicId = titleToIdContext(topicTitleSingular, undefined, context)
-    if (content_arg !== undefined) {
-      topicTitle = renderArg(content_arg, context)
-    }
-    return [htmlAttr('href', `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${topicId}`), topicTitle, undefined];
-  }
-
-  // href
-  let href
-  if (target_ast) {
-    href = xHrefAttr(target_ast, context)
-  }
-
-  // content
-  let content;
-  if (content_arg === undefined) {
-    if (target_id === context.options.ref_prefix) {
-      content = HTML_HOME_MARKER
-    } else {
-      if (context.renderXAsHref) {
-        content = renderArg(href_arg, context)
-      } else {
-        if (!target_ast) {
-          return [href, renderErrorXUndefined(ast, context, target_id)];
-        }
-        let x_text_options = {
-          caption_prefix_span: false,
-          capitalize: ast.validation_output.c.boolean,
-          from_x: true,
-          quote: true,
-          pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
-        };
-        if (ast.validation_output.magic.boolean) {
-          const first_ast = href_arg.get(0);
-          if (first_ast.node_type === AstType.PLAINTEXT) {
-            const sep_idx = first_ast.text.lastIndexOf(Macro.HEADER_SCOPE_SEPARATOR)
-            const idx = sep_idx === -1 ? 0 : sep_idx + 1
-            const c = first_ast.text[idx]
-            if (
-              // Possible on home article on web, which has empty ID.
-              c !== undefined &&
-              c !== c.toLowerCase()
-            ) {
-              x_text_options.capitalize = true
-            }
-          }
-          const last_ast = href_arg.get(href_arg.length() - 1);
-          if (last_ast.node_type === AstType.PLAINTEXT) {
-            const text = first_ast.text
-            if (
-              text !== pluralizeWrap(text, 1) &&
-              // Due to buggy pluralize behaviour, it can be different from both.
-              // So let's check and abort otherwise just using what is actually in the ref
-              // https://github.com/plurals/pluralize/issues/172
-              // for those weirder cases.
-              text === pluralizeWrap(text, 2)
-            ) {
-              x_text_options.pluralize = true
-            }
-            if (ast.validation_output.magic.boolean) {
-              const words = text.split(PLURALIZE_WORD_SPLIT_REGEX)
-              x_text_options.forceLastWord = words[words.length - 1]
-            }
-          }
-        }
-        if (ast.validation_output.full.given) {
-          x_text_options.style_full = ast.validation_output.full.boolean
-          x_text_options.style_full_from_x = true
-        }
-        const xTextBaseRet = xTextBase(target_ast, context, x_text_options);
-        if (showDisambiguate) {
-          content = xTextBaseRet.innerWithDisambiguate
-        } else {
-          content = xTextBaseRet.full
-        }
-        if (content === ``) {
-          let message = `empty internal link body: "${target_id}"`;
-          renderError(context, message, ast.source_location);
-          return errorMessageInOutput(message, context);
-        }
-      }
-    }
-  } else {
-    // Explicit content given, just use it then.
-    content = renderArg(content_arg, context);
-  }
-  return [href, content, target_ast];
-}
-
 /** Calculate the href value to a given target AstNode.
  *
  * This takes into account e.g. if the target node is in a different source file:
@@ -8683,7 +8580,6 @@ function xHrefAttr(target_ast, context) {
  *         {string} innerWithDisambiguate: 'Python (programming language)'. Note no .meta span on the disambiguate.
  */
 function xTextBase(ast, context, options={}) {
-  context = cloneAndSet(context, 'in_a', true)
   if  (!('addNumberDiv' in options)) {
     options.addNumberDiv = false;
   }
@@ -10775,7 +10671,7 @@ const OUTPUT_FORMATS_LIST = [
                 for (const ancestor of nearestAncestors) {
                   entries.push({
                     href: xHrefAttr(ancestor, context),
-                    content: renderTitlePossibleHomeMarker(ancestor, context),
+                    content: renderTitlePossibleHomeMarker(ancestor, cloneAndSet(context, 'in_a', true)),
                   })
                 }
                 // Breadcrumb.
@@ -10791,7 +10687,8 @@ const OUTPUT_FORMATS_LIST = [
             parent_links = []
             for (const parent_ast of parent_asts) {
               // .u for Up
-              parent_links.push(`<a${xHrefAttr(parent_ast, context)} class="u"> ${renderTitlePossibleHomeMarker(parent_ast, context)}</a>`);
+              parent_links.push(`<a${xHrefAttr(parent_ast, context)} class="u"> ${
+                renderTitlePossibleHomeMarker(parent_ast, cloneAndSet(context, 'in_a', true))}</a>`);
             }
             parent_links = parent_links.join('');
             if (parent_links) {
@@ -11501,11 +11398,100 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
         },
         [Macro.UNORDERED_LIST_MACRO_NAME]: htmlRenderSimpleElem('ul', UL_OL_OPTS),
         [Macro.X_MACRO_NAME]: function(ast, context) {
-          let [href, content, target_ast] = xGetHrefContent(
-            ast,
-            context,
-            { showDisambiguate: ast.validation_output.showDisambiguate.boolean }
-          )
+          const showDisambiguate = ast.validation_output.showDisambiguate.boolean
+          const { href_arg, target_id, target_id_raw, target_ast } = xGetTargetAst(ast, context)
+          const content_arg = ast.args.content
+
+          let href
+          let content
+          if (ast.validation_output.topic.boolean) {
+            let topicTitle = target_id_raw
+            let topicTitleSingular = topicTitle
+            if (!ast.validation_output.p.boolean) {
+              topicTitleSingular = pluralizeWrap(topicTitleSingular, 1)
+            }
+            const topicId = titleToIdContext(topicTitleSingular, undefined, context)
+            if (content_arg !== undefined) {
+              topicTitle = renderArg(content_arg, context)
+            }
+            href = htmlAttr('href', `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${topicId}`)
+            content = topicTitle
+          } else {
+            if (target_ast) {
+              href = xHrefAttr(target_ast, context)
+            }
+
+            if (content_arg === undefined) {
+              if (target_id === context.options.ref_prefix) {
+                content = HTML_HOME_MARKER
+              } else if (context.renderXAsHref) {
+                content = renderArg(href_arg, context)
+              } else {
+                if (!target_ast) {
+                  content = renderErrorXUndefined(ast, context, target_id)
+                } else {
+                  let x_text_options = {
+                    caption_prefix_span: false,
+                    capitalize: ast.validation_output.c.boolean,
+                    from_x: true,
+                    quote: true,
+                    pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
+                  };
+                  if (ast.validation_output.magic.boolean) {
+                    const first_ast = href_arg.get(0);
+                    if (first_ast.node_type === AstType.PLAINTEXT) {
+                      const sep_idx = first_ast.text.lastIndexOf(Macro.HEADER_SCOPE_SEPARATOR)
+                      const idx = sep_idx === -1 ? 0 : sep_idx + 1
+                      const c = first_ast.text[idx]
+                      if (
+                        // Possible on home article on web, which has empty ID.
+                        c !== undefined &&
+                        c !== c.toLowerCase()
+                      ) {
+                        x_text_options.capitalize = true
+                      }
+                    }
+                    const last_ast = href_arg.get(href_arg.length() - 1);
+                    if (last_ast.node_type === AstType.PLAINTEXT) {
+                      const text = first_ast.text
+                      if (
+                        text !== pluralizeWrap(text, 1) &&
+                        // Due to buggy pluralize behaviour, it can be different from both.
+                        // So let's check and abort otherwise just using what is actually in the ref
+                        // https://github.com/plurals/pluralize/issues/172
+                        // for those weirder cases.
+                        text === pluralizeWrap(text, 2)
+                      ) {
+                        x_text_options.pluralize = true
+                      }
+                      if (ast.validation_output.magic.boolean) {
+                        const words = text.split(PLURALIZE_WORD_SPLIT_REGEX)
+                        x_text_options.forceLastWord = words[words.length - 1]
+                      }
+                    }
+                  }
+                  if (ast.validation_output.full.given) {
+                    x_text_options.style_full = ast.validation_output.full.boolean
+                    x_text_options.style_full_from_x = true
+                  }
+                  const xTextBaseRet = xTextBase(target_ast, cloneAndSet(context, 'in_a', true), x_text_options);
+                  if (showDisambiguate) {
+                    content = xTextBaseRet.innerWithDisambiguate
+                  } else {
+                    content = xTextBaseRet.full
+                  }
+                  if (content === ``) {
+                    let message = `empty internal link body: "${target_id}"`;
+                    renderError(context, message, ast.source_location);
+                    content = errorMessageInOutput(message, context);
+                  }
+                }
+              }
+            } else {
+              // Explicit content given, just use it then.
+              content = renderArg(content_arg, context);
+            }
+          }
           let incompatible_pair
           if (ast.validation_output.full.given) {
             if (ast.validation_output.ref.given) {

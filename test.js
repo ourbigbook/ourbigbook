@@ -553,6 +553,14 @@ function assert_cli(
     if (!('assert_not_exists' in options)) {
       options.assert_not_exists = [];
     }
+    if (!('assert_stderr_contains' in options)) {
+      // Assert that stderr contains string/regex matches.
+      options.assert_stderr_contains = []
+    }
+    if (!('assert_stdout_contains' in options)) {
+      // Assert that stdout contains string/regex matches.
+      options.assert_stdout_contains = []
+    }
     if (!('assert_not_xpath' in options)) {
       options.assert_not_xpath = {};
     }
@@ -625,11 +633,43 @@ function assert_cli(
       input: options.stdin,
     });
     const assert_msg = exec_assert_message(out, cmd, args, cwd);
+    const stdout_str = out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING)
+    const stderr_str = out.stderr.toString(ourbigbook_nodejs_webpack_safe.ENCODING)
     assert.strictEqual(out.status, options.assert_exit_status, assert_msg);
+    for (const contains of options.assert_stdout_contains) {
+      if (typeof contains === 'string') {
+        assert.notStrictEqual(
+          stdout_str.indexOf(contains),
+          -1,
+          `stdout should contain "${contains}"\n\n${assert_msg}`
+        )
+      } else if (contains.constructor === RegExp) {
+        assert.notStrictEqual(
+          stdout_str.match(contains),
+          null,
+          `stdout should match "${contains}"\n\n${assert_msg}`
+        )
+      }
+    }
+    for (const contains of options.assert_stderr_contains) {
+      if (typeof contains === 'string') {
+        assert.notStrictEqual(
+          stderr_str.indexOf(contains),
+          -1,
+          `stderr should contain "${contains}"\n\n${assert_msg}`
+        )
+      } else if (contains.constructor === RegExp) {
+        assert.notStrictEqual(
+          stderr_str.match(contains),
+          null,
+          `stderr should match "${contains}"\n\n${assert_msg}`
+        )
+      }
+    }
     for (const xpath_expr of options.assert_xpath_stdout) {
       assert_xpath(
         xpath_expr,
-        out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING),
+        stdout_str,
         {message: assert_msg},
       );
     }
@@ -10860,11 +10900,29 @@ assert_cli(
   }
 )
 assert_cli(
+  '--view-output fails on stdin conversion',
+  {
+    args: ['--view-output'],
+    stdin: 'qwer',
+    assert_exit_status: 1,
+    assert_stderr_contains: ['--view-output can only be used on single-file conversions'],
+  }
+)
+assert_cli(
   'input from file and --stdout produces output on stdout',
   {
     args: ['--stdout', 'index.bigb'],
     assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
     filesystem: { 'index.bigb': '= Notindex\n\naabb\n' },
+  }
+)
+assert_cli(
+  '--view-output fails on directory conversion',
+  {
+    args: ['--view-output', '.'],
+    filesystem: { 'index.bigb': '= Notindex\n\naabb\n' },
+    assert_exit_status: 1,
+    assert_stderr_contains: ['--view-output can only be used on single-file conversions'],
   }
 )
 assert_cli(

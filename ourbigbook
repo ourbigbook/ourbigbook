@@ -699,6 +699,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   if (
     nonOurbigbookOptions.cli.formatSource
   ) {
+    nonOurbigbookOptions.last_output_path = first_output_path
     // I should use callbacks instead of doing this. But lazy.
     return
   }
@@ -954,6 +955,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   if (ourbigbook_options.perf) {
     console.error(`perf convert_path_to_file_end ${now()}`);
   }
+  nonOurbigbookOptions.last_output_path = first_output_path
   return output;
 }
 
@@ -1233,6 +1235,17 @@ function runCmd(cmd, args=[], options={}) {
   return ret
 }
 
+function viewOutput(output_path, cmdOpts) {
+  const resolved_path = path.resolve(output_path)
+  if (process.platform === 'darwin') {
+    runCmd('open', [resolved_path], cmdOpts)
+  } else if (process.platform === 'win32') {
+    runCmd('cmd', ['/c', 'start', '', resolved_path], cmdOpts)
+  } else {
+    runCmd('xdg-open', [resolved_path], cmdOpts)
+  }
+}
+
 /** Skip path from ourbigbook conversion. */
 function ignore_path(
   ignore_basenames,
@@ -1471,6 +1484,7 @@ cli_parser.option('--web-url <url>', 'Set a custom sync URL for --web: https://d
 cli_parser.option('--web-user <username>', 'Set username from CLI: https://docs.ourbigbook.com#web-user');
 cli_parser.option('--unsafe-ace', 'https://docs.ourbigbook.com#unsafe-ace');
 cli_parser.option('--unsafe-xss', 'https://docs.ourbigbook.com#unsafe-xss');
+cli_parser.option('-V, --view-output', 'Open the main output file in a browser after a single-file conversion: https://docs.ourbigbook.com#view-output', false);
 
 // Positional arguments.
 cli_parser.argument('[input_path...]', 'file or directory to convert http://docs.ourbigbook.com#ourbigbook-executable. If the first path is a file, all others must also be files (and not directories) as an optimization limitation. And they must lie in the same OurBigBook project.');
@@ -1911,6 +1925,9 @@ if (cli.helpMacros) {
     process.exit(0)
   }
   if (inputPath === undefined) {
+    if (cli.viewOutput) {
+      cli_error('--view-output can only be used on single-file conversions');
+    }
     // Input from stdin.
     title = 'stdin';
     input = await readStdin();
@@ -1922,6 +1939,17 @@ if (cli.helpMacros) {
   } else {
     if (!fs.existsSync(inputPath)) {
       cli_error(`input_path does not exist: "${inputPath}"`);
+    }
+    if (cli.viewOutput) {
+      if (!input_path_is_file) {
+        cli_error('--view-output can only be used on single-file conversions');
+      }
+      if (inputPaths.length !== 1) {
+        cli_error('--view-output requires exactly one input file');
+      }
+      if (!cli.render) {
+        cli_error('--view-output requires render output; it is incompatible with --no-render');
+      }
     }
     let publishDir
     let publishDirCwd
@@ -2517,6 +2545,9 @@ if (cli.helpMacros) {
       if (publish) {
         cli_error('--publish and --watch are incompatible');
       }
+      if (cli.viewOutput) {
+        cli_error('--view-output and --watch are incompatible');
+      }
       await create_db(ourbigbook_options, nonOurbigbookOptions);
       if (!input_path_is_file) {
         await reconcile_db_and_filesystem(inputPath, ourbigbook_options, nonOurbigbookOptions);
@@ -2550,6 +2581,16 @@ if (cli.helpMacros) {
         }
         if (!nonOurbigbookOptions.had_error && cli.render) {
           await check_db(nonOurbigbookOptions)
+        }
+        if (
+          cli.viewOutput &&
+          !nonOurbigbookOptions.had_error
+        ) {
+          const output_path = nonOurbigbookOptions.last_output_path
+          if (output_path === undefined) {
+            cli_error('could not determine output file for --view-output')
+          }
+          viewOutput(output_path, cmdOpts)
         }
       } else {
         if (cli.stdout) {

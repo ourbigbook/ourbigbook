@@ -7784,7 +7784,10 @@ function renderToc(context) {
       //  cur_context = context;
       //}
 
-      entry.content = xText(target_ast, context, {
+      // ToC entry content is wrapped in an <a>, so nested links inside titles
+      // (e.g. headers containing <x> references) must be flattened to text.
+      const toc_link_context = cloneAndSet(context, 'in_a', true)
+      entry.content = xText(target_ast, toc_link_context, {
         addNumberDiv: true,
         addNumberElem: 'i',
         addNumberClass: 'n',
@@ -7813,7 +7816,7 @@ function renderToc(context) {
           parent_href_target = tocIdWithScopeRemoval(parent_ast.id, context);
         }
         entry.parent_href = htmlAttr('href', '#' + parent_href_target);
-        entry.parent_content = xText(parent_ast, context, { show_caption_prefix: false })
+        entry.parent_content = xText(parent_ast, toc_link_context, { show_caption_prefix: false })
       }
       // The inner <div></div> inside arrow is so that:
       // - outter div: takes up space to make clicking easy

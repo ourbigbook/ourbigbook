@@ -8375,6 +8375,29 @@ assert_lib('toc: disambiguate shows on toc but title2 does not',
     },
   },
 )
+assert_lib('toc: title with x does not create nested links',
+  {
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': `= Toplevel
+
+== Target
+
+== <Target> tribute
+`,
+    },
+    assert_xpath: {
+      'index.html': [
+        "//*[@id='_toc']//x:a[@href='#target-tribute' and contains(., 'Target tribute')]",
+      ],
+    },
+    assert_not_xpath: {
+      'index.html': [
+        "//*[@id='_toc']//x:a[@href='#target-tribute']//x:a",
+      ],
+    },
+  },
+)
 
 assert_lib_ast('toc: the toc is added before the first h1 when there are multiple toplevel h1',
   `aa

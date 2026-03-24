@@ -3801,6 +3801,7 @@ This shows what includes render as.
 
 = `\JsCanvasDemo`
 {parent=Macro}
+{tag=XSS unsafe macro}
 
 The `JsCanvasDemo` macro allows you to create interactive HTML/JavaScript https://en.wikipedia.org/wiki/Canvas_element[canvas] demos easily.
 
@@ -3899,6 +3900,9 @@ void main() {
   }
 }
 ]]
+
+One day, I believe, one day, humanity shall invent a way to sandbox JavaScript execution so that this will cease to be an <XSS unsafe macro>: 
+* https://stackoverflow.com/questions/12209657/how-can-i-sandbox-untrusted-user-submitted-javascript-content
 
 = List
 {parent=Macro}
@@ -4278,6 +4282,7 @@ One major advantage of this, is that when writing documentation, you often want 
 
 = Passthrough
 {parent=Macro}
+{tag=XSS unsafe macro}
 {title2=`\Passthrough`, `\passthrough`}
 
 Dumps its contents directly into the rendered output.
@@ -11959,7 +11964,7 @@ OurBigBook HTML output is designed to be XSS safe by default, any non-XSS safe c
 
 Of course, we are walking on eggs, and this is hard to assert, so the best thing to do later on will be to parse the output e.g. with https://developer.mozilla.org/en-US/docs/Web/API/DOMParser[`DOMParser`] to ensure that it is valid and does not contain any `script` tags, but it is not as simple as that: https://stackoverflow.com/questions/37435077/execute-javascript-for-xss-without-script-tags/61588322#61588322
 
-XSS unsafe constructs lead to errors by default. XSS unsafe constructs can be allowed <OurBigBook CLI>[from the command] line with:
+XSS unsafe constructs lead to errors by default. XSS unsafe constructs can be allowed <OurBigBook CLI>[from the command line] with:
 ``
 ./ourbigbook --unsafe-xss
 ``
@@ -11967,6 +11972,11 @@ or from the <ourbigbook.json> file with an entry of form:
 ``
 "unsafeXss": true
 ``
+
+= XSS unsafe macro
+{parent=unsafeXss}
+
+An XSS unsafe macro is a macro which cannot be used unless <unsafeXss> is enabled. This in particular prevents their usage in <OurBigBook.com>.
 
 = Contact
 {parent=}

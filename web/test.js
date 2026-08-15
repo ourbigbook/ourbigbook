@@ -22,6 +22,7 @@ const {
   TRI_TRUE,
   getList,
   getLocked,
+  getVerified,
 } = require('./front/js')
 
 const web_api = require('ourbigbook/web_api');
@@ -342,6 +343,20 @@ it('getLocked', function() {
   assert.deepStrictEqual(parse(TRI_ALL), [undefined, 200])
   assert.deepStrictEqual(parse('true'), [false, 422])
   assert.deepStrictEqual(parse([TRI_FALSE]), [false, 422])
+})
+
+it('getVerified', function() {
+  function parse(verified) {
+    const res = { statusCode: 200 }
+    const ret = getVerified({ query: { verified } }, res)
+    return [ret, res.statusCode]
+  }
+  assert.deepStrictEqual(parse(undefined), [true, 200])
+  assert.deepStrictEqual(parse(TRI_FALSE), [false, 200])
+  assert.deepStrictEqual(parse(TRI_TRUE), [true, 200])
+  assert.deepStrictEqual(parse(TRI_ALL), [undefined, 200])
+  assert.deepStrictEqual(parse('true'), [true, 422])
+  assert.deepStrictEqual(parse([TRI_TRUE]), [true, 422])
 })
 
 it('User discussionCount and commentCount caches', async function() {
@@ -2959,27 +2974,47 @@ it(`api: user: locked users can't do much`, async () => {
     }))
     assertStatus(status, data)
 
-    // User listings can select unlocked users, locked users, or both.
     const User = test.sequelize.models.User
-    async function listedUsernames(locked) {
+    await User.update({ verified: false }, { where: { username: 'user1' } })
+
+    // User listings can independently filter locked and verified users.
+    async function listedUsernames(locked, verified) {
       const users = await User.getUsers({
         count: false,
         locked,
         order: 'username',
         orderAscDesc: 'ASC',
         sequelize: test.sequelize,
+        verified,
       })
       return users.map(user => user.username)
     }
-    assert.deepStrictEqual(await listedUsernames(false), ['user1', 'user2'])
-    assert.deepStrictEqual(await listedUsernames(true), ['user0'])
-    assert.deepStrictEqual(await listedUsernames(undefined), ['user0', 'user1', 'user2'])
+    assert.deepStrictEqual(await listedUsernames(false, true), ['user2'])
+    assert.deepStrictEqual(await listedUsernames(false, false), ['user1'])
+    assert.deepStrictEqual(await listedUsernames(false, undefined), ['user1', 'user2'])
+    assert.deepStrictEqual(await listedUsernames(true, true), ['user0'])
+    assert.deepStrictEqual(await listedUsernames(undefined, true), ['user0', 'user2'])
+    assert.deepStrictEqual(await listedUsernames(undefined, undefined), ['user0', 'user1', 'user2'])
 
     if (testNext) {
       ;({data, status} = await test.sendJsonHttp('GET', routes.users()))
       assertStatus(status, data)
       assert.match(data, /Only unlocked users are being shown/)
+      assert.match(data, /Only users with verified email are being shown/)
       assert.doesNotMatch(data, /href="\/user0"/)
+      assert.doesNotMatch(data, /href="\/user1"/)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.users({ verified: TRI_FALSE })))
+      assertStatus(status, data)
+      assert.match(data, /Only users with unverified email are being shown/)
+      assert.match(data, /href="\/user1"/)
+      assert.doesNotMatch(data, /href="\/user2"/)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.users({ verified: TRI_ALL })))
+      assertStatus(status, data)
+      assert.match(data, /Users with unverified email are being shown/)
+      assert.match(data, /href="\/user1"/)
+      assert.match(data, /href="\/user2"/)
 
       ;({data, status} = await test.sendJsonHttp('GET', routes.users({ locked: TRI_TRUE })))
       assertStatus(status, data)
@@ -2991,7 +3026,13 @@ it(`api: user: locked users can't do much`, async () => {
       assertStatus(status, data)
       assert.match(data, /Locked users are being shown/)
       assert.match(data, /href="\/user0"/)
+      assert.doesNotMatch(data, /href="\/user1"/)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.users({ locked: TRI_ALL, verified: TRI_ALL })))
+      assertStatus(status, data)
+      assert.match(data, /href="\/user0"/)
       assert.match(data, /href="\/user1"/)
+      assert.match(data, /href="\/user2"/)
     }
 
     // Check that user0 cannot do stuff.

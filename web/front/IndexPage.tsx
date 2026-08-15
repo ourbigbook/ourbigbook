@@ -48,6 +48,7 @@ export interface IndexPageProps extends CommonPropsType {
   issueArticle?: ArticleType;
   followed?: boolean;
   hasLocked?: boolean;
+  hasUnverified?: boolean;
   itemType?: 'article' | 'comment' | 'discussion' | 'topic' | 'user';
   locked?: boolean;
   order: string;
@@ -61,6 +62,7 @@ export interface IndexPageProps extends CommonPropsType {
   totalUsers?: number,
   users?: UserType[];
   usersCount?: number;
+  verified?: boolean;
 }
 
 function IndexPageHoc({
@@ -76,6 +78,7 @@ function IndexPageHoc({
     commentsCount,
     followed=false,
     hasLocked,
+    hasUnverified,
     issueArticle,
     itemType,
     locked,
@@ -91,6 +94,7 @@ function IndexPageHoc({
     totalUsers,
     users,
     usersCount,
+    verified,
   }: IndexPageProps) {
     let title
     if (isHomepage) {
@@ -336,11 +340,13 @@ function IndexPageHoc({
         {itemType === 'user'
           ? <UserList {...{
               hasLocked,
+              hasUnverified,
               locked,
               loggedInUser,
               page,
               users,
               usersCount,
+              verified,
             }}/>
           : itemType === 'comment'
             ? <CommentList {...{

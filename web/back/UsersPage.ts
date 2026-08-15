@@ -2,7 +2,7 @@ import { GetServerSideProps } from 'next'
 
 import { getLoggedInUser } from 'back'
 import { articleLimit } from 'front/config'
-import { getLocked, getOrderAndPage } from 'front/js'
+import { getLocked, getOrderAndPage, getVerified } from 'front/js'
 import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
 
@@ -11,6 +11,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
 ) => {
   const loggedInUser = await getLoggedInUser(req, res)
   const locked = getLocked(req, res)
+  const verified = getVerified(req, res)
   const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, {
     defaultOrder: 'score',
     allowedSorts: {
@@ -34,6 +35,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     totalTopics,
     totalUsers,
     lockedUsers,
+    unverifiedUsers,
     { count: usersCount, rows: userRows },
   ] = await Promise.all([
     // site
@@ -55,6 +57,8 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     User.count({ where: { locked: false } }),
     // lockedUsers
     User.count({ where: { locked: true } }),
+    // unverifiedUsers
+    User.count({ where: { verified: false } }),
     // users
     User.getUsers({
       locked,
@@ -63,6 +67,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
       orderAscDesc: ascDesc,
       limit: articleLimit,
       sequelize,
+      verified,
     }),
   ])
   const [users, pinnedArticle] = await Promise.all([
@@ -79,6 +84,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
   ])
   const props: IndexPageProps = {
     hasLocked: !!lockedUsers,
+    hasUnverified: !!unverifiedUsers,
     itemType: 'user',
     locked: locked === undefined ? null : locked,
     order,
@@ -92,6 +98,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     totalUsers,
     users,
     usersCount,
+    verified: verified === undefined ? null : verified,
   }
   if (loggedInUser) {
     props.loggedInUser = await loggedInUser.toJson()

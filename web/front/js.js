@@ -52,6 +52,10 @@ function getLocked(req, res) {
   return getTri(req, res, 'locked', false)
 }
 
+function getVerified(req, res) {
+  return getTri(req, res, 'verified', true)
+}
+
 function getOrderAndPage(req, page, opts={}) {
   const [order, orderErr, ascDesc] = getOrder(req, opts)
   const [pageNum, pageErr] = getPage(page)
@@ -299,6 +303,7 @@ module.exports = {
   getCommentSlug,
   getList,
   getLocked,
+  getVerified,
   getOrder,
   getOrderAndPage,
   getPage,

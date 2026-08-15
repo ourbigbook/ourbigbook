@@ -253,12 +253,12 @@ module.exports = (sequelize) => {
         { fields: ['commentCount', 'createdAt'] },
         { fields: ['score'] },
         { fields: ['username'] },
-        { fields: ['locked', 'createdAt'] },
-        { fields: ['locked', 'followerCount', 'createdAt'] },
-        { fields: ['locked', 'discussionCount', 'createdAt'] },
-        { fields: ['locked', 'commentCount', 'createdAt'] },
-        { fields: ['locked', 'score', 'createdAt'] },
-        { fields: ['locked', 'username'] },
+        { fields: ['verified', 'locked', 'createdAt'] },
+        { fields: ['verified', 'locked', 'followerCount', 'createdAt'] },
+        { fields: ['verified', 'locked', 'discussionCount', 'createdAt'] },
+        { fields: ['verified', 'locked', 'commentCount', 'createdAt'] },
+        { fields: ['verified', 'locked', 'score', 'createdAt'] },
+        { fields: ['verified', 'locked', 'username'] },
       ]
     }
   )
@@ -579,6 +579,7 @@ module.exports = (sequelize) => {
     orderAscDesc,
     sequelize,
     username,
+    verified,
   }) {
     if (count === undefined) {
       count = true
@@ -616,6 +617,9 @@ module.exports = (sequelize) => {
     }
     if (username) {
       where.username = username
+    }
+    if (verified !== undefined) {
+      where.verified = verified
     }
     if (order !== 'createdAt') {
       // To make results deterministic.

@@ -11222,6 +11222,10 @@ Types:
   * http://localhost:3000/go/users?locked=0[]: show only unlocked users. Same as the default http://localhost:3000/go/users[].
   * http://localhost:3000/go/users?locked=1[]: show only locked users.
   * http://localhost:3000/go/users?locked=2[]: show both locked and unlocked users.
+  The user list also hides users without verified email by default:
+  * http://localhost:3000/go/users?verified=1[]: show only users with verified email. Same as the default http://localhost:3000/go/users[].
+  * http://localhost:3000/go/users?verified=0[]: show only users with unverified email.
+  * http://localhost:3000/go/users?verified=2[]: show users with both verified and unverified email.
 
 = OurBigBook Web URL standards: article ID comes last due to slash
 {c}

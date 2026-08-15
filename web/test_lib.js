@@ -534,6 +534,15 @@ async function generateDemoData(params) {
     }
     User.setPassword(lockedUserArg, process.env.OURBIGBOOK_DEMO_USER_PASSWORD || 'asdf')
     userArgs.push(lockedUserArg)
+    const unverifiedUserArg = {
+      username: 'unverified-user',
+      displayName: 'Unverified User',
+      email: 'unverified-user@mail.com',
+      locked: false,
+      verified: false,
+    }
+    User.setPassword(unverifiedUserArg, process.env.OURBIGBOOK_DEMO_USER_PASSWORD || 'asdf')
+    userArgs.push(unverifiedUserArg)
     const users = []
     const userIdToUser = {}
     for (const userArg of userArgs) {

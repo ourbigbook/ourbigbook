@@ -50,9 +50,9 @@ const UserList = ({
               <th className="shrink"><UserIcon /> User</th>
               <th className="shrink"><UserIcon /> Username</th>
               <th className="shrink"><FollowIcon /> Followers</th>
+              <th className="shrink"><TimeIcon /> Joined</th>
               <th className="shrink"><DiscussionIcon /> Discussions</th>
               <th className="shrink"><CommentIcon /> Comments</th>
-              <th className="shrink"><TimeIcon /> Joined</th>
               <th className="shrink"><OkIcon /> Email verified</th>
               <th className="shrink"><LockIcon /> Locked</th>
             </tr>
@@ -66,9 +66,9 @@ const UserList = ({
                 </td>
                 <td className="shrink"><UserLink user={user}>@{user.username}</UserLink></td>
                 <td className="shrink right bold"><CustomLink href={routes.userFollowed(user.username)}>{user.followerCount}</CustomLink></td>
+                <td className="shrink">{formatDate(user.createdAt)}</td>
                 <td className="shrink right bold"><CustomLink href={routes.userIssues(user.username)}>{user.discussionCount}</CustomLink></td>
                 <td className="shrink right bold"><CustomLink href={routes.userComments(user.username)}>{user.commentCount}</CustomLink></td>
-                <td className="shrink">{formatDate(user.createdAt)}</td>
                 <td className="shrink right">{booleanToStringForTable(user.verified)}</td>
                 <td className="shrink right">{booleanToStringForTable(user.locked)}</td>
               </tr>

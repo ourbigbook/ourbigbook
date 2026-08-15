@@ -409,6 +409,10 @@ async function sync(sequelize, opts={}) {
     await sequelizeCreateTriggerUpdateCount(sequelize, User, UserFollowUser, 'followerCount', 'followId')
     await sequelizeCreateTriggerUpdateCount(sequelize, Issue, Comment, 'commentCount', 'issueId')
     await sequelizeCreateTriggerUpdateCount(sequelize, Article, Issue, 'issueCount', 'articleId')
+    await sequelizeCreateTriggerUpdateCount(
+      sequelize, User, Issue, 'discussionCount', 'authorId', { nameExtra: 'user_discussion_count' })
+    await sequelizeCreateTriggerUpdateCount(
+      sequelize, User, Comment, 'commentCount', 'authorId', { nameExtra: 'user_comment_count' })
 
     // Article
     await sequelizeCreateTrigger(sequelize, Article, 'delete',
@@ -511,7 +515,41 @@ async function normalize({
       }
     } else {
       for (const username of usernames) {
-        if (what === 'nested-set') {
+        if (
+          what === 'user-discussion-count' ||
+          what === 'user-comment-count'
+        ) {
+          const childModel = what === 'user-discussion-count' ? Issue : Comment
+          const checkField = what === 'user-discussion-count' ? 'discussionCount' : 'commentCount'
+          const user = await User.findOne({
+            attributes: ['id', 'username', checkField],
+            where: { username },
+            transaction,
+          })
+          const count = await childModel.count({
+            where: { authorId: user.id },
+            transaction,
+          })
+          if (check) {
+            const msg = `${what} ${username} ${count} !== ${user[checkField]}`
+            assert.strictEqual(count, user[checkField], msg)
+          }
+          if (print) {
+            console.log(`${what} ${username} ${user[checkField]}`)
+          }
+          if (fix) {
+            if (log)
+              console.log(`${what} ${username} ${count}`)
+            await User.update(
+              { [checkField]: count },
+              {
+                silent: true,
+                transaction,
+                where: { id: user.id },
+              },
+            )
+          }
+        } else if (what === 'nested-set') {
           if (fix) {
             await Article.updateNestedSets(username, { transaction })
           }

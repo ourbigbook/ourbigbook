@@ -1,8 +1,10 @@
 export type UserType = {
   admin?: string;
   bio: string;
+  commentCount: number;
   createdAt: string;
   displayName: string;
+  discussionCount: number;
   effectiveImage: string;
   email?: string;
   followerCount: number;

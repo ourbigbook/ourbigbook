@@ -344,6 +344,75 @@ it('getLocked', function() {
   assert.deepStrictEqual(parse([TRI_FALSE]), [false, 422])
 })
 
+it('User discussionCount and commentCount caches', async function() {
+  const sequelize = this.test.sequelize
+  const { Comment, Issue, User } = sequelize.models
+  const user0 = await createUser(sequelize, 0)
+  const user1 = await createUser(sequelize, 1)
+  const article = await createArticle(sequelize, user1, { i: 0 })
+
+  async function assertCounts(user, discussionCount, commentCount) {
+    await user.reload()
+    assert.strictEqual(user.discussionCount, discussionCount)
+    assert.strictEqual(user.commentCount, commentCount)
+  }
+
+  const issue = await Issue.createSideEffects(user0, article, {
+    number: 1,
+    titleSource: 'Discussion',
+  })
+  const comment = await Comment.createSideEffects(user0, issue, {
+    number: 1,
+    source: 'Comment',
+  })
+  await assertCounts(user0, 1, 1)
+
+  // Trigger updates participate in the caller's transaction and roll back with it.
+  await assert.rejects(sequelize.transaction(async transaction => {
+    await Issue.createSideEffects(user0, article, {
+      number: 2,
+      titleSource: 'Rolled back discussion',
+    }, { transaction })
+    await Comment.createSideEffects(user0, issue, {
+      number: 2,
+      source: 'Rolled back comment',
+    }, { transaction })
+    throw new Error('rollback counts')
+  }), /rollback counts/)
+  await assertCounts(user0, 1, 1)
+
+  // Reassigning authors moves the cached counts between users.
+  await issue.update({ authorId: user1.id })
+  await comment.update({ authorId: user1.id })
+  await assertCounts(user0, 0, 0)
+  await assertCounts(user1, 1, 1)
+
+  await sequelize.transaction(async transaction => {
+    await comment.destroy({ transaction })
+    await issue.destroy({ transaction })
+  })
+  await assertCounts(user1, 0, 0)
+
+  // normalize can repair either cache if it gets out of sync.
+  await User.update(
+    { discussionCount: 99, commentCount: 99 },
+    { where: { id: user0.id } },
+  )
+  await models.normalize({
+    fix: true,
+    sequelize,
+    usernames: [user0.username],
+    whats: ['user-discussion-count', 'user-comment-count'],
+  })
+  await models.normalize({
+    check: true,
+    sequelize,
+    usernames: [user0.username],
+    whats: ['user-discussion-count', 'user-comment-count'],
+  })
+  await assertCounts(user0, 0, 0)
+})
+
 it('User.findAndCountArticlesByFollowed', async function() {
   const sequelize = this.test.sequelize
   const user0 = await createUser(sequelize, 0)
@@ -1247,6 +1316,20 @@ Welcome to my home page hacked!
       assert.match(data.issue.render, /The <i>body<\/i> 1 index 0\./)
       assert.strictEqual(data.issue.number, 1)
 
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.discussionCount, 8)
+      ;({data, status} = await test.webApi.user('user1'))
+      assertStatus(status, data)
+      assert.strictEqual(data.discussionCount, 1)
+      ;({data, status} = await test.webApi.users({ sort: 'discussions' }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user0', discussionCount: 8 },
+        { username: 'user1', discussionCount: 1 },
+        { username: 'user2', discussionCount: 0 },
+      ])
+
     // Create issue errors
 
       // Article does not exist
@@ -1493,6 +1576,17 @@ Welcome to my home page hacked!
       assert.match(data.comment.render, /The <i>body<\/i> 1 0 0\./)
       assert.strictEqual(data.comment.number, 1)
 
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.commentCount, 5)
+      ;({data, status} = await test.webApi.users({ sort: 'comments' }))
+      assertStatus(status, data)
+      assertRows(data.users, [
+        { username: 'user0', commentCount: 5 },
+        { username: 'user2', commentCount: 0 },
+        { username: 'user1', commentCount: 0 },
+      ])
+
     // Create comment errors
 
       // Article does not exist
@@ -1579,6 +1673,10 @@ Welcome to my home page hacked!
       ;({data, status} = await test.webApi.issue('user0/title-0', 1))
       assertStatus(status, data)
       assert.strictEqual(data.commentCount, 1)
+
+      ;({data, status} = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.commentCount, 4)
 
       // The deleted comment is no longer visible
       ;({data, status} = await test.webApi.comment('user0/title-0', 1, 1))
@@ -1667,6 +1765,7 @@ Welcome to my home page hacked!
         assertStatus(status, data)
         ;({data, status} = await test.sendJsonHttp('GET', routes.issues({ sort: 'comments' }), ))
         assertStatus(status, data)
+        assert.match(data, /href="\/go\/discussions\?sort=comments"/)
 
         // Issue
         ;({data, status} = await test.sendJsonHttp('GET', routes.issue('user0/title-0', 1), ))
@@ -1713,6 +1812,10 @@ Welcome to my home page hacked!
         ;({data, status} = await test.sendJsonHttp('GET', routes.users({ sort: 'updated' }), ))
         assert.strictEqual(status, 422)
         ;({data, status} = await test.sendJsonHttp('GET', routes.users({ sort: 'score' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp('GET', routes.users({ sort: 'discussions' }), ))
+        assertStatus(status, data)
+        ;({data, status} = await test.sendJsonHttp('GET', routes.users({ sort: 'comments' }), ))
         assertStatus(status, data)
         ;({data, status} = await test.sendJsonHttp('GET', routes.users({ sort: 'username' }), ))
         assertStatus(status, data)

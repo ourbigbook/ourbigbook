@@ -1294,12 +1294,12 @@ function remove_duplicates_sorted_array(arr) {
 // action: SQL statement string with what must be done
 // after: 'BEFORE' or 'AFTER'
 // when: SQL statement string that goes in WHEN ( <when> )
-async function sequelizeCreateTrigger(sequelize, model, on, action, { after, when, nameExtra } = {}) {
+async function sequelizeCreateTrigger(sequelize, model, on, action, { after, when, nameExtra, transaction } = {}) {
   if (after === undefined) {
     after = 'AFTER'
   }
   if (nameExtra) {
-    nameExtra = `_${nameExtra})`
+    nameExtra = `_${nameExtra}`
   } else {
     nameExtra = ''
   }
@@ -1322,16 +1322,16 @@ BEGIN
   RETURN ${oldnew};
 END;
 $$
-`)
+`, { transaction })
     // CREATE OR REPLACE TRIGGER was only added on postgresql 14 so let's be a bit more portable for now:
     // https://stackoverflow.com/questions/35927365/create-or-replace-trigger-postgres
-    await sequelize.query(`DROP TRIGGER IF EXISTS ${triggerName} ON "${model.tableName}"`)
+    await sequelize.query(`DROP TRIGGER IF EXISTS ${triggerName} ON "${model.tableName}"`, { transaction })
     await sequelize.query(`CREATE TRIGGER ${triggerName}
   ${after} ${on.toUpperCase()}
   ON "${model.tableName}"
   FOR EACH ROW${when}
   EXECUTE PROCEDURE "${functionName}"();
-`)
+`, { transaction })
   } else if (sequelize.options.dialect === 'sqlite') {
     await sequelize.query(`
 CREATE TRIGGER IF NOT EXISTS ${triggerName}
@@ -1341,18 +1341,27 @@ CREATE TRIGGER IF NOT EXISTS ${triggerName}
   BEGIN
     ${action};
   END;
-`)
+`, { transaction })
   }
 }
 
 /** Create triggers to keep counts such as user likes article counts on article table in sync. */
-async function sequelizeCreateTriggerUpdateCount(sequelize, articleTable, likeTable, articleTableCountField, likeTableArticleIdField) {
+async function sequelizeCreateTriggerUpdateCount(
+  sequelize,
+  articleTable,
+  likeTable,
+  articleTableCountField,
+  likeTableArticleIdField,
+  opts={},
+) {
   const articleTableName = articleTable.tableName
   await sequelizeCreateTrigger(sequelize, likeTable, 'insert',
-    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" + 1 WHERE NEW."${likeTableArticleIdField}" = "${articleTableName}"."id"`
+    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" + 1 WHERE NEW."${likeTableArticleIdField}" = "${articleTableName}"."id"`,
+    opts,
   ),
   await sequelizeCreateTrigger(sequelize, likeTable, 'delete',
-    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" - 1 WHERE OLD."${likeTableArticleIdField}" = "${articleTableName}"."id"`
+    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" - 1 WHERE OLD."${likeTableArticleIdField}" = "${articleTableName}"."id"`,
+    opts,
   ),
   await sequelizeCreateTrigger(
     // I don't think this will ever happen, only insert/deletion. But still let's define it just in case.
@@ -1363,6 +1372,7 @@ async function sequelizeCreateTriggerUpdateCount(sequelize, articleTable, likeTa
     `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" - 1 WHERE OLD."${likeTableArticleIdField}" = "${articleTableName}"."id"`
     ,
     {
+      ...opts,
       when: `OLD."${likeTableArticleIdField}" <> NEW."${likeTableArticleIdField}"`,
     }
   )

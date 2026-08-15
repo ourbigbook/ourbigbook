@@ -91,6 +91,16 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      discussionCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
+      commentCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
       admin: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -239,10 +249,14 @@ module.exports = (sequelize) => {
         { fields: ['createdAt'] },
         { fields: ['email'] },
         { fields: ['followerCount'] },
+        { fields: ['discussionCount', 'createdAt'] },
+        { fields: ['commentCount', 'createdAt'] },
         { fields: ['score'] },
         { fields: ['username'] },
         { fields: ['locked', 'createdAt'] },
         { fields: ['locked', 'followerCount', 'createdAt'] },
+        { fields: ['locked', 'discussionCount', 'createdAt'] },
+        { fields: ['locked', 'commentCount', 'createdAt'] },
         { fields: ['locked', 'score', 'createdAt'] },
         { fields: ['locked', 'username'] },
       ]
@@ -268,7 +282,9 @@ module.exports = (sequelize) => {
       admin: this.admin,
       createdAt: this.createdAt.toISOString(),
       displayName: this.displayName,
+      discussionCount: this.discussionCount,
       effectiveImage: this.image || config.defaultProfileImage,
+      commentCount: this.commentCount,
       followerCount: this.followerCount,
       id: this.id,
       image: this.image,
@@ -634,6 +650,8 @@ module.exports = (sequelize) => {
     'created': 'createdAt',
   }
   User.ALLOWED_SORTS_EXTRA = {
+    'comments': 'commentCount',
+    'discussions': 'discussionCount',
     'score': undefined,
   }
 

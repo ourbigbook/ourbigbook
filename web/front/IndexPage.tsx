@@ -292,6 +292,18 @@ function IndexPageHoc({
               >
                 <UserIcon /> <AlphabeticalOrderTabTitle />
               </CustomLink>
+              <CustomLink
+                className={`tab-item${order === 'discussionCount' ? ' active' : ''}`}
+                href={routes.users({ sort: 'discussions' })}
+              >
+                <DiscussionIcon /> Discussions
+              </CustomLink>
+              <CustomLink
+                className={`tab-item${order === 'commentCount' ? ' active' : ''}`}
+                href={routes.users({ sort: 'comments' })}
+              >
+                <CommentIcon /> Comments
+              </CustomLink>
             </>}
             {itemType === 'discussion' && <>
               <CustomLink
@@ -311,6 +323,12 @@ function IndexPageHoc({
                 href={isHomepage ? routes.issues({ sort: 'score' }) : routes.articleIssues(issueArticle.slug, { sort: 'score' })}
               >
                 <StarIcon /> Top
+              </CustomLink>
+              <CustomLink
+                className={`tab-item${order === 'commentCount' ? ' active' : ''}`}
+                href={isHomepage ? routes.issues({ sort: 'comments' }) : routes.articleIssues(issueArticle.slug, { sort: 'comments' })}
+              >
+                <CommentIcon /> Comments
               </CustomLink>
             </>}
           </div>

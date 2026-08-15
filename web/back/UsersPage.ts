@@ -15,6 +15,8 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     defaultOrder: 'score',
     allowedSorts: {
       'created': 'createdAt',
+      'comments': 'commentCount',
+      'discussions': 'discussionCount',
       'follower-count': 'followerCount',
       'score': undefined,
       'username': undefined,

@@ -241,9 +241,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         // totalArticlesByUser
         Article.count({ where: { authorId: user.id, list: true } }),
         // totalCommentsByUser
-        Comment.count({ where: { authorId: user.id } }),
+        user.commentCount,
         // totalDiscussionsByUser
-        Issue.count({ where: { authorId: user.id } }),
+        user.discussionCount,
         // users
         usersPromise,
         // signupIpIsBlacklisted

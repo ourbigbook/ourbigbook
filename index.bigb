@@ -11211,7 +11211,17 @@ All lists of things will never be ISR'ed, as those can change constantly. One co
 which appear only in lists of things, will always be part of the GET query, and not params.
 
 Types:
-* booleans are `true` or `false`
+* booleans are:
+  * `0` for false
+  * `1` for true
+* tristate booleans are:
+  * `0` for false
+  * `1` for true
+  * `2` for all
+  These are used for example when filtering booleans where the default is to show only either true or false but not both, e.g., we hide locked users by default, i.e. `locked=0` is the default, therefore we have:
+  * http://localhost:3000/go/users?locked=0[]: show only unlocked users. Same as the default http://localhost:3000/go/users[].
+  * http://localhost:3000/go/users?locked=1[]: show only locked users.
+  * http://localhost:3000/go/users?locked=2[]: show both locked and unlocked users.
 
 = OurBigBook Web URL standards: article ID comes last due to slash
 {c}

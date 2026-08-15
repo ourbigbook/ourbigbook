@@ -47,7 +47,9 @@ export interface IndexPageProps extends CommonPropsType {
   commentsCount?: number;
   issueArticle?: ArticleType;
   followed?: boolean;
+  hasLocked?: boolean;
   itemType?: 'article' | 'comment' | 'discussion' | 'topic' | 'user';
+  locked?: boolean;
   order: string;
   orderAscDesc: string;
   page: number;
@@ -73,8 +75,10 @@ function IndexPageHoc({
     comments,
     commentsCount,
     followed=false,
+    hasLocked,
     issueArticle,
     itemType,
+    locked,
     loggedInUser,
     order,
     orderAscDesc,
@@ -313,6 +317,8 @@ function IndexPageHoc({
         }
         {itemType === 'user'
           ? <UserList {...{
+              hasLocked,
+              locked,
               loggedInUser,
               page,
               users,

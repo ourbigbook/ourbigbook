@@ -15,7 +15,14 @@ const convert = require('./convert')
 const models = require('./models')
 const test_lib = require('./test_lib')
 const { INVALID_UTF8_BUFFER } = test_lib
-const { AUTH_COOKIE_NAME } = require('./front/js')
+const {
+  AUTH_COOKIE_NAME,
+  TRI_ALL,
+  TRI_FALSE,
+  TRI_TRUE,
+  getList,
+  getLocked,
+} = require('./front/js')
 
 const web_api = require('ourbigbook/web_api');
 const { QUERY_TRUE_VAL } = web_api
@@ -307,6 +314,34 @@ beforeEach(async function () {
 
 afterEach(async function () {
   return this.currentTest.sequelize.close()
+})
+
+it('getList', function() {
+  function parse(listed) {
+    const res = { statusCode: 200 }
+    const ret = getList({ query: { listed } }, res)
+    return [ret, res.statusCode]
+  }
+  assert.deepStrictEqual(parse(undefined), [true, 200])
+  assert.deepStrictEqual(parse(TRI_FALSE), [false, 200])
+  assert.deepStrictEqual(parse(TRI_TRUE), [true, 200])
+  assert.deepStrictEqual(parse(TRI_ALL), [undefined, 200])
+  assert.deepStrictEqual(parse('true'), [true, 422])
+  assert.deepStrictEqual(parse([TRI_TRUE]), [true, 422])
+})
+
+it('getLocked', function() {
+  function parse(locked) {
+    const res = { statusCode: 200 }
+    const ret = getLocked({ query: { locked } }, res)
+    return [ret, res.statusCode]
+  }
+  assert.deepStrictEqual(parse(undefined), [false, 200])
+  assert.deepStrictEqual(parse(TRI_FALSE), [false, 200])
+  assert.deepStrictEqual(parse(TRI_TRUE), [true, 200])
+  assert.deepStrictEqual(parse(TRI_ALL), [undefined, 200])
+  assert.deepStrictEqual(parse('true'), [false, 422])
+  assert.deepStrictEqual(parse([TRI_FALSE]), [false, 422])
 })
 
 it('User.findAndCountArticlesByFollowed', async function() {
@@ -2821,6 +2856,41 @@ it(`api: user: locked users can't do much`, async () => {
     }))
     assertStatus(status, data)
 
+    // User listings can select unlocked users, locked users, or both.
+    const User = test.sequelize.models.User
+    async function listedUsernames(locked) {
+      const users = await User.getUsers({
+        count: false,
+        locked,
+        order: 'username',
+        orderAscDesc: 'ASC',
+        sequelize: test.sequelize,
+      })
+      return users.map(user => user.username)
+    }
+    assert.deepStrictEqual(await listedUsernames(false), ['user1', 'user2'])
+    assert.deepStrictEqual(await listedUsernames(true), ['user0'])
+    assert.deepStrictEqual(await listedUsernames(undefined), ['user0', 'user1', 'user2'])
+
+    if (testNext) {
+      ;({data, status} = await test.sendJsonHttp('GET', routes.users()))
+      assertStatus(status, data)
+      assert.match(data, /Only unlocked users are being shown/)
+      assert.doesNotMatch(data, /href="\/user0"/)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.users({ locked: TRI_TRUE })))
+      assertStatus(status, data)
+      assert.match(data, /Only locked users are being shown/)
+      assert.match(data, /href="\/user0"/)
+      assert.doesNotMatch(data, /href="\/user1"/)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.users({ locked: TRI_ALL })))
+      assertStatus(status, data)
+      assert.match(data, /Locked users are being shown/)
+      assert.match(data, /href="\/user0"/)
+      assert.match(data, /href="\/user1"/)
+    }
+
     // Check that user0 cannot do stuff.
 
       test.loginUser(user0)
@@ -2885,7 +2955,7 @@ it(`api: user: locked users can't do much`, async () => {
       // Locked users cannot create comments.
       ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, '= The header\n\n==The body\n'))
       assert.strictEqual(status, 403)
-  })
+  }, { canTestNext: true })
 })
 
 it('api: article tree: single user', async () => {

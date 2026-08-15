@@ -65,12 +65,14 @@ export interface UserPageProps extends CommonPropsType {
   comments?: CommentType[];
   commentsCount?: number;
   hasListedArticle?: boolean;
+  hasLocked?: boolean;
   hasUnlisted?: boolean;
   incomingLinks?: ArticleLinkType[];
   issuesCount?: number;
   itemType?: 'article' | 'comment' | 'discussion' | 'like'| 'topic' | 'user';
   latestIssues?: IssueType[];
   list: boolean,
+  locked?: boolean,
   order: string;
   orderAscDesc: string;
   page: number;
@@ -120,12 +122,14 @@ export default function UserPage({
   commentsCount,
   commentCountByLoggedInUser,
   hasListedArticle,
+  hasLocked,
   hasUnlisted,
   incomingLinks,
   issuesCount,
   itemType,
   latestIssues,
   list,
+  locked,
   loggedInUser,
   order,
   orderAscDesc,
@@ -469,6 +473,8 @@ export default function UserPage({
     }
     {itemType === 'user' &&
       <UserList {...{
+        hasLocked,
+        locked,
         loggedInUser,
         page,
         users,

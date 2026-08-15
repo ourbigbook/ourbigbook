@@ -146,7 +146,7 @@ export const getServerSidePropsIndexHoc = ({
       // totalTopics
       Topic.count(),
       // totalUsers
-      User.count(),
+      User.count({ where: { locked: false } }),
     ])
     const props: IndexPageProps = {
       followed: followedEff,

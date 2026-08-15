@@ -1,4 +1,8 @@
 import React from 'react'
+import Link from 'next/link'
+import { useRouter } from 'next/router'
+
+import lodash from 'lodash'
 
 import { formatDate } from 'ourbigbook'
 
@@ -7,11 +11,14 @@ import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import { UserLink, UserScore } from 'front/user'
 import { articleLimit } from 'front/config'
+import { TRI_ALL, TRI_TRUE } from 'front/js'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
 import { booleanToStringForTable, FollowIcon, LikeIcon, LockIcon, OkIcon, TimeIcon, UserIcon } from 'front'
 
 export type UserListProps = {
+  hasLocked?: boolean;
+  locked?: boolean;
   loggedInUser?: UserType;
   page: number;
   paginationUrlFunc?: PaginationPropsUrlFunc;
@@ -20,20 +27,22 @@ export type UserListProps = {
 }
 
 const UserList = ({
+  hasLocked,
+  locked,
   loggedInUser,
   page,
   paginationUrlFunc,
   users,
   usersCount,
 }: UserListProps) => {
-  if (users.length === 0) {
-    return <div className="article-preview content-not-ourbigbook">
-      There are no users on the website.
-    </div>;
-  }
+  const router = useRouter()
   return (
     <div className="list-nav-container">
-      <div className="list-container content-not-ourbigbook">
+      {users.length === 0
+        ? <div className="article-preview content-not-ourbigbook">
+            There are no users on the website.
+          </div>
+        : <><div className="list-container content-not-ourbigbook">
         <table className="list">
           <thead>
             <tr>
@@ -69,7 +78,31 @@ const UserList = ({
         itemsPerPage: articleLimit,
         urlFunc: paginationUrlFunc,
         what: 'users',
-      }} />
+      }} /></>}
+      {hasLocked === true &&
+        <p className="content-not-ourbigbook">
+          <LockIcon />{' '}
+          {locked === false
+            ? <>
+                Only unlocked users are being shown,{' '}
+                <Link href={{ pathname: router.pathname, query: { ...router.query, locked: TRI_ALL } }}>
+                  also show locked users
+                </Link>
+                {' '}or{' '}
+                <Link href={{ pathname: router.pathname, query: { ...router.query, locked: TRI_TRUE } }}>
+                  only show locked users
+                </Link>.
+              </>
+            : <>
+                {locked === true ? 'Only locked users are being shown' : 'Locked users are being shown'},
+                {' '}
+                <Link href={{ pathname: router.pathname, query: lodash.omit(router.query, 'locked') }}>
+                  click here to show only unlocked users
+                </Link>.
+              </>
+          }
+        </p>
+      }
     </div>
   );
 };

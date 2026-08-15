@@ -516,6 +516,7 @@ async function generateDemoData(params) {
         username,
         displayName,
         email: `user${i}@mail.com`,
+        locked: false,
         verified: true,
       }
       if (image) {
@@ -524,6 +525,15 @@ async function generateDemoData(params) {
       User.setPassword(userArg, process.env.OURBIGBOOK_DEMO_USER_PASSWORD || 'asdf')
       userArgs.push(userArg)
     }
+    const lockedUserArg = {
+      username: 'locked-user',
+      displayName: 'Locked User',
+      email: 'locked-user@mail.com',
+      locked: true,
+      verified: true,
+    }
+    User.setPassword(lockedUserArg, process.env.OURBIGBOOK_DEMO_USER_PASSWORD || 'asdf')
+    userArgs.push(lockedUserArg)
     const users = []
     const userIdToUser = {}
     for (const userArg of userArgs) {

@@ -11,6 +11,10 @@ const { convertContext } = config
 const web_api = require('ourbigbook/web_api');
 const { QUERY_FALSE_VAL, QUERY_TRUE_VAL } = web_api
 
+const TRI_FALSE = '0'
+const TRI_TRUE = '1'
+const TRI_ALL = '2'
+
 // https://stackoverflow.com/questions/14382725/how-to-get-the-correct-ip-address-of-a-client-into-a-node-socket-io-app-hosted-o/14382990#14382990
 // Works on Heroku 2021.
 function getClientIp(req) {
@@ -25,24 +29,27 @@ function getCommentSlug(comment) {
   return `${comment.issue.article.slug}#${comment.issue.number}#${comment.number}`
 }
 
+function getTri(req, res, param, defaultValue) {
+  const value = req.query[param]
+  if (value === undefined) {
+    return defaultValue
+  } else if (value === TRI_FALSE) {
+    return false
+  } else if (value === TRI_TRUE) {
+    return true
+  } else if (value === TRI_ALL) {
+    return undefined
+  }
+  res.statusCode = 422
+  return defaultValue
+}
+
 function getList(req, res) {
-  let ok, showUnlisted, showListed
-  const showUnlistedStr = req.query['show-unlisted']
-  const showListedStr = req.query['show-listed']
-  if (showUnlistedStr ===  undefined) {
-    showUnlisted = false
-    ok = true
-  } else {
-    ;[showUnlisted, ok] = typecastBoolean(showUnlistedStr)
-  }
-  if (showListedStr === undefined) {
-    showListed = true
-    ok = true
-  } else {
-    ;[showListed, ok] = typecastBoolean(showListedStr)
-  }
-  if (!ok) { res.statusCode = 422 }
-  return showUnlisted ? (showListed ? undefined : false) : true
+  return getTri(req, res, 'listed', true)
+}
+
+function getLocked(req, res) {
+  return getTri(req, res, 'locked', false)
 }
 
 function getOrderAndPage(req, page, opts={}) {
@@ -285,12 +292,17 @@ function querySearchToTopicId(search) {
 
 module.exports = {
   AUTH_COOKIE_NAME: 'auth',
+  TRI_ALL,
+  TRI_FALSE,
+  TRI_TRUE,
   getClientIp,
   getCommentSlug,
   getList,
+  getLocked,
   getOrder,
   getOrderAndPage,
   getPage,
+  getTri,
   hasReachedMaxItemCount,
   idToSlug,
   idToTopic,

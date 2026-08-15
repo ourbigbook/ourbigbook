@@ -3,7 +3,7 @@ import ourbigbook from 'ourbigbook'
 import { getLoggedInUser } from 'back'
 import { getServerSidePropsArticleHoc } from 'back/ArticlePage'
 import { articleLimit  } from 'front/config'
-import { getList, getOrderAndPage, idToSlug, uidTopicIdToId } from 'front/js'
+import { getList, getLocked, getOrderAndPage, idToSlug, uidTopicIdToId } from 'front/js'
 import { MyGetServerSideProps } from 'front/types'
 import { UserPageProps } from 'front/UserPage'
 import { cant } from 'front/cant'
@@ -32,6 +32,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         }
       }
       const list = getList(req, res)
+      const locked = getLocked(req, res)
       let author, articlesFollowedBy, likedBy, following, followedBy, itemType
       let allowedSorts, allowedSortsExtra, defaultOrder, parentFromTo, parentId, parentType
       switch (what) {
@@ -175,12 +176,20 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       const usersPromise = itemType === 'user' ? User.getUsers({
         following,
         followedBy,
+        locked,
         limit: articleLimit,
         offset,
         order,
         orderAscDesc: ascDesc,
         sequelize,
       }) : []
+      const lockedUsersPromise = itemType === 'user' ? User.getUsers({
+        following,
+        followedBy,
+        limit: 1,
+        locked: true,
+        sequelize,
+      }) : { count: 0 }
       const updateNewScoreLastCheckPromise = (what === 'liked' && loggedInUser && user.id === loggedInUser.id) ?
         user.update({ newScoreLastCheck: Date.now() }) : null
       const [
@@ -188,6 +197,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         comments,
         userJson,
         hasListedArticle,
+        lockedUsers,
         loggedInUserJson,
         likes,
         unlistedArticles,
@@ -212,6 +222,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           where: { authorId: user.id, list: true },
           attributes: ['id', 'slug']
         }),
+        // lockedUsers
+        lockedUsersPromise,
         // loggedInUserJson
         loggedInUser ? loggedInUser.toJson() : undefined,
         // likes
@@ -245,9 +257,11 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       }
       const props: UserPageProps = {
         clearScoreDelta: !!updateNewScoreLastCheckPromise,
+        hasLocked: !!lockedUsers.count,
         hasUnlisted: !!unlistedArticles.count,
         itemType,
         list: list === undefined ? null : list,
+        locked: locked === undefined ? null : locked,
         order,
         orderAscDesc: ascDesc,
         page,

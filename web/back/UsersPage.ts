@@ -2,7 +2,7 @@ import { GetServerSideProps } from 'next'
 
 import { getLoggedInUser } from 'back'
 import { articleLimit } from 'front/config'
-import { getOrderAndPage } from 'front/js'
+import { getLocked, getOrderAndPage } from 'front/js'
 import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
 
@@ -10,6 +10,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
   { query, req, res }
 ) => {
   const loggedInUser = await getLoggedInUser(req, res)
+  const locked = getLocked(req, res)
   const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, {
     defaultOrder: 'score',
     allowedSorts: {
@@ -30,6 +31,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     totalDiscussions,
     totalTopics,
     totalUsers,
+    lockedUsers,
     { count: usersCount, rows: userRows },
   ] = await Promise.all([
     // site
@@ -48,12 +50,17 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     // totalTopics
     Topic.count(),
     // totalUsers
-    User.count(),
+    User.count({ where: { locked: false } }),
+    // lockedUsers
+    User.count({ where: { locked: true } }),
     // users
-    User.findAndCountAll({
+    User.getUsers({
+      locked,
       offset,
-      order: [[order, ascDesc]],
+      order,
+      orderAscDesc: ascDesc,
       limit: articleLimit,
+      sequelize,
     }),
   ])
   const [users, pinnedArticle] = await Promise.all([
@@ -69,7 +76,9 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     })(),
   ])
   const props: IndexPageProps = {
+    hasLocked: !!lockedUsers,
     itemType: 'user',
+    locked: locked === undefined ? null : locked,
     order,
     orderAscDesc: ascDesc,
     page,

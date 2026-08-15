@@ -241,6 +241,9 @@ module.exports = (sequelize) => {
         { fields: ['followerCount'] },
         { fields: ['score'] },
         { fields: ['username'] },
+        { fields: ['locked', 'createdAt'] },
+        { fields: ['locked', 'followerCount', 'createdAt'] },
+        { fields: ['locked', 'score', 'createdAt'] },
         { fields: ['locked', 'username'] },
       ]
     }
@@ -554,6 +557,7 @@ module.exports = (sequelize) => {
     limit,
     following,
     followedBy,
+    locked,
     offset,
     order,
     orderAscDesc,
@@ -591,6 +595,9 @@ module.exports = (sequelize) => {
     }
     const orderList = [[order, orderAscDesc]]
     const where = {}
+    if (locked !== undefined) {
+      where.locked = locked
+    }
     if (username) {
       where.username = username
     }

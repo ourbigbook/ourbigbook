@@ -26,6 +26,7 @@ import {
   articleLimit,
 } from 'front/config'
 import routes from 'front/routes'
+import { TRI_ALL, TRI_FALSE } from 'front/js'
 import { ArticleType } from 'front/types/ArticleType'
 import { ItemBody } from 'front/ItemBody'
 import { IssueType } from 'front/types/IssueType'
@@ -563,7 +564,7 @@ const ArticleList = ({
                 <Link
                   href={{
                     pathname: router.pathname,
-                    query: { ...router.query, 'show-unlisted': QUERY_TRUE_VAL },
+                    query: { ...router.query, listed: TRI_ALL },
                   }}
                 >
                   also show them
@@ -572,7 +573,7 @@ const ArticleList = ({
                 <Link
                   href={{
                     pathname: router.pathname,
-                    query: { ...router.query, 'show-unlisted': QUERY_TRUE_VAL, 'show-listed': QUERY_FALSE_VAL },
+                    query: { ...router.query, listed: TRI_FALSE },
                   }}
                 >
                   only show them
@@ -584,7 +585,7 @@ const ArticleList = ({
                 <Link
                   href={{
                     pathname: router.pathname,
-                    query: lodash.omit(router.query, 'show-unlisted', 'show-listed'),
+                    query: lodash.omit(router.query, 'listed'),
                   }}
                 >
                   click here to show only listed articles

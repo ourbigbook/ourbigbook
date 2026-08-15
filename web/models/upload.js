@@ -151,7 +151,10 @@ module.exports = (sequelize) => {
       }
       return await Promise.all([
         this.destroy({ transaction }),
-        UploadDirectory.destroy({ where: { id: deleteDirectoryIds }})
+        UploadDirectory.destroy({
+          transaction,
+          where: { id: deleteDirectoryIds },
+        })
       ])[0]
     })
   }

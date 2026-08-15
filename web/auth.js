@@ -1,5 +1,14 @@
-const jwt = require('express-jwt')
-const secret = require('./front/config').secret
+const { verify } = require('./jwt')
+
+class UnauthorizedError extends Error {
+  constructor(code, error) {
+    super(error.message)
+    this.code = code
+    this.inner = error
+    this.name = 'UnauthorizedError'
+    this.status = 401
+  }
+}
 
 function getTokenFromHeader(authorization) {
   if (
@@ -15,18 +24,31 @@ function getTokenFromRequest(req) {
   return getTokenFromHeader(req.headers.authorization)
 }
 
-const auth = {
-  required: jwt({
-    secret,
-    userProperty: 'payload',
-    getToken: getTokenFromRequest
-  }),
-  optional: jwt({
-    secret,
-    userProperty: 'payload',
-    credentialsRequired: false,
-    getToken: getTokenFromRequest
-  })
+function authenticate(credentialsRequired) {
+  return function(req, res, next) {
+    const token = getTokenFromRequest(req)
+    if (token === null) {
+      if (credentialsRequired) {
+        return next(new UnauthorizedError(
+          'credentials_required',
+          new Error('No authorization token was found')
+        ))
+      }
+      return next()
+    }
+    try {
+      req.payload = verify(token)
+    } catch (error) {
+      if (credentialsRequired) {
+        return next(new UnauthorizedError('invalid_token', error))
+      }
+    }
+    next()
+  }
 }
 
-module.exports = auth
+module.exports = {
+  required: authenticate(true),
+  optional: authenticate(false),
+  UnauthorizedError,
+}

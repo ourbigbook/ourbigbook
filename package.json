@@ -36,7 +36,7 @@
     "html-minimizer-webpack-plugin": "^5.0.0",
     "js-beautify": "1.14.7",
     "mini-css-extract-plugin": "2.1.0",
-    "mocha": "10.2.0",
+    "mocha": "11.8.0",
     "mocha-list-tests": "1.0.2",
     "monaco-editor": "0.20.0",
     "node-polyfill-webpack-plugin": "1.1.4",
@@ -56,8 +56,8 @@
     "xpath": "0.0.32"
   },
   "engines": {
-    "node": "22.14.0",
-    "npm": "10.2.3"
+    "node": "26.7.0",
+    "npm": "11.19.0"
   },
   "files": [
     "default.tex",

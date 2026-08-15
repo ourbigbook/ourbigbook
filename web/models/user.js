@@ -1,6 +1,6 @@
 const crypto = require('crypto')
 const Sequelize = require('sequelize')
-const jwt = require('jsonwebtoken')
+const jwt = require('../jwt')
 
 const ourbigbook = require('ourbigbook')
 

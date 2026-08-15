@@ -2,8 +2,7 @@ import { GetServerSidePropsResult } from 'next';
 
 import { getCookieFromReq } from 'front'
 import { AUTH_COOKIE_NAME } from 'front/js'
-import { verify } from 'jsonwebtoken'
-import { secret } from 'front/config'
+import { verify } from './jwt'
 
 export async function findSynonymOr404(
   sequelize,
@@ -35,7 +34,7 @@ export async function getLoggedInUser(req, res, loggedInUser?) {
     let verifiedUser
     if (authCookie) {
       try {
-        verifiedUser = verify(authCookie, secret)
+        verifiedUser = verify(authCookie)
       } catch (e) {
         return null
       }

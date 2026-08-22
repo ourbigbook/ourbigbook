@@ -1600,15 +1600,16 @@ if (cli.helpMacros) {
     }
   }
   const publish_target = cli.publishTarget
+  const publish_target_options = publish && ourbigbook_json.target
+    ? ourbigbook_json.target[publish_target]
+    : undefined
   if (
-    publish &&
-    ourbigbook_json.target &&
-    ourbigbook_json.target[publish_target]
+    publish_target_options
   ) {
     ourbigbook_json = lodash.merge(
       {},
       ourbigbook_json,
-      ourbigbook_json.target[publish_target]
+      publish_target_options
     )
   }
   if (web) {
@@ -1650,6 +1651,9 @@ if (cli.helpMacros) {
         }
         break;
       case 'github-md':
+        if (!publish_target_options || publish_target_options.generateSitemap === undefined) {
+          ourbigbook_json.generateSitemap = false
+        }
         cli.outputFormat = ourbigbook.OUTPUT_FORMAT_MARKDOWN
         htmlXExtension = true
         split_headers = true
@@ -1701,6 +1705,7 @@ if (cli.helpMacros) {
     embed_includes: cli.embedIncludes,
     fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
     htmlXExtension,
+    markdownIndexBasename: publish_target === 'github-md' ? 'README' : undefined,
     output_format,
     outfile: cli.outfile,
     path_sep: path.sep,

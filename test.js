@@ -265,7 +265,7 @@ Text with **bold**, _italic_, and [link](https://example.com).
     }, asciidocExtraReturns)
     assert.deepStrictEqual(asciidocExtraReturns.errors, [])
     assert.strictEqual(asciidoc, `= Hello
-:toc:
+:toc: macro
 
 Text with *bold*, _italic_, and https://example.com[link].
 
@@ -342,6 +342,80 @@ Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
 `)
   })
 
+  it('renders inflected links, media captions, descriptions, and video sources', async function () {
+    const extraReturns = {}
+    const markdown = await ourbigbook.convert(`= Home
+{c}
+
+\\Video[https://youtu.be/first]{title=Introduction}
+
+\\b[Notable features]:
+\\Ol[
+* \\b[<topics>]: details.
+
+  \\Image[topic.png]{title=The <topics> feature}{description=Live demo: <#derivative>.}{external}
+
+  \\Video[https://youtu.be/second]{title=<topics> demo}
+]
+
+== Topic
+`, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+    assert(markdown.includes('**Notable features**:\n1. **[topics](#topic)**: details.'))
+    assert(markdown.includes('\n\n   ![](topic.png)\n\n   **Figure 1. The topics feature**. Live demo: [derivative](https://ourbigbook.com/go/topic/derivative).'))
+    assert(markdown.includes('\n\n   **Video 2. topics demo.** [Source](https://youtu.be/second).'))
+    assert(!markdown.includes('\n   \n'))
+  })
+
+  it('renders nested caption lists and ends multiline captions with a horizontal rule', async function () {
+    const extraReturns = {}
+    const markdown = await ourbigbook.convert(`= Home
+
+\\Image[image.png]
+{title=Multiline}
+{external}
+{description=
+For example:
+* one
+* two
+then after.
+}
+
+\\Image[single-line.png]{title=Single line}{description=Short.}{external}
+`, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+    assert(markdown.includes(`**Figure 1. Multiline**. For example:
+- one
+- two
+
+then after.
+
+---`))
+    assert(markdown.includes('**Figure 2. Single line**. Short.'))
+    assert.strictEqual((markdown.match(/^---$/gm) || []).length, 1)
+  })
+
+  it('includes header disambiguation in Markdown headings and TOC labels', async function () {
+    const extraReturns = {}
+    const markdown = await ourbigbook.convert(`= Home
+
+== \\c[--web-nested-set]
+{disambiguate=option}
+`, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+    assert(markdown.includes('- [`--web-nested-set` (option)](#web-nested-set-option)'))
+    assert(markdown.includes('## `--web-nested-set` (option)'))
+  })
+
   it('downgrades headings deeper than h6 to h6', async function () {
     const input = Array.from(
       { length: 8 },
@@ -367,6 +441,11 @@ Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
   it('adds a literal Markdown TOC and the AsciiDoc built-in TOC attribute', async function () {
     const input = `= Home
 
+= Home alias
+{synonym}
+
+Introduction.
+
 == One
 
 === Two with <one>
@@ -381,15 +460,17 @@ Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
     assert.deepStrictEqual(markdownExtraReturns.errors, [])
     assert.strictEqual(markdown, `# Home
 
+Introduction.
+
 **Table of contents**
 
 - [One](#one)
-  - [Two with One](#two-with-one)
+  - [Two with one](#two-with-one)
 - [Three](#three)
 
 ## One
 
-### Two with [One](#one)
+### Two with [one](#one)
 
 ## Three
 `)
@@ -401,11 +482,15 @@ Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
     }, asciidocExtraReturns)
     assert.deepStrictEqual(asciidocExtraReturns.errors, [])
     assert.strictEqual(asciidoc, `= Home
-:toc:
+:toc: macro
+
+Introduction.
+
+toc::[]
 
 == One
 
-=== Two with <<one,One>>
+=== Two with <<one,one>>
 
 == Three
 `)
@@ -11370,7 +11455,7 @@ assert_cli(
       'index.bigb': '= Input\n\nText with \\b[bold].\n',
     },
     assert_bigb: {
-      [`${TMP_DIRNAME}/adoc/index.adoc`]: '= Input\n:toc:\n\nText with *bold*.\n',
+      [`${TMP_DIRNAME}/adoc/index.adoc`]: '= Input\n:toc: macro\n\nText with *bold*.\n',
     },
   }
 )
@@ -11967,10 +12052,18 @@ assert_cli(
     args: ['--dry-run', '--publish', '--publish-target', 'github-md', '.'],
     filesystem: {
       ...publish_filesystem,
+      'index.bigb': `${publish_filesystem['index.bigb']}
+\\Image[feature/topics/derivative.png][Derivative]{width=640}
+`,
       'ourbigbook.json': `{
+  "media-providers": {
+    "github": {
+      "default-for": ["image"],
+      "remote": "ourbigbook/ourbigbook-media"
+    }
+  },
   "target": {
     "github-md": {
-      "publishBranch": "master",
       "publishRemoteUrl": "git@github.com:ourbigbook/docs-md.git"
     }
   }
@@ -11984,7 +12077,7 @@ assert_cli(
       'push -f origin master:master',
     ],
     assert_exists: [
-      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/index.md`,
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/README.md`,
       `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/split.md`,
       `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/h2.md`,
       `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex.md`,
@@ -11995,9 +12088,13 @@ assert_cli(
       `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css`,
     ],
     assert_contains: {
-      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/index.md`]: [
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/README.md`]: [
         '[link to notindex](notindex.md)',
         '[link to notindex h2](notindex.md#notindex-h2)',
+        '<img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/topics/derivative.png" alt="Derivative" width="640">',
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex.md`]: [
+        '[link to toplevel](README.md)',
       ],
     },
   }

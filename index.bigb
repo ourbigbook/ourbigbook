@@ -9,7 +9,7 @@
 
 The \b[OurBigBook Project] is creating the ultimate https://github.com/ourbigbook/ourbigbook[open source] tools to <publish> \b[textbooks]/\b[<#personal knowledge bases>]/\b[<#Zettelkasten>]/\b[<#digital gardens>] in the <#learn in public> philosophy. It is our best shot yet at the final \b[real-world <#Encyclopedia Galactica>] by allowing effective \b[<#mindmeld>[mind melding]]/\b[<#collective intelligence>] via the \b[<topics feature>].
 
-\Image[logo.svg]
+\Image[logo.png]
 {height=150}
 {title=<project logo>[Logo of] the <OurBigBook Project>}
 
@@ -7827,9 +7827,9 @@ TODO find some upstream discussion.
 = `--publish-target github-md`
 {parent=`--publish-target`}
 
-Publishes Markdown directly to a GitHub repository. Both nonsplit `.md` documents and the `.md` files produced by <split headers> are included, and cross-file links target those Markdown files so they work when browsed on GitHub.
+Publishes Markdown directly to a GitHub repository. Both nonsplit `.md` documents and the `.md` files produced by <split headers> are included, cross-file links target those Markdown files, and generated `index.md` files are named `README.md` so directory landing pages work naturally on GitHub.
 
-The output is committed and force-pushed to the configured publish branch in the same fashion as the GitHub Pages target. The default branch is `master`.
+The output is committed and force-pushed to the configured publish branch in the same fashion as the GitHub Pages target. The default branch is `master`, and sitemap generation is disabled by default. Both defaults can be overridden under <ourbigbook.json/target>.
 
 For example:
 ``

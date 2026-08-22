@@ -16,7 +16,10 @@ tmp.*
 *.tmp
 *.tmp.*
 tmp2.bigb
-logo.png
+# Keep /logo.png
+# GitHub does not support SVG for github-md target.
+/vscode/logo.png
+/web/public/logo.png
 logo-circle.png
 
 # web/

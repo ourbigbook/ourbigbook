@@ -697,7 +697,14 @@ class AstNode {
       if (ret === undefined) {
         return {}
       } else {
-        const { dirname, basename, split_suffix: split_suffix_used } = ret
+        const { dirname, split_suffix: split_suffix_used } = ret
+        let { basename } = ret
+        if (
+          context.options.output_format === OUTPUT_FORMAT_MARKDOWN &&
+          basename === INDEX_BASENAME_NOEXT
+        ) {
+          basename = context.options.markdownIndexBasename
+        }
         return {
           path: pathJoin(dirname, basename + '.' + OUTPUT_FORMATS[context.options.output_format].ext, context.options.path_sep),
           dirname,
@@ -3748,6 +3755,7 @@ function convertInitOptions(options) {
     options.prefixNonIndexedIdsWithParentId = false;
   }
   if (!('log' in options)) { options.log = {}; }
+  if (!('markdownIndexBasename' in options)) { options.markdownIndexBasename = INDEX_BASENAME_NOEXT }
   if (!('outfile' in options)) {
     // Override the default calculated output file for the main input.
     options.outfile = undefined;
@@ -8612,6 +8620,46 @@ function xHrefAttr(target_ast, context) {
   return htmlAttr('href', xHref(target_ast, context));
 }
 
+function xTextOptionsFromX(ast, hrefArg) {
+  const options = {
+    capitalize: ast.validation_output.c.boolean,
+    from_x: true,
+    quote: true,
+    pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
+  }
+  if (ast.validation_output.magic.boolean) {
+    const firstAst = hrefArg.get(0)
+    if (firstAst && firstAst.node_type === AstType.PLAINTEXT) {
+      const separatorIndex = firstAst.text.lastIndexOf(Macro.HEADER_SCOPE_SEPARATOR)
+      const index = separatorIndex === -1 ? 0 : separatorIndex + 1
+      const firstCharacter = firstAst.text[index]
+      if (
+        firstCharacter !== undefined &&
+        firstCharacter !== firstCharacter.toLowerCase()
+      ) {
+        options.capitalize = true
+      }
+    }
+    const lastAst = hrefArg.get(hrefArg.length() - 1)
+    if (lastAst && lastAst.node_type === AstType.PLAINTEXT) {
+      const text = lastAst.text
+      if (
+        text !== pluralizeWrap(text, 1) &&
+        text === pluralizeWrap(text, 2)
+      ) {
+        options.pluralize = true
+      }
+      const words = text.split(PLURALIZE_WORD_SPLIT_REGEX)
+      options.forceLastWord = words[words.length - 1]
+    }
+  }
+  if (ast.validation_output.full.given) {
+    options.style_full = ast.validation_output.full.boolean
+    options.style_full_from_x = true
+  }
+  return options
+}
+
 /**
  * Calculate the text (visible content) of a internal link, or the text
  * that the caption text that internal links can refer to, e.g.
@@ -10393,7 +10441,25 @@ function markupBlock(ast, output, opts={}) {
 
 function markupListItem(ast, context, marker) {
   const content = markupRenderArg(ast, context).replace(/\n+$/, '')
-  return `${marker} ${content.replace(/\n/g, '\n  ')}\n`
+  const continuationIndent = ' '.repeat(marker.length + 1)
+  const lines = content.split('\n')
+  return `${marker} ${lines.map((line, index) => {
+    if (index === 0) return line
+    if (line.trim() === '') return ''
+    return continuationIndent + line
+  }).join('\n')}\n`
+}
+
+function markupListBlock(ast, context) {
+  let ret = markupBlock(ast, markupRenderArg(ast, context), { paragraphNewlineCount: 1 })
+  if (
+    ast.parent_ast &&
+    ast.parent_ast.macro_name !== Macro.PARAGRAPH_MACRO_NAME &&
+    ast.parent_ast.macro_name !== Macro.TOPLEVEL_MACRO_NAME
+  ) {
+    ret = '\n' + ret
+  }
+  return ret
 }
 
 function markdownEscape(text) {
@@ -10424,16 +10490,113 @@ function markdownToc(ast, context) {
       }
       const targetMacro = context.macros[targetAst.macro_name]
       const titleArg = targetMacro.options.get_title_arg(targetAst, context)
-      const title = titleArg === undefined ? targetAst.id : renderArg(
-        titleArg,
-        cloneAndSet(context, 'renderXAsHref', true)
-      )
+      const title = targetAst.macro_name === Macro.HEADER_MACRO_NAME
+        ? markupHeaderTitle(targetAst, cloneAndSet(context, 'renderXAsHref', true))
+        : (titleArg === undefined ? targetAst.id : renderArg(
+          titleArg,
+          cloneAndSet(context, 'renderXAsHref', true)
+        ))
       lines.push(`${'  '.repeat(depth)}- [${title}](${xHref(hrefTargetAst, context)})`)
       visit(node.children, depth + 1)
     }
   }
   visit(ast.header_tree_node.children, 0)
   return lines.length ? `**Table of contents**\n\n${lines.join('\n')}\n\n` : ''
+}
+
+function markupMediaCaption(ast, context, asciidoc) {
+  if (ast.id === undefined || !captionNumberVisible(ast, context)) return ''
+  const macro = context.macros[ast.macro_name]
+  const number = macro.options.get_number(ast, context)
+  const titleArg = macro.options.get_title_arg(ast, context)
+  const title = titleArg === undefined ? '' : renderArg(
+    titleArg,
+    cloneAndSet(context, 'renderXAsHref', true)
+  )
+  let label = macro.options.caption_prefix
+  if (number !== undefined) label += ` ${number}`
+  if (title) label += `${number === undefined ? ' ' : '. '}${title}`
+  const terminalPunctuation = isPunctuation(label[label.length - 1]) ? '' : '.'
+  const labelWithVideoPunctuation = ast.macro_name === 'Video'
+    ? `${label}${terminalPunctuation}`
+    : label
+  const boldLabel = asciidoc
+    ? `*${labelWithVideoPunctuation}*`
+    : `**${labelWithVideoPunctuation}**`
+  let ret = `${boldLabel}${ast.macro_name === 'Video' ? '' : terminalPunctuation}`
+  const { error_message, source } = macroImageVideoResolveParamsWithSource(ast, context)
+  if (error_message === undefined && source) {
+    ret += asciidoc ? ` ${source}[Source].` : ` [Source](${source}).`
+  }
+  const description = markupRenderArg(ast, context, Macro.DESCRIPTION_ARGUMENT_NAME).trim()
+  if (description) ret += ` ${description}`
+  return ret
+}
+
+function markupMediaSrc(ast, context) {
+  let {
+    error_message,
+    media_provider_type,
+    relpath_prefix,
+    src,
+  } = macroImageVideoResolveParams(ast, context)
+  if (error_message !== undefined) {
+    return markupRenderLiteralArg(ast, context, 'src')
+  }
+  ;({ href: src } = resolveLinkToFileGetHref({
+    context,
+    external: ast.validation_output.external.given
+      ? ast.validation_output.external.boolean
+      : undefined,
+    href: src,
+    media_provider_type,
+  }))
+  if (relpath_prefix !== undefined) {
+    src = path.join(relpath_prefix, src)
+  }
+  return src
+}
+
+function markupMediaBlock(ast, context, asciidoc, includeImage) {
+  const parts = []
+  if (includeImage) {
+    parts.push(markupImage(ast, context, asciidoc, false))
+  }
+  const caption = markupMediaCaption(ast, context, asciidoc)
+  if (caption) parts.push(caption)
+  if (caption && getDescription(ast.args.description, context).multiline_caption) {
+    parts.push(asciidoc ? "'''" : '---')
+  }
+  return markupBlock(ast, parts.join('\n\n'))
+}
+
+function markupImage(ast, context, asciidoc, inline) {
+  const src = markupMediaSrc(ast, context)
+  const alt = markupRenderArg(ast, context, 'alt')
+  const dimensions = []
+  for (const dimension of ['width', 'height']) {
+    if (ast.validation_output[dimension].given) {
+      dimensions.push([dimension, ast.validation_output[dimension].positive_nonzero_integer])
+    }
+  }
+  if (asciidoc) {
+    const attributes = [alt, ...dimensions.map(([name, value]) => `${name}=${value}`)]
+    return `image${inline ? ':' : '::'}${src}[${attributes.join(',')}]`
+  }
+  if (dimensions.length) {
+    const altAttribute = htmlEscapeAttr(renderArgNoescape(ast.args.alt, context))
+    return `<img src="${src}" alt="${altAttribute}"${dimensions.map(([name, value]) => ` ${name}="${value}"`).join('')}>`
+  }
+  return `![${alt}](${src})`
+}
+
+function markupHeaderTitle(ast, context) {
+  let title = markupRenderArg(ast, context, Macro.TITLE_ARGUMENT_NAME)
+  const disambiguateArg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME]
+  if (disambiguateArg !== undefined) {
+    title += ` (${renderArg(disambiguateArg, context)})`
+  }
+  return title
 }
 
 function markupTable(ast, context, asciidoc=false) {
@@ -10490,26 +10653,18 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     'Comment': function() { return '' },
     'comment': function() { return '' },
     [Macro.HEADER_MACRO_NAME]: function(ast, context) {
+      if (ast.isSynonym()) return ''
       const level = ast.header_tree_node.get_level() - context.header_tree_top_level + 1
-      const heading = `${headingChar.repeat(Math.min(6, Math.max(1, level)))} ${markupRenderArg(ast, context, Macro.TITLE_ARGUMENT_NAME)}`
+      const heading = `${headingChar.repeat(Math.min(6, Math.max(1, level)))} ${markupHeaderTitle(ast, context)}`
       if (level === 1) {
-        if (asciidoc) return `${heading}\n:toc:\n\n`
-        return `${heading}\n\n${markdownToc(ast, context)}`
+        if (asciidoc) return `${heading}\n:toc: macro\n\n`
       }
       return `${heading}\n\n`
     },
     'Hr': function(ast) { return markupBlock(ast, asciidoc ? "'''" : '---') },
     'i': function(ast, context) { return `_${markupRenderArg(ast, context)}_` },
-    'Image': function(ast, context) {
-      const src = markupRenderLiteralArg(ast, context, 'src')
-      const alt = markupRenderArg(ast, context, 'alt')
-      return markupBlock(ast, asciidoc ? `image::${src}[${alt}]` : `![${alt}](${src})`)
-    },
-    'image': function(ast, context) {
-      const src = markupRenderLiteralArg(ast, context, 'src')
-      const alt = markupRenderArg(ast, context, 'alt')
-      return asciidoc ? `image:${src}[${alt}]` : `![${alt}](${src})`
-    },
+    'Image': function(ast, context) { return markupMediaBlock(ast, context, asciidoc, true) },
+    'image': function(ast, context) { return markupImage(ast, context, asciidoc, true) },
     [Macro.INCLUDE_MACRO_NAME]: function(ast, context) {
       const href = markupRenderLiteralArg(ast, context, 'href')
       return markupBlock(ast, asciidoc ? `include::${href}.adoc[]` : `[Include: ${href}](${href}.md)`)
@@ -10525,7 +10680,7 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     [Macro.MATH_MACRO_NAME]: function(ast, context) {
       return asciidoc ? `latexmath:[${markupRenderLiteralArg(ast, context)}]` : `$${markupRenderLiteralArg(ast, context)}$`
     },
-    'Ol': function(ast, context) { return markupBlock(ast, markupRenderArg(ast, context)) },
+    'Ol': markupListBlock,
     [Macro.PARAGRAPH_MACRO_NAME]: function(ast, context) {
       return `${markupRenderArg(ast, context).replace(/\n+$/, '')}\n\n`
     },
@@ -10549,10 +10704,34 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     [Macro.TD_MACRO_NAME]: markupGeneric,
     [Macro.TH_MACRO_NAME]: markupGeneric,
     [Macro.TR_MACRO_NAME]: markupGeneric,
-    [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) { return markupRenderArg(ast, context).replace(/\n+$/, '') + '\n' },
-    [Macro.UNORDERED_LIST_MACRO_NAME]: function(ast, context) { return markupBlock(ast, markupRenderArg(ast, context)) },
+    'Video': function(ast, context) { return markupMediaBlock(ast, context, asciidoc, false) },
+    [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) {
+      let ret = ''
+      let firstHeaderAst
+      let tocRendered = false
+      for (const childAst of ast.args[Macro.CONTENT_ARGUMENT_NAME] || []) {
+        if (
+          childAst.macro_name === Macro.HEADER_MACRO_NAME &&
+          !childAst.isSynonym()
+        ) {
+          if (firstHeaderAst === undefined) {
+            firstHeaderAst = childAst
+          } else if (!tocRendered) {
+            const toc = asciidoc ? 'toc::[]\n\n' : markdownToc(firstHeaderAst, context)
+            if (toc) {
+              ret += toc
+              context.last_render = toc
+            }
+            tocRendered = true
+          }
+        }
+        ret += childAst.render(context)
+      }
+      return ret.replace(/\n+$/, '') + '\n'
+    },
+    [Macro.UNORDERED_LIST_MACRO_NAME]: markupListBlock,
     [Macro.X_MACRO_NAME]: function(ast, context) {
-      const { target_id, target_id_raw, target_ast } = xGetTargetAst(ast, context)
+      const { href_arg, target_id, target_id_raw, target_ast } = xGetTargetAst(ast, context)
       let href
       if (ast.validation_output.topic.boolean) {
         const topicId = titleToIdContext(target_id_raw, undefined, context)
@@ -10568,12 +10747,14 @@ function makeMarkupConvertFuncs(asciidoc=false) {
       } else if (ast.validation_output.topic.boolean) {
         content = markupRenderLiteralArg(ast, context, 'href')
       } else if (target_ast) {
-        const targetMacro = context.macros[target_ast.macro_name]
-        const titleArg = targetMacro.options.get_title_arg(target_ast, context)
-        content = titleArg === undefined ? target_id : renderArg(
-          titleArg,
-          cloneAndSet(context, 'renderXAsHref', true)
+        const xTextBaseRet = xTextBase(
+          target_ast,
+          cloneAndSet(context, 'renderXAsHref', true),
+          Object.assign({ caption_prefix_span: false }, xTextOptionsFromX(ast, href_arg))
         )
+        content = ast.validation_output.showDisambiguate.boolean
+          ? xTextBaseRet.innerWithDisambiguate
+          : xTextBaseRet.full
       } else {
         content = markupRenderLiteralArg(ast, context, 'href')
       }
@@ -11781,50 +11962,10 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
                 if (!target_ast) {
                   content = renderErrorXUndefined(ast, context, target_id)
                 } else {
-                  let x_text_options = {
-                    caption_prefix_span: false,
-                    capitalize: ast.validation_output.c.boolean,
-                    from_x: true,
-                    quote: true,
-                    pluralize: ast.validation_output.p.given ? ast.validation_output.p.boolean : undefined,
-                  };
-                  if (ast.validation_output.magic.boolean) {
-                    const first_ast = href_arg.get(0);
-                    if (first_ast && first_ast.node_type === AstType.PLAINTEXT) {
-                      const sep_idx = first_ast.text.lastIndexOf(Macro.HEADER_SCOPE_SEPARATOR)
-                      const idx = sep_idx === -1 ? 0 : sep_idx + 1
-                      const c = first_ast.text[idx]
-                      if (
-                        // Possible on home article on web, which has empty ID.
-                        c !== undefined &&
-                        c !== c.toLowerCase()
-                      ) {
-                        x_text_options.capitalize = true
-                      }
-                    }
-                    const last_ast = href_arg.get(href_arg.length() - 1);
-                    if (last_ast && last_ast.node_type === AstType.PLAINTEXT) {
-                      const text = last_ast.text
-                      if (
-                        text !== pluralizeWrap(text, 1) &&
-                        // Due to buggy pluralize behaviour, it can be different from both.
-                        // So let's check and abort otherwise just using what is actually in the ref
-                        // https://github.com/plurals/pluralize/issues/172
-                        // for those weirder cases.
-                        text === pluralizeWrap(text, 2)
-                      ) {
-                        x_text_options.pluralize = true
-                      }
-                      if (ast.validation_output.magic.boolean) {
-                        const words = text.split(PLURALIZE_WORD_SPLIT_REGEX)
-                        x_text_options.forceLastWord = words[words.length - 1]
-                      }
-                    }
-                  }
-                  if (ast.validation_output.full.given) {
-                    x_text_options.style_full = ast.validation_output.full.boolean
-                    x_text_options.style_full_from_x = true
-                  }
+                  const x_text_options = Object.assign(
+                    { caption_prefix_span: false },
+                    xTextOptionsFromX(ast, href_arg)
+                  )
                   const xTextBaseRet = xTextBase(target_ast, cloneAndSet(context, 'in_a', true), x_text_options);
                   if (showDisambiguate) {
                     content = xTextBaseRet.innerWithDisambiguate

@@ -24,9 +24,7 @@
   "publishRemoteUrl": "git@github.com:ourbigbook/ourbigbook.git",
   "target": {
     "github-md": {
-      "generateSitemap": false,
       "prepublish": null,
-      "publishBranch": "master",
       "publishRemoteUrl": "git@github.com:ourbigbook/docs-md.git"
     }
   },

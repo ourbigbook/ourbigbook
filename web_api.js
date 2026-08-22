@@ -525,6 +525,10 @@ async function sendJsonHttp(method, path, opts={}) {
 class DbProviderBase extends ourbigbook.DbProvider {
   constructor(opts={}) {
     super()
+    // IDs known to have come from persistent storage. Keep this separate from
+    // id_cache because live conversions also inject their local header ASTs
+    // into that cache while building the header tree.
+    this.db_ids = new Set()
     this.id_cache = {}
     this.ref_cache = {
       from_id: {},
@@ -569,6 +573,7 @@ class DbProviderBase extends ourbigbook.DbProvider {
 
   add_row_to_id_cache(row, context) {
     if (row !== null) {
+      this.db_ids.add(row.idid)
       const ast = this.row_to_ast(row, context)
       const oldCache = this.id_cache[ast.id]
       if (
@@ -590,6 +595,10 @@ class DbProviderBase extends ourbigbook.DbProvider {
         return ast
       }
     }
+  }
+
+  has_db_id(id) {
+    return this.db_ids.has(id)
   }
 
   get_noscopes_base(ids, ignore_paths_set) {

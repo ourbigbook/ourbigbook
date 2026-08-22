@@ -251,6 +251,11 @@ class OurbigbookEditor {
 
       const convertOptionsCopy = Object.assign({}, convertOptions)
       convertOptionsCopy.input_path = input_path
+      // Keep the exact input and calculated path used by the latest successful
+      // preview conversion. The web article creator uses these to run the same
+      // split_headers conversion as the CLI uploader when it is submitted.
+      this.lastInput = input
+      this.lastInputPath = input_path
       this.output_elem.innerHTML = await this.ourbigbook.convert(
         input,
         convertOptionsCopy,
@@ -364,9 +369,10 @@ class OurbigbookEditor {
             }
             scrollParentToChild(this.output_elem, elem);
           }
-        } else {
-          console.error(`could not find ID for line ${line_number}: ${id}`);
         }
+        // A cursor event can arrive after the source changed but before its
+        // asynchronous preview conversion completed. In that normal case the
+        // new ID is not in the old preview DOM yet, so there is nothing to do.
       };
     }
     this.options.scrollPreviewToSourceLineCallback({ ourbigbook_editor: this, line_number, line_number_orig })

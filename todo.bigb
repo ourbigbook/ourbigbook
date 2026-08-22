@@ -391,6 +391,8 @@ We could then consider removing several `Ref.destroy` and `Id.destroy` `ON CASCA
 {tag=Web}
 {id=web-create-multiple-headers}
 
+Implemented for new articles: the editor splits the input with the same `split_headers` conversion used by `ourbigbook --web`, then creates each article in parent-before-child order. Editing an existing article remains single-header.
+
 === Option to add zip of local conversion to converted GitHub pages website
 {tag=Publish}
 

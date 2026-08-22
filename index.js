@@ -3667,6 +3667,11 @@ function convertInitOptions(options) {
   }
   if (!('body_only' in options)) { options.body_only = false; }
   if (!('db_provider' in options)) { options.db_provider = undefined; }
+  if (!('check_db_ids' in options)) {
+    // Check whether IDs defined by this input already exist in db_provider.
+    // Used by the new-article web editor, where every definition must be new.
+    options.check_db_ids = false
+  }
   if (!('fixedScopeRemoval' in options)) {
     // Rather than removing scopes from children page in a toplevel page that has a scope,
     // remove fixed n chars from every single ID. This is used on Web to remove @ from links
@@ -6978,6 +6983,26 @@ async function parse(tokens, options, context, extra_returns={}) {
 
       if (options.db_provider !== undefined) {
         const prefetch_ids = new Set()
+        const db_ids_to_check = []
+        if (options.check_db_ids) {
+          for (const id in options.indexed_ids) {
+            const ast = options.indexed_ids[id]
+            // The first header is edited in a separate title input on Web, so
+            // its collision remains a title-field diagnostic. Definitions in
+            // the Monaco source editor get regular source-located errors.
+            if (
+              ast.macro_name === Macro.HEADER_MACRO_NAME &&
+              ast.is_first_header_in_input_file
+            ) {
+              continue
+            }
+            const db_id = id.startsWith(AT_MENTION_CHAR) || !options.ref_prefix
+              ? id
+              : `${options.ref_prefix}${Macro.HEADER_SCOPE_SEPARATOR}${id}`
+            prefetch_ids.add(db_id)
+            db_ids_to_check.push({ ast, db_id })
+          }
+        }
         for (const ref of options.refs_to_h) {
           prefetch_ids.add(ref.target_id)
         }
@@ -7112,6 +7137,14 @@ async function parse(tokens, options, context, extra_returns={}) {
         ])
         context.automaticTopicLinkIds = new Set(automaticTopicLinkIds)
         context.aFileTypes = aFileTypes
+        for (const { ast, db_id } of db_ids_to_check) {
+          const exists = options.db_provider.has_db_id
+            ? options.db_provider.has_db_id(db_id)
+            : options.db_provider.get_noscope(db_id, context) !== undefined
+          if (exists) {
+            parseError(state, `ID already taken: "${db_id}"`, ast.source_location)
+          }
+        }
       }
 
       // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
@@ -9268,6 +9301,87 @@ function modifyEditorInput(title, body) {
   return { offset: 1 + offsetOffset, new: ret }
 }
 exports.modifyEditorInput = modifyEditorInput
+
+/**
+ * Split one editor/CLI-style input into the individual articles that can be
+ * sent to OurBigBook Web. This deliberately uses the converter's
+ * split_headers output, which is also what `ourbigbook --web` uploads use.
+ *
+ * The returned articles are in header-tree preorder, so every parent appears
+ * before its children. `parent` and `previousSibling` point to other entries
+ * in the returned array when those relationships are internal to the input.
+ */
+async function splitWebArticles(input, options={}) {
+  const extra_returns = {}
+  await convert(input, Object.assign({}, options, {
+    forbid_multiheader: undefined,
+    output_format: OUTPUT_FORMAT_OURBIGBOOK,
+    render: true,
+    split_headers: true,
+  }), extra_returns)
+  if (extra_returns.errors.length) {
+    return { articles: [], extra_returns }
+  }
+
+  const idToArticle = new Map()
+  const titleRegex = new RegExp(`${SHORTHAND_HEADER_CHAR} (.*)`)
+  for (const outputPath in extra_returns.rendered_outputs) {
+    const output = extra_returns.rendered_outputs[outputPath]
+    if (!output.split) {
+      continue
+    }
+    const lines = output.full.split('\n')
+    const titleMatch = lines.length ? lines[0].match(titleRegex) : undefined
+    if (!titleMatch || titleMatch.length < 2) {
+      throw new Error(`split header output does not start with "${SHORTHAND_HEADER_CHAR} Header": ${outputPath}`)
+    }
+    const bodyStart = lines[1] === '' ? 2 : 1
+    idToArticle.set(output.header_ast.id, {
+      ast: output.header_ast,
+      bodySource: lines.slice(bodyStart).join('\n'),
+      outputPath,
+      titleSource: titleMatch[1],
+    })
+  }
+
+  const articles = []
+  function visit(treeNode, parent) {
+    let previousSibling
+    for (const child of treeNode.children) {
+      const article = idToArticle.get(child.ast.id)
+      if (article) {
+        article.parent = parent
+        article.previousSibling = previousSibling
+        articles.push(article)
+        visit(child, article)
+        previousSibling = article
+      } else {
+        visit(child, parent)
+      }
+    }
+  }
+  visit(extra_returns.context.header_tree)
+
+  // In the web editor, the first H1 comes from the separate title input. Any
+  // further H1s typed into the body are therefore children of that article,
+  // rather than additional roots beside it. Preserve their source order after
+  // any H2 children that the first article already had.
+  const firstArticle = articles[0]
+  if (firstArticle) {
+    let previousFirstArticleChild
+    for (const article of articles.slice(1)) {
+      if (article.parent === firstArticle) {
+        previousFirstArticleChild = article
+      } else if (!article.parent) {
+        article.parent = firstArticle
+        article.previousSibling = previousFirstArticleChild
+        previousFirstArticleChild = article
+      }
+    }
+  }
+  return { articles, extra_returns }
+}
+exports.splitWebArticles = splitWebArticles
 
 const MACRO_IMAGE_VIDEO_OPTIONS = {
   captionNumberVisible: function (ast, context) {
@@ -11442,7 +11556,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
                   };
                   if (ast.validation_output.magic.boolean) {
                     const first_ast = href_arg.get(0);
-                    if (first_ast.node_type === AstType.PLAINTEXT) {
+                    if (first_ast && first_ast.node_type === AstType.PLAINTEXT) {
                       const sep_idx = first_ast.text.lastIndexOf(Macro.HEADER_SCOPE_SEPARATOR)
                       const idx = sep_idx === -1 ? 0 : sep_idx + 1
                       const c = first_ast.text[idx]
@@ -11455,8 +11569,8 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
                       }
                     }
                     const last_ast = href_arg.get(href_arg.length() - 1);
-                    if (last_ast.node_type === AstType.PLAINTEXT) {
-                      const text = first_ast.text
+                    if (last_ast && last_ast.node_type === AstType.PLAINTEXT) {
+                      const text = last_ast.text
                       if (
                         text !== pluralizeWrap(text, 1) &&
                         // Due to buggy pluralize behaviour, it can be different from both.

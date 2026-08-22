@@ -16,6 +16,7 @@ import { convertOptions, docsUrl, forbidMultiheaderMessage, sureLeaveMessage, is
 
 import {
   ArticleBy,
+  ArticleIcon,
   capitalize,
   disableButton,
   enableButton,
@@ -27,6 +28,7 @@ import {
   slugFromArray,
   useWindowEventListener,
   TopicIcon,
+  TimeIcon,
   DiscussionIcon,
   NewArticleIcon,
 } from 'front'
@@ -144,6 +146,13 @@ function titleToPath(username, title) {
   return `${titleToId(username, title)}.${ourbigbook.OURBIGBOOK_EXT}`
 }
 
+function localWebId(username, id) {
+  if (id.startsWith(ourbigbook.AT_MENTION_CHAR)) {
+    return id
+  }
+  return `${ourbigbook.AT_MENTION_CHAR}${username}/${id}`
+}
+
 const idExistsCache = {}
 async function cachedIdExists(idid) {
   if (idid in idExistsCache) {
@@ -214,6 +223,8 @@ export default function EditorPageHoc({
 
     // State
     const [isLoading, setLoading] = useState(false)
+    const [publishElapsedSeconds, setPublishElapsedSeconds] = useState(0)
+    const [publishProgress, setPublishProgress] = useState(null)
     const [topicId, setTopicId] = useState('')
     const [editorLoaded, setEditorLoading] = useState(false)
     // TODO titleErrors can be undefined immediately after this call,
@@ -234,6 +245,21 @@ export default function EditorPageHoc({
     const ourbigbookParentIdContainerElem = useRef(null)
     const saveButtonElem = useRef(null)
     const parentInputElem = useRef(null);
+    const publishModalElem = useRef(null)
+    const publishStartedAt = publishProgress?.startedAt
+
+    useEffect(() => {
+      if (publishStartedAt === undefined) {
+        return
+      }
+      publishModalElem.current?.focus()
+      const updateElapsed = () => {
+        setPublishElapsedSeconds(Math.floor((Date.now() - publishStartedAt) / 1000))
+      }
+      updateElapsed()
+      const interval = window.setInterval(updateElapsed, 250)
+      return () => window.clearInterval(interval)
+    }, [publishStartedAt])
 
     const maxReached = hasReachedMaxItemCount(loggedInUser, articleCountByLoggedInUser, pluralize(itemType))
     let ownerUsername: string
@@ -279,7 +305,7 @@ export default function EditorPageHoc({
       // Can fail on maximum number of articles reached.
       saveButtonElem.current
     ) {
-      if (hasError) {
+      if (hasError || isLoading) {
         disableButton(saveButtonElem.current)
       } else {
         enableButton(saveButtonElem.current)
@@ -295,17 +321,27 @@ export default function EditorPageHoc({
         return
       }
       setLoading(true)
+      if (isNew && !isIssue) {
+        setPublishProgress({
+          current: 0,
+          currentId: undefined,
+          startedAt: Date.now(),
+          title: undefined,
+          total: undefined,
+        })
+      }
       let data, status
-      file.bodySource = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
-      if (isIssue) {
+      try {
+        file.bodySource = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
+        if (isIssue) {
         file.list = list
         if (isNew) {
           ;({ data, status } = await webApi.issueCreate(slugString, file))
         } else {
           ;({ data, status } = await webApi.issueEdit(slugString, router.query.number, file))
         }
-      } else {
-        const opts: {
+        } else {
+        const baseOpts: {
           list: boolean;
           owner: string;
           path?: string;
@@ -315,15 +351,69 @@ export default function EditorPageHoc({
           list,
           owner: ownerUsername,
         }
-        if (!isIndex) {
-          opts.parentId = titleToId(ownerUsername, parentTitle)
-          if (previousSiblingTitle) {
-            opts.previousSiblingId = titleToId(ownerUsername, previousSiblingTitle)
-          }
-        }
         if (isNew) {
-          ;({ data, status } = await webApi.articleCreate(file, opts))
+          const editor = ourbigbookEditorElem.current.ourbigbookEditor
+          const splitResult = await ourbigbook.splitWebArticles(
+            editor.lastInput,
+            {
+              ...editor.options.convertOptions,
+              db_provider: new RestDbProvider(),
+              input_path: editor.lastInputPath,
+            },
+          )
+          if (splitResult.extra_returns.errors.length || !splitResult.articles.length) {
+            status = 422
+            data = { errors: splitResult.extra_returns.errors.length
+              ? splitResult.extra_returns.errors.map(error => error.message)
+              : ['No articles were found in the editor input']
+            }
+          } else {
+            let rootData
+            status = 200
+            const total = splitResult.articles.length
+            for (let i = 0; i < total; i++) {
+              const article = splitResult.articles[i]
+              setPublishProgress(progress => ({
+                ...progress,
+                current: i + 1,
+                currentId: localWebId(ownerUsername, article.ast.id),
+                title: article.titleSource,
+                total,
+              }))
+              const opts = { ...baseOpts }
+              if (article.parent) {
+                opts.parentId = localWebId(ownerUsername, article.parent.ast.id)
+              } else if (!isIndex) {
+                opts.parentId = titleToId(ownerUsername, parentTitle)
+              }
+              if (article.previousSibling) {
+                opts.previousSiblingId = localWebId(ownerUsername, article.previousSibling.ast.id)
+              } else if (!article.parent && previousSiblingTitle) {
+                opts.previousSiblingId = titleToId(ownerUsername, previousSiblingTitle)
+              }
+              ;({ data, status } = await webApi.articleCreate({
+                bodySource: article.bodySource,
+                titleSource: article.titleSource,
+              }, opts))
+              if (status !== 200) {
+                break
+              }
+              if (!rootData) {
+                rootData = data
+              }
+            }
+            if (status === 200) {
+              data = rootData
+            }
+          }
         } else {
+          const opts = baseOpts
+          if (!isIndex) {
+            opts.parentId = titleToId(ownerUsername, parentTitle)
+            if (previousSiblingTitle) {
+              opts.previousSiblingId = titleToId(ownerUsername, previousSiblingTitle)
+            }
+          }
           const path = slugFromArray(
             ourbigbook.pathSplitext(initialFile.path)[0].split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR),
             { username: false }
@@ -333,6 +423,12 @@ export default function EditorPageHoc({
           }
           ;({ data, status } = await webApi.articleCreateOrUpdate(file, opts))
         }
+        }
+      } catch (error) {
+        setLoading(false)
+        setPublishProgress(null)
+        setTitleErrors([`An error occurred while publishing: ${error.message}`])
+        return
       }
       setLoading(false)
       if (status === 200) {
@@ -351,6 +447,7 @@ export default function EditorPageHoc({
         }
         Router.push(redirTarget, null, { scroll: true })
       } else {
+        setPublishProgress(null)
         let errors = data.errors
         if (!errors) {
           errors = [`An error ocurred: ${status}`]
@@ -371,8 +468,9 @@ export default function EditorPageHoc({
         let editor
         loader.init().then(monaco => {
           const finalConvertOptions = lodash.merge({
+            check_db_ids: isNew && !isIssue,
             db_provider: new RestDbProvider(),
-            forbid_multiheader: isIssue ? undefined : forbidMultiheaderMessage,
+            forbid_multiheader: isIssue || isNew ? undefined : forbidMultiheaderMessage,
             input_path: initialFile?.path || titleToPath(ownerUsername, 'asdf'),
             katex_macros: preload_katex(ourbigbook_tex),
             ourbigbook_json: {
@@ -400,7 +498,9 @@ export default function EditorPageHoc({
 
                 let titleErrors = []
                 if (!isIssue) {
-                  const newId = extra_returns.context.header_tree.children[0].ast.id
+                  const headerTreeRoot = extra_returns.context.header_tree
+                  const firstHeader = headerTreeRoot.children[0]
+                  const newId = firstHeader.ast.id
                   let newTopicId = idToTopic(newId)
                   setTopicId(newTopicId)
                   let showToUserNew
@@ -412,10 +512,24 @@ export default function EditorPageHoc({
                     showToUserNew = newTopicId
                   }
                   if (isNew) {
+                    const headerIds = []
+                    const collectHeaderIds = (node) => {
+                      for (const child of node.children) {
+                        headerIds.push(localWebId(ownerUsername, child.ast.id))
+                        collectHeaderIds(child)
+                      }
+                    }
+                    collectHeaderIds(headerTreeRoot)
                     if (newTopicId) {
-                      const id = `${ourbigbook.AT_MENTION_CHAR}${ownerUsername}/${newTopicId}`
+                      const id = localWebId(ownerUsername, firstHeader.ast.id)
                       if (await cachedIdExists(id)) {
-                        titleErrors.push(`ID already taken: "${id}" `)
+                        titleErrors.push(`ID already taken: "${id}"`)
+                      }
+                      if (
+                        !loggedInUser.admin &&
+                        articleCountByLoggedInUser + headerIds.length > loggedInUser.maxArticles
+                      ) {
+                        titleErrors.push(`Creating these ${headerIds.length} articles would exceed your maximum of ${loggedInUser.maxArticles} articles`)
                       }
                     } else {
                       if (ourbigbookEditor.titleSource) {
@@ -619,6 +733,38 @@ export default function EditorPageHoc({
 
     return <>
       <MyHead title={title} />
+      {publishProgress &&
+        <div
+          aria-live="polite"
+          aria-modal="true"
+          className="modal-page publish-progress-modal"
+          onKeyDown={e => e.preventDefault()}
+          ref={publishModalElem}
+          role="dialog"
+          tabIndex={-1}
+        >
+          <div className="modal-container">
+            <div className="modal-title ourbigbook-title">
+              <ArticleIcon title={null} /> Publishing articles
+            </div>
+            {publishProgress.total === undefined
+              ? <div>Preparing articles…</div>
+              : <>
+                  <div className="publish-progress-count">
+                    {publishProgress.current} / {publishProgress.total}
+                  </div>
+                  <progress
+                    max={publishProgress.total}
+                    value={Math.max(0, publishProgress.current - 1)}
+                  />
+                  <div>Publishing “{publishProgress.title}”</div>
+                  <div className="publish-progress-id">{publishProgress.currentId}</div>
+                </>
+            }
+            <div><TimeIcon /> {publishElapsedSeconds} seconds elapsed</div>
+          </div>
+        </div>
+      }
       <div className="editor-page content-not-ourbigbook">
         { maxReached
           ? <p>{maxReached}</p>
@@ -629,7 +775,7 @@ export default function EditorPageHoc({
                     ? <>
                         <NewArticleIcon /> New {itemType}
                         {(!isIssue && topicId) && <>
-                          {' '}on <span className="meta">
+                          {' '}on topic <span className="meta">
                             <CustomLink href={routes.topic(topicId)} newTab={true}><TopicIcon /> {topicId}</CustomLink>
                           </span>
                         </>}

@@ -775,6 +775,25 @@ span.shortcut {
   }
 }
 
+.publish-progress-modal {
+  cursor: wait;
+  z-index: 1000;
+
+  .modal-container {
+    min-width: min(30em, calc(100% - 2em));
+  }
+
+  .publish-progress-count {
+    font-size: 1.5em;
+    font-weight: bold;
+  }
+
+  .publish-progress-id {
+    font-family: monospace;
+    overflow-wrap: anywhere;
+  }
+}
+
 /* Links for internal navigation between pages. */
 .navlink {
   font-weight: bold;

@@ -16,7 +16,7 @@ const ourbigbook_nodejs = require('./nodejs');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const { TMP_DIRNAME } = ourbigbook_nodejs_webpack_safe
-const { read_include } = require('./web_api');
+const { DbProviderBase, read_include } = require('./web_api');
 const {
   assertRows,
   assert_xpath,
@@ -32,6 +32,142 @@ const MAKE_GIT_REPO_PRE_EXEC = [
   ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/ourbigbook-generate.git']],
 ]
 const PATH_SEP = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR
+
+class SplitWebArticlesDbProvider extends DbProviderBase {
+  constructor(existingIds={}) {
+    super()
+    Object.assign(this.id_cache, existingIds)
+    for (const id in existingIds) {
+      this.db_ids.add(id)
+    }
+  }
+  async get_noscopes_base_fetch() { return [] }
+  async get_refs_to_fetch() { return [] }
+  async fetch_files() {}
+  async fetch_header_tree_ids() { return [] }
+  async fetch_ancestors() { return [] }
+  build_header_tree() { return [] }
+  fetch_ancestors_build_tree() { return [] }
+  get_refs_to() { return [] }
+}
+
+describe('splitWebArticles', function () {
+  it('splits source and orders parents before children', async function () {
+    const { articles, extra_returns } = await ourbigbook.splitWebArticles(`= Root
+
+Root body.
+
+== Child
+
+Child body.
+
+=== Grandchild
+
+Grandchild body.
+
+== Second child
+
+= Second root
+
+Second root body.
+
+== Second root child
+
+Second root child body.
+`, {
+      body_only: true,
+      db_provider: new SplitWebArticlesDbProvider(),
+      input_path: '@user/root.bigb',
+      ref_prefix: '@user',
+    })
+    assert.deepStrictEqual(extra_returns.errors, [])
+    assert.deepStrictEqual(articles.map(article => ({
+      bodySource: article.bodySource,
+      id: article.ast.id,
+      parentId: article.parent?.ast.id,
+      previousSiblingId: article.previousSibling?.ast.id,
+      titleSource: article.titleSource,
+    })), [
+      { bodySource: 'Root body.\n', id: '@user/root', parentId: undefined, previousSiblingId: undefined, titleSource: 'Root' },
+      { bodySource: 'Child body.\n', id: 'child', parentId: '@user/root', previousSiblingId: undefined, titleSource: 'Child' },
+      { bodySource: 'Grandchild body.\n', id: 'grandchild', parentId: 'child', previousSiblingId: undefined, titleSource: 'Grandchild' },
+      { bodySource: '', id: 'second-child', parentId: '@user/root', previousSiblingId: 'child', titleSource: 'Second child' },
+      { bodySource: 'Second root body.\n', id: 'second-root', parentId: '@user/root', previousSiblingId: 'second-child', titleSource: 'Second root' },
+      { bodySource: 'Second root child body.\n', id: 'second-root-child', parentId: 'second-root', previousSiblingId: undefined, titleSource: 'Second root child' },
+    ])
+  })
+
+  it('reports existing header and explicit macro IDs as converter errors', async function () {
+    const existing_extra_returns = {}
+    await ourbigbook.convert(`= Existing header
+
+\\Image[https://example.com/image.png]{id=existing-image}
+`, {
+      input_path: '@user/existing-header.bigb',
+      path_sep: '/',
+      ref_prefix: '@user',
+      render: false,
+    }, existing_extra_returns)
+    const extra_returns = {}
+    await ourbigbook.convert(`= Root
+
+\\Image[https://example.com/image.png]{id=existing-image}
+
+== Existing header
+`, {
+      body_only: true,
+      check_db_ids: true,
+      db_provider: new SplitWebArticlesDbProvider({
+        '@user/existing-header': existing_extra_returns.ids['@user/existing-header'],
+        '@user/existing-image': existing_extra_returns.ids['@user/existing-image'],
+      }),
+      forbid_include: 'Includes are disabled',
+      input_path: '@user/root.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK,
+      path_sep: '/',
+      ref_prefix: '@user',
+      render_metadata: false,
+      webMode: true,
+    }, extra_returns)
+    assert.deepStrictEqual(extra_returns.errors.map(error => ({
+      line: error.source_location.line,
+      message: error.message,
+    })), [
+      { line: 3, message: 'ID already taken: "@user/existing-image"' },
+      { line: 5, message: 'ID already taken: "@user/existing-header"' },
+    ])
+  })
+
+  it('does not throw while a magic link is being typed', async function () {
+    const home_extra_returns = {}
+    await ourbigbook.convert('= Home', {
+      input_path: '@user/index.bigb',
+      path_sep: '/',
+      ref_prefix: '@user',
+      render: false,
+      webMode: true,
+    }, home_extra_returns)
+    for (const body of ['<', '<a', '<asdf>']) {
+      const db_provider = new SplitWebArticlesDbProvider({
+        '@user': home_extra_returns.ids['@user'],
+      })
+      const extra_returns = {}
+      await ourbigbook.convert(`= New
+
+${body}`, {
+        body_only: true,
+        db_provider,
+        forbid_include: 'Includes are disabled',
+        input_path: '@user/new.bigb',
+        path_sep: '/',
+        ref_prefix: '@user',
+        render_metadata: false,
+        webMode: true,
+      }, extra_returns)
+      assert(extra_returns.errors.length > 0)
+    }
+  })
+})
 
 // Common default convert options for the tests.
 const convert_opts = {

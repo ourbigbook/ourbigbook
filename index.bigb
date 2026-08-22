@@ -7548,12 +7548,16 @@ The default output format. Web pages!!!
 = `md` output format
 {parent=output format}
 
-Outputs Markdown to a `.md` file. The portable common subset of OurBigBook headers, paragraphs, emphasis, links, images, code, quotes, lists, horizontal rules, mathematics and tables is converted to the closest Markdown construct.
+Outputs Markdown to a `.md` file.
+
+The portable common subset of OurBigBook headers, paragraphs, emphasis, links, images, code, quotes, lists, horizontal rules, mathematics and tables is converted to the closest Markdown construct.
 
 For example:
 ``
 ourbigbook -O md index.bigb
 ``
+
+Markdown output is generally viewed as a downgrade of data structures, since markdown is a subset of <OurBigBook>. One major use case is to publish directly GitHub, thus treating the markdown as an output entirely.
 
 = `adoc` output format
 {parent=output format}
@@ -7765,21 +7769,9 @@ _out/publish/_out/local
 = `--publish-target github-pages`
 {parent=`--publish-target`}
 
-Publish to <#GitHub Pages>. See also: <Publish to GitHub Pages>{full}.
-
-= `--publish-target local`
-{parent=`--publish-target`}
-
-Publish as a local directory that can be zipped and sent to someone else, and then correctly viewed by a browser locally by the receiver. You can then zip it from the Linux command line for example with:
-``
-ourbigbook --publish --publish-target local
-cd _out/publish/_out
-zip -r local.zip local
-``
-Maybe we should do the Zip step from the <OurBigBook CLI> as well. There is no Node.js standard library wrapper however apparently: https://stackoverflow.com/questions/15641243/need-to-zip-an-entire-directory-using-node-js
-
 = Publish to GitHub Pages
-{parent=`--publish-target`}
+{synonym}
+{title2}
 
 = GitHub Pages
 {synonym}
@@ -7787,12 +7779,14 @@ Maybe we should do the Zip step from the <OurBigBook CLI> as well. There is no N
 = Published to GitHub Pages
 {synonym}
 
+Publish to <#GitHub Pages>.
+
 https://pages.github.com/[GitHub pages] is the default OurBigBook publish target.
 
 Since that procedure is so important, it is documented directly at: <play with the template>.
 
 = Publish to GitHub pages root page
-{parent=Publish to GitHub Pages}
+{parent=publish-target-github-pages}
 
 If you want to publish your root user page, which appears at `/` (e.g. https://github.com/cirosantilli/cirosantilli.github.io for the user `cirosantilli`), GitHub annoyingly forces you to use the `master` branch for the HTML output:
 * https://github.com/isaacs/github/issues/212
@@ -7818,17 +7812,42 @@ git push --delete origin master
 You then will also want to set your default repository branch to `dev` in the settings for that repository: https://help.github.com/en/github/administering-a-repository/setting-the-default-branch
 
 = `.github` directory is ignored on GitHub Pages
-{parent=Publish to GitHub Pages}
+{parent=publish-target-github-pages}
 
 It's a GitHub bug/feature: https://github.com/orgs/community/discussions/52252
 
 Maybe we should just ignore the `.github` directory when publishing, otherwise it leads to a broken link on the <`_dir` directory> listings.
 
 = `_raw` files are downloaded rather than displayed in browser for certain file extensions on GitHub Pages
-{parent=Publish to GitHub Pages}
+{parent=publish-target-github-pages}
 {tag=`_raw` directory}
 
 TODO find some upstream discussion.
+
+= `--publish-target github-md`
+{parent=`--publish-target`}
+
+Publishes Markdown directly to a GitHub repository. Both nonsplit `.md` documents and the `.md` files produced by <split headers> are included, and cross-file links target those Markdown files so they work when browsed on GitHub.
+
+The output is committed and force-pushed to the configured publish branch in the same fashion as the GitHub Pages target. The default branch is `master`.
+
+For example:
+``
+ourbigbook --publish --publish-target github-md
+``
+
+The OurBigBook documentation configures this target to publish to https://github.com/ourbigbook/docs-md using <ourbigbook.json/target>.
+
+= `--publish-target local`
+{parent=`--publish-target`}
+
+Publish as a local directory that can be zipped and sent to someone else, and then correctly viewed by a browser locally by the receiver. You can then zip it from the Linux command line for example with:
+``
+ourbigbook --publish --publish-target local
+cd _out/publish/_out
+zip -r local.zip local
+``
+Maybe we should do the Zip step from the <OurBigBook CLI> as well. There is no Node.js standard library wrapper however apparently: https://stackoverflow.com/questions/15641243/need-to-zip-an-entire-directory-using-node-js
 
 = `-S`, `--split-headers`
 {id=split-headers}
@@ -8110,6 +8129,7 @@ Template variable expansion automatically escape special HTML characters such as
 `true` iff the <--publish target> is a standard website, i.e. something that will be hosted publicly on a URL. This is currently `true` for the following publish targets:
 * `--publish-target github-pages`
 and it is `false` for the following targets:
+* `--publish-target github-md`
 * `--publish-target local`
 
 This template variable is useful to remove JavaScript elements that only work on public websites and not on `localhost` or `file:`, e.g.:
@@ -8798,6 +8818,26 @@ One example usage is to redirect all links of your <static website> to your <Our
 ``
 
 If given these options override pre-existing options on the published output.
+
+= `target`
+{parent=ourbigbook.json}
+
+Options applied only for a specific <--publish-target>. Each target object is merged over the normal `ourbigbook.json` configuration before conversion and publishing, so global options remain as defaults.
+
+For example:
+``
+"target": {
+  "github-md": {
+    "publishBranch": "master",
+    "publishRemoteUrl": "git@github.com:ourbigbook/docs-md.git"
+  }
+}
+``
+
+= `publishBranch`
+{parent=ourbigbook.json}
+
+Branch to which a Git-based publish target is force-pushed. It may be set inside <ourbigbook.json/target> when different targets use different branches.
 
 = `publishRemoteUrl`
 {parent=ourbigbook.json}

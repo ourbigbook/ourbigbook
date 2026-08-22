@@ -22,6 +22,14 @@
   "publishCommitDate": "2000-01-01T00:00:00",
   "publishCommitAuthorSameAsSource": true,
   "publishRemoteUrl": "git@github.com:ourbigbook/ourbigbook.git",
+  "target": {
+    "github-md": {
+      "generateSitemap": false,
+      "prepublish": null,
+      "publishBranch": "master",
+      "publishRemoteUrl": "git@github.com:ourbigbook/docs-md.git"
+    }
+  },
   "publishRootUrl": "https://docs.ourbigbook.com",
   "sitemap": true,
   "unsafeXss": true

@@ -11962,6 +11962,47 @@ assert_cli(
   }
 )
 assert_cli(
+  'publish: --publish-target github-md renders split and nonsplit Markdown',
+  {
+    args: ['--dry-run', '--publish', '--publish-target', 'github-md', '.'],
+    filesystem: {
+      ...publish_filesystem,
+      'ourbigbook.json': `{
+  "target": {
+    "github-md": {
+      "publishBranch": "master",
+      "publishRemoteUrl": "git@github.com:ourbigbook/docs-md.git"
+    }
+  }
+}
+`,
+    },
+    pre_exec: publish_pre_exec,
+    assert_stdout_contains: [
+      'checkout -B master',
+      'remote add origin git@github.com:ourbigbook/docs-md.git',
+      'push -f origin master:master',
+    ],
+    assert_exists: [
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/index.md`,
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/split.md`,
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/h2.md`,
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex.md`,
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex-split.md`,
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex-h2.md`,
+    ],
+    assert_not_exists: [
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css`,
+    ],
+    assert_contains: {
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/index.md`]: [
+        '[link to notindex](notindex.md)',
+        '[link to notindex h2](notindex.md#notindex-h2)',
+      ],
+    },
+  }
+)
+assert_cli(
   'publish: --publish-target local works',
   {
     args: ['--dry-run', '--split-headers', '--publish', '--publish-target', 'local', '.'],

@@ -1599,6 +1599,18 @@ if (cli.helpMacros) {
         path.join(ourbigbook_json_dir, ourbigbook.OURBIGBOOK_JSON_BASENAME), ourbigbook_nodejs_webpack_safe.ENCODING)))
     }
   }
+  const publish_target = cli.publishTarget
+  if (
+    publish &&
+    ourbigbook_json.target &&
+    ourbigbook_json.target[publish_target]
+  ) {
+    ourbigbook_json = lodash.merge(
+      {},
+      ourbigbook_json,
+      ourbigbook_json.target[publish_target]
+    )
+  }
   if (web) {
     let jsonH = ourbigbook_json.h
     if (jsonH === undefined) {
@@ -1620,7 +1632,6 @@ if (cli.helpMacros) {
   // - publish a local file to then ZIP: no
   let publishIsPublic
   const publish_create_files = {}
-  const publish_target = cli.publishTarget
   if (publish) {
     switch (publish_target) {
       case 'github-pages':
@@ -1638,6 +1649,14 @@ if (cli.helpMacros) {
           publish_create_files['CNAME'] = fs.readFileSync(cname_path, ourbigbook_nodejs_webpack_safe.ENCODING)
         }
         break;
+      case 'github-md':
+        cli.outputFormat = ourbigbook.OUTPUT_FORMAT_MARKDOWN
+        htmlXExtension = true
+        split_headers = true
+        publish_uses_git = true
+        publishTargetIsWebsite = false
+        publishIsPublic = true
+        break
       case 'local':
         htmlXExtension = true;
         publish_uses_git = false;
@@ -2657,7 +2676,11 @@ if (cli.helpMacros) {
               cli_error('only know how  to publish to origin == github.com currently, please send a patch');
             }
             let remote_url_path_components = parsed_remote_url.pathname.split(path.sep);
-            if (remote_url_path_components[2].startsWith(remote_url_path_components[1] + '.github.io')) {
+            if (options.ourbigbook_json.publishBranch) {
+              publishBranch = options.ourbigbook_json.publishBranch
+            } else if (publish_target === 'github-md') {
+              publishBranch = 'master'
+            } else if (remote_url_path_components[2].startsWith(remote_url_path_components[1] + '.github.io')) {
               publishBranch = 'master';
             } else {
               publishBranch = 'gh-pages';
@@ -2739,18 +2762,20 @@ if (cli.helpMacros) {
           }
 
           // Generate redirects from ourbigbook.json.
-          for (let [from, to] of options.ourbigbook_json.redirects) {
-            if (
-              // TODO https://docs.ourbigbook.com/respect-ourbigbook-json-htmlxextension-on-ourbigbook-json-redirects
-              ourbigbook_options.htmlXExtension === false ? false : true &&
-              !ourbigbook.protocolIsKnown(to)
-            ) {
-              to +=  '.' + ourbigbook.HTML_EXT
+          if (output_format === ourbigbook.OUTPUT_FORMAT_HTML) {
+            for (let [from, to] of options.ourbigbook_json.redirects) {
+              if (
+                // TODO https://docs.ourbigbook.com/respect-ourbigbook-json-htmlxextension-on-ourbigbook-json-redirects
+                ourbigbook_options.htmlXExtension === false ? false : true &&
+                !ourbigbook.protocolIsKnown(to)
+              ) {
+                to +=  '.' + ourbigbook.HTML_EXT
+              }
+              generate_redirect_base(
+                path.join(nonOurbigbookOptions.outdir, from + '.' + ourbigbook.HTML_EXT),
+                to
+              )
             }
-            generate_redirect_base(
-              path.join(nonOurbigbookOptions.outdir, from + '.' + ourbigbook.HTML_EXT),
-              to
-            )
           }
         }
 
@@ -2795,7 +2820,7 @@ if (cli.helpMacros) {
             fs.writeFileSync(outpath, publish_create_files[p])
           }
 
-          if ('prepublish' in options.ourbigbook_json) {
+          if (options.ourbigbook_json.prepublish) {
             if (!cli.dryRun && !cli.dryRunPush && !cli.unsafeAce) {
               cli_error('prepublish in ourbigbook.json requires running with --unsafe-ace');
             }
@@ -2810,57 +2835,59 @@ if (cli.helpMacros) {
             }
           }
 
-          fs.mkdirSync(publish_out_publish_obb_dir, { recursive: true })
-          if (
-            options.ourbigbook_json.generateSitemap &&
-            options.ourbigbook_json.publishRootUrl
-          ) {
-            let sitemap = nonOurbigbookOptions.sitemap
-            if (!nonOurbigbookOptions.options.htmlXExtension) {
-              for (let i = 0; i < sitemap.length; i++) {
-                let p = sitemap[i]
-                let pSplit = p.split(URL_SEP)
-                if (pSplit[pSplit.length - 1] === 'index.html') {
-                  p = pSplit.slice(0, -1).join(URL_SEP)
+          if (output_format === ourbigbook.OUTPUT_FORMAT_HTML) {
+            fs.mkdirSync(publish_out_publish_obb_dir, { recursive: true })
+            if (
+              options.ourbigbook_json.generateSitemap &&
+              options.ourbigbook_json.publishRootUrl
+            ) {
+              let sitemap = nonOurbigbookOptions.sitemap
+              if (!nonOurbigbookOptions.options.htmlXExtension) {
+                for (let i = 0; i < sitemap.length; i++) {
+                  let p = sitemap[i]
+                  let pSplit = p.split(URL_SEP)
+                  if (pSplit[pSplit.length - 1] === 'index.html') {
+                    p = pSplit.slice(0, -1).join(URL_SEP)
+                  }
+                  if (p.endsWith('.' + ourbigbook.HTML_EXT)) {
+                    p = p.slice(0, - (ourbigbook.HTML_EXT.length + 1))
+                  }
+                  sitemap[i] = p
                 }
-                if (p.endsWith('.' + ourbigbook.HTML_EXT)) {
-                  p = p.slice(0, - (ourbigbook.HTML_EXT.length + 1))
-                }
-                sitemap[i] = p
               }
+              const sitemapPath = path.join(publish_out_publish_obb_dir, 'sitemap.txt')
+              console.log(`sitemap: ${relpathCwd(sitemapPath)}`)
+              fs.writeFileSync(
+                sitemapPath,
+                sitemap
+                  // Not ideal to remove duplicates here, but there were some
+                  // duplicate _file cases that would require some thought.
+                  .sort()
+                  .filter((elem, index, arr) =>
+                    index === arr.length - 1 || arr[index + 1] !== elem
+                  ).map(p =>
+                    `${options.ourbigbook_json.publishRootUrl}${p ? URL_SEP : ''}${p}`
+                  ).join('\n')
+              )
             }
-            const sitemapPath = path.join(publish_out_publish_obb_dir, 'sitemap.txt')
-            console.log(`sitemap: ${relpathCwd(sitemapPath)}`)
-            fs.writeFileSync(
-              sitemapPath,
-              sitemap
-                // Not ideal to remove duplicates here, but there were some
-                // duplicate _file cases that would require some thought.
-                .sort()
-                .filter((elem, index, arr) =>
-                  index === arr.length - 1 || arr[index + 1] !== elem
-                ).map(p =>
-                  `${options.ourbigbook_json.publishRootUrl}${p ? URL_SEP : ''}${p}`
-                ).join('\n')
-            )
-          }
 
-          // Copy runtime assets from _obb/ into the output repository.
-          const dir = fs.opendirSync(ourbigbook_nodejs.DIST_PATH)
-          let dirent
-          while ((dirent = dir.readSync()) !== null) {
-            require('fs-extra').copySync(
-              path.join(ourbigbook_nodejs.DIST_PATH, dirent.name),
-              path.join(publishOutPublishDistDir, dirent.name)
-            )
+            // Copy runtime assets from _obb/ into the output repository.
+            const dir = fs.opendirSync(ourbigbook_nodejs.DIST_PATH)
+            let dirent
+            while ((dirent = dir.readSync()) !== null) {
+              require('fs-extra').copySync(
+                path.join(ourbigbook_nodejs.DIST_PATH, dirent.name),
+                path.join(publishOutPublishDistDir, dirent.name)
+              )
+            }
+            if (options.ourbigbook_json.web && options.ourbigbook_json.web.linkFromStaticHeaderMetaToWeb) {
+              fs.copyFileSync(
+                ourbigbook_nodejs.LOGO_PATH,
+                path.join(publishOutPublishDir, ourbigbook_nodejs.LOGO_ROOT_RELPATH)
+              )
+            }
+            dir.closeSync()
           }
-          if (options.ourbigbook_json.web && options.ourbigbook_json.web.linkFromStaticHeaderMetaToWeb) {
-            fs.copyFileSync(
-              ourbigbook_nodejs.LOGO_PATH,
-              path.join(publishOutPublishDir, ourbigbook_nodejs.LOGO_ROOT_RELPATH)
-            )
-          }
-          dir.closeSync()
 
           if (publish_uses_git) {
             // Commit and push.

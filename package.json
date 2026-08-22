@@ -94,7 +94,7 @@
     "devs": "cd web && npm run devs",
     "heroku-prebuild": "./heroku-prebuild",
     "link": "npm link && npm link ourbigbook",
-    "publish": "ourbigbook --publish --unsafe-ace",
+    "publish": "ourbigbook --publish --unsafe-ace && ourbigbook --publish --unsafe-ace --publish-target github-md",
     "start": "cd web && npm start",
     "start-dev": "cd web && npm run start-dev",
     "test": "NODE_OPTIONS='--unhandled-rejections=strict' mocha test --ignore-leaks --timeout 4000",

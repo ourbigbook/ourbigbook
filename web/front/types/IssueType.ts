@@ -14,6 +14,7 @@ export type IssueType = {
   followerCount: number;
   id: string;
   image?: string;
+  list: boolean;
   number: number;
   render: string;
   score: number;

@@ -8205,13 +8205,14 @@ The reason for this is that the article may have metadata created by other users
 
 In order to actually remove the header you should follow the procedure from <OurBigBook Web page renaming>{full}, which instead first moves all discussions over to a new article before deleting.
 
-= OurBigBook Web unlisted articles
+= OurBigBook Web unlisted content
+{id=ourbigbook-web-unlisted-articles}
 {parent=Local header deletion on web upload}
 
 = Unlisted
 {synonym}
 
-It is possible to mark articles as unlisted in <OurBigBook Web>.
+It is possible to mark articles, discussions and comments as unlisted in <OurBigBook Web>.
 
 This also happens automatically when doing <--web> upload for previously published articles that were deleted locally, see also: <Local header deletion on web upload>{full}
 
@@ -8221,6 +8222,8 @@ Marking an article as unlisted makes it not show up by default on article listin
 * on <topics>
 Unlisted articles do however appear on listings such as:
 * lists of articles liked by given users
+
+Discussions and comments can likewise be unlisted by their authors or by an administrator. They are hidden from listings by default, but each affected listing offers controls to show all content or only unlisted content.
 
 = `--web-ask-password`
 {parent=OurBigBook CLI options}

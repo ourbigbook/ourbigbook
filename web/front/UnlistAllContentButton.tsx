@@ -4,17 +4,17 @@ import { webApi } from 'front/api'
 import ToggleButton from 'front/ToggleButton'
 import { UnlistedIcon } from 'front'
 
-const UnlistAllArticlesButton = ({
+const UnlistAllContentButton = ({
   username,
   on,
 }) => <ToggleButton {...{
   callbackOff: async () => {
-    return webApi.articlesBulkUpdate({ username }, { list: false })
+    return webApi.userUnlistContent(username)
   },
-  contentOff: <><UnlistedIcon /> Unlist all articles</>,
-  contentOn: <><UnlistedIcon /> All articles are unlisted</>,
+  contentOff: <><UnlistedIcon /> Unlist all content</>,
+  contentOn: <><UnlistedIcon /> All content is unlisted</>,
   disabledWhenOn: true,
   on,
 }} />
 
-export default UnlistAllArticlesButton
+export default UnlistAllContentButton

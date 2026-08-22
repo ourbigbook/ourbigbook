@@ -1,7 +1,7 @@
 import { getLoggedInUser } from 'back'
 import { articleLimit } from 'front/config'
 import { MyGetServerSideProps } from 'front/types'
-import { getOrderAndPage, typecastInteger } from 'front/js'
+import { getList, getOrderAndPage, typecastInteger } from 'front/js'
 import { ArticlePageProps } from 'front/ArticlePage'
 import { CommentType } from 'front/types/CommentType'
 
@@ -12,6 +12,7 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
       typeof numberString === 'string'
     ) {
       const sequelize = req.sequelize
+      const list = getList(req, res)
       const { Comment, Issue } = sequelize.models
       typecastInteger
       const [number, ok] = typecastInteger(numberString)
@@ -43,11 +44,13 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
         issueJson,
         issuesCount,
         loggedInUserJson,
+        unlistedCommentsCount,
       ] = await Promise.all([
         issue.article.toJson(loggedInUser),
         loggedInUser ? Comment.count({ where: { authorId: loggedInUser.id } }) : null,
         Comment.getComments({
           issueId: issue.id,
+          list,
           order: [[order, 'ASC']],
           limit: articleLimit,
           offset,
@@ -60,14 +63,17 @@ export const getServerSidePropsIssueHoc = (): MyGetServerSideProps => {
         issue.toJson(loggedInUser),
         Issue.count({ where: { articleId: issue.articleId } }),
         loggedInUser ? loggedInUser.toJson() : undefined,
+        Comment.count({ where: { issueId: issue.id, list: false } }),
       ])
       const props: ArticlePageProps = {
         article: issueJson,
         comments: comments as CommentType[],
         commentsCount,
+        hasUnlistedComments: !!unlistedCommentsCount,
         page,
         issueArticle: articleJson,
         issuesCount,
+        list: list === undefined ? null : list,
       }
       if (loggedInUser) {
         props.loggedInUser = loggedInUserJson

@@ -50,7 +50,8 @@ import { TopicType } from 'front/types/TopicType'
 import { UserType } from 'front/types/UserType'
 import LockUserButton from 'front/LockUserButton'
 import BlacklistSignupIpButton from './BlacklistSignupIpButton'
-import UnlistAllArticlesButton from './UnlistAllArticlesButton'
+import SpammerButton from './SpammerButton'
+import UnlistAllContentButton from './UnlistAllContentButton'
 
 export interface UserPageProps extends CommonPropsType {
   ancestors?: ArticleLinkType[];
@@ -64,7 +65,7 @@ export interface UserPageProps extends CommonPropsType {
   commentCountByLoggedInUser?: number;
   comments?: CommentType[];
   commentsCount?: number;
-  hasListedArticle?: boolean;
+  hasListedContent?: boolean;
   hasLocked?: boolean;
   hasUnlisted?: boolean;
   incomingLinks?: ArticleLinkType[];
@@ -121,7 +122,7 @@ export default function UserPage({
   comments,
   commentsCount,
   commentCountByLoggedInUser,
-  hasListedArticle,
+  hasListedContent,
   hasLocked,
   hasUnlisted,
   incomingLinks,
@@ -156,6 +157,9 @@ export default function UserPage({
   // Following state.
   const [following, setFollowing] = React.useState(false)
   const [followerCount, setFollowerCount] = React.useState(user?.followerCount)
+  const [moderationLocked, setModerationLocked] = React.useState(user.locked)
+  const [moderationIpBlacklisted, setModerationIpBlacklisted] = React.useState(signupIpIsBlacklisted)
+  const [moderationContentUnlisted, setModerationContentUnlisted] = React.useState(!hasListedContent)
   React.useEffect(() => {
     setFollowing(user?.following)
     setFollowerCount(user?.followerCount)
@@ -163,6 +167,11 @@ export default function UserPage({
     user?.following,
     user?.followerCount,
   ])
+  React.useEffect(() => {
+    setModerationLocked(user.locked)
+    setModerationIpBlacklisted(signupIpIsBlacklisted)
+    setModerationContentUnlisted(!hasListedContent)
+  }, [hasListedContent, signupIpIsBlacklisted, user.locked])
 
   // title
   const displayAndUsername = displayAndUsernameText(user)
@@ -246,13 +255,32 @@ export default function UserPage({
                 </CustomLink>
               }
               {!cant.setUserLimits(loggedInUser, user) &&
-                <LockUserButton {...{ username, on: user.locked }} />
-              }
-              {(!cant.setUserLimits(loggedInUser, user) && user.ip) &&
-                <BlacklistSignupIpButton {...{ ip: user.ip, on: signupIpIsBlacklisted }} />
+                <SpammerButton {...{
+                  username,
+                  on: moderationLocked && moderationIpBlacklisted && moderationContentUnlisted,
+                  onSuccess: () => {
+                    setModerationLocked(true)
+                    setModerationIpBlacklisted(true)
+                    setModerationContentUnlisted(true)
+                  },
+                }} />
               }
               {!cant.setUserLimits(loggedInUser, user) &&
-                <UnlistAllArticlesButton {...{ username, on: !hasListedArticle }} />
+                <LockUserButton {...{
+                  username,
+                  on: moderationLocked,
+                  onChange: setModerationLocked,
+                }} />
+              }
+              {(!cant.setUserLimits(loggedInUser, user) && user.ip) &&
+                <BlacklistSignupIpButton {...{
+                  ip: user.ip,
+                  on: moderationIpBlacklisted,
+                  onChange: setModerationIpBlacklisted,
+                }} />
+              }
+              {!cant.setUserLimits(loggedInUser, user) &&
+                <UnlistAllContentButton {...{ username, on: moderationContentUnlisted }} />
               }
               {isCurrentUser &&
                 <LogoutButton />
@@ -467,6 +495,9 @@ export default function UserPage({
       <CommentList {...{
         comments,
         commentsCount,
+        hasUnlisted,
+        list,
+        loggedInUser,
         page,
         showAuthor: false,
       }}/>

@@ -10,9 +10,10 @@ import UserLinkWithImage from 'front/UserLinkWithImage'
 import {
   DiscussionIcon,
   TimeIcon,
+  UnlistedIcon,
   UserIcon,
 } from 'front'
-import { getCommentSlug } from 'front/js'
+import { getCommentSlug, TRI_ALL, TRI_FALSE } from 'front/js'
 import { articleLimit } from 'front/config'
 import routes from 'front/routes'
 import ShowBody from 'front/ShowBody'
@@ -26,6 +27,8 @@ import { UserType } from 'front/types/UserType'
 export type CommentListProps = {
   comments?: CommentType[];
   commentsCount?: number;
+  hasUnlisted?: boolean;
+  list?: boolean;
   loggedInUser?: UserType;
   page: number;
   showAuthor?: boolean;
@@ -39,6 +42,8 @@ export type CommentListProps = {
 const CommentList = ({
   comments,
   commentsCount,
+  hasUnlisted,
+  list,
   loggedInUser,
   page,
   showAuthor=true,
@@ -158,6 +163,30 @@ const CommentList = ({
             </div>
             {pagination}
           </div>
+      }
+      {hasUnlisted === true &&
+        <p className="content-not-ourbigbook">
+          <UnlistedIcon />{' '}
+          {list === true
+            ? <>
+                There are unlisted comments,{' '}
+                <Link href={{ pathname, query: { ...query, listed: TRI_ALL } }}>
+                  also show them
+                </Link>
+                {' '}or{' '}
+                <Link href={{ pathname, query: { ...query, listed: TRI_FALSE } }}>
+                  only show them
+                </Link>.
+              </>
+            : <>
+                {list === false ? 'Only unlisted comments are being shown' : 'Unlisted comments are being shown'},
+                {' '}
+                <Link href={{ pathname, query: lodash.omit(query, 'listed') }}>
+                  click here to show only listed comments
+                </Link>.
+              </>
+          }
+        </p>
       }
     </div>
   )

@@ -410,9 +410,15 @@ async function sync(sequelize, opts={}) {
     await sequelizeCreateTriggerUpdateCount(sequelize, Issue, Comment, 'commentCount', 'issueId')
     await sequelizeCreateTriggerUpdateCount(sequelize, Article, Issue, 'issueCount', 'articleId')
     await sequelizeCreateTriggerUpdateCount(
-      sequelize, User, Issue, 'discussionCount', 'authorId', { nameExtra: 'user_discussion_count' })
+      sequelize, User, Issue, 'discussionCount', 'authorId', {
+        countBooleanField: 'list',
+        nameExtra: 'user_discussion_count',
+      })
     await sequelizeCreateTriggerUpdateCount(
-      sequelize, User, Comment, 'commentCount', 'authorId', { nameExtra: 'user_comment_count' })
+      sequelize, User, Comment, 'commentCount', 'authorId', {
+        countBooleanField: 'list',
+        nameExtra: 'user_comment_count',
+      })
 
     // Article
     await sequelizeCreateTrigger(sequelize, Article, 'delete',
@@ -527,7 +533,7 @@ async function normalize({
             transaction,
           })
           const count = await childModel.count({
-            where: { authorId: user.id },
+            where: { authorId: user.id, list: true },
             transaction,
           })
           if (check) {

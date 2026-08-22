@@ -46,6 +46,7 @@ const editPermissions = [
 
   // Comments
   ['createComment', (loggedInUser) => { return false }],
+  ['editComment', (loggedInUser, commentUsername) => loggedInUser.username !== commentUsername],
   ['deleteComment', (loggedInUser, comment) => true],
 
   // SiteSettings

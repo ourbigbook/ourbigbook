@@ -298,6 +298,7 @@ export default function EditorPageHoc({
       let data, status
       file.bodySource = ourbigbookEditorElem.current.ourbigbookEditor.getValue()
       if (isIssue) {
+        file.list = list
         if (isNew) {
           ;({ data, status } = await webApi.issueCreate(slugString, file))
         } else {
@@ -697,27 +698,25 @@ export default function EditorPageHoc({
                   //oks={hasError ? undefined : ['Title looks good.']}
                 />
                 <div className="tab-list">
-                  {(!isIssue) && <>
-                    <Link
-                      className={`tab-item${tab === 'editor' ? ' active' : ''}`}
-                      href={'#' /* TODO don't know how to make this empty. Like this it makes the URL be '#' which is ugly, but it works. */}
-                      onClick={(ev) => {
-                        ev.preventDefault()
-                        window.location.hash = '' }}
-                    >
-                      <EditArticleIcon /> Editor
-                    </Link>
-                    <Link
-                      className={`tab-item${tab === 'metadata' ? ' active' : ''}`}
-                      href={`#${metadataTabId}`}
-                      onClick={(ev) => {
-                        ev.preventDefault()
-                        window.location.hash = `#${metadataTabId}`
-                      }}
-                    >
-                      <MoreIcon /> Metadata
-                    </Link>
-                  </>}
+                  <Link
+                    className={`tab-item${tab === 'editor' ? ' active' : ''}`}
+                    href={'#' /* TODO don't know how to make this empty. Like this it makes the URL be '#' which is ugly, but it works. */}
+                    onClick={(ev) => {
+                      ev.preventDefault()
+                      window.location.hash = '' }}
+                  >
+                    <EditArticleIcon /> Editor
+                  </Link>
+                  <Link
+                    className={`tab-item${tab === 'metadata' ? ' active' : ''}`}
+                    href={`#${metadataTabId}`}
+                    onClick={(ev) => {
+                      ev.preventDefault()
+                      window.location.hash = `#${metadataTabId}`
+                    }}
+                  >
+                    <MoreIcon /> Metadata
+                  </Link>
                   {' '}
                   <button
                     className="btn"
@@ -788,15 +787,15 @@ export default function EditorPageHoc({
                         </Label>
                         <ErrorList errors={parentErrors}/>
                       </>}
-                      <Label label="Unlisted" inline={true}>
-                        <input
-                          type="checkbox"
-                          defaultChecked={!list}
-                          onChange={(e) => { setList(!e.target.checked) }}
-                        />
-                      </Label>
                     </div>
                   }
+                  <Label label="Unlisted" inline={true}>
+                    <input
+                      type="checkbox"
+                      defaultChecked={!list}
+                      onChange={(e) => { setList(!e.target.checked) }}
+                    />
+                  </Label>
                 </div>
               </div>
             </>

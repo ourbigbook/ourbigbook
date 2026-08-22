@@ -2,12 +2,13 @@ import { getLoggedInUser } from 'back'
 import { articleLimit, fallback } from 'front/config'
 import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
-import { getOrderAndPage } from 'front/js'
+import { getList, getOrderAndPage } from 'front/js'
 
 export const getServerSidePropsIssueCommentsIndexHoc = (): MyGetServerSideProps => {
   return async ({ params = {}, query, req, res }) => {
     const { slug } = params
     const sequelize = req.sequelize
+    const list = getList(req, res)
     const { ascDesc, err, order, page } = getOrderAndPage(req, query.page)
     if (err) { res.statusCode = 422 }
     const [article, loggedInUser] = await Promise.all([
@@ -24,25 +25,33 @@ export const getServerSidePropsIssueCommentsIndexHoc = (): MyGetServerSideProps 
     ])
     if (!article) { return { notFound: true } }
     const offset = page * articleLimit
-    const [articleJson, [commentsCount, comments]] = await Promise.all([
+    const [articleJson, commentsAndCount, unlistedCount] = await Promise.all([
       article.toJson(loggedInUser),
       sequelize.models.Comment.getComments({
         articleId: article.id,
+        list,
         offset,
         order: [[order, ascDesc]],
         limit: articleLimit,
-      }).then(commentsAndCounts => {
-        return Promise.all([
-          commentsAndCounts.count,
-          Promise.all(commentsAndCounts.rows.map(comment => comment.toJson(loggedInUser))),
-        ])
-      })
+      }),
+      sequelize.models.Comment.count({
+        where: { list: false },
+        include: [{
+          model: sequelize.models.Issue,
+          as: 'issue',
+          required: true,
+          where: { articleId: article.id },
+        }],
+      }),
     ])
+    const comments = await Promise.all(commentsAndCount.rows.map(comment => comment.toJson(loggedInUser)))
     const props: IndexPageProps = {
       comments: comments,
-      commentsCount: commentsCount,
+      commentsCount: commentsAndCount.count,
+      hasUnlisted: !!unlistedCount,
       itemType: 'comment',
       issueArticle: articleJson,
+      list: list === undefined ? null : list,
       page,
       order,
       orderAscDesc: ascDesc,

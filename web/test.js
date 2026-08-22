@@ -382,6 +382,14 @@ it('User discussionCount and commentCount caches', async function() {
   })
   await assertCounts(user0, 1, 1)
 
+  // Only listed discussions and comments contribute to the user caches.
+  await issue.update({ list: false })
+  await comment.update({ list: false })
+  await assertCounts(user0, 0, 0)
+  await issue.update({ list: true })
+  await comment.update({ list: true })
+  await assertCounts(user0, 1, 1)
+
   // Trigger updates participate in the caller's transaction and roll back with it.
   await assert.rejects(sequelize.transaction(async transaction => {
     await Issue.createSideEffects(user0, article, {
@@ -3001,14 +3009,16 @@ it(`api: user: locked users can't do much`, async () => {
       assertStatus(status, data)
       assert.match(data, /Only unlocked users are being shown/)
       assert.match(data, /Only users with verified email are being shown/)
+      assert.match(data, /"totalUsers":1/)
       assert.doesNotMatch(data, /href="\/user0"/)
       assert.doesNotMatch(data, /href="\/user1"/)
 
       ;({data, status} = await test.sendJsonHttp('GET', routes.users({ verified: TRI_FALSE })))
       assertStatus(status, data)
       assert.match(data, /Only users with unverified email are being shown/)
-      assert.match(data, /href="\/user1"/)
-      assert.doesNotMatch(data, /href="\/user2"/)
+      const usersTableBody = data.match(/<tbody>(.*?)<\/tbody>/s)[1]
+      assert.match(usersTableBody, /href="\/user1"/)
+      assert.doesNotMatch(usersTableBody, /href="\/user2"/)
 
       ;({data, status} = await test.sendJsonHttp('GET', routes.users({ verified: TRI_ALL })))
       assertStatus(status, data)
@@ -6482,6 +6492,103 @@ it(`api: article: bulk update`, async () => {
       { slug: 'user0', list: false },
     ])
   }, { defaultExpectStatus: 200 })
+})
+
+it(`api: discussion and comment listing`, async () => {
+  await testApp(async (test) => {
+    let data, status
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    const spammer = await test.createUserApi(2)
+
+    test.loginUser(user0)
+    ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 0 })))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.issueCreate('user0/title-0', createIssueArg(1, 0, 0)))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.commentCreate('user0/title-0', 1, 'comment'))
+    assertStatus(status, data)
+
+    const { Comment, Issue, SignupBlacklistIp, User } = test.sequelize.models
+    async function assertUserCounts(discussionCount, commentCount) {
+      const user = await User.findOne({ where: { username: 'user0' } })
+      assert.strictEqual(user.discussionCount, discussionCount)
+      assert.strictEqual(user.commentCount, commentCount)
+    }
+    await assertUserCounts(1, 1)
+
+    // Other non-admin users cannot unlist content.
+    test.loginUser(user1)
+    ;({data, status} = await test.webApi.issueEdit(
+      'user0/title-0', 1, { list: false }, { expectStatus: 403 },
+    ))
+    ;({data, status} = await test.webApi.commentUpdate(
+      'user0/title-0', 1, 1, { list: false }, { expectStatus: 403 },
+    ))
+
+    // The author can unlist and relist their own discussions and comments.
+    test.loginUser(user0)
+    ;({data, status} = await test.webApi.issueEdit('user0/title-0', 1, { list: false }))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.commentUpdate('user0/title-0', 1, 1, { list: false }))
+    assertStatus(status, data)
+    await assertUserCounts(0, 0)
+    assert.strictEqual((await Issue.getIssues({ list: true, sequelize: test.sequelize })).count, 0)
+    assert.strictEqual((await Issue.getIssues({ list: false, sequelize: test.sequelize })).count, 1)
+    assert.strictEqual((await Comment.getComments({ list: true })).count, 0)
+    assert.strictEqual((await Comment.getComments({ list: false })).count, 1)
+
+    ;({data, status} = await test.webApi.issueEdit('user0/title-0', 1, { list: true }))
+    assertStatus(status, data)
+    ;({data, status} = await test.webApi.commentUpdate('user0/title-0', 1, 1, { list: true }))
+    assertStatus(status, data)
+    await assertUserCounts(1, 1)
+
+    // Admin bulk-unlisting covers every content type and zeros the caches.
+    await User.update({ admin: true }, { where: { username: 'user1' } })
+    test.loginUser(user1)
+    ;({data, status} = await test.webApi.userUnlistContent('user0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.count, 4)
+    assert.deepStrictEqual(data.counts, [2, 1, 1])
+    await assertUserCounts(0, 0)
+
+    if (testNext) {
+      ;({data, status} = await test.sendJsonHttp('GET', routes.issues()))
+      assertStatus(status, data)
+      assert.match(data, /There are unlisted discussions/)
+      assert.doesNotMatch(data, /The <i>title/)
+      assert.match(data, /"totalDiscussions":0/)
+      assert.match(data, /"totalComments":0/)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.issues({ listed: TRI_ALL })))
+      assertStatus(status, data)
+      assert.match(data, /Unlisted discussions are being shown/)
+      assert.match(data, /The <i>title/)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.comments()))
+      assertStatus(status, data)
+      assert.match(data, /There are unlisted comments/)
+      assert.doesNotMatch(data, />comment</)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.comments({ listed: TRI_ALL })))
+      assertStatus(status, data)
+      assert.match(data, /Unlisted comments are being shown/)
+      assert.match(data, />comment</)
+    }
+
+    // Marking a spammer locks them, blacklists their signup IP, and unlists their content.
+    ;({data, status} = await test.webApi.userMarkSpammer('user2'))
+    assertStatus(status, data)
+    const spammerRow = await User.findOne({ where: { username: spammer.username } })
+    assert.strictEqual(spammerRow.locked, true)
+    assert.strictEqual(await test.sequelize.models.Article.count({
+      where: { authorId: spammerRow.id, list: true },
+    }), 0)
+    if (spammerRow.ip) {
+      assert.strictEqual(await SignupBlacklistIp.count({ where: { ip: spammerRow.ip } }), 1)
+    }
+  }, { canTestNext: true, defaultExpectStatus: 200 })
 })
 
 it(`api: article with {file}`, async () => {

@@ -554,12 +554,12 @@ const ArticleList = ({
           </>
         }
       </div>
-      {(itemType === 'article' && hasUnlisted === true) &&
+      {((itemType === 'article' || itemType === 'discussion') && hasUnlisted === true) &&
         <p className="content-not-ourbigbook">
           <UnlistedIcon />{' '}
           {list === true
             ? <>
-                There are unlisted articles,
+                {`There are unlisted ${itemType === 'discussion' ? 'discussions' : 'articles'},`}
                 {' '}
                 <Link
                   href={{
@@ -580,7 +580,9 @@ const ArticleList = ({
                 </Link>.
               </>
             : <>
-                {list === false ? 'Only unlisted articles are being shown' : 'Unlisted articles are being shown'},
+                {list === false
+                  ? `Only unlisted ${itemType === 'discussion' ? 'discussions' : 'articles'} are being shown`
+                  : `Unlisted ${itemType === 'discussion' ? 'discussions' : 'articles'} are being shown`},
                 {' '}
                 <Link
                   href={{
@@ -588,7 +590,7 @@ const ArticleList = ({
                     query: lodash.omit(router.query, 'listed'),
                   }}
                 >
-                  click here to show only listed articles
+                  {`click here to show only listed ${itemType === 'discussion' ? 'discussions' : 'articles'}`}
                 </Link>.
               </>
           }

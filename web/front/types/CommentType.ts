@@ -10,6 +10,7 @@ export type CommentType = {
   createdAt: string;
   id: string;
   issue?: IssueType;
+  list: boolean;
   number: number;
   render: string;
   source: string;

@@ -48,13 +48,13 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     // totalArticles
     Article.count({ where: { list: true } }),
     // totalComments
-    Comment.count(),
+    Comment.count({ where: { list: true } }),
     // totalDiscussions
-    Issue.count(),
+    Issue.count({ where: { list: true } }),
     // totalTopics
     Topic.count(),
     // totalUsers
-    User.count({ where: { locked: false } }),
+    User.count({ where: { locked: false, verified: true } }),
     // lockedUsers
     User.count({ where: { locked: true } }),
     // unverifiedUsers

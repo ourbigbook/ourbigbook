@@ -1,6 +1,6 @@
 import { getLoggedInUser } from 'back'
 import { articleLimit } from 'front/config'
-import { getOrderAndPage } from 'front/js'
+import { getList, getOrderAndPage } from 'front/js'
 import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
 
@@ -10,6 +10,7 @@ export const getServerSidePropsIndexHoc = ({
 }={}): MyGetServerSideProps => {
   return async ({ query, req, res }) => {
     const loggedInUser = await getLoggedInUser(req, res)
+    const list = getList(req, res)
     let followedEff = followed
     if (!loggedInUser) {
       followedEff = false;
@@ -55,6 +56,7 @@ export const getServerSidePropsIndexHoc = ({
       totalDiscussions,
       totalTopics,
       totalUsers,
+      unlistedCount,
     ] = await Promise.all([
       (async () => {
         let articles
@@ -93,6 +95,7 @@ export const getServerSidePropsIndexHoc = ({
               order,
               orderAscDesc: ascDesc,
               limit,
+              list,
             })
             articles = await Promise.all(articlesAndCounts.rows.map(
               (article) => {
@@ -120,7 +123,7 @@ export const getServerSidePropsIndexHoc = ({
       })(),
       // commentsAndCount
       itemType === 'comment'
-        ? Comment.getComments({ limit, offset })
+        ? Comment.getComments({ limit, list, offset })
         : {}
       ,
       // pinnedArticle
@@ -140,17 +143,24 @@ export const getServerSidePropsIndexHoc = ({
       // totalArticles
       Article.count({ where: { list: true } }),
       // totalComments
-      Comment.count(),
+      Comment.count({ where: { list: true } }),
       // totalDiscussions
-      Issue.count(),
+      Issue.count({ where: { list: true } }),
       // totalTopics
       Topic.count(),
       // totalUsers
-      User.count({ where: { locked: false } }),
+      User.count({ where: { locked: false, verified: true } }),
+      itemTypeEff === 'discussion'
+        ? Issue.count({ where: { list: false } })
+        : itemTypeEff === 'comment'
+          ? Comment.count({ where: { list: false } })
+          : 0,
     ])
     const props: IndexPageProps = {
       followed: followedEff,
+      hasUnlisted: !!unlistedCount,
       itemType: itemTypeEff,
+      list: list === undefined ? null : list,
       order,
       orderAscDesc: ascDesc,
       page,

@@ -20,6 +20,11 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      list: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
     },
     {
       indexes: [
@@ -35,10 +40,14 @@ module.exports = (sequelize) => {
         // Efficient global listings.
         { fields: ['createdAt'], },
         { fields: ['updatedAt'], },
+        { fields: ['list', 'createdAt'], },
+        { fields: ['list', 'updatedAt'], },
 
         // Efficient listing of issues by a given user.
         { fields: ['authorId', 'createdAt'], },
         { fields: ['authorId', 'updatedAt'], },
+        { fields: ['authorId', 'list', 'createdAt'], },
+        { fields: ['authorId', 'list', 'updatedAt'], },
       ],
     },
   )
@@ -61,6 +70,7 @@ module.exports = (sequelize) => {
     articleId,
     issueId,
     limit,
+    list,
     offset,
     order,
     transaction,
@@ -68,6 +78,9 @@ module.exports = (sequelize) => {
     const where = {}
     if (authorId !== undefined) {
       where.authorId = authorId
+    }
+    if (list !== undefined) {
+      where.list = list
     }
     if (order === undefined) {
       order = [['createdAt', 'DESC']]
@@ -117,6 +130,7 @@ module.exports = (sequelize) => {
   Comment.prototype.toJson = async function(loggedInUser) {
     const ret = {
       id: this.id,
+      list: this.list,
       number: this.number,
       source: this.source,
       render: this.render,

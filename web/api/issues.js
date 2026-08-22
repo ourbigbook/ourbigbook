@@ -174,6 +174,10 @@ router.post('/', auth.required, async function(req, res, next) {
     const titleSource = lib.validateParam(issueData, 'titleSource', {
       validators: [front.isString, front.isTruthy]
     })
+    const list = lib.validateParam(issueData, 'list', {
+      validators: [front.isBoolean],
+      defaultValue: true,
+    })
     const issue = await convertDiscussion({
       article,
       bodySource,
@@ -181,6 +185,7 @@ router.post('/', auth.required, async function(req, res, next) {
         automaticTopicLinksMaxWords: site.automaticTopicLinksMaxWords,
       },
       number: lastIssue ? lastIssue.number + 1 : 1,
+      list,
       sequelize,
       titleSource,
       user: loggedInUser
@@ -239,14 +244,28 @@ router.put('/:number', auth.required, async function(req, res, next) {
       validators: [front.isString, front.isTruthy],
       defaultValue: undefined,
     })
-    const newIssue = await convertDiscussion({
-      article,
-      bodySource,
-      issue,
-      sequelize,
-      titleSource,
-      user: loggedInUser,
+    const list = lib.validateParam(issueData, 'list', {
+      validators: [front.isBoolean],
+      defaultValue: undefined,
     })
+    let newIssue
+    if (bodySource === undefined && titleSource === undefined) {
+      if (list !== undefined) {
+        issue.list = list
+        await issue.save()
+      }
+      newIssue = issue
+    } else {
+      newIssue = await convertDiscussion({
+        article,
+        bodySource,
+        issue,
+        list,
+        sequelize,
+        titleSource,
+        user: loggedInUser,
+      })
+    }
     newIssue.author = loggedInUser
     res.json({ issue: await newIssue.toJson(loggedInUser) })
   } catch(error) {
@@ -544,6 +563,51 @@ router.get('/:issueNumber/comment/:commentNumber', auth.optional, async function
     return res.json(await comment.toJson(loggedInUser))
   } catch(error) {
     next(error);
+  }
+})
+
+// Update a comment.
+router.put('/:issueNumber/comments/:commentNumber', auth.required, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const [comment, loggedInUser] = await Promise.all([
+      getComment(req, res),
+      sequelize.models.User.findByPk(req.payload.id),
+    ])
+    if (cant.editComment(loggedInUser, comment.author.username)) {
+      return res.sendStatus(403)
+    }
+    const body = lib.validateParam(req, 'body')
+    const commentData = lib.validateParam(body, 'comment')
+    const source = lib.validateParam(commentData, 'source', {
+      validators: [front.isString],
+      defaultValue: undefined,
+    })
+    const list = lib.validateParam(commentData, 'list', {
+      validators: [front.isBoolean],
+      defaultValue: undefined,
+    })
+    await sequelize.transaction(async transaction => {
+      if (source !== undefined) {
+        lib.validateBodySize(loggedInUser, source)
+        await convertComment({
+          comment,
+          issue: comment.issue,
+          number: comment.number,
+          sequelize,
+          source,
+          transaction,
+          user: comment.author,
+        })
+      }
+      if (list !== undefined) {
+        comment.list = list
+        await comment.save({ transaction })
+      }
+    })
+    res.json({ comment: await comment.toJson(loggedInUser) })
+  } catch(error) {
+    next(error)
   }
 })
 

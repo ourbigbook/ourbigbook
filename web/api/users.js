@@ -56,6 +56,23 @@ router.param('username', function(req, res, next, username) {
     .catch(next)
 })
 
+async function unlistUserContent(sequelize, user, transaction) {
+  const { Article, Comment, Issue, User } = sequelize.models
+  const counts = []
+  for (const Model of [Article, Issue, Comment]) {
+    const [count] = await Model.update(
+      { list: false },
+      { where: { authorId: user.id, list: true }, transaction },
+    )
+    counts.push(count)
+  }
+  await User.update(
+    { discussionCount: 0, commentCount: 0 },
+    { where: { id: user.id }, transaction },
+  )
+  return counts
+}
+
 // Login to the website.
 router.post('/login', async function(req, res, next) {
   try {
@@ -493,6 +510,50 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
     return res.json({ user: await user.toJson(user) })
   } catch(error) {
     next(error);
+  }
+})
+
+router.put('/users/:username/unlist-content', auth.required, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const ret = await sequelize.transaction(async transaction => {
+      const loggedInUser = await sequelize.models.User.findByPk(req.payload.id, { transaction })
+      const msg = cant.updateSiteSettings(loggedInUser)
+      if (msg) {
+        throw new ValidationError([msg], 403)
+      }
+      const counts = await unlistUserContent(sequelize, req.user, transaction)
+      return { count: counts.reduce((sum, count) => sum + count, 0), counts }
+    })
+    res.json(ret)
+  } catch(error) {
+    next(error)
+  }
+})
+
+router.put('/users/:username/spammer', auth.required, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const ret = await sequelize.transaction(async transaction => {
+      const { SignupBlacklistIp, User } = sequelize.models
+      const loggedInUser = await User.findByPk(req.payload.id, { transaction })
+      const msg = cant.updateSiteSettings(loggedInUser)
+      if (msg) {
+        throw new ValidationError([msg], 403)
+      }
+      const counts = await unlistUserContent(sequelize, req.user, transaction)
+      await req.user.update({ locked: true }, { transaction })
+      if (req.user.ip) {
+        await SignupBlacklistIp.bulkCreate(
+          [{ ip: req.user.ip }],
+          { transaction, updateOnDuplicate: ['ip'] },
+        )
+      }
+      return { count: counts.reduce((sum, count) => sum + count, 0), counts }
+    })
+    res.json(ret)
+  } catch(error) {
+    next(error)
   }
 })
 

@@ -43,6 +43,11 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      list: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
       image: {
         type: DataTypes.TEXT,
         allowNull: true,
@@ -65,6 +70,11 @@ module.exports = (sequelize) => {
         { fields: ['score'], },
         { fields: ['followerCount'], },
         { fields: ['commentCount'], },
+        { fields: ['list', 'createdAt'], },
+        { fields: ['list', 'updatedAt'], },
+        { fields: ['list', 'score'], },
+        { fields: ['list', 'followerCount'], },
+        { fields: ['list', 'commentCount'], },
 
         // Efficient listing of issues by a given user.
         { fields: ['authorId', 'createdAt'], },
@@ -72,6 +82,11 @@ module.exports = (sequelize) => {
         { fields: ['authorId', 'score'], },
         { fields: ['authorId', 'followerCount'], },
         { fields: ['authorId', 'commentCount'], },
+        { fields: ['authorId', 'list', 'createdAt'], },
+        { fields: ['authorId', 'list', 'updatedAt'], },
+        { fields: ['authorId', 'list', 'score'], },
+        { fields: ['authorId', 'list', 'followerCount'], },
+        { fields: ['authorId', 'list', 'commentCount'], },
       ],
     },
   )
@@ -122,6 +137,7 @@ module.exports = (sequelize) => {
       followerCount: this.followerCount,
       followed,
       image: this.image,
+      list: this.list,
       liked,
       titleSource: this.titleSource,
       bodySource: this.bodySource,
@@ -186,11 +202,13 @@ module.exports = (sequelize) => {
   }
 
   Issue.getIssues = async ({
+    articleId,
     author,
     followedBy,
     includeArticle,
     likedBy,
     limit,
+    list,
     offset,
     order,
     orderAscDesc,
@@ -246,6 +264,13 @@ module.exports = (sequelize) => {
       })
     }
     const orderList = []
+    const where = {}
+    if (articleId !== undefined) {
+      where.articleId = articleId
+    }
+    if (list !== undefined) {
+      where.list = list
+    }
     if (order !== undefined) {
       orderList.push([order, orderAscDesc])
     }
@@ -259,6 +284,7 @@ module.exports = (sequelize) => {
       offset,
       order: orderList,
       transaction,
+      where,
     })
   }
 

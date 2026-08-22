@@ -5,6 +5,7 @@ import ToggleButton from 'front/ToggleButton'
 import { LockIcon, UnlockIcon } from 'front'
 
 const LockUserButton = ({
+  onChange,
   username,
   on,
 }) => <ToggleButton {...{
@@ -17,6 +18,7 @@ const LockUserButton = ({
   contentOff: <><LockIcon /> Lock</>,
   contentOn: <><UnlockIcon /> Unlock</>,
   on,
+  onSuccess: () => onChange && onChange(!on),
 }} />
 
 export default LockUserButton

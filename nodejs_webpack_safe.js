@@ -1355,12 +1355,15 @@ async function sequelizeCreateTriggerUpdateCount(
   opts={},
 ) {
   const articleTableName = articleTable.tableName
+  const countBooleanField = opts.countBooleanField
+  const newCountCondition = countBooleanField ? ` AND NEW."${countBooleanField}"` : ''
+  const oldCountCondition = countBooleanField ? ` AND OLD."${countBooleanField}"` : ''
   await sequelizeCreateTrigger(sequelize, likeTable, 'insert',
-    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" + 1 WHERE NEW."${likeTableArticleIdField}" = "${articleTableName}"."id"`,
+    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" + 1 WHERE NEW."${likeTableArticleIdField}" = "${articleTableName}"."id"${newCountCondition}`,
     opts,
   ),
   await sequelizeCreateTrigger(sequelize, likeTable, 'delete',
-    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" - 1 WHERE OLD."${likeTableArticleIdField}" = "${articleTableName}"."id"`,
+    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" - 1 WHERE OLD."${likeTableArticleIdField}" = "${articleTableName}"."id"${oldCountCondition}`,
     opts,
   ),
   await sequelizeCreateTrigger(
@@ -1368,12 +1371,14 @@ async function sequelizeCreateTriggerUpdateCount(
     sequelize,
     likeTable,
     'update',
-    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" + 1 WHERE NEW."${likeTableArticleIdField}" = "${articleTableName}"."id";\n` +
-    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" - 1 WHERE OLD."${likeTableArticleIdField}" = "${articleTableName}"."id"`
+    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" + 1 WHERE NEW."${likeTableArticleIdField}" = "${articleTableName}"."id"${newCountCondition};\n` +
+    `UPDATE "${articleTableName}" SET "${articleTableCountField}" = "${articleTableCountField}" - 1 WHERE OLD."${likeTableArticleIdField}" = "${articleTableName}"."id"${oldCountCondition}`
     ,
     {
       ...opts,
-      when: `OLD."${likeTableArticleIdField}" <> NEW."${likeTableArticleIdField}"`,
+      when: countBooleanField
+        ? `OLD."${likeTableArticleIdField}" <> NEW."${likeTableArticleIdField}" OR OLD."${countBooleanField}" <> NEW."${countBooleanField}"`
+        : `OLD."${likeTableArticleIdField}" <> NEW."${likeTableArticleIdField}"`,
     }
   )
 }

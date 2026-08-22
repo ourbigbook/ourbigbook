@@ -1119,6 +1119,7 @@ async function convertDiscussion({
   convertOptionsExtra,
   date,
   issue,
+  list,
   number,
   sequelize,
   titleSource,
@@ -1172,6 +1173,7 @@ async function convertDiscussion({
         bodySource,
         date,
         image,
+        list,
         number,
         render,
         titleRender,
@@ -1192,6 +1194,9 @@ async function convertDiscussion({
         },
       )
     } else {
+      if (list !== undefined) {
+        issue.list = list
+      }
       issue.image = image
       issue.titleRender = titleRender
       issue.titleRenderPlaintext = titleRenderPlaintext

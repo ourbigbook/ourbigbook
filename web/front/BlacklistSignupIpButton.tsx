@@ -7,6 +7,7 @@ import { LockIcon, UnlockIcon } from 'front'
 const BlacklistSignupIpButton = ({
   ip,
   on,
+  onChange,
 }) => <ToggleButton {...{
   callbackOff: async () => {
     return webApi.siteSettingsBlacklistSignupIpCreate({ ips: [ip] })
@@ -17,6 +18,7 @@ const BlacklistSignupIpButton = ({
   contentOff: <><LockIcon /> Blacklist signup ip {ip}</>,
   contentOn: <><UnlockIcon /> Unblacklist signup ip {ip}</>,
   on,
+  onSuccess: () => onChange && onChange(!on),
 }} />
 
 export default BlacklistSignupIpButton

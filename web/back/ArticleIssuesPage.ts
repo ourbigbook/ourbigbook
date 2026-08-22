@@ -2,7 +2,7 @@ import { findSynonymOr404, getLoggedInUser } from 'back'
 import { articleLimit, fallback } from 'front/config'
 import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
-import { getOrderAndPage } from 'front/js'
+import { getList, getOrderAndPage } from 'front/js'
 import routes from 'front/routes'
 
 export const getServerSidePropsArticleIssuesHoc = (): MyGetServerSideProps => {
@@ -10,7 +10,8 @@ export const getServerSidePropsArticleIssuesHoc = (): MyGetServerSideProps => {
     if (slug instanceof Array) {
       const slugString = slug.join('/')
       const sequelize = req.sequelize
-      const { Article, Issue, User } = sequelize.models
+      const { Article, Issue } = sequelize.models
+      const list = getList(req, res)
       const { ascDesc, err, order, page } = getOrderAndPage(req, query.page, {
         allowedSortsExtra: Issue.ALLOWED_SORTS_EXTRA,
       })
@@ -31,29 +32,28 @@ export const getServerSidePropsArticleIssuesHoc = (): MyGetServerSideProps => {
       }
       if (err) { res.statusCode = 422 }
       const offset = page * articleLimit
-      const [articleJson, [issuesCount, issues]] = await Promise.all([
+      const [articleJson, issuesAndCount, unlistedCount] = await Promise.all([
         article.toJson(loggedInUser),
-        Issue.findAndCountAll({
-          where: { articleId: article.id },
+        Issue.getIssues({
+          articleId: article.id,
+          includeArticle: true,
+          list,
           offset,
-          order: [[order, ascDesc]],
+          order,
+          orderAscDesc: ascDesc,
           limit: articleLimit,
-          include: [{
-            model: User,
-            as: 'author',
-          }],
-        }).then(issuesAndCounts => {
-          return Promise.all([
-            issuesAndCounts.count,
-            Promise.all(issuesAndCounts.rows.map(issue => issue.toJson(loggedInUser))),
-          ])
-        })
+          sequelize,
+        }),
+        Issue.count({ where: { articleId: article.id, list: false } }),
       ])
+      const issues = await Promise.all(issuesAndCount.rows.map(issue => issue.toJson(loggedInUser)))
       const props: IndexPageProps = {
         articles: issues,
-        articlesCount: issuesCount,
+        articlesCount: issuesAndCount.count,
+        hasUnlisted: !!unlistedCount,
         itemType: 'discussion',
         issueArticle: articleJson,
+        list: list === undefined ? null : list,
         page,
         order,
         orderAscDesc: ascDesc,

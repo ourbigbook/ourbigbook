@@ -161,6 +161,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           followedBy: articlesFollowedBy,
           includeArticle: true,
           limit: articleLimit,
+          list,
           offset,
           order,
           orderAscDesc: ascDesc,
@@ -196,7 +197,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         articles,
         comments,
         userJson,
-        hasListedArticle,
+        hasListedContent,
         lockedUsers,
         loggedInUserJson,
         likes,
@@ -212,26 +213,38 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         articlesPromise,
         // comments
         itemType === 'comment'
-          ? Comment.getComments({ authorId: user.id, limit: articleLimit, offset })
+          ? Comment.getComments({ authorId: user.id, limit: articleLimit, list, offset })
           : {}
         ,
         // userJson
         user.toJson(loggedInUser),
-        // hasListedArticle
-        cant.updateSiteSettings(loggedInUser) ? false : Article.findOne({
-          where: { authorId: user.id, list: true },
-          attributes: ['id', 'slug']
-        }),
+        // hasListedContent
+        cant.updateSiteSettings(loggedInUser) ? false : Promise.all([
+          Article.findOne({ where: { authorId: user.id, list: true }, attributes: ['id'] }),
+          Issue.findOne({ where: { authorId: user.id, list: true }, attributes: ['id'] }),
+          Comment.findOne({ where: { authorId: user.id, list: true }, attributes: ['id'] }),
+        ]).then(items => items.some(item => !!item)),
         // lockedUsers
         lockedUsersPromise,
         // loggedInUserJson
         loggedInUser ? loggedInUser.toJson() : undefined,
         // likes
         likesPromise,
-        // unlistedArticles
+        // unlisted content
         itemType === 'article'
           ? Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false }))
-          : {}
+          : itemType === 'discussion'
+            ? Issue.getIssues({
+                author,
+                followedBy: articlesFollowedBy,
+                likedBy,
+                limit: 1,
+                list: false,
+                sequelize,
+              })
+            : itemType === 'comment'
+              ? Comment.getComments({ authorId: user.id, limit: 1, list: false })
+              : {}
         ,
         // parentArticleJson
         (parentId !== undefined)
@@ -273,7 +286,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         what,
       }
       if (!cant.updateSiteSettings(loggedInUser)) {
-        props.hasListedArticle = !!hasListedArticle
+        props.hasListedContent = !!hasListedContent
       }
       if (loggedInUser) {
         props.loggedInUser = loggedInUserJson

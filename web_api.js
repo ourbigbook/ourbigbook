@@ -312,11 +312,11 @@ class WebApi {
     )
   }
 
-  async commentUpdate(slug, issueNumber, comentNumber, source, reqOpts={}) {
+  async commentUpdate(slug, issueNumber, commentNumber, comment, reqOpts={}) {
     return this.req('put',
-      `issues/${issueNumber}/comments${commentNumber}?id=${encodeURIComponent(slug)}`,
+      `issues/${issueNumber}/comments/${commentNumber}?id=${encodeURIComponent(slug)}`,
       {
-        body: { comment: { source } },
+        body: { comment },
         ...reqOpts
       },
     )
@@ -433,6 +433,14 @@ class WebApi {
       `users/${username}`,
       { body: { user }, ...reqOpts },
     )
+  }
+
+  async userUnlistContent(username, reqOpts={}) {
+    return this.req('put', `users/${username}/unlist-content`, reqOpts)
+  }
+
+  async userMarkSpammer(username, reqOpts={}) {
+    return this.req('put', `users/${username}/spammer`, reqOpts)
   }
 
   async userUpdateProfilePicture(username, bytes, reqOpts={}) {

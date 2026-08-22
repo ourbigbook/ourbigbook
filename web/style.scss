@@ -792,14 +792,10 @@ span.shortcut {
         font-weight: bold;
         text-decoration: none;
       }
-      &.active {
-        a {
-          color: $tab-bar-active-color;
-        }
-      }
-      &:hover {
+      &.active, &:hover {
         a {
           background-color: $button-hover-background-color;
+          border-color: $color;
           color: $tab-bar-active-color;
           font-weight: bold;
         }

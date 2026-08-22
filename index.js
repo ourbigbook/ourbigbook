@@ -3824,6 +3824,13 @@ function convertInitOptions(options) {
   } else {
     options.template_vars = {};
   }
+  if (!('out_ext' in options.template_vars)) {
+    if (options.output_format === OUTPUT_FORMAT_HTML && !options.htmlXExtension) {
+      options.template_vars.out_ext = ''
+    } else {
+      options.template_vars.out_ext = `.${OUTPUT_FORMATS[options.output_format].ext}`
+    }
+  }
     if (!('head' in options.template_vars)) { options.template_vars.head = ''; }
     if (!('root_relpath' in options.template_vars)) { options.template_vars.root_relpath = ''; }
     if (!('post_body' in options.template_vars)) { options.template_vars.post_body = ''; }
@@ -8512,7 +8519,12 @@ function xHrefParts(target_ast, context) {
       ) {
         target_output_path_basename = '';
       } else {
-        if (context.options.htmlXExtension) {
+        if (
+          context.options.output_format === OUTPUT_FORMAT_MARKDOWN ||
+          context.options.output_format === OUTPUT_FORMAT_ASCIIDOC
+        ) {
+          target_output_path_basename += '.' + OUTPUT_FORMATS[context.options.output_format].ext
+        } else if (context.options.htmlXExtension) {
           target_output_path_basename += '.' + HTML_EXT;
         } else if (target_output_path_basename === INDEX_BASENAME_NOEXT) {
           if (href_path_dirname_rel === '') {
@@ -10370,6 +10382,15 @@ function markupGeneric(ast, context) {
   return markupRenderArg(ast, context)
 }
 
+function markupBlock(ast, output, opts={}) {
+  if (!output) return ''
+  if (ast.parent_ast && ast.parent_ast.macro_name === Macro.PARAGRAPH_MACRO_NAME) {
+    const paragraphNewlines = '\n'.repeat(opts.paragraphNewlineCount === undefined ? 2 : opts.paragraphNewlineCount)
+    return `${paragraphNewlines}${output.replace(/^\n+|\n+$/g, '')}${paragraphNewlines}`
+  }
+  return `${output.replace(/^\n+|\n+$/g, '')}\n\n`
+}
+
 function markupListItem(ast, context, marker) {
   const content = markupRenderArg(ast, context).replace(/\n+$/, '')
   return `${marker} ${content.replace(/\n/g, '\n  ')}\n`
@@ -10391,6 +10412,30 @@ function markdownCodeDelimiter(content, minimumLength=1) {
   return '`'.repeat(length)
 }
 
+function markdownToc(ast, context) {
+  const lines = []
+  const visit = (nodes, depth) => {
+    for (const node of nodes) {
+      const targetAst = node.ast
+      let hrefTargetAst = targetAst
+      if (targetAst.from_include) {
+        const dbTargetAst = context.db_provider.get(targetAst.id, context)
+        if (dbTargetAst !== undefined) hrefTargetAst = dbTargetAst
+      }
+      const targetMacro = context.macros[targetAst.macro_name]
+      const titleArg = targetMacro.options.get_title_arg(targetAst, context)
+      const title = titleArg === undefined ? targetAst.id : renderArg(
+        titleArg,
+        cloneAndSet(context, 'renderXAsHref', true)
+      )
+      lines.push(`${'  '.repeat(depth)}- [${title}](${xHref(hrefTargetAst, context)})`)
+      visit(node.children, depth + 1)
+    }
+  }
+  visit(ast.header_tree_node.children, 0)
+  return lines.length ? `**Table of contents**\n\n${lines.join('\n')}\n\n` : ''
+}
+
 function markupTable(ast, context, asciidoc=false) {
   const rows = []
   for (const rowAst of ast.args.content || []) {
@@ -10401,7 +10446,7 @@ function markupTable(ast, context, asciidoc=false) {
     rows.push(cells)
   }
   if (asciidoc) {
-    return `|===\n${rows.map(row => row.map(cell => `|${cell}`).join(' ') + '\n').join('')}|===\n\n`
+    return markupBlock(ast, `|===\n${rows.map(row => row.map(cell => `|${cell}`).join(' ') + '\n').join('')}|===`)
   }
   if (!rows.length) {
     return ''
@@ -10413,7 +10458,7 @@ function markupTable(ast, context, asciidoc=false) {
   for (const row of rows.slice(1)) {
     ret += renderRow(row)
   }
-  return ret + '\n'
+  return markupBlock(ast, ret)
 }
 
 function makeMarkupConvertFuncs(asciidoc=false) {
@@ -10431,9 +10476,9 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     [Macro.LINE_BREAK_MACRO_NAME]: function() { return asciidoc ? ' +\n' : '  \n' },
     [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
       const content = markupRenderLiteralArg(ast, context).replace(/\n$/, '')
-      if (asciidoc) return `[source]\n----\n${content}\n----\n\n`
+      if (asciidoc) return markupBlock(ast, `[source]\n----\n${content}\n----`)
       const fence = markdownCodeDelimiter(content, 3)
-      return `${fence}\n${content}\n${fence}\n\n`
+      return markupBlock(ast, `${fence}\n${content}\n${fence}`, { paragraphNewlineCount: 1 })
     },
     [Macro.CODE_MACRO_NAME]: function(ast, context) {
       const content = markupRenderLiteralArg(ast, context)
@@ -10446,14 +10491,19 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     'comment': function() { return '' },
     [Macro.HEADER_MACRO_NAME]: function(ast, context) {
       const level = ast.header_tree_node.get_level() - context.header_tree_top_level + 1
-      return `${headingChar.repeat(Math.max(1, level))} ${markupRenderArg(ast, context, Macro.TITLE_ARGUMENT_NAME)}\n\n`
+      const heading = `${headingChar.repeat(Math.min(6, Math.max(1, level)))} ${markupRenderArg(ast, context, Macro.TITLE_ARGUMENT_NAME)}`
+      if (level === 1) {
+        if (asciidoc) return `${heading}\n:toc:\n\n`
+        return `${heading}\n\n${markdownToc(ast, context)}`
+      }
+      return `${heading}\n\n`
     },
-    'Hr': function() { return asciidoc ? "'''\n\n" : '---\n\n' },
+    'Hr': function(ast) { return markupBlock(ast, asciidoc ? "'''" : '---') },
     'i': function(ast, context) { return `_${markupRenderArg(ast, context)}_` },
     'Image': function(ast, context) {
       const src = markupRenderLiteralArg(ast, context, 'src')
       const alt = markupRenderArg(ast, context, 'alt')
-      return asciidoc ? `image::${src}[${alt}]\n\n` : `![${alt}](${src})\n\n`
+      return markupBlock(ast, asciidoc ? `image::${src}[${alt}]` : `![${alt}](${src})`)
     },
     'image': function(ast, context) {
       const src = markupRenderLiteralArg(ast, context, 'src')
@@ -10462,7 +10512,7 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     },
     [Macro.INCLUDE_MACRO_NAME]: function(ast, context) {
       const href = markupRenderLiteralArg(ast, context, 'href')
-      return asciidoc ? `include::${href}.adoc[]\n\n` : `[Include: ${href}](${href}.md)\n\n`
+      return markupBlock(ast, asciidoc ? `include::${href}.adoc[]` : `[Include: ${href}](${href}.md)`)
     },
     [Macro.LIST_ITEM_MACRO_NAME]: function(ast, context) {
       const ordered = ast.parent_ast && ast.parent_ast.macro_name === 'Ol'
@@ -10470,12 +10520,12 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     },
     [Macro.MATH_MACRO_NAME.toUpperCase()]: function(ast, context) {
       const content = markupRenderLiteralArg(ast, context)
-      return asciidoc ? `[latexmath]\n++++\n${content}\n++++\n\n` : `$$\n${content}\n$$\n\n`
+      return markupBlock(ast, asciidoc ? `[latexmath]\n++++\n${content}\n++++` : `$$\n${content}\n$$`)
     },
     [Macro.MATH_MACRO_NAME]: function(ast, context) {
       return asciidoc ? `latexmath:[${markupRenderLiteralArg(ast, context)}]` : `$${markupRenderLiteralArg(ast, context)}$`
     },
-    'Ol': function(ast, context) { return markupRenderArg(ast, context) + '\n' },
+    'Ol': function(ast, context) { return markupBlock(ast, markupRenderArg(ast, context)) },
     [Macro.PARAGRAPH_MACRO_NAME]: function(ast, context) {
       return `${markupRenderArg(ast, context).replace(/\n+$/, '')}\n\n`
     },
@@ -10485,13 +10535,13 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     },
     [capitalizeFirstLetter(Macro.PASSTHROUGH_MACRO_NAME)]: function(ast, context) {
       const content = markupRenderLiteralArg(ast, context)
-      return asciidoc ? `++++\n${content}\n++++\n\n` : `${content}\n\n`
+      return markupBlock(ast, asciidoc ? `++++\n${content}\n++++` : content)
     },
     [Macro.PASSTHROUGH_MACRO_NAME]: markupGeneric,
     [Macro.QUOTE_MACRO_NAME]: function(ast, context) {
       const content = markupRenderArg(ast, context).replace(/\n+$/, '')
-      if (asciidoc) return `[quote]\n____\n${content}\n____\n\n`
-      return content.split('\n').map(line => `> ${line}`).join('\n') + '\n\n'
+      if (asciidoc) return markupBlock(ast, `[quote]\n____\n${content}\n____`)
+      return markupBlock(ast, content.split('\n').map(line => `> ${line}`).join('\n'))
     },
     'sub': function(ast, context) { return asciidoc ? `~${markupRenderArg(ast, context)}~` : `<sub>${markupRenderArg(ast, context)}</sub>` },
     'sup': function(ast, context) { return asciidoc ? `^${markupRenderArg(ast, context)}^` : `<sup>${markupRenderArg(ast, context)}</sup>` },
@@ -10500,11 +10550,38 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     [Macro.TH_MACRO_NAME]: markupGeneric,
     [Macro.TR_MACRO_NAME]: markupGeneric,
     [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) { return markupRenderArg(ast, context).replace(/\n+$/, '') + '\n' },
-    [Macro.UNORDERED_LIST_MACRO_NAME]: function(ast, context) { return markupRenderArg(ast, context) + '\n' },
+    [Macro.UNORDERED_LIST_MACRO_NAME]: function(ast, context) { return markupBlock(ast, markupRenderArg(ast, context)) },
     [Macro.X_MACRO_NAME]: function(ast, context) {
-      const href = markupRenderLiteralArg(ast, context, 'href')
-      const content = markupRenderArg(ast, context) || href
-      return asciidoc ? `<<${href},${content}>>` : `[${content}](#${href})`
+      const { target_id, target_id_raw, target_ast } = xGetTargetAst(ast, context)
+      let href
+      if (ast.validation_output.topic.boolean) {
+        const topicId = titleToIdContext(target_id_raw, undefined, context)
+        href = `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${topicId}`
+      } else if (target_ast) {
+        href = xHref(target_ast, context)
+      } else {
+        href = `#${target_id}`
+      }
+      let content
+      if (ast.args.content !== undefined) {
+        content = markupRenderArg(ast, context)
+      } else if (ast.validation_output.topic.boolean) {
+        content = markupRenderLiteralArg(ast, context, 'href')
+      } else if (target_ast) {
+        const targetMacro = context.macros[target_ast.macro_name]
+        const titleArg = targetMacro.options.get_title_arg(target_ast, context)
+        content = titleArg === undefined ? target_id : renderArg(
+          titleArg,
+          cloneAndSet(context, 'renderXAsHref', true)
+        )
+      } else {
+        content = markupRenderLiteralArg(ast, context, 'href')
+      }
+      if (context.renderXAsHref) return content
+      if (asciidoc) {
+        return href[0] === '#' ? `<<${href.slice(1)},${content}>>` : `xref:${href}[${content}]`
+      }
+      return `[${content}](${href})`
     },
   }
   return new Proxy(funcs, { get(target, property) { return target[property] || markupGeneric } })
@@ -11543,11 +11620,9 @@ const OUTPUT_FORMATS_LIST = [
             let root_page;
             let server_path = context.toplevel_output_path
             if (context.options.htmlXExtension) {
-              context.options.template_vars.html_ext = `.${HTML_EXT}`
               context.options.template_vars.html_index = `/index.${HTML_EXT}`
               root_page = context.options.template_vars.root_relpath + INDEX_BASENAME_NOEXT + '.' + HTML_EXT;
             } else {
-              context.options.template_vars.html_ext = '';
               context.options.template_vars.html_index = '';
               if (context.options.template_vars.root_relpath === '') {
                 root_page = '.'

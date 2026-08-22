@@ -171,6 +171,26 @@ ${body}`, {
 })
 
 describe('Markdown and AsciiDoc formats', function () {
+  it('sets the generalized out_ext template variable from the output format', function () {
+    for (const [outputFormat, outExt] of [
+      [ourbigbook.OUTPUT_FORMAT_HTML, '.html'],
+      [ourbigbook.OUTPUT_FORMAT_MARKDOWN, '.md'],
+      [ourbigbook.OUTPUT_FORMAT_ASCIIDOC, '.adoc'],
+    ]) {
+      assert.strictEqual(
+        ourbigbook.convertInitOptions({ output_format: outputFormat }).template_vars.out_ext,
+        outExt
+      )
+    }
+    assert.strictEqual(
+      ourbigbook.convertInitOptions({
+        htmlXExtension: false,
+        output_format: ourbigbook.OUTPUT_FORMAT_HTML,
+      }).template_vars.out_ext,
+      ''
+    )
+  })
+
   it('converts Markdown to canonical OurBigBook source with Marked', async function () {
     assert.strictEqual(
       await markdownToOurbigbook('# Hello\n\nText with **bold**, *italic*, [link](https://example.com), and `code`.\n\n- one\n- two\n'),
@@ -245,11 +265,149 @@ Text with **bold**, _italic_, and [link](https://example.com).
     }, asciidocExtraReturns)
     assert.deepStrictEqual(asciidocExtraReturns.errors, [])
     assert.strictEqual(asciidoc, `= Hello
+:toc:
 
 Text with *bold*, _italic_, and https://example.com[link].
 
 * one
 * two
+`)
+  })
+
+  it('preserves paragraph-adjacent Markdown code blocks with single newlines', async function () {
+    const extraReturns = {}
+    const markdown = await ourbigbook.convert(`= Input
+
+Before:
+\`\`
+code
+\`\`
+after.
+`, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+    assert.strictEqual(markdown, `# Input
+
+Before:
+\`\`\`
+code
+\`\`\`
+after.
+`)
+  })
+
+  it('uses the target header title and resolved ID for Markdown cross-references', async function () {
+    const extraReturns = {}
+    const markdown = await ourbigbook.convert(`= Home
+
+== paragraphs, links, code, math
+
+Reference to a header: <paragraphs, links, code, math>.
+
+Same reference: \\x[paragraphs-links-code-math].
+`, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+    assert.strictEqual(markdown, `# Home
+
+**Table of contents**
+
+- [paragraphs, links, code, math](#paragraphs-links-code-math)
+
+## paragraphs, links, code, math
+
+Reference to a header: [paragraphs, links, code, math](#paragraphs-links-code-math).
+
+Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
+`)
+  })
+
+  it('renders topic links as OurBigBook Web topic URLs', async function () {
+    const extraReturns = {}
+    const markdown = await ourbigbook.convert(`= Home
+
+\\Q[In #mathematics I really like the <#fundamental theorem of calculus>.]
+`, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+    assert.strictEqual(markdown, `# Home
+
+> In [mathematics](https://ourbigbook.com/go/topic/mathematics) I really like the [fundamental theorem of calculus](https://ourbigbook.com/go/topic/fundamental-theorem-of-calculus).
+`)
+  })
+
+  it('downgrades headings deeper than h6 to h6', async function () {
+    const input = Array.from(
+      { length: 8 },
+      (_, index) => `${'='.repeat(index + 1)} H${index + 1}\n`
+    ).join('\n')
+    for (const [outputFormat, marker] of [
+      [ourbigbook.OUTPUT_FORMAT_MARKDOWN, '#'],
+      [ourbigbook.OUTPUT_FORMAT_ASCIIDOC, '='],
+    ]) {
+      const extraReturns = {}
+      const output = await ourbigbook.convert(input, {
+        input_path: 'index.bigb',
+        output_format: outputFormat,
+      }, extraReturns)
+      assert.deepStrictEqual(extraReturns.errors, [])
+      assert(output.includes(`${marker.repeat(6)} H6`))
+      assert(output.includes(`${marker.repeat(6)} H7`))
+      assert(output.includes(`${marker.repeat(6)} H8`))
+      assert(!output.includes(marker.repeat(7)))
+    }
+  })
+
+  it('adds a literal Markdown TOC and the AsciiDoc built-in TOC attribute', async function () {
+    const input = `= Home
+
+== One
+
+=== Two with <one>
+
+== Three
+`
+    const markdownExtraReturns = {}
+    const markdown = await ourbigbook.convert(input, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, markdownExtraReturns)
+    assert.deepStrictEqual(markdownExtraReturns.errors, [])
+    assert.strictEqual(markdown, `# Home
+
+**Table of contents**
+
+- [One](#one)
+  - [Two with One](#two-with-one)
+- [Three](#three)
+
+## One
+
+### Two with [One](#one)
+
+## Three
+`)
+
+    const asciidocExtraReturns = {}
+    const asciidoc = await ourbigbook.convert(input, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_ASCIIDOC,
+    }, asciidocExtraReturns)
+    assert.deepStrictEqual(asciidocExtraReturns.errors, [])
+    assert.strictEqual(asciidoc, `= Home
+:toc:
+
+== One
+
+=== Two with <<one,One>>
+
+== Three
 `)
   })
 })
@@ -11212,7 +11370,34 @@ assert_cli(
       'index.bigb': '= Input\n\nText with \\b[bold].\n',
     },
     assert_bigb: {
-      [`${TMP_DIRNAME}/adoc/index.adoc`]: '= Input\n\nText with *bold*.\n',
+      [`${TMP_DIRNAME}/adoc/index.adoc`]: '= Input\n:toc:\n\nText with *bold*.\n',
+    },
+  }
+)
+assert_cli(
+  'Markdown cross-file links and included-header TOC entries target Markdown files',
+  {
+    args: ['-O', 'md', '.'],
+    filesystem: {
+      'index.bigb': `= Home
+
+== Cross references
+
+<h2 not in the index>
+
+\\Include[not-index]
+`,
+      'not-index.bigb': `= Not the index
+
+== h2 not in the index
+`,
+    },
+    assert_contains: {
+      [`${TMP_DIRNAME}/md/index.md`]: [
+        '- [Not the index](not-index.md)',
+        '  - [h2 not in the index](not-index.md#h2-not-in-the-index)',
+        '[h2 not in the index](not-index.md#h2-not-in-the-index)',
+      ],
     },
   }
 )
@@ -12402,6 +12587,7 @@ assert_cli(
 <a id="root-relpath" href="{{ root_relpath }}">Root relpath</a>
 <a id="root-page" href="{{ root_page }}">Root page</a>
 <a id="raw-relpath" href="{{ raw_relpath }}">Raw relpath</a>
+<a id="out-ext" href="output{{ out_ext }}">Output extension</a>
 {{ post_body }}
 </body>
 </html>
@@ -12411,6 +12597,7 @@ assert_cli(
       [`${TMP_DIRNAME}/html/index.html`]: [
         "//x:a[@id='root-relpath' and @href='']",
         "//x:a[@id='root-page' and @href='']",
+        "//x:a[@id='out-ext' and @href='output.html']",
       ],
       [`${TMP_DIRNAME}/html/split.html`]: [
         "//x:a[@id='root-relpath' and @href='']",

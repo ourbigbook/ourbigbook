@@ -7997,12 +7997,12 @@ The following variables are defined for usage inside your <ourbigbook.liquid.htm
   ``
   <img src="image/x-icon" href="{{ github_prefix }}/myimage.jpg" />
   ``
-* `html_ext`: `.html` for local renders, empty for server renders.
+* `out_ext`: the current output extension including its leading dot, such as `.html`, `.md` or `.adoc`. It is empty for extensionless server renders.
 
   So e.g. to link to an ID `myid` you can use:
 
   ``
-  <a href="{{ root_relpath }}myid{{ html_ext }}">
+  <a href="{{ root_relpath }}myid{{ out_ext }}">
   ``
 
   This will ideally be replaced with a more generic link to arbitrary ID mechnism at some point: https://github.com/ourbigbook/ourbigbook/issues/135
@@ -11894,7 +11894,7 @@ The static editor is a browser-only toy/demo with no persistent storage. We call
 
 That editor can be viewed directly locally with:
 ``
-git clone https://github.com/ourbigbook/ourbigbook
+git clone --recursive https://github.com/ourbigbook/ourbigbook
 cd ourbigbook
 npm install
 npm run build-assets
@@ -12068,7 +12068,7 @@ Such CLA would also make it easier for the OurBigBook Project to be able to figh
 
 Install master globally on your machine:
 ``
-git clone https://github.com/ourbigbook/ourbigbook
+git clone --recursive https://github.com/ourbigbook/ourbigbook
 cd ourbigbook
 npm link
 npm link ourbigbook

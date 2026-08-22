@@ -7493,6 +7493,19 @@ The generated output is slightly different than that of:
 ``
 because with `--outfile` we know where the output is going, and so we can generate relative includes to default CSS/JavaScript files.
 
+= `-I --input-format <inputformat>`
+{id=input-format}
+{parent=OurBigBook CLI options}
+
+Selects the CLI input frontend. Supported values are `bigb` (the default) and `markdown`. Markdown is automatically selected for `.md` and `.markdown` input files, and can be selected explicitly for standard input:
+``
+printf '# Hello' | ourbigbook -I markdown -O bigb --stdout
+``
+
+Directory conversion remains BigB-only unless `-I markdown` is given, so that Markdown documentation files such as `README.md` are not compiled unexpectedly.
+
+The Markdown frontend uses Marked to tokenize Markdown, converts those tokens to the OurBigBook AST through canonical OurBigBook source, and then uses the normal ID, validation and rendering pipeline. This is currently CLI-only.
+
 = `-O --output-format <outformat>`
 {id=output-format}
 {parent=OurBigBook CLI options}
@@ -7531,6 +7544,26 @@ This was tracked at: https://github.com/ourbigbook/ourbigbook/issues/83
 {parent=output format}
 
 The default output format. Web pages!!!
+
+= `md` output format
+{parent=output format}
+
+Outputs Markdown to a `.md` file. The portable common subset of OurBigBook headers, paragraphs, emphasis, links, images, code, quotes, lists, horizontal rules, mathematics and tables is converted to the closest Markdown construct.
+
+For example:
+``
+ourbigbook -O md index.bigb
+``
+
+= `adoc` output format
+{parent=output format}
+
+Outputs AsciiDoc to an `.adoc` file. It supports the same portable common subset as the <md output format>.
+
+For example:
+``
+ourbigbook -O adoc index.bigb
+``
 
 = `id` output format
 {parent=output format}

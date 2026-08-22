@@ -15,6 +15,7 @@ const {
 const ourbigbook_nodejs = require('./nodejs');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
+const { markdownToOurbigbook } = ourbigbook
 const { TMP_DIRNAME } = ourbigbook_nodejs_webpack_safe
 const { DbProviderBase, read_include } = require('./web_api');
 const {
@@ -166,6 +167,90 @@ ${body}`, {
       }, extra_returns)
       assert(extra_returns.errors.length > 0)
     }
+  })
+})
+
+describe('Markdown and AsciiDoc formats', function () {
+  it('converts Markdown to canonical OurBigBook source with Marked', async function () {
+    assert.strictEqual(
+      await markdownToOurbigbook('# Hello\n\nText with **bold**, *italic*, [link](https://example.com), and `code`.\n\n- one\n- two\n'),
+      `= Hello
+
+Text with \\b[bold], \\i[italic], \\a[https://example.com][link], and \\c[code].
+
+\\Ul[
+\\L[
+one
+]
+\\L[
+two
+]
+]
+`
+    )
+  })
+
+  it('feeds representative GFM blocks through the normal AST pipeline', async function () {
+    const bigb = await markdownToOurbigbook(`# Input
+
+1. first
+2. second
+
+> quoted
+
+![Alt](image.png)
+
+| A | B |
+|---|---|
+| 1 | 2 |
+`)
+    assert(bigb.includes('\\Ol['))
+    assert(bigb.includes('\\Q['))
+    assert(bigb.includes('\\image[image.png][Alt]'))
+    assert(bigb.includes('\\Table['))
+    const extraReturns = {}
+    await ourbigbook.convert(bigb, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_HTML,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+  })
+
+  it('renders the same AST as Markdown and AsciiDoc', async function () {
+    const input = `= Hello
+
+Text with \\b[bold], \\i[italic], and \\a[https://example.com][link].
+
+* one
+* two
+`
+    const markdownExtraReturns = {}
+    const markdown = await ourbigbook.convert(input, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, markdownExtraReturns)
+    assert.deepStrictEqual(markdownExtraReturns.errors, [])
+    assert.strictEqual(markdown, `# Hello
+
+Text with **bold**, _italic_, and [link](https://example.com).
+
+- one
+- two
+`)
+
+    const asciidocExtraReturns = {}
+    const asciidoc = await ourbigbook.convert(input, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_ASCIIDOC,
+    }, asciidocExtraReturns)
+    assert.deepStrictEqual(asciidocExtraReturns.errors, [])
+    assert.strictEqual(asciidoc, `= Hello
+
+Text with *bold*, _italic_, and https://example.com[link].
+
+* one
+* two
+`)
   })
 })
 
@@ -11073,6 +11158,62 @@ assert_cli(
     args: ['--stdout', 'index.bigb'],
     assert_xpath_stdout: ["//x:div[@class='p' and text()='aabb']"],
     filesystem: { 'index.bigb': '= Notindex\n\naabb\n' },
+  }
+)
+assert_cli(
+  'Markdown input file is inferred from its extension and can produce BigB',
+  {
+    args: ['--stdout', '-O', 'bigb', 'index.md'],
+    filesystem: {
+      'index.md': '# Input\n\nText with **bold**.\n',
+    },
+    assert_stdout_contains: ['= Input\n\nText with \\b[bold].\n'],
+    assert_bigb: {
+      [`${TMP_DIRNAME}/bigb/index.bigb`]: '= Input\n\nText with \\b[bold].\n',
+    },
+  }
+)
+assert_cli(
+  'Markdown stdin can be selected explicitly',
+  {
+    args: ['-I', 'markdown', '-O', 'bigb', '--stdout'],
+    stdin: '# Hello\n',
+    assert_stdout_contains: ['= Hello\n'],
+  }
+)
+assert_cli(
+  '-O md selects the Markdown output format',
+  {
+    args: ['-O', 'md', 'index.bigb'],
+    filesystem: {
+      'index.bigb': '= Input\n\nText with \\b[bold].\n',
+    },
+    assert_bigb: {
+      [`${TMP_DIRNAME}/md/index.md`]: '# Input\n\nText with **bold**.\n',
+    },
+  }
+)
+assert_cli(
+  '-O markdown is not an output format identifier',
+  {
+    args: ['-O', 'markdown', 'index.bigb'],
+    filesystem: {
+      'index.bigb': '= Input\n',
+    },
+    assert_exit_status: 1,
+    assert_stderr_contains: ['unknown output format: markdown'],
+  }
+)
+assert_cli(
+  '-O adoc selects the AsciiDoc output format',
+  {
+    args: ['-O', 'adoc', 'index.bigb'],
+    filesystem: {
+      'index.bigb': '= Input\n\nText with \\b[bold].\n',
+    },
+    assert_bigb: {
+      [`${TMP_DIRNAME}/adoc/index.adoc`]: '= Input\n\nText with *bold*.\n',
+    },
   }
 )
 assert_cli(

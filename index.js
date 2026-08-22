@@ -9013,6 +9013,10 @@ const RENDER_TYPE_WEB = 'web'
 exports.RENDER_TYPE_WEB = RENDER_TYPE_WEB
 const OUTPUT_FORMAT_HTML = 'html';
 exports.OUTPUT_FORMAT_HTML = OUTPUT_FORMAT_HTML
+const OUTPUT_FORMAT_MARKDOWN = 'md';
+exports.OUTPUT_FORMAT_MARKDOWN = OUTPUT_FORMAT_MARKDOWN
+const OUTPUT_FORMAT_ASCIIDOC = 'adoc';
+exports.OUTPUT_FORMAT_ASCIIDOC = OUTPUT_FORMAT_ASCIIDOC
 const OUTPUT_FORMAT_ID = 'id';
 exports.OUTPUT_FORMAT_ID = OUTPUT_FORMAT_ID
 const TOPLEVEL_INDEX_ID = '';
@@ -10351,6 +10355,161 @@ class OutputFormat {
     }
   }
 }
+
+function markupRenderArg(ast, context, argName=Macro.CONTENT_ARGUMENT_NAME) {
+  const arg = ast.args[argName]
+  return arg === undefined ? '' : renderArg(arg, context)
+}
+
+function markupRenderLiteralArg(ast, context, argName=Macro.CONTENT_ARGUMENT_NAME) {
+  const arg = ast.args[argName]
+  return arg === undefined ? '' : renderArg(arg, cloneAndSet(context, 'in_literal', true))
+}
+
+function markupGeneric(ast, context) {
+  return markupRenderArg(ast, context)
+}
+
+function markupListItem(ast, context, marker) {
+  const content = markupRenderArg(ast, context).replace(/\n+$/, '')
+  return `${marker} ${content.replace(/\n/g, '\n  ')}\n`
+}
+
+function markdownEscape(text) {
+  return text.replace(/([\\`*_[\]<>#])/g, '\\$1')
+}
+
+function asciidocEscape(text) {
+  return text.replace(/([\\*_\[\]])/g, '\\$1')
+}
+
+function markdownCodeDelimiter(content, minimumLength=1) {
+  let length = minimumLength
+  for (const match of content.matchAll(/`+/g)) {
+    length = Math.max(length, match[0].length + 1)
+  }
+  return '`'.repeat(length)
+}
+
+function markupTable(ast, context, asciidoc=false) {
+  const rows = []
+  for (const rowAst of ast.args.content || []) {
+    const cells = []
+    for (const cellAst of rowAst.args.content || []) {
+      cells.push(markupRenderArg(cellAst, context).replace(/\n+/g, ' ').trim())
+    }
+    rows.push(cells)
+  }
+  if (asciidoc) {
+    return `|===\n${rows.map(row => row.map(cell => `|${cell}`).join(' ') + '\n').join('')}|===\n\n`
+  }
+  if (!rows.length) {
+    return ''
+  }
+  const width = Math.max(...rows.map(row => row.length))
+  const renderRow = row => `| ${row.concat(Array(width - row.length).fill('')).join(' | ')} |\n`
+  let ret = renderRow(rows[0])
+  ret += `| ${Array(width).fill('---').join(' | ')} |\n`
+  for (const row of rows.slice(1)) {
+    ret += renderRow(row)
+  }
+  return ret + '\n'
+}
+
+function makeMarkupConvertFuncs(asciidoc=false) {
+  const headingChar = asciidoc ? '=' : '#'
+  const funcs = {
+    [Macro.LINK_MACRO_NAME]: function(ast, context) {
+      const href = markupRenderLiteralArg(ast, context, 'href')
+      const content = markupRenderArg(ast, context) || href
+      return asciidoc ? `${href}[${content}]` : `[${content}](${href})`
+    },
+    [Macro.BOLD_MACRO_NAME]: function(ast, context) {
+      const content = markupRenderArg(ast, context)
+      return asciidoc ? `*${content}*` : `**${content}**`
+    },
+    [Macro.LINE_BREAK_MACRO_NAME]: function() { return asciidoc ? ' +\n' : '  \n' },
+    [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
+      const content = markupRenderLiteralArg(ast, context).replace(/\n$/, '')
+      if (asciidoc) return `[source]\n----\n${content}\n----\n\n`
+      const fence = markdownCodeDelimiter(content, 3)
+      return `${fence}\n${content}\n${fence}\n\n`
+    },
+    [Macro.CODE_MACRO_NAME]: function(ast, context) {
+      const content = markupRenderLiteralArg(ast, context)
+      if (asciidoc) return `\`${content}\``
+      const delimiter = markdownCodeDelimiter(content)
+      const padding = content.startsWith('`') || content.endsWith('`') ? ' ' : ''
+      return `${delimiter}${padding}${content}${padding}${delimiter}`
+    },
+    'Comment': function() { return '' },
+    'comment': function() { return '' },
+    [Macro.HEADER_MACRO_NAME]: function(ast, context) {
+      const level = ast.header_tree_node.get_level() - context.header_tree_top_level + 1
+      return `${headingChar.repeat(Math.max(1, level))} ${markupRenderArg(ast, context, Macro.TITLE_ARGUMENT_NAME)}\n\n`
+    },
+    'Hr': function() { return asciidoc ? "'''\n\n" : '---\n\n' },
+    'i': function(ast, context) { return `_${markupRenderArg(ast, context)}_` },
+    'Image': function(ast, context) {
+      const src = markupRenderLiteralArg(ast, context, 'src')
+      const alt = markupRenderArg(ast, context, 'alt')
+      return asciidoc ? `image::${src}[${alt}]\n\n` : `![${alt}](${src})\n\n`
+    },
+    'image': function(ast, context) {
+      const src = markupRenderLiteralArg(ast, context, 'src')
+      const alt = markupRenderArg(ast, context, 'alt')
+      return asciidoc ? `image:${src}[${alt}]` : `![${alt}](${src})`
+    },
+    [Macro.INCLUDE_MACRO_NAME]: function(ast, context) {
+      const href = markupRenderLiteralArg(ast, context, 'href')
+      return asciidoc ? `include::${href}.adoc[]\n\n` : `[Include: ${href}](${href}.md)\n\n`
+    },
+    [Macro.LIST_ITEM_MACRO_NAME]: function(ast, context) {
+      const ordered = ast.parent_ast && ast.parent_ast.macro_name === 'Ol'
+      return markupListItem(ast, context, ordered ? (asciidoc ? '.' : '1.') : (asciidoc ? '*' : '-'))
+    },
+    [Macro.MATH_MACRO_NAME.toUpperCase()]: function(ast, context) {
+      const content = markupRenderLiteralArg(ast, context)
+      return asciidoc ? `[latexmath]\n++++\n${content}\n++++\n\n` : `$$\n${content}\n$$\n\n`
+    },
+    [Macro.MATH_MACRO_NAME]: function(ast, context) {
+      return asciidoc ? `latexmath:[${markupRenderLiteralArg(ast, context)}]` : `$${markupRenderLiteralArg(ast, context)}$`
+    },
+    'Ol': function(ast, context) { return markupRenderArg(ast, context) + '\n' },
+    [Macro.PARAGRAPH_MACRO_NAME]: function(ast, context) {
+      return `${markupRenderArg(ast, context).replace(/\n+$/, '')}\n\n`
+    },
+    [Macro.PLAINTEXT_MACRO_NAME]: function(ast, context) {
+      if (context.in_literal) return ast.text
+      return asciidoc ? asciidocEscape(ast.text) : markdownEscape(ast.text)
+    },
+    [capitalizeFirstLetter(Macro.PASSTHROUGH_MACRO_NAME)]: function(ast, context) {
+      const content = markupRenderLiteralArg(ast, context)
+      return asciidoc ? `++++\n${content}\n++++\n\n` : `${content}\n\n`
+    },
+    [Macro.PASSTHROUGH_MACRO_NAME]: markupGeneric,
+    [Macro.QUOTE_MACRO_NAME]: function(ast, context) {
+      const content = markupRenderArg(ast, context).replace(/\n+$/, '')
+      if (asciidoc) return `[quote]\n____\n${content}\n____\n\n`
+      return content.split('\n').map(line => `> ${line}`).join('\n') + '\n\n'
+    },
+    'sub': function(ast, context) { return asciidoc ? `~${markupRenderArg(ast, context)}~` : `<sub>${markupRenderArg(ast, context)}</sub>` },
+    'sup': function(ast, context) { return asciidoc ? `^${markupRenderArg(ast, context)}^` : `<sup>${markupRenderArg(ast, context)}</sup>` },
+    [Macro.TABLE_MACRO_NAME]: function(ast, context) { return markupTable(ast, context, asciidoc) },
+    [Macro.TD_MACRO_NAME]: markupGeneric,
+    [Macro.TH_MACRO_NAME]: markupGeneric,
+    [Macro.TR_MACRO_NAME]: markupGeneric,
+    [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) { return markupRenderArg(ast, context).replace(/\n+$/, '') + '\n' },
+    [Macro.UNORDERED_LIST_MACRO_NAME]: function(ast, context) { return markupRenderArg(ast, context) + '\n' },
+    [Macro.X_MACRO_NAME]: function(ast, context) {
+      const href = markupRenderLiteralArg(ast, context, 'href')
+      const content = markupRenderArg(ast, context) || href
+      return asciidoc ? `<<${href},${content}>>` : `[${content}](#${href})`
+    },
+  }
+  return new Proxy(funcs, { get(target, property) { return target[property] || markupGeneric } })
+}
+
 const OUTPUT_FORMATS_LIST = [
   new OutputFormat(
     OUTPUT_FORMAT_HTML,
@@ -11750,6 +11909,14 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
       }
     }
   ),
+  new OutputFormat(
+    OUTPUT_FORMAT_MARKDOWN,
+    { ext: 'md', convert_funcs: makeMarkupConvertFuncs(false) }
+  ),
+  new OutputFormat(
+    OUTPUT_FORMAT_ASCIIDOC,
+    { ext: 'adoc', convert_funcs: makeMarkupConvertFuncs(true) }
+  ),
 ]
 
 function ourbigbookCodeMathInline(c) {
@@ -12589,6 +12756,158 @@ OUTPUT_FORMATS_LIST.push(
     }
   )
 )
+
+let markedPromise
+
+async function loadMarked() {
+  if (!markedPromise) {
+    const dynamicImport = eval('(specifier) => import(specifier)')
+    markedPromise = dynamicImport('marked').catch(() => {
+      const { pathToFileURL } = eval('require')('url')
+      return dynamicImport(pathToFileURL(
+        path.join(__dirname, 'marked', 'src', 'marked.ts')
+      ).href)
+    })
+  }
+  return markedPromise
+}
+
+function markdownInputLiteralArgument(text) {
+  let delimiterLength = 1
+  for (const match of text.matchAll(/\]+/g)) {
+    delimiterLength = Math.max(delimiterLength, match[0].length + 1)
+  }
+  return '['.repeat(delimiterLength) + text + ']'.repeat(delimiterLength)
+}
+
+function markdownInputArgument(text) {
+  return `[${text}]`
+}
+
+function markdownInputRenderInline(tokens=[]) {
+  let ret = ''
+  for (const token of tokens) {
+    switch (token.type) {
+      case 'text':
+      case 'escape':
+        ret += token.tokens ? markdownInputRenderInline(token.tokens) : ourbigbookEscape(token.text)
+        break
+      case 'strong':
+        ret += `\\b${markdownInputArgument(markdownInputRenderInline(token.tokens))}`
+        break
+      case 'em':
+        ret += `\\i${markdownInputArgument(markdownInputRenderInline(token.tokens))}`
+        break
+      case 'del':
+        ret += `\\passthrough${markdownInputLiteralArgument('<del>')}${markdownInputRenderInline(token.tokens)}\\passthrough${markdownInputLiteralArgument('</del>')}`
+        break
+      case 'codespan':
+        ret += `\\c${markdownInputLiteralArgument(token.text)}`
+        break
+      case 'br':
+        ret += '\\br'
+        break
+      case 'checkbox':
+        ret += token.checked ? '[x] ' : '[ ] '
+        break
+      case 'link':
+        ret += `\\a${markdownInputLiteralArgument(token.href)}${markdownInputArgument(markdownInputRenderInline(token.tokens))}`
+        break
+      case 'image': {
+        const alt = token.text ? markdownInputArgument(ourbigbookEscape(token.text)) : ''
+        ret += `\\image${markdownInputLiteralArgument(token.href)}${alt}`
+        break
+      }
+      case 'html':
+        ret += `\\passthrough${markdownInputLiteralArgument(token.text)}`
+        break
+      default:
+        if (token.tokens) {
+          ret += markdownInputRenderInline(token.tokens)
+        } else if (token.text) {
+          ret += ourbigbookEscape(token.text)
+        }
+    }
+  }
+  return ret
+}
+
+function markdownInputRenderList(token) {
+  const macro = token.ordered ? 'Ol' : 'Ul'
+  let ret = `\\${macro}[\n`
+  for (const item of token.items) {
+    ret += '\\L[\n'
+    ret += markdownInputRenderBlocks(item.tokens).replace(/\n+$/, '')
+    ret += '\n]\n'
+  }
+  return ret + ']\n\n'
+}
+
+function markdownInputRenderTable(token) {
+  let ret = '\\Table[\n\\Tr[\n'
+  for (const cell of token.header) {
+    ret += `\\Th${markdownInputArgument(markdownInputRenderInline(cell.tokens))}\n`
+  }
+  ret += ']\n'
+  for (const row of token.rows) {
+    ret += '\\Tr[\n'
+    for (const cell of row) {
+      ret += `\\Td${markdownInputArgument(markdownInputRenderInline(cell.tokens))}\n`
+    }
+    ret += ']\n'
+  }
+  return ret + ']\n\n'
+}
+
+function markdownInputRenderBlocks(tokens=[]) {
+  let ret = ''
+  for (const token of tokens) {
+    switch (token.type) {
+      case 'space':
+      case 'def':
+        break
+      case 'heading':
+        ret += `${'='.repeat(token.depth)} ${markdownInputRenderInline(token.tokens)}\n\n`
+        break
+      case 'paragraph':
+      case 'text':
+        ret += `${markdownInputRenderInline(token.tokens || [])}\n\n`
+        break
+      case 'code':
+        ret += `\\C${markdownInputLiteralArgument(token.text)}\n\n`
+        break
+      case 'blockquote':
+        ret += `\\Q[\n${markdownInputRenderBlocks(token.tokens).replace(/\n+$/, '')}\n]\n\n`
+        break
+      case 'list':
+        ret += markdownInputRenderList(token)
+        break
+      case 'table':
+        ret += markdownInputRenderTable(token)
+        break
+      case 'hr':
+        ret += '\\Hr\n\n'
+        break
+      case 'html':
+        ret += `\\Passthrough${markdownInputLiteralArgument(token.text)}\n\n`
+        break
+      default:
+        if (token.tokens) {
+          ret += markdownInputRenderBlocks(token.tokens)
+        } else if (token.text) {
+          ret += `${ourbigbookEscape(token.text)}\n\n`
+        }
+    }
+  }
+  return ret
+}
+
+/** Convert Markdown into canonical OurBigBook source through Marked's lexer. */
+async function markdownToOurbigbook(input) {
+  const { lexer } = await loadMarked()
+  return markdownInputRenderBlocks(lexer(input, { gfm: true })).replace(/\n+$/, '\n')
+}
+exports.markdownToOurbigbook = markdownToOurbigbook
 
 const OUTPUT_FORMATS = {}
 exports.OUTPUT_FORMATS = OUTPUT_FORMATS

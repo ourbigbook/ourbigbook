@@ -12,6 +12,8 @@ const RENDER_TYPES = {
   [ourbigbook.OUTPUT_FORMAT_HTML]: 0,
   [ourbigbook.OUTPUT_FORMAT_OURBIGBOOK]: 1,
   [ourbigbook.RENDER_TYPE_WEB]: 2,
+  [ourbigbook.OUTPUT_FORMAT_MARKDOWN]: 3,
+  [ourbigbook.OUTPUT_FORMAT_ASCIIDOC]: 4,
 };
 exports.RENDER_TYPES = RENDER_TYPES
 

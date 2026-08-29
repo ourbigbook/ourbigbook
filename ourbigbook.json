@@ -1,5 +1,12 @@
 {
   "generateSitemap": true,
+  "ignore": [
+    "CONTRIBUTING\\.md",
+    "README\\.md",
+    "marked",
+    "vscode/CHANGELOG\\.md",
+    "vscode/README\\.md"
+  ],
   "ignoreConvert": [
     "ourbigbook.common.scss",
     "ourbigbook.scss",

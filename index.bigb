@@ -7498,14 +7498,37 @@ because with `--outfile` we know where the output is going, and so we can genera
 {id=input-format}
 {parent=OurBigBook CLI options}
 
-Selects the CLI input frontend. Supported values are `bigb` (the default) and `markdown`. Markdown is automatically selected for `.md` and `.markdown` input files, and can be selected explicitly for standard input:
+Selects the input format.
+
+Supported values:
+* `bigb`: the default an recommended format
+* `md`, see: <--input-format md>
+
+The input format is automatically selected from the file extension, e.g. `.md` or `.markdown` input files. For input from standard input, it can be selected explicitly e.g. with:
 ``
 printf '# Hello' | ourbigbook -I markdown -O bigb --stdout
 ``
 
 Directory conversion remains BigB-only unless `-I markdown` is given, so that Markdown documentation files such as `README.md` are not compiled unexpectedly.
 
-The Markdown frontend uses Marked to tokenize Markdown, converts those tokens to the OurBigBook AST through canonical OurBigBook source, and then uses the normal ID, validation and rendering pipeline. This is currently CLI-only.
+= `--input-format md`
+{parent=input-format}
+
+= Markdown input
+{synonym}
+{title2}
+
+OurBigBook has basic support for markdown input.
+
+Markdown is a more insane format and for now has no OurBigBook-specific features, but Codex kind of vibe coded it quickly and we did it for the lols.
+
+For now, you can transparently <include> standard markdown files such as \a[not-index-md.md] with:
+``
+\Include[not-index-md]
+``
+and OurBigBook will integrate it into the current project seamlessly. Live demo:
+
+\Include[not-index-md]
 
 = `-O --output-format <outformat>`
 {id=output-format}

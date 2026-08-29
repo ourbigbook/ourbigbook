@@ -46,54 +46,57 @@ function read_include({exists, read, path_sep, ext}) {
   function join(...parts) {
     return parts.join(path_sep)
   }
-  if (ext === undefined) {
-    ext = `.${ourbigbook.OURBIGBOOK_EXT}`
-  }
+  const exts = ext === undefined
+    ? [`.${ourbigbook.OURBIGBOOK_EXT}`, '.md', '.markdown']
+    : [ext]
   return async (id, input_dir) => {
     let found = undefined
-    let test
-    let basename = id + ext
-    if (basename[0] === path_sep) {
-      test = id.substring(1)
-      if (await exists(test)) {
-        found = test
-      }
-    } else {
-      const input_dir_with_sep = input_dir + path_sep
-      for (let i = input_dir_with_sep.length - 1; i > 0; i--) {
-        if (input_dir_with_sep[i] === path_sep) {
-          test = input_dir_with_sep.slice(0, i + 1) + basename
-          if (await exists(test)) {
-            found = test
-            break
-          }
+    for (const candidateExt of exts) {
+      let test
+      const basename = id + candidateExt
+      if (basename[0] === path_sep) {
+        test = basename.substring(1)
+        if (await exists(test)) {
+          found = test
         }
-      }
-      if (found === undefined && await exists(basename)) {
-        found = basename
-      }
-    }
-    if (found === undefined) {
-      test = join(id, ourbigbook.INDEX_BASENAME_NOEXT + ext)
-      if (input_dir !=='') {
-        test = join(input_dir, test)
-      }
-      if (await exists(test)) {
-        found = test
-      }
-      if (found === undefined) {
-        const [dir, basename] = ourbigbook.pathSplit(id, path_sep)
-        const [basename_noext, ext] = ourbigbook.pathSplitext(basename)
-        if (basename_noext === ourbigbook.INDEX_BASENAME_NOEXT) {
-          for (let index_basename_noext of ourbigbook.INDEX_FILE_BASENAMES_NOEXT) {
-            test = join(dir, index_basename_noext + ext)
+      } else {
+        const input_dir_with_sep = input_dir + path_sep
+        for (let i = input_dir_with_sep.length - 1; i > 0; i--) {
+          if (input_dir_with_sep[i] === path_sep) {
+            test = input_dir_with_sep.slice(0, i + 1) + basename
             if (await exists(test)) {
               found = test
               break
             }
           }
         }
+        if (found === undefined && await exists(basename)) {
+          found = basename
+        }
       }
+      if (found === undefined) {
+        test = join(id, ourbigbook.INDEX_BASENAME_NOEXT + candidateExt)
+        if (input_dir !=='') {
+          test = join(input_dir, test)
+        }
+        if (await exists(test)) {
+          found = test
+        }
+        if (found === undefined) {
+          const [dir, idBasename] = ourbigbook.pathSplit(id, path_sep)
+          const [basename_noext, idExt] = ourbigbook.pathSplitext(idBasename)
+          if (basename_noext === ourbigbook.INDEX_BASENAME_NOEXT) {
+            for (let index_basename_noext of ourbigbook.INDEX_FILE_BASENAMES_NOEXT) {
+              test = join(dir, index_basename_noext + idExt)
+              if (await exists(test)) {
+                found = test
+                break
+              }
+            }
+          }
+        }
+      }
+      if (found !== undefined) break
     }
     if (found !== undefined) {
       return [found, await read(found)]

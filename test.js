@@ -11525,6 +11525,91 @@ assert_cli(
   }
 )
 assert_cli(
+  'directory conversion discovers Markdown and Include resolves Markdown',
+  {
+    args: ['.'],
+    filesystem: {
+      'index.bigb': `= Home
+
+\\Include[bigb-page]
+\\Include[markdown-page]
+`,
+      'bigb-page.bigb': '= BigB page\n',
+      'markdown-page.md': `# Markdown page
+
+Markdown paragraph.
+
+## Markdown child
+`,
+      'README.md': '# Repository readme\n',
+      'CONTRIBUTING.md': '# Contributing\n',
+      'ourbigbook.json': `{
+  "ignore": [
+    "CONTRIBUTING\\\\.md",
+    "README\\\\.md"
+  ]
+}
+`,
+    },
+    assert_exists: [
+      `${TMP_DIRNAME}/html/markdown-page.html`,
+    ],
+    assert_not_exists: [
+      `${TMP_DIRNAME}/html/README.html`,
+      `${TMP_DIRNAME}/html/CONTRIBUTING.html`,
+    ],
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/index.html`]: [
+        xpath_header(2, 'bigb-page'),
+        xpath_header(2, 'markdown-page'),
+      ],
+      [`${TMP_DIRNAME}/html/markdown-page.html`]: [
+        xpath_header(1, 'markdown-page'),
+        xpath_header(2, 'markdown-child'),
+      ],
+    },
+  }
+)
+assert_cli(
+  'embed Include parses Markdown before inserting it',
+  {
+    args: ['--embed-includes', 'index.bigb'],
+    filesystem: {
+      'index.bigb': `= Home
+
+\\Include[markdown-page]
+`,
+      'markdown-page.md': `# Markdown page
+
+Markdown paragraph.
+
+## Markdown child
+`,
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/index.html`]: [
+        xpath_header(2, 'markdown-page'),
+        xpath_header(3, 'markdown-child'),
+        "//x:div[@class='p' and text()='Markdown paragraph.']",
+      ],
+    },
+  }
+)
+assert_cli(
+  'repository README Markdown has no built-in special case',
+  {
+    args: ['--no-check-db', 'README.md'],
+    filesystem: {
+      'README.md': '# Repository readme\n',
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/README.html`]: [
+        xpath_header(1, 'README'),
+      ],
+    },
+  }
+)
+assert_cli(
   'Markdown stdin can be selected explicitly',
   {
     args: ['-I', 'markdown', '-O', 'bigb', '--stdout'],

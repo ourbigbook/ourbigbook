@@ -563,10 +563,8 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   const markdownExplicit = nonOurbigbookOptions.cli.inputFormat === 'markdown' || nonOurbigbookOptions.cli.inputFormat === 'md'
   const isbigb = (
     (inputExt === `.${ourbigbook.OURBIGBOOK_EXT}` && !markdownExplicit) ||
-    (
-      (inputExt === '.md' || inputExt === '.markdown') &&
-      (nonOurbigbookOptions.input_path_is_file || markdownExplicit)
-    )
+    inputExt === '.md' ||
+    inputExt === '.markdown'
   ) && !is_directory
   if (is_directory || isbigb) {
     nonOurbigbookOptions.ourbigbook_paths_converted.push(input_path_relative_to_ourbigbook_json)
@@ -1868,7 +1866,12 @@ if (cli.helpMacros) {
         outdir,
         ourbigbook.OURBIGBOOK_JSON_BASENAME
       ),
-      JSON.stringify({}, null, 2) + '\n'
+      JSON.stringify({
+        ignore: [
+          'CONTRIBUTING\\.md',
+          'README\\.md',
+        ],
+      }, null, 2) + '\n'
     )
     process.exit(0)
   }

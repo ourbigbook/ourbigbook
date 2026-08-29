@@ -324,6 +324,8 @@ Same reference: \\x[paragraphs-links-code-math].
 
 ## paragraphs, links, code, math
 
+↑ **Parent:** [Home]()
+
 Reference to a header: [paragraphs, links, code, math](#paragraphs-links-code-math).
 
 Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
@@ -439,7 +441,7 @@ then after.
     assert(!markdown.includes('<a id="ordinary"></a>'))
     assert(markdown.includes('## Ordinary'))
     assert(markdown.includes('<h2 id="custom-id">Custom</h2>'))
-    assert(markdown.includes('<h2 id="_file/picture.png">picture.png</h2>\n\n![picture.png](_raw/picture.png)'))
+    assert(markdown.includes('<h2 id="_file/picture.png">picture.png</h2>\n\n↑ **Parent:** [Home]()\n\n![picture.png](_raw/picture.png)'))
   })
 
   it('starts fenced code on a new line after list-item text', async function () {
@@ -544,9 +546,15 @@ Introduction.
 
 ## One
 
+↑ **Parent:** [Home]()
+
 ### Two with [one](#one)
 
+↑ **Parent:** [One](#one)
+
 ## Three
+
+↑ **Parent:** [Home]()
 `)
 
     const asciidocExtraReturns = {}
@@ -12154,6 +12162,8 @@ assert_cli(
       ...publish_filesystem,
       'local.png': 'local image',
       'index.bigb': `${publish_filesystem['index.bigb']}
+\\x[toplevel-scope/toplevel-scope-h2][link to scoped h2]
+
 \\Image[feature/topics/derivative.png][Derivative]{width=640}
 
 \\Image[local.png][Local]{provider=local}
@@ -12201,10 +12211,67 @@ assert_cli(
       [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex.md`]: [
         '[link to toplevel](README.md)',
       ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/split.md`]: [
+        '[link to notindex](notindex-split.md)',
+        '[link to notindex h2](notindex-h2.md)',
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/h2.md`]: [
+        '[link to scoped h2](toplevel-scope/toplevel-scope-h2.md)',
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex-split.md`]: [
+        '[link to h2](h2.md)',
+      ],
     },
   }
 )
-const githubMdTestMaxBytes = 500
+assert_cli(
+  'publish: github-md renders HTML-equivalent header metadata',
+  {
+    args: ['--dry-run', '--publish', '--publish-target', 'github-md', '.'],
+    filesystem: {
+      'index.bigb': `= Home
+{wiki=Home_page}
+
+<Notindex>
+
+\\Include[notindex]
+
+== Tagger
+{tag=notindex}
+`,
+      'notindex.bigb': `= Notindex
+{wiki=Notindex_page}
+
+== Child
+`,
+      'ourbigbook.json': `{
+  "target": {
+    "github-md": {}
+  }
+}
+`,
+    },
+    pre_exec: [...publish_pre_exec, ['git', ['checkout', '-b', 'dev']]],
+    assert_contains: {
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/README.md`]: [
+        '🏷️ **Tags:** [Notindex](notindex.md)',
+        'ⓦ [Wiki](https://en.wikipedia.org/wiki/Home_page)',
+      ],
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex.md`]: [
+        '↑ **Parent:** [Home](README.md)',
+        'ⓦ [Wiki](https://en.wikipedia.org/wiki/Notindex_page)',
+        '↑ **Parent:** [Notindex](notindex.md)',
+        '## 🏷️ Tagged (1)',
+        '- [Tagger](README.md#tagger)',
+        '## ↑ Ancestors (1)',
+        '1. [Home](README.md)',
+        '## ← Incoming links (1)',
+        '- [Home](README.md)',
+      ],
+    },
+  }
+)
+const githubMdTestMaxBytes = 1050
 const githubMdTestLevels = 12
 const githubMdTestTitles = Array.from(
   { length: githubMdTestLevels },
@@ -12268,7 +12335,7 @@ assert_cli(
   {
     args: ['--dry-run', '--publish', '--publish-target', 'github-md', '.'],
     filesystem: {
-      'index.bigb': `= Home\n\n${'content '.repeat(100)}\n`,
+      'index.bigb': `= Home\n\n${'content '.repeat(200)}\n`,
       'ourbigbook.json': `{
   "target": {
     "github-md": {

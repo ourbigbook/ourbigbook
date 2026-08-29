@@ -9054,6 +9054,10 @@ const HTML_EXT = 'html';
 exports.HTML_EXT = HTML_EXT;
 const INCOMING_LINKS_MARKER = '<span title="Incoming links" class="fa-solid-900 icon">\u{f060}</span>'
 exports.INCOMING_LINKS_MARKER = INCOMING_LINKS_MARKER
+const UNICODE_INCOMING_LINKS_MARKER = '\u2190'
+const UNICODE_PARENT_MARKER = '\u2191'
+const UNICODE_TAGS_MARKER = '\u{1f3f7}\ufe0f'
+const UNICODE_WIKI_MARKER = '\u24e6'
 const SYNONYM_LINKS_MARKER = '<span title="Synonyms" class="fa-solid-900 icon">\u{f07e}</span>'
 exports.SYNONYM_LINKS_MARKER = SYNONYM_LINKS_MARKER
 const TXT_HOME_MARKER = 'Home'
@@ -10628,6 +10632,147 @@ function markupFilePreview(ast, context, asciidoc) {
   return asciidoc ? `image::${src}[${alt}]\n\n` : `![${alt}](${src})\n\n`
 }
 
+/** Collect header metadata once so output formats only decide presentation. */
+function headerMetadata(ast, context, firstHeader) {
+  const ret = {
+    ancestors: firstHeader ? ast.ancestors(context) : [],
+    parentAsts: ast.get_header_parent_asts(context),
+    showTags: !ast.from_include || context.options.embed_includes,
+    tagAsts: [],
+    wikiHref: undefined,
+  }
+  if (ast.validation_output.wiki.given) {
+    const plaintextContext = cloneAndSet(
+      context,
+      'options',
+      cloneAndSet(context.options, 'output_format', OUTPUT_FORMAT_ID)
+    )
+    let wiki = renderArg(ast.args.wiki, plaintextContext)
+    if (wiki === '') {
+      wiki = renderArg(ast.args[Macro.TITLE_ARGUMENT_NAME], plaintextContext).replace(/ /g, '_')
+      if (ast.validation_output[Macro.DISAMBIGUATE_ARGUMENT_NAME].given) {
+        wiki += `_(${renderArg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], plaintextContext).replace(/ /g, '_')})`
+      }
+    }
+    ret.wikiHref = `https://en.wikipedia.org/wiki/${wiki}`
+  }
+  if (ret.showTags) {
+    const referenceContext = cloneAndSet(context, 'validateAst', true)
+    // Invalid child references are reported at their source. Do not duplicate
+    // those errors while rendering metadata above the source reference.
+    referenceContext.ignore_errors = true
+    referenceContext.source_location = ast.source_location
+    ret.tagAsts = context.db_provider.get_refs_to_as_asts(
+      REFS_TABLE_X_CHILD,
+      ast.id,
+      referenceContext,
+      { current_scope: ast.scope },
+    ).sort((a, b) => a.id.localeCompare(b.id))
+  }
+  return ret
+}
+
+/** Collect the metadata sections attached to the current output page. */
+function toplevelMetadata(context) {
+  const ast = context.toplevel_ast
+  if (ast === undefined) {
+    return { ancestors: [], incomingIds: new Set(), taggedIds: new Set() }
+  }
+  return {
+    ancestors: ast.ancestors(context),
+    incomingIds: context.db_provider.get_refs_to_as_ids(REFS_TABLE_X, ast.id),
+    taggedIds: context.db_provider.get_refs_to_as_ids(REFS_TABLE_X_CHILD, ast.id, true),
+  }
+}
+
+function markdownMetadataLink(targetAst, context, scope) {
+  const args = {
+    [Macro.CAPITALIZE_ARGUMENT_NAME]: new AstArgument(),
+    href: new AstArgument([new PlaintextAstNode(targetAst.id)]),
+    showDisambiguate: new AstArgument(),
+  }
+  const xAst = new AstNode(
+    AstType.MACRO,
+    Macro.X_MACRO_NAME,
+    args,
+    targetAst.source_location,
+    scope === undefined ? undefined : { scope },
+  )
+  const referenceContext = cloneAndSet(context, 'validateAst', true)
+  referenceContext.ignore_errors = true
+  referenceContext.source_location = targetAst.source_location
+  return xAst.render(referenceContext)
+}
+
+function markdownXHref(targetAst, context) {
+  let hrefContext = context
+  if (context.in_split_headers && context.to_split_headers === undefined) {
+    // Split Markdown pages should form a self-contained split-page graph.
+    // Explicit callers (notably included-file ToCs) may still force nosplit.
+    hrefContext = cloneAndSet(context, 'to_split_headers', true)
+  }
+  const href = xHref(targetAst, hrefContext)
+  if (href !== '' || context.toplevel_output_path === undefined) return href
+
+  // In HTML, href="" points to the current document. GitHub interprets an
+  // empty Markdown destination as the directory containing the blob instead,
+  // so spell out the current filename for links to the page's root header.
+  return pathSplit(context.toplevel_output_path, context.options.path_sep)[1]
+}
+
+function markdownHeaderMetadata(ast, context, firstHeader) {
+  if (!context.options.render_metadata) return ''
+  const metadata = headerMetadata(ast, context, firstHeader)
+  const lines = []
+  if (metadata.parentAsts.length) {
+    lines.push(`${UNICODE_PARENT_MARKER} **Parent:** ${metadata.parentAsts.map(
+      parentAst => markdownMetadataLink(parentAst, context, ast.scope)
+    ).join(', ')}`)
+  }
+  if (metadata.tagAsts.length) {
+    lines.push(`${UNICODE_TAGS_MARKER} **Tags:** ${metadata.tagAsts.map(
+      tagAst => markdownMetadataLink(tagAst, context, ast.scope)
+    ).join(', ')}`)
+  }
+  if (metadata.wikiHref !== undefined) {
+    lines.push(`${UNICODE_WIKI_MARKER} [Wiki](${metadata.wikiHref})`)
+  }
+  return lines.length ? `${lines.join('  \n')}\n\n` : ''
+}
+
+function markdownMetadataSection(title, marker, targetIds, context, ordered=false) {
+  const ids = Array.from(targetIds).sort()
+  const links = []
+  for (const id of ids) {
+    const targetAst = context.db_provider.get(id, context)
+    if (targetAst !== undefined) {
+      links.push(markdownMetadataLink(targetAst, context))
+    }
+  }
+  if (!links.length) return ''
+  const items = links.map((link, index) => `${ordered ? `${index + 1}.` : '-'} ${link}`).join('\n')
+  return `## ${marker} ${title} (${links.length})\n\n${items}\n\n`
+}
+
+function markdownToplevelMetadata(context) {
+  if (!context.options.render_metadata) return ''
+  const metadata = toplevelMetadata(context)
+  let ret = markdownMetadataSection('Tagged', UNICODE_TAGS_MARKER, metadata.taggedIds, context)
+  if (metadata.ancestors.length) {
+    const links = metadata.ancestors.map(ancestor => markdownMetadataLink(ancestor, context))
+    ret += `## ${UNICODE_PARENT_MARKER} Ancestors (${links.length})\n\n${links.map(
+      (link, index) => `${index + 1}. ${link}`
+    ).join('\n')}\n\n`
+  }
+  ret += markdownMetadataSection(
+    'Incoming links',
+    UNICODE_INCOMING_LINKS_MARKER,
+    metadata.incomingIds,
+    context,
+  )
+  return ret
+}
+
 function markdownToc(ast, context, maxDepth=Infinity) {
   const lines = []
   const visit = (nodes, depth) => {
@@ -10847,10 +10992,15 @@ function makeMarkupConvertFuncs(asciidoc=false) {
         heading = `<h${outputLevel} id="${htmlEscapeAttr(customId)}">${markupHeaderTitle(ast, htmlContext)}</h${outputLevel}>`
       }
       const preview = markupFilePreview(ast, context, asciidoc)
+      const metadata = asciidoc ? '' : markdownHeaderMetadata(
+        ast,
+        context,
+        context.toplevel_ast !== undefined && ast.id === context.toplevel_ast.id,
+      )
       if (level === 1) {
         if (asciidoc) return `${heading}\n:toc: macro\n\n${preview}`
       }
-      return `${heading}\n\n${preview}`
+      return `${heading}\n\n${metadata}${preview}`
     },
     'Hr': function(ast) { return markupBlock(ast, asciidoc ? "'''" : '---') },
     'i': function(ast, context) { return `_${markupRenderArg(ast, context)}_` },
@@ -10930,6 +11080,9 @@ function makeMarkupConvertFuncs(asciidoc=false) {
       if (!asciidoc && firstHeaderAst !== undefined && !tocRendered) {
         renderMarkupToc()
       }
+      if (!asciidoc && firstHeaderAst !== undefined) {
+        ret += markdownToplevelMetadata(context)
+      }
       return ret.replace(/\n+$/, '') + '\n'
     },
     [Macro.UNORDERED_LIST_MACRO_NAME]: markupListBlock,
@@ -10940,7 +11093,7 @@ function makeMarkupConvertFuncs(asciidoc=false) {
         const topicId = titleToIdContext(target_id_raw, undefined, context)
         href = `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${topicId}`
       } else if (target_ast) {
-        href = xHref(target_ast, context)
+        href = markdownXHref(target_ast, context)
       } else {
         href = `#${target_id}`
       }
@@ -11092,6 +11245,7 @@ const OUTPUT_FORMATS_LIST = [
             context.toplevel_ast !== undefined &&
             ast.id === context.toplevel_ast.id
           )
+          const sharedHeaderMetadata = headerMetadata(ast, context, first_header)
           ret += `<div class="h${first_header ? ' top' : ''}"${id_attr}${hasToc && context.options.add_test_instrumentation ? ' data-has-toc="1"' : ''}>`;
 
           // Self link.
@@ -11147,9 +11301,8 @@ const OUTPUT_FORMATS_LIST = [
               rendered_outputs_entry.titleSourceLocation = title_arg.source_location
             }
           }
-          let ancestors
+          const ancestors = sharedHeaderMetadata.ancestors
           if (first_header) {
-            ancestors = ast.ancestors(context)
             if (
               // We'll inject this dynamically at runtime. We already do this for the breakcrumb
               // so the data is already there. Also full ancestors are not being fetched on render on web,
@@ -11207,15 +11360,8 @@ const OUTPUT_FORMATS_LIST = [
 
           // Metadata that shows on separate lines below toplevel header.
           let wiki_link;
-          if (ast.validation_output.wiki.given) {
-            let wiki = renderArg(ast.args.wiki, context);
-            if (wiki === '') {
-              wiki = (renderArg(ast.args[Macro.TITLE_ARGUMENT_NAME], context)).replace(/ /g, '_');
-              if (ast.validation_output[Macro.DISAMBIGUATE_ARGUMENT_NAME].given) {
-                wiki += '_(' + (renderArg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], context)).replace(/ /g, '_')  + ')'
-              }
-            }
-            wiki_link = `<a href="https://en.wikipedia.org/wiki/${htmlEscapeAttr(wiki)}" class="wiki"></a>`;
+          if (sharedHeaderMetadata.wikiHref !== undefined) {
+            wiki_link = `<a href="${htmlEscapeAttr(sharedHeaderMetadata.wikiHref)}" class="wiki"></a>`;
           }
 
           let ourbigbookLink
@@ -11334,7 +11480,7 @@ const OUTPUT_FORMATS_LIST = [
           // Calculate tag_ids_html
           const tag_ids_html_array = [];
           let tag_ids_html
-          const showTags = !ast.from_include || context.options.embed_includes
+          const showTags = sharedHeaderMetadata.showTags
           if (showTags) {
             const new_context = cloneAndSet(context, 'validateAst', true);
             // This is needed because in case of an an undefined \\x with {parent},
@@ -11343,9 +11489,7 @@ const OUTPUT_FORMATS_LIST = [
             // root cause.
             new_context.ignore_errors = true;
             new_context.source_location = ast.source_location;
-            const target_tag_asts = context.db_provider.get_refs_to_as_asts(
-              REFS_TABLE_X_CHILD, ast.id, new_context, { current_scope: ast.scope });
-            for (const target_id of target_tag_asts.map(ast => ast.id).sort()) {
+            for (const target_id of sharedHeaderMetadata.tagAsts.map(ast => ast.id)) {
               const x_ast = new AstNode(
                 AstType.MACRO,
                 Macro.X_MACRO_NAME,
@@ -11420,9 +11564,8 @@ const OUTPUT_FORMATS_LIST = [
               }
             }
           } else {
-            const parent_asts = ast.get_header_parent_asts(context)
             parent_links = []
-            for (const parent_ast of parent_asts) {
+            for (const parent_ast of sharedHeaderMetadata.parentAsts) {
               // .u for Up
               parent_links.push(`<a${xHrefAttr(parent_ast, context)} class="u"> ${
                 renderTitlePossibleHomeMarker(parent_ast, cloneAndSet(context, 'in_a', true))}</a>`);
@@ -11886,15 +12029,25 @@ const OUTPUT_FORMATS_LIST = [
             body += renderToc(context)
           }
           body += context.renderBeforeNextHeader.map(s => htmlToplevelChildModifierById(s)).join('')
-          const ancestors = context.toplevel_ast.ancestors(context)
-          if (
-            context.toplevel_ast !== undefined &&
-            context.options.render_metadata
-          ) {
+          const sharedToplevelMetadata = (
+            context.toplevel_ast !== undefined && context.options.render_metadata
+          ) ? toplevelMetadata(context) : undefined
+          const ancestors = context.toplevel_ast === undefined
+            ? []
+            : (
+              sharedToplevelMetadata === undefined
+                ? context.toplevel_ast.ancestors(context)
+                : sharedToplevelMetadata.ancestors
+            )
+          if (sharedToplevelMetadata !== undefined) {
             {
-              const target_ids = context.db_provider.get_refs_to_as_ids(
-                REFS_TABLE_X_CHILD, context.toplevel_ast.id, true);
-              body += createLinkList(context, ast, TAGGED_ID_UNRESERVED, `${TAGS_MARKER} Tagged`, target_ids)
+              body += createLinkList(
+                context,
+                ast,
+                TAGGED_ID_UNRESERVED,
+                `${TAGS_MARKER} Tagged`,
+                sharedToplevelMetadata.taggedIds,
+              )
             }
 
             // Ancestors
@@ -11969,8 +12122,13 @@ const OUTPUT_FORMATS_LIST = [
             }
 
             {
-              const target_ids = context.db_provider.get_refs_to_as_ids(REFS_TABLE_X, context.toplevel_ast.id);
-              body += createLinkList(context, ast, INCOMING_LINKS_ID_UNRESERVED, `${INCOMING_LINKS_MARKER} Incoming links`, target_ids)
+              body += createLinkList(
+                context,
+                ast,
+                INCOMING_LINKS_ID_UNRESERVED,
+                `${INCOMING_LINKS_MARKER} Incoming links`,
+                sharedToplevelMetadata.incomingIds,
+              )
             }
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(REFS_TABLE_SYNONYM, context.toplevel_ast.id);

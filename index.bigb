@@ -978,7 +978,7 @@ $$
 \OurBigBookExample[[
 As shown at <image Cute chicken chick>, chicks are cute.
 
-\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/800px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201]
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/960px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201]
 {title=Cute chicken chick}
 
 \Video[https://www.youtube.com/watch?v=j_fl4xoGTKU]
@@ -987,7 +987,7 @@ As shown at <image Cute chicken chick>, chicks are cute.
 
 Images can take a bunch of options, about which you can read more about at <image arguments>. Most should be self explanatory, here is an image with a bunch of useful arguments:
 \OurBigBookExample[[
-\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/800px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201]
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/c/c9/H%C3%BChnerk%C3%BCken_02.jpg/960px-H%C3%BChnerk%C3%BCken_02.jpg?20200716091201]
 {title=Ultra cute chicken chick}
 {description=
 The chicken is yellow, and the hand is brown.
@@ -3421,7 +3421,7 @@ Now, as mentioned at <ourbigbook.json/media-providers>, everything will work bea
 
 Wikimedia Commons is another great possibility to upload your images to:
 \OurBigBookExample[[
-\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg]
+\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/500px-Gel_electrophoresis_insert_comb.jpg]
 {source=https://commons.wikimedia.org/wiki/File:Gel_electrophoresis_insert_comb.jpg}
 ]]
 
@@ -3435,7 +3435,7 @@ And like for non-Wikimedia images, you can automatically generate a `title` from
 ]]
 
 And a quick test for a more complex thumb resized URL:
-\OurBigBookExample[[\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/450px-Gel_electrophoresis_insert_comb.jpg\]]]
+\OurBigBookExample[[\Image[https://upload.wikimedia.org/wikipedia/commons/thumb/5/5b/Gel_electrophoresis_insert_comb.jpg/500px-Gel_electrophoresis_insert_comb.jpg\]]]
 
 If you really absolutely want to turn off the `source`, you can explicitly set:
 \OurBigBookExample[[
@@ -7983,10 +7983,12 @@ If no template is present, the default template at one point was:
 <head>
 <meta charset=utf-8>
 <title>{{ title }}</title>
+{{ theme_init }}
 <style>{{ style }}</style>
 </head>
 <body class="ourbigbook">
 {{ body }}
+<footer>{{ theme_toggle }}</footer>
 </body>
 </html>
 ``
@@ -7996,6 +7998,8 @@ The the above example, you can see a few or our predefined <template variables>:
 * `title`: the title based on the toplevel header of the page
 * `style`: our default stylesheet
 * `body`: the main rendered body
+* `theme_init`: initializes the saved light or dark theme. Place this in `<head>` before stylesheets to avoid a flash of the default light theme.
+* `theme_toggle`: a button that toggles and persists the light or dark theme. It can be placed anywhere, and is included in the default page footer.
 
 We chose Liquid as our template language because it is server-side safe. This allows you to to download the OurBigBook repository of anyone and just compile it yourself without the fear that it will install malware in your computer, see also <--unsafe-ace>{full}.
 
@@ -8137,6 +8141,8 @@ The following variables are defined for usage inside your <ourbigbook.liquid.htm
   <meta property="og:url" content="{{ json.publishRootUrl }}{{ server_path }}">
   ``
 * `style`: default OurBigBook stylesheets
+* `theme_init`: an inline script that applies the persisted theme. It should be placed in `<head>` before stylesheets.
+* `theme_toggle`: a light/dark theme toggle button suitable for placing in a footer
 * `title`: a plaintext version of the page title without any HTML tags which will is suitable for the `<title>` element
 * `toplevel_id`: ID of <the toplevel header> of a page, e.g. given and <split headers>:
   ``

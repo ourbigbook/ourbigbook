@@ -70,6 +70,7 @@ const profilePicturePath = apiPath + '/uploads/profile-picture'
 const allowedImageContentTypesArr = [
   'image/jpeg',
   'image/png',
+  'image/webp',
 ]
 const allowedImageContentTypesSimplifiedArr = allowedImageContentTypesArr.map(t => t.split('/')[1])
 module.exports = {

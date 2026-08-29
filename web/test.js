@@ -7,6 +7,7 @@ const {
   assert_xpath,
 } = require('ourbigbook/test_lib')
 const ourbigbook = require('ourbigbook')
+const sharp = require('sharp')
 
 const app = require('./app')
 const config = require('./front/config')
@@ -5626,27 +5627,34 @@ it(`api: profile picture`, async () => {
 
     const base64 = PNG_1X1_WHITE_BUFFER.toString('base64')
 
-    // Success.
-    ;({ data, status } = await test.webApi.userUpdateProfilePicture(
-      'user0',
-      `data:image/png;base64,${base64}`,
-    ))
-    assertStatus(status, data)
+    async function assertProfilePicture(contentType, bytes) {
+      ;({ data, status } = await test.webApi.userUpdateProfilePicture(
+        'user0',
+        `data:${contentType};base64,${bytes.toString('base64')}`,
+      ))
+      assertStatus(status, data)
 
-    // The stored public URL must match the GET endpoint used by the browser.
-    ;({ data, status } = await test.webApi.user('user0'))
-    assertStatus(status, data)
-    assert.strictEqual(data.image, `${config.profilePicturePath}/${user0.id}`)
-    assert.strictEqual(data.effectiveImage, data.image)
-    let headers
-    ;({ data, headers, status } = await test.sendJsonHttp(
-      'get',
-      data.image,
-      { useToken: false },
-    ))
-    assert.strictEqual(status, 200)
-    assert.strictEqual(headers['content-type'], 'image/png')
-    assert(data.length > 0)
+      // The stored public URL must match the GET endpoint used by the browser.
+      ;({ data, status } = await test.webApi.user('user0'))
+      assertStatus(status, data)
+      assert.strictEqual(data.image, `${config.profilePicturePath}/${user0.id}`)
+      assert.strictEqual(data.effectiveImage, data.image)
+      let headers
+      ;({ data, headers, status } = await test.sendJsonHttp(
+        'get',
+        data.image,
+        { useToken: false },
+      ))
+      assert.strictEqual(status, 200)
+      assert.strictEqual(headers['content-type'], contentType)
+      assert(data.length > 0)
+    }
+
+    await assertProfilePicture('image/png', PNG_1X1_WHITE_BUFFER)
+    await assertProfilePicture(
+      'image/webp',
+      await sharp(PNG_1X1_WHITE_BUFFER).webp().toBuffer(),
+    )
 
     // Format not allowed.
     ;({ data, status } = await test.webApi.userUpdateProfilePicture(

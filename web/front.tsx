@@ -404,9 +404,11 @@ export function slugFromRouter(router, opts={}) {
 
 export const AppContext = React.createContext<{
   prevPageNoSignup: string
+  setLoggedInUserEffectiveImage: (effectiveImage: string) => void | undefined,
   updatePrevPageNoSignup: (newCur: string) => void | undefined,
 }>({
   prevPageNoSignup: '',
+  setLoggedInUserEffectiveImage: undefined,
   updatePrevPageNoSignup: undefined
 });
 

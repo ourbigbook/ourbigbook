@@ -46,6 +46,12 @@ const MyApp = ({ Component, pageProps }) => {
   })
 
   const [prevPageNoSignup, setPrevPageNoSignup] = useState({ prev: null, cur: null });
+  const [loggedInUserEffectiveImage, setLoggedInUserEffectiveImage] = useState(
+    pageProps.loggedInUser?.effectiveImage
+  )
+  useEffect(() => {
+    setLoggedInUserEffectiveImage(pageProps.loggedInUser?.effectiveImage)
+  }, [pageProps.loggedInUser?.username, pageProps.loggedInUser?.effectiveImage])
   function updatePrevPageNoSignup(newCur, route) {
     // This is so that for logged off user the sequence:
     // - Create new article button
@@ -74,13 +80,20 @@ const MyApp = ({ Component, pageProps }) => {
   }, [router.events])
 
   const isEditor = !!Component.isEditor
+  const loggedInUser = pageProps.loggedInUser
+    ? { ...pageProps.loggedInUser, effectiveImage: loggedInUserEffectiveImage }
+    : pageProps.loggedInUser
   return (
-    <AppContextProvider vals={{ prevPageNoSignup: prevPageNoSignup.prev, updatePrevPageNoSignup }} >
+    <AppContextProvider vals={{
+      prevPageNoSignup: prevPageNoSignup.prev,
+      setLoggedInUserEffectiveImage,
+      updatePrevPageNoSignup,
+    }} >
       <div className={`toplevel${isEditor ? ' editor' : ''}`}>
         <Navbar {...{
           isEditor,
           clearScoreDelta: pageProps.clearScoreDelta,
-          loggedInUser: pageProps.loggedInUser,
+          loggedInUser,
           scoreDelta: pageProps.scoreDelta,
         }} />
         <div className="main">

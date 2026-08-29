@@ -610,7 +610,10 @@ router.put('/users/:username/profile-picture', auth.required, async function(req
       await user.saveSideEffects({ transaction })
     })
     t0 = lib.logPerf(t0, 'PUT /users/:username/profile-picture after transaction')
-    return res.json({})
+    return res.json({
+      image: user.image,
+      imageDataUrl: `data:${contentType};base64,${bytes.toString('base64')}`,
+    })
   } catch(error) {
     next(error);
   }

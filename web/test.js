@@ -5628,16 +5628,20 @@ it(`api: profile picture`, async () => {
     const base64 = PNG_1X1_WHITE_BUFFER.toString('base64')
 
     async function assertProfilePicture(contentType, bytes) {
-      ;({ data, status } = await test.webApi.userUpdateProfilePicture(
+      let uploadData
+      ;({ data: uploadData, status } = await test.webApi.userUpdateProfilePicture(
         'user0',
         `data:${contentType};base64,${bytes.toString('base64')}`,
       ))
-      assertStatus(status, data)
+      assertStatus(status, uploadData)
+      assert.strictEqual(uploadData.image, `${config.profilePicturePath}/${user0.id}`)
+      assert.match(uploadData.imageDataUrl, new RegExp(`^data:${contentType};base64,`))
+      assert(Buffer.from(uploadData.imageDataUrl.split(',')[1], 'base64').length > 0)
 
       // The stored public URL must match the GET endpoint used by the browser.
       ;({ data, status } = await test.webApi.user('user0'))
       assertStatus(status, data)
-      assert.strictEqual(data.image, `${config.profilePicturePath}/${user0.id}`)
+      assert.strictEqual(data.image, uploadData.image)
       assert.strictEqual(data.effectiveImage, data.image)
       let headers
       ;({ data, headers, status } = await test.sendJsonHttp(
@@ -5648,13 +5652,15 @@ it(`api: profile picture`, async () => {
       assert.strictEqual(status, 200)
       assert.strictEqual(headers['content-type'], contentType)
       assert(data.length > 0)
+      return uploadData.imageDataUrl
     }
 
-    await assertProfilePicture('image/png', PNG_1X1_WHITE_BUFFER)
-    await assertProfilePicture(
+    const pngDataUrl = await assertProfilePicture('image/png', PNG_1X1_WHITE_BUFFER)
+    const webpDataUrl = await assertProfilePicture(
       'image/webp',
       await sharp(PNG_1X1_WHITE_BUFFER).webp().toBuffer(),
     )
+    assert.notStrictEqual(webpDataUrl, pngDataUrl)
 
     // Format not allowed.
     ;({ data, status } = await test.webApi.userUpdateProfilePicture(

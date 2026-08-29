@@ -9,7 +9,6 @@ import {
   contactUrl,
   docsUrl,
   docsAccountLockingUrl,
-  profilePicturePath,
   profilePictureMaxUploadSize,
 } from 'front/config'
 import CustomImage from 'front/CustomImage'
@@ -17,6 +16,7 @@ import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
 import {
   addCommasToInteger,
+  AppContext,
   HelpIcon,
   LockIcon,
   MyHead,
@@ -50,6 +50,7 @@ const Settings = ({
 }: SettingsProps) => {
   const [isLoading, setLoading] = React.useState(false);
   const [errors, setErrors] = React.useState([]);
+  const { setLoggedInUserEffectiveImage } = React.useContext(AppContext)
   const username = user0.username
   const [userInfo, setUserInfo] = React.useState(lodash.pick(
     user0,
@@ -168,7 +169,10 @@ const Settings = ({
                         readerEvent.target.result,
                       )
                       if (status === 200) {
-                        profileImageRef.current.src = `${profilePicturePath}/${user0.id}`
+                        profileImageRef.current.src = data.imageDataUrl
+                        if (user0.username === loggedInUser.username) {
+                          setLoggedInUserEffectiveImage(data.imageDataUrl)
+                        }
                       } else {
                         let msg = `Upload failed with status: ${status}`
                         if (data.errors) {

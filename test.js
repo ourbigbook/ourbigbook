@@ -365,8 +365,8 @@ Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert(markdown.includes('**Notable features**:\n1. **[topics](#topic)**: details.'))
-    assert(markdown.includes('\n\n   ![](topic.png)\n\n   **Figure 1. The topics feature**. Live demo: [derivative](https://ourbigbook.com/go/topic/derivative).'))
-    assert(markdown.includes('\n\n   **Video 2. topics demo.** [Source](https://youtu.be/second).'))
+    assert(markdown.includes('\n\n   <a id="image-the-topics-feature"></a>\n   ![](topic.png)\n\n   **[Figure 1](#image-the-topics-feature). The topics feature**. Live demo: [derivative](https://ourbigbook.com/go/topic/derivative).'))
+    assert(markdown.includes('\n\n   <a id="video-topics-demo"></a>\n   **[Video 2](#video-topics-demo). topics demo.** [Source](https://youtu.be/second).'))
     assert(!markdown.includes('\n   \n'))
   })
 
@@ -390,14 +390,14 @@ then after.
       output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
-    assert(markdown.includes(`**Figure 1. Multiline**. For example:
+    assert(markdown.includes(`**[Figure 1](#image-multiline). Multiline**. For example:
 - one
 - two
 
 then after.
 
 ---`))
-    assert(markdown.includes('**Figure 2. Single line**. Short.'))
+    assert(markdown.includes('**[Figure 2](#image-single-line). Single line**. Short.'))
     assert.strictEqual((markdown.match(/^---$/gm) || []).length, 1)
   })
 
@@ -413,7 +413,77 @@ then after.
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert(markdown.includes('- [`--web-nested-set` (option)](#web-nested-set-option)'))
-    assert(markdown.includes('## `--web-nested-set` (option)'))
+    assert(markdown.includes('<h2 id="web-nested-set-option"><code>--web-nested-set</code> (option)</h2>'))
+  })
+
+  it('uses HTML headings only for mismatched IDs and previews image file headers', async function () {
+    const extraReturns = {}
+    const markdown = await ourbigbook.convert(`= Home
+
+== Ordinary
+
+== Custom
+{id=custom-id}
+
+== picture.png
+{file}
+`, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+    assert(!markdown.includes('<a id="ordinary"></a>'))
+    assert(markdown.includes('## Ordinary'))
+    assert(markdown.includes('<h2 id="custom-id">Custom</h2>'))
+    assert(markdown.includes('<h2 id="_file/picture.png">picture.png</h2>\n\n![picture.png](_raw/picture.png)'))
+  })
+
+  it('starts fenced code on a new line after list-item text', async function () {
+    const extraReturns = {}
+    const markdown = await ourbigbook.convert(`= Home
+
+\\Ul[
+* text:
+  \`\`
+  code
+  \`\`
+]
+`, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+    assert(markdown.includes('- text:\n  ```\n  code\n  ```'))
+    assert(!markdown.includes('text:```'))
+  })
+
+  it('adds Markdown anchors to identified non-header blocks', async function () {
+    const extraReturns = {}
+    const markdown = await ourbigbook.convert(`= Home
+
+\\C[[code]]
+{id=custom-code}
+`, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+    assert(markdown.includes('<a id="custom-code"></a>\n```\ncode\n```'))
+  })
+
+  it('flattens links inside Markdown TOC labels', async function () {
+    const extraReturns = {}
+    const markdown = await ourbigbook.convert(`= Home
+
+== https://example.com
+{file}
+`, {
+      input_path: 'index.bigb',
+      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+    }, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [])
+    assert(markdown.includes('- [https://example.com](#_file/https://example.com)'))
+    assert(!markdown.includes('[[https://example.com](https://example.com)]'))
   })
 
   it('downgrades headings deeper than h6 to h6', async function () {
@@ -12052,8 +12122,11 @@ assert_cli(
     args: ['--dry-run', '--publish', '--publish-target', 'github-md', '.'],
     filesystem: {
       ...publish_filesystem,
+      'local.png': 'local image',
       'index.bigb': `${publish_filesystem['index.bigb']}
 \\Image[feature/topics/derivative.png][Derivative]{width=640}
+
+\\Image[local.png][Local]{provider=local}
 `,
       'ourbigbook.json': `{
   "media-providers": {
@@ -12083,6 +12156,7 @@ assert_cli(
       `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex.md`,
       `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex-split.md`,
       `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex-h2.md`,
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/${ourbigbook.RAW_PREFIX}/local.png`,
     ],
     assert_not_exists: [
       `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/${ourbigbook_nodejs.PUBLISH_ASSET_DIST_PREFIX}/ourbigbook.css`,
@@ -12092,6 +12166,7 @@ assert_cli(
         '[link to notindex](notindex.md)',
         '[link to notindex h2](notindex.md#notindex-h2)',
         '<img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/topics/derivative.png" alt="Derivative" width="640">',
+        '![Local](_raw/local.png)',
       ],
       [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex.md`]: [
         '[link to toplevel](README.md)',

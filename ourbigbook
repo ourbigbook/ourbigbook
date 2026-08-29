@@ -730,6 +730,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   // _raw and _dir auto-generation. --split-headers on explicit headers with {file}
   // still happens outside of this, this is just for auto-generation.
   const convertNonBigb = ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
+  const copyToRaw = ourbigbook_options.output_format !== ourbigbook.OUTPUT_FORMAT_OURBIGBOOK
   let output_path_noext
   const forceRender = nonOurbigbookOptions.input_path_is_file || nonOurbigbookOptions.cli.forceRender
   if (ourbigbook_options.output_format !== ourbigbook.OUTPUT_FORMAT_OURBIGBOOK) {
@@ -939,10 +940,10 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
     )
   }
   if (ourbigbook_options.output_format !== ourbigbook.OUTPUT_FORMAT_OURBIGBOOK) {
-    if (!nonOurbigbookOptions.had_error && (isbigb || convertNonBigb)) {
+    if (!nonOurbigbookOptions.had_error && (isbigb || copyToRaw)) {
       // Copy the file into raw.
       if (
-        convertNonBigb &&
+        copyToRaw &&
         !nonOurbigbookOptions.ourbigbook_paths_converted_only &&
         !is_directory &&
         ourbigbook_options.render

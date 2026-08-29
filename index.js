@@ -352,6 +352,16 @@ class AstNode {
       out = errorMessageInOutput(this.validation_error[0], context);
     }
 
+    if (
+      context.options.output_format === OUTPUT_FORMAT_MARKDOWN &&
+      this.macro_name !== Macro.HEADER_MACRO_NAME &&
+      this.id !== undefined &&
+      !/^_\d+$/.test(this.id) &&
+      out
+    ) {
+      out = markupIdAnchor(this, context) + out
+    }
+
     // Add a div to all direct children of toplevel to implement
     // the on hover links to self and left margin.
     {
@@ -10478,6 +10488,63 @@ function markdownCodeDelimiter(content, minimumLength=1) {
   return '`'.repeat(length)
 }
 
+function githubMarkdownSlug(title, context) {
+  const base = title
+    .trim()
+    .toLowerCase()
+    .replace(/[\0-\x1F!-,.\/:;<=>?@[\\\]^`{|}~]/g, '')
+    .replace(/\s/g, '-')
+  const count = context.markdownHeadingSlugCounts.get(base) || 0
+  context.markdownHeadingSlugCounts.set(base, count + 1)
+  return count === 0 ? base : `${base}-${count}`
+}
+
+function markupHeaderAnchor(ast, context) {
+  if (context.options.output_format !== OUTPUT_FORMAT_MARKDOWN) return undefined
+  const href = xHref(ast, context)
+  const hashIndex = href.indexOf('#')
+  const plaintextContext = cloneAndSet(
+    context,
+    'options',
+    cloneAndSet(context.options, 'output_format', OUTPUT_FORMAT_ID)
+  )
+  let plaintextTitle = renderArg(ast.args[Macro.TITLE_ARGUMENT_NAME], plaintextContext)
+  const disambiguateArg = ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME]
+  if (disambiguateArg !== undefined) {
+    plaintextTitle += ` (${renderArg(disambiguateArg, plaintextContext)})`
+  }
+  const nativeId = githubMarkdownSlug(plaintextTitle, context)
+  if (hashIndex === -1) return undefined
+  const desiredId = href.slice(hashIndex + 1)
+  return nativeId === desiredId ? undefined : desiredId
+}
+
+function markupIdHref(ast, context) {
+  const href = xHref(ast, context)
+  const hashIndex = href.indexOf('#')
+  return hashIndex === -1 ? undefined : `#${href.slice(hashIndex + 1)}`
+}
+
+function markupIdAnchor(ast, context) {
+  const href = markupIdHref(ast, context)
+  return href === undefined ? '' : `<a id="${htmlEscapeAttr(href.slice(1))}"></a>\n`
+}
+
+function markupFilePreview(ast, context, asciidoc) {
+  if (!ast.file || !IMAGE_EXTENSIONS.has(pathSplitext(ast.file)[1].toLowerCase())) return ''
+  let src = ast.file
+  if (!protocolIsGiven(src)) {
+    ;({ href: src } = resolveLinkToFileGetHref({
+      context,
+      external: false,
+      href: URL_SEP + src,
+      media_provider_type: 'local',
+    }))
+  }
+  const alt = markdownEscape(urlBasename(ast.file))
+  return asciidoc ? `image::${src}[${alt}]\n\n` : `![${alt}](${src})\n\n`
+}
+
 function markdownToc(ast, context) {
   const lines = []
   const visit = (nodes, depth) => {
@@ -10513,8 +10580,16 @@ function markupMediaCaption(ast, context, asciidoc) {
     titleArg,
     cloneAndSet(context, 'renderXAsHref', true)
   )
-  let label = macro.options.caption_prefix
-  if (number !== undefined) label += ` ${number}`
+  const { error_message, source } = macroImageVideoResolveParamsWithSource(ast, context)
+  let prefix = macro.options.caption_prefix
+  if (number !== undefined) prefix += ` ${number}`
+  const mediaHref = asciidoc
+    ? (ast.macro_name === 'Image' ? markupMediaSrc(ast, context) : source)
+    : markupIdHref(ast, context)
+  if (mediaHref) {
+    prefix = asciidoc ? `${mediaHref}[${prefix}]` : `[${prefix}](${mediaHref})`
+  }
+  let label = prefix
   if (title) label += `${number === undefined ? ' ' : '. '}${title}`
   const terminalPunctuation = isPunctuation(label[label.length - 1]) ? '' : '.'
   const labelWithVideoPunctuation = ast.macro_name === 'Video'
@@ -10524,7 +10599,6 @@ function markupMediaCaption(ast, context, asciidoc) {
     ? `*${labelWithVideoPunctuation}*`
     : `**${labelWithVideoPunctuation}**`
   let ret = `${boldLabel}${ast.macro_name === 'Video' ? '' : terminalPunctuation}`
-  const { error_message, source } = macroImageVideoResolveParamsWithSource(ast, context)
   if (error_message === undefined && source) {
     ret += asciidoc ? ` ${source}[Source].` : ` [Source](${source}).`
   }
@@ -10630,6 +10704,7 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     [Macro.LINK_MACRO_NAME]: function(ast, context) {
       const href = markupRenderLiteralArg(ast, context, 'href')
       const content = markupRenderArg(ast, context) || href
+      if (context.renderXAsHref || context.in_a) return content
       return asciidoc ? `${href}[${content}]` : `[${content}](${href})`
     },
     [Macro.BOLD_MACRO_NAME]: function(ast, context) {
@@ -10638,10 +10713,19 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     },
     [Macro.LINE_BREAK_MACRO_NAME]: function() { return asciidoc ? ' +\n' : '  \n' },
     [Macro.CODE_MACRO_NAME.toUpperCase()]: function(ast, context) {
+      const previousRender = context.last_render
       const content = markupRenderLiteralArg(ast, context).replace(/\n$/, '')
       if (asciidoc) return markupBlock(ast, `[source]\n----\n${content}\n----`)
       const fence = markdownCodeDelimiter(content, 3)
-      return markupBlock(ast, `${fence}\n${content}\n${fence}`, { paragraphNewlineCount: 1 })
+      let ret = markupBlock(ast, `${fence}\n${content}\n${fence}`, { paragraphNewlineCount: 1 })
+      if (
+        previousRender &&
+        !previousRender.endsWith('\n') &&
+        !ret.startsWith('\n')
+      ) {
+        ret = '\n' + ret
+      }
+      return ret
     },
     [Macro.CODE_MACRO_NAME]: function(ast, context) {
       const content = markupRenderLiteralArg(ast, context)
@@ -10655,11 +10739,22 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     [Macro.HEADER_MACRO_NAME]: function(ast, context) {
       if (ast.isSynonym()) return ''
       const level = ast.header_tree_node.get_level() - context.header_tree_top_level + 1
-      const heading = `${headingChar.repeat(Math.min(6, Math.max(1, level)))} ${markupHeaderTitle(ast, context)}`
-      if (level === 1) {
-        if (asciidoc) return `${heading}\n:toc: macro\n\n`
+      const outputLevel = Math.min(6, Math.max(1, level))
+      let heading = `${headingChar.repeat(outputLevel)} ${markupHeaderTitle(ast, context)}`
+      const customId = markupHeaderAnchor(ast, context)
+      if (customId !== undefined) {
+        const htmlContext = cloneAndSet(
+          context,
+          'options',
+          cloneAndSet(context.options, 'output_format', OUTPUT_FORMAT_HTML)
+        )
+        heading = `<h${outputLevel} id="${htmlEscapeAttr(customId)}">${markupHeaderTitle(ast, htmlContext)}</h${outputLevel}>`
       }
-      return `${heading}\n\n`
+      const preview = markupFilePreview(ast, context, asciidoc)
+      if (level === 1) {
+        if (asciidoc) return `${heading}\n:toc: macro\n\n${preview}`
+      }
+      return `${heading}\n\n${preview}`
     },
     'Hr': function(ast) { return markupBlock(ast, asciidoc ? "'''" : '---') },
     'i': function(ast, context) { return `_${markupRenderArg(ast, context)}_` },
@@ -10707,6 +10802,7 @@ function makeMarkupConvertFuncs(asciidoc=false) {
     'Video': function(ast, context) { return markupMediaBlock(ast, context, asciidoc, false) },
     [Macro.TOPLEVEL_MACRO_NAME]: function(ast, context) {
       let ret = ''
+      context.markdownHeadingSlugCounts = new Map()
       let firstHeaderAst
       let tocRendered = false
       for (const childAst of ast.args[Macro.CONTENT_ARGUMENT_NAME] || []) {

@@ -61,7 +61,7 @@ router.get('/profile-picture/:uid', auth.optional, async function(req, res, next
     await sequelize.transaction(async (transaction) => {
       const upload = await Upload.findOne({ where: { path: `${config.profilePicturePathComponent}/${uid}` }, transaction })
       if (!upload) {
-        throw new lib.ValidationError(`path does not exist: ${path}`, 404)
+        throw new lib.ValidationError(`profile picture does not exist for user ID: ${uid}`, 404)
       }
       res.set({
         'Content-Type': upload.contentType,

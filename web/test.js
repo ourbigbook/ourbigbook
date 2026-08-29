@@ -5633,6 +5633,21 @@ it(`api: profile picture`, async () => {
     ))
     assertStatus(status, data)
 
+    // The stored public URL must match the GET endpoint used by the browser.
+    ;({ data, status } = await test.webApi.user('user0'))
+    assertStatus(status, data)
+    assert.strictEqual(data.image, `${config.profilePicturePath}/${user0.id}`)
+    assert.strictEqual(data.effectiveImage, data.image)
+    let headers
+    ;({ data, headers, status } = await test.sendJsonHttp(
+      'get',
+      data.image,
+      { useToken: false },
+    ))
+    assert.strictEqual(status, 200)
+    assert.strictEqual(headers['content-type'], 'image/png')
+    assert(data.length > 0)
+
     // Format not allowed.
     ;({ data, status } = await test.webApi.userUpdateProfilePicture(
       'user0',

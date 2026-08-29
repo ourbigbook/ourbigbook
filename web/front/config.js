@@ -66,7 +66,7 @@ const convertOptions = {
 const apiPath = '/' + ourbigbook.WEB_API_PATH
 const uploadPathComponent = 'upload'
 const profilePicturePathComponent = 'profile'
-const profilePicturePath = apiPath + '/upload/' + profilePicturePathComponent
+const profilePicturePath = apiPath + '/uploads/profile-picture'
 const allowedImageContentTypesArr = [
   'image/jpeg',
   'image/png',

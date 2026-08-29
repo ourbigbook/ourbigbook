@@ -74,6 +74,10 @@ function getOrderAndPage(req, page, opts={}) {
   }
 }
 
+function orderAscDescNullsLast(orderAscDesc) {
+  return orderAscDesc.replace(/\s+NULLS\s+(FIRST|LAST)$/i, '') + ' NULLS LAST'
+}
+
 /** GET param -> DB order map. undefined means both are the same. */
 const ALLOWED_SORTS_DEFAULT = {
   created: 'createdAt',
@@ -306,6 +310,7 @@ module.exports = {
   getVerified,
   getOrder,
   getOrderAndPage,
+  orderAscDescNullsLast,
   getPage,
   getTri,
   hasReachedMaxItemCount,

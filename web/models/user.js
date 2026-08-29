@@ -7,6 +7,7 @@ const ourbigbook = require('ourbigbook')
 const convert = require('../convert')
 const { cant } = require('../front/cant')
 const config = require('../front/config')
+const { orderAscDescNullsLast } = require('../front/js')
 
 const { DataTypes, Op } = Sequelize
 
@@ -239,6 +240,7 @@ module.exports = (sequelize) => {
             bodySource: User.defaultIndexBody,
             path: ourbigbook.INDEX_BASENAME_NOEXT,
             sequelize,
+            setDates: false,
             titleSource: '',
             transaction: options.transaction
           })
@@ -455,6 +457,9 @@ module.exports = (sequelize) => {
     }
     if (orderAscDesc === undefined) {
       orderAscDesc = 'DESC'
+    }
+    if (order === 'createdAt' || order === 'updatedAt') {
+      orderAscDesc = orderAscDescNullsLast(orderAscDesc)
     }
     return sequelize.models.Article.findAndCountAll({
       offset,

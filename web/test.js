@@ -437,6 +437,25 @@ it('User discussionCount and commentCount caches', async function() {
   await assertCounts(user0, 0, 0)
 })
 
+it('new user index article has null dates and sorts after dated articles', async function() {
+  const sequelize = this.test.sequelize
+  const { Article } = sequelize.models
+  const user = await createUser(sequelize, 0)
+  const indexArticle = await Article.findOne({ where: { slug: user.username } })
+  assert.strictEqual(indexArticle.createdAt, null)
+  assert.strictEqual(indexArticle.updatedAt, null)
+
+  const datedArticle = await createArticle(sequelize, user, { i: 0 })
+  for (const order of ['createdAt', 'updatedAt']) {
+    const rows = await Article.getArticles({
+      count: false,
+      order,
+      sequelize,
+    })
+    assert.deepStrictEqual(rows.map(article => article.id), [datedArticle.id, indexArticle.id])
+  }
+})
+
 it('User.findAndCountArticlesByFollowed', async function() {
   const sequelize = this.test.sequelize
   const user0 = await createUser(sequelize, 0)
@@ -467,6 +486,19 @@ it('User.findAndCountArticlesByFollowed', async function() {
   assert.strictEqual(rows.length, 3)
   // 6 manually from all follows + 2 for the automatically created indexes.
   assert.strictEqual(count, 8)
+
+  // Undated automatic index articles sort after dated articles in the followed feed.
+  // Test ASC explicitly because both SQLite and PostgreSQL otherwise put NULL first.
+  for (const order of ['createdAt', 'updatedAt']) {
+    // getOrderAndPage supplies the NULLS LAST suffix before calling this method.
+    const { rows } = await user0.findAndCountArticlesByFollowed(0, 8, order, 'ASC NULLS LAST')
+    assert(rows.slice(0, 6).every(article => article[order] !== null))
+    assert(rows.slice(6).every(article => article[order] === null))
+    assert.deepStrictEqual(
+      rows.slice(6).map(article => article.slug).sort(),
+      ['user1', 'user3']
+    )
+  }
 })
 
 it('Article.getArticlesInSamePage simple', async function test_Article__getArticlesInSamePage() {

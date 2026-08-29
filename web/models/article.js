@@ -9,7 +9,7 @@ const { sequelizeWhereStartsWith } = require('ourbigbook/models')
 
 const config = require('../front/config')
 const front_js = require('../front/js')
-const { querySearchToTopicId } = front_js
+const { orderAscDescNullsLast, querySearchToTopicId } = front_js
 const convert = require('../convert')
 const e = require('cors')
 
@@ -1360,11 +1360,14 @@ WHERE
     const orderList = []
     if (topicIdSearch === undefined) {
       if (order !== undefined) {
-        orderList.push([order, orderAscDesc])
+        const orderDirection = order === 'createdAt' || order === 'updatedAt'
+          ? orderAscDescNullsLast(orderAscDesc)
+          : orderAscDesc
+        orderList.push([order, orderDirection])
       }
       if (order !== 'createdAt' && order !== 'nestedSetIndex') {
         // To make results deterministic.
-        orderList.push(['createdAt', 'DESC'])
+        orderList.push(['createdAt', 'DESC NULLS LAST'])
       }
     } else {
       // Override all other orderings, as we currently don't have

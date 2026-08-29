@@ -187,6 +187,7 @@ async function convert({
  *   both of which are exposed to users and exercized by the ourbigbook CLI.
  *
  * @param {string} parentId - Required for h2Render to render correctly. Otherwise it looks like an h1Render.
+ * @param {boolean} setDates - If false, create new Article rows with null createdAt and updatedAt.
  * @param {boolean} updateTree - If false, don't change the position of the article in the tree.
  *   This also prevents the creation of new articles, only content updates are allowed in that case.
  *   This option can massively save time by skipping unnecessary nested set tree updates.
@@ -206,6 +207,7 @@ async function convertArticle({
   previousSiblingId,
   render,
   sequelize,
+  setDates,
   titleSource,
   transaction,
   updateNestedSetIndex,
@@ -227,6 +229,9 @@ async function convertArticle({
   }
   if (updateUpdatedAt === undefined) {
     updateUpdatedAt = true
+  }
+  if (setDates === undefined) {
+    setDates = !author.hideArticleDates
   }
   let t0
   const { Article, File, Id, Issue, Ref, Topic, UserLikeArticle } = sequelize.models
@@ -828,7 +833,7 @@ async function convertArticle({
         if (doUpdateNestedSetIndex) {
           articleArg.depth = newDepth
         }
-        if (!author.hideArticleDates) {
+        if (setDates) {
           const d = new Date()
           articleArg.createdAt = d
           articleArg.updatedAt = d

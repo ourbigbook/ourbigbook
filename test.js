@@ -171,6 +171,10 @@ ${body}`, {
 })
 
 describe('Markdown and AsciiDoc formats', function () {
+  it('uses GitHub repository landing page Markdown byte limit', function () {
+    assert.strictEqual(ourbigbook.GITHUB_MARKDOWN_MAX_BYTES, 512 * 1024)
+  })
+
   it('sets the generalized out_ext template variable from the output format', function () {
     for (const [outputFormat, outExt] of [
       [ourbigbook.OUTPUT_FORMAT_HTML, '.html'],
@@ -1075,6 +1079,12 @@ function assert_cli(
       // RegExp matches: regexp matches at least once
       options.assert_contains = {};
     }
+    if (!('assert_file_max_bytes' in options)) {
+      options.assert_file_max_bytes = {};
+    }
+    if (!('assert_not_contains' in options)) {
+      options.assert_not_contains = {};
+    }
     if (!('assert_exists' in options)) {
       options.assert_exists = [];
     }
@@ -1255,6 +1265,26 @@ function assert_cli(
           )
         }
       }
+    }
+    for (const relpath in options.assert_not_contains) {
+      const fullpath = path.join(tmpdir, relpath);
+      assert.ok(fs.existsSync(fullpath), `path does not exist: ${fullpath}\n\n` + assert_msg)
+      const content = fs.readFileSync(fullpath).toString(ourbigbook_nodejs_webpack_safe.ENCODING)
+      for (const notContains of options.assert_not_contains[relpath]) {
+        assert.strictEqual(
+          content.indexOf(notContains),
+          -1,
+          `"${relpath}" should not contain "${notContains}"\n\n` + assert_msg,
+        )
+      }
+    }
+    for (const relpath in options.assert_file_max_bytes) {
+      const fullpath = path.join(tmpdir, relpath);
+      assert.ok(fs.existsSync(fullpath), `path does not exist: ${fullpath}\n\n` + assert_msg)
+      assert.ok(
+        fs.statSync(fullpath).size < options.assert_file_max_bytes[relpath],
+        `"${relpath}" should be smaller than ${options.assert_file_max_bytes[relpath]} bytes\n\n` + assert_msg,
+      )
     }
     if (!ourbigbook_nodejs_front.postgres) {
       for (const relpath of options.assert_exists_sqlite) {
@@ -12173,6 +12203,91 @@ assert_cli(
       ],
     },
   }
+)
+const githubMdTestMaxBytes = 500
+const githubMdTestLevels = 12
+const githubMdTestTitles = Array.from(
+  { length: githubMdTestLevels },
+  (_, index) => `Level ${index + 1} ${'title '.repeat(8)}`.trim(),
+)
+const githubMdTestSource = `= Home
+
+Root body.
+
+\\Include[subdir/notindex]
+
+${githubMdTestTitles.map((title, index) =>
+  `${'='.repeat(index + 2)} ${title}\n{id=level-${index + 1}}\n`
+).join('\n')}`
+const githubMdTestOutputPrefix = `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md`
+assert_cli(
+  'publish: github-md splits oversized pages and shortens oversized ToCs',
+  {
+    args: ['--dry-run', '--publish', '--publish-target', 'github-md', '.'],
+    filesystem: {
+      'index.bigb': githubMdTestSource,
+      'subdir/notindex.bigb': '= Notindex\n',
+      'ourbigbook.json': `{
+  "target": {
+    "github-md": {
+      "githubMarkdownMaxBytes": ${githubMdTestMaxBytes}
+    }
+  }
+}
+`,
+    },
+    pre_exec: [...publish_pre_exec, ['git', ['checkout', '-b', 'dev']]],
+    assert_contains: {
+      [`${githubMdTestOutputPrefix}/README.md`]: [
+        '[Notindex](subdir/notindex.md)',
+        `[${githubMdTestTitles[0]}](level-1.md)`,
+      ],
+      [`${githubMdTestOutputPrefix}/level-1.md`]: [
+        `[${githubMdTestTitles[1]}](level-2.md)`,
+      ],
+    },
+    assert_not_contains: {
+      [`${githubMdTestOutputPrefix}/README.md`]: [
+        githubMdTestTitles[1],
+        'subdir/notindex-split.md',
+      ],
+      [`${githubMdTestOutputPrefix}/level-1.md`]: [githubMdTestTitles[2]],
+    },
+    assert_file_max_bytes: Object.fromEntries([
+      `${githubMdTestOutputPrefix}/README.md`,
+      `${githubMdTestOutputPrefix}/split.md`,
+      ...Array.from(
+        { length: githubMdTestLevels },
+        (_, index) => `${githubMdTestOutputPrefix}/level-${index + 1}.md`,
+      ),
+    ].map(outputPath => [outputPath, githubMdTestMaxBytes])),
+  },
+)
+assert_cli(
+  'publish: github-md warns when one section cannot be split further',
+  {
+    args: ['--dry-run', '--publish', '--publish-target', 'github-md', '.'],
+    filesystem: {
+      'index.bigb': `= Home\n\n${'content '.repeat(100)}\n`,
+      'ourbigbook.json': `{
+  "target": {
+    "github-md": {
+      "githubMarkdownMaxBytes": ${githubMdTestMaxBytes}
+    }
+  }
+}
+`,
+    },
+    pre_exec: [...publish_pre_exec, ['git', ['checkout', '-b', 'dev']]],
+    assert_exists: [
+      `${githubMdTestOutputPrefix}/README.md`,
+      `${githubMdTestOutputPrefix}/split.md`,
+    ],
+    assert_stderr_contains: [
+      'warning: index.bigb:1:1: Markdown output "README.md"',
+      'warning: index.bigb:1:1: Markdown output "split.md"',
+    ],
+  },
 )
 assert_cli(
   'publish: --publish-target local works',

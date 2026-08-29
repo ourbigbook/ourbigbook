@@ -525,6 +525,10 @@ async function convert_input(input, ourbigbook_options, nonOurbigbookOptions={})
       new_options.extra_returns.errors.map(e => e.toString()))) {
     console.error(error_string);
   }
+  for (const warning_string of ourbigbook_nodejs_webpack_safe.remove_duplicates_sorted_array(
+      new_options.extra_returns.warnings.map(warning => warning.toString()))) {
+    console.error(warning_string);
+  }
   nonOurbigbookOptions.extra_returns = new_options.extra_returns;
   if (new_options.extra_returns.errors.length > 0) {
     nonOurbigbookOptions.had_error = true;
@@ -1628,7 +1632,7 @@ if (cli.helpMacros) {
     ourbigbook_json.template = DEFAULT_TEMPLATE_BASENAME
   }
 
-  let split_headers, publish_uses_git;
+  let markdownMaxBytes, split_headers, publish_uses_git;
   // Content will become publicly visible after publishing. For example:
   // - publish to github pages: yes
   // - publish a local file to then ZIP: no
@@ -1661,6 +1665,21 @@ if (cli.helpMacros) {
         publish_uses_git = true
         publishTargetIsWebsite = false
         publishIsPublic = true
+        markdownMaxBytes = ourbigbook.GITHUB_MARKDOWN_MAX_BYTES
+        if (ourbigbook_json.githubMarkdownMaxBytes !== undefined) {
+          if (
+            !Number.isInteger(ourbigbook_json.githubMarkdownMaxBytes) ||
+            ourbigbook_json.githubMarkdownMaxBytes <= 0
+          ) {
+            cli_error('githubMarkdownMaxBytes must be a positive integer')
+          }
+          // A project may choose a more conservative limit, but cannot disable
+          // the GitHub rendering safeguard by raising it.
+          markdownMaxBytes = Math.min(
+            markdownMaxBytes,
+            ourbigbook_json.githubMarkdownMaxBytes,
+          )
+        }
         break
       case 'local':
         htmlXExtension = true;
@@ -1707,6 +1726,7 @@ if (cli.helpMacros) {
     fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
     htmlXExtension,
     markdownIndexBasename: publish_target === 'github-md' ? 'README' : undefined,
+    markdownMaxBytes,
     output_format,
     outfile: cli.outfile,
     path_sep: path.sep,

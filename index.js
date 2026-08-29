@@ -1004,6 +1004,12 @@ class ErrorMessage {
   }
 }
 
+class WarningMessage extends ErrorMessage {
+  toString() {
+    return super.toString().replace(/^error:/, 'warning:')
+  }
+}
+
 function isAbsoluteXref(id, context) {
   return id[0] === Macro.HEADER_SCOPE_SEPARATOR ||
       (context.options.x_leading_at_to_web && id[0] === AT_MENTION_CHAR)
@@ -3338,6 +3344,7 @@ async function convert(
       renderAstList({ asts, context, header_count, split: true });
       // Because the following conversion would redefine them.
     }
+    enforceMarkdownMaxBytes(context)
     perfPrint(context, 'render_post')
     if (extra_returns.errors.length === 0) {
       // Only add render errors if there are no parse errors before. They could be just a bunch of noise.
@@ -3375,6 +3382,75 @@ async function convert(
   return output;
 }
 exports.convert = convert;
+
+function enforceMarkdownMaxBytes(context) {
+  const maxBytes = context.options.markdownMaxBytes
+  if (
+    context.options.output_format !== OUTPUT_FORMAT_MARKDOWN ||
+    maxBytes === undefined
+  ) {
+    return
+  }
+  const renderedOutputs = context.extra_returns.rendered_outputs
+  const byteLength = value => new TextEncoder().encode(value).length
+
+  // A split page contains only one section, but its recursive ToC can still be
+  // larger than GitHub will render. In that case retain only direct children.
+  for (const renderedOutput of Object.values(renderedOutputs)) {
+    if (
+      renderedOutput.split &&
+      byteLength(renderedOutput.full) >= maxBytes &&
+      renderedOutput.markdownToc &&
+      renderedOutput.markdownTocShort !== renderedOutput.markdownToc
+    ) {
+      if (renderedOutput.full.includes(renderedOutput.markdownToc)) {
+        renderedOutput.full = renderedOutput.full.replace(
+          renderedOutput.markdownToc,
+          renderedOutput.markdownTocShort,
+        )
+      } else {
+        // Toplevel rendering normalizes trailing newlines after a ToC at EOF.
+        renderedOutput.full = renderedOutput.full.replace(
+          renderedOutput.markdownToc.trimEnd(),
+          renderedOutput.markdownTocShort.trimEnd(),
+        )
+      }
+    }
+  }
+
+  // Preserve canonical filenames (especially README.md), but give an oversized
+  // nonsplit page the content and cross-file links of its split counterpart.
+  const splitById = new Map()
+  for (const renderedOutput of Object.values(renderedOutputs)) {
+    if (renderedOutput.split && renderedOutput.header_ast !== undefined) {
+      splitById.set(renderedOutput.header_ast.id, renderedOutput)
+    }
+  }
+  for (const renderedOutput of Object.values(renderedOutputs)) {
+    if (
+      !renderedOutput.split &&
+      renderedOutput.header_ast !== undefined &&
+      byteLength(renderedOutput.full) >= maxBytes
+    ) {
+      const splitOutput = splitById.get(renderedOutput.header_ast.id)
+      if (splitOutput !== undefined) {
+        renderedOutput.full = splitOutput.full
+      }
+    }
+  }
+
+  // A single header section has no safe automatic boundary left. Keep it so no
+  // content is lost, but warn that GitHub might not render it.
+  for (const [outputPath, renderedOutput] of Object.entries(renderedOutputs)) {
+    const bytes = byteLength(renderedOutput.full)
+    if (bytes >= maxBytes) {
+      context.extra_returns.warnings.push(new WarningMessage(
+        `Markdown output "${outputPath}" is ${bytes} bytes; it must be smaller than ${maxBytes} bytes. Add a child header to split this section further.`,
+        renderedOutput.header_ast.source_location,
+      ))
+    }
+  }
+}
 
 /** Convert an argument to an XSS-safe output string.
  *
@@ -4028,6 +4104,7 @@ function convertInitContext(options={}, extra_returns={}) {
 
   extra_returns.debug_perf = {};
   extra_returns.errors = [];
+  extra_returns.warnings = [];
   extra_returns.rendered_outputs = {};
   const context = {
     // path -> { 'directory', 'file' }
@@ -9085,6 +9162,12 @@ const OUTPUT_FORMAT_HTML = 'html';
 exports.OUTPUT_FORMAT_HTML = OUTPUT_FORMAT_HTML
 const OUTPUT_FORMAT_MARKDOWN = 'md';
 exports.OUTPUT_FORMAT_MARKDOWN = OUTPUT_FORMAT_MARKDOWN
+// GitHub documents a general formatted-text preview threshold around 2 MB, but
+// repository landing pages truncate README blobs at 512 KiB. github-md always
+// produces README files, so use the lower limit for every output consistently.
+// https://github.com/orgs/community/discussions/23920
+const GITHUB_MARKDOWN_MAX_BYTES = 512 * 1024
+exports.GITHUB_MARKDOWN_MAX_BYTES = GITHUB_MARKDOWN_MAX_BYTES
 const OUTPUT_FORMAT_ASCIIDOC = 'adoc';
 exports.OUTPUT_FORMAT_ASCIIDOC = OUTPUT_FORMAT_ASCIIDOC
 const OUTPUT_FORMAT_ID = 'id';
@@ -10545,7 +10628,7 @@ function markupFilePreview(ast, context, asciidoc) {
   return asciidoc ? `image::${src}[${alt}]\n\n` : `![${alt}](${src})\n\n`
 }
 
-function markdownToc(ast, context) {
+function markdownToc(ast, context, maxDepth=Infinity) {
   const lines = []
   const visit = (nodes, depth) => {
     for (const node of nodes) {
@@ -10555,6 +10638,17 @@ function markdownToc(ast, context) {
         const dbTargetAst = context.db_provider.get(targetAst.id, context)
         if (dbTargetAst !== undefined) hrefTargetAst = dbTargetAst
       }
+      let hrefContext = context
+      if (context.in_split_headers) {
+        // Same-source descendants only exist on their split pages. Included
+        // source files, however, have canonical nonsplit Markdown pages of
+        // their own and ToCs should prefer those over *-split.md alternates.
+        hrefContext = cloneAndSet(
+          context,
+          'to_split_headers',
+          hrefTargetAst.source_location.path === context.toplevel_ast.source_location.path,
+        )
+      }
       const targetMacro = context.macros[targetAst.macro_name]
       const titleArg = targetMacro.options.get_title_arg(targetAst, context)
       const title = targetAst.macro_name === Macro.HEADER_MACRO_NAME
@@ -10563,8 +10657,10 @@ function markdownToc(ast, context) {
           titleArg,
           cloneAndSet(context, 'renderXAsHref', true)
         ))
-      lines.push(`${'  '.repeat(depth)}- [${title}](${xHref(hrefTargetAst, context)})`)
-      visit(node.children, depth + 1)
+      lines.push(`${'  '.repeat(depth)}- [${title}](${xHref(hrefTargetAst, hrefContext)})`)
+      if (depth + 1 < maxDepth) {
+        visit(node.children, depth + 1)
+      }
     }
   }
   visit(ast.header_tree_node.children, 0)
@@ -10805,6 +10901,19 @@ function makeMarkupConvertFuncs(asciidoc=false) {
       context.markdownHeadingSlugCounts = new Map()
       let firstHeaderAst
       let tocRendered = false
+      const renderMarkupToc = () => {
+        const toc = asciidoc ? 'toc::[]\n\n' : markdownToc(firstHeaderAst, context)
+        if (toc) {
+          ret += toc
+          context.last_render = toc
+          if (!asciidoc && context.toplevel_output_path !== undefined) {
+            const renderedOutput = context.extra_returns.rendered_outputs[context.toplevel_output_path]
+            renderedOutput.markdownToc = toc
+            renderedOutput.markdownTocShort = markdownToc(firstHeaderAst, context, 1)
+          }
+        }
+        tocRendered = true
+      }
       for (const childAst of ast.args[Macro.CONTENT_ARGUMENT_NAME] || []) {
         if (
           childAst.macro_name === Macro.HEADER_MACRO_NAME &&
@@ -10813,15 +10922,13 @@ function makeMarkupConvertFuncs(asciidoc=false) {
           if (firstHeaderAst === undefined) {
             firstHeaderAst = childAst
           } else if (!tocRendered) {
-            const toc = asciidoc ? 'toc::[]\n\n' : markdownToc(firstHeaderAst, context)
-            if (toc) {
-              ret += toc
-              context.last_render = toc
-            }
-            tocRendered = true
+            renderMarkupToc()
           }
         }
         ret += childAst.render(context)
+      }
+      if (!asciidoc && firstHeaderAst !== undefined && !tocRendered) {
+        renderMarkupToc()
       }
       return ret.replace(/\n+$/, '') + '\n'
     },

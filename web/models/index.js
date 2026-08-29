@@ -410,6 +410,12 @@ async function sync(sequelize, opts={}) {
     await sequelizeCreateTriggerUpdateCount(sequelize, Issue, Comment, 'commentCount', 'issueId')
     await sequelizeCreateTriggerUpdateCount(sequelize, Article, Issue, 'issueCount', 'articleId')
     await sequelizeCreateTriggerUpdateCount(
+      sequelize, Topic, Article, 'articleCount', 'topicId', {
+        articleTableIdField: 'topicId',
+        countBooleanField: 'list',
+        nameExtra: 'topic_article_count',
+      })
+    await sequelizeCreateTriggerUpdateCount(
       sequelize, User, Issue, 'discussionCount', 'authorId', {
         countBooleanField: 'list',
         nameExtra: 'user_discussion_count',

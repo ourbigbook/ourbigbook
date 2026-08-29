@@ -230,7 +230,7 @@ function WebMeta({
       {' '}
       {!isIndex &&
         <a className="by-others btn" href={routes.topic(curArticle.topicId)} title="Articles by others on the same topic">
-          <TopicIcon title={null} /> {curArticle.topicCount - 1}{toplevel ? <> By others<span className="mobile-hide"> on same topic</span></> : ''}
+          <TopicIcon title={null} /> {curArticle.topicCount - (curArticle.list === false ? 0 : 1)}{toplevel ? <> By others<span className="mobile-hide"> on same topic</span></> : ''}
         </a>
       }
       {' '}

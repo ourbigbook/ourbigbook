@@ -12,7 +12,7 @@ module.exports = (sequelize) => {
     'Topic',
     {
       articleCount: {
-        // Cache of how many articles have this topic.
+        // Cache of how many listed articles have this topic.
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0,
@@ -236,7 +236,7 @@ FROM (
   INNER JOIN (
     SELECT
       "topicId",
-      COUNT(*) AS "articleCount"
+      SUM(CASE WHEN "list" THEN 1 ELSE 0 END) AS "articleCount"
     FROM "${Article.tableName}"
     GROUP BY "topicId"
     HAVING "topicId" IN (:topicIds)

@@ -83,6 +83,7 @@ const ArticlePageHoc = (isIssue=false) => {
       t0 = performance.now()
     }
     const author = article.author
+    const otherArticlesInTopicCount = article.topicCount - (article.list === false ? 0 : 1)
     const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, article.author.username)
     if (isIssue) {
       useEEditIssue(canEdit, issueArticle.slug, article.number)
@@ -156,12 +157,12 @@ const ArticlePageHoc = (isIssue=false) => {
           <>
             <h2 className="content-not-ourbigbook">
               <CustomLink href={routes.topic(article.topicId)}>
-                <TopicIcon /> Articles by others on the same topic <span className="meta">({ article.topicCount - 1 })</span>
+                <TopicIcon /> Articles by others on the same topic <span className="meta">({otherArticlesInTopicCount})</span>
               </CustomLink>
             </h2>
             <ArticleList {...{
               articles: otherArticlesInTopic,
-              articlesCount: article.topicCount,
+              articlesCount: otherArticlesInTopicCount,
               handleShortFragmentSkipOnce,
               loggedInUser,
               showAuthor: true,

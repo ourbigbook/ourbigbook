@@ -136,6 +136,7 @@ async function createArticles(sequelize, author, opts) {
   const { articles } = await convert.convertArticle({
     author,
     bodySource: articleArg.bodySource,
+    list: opts.list,
     path: opts.path,
     parentId: articleArg.parentId || `${ourbigbook.AT_MENTION_CHAR}${author.username}`,
     render: opts.render,
@@ -769,6 +770,12 @@ it('Article.updateTopicsNewArticles', async function() {
   }
 
   const articles = []
+  const unlistedArticle = await createArticle(sequelize, users[0], { i: 100, list: false })
+  assertRows(
+    await getTopicIds(['title-100']),
+    [{ articleId: unlistedArticle.id, articleCount: 0 }]
+  )
+
   articles.push(await createArticle(sequelize, users[0], { i: 0 }))
   assertRows(
     await getTopicIds(['title-0']),
@@ -790,6 +797,18 @@ it('Article.updateTopicsNewArticles', async function() {
   articles.push(await createArticle(sequelize, users[1], { i: 99, path: 'title-0' }))
   // The topic title-0 is tied with two different titles, "Title 0" and "Title 99".
   // So we keep the oldest one, "Title 0".
+  assertRows(
+    await getTopicIds(['title-0']),
+    [{ articleId: articles[0].id, articleCount: 2 }]
+  )
+
+  // Listing changes update the cached topic count immediately.
+  await articles[1].update({ list: false })
+  assertRows(
+    await getTopicIds(['title-0']),
+    [{ articleId: articles[0].id, articleCount: 1 }]
+  )
+  await articles[1].update({ list: true })
   assertRows(
     await getTopicIds(['title-0']),
     [{ articleId: articles[0].id, articleCount: 2 }]

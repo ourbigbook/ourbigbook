@@ -275,6 +275,7 @@ A full blown showcase knowledge base can be seen at:
 * https://github.com/ourbigbook/ourbigbook/issues[]: project issue tracker
 * https://github.com/ourbigbook/ourbigbook/blob/master/index.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
+  * https://github.com/ourbigbook/docs-md[]: a version of this document rendered as Markdown
 * https://docs.ourbigbook.com/_obb/dist/editor[]: live in-browser editor demo
 * https://github.com/ourbigbook/template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
   * https://ourbigbook.github.io/template[]: the above <published to GitHub Pages>
@@ -7828,6 +7829,10 @@ TODO find some upstream discussion.
 {parent=`--publish-target`}
 
 Publishes Markdown directly to a GitHub repository. Both nonsplit `.md` documents and the `.md` files produced by <split headers> are included, cross-file links target those Markdown files, and generated `index.md` files are named `README.md` so directory landing pages work naturally on GitHub.
+
+Some demos:
+* https://github.com/ourbigbook/docs-md[]: a render of this documentation
+* https://github.com/cirosantilli/cirosantilli.github.io-md[]: a render of https://github.com/cirosantilli/cirosantilli.github.io[]
 
 GitHub documents a general formatted-text preview threshold of approximately 2 MB: https://docs.github.com/repositories/creating-and-managing-repositories/repository-limits#text-limits However, repository landing pages truncate README files at 512 KiB: https://github.com/orgs/community/discussions/23920 Because this target produces README files, it conservatively applies the lower 512 KiB limit to every generated Markdown file. Where a safe header boundary exists, an oversized nonsplit page is automatically replaced by its split-header version. Its table of contents links included source files to their canonical nonsplit `.md` pages rather than their `-split.md` alternates. If the recursive table of contents would still make a split page too large, only its first child level is included. A single header section that remains too large cannot be split safely, so publication continues with a warning asking for another child header.
 

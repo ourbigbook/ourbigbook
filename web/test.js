@@ -319,6 +319,18 @@ afterEach(async function () {
   return this.currentTest.sequelize.close()
 })
 
+it('routes percent-encode article and topic path components', function() {
+  const slug = 'user0/%51978?#[] 你好'
+  const encodedSlug = 'user0/%2551978%3F%23%5B%5D%20%E4%BD%A0%E5%A5%BD'
+  assert.strictEqual(routes.decodeUrlPath(encodedSlug), slug)
+  assert.strictEqual(routes.decodeUrlPath('user0/%not-an-escape'), 'user0/%not-an-escape')
+  assert.strictEqual(routes.article(slug), `/${encodedSlug}`)
+  assert.strictEqual(routes.articleSource(slug), `/go/source/${encodedSlug}`)
+  assert.strictEqual(routes.issue(slug, 1), `/go/discussion/1/${encodedSlug}`)
+  assert.strictEqual(routes.topic(slug), `/go/topic/${encodedSlug}`)
+  assert.strictEqual(routes.userArticlesChildren('user0', slug), `/go/user/user0/children/${encodedSlug}`)
+})
+
 it('getList', function() {
   function parse(listed) {
     const res = { statusCode: 200 }
@@ -5726,6 +5738,22 @@ it(`api: explicit id`, async () => {
     ;({data, status} = await createOrUpdateArticleApi(test, article,))
     assertStatus(status, data)
     assert.strictEqual(data.articles[0].slug, 'user0/qwer')
+
+    // Explicit IDs may contain URL-significant characters. Links to them must
+    // preserve the ID through the browser's single URL-decoding pass.
+    ;({data, status} = await createOrUpdateArticleApi(
+      test,
+      createArticleArg({ i: 1, titleSource: 'Percent ID' }),
+      { path: '%51978' },
+    ))
+    assertStatus(status, data)
+    assert.strictEqual(data.articles[0].slug, 'user0/%51978')
+    ;({data, status} = await createOrUpdateArticleApi(
+      test,
+      createArticleArg({ i: 2, titleSource: 'Link to percent ID', bodySource: '\\x[%51978]' }),
+    ))
+    assertStatus(status, data)
+    assert.match(data.articles[0].render, /href="\/user0\/%2551978"/)
   })
 })
 

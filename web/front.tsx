@@ -10,6 +10,7 @@ import ourbigbook, {
   INCOMING_LINKS_MARKER,
   TAGS_MARKER,
   URL_SEP,
+  encodeUrlPath,
   htmlCreatedUpdatedPills,
 } from 'ourbigbook'
 
@@ -622,12 +623,12 @@ export function getShortFragFromLongForPath(fragNoHash, pathNoSlash) {
 }
 
 export function getShortFragFromLong(fragNoHash) {
-  return getShortFragFromLongForPath(fragNoHash, window.location.pathname.substring(1))
+  return getShortFragFromLongForPath(fragNoHash, routes.decodeUrlPath(window.location.pathname.substring(1)))
 }
 
 /** Modify the current URL to have this hash. Do not add alter browser history. */
 export function replaceFrag(fragNoHash) {
-  const newUrl = window.location.pathname + window.location.search + '#' + fragNoHash
+  const newUrl = window.location.pathname + window.location.search + '#' + encodeUrlPath(fragNoHash)
   // Using this internal-looking API works. Not amazing, bu we can't find a better way.
   // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
   // https://github.com/vercel/next.js/discussions/18072
@@ -641,7 +642,7 @@ export function replaceFrag(fragNoHash) {
 /** Input: we are in an url with long fragment such as #barack-obama/mathematics
  * Outcome: replace the URL fragment with the corresponding short one without altering browser history. */
 export function replaceShortFrag() {
-  replaceFrag(getShortFragFromLong(window.location.hash.substring(1)))
+  replaceFrag(getShortFragFromLong(routes.decodeUrlPath(window.location.hash.substring(1))))
 }
 
 /** Use explicit .target class to overcome https://github.com/ourbigbook/ourbigbook/issues/302 */
@@ -662,7 +663,7 @@ export function shortFragGoTo(
   targetElem: HTMLElement
 ) {
   handleShortFragmentSkipOnce.current = true
-  window.location.hash = longFrag
+  window.location.hash = encodeUrlPath(longFrag)
   replaceFrag(shortFrag)
   fragSetTarget(targetElem)
 }

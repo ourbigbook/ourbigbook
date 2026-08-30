@@ -51,7 +51,7 @@ import routes from 'front/routes'
 import { cant } from 'front/cant'
 import CustomLink from 'front/CustomLink'
 import FollowArticleButton from 'front/FollowArticleButton'
-import { htmlEscapeAttr } from 'ourbigbook'
+import { encodeUrlPath, htmlEscapeAttr } from 'ourbigbook'
 
 import {
   ANCESTORS_ID,
@@ -90,15 +90,13 @@ const NEW_MODAL_BUTTON_CLASS = 'new-modal'
 
 function LinkListNoTitle({
   articles,
-  linkPref,
 }: {
   articles: ArticleType[],
-  linkPref: string,
 }) {
   return <ul>
     {articles.map(a =>
       <li key={a.slug}><a
-        href={`${linkPref}${a.slug}`}
+        href={routes.article(a.slug)}
         className="ourbigbook-title"
         dangerouslySetInnerHTML={{ __html: a.titleRenderWithScope }}
       ></a></li>
@@ -167,7 +165,6 @@ function LinkList(
   idUnreserved: string,
   marker: string,
   title: string,
-  linkPref: string,
   opts: any ={},
 ) {
   let { href } = opts
@@ -185,7 +182,7 @@ function LinkList(
         <span className="meta">({ articles.length })</span>
       </a>
     </h2>
-    <LinkListNoTitle {...{ articles, linkPref }} />
+    <LinkListNoTitle {...{ articles }} />
   </>
 }
 
@@ -484,10 +481,6 @@ export default function Article({
       </CustomLink>
     </>
   }
-  let linkPref: string|undefined
-  if (!isIssue) {
-    linkPref = '../'.repeat(article.slug.split('/').length - 1)
-  }
   const articlesInSamePageMap = {}
   const articlesInSamePageMapForToc = {}
   if (!isIssue) {
@@ -570,9 +563,9 @@ export default function Article({
           frag = window.location.hash
         }
         // algebra
-        const fragNoHash = frag.substring(1)
+        const fragNoHash = routes.decodeUrlPath(frag.substring(1))
         // mathematics
-        const pathNoSlash = window.location.pathname.substring(1)
+        const pathNoSlash = routes.decodeUrlPath(window.location.pathname.substring(1))
         // mathematics/
         const path = pathNoSlash + '/'
         if (frag) {
@@ -633,12 +626,12 @@ export default function Article({
               // jump to the ID and highlight it.. This triggers a onhashchange event
               // which will call this function once again. The next call will then immediately
               // convert long ID to short ID.
-              window.location.replace('#' + fullid)
+              window.location.replace('#' + encodeUrlPath(fullid))
             } else {
               // ID is not on page anymore because too many articles were added before it on the same page,
               // assume toplevel does not have scope for now. TODO get that information from DB and make the
               // correct assumption here instead.
-              Router.replace('/' + fullid)
+              Router.replace('/' + encodeUrlPath(fullid))
             }
           } else {
             // Long URL and present in page. Let's shorten it without triggering
@@ -649,9 +642,9 @@ export default function Article({
             // https://github.com/vercel/next.js/discussions/18072
             let newUrl
             if (handleShortFragmentCurrentFragType === 'long') {
-              newUrl = window.location.pathname + window.location.search + '#' + getShortFragFromLong(fragNoHash)
+              newUrl = window.location.pathname + window.location.search + '#' + encodeUrlPath(getShortFragFromLong(fragNoHash))
             } else if (handleShortFragmentCurrentFragType === 'abs') {
-              newUrl = window.location.pathname + window.location.search + '#' + AT_MENTION_CHAR + fragNoHash
+              newUrl = window.location.pathname + window.location.search + '#' + encodeUrlPath(AT_MENTION_CHAR + fragNoHash)
             }
             window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
             // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
@@ -698,9 +691,9 @@ export default function Article({
                 // We are certain that these links are of form #barack-obama/mathematics
                 // and that they point to something present in the current page.
                 // E.g. barack-obama/mathematics. So the handling can be a bit simplified.
-                const frag = new URL(a.href).hash.substring(1)
+                const frag = routes.decodeUrlPath(new URL(a.href).hash.substring(1))
                 const shortFrag = getShortFragFromLong(frag)
-                a.href = '#' + shortFrag
+                a.href = '#' + encodeUrlPath(shortFrag)
                 a.addEventListener(
                   'click',
                   (ev) => {
@@ -801,14 +794,16 @@ export default function Article({
             ) {
               // E.g. barack-obama/mathematics
               let frag
+              const urlFrag = routes.decodeUrlPath(url.hash.slice(1))
+              const urlPath = routes.decodeUrlPath(url.pathname.slice(1))
               if (url.hash) {
                 // This could happen with a raw link like \a[#barack-obama/mathematics]...
                 // Shorthand, but someone Will do it.
-                frag = url.hash.slice(1)
+                frag = urlFrag
               } else {
                 // + 1 for the '/' that prefixes every link.
                 // https://github.com/ourbigbook/ourbigbook/issues/283
-                frag = url.pathname.slice(1)
+                frag = urlPath
               }
               const targetElem = document.getElementById(frag)
               let goToTargetInPage
@@ -824,11 +819,11 @@ export default function Article({
                 !url.search
               ) {
                 goToTargetInPage = true
-                a.href = '#' + shortFrag
+                a.href = '#' + encodeUrlPath(shortFrag)
               } else {
                 goToTargetInPage = false
-                const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
-                a.href = url.pathname + url.search + (frag ? ('#' + frag) : '')
+                const frag = getShortFragFromLongForPath(urlFrag, urlPath)
+                a.href = url.pathname + url.search + (frag ? ('#' + encodeUrlPath(frag)) : '')
               }
               a.addEventListener('click', e => {
                 if (
@@ -873,7 +868,6 @@ export default function Article({
     handleShortFragmentSkipOnce,
     isIssue,
     issueArticle,
-    linkPref,
     loggedInUser,
   ])
   let html = ''
@@ -889,7 +883,7 @@ export default function Article({
           if (ancestor.hasScope) {
             ancestorHtmls.push(renderToString(
               <a
-                href={`${linkPref}${ancestor.slug}`}
+                href={routes.article(ancestor.slug)}
                 dangerouslySetInnerHTML={{ __html: ancestor.titleRender }}
               />
             ))
@@ -909,7 +903,7 @@ export default function Article({
           htmlAncestorLinks(
             ancestors.slice(Math.max(ancestors.length - ANCESTORS_MAX, 1)).map(a => { return {
               content: a.titleRender,
-              href: ` href="${linkPref}${htmlEscapeAttr(a.slug)}"`,
+              href: ` href="${htmlEscapeAttr(routes.article(a.slug))}"`,
             }}),
             ancestors.length,
             { addSpaceBeforeFirst: true }
@@ -980,7 +974,7 @@ export default function Article({
           : undefined
         ,
         content,
-        href: ` href="/${href}"`,
+        href: ` href="${htmlEscapeAttr(routes.article(href))}"`,
         level,
         has_child: i < articlesInSamePageForToc.length - 1 && articlesInSamePageForToc[i + 1].depth > a.depth,
         // A quick hack as it will be easier to do it here than to modify the link generation.
@@ -1044,7 +1038,7 @@ export default function Article({
       if (a.taggedArticles) {
         html += `<p><a href="${routes.userArticlesTagged(a.author.username, a.topicId)}"><b>${TAGS_MARKER} Tagged</b></a></p>`
         html += '<div className="content-not-ourbigbook">'
-        html += renderToString(LinkListNoTitle( {...{ articles: a.taggedArticles, linkPref } }))
+        html += renderToString(LinkListNoTitle({ articles: a.taggedArticles }))
         //for (const t of a.taggedArticles) {
         //  html += `<a href="${t.slug}">${t.titleRender}</a>`
         //}
@@ -1177,7 +1171,6 @@ export default function Article({
                   TAGGED_ID_UNRESERVED,
                   TAGS_MARKER,
                   'Tagged',
-                  linkPref,
                   { href: routes.userArticlesTagged(article.author.username, article.topicId) }
                 )}
                 {(ancestors.length !== 0) && <>
@@ -1195,7 +1188,7 @@ export default function Article({
                     {ancestors.slice().reverse().map(a =>
                       // Don't need href=../a.slug because this section cannot appear on the index page.
                       <li key={a.slug}><a
-                        href={`${linkPref}${a.slug}`}
+                        href={routes.article(a.slug)}
                         dangerouslySetInnerHTML={{ __html: a.titleRender }}
                       ></a></li>
                     )}
@@ -1206,10 +1199,9 @@ export default function Article({
                   INCOMING_LINKS_ID_UNRESERVED,
                   INCOMING_LINKS_MARKER,
                   'Incoming links',
-                  linkPref,
                   { href: routes.userArticlesIncoming(article.author.username, article.topicId) },
                 )}
-                {LinkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms', linkPref)}
+                {LinkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms')}
                 <p className="navlink"><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></p>
               </div>
               <h2>

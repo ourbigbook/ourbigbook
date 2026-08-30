@@ -4855,6 +4855,12 @@ function htmlEscapeAttr(str) {
 }
 exports.htmlEscapeAttr = htmlEscapeAttr
 
+/** Percent-encode a URL path while preserving its component separators. */
+function encodeUrlPath(path, pathSep='/') {
+  return path.split(pathSep).map(encodeURIComponent).join(pathSep)
+}
+exports.encodeUrlPath = encodeUrlPath
+
 
 /* This does some extra percent encoding conversions that are not
  * stricly required by HTML itself in general, e.g.:
@@ -8651,6 +8657,9 @@ function xHrefParts(target_ast, context) {
   if (href_path && context.options.x_absolute) {
     href_path = '/' + href_path
   }
+  if (context.options.webMode) {
+    href_path = encodeUrlPath(href_path, context.options.path_sep)
+  }
 
   // Fragment
   if (
@@ -11095,7 +11104,7 @@ function makeMarkupConvertFuncs(asciidoc=false) {
       let href
       if (ast.validation_output.topic.boolean) {
         const topicId = titleToIdContext(target_id_raw, undefined, context)
-        href = `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${topicId}`
+        href = `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${context.options.webMode ? encodeUrlPath(topicId) : topicId}`
       } else if (target_ast) {
         href = markdownXHref(target_ast, context)
       } else {
@@ -11932,7 +11941,7 @@ const OUTPUT_FORMATS_LIST = [
                     if (topicId) {
                       const textComponentsAdvance = k * 2 - 1
                       let xContent = textComponents.slice(textComponentsI, textComponentsI + textComponentsAdvance).join('')
-                      ret += `<a href="${htmlEscapeHrefAttr(`/${WEB_TOPIC_PATH}/${topicId}`)}" class="t">` +
+                      ret += `<a href="${htmlEscapeHrefAttr(`/${WEB_TOPIC_PATH}/${encodeUrlPath(topicId)}`)}" class="t">` +
                         `${htmlEscapeContent(xContent)}` +
                       `</a>`
                       // Topic found, wrap it into a topic link.
@@ -12313,7 +12322,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
             if (content_arg !== undefined) {
               topicTitle = renderArg(content_arg, context)
             }
-            href = htmlAttr('href', `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${topicId}`)
+            href = htmlAttr('href', `${context.options.webMode ? URL_SEP : context.webUrl}${WEB_TOPIC_PATH}${URL_SEP}${context.options.webMode ? encodeUrlPath(topicId) : topicId}`)
             content = topicTitle
           } else {
             if (target_ast) {

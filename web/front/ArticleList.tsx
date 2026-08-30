@@ -37,6 +37,7 @@ import { encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web
 import {
   AT_MENTION_CHAR,
   UNICODE_SEARCH_CHAR,
+  encodeUrlPath,
   formatDate,
 } from 'ourbigbook'
 import {
@@ -344,18 +345,20 @@ const ArticleList = ({
                                             let longFrag
                                             let goToTargetInPage = false
                                             let targetElem
+                                            const urlFrag = routes.decodeUrlPath(url.hash.slice(1))
+                                            const urlPath = routes.decodeUrlPath(url.pathname.slice(1))
                                             if (url.hash) {
-                                              frag = url.hash.slice(1)
+                                              frag = urlFrag
                                               targetElem = document.getElementById(frag)
                                               longFrag = AT_MENTION_CHAR + frag
                                               if (targetElem) {
                                                 goToTargetInPage = true
-                                                a.href = '#' + longFrag
+                                                a.href = '#' + encodeUrlPath(longFrag)
                                               }
                                             }
                                             if (!goToTargetInPage) {
-                                              const frag = getShortFragFromLongForPath(url.hash.slice(1), url.pathname.slice(1))
-                                              a.href = url.pathname + (frag ? ('#' + frag) : '')
+                                              const frag = getShortFragFromLongForPath(urlFrag, urlPath)
+                                              a.href = url.pathname + (frag ? ('#' + encodeUrlPath(frag)) : '')
                                             }
                                             a.addEventListener('click', e => {
                                               if (

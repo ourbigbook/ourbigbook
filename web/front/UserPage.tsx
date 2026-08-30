@@ -4,7 +4,7 @@ import React from 'react'
 
 import pluralize from 'pluralize'
 
-import { formatNumberApprox } from 'ourbigbook'
+import { formatDate, formatNumberApprox } from 'ourbigbook'
 
 import {
   ArticleIcon,
@@ -242,6 +242,7 @@ export default function UserPage({
               statuses.map((status, i) => <div className="h2 inline" key={i}>{status}</div>)}
             </div>}
             <div className="user-actions">
+              <span className="pill"><TimeIcon /> Joined {formatDate(user.createdAt)}</span>
               <FollowUserButton {...{ loggedInUser, user, showUsername: false }}/>
               <CustomLink className="btn" href={routes.issueNew(`${username}`)}>
                 <DiscussionIcon /> Message

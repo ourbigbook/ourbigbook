@@ -913,11 +913,17 @@ span.shortcut {
       }
     }
     .user-actions {
+      align-items: center;
+      display: flex;
+      flex-wrap: wrap;
       @media only screen and (max-width: $max-mobile-width) {
-        display: inline;
+        display: inline-flex;
         margin-left: 0.5em;
       }
       margin-bottom: 1em;
+      > .pill {
+        line-height: 24px;
+      }
       >:not(:last-child) {
         margin-right: 0.5ch;
       }

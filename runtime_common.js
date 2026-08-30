@@ -85,6 +85,10 @@ const THEME_STORAGE_KEY = 'ourbigbook-theme'
 exports.THEME_STORAGE_KEY = THEME_STORAGE_KEY
 const THEME_TOGGLE_CLASS = 'ourbigbook-theme-toggle'
 exports.THEME_TOGGLE_CLASS = THEME_TOGGLE_CLASS
+const THEME_TOGGLE_ICON_CLASS = 'ourbigbook-theme-toggle-icon'
+exports.THEME_TOGGLE_ICON_CLASS = THEME_TOGGLE_ICON_CLASS
+const THEME_TOGGLE_LABEL_CLASS = 'ourbigbook-theme-toggle-label'
+exports.THEME_TOGGLE_LABEL_CLASS = THEME_TOGGLE_LABEL_CLASS
 
 function getStoredTheme(storage=window.localStorage) {
   try {
@@ -96,13 +100,28 @@ function getStoredTheme(storage=window.localStorage) {
 exports.getStoredTheme = getStoredTheme
 
 function themeToggleLabel(theme) {
-  return theme === THEME_DARK ? '☀ Light theme' : '☾ Dark theme'
+  return theme === THEME_DARK ? 'Light theme' : 'Dark theme'
 }
 exports.themeToggleLabel = themeToggleLabel
 
+function themeToggleIcon(theme) {
+  // Font Awesome solid sun and moon.
+  return String.fromCharCode(theme === THEME_DARK ? 0xf185 : 0xf186)
+}
+exports.themeToggleIcon = themeToggleIcon
+
 function updateThemeToggleButtons(theme, doc=document) {
   for (const button of doc.getElementsByClassName(THEME_TOGGLE_CLASS)) {
-    button.textContent = themeToggleLabel(theme)
+    if (button.getElementsByClassName) {
+      const icons = button.getElementsByClassName(THEME_TOGGLE_ICON_CLASS)
+      const labels = button.getElementsByClassName(THEME_TOGGLE_LABEL_CLASS)
+      if (icons.length && labels.length) {
+        icons[0].textContent = themeToggleIcon(theme)
+        labels[0].textContent = themeToggleLabel(theme)
+        continue
+      }
+    }
+    button.textContent = `${themeToggleIcon(theme)} ${themeToggleLabel(theme)}`
   }
 }
 exports.updateThemeToggleButtons = updateThemeToggleButtons
@@ -150,7 +169,7 @@ function themeInitJavaScript() {
 exports.themeInitJavaScript = themeInitJavaScript
 
 function themeToggleHtml() {
-  return `<button type="button" class="${THEME_TOGGLE_CLASS}" onclick="ourbigbook_runtime.toggleTheme()">${themeToggleLabel(THEME_LIGHT)}</button>`
+  return `<button type="button" class="${THEME_TOGGLE_CLASS}" onclick="ourbigbook_runtime.toggleTheme()"><span class="fas fa-solid-900 ${THEME_TOGGLE_ICON_CLASS}" aria-hidden="true">&#xf186;</span> <span class="${THEME_TOGGLE_LABEL_CLASS}">${themeToggleLabel(THEME_LIGHT)}</span></button>`
 }
 exports.themeToggleHtml = themeToggleHtml
 

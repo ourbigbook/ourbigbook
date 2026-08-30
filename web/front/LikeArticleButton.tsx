@@ -65,7 +65,7 @@ const LikeArticleButton = ({
   if (showText) {
     count = <span className="counter">{count}</span>
   }
-  let buttonClassNames = ['modal']
+  let buttonClassNames = ['like-button', 'modal']
   let title;
   if (loggedInUser && cantLike) {
     buttonClassNames.push('disabled')

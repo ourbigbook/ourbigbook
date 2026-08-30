@@ -3,13 +3,23 @@ $ourbigbook-include-theme: false;
 
 :root {
   @include ourbigbook-theme-light;
+  --ourbigbook-like-button-highlight-background-color: #FF1493;
+  --ourbigbook-like-button-highlight-border-color: var(--ourbigbook-color);
 }
 :root[data-ourbigbook-theme='dark'] {
   @include ourbigbook-theme-dark;
+  --ourbigbook-like-button-highlight-background-color: #BB1070;
+  --ourbigbook-like-button-highlight-border-color: #CCC;
+}
+:root[data-ourbigbook-theme='dark'] .ourbigbook-theme-toggle {
+  background-color: var(--ourbigbook-button-background-color);
+  border: 1px solid var(--ourbigbook-button-border-color);
 }
 
 // Colors
 $like-button-inactive-color: white;
+$like-button-highlight-background-color: var(--ourbigbook-like-button-highlight-background-color);
+$like-button-highlight-border-color: var(--ourbigbook-like-button-highlight-border-color);
 $like-button-hover-color: #FF1493;
 $img-background-color: white;
 
@@ -86,7 +96,7 @@ button, a.btn {
   &:not(.disabled):not(:disabled) {
     // We make hover more visible than active because it glares too much
     // when you have an article list with lost of like buttons.
-    &, &:hover.active {
+    & {
       background-color: $button-background-color;
       color: $button-color;
       .icon-heart {
@@ -101,16 +111,19 @@ button, a.btn {
         color: white;
       }
     }
-    &:hover:not(.active) {
-      &.modal {
-        background-color: $like-button-hover-color;
+    &:hover.modal, &.active.modal {
+      background-color: $like-button-highlight-background-color;
+      border-color: $like-button-highlight-border-color;
+    }
+    &.active.like-button:hover {
+      background-color: $button-background-color;
+      border-color: $button-border-color;
+      color: $button-color;
+      .icon-heart {
+        color: $like-button-hover-color;
       }
     }
-    &:not(:hover).active.modal {
-      background-color: $like-button-hover-color;
-    }
   }
-      //background-color: #BB1070;
   &.disabled, &:disabled {
     background-color: $button-disabled-background-color;
     color: $button-disabled-color;

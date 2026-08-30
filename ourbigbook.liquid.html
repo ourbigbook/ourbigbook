@@ -31,7 +31,6 @@
 <main class="ourbigbook">
 {{ body }}</main>
 <footer>
-<div>{{ theme_toggle }}</div>
 <div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
 <div><a href="{{ dir_relpath }}{{ html_index }}">Website source code</a></div>
 {% comment %}
@@ -41,7 +40,9 @@
 <div>Source code for this page: <a href="https://github.com/ourbigbook/ourbigbook/blob/{{ git_sha }}/{{ input_path }}">{{ input_path }}</a></div>
 {% endif %}
 {% endcomment %}{% if input_path != "" %}<div>Source code for this page: <a href="{{ file_relpath }}/{{ input_path }}{{ out_ext }}">{{ input_path }}</a></div>
-{% endif %}</footer>
+{% endif %}
+<div>{{ theme_toggle }}</div>
+</footer>
 {% if publishTargetIsWebsite %}{% comment %}Google Analytics, AKA selling my soul to Google for some backlinks.{% endcomment %}<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
 <script>
   window.dataLayer = window.dataLayer || [];

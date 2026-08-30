@@ -2,8 +2,11 @@ import React from 'react'
 
 const {
   THEME_LIGHT,
+  THEME_TOGGLE_ICON_CLASS,
+  THEME_TOGGLE_LABEL_CLASS,
   getStoredTheme,
   setTheme,
+  themeToggleIcon,
   themeToggleLabel,
   toggleTheme,
 } = require('ourbigbook/runtime_common')
@@ -20,7 +23,11 @@ const ThemeToggle = () => {
     className="ourbigbook-theme-toggle"
     onClick={() => setThemeState(toggleTheme())}
   >
-    {themeToggleLabel(theme)}
+    <span className={`fas fa-solid-900 ${THEME_TOGGLE_ICON_CLASS}`} aria-hidden="true">
+      {themeToggleIcon(theme)}
+    </span>
+    {' '}
+    <span className={THEME_TOGGLE_LABEL_CLASS}>{themeToggleLabel(theme)}</span>
   </button>
 }
 

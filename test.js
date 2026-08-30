@@ -60,12 +60,12 @@ describe('theme', function () {
     assert.strictEqual(theme.setTheme(theme.THEME_DARK, { doc, storage }), theme.THEME_DARK)
     assert.strictEqual(attributes.get(theme.THEME_ATTRIBUTE), theme.THEME_DARK)
     assert.strictEqual(values.get(theme.THEME_STORAGE_KEY), theme.THEME_DARK)
-    assert.deepStrictEqual(buttons.map(button => button.textContent), ['☀ Light theme', '☀ Light theme'])
+    assert.deepStrictEqual(buttons.map(button => button.textContent), [' Light theme', ' Light theme'])
 
     assert.strictEqual(theme.toggleTheme({ doc, storage }), theme.THEME_LIGHT)
     assert.strictEqual(attributes.has(theme.THEME_ATTRIBUTE), false)
     assert.strictEqual(values.get(theme.THEME_STORAGE_KEY), theme.THEME_LIGHT)
-    assert.deepStrictEqual(buttons.map(button => button.textContent), ['☾ Dark theme', '☾ Dark theme'])
+    assert.deepStrictEqual(buttons.map(button => button.textContent), [' Dark theme', ' Dark theme'])
   })
 })
 
@@ -13165,7 +13165,8 @@ assert_cli(
     },
     assert_xpath: {
       [`${TMP_DIRNAME}/html/index.html`]: [
-        "//x:footer/x:button[@type='button' and contains(@class, 'ourbigbook-theme-toggle') and text()='☾ Dark theme']",
+        "//x:footer/x:button[@type='button' and contains(@class, 'ourbigbook-theme-toggle')]/x:span[contains(concat(' ', normalize-space(@class), ' '), ' fas ') and contains(@class, 'fa-solid-900') and contains(@class, 'ourbigbook-theme-toggle-icon')]",
+        "//x:footer/x:button/x:span[contains(@class, 'ourbigbook-theme-toggle-label') and text()='Dark theme']",
       ],
     },
   }

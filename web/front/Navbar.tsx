@@ -70,7 +70,7 @@ const Navbar = ({ clearScoreDelta, isEditor, loggedInUser }) => {
             href={routes.userLiked(loggedInUser?.username)}
             className={`score${ scoreDelta ? ` changed` : '' }`}
           >
-            <LikeIcon /> <span className="txt">+{scoreDelta}</span>
+            <LikeIcon /><span className="txt">+{scoreDelta}</span>
           </NavLink>
           <NavLink
             href={routes.user(loggedInUser?.username)}
@@ -81,7 +81,7 @@ const Navbar = ({ clearScoreDelta, isEditor, loggedInUser }) => {
               className="profile-thumb"
               src={loggedInUser?.effectiveImage}
             />
-            {loggedInUser?.score}<LikeIcon />
+            {loggedInUser?.score}
           </NavLink>
         </Maybe>
         <Maybe test={!loggedInUser}>

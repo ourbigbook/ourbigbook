@@ -555,12 +555,14 @@ div.tab-list {
     // But bloody Firefox then prevents the entire line from breaking up and hides items!
     // So we keep the less broken but not ideal option.
     white-space: pre-line;
-    &.active {
-      color: $tab-bar-active-color;
-    }
-    &:hover {
+    &.active, &:hover {
       color: $tab-bar-active-color;
       background-color: $button-hover-background-color;
+      text-decoration: underline;
+      text-underline-offset: 0.3em;
+    }
+    &.active {
+      text-underline-offset: 0.4em;
     }
   }
 }
@@ -839,6 +841,8 @@ span.shortcut {
           border-color: $color;
           color: $tab-bar-active-color;
           font-weight: bold;
+          text-decoration: underline;
+          text-underline-offset: 0.3em;
         }
       }
     }
@@ -1035,6 +1039,9 @@ nav.navbar {
         color: $h-color;
       }
     }
+    &.score .icon-heart {
+      margin-right: 0.2em;
+    }
     &.profile {
       padding-left: 3px;
     }
@@ -1074,6 +1081,11 @@ nav.navbar {
       .icon {
         color: $navbar-background-color;
       }
+    }
+    &.score:not(.changed) .icon-heart {
+      -webkit-text-stroke: 1px #000;
+      color: #fff;
+      paint-order: stroke fill;
     }
   }
   .brand-group {

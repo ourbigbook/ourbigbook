@@ -90,6 +90,24 @@ exports.THEME_TOGGLE_ICON_CLASS = THEME_TOGGLE_ICON_CLASS
 const THEME_TOGGLE_LABEL_CLASS = 'ourbigbook-theme-toggle-label'
 exports.THEME_TOGGLE_LABEL_CLASS = THEME_TOGGLE_LABEL_CLASS
 
+const TOC_STATE_CLOSED = 'closed'
+exports.TOC_STATE_CLOSED = TOC_STATE_CLOSED
+const TOC_STATE_OPEN = 'open'
+exports.TOC_STATE_OPEN = TOC_STATE_OPEN
+const TOC_STATE_SUMMARIZED = 'summarized'
+exports.TOC_STATE_SUMMARIZED = TOC_STATE_SUMMARIZED
+
+function tocClickNextState(parentClosed, directChildren) {
+  if (parentClosed) {
+    return TOC_STATE_OPEN
+  }
+  if (directChildren.every(child => !child.hasChildren || child.closed)) {
+    return TOC_STATE_CLOSED
+  }
+  return TOC_STATE_SUMMARIZED
+}
+exports.tocClickNextState = tocClickNextState
+
 function getStoredTheme(storage=window.localStorage) {
   try {
     return storage.getItem(THEME_STORAGE_KEY) === THEME_DARK ? THEME_DARK : THEME_LIGHT

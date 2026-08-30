@@ -3106,20 +3106,16 @@ To the left of table of content entries you can click on an open/close icon to t
 
 The main use case covered by the expansion algorithm is as follows:
 * the page starts with all nodes open to facilitate Ctrl + F queries
-* if you click on a node in that sate, you close all its children, to get a summarized overview of the contents
-* if you click one of those children, it opens only its own children, so you can interactively continue exploring the tree
+* if you click an open node, you close its direct branches to get a summarized overview of its contents
+* you can then click it again to close the node itself
+* clicking a closed node opens its entire subtree, after which you can summarize it again
 
 The exact behaviour is:
-* the clicked node is open:
-  * state 1 all children are closed. Action: open all children recursively, which puts us in state 2
-  * state 2: not all children are closed. Action close all children, which puts us in state 1. This gives a good overview of the children, without any children of children getting in the way.
-* state 3: the clicked node is closed (not showing any children). Action: open it to show all direct children, but not further descendants (i.e. close those children). This puts us in state 1.
+* summarized: the clicked node is open and every direct child is either closed or has no children. Action: close the clicked node
+* closed: the clicked node is not showing its children. Action: open the clicked node and all its descendants recursively
+* any other open state, including a fully open or mixed subtree. Action: summarize it by closing every direct child that has children
 
-Note that those rules make it impossible to close a node by clicking on it, the only way to close a node os to click on its parent, the state transitions are:
-* 3 -> 1
-* 1 -> 2
-* 2 -> 1
-but we feel that it is worth it to do things like this to cover the main use case described above without having to add two buttons per entry.
+The main cycle is therefore: summarized -> closed -> fully open -> summarized.
 
 Clicking on the link from a <header> up to the table of contents also automatically opens up the node for you in case it had been previously closed manually.
 

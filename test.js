@@ -69,6 +69,31 @@ describe('theme', function () {
   })
 })
 
+describe('toc runtime', function () {
+  it('cycles summarized, closed, and recursively open states', function () {
+    const leaf = { closed: false, hasChildren: false }
+    const closedBranch = { closed: true, hasChildren: true }
+    const openBranch = { closed: false, hasChildren: true }
+
+    assert.strictEqual(
+      theme.tocClickNextState(false, [leaf, closedBranch]),
+      theme.TOC_STATE_CLOSED,
+    )
+    assert.strictEqual(
+      theme.tocClickNextState(true, [leaf, closedBranch]),
+      theme.TOC_STATE_OPEN,
+    )
+    assert.strictEqual(
+      theme.tocClickNextState(false, [leaf, openBranch]),
+      theme.TOC_STATE_SUMMARIZED,
+    )
+    assert.strictEqual(
+      theme.tocClickNextState(false, [leaf, closedBranch, openBranch]),
+      theme.TOC_STATE_SUMMARIZED,
+    )
+  })
+})
+
 class SplitWebArticlesDbProvider extends DbProviderBase {
   constructor(existingIds={}) {
     super()

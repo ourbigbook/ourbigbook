@@ -21,6 +21,10 @@ const {
   getStoredTheme,
   setTheme,
   titleToId,
+  TOC_STATE_CLOSED,
+  TOC_STATE_OPEN,
+  TOC_STATE_SUMMARIZED,
+  tocClickNextState,
   toggleTheme: toggleThemeCommon,
   USER_FINISHED_TYPING_MS,
 } = require('./runtime_common');
@@ -164,40 +168,39 @@ export function ourbigbook_runtime(toplevel, opts={}) {
         toc_arrow.addEventListener('click', () => {
           // https://docs.ourbigbook.com#table-of-contents-javascript-open-close-interaction
           const parent_li = toc_arrow.parentElement.parentElement
-          let all_children_closed = true
-          let all_children_open = true
-          let was_open
-          if (parent_li.classList.contains(CLOSE_CLASS)) {
-            was_open = false
-            // Open self.
-            parent_li.classList.remove(CLOSE_CLASS)
-          } else {
-            was_open = true
-            // Check if all children are closed.
-            for (const toc_arrow_child of parent_li.childNodes) {
-              if (toc_arrow_child.tagName === 'UL') {
-                for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
-                  if (toc_arrow_child_2.tagName === 'LI') {
-                    if (toc_arrow_child_2.classList.contains(CLOSE_CLASS)) {
-                      all_children_open = false
-                    } else if (toc_arrow_child_2.classList.contains('has-child')) {
-                      all_children_closed = false
-                    }
-                  }
+          const directChildren = []
+          for (const child of parent_li.children) {
+            if (child.tagName === 'UL') {
+              for (const grandchild of child.children) {
+                if (grandchild.tagName === 'LI') {
+                  directChildren.push(grandchild)
                 }
               }
             }
           }
-          for (const toc_arrow_child of parent_li.childNodes) {
-            if (toc_arrow_child.tagName === 'UL') {
-              for (const toc_arrow_child_2 of toc_arrow_child.childNodes) {
-                if (toc_arrow_child_2.tagName === 'LI') {
-                  if (!was_open || (was_open && !all_children_closed)) {
-                    toc_arrow_child_2.classList.add(CLOSE_CLASS)
-                  } else {
-                    toc_arrow_child_2.classList.remove(CLOSE_CLASS)
-                  }
-                }
+          const nextState = tocClickNextState(
+            parent_li.classList.contains(CLOSE_CLASS),
+            directChildren.map(child => ({
+              closed: child.classList.contains(CLOSE_CLASS),
+              hasChildren: child.classList.contains('has-child'),
+            })),
+          )
+          if (nextState === TOC_STATE_OPEN) {
+            // A closed node opens its entire subtree.
+            parent_li.classList.remove(CLOSE_CLASS)
+            for (const descendant of parent_li.querySelectorAll(`li.${CLOSE_CLASS}`)) {
+              descendant.classList.remove(CLOSE_CLASS)
+            }
+          } else if (nextState === TOC_STATE_CLOSED) {
+            // A summarized node can be closed directly.
+            parent_li.classList.add(CLOSE_CLASS)
+          } else if (nextState === TOC_STATE_SUMMARIZED) {
+            // In any expanded or mixed state, show direct children only.
+            for (const child of directChildren) {
+              if (child.classList.contains('has-child')) {
+                child.classList.add(CLOSE_CLASS)
+              } else {
+                child.classList.remove(CLOSE_CLASS)
               }
             }
           }

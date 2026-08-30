@@ -15,6 +15,7 @@ const {
 const ourbigbook_nodejs = require('./nodejs');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
+const theme = require('./runtime_common')
 const { markdownToOurbigbook } = ourbigbook
 const { TMP_DIRNAME } = ourbigbook_nodejs_webpack_safe
 const { DbProviderBase, read_include } = require('./web_api');
@@ -33,6 +34,40 @@ const MAKE_GIT_REPO_PRE_EXEC = [
   ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/ourbigbook-generate.git']],
 ]
 const PATH_SEP = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR
+
+describe('theme', function () {
+  it('toggles, persists, and updates every toggle button', function () {
+    const attributes = new Map()
+    const buttons = [{}, {}]
+    const values = new Map()
+    const doc = {
+      documentElement: {
+        getAttribute: key => attributes.get(key) || null,
+        removeAttribute: key => attributes.delete(key),
+        setAttribute: (key, value) => attributes.set(key, value),
+      },
+      getElementsByClassName: className => {
+        assert.strictEqual(className, theme.THEME_TOGGLE_CLASS)
+        return buttons
+      },
+      querySelector: () => null,
+    }
+    const storage = {
+      getItem: key => values.get(key) || null,
+      setItem: (key, value) => values.set(key, value),
+    }
+
+    assert.strictEqual(theme.setTheme(theme.THEME_DARK, { doc, storage }), theme.THEME_DARK)
+    assert.strictEqual(attributes.get(theme.THEME_ATTRIBUTE), theme.THEME_DARK)
+    assert.strictEqual(values.get(theme.THEME_STORAGE_KEY), theme.THEME_DARK)
+    assert.deepStrictEqual(buttons.map(button => button.textContent), ['☀ Light theme', '☀ Light theme'])
+
+    assert.strictEqual(theme.toggleTheme({ doc, storage }), theme.THEME_LIGHT)
+    assert.strictEqual(attributes.has(theme.THEME_ATTRIBUTE), false)
+    assert.strictEqual(values.get(theme.THEME_STORAGE_KEY), theme.THEME_LIGHT)
+    assert.deepStrictEqual(buttons.map(button => button.textContent), ['☾ Dark theme', '☾ Dark theme'])
+  })
+})
 
 class SplitWebArticlesDbProvider extends DbProviderBase {
   constructor(existingIds={}) {
@@ -13113,6 +13148,40 @@ assert_cli(
         `//x:a[@id='raw-relpath' and @href='../../../${RAW_PREFIX}']`,
       ],
     }
+  }
+)
+assert_cli(
+  'template: light/dark theme Liquid toggle variable',
+  {
+    args: ['index.bigb'],
+    filesystem: {
+      'index.bigb': '= Toplevel\n',
+      'ourbigbook.liquid.html': `<!doctype html>
+<html>
+<head><style>{{ style }}</style></head>
+<body>{{ body }}<footer>{{ theme_toggle }}</footer>{{ post_body }}</body>
+</html>
+`,
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/index.html`]: [
+        "//x:footer/x:button[@type='button' and contains(@class, 'ourbigbook-theme-toggle') and text()='☾ Dark theme']",
+      ],
+    },
+  }
+)
+assert_cli(
+  'template: built-in template includes light/dark theme toggle in footer',
+  {
+    args: ['index.bigb'],
+    filesystem: {
+      'index.bigb': '= Toplevel\n',
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/index.html`]: [
+        "//x:footer/x:button[contains(@class, 'ourbigbook-theme-toggle')]",
+      ],
+    },
   }
 )
 assert_cli(

@@ -2,6 +2,8 @@ import Document, { Html, Head, Main, NextScript } from 'next/document'
 import React from 'react'
 import { googleAnalyticsId, isProduction } from 'front/config'
 
+const { themeInitJavaScript } = require('ourbigbook/runtime_common')
+
 interface IProps {
   css: any;
 }
@@ -17,6 +19,7 @@ class MyDocument extends Document<IProps> {
     return (
       <Html lang="en">
         <Head>
+          <script dangerouslySetInnerHTML={{ __html: themeInitJavaScript() }} />
           <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
           {isProduction &&
             <>

@@ -27,8 +27,8 @@ export function UserLink({ children, user }) {
   </CustomLink>
 }
 
-export function UserScore({ space=false, user }) {
-  return <span title={defaultUserScoreTitle}>{user.score}{space ? ' ' : ''}<LikeIcon /></span>
+export function UserScore({ space=true, user }) {
+  return <span title={defaultUserScoreTitle}><LikeIcon />{space ? ' ' : ''}{user.score}</span>
 }
 
 export type DisplayAndUsernameProps = {

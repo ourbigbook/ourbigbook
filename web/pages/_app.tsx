@@ -12,6 +12,7 @@ import {
   isProduction
 } from 'front/config';
 import Navbar from 'front/Navbar'
+import ThemeToggle from 'front/ThemeToggle'
 import {
   AppContextProvider,
   FontAwesomeIcon,
@@ -109,6 +110,7 @@ const MyApp = ({ Component, pageProps }) => {
             <a href="https://mastodon.social/@ourbigbook">{FontAwesomeIcon(0xf4f6, { cls: 'fa-brands-400' })} @ourbigbook</a>
             <a href="https://twitter.com/OurBigBook">{FontAwesomeIcon(0xf099, { cls: 'fa-brands-400' })} @OurBigBook</a>
             <a href="https://www.youtube.com/@OurBigBook">{FontAwesomeIcon(0xf167, { cls: 'fa-brands-400' })} @OurBigBook</a>
+            <ThemeToggle />
           </footer>
         }
       </div>

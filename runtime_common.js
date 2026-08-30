@@ -75,6 +75,85 @@ const NORMALIZE_PUNCTUATION_CHARACTER_MAP = {
 const ID_SEPARATOR = '-'
 exports.ID_SEPARATOR = ID_SEPARATOR
 
+const THEME_ATTRIBUTE = 'data-ourbigbook-theme'
+exports.THEME_ATTRIBUTE = THEME_ATTRIBUTE
+const THEME_DARK = 'dark'
+exports.THEME_DARK = THEME_DARK
+const THEME_LIGHT = 'light'
+exports.THEME_LIGHT = THEME_LIGHT
+const THEME_STORAGE_KEY = 'ourbigbook-theme'
+exports.THEME_STORAGE_KEY = THEME_STORAGE_KEY
+const THEME_TOGGLE_CLASS = 'ourbigbook-theme-toggle'
+exports.THEME_TOGGLE_CLASS = THEME_TOGGLE_CLASS
+
+function getStoredTheme(storage=window.localStorage) {
+  try {
+    return storage.getItem(THEME_STORAGE_KEY) === THEME_DARK ? THEME_DARK : THEME_LIGHT
+  } catch (_) {
+    return THEME_LIGHT
+  }
+}
+exports.getStoredTheme = getStoredTheme
+
+function themeToggleLabel(theme) {
+  return theme === THEME_DARK ? '☀ Light theme' : '☾ Dark theme'
+}
+exports.themeToggleLabel = themeToggleLabel
+
+function updateThemeToggleButtons(theme, doc=document) {
+  for (const button of doc.getElementsByClassName(THEME_TOGGLE_CLASS)) {
+    button.textContent = themeToggleLabel(theme)
+  }
+}
+exports.updateThemeToggleButtons = updateThemeToggleButtons
+
+function setTheme(theme, { doc=document, persist=true, storage=window.localStorage }={}) {
+  if (theme === THEME_DARK) {
+    doc.documentElement.setAttribute(THEME_ATTRIBUTE, THEME_DARK)
+  } else {
+    theme = THEME_LIGHT
+    doc.documentElement.removeAttribute(THEME_ATTRIBUTE)
+  }
+  if (persist) {
+    try {
+      storage.setItem(THEME_STORAGE_KEY, theme)
+    } catch (_) {}
+  }
+  updateThemeToggleButtons(theme, doc)
+  const giscusTheme = theme === THEME_DARK ? 'dark_high_contrast' : 'light'
+  const giscusScript = doc.querySelector('script[src="https://giscus.app/client.js"]')
+  if (giscusScript) {
+    giscusScript.setAttribute('data-theme', giscusTheme)
+  }
+  const giscusFrame = doc.querySelector('iframe.giscus-frame')
+  if (giscusFrame && giscusFrame.contentWindow) {
+    giscusFrame.contentWindow.postMessage({
+      giscus: { setConfig: { theme: giscusTheme } },
+    }, 'https://giscus.app')
+  }
+  return theme
+}
+exports.setTheme = setTheme
+
+function toggleTheme(opts={}) {
+  const doc = opts.doc || document
+  const current = doc.documentElement.getAttribute(THEME_ATTRIBUTE) === THEME_DARK
+    ? THEME_DARK
+    : THEME_LIGHT
+  return setTheme(current === THEME_DARK ? THEME_LIGHT : THEME_DARK, opts)
+}
+exports.toggleTheme = toggleTheme
+
+function themeInitJavaScript() {
+  return `(function(){try{if(localStorage.getItem('${THEME_STORAGE_KEY}')==='${THEME_DARK}')document.documentElement.setAttribute('${THEME_ATTRIBUTE}','${THEME_DARK}')}catch(e){}})()`
+}
+exports.themeInitJavaScript = themeInitJavaScript
+
+function themeToggleHtml() {
+  return `<button type="button" class="${THEME_TOGGLE_CLASS}" onclick="ourbigbook_runtime.toggleTheme()">${themeToggleLabel(THEME_LIGHT)}</button>`
+}
+exports.themeToggleHtml = themeToggleHtml
+
 /** https://stackoverflow.com/questions/14313183/javascript-regex-how-do-i-check-if-the-string-is-ascii-only/14313213#14313213 */
 function isAscii(str) {
   return /^[\x00-\x7F]*$/.test(str);

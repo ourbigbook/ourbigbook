@@ -17,7 +17,13 @@ if (typeof window !== 'undefined') {
   require('tablesort/src/sorts/tablesort.monthname.js')
   require('tablesort/src/sorts/tablesort.number.js')
 }
-const { titleToId, USER_FINISHED_TYPING_MS } = require('./runtime_common');
+const {
+  getStoredTheme,
+  setTheme,
+  titleToId,
+  toggleTheme: toggleThemeCommon,
+  USER_FINISHED_TYPING_MS,
+} = require('./runtime_common');
 
 let myDocument
 const CLOSE_CLASS = 'close'
@@ -51,6 +57,7 @@ export function ourbigbook_runtime(toplevel, opts={}) {
   } else {
     myDocument = toplevel.ownerDocument
   }
+  setTheme(getStoredTheme(), { doc: myDocument, persist: false })
   let { hoverSelfLinkCallback } = opts
   if (opts.hoverSelfLinkCallback === undefined) {
     hoverSelfLinkCallback = () => {}
@@ -324,6 +331,10 @@ export function ourbigbook_runtime(toplevel, opts={}) {
     )
     observer.observe(ourbigbook_canvas_demo_elem);
   }
+}
+
+export function toggleTheme() {
+  return toggleThemeCommon()
 }
 
 // Load required scripts dynamically:

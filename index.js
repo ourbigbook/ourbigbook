@@ -12158,6 +12158,7 @@ const OUTPUT_FORMATS_LIST = [
 {{ head }}</head>
 <body class="ourbigbook">
 {{ body }}
+<footer>{{ theme_toggle }}</footer>
 {{ post_body }}</body>
 </html>
 `;
@@ -12192,6 +12193,7 @@ const OUTPUT_FORMATS_LIST = [
               json: context.options.ourbigbook_json,
               image: context.firstImageSrc,
               root_page,
+              theme_toggle: runtime_common.themeToggleHtml(),
               title:
                 ancestors.toReversed().map(a =>
                   a.validation_output.scope.given ?

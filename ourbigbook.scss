@@ -6,6 +6,15 @@
 
 @import 'ourbigbook.common.scss';
 
+@if $ourbigbook-include-theme {
+  :root {
+    @include ourbigbook-theme-light;
+  }
+  :root[data-ourbigbook-theme='dark'] {
+    @include ourbigbook-theme-dark;
+  }
+}
+
 // Main class that contains full ourbigbook content.
 .ourbigbook {
   @include ourbigbook-main;

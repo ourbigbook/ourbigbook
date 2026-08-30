@@ -8,33 +8,88 @@
 // This file is intended to be used with @import. This means that
 // it contains only variables and mixins, and no actual style definitions.
 
-// Light
-//$a-color: #0000EE;
-//$a-color-visited: rgb(85, 26, 139);
-//$background-color: white;
-//$code-background-color: #eeeeee;
-//$color: black;
-//$target-background-color: #FFFFCC;
+$ourbigbook-include-theme: true !default;
 
-// Dark.
-$a-color: #BBDDFF;
-$background-color: #181818;
-// color-discreet was too dim, and $color was too bright and distracting. Let's try this then.
-$brandname-color: #CCCCCC;
-$code-background-color: #333333;
-$color: #EEEEEE;
-$color-discreet: #BBBBBB;
-$color-slightly-discreet: #DDD;
-$h-color: #DDDD00;
-$navbar-background-color: #000;
-// To make non-brand items a bit less visible than the brand.
-$table-border-color: #444444;
-$table-even-background-color: #222222;
-$table-head-background-color: #121212;
-$target-background-color: #442222;
-$ourbigbook-error-color: #F55;
-$ourbigbook-ok-color: #5F5;
-$ourbigbook-warning-color: #DDDD00;
+@mixin ourbigbook-theme-light {
+  color-scheme: light;
+  --ourbigbook-a-color: #3366cc;
+  --ourbigbook-background-color: #fff;
+  --ourbigbook-brandname-color: #202122;
+  --ourbigbook-button-background-color: #f8f9fa;
+  --ourbigbook-button-border-color: #72777d;
+  --ourbigbook-button-color: #202122;
+  --ourbigbook-button-disabled-background-color: #eaecf0;
+  --ourbigbook-button-disabled-color: #72777d;
+  --ourbigbook-code-background-color: #f1f3f5;
+  --ourbigbook-color: #202122;
+  --ourbigbook-color-discreet: #54595d;
+  --ourbigbook-color-slightly-discreet: #72777d;
+  --ourbigbook-h-color: #000;
+  --ourbigbook-navbar-background-color: #eaecf0;
+  --ourbigbook-table-border-color: #a2a9b1;
+  --ourbigbook-table-even-background-color: #f8f9fa;
+  --ourbigbook-table-head-background-color: #eaecf0;
+  --ourbigbook-target-background-color: #fff3cd;
+  --ourbigbook-error-color: #b00020;
+  --ourbigbook-ok-color: #006400;
+  --ourbigbook-warning-color: #6b5900;
+  --ourbigbook-input-color: #202122;
+  --ourbigbook-input-disabled-background-color: #eaecf0;
+  --ourbigbook-input-placeholder-color: #72777d;
+}
+
+@mixin ourbigbook-theme-dark {
+  color-scheme: dark;
+  --ourbigbook-a-color: #BBDDFF;
+  --ourbigbook-background-color: #181818;
+  --ourbigbook-brandname-color: #CCCCCC;
+  --ourbigbook-button-background-color: #181818;
+  --ourbigbook-button-border-color: #666666;
+  --ourbigbook-button-color: #E8E6E3;
+  --ourbigbook-button-disabled-background-color: #444;
+  --ourbigbook-button-disabled-color: white;
+  --ourbigbook-code-background-color: #333333;
+  --ourbigbook-color: #EEEEEE;
+  --ourbigbook-color-discreet: #BBBBBB;
+  --ourbigbook-color-slightly-discreet: #DDD;
+  --ourbigbook-h-color: #DDDD00;
+  --ourbigbook-navbar-background-color: #000;
+  --ourbigbook-table-border-color: #444444;
+  --ourbigbook-table-even-background-color: #222222;
+  --ourbigbook-table-head-background-color: #121212;
+  --ourbigbook-target-background-color: #442222;
+  --ourbigbook-error-color: #F55;
+  --ourbigbook-ok-color: #5F5;
+  --ourbigbook-warning-color: #DDDD00;
+  --ourbigbook-input-color: white;
+  --ourbigbook-input-disabled-background-color: rgb(50, 50, 50);
+  --ourbigbook-input-placeholder-color: #AAA;
+}
+
+$a-color: var(--ourbigbook-a-color);
+$background-color: var(--ourbigbook-background-color);
+$brandname-color: var(--ourbigbook-brandname-color);
+$button-background-color: var(--ourbigbook-button-background-color);
+$button-border-color: var(--ourbigbook-button-border-color);
+$button-color: var(--ourbigbook-button-color);
+$button-disabled-background-color: var(--ourbigbook-button-disabled-background-color);
+$button-disabled-color: var(--ourbigbook-button-disabled-color);
+$code-background-color: var(--ourbigbook-code-background-color);
+$color: var(--ourbigbook-color);
+$color-discreet: var(--ourbigbook-color-discreet);
+$color-slightly-discreet: var(--ourbigbook-color-slightly-discreet);
+$h-color: var(--ourbigbook-h-color);
+$navbar-background-color: var(--ourbigbook-navbar-background-color);
+$table-border-color: var(--ourbigbook-table-border-color);
+$table-even-background-color: var(--ourbigbook-table-even-background-color);
+$table-head-background-color: var(--ourbigbook-table-head-background-color);
+$target-background-color: var(--ourbigbook-target-background-color);
+$ourbigbook-error-color: var(--ourbigbook-error-color);
+$ourbigbook-ok-color: var(--ourbigbook-ok-color);
+$ourbigbook-warning-color: var(--ourbigbook-warning-color);
+$input-color: var(--ourbigbook-input-color);
+$input-disabled-background-color: var(--ourbigbook-input-disabled-background-color);
+$input-placeholder-color: var(--ourbigbook-input-placeholder-color);
 
 $caption-margin-vert: 0.4em;
 $font-family: Arial, Helvetica, sans-serif;
@@ -202,11 +257,11 @@ $footer-color: $color;
   border-radius: 3px;
   border: 1px solid gray;
   box-sizing: border-box;
-  color: white;
+  color: $input-color;
   padding: 0.3em 0.5em;
   width: 100%;
   &[disabled] {
-    background-color: rgb(50, 50, 50);
+    background-color: $input-disabled-background-color;
   }
   &[type=checkbox] {
     width: auto;
@@ -216,7 +271,7 @@ $footer-color: $color;
     border-color: #CCC;
   }
   &::placeholder {
-    color: #AAA;
+    color: $input-placeholder-color;
   }
   // Unable to make it work for password fields.
   // https://stackoverflow.com/questions/55131944/how-to-remove-blue-background-on-chrome-autocomplete

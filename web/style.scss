@@ -1,9 +1,15 @@
+$ourbigbook-include-theme: false;
 @import '../ourbigbook.common.scss';
+
+:root {
+  @include ourbigbook-theme-light;
+}
+:root[data-ourbigbook-theme='dark'] {
+  @include ourbigbook-theme-dark;
+}
 
 // Colors
 $like-button-inactive-color: white;
-// Less bright than $like-button-hover-color otherwise too much glare.
-$like-button-active-color: #BB1070;
 $like-button-hover-color: #FF1493;
 $img-background-color: white;
 
@@ -61,9 +67,8 @@ a {
 }
 
 button, a.btn {
-  $button-fg-color: #E8E6E3;
   border-radius: 3px;
-  border: 2px solid #666666;
+  border: 2px solid $button-border-color;
   cursor: pointer;
   display: inline-block;
   font-size: 15px;
@@ -82,33 +87,33 @@ button, a.btn {
     // We make hover more visible than active because it glares too much
     // when you have an article list with lost of like buttons.
     &, &:hover.active {
-      background-color: #181818;
-      color: $button-fg-color;
+      background-color: $button-background-color;
+      color: $button-color;
       .icon-heart {
         color: $like-button-hover-color;
       }
     }
     &:hover, &.active {
       background-color: $button-hover-background-color;
+      border-color: $color;
       text-decoration: none;
       .icon-heart {
         color: white;
       }
     }
-    &:not(:hover).active {
-      background-color: $like-button-active-color;
-    }
     &:hover:not(.active) {
-      border-color: $color;
       &.modal {
         background-color: $like-button-hover-color;
       }
     }
+    &:not(:hover).active.modal {
+      background-color: $like-button-hover-color;
+    }
   }
       //background-color: #BB1070;
   &.disabled, &:disabled {
-    background-color: #444;
-    color: white;
+    background-color: $button-disabled-background-color;
+    color: $button-disabled-color;
     cursor: default;
     text-decoration: none;
   }
@@ -281,7 +286,7 @@ div.list-container {
               padding-left: 0.5em;
               padding-right: 0.5em;
             }
-            background: linear-gradient(rgba($background-color, 0), $background-color);
+            background: linear-gradient(transparent, $background-color);
             height: $h;
             margin-top: -$h;
             position: relative;
@@ -548,10 +553,14 @@ div.tab-list {
 }
 
 .icon.icon-star {
+  -webkit-text-stroke: 1px $color;
   color: yellow;
+  paint-order: stroke fill;
 }
 .icon.icon-heart {
+  -webkit-text-stroke: 1px $color;
   color: $like-button-hover-color;
+  paint-order: stroke fill;
 }
 
 span.shortcut {
@@ -922,6 +931,9 @@ img.profile-thumb {
 } // div.main
 
 footer {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
   line-height: 1.5em;
   margin-top: 10px;
   padding: 10px $toplevel-padding;
@@ -937,6 +949,12 @@ footer {
     &:hover {
       text-decoration: underline;
     }
+  }
+  .ourbigbook-theme-toggle {
+    font-family: inherit;
+    font-size: inherit;
+    font-weight: inherit;
+    line-height: inherit;
   }
 }
 
@@ -996,7 +1014,6 @@ nav.navbar {
     }
     &.score.changed {
       //background-color: $like-button-inactive-color;
-      //color: $like-button-active-color;
       // Need to go a bit custom here because of the golden background.
       .icon-heart {
         color: $heart-background-hover-color;

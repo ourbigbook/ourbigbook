@@ -57,7 +57,7 @@ const UserList = ({
               <th className="shrink"><TimeIcon /> Joined</th>
               <th className="shrink"><DiscussionIcon /> Discussions</th>
               <th className="shrink"><CommentIcon /> Comments</th>
-              <th className="shrink"><OkIcon /> Email verified</th>
+              <th className="shrink"><OkIcon title="Verified" /> Email verified</th>
               <th className="shrink"><LockIcon /> Locked</th>
             </tr>
           </thead>
@@ -113,7 +113,7 @@ const UserList = ({
       }
       {hasUnverified === true &&
         <p className="content-not-ourbigbook">
-          <OkIcon />{' '}
+          <OkIcon title="Verified" />{' '}
           {verified === true
             ? <>
                 Only users with verified email are being shown,{' '}

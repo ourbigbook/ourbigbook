@@ -5,11 +5,13 @@ $ourbigbook-include-theme: false;
   @include ourbigbook-theme-light;
   --ourbigbook-like-button-highlight-background-color: #FF1493;
   --ourbigbook-like-button-highlight-border-color: var(--ourbigbook-color);
+  --ourbigbook-neutral-button-hover-background-color: #e1e3e6;
 }
 :root[data-ourbigbook-theme='dark'] {
   @include ourbigbook-theme-dark;
   --ourbigbook-like-button-highlight-background-color: #BB1070;
   --ourbigbook-like-button-highlight-border-color: #CCC;
+  --ourbigbook-neutral-button-hover-background-color: var(--ourbigbook-code-background-color);
 }
 :root[data-ourbigbook-theme='dark'] .ourbigbook-theme-toggle {
   background-color: var(--ourbigbook-button-background-color);
@@ -111,7 +113,7 @@ button, a.btn {
         color: white;
       }
     }
-    &:hover.modal, &.active.modal {
+    &:hover.like-button, &.active.like-button {
       background-color: $like-button-highlight-background-color;
       border-color: $like-button-highlight-border-color;
     }
@@ -332,7 +334,9 @@ div.list-container {
     color: $ourbigbook-error-color;
   }
   &.icon-ok {
+    -webkit-text-stroke: 0.5px currentColor;
     color: $ourbigbook-ok-color;
+    paint-order: stroke fill;
   }
   &.icon-warning {
     color: $ourbigbook-warning-color;
@@ -397,6 +401,9 @@ h1, h2, h3, h4, h5, h6,
           padding: 0 4px;
         }
       }
+    }
+    a.btn:not(.like-button):hover, button:not(.like-button):hover {
+      background-color: var(--ourbigbook-neutral-button-hover-background-color);
     }
     .by-others, .issues, .see, .new, .edit {
       .icon {
@@ -914,6 +921,9 @@ span.shortcut {
       >:not(:last-child) {
         margin-right: 0.5ch;
       }
+      > a.btn:hover, > button:hover, > button.active {
+        background-color: var(--ourbigbook-neutral-button-hover-background-color);
+      }
     }
     .user-img {
       background-color: $img-background-color;
@@ -1077,8 +1087,16 @@ nav.navbar {
     .icon {
       color: $icon-color;
     }
+    .new-article-icon::before {
+      -webkit-text-stroke: 1px $navbar-background-color;
+      paint-order: stroke fill;
+    }
     &:hover {
       .icon {
+        color: $navbar-background-color;
+      }
+      .new-article-icon::before {
+        -webkit-text-stroke-color: $icon-color;
         color: $navbar-background-color;
       }
     }

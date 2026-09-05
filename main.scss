@@ -5,6 +5,7 @@ background-color: $background-color;
 font-family: $font-family;
 
 header, footer {
+  @include ourbigbook-theme-dark;
   background-color: $navbar-background-color;
 }
 header {

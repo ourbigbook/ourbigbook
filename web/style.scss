@@ -13,10 +13,6 @@ $ourbigbook-include-theme: false;
   --ourbigbook-like-button-highlight-border-color: #CCC;
   --ourbigbook-neutral-button-hover-background-color: var(--ourbigbook-code-background-color);
 }
-:root[data-ourbigbook-theme='dark'] .ourbigbook-theme-toggle {
-  background-color: var(--ourbigbook-button-background-color);
-  border: 1px solid var(--ourbigbook-button-border-color);
-}
 
 // Colors
 $like-button-inactive-color: white;
@@ -984,6 +980,8 @@ footer {
     }
   }
   .ourbigbook-theme-toggle {
+    background-color: $button-background-color;
+    border: 1px solid $button-border-color;
     font-family: inherit;
     font-size: inherit;
     font-weight: inherit;
@@ -992,6 +990,7 @@ footer {
 }
 
 footer, nav.navbar {
+  @include ourbigbook-theme-dark;
   background-color: $navbar-background-color;
   color: $h-color;
 }

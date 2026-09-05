@@ -893,7 +893,7 @@ The links don't show without JavaScript, this can be seen by disabling Js.
 
 The counts can be dynamic loaded, but the links we really want to do at compile time... any way?
 
-== Make rendered issue and comment fragments as short as possible
+=== Make rendered issue and comment fragments as short as possible
 {tag=Comment}
 {tag=Web}
 
@@ -929,7 +929,7 @@ The ideal fragment setup for both comments and issues would be either:
       * the ToC: `_comment/barack-obama/article-topic/<issue-id>/<comment-id>/_toc`
       * the links: `_comment/barack-obama/article-topic/<issue-id>/<comment-id>/_toc/my-header`
 
-== Cannot link from comment to article
+=== Cannot link from comment to article
 {tag=Comment}
 {tag=Web}
 

@@ -166,11 +166,94 @@ class OurbigbookEditor {
         minimap: {enabled: false},
         scrollBeyondLastLine: false,
         theme: 'vs-dark-ourbigbook',
+        wordBasedSuggestions: false,
         wordWrap: 'on',
         value: initial_content,
       }
     );
     this.editor = editor
+    // Monaco has no public suggestion-width option. Change its default through the
+    // widget's layout info so viewport clamping and manual resizing still work.
+    const suggestWidget = editor.getContribution?.('editor.contrib.suggestController')?.widget?.value
+    if (suggestWidget?.getLayoutInfo) {
+      const getLayoutInfo = suggestWidget.getLayoutInfo.bind(suggestWidget)
+      suggestWidget.getLayoutInfo = () => {
+        const info = getLayoutInfo()
+        return { ...info, defaultSize: info.defaultSize.with(640) }
+      }
+    }
+    this.completionProvider = monaco.languages.registerCompletionItemProvider('ourbigbook', {
+      triggerCharacters: ['<', '=', '[', '@', '/'],
+      provideCompletionItems: async (model, position, context, token) => {
+        if (model !== editor.getModel()) return
+        const line = model.getLineContent(position.lineNumber)
+        const completion = ourbigbook.getIdCompletionContext(line.slice(0, position.column - 1))
+        if (!completion) return
+        // Monaco can keep this request alive while the user types, then request
+        // updated incomplete results. Dropping it on a version change loses that
+        // completion session, especially when typing during the debounce below.
+        const stale = () => this.disposed || token.isCancellationRequested || model.isDisposed()
+        const prefix = options.idCompletionPrefix || options.convertOptions.ref_prefix
+        const localId = id => id === prefix ? '/' : prefix && id.startsWith(`${prefix}/`) ? id.slice(prefix.length + 1) : id
+        const query = completion.query.replace(/^\//, '')
+        const explicitUser = query.startsWith('@')
+        const matches = id => (explicitUser || !prefix || id === prefix || id.startsWith(`${prefix}/`)) &&
+          (explicitUser ? id : localId(id)).includes(query)
+        let ids = Object.keys(this.completionIds || {}).filter(matches)
+        const titles = { ...this.completionTitles }
+        if (options.getIdCompletions) {
+          // Incomplete suggestions are requested again as the user types. Avoid a request per keystroke.
+          await new Promise(resolve => setTimeout(resolve, 150))
+          if (stale()) return
+          try {
+            for (const { id, title } of await options.getIdCompletions(query)) {
+              ids.push(id)
+              // Prefer the title from the current draft over a saved version.
+              if (!(id in titles)) titles[id] = title
+            }
+          } catch (error) {
+            // Keep local suggestions usable when the server is unavailable.
+          }
+        }
+        if (stale()) return
+        ids = [...new Set(ids)].filter(matches)
+        const rank = id => (explicitUser ? id : localId(id)).startsWith(query) ? 0 : 1
+        ids.sort((a, b) => rank(a) - rank(b) || a.length - b.length || a.localeCompare(b))
+        const closeIndex = line.indexOf(completion.close, position.column - 1)
+        const range = new monaco.Range(position.lineNumber, completion.start + 1,
+          position.lineNumber, closeIndex < 0 ? position.column : closeIndex + 2)
+        const referencePrefix = options.convertOptions.ref_prefix
+        const sourceLine = position.lineNumber + (this.modifyEditorInputRet?.offset || 0)
+        let header
+        const findHeader = node => {
+          for (const child of node?.children || []) {
+            if (child.ast.source_location.line <= sourceLine) {
+              if (!header || child.ast.source_location.line >= header.source_location.line) header = child.ast
+              findHeader(child)
+            }
+          }
+        }
+        findHeader(this.lastHeaderTree)
+        const scope = header?.calculate_scope()
+        const absolute = completion.raw.startsWith('/') || (scope && scope !== referencePrefix)
+        const referenceId = id => {
+          if (referencePrefix && id.startsWith(`${referencePrefix}/`)) id = id.slice(referencePrefix.length + 1)
+          return (absolute && !id.startsWith('@') ? '/' : '') + id
+        }
+        return {
+          incomplete: true,
+          suggestions: ids.slice(0, 100).map((id, i) => ({
+            label: (explicitUser ? id : localId(id)) + (titles[id] ? ` | ${titles[id]}` : ''),
+            kind: monaco.languages.CompletionItemKind.Reference,
+            // Qualify scoped references, and complete the delimiter in one edit.
+            insertText: referenceId(id) + completion.close,
+            filterText: completion.raw + ' ' + id,
+            sortText: String(i).padStart(3, '0'),
+            range,
+          })),
+        }
+      },
+    })
     this.toolbar_elem = createEditorToolbar(this, root_elem.ownerDocument)
     root_elem.insertBefore(this.toolbar_elem, panes)
     if (options.initialLine) {
@@ -181,12 +264,15 @@ class OurbigbookEditor {
       if (this.handleSubmit) this.handleSubmit()
     })
     editor.onDidChangeModelContent(async (e) => {
+      if (this.disposed) return
       options.onDidChangeModelContentCallback(editor, e)
       this.modified = true
       await this.convertInput()
     });
     editor.onDidScrollChange(e => {
+      if (this.disposed) return
       const range = editor.getVisibleRanges()[0];
+      if (!range) return
       const lineNumber = range.startLineNumber
       // So that the title bar will show on dynamic website
       // when user scrolls to line 1.
@@ -211,6 +297,7 @@ class OurbigbookEditor {
   }
 
   async convertInput() {
+    if (this.disposed) return
     let extra_returns = {};
     let ok = true
     try {
@@ -240,6 +327,7 @@ class OurbigbookEditor {
             getInputPathConvertOptions,
             extra_returns
           )
+          if (this.disposed) return
           input_path = this.ourbigbook.idToScope(inputPathOrig)
           const newId = extra_returns.context.header_tree.children[0].ast.id
           let newBasename
@@ -259,11 +347,13 @@ class OurbigbookEditor {
       // split_headers conversion as the CLI uploader when it is submitted.
       this.lastInput = input
       this.lastInputPath = input_path
-      this.output_elem.innerHTML = await this.ourbigbook.convert(
+      const output = await this.ourbigbook.convert(
         input,
         convertOptionsCopy,
         extra_returns
       )
+      if (this.disposed) return
+      this.output_elem.innerHTML = output
     } catch(e) {
       // TODO clearly notify user on UI that they found a Ourbigbook crash bug for the current input.
       console.error(e);
@@ -274,6 +364,10 @@ class OurbigbookEditor {
       }
     }
     if (ok) {
+      this.completionIds = extra_returns.ids
+      const completionContext = this.ourbigbook.convertInitContext({ output_format: this.ourbigbook.OUTPUT_FORMAT_ID })
+      this.completionTitles = Object.fromEntries(Object.entries(this.completionIds).map(([id, ast]) =>
+        [id, this.ourbigbook.getIdCompletionTitle(ast, completionContext)]))
       this.lastHeaderTree = extra_returns.context.header_tree
       // Rebind to newly generated elements.
       this.ourbigbook_runtime(this.output_elem);
@@ -323,6 +417,9 @@ class OurbigbookEditor {
   }
 
   dispose() {
+    if (this.disposed) return
+    this.disposed = true
+    this.completionProvider.dispose()
     this.setToolbarDisabled(true)
     window.removeEventListener('beforeunload', this.beforeunload);
     this.editor.dispose()
@@ -347,6 +444,7 @@ class OurbigbookEditor {
   }
 
   scrollPreviewToSourceLine(line_number, block) {
+    if (this.disposed || !this.modifyEditorInputRet) return
     const line_number_orig = line_number
     line_number += this.modifyEditorInputRet.offset
     if (block === undefined) {

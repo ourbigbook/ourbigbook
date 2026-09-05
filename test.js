@@ -15664,6 +15664,24 @@ assert_cli(
 )
 
 describe('editor markup toolbar', function () {
+  it('detects ID completion contexts shared with VS Code', function () {
+    for (const [source, query, close] of [
+      ['before <Hello world', 'hello-world', '>'],
+      ['{parent=Scope/Hello', 'scope/hello', '}'],
+      ['{tag=@user/Hello', '@user/hello', '}'],
+      ['\\x[/hello', '/hello', ']'],
+      ['<', '', '>'],
+    ]) {
+      const completion = ourbigbook.getIdCompletionContext(source)
+      assert.strictEqual(completion.query, query)
+      assert.strictEqual(completion.close, close)
+      assert.strictEqual(source.slice(completion.start), completion.raw)
+    }
+    for (const source of ['ordinary text', '<closed>', '{title=hello', '\\<escaped', '<#Topic']) {
+      assert.strictEqual(ourbigbook.getIdCompletionContext(source), undefined)
+    }
+  })
+
   function apply(action, source='', start=0, end=source.length, options={}) {
     const edit = getMarkupEdit(action, source, start, end, options)
     const value = source.slice(0, edit.start) + edit.text + source.slice(edit.end)
@@ -15893,17 +15911,46 @@ describe('editor markup toolbar', function () {
       }]) {
         let value = options?.titleSource ? 'Web body.' : source
         const root = doc.createElement('div')
+        let completionProvider
+        let completionDisposed = false
+        let modelDisposed = false
+        let onScroll
+        let onCursor
+        const model = {
+          getLineContent: () => value,
+          getVersionId: () => value,
+          isDisposed: () => modelDisposed,
+          dispose: () => { modelDisposed = true },
+        }
         const monacoEditor = {
+          getModel: () => model,
           getValue: () => value,
           addCommand: () => {},
           onDidChangeModelContent: () => {},
-          onDidScrollChange: () => {},
-          onDidChangeCursorPosition: () => {},
+          onDidScrollChange: callback => { onScroll = callback },
+          onDidChangeCursorPosition: callback => { onCursor = callback },
           deltaDecorations: () => [],
-          dispose: () => {},
+          dispose: () => {
+            // Monaco may emit view events during teardown.
+            onScroll({})
+            onCursor({ position: { lineNumber: 1 } })
+            model.dispose()
+          },
         }
         const monaco = {
-          languages: { register: () => {}, setMonarchTokensProvider: () => {} },
+          languages: {
+            register: () => {}, setMonarchTokensProvider: () => {},
+            CompletionItemKind: { Reference: 1 },
+            registerCompletionItemProvider: (language, provider) => {
+              completionProvider = provider
+              return { dispose: () => { completionDisposed = true } }
+            },
+          },
+          Range: class {
+            constructor(startLineNumber, startColumn, endLineNumber, endColumn) {
+              Object.assign(this, { startLineNumber, startColumn, endLineNumber, endColumn })
+            }
+          },
           editor: { defineTheme: () => {}, create: () => monacoEditor },
           KeyMod: { CtrlCmd: 1 }, KeyCode: { Enter: 1 },
         }
@@ -15939,10 +15986,120 @@ describe('editor markup toolbar', function () {
         assert(controls.every(control => !control.disabled))
         assert.strictEqual(root.firstChild, editor.toolbar_elem)
         assert.strictEqual(editor.output_elem.parentNode.className, 'editor-panes')
+        const draftId = Object.keys(editor.completionIds)[0]
+        assert(draftId)
+        value = `<${draftId}>`
+        const position = { lineNumber: 1, column: 2 }
+        const token = { isCancellationRequested: false }
+        const complete = () => completionProvider.provideCompletionItems(model, position, {}, token)
+        const result = await complete()
+        const suggestion = result.suggestions.find(item => item.insertText === `${draftId}>`)
+        assert(suggestion)
+        assert.strictEqual(suggestion.label, `${draftId} | ${options?.titleSource || 'Ourbigbook hello world'}`)
+        assert.strictEqual(suggestion.insertText, `${draftId}>`)
+        assert.strictEqual(suggestion.range.startColumn, 2)
+        assert.strictEqual(suggestion.range.endColumn, value.length + 1)
+        assert.strictEqual(await completionProvider.provideCompletionItems({}, position, {}, token), undefined)
+        editor.options.getIdCompletions = async () => [
+          { id: draftId, title: 'Old title' }, { id: '@other/saved', title: 'Saved title' },
+        ]
+        const remoteResult = await complete()
+        assert.strictEqual(remoteResult.suggestions.filter(item => item.label === suggestion.label).length, 1)
+        assert.strictEqual(remoteResult.suggestions.find(item => item.label === '@other/saved | Saved title').insertText, '@other/saved>')
+        editor.options.idCompletionPrefix = '@current'
+        editor.options.convertOptions.ref_prefix = '@current'
+        editor.completionIds['@other/draft'] = {}
+        editor.completionIds['@current/draft'] = {}
+        editor.options.getIdCompletions = async () => ['@current/saved', '@other/saved', '@current-other/saved'].map(id => ({ id, title: 'Saved title' }))
+        const ownResult = await complete()
+        assert.deepStrictEqual(ownResult.suggestions.map(item => item.label), ['draft', 'saved | Saved title'])
+        assert.deepStrictEqual(ownResult.suggestions.map(item => item.insertText), ['draft>', 'saved>'])
+        const fetchCompletions = editor.options.getIdCompletions
+        delete editor.options.getIdCompletions
+        editor.completionIds['@current/love'] = {}
+        editor.completionTitles['@current/love'] = 'Love'
+        for (const [source, column, expected] of [
+          ['<lo', 4, '<love>'],
+          ['before <lo> after', 11, 'before <love> after'],
+          ['<love>', 4, '<love>'],
+          ['{tag=lo', 8, '{tag=love}'],
+          ['\\x[lo', 6, '\\x[love]'],
+          ['</lo', 5, '</love>'],
+        ]) {
+          value = source
+          position.column = column
+          const item = (await complete()).suggestions.find(item => item.label === 'love | Love')
+          assert(item)
+          assert.strictEqual(value.slice(0, item.range.startColumn - 1) + item.insertText + value.slice(item.range.endColumn - 1), expected)
+        }
+        const oldTree = editor.lastHeaderTree
+        const scoped = {}
+        await ourbigbook.convert('= Scoped\n{scope}\n\nBody', { render: false }, scoped)
+        editor.lastHeaderTree = scoped.context.header_tree
+        value = '<lo'
+        position.column = 4
+        assert.strictEqual((await complete()).suggestions.find(item => item.label === 'love | Love').insertText, '/love>')
+        editor.lastHeaderTree = oldTree
+        editor.options.getIdCompletions = fetchCompletions
+        value = '<@other/>'
+        position.column = value.length
+        const otherResult = await complete()
+        assert.deepStrictEqual(otherResult.suggestions.map(item => item.label), ['@other/draft', '@other/saved | Saved title'])
+        assert.deepStrictEqual(otherResult.suggestions.map(item => item.insertText), ['@other/draft>', '@other/saved>'])
+        position.column = 2
+        delete editor.options.idCompletionPrefix
+        delete editor.options.convertOptions.ref_prefix
+        // Monaco keeps the initial request alive while <lo is typed quickly.
+        // It needs incomplete results from that request to ask for the new prefix.
+        value = '<'
+        const requests = []
+        let finishRequest
+        editor.options.getIdCompletions = query => {
+          requests.push(query)
+          return new Promise(resolve => { finishRequest = resolve })
+        }
+        const fastResult = complete()
+        value = '<l'
+        await new Promise(resolve => setTimeout(resolve, 160))
+        assert.deepStrictEqual(requests, [''])
+        value = '<lo'
+        finishRequest([{ id: '@current/long-id', title: 'Long title' }])
+        const firstResult = await fastResult
+        assert(firstResult.incomplete)
+        assert(firstResult.suggestions.some(item => item.insertText === '@current/long-id>'))
+        position.column = 4
+        const updatedResult = complete()
+        await new Promise(resolve => setTimeout(resolve, 160))
+        assert.deepStrictEqual(requests, ['', 'lo'])
+        finishRequest([{ id: '@current/long-id', title: 'Long title' }])
+        const updatedSuggestion = (await updatedResult).suggestions.find(item => item.insertText === '@current/long-id>')
+        assert.strictEqual(updatedSuggestion.range.startColumn, 2)
+        assert.strictEqual(updatedSuggestion.range.endColumn, 4)
+        value = '<'
+        position.column = 2
+        const cancelledResult = complete()
+        token.isCancellationRequested = true
+        assert.strictEqual(await cancelledResult, undefined)
+        delete editor.options.getIdCompletions
         // Empty documents must also render without passing undefined to convert.
         value = ''
         await editor.convertInput()
         assert.strictEqual(typeof editor.lastInput, 'string')
+        // A conversion already in flight must not update a detached editor.
+        let finishConversion
+        editor.ourbigbook = { ...ourbigbook, convert: () => new Promise(resolve => { finishConversion = resolve }) }
+        editor.options.postBuildCallback = () => assert.fail('Preview callback after disposal')
+        editor.options.scrollPreviewToSourceLineCallback = () => assert.fail('Scroll callback after disposal')
+        const previousPreview = editor.output_elem.innerHTML
+        const pendingConversion = editor.convertInput()
+        editor.dispose()
+        assert(completionDisposed)
+        assert(modelDisposed)
+        finishConversion('Late preview')
+        await pendingConversion
+        assert.strictEqual(editor.output_elem.innerHTML, previousPreview)
+        onScroll({})
+        onCursor({ position: { lineNumber: 1 } })
       }
     } finally {
       for (const editor of editors) editor.dispose()

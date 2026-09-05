@@ -5177,6 +5177,57 @@ it('api: hideArticleDates', async () => {
   }, { defaultExpectStatus: 200 })
 })
 
+it('api: editor ID completions search IDs within an owner or an explicit username', async () => {
+  await testApp(async test => {
+    const getIds = async (query, username) => (await test.webApi.editorIdCompletions(query, username)).map(item => item.id)
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    for (const titleSource of ['Calculus', 'Advanced Calculus']) {
+      const { data, status } = await createArticleApi(test, createArticleArg({ i: 0, titleSource }))
+      assertStatus(status, data)
+    }
+    {
+      let ret = await createArticleApi(test, createArticleArg({ i: 0, titleSource: 'Scope', bodySource: '{scope}' }))
+      assertStatus(ret.status, ret.data)
+      ret = await createArticleApi(test, createArticleArg({ i: 0, titleSource: 'Calculus' }), { parentId: '@user0/scope' })
+      assertStatus(ret.status, ret.data)
+    }
+    assert.deepStrictEqual(await getIds('calculus', 'user0'), [
+      '@user0/calculus', '@user0/scope/calculus', '@user0/advanced-calculus',
+    ])
+    assert.deepStrictEqual(await test.webApi.editorIdCompletions('scope/', 'user0'), [{ id: '@user0/scope/calculus', title: 'Calculus' }])
+    assert.deepStrictEqual(await getIds('scope/', 'user0'), ['@user0/scope/calculus'])
+    assert.deepStrictEqual(await getIds('calculus', 'user1'), [])
+    assert.deepStrictEqual(await getIds('@user0/cal', 'user1'), ['@user0/calculus'])
+    {
+      const { data, status } = await createArticleApi(test, createArticleArg({
+        i: 0,
+        titleSource: 'References',
+        bodySource: '</calculus> </scope/calculus>\n\n\\a[https://example.com]{id=anchor}',
+      }), { parentId: '@user0/scope' })
+      assertStatus(status, data)
+      assert_xpath('//x:a[@href="/user0/calculus"]', data.articles[0].render)
+      assert_xpath('//x:a[@href="/user0/scope/calculus"]', data.articles[0].render)
+      assert.deepStrictEqual(await getIds('anchor', 'user0'), ['@user0/scope/anchor'])
+    }
+    for (const query of ['%', '_', "' OR 1=1 --", 'does-not-exist']) {
+      assert.deepStrictEqual(await getIds(query, 'user0'), [])
+    }
+    // The endpoint is also used by public editor previews; it returns only public IDs.
+    test.loginUser()
+    assert.deepStrictEqual(await getIds('@user0/cal', 'user1'), ['@user0/calculus'])
+    const { status } = await test.webApi.req('post', 'editor/id-completions', {
+      body: { query: 'x'.repeat(257), username: 'user0' },
+    })
+    assert.strictEqual(status, 422)
+    const sampleId = await test.sequelize.models.Id.findOne({ where: { idid: '@user0/calculus' } })
+    await test.sequelize.models.Id.bulkCreate(Array.from({ length: 105 }, (_, i) => ({
+      idid: `@user0/limit-${i}`, ast_json: sampleId.ast_json, macro_name: 'H',
+    })))
+    assert.strictEqual((await getIds('limit-', 'user0')).length, 100)
+  })
+})
+
 it('api: editor/fetch-files', async () => {
   await testApp(async (test) => {
     let data, status, article

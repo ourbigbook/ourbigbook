@@ -562,11 +562,10 @@ export async function activate(context: vscode.ExtensionContext) {
       channel.appendLine(`provideCompletionItems position=${position.line}:${col}`)
       channel.appendLine(`provideCompletionItems context={triggerCharacter=${context.triggerCharacter}, triggerKind=${context.triggerKind}`)
       const lineToCursor = document.lineAt(position.line).text.substring(0, col)
-      const matches = [...lineToCursor.matchAll(/(?<=<)[^>]*$|(?<=\{(parent|tag)=)[^}]*$/g)]
-      if (matches.length) {
-        const lastMatch = matches[matches.length - 1]
-        const queryRaw = lineToCursor.substring(lastMatch.index, col)
-        const query = ourbigbook.titleToId(queryRaw)
+      const completion = ourbigbook.getIdCompletionContext(lineToCursor)
+      if (completion) {
+        const queryRaw = completion.raw
+        const query = completion.query.replace(/^\//, '')
         if (query) {
           const c0 = queryRaw[0]
           const queryIsLower = c0.toLowerCase() === c0
@@ -579,12 +578,21 @@ export async function activate(context: vscode.ExtensionContext) {
             async function createCompletionItem(ids: any[], atStart: boolean) {
               const ret = []
               for (const id of ids) {
+                const ast = ourbigbook.AstNode.fromJSON(id.ast_json, renderContext)
+                const title = ourbigbook.getIdCompletionTitle(ast, renderContext)
+                const displayLabel = id.idid + (title ? ` | ${title}` : '')
+                if (completion.close === ']' || completion.query.includes('/') || query.startsWith('@')) {
+                  const item = new vscode.CompletionItem(displayLabel)
+                  item.insertText = id.idid.startsWith('@') ? id.idid : `/${id.idid}`
+                  item.range = new vscode.Range(position.line, completion.start, position.line, col)
+                  item.filterText = queryRaw + ' ' + id.idid
+                  ret.push(item)
+                  continue
+                }
                 // This slightly duplicates <> ourbigbook output type conversion,
                 // but it was a bit different and much simpler. Let's see.
-                const ast = ourbigbook.AstNode.fromJSON(id.ast_json, renderContext)
                 const macro = renderContext.macros[ast.macro_name];
-                const titleArg = macro.options.get_title_arg(ast, renderContext);
-                let label = ourbigbook.renderArg(titleArg, renderContext)
+                let label = title
                 const idPrefix = macro.options.id_prefix
                 if (idPrefix) {
                   label = `${idPrefix} ${ourbigbook.capitalizeFirstLetter(label)}`
@@ -602,7 +610,10 @@ export async function activate(context: vscode.ExtensionContext) {
                     }
                   }
                 }
-                ret.push(new vscode.CompletionItem(label))
+                const item = new vscode.CompletionItem(displayLabel)
+                item.insertText = label
+                item.filterText = queryRaw + ' ' + id.idid + ' ' + label
+                ret.push(item)
               }
               return ret
             }
@@ -636,8 +647,9 @@ export async function activate(context: vscode.ExtensionContext) {
     vscode.languages.registerCompletionItemProvider(
       { scheme: 'file', language: OURBIGBOOK_LANGUAGE_ID },
       new OurbigbookCompletionItemProvider(),
-      // TODO what does this give us?
       '<',
+      '=',
+      '[',
     )
   )
 

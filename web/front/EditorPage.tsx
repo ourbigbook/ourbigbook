@@ -785,7 +785,10 @@ export default function EditorPageHoc({
         !maxReached
       ) {
         let editor
+        let active = true
+        const editorElem = ourbigbookEditorElem.current
         loader.init().then(monaco => {
+          if (!active || ourbigbookEditorElem.current !== editorElem) return
           const finalConvertOptions = lodash.merge({
             check_db_ids: isNew && !isIssue,
             db_provider: new RestDbProvider(),
@@ -801,13 +804,15 @@ export default function EditorPageHoc({
           finalConvertOptions.automaticTopicLinksMaxWords = 0
           finalConvertOptions.x_external_prefix = '../'.repeat(window.location.pathname.match(/\//g).length - 1)
           editor = new OurbigbookEditor(
-            ourbigbookEditorElem.current,
+            editorElem,
             bodySource,
             monaco,
             ourbigbook,
             ourbigbook_runtime,
             {
               convertOptions: finalConvertOptions,
+              idCompletionPrefix: `@${loggedInUser.username}`,
+              getIdCompletions: query => webApi.editorIdCompletions(query, loggedInUser.username),
               handleSubmit,
               initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,
               modifyEditorInput: ourbigbook.modifyEditorInput,
@@ -815,6 +820,7 @@ export default function EditorPageHoc({
               toolbarHeaderLevels: isNew && !isIssue ? [2, 3, 4] : [],
               onImage: editor => setImageUpload({ editor, selection: editor.editor.getSelection() }),
               postBuildCallback: async (extra_returns, ourbigbookEditor) => {
+                if (!active || ourbigbookEditorElem.current !== editorElem) return
                 setHasConvertError(extra_returns.errors.length > 0)
 
                 let titleErrors = []
@@ -888,18 +894,17 @@ export default function EditorPageHoc({
                   ourbigbook_editor?: any;
                 } = {}
               ) => {
+                const headerElem = ourbigbookHeaderElem.current
+                const parentElem = ourbigbookParentIdContainerElem.current
+                if (!active || !headerElem || ourbigbookEditorElem.current !== editorElem) return
                 const { ourbigbook_editor, line_number, line_number_orig } = opts
                 const editor = ourbigbook_editor.editor
                 const visibleRange = editor.getVisibleRanges()[0]
+                if (!visibleRange) return
                 const firstVisibleLine = visibleRange.startLineNumber
                 if (firstVisibleLine === 1) {
-                  ourbigbookHeaderElem.current.classList.remove('hide')
-                  if (
-                    // Fails for index page.
-                    ourbigbookParentIdContainerElem.current !== null
-                  ) {
-                    ourbigbookParentIdContainerElem.current.classList.remove('hide')
-                  }
+                  headerElem.classList.remove('hide')
+                  parentElem?.classList.remove('hide')
                 } else {
                   if (
                     // TODO this is to prevent infinite loop/glitching:
@@ -912,8 +917,8 @@ export default function EditorPageHoc({
                     // Maybe something smarter can be done with editor.onDidLayoutChange.
                     editor.getModel().getLineCount() - (visibleRange.endLineNumber - visibleRange.startLineNumber) > 14
                   ) {
-                    ourbigbookHeaderElem.current.classList.add('hide')
-                    ourbigbookParentIdContainerElem.current.classList.add('hide')
+                    headerElem.classList.add('hide')
+                    parentElem?.classList.add('hide')
                   }
                 }
               },
@@ -922,21 +927,15 @@ export default function EditorPageHoc({
           if (isIndex) {
             editor.editor.focus()
           }
-          ourbigbookEditorElem.current.ourbigbookEditor = editor
+          editorElem.ourbigbookEditor = editor
           // To ensure an initial conversion in case user has modified title before the editor had loaded.
           // Otherwise title would only update if user edited title again.
           setEditorLoading(true)
         })
         return () => {
-          // TODO cleanup here not working.
-          // Blows exception when changing page title because scroll callback calls for the new page.
-          // This also leads the redirected article page to be at a random scroll and not on top.
-          // Maybe try to extract a solution from:
-          // https://github.com/suren-atoyan/monaco-react/blob/9acaf635caf6d738173e53434984252baa8b06d9/src/Editor/Editor.js
-          // What happens: order is ArticlePage -> onDidScrollChange -> dispose
-          // but we need dispose to be the first thing.
-          //ourbigbookEditorRef.current.ourbigbookEditor.dispose()
+          active = false
           if (editor) {
+            if (editorElem.ourbigbookEditor === editor) delete editorElem.ourbigbookEditor
             editor.dispose()
           }
         }

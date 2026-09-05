@@ -239,6 +239,15 @@ class WebApi {
     return ret.data.exists
   }
 
+  async editorIdCompletions(query, username, reqOpts={}) {
+    const { data, status } = await this.req('post', 'editor/id-completions', {
+      body: { query, username },
+      ...reqOpts,
+    })
+    if (status !== 200) throw new Error('Could not fetch ID completions')
+    return data.ids.map(id => ({ id, title: data.titles[id] }))
+  }
+
   async issue(slug, number, reqOpts={}) {
     const { data, status } = await this.issues({ id: slug, number })
     return { data: data.issues[0], status }

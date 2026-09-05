@@ -4,11 +4,48 @@
 
 const router = require('express').Router()
 
+const ourbigbook = require('ourbigbook')
 const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe');
 
 const auth = require('../auth')
 const front = require('../front/js')
 const lib = require('./lib')
+
+router.post('/id-completions', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const body = lib.validateParam(req, 'body')
+    const query = lib.validateParam(body, 'query', {
+      validators: [front.isString, value => value.length <= 256],
+    })
+    const username = lib.validateParam(body, 'username', {
+      validators: [front.isString, value => /^[a-z0-9][a-z0-9-]{0,255}$/.test(value)],
+    })
+    // Match public IDs, including non-header anchors. Escape LIKE wildcards literally.
+    const escapeLike = value => value.replace(/[!%_]/g, '!$&')
+    const prefix = `@${username}/`
+    const explicitUser = query.startsWith('@')
+    const column = sequelize.getQueryInterface().queryGenerator.quoteIdentifier('idid')
+    const like = pattern => `${column} LIKE ${sequelize.escape(pattern)} ESCAPE '!'`
+    const start = escapeLike(explicitUser ? query : prefix + query)
+    const pattern = explicitUser ? `${escapeLike(query)}%` : `${escapeLike(prefix)}%${escapeLike(query)}%`
+    const rows = await sequelize.models.Id.findAll({
+      attributes: ['idid', 'ast_json'],
+      where: sequelize.literal(like(pattern)),
+      order: [
+        [sequelize.literal(`CASE WHEN ${like(start + '%')} THEN 0 ELSE 1 END`), 'ASC'],
+        [sequelize.fn('LENGTH', sequelize.col('idid')), 'ASC'],
+        ['idid', 'ASC'],
+      ],
+      limit: 100,
+    })
+    const context = ourbigbook.convertInitContext({ output_format: ourbigbook.OUTPUT_FORMAT_ID })
+    const titles = Object.fromEntries(rows.map(row => [row.idid,
+      ourbigbook.getIdCompletionTitle(ourbigbook.AstNode.fromJSON(row.ast_json, context), context),
+    ]))
+    return res.json({ ids: Object.keys(titles), titles })
+  } catch (error) { next(error) }
+})
 
 router.post('/fetch-files', auth.optional, async function(req, res, next) {
   try {

@@ -84,12 +84,12 @@ const Settings = ({
     setUserInfo(state => ({ ...state, email: user.email }))
     setEmailCheck(null)
   }
-  const sendEmailChange = async (newEmail?: string) => {
+  const resendEmailChange = async () => {
     if (emailSending || isLoading || emailWaitMs > 0) return
     setEmailSending(true)
     setEmailActionError('')
     try {
-      const { data, status } = await webApi.userRequestEmailChange(username, newEmail)
+      const { data, status } = await webApi.userRequestEmailChange(username)
       if (status === 200) applyEmailState(data.user)
       else {
         setEmailActionError(typeof data.errors === 'string' ? data.errors : Object.values(data.errors || {}).flat().join(' ') || 'Could not send the verification email.')
@@ -274,14 +274,17 @@ const Settings = ({
             {emailError ? <span id="email-check-error" className="error-messages"><ErrorIcon /> {emailError}</span>
               : checkingEmail ? 'Checking…' : <OkIcon title="Email available" />}
           </span>}
-            {emailState.pendingEmail && <span className="email-change-note">
+            {canSetEmail && needsEmailVerification && !emailUnchanged && <span className="email-change-note">
+              {' '}A verification email will be sent to the new email after you submit.
+            </span>}
+            {emailUnchanged && emailState.pendingEmail && <span className="email-change-note">
               {' '}<HelpIcon title="Your current email stays active until you verify the new address." /> Check your new email <b>{emailState.pendingEmail}</b> to verify it.
             </span>}
             {canSetEmail && (emailState.pendingEmail || (needsEmailVerification && !emailUnchanged)) && <span role="status" aria-live="polite">
               {' '}{emailSending ? 'Sending…' : emailWaitMs > 0 ? `You can send a new email in ${emailWaitText}.`
-                : <button type="button" disabled={isLoading || (!emailUnchanged && !emailValid)}
-                    onClick={() => sendEmailChange(emailUnchanged ? undefined : email)}>
-                    {emailUnchanged ? 'Re-send' : 'Send verification'}
+                : emailUnchanged && emailState.pendingEmail && <button type="button" disabled={isLoading}
+                    onClick={resendEmailChange}>
+                    Re-send
                   </button>}
             </span>}
             {emailActionError && <span className="error-messages" role="alert"> <ErrorIcon /> {emailActionError}</span>}

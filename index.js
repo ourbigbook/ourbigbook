@@ -8202,6 +8202,33 @@ function titleToIdContext(title, options={}, context) {
 const titleToId = runtime_common.titleToId
 exports.titleToId = titleToId
 
+// Shared by the Monaco editor and VS Code. Offsets are zero-based, like slice().
+function getIdCompletionContext(lineToCursor) {
+  const match = /(<|\{(?:parent|tag)=|\\x\[)([^<>\[\]{}\n]*)$/.exec(lineToCursor)
+  if (!match) return
+  const start = match.index + match[1].length
+  // An escaped opener is ordinary text, not a reference.
+  let backslashes = 0
+  for (let i = match.index - 1; i >= 0 && lineToCursor[i] === '\\'; i--) backslashes++
+  if (backslashes % 2) return
+  const raw = match[2]
+  if (raw.startsWith('#')) return // Topic links have a separate namespace.
+  return {
+    start,
+    raw,
+    query: (raw.startsWith('@') ? '@' : '') + titleToId(raw, { keepScopeSep: true }),
+    close: match[1] === '<' ? '>' : match[1] === '\\x[' ? ']' : '}',
+  }
+}
+exports.getIdCompletionContext = getIdCompletionContext
+
+function getIdCompletionTitle(ast, context) {
+  const macro = context.macros[ast.macro_name]
+  if (!macro) return ''
+  return renderArg(macro.options.get_title_arg(ast, context), context).replace(/\s+/g, ' ').trim()
+}
+exports.getIdCompletionTitle = getIdCompletionTitle
+
 /** Heuristic only. */
 function idToTitle(id) {
   return capitalizeFirstLetter(id).replaceAll(ID_SEPARATOR, ' ')

@@ -7,6 +7,8 @@ export type UserType = {
   discussionCount: number;
   effectiveImage: string;
   email?: string;
+  pendingEmail?: string|null;
+  emailChangeWaitMs?: number;
   fileCount: number;
   fileSize: number;
   followerCount: number;

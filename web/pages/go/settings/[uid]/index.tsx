@@ -64,10 +64,49 @@ const Settings = ({
       'password',
     ]
   ))
-  const canSetEmail = !cant.setUserEmail(loggedInUser)
+  const canSetEmail = !cant.setUserEmail(loggedInUser, user0)
+  const needsEmailVerification = !loggedInUser.admin
+  const [emailState, setEmailState] = React.useState({ email: user0.email, pendingEmail: user0.pendingEmail, waitMs: user0.emailChangeWaitMs || 0 })
+  const [emailWaitMs, setEmailWaitMs] = React.useState(emailState.waitMs)
+  const [emailSending, setEmailSending] = React.useState(false)
+  const [emailActionError, setEmailActionError] = React.useState('')
+  React.useEffect(() => {
+    const started = Date.now()
+    const update = () => setEmailWaitMs(Math.max(0, emailState.waitMs - (Date.now() - started)))
+    update()
+    const timer = window.setInterval(update, 1000)
+    return () => window.clearInterval(timer)
+  }, [emailState])
+  const emailWaitText = emailWaitMs >= 3600000 ? `${Math.ceil(emailWaitMs / 3600000)}h`
+    : emailWaitMs >= 60000 ? `${Math.ceil(emailWaitMs / 60000)}m` : `${Math.ceil(emailWaitMs / 1000)}s`
+  const applyEmailState = (user) => {
+    setEmailState({ email: user.email, pendingEmail: user.pendingEmail, waitMs: user.emailChangeWaitMs || 0 })
+    setUserInfo(state => ({ ...state, email: user.email }))
+    setEmailCheck(null)
+  }
+  const sendEmailChange = async (newEmail?: string) => {
+    if (emailSending || isLoading || emailWaitMs > 0) return
+    setEmailSending(true)
+    setEmailActionError('')
+    try {
+      const { data, status } = await webApi.userRequestEmailChange(username, newEmail)
+      if (status === 200) applyEmailState(data.user)
+      else {
+        setEmailActionError(typeof data.errors === 'string' ? data.errors : Object.values(data.errors || {}).flat().join(' ') || 'Could not send the verification email.')
+        if (status === 429) {
+          const current = await webApi.user(username)
+          if (current.status === 200) setEmailState({ email: current.data.email, pendingEmail: current.data.pendingEmail, waitMs: current.data.emailChangeWaitMs || 0 })
+        }
+      }
+    } catch {
+      setEmailActionError('Could not send the verification email.')
+    } finally {
+      setEmailSending(false)
+    }
+  }
   const email = userInfo.email || ''
   const [emailCheck, setEmailCheck] = React.useState<{ email: string; error: string|null }|null>(null)
-  const emailUnchanged = email === user0.email
+  const emailUnchanged = email === emailState.email
   const emailError = !email ? 'Email is required.' : emailCheck?.email === email ? emailCheck.error : null
   const checkingEmail = canSetEmail && !!email && !emailUnchanged && emailCheck?.email !== email
   const emailValid = !canSetEmail || (!emailError && !checkingEmail)
@@ -90,14 +129,14 @@ const Settings = ({
   }, [canSetEmail, email, emailUnchanged, username])
   const profileImageRef = React.useRef<HTMLImageElement|null>(null)
   const updateState = (field) => (e) => {
-    if (field === 'email') setEmailCheck(null)
+    if (field === 'email') { setEmailCheck(null); setEmailActionError('') }
     const state = userInfo;
     const newState = { ...state, [field]: e.target.value };
     setUserInfo(newState);
   }
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (isLoading || !emailValid) return
+    if (isLoading || emailSending || !emailValid) return
     setLoading(true)
     const user = { ...userInfo }
     if (!user.password) {
@@ -112,6 +151,10 @@ const Settings = ({
         data.user.username === loggedInUser.username
       ) {
         await setupUserLocalStorage(data.user, setErrors)
+      }
+      if (needsEmailVerification && data.user.pendingEmail && !emailUnchanged) {
+        applyEmailState(data.user)
+        return
       }
       Router.push(routes.user(data.user.username))
     } else {
@@ -230,7 +273,19 @@ const Settings = ({
           <Label label={<>Email {canSetEmail && !emailUnchanged && <span role="status" aria-live="polite">
             {emailError ? <span id="email-check-error" className="error-messages"><ErrorIcon /> {emailError}</span>
               : checkingEmail ? 'Checking…' : <OkIcon title="Email available" />}
-          </span>}</>}>
+          </span>}
+            {emailState.pendingEmail && <span className="email-change-note">
+              {' '}<HelpIcon title="Your current email stays active until you verify the new address." /> Check your new email <b>{emailState.pendingEmail}</b> to verify it.
+            </span>}
+            {canSetEmail && (emailState.pendingEmail || (needsEmailVerification && !emailUnchanged)) && <span role="status" aria-live="polite">
+              {' '}{emailSending ? 'Sending…' : emailWaitMs > 0 ? `You can send a new email in ${emailWaitText}.`
+                : <button type="button" disabled={isLoading || (!emailUnchanged && !emailValid)}
+                    onClick={() => sendEmailChange(emailUnchanged ? undefined : email)}>
+                    {emailUnchanged ? 'Re-send' : 'Send verification'}
+                  </button>}
+            </span>}
+            {emailActionError && <span className="error-messages" role="alert"> <ErrorIcon /> {emailActionError}</span>}
+          </>}>
             <input
               type="email"
               placeholder="Email"
@@ -238,7 +293,7 @@ const Settings = ({
               onChange={updateState("email")}
               required
               disabled={!canSetEmail}
-              title={!canSetEmail ? 'Only admins can change email addresses' : undefined}
+              title={!canSetEmail ? 'You cannot change this email address' : undefined}
               aria-invalid={!!emailError}
               aria-describedby={canSetEmail && !emailUnchanged && emailError ? 'email-check-error' : undefined}
             />
@@ -299,7 +354,7 @@ const Settings = ({
           <button
             className="btn"
             type="submit"
-            disabled={isLoading || !emailValid}
+            disabled={isLoading || emailSending || !emailValid || (needsEmailVerification && !emailUnchanged && emailWaitMs > 0)}
           >
             <OkIcon /> Update settings
           </button>

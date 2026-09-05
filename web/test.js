@@ -1103,10 +1103,9 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.userUpdate('user0', { username: 'user0hacked' }))
       assert.strictEqual(status, 422)
 
-      // Non-admin users cannot modify email.
-      // TODO https://github.com/ourbigbook/ourbigbook/issues/268
+      // Changing email immediately after signup respects the shared email cooldown.
       ;({data, status} = await test.webApi.userUpdate('user0', { email: 'user0hacked@mail.com' }))
-      assert.strictEqual(status, 422)
+      assert.strictEqual(status, 429)
 
     // Create article in one go
 
@@ -5621,12 +5620,12 @@ it('api: admin can change user emails in settings', async () => {
     test.loginUser(user1)
     assert.strictEqual((await test.webApi.userUpdate('user0', { email: 'new@example.com' })).status, 403)
     test.loginUser(user0)
-    assert.strictEqual((await test.webApi.userCheckEmail('user0', 'new@example.com')).status, 403)
-    assert.strictEqual((await test.webApi.userUpdate('user0', { email: 'new@example.com' })).status, 422)
+    assert.strictEqual((await test.webApi.userCheckEmail('user0', 'new@example.com')).status, 200)
+    assert.strictEqual((await test.webApi.userUpdate('user0', { email: 'new@example.com' })).status, 429)
     if (testNext) {
       const settings = await test.sendJsonHttp('GET', routes.userEdit('user0'))
       assert.strictEqual(settings.status, 200)
-      assert_xpath('//x:input[@type="email" and @disabled]', settings.data)
+      assert_xpath('//x:input[@type="email" and not(@disabled)]', settings.data)
     }
     test.loginUser(admin)
     for (const email of ['new@example.com', user0.email.toUpperCase()]) {
@@ -5663,6 +5662,129 @@ it('api: admin can change user emails in settings', async () => {
     assert.strictEqual((await test.webApi.user('user0')).data.email, 'new@example.com')
     assert.strictEqual((await test.webApi.userUpdate('user2', { email: 'admin@example.com' })).status, 200)
   }, { canTestNext: true })
+})
+
+it('api: users verify email changes with the shared exponential cooldown', async () => {
+  await testApp(async test => {
+    const { User } = test.sequelize.models
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    const emails = test.app.get('emails')
+    const saved = await User.findByPk(user0.id)
+    await saved.update({ verificationCodeN: 0, verificationCode: 'old-password-reset-code' })
+    test.loginUser(user1)
+    assert.strictEqual((await test.webApi.userRequestEmailChange('user0', 'new@example.com')).status, 403)
+    assert.strictEqual((await test.webApi.userCheckEmail('user0', 'new@example.com')).status, 403)
+    test.loginUser(user0)
+    assert.strictEqual((await test.webApi.userRequestEmailChange('user0', user1.email)).status, 422)
+    const before = emails.length
+    const first = await test.webApi.userRequestEmailChange('user0', 'New@Example.COM')
+    assert.strictEqual(first.status, 200)
+    assert.strictEqual(first.data.user.email, user0.email)
+    assert.strictEqual(first.data.user.pendingEmail, 'new@example.com')
+    assert(first.data.user.emailChangeWaitMs > 14 * 60000)
+    assert(!('emailChangeCode' in first.data.user))
+    assert.strictEqual(emails.length, before + 1)
+    assert.strictEqual(emails[emails.length - 1].to, 'new@example.com')
+    await saved.reload()
+    const firstCode = saved.emailChangeCode
+    assert(emails[emails.length - 1].text.includes(firstCode))
+    assert.strictEqual(saved.email, user0.email)
+    assert.strictEqual(saved.verificationCode, 'old-password-reset-code')
+    assert.strictEqual(await User.verifyEmailChange('user0', 'invalid'), false)
+    assert.strictEqual(await User.verifyEmailChange('user1', firstCode), false)
+    assert.strictEqual((await test.webApi.resetPassword(user0.email, 'hacked', firstCode)).status, 422)
+    for (const email of [undefined, 'different@example.com']) {
+      assert.strictEqual((await test.webApi.userRequestEmailChange('user0', email)).status, 429)
+    }
+    assert.strictEqual((await test.webApi.userUpdate('user0', { email: 'different@example.com' })).status, 429)
+    assert.strictEqual(emails.length, before + 1)
+    if (testNext) {
+      const settings = await test.sendJsonHttp('GET', routes.userEdit('user0'))
+      assert.strictEqual(settings.status, 200)
+      assert_xpath(`//x:input[@type="email" and @value="${user0.email}"]`, settings.data)
+      assert_xpath('//x:label/x:span[contains(@class,"label") and contains(.,"Check your new email") and contains(.,"new@example.com") and contains(.,"You can send a new email in")]', settings.data)
+      assert(!settings.data.includes('>Re-send</button>'))
+    }
+    test.loginUser(user1)
+    assert.strictEqual((await test.webApi.user('user0')).data.pendingEmail, undefined)
+    test.disableToken()
+    assert.strictEqual((await test.webApi.user('user0')).data.pendingEmail, undefined)
+    test.loginUser(user0)
+    await saved.update({ verificationCodeSent: new Date(Date.now() - 16 * 60000) })
+    if (testNext) {
+      const settings = await test.sendJsonHttp('GET', routes.userEdit('user0'))
+      assert_xpath('//x:label/x:span//x:button[text()="Re-send" and not(@disabled)]', settings.data)
+    }
+    const resend = await test.webApi.userRequestEmailChange('user0')
+    assert.strictEqual(resend.status, 200)
+    assert(resend.data.user.emailChangeWaitMs > 59 * 60000)
+    await saved.reload()
+    const secondCode = saved.emailChangeCode
+    assert.notStrictEqual(firstCode, secondCode)
+    assert.strictEqual(await User.verifyEmailChange('user0', firstCode), false)
+    await saved.update({ verificationCodeSent: new Date(Date.now() - 61 * 60000) })
+    const changed = await test.webApi.userUpdate('user0', { email: 'third@example.com' })
+    assert.strictEqual(changed.status, 200)
+    assert.strictEqual(changed.data.user.email, user0.email)
+    assert.strictEqual(changed.data.user.pendingEmail, 'third@example.com')
+    assert(changed.data.user.emailChangeWaitMs > 239 * 60000)
+    assert.strictEqual(await User.verifyEmailChange('user0', secondCode), false)
+    await saved.reload()
+    const thirdCode = saved.emailChangeCode
+    // Pending addresses aren't reserved. Re-check uniqueness when confirming.
+    await User.update({ email: 'third@example.com' }, { where: { id: user1.id } })
+    assert.strictEqual(await User.verifyEmailChange('user0', thirdCode), false)
+    await saved.reload()
+    assert.strictEqual(saved.email, user0.email)
+    await User.update({ email: user1.email }, { where: { id: user1.id } })
+    if (testNext) {
+      // A link may be opened in a browser signed in to a different account.
+      test.loginUser(user1)
+      const verified = await test.sendJsonHttp('GET', `${routes.userVerify()}?emailChange=user0&code=${thirdCode}`)
+      assert.strictEqual(verified.status, 200)
+      assert(verified.data.includes('Your email address has been updated.'))
+    } else {
+      assert.strictEqual(await User.verifyEmailChange('user0', thirdCode), true)
+    }
+    assert.strictEqual(await User.verifyEmailChange('user0', thirdCode), false)
+    await saved.reload()
+    assert.strictEqual(saved.email, 'third@example.com')
+    assert.strictEqual(saved.pendingEmail, null)
+    assert.strictEqual(saved.emailChangeCode, null)
+    assert.strictEqual(saved.verificationCode, null)
+    assert.strictEqual(saved.verificationCodeN, 0)
+    assert.strictEqual((await test.webApi.userLogin({ username: 'third@example.com', password: 'asdf' })).status, 200)
+    assert.strictEqual((await test.webApi.userLogin({ username: user0.email, password: 'asdf' })).status, 422)
+    test.loginUser(user0)
+    if (config.postgres) {
+      const concurrent = await Promise.all([
+        test.webApi.userRequestEmailChange('user0', 'fourth@example.com'),
+        test.webApi.userRequestEmailChange('user0', 'fourth@example.com'),
+      ])
+      assert.deepStrictEqual(concurrent.map(result => result.status).sort(), [200, 429])
+    } else {
+      assert.strictEqual((await test.webApi.userRequestEmailChange('user0', 'fourth@example.com')).status, 200)
+    }
+    await saved.reload()
+    const fourthCode = saved.emailChangeCode
+    await User.update({ admin: true }, { where: { id: user1.id } })
+    test.loginUser(user1)
+    assert.strictEqual((await test.webApi.userUpdate('user0', { email: 'admin-set@example.com' })).status, 200)
+    assert.strictEqual(await User.verifyEmailChange('user0', fourthCode), false)
+  }, { canTestNext: true })
+})
+
+it('User pending email migration preserves existing accounts', async function() {
+  const sequelize = this.test.sequelize
+  const user = await createUser(sequelize, 0)
+  const migration = require('./migrations/21000101000039-user-add-pending-email-columns')
+  await migration.down(sequelize.getQueryInterface())
+  await migration.up(sequelize.getQueryInterface(), require('sequelize'))
+  await user.reload()
+  assert.strictEqual(user.email, 'user0@mail.com')
+  assert.strictEqual(user.pendingEmail, null)
+  assert.strictEqual(user.emailChangeCode, null)
 })
 
 it(`api: user validation`, async () => {

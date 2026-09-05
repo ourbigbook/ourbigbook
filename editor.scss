@@ -52,9 +52,9 @@
         outline-offset: 1px;
       }
       &:disabled {
+        background-color: $button-disabled-background-color;
         color: $button-disabled-color;
         cursor: default;
-        opacity: 0.6;
       }
     }
   }

@@ -450,6 +450,10 @@ class WebApi {
     return this.req('post', `users/${username}/email-check`, { body: { email }, ...reqOpts })
   }
 
+  async userRequestEmailChange(username, email, reqOpts={}) {
+    return this.req('post', `users/${username}/email-change`, { body: { email }, ...reqOpts })
+  }
+
   async userUnlistContent(username, reqOpts={}) {
     return this.req('put', `users/${username}/unlist-content`, reqOpts)
   }

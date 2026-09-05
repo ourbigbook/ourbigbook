@@ -1,5 +1,7 @@
 const url = require('url');
 
+const { htmlEscapeAttr } = require('ourbigbook')
+
 const { hashToHex, sendJsonHttp } = require('ourbigbook/web_api')
 
 const axios = require('axios')
@@ -238,12 +240,8 @@ async function validateCaptcha(config, req, res) {
 }
 
 function getTimeToWaitForNextEmailMs(user) {
-  if (user.verificationCodeN === 0)
-    return -1
-  return (
-    user.verificationCodeSent.getTime() +
-    lib.MILLIS_PER_MINUTE * user.sequelize.models.User.verificationCodeNToTimeDeltaMinutes(user.verificationCodeN)
-  ) - (new Date()).getTime()
+  const next = user.nextVerificationEmailAt()
+  return next ? next.getTime() - Date.now() : -1
 }
 
 // Create a new user.
@@ -374,29 +372,80 @@ Another step towards world domination is taken!
   }
 })
 
-// Validate an email without changing the account or exposing availability to non-admins.
+async function validateEmailChange(User, user, email, transaction) {
+  const candidate = User.build({ email })
+  try {
+    await candidate.validate({ fields: ['email'], hooks: false })
+  } catch (error) {
+    if (!(error instanceof SequelizeValidationError)) throw error
+    throw new ValidationError({ email: error.errors.map(item => item.message) })
+  }
+  const existing = await User.findOne({ attributes: ['id'], where: { email: candidate.email }, transaction })
+  if (existing && existing.id !== user.id) {
+    throw new ValidationError({ email: 'This email is taken.' })
+  }
+  return candidate.email
+}
+
+async function prepareEmailChange(req, user, email, transaction) {
+  if (!user.verified) throw new ValidationError({ email: 'Verify your current email before changing it.' })
+  const User = user.sequelize.models.User
+  email = await validateEmailChange(User, user, email, transaction)
+  if (email === user.email) throw new ValidationError({ email: 'This is already your current email.' })
+  const wait = getTimeToWaitForNextEmailMs(user)
+  if (wait > 0) {
+    throw new ValidationError({ email: `You can send a new email in ${lib.msToRoundedTime(wait)}` }, 429)
+  }
+  user.pendingEmail = email
+  user.emailChangeCode = User.generateVerificationCode()
+  user.verificationCodeN += 1
+  user.verificationCodeSent = new Date()
+  const verifyUrl = `${routes.host(req)}${routes.userVerify()}?emailChange=${encodeURIComponent(user.username)}&code=${user.emailChangeCode}`
+  return {
+    req,
+    to: email,
+    subject: 'Verify your new OurBigBook.com email address',
+    html: `<p>Please <a href="${htmlEscapeAttr(verifyUrl)}">verify your new email address</a> for your OurBigBook account.</p><p>If you did not request this change, ignore this email.</p>`,
+    text: `Verify your new email address for your OurBigBook account: ${verifyUrl}
+
+If you did not request this change, ignore this email.`,
+  }
+}
+
+router.post('/users/:username/email-change', auth.required, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const { User } = sequelize.models
+    const loggedInUser = await User.findByPk(req.payload.id)
+    if (cant.setUserEmail(loggedInUser, req.user)) throw new ValidationError(['You cannot change this email'], 403)
+    let user
+    await sequelize.transaction(async transaction => {
+      user = await User.findByPk(req.user.id, { transaction, lock: transaction.LOCK.UPDATE })
+      const email = validateParam(req.body, 'email', {
+        defaultValue: user.pendingEmail,
+        validators: [front.isString, front.isTruthy],
+      })
+      const mail = await prepareEmailChange(req, user, email, transaction)
+      await user.saveSideEffects({ transaction })
+      await lib.sendEmail(mail)
+    })
+    return res.json({ user: await user.toJson(loggedInUser) })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Check availability only for accounts the caller can edit.
 router.post('/users/:username/email-check', auth.required, async function(req, res, next) {
   res.set('Cache-Control', 'no-store')
   try {
     const { User } = req.app.get('sequelize').models
     const loggedInUser = await User.findByPk(req.payload.id)
-    if (cant.setUserEmail(loggedInUser)) {
-      throw new ValidationError(['Only admins can check email availability'], 403)
+    if (cant.setUserEmail(loggedInUser, req.user)) {
+      throw new ValidationError(['You cannot check email availability for this user'], 403)
     }
     const email = validateParam(req.body, 'email', { validators: [front.isString, front.isTruthy] })
-    const candidate = User.build({ email })
-    try {
-      await candidate.validate({ fields: ['email'], hooks: false })
-    } catch (error) {
-      if (!(error instanceof SequelizeValidationError)) throw error
-      // Invalid input is routine while typing; return the messages without
-      // sending a Sequelize exception to the development error logger.
-      throw new ValidationError({ email: error.errors.map(item => item.message) })
-    }
-    const existing = await User.findOne({ attributes: ['id'], where: { email: candidate.email } })
-    if (existing && existing.id !== req.user.id) {
-      throw new ValidationError({ email: 'This email is taken.' })
-    }
+    await validateEmailChange(User, req.user, email)
     return res.json({ available: true })
   } catch (error) {
     next(error)
@@ -413,133 +462,139 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
     if (msg) {
       throw new ValidationError([msg], 403)
     }
-    const userArg = req.body.user
-    if (userArg) {
-      // only update fields that were actually passed...
-      if (typeof userArg.username !== 'undefined') {
-        //user.username = userArg.username
-        if (user.username !== userArg.username) {
-          throw new ValidationError(
-            [`username cannot be modified currently, would change from ${user.username} to ${userArg.username}`],
-          )
-        }
-      }
-      if (typeof userArg.email !== 'undefined') {
-        const email = validateParam(userArg, 'email', { validators: [front.isString, front.isTruthy] })
-        if (user.email !== email.toLowerCase()) {
-          if (cant.setUserEmail(loggedInUser)) {
-            throw new ValidationError(['Only admins can change email addresses'])
+    await sequelize.transaction(async transaction => {
+      await user.reload({ transaction, lock: transaction.LOCK.UPDATE })
+      let mail
+      const userArg = req.body.user
+      if (userArg) {
+        // only update fields that were actually passed...
+        if (typeof userArg.username !== 'undefined') {
+          //user.username = userArg.username
+          if (user.username !== userArg.username) {
+            throw new ValidationError(
+              [`username cannot be modified currently, would change from ${user.username} to ${userArg.username}`],
+            )
           }
-          user.email = email
-          // Codes sent to the old address must not authorize password resets
-          // or verification at the new address.
-          user.verificationCode = null
-          user.verificationCodeN = 0
         }
-      }
-      if (typeof userArg.displayName !== 'undefined') {
-        const displayName = validateParam(userArg, 'displayName', {
-          validators: [front.isString, front.isTruthy],
-          defaultValue: undefined,
-        })
-        user.displayName = displayName
-      }
-      const emailNotifications = validateParam(userArg, 'emailNotifications', {
-        validators: [front.isBoolean],
-        defaultValue: undefined,
-      })
-      if (emailNotifications !== undefined) {
-        user.emailNotifications = userArg.emailNotifications
-      }
-      const emailNotificationsForArticleAnnouncement = validateParam(userArg, 'emailNotificationsForArticleAnnouncement', {
-        validators: [front.isBoolean],
-        defaultValue: undefined,
-      })
-      if (emailNotificationsForArticleAnnouncement !== undefined) {
-        user.emailNotificationsForArticleAnnouncement = userArg.emailNotificationsForArticleAnnouncement
-      }
-      const hideArticleDates = validateParam(userArg, 'hideArticleDates', {
-        validators: [front.isBoolean],
-        defaultValue: undefined,
-      })
-      if (hideArticleDates !== undefined) {
-        user.hideArticleDates = userArg.hideArticleDates
-      }
-
-      // User limits
-      {
-        const msg = cant.setUserLimits(loggedInUser)
-        function set(val, key) {
-          if (val !== undefined) {
-            if (msg) {
-              throw new ValidationError([msg], 403)
+        if (typeof userArg.email !== 'undefined') {
+          const email = validateParam(userArg, 'email', { validators: [front.isString, front.isTruthy] })
+          if (user.email !== email.toLowerCase()) {
+            if (loggedInUser.admin) {
+              user.email = email
+              user.pendingEmail = null
+              user.emailChangeCode = null
+              user.verificationCode = null
+              user.verificationCodeN = 0
             } else {
-              user[key] = val
+              mail = await prepareEmailChange(req, user, email, transaction)
             }
           }
         }
-        set(
-          validateParam(userArg, 'maxArticles', {
-            typecast: front.typecastInteger,
-            validators: [front.isPositiveInteger],
+        if (typeof userArg.displayName !== 'undefined') {
+          const displayName = validateParam(userArg, 'displayName', {
+            validators: [front.isString, front.isTruthy],
             defaultValue: undefined,
-          }),
-          'maxArticles',
-        )
-        set(
-          validateParam(userArg, 'maxArticleSize', {
-            typecast: front.typecastInteger,
-            validators: [front.isPositiveInteger],
-            defaultValue: undefined,
-          }),
-          'maxArticleSize',
-        )
-        set(
-          validateParam(userArg, 'maxUploads', {
-            typecast: front.typecastInteger,
-            validators: [front.isPositiveInteger],
-            defaultValue: undefined,
-          }),
-          'maxUploads',
-        )
-        set(
-          validateParam(userArg, 'maxUploadSize', {
-            typecast: front.typecastInteger,
-            validators: [front.isPositiveInteger],
-            defaultValue: undefined,
-          }),
-          'maxUploadSize',
-        )
-        set(
-          validateParam(userArg, 'maxIssuesPerMinute', {
-            typecast: front.typecastInteger,
-            validators: [front.isPositiveInteger],
-            defaultValue: undefined,
-          }),
-          'maxIssuesPerMinute',
-        )
-        set(
-          validateParam(userArg, 'maxIssuesPerHour', {
-            typecast: front.typecastInteger,
-            validators: [front.isPositiveInteger],
-            defaultValue: undefined,
-          }),
-          'maxIssuesPerHour',
-        )
-        set(
-          validateParam(userArg, 'locked', {
-            validators: [front.isBoolean],
-            defaultValue: undefined,
-          }),
-          'locked',
-        )
-      }
+          })
+          user.displayName = displayName
+        }
+        const emailNotifications = validateParam(userArg, 'emailNotifications', {
+          validators: [front.isBoolean],
+          defaultValue: undefined,
+        })
+        if (emailNotifications !== undefined) {
+          user.emailNotifications = userArg.emailNotifications
+        }
+        const emailNotificationsForArticleAnnouncement = validateParam(userArg, 'emailNotificationsForArticleAnnouncement', {
+          validators: [front.isBoolean],
+          defaultValue: undefined,
+        })
+        if (emailNotificationsForArticleAnnouncement !== undefined) {
+          user.emailNotificationsForArticleAnnouncement = userArg.emailNotificationsForArticleAnnouncement
+        }
+        const hideArticleDates = validateParam(userArg, 'hideArticleDates', {
+          validators: [front.isBoolean],
+          defaultValue: undefined,
+        })
+        if (hideArticleDates !== undefined) {
+          user.hideArticleDates = userArg.hideArticleDates
+        }
 
-      if (typeof userArg.password !== 'undefined') {
-        sequelize.models.User.setPassword(user, userArg.password)
+        // User limits
+        {
+          const msg = cant.setUserLimits(loggedInUser)
+          function set(val, key) {
+            if (val !== undefined) {
+              if (msg) {
+                throw new ValidationError([msg], 403)
+              } else {
+                user[key] = val
+              }
+            }
+          }
+          set(
+            validateParam(userArg, 'maxArticles', {
+              typecast: front.typecastInteger,
+              validators: [front.isPositiveInteger],
+              defaultValue: undefined,
+            }),
+            'maxArticles',
+          )
+          set(
+            validateParam(userArg, 'maxArticleSize', {
+              typecast: front.typecastInteger,
+              validators: [front.isPositiveInteger],
+              defaultValue: undefined,
+            }),
+            'maxArticleSize',
+          )
+          set(
+            validateParam(userArg, 'maxUploads', {
+              typecast: front.typecastInteger,
+              validators: [front.isPositiveInteger],
+              defaultValue: undefined,
+            }),
+            'maxUploads',
+          )
+          set(
+            validateParam(userArg, 'maxUploadSize', {
+              typecast: front.typecastInteger,
+              validators: [front.isPositiveInteger],
+              defaultValue: undefined,
+            }),
+            'maxUploadSize',
+          )
+          set(
+            validateParam(userArg, 'maxIssuesPerMinute', {
+              typecast: front.typecastInteger,
+              validators: [front.isPositiveInteger],
+              defaultValue: undefined,
+            }),
+            'maxIssuesPerMinute',
+          )
+          set(
+            validateParam(userArg, 'maxIssuesPerHour', {
+              typecast: front.typecastInteger,
+              validators: [front.isPositiveInteger],
+              defaultValue: undefined,
+            }),
+            'maxIssuesPerHour',
+          )
+          set(
+            validateParam(userArg, 'locked', {
+              validators: [front.isBoolean],
+              defaultValue: undefined,
+            }),
+            'locked',
+          )
+        }
+
+        if (typeof userArg.password !== 'undefined') {
+          sequelize.models.User.setPassword(user, userArg.password)
+        }
+        await user.saveSideEffects({ transaction })
+        if (mail) await lib.sendEmail(mail)
       }
-      await user.saveSideEffects()
-    }
+    })
     user.token = user.generateJWT()
     return res.json({ user: await user.toJson(user) })
   } catch(error) {

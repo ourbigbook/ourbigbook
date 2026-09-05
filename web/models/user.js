@@ -133,6 +133,14 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(1024),
         allowNull: true,
       },
+      pendingEmail: {
+        type: DataTypes.STRING,
+        allowNull: true,
+      },
+      emailChangeCode: {
+        type: DataTypes.STRING(1024),
+        allowNull: true,
+      },
       verificationCodeSent: {
         type: DataTypes.DATE,
         allowNull: true,
@@ -337,6 +345,8 @@ module.exports = (sequelize) => {
       if (!cant.viewUserSettings(loggedInUser, this)) {
         ret.ip = this.ip
         ret.email = this.email
+        ret.pendingEmail = this.pendingEmail
+        ret.emailChangeWaitMs = Math.max(0, (this.nextVerificationEmailAt()?.getTime() || 0) - Date.now())
         ret.emailNotifications = this.emailNotifications
         ret.emailNotificationsForArticleAnnouncement = this.emailNotificationsForArticleAnnouncement
         ret.hideArticleDates = this.hideArticleDates
@@ -416,6 +426,33 @@ module.exports = (sequelize) => {
 
   User.verificationCodeNToTimeDeltaMinutes = function verificationCodeNToTimeDeltaMinutes(verificationCodeN) {
     return 15 * 4**(verificationCodeN - 1)
+  }
+
+  User.prototype.nextVerificationEmailAt = function() {
+    return this.verificationCodeN && this.verificationCodeSent
+      ? new Date(this.verificationCodeSent.getTime() + 60000 * User.verificationCodeNToTimeDeltaMinutes(this.verificationCodeN))
+      : null
+  }
+
+  User.verifyEmailChange = async function(username, code) {
+    if (typeof code !== 'string' || !code) return false
+    try {
+      return await sequelize.transaction(async transaction => {
+        const user = await User.findOne({ where: { username }, transaction, lock: transaction.LOCK.UPDATE })
+        if (!user || !user.pendingEmail || user.emailChangeCode !== code) return false
+        user.email = user.pendingEmail
+        user.pendingEmail = null
+        user.emailChangeCode = null
+        user.verificationCode = null
+        user.verificationCodeN = 0
+        await user.saveSideEffects({ transaction })
+        return true
+      })
+    } catch (error) {
+      // Another account may have claimed the address since the link was sent.
+      if (error instanceof Sequelize.UniqueConstraintError) return false
+      throw error
+    }
   }
 
   User.countArticleLikesReceived = async function(uid, opts={}) {

@@ -12,19 +12,36 @@ export interface VerifyPageProps extends CommonPropsType {
   email?: string;
   user?: UserType;
   verificationOk?: boolean;
+  emailChangeUsername?: string;
 }
 
 export default function VerifyPage({
   code,
   email,
   user,
-  verificationOk
+  verificationOk,
+  emailChangeUsername,
+  loggedInUser,
 } : VerifyPageProps) {
   React.useEffect(() => {
-    if (verificationOk) {
+    if (verificationOk && !emailChangeUsername) {
       setupUserLocalStorage(user).then(() => Router.push(routes.home()))
     }
   })
+  if (emailChangeUsername) {
+    const title = 'Verify your email address'
+    return <>
+      <MyHead title={title} />
+      <div className="verify-page content-not-ourbigbook">
+        <h1>{title}</h1>
+        <p>{verificationOk ? 'Your email address has been updated.'
+          : 'This link is invalid, has already been used, or the email address is no longer available. Request a new link from Settings.'}</p>
+        <Link href={loggedInUser?.username === emailChangeUsername ? routes.userEdit(emailChangeUsername) : routes.userLogin()}>
+          {loggedInUser?.username === emailChangeUsername ? 'Return to Settings' : 'Sign in'}
+        </Link>
+      </div>
+    </>
+  }
   const title = 'Verify your account'
   return <>
     <MyHead title={title} />
@@ -53,6 +70,16 @@ import { getLoggedInUser } from 'back'
 
 export const getServerSideProps = async function getServerSidePropsVerifyPage({ params = {}, req, res }) {
   const loggedInUser = await getLoggedInUser(req, res)
+  const emailChangeUsername = req.query.emailChange
+  if (typeof emailChangeUsername === 'string' && emailChangeUsername) {
+    res.setHeader('Cache-Control', 'no-store')
+    const props: VerifyPageProps = {
+      emailChangeUsername,
+      verificationOk: await req.sequelize.models.User.verifyEmailChange(emailChangeUsername, req.query.code),
+    }
+    if (loggedInUser) props.loggedInUser = await loggedInUser.toJson(loggedInUser)
+    return { props }
+  }
   if (loggedInUser) {
     return {
       redirect: {

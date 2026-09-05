@@ -30,19 +30,6 @@
 </header>
 <main class="ourbigbook">
 {{ body }}</main>
-<footer>
-<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
-<div><a href="{{ dir_relpath }}{{ html_index }}">Website source code</a></div>
-{% comment %}
-<div>Source code: <a href="https://github.com/ourbigbook/ourbigbook">https://github.com/ourbigbook/ourbigbook</a></div>
-<div>Git version: <a href="https://github.com/ourbigbook/ourbigbook/commit/{{ git_sha }}">{{ git_sha }}</a></div>
-{% if input_path != "" %}
-<div>Source code for this page: <a href="https://github.com/ourbigbook/ourbigbook/blob/{{ git_sha }}/{{ input_path }}">{{ input_path }}</a></div>
-{% endif %}
-{% endcomment %}{% if input_path != "" %}<div>Source code for this page: <a href="{{ file_relpath }}/{{ input_path }}{{ out_ext }}">{{ input_path }}</a></div>
-{% endif %}
-<div>{{ theme_toggle }}</div>
-</footer>
 {% if publishTargetIsWebsite %}{% comment %}Google Analytics, AKA selling my soul to Google for some backlinks.{% endcomment %}<script async src="https://www.googletagmanager.com/gtag/js?id=G-2XSEK2ND00"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -65,5 +52,19 @@
         crossorigin="anonymous"
         async>
 </script>
-{% endif %}{{ post_body }}</body>
+{% endif %}
+<footer>
+<div>License: <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> unless noted</div>
+<div><a href="{{ dir_relpath }}{{ html_index }}">Website source code</a></div>
+{% comment %}
+<div>Source code: <a href="https://github.com/ourbigbook/ourbigbook">https://github.com/ourbigbook/ourbigbook</a></div>
+<div>Git version: <a href="https://github.com/ourbigbook/ourbigbook/commit/{{ git_sha }}">{{ git_sha }}</a></div>
+{% if input_path != "" %}
+<div>Source code for this page: <a href="https://github.com/ourbigbook/ourbigbook/blob/{{ git_sha }}/{{ input_path }}">{{ input_path }}</a></div>
+{% endif %}
+{% endcomment %}{% if input_path != "" %}<div>Source code for this page: <a href="{{ file_relpath }}/{{ input_path }}{{ out_ext }}">{{ input_path }}</a></div>
+{% endif %}
+<div>{{ theme_toggle }}</div>
+</footer>
+{{ post_body }}</body>
 </html>

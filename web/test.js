@@ -458,14 +458,21 @@ it('new user index article has null dates and sorts after dated articles', async
   assert.strictEqual(indexArticle.createdAt, null)
   assert.strictEqual(indexArticle.updatedAt, null)
 
+  await createUser(sequelize, 1)
+  await createUser(sequelize, 2)
   const datedArticle = await createArticle(sequelize, user, { i: 0 })
-  for (const order of ['createdAt', 'updatedAt']) {
-    const rows = await Article.getArticles({
-      count: false,
-      order,
-      sequelize,
-    })
-    assert.deepStrictEqual(rows.map(article => article.id), [datedArticle.id, indexArticle.id])
+  const expectedSlugs = [datedArticle.slug, 'user2', 'user1', 'user0']
+  for (const order of [undefined, 'createdAt', 'updatedAt', 'score']) {
+    for (const orderAscDesc of ['ASC', 'DESC']) {
+      const args = { count: false, order, orderAscDesc, sequelize }
+      const rows = await Article.getArticles(args)
+      assert.deepStrictEqual(rows.map(article => article.slug), expectedSlugs)
+      // Tied null dates must also have a stable order across page boundaries.
+      for (const offset of [0, 2]) {
+        const page = await Article.getArticles({ ...args, offset, limit: 2 })
+        assert.deepStrictEqual(page.map(article => article.slug), expectedSlugs.slice(offset, offset + 2))
+      }
+    }
   }
 })
 
@@ -508,8 +515,8 @@ it('User.findAndCountArticlesByFollowed', async function() {
     assert(rows.slice(0, 6).every(article => article[order] !== null))
     assert(rows.slice(6).every(article => article[order] === null))
     assert.deepStrictEqual(
-      rows.slice(6).map(article => article.slug).sort(),
-      ['user1', 'user3']
+      rows.slice(6).map(article => article.slug),
+      ['user3', 'user1']
     )
   }
 })

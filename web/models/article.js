@@ -1366,8 +1366,11 @@ WHERE
         orderList.push([order, orderDirection])
       }
       if (order !== 'createdAt' && order !== 'nestedSetIndex') {
-        // To make results deterministic.
         orderList.push(['createdAt', 'DESC NULLS LAST'])
+      }
+      if (order !== 'nestedSetIndex') {
+        // Dates can tie, especially for automatic index articles with null dates.
+        orderList.push(['id', 'DESC'])
       }
     } else {
       // Override all other orderings, as we currently don't have

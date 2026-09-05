@@ -465,7 +465,7 @@ module.exports = (sequelize) => {
       offset,
       limit,
       subQuery: false,
-      order: [[order, orderAscDesc]],
+      order: [[order, orderAscDesc], ['id', 'DESC']],
       include: [
         {
           model: sequelize.models.File,

@@ -2,9 +2,63 @@
 
 .ourbigbook-editor {
   display: flex;
+  flex-direction: column;
   /* https://stackoverflow.com/questions/12989931/body-height-100-displaying-vertical-scrollbar/46847795#46847795
    * 20 == 2x 10px padding (top + bottom). */
   height: 100%;
+  .editor-panes {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+  }
+  .editor-toolbar {
+    @include ourbigbook-theme-dark;
+    align-items: center;
+    background-color: $button-background-color;
+    border: 1px solid $button-border-color;
+    border-radius: 3px;
+    display: flex;
+    flex-shrink: 0;
+    flex-wrap: wrap;
+    font-family: $font-family;
+    gap: 4px;
+    margin-bottom: 5px;
+    padding: 4px;
+    .editor-toolbar-group {
+      align-items: center;
+      display: flex;
+      gap: 2px;
+      &:not(:first-child) {
+        border-left: 1px solid $button-border-color;
+        padding-left: 4px;
+      }
+    }
+    button, select {
+      background-color: $button-background-color;
+      border: 1px solid transparent;
+      border-radius: 3px;
+      color: $button-color;
+      cursor: pointer;
+      font-family: inherit;
+      font-size: 14px;
+      line-height: 24px;
+      min-height: 30px;
+      min-width: 30px;
+      padding: 2px 6px;
+      &:hover:not(:disabled) {
+        background-color: $code-background-color;
+      }
+      &:focus-visible {
+        outline: 2px solid $a-color;
+        outline-offset: 1px;
+      }
+      &:disabled {
+        color: $button-disabled-color;
+        cursor: default;
+        opacity: 0.6;
+      }
+    }
+  }
   .errorDecoration {
     background: red;
     width: 4px !important;

@@ -493,6 +493,7 @@ export default function EditorPageHoc({
               initialLine: initialArticle ? initialArticle.titleSourceLine : undefined,
               modifyEditorInput: ourbigbook.modifyEditorInput,
               titleSource: initialFileState.titleSource,
+              toolbarHeaderLevels: isNew && !isIssue ? [2, 3, 4] : [],
               postBuildCallback: async (extra_returns, ourbigbookEditor) => {
                 setHasConvertError(extra_returns.errors.length > 0)
 
@@ -679,6 +680,10 @@ export default function EditorPageHoc({
         ourbigbookEditorElem.current.ourbigbookEditor.setTitleSource(file.titleSource)
       }
     }, [file, editorLoaded])
+
+    useEffect(() => {
+      ourbigbookEditorElem.current?.ourbigbookEditor?.setToolbarDisabled(isLoading)
+    }, [isLoading, editorLoaded])
     useCtrlEnterSubmit(handleSubmit)
     const handleCancel = async (e) => {
       if (!ourbigbookEditorElem.current.ourbigbookEditor.modified || confirm('Are you sure you want to abandon your changes?')) {

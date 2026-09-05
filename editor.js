@@ -1,5 +1,3 @@
-const { INDEX_BASENAME_NOEXT } = require(".")
-
 class OurbigbookEditor {
   constructor(root_elem, initial_content, monaco, ourbigbook, ourbigbook_runtime, options) {
     this.ourbigbook = ourbigbook
@@ -20,7 +18,7 @@ class OurbigbookEditor {
       options.production = true
     }
     if (!('modifyEditorInput' in options)) {
-      options.modifyEditorInput = (old) => { return { offset: 0, new: old } }
+      options.modifyEditorInput = (titleSource, bodySource) => ({ offset: 0, new: bodySource })
     }
     this.modifyEditorInput = options.modifyEditorInput
     if (!('onDidChangeModelContentCallback' in options)) {
@@ -51,9 +49,12 @@ class OurbigbookEditor {
     errors_elem.classList.add('errors');
     errors_elem.classList.add('ourbigbook-body');
     root_elem.innerHTML = '';
-    root_elem.appendChild(input_elem);
-    root_elem.appendChild(output_elem);
-    root_elem.appendChild(errors_elem);
+    const panes = document.createElement('div')
+    panes.className = 'editor-panes'
+    panes.appendChild(input_elem);
+    panes.appendChild(output_elem);
+    panes.appendChild(errors_elem);
+    root_elem.appendChild(panes)
 
     monaco.languages.register({ id: 'ourbigbook' });
     // TODO replace with our own tokenizer output:
@@ -170,12 +171,14 @@ class OurbigbookEditor {
       }
     );
     this.editor = editor
+    this.toolbar_elem = createEditorToolbar(this, root_elem.ownerDocument)
+    root_elem.insertBefore(this.toolbar_elem, panes)
     if (options.initialLine) {
       // https://stackoverflow.com/questions/45123386/scroll-to-line-in-monaco-editor
       editor.revealLineInCenter(options.initialLine)
     }
     editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
-      this.handleSubmit()
+      if (this.handleSubmit) this.handleSubmit()
     })
     editor.onDidChangeModelContent(async (e) => {
       options.onDidChangeModelContentCallback(editor, e)
@@ -319,8 +322,15 @@ class OurbigbookEditor {
   }
 
   dispose() {
+    this.setToolbarDisabled(true)
     window.removeEventListener('beforeunload', this.beforeunload);
     this.editor.dispose()
+  }
+
+  setToolbarDisabled(disabled) {
+    for (const control of this.toolbar_elem.querySelectorAll('button, select')) {
+      control.disabled = disabled
+    }
   }
 
   getValue() {
@@ -385,6 +395,263 @@ class OurbigbookEditor {
 }
 
 
+// Source edits for the shared editor toolbar. Offsets refer to the original Monaco model.
+// Keep this independent of the DOM so the generated markup can be tested with the converter.
+function isWrapped(text, open) {
+  if (!text.startsWith(open)) return false
+  let depth = 1
+  for (let i = open.length; i < text.length; i++) {
+    if (text[i] === '\\') i++
+    else if (text[i] === '[') depth++
+    else if (text[i] === ']' && --depth === 0) return i === text.length - 1
+  }
+  return false
+}
+
+function getMarkupEdit(action, value, start, end) {
+  const eol = value.includes('\r\n') ? '\r\n' : '\n'
+  const selected = value.slice(start, end)
+  const edit = (text, from=0, to=text.length) => ({
+    start, end, text, selectionStart: start + from, selectionEnd: start + to,
+  })
+  const wrap = (before, content, after) => edit(before + content + after, before.length, before.length + content.length)
+
+  if (action === 'bold' || action === 'italic') {
+    const open = action === 'bold' ? '\\b[' : '\\i['
+    if (start !== end && value.slice(start - open.length, start) === open && value[end] === ']') {
+      start -= open.length
+      end++
+      return edit(selected)
+    }
+    if (!selected) return wrap(open, action === 'bold' ? 'bold text' : 'italic text', ']')
+    // Format each line separately: inline macros cannot contain paragraphs or list items.
+    const lines = selected.split(eol).map(line => line.match(/^([ \t]*(?:(?:\*|>|\|\|?|={1,6}) )?)(.*?)([ \t]*)$/))
+    const remove = lines.filter(parts => parts[2]).every(parts => isWrapped(parts[2], open))
+    const text = lines.map(([, prefix, content, suffix]) => prefix + (content
+      ? remove ? content.slice(open.length, -1) : open + content + ']'
+      : '') + suffix).join(eol)
+    if (lines.length === 1 && !remove && lines[0][2]) {
+      const from = lines[0][1].length + open.length
+      return edit(text, from, from + lines[0][2].length)
+    }
+    return edit(text)
+  }
+
+  if (action === 'link') {
+    if (/^https?:\/\/\S+$/i.test(selected)) {
+      const url = selected.replace(/[\\[\]{}]/g, '\\$&')
+      return wrap(`${url}[`, 'link text', ']')
+    }
+    const url = 'http://example.com'
+    return edit(`${url}[${selected || 'link text'}]`, 0, url.length)
+  }
+
+  if ((action === 'code' || action === 'math') && !selected.includes('\n')) {
+    const math = action === 'math'
+    const content = selected || (math ? 'x^2' : 'code')
+    const delimiter = math ? '$' : '`'
+    if (!content.includes(delimiter)) return wrap(delimiter, content, delimiter)
+    // Literal arguments preserve embedded delimiters, brackets and backslashes.
+    const brackets = Math.max(2, ...Array.from(content.matchAll(/[\[\]]+/g), match => match[0].length + 1))
+    return wrap((math ? '\\m' : '\\c') + '['.repeat(brackets) + eol, content, eol + ']'.repeat(brackets))
+  }
+
+  // Block actions affect whole touched lines. A selection ending at column 1
+  // belongs to the preceding line, as with Monaco's built-in indentation commands.
+  const originalStart = start
+  const originalEnd = end
+  if (action !== 'table' || start !== end) {
+    start = start === 0 ? 0 : value.lastIndexOf('\n', start - 1) + 1
+    if (end > originalStart && value[end - 1] === '\n') end -= eol.length
+    const nextLine = value.indexOf('\n', end)
+    end = nextLine < 0 ? value.length : nextLine - (value[nextLine - 1] === '\r' ? 1 : 0)
+  }
+  const content = value.slice(start, end)
+  const lines = content.split(eol)
+  const block = (text, from=0, to=text.length) => {
+    const before = value.slice(0, start)
+    const after = value.slice(end)
+    const prefix = !before || before.endsWith(eol + eol) ? '' : before.endsWith(eol) ? eol : eol + eol
+    const suffix = !after || after.startsWith(eol + eol) ? '' : after.startsWith(eol) ? eol : eol + eol
+    return edit(prefix + text + suffix, prefix.length + from, prefix.length + to)
+  }
+
+  if (action === 'indent' || action === 'outdent') {
+    const text = lines.map(line => action === 'indent' ? '  ' + line : line.replace(/^(?: {1,2}|\t)/, '')).join(eol)
+    if (originalStart === originalEnd) {
+      const removed = lines[0].length - text.length
+      const cursor = Math.max(0, originalStart - start - removed)
+      return edit(text, cursor, cursor)
+    }
+    return edit(text)
+  }
+
+  if (action === 'bullet-list' || action === 'numbered-list') {
+    const hasContent = content.trim().length > 0
+    const remove = action === 'bullet-list' && hasContent && lines.filter(line => line.trim()).every(line => /^ *\* /.test(line))
+    const items = hasContent ? lines.map(line => {
+      if (!line.trim()) return line
+      if (remove) return line.replace(/^( *)\* /, '$1')
+      return /^ *\* /.test(line) ? line : line.replace(/^( *)(.*)$/, '$1* $2')
+    }).join(eol) : '* List item'
+    if (action === 'numbered-list') {
+      const before = '\\Ol[' + eol
+      return block(before + items + eol + ']', before.length + (hasContent ? 0 : 2), before.length + items.length)
+    }
+    return block(items, hasContent ? 0 : 2)
+  }
+
+  if (action === 'quote') {
+    const body = content || 'Quoted text'
+    const text = body.split(eol).map((line, i) => i === 0 ? '> ' + line : line ? '  ' + line : '').join(eol)
+    return block(text, 2)
+  }
+
+  if (['code', 'code-block', 'math', 'math-block'].includes(action)) {
+    const math = action === 'math' || action === 'math-block'
+    const body = content || (math ? '\\frac{a}{b}' : 'Code goes here')
+    const fence = (math ? '$' : '`').repeat(Math.max(2, ...Array.from(body.matchAll(math ? /\$+/g : /`+/g), match => match[0].length + 1)))
+    return block(fence + eol + body + eol + fence, fence.length + eol.length, fence.length + eol.length + body.length)
+  }
+
+  if (action === 'table') {
+    const rows = content.trim() ? lines.filter(line => line.trim()).map(line => line.split('\t')) : [
+      ['Heading 1', 'Heading 2'],
+      ['Cell 1', 'Cell 2'],
+    ]
+    const columns = Math.max(...rows.map(row => row.length))
+    const text = rows.map((row, i) => Array.from({ length: columns }, (_, j) =>
+      `${i === 0 ? '||' : '|'} ${row[j] || ''}`
+    ).join(eol)).join(eol + eol)
+    return block(text, 3, 3 + rows[0][0].length)
+  }
+
+  if (/^heading-[1-6]$/.test(action)) {
+    const prefix = '='.repeat(Number(action.slice(-1))) + ' '
+    const text = content.trim() ? lines.filter(line => line.trim()).map(line =>
+      prefix + line.trim().replace(/^={1,6} +/, '')
+    ).join(eol + eol) : prefix + 'Heading'
+    return block(text, prefix.length)
+  }
+
+  throw new Error(`Unknown editor markup action: ${action}`)
+}
+
+function applyEditorMarkup(ourbigbookEditor, action) {
+  const { editor, monaco } = ourbigbookEditor
+  const model = editor.getModel()
+  const selection = editor.getSelection()
+  if (!model || !selection) return
+  const edit = getMarkupEdit(action, model.getValue(),
+    model.getOffsetAt(selection.getStartPosition()), model.getOffsetAt(selection.getEndPosition()))
+  const start = model.getPositionAt(edit.start)
+  const end = model.getPositionAt(edit.end)
+  editor.pushUndoStop()
+  editor.executeEdits('ourbigbook-toolbar', [{
+    range: new monaco.Range(start.lineNumber, start.column, end.lineNumber, end.column),
+    text: edit.text,
+  }], () => {
+    const from = model.getPositionAt(edit.selectionStart)
+    const to = model.getPositionAt(edit.selectionEnd)
+    return [new monaco.Selection(from.lineNumber, from.column, to.lineNumber, to.column)]
+  })
+  editor.pushUndoStop()
+  editor.focus()
+  editor.revealRangeInCenterIfOutsideViewport(editor.getSelection())
+}
+
+
+function createEditorToolbar(ourbigbookEditor, doc=document) {
+  const toolbar = doc.createElement('div')
+  toolbar.className = 'editor-toolbar'
+  toolbar.setAttribute('role', 'toolbar')
+  toolbar.setAttribute('aria-label', 'Text formatting')
+  const groups = [
+    [
+      ['bold', 'B', 'Bold — format selected text', 'b'],
+      ['italic', 'I', 'Italic — format selected text', 'i'],
+      ['link', '🔗 Link', 'Link — use selected text or URL'],
+      ['code', '</> Inline code', 'Inline code — format selected text'],
+      ['code-block', '{ } Code block', 'Code block — format selected lines'],
+    ],
+    [
+      ['math', 'x² Inline math', 'Inline math — format selected LaTeX'],
+      ['math-block', '∑ Block math', 'Block math — format selected LaTeX lines'],
+    ],
+    [
+      ['bullet-list', '• List', 'Bullet list — toggle bullets on selected lines'],
+      ['numbered-list', '1. List', 'Numbered list — turn selected lines into items'],
+      ['quote', 'Quote', 'Quote — quote selected lines'],
+      ['table', 'Table', 'Table — turn selected lines into rows and tabs into columns; first row is headings'],
+    ],
+    [
+      ['outdent', '←', 'Decrease indentation by two spaces'],
+      ['indent', '→', 'Increase indentation by two spaces'],
+    ],
+  ]
+  const groupElement = () => {
+    const group = doc.createElement('div')
+    group.className = 'editor-toolbar-group'
+    toolbar.appendChild(group)
+    return group
+  }
+  for (const group of groups) {
+    const element = groupElement()
+    for (const [action, label, title, tag] of group) {
+      const button = doc.createElement('button')
+      button.type = 'button'
+      button.title = title
+      button.setAttribute('aria-label', title)
+      button.setAttribute('data-action', action)
+      const content = tag ? doc.createElement(tag) : button
+      content.textContent = label
+      if (tag) button.appendChild(content)
+      button.addEventListener('mousedown', event => event.preventDefault())
+      button.addEventListener('click', () => {
+        if (!button.disabled) applyEditorMarkup(ourbigbookEditor, action)
+      })
+      element.appendChild(button)
+    }
+  }
+  const levels = ourbigbookEditor.options.toolbarHeaderLevels || [1, 2, 3, 4, 5, 6]
+  if (levels.length) {
+    const select = doc.createElement('select')
+    select.setAttribute('aria-label', 'Insert heading')
+    select.title = 'Turn the current line or selected lines into headings'
+    const placeholder = doc.createElement('option')
+    placeholder.textContent = 'Heading'
+    placeholder.value = ''
+    placeholder.disabled = true
+    placeholder.selected = true
+    select.appendChild(placeholder)
+    for (const level of levels) {
+      const option = doc.createElement('option')
+      option.value = `heading-${level}`
+      option.textContent = `Heading ${level}`
+      select.appendChild(option)
+    }
+    select.addEventListener('change', () => {
+      if (!select.disabled && select.value) applyEditorMarkup(ourbigbookEditor, select.value)
+      select.value = ''
+    })
+    groupElement().appendChild(select)
+  }
+  toolbar.addEventListener('keydown', event => {
+    if (event.target.tagName === 'SELECT') return
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return
+    const controls = Array.from(toolbar.querySelectorAll('button:enabled, select:enabled'))
+    const index = controls.indexOf(event.target)
+    if (index < 0) return
+    event.preventDefault()
+    const next = event.key === 'Home' ? 0 : event.key === 'End' ? controls.length - 1
+      : (index + (event.key === 'ArrowRight' ? 1 : -1) + controls.length) % controls.length
+    controls[next].focus()
+  })
+  return toolbar
+}
+
 if (typeof exports !== 'undefined') {
   exports.OurbigbookEditor = OurbigbookEditor;
+  exports.getMarkupEdit = getMarkupEdit
+  exports.applyEditorMarkup = applyEditorMarkup
 }

@@ -16,6 +16,7 @@ const ourbigbook_nodejs = require('./nodejs');
 const ourbigbook_nodejs_front = require('./nodejs_front');
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const theme = require('./runtime_common')
+const { OurbigbookEditor, getMarkupEdit, applyEditorMarkup } = require('./editor')
 const { markdownToOurbigbook } = ourbigbook
 const { TMP_DIRNAME } = ourbigbook_nodejs_webpack_safe
 const { DbProviderBase, read_include } = require('./web_api');
@@ -15661,3 +15662,261 @@ assert_cli(
     },
   }
 )
+
+describe('editor markup toolbar', function () {
+  function apply(action, source='', start=0, end=source.length) {
+    const edit = getMarkupEdit(action, source, start, end)
+    const value = source.slice(0, edit.start) + edit.text + source.slice(edit.end)
+    assert(edit.selectionStart >= 0 && edit.selectionEnd <= value.length)
+    return { value, selected: value.slice(edit.selectionStart, edit.selectionEnd), edit }
+  }
+
+  it('formats and toggles selected inline text, preserving whitespace and surrounding source', function () {
+    for (const [action, macro] of [['bold', 'b'], ['italic', 'i']]) {
+      const result = apply(action, 'before hello after', 7, 12)
+      assert.strictEqual(result.value, `before \\${macro}[hello] after`)
+      assert.strictEqual(result.selected, 'hello')
+      assert.strictEqual(apply(action, result.value, result.edit.selectionStart, result.edit.selectionEnd).value, 'before hello after')
+      assert.strictEqual(apply(action, `\\${macro}[hello]`).value, 'hello')
+      assert.strictEqual(apply(action, ' hello ').value, ` \\${macro}[hello] `)
+      assert.strictEqual(apply(action, 'one\n\ntwo').value, `\\${macro}[one]\n\n\\${macro}[two]`)
+      assert.strictEqual(apply(action, '* one\n  * two').value, `* \\${macro}[one]\n  * \\${macro}[two]`)
+      assert.strictEqual(apply(action, `\\${macro}[one] and \\${macro}[two]`).value, `\\${macro}[\\${macro}[one] and \\${macro}[two]]`)
+    }
+  })
+
+  it('inserts replaceable placeholders and links with a useful selection', function () {
+    for (const [action, selected] of [
+      ['bold', 'bold text'], ['italic', 'italic text'], ['code', 'code'],
+      ['code-block', 'Code goes here'], ['bullet-list', 'List item'],
+      ['numbered-list', 'List item'], ['quote', 'Quoted text'],
+      ['table', 'Heading 1'], ['heading-2', 'Heading'],
+      ['math', 'x^2'], ['math-block', '\\frac{a}{b}'],
+    ]) assert.strictEqual(apply(action).selected, selected, action)
+    const result = apply('bold', 'before after', 7, 7)
+    assert.strictEqual(result.value, 'before \\b[bold text]after')
+    assert.strictEqual(apply('link').value, 'http://example.com[link text]')
+    assert.strictEqual(apply('link').selected, 'http://example.com')
+    assert.strictEqual(apply('link', 'OurBigBook').value, 'http://example.com[OurBigBook]')
+    assert.strictEqual(apply('link', 'OurBigBook').selected, 'http://example.com')
+    assert.strictEqual(apply('link', 'https://example.org').value, 'https://example.org[link text]')
+    assert.strictEqual(apply('link', 'https://example.org').selected, 'link text')
+  })
+
+  it('formats whole touched lines without consuming the following line', function () {
+    assert.strictEqual(apply('bullet-list', 'one\ntwo\nthree', 1, 4).value, '* one\n\ntwo\nthree')
+    assert.strictEqual(apply('bullet-list', 'one\ntwo', 1, 1).value, '* one\n\ntwo')
+    assert.strictEqual(apply('bullet-list', 'one\ntwo').value, '* one\n* two')
+    assert.strictEqual(apply('bullet-list', '* one\n  * two').value, 'one\n  two')
+    assert.strictEqual(apply('numbered-list', 'one\ntwo').value, '\\Ol[\n* one\n* two\n]')
+    assert.strictEqual(apply('quote', 'before\none\n\ntwo\nafter', 7, 15).value, 'before\n\n> one\n\n  two\n\nafter')
+    assert.strictEqual(apply('quote', '\nnext', 0, 0).value, '> Quoted text\n\nnext')
+    assert.strictEqual(apply('heading-2', '== Old heading').value, '== Old heading')
+    assert.strictEqual(apply('heading-3', '== Old heading').value, '=== Old heading')
+  })
+
+  it('indents by two spaces, preserves the cursor, and handles Windows line endings', function () {
+    const result = apply('indent', 'one\ntwo', 1, 1)
+    assert.strictEqual(result.value, '  one\ntwo')
+    assert.strictEqual(result.edit.selectionStart, 3)
+    assert.strictEqual(result.selected, '')
+    assert.strictEqual(apply('outdent', result.value, 3, 3).edit.selectionStart, 1)
+    assert.strictEqual(apply('outdent', ' one\n  two\n\tthree').value, 'one\ntwo\nthree')
+    assert.strictEqual(apply('indent', 'one\ntwo\nthree', 0, 4).value, '  one\ntwo\nthree')
+    assert.strictEqual(apply('bullet-list', 'one\r\ntwo\r\nthree', 0, 5).value, '* one\r\n\r\ntwo\r\nthree')
+    assert.strictEqual(apply('quote', 'one\r\ntwo').value, '> one\r\n  two')
+  })
+
+  it('makes tables from tab-separated rows, padding uneven rows', function () {
+    const result = apply('table', 'Name\tCount\nApples\t2\nPears')
+    assert.strictEqual(result.value, '|| Name\n|| Count\n\n| Apples\n| 2\n\n| Pears\n| ')
+    assert.strictEqual(result.selected, 'Name')
+    assert.strictEqual(apply('table', 'First\nSecond').value, '|| First\n\n| Second')
+    assert.strictEqual(apply('table', 'before after', 7, 7).value, 'before \n\n' + apply('table').value + '\n\nafter')
+    assert.strictEqual(apply('table', 'Name\tCount\nApples\t').value, '|| Name\n|| Count\n\n| Apples\n| ')
+  })
+
+  it('generates valid markup and preserves code literals through the real converter', async function () {
+    const cases = [
+      ['bold', 'one\n\ntwo', /<b>one<\/b>/],
+      ['italic', '* one\n  * two', /<i>two<\/i>/],
+      ['link', 'a label', /<a href="http:\/\/example.com"[^>]*>a label<\/a>/],
+      ['link', 'https://example.org/path?q[]=value', /<a href="https:\/\/example.org\/path\?q%5B%5D=value"[^>]*>link text<\/a>/],
+      ['bullet-list', 'one\ntwo', /<ul/],
+      ['numbered-list', 'one\ntwo', /<ol/],
+      ['quote', 'first\n\nsecond', /<blockquote[^>]*>\s*<div class="p"[^>]*>first<\/div>\s*<div class="p"[^>]*>second<\/div>\s*<\/blockquote>/],
+      ['table', 'Name\tCount\nApples\t2\nPears', /<th[^>]*>Name<\/th>/],
+      ['heading-2', 'Section', /<h2/],
+      ['code', 'a`b[]\\c', /<code>a`b\[\]\\c<\/code>/],
+      ['code-block', 'const s = `x`\n// `` and ```', /<pre/],
+      ['math', '\\sqrt{x^2 + y^2}', /class="katex"/],
+      ['math', '\\text{\\$5}', /class="katex"/],
+      ['math-block', '\\frac{a}{b}', /class="equation"/],
+      ['math', '\\begin{aligned}\na &= b \\\\\nc &= d\n\\end{aligned}', /class="equation"/],
+    ]
+    for (const [action, source, expected] of cases) {
+      const extra = {}
+      const result = apply(action, source)
+      const html = await ourbigbook.convert('= Title\n\n' + result.value, { body_only: true }, extra)
+      assert.deepStrictEqual(extra.errors.map(String), [], action)
+      assert.match(html, expected, action)
+    }
+    for (const action of ['bold', 'italic', 'link', 'code', 'code-block', 'math', 'math-block', 'bullet-list', 'numbered-list', 'quote', 'table', 'heading-2']) {
+      const extra = {}
+      await ourbigbook.convert('= Title\n\n' + apply(action).value, { body_only: true }, extra)
+      assert.deepStrictEqual(extra.errors.map(String), [], action)
+    }
+    const headings = ['heading-2', 'heading-3', 'heading-4'].map((action, i) => apply(action, `Section ${i}`).value)
+    const extra = {}
+    const html = await ourbigbook.convert('= Title\n\n' + headings.join('\n\n'), { body_only: true }, extra)
+    assert.deepStrictEqual(extra.errors.map(String), [])
+    for (const level of [2, 3, 4]) assert(html.includes(`<h${level}`))
+  })
+
+  it('applies one Monaco edit with undo boundaries, restores the selection, and focuses the editor', function () {
+    let value = 'before\nhello after'
+    const calls = []
+    class Range {
+      constructor(startLineNumber, startColumn, endLineNumber, endColumn) {
+        Object.assign(this, { startLineNumber, startColumn, endLineNumber, endColumn })
+      }
+      getStartPosition() { return { lineNumber: this.startLineNumber, column: this.startColumn } }
+      getEndPosition() { return { lineNumber: this.endLineNumber, column: this.endColumn } }
+    }
+    let selection = new Range(2, 1, 2, 6)
+    const model = {
+      getValue: () => value,
+      getOffsetAt: ({ lineNumber, column }) => value.split('\n').slice(0, lineNumber - 1).reduce((offset, line) => offset + line.length + 1, 0) + column - 1,
+      getPositionAt: offset => {
+        const lines = value.slice(0, offset).split('\n')
+        return { lineNumber: lines.length, column: lines[lines.length - 1].length + 1 }
+      },
+    }
+    const editor = {
+      getModel: () => model,
+      getSelection: () => selection,
+      pushUndoStop: () => calls.push('undo stop'),
+      executeEdits: (source, edits, cursorState) => {
+        calls.push(source)
+        assert.strictEqual(edits.length, 1)
+        const { range, text } = edits[0]
+        const start = model.getOffsetAt(range.getStartPosition())
+        const end = model.getOffsetAt(range.getEndPosition())
+        value = value.slice(0, start) + text + value.slice(end)
+        ;[selection] = cursorState()
+      },
+      focus: () => calls.push('focus'),
+      revealRangeInCenterIfOutsideViewport: range => assert.strictEqual(range, selection),
+    }
+    applyEditorMarkup({ editor, monaco: { Range, Selection: Range } }, 'bold')
+    assert.strictEqual(value, 'before\n\\b[hello] after')
+    assert.deepStrictEqual(selection, new Range(2, 4, 2, 9))
+    assert.deepStrictEqual(calls, ['undo stop', 'ourbigbook-toolbar', 'undo stop', 'focus'])
+  })
+
+  it('preserves selected LaTeX, inserts math placeholders, and handles dollar delimiters', function () {
+    const result = apply('math', 'before \\frac{x}{2} after', 7, 18)
+    assert.strictEqual(result.value, 'before $\\frac{x}{2}$ after')
+    assert.strictEqual(result.selected, '\\frac{x}{2}')
+    assert.strictEqual(apply('math').value, '$x^2$')
+    assert.strictEqual(apply('math-block').value, '$$\n\\frac{a}{b}\n$$')
+    assert.strictEqual(apply('math', '\\text{\\$5}').value, '\\m[[\n\\text{\\$5}\n]]')
+    assert.strictEqual(apply('math-block', 'a\r\nb').value, '$$\r\na\r\nb\r\n$$')
+    assert.strictEqual(apply('math-block', 'a $$ b').value, '$$$\na $$ b\n$$$')
+  })
+
+  it('initializes the standalone demo without an input modifier and shares toolbar configuration with web', async function () {
+    // Use a small DOM/Monaco adapter, but run the real editor constructor and converter.
+    const { DOMImplementation } = require('xmldom')
+    const doc = new DOMImplementation().createDocument(null, null, null)
+    const createElement = doc.createElement.bind(doc)
+    doc.createElement = name => {
+      const elem = createElement(name)
+      elem.listeners = {}
+      elem.addEventListener = (name, listener) => { elem.listeners[name] = listener }
+      elem.focus = () => { doc.activeElement = elem }
+      elem.classList = {
+        add: name => elem.setAttribute('class', name),
+        remove: () => elem.removeAttribute('class'),
+      }
+      elem.querySelectorAll = selector => Array.from(elem.getElementsByTagName('*')).filter(child =>
+        ['button', 'select'].includes(child.tagName) && (!selector.includes(':enabled') || !child.disabled))
+      return elem
+    }
+    const oldDocument = global.document
+    const oldWindow = global.window
+    global.document = doc
+    const windowListeners = new Set()
+    global.window = {
+      addEventListener: (name, listener) => windowListeners.add(listener),
+      removeEventListener: (name, listener) => windowListeners.delete(listener),
+    }
+    const findExample = node => {
+      if (node.attrs?.some(attr => attr.name === 'id' && attr.value === 'example')) return node
+      for (const child of node.childNodes || []) {
+        const found = findExample(child)
+        if (found) return found
+      }
+    }
+    const example = findExample(require('parse5').parse(fs.readFileSync(path.join(__dirname, 'editor.html'), 'utf8')))
+    const source = example.childNodes.map(node => node.value || '').join('')
+    const editors = []
+    try {
+      for (const options of [undefined, { toolbarHeaderLevels: [] }, {
+        toolbarHeaderLevels: [2, 3, 4], titleSource: 'Web title', modifyEditorInput: ourbigbook.modifyEditorInput,
+      }]) {
+        let value = options?.titleSource ? 'Web body.' : source
+        const root = doc.createElement('div')
+        const monacoEditor = {
+          getValue: () => value,
+          addCommand: () => {},
+          onDidChangeModelContent: () => {},
+          onDidScrollChange: () => {},
+          onDidChangeCursorPosition: () => {},
+          deltaDecorations: () => [],
+          dispose: () => {},
+        }
+        const monaco = {
+          languages: { register: () => {}, setMonarchTokensProvider: () => {} },
+          editor: { defineTheme: () => {}, create: () => monacoEditor },
+          KeyMod: { CtrlCmd: 1 }, KeyCode: { Enter: 1 },
+        }
+        const editor = new OurbigbookEditor(root, value, monaco, ourbigbook, () => {}, options)
+        editors.push(editor)
+        const initialResult = await new Promise(resolve => { editor.options.postBuildCallback = resolve })
+        assert.deepStrictEqual(initialResult.errors.map(String), [])
+        assert.strictEqual(typeof editor.lastInput, 'string')
+        if (options?.titleSource) {
+          assert.strictEqual(editor.lastInput, '= Web title\n\nWeb body.\n')
+        } else {
+          assert.strictEqual(editor.lastInput, source)
+          assert.match(editor.output_elem.innerHTML, /Ourbigbook hello world/)
+          assert.match(editor.output_elem.innerHTML, /class="katex"/)
+        }
+        const controls = editor.toolbar_elem.querySelectorAll('button, select')
+        assert(controls.some(control => control.getAttribute('data-action') === 'math'))
+        assert(controls.some(control => control.getAttribute('data-action') === 'math-block'))
+        const select = controls.find(control => control.tagName === 'select')
+        assert.deepStrictEqual(select ? Array.from(select.getElementsByTagName('option')).slice(1).map(option => option.value) : [],
+          (options?.toolbarHeaderLevels || [1, 2, 3, 4, 5, 6]).map(level => `heading-${level}`))
+        editor.setToolbarDisabled(true)
+        assert(controls.every(control => control.disabled))
+        editor.setToolbarDisabled(false)
+        assert(controls.every(control => !control.disabled))
+        assert.strictEqual(root.firstChild, editor.toolbar_elem)
+        assert.strictEqual(editor.output_elem.parentNode.className, 'editor-panes')
+        // Empty documents must also render without passing undefined to convert.
+        value = ''
+        await editor.convertInput()
+        assert.strictEqual(typeof editor.lastInput, 'string')
+      }
+    } finally {
+      for (const editor of editors) editor.dispose()
+      if (oldDocument === undefined) delete global.document
+      else global.document = oldDocument
+      if (oldWindow === undefined) delete global.window
+      else global.window = oldWindow
+    }
+    assert.strictEqual(windowListeners.size, 0)
+  })
+})

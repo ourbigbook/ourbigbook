@@ -200,13 +200,29 @@ router.delete('/', auth.required, async function(req, res, next) {
   }
 })
 
+// Editors may target another user's namespace when an admin edits their article.
+async function getUploadOwnerId(req) {
+  const username = lib.validateParam(req.query, 'username', { defaultValue: undefined, validators: [isString] })
+  if (username === undefined) return req.payload.id
+  const { User } = req.app.get('sequelize').models
+  const [loggedInUser, owner] = await Promise.all([
+    User.findByPk(req.payload.id),
+    User.findOne({ where: { username } }),
+  ])
+  if (!owner) throw new ValidationError(`username does not exist: ${username}`, 404)
+  const msg = cant.editArticle(loggedInUser, username)
+  if (msg) throw new ValidationError([msg], 403)
+  return owner.id
+}
+
 router.get('/metadata', auth.required, async function(req, res, next) {
   try {
     const { Upload } = req.app.get('sequelize').models
     const path = lib.validateParam(req.query, 'path', { validators: [isString] })
+    const ownerId = await getUploadOwnerId(req)
     const upload = await Upload.findOne({
       attributes: ['hash', 'contentType', 'size'],
-      where: { path: Upload.uidAndPathToUploadPath(req.payload.id, path) },
+      where: { path: Upload.uidAndPathToUploadPath(ownerId, path) },
     })
     res.set('Cache-Control', 'no-store')
     return res.json(upload ? { exists: true, hash: upload.hash, contentType: upload.contentType, size: upload.size }
@@ -222,7 +238,8 @@ router.get('/images', auth.required, async function(req, res, next) {
     const { Upload } = sequelize.models
     const prefix = lib.validateParam(req.query, 'prefix', { defaultValue: '', validators: [isString] })
     const [limit, offset] = lib.getLimitAndOffset(req, res, { defaultLimit: 20, limitMax: 100 })
-    const directory = Upload.uidAndPathToUploadPath(req.payload.id, '') + URL_SEP
+    const ownerId = await getUploadOwnerId(req)
+    const directory = Upload.uidAndPathToUploadPath(ownerId, '') + URL_SEP
     const fullPrefix = directory + prefix
     const { count, rows } = await Upload.findAndCountAll({
       attributes: ['path'],

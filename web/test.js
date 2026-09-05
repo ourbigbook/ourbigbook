@@ -7326,6 +7326,39 @@ it('api: upload metadata and conditional replacement protect existing files', as
   })
 })
 
+it('api: admins upload and replace images in the article owner namespace', async () => {
+  await testApp(async test => {
+    const admin = await test.createUserApi(0)
+    const owner = await test.createUserApi(1)
+    const replacement = await sharp(PNG_1X1_WHITE_BUFFER).resize(2, 2).png().toBuffer()
+    test.loginUser(owner)
+    await test.webApi.uploadCreateOrUpdate('user1/photo.png', PNG_1X1_WHITE_BUFFER)
+    test.loginUser(admin)
+    await test.webApi.uploadCreateOrUpdate('user0/photo.png', replacement)
+    await test.webApi.uploadMetadata('photo.png', { username: 'user1', expectStatus: 403 })
+    await test.webApi.uploadImages({ username: 'user1' }, { expectStatus: 403 })
+    await test.webApi.uploadCreateOrUpdate('user1/new.png', replacement, { expectStatus: 403 })
+    await test.sequelize.models.User.update({ admin: true }, { where: { id: admin.id } })
+    const metadata = (await test.webApi.uploadMetadata('photo.png', { username: 'user1' })).data
+    assert.strictEqual(metadata.hash, web_api.hashToHex(PNG_1X1_WHITE_BUFFER))
+    assert.strictEqual((await test.webApi.uploadMetadata('photo.png')).data.hash, web_api.hashToHex(replacement))
+    await test.webApi.uploadCreateOrUpdate('user1/new.png', PNG_1X1_WHITE_BUFFER, { headers: { 'If-None-Match': '*' } })
+    await test.webApi.uploadCreateOrUpdate('user1/photo.png', replacement, { headers: { 'If-Match': `"${metadata.hash}"` } })
+    assert.deepStrictEqual((await test.webApi.uploadImages({ username: 'user1' })).data, {
+      images: [{ path: 'new.png' }, { path: 'photo.png' }], count: 2,
+    })
+    assert.deepStrictEqual((await test.webApi.uploadImages()).data, { images: [{ path: 'photo.png' }], count: 1 })
+    assert.deepStrictEqual((await test.webApi.upload('user1/photo.png')).data, replacement)
+    const updatedOwner = await test.sequelize.models.User.findByPk(owner.id)
+    const updatedAdmin = await test.sequelize.models.User.findByPk(admin.id)
+    assert.strictEqual(updatedOwner.fileCount, 2)
+    assert.strictEqual(updatedOwner.fileSize, PNG_1X1_WHITE_BUFFER.length + replacement.length)
+    assert.strictEqual(updatedAdmin.fileCount, 1)
+    assert.strictEqual(updatedAdmin.fileSize, replacement.length)
+    await test.webApi.uploadMetadata('photo.png', { username: 'does-not-exist', expectStatus: 404 })
+  })
+})
+
 it('api: uploaded image search matches literal prefixes for the current user only', async () => {
   await testApp(async test => {
     const user0 = await test.createUserApi(0)

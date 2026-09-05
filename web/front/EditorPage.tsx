@@ -114,7 +114,7 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
     setPathCheckError(false)
     const timer = window.setTimeout(async () => {
       try {
-        const { data } = await webApi.uploadMetadata(path)
+        const { data } = await webApi.uploadMetadata(path, { username })
         if (active) setPathStatus({ path, ...data })
       } catch {
         if (active) {
@@ -126,7 +126,7 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
       }
     }, 200)
     return () => { active = false; window.clearTimeout(timer) }
-  }, [path, tab, pathCheckRevision])
+  }, [path, tab, pathCheckRevision, username])
 
   useEffect(() => {
     if (!replacement) return
@@ -148,7 +148,7 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
     setSearching(true)
     const timer = window.setTimeout(async () => {
       try {
-        const { data } = await webApi.uploadImages({ prefix: search, limit: 20 })
+        const { data } = await webApi.uploadImages({ prefix: search, limit: 20, username })
         if (active) {
           setImages(data.images)
           setImageCount(data.count)
@@ -167,7 +167,7 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
       active = false
       window.clearTimeout(timer)
     }
-  }, [search, tab])
+  }, [search, tab, username])
 
   function insert(source, fromWeb=false) {
     dialog.current.close()
@@ -1058,7 +1058,7 @@ export default function EditorPageHoc({
     return <>
       <MyHead title={title} />
       {imageUpload && <ImageModal
-        username={loggedInUser.username}
+        username={ownerUsername}
         initialWebUrl={(() => {
           const text = imageUpload.editor.editor.getModel().getValueInRange(imageUpload.selection)
           return /^https?:\/\/\S+$/i.test(text) ? text : ''
@@ -1079,8 +1079,7 @@ export default function EditorPageHoc({
             (!isNew || (parentTitle === 'Index' && !previousSiblingTitle &&
               headers?.length === 1 && headers[0].children.length === 0))
           editor.editor.setSelection(imageUpload.selection)
-          const imageSource = fromWeb ? path : loggedInUser.username !== ownerUsername
-            ? `@${loggedInUser.username}/${path}` : useRelativePath ? path : `/${path}`
+          const imageSource = fromWeb ? path : useRelativePath ? path : `/${path}`
           applyEditorMarkup(editor, 'image', { imageSource })
           setImageUpload(null)
         }}

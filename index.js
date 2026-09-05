@@ -3689,10 +3689,6 @@ async function parseInclude(
   href,
   options={}
 ) {
-  const inputExt = pathSplitext(input_path)[1].toLowerCase()
-  if (inputExt === 'md' || inputExt === 'markdown') {
-    input_string = await markdownToOurbigbook(input_string)
-  }
   convert_options = { ...convert_options }
   convert_options.from_include = true;
   convert_options.h_parse_level_offset = cur_header_level;
@@ -5762,8 +5758,13 @@ async function parse(tokens, options, context, extra_returns={}) {
             } else {
               let new_child_nodes;
               if (options.embed_includes) {
+                // Only included files need format conversion; inline examples are already BigB.
+                const includeExt = pathSplitext(include_path)[1].toLowerCase()
+                const includeInput = includeExt === 'md' || includeExt === 'markdown'
+                  ? await markdownToOurbigbook(include_content)
+                  : include_content
                 new_child_nodes = await parseInclude(
-                  include_content,
+                  includeInput,
                   options,
                   parent_ast_header_level,
                   include_path,

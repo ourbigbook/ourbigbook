@@ -10060,6 +10060,13 @@ assert_lib('OurBigBookExample: that links to id in another file',
     },
   },
 )
+for (const ext of ['md', 'markdown']) {
+  assert_lib(`OurBigBookExample: BigB content with a ${ext} input path`, {
+    stdin: '\\OurBigBookExample[[aa \\i[bb] cc]]',
+    convert_opts: { input_path: `example.${ext}` },
+    assert_xpath_stdout: ["//x:blockquote//x:i[text()='bb']"],
+  })
+}
 
 // passthrough
 assert_lib('passthrough: basic',

@@ -193,61 +193,18 @@ class OurbigbookEditor {
         // updated incomplete results. Dropping it on a version change loses that
         // completion session, especially when typing during the debounce below.
         const stale = () => this.disposed || token.isCancellationRequested || model.isDisposed()
-        const prefix = options.idCompletionPrefix || options.convertOptions.ref_prefix
-        const localId = id => id === prefix ? '/' : prefix && id.startsWith(`${prefix}/`) ? id.slice(prefix.length + 1) : id
-        const query = completion.query.replace(/^\//, '')
-        const explicitUser = query.startsWith('@')
-        const matches = id => (explicitUser || !prefix || id === prefix || id.startsWith(`${prefix}/`)) &&
-          (explicitUser ? id : localId(id)).includes(query)
-        let ids = Object.keys(this.completionIds || {}).filter(matches)
-        const titles = { ...this.completionTitles }
-        if (options.getIdCompletions) {
-          // Incomplete suggestions are requested again as the user types. Avoid a request per keystroke.
-          await new Promise(resolve => setTimeout(resolve, 150))
-          if (stale()) return
-          try {
-            for (const { id, title } of await options.getIdCompletions(query)) {
-              ids.push(id)
-              // Prefer the title from the current draft over a saved version.
-              if (!(id in titles)) titles[id] = title
-            }
-          } catch (error) {
-            // Keep local suggestions usable when the server is unavailable.
-          }
-        }
-        if (stale()) return
-        ids = [...new Set(ids)].filter(matches)
-        const rank = id => (explicitUser ? id : localId(id)).startsWith(query) ? 0 : 1
-        ids.sort((a, b) => rank(a) - rank(b) || a.length - b.length || a.localeCompare(b))
+        const items = await this.getIdSuggestions(completion, position, stale)
+        if (!items) return
         const closeIndex = line.indexOf(completion.close, position.column - 1)
         const range = new monaco.Range(position.lineNumber, completion.start + 1,
           position.lineNumber, closeIndex < 0 ? position.column : closeIndex + 2)
-        const referencePrefix = options.convertOptions.ref_prefix
-        const sourceLine = position.lineNumber + (this.modifyEditorInputRet?.offset || 0)
-        let header
-        const findHeader = node => {
-          for (const child of node?.children || []) {
-            if (child.ast.source_location.line <= sourceLine) {
-              if (!header || child.ast.source_location.line >= header.source_location.line) header = child.ast
-              findHeader(child)
-            }
-          }
-        }
-        findHeader(this.lastHeaderTree)
-        const scope = header?.calculate_scope()
-        const absolute = completion.raw.startsWith('/') || (scope && scope !== referencePrefix)
-        const referenceId = id => {
-          if (referencePrefix && id.startsWith(`${referencePrefix}/`)) id = id.slice(referencePrefix.length + 1)
-          return (absolute && !id.startsWith('@') ? '/' : '') + id
-        }
         return {
           incomplete: true,
-          suggestions: ids.slice(0, 100).map((id, i) => ({
-            label: (explicitUser ? id : localId(id)) + (titles[id] ? ` | ${titles[id]}` : ''),
+          suggestions: items.map((item, i) => ({
+            label: item.label,
             kind: monaco.languages.CompletionItemKind.Reference,
-            // Qualify scoped references, and complete the delimiter in one edit.
-            insertText: referenceId(id) + completion.close,
-            filterText: completion.raw + ' ' + id,
+            insertText: item.reference + completion.close,
+            filterText: completion.raw + ' ' + item.id,
             sortText: String(i).padStart(3, '0'),
             range,
           })),
@@ -294,6 +251,60 @@ class OurbigbookEditor {
       }
     }
     window.addEventListener('beforeunload', this.beforeunload)
+  }
+
+  // Shared by inline completion and the cross-reference search dialog.
+  async getIdSuggestions(completion, position, stale = () => this.disposed) {
+    const options = this.options
+    const prefix = options.idCompletionPrefix || options.convertOptions.ref_prefix
+    const localId = id => id === prefix ? '/' : prefix && id.startsWith(`${prefix}/`) ? id.slice(prefix.length + 1) : id
+    const query = completion.query.replace(/^\//, '')
+    const explicitUser = query.startsWith('@')
+    const matches = id => (explicitUser || !prefix || id === prefix || id.startsWith(`${prefix}/`)) &&
+      (explicitUser ? id : localId(id)).includes(query)
+    let ids = Object.keys(this.completionIds || {}).filter(matches)
+    const titles = { ...this.completionTitles }
+    if (options.getIdCompletions) {
+      // Incomplete suggestions are requested again as the user types. Avoid a request per keystroke.
+      await new Promise(resolve => setTimeout(resolve, 150))
+      if (stale()) return
+      try {
+        for (const { id, title } of await options.getIdCompletions(query)) {
+          ids.push(id)
+          // Prefer the title from the current draft over a saved version.
+          if (!(id in titles)) titles[id] = title
+        }
+      } catch (error) {
+        // Keep local suggestions usable when the server is unavailable.
+      }
+    }
+    if (stale()) return
+    ids = [...new Set(ids)].filter(matches)
+    const rank = id => (explicitUser ? id : localId(id)).startsWith(query) ? 0 : 1
+    ids.sort((a, b) => rank(a) - rank(b) || a.length - b.length || a.localeCompare(b))
+    const referencePrefix = options.convertOptions.ref_prefix
+    const sourceLine = position.lineNumber + (this.modifyEditorInputRet?.offset || 0)
+    let header
+    const findHeader = node => {
+      for (const child of node?.children || []) {
+        if (child.ast.source_location.line <= sourceLine) {
+          if (!header || child.ast.source_location.line >= header.source_location.line) header = child.ast
+          findHeader(child)
+        }
+      }
+    }
+    findHeader(this.lastHeaderTree)
+    const scope = header?.calculate_scope()
+    const absolute = completion.raw.startsWith('/') || (scope && scope !== referencePrefix)
+    const referenceId = id => {
+      if (referencePrefix && id.startsWith(`${referencePrefix}/`)) id = id.slice(referencePrefix.length + 1)
+      return (absolute && !id.startsWith('@') ? '/' : '') + id
+    }
+    return ids.slice(0, 100).map(id => ({
+      id,
+      label: (explicitUser ? id : localId(id)) + (titles[id] ? ` | ${titles[id]}` : ''),
+      reference: referenceId(id),
+    }))
   }
 
   async convertInput() {
@@ -419,6 +430,7 @@ class OurbigbookEditor {
   dispose() {
     if (this.disposed) return
     this.disposed = true
+    this.closeXrefDialog?.()
     this.completionProvider.dispose()
     this.setToolbarDisabled(true)
     window.removeEventListener('beforeunload', this.beforeunload);
@@ -491,6 +503,112 @@ class OurbigbookEditor {
     this.titleSource = titleSource
     await this.convertInput()
   }
+
+  openXrefDialog() {
+    if (this.disposed || this.closeXrefDialog) return
+    const { editor } = this
+    const model = editor.getModel()
+    const selection = editor.getSelection()
+    if (!model || !selection) return
+    const version = model.getVersionId()
+    const doc = this.toolbar_elem.ownerDocument
+    const dialog = doc.createElement('dialog')
+    dialog.className = 'editor-xref-dialog'
+    dialog.setAttribute('aria-label', 'Insert cross-reference')
+    const form = doc.createElement('form')
+    const title = doc.createElement('h2')
+    title.textContent = 'Insert cross-reference'
+    const label = doc.createElement('label')
+    label.textContent = 'Search IDs'
+    const input = doc.createElement('input')
+    input.type = 'text'
+    input.autocomplete = 'off'
+    input.placeholder = 'Search by ID, or @username/id'
+    input.value = model.getValueInRange(selection).trim().replace(/^<([^<>]+)>$/, '$1').replace(/\s+/g, ' ')
+    label.appendChild(input)
+    const status = doc.createElement('p')
+    status.setAttribute('role', 'status')
+    const results = doc.createElement('select')
+    results.size = 8
+    results.setAttribute('aria-label', 'Matching cross-references')
+    const actions = doc.createElement('div')
+    actions.className = 'editor-xref-actions'
+    const cancel = doc.createElement('button')
+    cancel.type = 'button'
+    cancel.textContent = 'Cancel'
+    const insert = doc.createElement('button')
+    insert.type = 'submit'
+    insert.textContent = 'Insert'
+    insert.disabled = true
+    actions.append(cancel, insert)
+    form.append(title, label, status, results, actions)
+    dialog.appendChild(form)
+    this.toolbar_elem.parentNode.appendChild(dialog)
+    let closed = false
+    let request = 0
+    let items = []
+    const close = () => {
+      if (closed) return
+      closed = true
+      if (dialog.open) dialog.close()
+      dialog.remove()
+      this.closeXrefDialog = undefined
+      if (!this.disposed) editor.focus()
+    }
+    this.closeXrefDialog = close
+    dialog.addEventListener('cancel', event => { event.preventDefault(); close() })
+    dialog.addEventListener('close', close)
+    cancel.addEventListener('click', close)
+    const search = async () => {
+      const currentRequest = ++request
+      const stale = () => closed || this.disposed || currentRequest !== request
+      items = []
+      results.innerHTML = ''
+      results.disabled = true
+      insert.disabled = true
+      status.textContent = 'Searching…'
+      const completion = this.ourbigbook.getIdCompletionContext('<' + input.value)
+      const matches = completion ? await this.getIdSuggestions(completion, selection.getStartPosition(), stale) : []
+      if (stale()) return
+      items = matches || []
+      for (const [i, item] of items.entries()) {
+        const option = doc.createElement('option')
+        option.value = String(i)
+        option.textContent = item.label
+        results.appendChild(option)
+      }
+      results.selectedIndex = items.length ? 0 : -1
+      results.disabled = insert.disabled = items.length === 0
+      status.textContent = items.length ? `${items.length} results` : 'No matching IDs.'
+    }
+    input.addEventListener('input', search)
+    input.addEventListener('keydown', event => {
+      if (event.key === 'ArrowDown' && items.length) {
+        event.preventDefault()
+        results.focus()
+      }
+    })
+    results.addEventListener('keydown', event => {
+      if (event.key === 'Enter') { event.preventDefault(); form.requestSubmit() }
+    })
+    results.addEventListener('dblclick', () => form.requestSubmit())
+    form.addEventListener('submit', event => {
+      event.preventDefault()
+      const item = items[results.selectedIndex]
+      if (closed || this.disposed || insert.disabled || !item) return
+      if (model !== editor.getModel() || model.getVersionId() !== version) {
+        status.textContent = 'The document changed. Close this dialog and try again.'
+        insert.disabled = true
+        return
+      }
+      close()
+      editor.setSelection(selection)
+      applyEditorMarkup(this, 'xref', { xrefTarget: item.reference })
+    })
+    dialog.showModal()
+    input.focus()
+    search()
+  }
 }
 
 
@@ -543,6 +661,13 @@ function getMarkupEdit(action, value, start, end, options={}) {
     }
     const url = 'http://example.com'
     return edit(`${url}[${selected || 'link text'}]`, 0, url.length)
+  }
+
+  if (action === 'xref') {
+    const target = options.xrefTarget.replace(/[\\[\]{}<>]/g, '\\$&')
+    const text = selected && !/^<[^<>]+>$/.test(selected)
+      ? `\\x[${target}][${selected}]` : `<${target}>`
+    return edit(text, text.length, text.length)
   }
 
   if ((action === 'code' || action === 'math') && !selected.includes('\n')) {
@@ -685,6 +810,7 @@ function createEditorToolbar(ourbigbookEditor, doc=document) {
       ['bold', 'B', 'Bold — format selected text', 'b'],
       ['italic', 'I', 'Italic — format selected text', 'i'],
       ['link', '🔗 Link', 'Link — use selected text or URL'],
+      ['xref', '↗ Cross-reference', 'Link to an internal ID'],
       ['code', '</> Inline code', 'Inline code — format selected text'],
       ['code-block', '{ } Code block', 'Code block — format selected lines'],
     ],
@@ -725,6 +851,7 @@ function createEditorToolbar(ourbigbookEditor, doc=document) {
       button.addEventListener('click', () => {
         if (!button.disabled) {
           if (action === 'image' && ourbigbookEditor.options.onImage) ourbigbookEditor.options.onImage(ourbigbookEditor)
+          else if (action === 'xref') ourbigbookEditor.openXrefDialog()
           else applyEditorMarkup(ourbigbookEditor, action)
         }
       })

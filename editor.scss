@@ -6,6 +6,52 @@
   /* https://stackoverflow.com/questions/12989931/body-height-100-displaying-vertical-scrollbar/46847795#46847795
    * 20 == 2x 10px padding (top + bottom). */
   height: 100%;
+  .editor-xref-dialog {
+    background-color: $background-color;
+    color: $color;
+    border: 1px solid $button-border-color;
+    border-radius: 4px;
+    box-sizing: border-box;
+    font-family: $font-family;
+    width: 640px;
+    max-width: calc(100vw - 32px);
+    max-height: calc(100vh - 32px);
+    overflow: auto;
+    padding: 20px;
+    &::backdrop { background: rgba(0, 0, 0, .5); }
+    h2 { margin: 0 0 16px; }
+    input, select {
+      background-color: $background-color;
+      color: $color;
+      border: 1px solid $button-border-color;
+      box-sizing: border-box;
+      display: block;
+      font: inherit;
+      padding: 6px;
+      width: 100%;
+    }
+    input { margin-top: 6px; }
+    .editor-xref-actions {
+      display: flex;
+      gap: 8px;
+      justify-content: flex-end;
+      margin-top: 16px;
+    }
+    button {
+      background-color: $button-background-color;
+      color: $button-color;
+      border: 1px solid $button-border-color;
+      border-radius: 3px;
+      font: inherit;
+      padding: 4px 10px;
+      cursor: pointer;
+      &:disabled {
+        background-color: $button-disabled-background-color;
+        color: $button-disabled-color;
+        cursor: default;
+      }
+    }
+  }
   .editor-panes {
     display: flex;
     flex: 1;

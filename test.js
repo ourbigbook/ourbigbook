@@ -15664,6 +15664,19 @@ assert_cli(
 )
 
 describe('editor markup toolbar', function () {
+  it('inserts cross-references and preserves selected link text', async function () {
+    assert.strictEqual(apply('xref', '', 0, 0, { xrefTarget: 'love' }).value, '<love>')
+    assert.strictEqual(apply('xref', 'old', 0, 3, { xrefTarget: 'love' }).value, '\\x[love][old]')
+    assert.strictEqual(apply('xref', '<old>', 0, 5, { xrefTarget: '@other/love' }).value, '<@other/love>')
+    const result = apply('xref', 'before love after', 7, 11, { xrefTarget: '/love' })
+    assert.strictEqual(result.value, 'before \\x[/love][love] after')
+    assert.strictEqual(result.selected, '')
+    const extra = {}
+    const html = await ourbigbook.convert('= Love\n\n' + result.value, {}, extra)
+    assert.deepStrictEqual(extra.errors.map(String), [])
+    assert_xpath('//x:a[text()="love"]', html)
+  })
+
   it('detects ID completion contexts shared with VS Code', function () {
     for (const [source, query, close] of [
       ['before <Hello world', 'hello-world', '>'],
@@ -15877,6 +15890,11 @@ describe('editor markup toolbar', function () {
       const elem = createElement(name)
       elem.listeners = {}
       elem.addEventListener = (name, listener) => { elem.listeners[name] = listener }
+      elem.append = (...children) => children.forEach(child => elem.appendChild(child))
+      elem.remove = () => elem.parentNode?.removeChild(elem)
+      elem.showModal = () => { elem.open = true }
+      elem.close = () => { elem.open = false; elem.listeners.close?.() }
+      elem.requestSubmit = () => elem.listeners.submit?.({ preventDefault: () => {} })
       elem.focus = () => { doc.activeElement = elem }
       elem.classList = {
         add: name => elem.setAttribute('class', name),
@@ -15916,13 +15934,27 @@ describe('editor markup toolbar', function () {
         let modelDisposed = false
         let onScroll
         let onCursor
+        let selection
         const model = {
+          getValue: () => value,
+          getValueInRange: range => value.slice(range.startColumn - 1, range.endColumn - 1),
+          getOffsetAt: position => position.column - 1,
+          getPositionAt: offset => ({ lineNumber: 1, column: offset + 1 }),
           getLineContent: () => value,
           getVersionId: () => value,
           isDisposed: () => modelDisposed,
           dispose: () => { modelDisposed = true },
         }
         const monacoEditor = {
+          getSelection: () => selection,
+          setSelection: next => { selection = next },
+          focus: () => {},
+          pushUndoStop: () => {},
+          revealRangeInCenterIfOutsideViewport: () => {},
+          executeEdits: (source, edits, cursorState) => {
+            for (const edit of edits) value = value.slice(0, edit.range.startColumn - 1) + edit.text + value.slice(edit.range.endColumn - 1)
+            ;[selection] = cursorState()
+          },
           getModel: () => model,
           getValue: () => value,
           addCommand: () => {},
@@ -15950,10 +15982,13 @@ describe('editor markup toolbar', function () {
             constructor(startLineNumber, startColumn, endLineNumber, endColumn) {
               Object.assign(this, { startLineNumber, startColumn, endLineNumber, endColumn })
             }
+            getStartPosition() { return { lineNumber: this.startLineNumber, column: this.startColumn } }
+            getEndPosition() { return { lineNumber: this.endLineNumber, column: this.endColumn } }
           },
           editor: { defineTheme: () => {}, create: () => monacoEditor },
           KeyMod: { CtrlCmd: 1 }, KeyCode: { Enter: 1 },
         }
+        monaco.Selection = monaco.Range
         const editor = new OurbigbookEditor(root, value, monaco, ourbigbook, () => {}, options)
         editors.push(editor)
         const initialResult = await new Promise(resolve => { editor.options.postBuildCallback = resolve })
@@ -16081,6 +16116,40 @@ describe('editor markup toolbar', function () {
         token.isCancellationRequested = true
         assert.strictEqual(await cancelledResult, undefined)
         delete editor.options.getIdCompletions
+        if (options?.titleSource) {
+          value = 'Love'
+          selection = new monaco.Range(1, 1, 1, 5)
+          editor.options.idCompletionPrefix = '@current'
+          editor.options.convertOptions.ref_prefix = '@current'
+          editor.options.getIdCompletions = async () => [{ id: '@current/love', title: 'Love' }, { id: '@other/love', title: 'Other love' }]
+          controls.find(control => control.getAttribute('data-action') === 'xref').listeners.click()
+          const dialog = root.getElementsByTagName('dialog')[0]
+          assert(dialog.open)
+          const input = dialog.getElementsByTagName('input')[0]
+          assert.strictEqual(input.value, 'Love')
+          input.value = 'missing'
+          input.listeners.input()
+          input.value = 'Love'
+          input.listeners.input()
+          await new Promise(resolve => setTimeout(resolve, 170))
+          const matches = dialog.getElementsByTagName('option')
+          assert.strictEqual(matches.length, 1)
+          assert.strictEqual(matches[0].textContent, 'love | Love')
+          input.listeners.keydown({ key: 'ArrowDown', preventDefault: () => {} })
+          const resultList = dialog.getElementsByTagName('select')[0]
+          assert.strictEqual(doc.activeElement, resultList)
+          resultList.listeners.keydown({ key: 'Enter', preventDefault: () => {} })
+          assert.strictEqual(value, '\\x[love][Love]')
+          assert.strictEqual(root.getElementsByTagName('dialog').length, 0)
+          const unchanged = value
+          editor.openXrefDialog()
+          root.getElementsByTagName('dialog')[0].listeners.cancel({ preventDefault: () => {} })
+          assert.strictEqual(value, unchanged)
+          assert.strictEqual(root.getElementsByTagName('dialog').length, 0)
+          delete editor.options.idCompletionPrefix
+          delete editor.options.convertOptions.ref_prefix
+          delete editor.options.getIdCompletions
+        }
         // Empty documents must also render without passing undefined to convert.
         value = ''
         await editor.convertInput()

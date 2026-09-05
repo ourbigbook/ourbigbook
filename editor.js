@@ -456,11 +456,11 @@ function getMarkupEdit(action, value, start, end) {
     return wrap((math ? '\\m' : '\\c') + '['.repeat(brackets) + eol, content, eol + ']'.repeat(brackets))
   }
 
-  // Block actions affect whole touched lines. A selection ending at column 1
+  // Most block actions affect whole touched lines. A selection ending at column 1
   // belongs to the preceding line, as with Monaco's built-in indentation commands.
   const originalStart = start
   const originalEnd = end
-  if (action !== 'table' || start !== end) {
+  if (action !== 'image' && (action !== 'table' || start !== end)) {
     start = start === 0 ? 0 : value.lastIndexOf('\n', start - 1) + 1
     if (end > originalStart && value[end - 1] === '\n') end -= eol.length
     const nextLine = value.indexOf('\n', end)
@@ -474,6 +474,16 @@ function getMarkupEdit(action, value, start, end) {
     const prefix = !before || before.endsWith(eol + eol) ? '' : before.endsWith(eol) ? eol : eol + eol
     const suffix = !after || after.startsWith(eol + eol) ? '' : after.startsWith(eol) ? eol : eol + eol
     return edit(prefix + text + suffix, prefix.length + from, prefix.length + to)
+  }
+
+  if (action === 'image') {
+    const isUrl = /^https?:\/\/\S+$/i.test(selected)
+    const url = isUrl ? selected.replace(/[\\[\]{}]/g, '\\$&') : 'http://example.com/image.jpg'
+    const title = isUrl ? 'Image title' : selected || 'Image title'
+    const open = '\\Image['
+    const before = `${open}${url}]${eol}{title=`
+    const from = isUrl ? before.length : open.length
+    return block(before + title + '}', from, from + (isUrl ? title.length : url.length))
   }
 
   if (action === 'indent' || action === 'outdent') {
@@ -583,6 +593,7 @@ function createEditorToolbar(ourbigbookEditor, doc=document) {
       ['numbered-list', '1. List', 'Numbered list — turn selected lines into items'],
       ['quote', 'Quote', 'Quote — quote selected lines'],
       ['table', 'Table', 'Table — turn selected lines into rows and tabs into columns; first row is headings'],
+      ['image', '🖼 Image from web', 'Image from web — insert a block image using selected text as its title or a selected URL'],
     ],
     [
       ['outdent', '←', 'Decrease indentation by two spaces'],

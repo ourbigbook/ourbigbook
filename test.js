@@ -15703,6 +15703,19 @@ describe('editor markup toolbar', function () {
     assert.strictEqual(apply('link', 'https://example.org').selected, 'link text')
   })
 
+  it('inserts block images from URLs or titles without consuming surrounding text', function () {
+    const placeholder = '\\Image[http://example.com/image.jpg]\n{title=Image title}'
+    assert.strictEqual(apply('image').value, placeholder)
+    assert.strictEqual(apply('image').selected, 'http://example.com/image.jpg')
+    assert.strictEqual(apply('image', 'A sunset').value, '\\Image[http://example.com/image.jpg]\n{title=A sunset}')
+    const url = 'https://example.org/sunset.jpg'
+    const result = apply('image', `before ${url} after`, 7, 7 + url.length)
+    assert.strictEqual(result.value, `before \n\n\\Image[${url}]\n{title=Image title}\n\n after`)
+    assert.strictEqual(result.selected, 'Image title')
+    assert.strictEqual(apply('image', 'before after', 7, 7).value, `before \n\n${placeholder}\n\nafter`)
+    assert.strictEqual(apply('image', '\r\n', 0, 0).value, placeholder.replace('\n', '\r\n') + '\r\n\r\n')
+  })
+
   it('formats whole touched lines without consuming the following line', function () {
     assert.strictEqual(apply('bullet-list', 'one\ntwo\nthree', 1, 4).value, '* one\n\ntwo\nthree')
     assert.strictEqual(apply('bullet-list', 'one\ntwo', 1, 1).value, '* one\n\ntwo')
@@ -15742,6 +15755,8 @@ describe('editor markup toolbar', function () {
       ['italic', '* one\n  * two', /<i>two<\/i>/],
       ['link', 'a label', /<a href="http:\/\/example.com"[^>]*>a label<\/a>/],
       ['link', 'https://example.org/path?q[]=value', /<a href="https:\/\/example.org\/path\?q%5B%5D=value"[^>]*>link text<\/a>/],
+      ['image', 'A sunset', /<img[^>]*src="http:\/\/example.com\/image.jpg"/],
+      ['image', 'https://example.org/image.jpg?q[]=value', /<img[^>]*src="https:\/\/example.org\/image.jpg\?q%5B%5D=value"/],
       ['bullet-list', 'one\ntwo', /<ul/],
       ['numbered-list', 'one\ntwo', /<ol/],
       ['quote', 'first\n\nsecond', /<blockquote[^>]*>\s*<div class="p"[^>]*>first<\/div>\s*<div class="p"[^>]*>second<\/div>\s*<\/blockquote>/],
@@ -15761,7 +15776,7 @@ describe('editor markup toolbar', function () {
       assert.deepStrictEqual(extra.errors.map(String), [], action)
       assert.match(html, expected, action)
     }
-    for (const action of ['bold', 'italic', 'link', 'code', 'code-block', 'math', 'math-block', 'bullet-list', 'numbered-list', 'quote', 'table', 'heading-2']) {
+    for (const action of ['bold', 'italic', 'link', 'image', 'code', 'code-block', 'math', 'math-block', 'bullet-list', 'numbered-list', 'quote', 'table', 'heading-2']) {
       const extra = {}
       await ourbigbook.convert('= Title\n\n' + apply(action).value, { body_only: true }, extra)
       assert.deepStrictEqual(extra.errors.map(String), [], action)
@@ -15896,6 +15911,7 @@ describe('editor markup toolbar', function () {
         const controls = editor.toolbar_elem.querySelectorAll('button, select')
         assert(controls.some(control => control.getAttribute('data-action') === 'math'))
         assert(controls.some(control => control.getAttribute('data-action') === 'math-block'))
+        assert(controls.some(control => control.getAttribute('data-action') === 'image'))
         const select = controls.find(control => control.tagName === 'select')
         assert.deepStrictEqual(select ? Array.from(select.getElementsByTagName('option')).slice(1).map(option => option.value) : [],
           (options?.toolbarHeaderLevels || [1, 2, 3, 4, 5, 6]).map(level => `heading-${level}`))

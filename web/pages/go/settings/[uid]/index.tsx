@@ -5,6 +5,7 @@ import lodash from 'lodash'
 
 import {
   allowedImageContentTypes,
+  allowedImageContentTypesArr,
   allowedImageContentTypesSimplifiedArr,
   contactUrl,
   docsUrl,
@@ -154,6 +155,7 @@ const Settings = ({
               onClick={() => {
                 const input = document.createElement('input')
                 input.type = 'file'
+                input.accept = allowedImageContentTypesArr.join(',')
                 input.onchange = e => { 
                   var file = (e.target as HTMLInputElement).files[0]
                   if (file.size > profilePictureMaxUploadSize) {

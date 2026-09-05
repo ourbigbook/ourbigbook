@@ -7,6 +7,7 @@ const editPermissions = [
     }
   }],
   ['setUserLimits', (loggedInUser) => true],
+  ['setUserEmail', (loggedInUser) => true],
   ['followUser', (loggedInUser, user) => { return false }],
   ['unfollowUser', (loggedInUser, user) => { return false }],
 

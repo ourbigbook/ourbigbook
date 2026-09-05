@@ -18,6 +18,7 @@ import MapErrors from 'front/MapErrors'
 import {
   addCommasToInteger,
   AppContext,
+  ErrorIcon,
   HelpIcon,
   LockIcon,
   MyHead,
@@ -57,19 +58,46 @@ const Settings = ({
     user0,
     [
       'displayName',
+      'email',
       'emailNotifications',
       'hideArticleDates',
       'password',
     ]
   ))
+  const canSetEmail = !cant.setUserEmail(loggedInUser)
+  const email = userInfo.email || ''
+  const [emailCheck, setEmailCheck] = React.useState<{ email: string; error: string|null }|null>(null)
+  const emailUnchanged = email === user0.email
+  const emailError = !email ? 'Email is required.' : emailCheck?.email === email ? emailCheck.error : null
+  const checkingEmail = canSetEmail && !!email && !emailUnchanged && emailCheck?.email !== email
+  const emailValid = !canSetEmail || (!emailError && !checkingEmail)
+  React.useEffect(() => {
+    if (!canSetEmail || emailUnchanged || !email) return
+    let active = true
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data, status } = await webApi.userCheckEmail(username, email)
+        const error = status === 200 && data.available === true ? null
+          : status === 422 && data.errors
+            ? (typeof data.errors === 'string' ? data.errors : Object.values(data.errors).flat().join(' '))
+            : 'Could not check this email.'
+        if (active) setEmailCheck({ email, error })
+      } catch {
+        if (active) setEmailCheck({ email, error: 'Could not check this email.' })
+      }
+    }, 250)
+    return () => { active = false; window.clearTimeout(timer) }
+  }, [canSetEmail, email, emailUnchanged, username])
   const profileImageRef = React.useRef<HTMLImageElement|null>(null)
   const updateState = (field) => (e) => {
+    if (field === 'email') setEmailCheck(null)
     const state = userInfo;
     const newState = { ...state, [field]: e.target.value };
     setUserInfo(newState);
   }
   const handleSubmit = async (e) => {
     e.preventDefault()
+    if (isLoading || !emailValid) return
     setLoading(true)
     const user = { ...userInfo }
     if (!user.password) {
@@ -88,6 +116,9 @@ const Settings = ({
       Router.push(routes.user(data.user.username))
     } else {
       setErrors(data.errors)
+      if (canSetEmail && data.errors?.email) {
+        setEmailCheck({ email, error: String(data.errors.email) })
+      }
     }
   }
 
@@ -196,15 +227,20 @@ const Settings = ({
               <span className="profile-picture-caption">Click to update</span>
             </span>
           </Label>
-          <Label label="Email">
+          <Label label={<>Email {canSetEmail && !emailUnchanged && <span role="status" aria-live="polite">
+            {emailError ? <span id="email-check-error" className="error-messages"><ErrorIcon /> {emailError}</span>
+              : checkingEmail ? 'Checking…' : <OkIcon title="Email available" />}
+          </span>}</>}>
             <input
               type="email"
               placeholder="Email"
-              value={user0.email}
+              value={userInfo.email}
               onChange={updateState("email")}
-              // https://github.com/ourbigbook/ourbigbook/issues/268
-              disabled={true}
-              title="Cannot be currently modified"
+              required
+              disabled={!canSetEmail}
+              title={!canSetEmail ? 'Only admins can change email addresses' : undefined}
+              aria-invalid={!!emailError}
+              aria-describedby={canSetEmail && !emailUnchanged && emailError ? 'email-check-error' : undefined}
             />
           </Label>
           <Label label="Password">
@@ -263,7 +299,7 @@ const Settings = ({
           <button
             className="btn"
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || !emailValid}
           >
             <OkIcon /> Update settings
           </button>

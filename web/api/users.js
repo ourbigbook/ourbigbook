@@ -6,6 +6,7 @@ const axios = require('axios')
 const router = require('express').Router()
 const passport = require('passport')
 const sharp = require('sharp')
+const { ValidationError: SequelizeValidationError } = require('sequelize')
 
 const auth = require('../auth')
 const lib = require('./lib')
@@ -373,8 +374,36 @@ Another step towards world domination is taken!
   }
 })
 
-// Modify information about the given logged user.
-// Backend for settings page on the web UI.
+// Validate an email without changing the account or exposing availability to non-admins.
+router.post('/users/:username/email-check', auth.required, async function(req, res, next) {
+  res.set('Cache-Control', 'no-store')
+  try {
+    const { User } = req.app.get('sequelize').models
+    const loggedInUser = await User.findByPk(req.payload.id)
+    if (cant.setUserEmail(loggedInUser)) {
+      throw new ValidationError(['Only admins can check email availability'], 403)
+    }
+    const email = validateParam(req.body, 'email', { validators: [front.isString, front.isTruthy] })
+    const candidate = User.build({ email })
+    try {
+      await candidate.validate({ fields: ['email'], hooks: false })
+    } catch (error) {
+      if (!(error instanceof SequelizeValidationError)) throw error
+      // Invalid input is routine while typing; return the messages without
+      // sending a Sequelize exception to the development error logger.
+      throw new ValidationError({ email: error.errors.map(item => item.message) })
+    }
+    const existing = await User.findOne({ attributes: ['id'], where: { email: candidate.email } })
+    if (existing && existing.id !== req.user.id) {
+      throw new ValidationError({ email: 'This email is taken.' })
+    }
+    return res.json({ available: true })
+  } catch (error) {
+    next(error)
+  }
+})
+
+// Modify information about the given user. Backend for the settings page.
 router.put('/users/:username', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
@@ -396,11 +425,16 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
         }
       }
       if (typeof userArg.email !== 'undefined') {
-        //user.email = userArg.email
-        if (user.email !== userArg.email) {
-          throw new ValidationError(
-            [`email cannot be modified currently, would change from ${user.email} to ${userArg.email}`],
-          )
+        const email = validateParam(userArg, 'email', { validators: [front.isString, front.isTruthy] })
+        if (user.email !== email.toLowerCase()) {
+          if (cant.setUserEmail(loggedInUser)) {
+            throw new ValidationError(['Only admins can change email addresses'])
+          }
+          user.email = email
+          // Codes sent to the old address must not authorize password resets
+          // or verification at the new address.
+          user.verificationCode = null
+          user.verificationCodeN = 0
         }
       }
       if (typeof userArg.displayName !== 'undefined') {

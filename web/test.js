@@ -1103,10 +1103,8 @@ it('api: create an article and see it on global feed', async () => {
       ;({data, status} = await test.webApi.userUpdate('user0', { username: 'user0hacked' }))
       assert.strictEqual(status, 422)
 
-      // Cannot modify email.
+      // Non-admin users cannot modify email.
       // TODO https://github.com/ourbigbook/ourbigbook/issues/268
-      // Once the above is fixed, this will likely just be allowed on dev mode and then
-      // we will just remove this test.
       ;({data, status} = await test.webApi.userUpdate('user0', { email: 'user0hacked@mail.com' }))
       assert.strictEqual(status, 422)
 
@@ -5608,6 +5606,63 @@ it(`api: admin can edit other user's articles`, async () => {
     assertStatus(status, data)
     assert.strictEqual(data.file.bodySource, 'hacked')
   })
+})
+
+it('api: admin can change user emails in settings', async () => {
+  await testApp(async test => {
+    const { User } = test.sequelize.models
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    const admin = await test.createUserApi(2)
+    await User.update({ admin: true }, { where: { id: admin.id } })
+    test.disableToken()
+    assert.strictEqual((await test.webApi.userCheckEmail('user0', 'new@example.com')).status, 401)
+    assert.strictEqual((await test.webApi.userUpdate('user0', { email: 'new@example.com' })).status, 401)
+    test.loginUser(user1)
+    assert.strictEqual((await test.webApi.userUpdate('user0', { email: 'new@example.com' })).status, 403)
+    test.loginUser(user0)
+    assert.strictEqual((await test.webApi.userCheckEmail('user0', 'new@example.com')).status, 403)
+    assert.strictEqual((await test.webApi.userUpdate('user0', { email: 'new@example.com' })).status, 422)
+    if (testNext) {
+      const settings = await test.sendJsonHttp('GET', routes.userEdit('user0'))
+      assert.strictEqual(settings.status, 200)
+      assert_xpath('//x:input[@type="email" and @disabled]', settings.data)
+    }
+    test.loginUser(admin)
+    for (const email of ['new@example.com', user0.email.toUpperCase()]) {
+      const checked = await test.webApi.userCheckEmail('user0', email)
+      assert.strictEqual(checked.status, 200)
+      assert.deepStrictEqual(checked.data, { available: true })
+    }
+    assert.strictEqual((await test.webApi.user('user0')).data.email, user0.email)
+    await User.update({ verificationCode: 'old-code', verificationCodeN: 1 }, { where: { id: user0.id } })
+    const changed = await test.webApi.userUpdate('user0', { email: 'New@Example.COM' })
+    assert.strictEqual(changed.status, 200)
+    assert.strictEqual(changed.data.user.email, 'new@example.com')
+    const saved = await User.findByPk(user0.id)
+    assert.strictEqual(saved.email, 'new@example.com')
+    assert.strictEqual(saved.verified, user0.verified)
+    assert.strictEqual(saved.verificationCode, null)
+    assert.strictEqual(saved.verificationCodeN, 0)
+    if (testNext) {
+      const settings = await test.sendJsonHttp('GET', routes.userEdit('user0'))
+      assert.strictEqual(settings.status, 200)
+      assert_xpath('//x:input[@type="email" and not(@disabled) and @value="new@example.com"]', settings.data)
+      assert(!settings.data.includes('title="Email available"'))
+    }
+    for (const email of ['', null, 1, {}, 'invalid', 'asdf@mail.', user1.email.toUpperCase()]) {
+      const checked = await test.webApi.userCheckEmail('user0', email)
+      assert.strictEqual(checked.status, 422, JSON.stringify(checked.data))
+      assert(!('fullError' in checked.data))
+      const response = await test.webApi.userUpdate('user0', { email })
+      assert.strictEqual(response.status, 422, JSON.stringify(response.data))
+      await saved.reload()
+      assert.strictEqual(saved.email, 'new@example.com')
+    }
+    assert.strictEqual((await test.webApi.userUpdate('user0', { displayName: 'New name' })).status, 200)
+    assert.strictEqual((await test.webApi.user('user0')).data.email, 'new@example.com')
+    assert.strictEqual((await test.webApi.userUpdate('user2', { email: 'admin@example.com' })).status, 200)
+  }, { canTestNext: true })
 })
 
 it(`api: user validation`, async () => {

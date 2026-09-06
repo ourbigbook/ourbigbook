@@ -488,6 +488,9 @@ div.dir-page {
 
 div.editor-page {
   $title-font-size: 24px;
+  .ourbigbook-editor.hide-empty-title .output > .h.top {
+    display: none;
+  }
   display: flex;
   flex-direction: column;
   height: 100%;

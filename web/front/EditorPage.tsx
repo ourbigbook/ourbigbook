@@ -1144,7 +1144,7 @@ export default function EditorPageHoc({
                     </CustomLink>
                   </div>
                   <div
-                    className="ourbigbook-editor"
+                    className={`ourbigbook-editor${isNew && !isIssue && !(file.titleSource || '').trim() ? ' hide-empty-title' : ''}`}
                     ref={ourbigbookEditorElem}
                   >
                   </div>

@@ -244,6 +244,10 @@ export function FollowIcon(opts) {
   return FontAwesomeIcon(0xf06e, { opts, title: "Follow" })
 }
 
+export function FileIcon(opts) {
+  return FontAwesomeIcon(0xf15b, { opts, title: "File" })
+}
+
 export function HelpIcon(opts) {
   return FontAwesomeIcon(0xf05a, { opts, title: "Help" })
 }
@@ -259,6 +263,10 @@ export function IdIcon(opts) {
 
 export function IncomingIcon() {
   return <span dangerouslySetInnerHTML={{ __html: INCOMING_LINKS_MARKER }} />
+}
+
+export function ImageIcon(opts) {
+  return FontAwesomeIcon(0xf03e, { opts, title: "Image" })
 }
 
 export function InformationIcon(opts) {
@@ -686,6 +694,7 @@ export function orderToPageTitle(order: string): string {
       return 'Announced'
     case 'createdAt':
       return 'New'
+    case 'path':
     case 'topicId':
       return 'Alphabetically sorted'
     case 'score':

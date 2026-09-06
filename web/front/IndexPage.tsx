@@ -13,6 +13,7 @@ import {
   DiscussionAbout,
   DiscussionIcon,
   DirectoryIcon,
+  FileIcon,
   HideIcon,
   LargestIcon,
   MyHead,
@@ -343,6 +344,9 @@ function IndexPageHoc({
                 className={`tab-item${order === column ? ' active' : ''}`} href={routes.files({ sort })}>
                 {sort === 'size' ? <LargestIcon /> : <TimeIcon />} {label}
               </CustomLink>)}
+              <CustomLink className={`tab-item${order === 'path' ? ' active' : ''}`} href={routes.files({ sort: 'path' })}>
+                <FileIcon /> <AlphabeticalOrderTabTitle />
+              </CustomLink>
             </>}
             {itemType === 'discussion' && <>
               <CustomLink

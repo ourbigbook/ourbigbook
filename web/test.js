@@ -6869,6 +6869,9 @@ it('web: user files retain the profile at root, with tree and list views', async
     assert.strictEqual(files.count, 2)
     assert.strictEqual(files.files[0].path, 'user0/images [1]/photo.png')
     assert.strictEqual((await Upload.getFileIndex({ authorId: user0.id, order: 'size', limit: 1, offset: 1 })).files[0].path, 'user0/notes.txt')
+    assert.deepStrictEqual((await Upload.getFileIndex({ authorId: user0.id, order: 'path' })).files.map(file => file.path),
+      ['user0/images [1]/photo.png', 'user0/notes.txt'])
+    assert.strictEqual((await Upload.getFileIndex({ authorId: user0.id, order: 'path', limit: 1, offset: 1 })).files[0].path, 'user0/notes.txt')
     if (testNext) {
       test.disableToken()
       const tree = await test.sendJsonHttp('GET', routes.dir('user0'))
@@ -6883,6 +6886,10 @@ it('web: user files retain the profile at root, with tree and list views', async
       assert_xpath('//x:a[contains(@class, "active") and normalize-space(text())="List"]', list.data)
       assert_xpath('//x:table[contains(@class, "file-list")]//x:img[@src="/user0/_raw/images%20%5B1%5D/photo.png"]', list.data)
       assert(!list.data.includes('user1/other.png'))
+      const alphabetical = await test.sendJsonHttp('GET', routes.userFiles('user0', { sort: 'path' }))
+      assert.strictEqual(alphabetical.status, 200)
+      assert_xpath('//x:a[contains(@class, "active") and @href="/go/user/user0/files?sort=path"]', alphabetical.data)
+      assert_xpath('(//x:td[@class="file-path"])[1]/x:a[@href="/user0/_file/images%20%5B1%5D/photo.png"]', alphabetical.data)
       const users = await test.sendJsonHttp('GET', routes.users({ sort: 'files' }))
       assert.strictEqual(users.status, 200)
       assert_xpath('//x:a[contains(@class, "active") and @href="/go/users?sort=files"]', users.data)
@@ -6906,8 +6913,9 @@ it('web: user files retain the profile at root, with tree and list views', async
 it('web: global file index lists metadata, image previews, and stable pages', async () => {
   await testApp(async test => {
     const { Upload } = test.sequelize.models
-    const user0 = await test.createUserApi(0)
+    // Username order differs from internal user ID order.
     const user1 = await test.createUserApi(1)
+    const user0 = await test.createUserApi(0)
     test.loginUser(user0)
     await test.webApi.uploadCreateOrUpdate('user0/images/a [1].png', PNG_1X1_WHITE_BUFFER)
     await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'notes')
@@ -6931,6 +6939,12 @@ it('web: global file index lists metadata, image previews, and stable pages', as
     assert(!('bytes' in image))
     assert(!('hash' in image))
     assert.strictEqual((await Upload.getFileIndex({ order: 'size' })).files[0].path, image.path)
+    assert.deepStrictEqual((await Upload.getFileIndex({ order: 'path', limit: 2 })).files.map(file => file.path),
+      ['user0/images/a [1].png', 'user0/notes.txt'])
+    assert.deepStrictEqual((await Upload.getFileIndex({ order: 'path', limit: 2, offset: 2 })).files.map(file => file.path),
+      ['user1/data.txt'])
+    assert.deepStrictEqual((await Upload.getFileIndex({ order: 'path', orderAscDesc: 'DESC' })).files.map(file => file.path),
+      ['user1/data.txt', 'user0/notes.txt', 'user0/images/a [1].png'])
     test.loginUser(user0)
     await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'updated')
     const updated = (await Upload.getFileIndex({ order: 'updatedAt' })).files[0]
@@ -6944,6 +6958,13 @@ it('web: global file index lists metadata, image previews, and stable pages', as
       assert_xpath(`//x:table[contains(@class, 'file-list')]//x:td[@class='file-path']/x:a[@href='${image.url}']`, data)
       assert_xpath(`//x:table[contains(@class, 'file-list')]//x:img[@src='${image.previewUrl}']`, data)
       assert_xpath('(//x:table[contains(@class, "file-list")]//x:time[@datetime="2026-01-01T00:00:00.000Z"])[1]', data)
+      const alphabetical = await test.sendJsonHttp('GET', routes.files({ sort: 'path' }))
+      assert.strictEqual(alphabetical.status, 200)
+      assert_xpath('//x:a[contains(@class, "active") and @href="/go/files?sort=path"]', alphabetical.data)
+      assert_xpath(`(//x:td[@class="file-path"])[1]/x:a[@href='${image.url}']`, alphabetical.data)
+      const descending = await test.sendJsonHttp('GET', routes.files({ sort: 'path-desc' }))
+      assert.strictEqual(descending.status, 200)
+      assert_xpath('(//x:td[@class="file-path"])[1]/x:a[@href="/user1/_file/data.txt"]', descending.data)
       const empty = await test.sendJsonHttp('GET', routes.files({ page: 2 }))
       assert(empty.data.includes('There are no files to show.'))
     }

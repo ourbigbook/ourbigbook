@@ -211,14 +211,21 @@ module.exports = (sequelize) => {
       '"Upload"."path"'),
   })
 
-  Upload.getFileIndex = async function({ authorId, limit=20, offset=0, order='createdAt', orderAscDesc='DESC' }={}) {
-    if (!['createdAt', 'updatedAt', 'size'].includes(order)) throw new Error('Invalid file order')
+  Upload.getFileIndex = async function({ authorId, limit=20, offset=0, order='createdAt', orderAscDesc }={}) {
+    if (!['createdAt', 'updatedAt', 'size', 'path'].includes(order)) throw new Error('Invalid file order')
+    if (orderAscDesc === undefined) orderAscDesc = order === 'path' ? 'ASC' : 'DESC'
+    // Global paths start with the public username, not the numeric ID stored
+    // in Upload.path. Sort in SQL before pagination, using the displayed path.
+    const orderColumn = order === 'path' && authorId === undefined ? sequelize.literal(`COALESCE((
+      SELECT "User"."username" || substr("Upload"."path", length('${uploadPathComponent}/' || "User"."id") + 1)
+      FROM "User" WHERE ${fileOwnerWhere('"Upload"."path"')}
+    ), "Upload"."path")`) : order
     const { count, rows } = await Upload.findAndCountAll({
       attributes: ['id', 'path', 'size', 'contentType', 'createdAt', 'updatedAt'],
       where: Upload.fileIndexWhere(authorId),
       limit,
       offset,
-      order: [[order, orderAscDesc], ['id', 'DESC']],
+      order: [[orderColumn, orderAscDesc], ['id', 'DESC']],
     })
     const users = await sequelize.models.User.findAll({
       attributes: ['id', 'username'],

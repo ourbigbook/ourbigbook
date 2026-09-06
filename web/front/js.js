@@ -87,6 +87,7 @@ const ALLOWED_SORTS_DEFAULT = {
 /** By default we order by DESC because it works well with createdAt/updatedAt and score.
  * But for these things, notably alphabetical listings, we want to sort alphabetically instead by default. */
 const SORT_WITH_DEFAULT_ASC = new Set([
+  'path',
   'nestedSetIndex',
   'slug',
   'topicId',

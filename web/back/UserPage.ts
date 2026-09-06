@@ -118,7 +118,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       }
       switch (what) {
         case 'user-files':
-          allowedSortsExtra = { size: 'size' }
+          allowedSortsExtra = { size: 'size', path: 'path' }
           break
         case 'user-articles':
           allowedSortsExtra = Article.ALLOWED_SORTS_EXTRA

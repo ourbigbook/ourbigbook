@@ -36,7 +36,7 @@ export const getServerSidePropsIndexHoc = ({
       case 'comment':
         break
       case 'file':
-        getOrderAndPageOpts.allowedSortsExtra = { size: 'size' }
+        getOrderAndPageOpts.allowedSortsExtra = { size: 'size', path: 'path' }
         break
       case 'discussion':
         getOrderAndPageOpts.allowedSortsExtra = Issue.ALLOWED_SORTS_EXTRA

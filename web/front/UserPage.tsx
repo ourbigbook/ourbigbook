@@ -31,6 +31,7 @@ import {
   AnnounceIcon,
   LockIcon,
   DirectoryIcon,
+  FileIcon,
 } from 'front'
 import ArticleList from 'front/ArticleList'
 import CommentList from 'front/CommentList'
@@ -519,8 +520,11 @@ export default function UserPage({
           className={`tab-item${order === column ? ' active' : ''}`}>
           {sort === 'size' ? <LargestIcon /> : <TimeIcon />} {label}
         </CustomLink>)}
+        <CustomLink className={`tab-item${order === 'path' ? ' active' : ''}`} href={routes.userFiles(username, { sort: 'path' })}>
+          <FileIcon /> <AlphabeticalOrderTabTitle />
+        </CustomLink>
       </div>
-      <FileList {...{ files, filesCount, page }} />
+      <FileList {...{ files, filesCount, page, username }} />
     </>}
     {(itemType === 'article' || itemType === 'discussion' || itemType === 'like') &&
       <ArticleList {...{

@@ -5,7 +5,11 @@ import { encodeUrlPath, formatDate, URL_SEP } from 'ourbigbook'
 
 import {
   DirectoryIcon,
+  FileIcon,
+  ImageIcon,
+  LargestIcon,
   MyHead,
+  TimeIcon,
   uploadPathWithoutUser,
 } from 'front'
 import UserLinkWithImage from 'front/UserLinkWithImage'
@@ -25,19 +29,28 @@ export interface DirPageProps extends CommonPropsType {
   childFiles: UploadEntryType[];
 }
 
-export function FileList({ files, filesCount, page }: { files: UploadIndexType[]; filesCount: number; page: number }) {
+export function FileList({ files, filesCount, page, username }: { files: UploadIndexType[]; filesCount: number; page: number; username?: string }) {
   return <div className="list-nav-container">
     {files.length === 0 ? <div className="article-preview content-not-ourbigbook">There are no files to show.</div> :
       <div className="list-container content-not-ourbigbook">
         <table className="list file-list">
-          <thead><tr><th>Path</th><th>Preview</th><th>Size (bytes)</th><th>Created</th><th>Updated</th></tr></thead>
-          <tbody>{files.map(file => <tr key={file.path}>
-            <td className="file-path">{file.url ? <a href={file.url}>{file.path}</a> : file.path}</td>
-            <td>{file.previewUrl && <a href={file.url}><img src={file.previewUrl} alt={file.path} loading="lazy" /></a>}</td>
-            <td className="shrink right">{file.size.toLocaleString('en-US')}</td>
-            <td className="shrink"><time dateTime={file.createdAt} title={file.createdAt}>{formatDate(file.createdAt)}</time></td>
-            <td className="shrink"><time dateTime={file.updatedAt} title={file.updatedAt}>{formatDate(file.updatedAt)}</time></td>
-          </tr>)}</tbody>
+          <thead><tr>
+            <th><FileIcon /> Path</th>
+            <th><ImageIcon /> Preview</th>
+            <th><LargestIcon title="Size" /> Size (bytes)</th>
+            <th><TimeIcon /> Created</th>
+            <th><TimeIcon /> Updated</th>
+          </tr></thead>
+          <tbody>{files.map(file => {
+            const path = username && file.path.startsWith(`${username}/`) ? file.path.slice(username.length + 1) : file.path
+            return <tr key={file.path}>
+              <td className="file-path">{file.url ? <a href={file.url}>{path}</a> : path}</td>
+              <td>{file.previewUrl && <a href={file.url}><img src={file.previewUrl} alt={path} loading="lazy" /></a>}</td>
+              <td className="shrink right">{file.size.toLocaleString('en-US')}</td>
+              <td className="shrink"><time dateTime={file.createdAt} title={file.createdAt}>{formatDate(file.createdAt)}</time></td>
+              <td className="shrink"><time dateTime={file.updatedAt} title={file.updatedAt}>{formatDate(file.updatedAt)}</time></td>
+            </tr>
+          })}</tbody>
         </table>
       </div>}
     <Pagination currentPage={page} itemsCount={filesCount} itemsPerPage={articleLimit} what="files" />

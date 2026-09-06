@@ -33,6 +33,7 @@ logo-circle.png
 
 # next.js
 /web/.next/
+/web/.next-dev/
 /web/out/
 /web/.now/
 /web/.now

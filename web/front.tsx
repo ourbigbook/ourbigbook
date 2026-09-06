@@ -265,6 +265,14 @@ export function InformationIcon(opts) {
   return FontAwesomeIcon(0xf05a, { opts, title: "Note" })
 }
 
+export function ListIcon(opts) {
+  return FontAwesomeIcon(0xf03a, { opts, title: "List" })
+}
+
+export function LargestIcon(opts) {
+  return FontAwesomeIcon(0xf160, { opts, title: "Largest" })
+}
+
 export function LockIcon(opts) {
   // https://fontawesome.com/icons/lock?s=solid
   return FontAwesomeIcon(0xf023, { opts })
@@ -321,6 +329,10 @@ export function TimeIcon(opts) {
 
 export function TopicIcon(opts) {
   return FontAwesomeIcon(0xf500, { opts, title: "Topic" })
+}
+
+export function TreeIcon(opts) {
+  return FontAwesomeIcon(0xf0e8, { opts, title: "Tree" })
 }
 
 export function UserIcon(opts) {

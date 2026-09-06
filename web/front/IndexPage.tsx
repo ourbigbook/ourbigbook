@@ -14,6 +14,7 @@ import {
   DiscussionIcon,
   DirectoryIcon,
   HideIcon,
+  LargestIcon,
   MyHead,
   NewArticleIcon,
   orderToPageTitle,
@@ -334,7 +335,7 @@ function IndexPageHoc({
                 ['size', 'size', 'Largest'],
               ].map(([sort, column, label]) => <CustomLink key={sort}
                 className={`tab-item${order === column ? ' active' : ''}`} href={routes.files({ sort })}>
-                {label}
+                {sort === 'size' ? <LargestIcon /> : <TimeIcon />} {label}
               </CustomLink>)}
             </>}
             {itemType === 'discussion' && <>

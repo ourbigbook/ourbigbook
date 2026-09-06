@@ -13,6 +13,8 @@ import {
   IncomingIcon,
   DiscussionIcon,
   LikeIcon,
+  LargestIcon,
+  ListIcon,
   MyHead,
   SettingsIcon,
   StarIcon,
@@ -21,6 +23,7 @@ import {
   orderToPageTitle,
   useEEdit,
   TimeIcon,
+  TreeIcon,
   FollowIcon,
   ArrowRightIcon,
   ArrowLeftIcon,
@@ -383,10 +386,10 @@ export default function UserPage({
               <div className="tab-list">
                 {itemType === 'file' && <>
                   <CustomLink href={routes.dir(username)} className={`tab-item${what === 'user-files-tree' ? ' active' : ''}`}>
-                    Tree
+                    <TreeIcon /> Tree
                   </CustomLink>
                   <CustomLink href={routes.userFiles(username)} className={`tab-item${what === 'user-files' ? ' active' : ''}`}>
-                    List
+                    <ListIcon /> List
                   </CustomLink>
                 </>}
                 {itemType === 'article' && <>
@@ -513,7 +516,9 @@ export default function UserPage({
         {[
           ['created', 'createdAt', 'New'], ['updated', 'updatedAt', 'Updated'], ['size', 'size', 'Largest'],
         ].map(([sort, column, label]) => <CustomLink key={sort} href={routes.userFiles(username, { sort })}
-          className={`tab-item${order === column ? ' active' : ''}`}>{label}</CustomLink>)}
+          className={`tab-item${order === column ? ' active' : ''}`}>
+          {sort === 'size' ? <LargestIcon /> : <TimeIcon />} {label}
+        </CustomLink>)}
       </div>
       <FileList {...{ files, filesCount, page }} />
     </>}

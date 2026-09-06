@@ -25,6 +25,7 @@ import {
   HelpIcon,
   MoreIcon,
   OkIcon,
+  WarningIcon,
   slugFromArray,
   useWindowEventListener,
   TopicIcon,
@@ -65,6 +66,16 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
   const [errors, setErrors] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const uploadingRef = useRef(false)
+  const [pathStatus, setPathStatus] = useState<{
+    path: string; exists: boolean; hash?: string; contentType?: string;
+  }>(null)
+  const [checkingPath, setCheckingPath] = useState(false)
+  const [pathCheckError, setPathCheckError] = useState(false)
+  const [pathCheckRevision, setPathCheckRevision] = useState(0)
+  const [replacement, setReplacement] = useState<typeof pathStatus>(null)
+  const replacementDialog = useRef<HTMLDialogElement>(null)
+  const [oldPreviewLoaded, setOldPreviewLoaded] = useState(false)
+  const [oldPreviewFailed, setOldPreviewFailed] = useState(false)
   const [search, setSearch] = useState('')
   const [images, setImages] = useState<{ path: string }[]>([])
   const [imageCount, setImageCount] = useState(0)
@@ -95,6 +106,41 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
     setPreview(url)
     return () => URL.revokeObjectURL(url)
   }, [image])
+
+  useEffect(() => {
+    if (tab !== 'upload' || !path) return
+    let active = true
+    setCheckingPath(true)
+    setPathCheckError(false)
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data } = await webApi.uploadMetadata(path)
+        if (active) setPathStatus({ path, ...data })
+      } catch {
+        if (active) {
+          setPathStatus(null)
+          setPathCheckError(true)
+        }
+      } finally {
+        if (active) setCheckingPath(false)
+      }
+    }, 200)
+    return () => { active = false; window.clearTimeout(timer) }
+  }, [path, tab, pathCheckRevision])
+
+  useEffect(() => {
+    if (!replacement) return
+    const element = replacementDialog.current
+    setOldPreviewLoaded(false)
+    setOldPreviewFailed(false)
+    element.showModal()
+    const cancel = e => {
+      e.preventDefault()
+      if (!uploadingRef.current) setReplacement(null)
+    }
+    element.addEventListener('cancel', cancel)
+    return () => element.removeEventListener('cancel', cancel)
+  }, [replacement])
 
   useEffect(() => {
     if (tab !== 'select') return
@@ -150,13 +196,34 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
       setErrors(['Keep the selected image’s file extension so it is served with the correct image type.'])
       return
     }
+    if (checkingPath || pathCheckError || pathStatus?.path !== path) return
+    setErrors([])
+    if (pathStatus.exists) {
+      setReplacement(pathStatus)
+    } else {
+      await saveUpload()
+    }
+  }
+
+  async function saveUpload(existing=null) {
+    if (uploadingRef.current) return
     uploadingRef.current = true
     setUploading(true)
     setErrors([])
     try {
-      await webApi.uploadCreateOrUpdate(`${username}/${path}`, await image.arrayBuffer())
+      await webApi.uploadCreateOrUpdate(`${username}/${path}`, await image.arrayBuffer(), {
+        headers: existing ? { 'If-Match': `"${existing.hash}"` } : { 'If-None-Match': '*' },
+      })
+      replacementDialog.current?.close()
       insert(path)
     } catch (error) {
+      if (error.response?.status === 412) {
+        setReplacement(null)
+        setPathStatus(null)
+        setPathCheckRevision(revision => revision + 1)
+        setErrors(['This file changed since it was checked. Review the current version and try again.'])
+        return
+      }
       const messages = error.response?.data?.errors
       setErrors(messages ? (typeof messages === 'string' ? [messages] : Array.isArray(messages) ? messages : Object.values(messages).flat()).map(String)
         : [error.message || 'Upload failed. Please try again.'])
@@ -166,7 +233,7 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
     }
   }
 
-  return <dialog
+  return <><dialog
     ref={dialog}
     className="image-upload-modal content-not-ourbigbook"
     aria-labelledby="image-upload-title"
@@ -224,8 +291,16 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
             File path
             <input type="text" value={path} required disabled={uploading} onChange={e => setPath(e.target.value)} />
           </label>
+          {path && <div role="status">
+            {pathCheckError ? <>
+              <WarningIcon /> Could not check this path.{' '}
+              <button type="button" onClick={() => setPathCheckRevision(revision => revision + 1)}>Retry</button>
+            </> : checkingPath || pathStatus?.path !== path ? 'Checking file path…'
+              : pathStatus.exists ? <><WarningIcon /> A file already exists at this path. You’ll review it before replacing it.</>
+              : <><OkIcon title="Available" /> This path is available. A new file will be created.</>}
+          </div>}
           <p>Saved under {username}/. You can include folders, for example images/photo.png.
-            {' '}Uploading to an existing path replaces that file.</p>
+          </p>
         </>}
         {tab === 'select' && <>
           <label>
@@ -259,13 +334,43 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
       <div role="alert"><ErrorList errors={errors} /></div>
       <div className="image-upload-actions">
         <button type="button" disabled={uploading} onClick={onClose}>Cancel</button>
-        <button type="submit" disabled={uploading || (tab === 'upload' ? !image || !previewReady || !path
+        <button type="submit" disabled={uploading || (tab === 'upload' ? !image || !previewReady || !path || checkingPath || pathCheckError || pathStatus?.path !== path
           : tab === 'select' ? searching || !selectedImage : !validWebUrl)}>
           {uploading ? 'Uploading…' : tab === 'upload' ? 'Upload and insert' : 'Insert image'}
         </button>
       </div>
     </form>
   </dialog>
+  {replacement && <dialog ref={replacementDialog} className="image-upload-modal image-replace-modal content-not-ourbigbook"
+    aria-labelledby="image-replace-title" aria-busy={uploading} onKeyDown={e => e.stopPropagation()}>
+    <h2 id="image-replace-title">Replace existing file?</h2>
+    <p><strong>{replacement.path}</strong> already exists. Replacing it will change the image everywhere this file is used.</p>
+    <div className="image-replace-previews">
+      <figure>
+        <figcaption>Existing image</figcaption>
+        {replacement.contentType?.startsWith('image/') ? <>
+          <img src={`/${username}/_raw/${replacement.path.split('/').map(encodeURIComponent).join('/')}?v=${replacement.hash}`}
+            alt="Existing image" onLoad={() => setOldPreviewLoaded(true)} onError={() => {
+              setOldPreviewLoaded(true)
+              setOldPreviewFailed(true)
+            }} />
+          {!oldPreviewLoaded && <p>Loading existing image…</p>}
+          {oldPreviewFailed && <p>The existing image could not be previewed.</p>}
+        </> : <p>The existing file ({replacement.contentType}) is not an image.</p>}
+      </figure>
+      <figure>
+        <figcaption>New image</figcaption>
+        <img src={preview} alt="New image" />
+      </figure>
+    </div>
+    <div role="alert"><ErrorList errors={errors} /></div>
+    <div className="image-upload-actions">
+      <button type="button" autoFocus disabled={uploading} onClick={() => setReplacement(null)}>Cancel</button>
+      <button type="button" disabled={uploading || (replacement.contentType?.startsWith('image/') && !oldPreviewLoaded)}
+        onClick={() => saveUpload(replacement)}>{uploading ? 'Replacing…' : 'Replace and insert'}</button>
+    </div>
+  </dialog>}
+  </>
 }
 
 /** DbProvider that fetchs data via the OurBigBook Web REST API. */

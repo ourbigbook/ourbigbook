@@ -97,8 +97,11 @@ router.put('/', auth.required, async function(req, res, next) {
       if (msg) {
         throw new lib.ValidationError([msg], 403)
       }
+      // Serialize writes in this user's namespace, including creation of paths
+      // which have no Upload row to lock yet.
+      await User.findByPk(author.id, { transaction, lock: transaction.LOCK.UPDATE })
       const [existing, count] = await Promise.all([
-        Upload.count({ where: { path: actualPath } }, { transaction }),
+        Upload.findOne({ attributes: ['hash'], where: { path: actualPath }, transaction }),
         Upload.count({
           where: {
             path: sequelizeWhereStartsWith(
@@ -110,9 +113,14 @@ router.put('/', auth.required, async function(req, res, next) {
           transaction,
         }),
       ])
+      const ifMatch = req.get('If-Match')
+      if ((req.get('If-None-Match') === '*' && existing) ||
+          (ifMatch !== undefined && (!existing || ifMatch !== `"${existing.hash}"`))) {
+        throw new ValidationError('The file has changed. Check the current version before replacing it.', 412)
+      }
       if (
         !loggedInUser.admin &&
-        existing === 0 &&
+        !existing &&
         count >= author.maxUploads
       ) {
         throw new ValidationError(
@@ -156,6 +164,7 @@ router.delete('/', auth.required, async function(req, res, next) {
       if (msg) {
         throw new lib.ValidationError([msg], 403)
       }
+      await User.findByPk(author.id, { transaction, lock: transaction.LOCK.UPDATE })
       const upload = await Upload.findOne({ where: { path: actualPath }, transaction})
       if (!upload) {
         throw new lib.ValidationError(`path does not exist: ${path}`, 404)
@@ -188,6 +197,22 @@ router.delete('/', auth.required, async function(req, res, next) {
     return res.json({})
   } catch(error) {
     next(error);
+  }
+})
+
+router.get('/metadata', auth.required, async function(req, res, next) {
+  try {
+    const { Upload } = req.app.get('sequelize').models
+    const path = lib.validateParam(req.query, 'path', { validators: [isString] })
+    const upload = await Upload.findOne({
+      attributes: ['hash', 'contentType', 'size'],
+      where: { path: Upload.uidAndPathToUploadPath(req.payload.id, path) },
+    })
+    res.set('Cache-Control', 'no-store')
+    return res.json(upload ? { exists: true, hash: upload.hash, contentType: upload.contentType, size: upload.size }
+      : { exists: false })
+  } catch (error) {
+    next(error)
   }
 })
 

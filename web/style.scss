@@ -847,6 +847,21 @@ span.shortcut {
   }
 }
 
+.image-replace-modal {
+  width: min(48em, calc(100% - 2em));
+  > * + * { margin-top: 1em; }
+  strong { overflow-wrap: anywhere; }
+  .image-replace-previews {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1em;
+    figure { margin: 0; }
+    figcaption { font-weight: bold; margin-bottom: 0.5em; }
+    img { width: 100%; max-height: 40vh; object-fit: contain; }
+    @media (max-width: 500px) { grid-template-columns: 1fr; }
+  }
+}
+
 .publish-progress-modal {
   cursor: wait;
   z-index: 1000;

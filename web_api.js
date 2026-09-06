@@ -405,6 +405,10 @@ class WebApi {
     return this.req('get', `uploads/images${encodeGetParamsWithOffset(opts)}`, reqOpts)
   }
 
+  async uploadMetadata(path, reqOpts={}) {
+    return this.req('get', `uploads/metadata${encodeGetParamsWithOffset({ path })}`, reqOpts)
+  }
+
   async users(opts, reqOpts={}) {
     return this.req('get', `users${encodeGetParamsWithOffset(opts)}`)
   }

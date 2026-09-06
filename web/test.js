@@ -6781,6 +6781,46 @@ it(`api: article {synonymNoScope}`, async () => {
   }, { defaultExpectStatus: 200 })
 })
 
+it('api: upload metadata and conditional replacement protect existing files', async () => {
+  await testApp(async test => {
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    test.loginUser(user1)
+    await test.webApi.uploadCreateOrUpdate('user1/other.png', PNG_1X1_WHITE_BUFFER)
+    test.loginUser(user0)
+    assert.deepStrictEqual((await test.webApi.uploadMetadata('other.png')).data, { exists: false })
+    const path = 'images/a [1].png'
+    const fullPath = `user0/${path}`
+    assert.deepStrictEqual((await test.webApi.uploadMetadata(path)).data, { exists: false })
+    const createOnly = { headers: { 'If-None-Match': '*' } }
+    await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER, createOnly)
+    const metadata = await test.webApi.uploadMetadata(path)
+    assert.strictEqual(metadata.headers['cache-control'], 'no-store')
+    assert.deepStrictEqual(metadata.data, {
+      exists: true, hash: web_api.hashToHex(PNG_1X1_WHITE_BUFFER), contentType: 'image/png', size: PNG_1X1_WHITE_BUFFER.length,
+    })
+    const replacement = await sharp(PNG_1X1_WHITE_BUFFER).resize(2, 2).png().toBuffer()
+    await test.webApi.uploadCreateOrUpdate(fullPath, replacement, { ...createOnly, expectStatus: 412 })
+    assert.deepStrictEqual((await test.webApi.upload(fullPath)).data, PNG_1X1_WHITE_BUFFER)
+    const confirmed = { headers: { 'If-Match': `"${metadata.data.hash}"` } }
+    await test.webApi.uploadCreateOrUpdate(fullPath, replacement, confirmed)
+    assert.deepStrictEqual((await test.webApi.upload(fullPath)).data, replacement)
+    // A confirmation for the previous version must not overwrite the new one.
+    await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER, { ...confirmed, expectStatus: 412 })
+    assert.deepStrictEqual((await test.webApi.upload(fullPath)).data, replacement)
+    await test.webApi.uploadDelete(fullPath)
+    await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER, { ...confirmed, expectStatus: 412 })
+    assert.deepStrictEqual((await test.webApi.uploadMetadata(path)).data, { exists: false })
+    // Existing CLI callers can still explicitly use the unconditional API.
+    await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER)
+    await test.webApi.uploadCreateOrUpdate(fullPath, replacement)
+    assert.deepStrictEqual((await test.webApi.upload(fullPath)).data, replacement)
+    await test.webApi.req('get', 'uploads/metadata?path=a&path=b', { expectStatus: 422 })
+    test.disableToken()
+    await test.webApi.uploadMetadata(path, { expectStatus: 401 })
+  })
+})
+
 it('api: uploaded image search matches literal prefixes for the current user only', async () => {
   await testApp(async test => {
     const user0 = await test.createUserApi(0)

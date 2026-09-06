@@ -19,7 +19,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       typeof uid === 'string'
     ) {
       const sequelize = req.sequelize
-      const { Article, Comment, Issue, Ref, SignupBlacklistIp, User } = sequelize.models
+      const { Article, Comment, Issue, Ref, SignupBlacklistIp, Upload, UploadDirectory, User } = sequelize.models
       const [loggedInUser, user] = await Promise.all([
         getLoggedInUser(req, res),
         User.findOne({
@@ -36,6 +36,10 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       let author, articlesFollowedBy, likedBy, following, followedBy, itemType
       let allowedSorts, allowedSortsExtra, defaultOrder, parentFromTo, parentId, parentType
       switch (what) {
+        case 'user-files':
+        case 'user-files-tree':
+          itemType = 'file'
+          break
         case 'follows':
           followedBy = uid
           itemType = 'user'
@@ -113,6 +117,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           throw new Error(`Unknown search: ${what}`)
       }
       switch (what) {
+        case 'user-files':
+          allowedSortsExtra = { size: 'size' }
+          break
         case 'user-articles':
           allowedSortsExtra = Article.ALLOWED_SORTS_EXTRA
           break
@@ -208,6 +215,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         totalDiscussionsByUser,
         users,
         signupIpIsBlacklisted,
+        fileIndex,
+        rootDirectory,
       ] = await Promise.all([
         // articles
         articlesPromise,
@@ -261,6 +270,14 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         usersPromise,
         // signupIpIsBlacklisted
         cant.updateSiteSettings(loggedInUser) ? false : SignupBlacklistIp.findOne({ where: { ip: user.ip } }).then(ip => !!ip),
+        what === 'user-files' ? Upload.getFileIndex({ authorId: user.id, limit: articleLimit, offset, order, orderAscDesc: ascDesc }) : null,
+        what === 'user-files-tree' ? UploadDirectory.findOne({
+          where: { path: Upload.uidAndPathToUploadPath(user.id, '') },
+          include: [
+            { model: UploadDirectory, as: 'childDirectories', attributes: ['path'] },
+            { model: Upload, as: 'childFiles', attributes: ['path'] },
+          ],
+        }) : null,
         updateNewScoreLastCheckPromise,
       ])
       if (parentTopicIdString && !parentArticleJson) {
@@ -294,7 +311,19 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       if (parentArticleJson) {
         props.parentArticle = parentArticleJson 
       }
-      if (itemType === 'user') {
+      if (itemType === 'file') {
+        if (what === 'user-files') {
+          props.files = fileIndex.files
+          props.filesCount = fileIndex.count
+        } else {
+          // An existing user always has an empty file root, even before their
+          // first upload (or after deleting their last file).
+          props.childDirectories = (rootDirectory?.childDirectories || [])
+            .sort((a, b) => a.path.localeCompare(b.path)).map(directory => directory.toEntryJson())
+          props.childFiles = (rootDirectory?.childFiles || [])
+            .sort((a, b) => a.path.localeCompare(b.path)).map(file => file.toEntryJson())
+        }
+      } else if (itemType === 'user') {
         props.users = await Promise.all(users.rows.map(user => user.toJson(loggedInUser)))
         props.usersCount = users.count
       } else if (itemType === 'article' || itemType === 'discussion') {

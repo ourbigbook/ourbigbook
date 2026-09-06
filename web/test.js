@@ -6781,6 +6781,60 @@ it(`api: article {synonymNoScope}`, async () => {
   }, { defaultExpectStatus: 200 })
 })
 
+it('web: user files retain the profile at root, with tree and list views', async () => {
+  await testApp(async test => {
+    const { Upload, UploadDirectory } = test.sequelize.models
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    assert.deepStrictEqual(await Upload.getFileIndex({ authorId: user0.id }), { count: 0, files: [] })
+    if (testNext) {
+      for (const url of [routes.dir('user0'), routes.userFiles('user0')]) {
+        const { data, status } = await test.sendJsonHttp('GET', url)
+        assert.strictEqual(status, 200)
+        assert_xpath('//x:div[contains(@class, "user-info")]//x:h1/x:a[@href="/user0"]', data)
+        assert_xpath('//x:a[contains(@class, "active") and contains(., "Files")]', data)
+        assert(data.includes(url === routes.dir('user0') ? 'This directory is empty.' : 'There are no files to show.'))
+      }
+      assert.strictEqual(await UploadDirectory.count(), 0)
+      assert.strictEqual((await test.sendJsonHttp('GET', routes.dir('missing-user'))).status, 404)
+      assert.strictEqual((await test.sendJsonHttp('GET', routes.userFiles('missing-user'))).status, 404)
+      assert.strictEqual((await test.sendJsonHttp('GET', routes.dir('user0', 'missing'))).status, 404)
+    }
+    test.loginUser(user0)
+    await test.webApi.uploadCreateOrUpdate('user0/images [1]/photo.png', PNG_1X1_WHITE_BUFFER)
+    await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'notes')
+    test.loginUser(user1)
+    await test.webApi.uploadCreateOrUpdate('user1/other.png', PNG_1X1_WHITE_BUFFER)
+    const files = await Upload.getFileIndex({ authorId: user0.id, order: 'size', limit: 1 })
+    assert.strictEqual(files.count, 2)
+    assert.strictEqual(files.files[0].path, 'user0/images [1]/photo.png')
+    assert.strictEqual((await Upload.getFileIndex({ authorId: user0.id, order: 'size', limit: 1, offset: 1 })).files[0].path, 'user0/notes.txt')
+    if (testNext) {
+      test.disableToken()
+      const tree = await test.sendJsonHttp('GET', routes.dir('user0'))
+      assert.strictEqual(tree.status, 200)
+      assert_xpath('//x:a[contains(@class, "active") and text()="Tree"]', tree.data)
+      assert_xpath('//x:a[@href="/user0/_dir/images%20%5B1%5D"]', tree.data)
+      assert_xpath('//x:a[@href="/user0/_file/notes.txt"]', tree.data)
+      const list = await test.sendJsonHttp('GET', routes.userFiles('user0', { sort: 'size' }))
+      assert.strictEqual(list.status, 200)
+      assert_xpath('//x:div[contains(@class, "user-info")]//x:h1/x:a[@href="/user0"]', list.data)
+      assert_xpath('//x:a[contains(@class, "active") and text()="List"]', list.data)
+      assert_xpath('//x:table[contains(@class, "file-list")]//x:img[@src="/user0/_raw/images%20%5B1%5D/photo.png"]', list.data)
+      assert(!list.data.includes('user1/other.png'))
+      const subdir = await test.sendJsonHttp('GET', routes.dir('user0', 'images [1]'))
+      assert.strictEqual(subdir.status, 200)
+      assert_xpath('//x:div[contains(@class, "dir-page")]/x:h1', subdir.data)
+      assert(!subdir.data.includes('class="user-info'))
+      assert_xpath('//x:a[@href="/user0/_file/images%20%5B1%5D/photo.png"]', subdir.data)
+    }
+    test.loginUser(user0)
+    await test.webApi.uploadDelete('user0/images [1]/photo.png')
+    await test.webApi.uploadDelete('user0/notes.txt')
+    if (testNext) assert.strictEqual((await test.sendJsonHttp('GET', routes.dir('user0'))).status, 200)
+  }, { canTestNext: true })
+})
+
 it('web: global file index lists metadata, image previews, and stable pages', async () => {
   await testApp(async test => {
     const { Upload } = test.sequelize.models

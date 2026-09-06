@@ -2,7 +2,7 @@ import React from 'react'
 
 import pluralize from 'pluralize'
 
-import { formatDate, formatNumberApprox } from 'ourbigbook'
+import { formatNumberApprox } from 'ourbigbook'
 
 import {
   AlphabeticalOrderTabTitle,
@@ -29,8 +29,7 @@ import {
 import ArticleList from 'front/ArticleList'
 import CommentList from 'front/CommentList'
 import UserList from 'front/UserList'
-import Pagination from 'front/Pagination'
-import { articleLimit } from 'front/config'
+import { FileList } from 'front/DirPage'
 import { UploadIndexType } from 'front/types/UploadType'
 import CustomLink from 'front/CustomLink'
 import routes from 'front/routes'
@@ -366,22 +365,7 @@ function IndexPageHoc({
             </>}
           </div>
         }
-        {itemType === 'file' ? <div className="list-nav-container">
-          {files.length === 0 ? <div className="article-preview content-not-ourbigbook">There are no files to show.</div> :
-            <div className="list-container content-not-ourbigbook">
-              <table className="list file-list">
-                <thead><tr><th>Path</th><th>Preview</th><th>Size (bytes)</th><th>Created</th><th>Updated</th></tr></thead>
-                <tbody>{files.map(file => <tr key={file.path}>
-                  <td className="file-path">{file.url ? <a href={file.url}>{file.path}</a> : file.path}</td>
-                  <td>{file.previewUrl && <a href={file.url}><img src={file.previewUrl} alt={file.path} loading="lazy" /></a>}</td>
-                  <td className="shrink right">{file.size.toLocaleString('en-US')}</td>
-                  <td className="shrink"><time dateTime={file.createdAt} title={file.createdAt}>{formatDate(file.createdAt)}</time></td>
-                  <td className="shrink"><time dateTime={file.updatedAt} title={file.updatedAt}>{formatDate(file.updatedAt)}</time></td>
-                </tr>)}</tbody>
-              </table>
-            </div>}
-          <Pagination currentPage={page} itemsCount={filesCount} itemsPerPage={articleLimit} what="files" />
-        </div> : itemType === 'user'
+        {itemType === 'file' ? <FileList {...{ files, filesCount, page }} /> : itemType === 'user'
           ? <UserList {...{
               hasLocked,
               hasUnverified,

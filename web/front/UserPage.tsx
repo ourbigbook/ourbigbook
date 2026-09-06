@@ -42,6 +42,9 @@ import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import routes from 'front/routes'
 import Article from 'front/Article'
 import UserList from 'front/UserList'
+import { DirectoryEntries, FileList } from 'front/DirPage'
+import { UploadEntryType, UploadIndexType } from 'front/types/UploadType'
+import { UploadDirectoryEntryType } from 'front/types/UploadDirectoryType'
 import { ArticleType, ArticleLinkType } from 'front/types/ArticleType'
 import { CommentType } from 'front/types/CommentType'
 import { CommonPropsType } from 'front/types/CommonPropsType'
@@ -70,7 +73,11 @@ export interface UserPageProps extends CommonPropsType {
   hasUnlisted?: boolean;
   incomingLinks?: ArticleLinkType[];
   issuesCount?: number;
-  itemType?: 'article' | 'comment' | 'discussion' | 'like'| 'topic' | 'user';
+  itemType?: 'article' | 'comment' | 'discussion' | 'file' | 'like'| 'topic' | 'user';
+  files?: UploadIndexType[];
+  filesCount?: number;
+  childDirectories?: UploadDirectoryEntryType[];
+  childFiles?: UploadEntryType[];
   latestIssues?: IssueType[];
   list: boolean,
   locked?: boolean,
@@ -106,6 +113,8 @@ export interface UserPageProps extends CommonPropsType {
     'user-incoming-articles' |
     'user-tagged-articles' |
     'user-comments' |
+    'user-files' |
+    'user-files-tree' |
     'user-issues'
   ;
 }
@@ -121,6 +130,10 @@ export default function UserPage({
   ancestors,
   comments,
   commentsCount,
+  files,
+  filesCount,
+  childDirectories,
+  childFiles,
   commentCountByLoggedInUser,
   hasListedContent,
   hasLocked,
@@ -193,6 +206,12 @@ export default function UserPage({
   } else {
     let title2
     switch (what) {
+      case 'user-files':
+        title2 = `${order === 'size' ? 'Largest' : orderToPageTitle(order)} files`
+        break
+      case 'user-files-tree':
+        title2 = 'Files'
+        break
       case 'followed':
         title2 = 'Newly followed by'
         break;
@@ -347,7 +366,7 @@ export default function UserPage({
                 </CustomLink>
                 <CustomLink
                   href={routes.dir(username)}
-                  className={`tab-item`}
+                  className={`tab-item${itemType === 'file' ? ' active' : ''}`}
                 >
                   <DirectoryIcon /> Files
                 </CustomLink>
@@ -362,6 +381,14 @@ export default function UserPage({
                 }
               </div>
               <div className="tab-list">
+                {itemType === 'file' && <>
+                  <CustomLink href={routes.dir(username)} className={`tab-item${what === 'user-files-tree' ? ' active' : ''}`}>
+                    Tree
+                  </CustomLink>
+                  <CustomLink href={routes.userFiles(username)} className={`tab-item${what === 'user-files' ? ' active' : ''}`}>
+                    List
+                  </CustomLink>
+                </>}
                 {itemType === 'article' && <>
                   <CustomLink
                     href={routes.userArticles(username, { sort: 'created' })}
@@ -478,6 +505,18 @@ export default function UserPage({
         }}/>
       }
     </div>
+    {what === 'user-files-tree' && <div className="dir-page content-not-ourbigbook">
+      <DirectoryEntries author={user} {...{ childDirectories, childFiles }} />
+    </div>}
+    {what === 'user-files' && <>
+      <div className="tab-list content-not-ourbigbook">
+        {[
+          ['created', 'createdAt', 'New'], ['updated', 'updatedAt', 'Updated'], ['size', 'size', 'Largest'],
+        ].map(([sort, column, label]) => <CustomLink key={sort} href={routes.userFiles(username, { sort })}
+          className={`tab-item${order === column ? ' active' : ''}`}>{label}</CustomLink>)}
+      </div>
+      <FileList {...{ files, filesCount, page }} />
+    </>}
     {(itemType === 'article' || itemType === 'discussion' || itemType === 'like') &&
       <ArticleList {...{
         articles,

@@ -204,15 +204,17 @@ module.exports = (sequelize) => {
     }
   }
 
-  Upload.fileIndexWhere = () => ({
-    path: sequelizeWhereStartsWith(sequelize, uploadPathComponent + URL_SEP, '"Upload"."path"'),
+  Upload.fileIndexWhere = (authorId) => ({
+    path: sequelizeWhereStartsWith(sequelize,
+      authorId === undefined ? uploadPathComponent + URL_SEP : Upload.uidAndPathToUploadPath(authorId, '') + URL_SEP,
+      '"Upload"."path"'),
   })
 
-  Upload.getFileIndex = async function({ limit=20, offset=0, order='createdAt', orderAscDesc='DESC' }={}) {
+  Upload.getFileIndex = async function({ authorId, limit=20, offset=0, order='createdAt', orderAscDesc='DESC' }={}) {
     if (!['createdAt', 'updatedAt', 'size'].includes(order)) throw new Error('Invalid file order')
     const { count, rows } = await Upload.findAndCountAll({
       attributes: ['id', 'path', 'size', 'contentType', 'createdAt', 'updatedAt'],
-      where: Upload.fileIndexWhere(),
+      where: Upload.fileIndexWhere(authorId),
       limit,
       offset,
       order: [[order, orderAscDesc], ['id', 'DESC']],

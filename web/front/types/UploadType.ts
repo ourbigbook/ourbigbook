@@ -11,3 +11,8 @@ export interface UploadType extends UploadEntryType {
   size: number;
   updatedAt: string;
 };
+
+export interface UploadIndexType extends Pick<UploadType, 'path' | 'contentType' | 'size' | 'createdAt' | 'updatedAt'> {
+  url: string | null;
+  previewUrl: string | null;
+}

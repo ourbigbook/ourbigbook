@@ -26,7 +26,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
   const sequelize = req.sequelize
   if (err) { res.statusCode = 422 }
   const offset = page * articleLimit
-  const { Article, Comment, Issue, Site, Topic, User } = sequelize.models
+  const { Article, Comment, Issue, Site, Topic, Upload, User } = sequelize.models
   const [
     site,
     totalArticles,
@@ -34,6 +34,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     totalDiscussions,
     totalTopics,
     totalUsers,
+    totalFiles,
     lockedUsers,
     unverifiedUsers,
     { count: usersCount, rows: userRows },
@@ -55,6 +56,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     Topic.count(),
     // totalUsers
     User.count({ where: { locked: false, verified: true } }),
+    Upload.count({ where: Upload.fileIndexWhere() }),
     // lockedUsers
     User.count({ where: { locked: true } }),
     // unverifiedUsers
@@ -96,6 +98,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
     totalComments,
     totalTopics,
     totalUsers,
+    totalFiles,
     users,
     usersCount,
     verified: verified === undefined ? null : verified,

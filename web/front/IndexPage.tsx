@@ -2,7 +2,7 @@ import React from 'react'
 
 import pluralize from 'pluralize'
 
-import { formatNumberApprox } from 'ourbigbook'
+import { formatDate, formatNumberApprox } from 'ourbigbook'
 
 import {
   AlphabeticalOrderTabTitle,
@@ -12,6 +12,7 @@ import {
   CommentIcon,
   DiscussionAbout,
   DiscussionIcon,
+  DirectoryIcon,
   HideIcon,
   MyHead,
   NewArticleIcon,
@@ -28,6 +29,9 @@ import {
 import ArticleList from 'front/ArticleList'
 import CommentList from 'front/CommentList'
 import UserList from 'front/UserList'
+import Pagination from 'front/Pagination'
+import { articleLimit } from 'front/config'
+import { UploadIndexType } from 'front/types/UploadType'
 import CustomLink from 'front/CustomLink'
 import routes from 'front/routes'
 import FollowArticleButton from 'front/FollowArticleButton'
@@ -50,7 +54,10 @@ export interface IndexPageProps extends CommonPropsType {
   hasLocked?: boolean;
   hasUnlisted?: boolean;
   hasUnverified?: boolean;
-  itemType?: 'article' | 'comment' | 'discussion' | 'topic' | 'user';
+  itemType?: 'article' | 'comment' | 'discussion' | 'file' | 'topic' | 'user';
+  files?: UploadIndexType[];
+  filesCount?: number;
+  totalFiles?: number;
   locked?: boolean;
   list?: boolean;
   order: string;
@@ -79,6 +86,9 @@ function IndexPageHoc({
     comments,
     commentsCount,
     followed=false,
+    files,
+    filesCount,
+    totalFiles,
     hasLocked,
     hasUnlisted,
     hasUnverified,
@@ -102,7 +112,7 @@ function IndexPageHoc({
   }: IndexPageProps) {
     let title
     if (isHomepage) {
-      let orderTitle = orderToPageTitle(order)
+      let orderTitle = itemType === 'file' && order === 'size' ? 'Largest' : orderToPageTitle(order)
       if (orderTitle === undefined && itemType === 'topic') {
         orderTitle = 'Largest'
       }
@@ -186,6 +196,11 @@ function IndexPageHoc({
               <span className="mobile-hide"> ({formatNumberApprox(totalComments)})</span>
             </>}
           </CustomLink>
+          {isHomepage &&
+            <CustomLink className={`tab-item${itemType === 'file' ? ' active' : ''}`} href={routes.files()}>
+              <DirectoryIcon /> Files<span className="mobile-hide"> ({formatNumberApprox(totalFiles)})</span>
+            </CustomLink>
+          }
           {!isHomepage &&
             <span className='tab-item'>
               <FollowArticleButton {...{
@@ -313,6 +328,16 @@ function IndexPageHoc({
                 <CommentIcon /> Comments
               </CustomLink>
             </>}
+            {itemType === 'file' && <>
+              {[
+                ['created', 'createdAt', 'New'],
+                ['updated', 'updatedAt', 'Updated'],
+                ['size', 'size', 'Largest'],
+              ].map(([sort, column, label]) => <CustomLink key={sort}
+                className={`tab-item${order === column ? ' active' : ''}`} href={routes.files({ sort })}>
+                {label}
+              </CustomLink>)}
+            </>}
             {itemType === 'discussion' && <>
               <CustomLink
                 className={`tab-item${order === 'createdAt' ? ' active' : ''}`}
@@ -341,7 +366,22 @@ function IndexPageHoc({
             </>}
           </div>
         }
-        {itemType === 'user'
+        {itemType === 'file' ? <div className="list-nav-container">
+          {files.length === 0 ? <div className="article-preview content-not-ourbigbook">There are no files to show.</div> :
+            <div className="list-container content-not-ourbigbook">
+              <table className="list file-list">
+                <thead><tr><th>Path</th><th>Preview</th><th>Size (bytes)</th><th>Created</th><th>Updated</th></tr></thead>
+                <tbody>{files.map(file => <tr key={file.path}>
+                  <td className="file-path">{file.url ? <a href={file.url}>{file.path}</a> : file.path}</td>
+                  <td>{file.previewUrl && <a href={file.url}><img src={file.previewUrl} alt={file.path} loading="lazy" /></a>}</td>
+                  <td className="shrink right">{file.size.toLocaleString('en-US')}</td>
+                  <td className="shrink"><time dateTime={file.createdAt} title={file.createdAt}>{formatDate(file.createdAt)}</time></td>
+                  <td className="shrink"><time dateTime={file.updatedAt} title={file.updatedAt}>{formatDate(file.updatedAt)}</time></td>
+                </tr>)}</tbody>
+              </table>
+            </div>}
+          <Pagination currentPage={page} itemsCount={filesCount} itemsPerPage={articleLimit} what="files" />
+        </div> : itemType === 'user'
           ? <UserList {...{
               hasLocked,
               hasUnverified,

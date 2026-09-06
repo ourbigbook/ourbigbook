@@ -6781,6 +6781,53 @@ it(`api: article {synonymNoScope}`, async () => {
   }, { defaultExpectStatus: 200 })
 })
 
+it('web: global file index lists metadata, image previews, and stable pages', async () => {
+  await testApp(async test => {
+    const { Upload } = test.sequelize.models
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    test.loginUser(user0)
+    await test.webApi.uploadCreateOrUpdate('user0/images/a [1].png', PNG_1X1_WHITE_BUFFER)
+    await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'notes')
+    test.loginUser(user1)
+    await test.webApi.uploadCreateOrUpdate('user1/data.txt', 'data')
+    await Upload.upsertSideEffects({
+      ...Upload.getCreateObj({ path: `profile/${user0.id}`, bytes: PNG_1X1_WHITE_BUFFER }), contentType: 'image/png',
+    })
+    await Upload.update({ createdAt: new Date('2026-01-01T00:00:00Z') }, { where: Upload.fileIndexWhere(), silent: true })
+    const result = await Upload.getFileIndex({ limit: 2 })
+    assert.strictEqual(result.count, 3)
+    assert.deepStrictEqual(result.files.map(file => file.path), ['user1/data.txt', 'user0/notes.txt'])
+    assert(result.files.every(file => file.previewUrl === null))
+    const page2 = await Upload.getFileIndex({ limit: 2, offset: 2 })
+    assert.deepStrictEqual(page2.files.map(file => file.path), ['user0/images/a [1].png'])
+    const image = page2.files[0]
+    assert.strictEqual(image.url, '/user0/_file/images/a%20%5B1%5D.png')
+    assert.strictEqual(image.previewUrl, '/user0/_raw/images/a%20%5B1%5D.png')
+    assert.strictEqual(image.size, PNG_1X1_WHITE_BUFFER.length)
+    assert.strictEqual(image.createdAt, '2026-01-01T00:00:00.000Z')
+    assert(!('bytes' in image))
+    assert(!('hash' in image))
+    assert.strictEqual((await Upload.getFileIndex({ order: 'size' })).files[0].path, image.path)
+    test.loginUser(user0)
+    await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'updated')
+    const updated = (await Upload.getFileIndex({ order: 'updatedAt' })).files[0]
+    assert.strictEqual(updated.path, 'user0/notes.txt')
+    assert.strictEqual(updated.createdAt, '2026-01-01T00:00:00.000Z')
+    assert.strictEqual(updated.size, 7)
+    if (testNext) {
+      test.disableToken()
+      const { data } = await test.sendJsonHttp('GET', routes.files())
+      assert_xpath('//x:a[@href="/go/files" and contains(@class, "active") and contains(., "Files")]', data)
+      assert_xpath(`//x:table[contains(@class, 'file-list')]//x:td[@class='file-path']/x:a[@href='${image.url}']`, data)
+      assert_xpath(`//x:table[contains(@class, 'file-list')]//x:img[@src='${image.previewUrl}']`, data)
+      assert_xpath('(//x:table[contains(@class, "file-list")]//x:time[@datetime="2026-01-01T00:00:00.000Z"])[1]', data)
+      const empty = await test.sendJsonHttp('GET', routes.files({ page: 2 }))
+      assert(empty.data.includes('There are no files to show.'))
+    }
+  }, { canTestNext: true })
+})
+
 it('api: upload metadata and conditional replacement protect existing files', async () => {
   await testApp(async test => {
     const user0 = await test.createUserApi(0)
@@ -6815,6 +6862,12 @@ it('api: upload metadata and conditional replacement protect existing files', as
     await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER)
     await test.webApi.uploadCreateOrUpdate(fullPath, replacement)
     assert.deepStrictEqual((await test.webApi.upload(fullPath)).data, replacement)
+    if (test.sequelize.getDialect() === 'postgres') {
+      // Only one simultaneous create can claim a previously unused name.
+      const results = await Promise.all([PNG_1X1_WHITE_BUFFER, replacement].map(bytes =>
+        test.webApi.uploadCreateOrUpdate('user0/race.png', bytes, { ...createOnly, expectStatus: undefined })))
+      assert.deepStrictEqual(results.map(result => result.status).sort(), [200, 412])
+    }
     await test.webApi.req('get', 'uploads/metadata?path=a&path=b', { expectStatus: 422 })
     test.disableToken()
     await test.webApi.uploadMetadata(path, { expectStatus: 401 })

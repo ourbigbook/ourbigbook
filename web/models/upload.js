@@ -5,6 +5,7 @@ const { DataTypes } = Sequelize
 
 const { URL_SEP } = require('ourbigbook')
 const { hashToHex } = require('ourbigbook/web_api')
+const { sequelizeWhereStartsWith } = require('ourbigbook/models')
 
 const { uploadPathComponent } = require('../front/config')
 
@@ -200,6 +201,43 @@ module.exports = (sequelize) => {
       // Cannot be derived from author when author ID does not exist.
       authorUsername,
       path: actualPath,
+    }
+  }
+
+  Upload.fileIndexWhere = () => ({
+    path: sequelizeWhereStartsWith(sequelize, uploadPathComponent + URL_SEP, '"Upload"."path"'),
+  })
+
+  Upload.getFileIndex = async function({ limit=20, offset=0, order='createdAt', orderAscDesc='DESC' }={}) {
+    if (!['createdAt', 'updatedAt', 'size'].includes(order)) throw new Error('Invalid file order')
+    const { count, rows } = await Upload.findAndCountAll({
+      attributes: ['id', 'path', 'size', 'contentType', 'createdAt', 'updatedAt'],
+      where: Upload.fileIndexWhere(),
+      limit,
+      offset,
+      order: [[order, orderAscDesc], ['id', 'DESC']],
+    })
+    const users = await sequelize.models.User.findAll({
+      attributes: ['id', 'username'],
+      where: { id: rows.map(row => row.path.split(URL_SEP)[1]).filter(id => /^\d+$/.test(id)) },
+    })
+    const usernames = new Map(users.map(user => [String(user.id), user.username]))
+    return {
+      count,
+      files: rows.map(row => {
+        const [, uid, ...parts] = row.path.split(URL_SEP)
+        const username = usernames.get(uid)
+        const encodedPath = parts.map(encodeURIComponent).join(URL_SEP)
+        return {
+          path: username ? `${username}/${parts.join(URL_SEP)}` : row.path,
+          url: username ? `/${username}/_file/${encodedPath}` : null,
+          previewUrl: username && row.contentType.startsWith('image/') ? `/${username}/_raw/${encodedPath}` : null,
+          contentType: row.contentType,
+          size: row.size,
+          createdAt: row.createdAt.toISOString(),
+          updatedAt: row.updatedAt.toISOString(),
+        }
+      }),
     }
   }
 

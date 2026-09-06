@@ -45,6 +45,7 @@ module.exports = {
   articleSource: (slug) => `/${escapeUsername}/source/${encodeUrlPath(slug)}`,
   article: slug => `/${encodeUrlPath(slug)}`,
   comments: (opts={}) => `/${escapeUsername}/comments${encodeGetParamsWithPage(opts)}`,
+  files: (opts={}) => `/${escapeUsername}/files${encodeGetParamsWithPage(opts)}`,
   dir: (username, dir) => `/${username}/${DIR_PREFIX}${dir ? `/${dir}` : ''}`,
   host: req => `${req.protocol}://${req.get('host')}`,
   issueComment: (slug, issueNumber, commentNumber) => `${issue(slug, issueNumber)}#${commentIdPrefix}${commentNumber}`,

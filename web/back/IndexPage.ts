@@ -28,12 +28,15 @@ export const getServerSidePropsIndexHoc = ({
       allowedSortsExtra?: any;
     } = {}
     const sequelize = req.sequelize
-    const { Article, Comment, Issue, Site, Topic, User } = sequelize.models
+    const { Article, Comment, Issue, Site, Topic, Upload, User } = sequelize.models
     switch (itemTypeEff) {
       case 'article':
         getOrderAndPageOpts.allowedSortsExtra = Article.ALLOWED_SORTS_EXTRA
         break
       case 'comment':
+        break
+      case 'file':
+        getOrderAndPageOpts.allowedSortsExtra = { size: 'size' }
         break
       case 'discussion':
         getOrderAndPageOpts.allowedSortsExtra = Issue.ALLOWED_SORTS_EXTRA
@@ -56,6 +59,8 @@ export const getServerSidePropsIndexHoc = ({
       totalDiscussions,
       totalTopics,
       totalUsers,
+      totalFiles,
+      fileIndex,
       unlistedCount,
     ] = await Promise.all([
       (async () => {
@@ -63,6 +68,8 @@ export const getServerSidePropsIndexHoc = ({
         let articlesCount
         let articlesAndCounts
         switch (itemTypeEff) {
+          case 'file':
+            return [null, null]
           case 'article':
             if (followedEff) {
               articlesAndCounts = await loggedInUser.findAndCountArticlesByFollowedToJson(
@@ -150,6 +157,8 @@ export const getServerSidePropsIndexHoc = ({
       Topic.count(),
       // totalUsers
       User.count({ where: { locked: false, verified: true } }),
+      Upload.count({ where: Upload.fileIndexWhere() }),
+      itemTypeEff === 'file' ? Upload.getFileIndex({ limit, offset, order, orderAscDesc: ascDesc }) : null,
       itemTypeEff === 'discussion'
         ? Issue.count({ where: { list: false } })
         : itemTypeEff === 'comment'
@@ -170,8 +179,12 @@ export const getServerSidePropsIndexHoc = ({
       totalComments,
       totalTopics,
       totalUsers,
+      totalFiles,
     }
-    if (itemType === 'comment') {
+    if (itemTypeEff === 'file') {
+      props.files = fileIndex.files
+      props.filesCount = fileIndex.count
+    } else if (itemType === 'comment') {
       props.comments = await Promise.all(commentsAndCount.rows.map(comment => comment.toJson(loggedInUser)))
       props.commentsCount = commentsAndCount.count
     } else {

@@ -6,6 +6,7 @@ const { DataTypes } = Sequelize
 const { URL_SEP } = require('ourbigbook')
 const { hashToHex } = require('ourbigbook/web_api')
 const { sequelizeWhereStartsWith } = require('ourbigbook/models')
+const { sequelizeCreateTrigger } = require('ourbigbook/nodejs_webpack_safe')
 
 const { uploadPathComponent } = require('../front/config')
 
@@ -150,13 +151,13 @@ module.exports = (sequelize) => {
           break
         }
       }
-      return await Promise.all([
+      return (await Promise.all([
         this.destroy({ transaction }),
         UploadDirectory.destroy({
           transaction,
           where: { id: deleteDirectoryIds },
         })
-      ])[0]
+      ]))[0]
     })
   }
 
@@ -261,4 +262,27 @@ module.exports = (sequelize) => {
   }
 
   return Upload
+}
+
+// Upload ownership is encoded in the path. Include the trailing separator so
+// user 1 does not also own user 10's files, and exclude the profile namespace.
+function fileOwnerWhere(path) {
+  const prefix = `'${uploadPathComponent}/' || "User"."id" || '/'`
+  return `substr(${path}, 1, length(${prefix})) = ${prefix}`
+}
+module.exports.fileOwnerWhere = fileOwnerWhere
+
+module.exports.createFileCountTriggers = async function(sequelize, transaction) {
+  const update = (row, delta) =>
+    `UPDATE "User" SET "fileCount" = "fileCount" ${delta} 1 WHERE ${fileOwnerWhere(`${row}."path"`)}`
+  for (const operation of ['insert', 'delete', 'update']) {
+    const statements = []
+    if (operation !== 'insert') statements.push(update('OLD', '-'))
+    if (operation !== 'delete') statements.push(update('NEW', '+'))
+    await sequelizeCreateTrigger(sequelize, { tableName: 'Upload' }, operation, statements.join(';\n'), {
+      nameExtra: 'user_file_count',
+      transaction,
+      when: operation === 'update' ? 'OLD."path" <> NEW."path"' : undefined,
+    })
+  }
 }

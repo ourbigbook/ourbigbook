@@ -371,7 +371,7 @@ export default function UserPage({
                   href={routes.dir(username)}
                   className={`tab-item${itemType === 'file' ? ' active' : ''}`}
                 >
-                  <DirectoryIcon /> Files
+                  <DirectoryIcon /> Files<span className="mobile-hide"> ({ formatNumberApprox(user.fileCount) })</span>
                 </CustomLink>
                 {false &&
                   // TODO https://github.com/ourbigbook/ourbigbook/issues/313

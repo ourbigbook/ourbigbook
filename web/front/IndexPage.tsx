@@ -327,6 +327,12 @@ function IndexPageHoc({
               >
                 <CommentIcon /> Comments
               </CustomLink>
+              <CustomLink
+                className={`tab-item${order === 'fileCount' ? ' active' : ''}`}
+                href={routes.users({ sort: 'files' })}
+              >
+                <DirectoryIcon /> Files
+              </CustomLink>
             </>}
             {itemType === 'file' && <>
               {[

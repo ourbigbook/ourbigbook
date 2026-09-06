@@ -450,6 +450,58 @@ it('User discussionCount and commentCount caches', async function() {
   await assertCounts(user0, 0, 0)
 })
 
+it('User fileCount cache and migration', async function() {
+  const sequelize = this.test.sequelize
+  const { Upload, User } = sequelize.models
+  const user0 = await createUser(sequelize, 0)
+  const user1 = await createUser(sequelize, 1)
+  // Exercise the numeric namespace boundary (1 versus 10).
+  const user10 = await User.create({ ...createUserArg(10, { password: false }), id: 10 })
+  const put = (path, bytes='test') => Upload.upsertSideEffects(Upload.getCreateObj({ path, bytes: Buffer.from(bytes) }))
+  async function assertCounts(count0, count1, count10=1) {
+    for (const [user, count] of [[user0, count0], [user1, count1], [user10, count10]]) {
+      await user.reload()
+      assert.strictEqual(user.fileCount, count)
+      assert.strictEqual((await user.toJson()).fileCount, count)
+    }
+  }
+  await put(Upload.uidAndPathToUploadPath(user10.id, 'ten.txt'))
+  const path = Upload.uidAndPathToUploadPath(user0.id, 'dir/a.txt')
+  const upload = await put(path)
+  await put(`${config.profilePicturePathComponent}/${user0.id}`)
+  await assertCounts(1, 0)
+  await put(path, 'replacement')
+  await assertCounts(1, 0)
+  await assert.rejects(sequelize.transaction(async transaction => {
+    await Upload.upsertSideEffects(Upload.getCreateObj({
+      path: Upload.uidAndPathToUploadPath(user0.id, 'rollback.txt'), bytes: Buffer.from('test'),
+    }), { transaction })
+    throw new Error('rollback file count')
+  }), /rollback file count/)
+  await assertCounts(1, 0)
+  await upload.update({ path: Upload.uidAndPathToUploadPath(user1.id, 'moved.txt') })
+  await assertCounts(0, 1)
+  await upload.update({ path: `other/${user1.id}/moved.txt` })
+  await assertCounts(0, 0)
+  await upload.update({ path })
+  await assertCounts(1, 0)
+
+  const migration = require('./migrations/21000101000037-user-add-file-count-column')
+  const queryInterface = sequelize.getQueryInterface()
+  await migration.down(queryInterface)
+  await migration.up(queryInterface, require('sequelize'))
+  await assertCounts(1, 0)
+  await put(path, 'replacement after migration')
+  await assertCounts(1, 0)
+  await upload.destroySideEffects({})
+  await assertCounts(0, 0)
+
+  await User.update({ fileCount: 99 }, { where: { id: user0.id } })
+  await models.normalize({ fix: true, sequelize, usernames: [user0.username], whats: ['user-file-count'] })
+  await models.normalize({ check: true, sequelize, usernames: [user0.username], whats: ['user-file-count'] })
+  await assertCounts(0, 0)
+})
+
 it('new user index article has null dates and sorts after dated articles', async function() {
   const sequelize = this.test.sequelize
   const { Article } = sequelize.models
@@ -6805,6 +6857,14 @@ it('web: user files retain the profile at root, with tree and list views', async
     await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'notes')
     test.loginUser(user1)
     await test.webApi.uploadCreateOrUpdate('user1/other.png', PNG_1X1_WHITE_BUFFER)
+    assert.strictEqual((await test.webApi.user('user0')).data.fileCount, 2)
+    assert.strictEqual((await test.webApi.user('user1')).data.fileCount, 1)
+    const usersByFiles = await test.webApi.users({ sort: 'files' })
+    assert.strictEqual(usersByFiles.status, 200)
+    assertRows(usersByFiles.data.users, [
+      { username: 'user0', fileCount: 2 },
+      { username: 'user1', fileCount: 1 },
+    ])
     const files = await Upload.getFileIndex({ authorId: user0.id, order: 'size', limit: 1 })
     assert.strictEqual(files.count, 2)
     assert.strictEqual(files.files[0].path, 'user0/images [1]/photo.png')
@@ -6813,6 +6873,7 @@ it('web: user files retain the profile at root, with tree and list views', async
       test.disableToken()
       const tree = await test.sendJsonHttp('GET', routes.dir('user0'))
       assert.strictEqual(tree.status, 200)
+      assert_xpath('//x:a[@href="/user0/_dir" and contains(., "Files")]/x:span[contains(., "(2)")]', tree.data)
       assert_xpath('//x:a[contains(@class, "active") and normalize-space(text())="Tree"]', tree.data)
       assert_xpath('//x:a[@href="/user0/_dir/images%20%5B1%5D"]', tree.data)
       assert_xpath('//x:a[@href="/user0/_file/notes.txt"]', tree.data)
@@ -6822,6 +6883,12 @@ it('web: user files retain the profile at root, with tree and list views', async
       assert_xpath('//x:a[contains(@class, "active") and normalize-space(text())="List"]', list.data)
       assert_xpath('//x:table[contains(@class, "file-list")]//x:img[@src="/user0/_raw/images%20%5B1%5D/photo.png"]', list.data)
       assert(!list.data.includes('user1/other.png'))
+      const users = await test.sendJsonHttp('GET', routes.users({ sort: 'files' }))
+      assert.strictEqual(users.status, 200)
+      assert_xpath('//x:a[contains(@class, "active") and @href="/go/users?sort=files"]', users.data)
+      assert_xpath('//x:th[contains(., "Files")]', users.data)
+      assert_xpath('//x:td/x:a[@href="/user0/_dir" and text()="2"]', users.data)
+      assert_xpath('//x:td/x:a[@href="/user1/_dir" and text()="1"]', users.data)
       const subdir = await test.sendJsonHttp('GET', routes.dir('user0', 'images [1]'))
       assert.strictEqual(subdir.status, 200)
       assert_xpath('//x:div[contains(@class, "dir-page")]/x:h1', subdir.data)
@@ -6831,6 +6898,7 @@ it('web: user files retain the profile at root, with tree and list views', async
     test.loginUser(user0)
     await test.webApi.uploadDelete('user0/images [1]/photo.png')
     await test.webApi.uploadDelete('user0/notes.txt')
+    assert.strictEqual((await test.webApi.user('user0')).data.fileCount, 0)
     if (testNext) assert.strictEqual((await test.sendJsonHttp('GET', routes.dir('user0'))).status, 200)
   }, { canTestNext: true })
 })

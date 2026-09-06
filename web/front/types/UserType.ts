@@ -7,6 +7,7 @@ export type UserType = {
   discussionCount: number;
   effectiveImage: string;
   email?: string;
+  fileCount: number;
   followerCount: number;
   following: boolean;
   id: number;

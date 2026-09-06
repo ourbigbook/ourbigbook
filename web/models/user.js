@@ -97,6 +97,11 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      fileCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
       commentCount: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -253,12 +258,14 @@ module.exports = (sequelize) => {
         { fields: ['followerCount'] },
         { fields: ['discussionCount', 'createdAt'] },
         { fields: ['commentCount', 'createdAt'] },
+        { fields: ['fileCount', 'createdAt'] },
         { fields: ['score'] },
         { fields: ['username'] },
         { fields: ['verified', 'locked', 'createdAt'] },
         { fields: ['verified', 'locked', 'followerCount', 'createdAt'] },
         { fields: ['verified', 'locked', 'discussionCount', 'createdAt'] },
         { fields: ['verified', 'locked', 'commentCount', 'createdAt'] },
+        { fields: ['verified', 'locked', 'fileCount', 'createdAt'] },
         { fields: ['verified', 'locked', 'score', 'createdAt'] },
         { fields: ['verified', 'locked', 'username'] },
       ]
@@ -287,6 +294,7 @@ module.exports = (sequelize) => {
       discussionCount: this.discussionCount,
       effectiveImage: this.image || config.defaultProfileImage,
       commentCount: this.commentCount,
+      fileCount: this.fileCount,
       followerCount: this.followerCount,
       id: this.id,
       image: this.image,
@@ -661,6 +669,7 @@ module.exports = (sequelize) => {
   User.ALLOWED_SORTS_EXTRA = {
     'comments': 'commentCount',
     'discussions': 'discussionCount',
+    'files': 'fileCount',
     'score': undefined,
   }
 

@@ -426,6 +426,8 @@ async function sync(sequelize, opts={}) {
         nameExtra: 'user_comment_count',
       })
 
+    await require('./upload').createFileCountTriggers(sequelize)
+
     // Article
     await sequelizeCreateTrigger(sequelize, Article, 'delete',
       `UPDATE "${User.tableName}" SET "score" = "${User.tableName}"."score" - OLD."score"\n` +
@@ -529,17 +531,18 @@ async function normalize({
       for (const username of usernames) {
         if (
           what === 'user-discussion-count' ||
-          what === 'user-comment-count'
+          what === 'user-comment-count' ||
+          what === 'user-file-count'
         ) {
-          const childModel = what === 'user-discussion-count' ? Issue : Comment
-          const checkField = what === 'user-discussion-count' ? 'discussionCount' : 'commentCount'
+          const childModel = what === 'user-file-count' ? Upload : what === 'user-discussion-count' ? Issue : Comment
+          const checkField = what === 'user-file-count' ? 'fileCount' : what === 'user-discussion-count' ? 'discussionCount' : 'commentCount'
           const user = await User.findOne({
             attributes: ['id', 'username', checkField],
             where: { username },
             transaction,
           })
           const count = await childModel.count({
-            where: { authorId: user.id, list: true },
+            where: what === 'user-file-count' ? Upload.fileIndexWhere(user.id) : { authorId: user.id, list: true },
             transaction,
           })
           if (check) {

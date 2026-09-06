@@ -14,7 +14,7 @@ import { articleLimit } from 'front/config'
 import { TRI_ALL, TRI_FALSE, TRI_TRUE } from 'front/js'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
-import { booleanToStringForTable, CommentIcon, DiscussionIcon, FollowIcon, LikeIcon, LockIcon, OkIcon, TimeIcon, UserIcon } from 'front'
+import { booleanToStringForTable, CommentIcon, DirectoryIcon, DiscussionIcon, FollowIcon, LikeIcon, LockIcon, OkIcon, TimeIcon, UserIcon } from 'front'
 
 export type UserListProps = {
   hasLocked?: boolean;
@@ -57,6 +57,7 @@ const UserList = ({
               <th className="shrink"><TimeIcon /> Joined</th>
               <th className="shrink"><DiscussionIcon /> Discussions</th>
               <th className="shrink"><CommentIcon /> Comments</th>
+              <th className="shrink"><DirectoryIcon /> Files</th>
               <th className="shrink"><OkIcon title="Verified" /> Email verified</th>
               <th className="shrink"><LockIcon /> Locked</th>
             </tr>
@@ -73,6 +74,7 @@ const UserList = ({
                 <td className="shrink">{formatDate(user.createdAt)}</td>
                 <td className="shrink right bold"><CustomLink href={routes.userIssues(user.username)}>{user.discussionCount}</CustomLink></td>
                 <td className="shrink right bold"><CustomLink href={routes.userComments(user.username)}>{user.commentCount}</CustomLink></td>
+                <td className="shrink right bold"><CustomLink href={routes.dir(user.username)}>{user.fileCount}</CustomLink></td>
                 <td className="shrink right">{booleanToStringForTable(user.verified)}</td>
                 <td className="shrink right">{booleanToStringForTable(user.locked)}</td>
               </tr>

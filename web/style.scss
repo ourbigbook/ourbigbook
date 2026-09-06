@@ -814,7 +814,7 @@ span.shortcut {
   &::backdrop {
     background: rgba(0, 0, 0, 0.6);
   }
-  form, label {
+  form, label, .image-panel {
     display: flex;
     flex-direction: column;
     gap: 0.5em;
@@ -822,6 +822,16 @@ span.shortcut {
   form { gap: 1em; }
   h2, p { margin: 0; }
   input { width: 100%; box-sizing: border-box; }
+  .image-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25em;
+    border-bottom: 1px solid $button-border-color;
+    button[aria-selected='true'] {
+      font-weight: bold;
+      border-bottom: 3px solid $a-color;
+    }
+  }
   .image-upload-preview {
     max-width: 100%;
     max-height: 40vh;

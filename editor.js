@@ -599,7 +599,7 @@ function createEditorToolbar(ourbigbookEditor, doc=document) {
       ['numbered-list', '1. List', 'Numbered list — turn selected lines into items'],
       ['quote', 'Quote', 'Quote — quote selected lines'],
       ['table', 'Table', 'Table — turn selected lines into rows and tabs into columns; first row is headings'],
-      ['image', '🖼 Image from web', 'Image from web — insert a block image using selected text as its title or a selected URL'],
+      ['image', '🖼 Image', 'Insert a block image'],
     ],
     [
       ['outdent', '←', 'Decrease indentation by two spaces'],
@@ -611,9 +611,6 @@ function createEditorToolbar(ourbigbookEditor, doc=document) {
     group.className = 'editor-toolbar-group'
     toolbar.appendChild(group)
     return group
-  }
-  if (ourbigbookEditor.options.onUploadImage) {
-    groups[2].push(['upload-image', '↑ Upload image', 'Upload an image and insert it into the editor'])
   }
   for (const group of groups) {
     const element = groupElement()
@@ -629,7 +626,7 @@ function createEditorToolbar(ourbigbookEditor, doc=document) {
       button.addEventListener('mousedown', event => event.preventDefault())
       button.addEventListener('click', () => {
         if (!button.disabled) {
-          if (action === 'upload-image') ourbigbookEditor.options.onUploadImage(ourbigbookEditor)
+          if (action === 'image' && ourbigbookEditor.options.onImage) ourbigbookEditor.options.onImage(ourbigbookEditor)
           else applyEditorMarkup(ourbigbookEditor, action)
         }
       })

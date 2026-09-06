@@ -15889,7 +15889,7 @@ describe('editor markup toolbar', function () {
     try {
       for (const options of [undefined, { toolbarHeaderLevels: [] }, {
         toolbarHeaderLevels: [2, 3, 4], titleSource: 'Web title', modifyEditorInput: ourbigbook.modifyEditorInput,
-        onUploadImage: editor => { editor.uploadRequested = true },
+        onImage: editor => { editor.imageRequested = true },
       }]) {
         let value = options?.titleSource ? 'Web body.' : source
         const root = doc.createElement('div')
@@ -15923,11 +15923,12 @@ describe('editor markup toolbar', function () {
         assert(controls.some(control => control.getAttribute('data-action') === 'math'))
         assert(controls.some(control => control.getAttribute('data-action') === 'math-block'))
         assert(controls.some(control => control.getAttribute('data-action') === 'image'))
-        const uploadButton = controls.find(control => control.getAttribute('data-action') === 'upload-image')
-        assert.strictEqual(!!uploadButton, !!options?.onUploadImage)
-        if (uploadButton) {
-          uploadButton.listeners.click()
-          assert.strictEqual(editor.uploadRequested, true)
+        assert(!controls.some(control => control.getAttribute('data-action') === 'upload-image'))
+        const imageButtons = controls.filter(control => control.getAttribute('data-action') === 'image')
+        assert.strictEqual(imageButtons.length, 1)
+        if (options?.onImage) {
+          imageButtons[0].listeners.click()
+          assert.strictEqual(editor.imageRequested, true)
         }
         const select = controls.find(control => control.tagName === 'select')
         assert.deepStrictEqual(select ? Array.from(select.getElementsByTagName('option')).slice(1).map(option => option.value) : [],

@@ -55,8 +55,9 @@ export interface EditorPageProps extends CommonPropsType {
   titleSourceLine?: number;
 }
 
-function ImageUploadModal({ username, onUploaded, onClose }) {
+function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
   const dialog = useRef<HTMLDialogElement>(null)
+  const [tab, setTab] = useState('upload')
   const [image, setImage] = useState<File>(null)
   const [preview, setPreview] = useState('')
   const [previewReady, setPreviewReady] = useState(false)
@@ -64,6 +65,17 @@ function ImageUploadModal({ username, onUploaded, onClose }) {
   const [errors, setErrors] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
   const uploadingRef = useRef(false)
+  const [search, setSearch] = useState('')
+  const [images, setImages] = useState<{ path: string }[]>([])
+  const [imageCount, setImageCount] = useState(0)
+  const [searching, setSearching] = useState(false)
+  const [webUrl, setWebUrl] = useState(initialWebUrl)
+  const selectedImage = images.find(image => image.path === search)
+  let validWebUrl = ''
+  try {
+    const url = new URL(webUrl)
+    if (url.protocol === 'http:' || url.protocol === 'https:') validWebUrl = url.href
+  } catch {}
 
   useEffect(() => {
     dialog.current.showModal()
@@ -84,9 +96,50 @@ function ImageUploadModal({ username, onUploaded, onClose }) {
     return () => URL.revokeObjectURL(url)
   }, [image])
 
+  useEffect(() => {
+    if (tab !== 'select') return
+    let active = true
+    setSearching(true)
+    const timer = window.setTimeout(async () => {
+      try {
+        const { data } = await webApi.uploadImages({ prefix: search, limit: 20 })
+        if (active) {
+          setImages(data.images)
+          setImageCount(data.count)
+        }
+      } catch (error) {
+        if (active) {
+          setImages([])
+          setImageCount(0)
+          setErrors(['Could not load your images. Please try again.'])
+        }
+      } finally {
+        if (active) setSearching(false)
+      }
+    }, 200)
+    return () => {
+      active = false
+      window.clearTimeout(timer)
+    }
+  }, [search, tab])
+
+  function insert(source, fromWeb=false) {
+    dialog.current.close()
+    onInsert(source, fromWeb)
+  }
+
   async function upload(e) {
     e.preventDefault()
-    if (uploadingRef.current || !image || !previewReady) return
+    if (uploadingRef.current) return
+    if (tab === 'select') {
+      if (selectedImage && !searching) insert(selectedImage.path)
+      return
+    }
+    if (tab === 'web') {
+      if (validWebUrl) insert(validWebUrl, true)
+      return
+    }
+    if (!image || !previewReady) return
     const parts = path.split('/')
     if (parts.some(part => !part || part === '.' || part === '..') || /[\\\x00-\x1f\x7f]/.test(path)) {
       setErrors(['Enter a relative file path, such as images/photo.png, without empty, . or .. components.'])
@@ -102,8 +155,7 @@ function ImageUploadModal({ username, onUploaded, onClose }) {
     setErrors([])
     try {
       await webApi.uploadCreateOrUpdate(`${username}/${path}`, await image.arrayBuffer())
-      dialog.current.close()
-      onUploaded(path)
+      insert(path)
     } catch (error) {
       const messages = error.response?.data?.errors
       setErrors(messages ? (typeof messages === 'string' ? [messages] : Array.isArray(messages) ? messages : Object.values(messages).flat()).map(String)
@@ -122,42 +174,94 @@ function ImageUploadModal({ username, onUploaded, onClose }) {
     onKeyDown={e => e.stopPropagation()}
   >
     <form onSubmit={upload}>
-      <h2 id="image-upload-title">Upload image</h2>
-      <label>
-        Image
-        <input type="file" accept="image/*" disabled={uploading} required onChange={e => {
-          const file = e.target.files?.[0]
-          setErrors([])
-          setPreviewReady(false)
-          setPreview('')
-          if (file && !file.type.startsWith('image/')) {
-            setImage(null)
-            setPath('')
-            setErrors(['Please select an image file.'])
-            return
-          }
-          setImage(file || null)
-          setPath(file?.name || '')
-        }} />
-      </label>
-      {preview && <img className="image-upload-preview" src={preview} alt="Selected image preview"
-        onLoad={() => setPreviewReady(true)}
-        onError={() => {
-          setPreviewReady(false)
-          setErrors(['This file cannot be previewed as an image. Please select another file.'])
-        }}
-      />}
-      <label>
-        File path
-        <input type="text" value={path} required disabled={uploading} onChange={e => setPath(e.target.value)} />
-      </label>
-      <p>Saved under {username}/. You can include folders, for example images/photo.png.
-        {' '}Uploading to an existing path replaces that file.</p>
+      <h2 id="image-upload-title">Image</h2>
+      <div className="image-tabs" role="tablist" aria-label="Image source">
+        {[['upload', 'Upload image'], ['select', 'Select image'], ['web', 'From web']].map(([value, label]) =>
+          <button key={value} type="button" role="tab" id={`image-tab-${value}`}
+            aria-selected={tab === value} aria-controls={`image-panel-${value}`}
+            tabIndex={tab === value ? 0 : -1} disabled={uploading}
+            onClick={() => { setTab(value); setErrors([]) }}
+            onKeyDown={e => {
+              if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(e.key)) return
+              e.preventDefault()
+              const tabs = Array.from(e.currentTarget.parentElement.querySelectorAll('button'))
+              const i = tabs.indexOf(e.currentTarget)
+              const next = e.key === 'Home' ? 0 : e.key === 'End' ? tabs.length - 1
+                : (i + (e.key === 'ArrowRight' ? 1 : -1) + tabs.length) % tabs.length
+              tabs[next].click()
+              tabs[next].focus()
+            }}
+          >{label}</button>
+        )}
+      </div>
+      <div role="tabpanel" id={`image-panel-${tab}`} aria-labelledby={`image-tab-${tab}`} className="image-panel">
+        {tab === 'upload' && <>
+          <label>
+            Image
+            <input type="file" accept="image/*" disabled={uploading} onChange={e => {
+              const file = e.target.files?.[0]
+              setErrors([])
+              setPreviewReady(false)
+              setPreview('')
+              if (file && !file.type.startsWith('image/')) {
+                setImage(null)
+                setPath('')
+                setErrors(['Please select an image file.'])
+                return
+              }
+              setImage(file || null)
+              setPath(file?.name || '')
+            }} />
+          </label>
+          {preview && <img className="image-upload-preview" src={preview} alt="Selected image preview"
+            onLoad={() => setPreviewReady(true)}
+            onError={() => {
+              setPreviewReady(false)
+              setErrors(['This file cannot be previewed as an image. Please select another file.'])
+            }}
+          />}
+          <label>
+            File path
+            <input type="text" value={path} required disabled={uploading} onChange={e => setPath(e.target.value)} />
+          </label>
+          <p>Saved under {username}/. You can include folders, for example images/photo.png.
+            {' '}Uploading to an existing path replaces that file.</p>
+        </>}
+        {tab === 'select' && <>
+          <label>
+            Search your images
+            <input type="text" list="uploaded-image-options" value={search} autoComplete="off"
+              placeholder="Start typing a file path" onChange={e => {
+                setSearch(e.target.value)
+                setImages([])
+                setErrors([])
+                setSearching(true)
+              }} />
+            <datalist id="uploaded-image-options">
+              {images.map(image => <option key={image.path} value={image.path} />)}
+            </datalist>
+          </label>
+          <p role="status">{searching ? 'Searching…' : imageCount === 0 ? 'No matching images.'
+            : imageCount > images.length ? 'Showing the first 20 matches. Type more to narrow the search.'
+            : `${imageCount} matching image${imageCount === 1 ? '' : 's'}. Select a path from the dropdown.`}</p>
+          {selectedImage && <img className="image-upload-preview" alt="Selected image preview"
+            src={`/${username}/_raw/${selectedImage.path.split('/').map(encodeURIComponent).join('/')}`} />}
+        </>}
+        {tab === 'web' && <>
+          <label>
+            Image URL
+            <input type="url" value={webUrl} required placeholder="https://example.com/image.jpg"
+              onChange={e => setWebUrl(e.target.value)} />
+          </label>
+          {validWebUrl && <img className="image-upload-preview" src={validWebUrl} alt="Web image preview" />}
+        </>}
+      </div>
       <div role="alert"><ErrorList errors={errors} /></div>
       <div className="image-upload-actions">
         <button type="button" disabled={uploading} onClick={onClose}>Cancel</button>
-        <button type="submit" disabled={uploading || !image || !previewReady || !path}>
-          {uploading ? 'Uploading…' : 'Upload and insert'}
+        <button type="submit" disabled={uploading || (tab === 'upload' ? !image || !previewReady || !path
+          : tab === 'select' ? searching || !selectedImage : !validWebUrl)}>
+          {uploading ? 'Uploading…' : tab === 'upload' ? 'Upload and insert' : 'Insert image'}
         </button>
       </div>
     </form>
@@ -604,7 +708,7 @@ export default function EditorPageHoc({
               modifyEditorInput: ourbigbook.modifyEditorInput,
               titleSource: initialFileState.titleSource,
               toolbarHeaderLevels: isNew && !isIssue ? [2, 3, 4] : [],
-              onUploadImage: editor => setImageUpload({ editor, selection: editor.editor.getSelection() }),
+              onImage: editor => setImageUpload({ editor, selection: editor.editor.getSelection() }),
               postBuildCallback: async (extra_returns, ourbigbookEditor) => {
                 setHasConvertError(extra_returns.errors.length > 0)
 
@@ -849,13 +953,17 @@ export default function EditorPageHoc({
 
     return <>
       <MyHead title={title} />
-      {imageUpload && <ImageUploadModal
-        username={ownerUsername}
+      {imageUpload && <ImageModal
+        username={loggedInUser.username}
+        initialWebUrl={(() => {
+          const text = imageUpload.editor.editor.getModel().getValueInRange(imageUpload.selection)
+          return /^https?:\/\/\S+$/i.test(text) ? text : ''
+        })()}
         onClose={() => {
           setImageUpload(null)
           imageUpload.editor.editor.focus()
         }}
-        onUploaded={path => {
+        onInsert={(path, fromWeb) => {
           const editor = imageUpload.editor
           const inputPath = editor.lastInputPath
           const headers = editor.lastHeaderTree?.children
@@ -867,7 +975,9 @@ export default function EditorPageHoc({
             (!isNew || (parentTitle === 'Index' && !previousSiblingTitle &&
               headers?.length === 1 && headers[0].children.length === 0))
           editor.editor.setSelection(imageUpload.selection)
-          applyEditorMarkup(editor, 'image', { imageSource: useRelativePath ? path : `/${path}` })
+          const imageSource = fromWeb ? path : loggedInUser.username !== ownerUsername
+            ? `@${loggedInUser.username}/${path}` : useRelativePath ? path : `/${path}`
+          applyEditorMarkup(editor, 'image', { imageSource })
           setImageUpload(null)
         }}
       />}

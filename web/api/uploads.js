@@ -3,6 +3,7 @@
 // just store everything in the DB to start with until I regret the choice one day and migrate.
 
 const router = require('express').Router()
+const { Op } = require('sequelize')
 
 const { FILE_PREFIX, Macro, URL_SEP } = require('ourbigbook')
 const { sequelizeWhereStartsWith } = require('ourbigbook/models')
@@ -14,6 +15,7 @@ const { ValidationError } = lib
 const convert = require('../convert')
 const { cant } = require('../front/cant')
 const config = require('../front/config')
+const { isString } = require('../front/js')
 
 async function pathToActualPath(path, User, Upload, opts={}) {
   const ret = await Upload.pathToActualPath(path, User, Upload, opts)
@@ -186,6 +188,32 @@ router.delete('/', auth.required, async function(req, res, next) {
     return res.json({})
   } catch(error) {
     next(error);
+  }
+})
+
+router.get('/images', auth.required, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const { Upload } = sequelize.models
+    const prefix = lib.validateParam(req.query, 'prefix', { defaultValue: '', validators: [isString] })
+    const [limit, offset] = lib.getLimitAndOffset(req, res, { defaultLimit: 20, limitMax: 100 })
+    const directory = Upload.uidAndPathToUploadPath(req.payload.id, '') + URL_SEP
+    const fullPrefix = directory + prefix
+    const { count, rows } = await Upload.findAndCountAll({
+      attributes: ['path'],
+      where: {
+        path: sequelizeWhereStartsWith(sequelize, directory, '"Upload"."path"'),
+        contentType: { [Op.like]: 'image/%' },
+        // Compare a literal prefix: %, _, * and [ in filenames are not wildcards.
+        [Op.and]: sequelize.where(sequelize.fn('substr', sequelize.col('path'), 1, Array.from(fullPrefix).length), fullPrefix),
+      },
+      order: [['path', 'ASC']],
+      limit,
+      offset,
+    })
+    return res.json({ images: rows.map(row => ({ path: row.path.slice(directory.length) })), count })
+  } catch (error) {
+    next(error)
   }
 })
 

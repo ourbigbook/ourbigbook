@@ -12,7 +12,6 @@
     min-height: 0;
   }
   .editor-toolbar {
-    @include ourbigbook-theme-dark;
     align-items: center;
     background-color: $button-background-color;
     border: 1px solid $button-border-color;

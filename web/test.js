@@ -6781,6 +6781,46 @@ it(`api: article {synonymNoScope}`, async () => {
   }, { defaultExpectStatus: 200 })
 })
 
+it('api: uploaded image search matches literal prefixes for the current user only', async () => {
+  await testApp(async test => {
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    test.loginUser(user1)
+    await test.webApi.uploadCreateOrUpdate('user1/photo-other.png', PNG_1X1_WHITE_BUFFER)
+    test.loginUser(user0)
+    const paths = ['photo-a.png', 'photo-b.png', 'Photo-c.png', 'sub/photo.png', 'a%_*.png', 'aZZZ.png', '[photo].png', '🖼photo.png']
+    for (const path of paths) await test.webApi.uploadCreateOrUpdate(`user0/${path}`, PNG_1X1_WHITE_BUFFER)
+    await test.webApi.uploadCreateOrUpdate('user0/photo.txt', 'text')
+    const { Upload } = test.sequelize.models
+    await Upload.upsertSideEffects({
+      ...Upload.getCreateObj({ path: `profile/${user0.id}`, bytes: PNG_1X1_WHITE_BUFFER }), contentType: 'image/png',
+    })
+    const all = await test.webApi.uploadImages()
+    assert.strictEqual(all.data.count, paths.length)
+    assert.deepStrictEqual(all.data.images.map(image => image.path).sort(), [...paths].sort())
+    for (const [prefix, expected] of [
+      ['photo', ['photo-a.png', 'photo-b.png']],
+      ['Photo', ['Photo-c.png']],
+      ['a%_', ['a%_*.png']],
+      ['[', ['[photo].png']],
+      ['🖼', ['🖼photo.png']],
+      ['oto', []],
+      ['sub/', ['sub/photo.png']],
+    ]) {
+      const { data } = await test.webApi.uploadImages({ prefix })
+      assert.deepStrictEqual(data.images.map(image => image.path), expected, prefix)
+      assert.strictEqual(data.count, expected.length)
+      assert(data.images.every(image => Object.keys(image).join() === 'path'))
+    }
+    const page = await test.webApi.uploadImages({ prefix: 'photo', limit: 1, offset: 1 })
+    assert.deepStrictEqual(page.data, { images: [{ path: 'photo-b.png' }], count: 2 })
+    await test.webApi.uploadImages({ limit: 101 }, { expectStatus: 422 })
+    await test.webApi.req('get', 'uploads/images?prefix=photo&prefix=sub', { expectStatus: 422 })
+    test.disableToken()
+    await test.webApi.uploadImages({}, { expectStatus: 401 })
+  })
+})
+
 it('api: editor uploaded image markup resolves from nested articles', async () => {
   await testApp(async test => {
     const { getMarkupEdit } = require('ourbigbook/editor')

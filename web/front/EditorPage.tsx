@@ -11,7 +11,7 @@ import ourbigbook_tex from 'ourbigbook/default.tex'
 import web_api from 'ourbigbook/web_api'
 import { preload_katex } from 'ourbigbook/nodejs_front'
 import { ourbigbook_runtime } from 'ourbigbook/dist/ourbigbook_runtime.js'
-import { OurbigbookEditor } from 'ourbigbook/editor.js'
+import { OurbigbookEditor, applyEditorMarkup } from 'ourbigbook/editor.js'
 import { convertOptions, docsUrl, forbidMultiheaderMessage, sureLeaveMessage, isProduction, read_include_web } from 'front/config'
 
 import {
@@ -53,6 +53,115 @@ export interface EditorPageProps extends CommonPropsType {
   previousSiblingTitle?: string,
   titleSource?: string;
   titleSourceLine?: number;
+}
+
+function ImageUploadModal({ username, onUploaded, onClose }) {
+  const dialog = useRef<HTMLDialogElement>(null)
+  const [image, setImage] = useState<File>(null)
+  const [preview, setPreview] = useState('')
+  const [previewReady, setPreviewReady] = useState(false)
+  const [path, setPath] = useState('')
+  const [errors, setErrors] = useState<string[]>([])
+  const [uploading, setUploading] = useState(false)
+  const uploadingRef = useRef(false)
+
+  useEffect(() => {
+    dialog.current.showModal()
+  }, [])
+  useEffect(() => {
+    const element = dialog.current
+    const cancel = e => {
+      e.preventDefault()
+      if (!uploadingRef.current) onClose()
+    }
+    element.addEventListener('cancel', cancel)
+    return () => element.removeEventListener('cancel', cancel)
+  }, [onClose])
+  useEffect(() => {
+    if (!image) return
+    const url = URL.createObjectURL(image)
+    setPreview(url)
+    return () => URL.revokeObjectURL(url)
+  }, [image])
+
+  async function upload(e) {
+    e.preventDefault()
+    if (uploadingRef.current || !image || !previewReady) return
+    const parts = path.split('/')
+    if (parts.some(part => !part || part === '.' || part === '..') || /[\\\x00-\x1f\x7f]/.test(path)) {
+      setErrors(['Enter a relative file path, such as images/photo.png, without empty, . or .. components.'])
+      return
+    }
+    const extension = name => name.slice(name.lastIndexOf('.')).toLowerCase().replace(/^\.jpeg$/, '.jpg')
+    if (extension(path) !== extension(image.name)) {
+      setErrors(['Keep the selected image’s file extension so it is served with the correct image type.'])
+      return
+    }
+    uploadingRef.current = true
+    setUploading(true)
+    setErrors([])
+    try {
+      await webApi.uploadCreateOrUpdate(`${username}/${path}`, await image.arrayBuffer())
+      dialog.current.close()
+      onUploaded(path)
+    } catch (error) {
+      const messages = error.response?.data?.errors
+      setErrors(messages ? (typeof messages === 'string' ? [messages] : Array.isArray(messages) ? messages : Object.values(messages).flat()).map(String)
+        : [error.message || 'Upload failed. Please try again.'])
+    } finally {
+      uploadingRef.current = false
+      setUploading(false)
+    }
+  }
+
+  return <dialog
+    ref={dialog}
+    className="image-upload-modal content-not-ourbigbook"
+    aria-labelledby="image-upload-title"
+    aria-busy={uploading}
+    onKeyDown={e => e.stopPropagation()}
+  >
+    <form onSubmit={upload}>
+      <h2 id="image-upload-title">Upload image</h2>
+      <label>
+        Image
+        <input type="file" accept="image/*" disabled={uploading} required onChange={e => {
+          const file = e.target.files?.[0]
+          setErrors([])
+          setPreviewReady(false)
+          setPreview('')
+          if (file && !file.type.startsWith('image/')) {
+            setImage(null)
+            setPath('')
+            setErrors(['Please select an image file.'])
+            return
+          }
+          setImage(file || null)
+          setPath(file?.name || '')
+        }} />
+      </label>
+      {preview && <img className="image-upload-preview" src={preview} alt="Selected image preview"
+        onLoad={() => setPreviewReady(true)}
+        onError={() => {
+          setPreviewReady(false)
+          setErrors(['This file cannot be previewed as an image. Please select another file.'])
+        }}
+      />}
+      <label>
+        File path
+        <input type="text" value={path} required disabled={uploading} onChange={e => setPath(e.target.value)} />
+      </label>
+      <p>Saved under {username}/. You can include folders, for example images/photo.png.
+        {' '}Uploading to an existing path replaces that file.</p>
+      <div role="alert"><ErrorList errors={errors} /></div>
+      <div className="image-upload-actions">
+        <button type="button" disabled={uploading} onClick={onClose}>Cancel</button>
+        <button type="submit" disabled={uploading || !image || !previewReady || !path}>
+          {uploading ? 'Uploading…' : 'Upload and insert'}
+        </button>
+      </div>
+    </form>
+  </dialog>
 }
 
 /** DbProvider that fetchs data via the OurBigBook Web REST API. */
@@ -223,6 +332,7 @@ export default function EditorPageHoc({
 
     // State
     const [isLoading, setLoading] = useState(false)
+    const [imageUpload, setImageUpload] = useState(null)
     const [publishElapsedSeconds, setPublishElapsedSeconds] = useState(0)
     const [publishProgress, setPublishProgress] = useState(null)
     const [topicId, setTopicId] = useState('')
@@ -315,7 +425,7 @@ export default function EditorPageHoc({
       if (e) {
         e.preventDefault()
       }
-      if (hasError) {
+      if (hasError || imageUpload) {
         // Although the button should be disabled from clicks,
         // this could still be reached via the Ctrl shortcut.
         return
@@ -494,6 +604,7 @@ export default function EditorPageHoc({
               modifyEditorInput: ourbigbook.modifyEditorInput,
               titleSource: initialFileState.titleSource,
               toolbarHeaderLevels: isNew && !isIssue ? [2, 3, 4] : [],
+              onUploadImage: editor => setImageUpload({ editor, selection: editor.editor.getSelection() }),
               postBuildCallback: async (extra_returns, ourbigbookEditor) => {
                 setHasConvertError(extra_returns.errors.length > 0)
 
@@ -738,6 +849,28 @@ export default function EditorPageHoc({
 
     return <>
       <MyHead title={title} />
+      {imageUpload && <ImageUploadModal
+        username={ownerUsername}
+        onClose={() => {
+          setImageUpload(null)
+          imageUpload.editor.editor.focus()
+        }}
+        onUploaded={path => {
+          const editor = imageUpload.editor
+          const inputPath = editor.lastInputPath
+          const headers = editor.lastHeaderTree?.children
+          // Bare paths are relative to the source file's directory. New articles
+          // can inherit a scope from their parent or split into scoped children;
+          // discussions also have a separate internal source directory.
+          const useRelativePath = !isIssue &&
+            inputPath?.startsWith(`@${ownerUsername}/`) && inputPath.split('/').length === 2 &&
+            (!isNew || (parentTitle === 'Index' && !previousSiblingTitle &&
+              headers?.length === 1 && headers[0].children.length === 0))
+          editor.editor.setSelection(imageUpload.selection)
+          applyEditorMarkup(editor, 'image', { imageSource: useRelativePath ? path : `/${path}` })
+          setImageUpload(null)
+        }}
+      />}
       {publishProgress &&
         <div
           aria-live="polite"

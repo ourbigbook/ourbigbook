@@ -6781,6 +6781,31 @@ it(`api: article {synonymNoScope}`, async () => {
   }, { defaultExpectStatus: 200 })
 })
 
+it('api: editor uploaded image markup resolves from nested articles', async () => {
+  await testApp(async test => {
+    const { getMarkupEdit } = require('ourbigbook/editor')
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const path = 'images/my picture[1].png'
+    // The browser sends an ArrayBuffer through the same API client.
+    const bytes = Uint8Array.from(PNG_1X1_WHITE_BUFFER).buffer
+    await test.webApi.uploadCreateOrUpdate(`user0/${path}`, bytes)
+    const relative = getMarkupEdit('image', '', 0, 0, { imageSource: path })
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Root photo', bodySource: relative.text }))
+    const rootArticle = await test.webApi.article('user0/root-photo')
+    const url = '/user0/_raw/images/my%20picture%5B1%5D.png'
+    assert_xpath(`//x:img[@src='${url}']`, rootArticle.data.render)
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Nested', bodySource: '{scope}' }))
+    const { text } = getMarkupEdit('image', '', 0, 0, { imageSource: `/${path}` })
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Photo', bodySource: text }), { parentId: '@user0/nested' })
+    const { data } = await test.webApi.article('user0/nested/photo')
+    assert_xpath(`//x:img[@src='${url}']`, data.render)
+    const response = await web_api.sendJsonHttp('GET', url, { ...test.webApi.opts, responseType: 'arraybuffer' })
+    assert.deepStrictEqual(response.data, PNG_1X1_WHITE_BUFFER)
+    assert.strictEqual(response.headers['content-type'], 'image/png')
+  })
+})
+
 it(`api: upload simple`, async () => {
   await testApp(async (test) => {
     let data, status, article

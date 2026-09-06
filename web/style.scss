@@ -802,6 +802,38 @@ span.shortcut {
   }
 }
 
+.image-upload-modal {
+  background: $background-color;
+  color: $color;
+  border: 1px solid $button-border-color;
+  border-radius: 4px;
+  padding: 1.5em;
+  width: min(32em, calc(100% - 2em));
+  max-height: calc(100% - 2em);
+  overflow: auto;
+  &::backdrop {
+    background: rgba(0, 0, 0, 0.6);
+  }
+  form, label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5em;
+  }
+  form { gap: 1em; }
+  h2, p { margin: 0; }
+  input { width: 100%; box-sizing: border-box; }
+  .image-upload-preview {
+    max-width: 100%;
+    max-height: 40vh;
+    object-fit: contain;
+  }
+  .image-upload-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5em;
+  }
+}
+
 .publish-progress-modal {
   cursor: wait;
   z-index: 1000;

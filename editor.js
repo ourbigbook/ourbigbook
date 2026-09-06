@@ -274,6 +274,7 @@ class OurbigbookEditor {
       }
     }
     if (ok) {
+      this.lastHeaderTree = extra_returns.context.header_tree
       // Rebind to newly generated elements.
       this.ourbigbook_runtime(this.output_elem);
       this.line_to_id = extra_returns.context.line_to_id;
@@ -408,7 +409,7 @@ function isWrapped(text, open) {
   return false
 }
 
-function getMarkupEdit(action, value, start, end) {
+function getMarkupEdit(action, value, start, end, options={}) {
   const eol = value.includes('\r\n') ? '\r\n' : '\n'
   const selected = value.slice(start, end)
   const edit = (text, from=0, to=text.length) => ({
@@ -477,6 +478,11 @@ function getMarkupEdit(action, value, start, end) {
   }
 
   if (action === 'image') {
+    if (options.imageSource !== undefined) {
+      const source = options.imageSource.replace(/[\\[\]{}]/g, '\\$&')
+      const text = `\\Image[${source}]`
+      return block(text, text.length)
+    }
     const isUrl = /^https?:\/\/\S+$/i.test(selected)
     const url = isUrl ? selected.replace(/[\\[\]{}]/g, '\\$&') : 'http://example.com/image.jpg'
     const title = isUrl ? 'Image title' : selected || 'Image title'
@@ -547,13 +553,13 @@ function getMarkupEdit(action, value, start, end) {
   throw new Error(`Unknown editor markup action: ${action}`)
 }
 
-function applyEditorMarkup(ourbigbookEditor, action) {
+function applyEditorMarkup(ourbigbookEditor, action, options={}) {
   const { editor, monaco } = ourbigbookEditor
   const model = editor.getModel()
   const selection = editor.getSelection()
   if (!model || !selection) return
   const edit = getMarkupEdit(action, model.getValue(),
-    model.getOffsetAt(selection.getStartPosition()), model.getOffsetAt(selection.getEndPosition()))
+    model.getOffsetAt(selection.getStartPosition()), model.getOffsetAt(selection.getEndPosition()), options)
   const start = model.getPositionAt(edit.start)
   const end = model.getPositionAt(edit.end)
   editor.pushUndoStop()
@@ -606,6 +612,9 @@ function createEditorToolbar(ourbigbookEditor, doc=document) {
     toolbar.appendChild(group)
     return group
   }
+  if (ourbigbookEditor.options.onUploadImage) {
+    groups[2].push(['upload-image', '↑ Upload image', 'Upload an image and insert it into the editor'])
+  }
   for (const group of groups) {
     const element = groupElement()
     for (const [action, label, title, tag] of group) {
@@ -619,7 +628,10 @@ function createEditorToolbar(ourbigbookEditor, doc=document) {
       if (tag) button.appendChild(content)
       button.addEventListener('mousedown', event => event.preventDefault())
       button.addEventListener('click', () => {
-        if (!button.disabled) applyEditorMarkup(ourbigbookEditor, action)
+        if (!button.disabled) {
+          if (action === 'upload-image') ourbigbookEditor.options.onUploadImage(ourbigbookEditor)
+          else applyEditorMarkup(ourbigbookEditor, action)
+        }
       })
       element.appendChild(button)
     }

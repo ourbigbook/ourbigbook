@@ -15664,8 +15664,8 @@ assert_cli(
 )
 
 describe('editor markup toolbar', function () {
-  function apply(action, source='', start=0, end=source.length) {
-    const edit = getMarkupEdit(action, source, start, end)
+  function apply(action, source='', start=0, end=source.length, options={}) {
+    const edit = getMarkupEdit(action, source, start, end, options)
     const value = source.slice(0, edit.start) + edit.text + source.slice(edit.end)
     assert(edit.selectionStart >= 0 && edit.selectionEnd <= value.length)
     return { value, selected: value.slice(edit.selectionStart, edit.selectionEnd), edit }
@@ -15714,6 +15714,16 @@ describe('editor markup toolbar', function () {
     assert.strictEqual(result.selected, 'Image title')
     assert.strictEqual(apply('image', 'before after', 7, 7).value, `before \n\n${placeholder}\n\nafter`)
     assert.strictEqual(apply('image', '\r\n', 0, 0).value, placeholder.replace('\n', '\r\n') + '\r\n\r\n')
+  })
+
+  it('inserts uploaded image paths as a single block without a title or username', function () {
+    assert.strictEqual(apply('image', '', 0, 0, { imageSource: 'photo.png' }).value, '\\Image[photo.png]')
+    const options = { imageSource: '/images/my picture[1].png' }
+    const markup = '\\Image[/images/my picture\\[1\\].png]'
+    const result = apply('image', 'before after', 7, 7, options)
+    assert.strictEqual(result.value, `before \n\n${markup}\n\nafter`)
+    assert.strictEqual(result.selected, '')
+    assert.strictEqual(apply('image', 'replace me', 0, 10, options).value, markup)
   })
 
   it('formats whole touched lines without consuming the following line', function () {
@@ -15879,6 +15889,7 @@ describe('editor markup toolbar', function () {
     try {
       for (const options of [undefined, { toolbarHeaderLevels: [] }, {
         toolbarHeaderLevels: [2, 3, 4], titleSource: 'Web title', modifyEditorInput: ourbigbook.modifyEditorInput,
+        onUploadImage: editor => { editor.uploadRequested = true },
       }]) {
         let value = options?.titleSource ? 'Web body.' : source
         const root = doc.createElement('div')
@@ -15912,6 +15923,12 @@ describe('editor markup toolbar', function () {
         assert(controls.some(control => control.getAttribute('data-action') === 'math'))
         assert(controls.some(control => control.getAttribute('data-action') === 'math-block'))
         assert(controls.some(control => control.getAttribute('data-action') === 'image'))
+        const uploadButton = controls.find(control => control.getAttribute('data-action') === 'upload-image')
+        assert.strictEqual(!!uploadButton, !!options?.onUploadImage)
+        if (uploadButton) {
+          uploadButton.listeners.click()
+          assert.strictEqual(editor.uploadRequested, true)
+        }
         const select = controls.find(control => control.tagName === 'select')
         assert.deepStrictEqual(select ? Array.from(select.getElementsByTagName('option')).slice(1).map(option => option.value) : [],
           (options?.toolbarHeaderLevels || [1, 2, 3, 4, 5, 6]).map(level => `heading-${level}`))

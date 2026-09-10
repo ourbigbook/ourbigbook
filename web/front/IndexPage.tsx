@@ -334,6 +334,12 @@ function IndexPageHoc({
               >
                 <DirectoryIcon /> Files
               </CustomLink>
+              <CustomLink
+                className={`tab-item${order === 'fileSize' ? ' active' : ''}`}
+                href={routes.users({ sort: 'file-size' })}
+              >
+                <LargestIcon title="Total file size" /> File size
+              </CustomLink>
             </>}
             {itemType === 'file' && <>
               {[

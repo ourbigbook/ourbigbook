@@ -19,6 +19,7 @@ export const getServerSidePropsUsers: MyGetServerSideProps = async (
       'comments': 'commentCount',
       'discussions': 'discussionCount',
       'files': 'fileCount',
+      'file-size': 'fileSize',
       'follower-count': 'followerCount',
       'score': undefined,
       'username': undefined,

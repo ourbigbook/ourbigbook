@@ -102,6 +102,15 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      fileSize: {
+        type: DataTypes.BIGINT,
+        allowNull: false,
+        defaultValue: 0,
+        get() {
+          // PostgreSQL returns BIGINT as a string; expose bytes as a number.
+          return Number(this.getDataValue('fileSize'))
+        },
+      },
       commentCount: {
         type: DataTypes.INTEGER,
         allowNull: false,
@@ -259,6 +268,7 @@ module.exports = (sequelize) => {
         { fields: ['discussionCount', 'createdAt'] },
         { fields: ['commentCount', 'createdAt'] },
         { fields: ['fileCount', 'createdAt'] },
+        { fields: ['fileSize', 'createdAt'] },
         { fields: ['score'] },
         { fields: ['username'] },
         { fields: ['verified', 'locked', 'createdAt'] },
@@ -266,6 +276,7 @@ module.exports = (sequelize) => {
         { fields: ['verified', 'locked', 'discussionCount', 'createdAt'] },
         { fields: ['verified', 'locked', 'commentCount', 'createdAt'] },
         { fields: ['verified', 'locked', 'fileCount', 'createdAt'] },
+        { fields: ['verified', 'locked', 'fileSize', 'createdAt'] },
         { fields: ['verified', 'locked', 'score', 'createdAt'] },
         { fields: ['verified', 'locked', 'username'] },
       ]
@@ -295,6 +306,7 @@ module.exports = (sequelize) => {
       effectiveImage: this.image || config.defaultProfileImage,
       commentCount: this.commentCount,
       fileCount: this.fileCount,
+      fileSize: this.fileSize,
       followerCount: this.followerCount,
       id: this.id,
       image: this.image,
@@ -670,6 +682,7 @@ module.exports = (sequelize) => {
     'comments': 'commentCount',
     'discussions': 'discussionCount',
     'files': 'fileCount',
+    'file-size': 'fileSize',
     'score': undefined,
   }
 

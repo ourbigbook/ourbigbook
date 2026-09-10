@@ -32,7 +32,7 @@ export function UserScore({ space=true, user }) {
 }
 
 export type DisplayAndUsernameProps = {
-  user: UserType,
+  user: Pick<UserType, 'displayName' | 'effectiveImage' | 'score' | 'username'>,
   showParenthesis?: boolean,
   showScore?: boolean,
   showUsername?: boolean,

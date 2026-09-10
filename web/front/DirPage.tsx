@@ -10,6 +10,7 @@ import {
   LargestIcon,
   MyHead,
   TimeIcon,
+  UserIcon,
   uploadPathWithoutUser,
 } from 'front'
 import UserLinkWithImage from 'front/UserLinkWithImage'
@@ -36,6 +37,7 @@ export function FileList({ files, filesCount, page, username }: { files: UploadI
         <table className="list file-list">
           <thead><tr>
             <th><FileIcon /> Path</th>
+            {username === undefined && <th><UserIcon /> Author</th>}
             <th><ImageIcon /> Preview</th>
             <th><LargestIcon title="Size" /> Size (bytes)</th>
             <th><TimeIcon /> Created</th>
@@ -45,7 +47,9 @@ export function FileList({ files, filesCount, page, username }: { files: UploadI
             const path = username && file.path.startsWith(`${username}/`) ? file.path.slice(username.length + 1) : file.path
             return <tr key={file.path}>
               <td className="file-path">{file.url ? <a href={file.url}>{path}</a> : path}</td>
-              <td>{file.previewUrl && <a href={file.url}><img src={file.previewUrl} alt={path} loading="lazy" /></a>}</td>
+              {username === undefined && <td className="shrink">{file.author
+                ? <UserLinkWithImage user={file.author} showUsername={false} /> : 'Unknown'}</td>}
+              <td className="file-preview">{file.previewUrl && <a href={file.url}><img src={file.previewUrl} alt={path} loading="lazy" /></a>}</td>
               <td className="shrink right">{file.size.toLocaleString('en-US')}</td>
               <td className="shrink"><time dateTime={file.createdAt} title={file.createdAt}>{formatDate(file.createdAt)}</time></td>
               <td className="shrink"><time dateTime={file.updatedAt} title={file.updatedAt}>{formatDate(file.updatedAt)}</time></td>

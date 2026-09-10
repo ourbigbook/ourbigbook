@@ -807,7 +807,7 @@ span.shortcut {
 
 .file-list {
   .file-path { overflow-wrap: anywhere; }
-  img { display: block; width: 96px; height: 64px; object-fit: contain; }
+  .file-preview img { display: block; width: 96px; height: 64px; object-fit: contain; }
 }
 
 .image-upload-modal {

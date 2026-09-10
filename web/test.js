@@ -502,6 +502,67 @@ it('User fileCount cache and migration', async function() {
   await assertCounts(0, 0)
 })
 
+it('User fileSize cache and migration', async function() {
+  const sequelize = this.test.sequelize
+  const { Upload, User } = sequelize.models
+  const user0 = await createUser(sequelize, 0)
+  const user1 = await createUser(sequelize, 1)
+  const path = Upload.uidAndPathToUploadPath(user0.id, 'file.txt')
+  const put = (bytes, transaction) => Upload.upsertSideEffects(Upload.getCreateObj({ path, bytes: Buffer.from(bytes) }), { transaction })
+  async function assertSizes(size0, size1) {
+    for (const [user, size] of [[user0, size0], [user1, size1]]) {
+      await user.reload()
+      assert.strictEqual(user.fileSize, size)
+      assert.strictEqual((await user.toJson()).fileSize, size)
+    }
+  }
+  await assertSizes(0, 0)
+  const upload = await put('hello')
+  await Upload.upsertSideEffects(Upload.getCreateObj({ path: `${config.profilePicturePathComponent}/${user0.id}`, bytes: PNG_1X1_WHITE_BUFFER }))
+  await assertSizes(5, 0)
+  await put('longer text')
+  await assertSizes(11, 0)
+  await put('a')
+  await assertSizes(1, 0)
+  assert.strictEqual(user0.fileCount, 1)
+  await assert.rejects(sequelize.transaction(async transaction => {
+    await put('rolled back replacement', transaction)
+    throw new Error('rollback file size')
+  }), /rollback file size/)
+  await assertSizes(1, 0)
+  await upload.reload()
+  await upload.update({ path: Upload.uidAndPathToUploadPath(user1.id, 'renamed.txt') })
+  await assertSizes(0, 1)
+  await upload.update({ path: `other/${user1.id}/file.txt` })
+  await assertSizes(0, 0)
+  await upload.update({ path })
+  await assertSizes(1, 0)
+
+  // Metadata-only fixtures exercise totals exceeding a 32-bit integer without
+  // allocating gigabytes of test data.
+  await upload.update({ size: 2000000000 })
+  const second = await Upload.upsertSideEffects({ ...Upload.getCreateObj({
+    path: Upload.uidAndPathToUploadPath(user0.id, 'second.txt'), bytes: Buffer.from('test'),
+  }), size: 2000000000 })
+  await assertSizes(4000000000, 0)
+  const migration = require('./migrations/21000101000038-user-add-file-size-column')
+  const queryInterface = sequelize.getQueryInterface()
+  await migration.down(queryInterface)
+  await migration.up(queryInterface, require('sequelize'))
+  await assertSizes(4000000000, 0)
+  await put('ok')
+  await assertSizes(2000000002, 0)
+  await second.destroySideEffects({})
+  await assertSizes(2, 0)
+  await upload.destroySideEffects({})
+  await assertSizes(0, 0)
+
+  await User.update({ fileSize: 99 }, { where: { id: user0.id } })
+  await models.normalize({ fix: true, sequelize, usernames: [user0.username], whats: ['user-file-size'] })
+  await models.normalize({ check: true, sequelize, usernames: [user0.username], whats: ['user-file-size'] })
+  await assertSizes(0, 0)
+})
+
 it('new user index article has null dates and sorts after dated articles', async function() {
   const sequelize = this.test.sequelize
   const { Article } = sequelize.models
@@ -6859,6 +6920,13 @@ it('web: user files retain the profile at root, with tree and list views', async
     await test.webApi.uploadCreateOrUpdate('user1/other.png', PNG_1X1_WHITE_BUFFER)
     assert.strictEqual((await test.webApi.user('user0')).data.fileCount, 2)
     assert.strictEqual((await test.webApi.user('user1')).data.fileCount, 1)
+    assert.strictEqual((await test.webApi.user('user0')).data.fileSize, PNG_1X1_WHITE_BUFFER.length + 5)
+    const usersByFileSize = await test.webApi.users({ sort: 'file-size' })
+    assert.strictEqual(usersByFileSize.status, 200)
+    assertRows(usersByFileSize.data.users, [
+      { username: 'user0', fileSize: PNG_1X1_WHITE_BUFFER.length + 5 },
+      { username: 'user1', fileSize: PNG_1X1_WHITE_BUFFER.length },
+    ])
     const usersByFiles = await test.webApi.users({ sort: 'files' })
     assert.strictEqual(usersByFiles.status, 200)
     assertRows(usersByFiles.data.users, [
@@ -6886,6 +6954,7 @@ it('web: user files retain the profile at root, with tree and list views', async
       assert_xpath('//x:a[contains(@class, "active") and normalize-space(text())="List"]', list.data)
       assert_xpath('//x:table[contains(@class, "file-list")]//x:img[@src="/user0/_raw/images%20%5B1%5D/photo.png"]', list.data)
       assert(!list.data.includes('user1/other.png'))
+      assert(!list.data.includes('> Author</th>'))
       const alphabetical = await test.sendJsonHttp('GET', routes.userFiles('user0', { sort: 'path' }))
       assert.strictEqual(alphabetical.status, 200)
       assert_xpath('//x:a[contains(@class, "active") and @href="/go/user/user0/files?sort=path"]', alphabetical.data)
@@ -6896,6 +6965,10 @@ it('web: user files retain the profile at root, with tree and list views', async
       assert_xpath('//x:th[contains(., "Files")]', users.data)
       assert_xpath('//x:td/x:a[@href="/user0/_dir" and text()="2"]', users.data)
       assert_xpath('//x:td/x:a[@href="/user1/_dir" and text()="1"]', users.data)
+      const usersBySize = await test.sendJsonHttp('GET', routes.users({ sort: 'file-size' }))
+      assert.strictEqual(usersBySize.status, 200)
+      assert_xpath('//x:a[contains(@class, "active") and @href="/go/users?sort=file-size"]', usersBySize.data)
+      assert_xpath(`//x:td/x:a[@href="/go/user/user0/files?sort=size" and text()="${PNG_1X1_WHITE_BUFFER.length + 5}"]`, usersBySize.data)
       const subdir = await test.sendJsonHttp('GET', routes.dir('user0', 'images [1]'))
       assert.strictEqual(subdir.status, 200)
       assert_xpath('//x:div[contains(@class, "dir-page")]/x:h1', subdir.data)
@@ -6906,6 +6979,7 @@ it('web: user files retain the profile at root, with tree and list views', async
     await test.webApi.uploadDelete('user0/images [1]/photo.png')
     await test.webApi.uploadDelete('user0/notes.txt')
     assert.strictEqual((await test.webApi.user('user0')).data.fileCount, 0)
+    assert.strictEqual((await test.webApi.user('user0')).data.fileSize, 0)
     if (testNext) assert.strictEqual((await test.sendJsonHttp('GET', routes.dir('user0'))).status, 200)
   }, { canTestNext: true })
 })
@@ -6936,6 +7010,11 @@ it('web: global file index lists metadata, image previews, and stable pages', as
     assert.strictEqual(image.previewUrl, '/user0/_raw/images/a%20%5B1%5D.png')
     assert.strictEqual(image.size, PNG_1X1_WHITE_BUFFER.length)
     assert.strictEqual(image.createdAt, '2026-01-01T00:00:00.000Z')
+    assert.deepStrictEqual(image.author, {
+      username: 'user0', displayName: user0.displayName,
+      effectiveImage: user0.effectiveImage, score: user0.score,
+    })
+    assert.strictEqual(result.files[0].author.username, 'user1')
     assert(!('bytes' in image))
     assert(!('hash' in image))
     assert.strictEqual((await Upload.getFileIndex({ order: 'size' })).files[0].path, image.path)
@@ -6956,6 +7035,8 @@ it('web: global file index lists metadata, image previews, and stable pages', as
       const { data } = await test.sendJsonHttp('GET', routes.files())
       assert_xpath('//x:a[@href="/go/files" and contains(@class, "active") and contains(., "Files")]', data)
       assert_xpath(`//x:table[contains(@class, 'file-list')]//x:td[@class='file-path']/x:a[@href='${image.url}']`, data)
+      assert_xpath('//x:table[contains(@class, "file-list")]//x:th[contains(., "Author")]', data)
+      assert_xpath(`//x:tr[x:td[@class='file-path']/x:a[@href='${image.url}']]/x:td/x:a[@href='/user0']`, data)
       assert_xpath(`//x:table[contains(@class, 'file-list')]//x:img[@src='${image.previewUrl}']`, data)
       assert_xpath('(//x:table[contains(@class, "file-list")]//x:time[@datetime="2026-01-01T00:00:00.000Z"])[1]', data)
       const alphabetical = await test.sendJsonHttp('GET', routes.files({ sort: 'path' }))

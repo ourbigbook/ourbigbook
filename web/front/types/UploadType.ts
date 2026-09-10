@@ -1,3 +1,5 @@
+import { UserType } from 'front/types/UserType'
+
 /* Directory listing entry */
 export interface UploadEntryType {
   path: string;
@@ -13,6 +15,7 @@ export interface UploadType extends UploadEntryType {
 };
 
 export interface UploadIndexType extends Pick<UploadType, 'path' | 'contentType' | 'size' | 'createdAt' | 'updatedAt'> {
+  author: Pick<UserType, 'displayName' | 'effectiveImage' | 'score' | 'username'> | null;
   url: string | null;
   previewUrl: string | null;
 }

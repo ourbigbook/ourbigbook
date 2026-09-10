@@ -8,7 +8,7 @@ const { hashToHex } = require('ourbigbook/web_api')
 const { sequelizeWhereStartsWith } = require('ourbigbook/models')
 const { sequelizeCreateTrigger } = require('ourbigbook/nodejs_webpack_safe')
 
-const { uploadPathComponent } = require('../front/config')
+const { defaultProfileImage, uploadPathComponent } = require('../front/config')
 
 // https://stackoverflow.com/a/77861877/895245
 function isValidUtf8(bytes) {
@@ -228,17 +228,24 @@ module.exports = (sequelize) => {
       order: [[orderColumn, orderAscDesc], ['id', 'DESC']],
     })
     const users = await sequelize.models.User.findAll({
-      attributes: ['id', 'username'],
+      attributes: ['id', 'username', 'displayName', 'image', 'score'],
       where: { id: rows.map(row => row.path.split(URL_SEP)[1]).filter(id => /^\d+$/.test(id)) },
     })
-    const usernames = new Map(users.map(user => [String(user.id), user.username]))
+    const authors = new Map(users.map(user => [String(user.id), {
+      username: user.username,
+      displayName: user.displayName,
+      effectiveImage: user.image || defaultProfileImage,
+      score: user.score,
+    }]))
     return {
       count,
       files: rows.map(row => {
         const [, uid, ...parts] = row.path.split(URL_SEP)
-        const username = usernames.get(uid)
+        const author = authors.get(uid) || null
+        const username = author?.username
         const encodedPath = parts.map(encodeURIComponent).join(URL_SEP)
         return {
+          author,
           path: username ? `${username}/${parts.join(URL_SEP)}` : row.path,
           url: username ? `/${username}/_file/${encodedPath}` : null,
           previewUrl: username && row.contentType.startsWith('image/') ? `/${username}/_raw/${encodedPath}` : null,
@@ -290,6 +297,21 @@ module.exports.createFileCountTriggers = async function(sequelize, transaction) 
       nameExtra: 'user_file_count',
       transaction,
       when: operation === 'update' ? 'OLD."path" <> NEW."path"' : undefined,
+    })
+  }
+}
+
+module.exports.createFileSizeTriggers = async function(sequelize, transaction) {
+  const update = (row, delta) =>
+    `UPDATE "User" SET "fileSize" = "fileSize" ${delta} ${row}."size" WHERE ${fileOwnerWhere(`${row}."path"`)}`
+  for (const operation of ['insert', 'delete', 'update']) {
+    const statements = []
+    if (operation !== 'insert') statements.push(update('OLD', '-'))
+    if (operation !== 'delete') statements.push(update('NEW', '+'))
+    await sequelizeCreateTrigger(sequelize, { tableName: 'Upload' }, operation, statements.join(';\n'), {
+      nameExtra: 'user_file_size',
+      transaction,
+      when: operation === 'update' ? 'OLD."path" <> NEW."path" OR OLD."size" <> NEW."size"' : undefined,
     })
   }
 }

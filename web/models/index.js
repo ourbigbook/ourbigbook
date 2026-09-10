@@ -427,6 +427,7 @@ async function sync(sequelize, opts={}) {
       })
 
     await require('./upload').createFileCountTriggers(sequelize)
+    await require('./upload').createFileSizeTriggers(sequelize)
 
     // Article
     await sequelizeCreateTrigger(sequelize, Article, 'delete',
@@ -529,22 +530,26 @@ async function normalize({
       }
     } else {
       for (const username of usernames) {
-        if (
-          what === 'user-discussion-count' ||
-          what === 'user-comment-count' ||
-          what === 'user-file-count'
-        ) {
-          const childModel = what === 'user-file-count' ? Upload : what === 'user-discussion-count' ? Issue : Comment
-          const checkField = what === 'user-file-count' ? 'fileCount' : what === 'user-discussion-count' ? 'discussionCount' : 'commentCount'
+        const userCache = {
+          'user-discussion-count': [Issue, 'discussionCount'],
+          'user-comment-count': [Comment, 'commentCount'],
+          'user-file-count': [Upload, 'fileCount'],
+          'user-file-size': [Upload, 'fileSize'],
+        }[what]
+        if (userCache) {
+          const [childModel, checkField] = userCache
           const user = await User.findOne({
             attributes: ['id', 'username', checkField],
             where: { username },
             transaction,
           })
-          const count = await childModel.count({
-            where: what === 'user-file-count' ? Upload.fileIndexWhere(user.id) : { authorId: user.id, list: true },
+          const query = {
+            where: childModel === Upload ? Upload.fileIndexWhere(user.id) : { authorId: user.id, list: true },
             transaction,
-          })
+          }
+          const count = what === 'user-file-size'
+            ? Number(await Upload.sum('size', query) || 0)
+            : await childModel.count(query)
           if (check) {
             const msg = `${what} ${username} ${count} !== ${user[checkField]}`
             assert.strictEqual(count, user[checkField], msg)

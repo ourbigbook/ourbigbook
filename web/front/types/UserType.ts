@@ -8,6 +8,7 @@ export type UserType = {
   effectiveImage: string;
   email?: string;
   fileCount: number;
+  fileSize: number;
   followerCount: number;
   following: boolean;
   id: number;

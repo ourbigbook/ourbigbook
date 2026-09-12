@@ -2281,9 +2281,11 @@ See also: <header explicit levels vs nesting design choice>{full} for further ra
 When mixing both <\H parent argument> and <scopes>, things get a bit complicated, because when writing or parsing, we have to first determine the parent header before resolving scopes.
 
 As a result, the follow simple rules are used:
-* start from the last header of the highest level
+* start from the most recent header and consider only it and its ancestors in the current branch
 * check if the `{parent=XXX}` is a suffix of its ID
 * if not, proceed to the next smaller level, and so on, until a suffix is found
+
+Starting a sibling or ancestor-level header closes the previous branch: its descendants can no longer be selected as parents.
 
 Following those rules for example, a file `tmp.bigb`:
 ``

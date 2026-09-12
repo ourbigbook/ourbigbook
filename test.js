@@ -5699,6 +5699,45 @@ assert_lib_ast('scope: with parent breakout with no leading slash',
   a('H', undefined, {level: [t('3')], title: [t('h5')]}, {id: 'h5'}),
 ]
 )
+assert_lib_ast('scope: parent resolves in the current branch after leaving a deeper branch',
+  `= Top
+
+= 18H
+{scope}
+{parent=}
+
+= b
+{parent=18H}
+{scope}
+
+= i
+{parent=b}
+{scope}
+
+= Solution
+{parent=i}
+
+= 19H
+{scope}
+{parent=}
+
+= i
+{parent=19H}
+{scope}
+
+= Solution
+{parent=i}
+`, [
+  a('H', undefined, {level: [t('1')], title: [t('Top')]}, {id: ''}),
+  a('H', undefined, {level: [t('2')], title: [t('18H')]}, {id: '18h'}),
+  a('H', undefined, {level: [t('3')], title: [t('b')]}, {id: '18h/b'}),
+  a('H', undefined, {level: [t('4')], title: [t('i')]}, {id: '18h/b/i'}),
+  a('H', undefined, {level: [t('5')], title: [t('Solution')]}, {id: '18h/b/i/solution'}),
+  a('H', undefined, {level: [t('2')], title: [t('19H')]}, {id: '19h'}),
+  a('H', undefined, {level: [t('3')], title: [t('i')]}, {id: '19h/i'}),
+  a('H', undefined, {level: [t('4')], title: [t('Solution')]}, {id: '19h/i/solution'}),
+], { input_path_noext: 'index' })
+
 // https://github.com/ourbigbook/ourbigbook/issues/120
 assert_lib_ast('scope: nested with parent',
   `= h1
@@ -6999,6 +7038,23 @@ assert_lib_error('header: parent cannot be an older id of a level',
 `,
   8, 1
 )
+for (const parent of ['child', '/old/child']) {
+  assert_lib_error(`header: parent cannot return to a closed deeper branch ${parent}`,
+    `= Top
+
+== Old
+{scope}
+
+=== Child
+
+== New
+
+= Last
+{parent=${parent}}
+`,
+    11, 1,
+  )
+}
 assert_lib_error('header: header inside parent',
   `= 1
 

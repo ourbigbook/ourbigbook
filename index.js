@@ -6152,16 +6152,18 @@ async function parse(tokens, options, context, extra_returns={}) {
               ast.scope = scope;
             }
           }
-          const old_tree_node = options.header_tree_stack.get(cur_header_level);
-          options.header_tree_stack.set(cur_header_level, cur_header_tree_node);
-          if (
-            // Possible on the first insert of a level.
-            old_tree_node !== undefined &&
-            // Possible if the level is not an integer.
-            old_tree_node.ast !== undefined
-          ) {
-            options.header_tree_id_stack.delete(old_tree_node.ast.id);
+          // Only the current branch can supply a parent. Leaving a branch
+          // also closes its deeper headers, whose ID suffixes might otherwise
+          // shadow parents in the new branch.
+          for (const [level, old_tree_node] of options.header_tree_stack) {
+            if (level >= cur_header_level) {
+              options.header_tree_stack.delete(level);
+              if (old_tree_node.ast !== undefined) {
+                options.header_tree_id_stack.delete(old_tree_node.ast.id);
+              }
+            }
           }
+          options.header_tree_stack.set(cur_header_level, cur_header_tree_node);
           header_tree_last_level = cur_header_level;
         }
         ast.header_tree_node = cur_header_tree_node

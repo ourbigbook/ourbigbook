@@ -299,6 +299,19 @@ function querySearchToTopicId(search) {
   return search === undefined ? undefined : titleToId(search, undefined, convertContext)
 }
 
+function openUserTabs(users, openWindow) {
+  // Open newest first: browsers normally place subsequent related tabs after
+  // the earlier ones. Sort a copy so the displayed table stays unchanged.
+  const ordered = [...users].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt) || b.id - a.id)
+  let blocked = 0
+  for (const user of ordered) {
+    const tab = openWindow(require('./routes').user(user.username), '_blank')
+    if (tab) tab.opener = null
+    else blocked++
+  }
+  return blocked
+}
+
 module.exports = {
   AUTH_COOKIE_NAME: 'auth',
   TRI_ALL,
@@ -312,6 +325,7 @@ module.exports = {
   getOrder,
   getOrderAndPage,
   orderAscDescNullsLast,
+  openUserTabs,
   getPage,
   getTri,
   hasReachedMaxItemCount,

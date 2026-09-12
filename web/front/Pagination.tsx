@@ -10,6 +10,7 @@ import CustomLink from 'front/CustomLink'
 export type PaginationPropsUrlFunc = (number) => string;
 
 export interface PaginationProps {
+  children?: React.ReactNode;
   isCurrent?: boolean;
   itemsCount: number;
   itemsPerPage: number;
@@ -85,6 +86,7 @@ function makeUrlFunc(urlString: string): (page: number) => string {
 }
 
 const Pagination = ({
+  children,
   // 0-indexed
   currentPage=1,
   itemsCount,
@@ -165,6 +167,7 @@ const Pagination = ({
     <span className="total">
       Total<span className="mobile-hide"> {what}</span>: <b>{itemsCount}</b>
     </span>
+    {children}
   </div>
   if (wrap) {
     ret = <nav className="content-not-ourbigbook">{ret}</nav>

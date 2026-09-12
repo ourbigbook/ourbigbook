@@ -11,7 +11,7 @@ import Pagination, { PaginationPropsUrlFunc } from 'front/Pagination'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import { UserLink, UserScore } from 'front/user'
 import { articleLimit } from 'front/config'
-import { TRI_ALL, TRI_FALSE, TRI_TRUE } from 'front/js'
+import { openUserTabs, TRI_ALL, TRI_FALSE, TRI_TRUE } from 'front/js'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
 import { booleanToStringForTable, CommentIcon, DirectoryIcon, DiscussionIcon, FollowIcon, LikeIcon, LargestIcon, LockIcon, OkIcon, TimeIcon, UserIcon } from 'front'
@@ -40,6 +40,7 @@ const UserList = ({
   verified,
 }: UserListProps) => {
   const router = useRouter()
+  const [blockedTabs, setBlockedTabs] = React.useState(0)
   return (
     <div className="list-nav-container">
       {users.length === 0
@@ -90,7 +91,15 @@ const UserList = ({
         itemsPerPage: articleLimit,
         urlFunc: paginationUrlFunc,
         what: 'users',
-      }} /></>}
+      }}>
+        {loggedInUser?.admin && router.pathname === '/go/users' && <>
+          {' '}<button type="button" title="Open every user on this page in a new tab, newest first"
+            onClick={() => setBlockedTabs(openUserTabs(users, window.open.bind(window)))}>
+            Open all
+          </button>
+          {blockedTabs > 0 && <span role="status"> {blockedTabs} tabs blocked. Allow pop-ups for this site to open all users.</span>}
+        </>}
+      </Pagination></>}
       {hasLocked === true &&
         <p className="content-not-ourbigbook">
           <LockIcon />{' '}

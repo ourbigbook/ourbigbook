@@ -24,6 +24,7 @@ const {
   getList,
   getLocked,
   getVerified,
+  openUserTabs,
 } = require('./front/js')
 
 const web_api = require('ourbigbook/web_api');
@@ -3106,6 +3107,28 @@ it('api: resource limits', async () => {
   }, { defaultExpectStatus: 200 })
 })
 
+it('user list opens only the displayed users newest first without changing table order', () => {
+  const users = [
+    { id: 3, username: 'oldest', createdAt: '2025-01-01' },
+    { id: 1, username: 'newest', createdAt: '2026-01-01' },
+    { id: 2, username: 'middle', createdAt: '2025-06-01' },
+  ]
+  const opened = []
+  const tabs = []
+  const blocked = openUserTabs(users, (url, target) => {
+    assert.strictEqual(target, '_blank')
+    opened.push(url)
+    if (url === '/middle') return null
+    const tab = { opener: {} }
+    tabs.push(tab)
+    return tab
+  })
+  assert.deepStrictEqual(opened, ['/newest', '/middle', '/oldest'])
+  assert.deepStrictEqual(users.map(user => user.username), ['oldest', 'newest', 'middle'])
+  assert.strictEqual(blocked, 1)
+  assert(tabs.every(tab => tab.opener === null))
+})
+
 it(`api: user: locked users can't do much`, async () => {
   await testApp(async (test) => {
     let data, status, article
@@ -3189,6 +3212,7 @@ it(`api: user: locked users can't do much`, async () => {
       ;({data, status} = await test.sendJsonHttp('GET', routes.users()))
       assertStatus(status, data)
       assert.match(data, /Only unlocked users are being shown/)
+      assert_xpath('//x:div[@class="pagination"]/x:span[@class="total"]/following-sibling::x:button[text()="Open all"]', data)
       assert.match(data, /Only users with verified email are being shown/)
       assert.match(data, /"totalUsers":1/)
       assert.doesNotMatch(data, /href="\/user0"/)
@@ -3206,6 +3230,11 @@ it(`api: user: locked users can't do much`, async () => {
       assert.match(data, /Users with unverified email are being shown/)
       assert.match(data, /href="\/user1"/)
       assert.match(data, /href="\/user2"/)
+      test.loginUser(user1)
+      assert(!(await test.sendJsonHttp('GET', routes.users())).data.includes('Open all'))
+      test.loginUser()
+      assert(!(await test.sendJsonHttp('GET', routes.users())).data.includes('Open all'))
+      test.loginUser(admin)
 
       ;({data, status} = await test.sendJsonHttp('GET', routes.users({ locked: TRI_TRUE })))
       assertStatus(status, data)

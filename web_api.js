@@ -406,6 +406,10 @@ class WebApi {
     return this.req('delete', `uploads${encodeGetParamsWithOffset({ path })}`, { ...reqOpts })
   }
 
+  async uploadUpdate(path, attrs, reqOpts={}) {
+    return this.req('patch', `uploads${encodeGetParamsWithOffset({ path })}`, { body: attrs, ...reqOpts })
+  }
+
   async uploadHash(opts={}, reqOpts={}) {
     return this.req('get', `uploads/hash${encodeGetParamsWithOffset(opts)}`, reqOpts)
   }

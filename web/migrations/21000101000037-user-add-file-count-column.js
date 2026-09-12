@@ -15,7 +15,7 @@ module.exports = {
     for (const index of indices) {
       await queryInterface.addIndex('User', index, { transaction })
     }
-    await createFileCountTriggers(queryInterface.sequelize, transaction)
+    await createFileCountTriggers(queryInterface.sequelize, transaction, false)
     await queryInterface.sequelize.query(`
 UPDATE "User" SET "fileCount" = (
   SELECT CAST(COUNT(*) AS INTEGER) FROM "Upload"

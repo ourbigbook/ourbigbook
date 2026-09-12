@@ -157,9 +157,9 @@ export const getServerSidePropsIndexHoc = ({
       Topic.count(),
       // totalUsers
       User.count({ where: { locked: false, verified: true } }),
-      Upload.count({ where: Upload.fileIndexWhere() }),
-      itemTypeEff === 'file' ? Upload.getFileIndex({ limit, offset, order, orderAscDesc: ascDesc }) : null,
-      itemTypeEff === 'discussion'
+      Upload.count({ where: { ...Upload.fileIndexWhere(), list: true } }),
+      itemTypeEff === 'file' ? Upload.getFileIndex({ list, limit, offset, order, orderAscDesc: ascDesc }) : null,
+      itemTypeEff === 'file' ? Upload.count({ where: { ...Upload.fileIndexWhere(), list: false } }) : itemTypeEff === 'discussion'
         ? Issue.count({ where: { list: false } })
         : itemTypeEff === 'comment'
           ? Comment.count({ where: { list: false } })

@@ -544,7 +544,7 @@ async function normalize({
             transaction,
           })
           const query = {
-            where: childModel === Upload ? Upload.fileIndexWhere(user.id) : { authorId: user.id, list: true },
+            where: childModel === Upload ? { ...Upload.fileIndexWhere(user.id), list: true } : { authorId: user.id, list: true },
             transaction,
           }
           const count = what === 'user-file-size'

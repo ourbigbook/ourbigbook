@@ -382,7 +382,7 @@ function IndexPageHoc({
             </>}
           </div>
         }
-        {itemType === 'file' ? <FileList {...{ files, filesCount, page }} /> : itemType === 'user'
+        {itemType === 'file' ? <FileList {...{ files, filesCount, page, list, hasUnlisted }} /> : itemType === 'user'
           ? <UserList {...{
               hasLocked,
               hasUnverified,

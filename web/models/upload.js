@@ -47,6 +47,11 @@ module.exports = (sequelize) => {
         type: DataTypes.STRING(512),
         allowNull: false,
       },
+      list: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+      },
     },
     {
       indexes: [
@@ -56,6 +61,7 @@ module.exports = (sequelize) => {
         { fields: ['size'] },
         { fields: ['updatedAt'] },
         { fields: ['parentId', 'path'] },
+        ...['createdAt', 'updatedAt', 'size', 'path'].map(column => ({ fields: ['list', column] })),
       ]
     }
   )
@@ -64,6 +70,11 @@ module.exports = (sequelize) => {
     const { transaction } = opts
     const { UploadDirectory } = sequelize.models
     return sequelize.transaction({ transaction }, async (transaction) => {
+      // Replacing bytes must not silently relist a file.
+      if (obj.list === undefined) {
+        const existing = await Upload.findOne({ where: { path: obj.path }, attributes: ['list'], transaction })
+        obj = { ...obj, list: existing ? existing.list : true }
+      }
       const pathSplit = obj.path.split(URL_SEP)
       const newDirPaths = []
       for (let i = 0; i < pathSplit.length; i++) {
@@ -211,7 +222,7 @@ module.exports = (sequelize) => {
       '"Upload"."path"'),
   })
 
-  Upload.getFileIndex = async function({ authorId, limit=20, offset=0, order='createdAt', orderAscDesc }={}) {
+  Upload.getFileIndex = async function({ authorId, list, limit=20, offset=0, order='createdAt', orderAscDesc }={}) {
     if (!['createdAt', 'updatedAt', 'size', 'path'].includes(order)) throw new Error('Invalid file order')
     if (orderAscDesc === undefined) orderAscDesc = order === 'path' ? 'ASC' : 'DESC'
     // Global paths start with the public username, not the numeric ID stored
@@ -221,8 +232,8 @@ module.exports = (sequelize) => {
       FROM "User" WHERE ${fileOwnerWhere('"Upload"."path"')}
     ), "Upload"."path")`) : order
     const { count, rows } = await Upload.findAndCountAll({
-      attributes: ['id', 'path', 'size', 'contentType', 'createdAt', 'updatedAt'],
-      where: Upload.fileIndexWhere(authorId),
+      attributes: ['id', 'path', 'size', 'contentType', 'createdAt', 'updatedAt', 'list'],
+      where: { ...Upload.fileIndexWhere(authorId), ...(list === undefined ? {} : { list }) },
       limit,
       offset,
       order: [[orderColumn, orderAscDesc], ['id', 'DESC']],
@@ -246,6 +257,7 @@ module.exports = (sequelize) => {
         const encodedPath = parts.map(encodeURIComponent).join(URL_SEP)
         return {
           author,
+          list: row.list,
           path: username ? `${username}/${parts.join(URL_SEP)}` : row.path,
           url: username ? `/${username}/_file/${encodedPath}` : null,
           previewUrl: username && row.contentType.startsWith('image/') ? `/${username}/_raw/${encodedPath}` : null,
@@ -260,6 +272,7 @@ module.exports = (sequelize) => {
 
   Upload.prototype.toJson = function(loggedInUser) {
     return {
+      list: this.list,
       createdAt: this.createdAt.toISOString(),
       contentType: this.contentType,
       hash: this.hash,
@@ -271,8 +284,29 @@ module.exports = (sequelize) => {
 
   Upload.prototype.toEntryJson = function() {
     return {
+      list: this.list,
       path: this.path,
     }
+  }
+
+  Upload.getDirectory = async function({ authorId, path='', list }) {
+    const { UploadDirectory } = sequelize.models
+    return UploadDirectory.findOne({
+      where: { path: Upload.uidAndPathToUploadPath(authorId, path) },
+      include: [
+        {
+          model: UploadDirectory, as: 'childDirectories', attributes: ['path'], required: false,
+          // Hide branches containing only unlisted files in the default tree.
+          ...(list === undefined ? {} : { where: sequelize.literal(`EXISTS (
+            SELECT 1 FROM "Upload" AS "visibleUpload"
+            WHERE substr("visibleUpload"."path", 1, length("childDirectories"."path") + 1) = "childDirectories"."path" || '/'
+              AND "visibleUpload"."list" = ${sequelize.escape(list)}
+          )`) }),
+        },
+        { model: Upload, as: 'childFiles', attributes: ['path', 'list'], required: false,
+          ...(list === undefined ? {} : { where: { list } }) },
+      ],
+    })
   }
 
   return Upload
@@ -286,32 +320,38 @@ function fileOwnerWhere(path) {
 }
 module.exports.fileOwnerWhere = fileOwnerWhere
 
-module.exports.createFileCountTriggers = async function(sequelize, transaction) {
+module.exports.createFileCountTriggers = async function(sequelize, transaction, listedOnly=true) {
   const update = (row, delta) =>
-    `UPDATE "User" SET "fileCount" = "fileCount" ${delta} 1 WHERE ${fileOwnerWhere(`${row}."path"`)}`
+    `UPDATE "User" SET "fileCount" = "fileCount" ${delta} 1 WHERE ${fileOwnerWhere(`${row}."path"`)}${listedOnly ? ` AND ${row}."list" = ${sequelize.escape(true)}` : ''}`
   for (const operation of ['insert', 'delete', 'update']) {
     const statements = []
     if (operation !== 'insert') statements.push(update('OLD', '-'))
     if (operation !== 'delete') statements.push(update('NEW', '+'))
+    if (sequelize.options.dialect === 'sqlite') {
+      await sequelize.query(`DROP TRIGGER IF EXISTS "Upload_${operation}_user_file_count"`, { transaction })
+    }
     await sequelizeCreateTrigger(sequelize, { tableName: 'Upload' }, operation, statements.join(';\n'), {
       nameExtra: 'user_file_count',
       transaction,
-      when: operation === 'update' ? 'OLD."path" <> NEW."path"' : undefined,
+      when: operation === 'update' ? 'OLD."path" <> NEW."path"' + (listedOnly ? ' OR OLD."list" <> NEW."list"' : '') : undefined,
     })
   }
 }
 
-module.exports.createFileSizeTriggers = async function(sequelize, transaction) {
+module.exports.createFileSizeTriggers = async function(sequelize, transaction, listedOnly=true) {
   const update = (row, delta) =>
-    `UPDATE "User" SET "fileSize" = "fileSize" ${delta} ${row}."size" WHERE ${fileOwnerWhere(`${row}."path"`)}`
+    `UPDATE "User" SET "fileSize" = "fileSize" ${delta} ${row}."size" WHERE ${fileOwnerWhere(`${row}."path"`)}${listedOnly ? ` AND ${row}."list" = ${sequelize.escape(true)}` : ''}`
   for (const operation of ['insert', 'delete', 'update']) {
     const statements = []
     if (operation !== 'insert') statements.push(update('OLD', '-'))
     if (operation !== 'delete') statements.push(update('NEW', '+'))
+    if (sequelize.options.dialect === 'sqlite') {
+      await sequelize.query(`DROP TRIGGER IF EXISTS "Upload_${operation}_user_file_size"`, { transaction })
+    }
     await sequelizeCreateTrigger(sequelize, { tableName: 'Upload' }, operation, statements.join(';\n'), {
       nameExtra: 'user_file_size',
       transaction,
-      when: operation === 'update' ? 'OLD."path" <> NEW."path" OR OLD."size" <> NEW."size"' : undefined,
+      when: operation === 'update' ? 'OLD."path" <> NEW."path" OR OLD."size" <> NEW."size"' + (listedOnly ? ' OR OLD."list" <> NEW."list"' : '') : undefined,
     })
   }
 }

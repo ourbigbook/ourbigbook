@@ -52,6 +52,7 @@ const editPermissions = [
 
   // Uploads: deletion is currently reserved for admins, including a user's own files.
   ['deleteUpload', (loggedInUser) => 'Only admins can delete files'],
+  ['editUpload', (loggedInUser, username) => loggedInUser.username !== username],
 
   // SiteSettings
   ['updateSiteSettings', (loggedInUser, comment) => true],

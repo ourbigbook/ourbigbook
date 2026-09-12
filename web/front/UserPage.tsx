@@ -46,7 +46,7 @@ import { DisplayAndUsername, displayAndUsernameText } from 'front/user'
 import routes from 'front/routes'
 import Article from 'front/Article'
 import UserList from 'front/UserList'
-import { DirectoryEntries, FileList } from 'front/DirPage'
+import { DirectoryEntries, FileList, UnlistedFilesNotice } from 'front/DirPage'
 import { UploadEntryType, UploadIndexType } from 'front/types/UploadType'
 import { UploadDirectoryEntryType } from 'front/types/UploadDirectoryType'
 import { ArticleType, ArticleLinkType } from 'front/types/ArticleType'
@@ -511,6 +511,7 @@ export default function UserPage({
     </div>
     {what === 'user-files-tree' && <div className="dir-page content-not-ourbigbook">
       <DirectoryEntries author={user} {...{ childDirectories, childFiles }} />
+      <UnlistedFilesNotice {...{ list, hasUnlisted }} />
     </div>}
     {what === 'user-files' && <>
       <div className="tab-list content-not-ourbigbook">
@@ -524,7 +525,7 @@ export default function UserPage({
           <FileIcon /> <AlphabeticalOrderTabTitle />
         </CustomLink>
       </div>
-      <FileList {...{ files, filesCount, page, username }} />
+      <FileList {...{ files, filesCount, page, username, list, hasUnlisted }} />
     </>}
     {(itemType === 'article' || itemType === 'discussion' || itemType === 'like') &&
       <ArticleList {...{

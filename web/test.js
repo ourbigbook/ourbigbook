@@ -7432,6 +7432,133 @@ it('api: uploaded image search matches literal prefixes for the current user onl
   })
 })
 
+it('web: file unlisting permissions, listings, replacement and counts', async () => {
+  await testApp(async test => {
+    const { User, Upload } = test.sequelize.models
+    const owner = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    const fullPath = 'user0/private [1]/photo.png'
+    const encoded = 'private%20%5B1%5D/photo.png'
+    const fileUrl = `/user0/_file/${encoded}`
+    const rawUrl = `/user0/_raw/${encoded}`
+    const unlistButton = '//x:button[normalize-space(text())="Unlist"]'
+    test.loginUser(owner)
+    await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER)
+    await test.webApi.uploadCreateOrUpdate('user0/visible.txt', 'visible')
+    if (testNext) assert_xpath(unlistButton, (await test.sendJsonHttp('GET', fileUrl)).data)
+    test.loginUser(other)
+    await test.webApi.uploadUpdate(fullPath, { list: false }, { expectStatus: 403 })
+    if (testNext) assert_xpath(unlistButton, (await test.sendJsonHttp('GET', fileUrl)).data, { count: 0 })
+    test.disableToken()
+    await test.webApi.uploadUpdate(fullPath, { list: false }, { expectStatus: 401 })
+    if (testNext) assert_xpath(unlistButton, (await test.sendJsonHttp('GET', fileUrl)).data, { count: 0 })
+    test.loginUser(owner)
+    for (const attrs of [{}, { list: 'false' }, { list: null }]) {
+      await test.webApi.uploadUpdate(fullPath, attrs, { expectStatus: 422 })
+    }
+    await test.webApi.uploadUpdate('user0/missing.png', { list: false }, { expectStatus: 404 })
+    await User.update({ locked: true }, { where: { id: owner.id } })
+    await test.webApi.uploadUpdate(fullPath, { list: false }, { expectStatus: 403 })
+    await User.update({ locked: false }, { where: { id: owner.id } })
+    await test.webApi.uploadUpdate(fullPath, { list: false })
+    await test.webApi.uploadUpdate(fullPath, { list: false })
+    const assertCounts = async (count, size) => {
+      const user = await User.findByPk(owner.id)
+      assert.strictEqual(user.fileCount, count)
+      assert.strictEqual(user.fileSize, size)
+      await models.normalize({ check: true, sequelize: test.sequelize, usernames: ['user0'], whats: ['user-file-count', 'user-file-size'] })
+    }
+    await assertCounts(1, 7)
+    assert.strictEqual((await Upload.getFileIndex({ list: true })).count, 1)
+    assert.strictEqual((await Upload.getFileIndex({ list: false })).files[0].list, false)
+    assert.strictEqual((await Upload.getFileIndex()).count, 2)
+    if (testNext) {
+      const ownerPage = await test.sendJsonHttp('GET', fileUrl)
+      assert_xpath('//x:button[normalize-space(text())="List"]', ownerPage.data)
+      assert_xpath('//x:span[contains(@class, "pill") and contains(., "Unlisted")]', ownerPage.data)
+      test.disableToken()
+      // Defaults hide unlisted files for everyone, with article-style opt-in filters.
+      for (const url of [routes.files(), routes.userFiles('user0'), routes.dir('user0')]) {
+        const hidden = await test.sendJsonHttp('GET', url)
+        assert_xpath(`//x:a[@href='${fileUrl}']`, hidden.data, { count: 0 })
+        assert_xpath('//x:a[contains(@href, "listed=2") and text()="also show them"]', hidden.data)
+        const only = await test.sendJsonHttp('GET', `${url}?listed=0`)
+        assert_xpath('//x:a[@href="/user0/_file/visible.txt"]', only.data, { count: 0 })
+        if (url !== routes.dir('user0')) {
+          assert_xpath(`//x:a[@href='${fileUrl}']`, only.data)
+          assert_xpath(`//x:a[@href='${fileUrl}']`, (await test.sendJsonHttp('GET', `${url}?listed=2`)).data)
+        } else {
+          assert_xpath('//x:a[contains(@href, "/user0/_dir/private%20%5B1%5D")]', hidden.data, { count: 0 })
+          assert_xpath('//x:a[@href="/user0/_dir/private%20%5B1%5D?listed=0"]', only.data)
+        }
+      }
+      const directory = '/user0/_dir/private%20%5B1%5D'
+      assert_xpath(`//x:a[@href='${fileUrl}']`, (await test.sendJsonHttp('GET', directory)).data, { count: 0 })
+      assert_xpath(`//x:a[@href='${fileUrl}']`, (await test.sendJsonHttp('GET', `${directory}?listed=0`)).data)
+      assert.strictEqual((await test.sendJsonHttp('GET', fileUrl)).status, 200)
+    }
+    assert.deepStrictEqual((await web_api.sendJsonHttp('GET', rawUrl, { ...test.webApi.opts, responseType: 'arraybuffer' })).data, PNG_1X1_WHITE_BUFFER)
+    test.loginUser(owner)
+    await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER)
+    await assertCounts(1, 7)
+    assert.strictEqual((await Upload.getFileIndex({ list: false })).count, 1)
+    // Unlisting is not a way around the upload quota. The owner can still select the image.
+    await User.update({ maxUploads: 2 }, { where: { id: owner.id } })
+    await test.webApi.uploadCreateOrUpdate('user0/extra.txt', 'extra', { expectStatus: 403 })
+    assert.strictEqual((await test.webApi.uploadImages({ prefix: 'private' })).data.images.length, 1)
+    await User.update({ admin: true }, { where: { id: other.id } })
+    test.loginUser(other)
+    await test.webApi.uploadUpdate(fullPath, { list: true })
+    await assertCounts(2, 7 + PNG_1X1_WHITE_BUFFER.length)
+    await test.webApi.uploadUpdate(fullPath, { list: false })
+    await test.webApi.uploadDelete(fullPath)
+    await assertCounts(1, 7)
+    test.loginUser(owner)
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'visible.txt', bodySource: '{file}\n\nFile description' }))
+    await test.webApi.uploadUpdate('user0/visible.txt', { list: false })
+    assert.strictEqual((await test.webApi.article('user0/_file/visible.txt')).data.list, true)
+    if (testNext) assert_xpath('//x:button[normalize-space(text())="List"]', (await test.sendJsonHttp('GET', '/user0/_file/visible.txt')).data)
+    await assertCounts(0, 0)
+    await test.webApi.uploadUpdate('user0/visible.txt', { list: true })
+    await assertCounts(1, 7)
+  }, { canTestNext: true })
+})
+
+it('Upload list migration preserves files and updates count triggers', async function() {
+  const sequelize = this.test.sequelize
+  const { Upload, User } = sequelize.models
+  const owner = await createUser(sequelize, 0)
+  const put = path => Upload.upsertSideEffects(Upload.getCreateObj({ path: Upload.uidAndPathToUploadPath(owner.id, path), bytes: Buffer.from('abc') }))
+  const first = await put('a.txt')
+  await put('b.txt')
+  await first.update({ list: false })
+  assert.strictEqual((await owner.reload()).fileCount, 1)
+  const migration = require('./migrations/21000101000040-upload-add-list-column')
+  const qi = sequelize.getQueryInterface()
+  await migration.down(qi)
+  assert.strictEqual((await owner.reload()).fileCount, 2)
+  assert.strictEqual(owner.fileSize, 6)
+  await migration.up(qi, require('sequelize'))
+  assert.strictEqual(await Upload.count({ where: { list: true } }), 2)
+  assert.deepStrictEqual((await first.reload()).bytes, Buffer.from('abc'))
+  await first.update({ list: false })
+  assert.strictEqual((await owner.reload()).fileCount, 1)
+  assert.strictEqual(owner.fileSize, 3)
+  await assert.rejects(sequelize.transaction(async transaction => {
+    await first.update({ list: true }, { transaction })
+    throw new Error('roll back visibility')
+  }), /roll back visibility/)
+  assert.strictEqual((await owner.reload()).fileCount, 1)
+  await first.reload()
+  await first.destroySideEffects({})
+  assert.strictEqual((await owner.reload()).fileCount, 1)
+  assert.strictEqual(owner.fileSize, 3)
+  await User.update({ fileCount: 99, fileSize: 99 }, { where: { id: owner.id } })
+  await models.normalize({ fix: true, sequelize, usernames: ['user0'], whats: ['user-file-count', 'user-file-size'] })
+  assert.strictEqual((await owner.reload()).fileCount, 1)
+  assert.strictEqual(owner.fileSize, 3)
+})
+
 it('web: only admins can delete uploaded files, including from their file pages', async () => {
   await testApp(async test => {
     const { User, Upload, UploadDirectory } = test.sequelize.models

@@ -15,7 +15,7 @@ module.exports = {
     for (const index of indices) {
       await queryInterface.addIndex('User', index, { transaction })
     }
-    await createFileSizeTriggers(queryInterface.sequelize, transaction)
+    await createFileSizeTriggers(queryInterface.sequelize, transaction, false)
     await queryInterface.sequelize.query(`
 UPDATE "User" SET "fileSize" = (
   SELECT COALESCE(SUM(CAST("Upload"."size" AS BIGINT)), 0) FROM "Upload"

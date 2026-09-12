@@ -3,6 +3,7 @@ import { UserType } from 'front/types/UserType'
 /* Directory listing entry */
 export interface UploadEntryType {
   path: string;
+  list: boolean;
 };
 
 export interface UploadType extends UploadEntryType {
@@ -14,7 +15,7 @@ export interface UploadType extends UploadEntryType {
   updatedAt: string;
 };
 
-export interface UploadIndexType extends Pick<UploadType, 'path' | 'contentType' | 'size' | 'createdAt' | 'updatedAt'> {
+export interface UploadIndexType extends Pick<UploadType, 'path' | 'contentType' | 'size' | 'createdAt' | 'updatedAt' | 'list'> {
   author: Pick<UserType, 'displayName' | 'effectiveImage' | 'score' | 'username'> | null;
   url: string | null;
   previewUrl: string | null;

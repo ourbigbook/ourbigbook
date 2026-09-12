@@ -251,6 +251,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
                 list: false,
                 sequelize,
               })
+            : itemType === 'file'
+              ? Upload.count({ where: { ...Upload.fileIndexWhere(user.id), list: false } }).then(count => ({ count }))
             : itemType === 'comment'
               ? Comment.getComments({ authorId: user.id, limit: 1, list: false })
               : {}
@@ -270,14 +272,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         usersPromise,
         // signupIpIsBlacklisted
         cant.updateSiteSettings(loggedInUser) ? false : SignupBlacklistIp.findOne({ where: { ip: user.ip } }).then(ip => !!ip),
-        what === 'user-files' ? Upload.getFileIndex({ authorId: user.id, limit: articleLimit, offset, order, orderAscDesc: ascDesc }) : null,
-        what === 'user-files-tree' ? UploadDirectory.findOne({
-          where: { path: Upload.uidAndPathToUploadPath(user.id, '') },
-          include: [
-            { model: UploadDirectory, as: 'childDirectories', attributes: ['path'] },
-            { model: Upload, as: 'childFiles', attributes: ['path'] },
-          ],
-        }) : null,
+        what === 'user-files' ? Upload.getFileIndex({ authorId: user.id, list, limit: articleLimit, offset, order, orderAscDesc: ascDesc }) : null,
+        what === 'user-files-tree' ? Upload.getDirectory({ authorId: user.id, list }) : null,
         updateNewScoreLastCheckPromise,
       ])
       if (parentTopicIdString && !parentArticleJson) {

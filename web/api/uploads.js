@@ -15,7 +15,7 @@ const { ValidationError } = lib
 const convert = require('../convert')
 const { cant } = require('../front/cant')
 const config = require('../front/config')
-const { isString } = require('../front/js')
+const { isBoolean, isString } = require('../front/js')
 
 async function pathToActualPath(path, User, Upload, opts={}) {
   const ret = await Upload.pathToActualPath(path, User, Upload, opts)
@@ -142,6 +142,28 @@ router.put('/', auth.required, async function(req, res, next) {
     return res.json({})
   } catch(error) {
     next(error);
+  }
+})
+
+router.patch('/', auth.required, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const { Upload, User } = sequelize.models
+    const path = lib.validateParam(req.query, 'path', { validators: [isString] })
+    const list = lib.validateParam(req.body, 'list', { validators: [isBoolean] })
+    await sequelize.transaction(async transaction => {
+      const loggedInUser = await User.findByPk(req.payload.id, { transaction })
+      const { path: actualPath, author } = await pathToActualPath(path, User, Upload, { transaction })
+      const msg = cant.editUpload(loggedInUser, author.username)
+      if (msg) throw new ValidationError([msg], 403)
+      await User.findByPk(author.id, { transaction, lock: transaction.LOCK.UPDATE })
+      const upload = await Upload.findOne({ where: { path: actualPath }, attributes: ['id', 'list'], transaction })
+      if (!upload) throw new ValidationError(`path does not exist: ${path}`, 404)
+      await upload.update({ list }, { transaction })
+    })
+    return res.json({ list })
+  } catch (error) {
+    next(error)
   }
 })
 

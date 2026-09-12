@@ -405,7 +405,7 @@ Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
     assert.deepStrictEqual(extraReturns.errors, [])
     assert.strictEqual(markdown, `# Home
 
-> In [mathematics](https://ourbigbook.com/go/topic/mathematics) I really like the [fundamental theorem of calculus](https://ourbigbook.com/go/topic/fundamental-theorem-of-calculus).
+> In [mathematics](https://ourbigbook.com/-/topic/mathematics) I really like the [fundamental theorem of calculus](https://ourbigbook.com/-/topic/fundamental-theorem-of-calculus).
 `)
   })
 
@@ -432,7 +432,7 @@ Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert(markdown.includes('**Notable features**:\n1. **[topics](#topic)**: details.'))
-    assert(markdown.includes('\n\n   <a id="image-the-topics-feature"></a>\n   ![](topic.png)\n\n   **[Figure 1](#image-the-topics-feature). The topics feature**. Live demo: [derivative](https://ourbigbook.com/go/topic/derivative).'))
+    assert(markdown.includes('\n\n   <a id="image-the-topics-feature"></a>\n   ![](topic.png)\n\n   **[Figure 1](#image-the-topics-feature). The topics feature**. Live demo: [derivative](https://ourbigbook.com/-/topic/derivative).'))
     assert(markdown.includes('\n\n   <a id="video-topics-demo"></a>\n   **[Video 2](#video-topics-demo). topics demo.** [Source](https://youtu.be/second).'))
     assert(!markdown.includes('\n   \n'))
   })
@@ -5142,7 +5142,7 @@ assert_lib_ast('x: topic link: basic shorthand',
   ],
   {
     assert_xpath_stdout: [
-      "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/dog' and text()='Dogs']",
+      "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/-/topic/dog' and text()='Dogs']",
     ]
   },
 )
@@ -5158,7 +5158,7 @@ assert_lib_ast('x: topic link: at start of document does not blow up',
   ],
   {
     assert_xpath_stdout: [
-      "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/dog' and text()='Dog']",
+      "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/-/topic/dog' and text()='Dog']",
     ]
   },
 )
@@ -5189,11 +5189,11 @@ assert_lib('x: topic link: sane',
     },
     assert_xpath: {
       'index.html': [
-        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/sane-link' and text()='Sane Link']",
-        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/sane-link-with-content' and text()='My Content']",
-        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/shorthand-link' and text()='Shorthand Link']",
-        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/many-dog' and text()='Many Dogs']",
-        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/go/topic/many-cats' and text()='Many Cats']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/-/topic/sane-link' and text()='Sane Link']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/-/topic/sane-link-with-content' and text()='My Content']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/-/topic/shorthand-link' and text()='Shorthand Link']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/-/topic/many-dog' and text()='Many Dogs']",
+        "//x:div[@class='p']//x:a[@href='https://ourbigbook.com/-/topic/many-cats' and text()='Many Cats']",
       ],
     },
   },
@@ -8689,6 +8689,14 @@ assert_lib_error('toc: _toc is a reserved id',
 {id=_toc}
 `,
   3, 1);
+for (const id of ['-', '-/child', 'parent/-', 'parent/-/child']) {
+  assert_lib_error(`id: reserved route separator ${id}`, `= Header\n{id=${id}}\n`, 1, 1)
+  assert_lib_error(`id: reserved route separator on inline macro ${id}`, `\\i[text]{id=${id}}`, 1, 1)
+}
+assert_lib_error('id: reserved route separator from input path', '= Header\n', 1, 1, 'parent/-/child.bigb', {
+  input_path_noext: 'parent/-/child',
+})
+assert_lib_error('id: reserved route separator on file header', '= parent/-/file.txt\n{file}\n', 1, 1)
 assert_lib('toc: table of contents contains included headers numbered without embed includes',
   {
     convert_dir: true,

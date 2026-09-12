@@ -2,7 +2,7 @@ const ourbigbook = require('ourbigbook')
 const { read_include } = require('ourbigbook/web_api')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
 
-const escapeUsername = 'go'
+const escapeUsername = '-'
 
 let databaseUrl
 if (process.env.NODE_ENV === 'test') {
@@ -183,6 +183,7 @@ module.exports = {
   reservedUsernames: new Set([
     ourbigbook.WEB_API_PATH,
     escapeUsername,
+    'go',
   ]),
   revalidate: 10,
   secret: ourbigbook_nodejs_front.isProduction ? process.env.SECRET : 'secret',

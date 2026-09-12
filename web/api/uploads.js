@@ -92,6 +92,9 @@ router.put('/', auth.required, async function(req, res, next) {
       if (!path) {
         throw new lib.ValidationError(`path must be given and cannot be empty`)
       }
+      if (path.split(URL_SEP).includes('-')) {
+        throw new lib.ValidationError('The file path component "-" is reserved for website routes.')
+      }
       const { path: actualPath, author } = await pathToActualPath(path, User, Upload, { transaction })
       msg = cant.editArticle(loggedInUser, author.username)
       if (msg) {

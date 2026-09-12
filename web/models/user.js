@@ -33,7 +33,7 @@ module.exports = (sequelize) => {
             msg: 'Usernames must start with a letter lowercase letter (a-z)' + sampleUsername
           },
           isNotReserved(value) {
-            if (value in config.reservedUsernames) {
+            if (config.reservedUsernames.has(value)) {
               throw new Error(`This username is reserved: ${value}`)
             }
             if (/[^a-z0-9-]/.test(value)) {

@@ -326,10 +326,10 @@ it('routes percent-encode article and topic path components', function() {
   assert.strictEqual(routes.decodeUrlPath(encodedSlug), slug)
   assert.strictEqual(routes.decodeUrlPath('user0/%not-an-escape'), 'user0/%not-an-escape')
   assert.strictEqual(routes.article(slug), `/${encodedSlug}`)
-  assert.strictEqual(routes.articleSource(slug), `/go/source/${encodedSlug}`)
-  assert.strictEqual(routes.issue(slug, 1), `/go/discussion/1/${encodedSlug}`)
-  assert.strictEqual(routes.topic(slug), `/go/topic/${encodedSlug}`)
-  assert.strictEqual(routes.userArticlesChildren('user0', slug), `/go/user/user0/children/${encodedSlug}`)
+  assert.strictEqual(routes.articleSource(slug), `/${encodedSlug}/-/source`)
+  assert.strictEqual(routes.issue(slug, 1), `/${encodedSlug}/-/discussion/1`)
+  assert.strictEqual(routes.topic(slug), `/-/topic/${encodedSlug}`)
+  assert.strictEqual(routes.userArticlesChildren('user0', slug), `/user0/${encodedSlug}/-/children`)
 })
 
 it('getList', function() {
@@ -449,6 +449,177 @@ it('User discussionCount and commentCount caches', async function() {
     whats: ['user-discussion-count', 'user-comment-count'],
   })
   await assertCounts(user0, 0, 0)
+})
+
+// Run Next's actual client router in a child process so browser globals do not
+// leak into the server. Only DOM rendering and component loading are stubbed;
+// rewrite resolution, middleware, history and HTTP data requests are exercised.
+async function assertClientNavigation(baseUrl, cookie, navigations) {
+  const assert = require('assert')
+  const fs = require('fs')
+  const vm = require('vm')
+  const nativeFetch = global.fetch
+  global.fetch = (url, options={}) => nativeFetch(new URL(url, baseUrl), {
+    ...options, headers: { ...options.headers, Cookie: cookie },
+  })
+  const html = await (await fetch('/')).text()
+  const nextData = JSON.parse(html.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1])
+  const location = new URL(baseUrl)
+  global.window = global.self = {
+    location,
+    __NEXT_DATA__: nextData,
+    addEventListener() {},
+    navigator: { userAgent: 'OurBigBook router regression test' },
+    history: Object.fromEntries(['pushState', 'replaceState'].map(method => [method, (state, title, url) => {
+      location.href = new URL(url, baseUrl).href
+    }])),
+  }
+  global.location = location
+  const Router = require('next/dist/shared/lib/router/router').default
+  const PageLoader = require('next/dist/client/page-loader').default
+  vm.runInThisContext(await (await fetch(`/_next/static/${nextData.buildId}/_buildManifest.js`)).text())
+  const dev = nextData.buildId === 'development'
+  const pages = dev
+    ? (await (await fetch('/_next/static/development/_devPagesManifest.json')).json()).pages
+    : self.__BUILD_MANIFEST.sortedPages
+  const middleware = JSON.parse(fs.readFileSync(`${dev ? '.next-dev' : '.next'}/server/middleware-manifest.json`))
+  const Component = () => null
+  const pageLoader = {
+    buildId: nextData.buildId,
+    getPageList: async () => pages,
+    getMiddleware: async () => middleware.middleware['/'].matchers,
+    getDataHref: PageLoader.prototype.getDataHref,
+    loadPage: async () => ({ page: Component, mod: { __N_SSP: true }, styleSheets: [] }),
+    _isSsg: async () => false,
+    prefetch: async () => {},
+  }
+  const router = new Router('/', {}, '/', {
+    initialProps: nextData.props, pageLoader, App: Component, Component,
+    wrapApp: app => app, subscription: async () => {},
+  })
+  await router._initialMatchesMiddlewarePromise
+  let routeChanges
+  Router.events.on('routeChangeStart', () => {
+    assert(++routeChanges < 10, 'Client navigation entered a redirect loop')
+  })
+  for (const [href, expected] of navigations) {
+    routeChanges = 0
+    await router.prefetch(href)
+    assert.strictEqual(await router.push(href), true, href)
+    assert.strictEqual(router.asPath, expected, href)
+    assert.strictEqual(location.pathname + location.search, expected, href)
+  }
+}
+
+it('web: scoped magic URLs and permanent legacy redirects', async () => {
+  await testApp(async test => {
+    if (!testNext) return
+    const user = await test.createUserApi(0)
+    await test.sequelize.models.User.update({ admin: true }, { where: { id: user.id } })
+    test.loginUser(user)
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Parent', bodySource: '{scope}' }))
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Child', bodySource: 'Content' }), { parentId: '@user0/parent' })
+    const slug = 'user0/parent/child'
+    await test.webApi.issueCreate(slug, { titleSource: 'A discussion', bodySource: 'Discussion body' })
+    const redirectCases = [
+      ...['users', 'articles', 'comments', 'discussions', 'files', 'login', 'register', 'new',
+        'reset-password', 'reset-password-sent', 'reset-password-update', 'site-settings', 'topics', 'verify'].map(action => [`/go/${action}`, `/-/${action}`]),
+      ['/go/topic/parent/child', '/-/topic/parent/child'],
+      ['/go/settings/user0', '/user0/-/settings'],
+      ...['articles', 'children', 'incoming', 'tagged', 'comments', 'discussions', 'files', 'follows',
+        'followed', 'liked', 'liked-discussions', 'likes', 'likes-discussions', 'follows-articles', 'follows-discussions'].map(action => [
+        `/go/user/user0/${action}`, `/user0/-/${action}`,
+      ]),
+      ...['children', 'incoming', 'tagged'].map(action => [
+        `/go/user/user0/${action}/parent/child`, `/${slug}/-/${action}`,
+      ]),
+      ...['comments', 'discussions'].map(action => [`/go/${action}/user0`, `/user0/-/article/${action}`]),
+      ...['comments', 'discussions', 'edit', 'delete', 'source', 'new', 'new-discussion'].map(action => [
+        `/go/${action}/${slug}`, `/${slug}/-/${action}`,
+      ]),
+      [`/go/discussion/1/${slug}`, `/${slug}/-/discussion/1`],
+      [`/go/edit-discussion/1/${slug}`, `/${slug}/-/discussion/1/edit`],
+      [`/go/delete-discussion/1/${slug}`, `/${slug}/-/discussion/1/delete`],
+      ['/go/source/user0/a%20b%25c', '/user0/a%20b%25c/-/source'],
+    ]
+    for (const [oldUrl, newUrl] of redirectCases) {
+      const response = await test.sendJsonHttp('GET', `${oldUrl}?listed=2&search=a%20b`)
+      assert.strictEqual(response.status, 308, oldUrl)
+      const destination = new URL(response.headers.location, 'http://localhost')
+      assert.strictEqual(destination.pathname, newUrl, oldUrl)
+      assert.strictEqual(destination.searchParams.get('listed'), '2')
+      assert.strictEqual(destination.searchParams.get('search'), 'a b')
+    }
+    const pages = [
+      '/-/users', '/-/files', '/-/articles', '/-/discussions', '/-/comments', '/-/topic/parent/child',
+      '/user0/-/settings', '/user0/-/articles', '/user0/-/discussions', '/user0/-/comments',
+      '/user0/-/files', '/user0/-/children', '/user0/-/incoming', '/user0/-/tagged',
+      '/user0/-/article/discussions', '/user0/-/article/comments',
+      ...['comments', 'discussions', 'edit', 'source', 'new', 'new-discussion', 'children', 'incoming', 'tagged', 'discussion/1', 'discussion/1/edit'].map(action => `/${slug}/-/${action}`),
+    ]
+    let buildId
+    for (const url of pages) {
+      const response = await test.sendJsonHttp('GET', url)
+      assert.strictEqual(response.status, 200, url)
+      assert_xpath('//x:nav[contains(@class, "navbar")]', response.data)
+      assert(!response.data.match(/(?:href|action)="\/go\//), `Legacy link on ${url}`)
+      const nextData = JSON.parse(response.data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1])
+      buildId = nextData.buildId
+      const navigation = await test.sendJsonHttp('GET', `/_next/data/${nextData.buildId}${url}.json`)
+      assert.strictEqual(navigation.status, 200, `Client navigation to ${url}`)
+      assert(navigation.data.pageProps, `Missing page props for ${url}`)
+    }
+    for (const [oldUrl, newUrl] of redirectCases) {
+      const response = await web_api.sendJsonHttp('GET', `/_next/data/${buildId}${oldUrl}.json?search=a%20b`, {
+        ...test.webApi.opts,
+        headers: { 'x-nextjs-data': '1' },
+      })
+      assert.strictEqual(response.status, 308, `Client redirect from ${oldUrl}`)
+      const destination = new URL(response.headers['x-nextjs-redirect'], 'http://localhost')
+      assert.strictEqual(destination.pathname, newUrl, oldUrl)
+      assert.strictEqual(destination.searchParams.get('search'), 'a b')
+    }
+    // Query-only links stay on the public URL after a rewrite.
+    await test.webApi.uploadCreateOrUpdate('user0/unlisted.txt', 'content')
+    await test.webApi.uploadUpdate('user0/unlisted.txt', { list: false })
+    const files = await test.sendJsonHttp('GET', '/user0/-/files?sort=size')
+    assert_xpath('//x:a[@href="/user0/-/files?listed=2&sort=size" and text()="also show them"]', files.data)
+    const discussion = await test.sendJsonHttp('GET', `/${slug}/-/discussion/1`)
+    assert(discussion.data.includes('Discussion body'))
+    const navigations = [
+      ['/-/discussions', '/-/discussions'],
+      ...pages.map(url => [url, url]),
+      ['/go/discussions', '/-/discussions'],
+      [`/go/discussions/${slug}`, `/${slug}/-/discussions`],
+      ['/go/user/user0/articles?sort=updated', '/user0/-/articles?sort=updated'],
+      ['/', '/'],
+    ]
+    await require('util').promisify(require('child_process').execFile)(process.execPath, [
+      '-e', `(${assertClientNavigation.toString()})(...${JSON.stringify([
+        `http://localhost:${test.webApi.opts.port}/`, `${AUTH_COOKIE_NAME}=${user.token}`, navigations,
+      ])}).catch(error => { console.error(error); process.exit(1) })`,
+    ], {
+      env: { ...process.env, NODE_ENV: 'production', __NEXT_HAS_REWRITES: '1' },
+      timeout: 30000,
+    })
+  }, { canTestNext: true })
+})
+
+it('api: reserved route separator cannot be an article or inline ID', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    for (const bodySource of ['{id=parent/-/child}', '\\i[text]{id=parent/-/child}']) {
+      await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Reserved ID', bodySource }), {}, { expectStatus: 422 })
+    }
+    for (const path of ['user0/-', 'user0/-/edit', 'user0/parent/-/child']) {
+      const response = await test.webApi.uploadCreateOrUpdate(path, 'content')
+      assert.strictEqual(response.status, 422, path)
+    }
+    for (const username of ['api', 'go', '-']) {
+      assert.throws(() => test.sequelize.models.User.rawAttributes.username.validate.isNotReserved(username), /reserved/)
+    }
+  })
 })
 
 it('User fileCount cache and migration', async function() {
@@ -1970,7 +2141,7 @@ Welcome to my home page hacked!
         assertStatus(status, data)
         ;({data, status} = await test.sendJsonHttp('GET', routes.issues({ sort: 'comments' }), ))
         assertStatus(status, data)
-        assert.match(data, /href="\/go\/discussions\?sort=comments"/)
+        assert.match(data, /href="\/-\/discussions\?sort=comments"/)
 
         // Issue
         ;({data, status} = await test.sendJsonHttp('GET', routes.issue('user0/title-0', 1), ))
@@ -5317,7 +5488,7 @@ it(`api: topic links don't have the domain name`, async () => {
     })
     ;({data, status} = await createArticleApi(test, article))
     assertStatus(status, data)
-    assert_xpath(`//x:div[@class='p']//x:a[@href='/go/topic/my-topic' and text()='My Topic']`, data.articles[0].render)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='/-/topic/my-topic' and text()='My Topic']`, data.articles[0].render)
 
     article = createArticleArg({
       i: 0,
@@ -5327,7 +5498,7 @@ it(`api: topic links don't have the domain name`, async () => {
     })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assertStatus(status, data)
-    assert_xpath(`//x:div[@class='p']//x:a[@href='/go/topic/my-topic' and text()='My Topic']`, data.articles[0].render)
+    assert_xpath(`//x:div[@class='p']//x:a[@href='/-/topic/my-topic' and text()='My Topic']`, data.articles[0].render)
   })
 })
 
@@ -6728,32 +6899,32 @@ it(`api: article: automatic topic linking`, async () => {
       i: 0,
     })))
     ;({data, status} = await test.webApi.article('user0/title-0'))
-    assert_xpath(`//x:div[@id='user0/1']//x:blockquote//x:a[@href='/go/topic/aa1' and text()='aa1']`, data.render)
-    assert_xpath(`//x:div[@id='user0/2']//x:blockquote//x:a[@href='/go/topic/aa2-bb2' and text()='aa2 bb2']`, data.render)
-    assert_xpath(`//x:div[@id='user0/3']//x:blockquote//x:a[@href='/go/topic/aa3-bb3-cc3' and text()='aa3 bb3 cc3']`, data.render)
-    assert_xpath(`//x:div[@id='user0/two-spaces']//x:blockquote//x:a[@href='/go/topic/aa2-bb2' and text()='aa2  bb2']`, data.render)
+    assert_xpath(`//x:div[@id='user0/1']//x:blockquote//x:a[@href='/-/topic/aa1' and text()='aa1']`, data.render)
+    assert_xpath(`//x:div[@id='user0/2']//x:blockquote//x:a[@href='/-/topic/aa2-bb2' and text()='aa2 bb2']`, data.render)
+    assert_xpath(`//x:div[@id='user0/3']//x:blockquote//x:a[@href='/-/topic/aa3-bb3-cc3' and text()='aa3 bb3 cc3']`, data.render)
+    assert_xpath(`//x:div[@id='user0/two-spaces']//x:blockquote//x:a[@href='/-/topic/aa2-bb2' and text()='aa2  bb2']`, data.render)
     assert_xpath(`//x:div[@id='user0/punct']//x:blockquote[text()='XXX aa2.bb2 YYY']`, data.render)
     assert_xpath(`//x:div[@id='user0/punct-space']//x:blockquote[text()='XXX aa2. bb2 YYY']`, data.render)
     // This could be potentially changed one day. But for now it's hard and rare so leave it.
-    assert_xpath(`//x:div[@id='user0/inline']//x:blockquote//x:a[@href='/go/topic/aa2-bb2']`, data.render, { count: 0 })
-    assert_xpath(`//x:div[@id='user0/test-common-1']//x:blockquote//x:a[@href='/go/topic/common1' and text()='common1']`, data.render)
-    assert_xpath(`//x:div[@id='user0/test-common-1-2']//x:blockquote//x:a[@href='/go/topic/common1-common2' and text()='common1 common2']`, data.render)
-    assert_xpath(`//x:div[@id='user0/test-common-1-3']//x:blockquote//x:a[@href='/go/topic/common1-common2-common3' and text()='common1 common2 common3']`, data.render)
-    assert_xpath(`//x:div[@id='user0/inlink']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
-    assert_xpath(`//x:div[@id='user0/inx']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
-    assert_xpath(`//x:div[@id='user0/incode']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
-    assert_xpath(`//x:div[@id='user0/inmath']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
-    assert_xpath(`//x:div[@id='user0/in-table-header']//x:blockquote//x:a[@href='/go/topic/aa1']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/inline']//x:blockquote//x:a[@href='/-/topic/aa2-bb2']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/test-common-1']//x:blockquote//x:a[@href='/-/topic/common1' and text()='common1']`, data.render)
+    assert_xpath(`//x:div[@id='user0/test-common-1-2']//x:blockquote//x:a[@href='/-/topic/common1-common2' and text()='common1 common2']`, data.render)
+    assert_xpath(`//x:div[@id='user0/test-common-1-3']//x:blockquote//x:a[@href='/-/topic/common1-common2-common3' and text()='common1 common2 common3']`, data.render)
+    assert_xpath(`//x:div[@id='user0/inlink']//x:blockquote//x:a[@href='/-/topic/aa1']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/inx']//x:blockquote//x:a[@href='/-/topic/aa1']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/incode']//x:blockquote//x:a[@href='/-/topic/aa1']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/inmath']//x:blockquote//x:a[@href='/-/topic/aa1']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/in-table-header']//x:blockquote//x:a[@href='/-/topic/aa1']`, data.render, { count: 0 })
     assert_xpath(`//x:div[@id='user0/in-a']//x:blockquote//x:a[@href='http://aa1.com' and text()='aa1.com']`, data.render)
     assert_xpath(`//x:div[@id='user0/in-a-in-b']//x:blockquote//x:b//x:a[@href='http://aa1.com' and text()='aa1.com']`, data.render)
 
     // These can be debated. We had removed them earlier, but decided to restore when we made the links invisible.
-    assert_xpath(`//x:div[@id='user0/single-letter-word']//x:blockquote//x:a[@href='/go/topic/i' and text()='I']`, data.render)
-    assert_xpath(`//x:div[@id='user0/single-letter-word-in-sentence']//x:blockquote//x:a[@href='/go/topic/i' and text()='I']`, data.render)
+    assert_xpath(`//x:div[@id='user0/single-letter-word']//x:blockquote//x:a[@href='/-/topic/i' and text()='I']`, data.render)
+    assert_xpath(`//x:div[@id='user0/single-letter-word-in-sentence']//x:blockquote//x:a[@href='/-/topic/i' and text()='I']`, data.render)
 
-    assert_xpath(`//x:div[@id='user0/blacklisted-word']//x:blockquote//x:a[@href='/go/topic/me' and text()='Me']`, data.render, { count: 0 })
-    assert_xpath(`//x:div[@id='user0/singular']//x:blockquote//x:a[@href='/go/topic/dog' and text()='dog']`, data.render)
-    assert_xpath(`//x:div[@id='user0/plural']//x:blockquote//x:a[@href='/go/topic/dog' and text()='dogs']`, data.render)
+    assert_xpath(`//x:div[@id='user0/blacklisted-word']//x:blockquote//x:a[@href='/-/topic/me' and text()='Me']`, data.render, { count: 0 })
+    assert_xpath(`//x:div[@id='user0/singular']//x:blockquote//x:a[@href='/-/topic/dog' and text()='dog']`, data.render)
+    assert_xpath(`//x:div[@id='user0/plural']//x:blockquote//x:a[@href='/-/topic/dog' and text()='dogs']`, data.render)
   }, { defaultExpectStatus: 200 })
 })
 
@@ -7214,18 +7385,18 @@ it('web: user files retain the profile at root, with tree and list views', async
       assert(!list.data.includes('> Author</th>'))
       const alphabetical = await test.sendJsonHttp('GET', routes.userFiles('user0', { sort: 'path' }))
       assert.strictEqual(alphabetical.status, 200)
-      assert_xpath('//x:a[contains(@class, "active") and @href="/go/user/user0/files?sort=path"]', alphabetical.data)
+      assert_xpath('//x:a[contains(@class, "active") and @href="/user0/-/files?sort=path"]', alphabetical.data)
       assert_xpath('(//x:td[@class="file-path"])[1]/x:a[@href="/user0/_file/images%20%5B1%5D/photo.png"]', alphabetical.data)
       const users = await test.sendJsonHttp('GET', routes.users({ sort: 'files' }))
       assert.strictEqual(users.status, 200)
-      assert_xpath('//x:a[contains(@class, "active") and @href="/go/users?sort=files"]', users.data)
+      assert_xpath('//x:a[contains(@class, "active") and @href="/-/users?sort=files"]', users.data)
       assert_xpath('//x:th[contains(., "Files")]', users.data)
       assert_xpath('//x:td/x:a[@href="/user0/_dir" and text()="2"]', users.data)
       assert_xpath('//x:td/x:a[@href="/user1/_dir" and text()="1"]', users.data)
       const usersBySize = await test.sendJsonHttp('GET', routes.users({ sort: 'file-size' }))
       assert.strictEqual(usersBySize.status, 200)
-      assert_xpath('//x:a[contains(@class, "active") and @href="/go/users?sort=file-size"]', usersBySize.data)
-      assert_xpath(`//x:td/x:a[@href="/go/user/user0/files?sort=size" and text()="${PNG_1X1_WHITE_BUFFER.length + 5}"]`, usersBySize.data)
+      assert_xpath('//x:a[contains(@class, "active") and @href="/-/users?sort=file-size"]', usersBySize.data)
+      assert_xpath(`//x:td/x:a[@href="/user0/-/files?sort=size" and text()="${PNG_1X1_WHITE_BUFFER.length + 5}"]`, usersBySize.data)
       const subdir = await test.sendJsonHttp('GET', routes.dir('user0', 'images [1]'))
       assert.strictEqual(subdir.status, 200)
       assert_xpath('//x:div[contains(@class, "dir-page")]/x:h1', subdir.data)
@@ -7291,7 +7462,7 @@ it('web: global file index lists metadata, image previews, and stable pages', as
     if (testNext) {
       test.disableToken()
       const { data } = await test.sendJsonHttp('GET', routes.files())
-      assert_xpath('//x:a[@href="/go/files" and contains(@class, "active") and contains(., "Files")]', data)
+      assert_xpath('//x:a[@href="/-/files" and contains(@class, "active") and contains(., "Files")]', data)
       assert_xpath(`//x:table[contains(@class, 'file-list')]//x:td[@class='file-path']/x:a[@href='${image.url}']`, data)
       assert_xpath('//x:table[contains(@class, "file-list")]//x:th[contains(., "Author")]', data)
       assert_xpath(`//x:tr[x:td[@class='file-path']/x:a[@href='${image.url}']]/x:td/x:a[@href='/user0']`, data)
@@ -7299,7 +7470,7 @@ it('web: global file index lists metadata, image previews, and stable pages', as
       assert_xpath('(//x:table[contains(@class, "file-list")]//x:time[@datetime="2026-01-01T00:00:00.000Z"])[1]', data)
       const alphabetical = await test.sendJsonHttp('GET', routes.files({ sort: 'path' }))
       assert.strictEqual(alphabetical.status, 200)
-      assert_xpath('//x:a[contains(@class, "active") and @href="/go/files?sort=path"]', alphabetical.data)
+      assert_xpath('//x:a[contains(@class, "active") and @href="/-/files?sort=path"]', alphabetical.data)
       assert_xpath(`(//x:td[@class="file-path"])[1]/x:a[@href='${image.url}']`, alphabetical.data)
       const descending = await test.sendJsonHttp('GET', routes.files({ sort: 'path-desc' }))
       assert.strictEqual(descending.status, 200)

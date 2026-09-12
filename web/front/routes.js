@@ -27,22 +27,34 @@ const encodeGetParamsWithPage = (opts, opts2={}) => {
   return encodeGetParams(opts)
 }
 
+function articleScope(slug) {
+  return `/${encodeUrlPath(slug)}/${escapeUsername}${slug.includes('/') ? '' : '/article'}`
+}
+
 function issue(slug, number) {
-  return `/${escapeUsername}/discussion/${number}/${encodeUrlPath(slug)}`
+  return `/${encodeUrlPath(slug)}/${escapeUsername}/discussion/${number}`
+}
+
+// Router.pathname identifies the internal Next page after a rewrite. Keep query-only
+// navigation on the public URL without leaking dynamic page parameters into the query.
+function currentPageHref(router, changes={}) {
+  const url = new URL(router.asPath, 'http://localhost')
+  return `${url.pathname}${encodeGetParams({ ...Object.fromEntries(url.searchParams), ...changes })}`
 }
 
 module.exports = {
+  currentPageHref,
   decodeUrlPath,
   home: () => `/`,
   articles: (opts={}) => `/${escapeUsername}/articles${encodeGetParamsWithPage(opts)}`,
-  articleComments: (slug, opts={}) => `/${escapeUsername}/comments/${encodeUrlPath(slug)}${encodeGetParamsWithPage(opts)}`,
-  articleDelete: slug => `/${escapeUsername}/delete/${encodeUrlPath(slug)}`,
-  articleEdit: slug => `/${escapeUsername}/edit/${encodeUrlPath(slug)}`,
-  articleIssues: (slug, opts={}) => `/${escapeUsername}/discussions/${encodeUrlPath(slug)}${encodeGetParamsWithPage(opts)}`,
+  articleComments: (slug, opts={}) => `${articleScope(slug)}/comments${encodeGetParamsWithPage(opts)}`,
+  articleDelete: slug => `/${encodeUrlPath(slug)}/${escapeUsername}/delete`,
+  articleEdit: slug => `/${encodeUrlPath(slug)}/${escapeUsername}/edit`,
+  articleIssues: (slug, opts={}) => `${articleScope(slug)}/discussions${encodeGetParamsWithPage(opts)}`,
   articleNew: (opts={}) => `/${escapeUsername}/new${encodeGetParams(opts)}`,
-  articleNewFrom: (slug) => `/${escapeUsername}/new/${encodeUrlPath(slug)}`,
+  articleNewFrom: (slug) => `/${encodeUrlPath(slug)}/${escapeUsername}/new`,
   articlesFollowed: (opts={}) => `/${encodeGetParamsWithPage(opts)}`,
-  articleSource: (slug) => `/${escapeUsername}/source/${encodeUrlPath(slug)}`,
+  articleSource: (slug) => `/${encodeUrlPath(slug)}/${escapeUsername}/source`,
   article: slug => `/${encodeUrlPath(slug)}`,
   comments: (opts={}) => `/${escapeUsername}/comments${encodeGetParamsWithPage(opts)}`,
   files: (opts={}) => `/${escapeUsername}/files${encodeGetParamsWithPage(opts)}`,
@@ -50,36 +62,36 @@ module.exports = {
   host: req => `${req.protocol}://${req.get('host')}`,
   issueComment: (slug, issueNumber, commentNumber) => `${issue(slug, issueNumber)}#${commentIdPrefix}${commentNumber}`,
   issueComments: (slug, number) => `${issue(slug, number)}#${commentsHeaderId}`,
-  issueDelete: (slug, number) => `/${escapeUsername}/delete-discussion/${number}/${encodeUrlPath(slug)}`,
-  issueEdit: (slug, number) => `/${escapeUsername}/edit-discussion/${number}/${encodeUrlPath(slug)}`,
-  issueNew: (slug) => `/${escapeUsername}/new-discussion/${encodeUrlPath(slug)}`,
+  issueDelete: (slug, number) => `${issue(slug, number)}/delete`,
+  issueEdit: (slug, number) => `${issue(slug, number)}/edit`,
+  issueNew: (slug) => `/${encodeUrlPath(slug)}/${escapeUsername}/new-discussion`,
   issue,
   issues: (opts={}) => `/${escapeUsername}/discussions${encodeGetParamsWithPage(opts)}`,
   resetPassword: () => `/${escapeUsername}/reset-password`,
   resetPasswordSent: () => `/${escapeUsername}/reset-password-sent`,
   resetPasswordUpdate: () => `/${escapeUsername}/reset-password-update`,
   siteSettings: () => `/${escapeUsername}/site-settings`,
-  userEdit: (uid) => `/${escapeUsername}/settings/${uid}`,
+  userEdit: (uid) => `/${uid}/${escapeUsername}/settings`,
   userLogin: () => `/${escapeUsername}/login`,
   userNew: () => `/${escapeUsername}/register`,
   userVerify: (email) => `/${escapeUsername}/verify${encodeGetParams({ email })}`,
   user: (uid) => `/${uid}`,
-  userArticles: (uid, opts={}) => `/${escapeUsername}/user/${uid}/articles${encodeGetParamsWithPage(opts)}`,
-  userArticlesChildren: (uid, tagTopicId, opts={}) => `/${escapeUsername}/user/${uid}/children${tagTopicId ? `/${encodeUrlPath(tagTopicId)}` : ''}${encodeGetParamsWithPage(opts)}`,
-  userArticlesIncoming: (uid, tagTopicId, opts={}) => `/${escapeUsername}/user/${uid}/incoming${tagTopicId ? `/${encodeUrlPath(tagTopicId)}` : ''}${encodeGetParamsWithPage(opts)}`,
-  userArticlesTagged: (uid, tagTopicId, opts={}) => `/${escapeUsername}/user/${uid}/tagged${tagTopicId ? `/${encodeUrlPath(tagTopicId)}` : ''}${encodeGetParamsWithPage(opts)}`,
-  userComments: (uid, opts={}) => `/${escapeUsername}/user/${uid}/comments${encodeGetParamsWithPage(opts)}`,
-  userFiles: (uid, opts={}) => `/${escapeUsername}/user/${uid}/files${encodeGetParamsWithPage(opts)}`,
-  userIssues: (uid, opts={}) => `/${escapeUsername}/user/${uid}/discussions${encodeGetParamsWithPage(opts)}`,
-  userFollows: (uid, opts={}) => `/${escapeUsername}/user/${uid}/follows${encodeGetParamsWithPage(opts)}`,
-  userFollowed: (uid, opts={}) => `/${escapeUsername}/user/${uid}/followed${encodeGetParamsWithPage(opts)}`,
-  userLiked: (uid, opts={}) => `/${escapeUsername}/user/${uid}/liked${encodeGetParamsWithPage(opts)}`,
-  userLikedDiscussions: (uid, opts={}) => `/${escapeUsername}/user/${uid}/liked-discussions${encodeGetParamsWithPage(opts)}`,
-  userLikes: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes${encodeGetParamsWithPage(opts)}`,
+  userArticles: (uid, opts={}) => `/${uid}/${escapeUsername}/articles${encodeGetParamsWithPage(opts)}`,
+  userArticlesChildren: (uid, tagTopicId, opts={}) => `/${uid}${tagTopicId ? `/${encodeUrlPath(tagTopicId)}` : ''}/${escapeUsername}/children${encodeGetParamsWithPage(opts)}`,
+  userArticlesIncoming: (uid, tagTopicId, opts={}) => `/${uid}${tagTopicId ? `/${encodeUrlPath(tagTopicId)}` : ''}/${escapeUsername}/incoming${encodeGetParamsWithPage(opts)}`,
+  userArticlesTagged: (uid, tagTopicId, opts={}) => `/${uid}${tagTopicId ? `/${encodeUrlPath(tagTopicId)}` : ''}/${escapeUsername}/tagged${encodeGetParamsWithPage(opts)}`,
+  userComments: (uid, opts={}) => `/${uid}/${escapeUsername}/comments${encodeGetParamsWithPage(opts)}`,
+  userFiles: (uid, opts={}) => `/${uid}/${escapeUsername}/files${encodeGetParamsWithPage(opts)}`,
+  userIssues: (uid, opts={}) => `/${uid}/${escapeUsername}/discussions${encodeGetParamsWithPage(opts)}`,
+  userFollows: (uid, opts={}) => `/${uid}/${escapeUsername}/follows${encodeGetParamsWithPage(opts)}`,
+  userFollowed: (uid, opts={}) => `/${uid}/${escapeUsername}/followed${encodeGetParamsWithPage(opts)}`,
+  userLiked: (uid, opts={}) => `/${uid}/${escapeUsername}/liked${encodeGetParamsWithPage(opts)}`,
+  userLikedDiscussions: (uid, opts={}) => `/${uid}/${escapeUsername}/liked-discussions${encodeGetParamsWithPage(opts)}`,
+  userLikes: (uid, opts={}) => `/${uid}/${escapeUsername}/likes${encodeGetParamsWithPage(opts)}`,
   // TODO https://github.com/ourbigbook/ourbigbook/issues/313
-  userLikesDiscussions: (uid, opts={}) => `/${escapeUsername}/user/${uid}/likes-discussions${encodeGetParamsWithPage(opts)}`,
-  userFollowsArticles: (uid, opts={}) => `/${escapeUsername}/user/${uid}/follows-articles${encodeGetParamsWithPage(opts)}`,
-  userFollowsDiscussions: (uid, opts={}) => `/${escapeUsername}/user/${uid}/follows-discussions${encodeGetParamsWithPage(opts)}`,
+  userLikesDiscussions: (uid, opts={}) => `/${uid}/${escapeUsername}/likes-discussions${encodeGetParamsWithPage(opts)}`,
+  userFollowsArticles: (uid, opts={}) => `/${uid}/${escapeUsername}/follows-articles${encodeGetParamsWithPage(opts)}`,
+  userFollowsDiscussions: (uid, opts={}) => `/${uid}/${escapeUsername}/follows-discussions${encodeGetParamsWithPage(opts)}`,
   users: (opts={}) => `/${escapeUsername}/users${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`,
   topic: (id, opts={}) => `/${escapeUsername}/topic/${encodeUrlPath(id)}${encodeGetParamsWithPage(opts, { defaultSort: 'score' })}`,
   topics: (opts={}) => {

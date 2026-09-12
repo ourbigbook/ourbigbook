@@ -2886,6 +2886,9 @@ function calculateId(
     if (ast.id && ast.subdir && !skip_scope) {
       ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
     }
+    if (ast.id && ast.id.split(Macro.HEADER_SCOPE_SEPARATOR).includes('-')) {
+      parseError(state, `The ID path component "-" is reserved for website routes: "${ast.id}"`, ast.source_location)
+    }
     if (file_header && context.options.input_path !== undefined) {
       const [input_path, ext] = pathSplitext(context.options.input_path)
       let inputPathNoRefPrefix = input_path
@@ -3938,7 +3941,7 @@ function convertInitOptions(options) {
   if (!('x_absolute' in options)) {
     // Make all internal links absolute from website root.
     // This is the only way that we can have a single rendering that works on both
-    // /go/topic/<topic> and /username/<topic>. It will also remove the need for
+    // /-/topic/<topic> and /username/<topic>. It will also remove the need for
     // the ../ hack we were using to make the same links work from both index /username
     // and /username/<topic>.
     options.x_absolute = false;
@@ -9060,7 +9063,7 @@ const SHORTHAND_TOPIC_CHAR = '#';
 exports.SHORTHAND_TOPIC_CHAR = SHORTHAND_TOPIC_CHAR
 const WEB_API_PATH = 'api';
 exports.WEB_API_PATH = WEB_API_PATH;
-const WEB_TOPIC_PATH = 'go/topic';
+const WEB_TOPIC_PATH = '-/topic';
 exports.WEB_TOPIC_PATH = WEB_TOPIC_PATH
 const PARAGRAPH_SEP = '\n\n';
 exports.PARAGRAPH_SEP = PARAGRAPH_SEP;

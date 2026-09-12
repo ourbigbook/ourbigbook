@@ -53,10 +53,10 @@ const MyApp = ({ Component, pageProps }) => {
   useEffect(() => {
     setLoggedInUserEffectiveImage(pageProps.loggedInUser?.effectiveImage)
   }, [pageProps.loggedInUser?.username, pageProps.loggedInUser?.effectiveImage])
-  function updatePrevPageNoSignup(newCur, route) {
+  function updatePrevPageNoSignup(newCur) {
     // This is so that for logged off user the sequence:
     // - Create new article button
-    if (!routesThatDontUpdatePrevPageNoSignup.has(route)) {
+    if (!routesThatDontUpdatePrevPageNoSignup.has(newCur?.split(/[?#]/)[0])) {
       const newVal = {
         prev: prevPageNoSignup.cur,
         cur: newCur,
@@ -65,9 +65,9 @@ const MyApp = ({ Component, pageProps }) => {
     }
   }
   useEffect(() => {
-      updatePrevPageNoSignup(router?.asPath, router?.route)
+      updatePrevPageNoSignup(router?.asPath)
     },
-    [router?.asPath, router?.route]
+    [router?.asPath]
   )
   // Google Analytics page switches:
   // https://stackoverflow.com/questions/60411351/how-to-use-google-analytics-with-next-js-app/62552263#62552263

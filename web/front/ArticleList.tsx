@@ -565,19 +565,13 @@ const ArticleList = ({
                 {`There are unlisted ${itemType === 'discussion' ? 'discussions' : 'articles'},`}
                 {' '}
                 <Link
-                  href={{
-                    pathname: router.pathname,
-                    query: { ...router.query, listed: TRI_ALL },
-                  }}
+                  href={routes.currentPageHref(router, { listed: TRI_ALL })}
                 >
                   also show them
                 </Link>
                 {' '}or{' '}
                 <Link
-                  href={{
-                    pathname: router.pathname,
-                    query: { ...router.query, listed: TRI_FALSE },
-                  }}
+                  href={routes.currentPageHref(router, { listed: TRI_FALSE })}
                 >
                   only show them
                 </Link>.
@@ -588,10 +582,7 @@ const ArticleList = ({
                   : `Unlisted ${itemType === 'discussion' ? 'discussions' : 'articles'} are being shown`},
                 {' '}
                 <Link
-                  href={{
-                    pathname: router.pathname,
-                    query: lodash.omit(router.query, 'listed'),
-                  }}
+                  href={routes.currentPageHref(router, { listed: undefined })}
                 >
                   {`click here to show only listed ${itemType === 'discussion' ? 'discussions' : 'articles'}`}
                 </Link>.

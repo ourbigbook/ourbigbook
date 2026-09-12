@@ -2,7 +2,6 @@ import React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 
-import lodash from 'lodash'
 
 import { formatDate } from 'ourbigbook'
 
@@ -92,7 +91,7 @@ const UserList = ({
         urlFunc: paginationUrlFunc,
         what: 'users',
       }}>
-        {loggedInUser?.admin && router.pathname === '/go/users' && <>
+        {loggedInUser?.admin && router.asPath.split(/[?#]/)[0] === routes.users() && <>
           {' '}<button type="button" title="Open every user on this page in a new tab, newest first"
             onClick={() => setBlockedTabs(openUserTabs(users, window.open.bind(window)))}>
             <LinkOpensInNewTabIcon /> Open all
@@ -106,18 +105,18 @@ const UserList = ({
           {locked === false
             ? <>
                 Only unlocked users are being shown,{' '}
-                <Link href={{ pathname: router.pathname, query: { ...router.query, locked: TRI_ALL } }}>
+                <Link href={routes.currentPageHref(router, { locked: TRI_ALL })}>
                   also show locked users
                 </Link>
                 {' '}or{' '}
-                <Link href={{ pathname: router.pathname, query: { ...router.query, locked: TRI_TRUE } }}>
+                <Link href={routes.currentPageHref(router, { locked: TRI_TRUE })}>
                   only show locked users
                 </Link>.
               </>
             : <>
                 {locked === true ? 'Only locked users are being shown' : 'Locked users are being shown'},
                 {' '}
-                <Link href={{ pathname: router.pathname, query: lodash.omit(router.query, 'locked') }}>
+                <Link href={routes.currentPageHref(router, { locked: undefined })}>
                   click here to show only unlocked users
                 </Link>.
               </>
@@ -130,18 +129,18 @@ const UserList = ({
           {verified === true
             ? <>
                 Only users with verified email are being shown,{' '}
-                <Link href={{ pathname: router.pathname, query: { ...router.query, verified: TRI_ALL } }}>
+                <Link href={routes.currentPageHref(router, { verified: TRI_ALL })}>
                   also show users with unverified email
                 </Link>
                 {' '}or{' '}
-                <Link href={{ pathname: router.pathname, query: { ...router.query, verified: TRI_FALSE } }}>
+                <Link href={routes.currentPageHref(router, { verified: TRI_FALSE })}>
                   only show users with unverified email
                 </Link>.
               </>
             : <>
                 {verified === false ? 'Only users with unverified email are being shown' : 'Users with unverified email are being shown'},
                 {' '}
-                <Link href={{ pathname: router.pathname, query: lodash.omit(router.query, 'verified') }}>
+                <Link href={routes.currentPageHref(router, { verified: undefined })}>
                   click here to show only users with verified email
                 </Link>.
               </>

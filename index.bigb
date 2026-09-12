@@ -31,7 +31,7 @@ ourbigbook --publish
 ```
 and your project is now published to https://johnsmith.github.io/template
 
-To publish your project to https://OurBigBook.com[], create an account at https://ourbigbook.com/go/register[] and then:
+To publish your project to https://OurBigBook.com[], create an account at https://ourbigbook.com/-/register[] and then:
 ``
 ourbigbook --web
 ``
@@ -208,7 +208,7 @@ A full blown showcase knowledge base can be seen at:
   {description=
   Search for your and other people's articles.
 
-  Visible live at: https://ourbigbook.com/go/articles?body=false&search=physics-and
+  Visible live at: https://ourbigbook.com/-/articles?body=false&search=physics-and
   }
   {provider=github}
   {border}
@@ -228,14 +228,14 @@ A full blown showcase knowledge base can be seen at:
   {border}
   {height=423}
   {provider=github}
-  {description=We can then list all the existing discussions for a given header. URL: https://ourbigbook.com/go/discussions/barack-obama/fundamental-theorem-of-calculus[]}
+  {description=We can then list all the existing discussions for a given header. URL: https://ourbigbook.com/barack-obama/fundamental-theorem-of-calculus/-/discussions[]}
 
   \Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png]
   {title=<OurBigBook Web discussion> example}
   {border}
   {height=1043}
   {provider=github}
-  {description=This is how a specific discussion looks like. URL: https://ourbigbook.com/go/discussion/1/barack-obama/fundamental-theorem-of-calculus[]}
+  {description=This is how a specific discussion looks like. URL: https://ourbigbook.com/barack-obama/fundamental-theorem-of-calculus/-/discussion/1[]}
 * \Image[feature/announce/button-arrow.png]
   {title=With </article announcement> you can send a link to your articles to your followers}
   {border}
@@ -2843,7 +2843,7 @@ So here we see that `Bat` and `Humming bird` have their unique position in the t
 
 \Image[feature/tagged-list/tagged.png]
 {title=<OurBigBook Web> tagged article list with body demo}
-{description=On <OurBigBook Web>, you can also list all articles tagged by an article while also showing the tagged article bodies rather than just their titles. Live URL: https://ourbigbook.com/go/user/cirosantilli/tagged/classification-mathematics}
+{description=On <OurBigBook Web>, you can also list all articles tagged by an article while also showing the tagged article bodies rather than just their titles. Live URL: https://ourbigbook.com/cirosantilli/classification-mathematics/-/tagged}
 {provider=github}
 {border}
 {height=1081}
@@ -5528,7 +5528,7 @@ For example, when rendering a <static website>, a link such as:
 ``
 would produce output similar to:
 ``
-\a[https://ourbigbook.com/go/topic/john-smith][John Smith]
+\a[https://ourbigbook.com/-/topic/john-smith][John Smith]
 ``
 e.g.:
 \OurBigBookExample[[
@@ -5608,7 +5608,7 @@ Therefore, it is up to authors to specifically specify the desired pluralization
   ``
   renders something like:
   ``
-  \a[https://ourbigbook.com/go/topic/many-dog][Many Dogs]
+  \a[https://ourbigbook.com/-/topic/many-dog][Many Dogs]
   ``
 * to prevent this automatic singularization, use <`\x` `p` argument> with `{p}`, e.g.:
   ``
@@ -5616,7 +5616,7 @@ Therefore, it is up to authors to specifically specify the desired pluralization
   ``
   renders something like:
   ``
-  \a[https://ourbigbook.com/go/topic/many-dogs][Many Dogs]
+  \a[https://ourbigbook.com/-/topic/many-dogs][Many Dogs]
   ``
   This is unfortunately always necessary for uncountable nouns such as "mathematics":
   \OurBigBookExample[[
@@ -6550,6 +6550,8 @@ animal.html#big-dog
 {synonym}
 
 IDs that start with an underscore `_` are reserved for OurBigBook usage, and will give an error if you try to use them, in order to prevent ID conflicts.
+
+The path component `-` is also reserved in both static and web IDs. This forbids `-`, `-/child`, `parent/-`, and `parent/-/child`. Other uses of hyphens, such as `my-article`, are allowed.
 
 For example:
 * the <table of contents> uses an ID `_toc` the <ID> of the ToC is always fixed to `toc`. If you try to use that for another element, you will get the following error:
@@ -9345,7 +9347,7 @@ There are a few ways to do that.
 {border}
 {provider=github}
 {height=500}
-{description=One easy way to create an article about a given topic is to use the "New Article in Topic" button from the topic page. URL: https://ourbigbook.com/go/topic/fundamental-theorem-of-calculus[]}
+{description=One easy way to create an article about a given topic is to use the "New Article in Topic" button from the topic page. URL: https://ourbigbook.com/-/topic/fundamental-theorem-of-calculus[]}
 
 \Image[Fundamental_theorem_of_calculus_subheader_create_my.png]
 {border}
@@ -9357,20 +9359,20 @@ There are a few ways to do that.
 {border}
 {provider=github}
 {height=300}
-{description=If you click do any of the above links, you will be redirected to the editor page, and the title will be preset. By simply using that exact same title to create your new article, your article will then appear in the correct "Fundamental theorem of calculus" topic where others might see it. https://ourbigbook.com/go/new?title=Proof%20of%20the%20fundamental%20theorem%20of%20calculus[].}
+{description=If you click do any of the above links, you will be redirected to the editor page, and the title will be preset. By simply using that exact same title to create your new article, your article will then appear in the correct "Fundamental theorem of calculus" topic where others might see it. https://ourbigbook.com/-/new?title=Proof%20of%20the%20fundamental%20theorem%20of%20calculus[].}
 
 = Automatic topic linking
 {c}
 {parent=OurBigBook Web topics}
 
 <OurBigBook Web> can automatically create links to topics from regular plaintext. For example, if the following topics exist:
-* `/go/topic/quantum-mechanics`
-* `/go/topic/mathematicsl-physics`
+* `/-/topic/quantum-mechanics`
+* `/-/topic/mathematicsl-physics`
 then writing:
 > I like mathematical physics and quantum mechanics.
 will automatically be converted to something like:
 ``
-I like <a href="/go/topic/mathematical-physics">mathematical physics</a> <a href="/go/topic/quantum-mechanics">quantum mechanics</a>.
+I like <a href="/-/topic/mathematical-physics">mathematical physics</a> <a href="/-/topic/quantum-mechanics">quantum mechanics</a>.
 ``
 This reduces the burden on writers of having to manually create topic links themselves.
 
@@ -9499,13 +9501,13 @@ Each article has their own discussion section. This way you can easily see if ot
 {border}
 {height=423}
 {provider=github}
-{description=From these 2 recent threads, in the first one seems that someone found the same difficulty that we did. URL: https://ourbigbook.com/go/discussions/barack-obama/fundamental-theorem-of-calculus[]}
+{description=From these 2 recent threads, in the first one seems that someone found the same difficulty that we did. URL: https://ourbigbook.com/barack-obama/fundamental-theorem-of-calculus/-/discussions[]}
 
 \Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png]
 {border}
 {height=1043}
 {provider=github}
-{description=So let's inspect that discussion. Ah, clearly, the comments are very illuminating, our problem is solved! Hopefully the author will fix the issue so that other people don't have to go searching the discussions as well. URL: https://ourbigbook.com/go/discussion/1/barack-obama/fundamental-theorem-of-calculus[]}
+{description=So let's inspect that discussion. Ah, clearly, the comments are very illuminating, our problem is solved! Hopefully the author will fix the issue so that other people don't have to go searching the discussions as well. URL: https://ourbigbook.com/barack-obama/fundamental-theorem-of-calculus/-/discussion/1[]}
 
 = OurBigBook Web search
 {c}
@@ -9517,7 +9519,7 @@ OurBigBook Web supports basic search for <ID> prefixes of articles and <topics>.
 
 \Image[feature/search/physics-arrow.png]
 {title=<OurBigBook Web search> demo}
-{description=Visible live at: https://ourbigbook.com/go/articles?body=false&search=physics-and}
+{description=Visible live at: https://ourbigbook.com/-/articles?body=false&search=physics-and}
 {provider=github}
 {border}
 {height=650}
@@ -9527,7 +9529,7 @@ OurBigBook Web supports basic search for <ID> prefixes of articles and <topics>.
 {border}
 {height=738}
 {provider=github}
-{source=https://ourbigbook.com/go/articles?body=false&search=calculus%20fun}
+{source=https://ourbigbook.com/-/articles?body=false&search=calculus%20fun}
 
 Related:
 * https://github.com/ourbigbook/ourbigbook/issues/263
@@ -9541,7 +9543,7 @@ Related:
 
 <OurBigBook Web> comes with a browser text editor where users can create and edit their articles in <OurBigBook Markup>.
 
-This is for example the editor you see when creating a new article at: https://ourbigbook.com/go/new
+This is for example the editor you see when creating a new article at: https://ourbigbook.com/-/new
 
 One day want to add an option to have a visual editor: <todo/WYSIWYG>{full}, but for now we'll try to make the text-editor as awesome as we can.
 
@@ -9643,9 +9645,9 @@ There are currently a few constructs that are legal in <OurBigBook CLI> but forb
 
 = User settings page
 {parent=OurBigBook Web page}
-{title2=`/go/settings/<username>`}
+{title2=`/<username>/-/settings`}
 
-Example: https://ourbigbook.com/go/settings/barack-obama
+Example: https://ourbigbook.com/barack-obama/-/settings
 
 Contains profile and account settings for each user, including limits such as the maximum number of articles that each user may publish.
 
@@ -9653,12 +9655,12 @@ This page is only visible to user themselves and <admins>. The limits can only b
 
 = Site settings page
 {parent=OurBigBook Web page}
-{title2=`/go/site-settings`}
+{title2=`/-/site-settings`}
 
 = Site settings
 {synonym}
 
-Example: https://ourbigbook.com/go/site-settings
+Example: https://ourbigbook.com/-/site-settings
 
 The <site settings page> contains global site settings that apply to the entire <OurBigBook Web> instance.
 
@@ -11329,27 +11331,30 @@ Types:
   * `1` for true
   * `2` for all
   These are used for example when filtering booleans where the default is to show only either true or false but not both, e.g., we hide locked users by default, i.e. `locked=0` is the default, therefore we have:
-  * http://localhost:3000/go/users?locked=0[]: show only unlocked users. Same as the default http://localhost:3000/go/users[].
-  * http://localhost:3000/go/users?locked=1[]: show only locked users.
-  * http://localhost:3000/go/users?locked=2[]: show both locked and unlocked users.
+  * http://localhost:3000/-/users?locked=0[]: show only unlocked users. Same as the default http://localhost:3000/-/users[].
+  * http://localhost:3000/-/users?locked=1[]: show only locked users.
+  * http://localhost:3000/-/users?locked=2[]: show both locked and unlocked users.
   The user list also hides users without verified email by default:
-  * http://localhost:3000/go/users?verified=1[]: show only users with verified email. Same as the default http://localhost:3000/go/users[].
-  * http://localhost:3000/go/users?verified=0[]: show only users with unverified email.
-  * http://localhost:3000/go/users?verified=2[]: show users with both verified and unverified email.
+  * http://localhost:3000/-/users?verified=1[]: show only users with verified email. Same as the default http://localhost:3000/-/users[].
+  * http://localhost:3000/-/users?verified=0[]: show only users with unverified email.
+  * http://localhost:3000/-/users?verified=2[]: show users with both verified and unverified email.
 
-= OurBigBook Web URL standards: article ID comes last due to slash
+= OurBigBook Web URL standards: scoped routes
 {c}
 {parent=OurBigBook Web URL standards}
 
-It is a bit annoying that due to <scopes> being separated with `/`, we always have to put article names last in any URL (outside GET parameters) to avoid ambiguities. E.g. it would be arguably nicer to have:
-``
-/go/donald-trump/linear-algebra/issues
-``
-rather than the current:
-``
-/go/issues/donald-trump/linear-algebra
-``
-but this produces ambiguity, what if user `issues` has an article with title `Linear algebra` under scope `donald-trump`?
+Browser URLs use `/-/` to separate a user or article ID from page actions:
+* global pages: `/-/users`, `/-/articles`, `/-/files`
+* user pages: `/username/-/articles`, `/username/-/files`, `/username/-/settings`
+* article pages: `/username/my/article/-/discussions`, `/username/my/article/-/edit`
+* individual discussions: `/username/my/article/-/discussion/1`
+
+For the user's home article, discussions and comments use `/username/-/article/discussions` and `/username/-/article/comments`. This distinguishes them from `/username/-/discussions` and `/username/-/comments`, which list content authored by that user.
+
+The `-` path component is reserved in IDs and uploaded file paths to prevent ambiguity. `go` remains a reserved username. Old `/go/` URLs permanently redirect to their new locations, preserving query parameters. Ordinary article URLs and `_dir`, `_file`, `_raw`, and `/api` routes keep their existing forms.
+
+= OurBigBook Web URL standards: article ID comes last due to slash
+{synonym}
 
 = OurBigBook Web API standards
 {parent=OurBigBook Web URL standards}
@@ -13498,7 +13503,7 @@ Video guidelines:
 * be careful about single pixel black border lines straying in the recording area, they are mega visible against the clear chrome browser bar on the finished output!
 * music style guidelines: cool, beats, techno, mysterious, upbeat
 
-  Some of the videos contain non-fully free YouTube music added via the YouTube UI. Reupload together with the video files appears however allowed. Ideally we should use fully https://ourbigbook.com/go/topic/cc-by-sa[CC BY-SA] music, but it is quite hard to find good ones. NC is not acceptable.
+  Some of the videos contain non-fully free YouTube music added via the YouTube UI. Reupload together with the video files appears however allowed. Ideally we should use fully https://ourbigbook.com/-/topic/cc-by-sa[CC BY-SA] music, but it is quite hard to find good ones. NC is not acceptable.
 * hardcode subtitles in the video. No voice. Previously we were using Aegisub to create the subtitles in `.ass` format and ffmpeg to hardcode:
   ``
   ffmpeg -i raw.mkv -vf subtitles=sub.ass out.mkv
@@ -13578,10 +13583,10 @@ Publicly known updates on related to their fellowship projects may also be added
 * https://bv.fapesp.br/en/pesquisador/717847/leticia-maria-paz-de-lima
 
 2022-12: Letícia Maria Paz De Lima is awarded 10,000 Brazilian Real (~1,929 USD) to help her:
-\Q[Focus on her https://ourbigbook.com/go/topic/quantum-computing[quantum computing] studies and research until 2023-06-30 (end of her third year), with the future intention of pursuing a https://ourbigbook.com/cirosantilli/doctor-of-philosophy[PhD] abroad in that area.]
+\Q[Focus on her https://ourbigbook.com/-/topic/quantum-computing[quantum computing] studies and research until 2023-06-30 (end of her third year), with the future intention of pursuing a https://ourbigbook.com/cirosantilli/doctor-of-philosophy[PhD] abroad in that area.]
 
-At the time of award, Letícia was a 3rd year student at the https://ourbigbook.com/go/topic/molecular-sciences-course-of-the-university-of-sao-paulo[Molecular Sciences Course of the University of São Paulo] and held a https://fapesp.br/bolsas/ic[FAPESP Scientific Initiation Scholarship]. She had become interested in Quantum Computing in the past year, and is passionate about working on that promising area of technology.
+At the time of award, Letícia was a 3rd year student at the https://ourbigbook.com/-/topic/molecular-sciences-course-of-the-university-of-sao-paulo[Molecular Sciences Course of the University of São Paulo] and held a https://fapesp.br/bolsas/ic[FAPESP Scientific Initiation Scholarship]. She had become interested in Quantum Computing in the past year, and is passionate about working on that promising area of technology.
 
-Her main mentors in the area so far were https://scholar.google.com/citations?user=FbGL0BEAAAAJ&hl=it[professor Paulo Nussenzveig] and https://portal.if.usp.br/ifusp/pt-br/users/bamaral[Barbara Amaral] of the Institute of Physics of the https://ourbigbook.com/go/topic/university-of-sao-paulo[University of São Paulo].
+Her main mentors in the area so far were https://scholar.google.com/citations?user=FbGL0BEAAAAJ&hl=it[professor Paulo Nussenzveig] and https://portal.if.usp.br/ifusp/pt-br/users/bamaral[Barbara Amaral] of the Institute of Physics of the https://ourbigbook.com/-/topic/university-of-sao-paulo[University of São Paulo].
 
 \Include[todo]{parent=}

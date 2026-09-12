@@ -23,7 +23,7 @@ import { UploadEntryType, UploadIndexType } from 'front/types/UploadType'
 import Pagination from 'front/Pagination'
 import { articleLimit } from 'front/config'
 import { UserType } from 'front/types/UserType'
-import { dir } from 'front/routes'
+import { currentPageHref, dir } from 'front/routes'
 import { TRI_ALL, TRI_FALSE } from 'front/js'
 
 export interface DirPageProps extends CommonPropsType {
@@ -38,8 +38,7 @@ export interface DirPageProps extends CommonPropsType {
 export function UnlistedFilesNotice({ list, hasUnlisted }: { list?: boolean; hasUnlisted?: boolean }) {
   const router = useRouter()
   if (!hasUnlisted) return null
-  const { listed, page, ...query } = router.query
-  const href = value => ({ pathname: router.pathname, query: { ...query, ...(value === undefined ? {} : { listed: value }) } })
+  const href = value => currentPageHref(router, { listed: value, page: undefined })
   return <p className="content-not-ourbigbook">
     <UnlistedIcon />{' '}
     {list === true ? <>

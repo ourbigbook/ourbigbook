@@ -3212,7 +3212,7 @@ it(`api: user: locked users can't do much`, async () => {
       ;({data, status} = await test.sendJsonHttp('GET', routes.users()))
       assertStatus(status, data)
       assert.match(data, /Only unlocked users are being shown/)
-      assert_xpath('//x:div[@class="pagination"]/x:span[@class="total"]/following-sibling::x:button[text()="Open all"]', data)
+      assert_xpath('//x:div[@class="pagination"]/x:span[@class="total"]/following-sibling::x:button[contains(., "Open all")]/*[contains(@class, "icon")]', data)
       assert.match(data, /Only users with verified email are being shown/)
       assert.match(data, /"totalUsers":1/)
       assert.doesNotMatch(data, /href="\/user0"/)
@@ -7209,7 +7209,7 @@ it('web: user files retain the profile at root, with tree and list views', async
       assert.strictEqual(list.status, 200)
       assert_xpath('//x:div[contains(@class, "user-info")]//x:h1/x:a[@href="/user0"]', list.data)
       assert_xpath('//x:a[contains(@class, "active") and normalize-space(text())="List"]', list.data)
-      assert_xpath('//x:table[contains(@class, "file-list")]//x:img[@src="/user0/_raw/images%20%5B1%5D/photo.png"]', list.data)
+      assert_xpath('//x:table[contains(@class, "file-list")]//x:a[@href="/user0/_raw/images%20%5B1%5D/photo.png"]/x:img[@src="/user0/_raw/images%20%5B1%5D/photo.png"]', list.data)
       assert(!list.data.includes('user1/other.png'))
       assert(!list.data.includes('> Author</th>'))
       const alphabetical = await test.sendJsonHttp('GET', routes.userFiles('user0', { sort: 'path' }))
@@ -7294,7 +7294,7 @@ it('web: global file index lists metadata, image previews, and stable pages', as
       assert_xpath(`//x:table[contains(@class, 'file-list')]//x:td[@class='file-path']/x:a[@href='${image.url}']`, data)
       assert_xpath('//x:table[contains(@class, "file-list")]//x:th[contains(., "Author")]', data)
       assert_xpath(`//x:tr[x:td[@class='file-path']/x:a[@href='${image.url}']]/x:td/x:a[@href='/user0']`, data)
-      assert_xpath(`//x:table[contains(@class, 'file-list')]//x:img[@src='${image.previewUrl}']`, data)
+      assert_xpath(`//x:table[contains(@class, 'file-list')]//x:a[@href='${image.previewUrl}']/x:img[@src='${image.previewUrl}']`, data)
       assert_xpath('(//x:table[contains(@class, "file-list")]//x:time[@datetime="2026-01-01T00:00:00.000Z"])[1]', data)
       const alphabetical = await test.sendJsonHttp('GET', routes.files({ sort: 'path' }))
       assert.strictEqual(alphabetical.status, 200)
@@ -7428,6 +7428,64 @@ it('api: uploaded image search matches literal prefixes for the current user onl
   })
 })
 
+it('web: file previews are pages and raw URLs serve the original bytes', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const files = [
+      ['images [1]/photo.png', PNG_1X1_WHITE_BUFFER],
+      ['notes.html', Buffer.from('<script>alert("not executed")</script>')],
+      ['data.bin', Buffer.from([0, 1, 2, 255])],
+      ['movie.mp4', Buffer.from('video placeholder')],
+    ]
+    for (const [path, bytes] of files) await test.webApi.uploadCreateOrUpdate(`user0/${path}`, bytes)
+    const count = await test.sequelize.models.Article.count()
+    if (testNext) {
+      test.disableToken()
+      for (const [path, bytes] of files) {
+        const encoded = ourbigbook.encodeUrlPath(path)
+        const preview = await test.sendJsonHttp('GET', `/user0/_file/${encoded}`)
+        assert.strictEqual(preview.status, 200)
+        assert(preview.headers['content-type'].startsWith('text/html'))
+        assert_xpath('//x:nav[@class="navbar"]', preview.data)
+        assert_xpath('//x:footer', preview.data)
+        assert_xpath('//x:div[contains(@class, "file-page")]/x:h1/x:a[@href="/user0/_dir" and text()="user0"]', preview.data)
+        assert_xpath(`//x:div[contains(@class, "file-page")]/x:h1/x:a[@href='/user0/_raw/${encoded}']`, preview.data)
+        assert_xpath('//x:div[contains(@class, "file-page")]/x:div[@class="article-info"]/x:a[@href="/user0"]/x:img[contains(@class, "profile-thumb")]', preview.data)
+        assert_xpath('//x:div[contains(@class, "file-page")]/x:div[contains(@class, "file-content") and preceding-sibling::x:div[@class="article-info"]]', preview.data)
+        assert_xpath('//x:h1', preview.data)
+        assert_xpath(`(//x:a[@href='/user0/_raw/${encoded}'])[1]`, preview.data)
+        if (path.endsWith('.png')) {
+          assert_xpath(`//x:a[@href='/user0/_raw/${encoded}']/x:img[@src='/user0/_raw/${encoded}']`, preview.data)
+          assert_xpath('//x:div[contains(@class, "file-page")]/x:h1/x:a[@href="/user0/_dir/images%20%5B1%5D"]', preview.data)
+        } else if (path.endsWith('.html')) {
+          assert_xpath('//x:pre//x:code[contains(., "<script>")]', preview.data)
+          assert(!preview.data.includes('<script>alert('))
+        } else if (path.endsWith('.bin')) {
+          assert(preview.data.includes('binary file'))
+        } else {
+          assert_xpath(`//x:video[@src='/user0/_raw/${encoded}']`, preview.data)
+        }
+        const raw = await web_api.sendJsonHttp('GET', `/user0/_raw/${encoded}`, { ...test.webApi.opts, responseType: 'arraybuffer' })
+        assert.strictEqual(raw.status, 200)
+        assert.deepStrictEqual(raw.data, bytes)
+        assert.strictEqual(raw.headers['content-security-policy'], "default-src 'none'")
+      }
+      for (const url of ['/user0/_file/missing.png', '/missing-user/_file/notes.html', '/user0/_raw/missing.png']) {
+        assert.strictEqual((await test.sendJsonHttp('GET', url)).status, 404)
+      }
+      assert.strictEqual(await test.sequelize.models.Article.count(), count)
+      test.loginUser(user)
+      await createOrUpdateArticleApi(test, createArticleArg({
+        titleSource: 'notes.html', bodySource: '{file}\n\nAuthored file description',
+      }))
+      const authored = await test.sendJsonHttp('GET', '/user0/_file/notes.html')
+      assert.strictEqual(authored.status, 200)
+      assert(authored.data.includes('Authored file description'))
+    }
+  }, { canTestNext: true })
+})
+
 it('api: editor uploaded image markup resolves from nested articles', async () => {
   await testApp(async test => {
     const { getMarkupEdit } = require('ourbigbook/editor')
@@ -7441,12 +7499,12 @@ it('api: editor uploaded image markup resolves from nested articles', async () =
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Root photo', bodySource: relative.text }))
     const rootArticle = await test.webApi.article('user0/root-photo')
     const url = '/user0/_raw/images/my%20picture%5B1%5D.png'
-    assert_xpath(`//x:img[@src='${url}']`, rootArticle.data.render)
+    assert_xpath(`//x:a[@href='${url}']/x:img[@src='${url}']`, rootArticle.data.render)
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Nested', bodySource: '{scope}' }))
     const { text } = getMarkupEdit('image', '', 0, 0, { imageSource: `/${path}` })
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Photo', bodySource: text }), { parentId: '@user0/nested' })
     const { data } = await test.webApi.article('user0/nested/photo')
-    assert_xpath(`//x:img[@src='${url}']`, data.render)
+    assert_xpath(`//x:a[@href='${url}']/x:img[@src='${url}']`, data.render)
     const response = await web_api.sendJsonHttp('GET', url, { ...test.webApi.opts, responseType: 'arraybuffer' })
     assert.deepStrictEqual(response.data, PNG_1X1_WHITE_BUFFER)
     assert.strictEqual(response.headers['content-type'], 'image/png')

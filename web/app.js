@@ -159,8 +159,8 @@ async function start(port, startNext, cb) {
 
   // Next handles anything outside of:
   // 1) /api.
-  // 2) /[uid]/raw.
-  app.get(new RegExp(`^(?!(${config.apiPath}|/[^/]+/(_raw|_file))(/|$))`), function (req, res) {
+  // 2) /[uid]/_raw. File previews under _file are Next pages.
+  app.get(new RegExp(`^(?!(${config.apiPath}|/[^/]+/_raw)(/|$))`), function (req, res) {
     // We pass the sequelize that we have already created and connected to the database
     // so that the Next.js backend can just use that connection. This is in particular mandatory
     // if we wish to use SQLite in-memory database, because there is no way to make two separate
@@ -168,15 +168,6 @@ async function start(port, startNext, cb) {
     req.sequelize = sequelize
     return nextHandle(req, res);
   });
-  // Make _file that does not exist the same as _raw before we get to implementing it.
-  app.get(new RegExp(`^/[^/]+/_file(/|$)`), async function (req, res, next) {
-    if (await sequelize.models.Article.findOne({ where: { slug: req.path.substring(1) } })) {
-      req.sequelize = sequelize
-      return nextHandle(req, res)
-    } else {
-      next()
-    }
-  })
   app.use(session({ secret: config.secret, cookie: { maxAge: 60000 }, resave: false, saveUninitialized: false }))
 
   // Handle API routes.
@@ -186,9 +177,6 @@ async function start(port, startNext, cb) {
     const router = express.Router()
     router.use(config.apiPath, api)
     router.get('/:username/_raw/:path(*)', auth.optional, async function(req, res, next) {
-      return uploadsGet(req, res, next, `${req.params.username}/${req.params.path}`)
-    })
-    router.get('/:username/_file/:path(*)', auth.optional, async function(req, res, next) {
       return uploadsGet(req, res, next, `${req.params.username}/${req.params.path}`)
     })
     app.use(router)

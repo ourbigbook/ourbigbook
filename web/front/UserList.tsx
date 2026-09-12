@@ -14,7 +14,7 @@ import { articleLimit } from 'front/config'
 import { openUserTabs, TRI_ALL, TRI_FALSE, TRI_TRUE } from 'front/js'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
-import { booleanToStringForTable, CommentIcon, DirectoryIcon, DiscussionIcon, FollowIcon, LikeIcon, LargestIcon, LockIcon, OkIcon, TimeIcon, UserIcon } from 'front'
+import { booleanToStringForTable, CommentIcon, DirectoryIcon, DiscussionIcon, FollowIcon, LikeIcon, LargestIcon, LinkOpensInNewTabIcon, LockIcon, OkIcon, TimeIcon, UserIcon } from 'front'
 
 export type UserListProps = {
   hasLocked?: boolean;
@@ -95,7 +95,7 @@ const UserList = ({
         {loggedInUser?.admin && router.pathname === '/go/users' && <>
           {' '}<button type="button" title="Open every user on this page in a new tab, newest first"
             onClick={() => setBlockedTabs(openUserTabs(users, window.open.bind(window)))}>
-            Open all
+            <LinkOpensInNewTabIcon /> Open all
           </button>
           {blockedTabs > 0 && <span role="status"> {blockedTabs} tabs blocked. Allow pop-ups for this site to open all users.</span>}
         </>}

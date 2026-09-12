@@ -49,7 +49,7 @@ export function FileList({ files, filesCount, page, username }: { files: UploadI
               <td className="file-path">{file.url ? <a href={file.url}>{path}</a> : path}</td>
               {username === undefined && <td className="shrink">{file.author
                 ? <UserLinkWithImage user={file.author} showUsername={false} /> : 'Unknown'}</td>}
-              <td className="file-preview">{file.previewUrl && <a href={file.url}><img src={file.previewUrl} alt={path} loading="lazy" /></a>}</td>
+              <td className="file-preview">{file.previewUrl && <a href={file.previewUrl}><img src={file.previewUrl} alt={path} loading="lazy" /></a>}</td>
               <td className="shrink right">{file.size.toLocaleString('en-US')}</td>
               <td className="shrink"><time dateTime={file.createdAt} title={file.createdAt}>{formatDate(file.createdAt)}</time></td>
               <td className="shrink"><time dateTime={file.updatedAt} title={file.updatedAt}>{formatDate(file.updatedAt)}</time></td>
@@ -79,6 +79,26 @@ export function DirectoryEntries({ author, childDirectories, childFiles }: Pick<
   </ul>
 }
 
+export function FileDirectoryHeader({ author, path, isFile=false }: { author: UserType; path: string; isFile?: boolean }) {
+  const parts = path ? path.split(URL_SEP) : []
+  const directories = isFile ? parts.slice(0, -1) : parts
+  return <>
+    <h1>
+      {isFile ? <FileIcon /> : <DirectoryIcon />}{' '}
+      <Link href={dir(author.username)}>{author.username}</Link>
+      <span className="meta">{URL_SEP}</span>
+      {directories.map((part, i) => <React.Fragment key={i}>
+        <Link href={dir(author.username, directories.slice(0, i + 1).join(URL_SEP))}>{part}</Link>
+        <span className="meta">{URL_SEP}</span>
+      </React.Fragment>)}
+      {isFile && <a href={`/${author.username}/_raw/${encodeUrlPath(path)}`}>{parts[parts.length - 1]}</a>}
+    </h1>
+    <div className="article-info">
+      by{' '}<UserLinkWithImage user={author} showUsername={true} />
+    </div>
+  </>
+}
+
 const DirPageHoc = (isIssue=false) => {
   return function DirPage ({
     author,
@@ -90,33 +110,7 @@ const DirPageHoc = (isIssue=false) => {
     return <>
       <MyHead title={`${author.username}${URL_SEP}${pathNoUsername}${pathNoUsername ? URL_SEP : ''}`} />
       <div className="dir-page content-not-ourbigbook">
-        <h1>
-          <DirectoryIcon />
-          {' '}
-          {(() => {
-            const ret = []
-            const pathSplit = pathNoUsername ? pathNoUsername.split(URL_SEP) : []
-            let curp = ''
-            let i = 0
-            for (const p of [author.username, ...pathSplit]) {
-              ret.push(
-                <Link href={dir(author.username, curp)} key={i}>{p}</Link>,
-                <span className="meta" key={-i-1}>{URL_SEP}</span>
-              )
-              if (i !== 0) {
-                curp += URL_SEP
-              }
-              curp += pathSplit[i]
-              i++
-            }
-            return ret
-          })()}
-        </h1>
-        <div className="article-info">
-          by
-          {' '}
-          <UserLinkWithImage user={author} showUsername={true} />
-        </div>
+        <FileDirectoryHeader author={author} path={pathNoUsername} />
         <DirectoryEntries {...{ author, childDirectories, childFiles }} />
       </div>
     </>

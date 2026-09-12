@@ -892,12 +892,14 @@ span.shortcut {
 }
 
 .pagination {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5em;
   height: 100%;
   list-style-type: none;
   padding: 0;
   .pages {
-    margin-right: 10px;
     .page-item {
       a {
         font-weight: bold;

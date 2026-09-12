@@ -8383,6 +8383,285 @@ assert_lib_error('header: parent fails with ourbigbook.json lint h-parent equal 
     }
   }
 )
+assert_lib('header: descendant links imply tags', {
+  convert_dir: true,
+  convert_opts: { split_headers: true },
+  filesystem: {
+    'index.bigb': String.raw`= Toplevel
+
+== Animal
+
+== Direct <Animal>
+
+\H[2][Nested \i[\b[<Animal>]]]
+
+== Explicit \x[animal][link]
+
+== Alternate title
+{title2=An \i[<Animal>]}
+
+== Body
+
+<Animal>
+
+\Image[image.jpg]{title=<Animal>}
+
+== Topic <#Animal>
+`,
+    'image.jpg': '',
+  },
+  assert_xpath: {
+    'direct-animal.html': ["//x:span[@class='tags']//x:a[@href='index.html#animal']"],
+    'nested-animal.html': ["//x:span[@class='tags']//x:a[@href='index.html#animal']"],
+    'animal.html': [
+      `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='index.html#nested-animal']`,
+    ],
+  },
+  postConvert: async ({ sequelize }) => {
+    const { Ref } = sequelize.models
+    assertRows(await Ref.findAll({
+      where: { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] },
+      order: [['to_id', 'ASC']],
+    }), [
+      { from_id: 'animal', to_id: 'alternate-title' },
+      { from_id: 'animal', to_id: 'direct-animal' },
+      { from_id: 'animal', to_id: 'explicit-link' },
+      { from_id: 'animal', to_id: 'nested-animal' },
+    ])
+  },
+})
+
+assert_lib('header: implicit tags exclude the parent in the Animal example', {
+  convert_dir: true,
+  filesystem: { 'index.bigb': '= Animal\n\n== About \\i[<Animal>]\n' },
+  postConvert: async ({ sequelize }) => {
+    const { Ref } = sequelize.models
+    assert.strictEqual(await Ref.count({ where: { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] } }), 0)
+  },
+})
+
+assert_lib('header: implicit tags exclude distant ancestors but preserve explicit tags and siblings', {
+  convert_dir: true,
+  convert_opts: { split_headers: true },
+  filesystem: { 'index.bigb': String.raw`= Home
+
+== Animal
+
+=== Branch
+
+==== About \i[\b[<Animal>]]
+{tag=Animal}
+{title2=<Animal>}
+
+==== More <Animals> and <Animal> and <Animal>
+
+== Elsewhere \i[<Animal>]
+` },
+  assert_not_xpath: {
+    'more-animals-and-animal-and-animal.html': ["//x:span[@class='tags']"],
+  },
+  postConvert: async ({ sequelize }) => {
+    const { Ref } = sequelize.models
+    assertRows(await Ref.findAll({
+      where: { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] }, order: [['to_id', 'ASC']],
+    }), [
+      { from_id: 'animal', to_id: 'about-animal' },
+      { from_id: 'animal', to_id: 'elsewhere-animal' },
+    ])
+  },
+})
+
+assert_lib('header: implicit tags resolve scoped names and parent arguments', {
+  convert_dir: true,
+  filesystem: { 'index.bigb': String.raw`= Home
+
+== Animal
+{scope}
+
+=== Branch
+
+==== About <Animal>
+
+= Ancestor </Animal>
+{parent=Branch}
+
+=== Animal
+` },
+  postConvert: async ({ sequelize }) => {
+    const { Ref } = sequelize.models
+    assertRows(await Ref.findAll({ where: { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] } }), [
+      { from_id: 'animal/animal', to_id: 'animal/about-animal' },
+    ])
+  },
+})
+
+assert_lib('header: implicit tags exclude ancestors across included files', {
+  convert_dir: true,
+  filesystem: {
+    'index.bigb': '= Animal\n\n\\Include[branch]\n',
+    'branch.bigb': '= Branch\n\n\\Include[leaf]\n',
+    'leaf.bigb': '= About \\i[<Animal>]\n{title2=<Animal>}\n\n== Deeper <Animal>\n{tag=Animal}\n',
+  },
+  assert_not_xpath: { 'leaf.html': ["//x:div[@class='h top']//x:span[@class='tags']"] },
+  postConvert: async ({ sequelize }) => {
+    const { Ref } = sequelize.models
+    const tags = await Ref.findAll({ where: { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] } })
+    assert.strictEqual(tags.length, 1)
+    assert.strictEqual(tags[0].to_id, 'deeper-animal')
+    assert.strictEqual(tags[0].defined_at_line, 5)
+  },
+})
+
+assert_lib('header: implicit tags are restored when cached include ancestry changes', {
+  convert_dir: true,
+  filesystem: {
+    'index.bigb': '= Home\n\n== Animal\n\n\\Include[branch]\n',
+    'branch.bigb': '= Branch\n\n\\Include[leaf]\n',
+    'leaf.bigb': '= About \\i[<Animal>]\n',
+  },
+  postConvert: async ({ sequelize }) => {
+    const { Ref } = sequelize.models
+    const tags = { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] }
+    assert.strictEqual(await Ref.count({ where: tags }), 0)
+    for (const from_id of ['', 'animal']) {
+      await Ref.update({ from_id }, {
+        where: { type: Ref.Types[ourbigbook.REFS_TABLE_PARENT], to_id: 'branch' },
+      })
+      assert.deepStrictEqual(await ourbigbook_nodejs_webpack_safe.check_db(sequelize), [])
+      assertRows(await Ref.findAll({ where: tags }), from_id === '' ? [
+        { from_id: 'animal', to_id: 'leaf' },
+      ] : [])
+    }
+  },
+})
+
+it('lib: header: duplicateTags checks nested links during extraction without a database', async () => {
+  for (const title of ['<Animal>', '\\x[animal]', '\\i[\\b[<Animal>]]']) {
+    for (const duplicateTags of [false, true]) {
+      const extra_returns = {}
+      // The target need not have been defined or extracted yet.
+      await ourbigbook.convert(`= Home\n\n== About ${title}\n{tag=Animal}\n`, {
+        input_path: 'index.bigb',
+        render: false,
+        ourbigbook_json: { lint: { duplicateTags } },
+      }, extra_returns)
+      assert.strictEqual(extra_returns.errors.length, duplicateTags ? 1 : 0)
+      if (duplicateTags) {
+        const error = extra_returns.errors[0]
+        assert.deepStrictEqual(error.source_location, new ourbigbook.SourceLocation(4, 1, 'index.bigb'))
+        assert(error.message.startsWith('duplicate tag "animal" on header "about-animal", previous tag at index.bigb:3:'))
+        assert(error.message.endsWith(
+          'Links such as <...> in a header title automatically tag that header when the target is not an ancestor; consider removing the redundant {tag=...}.'
+        ))
+      }
+    }
+  }
+})
+
+it('lib: header: duplicateTags defers differing plural candidates to the database', async () => {
+  const extra_returns = {}
+  // <Animals> may resolve to a scoped singular "animal", while the explicit
+  // tag resolves to "animals" elsewhere. Matching spellings alone aren't enough.
+  await ourbigbook.convert('= Home\n\n== About <Animals>\n{tag=Animals}\n', {
+    input_path: 'index.bigb',
+    render: false,
+  }, extra_returns)
+  assert.deepStrictEqual(extra_returns.errors, [])
+})
+
+for (const duplicateTags of [false, true]) {
+  assert_lib(`header: duplicateTags lint ${duplicateTags} resolves nested cross-file links`, {
+    convert_dir: true,
+    convert_opts: { ourbigbook_json: { lint: { duplicateTags } } },
+    assert_check_db_errors: duplicateTags ? 1 : 0,
+    filesystem: {
+      'index.bigb': String.raw`= Toplevel
+
+\Include[scope]
+
+== Dog
+`,
+      'scope.bigb': String.raw`= Scope
+{scope}
+
+\Include[scope/dog]
+
+== About \i[<Dogs>]
+{tag=Dog}
+
+== Both <Dog> and </Dog>
+`,
+      'scope/dog.bigb': '= Dog\n',
+    },
+    postConvert: async ({ sequelize, convertOpts }) => {
+      const { Ref } = sequelize.models
+      assertRows(await Ref.findAll({
+        where: { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] },
+        order: [['defined_at_line', 'ASC'], ['defined_at_col', 'ASC']],
+      }), [
+        { from_id: 'scope/dog', to_id: 'scope/about-dogs' },
+        { from_id: 'scope/dog', to_id: 'scope/about-dogs' },
+        { from_id: 'scope/dog', to_id: 'scope/both-dog-and-dog' },
+        { from_id: 'dog', to_id: 'scope/both-dog-and-dog' },
+      ])
+      // Omitting options must also enable the lint (as in the Web caller).
+      const errors = await ourbigbook_nodejs_webpack_safe.check_db(sequelize, undefined,
+        duplicateTags ? {} : { options: convertOpts })
+      assert.deepStrictEqual(errors, duplicateTags ? [
+        'scope.bigb:7:1: duplicate tag "scope/dog" on header "scope/about-dogs", previous tag at scope.bigb:6:14',
+      ] : [])
+    },
+  })
+}
+
+assert_lib('header: duplicateTags retains database checks for reverse child relationships', {
+  convert_dir: true,
+  convert_opts: { ourbigbook_json: { enableArg: { H: { child: true } } } },
+  assert_check_db_errors: 1,
+  filesystem: {
+    'index.bigb': '= Home\n\n== Animal\n{child=About}\n\n== About\n{tag=Animal}\n',
+  },
+  postConvert: async ({ sequelize }) => {
+    assert.deepStrictEqual(await ourbigbook_nodejs_webpack_safe.check_db(sequelize), [
+      'index.bigb:7:1: duplicate tag "animal" on header "about", previous tag at index.bigb:4:1',
+    ])
+  },
+})
+
+for (const cached of [false, true]) {
+  assert_cli(`duplicateTags lint reports all duplicate locations, cached=${cached}`, {
+    args: cached ? ['.'] : ['--no-check-db', '.'],
+    filesystem: {
+      'index.bigb': String.raw`= Toplevel
+
+== Animal
+
+== About \i[<Animal>]
+{tag=Animal}
+
+== Another
+{tag=Animal}
+{tag=Animal}
+
+== Repeated <Animal> and <Animal>
+`,
+      'ourbigbook.json': JSON.stringify(cached ? { lint: { duplicateTags: false } } : {}),
+    },
+    pre_exec: cached ? [
+      ['ourbigbook', ['.']],
+      { filesystem_update: {
+        'ourbigbook.json': JSON.stringify({ lint: { duplicateTags: true } }),
+      } },
+    ] : [],
+    assert_exit_status: 1,
+    assert_stderr_contains: [
+      'index.bigb:6:1: duplicate tag "animal" on header "about-animal", previous tag at index.bigb:5:14',
+      'index.bigb:10:1: duplicate tag "animal" on header "another", previous tag at index.bigb:9:1',
+      'index.bigb:12:27: duplicate tag "animal" on header "repeated-animal-and-animal", previous tag at index.bigb:12:14',
+    ],
+  })
+}
+
 // lint h-tag
 assert_lib_error('header: lint: h-tag child failure',
   `= 1
@@ -10288,8 +10567,8 @@ assert_lib_ast('id autogen: with disambiguate',
 assert_lib('id autogen: with undefined reference in title fails gracefully',
   {
     convert_dir: true,
-    // TODO 1 is better here, the errors is getting duplicated, but I'm not in the mood today.
-    assert_check_db_errors: 2,
+    // The link, title dependency and implicit tag each report the undefined target.
+    assert_check_db_errors: 3,
     filesystem: {
       'index.bigb': `= Toplevel
 
@@ -13741,7 +14020,7 @@ assert_cli(
 )
 
 assert_cli(
-  "multiple incoming child and parent links don't blow up",
+  "multiple incoming child and parent links don't blow up with duplicateTags disabled",
   {
     args: ['.'],
     filesystem: {
@@ -13759,7 +14038,7 @@ assert_cli(
 
 \\x[toplevel]{parent}
 `,
-      'ourbigbook.json': `{ "enableArg": { "x": {
+      'ourbigbook.json': `{ "lint": { "duplicateTags": false }, "enableArg": { "x": {
   "child": true,
   "parent": true
 } } }`,

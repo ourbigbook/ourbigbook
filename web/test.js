@@ -6888,6 +6888,56 @@ it('api: article: parent and parent-type', async () => {
   })
 })
 
+it('api: header descendant links are tags and duplicate tags fail by default', async () => {
+  await testApp(async (test) => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    await createArticleApi(test, createArticleArg({ titleSource: 'Good' }))
+    await createArticleApi(test, createArticleArg({ titleSource: 'About \\i[\\b[<Good>]]' }))
+    const { data } = await test.webApi.articles({
+      parent: '@user0/good',
+      'parent-type': ourbigbook.REFS_TABLE_X_CHILD,
+    })
+    assertRows(data.articles, [{ slug: 'user0/about-good' }])
+    const duplicate = await createArticleApi(test, createArticleArg({
+      titleSource: 'More \\i[<Good>]',
+      bodySource: '{tag=Good}\n',
+    }), {}, { expectStatus: 422 })
+    assert(JSON.stringify(duplicate.data).includes('duplicate tag \\"good\\"'))
+    assert(JSON.stringify(duplicate.data).includes(
+      'Links such as <...> in a header title automatically tag that header when the target is not an ancestor; consider removing the redundant {tag=...}.'
+    ))
+  }, { defaultExpectStatus: 200 })
+})
+
+it('api: implicit tags exclude ancestors and follow reparenting', async () => {
+  await testApp(async (test) => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    await createArticleApi(test, createArticleArg({ titleSource: 'Good' }))
+    await createArticleApi(test, createArticleArg({ titleSource: 'Branch' }), { parentId: '@user0/good' })
+    const article = createArticleArg({ titleSource: 'Inside \\i[<Good>]' })
+    await createArticleApi(test, article, { parentId: '@user0/branch' })
+    const { Ref } = test.sequelize.models
+    const where = {
+      type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD],
+      from_id: '@user0/good', to_id: '@user0/inside-good',
+    }
+    assert.strictEqual(await Ref.count({ where }), 0)
+    const { data } = await test.webApi.article('user0/inside-good')
+    assert(!data.render.includes('class="tags"'))
+    await createOrUpdateArticleApi(test, article, { parentId: '@user0' })
+    assert.strictEqual(await Ref.count({ where }), 1)
+    await createOrUpdateArticleApi(test, article, { parentId: '@user0/branch' })
+    assert.strictEqual(await Ref.count({ where }), 0)
+    // Explicit tags to ancestors are still allowed, and aren't duplicates of
+    // the title link because that link no longer creates a tag.
+    await createArticleApi(test, createArticleArg({
+      titleSource: 'Explicit <Good>', bodySource: '{tag=Good}\n',
+    }), { parentId: '@user0/good' })
+  }, { defaultExpectStatus: 200 })
+})
+
 it(`api: article: automatic topic linking`, async () => {
   // https://github.com/ourbigbook/ourbigbook/issues/356
   await testApp(async (test) => {

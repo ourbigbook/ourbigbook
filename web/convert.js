@@ -752,6 +752,9 @@ async function convertArticle({
           sequelize,
           [input_path],
           {
+            // Existing articles are moved after validation. Implicit tags must
+            // use the requested tree, rather than their previous ancestry.
+            parentOverride: !isIndex ? { id: toplevelId, parentId: newParentId } : undefined,
             // All paths here are the fully qualified paths, e.g. @user0/subdir/myfile.txt
             filterFilesThatDontExist: async (aRefs) => {
               const { Upload, UploadDirectory } = sequelize.models

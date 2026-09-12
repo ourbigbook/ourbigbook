@@ -2431,6 +2431,39 @@ class HeaderTreeNode {
 }
 exports.HeaderTreeNode = HeaderTreeNode
 
+function duplicateTagMessage(tag_id, header_id, previous_location) {
+  return `duplicate tag "${tag_id}" on header "${header_id}", previous tag at ${previous_location}`
+}
+exports.duplicateTagMessage = duplicateTagMessage
+
+// Include parents and Web parents can extend the local header tree.
+function headerAncestorIds(header, context) {
+  const ids = new Set()
+  const visited = new Set()
+  const todo = [header]
+  let complete = true
+  while (todo.length) {
+    const ast = todo.pop()
+    if (visited.has(ast.id)) continue
+    visited.add(ast.id)
+    const parents = ast.id === context.toplevel_id && context.options.parent_id !== undefined
+      ? new Set([context.options.parent_id]) : ast.get_header_parent_ids(context)
+    if (ast.id === context.options.parent_id && context.implicit_tag_parent_ancestors) {
+      for (const id of context.implicit_tag_parent_ancestors) ids.add(id)
+    }
+    if (!parents.size && context.options.db_provider && ast.id !== '' && ast.id !== context.options.ref_prefix) {
+      complete = false
+    }
+    for (const id of parents) {
+      ids.add(id)
+      const parent = context.db_provider.get_noscope(id, context)
+      if (parent) todo.push(parent)
+      else complete = false
+    }
+  }
+  return { ids, complete }
+}
+
 /** Add an entry to the data structures that keep the map of incoming
  * and outgoing \x and \x {child} links. */
 function addToRefsTo(toid, context, fromid, relation_type, opts={}) {
@@ -5614,7 +5647,13 @@ async function parse(tokens, options, context, extra_returns={}) {
   context.db_provider = db_provider;
   options.include_path_set.add(options.input_path);
   const title_ast_ancestors = []
-  const header_title_ast_ancestors = []
+  const header_ast_ancestors = []
+  const header_tags = new Map()
+  function recordHeaderTag(header, target_id, source_location, { inflected_target_id, implicit=false }={}) {
+    if (!options.ourbigbook_json.lint.duplicateTags) return
+    if (!header_tags.has(header)) header_tags.set(header, [])
+    header_tags.get(header).push({ target_id, source_location, inflected_target_id, implicit })
+  }
   const header_ids = []
   let prevAst, ast, parent_arg
   let isFirstAst = true
@@ -5627,8 +5666,8 @@ async function parse(tokens, options, context, extra_returns={}) {
       title_ast_ancestors.pop()
       continue
     }
-    if (pop === 'pop_header_title_ast_ancestors') {
-      header_title_ast_ancestors.pop()
+    if (pop === 'pop_header_ast_ancestors') {
+      header_ast_ancestors.pop()
       continue
     }
     if (ast && ast.node_type === AstType.MACRO) {
@@ -5639,10 +5678,10 @@ async function parse(tokens, options, context, extra_returns={}) {
       const parent_ast = parent_arg.parent_ast
       title_ast_ancestors.push(parent_ast)
       todo_visit.push('pop_title_ast_ancestors')
-      if (parent_ast.macro_name === Macro.HEADER_MACRO_NAME) {
-        header_title_ast_ancestors.push(parent_ast)
-        todo_visit.push('pop_header_title_ast_ancestors')
-      }
+    }
+    if (parent_arg.parent_ast?.macro_name === Macro.HEADER_MACRO_NAME) {
+      header_ast_ancestors.push(parent_arg.parent_ast)
+      todo_visit.push('pop_header_ast_ancestors')
     }
     let parent_arg_push_after = []
     let parent_arg_push_before = []
@@ -6293,9 +6332,11 @@ async function parse(tokens, options, context, extra_returns={}) {
           if (tags_or_children !== undefined) {
             for (const tag_or_child of tags_or_children) {
               const target_id = magicTitleArgToId(tag_or_child.args.content, context)
+              if (!child) recordHeaderTag(ast, target_id, tag_or_child.source_location)
               for (const target_id_with_scope of getAllPossibleScopeResolutions(ast.calculate_scope(), target_id, context)) {
                 options.refs_to_h.push({
                   ast,
+                  absolute: isAbsoluteXref(target_id, context),
                   child,
                   source_location: tag_or_child.source_location,
                   target_id: target_id_with_scope,
@@ -6316,6 +6357,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           !ast.validation_output.topic.boolean
         ) {
           const fetch_plural = ast.validation_output.magic.boolean
+          let inflected_target_id
           if (fetch_plural) {
             target_id = magicTitleToId(target_id, context)
           }
@@ -6328,7 +6370,9 @@ async function parse(tokens, options, context, extra_returns={}) {
           for (const target_id_with_scope of getAllPossibleScopeResolutions(cur_scope, target_id, context)) {
             options.refs_to_x.push({
               ast,
+              absolute: isAbsoluteXref(target_id, context),
               title_ast_ancestors: Object.assign([], title_ast_ancestors),
+              header_ast_ancestors: header_ast_ancestors.slice(),
               target_id: target_id_with_scope,
               inflected: false,
             })
@@ -6348,17 +6392,26 @@ async function parse(tokens, options, context, extra_returns={}) {
               if (new_text !== old_text) {
                 last_ast.text = new_text
                 const target_id = magicTitleToId(convertIdArg(ast.args.href, context), context)
+                inflected_target_id = target_id
                 last_ast.text = old_text
                 for (const target_id_with_scope of getAllPossibleScopeResolutions(cur_scope, target_id, context)) {
                   options.refs_to_x.push({
                     ast,
+                    absolute: isAbsoluteXref(target_id, context),
                     title_ast_ancestors: Object.assign([], title_ast_ancestors),
+                    header_ast_ancestors: header_ast_ancestors.slice(),
                     target_id: target_id_with_scope,
                     inflected: true,
                   })
                 }
               }
             }
+          }
+          for (const header_ast of header_ast_ancestors) {
+            recordHeaderTag(header_ast, target_id, ast.source_location, {
+              inflected_target_id: inflected_target_id === target_id ? undefined : inflected_target_id,
+              implicit: true,
+            })
           }
         }
       }
@@ -6453,6 +6506,40 @@ async function parse(tokens, options, context, extra_returns={}) {
   if (isFirstAst && lintStartsWithH1Header) {
     parseError(state, `files cannot be empty`, new SourceLocation(1, 1))
   }
+  function checkHeaderTags() {
+    for (const [header, tags] of header_tags) {
+      const ancestors = headerAncestorIds(header, context)
+      const seen = new Map()
+      tags.sort((a, b) => a.source_location.line - b.source_location.line ||
+        a.source_location.column - b.source_location.column)
+      for (const tag of tags) {
+        if (tag.implicit) {
+          const target = context.db_provider.get(tag.target_id, context, header.calculate_scope()) ||
+            (tag.inflected_target_id !== undefined &&
+              context.db_provider.get(tag.inflected_target_id, context, header.calculate_scope()))
+          if (target && ancestors.ids.has(target.synonym ?? target.id)) continue
+          // An unresolved external parent may make this link an ancestor link.
+          // Let the database decide when the local tree is not sufficient.
+          if (!ancestors.complete && (!target || !(target.id in options.indexed_ids))) continue
+        }
+        // Compare each source occurrence once, before expanding scope candidates.
+        // Different inflection candidates might resolve to different headers, so
+        // leave those (and reverse child relationships) to the database check.
+        const key = JSON.stringify([tag.target_id, tag.inflected_target_id])
+        const previous = seen.get(key)
+        if (previous !== undefined) {
+          let message = duplicateTagMessage(tag.target_id, header.id, previous.source_location.toString())
+          if (previous.implicit !== tag.implicit) {
+            message += '. Links such as <...> in a header title automatically tag that header when the target is not an ancestor; consider removing the redundant {tag=...}.'
+          }
+          parseError(state, message, tag.source_location)
+        } else {
+          seen.set(key, tag)
+        }
+      }
+    }
+  }
+  if (!options.render) checkHeaderTags()
   if (context.options.log['ast-pp-simple']) {
     console.error('ast-pp-simple: after pass 1');
     console.error(ast_toplevel.toString());
@@ -7039,7 +7126,8 @@ async function parse(tokens, options, context, extra_returns={}) {
       const target_id_effective = xChildDbEffectiveId(
         ref.target_id,
         context,
-        ref.ast
+        ref.ast,
+        ref.absolute
       )
       if (ref.child) {
         addToRefsTo(target_id_effective, context, ref.ast.id, ref.type, { source_location: ref.source_location });
@@ -7052,7 +7140,8 @@ async function parse(tokens, options, context, extra_returns={}) {
       const target_id_effective = xChildDbEffectiveId(
         ref.target_id,
         context,
-        ast
+        ast,
+        ref.absolute
       )
       const parent_id = ast.get_local_header_parent_id();
       if (
@@ -7083,7 +7172,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           if (ast.validation_output.child.boolean) {
             fromid = parent_id;
             toid = target_id_effective;
-          } else if (ast.validation_output.parent.boolean) {
+          } else if (ast.validation_output.parent.boolean && !ref.header_ast_ancestors.length) {
             toid = parent_id;
             fromid = target_id_effective;
           }
@@ -7092,13 +7181,25 @@ async function parse(tokens, options, context, extra_returns={}) {
           }
         }
       }
+      // Links anywhere inside a header (including nested formatting macros)
+      // tag that header. Reuse the link's scope and inflection candidates.
+      for (const header_ast of ref.header_ast_ancestors) {
+        if (!options.render) {
+          // Extraction must retain every candidate until check_db resolves both
+          // the target and ancestry across files. Rendering adds resolved tags below.
+          addToRefsTo(header_ast.id, context, target_id_effective, REFS_TABLE_X_CHILD, {
+            source_location: ast.source_location,
+            inflected: ref.inflected,
+          })
+        }
+      }
       for (const title_ast of ref.title_ast_ancestors) {
         addToRefsTo(
           target_id_effective,
           context,
           title_ast.id,
           REFS_TABLE_X_TITLE_TITLE,
-          { source_location: ast.source_location }
+          { source_location: ast.source_location, inflected: ref.inflected }
         );
       }
     }
@@ -7343,6 +7444,10 @@ async function parse(tokens, options, context, extra_returns={}) {
           fetch_header_tree_ids_rows, { context })
         context.options.db_provider.fetch_ancestors_build_tree(
           fetch_ancestors_rows, context)
+        if (options.parent_id !== undefined && options.refs_to_x.some(ref => ref.header_ast_ancestors.length)) {
+          context.implicit_tag_parent_ancestors = new Set(
+            (await options.db_provider.fetch_ancestors(options.parent_id)).map(row => row.idid))
+        }
       }
 
       if (context.options.db_provider !== undefined) {
@@ -7387,6 +7492,23 @@ async function parse(tokens, options, context, extra_returns={}) {
     }
   }
 
+  if (options.render && !options.from_include) {
+    const seen = new Set()
+    for (const ref of options.refs_to_x) {
+      if (seen.has(ref.ast)) continue
+      seen.add(ref.ast)
+      const target = xGetTargetAst(ref.ast, context).target_ast
+      if (!target) continue
+      for (const header of ref.header_ast_ancestors) {
+        if (!headerAncestorIds(header, context).ids.has(target.synonym ?? target.id)) {
+          addToRefsTo(header.id, context, target.id, REFS_TABLE_X_CHILD, {
+            source_location: ref.ast.source_location,
+          })
+        }
+      }
+    }
+    checkHeaderTags()
+  }
   context.in_parse = false
   perfPrint(context, 'parse_end')
   return ast_toplevel;
@@ -8411,8 +8533,12 @@ function validateAst(ast, context) {
 }
 exports.validateAst = validateAst
 
-function xChildDbEffectiveId(target_id, context, ast) {
-  const target_ast = context.db_provider.get(target_id, context, ast.scope);
+function xChildDbEffectiveId(target_id, context, ast, absolute=false) {
+  // Absolute references have already had their leading slash resolved. Applying
+  // the source scope again could select a shadowing child instead of an ancestor.
+  const target_ast = absolute
+    ? context.db_provider.get_noscope(target_id, context)
+    : context.db_provider.get(target_id, context, ast.scope)
   if (
     target_ast === undefined
   ) {
@@ -9211,6 +9337,7 @@ const OURBIGBOOK_JSON_DEFAULT = {
   ignore: [],
   ignoreConvert: [],
   lint: {
+    duplicateTags: true,
     startsWithH1Header: false,
     filesAreIncluded: true,
     'h-tag': undefined,

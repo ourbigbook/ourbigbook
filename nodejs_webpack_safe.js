@@ -918,7 +918,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
   //   * directory based scopes
   //   * \x magic pluralization variants
   // * ensure that all \x targets exist
-  let { filterFilesThatDontExist, perf, options, ref_prefix, transaction, web } = opts
+  let { filterFilesThatDontExist, parentOverride, perf, options, ref_prefix, transaction, web } = opts
   if (ref_prefix === undefined) {
     ref_prefix = ''
   }
@@ -957,6 +957,8 @@ async function check_db(sequelize, paths_converted, opts={}) {
         ['inflected', 'ASC'],
         // Longest matching scope first, we then ignore all others.
         [sequelize.fn('length', sequelize.col('to_id')), 'DESC'],
+        // For tags the candidate target is from_id, rather than to_id.
+        [sequelize.fn('length', sequelize.col('from_id')), 'DESC'],
       ],
       include: [
         {
@@ -1199,8 +1201,116 @@ async function check_db(sequelize, paths_converted, opts={}) {
       )
     }
   }
-  if (delete_unused_inflection_ids.length) {
-    await sequelize.models.Ref.destroy({ where: { id: delete_unused_inflection_ids }, transaction })
+  const deleted = new Set(delete_unused_inflection_ids)
+
+  // Rebuild implicit tags from resolved header links. Keeping the ordinary link
+  // lets an implicit tag reappear if an ancestor is later moved out of the tree.
+  // Source locations in the header AST distinguish these from explicit tags and
+  // the old body-level parent/child links, without adding a database column.
+  const links = new_refs.filter(ref => ref.type === Ref.Types[ourbigbook.REFS_TABLE_X] && !deleted.has(ref.id))
+  if (links.length) {
+    const headers = await Id.findAll({
+      attributes: ['idid', 'ast_json'],
+      where: { idid: [...new Set(links.map(ref => ref.from_id))], macro_name: ourbigbook.Macro.HEADER_MACRO_NAME },
+      transaction,
+    })
+    const sourceKey = (path, line, column) => JSON.stringify([path, line, column])
+    const headerLinks = new Map()
+    for (const header of headers) {
+      const locations = new Set()
+      const todo = [JSON.parse(header.ast_json)]
+      while (todo.length) {
+        const ast = todo.pop()
+        if (ast.macro_name === ourbigbook.Macro.X_MACRO_NAME) {
+          const loc = ast.source_location
+          locations.add(sourceKey(loc.path, loc.line, loc.column))
+        }
+        for (const arg of Object.values(ast.args)) todo.push(...arg.asts)
+      }
+      headerLinks.set(header.idid, locations)
+    }
+    const implicitLinks = links.filter(ref => headerLinks.get(ref.from_id)?.has(
+      sourceKey(ref.definedAt.path, ref.defined_at_line, ref.defined_at_col)))
+    if (implicitLinks.length) {
+      const [ancestors] = await sequelize.query(`
+WITH RECURSIVE parents (to_id, from_id) AS (
+  SELECT to_id, from_id FROM "${Ref.tableName}" WHERE type = :parentType${
+    parentOverride ? ' AND to_id <> :overrideId\n  UNION SELECT :overrideId, :overrideParent' : ''}
+), ancestors (descendant, ancestor) AS (
+  SELECT to_id, from_id FROM parents WHERE to_id IN (:headers)
+  UNION
+  SELECT a.descendant, r.from_id FROM ancestors a
+  JOIN parents r ON r.to_id = a.ancestor
+)
+SELECT descendant, ancestor FROM ancestors
+UNION
+SELECT a.descendant, r.from_id FROM ancestors a
+JOIN "${Ref.tableName}" r ON r.to_id = a.ancestor AND r.type = :synonymType
+`, {
+        replacements: {
+          headers: [...new Set(implicitLinks.map(ref => ref.from_id))],
+          parentType: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          synonymType: Ref.Types[ourbigbook.REFS_TABLE_SYNONYM],
+          overrideId: parentOverride?.id,
+          overrideParent: parentOverride?.parentId,
+        },
+        transaction,
+      })
+      const ancestorPairs = new Set(ancestors.map(a => JSON.stringify([a.descendant, a.ancestor])))
+      const tagSources = new Map()
+      const tagSourceKey = (header, ref) => JSON.stringify([header, ref.defined_at, ref.defined_at_line, ref.defined_at_col])
+      for (const ref of new_refs) {
+        if (ref.type !== Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] || deleted.has(ref.id)) continue
+        const key = tagSourceKey(ref.to_id, ref)
+        if (!tagSources.has(key)) tagSources.set(key, [])
+        tagSources.get(key).push(ref)
+      }
+      const createTags = []
+      for (const link of implicitLinks) {
+        const isAncestor = ancestorPairs.has(JSON.stringify([link.from_id, link.to_id]))
+        let exists = false
+        for (const tag of tagSources.get(tagSourceKey(link.from_id, link)) || []) {
+          if (isAncestor || tag.from_id !== link.to_id) deleted.add(tag.id)
+          else exists = true
+        }
+        if (!isAncestor && !exists) {
+          const tag = {
+            type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD],
+            from_id: link.to_id,
+            to_id: link.from_id,
+            defined_at: link.defined_at,
+            defined_at_line: link.defined_at_line,
+            defined_at_col: link.defined_at_col,
+            inflected: link.inflected,
+          }
+          createTags.push(tag)
+          new_refs.push({ ...tag, definedAt: link.definedAt })
+        }
+      }
+      if (createTags.length) await Ref.bulkCreate(createTags, { transaction })
+    }
+  }
+  if (deleted.size) {
+    await Ref.destroy({ where: { id: [...deleted] }, transaction })
+  }
+
+  if (options.ourbigbook_json?.lint?.duplicateTags ?? ourbigbook.OURBIGBOOK_JSON_DEFAULT.lint.duplicateTags) {
+    // Only compare resolved references: different spellings, scopes and plurals
+    // can refer to the same tag. Keep their locations for actionable diagnostics.
+    const tags = new Map()
+    for (const ref of new_refs) {
+      if (ref.type !== Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] || deleted.has(ref.id)) continue
+      const key = JSON.stringify([ref.from_id, ref.to_id])
+      const location = `${ref.definedAt.path}:${ref.defined_at_line}:${ref.defined_at_col}`
+      const previous = tags.get(key)
+      if (previous !== undefined) {
+        error_messages.push(
+          `${location}: ${ourbigbook.duplicateTagMessage(ref.from_id, ref.to_id, previous)}`
+        )
+      } else {
+        tags.set(key, location)
+      }
+    }
   }
 
   if (filterFilesThatDontExist) {

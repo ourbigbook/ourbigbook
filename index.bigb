@@ -2815,6 +2815,20 @@ The `\H` `tag` argument marks another header as a tag of the current header.
 
 Tags essentially allow you to classify a single header as a child of multiple headers, as opposed to its location in the header tree which is unique.
 
+<Internal links> inside a header automatically tag that header with their targets, unless the target is already a structural ancestor of the header. Descendancy already provides that relationship. This includes links nested inside other macros, such as formatting, and links in the <\H title2 argument>. For example:
+``
+= Home
+
+== Animal
+
+== About \i[<Animal>]
+``
+Here `About Animal` is tagged with `Animal`, so adding `{tag=Animal}` would be redundant. Both `<Animal>` and `\x[animal]` create implicit tags. Links in the section body and <topic links> do not.
+
+If `About Animal` were a child or deeper descendant of `Animal`, the link would not create an implicit tag. This also applies to ancestors reached through <includes>.
+
+<lint duplicateTags> reports repeated tags by default, including explicit tags that duplicate these implicit tags.
+
 Sample usage:
 ``
 = Animal
@@ -8612,6 +8626,23 @@ Dashes are added around the signs if needed, e.g.:
 {parent=ourbigbook.json}
 
 Dictionary of lint options to enable. OurBigBook tries to be strict about forcing specific styles by default, e.g. forbids triple newline paragraph. But sometimes we just can't bear it :-)
+
+= `lint` `duplicateTags`
+{parent=lint}
+
+If `true`, report multiple tag relationships between the same pair of headers. This includes a <header> link combined with an explicit <H tag argument> for the same target, repeated header links, and repeated explicit tags. Defaults to `true`.
+
+Repeated tags within a header are checked during parsing, including links nested inside formatting macros. Database validation (including <--check-db-only>) also checks duplicates after resolving scopes and magic-link plurals, and catches duplicates introduced by reverse <H child argument> relationships. Errors include the file, line and column of both occurrences.
+
+To temporarily allow duplicates, disable it in <ourbigbook.json>:
+``
+{
+  "lint": {
+    "duplicateTags": false
+  }
+}
+``
+Run `ourbigbook --force-render .` once to re-extract implicit tags from files previously cached by timestamp, and list the duplicates for cleanup.
 
 = `lint` `h-parent`
 {parent=lint}

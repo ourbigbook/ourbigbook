@@ -50,6 +50,9 @@ const editPermissions = [
   ['editComment', (loggedInUser, commentUsername) => loggedInUser.username !== commentUsername],
   ['deleteComment', (loggedInUser, comment) => true],
 
+  // Uploads: deletion is currently reserved for admins, including a user's own files.
+  ['deleteUpload', (loggedInUser) => 'Only admins can delete files'],
+
   // SiteSettings
   ['updateSiteSettings', (loggedInUser, comment) => true],
 ]

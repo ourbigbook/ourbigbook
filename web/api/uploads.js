@@ -151,7 +151,7 @@ router.delete('/', auth.required, async function(req, res, next) {
     const { Article, File, User, Upload } = sequelize.models
     await sequelize.transaction(async (transaction) => {
       const loggedInUser = await User.findByPk(req.payload.id, { transaction })
-      let msg = cant.createArticle(loggedInUser)
+      const msg = cant.deleteUpload(loggedInUser)
       if (msg) {
         throw new lib.ValidationError([msg], 403)
       }
@@ -160,10 +160,6 @@ router.delete('/', auth.required, async function(req, res, next) {
         throw new lib.ValidationError(`path must be given and cannot be empty`)
       }
       const { path: actualPath, author } = await pathToActualPath(path, User, Upload, { transaction })
-      msg = cant.editArticle(loggedInUser, author.username)
-      if (msg) {
-        throw new lib.ValidationError([msg], 403)
-      }
       await User.findByPk(author.id, { transaction, lock: transaction.LOCK.UPDATE })
       const upload = await Upload.findOne({ where: { path: actualPath }, transaction})
       if (!upload) {

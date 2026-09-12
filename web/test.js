@@ -7232,7 +7232,8 @@ it('web: user files retain the profile at root, with tree and list views', async
       assert(!subdir.data.includes('class="user-info'))
       assert_xpath('//x:a[@href="/user0/_file/images%20%5B1%5D/photo.png"]', subdir.data)
     }
-    test.loginUser(user0)
+    await test.sequelize.models.User.update({ admin: true }, { where: { id: user1.id } })
+    test.loginUser(user1)
     await test.webApi.uploadDelete('user0/images [1]/photo.png')
     await test.webApi.uploadDelete('user0/notes.txt')
     assert.strictEqual((await test.webApi.user('user0')).data.fileCount, 0)
@@ -7336,7 +7337,10 @@ it('api: upload metadata and conditional replacement protect existing files', as
     // A confirmation for the previous version must not overwrite the new one.
     await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER, { ...confirmed, expectStatus: 412 })
     assert.deepStrictEqual((await test.webApi.upload(fullPath)).data, replacement)
+    await test.sequelize.models.User.update({ admin: true }, { where: { id: user1.id } })
+    test.loginUser(user1)
     await test.webApi.uploadDelete(fullPath)
+    test.loginUser(user0)
     await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER, { ...confirmed, expectStatus: 412 })
     assert.deepStrictEqual((await test.webApi.uploadMetadata(path)).data, { exists: false })
     // Existing CLI callers can still explicitly use the unconditional API.
@@ -7426,6 +7430,61 @@ it('api: uploaded image search matches literal prefixes for the current user onl
     test.disableToken()
     await test.webApi.uploadImages({}, { expectStatus: 401 })
   })
+})
+
+it('web: only admins can delete uploaded files, including from their file pages', async () => {
+  await testApp(async test => {
+    const { User, Upload, UploadDirectory } = test.sequelize.models
+    const owner = await test.createUserApi(0)
+    const admin = await test.createUserApi(1)
+    const path = 'images [1]/photo.png'
+    const fullPath = `user0/${path}`
+    const url = `/user0/_file/${ourbigbook.encodeUrlPath(path)}`
+    const button = '//x:button[contains(., "Delete file")]'
+    test.loginUser(owner)
+    await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER)
+    const assertUnchanged = async () => {
+      assert.deepStrictEqual((await test.webApi.upload(fullPath)).data, PNG_1X1_WHITE_BUFFER)
+      const user = await User.findByPk(owner.id)
+      assert.strictEqual(user.fileCount, 1)
+      assert.strictEqual(user.fileSize, PNG_1X1_WHITE_BUFFER.length)
+    }
+    // Both the owner and another ordinary user are forbidden, even through direct API calls.
+    for (const user of [owner, admin]) {
+      test.loginUser(user)
+      if (testNext) assert_xpath(button, (await test.sendJsonHttp('GET', url)).data, { count: 0 })
+      await test.webApi.uploadDelete(fullPath, { expectStatus: 403 })
+      await assertUnchanged()
+    }
+    test.disableToken()
+    if (testNext) assert_xpath(button, (await test.sendJsonHttp('GET', url)).data, { count: 0 })
+    await test.webApi.uploadDelete(fullPath, { expectStatus: 401 })
+    await assertUnchanged()
+    await User.update({ admin: true }, { where: { id: admin.id } })
+    test.loginUser(admin)
+    if (testNext) assert_xpath(button, (await test.sendJsonHttp('GET', url)).data)
+    await test.webApi.uploadDelete(fullPath)
+    await test.webApi.upload(fullPath, { expectStatus: 404 })
+    await test.webApi.uploadDelete(fullPath, { expectStatus: 404 })
+    const user = await User.findByPk(owner.id)
+    assert.strictEqual(user.fileCount, 0)
+    assert.strictEqual(user.fileSize, 0)
+    assert.strictEqual(await UploadDirectory.count({ where: {
+      path: Upload.uidAndPathToUploadPath(owner.id, 'images [1]'),
+    } }), 0)
+    if (testNext) {
+      assert.strictEqual((await test.sendJsonHttp('GET', url)).status, 404)
+      assert.strictEqual((await test.sendJsonHttp('GET', routes.dir('user0'))).status, 200)
+    }
+    // Authored file pages expose the same file action to admins.
+    test.loginUser(owner)
+    await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'notes')
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'notes.txt', bodySource: '{file}\n\nDescription' }))
+    if (testNext) assert_xpath(button, (await test.sendJsonHttp('GET', '/user0/_file/notes.txt')).data, { count: 0 })
+    test.loginUser(admin)
+    if (testNext) assert_xpath(button, (await test.sendJsonHttp('GET', '/user0/_file/notes.txt')).data)
+    await test.webApi.uploadDelete('user0/notes.txt')
+  }, { canTestNext: true })
 })
 
 it('web: file previews are pages and raw URLs serve the original bytes', async () => {
@@ -7738,6 +7797,11 @@ it(`api: upload simple`, async () => {
       ))
       test.loginUser(user0)
 
+      // Even owners cannot delete uploads. Only admins may do so.
+      await test.webApi.uploadDelete('user0/upload-0.png', { expectStatus: 403 })
+      await test.sequelize.models.User.update({ admin: true }, { where: { id: user1.id } })
+      test.loginUser(user1)
+
       // Cannot delete upload that does not exist
       ;({data, status} = await test.webApi.uploadDelete(
         'user0/i-dont-exist',
@@ -7794,7 +7858,11 @@ it(`api: upload delete automatically clears up associated _file`, async () => {
     })))
 
     // Delete
+    const admin = await test.createUserApi(1)
+    await test.sequelize.models.User.update({ admin: true }, { where: { id: admin.id } })
+    test.loginUser(admin)
     ;({data, status} = await test.webApi.uploadDelete('user0/myfile.txt'))
+    test.loginUser(user0)
 
     // Can't edit it anymore because the file is gone.
     ;({data, status} = await createOrUpdateArticleApi(

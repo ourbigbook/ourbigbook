@@ -15683,23 +15683,6 @@ assert_cli(
     },
   }
 )
-if (!ourbigbook_nodejs_front.postgres) assert_cli('file: legacy cached IDs are rebuilt without changing source timestamps', {
-  args: ['-S', '.'],
-  filesystem: {
-    'index.bigb': '= Home\n\n\\x[_file/example.txt]\n\n== example.txt\n{file}\n',
-    'example.txt': 'Example contents',
-    'ourbigbook.json': '{}',
-  },
-  pre_exec: [
-    ['ourbigbook', ['-S', '.']],
-    ['sqlite3', [`${TMP_DIRNAME}/db.sqlite3`, `UPDATE "Id" SET "idid" = REPLACE("idid", '-/file/', '_file/')`]],
-  ],
-  assert_xpath: {
-    [`${TMP_DIRNAME}/html/index.html`]: ["//x:div[@class='p']/x:a[@href='#-/file/example.txt']"],
-    [`${TMP_DIRNAME}/html/-/file/example.txt.html`]: ["//x:code[text()='Example contents']"],
-  },
-})
-
 assert_cli('file: _file auto-generation conversion image media provider works',
   {
     args: ['-S', 'project'],

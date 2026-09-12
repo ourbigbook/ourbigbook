@@ -632,6 +632,8 @@ it('reserved path namespace migration preserves file IDs, references and uploads
     await test.webApi.commentCreate('user0/links', 1, 'Comment paragraph')
     const fileArticle = await Article.findOne({ where: { slug: 'user0/-/file/folder/_raw/picture.png' } })
     assert(fileArticle)
+    const fileRenders = {}
+    for (const field of ['h1Render', 'h2Render', 'render']) fileRenders[field] = fileArticle[field]
     const literal = '<code>_file/example _1</code><a href="https://example.com/_raw/a#_1">External</a>' +
       '<p id="user0/temporary/-/42">Temporary</p><a href="#user0/temporary/-/42">Jump</a>' +
       '<a href="/user0/-/raw/_1">Numeric filename</a><a href="#custom/_1">Authored ID</a>'
@@ -664,11 +666,22 @@ it('reserved path namespace migration preserves file IDs, references and uploads
     assert(links.render.includes('/user0/-/file/folder/_raw/picture.png'))
     // Rebuild from migrated paths and unchanged sources, including legacy xrefs.
     await Article.update({ render: '<p id="_toc">Old rendered HTML</p>' }, { where: { id: links.id } })
+    await Article.update({
+      h1Render: '<h1>Old file header</h1>',
+      h2Render: '<h2>Old file header</h2>',
+      render: '<p>Old file body</p>',
+    }, { where: { id: fileArticle.id } })
     await Article.rerender({ slugs: ['user0/links', fileArticle.slug] })
     await links.reload()
     await fileArticle.reload()
     assert(links.render.includes('/user0/-/file/folder/_raw/picture.png'))
-    assert(fileArticle.render.includes('/user0/-/raw/folder/_raw/picture.png'))
+    for (const [field, expected] of Object.entries(fileRenders)) {
+      assert.strictEqual(fileArticle[field], expected, field)
+    }
+    // File previews belong to the header render, for both standalone and included articles.
+    for (const field of ['h1Render', 'h2Render']) {
+      assert_xpath('//x:a[@href="/user0/-/raw/folder/_raw/picture.png"]/x:img[@src="/user0/-/raw/folder/_raw/picture.png"]', fileArticle[field])
+    }
     assert(!links.render.includes('Old rendered HTML'))
   })
 })

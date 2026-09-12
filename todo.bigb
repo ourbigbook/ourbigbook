@@ -33,7 +33,7 @@ when there is a file `myfile.txt` without a corresponding `{file}` header such a
 = myfile.txt
 {file}
 ``
-As of writing, on static we already autogenerate such `_file` pages for all files (not yet on web but we should too), so it's just a matter of checking if the target file exists when the ID doesn't for error checking, and linking to the _file.
+As of writing, on static we already autogenerate such `-/file` pages for all files (not yet on web but we should too), so it's just a matter of checking if the target file exists when the ID doesn't for error checking, and linking to the _file.
 
 === Link to _file rather than _raw if there's split pages
 {tag=File autogen}
@@ -434,7 +434,7 @@ extract_ids: README.bigb
 extract_ids: README.bigb skipped by timestamp
 render: README.bigb
 error: README.bigb:3:2: cross reference to unknown id: "asdf" at render time
-copy README.bigb -> out/html/_raw/README.bigb
+copy README.bigb -> out/html/-/raw/README.bigb
 render: README.bigb -> out/html/index.html finished in 51.55012200027704 ms
 ``
 with an error at render time.
@@ -478,7 +478,7 @@ It is currently possible however to just do:
 = .gitignore
 
 = child
-{parent=_file/.gitignore}
+{parent=-/file/.gitignore}
 ``
 I need to think why it works.
 
@@ -1016,9 +1016,9 @@ But aint't nobody got time for that!
 
 Reasonable results can already be obtained with:
 \passthrough[[
-<iframe src="_raw/js/matterjs/examples.html#top-down-asdw-fixed-viewport" width="1000" height="850"></iframe>
+<iframe src="-/raw/js/matterjs/examples.html#top-down-asdw-fixed-viewport" width="1000" height="850"></iframe>
 ]]
-The main issue with that is the possibly changing `_raw/js/matterjs/examples.html` path depending on scopes, and it is also not very nice to have to write `_raw` explicitly.
+The main issue with that is the possibly changing `-/raw/js/matterjs/examples.html` path depending on scopes, and it is also not very nice to have to write `-/raw` explicitly.
 
 Instead we should do the same handling as is currently done for `\a[]` and `\Image[]` on these paths.
 
@@ -1442,7 +1442,7 @@ OK, this was also reproducible on CLI, links to toplevel synonyms had fragments,
 {tag=File}
 
 We should have:
-* `_raw/path/to/main.py`: raw file
+* `-/raw/path/to/main.py`: raw file
 for every file `path/to/main.py` in the repo to avoid URL clashes, e.g. between:
 ``
 configure
@@ -1465,11 +1465,11 @@ We could start simple without any in-browser things, email only. Though having b
 {id=2}
 {tag=File}
 
-Edit: first implemented the `_index` thing. But actually noticed would be saner with a separate `_dir/` prefix for directories. Otherwise a recursive wget/zip would not work out of box which makes me sad. It is a bit sad that you can't just remove a path from `_raw/path/to/file.txt` to go to `_raw/path/to/` as you need `_dir/path/to/` instead. But so bet it.
+Edit: first implemented the `_index` thing. But actually noticed would be saner with a separate `-/dir/` prefix for directories. Otherwise a recursive wget/zip would not work out of box which makes me sad. It is a bit sad that you can't just remove a path from `-/raw/path/to/file.txt` to go to `-/raw/path/to/` as you need `-/dir/path/to/` instead. But so bet it.
 
-E.g. `subdir/index.html` which would show up under `_raw/subdir/index.html` gets overriden by the directory listing of `subdir/` which goes to the same location.
+E.g. `subdir/index.html` which would show up under `-/raw/subdir/index.html` gets overriden by the directory listing of `subdir/` which goes to the same location.
 
-One possibility would be to add an underscore: `_raw/subdir/_index.html` for the file. And another underscore for `_index.html` and so on.
+One possibility would be to add an underscore: `-/raw/subdir/_index.html` for the file. And another underscore for `_index.html` and so on.
 
 === Automatically add `source` to archive.org images
 {tag=Image}
@@ -1482,9 +1482,9 @@ Edit: OK that is useless. The source needs to be an HTML page, and we can't infe
 {tag=File}
 
 We should have:
-* `_file/path/to/main.py`: OurBigBook section showing preview of file + comments/metadata
-* `_raw/path/to/main.py`: raw file
-Done the `_file` part.
+* `-/file/path/to/main.py`: OurBigBook section showing preview of file + comments/metadata
+* `-/raw/path/to/main.py`: raw file
+Done the `-/file` part.
 
 === Following and followed tabs are swapped
 {tag=Web}

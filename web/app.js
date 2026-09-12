@@ -159,8 +159,8 @@ async function start(port, startNext, cb) {
 
   // Next handles anything outside of:
   // 1) /api.
-  // 2) /[uid]/_raw. File previews under _file are Next pages.
-  app.get(new RegExp(`^(?!(${config.apiPath}|/[^/]+/_raw)(/|$))`), function (req, res) {
+  // 2) /[uid]/-/raw. File previews under -/file are Next pages.
+  app.get(new RegExp(`^(?!(${config.apiPath}|/[^/]+/-/raw)(/|$))`), function (req, res) {
     // We pass the sequelize that we have already created and connected to the database
     // so that the Next.js backend can just use that connection. This is in particular mandatory
     // if we wish to use SQLite in-memory database, because there is no way to make two separate
@@ -176,7 +176,7 @@ async function start(port, startNext, cb) {
     config.convertOptions.katex_macros = back_js.preloadKatex()
     const router = express.Router()
     router.use(config.apiPath, api)
-    router.get('/:username/_raw/:path(*)', auth.optional, async function(req, res, next) {
+    router.get('/:username/-/raw/:path(*)', auth.optional, async function(req, res, next) {
       return uploadsGet(req, res, next, `${req.params.username}/${req.params.path}`)
     })
     app.use(router)

@@ -320,7 +320,7 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
             : imageCount > images.length ? 'Showing the first 20 matches. Type more to narrow the search.'
             : `${imageCount} matching image${imageCount === 1 ? '' : 's'}. Select a path from the dropdown.`}</p>
           {selectedImage && <img className="image-upload-preview" alt="Selected image preview"
-            src={`/${username}/_raw/${selectedImage.path.split('/').map(encodeURIComponent).join('/')}`} />}
+            src={`/${username}/-/raw/${selectedImage.path.split('/').map(encodeURIComponent).join('/')}`} />}
         </>}
         {tab === 'web' && <>
           <label>
@@ -349,7 +349,7 @@ function ImageModal({ username, initialWebUrl, onInsert, onClose }) {
       <figure>
         <figcaption>Existing image</figcaption>
         {replacement.contentType?.startsWith('image/') ? <>
-          <img src={`/${username}/_raw/${replacement.path.split('/').map(encodeURIComponent).join('/')}?v=${replacement.hash}`}
+          <img src={`/${username}/-/raw/${replacement.path.split('/').map(encodeURIComponent).join('/')}?v=${replacement.hash}`}
             alt="Existing image" onLoad={() => setOldPreviewLoaded(true)} onError={() => {
               setOldPreviewLoaded(true)
               setOldPreviewFailed(true)
@@ -484,7 +484,7 @@ async function cachedIdExists(idid) {
 
 const parentTitleDisplay = 'Parent article'
 const previousSiblingTitleDisplay = 'Previous sibling'
-const metadataTabId = `${ourbigbook.Macro.RESERVED_ID_PREFIX}metadata`
+const metadataTabId = `${ourbigbook.RESERVED_PATH_PREFIX}metadata`
 
 export default function EditorPageHoc({
   isIssue=false,
@@ -1032,7 +1032,7 @@ export default function EditorPageHoc({
     function goToTab() {
       const hash = window.location.hash
       let tab
-      if (hash === '#_metadata') {
+      if (hash === `#${metadataTabId}`) {
         tab = 'metadata'
       } else {
         tab = 'editor'

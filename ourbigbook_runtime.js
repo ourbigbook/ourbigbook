@@ -115,7 +115,7 @@ export function ourbigbook_runtime(toplevel, opts={}) {
                 const startsWithLis = []
                 const includesLis = []
                 for (const idDiv of idDivs) {
-                  const idNoPref = idDiv.id.replace('_toc/', '')
+                  const idNoPref = idDiv.id.replace('-/toc/', '')
                   function idDivToLi(idDiv) {
                     const notArrowAElem = idDiv.querySelectorAll(`.not-arrow a`)[0]
                     const clone = notArrowAElem.cloneNode(true)

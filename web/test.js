@@ -521,7 +521,13 @@ it('web: scoped magic URLs and permanent legacy redirects', async () => {
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Child', bodySource: 'Content' }), { parentId: '@user0/parent' })
     const slug = 'user0/parent/child'
     await test.webApi.issueCreate(slug, { titleSource: 'A discussion', bodySource: 'Discussion body' })
+    await test.webApi.uploadCreateOrUpdate('user0/image.png', PNG_1X1_WHITE_BUFFER)
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'image.png', bodySource: '{file}' }))
     const redirectCases = [
+      ['/user0/_file/image.png', '/user0/-/file/image.png'],
+      ['/user0/_dir', '/user0/-/dir'],
+      ['/user0/_dir/images', '/user0/-/dir/images'],
+      ['/user0/_raw/image.png', '/user0/-/raw/image.png'],
       ...['users', 'articles', 'comments', 'discussions', 'files', 'login', 'register', 'new',
         'reset-password', 'reset-password-sent', 'reset-password-update', 'site-settings', 'topics', 'verify'].map(action => [`/go/${action}`, `/-/${action}`]),
       ['/go/topic/parent/child', '/-/topic/parent/child'],
@@ -551,6 +557,8 @@ it('web: scoped magic URLs and permanent legacy redirects', async () => {
       assert.strictEqual(destination.searchParams.get('search'), 'a b')
     }
     const pages = [
+      '/user0/-/file/image.png', '/user0/-/dir',
+      ...['edit', 'source', 'discussions'].map(action => `/user0/-/file/image.png/-/${action}`),
       '/-/users', '/-/files', '/-/articles', '/-/discussions', '/-/comments', '/-/topic/parent/child',
       '/user0/-/settings', '/user0/-/articles', '/user0/-/discussions', '/user0/-/comments',
       '/user0/-/files', '/user0/-/children', '/user0/-/incoming', '/user0/-/tagged',
@@ -592,6 +600,8 @@ it('web: scoped magic URLs and permanent legacy redirects', async () => {
       ['/go/discussions', '/-/discussions'],
       [`/go/discussions/${slug}`, `/${slug}/-/discussions`],
       ['/go/user/user0/articles?sort=updated', '/user0/-/articles?sort=updated'],
+      ['/user0/_file/image.png', '/user0/-/file/image.png'],
+      ['/user0/_dir', '/user0/-/dir'],
       ['/', '/'],
     ]
     await require('util').promisify(require('child_process').execFile)(process.execPath, [
@@ -605,12 +615,121 @@ it('web: scoped magic URLs and permanent legacy redirects', async () => {
   }, { canTestNext: true })
 })
 
+it('reserved path namespace migration preserves file IDs, references and uploads', async () => {
+  await testApp(async test => {
+    const { sequelize } = test
+    const { Article, File, Id, Ref, Upload } = sequelize.models
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    await test.webApi.uploadCreateOrUpdate('user0/folder/_raw/picture.png', PNG_1X1_WHITE_BUFFER)
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'folder/_raw/picture.png', bodySource: '{file}' }))
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Links', bodySource: '<folder/_raw/picture.png>{file}\n\n\\i[Explicit]{id=custom/_1}' }))
+    for (const path of ['_1', 'a&b/_1']) {
+      await test.webApi.uploadCreateOrUpdate(`user0/${path}`, 'A numeric filename')
+      await createOrUpdateArticleApi(test, createArticleArg({ titleSource: path, bodySource: '{file}\n\nFile description' }))
+    }
+    await test.webApi.issueCreate('user0/links', { titleSource: 'Discussion', bodySource: 'Discussion paragraph' })
+    await test.webApi.commentCreate('user0/links', 1, 'Comment paragraph')
+    const fileArticle = await Article.findOne({ where: { slug: 'user0/-/file/folder/_raw/picture.png' } })
+    assert(fileArticle)
+    const literal = '<code>_file/example _1</code><a href="https://example.com/_raw/a#_1">External</a>' +
+      '<p id="user0/temporary/-/42">Temporary</p><a href="#user0/temporary/-/42">Jump</a>' +
+      '<a href="/user0/-/raw/_1">Numeric filename</a><a href="#custom/_1">Authored ID</a>'
+    await fileArticle.update({ render: fileArticle.render + literal })
+    const before = {}
+    for (const name of ['Article', 'File', 'Id', 'Ref', 'ARef', 'Topic', 'Issue', 'Comment', 'Upload', 'UploadDirectory', 'User']) {
+      before[name] = (await sequelize.query(`SELECT * FROM "${name}" ORDER BY "id"`))[0]
+    }
+    const migration = require('./migrations/21000101000041-reserved-path-namespace')
+    const qi = sequelize.getQueryInterface()
+    await migration.down(qi)
+    assert(await Article.findOne({ where: { slug: 'user0/_file/folder/_raw/picture.png' } }))
+    assert(await File.findOne({ where: { path: '@user0/_file/folder/_raw/picture.png.bigb' } }))
+    assert(await Id.findOne({ where: { idid: '@user0/_file/folder/_raw/picture.png' } }))
+    assert(await Ref.findOne({ where: { to_id: '@user0/_file/folder/_raw/picture.png' } }))
+    const legacyFile = await Article.findByPk(fileArticle.id)
+    assert.strictEqual(legacyFile.render, fileArticle.render)
+    assert(await Id.findOne({ where: { idid: '@user0/_file/_1' } }))
+    assert(await Id.findOne({ where: { idid: '@user0/custom/_1' } }))
+    await migration.up(qi)
+    await migration.up(qi)
+    for (const [name, expected] of Object.entries(before)) {
+      assert.deepStrictEqual((await sequelize.query(`SELECT * FROM "${name}" ORDER BY "id"`))[0], expected, name)
+    }
+    const upload = await Upload.findOne()
+    assert.deepStrictEqual(upload.bytes, PNG_1X1_WHITE_BUFFER)
+    // Saved source using legacy xrefs remains editable after migration.
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Links', bodySource: '\\x[_file/folder/_raw/picture.png]' }))
+    const links = await Article.findOne({ where: { slug: 'user0/links' } })
+    assert(links.render.includes('/user0/-/file/folder/_raw/picture.png'))
+    // Rebuild from migrated paths and unchanged sources, including legacy xrefs.
+    await Article.update({ render: '<p id="_toc">Old rendered HTML</p>' }, { where: { id: links.id } })
+    await Article.rerender({ slugs: ['user0/links', fileArticle.slug] })
+    await links.reload()
+    await fileArticle.reload()
+    assert(links.render.includes('/user0/-/file/folder/_raw/picture.png'))
+    assert(fileArticle.render.includes('/user0/-/raw/folder/_raw/picture.png'))
+    assert(!links.render.includes('Old rendered HTML'))
+  })
+})
+
+it('named anchors are rebuilt by rerendering without an HTML migration', async () => {
+  await testApp(async test => {
+    const { sequelize } = test
+    const { Article } = sequelize.models
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Anchors', bodySource: '\\i[Authored]{id=literal/_comment-1}\n\n\\i[Escaped]{id=a&b/_comment-1}' }))
+    await test.webApi.issueCreate('user0/anchors', { titleSource: 'Discussion', bodySource: 'Discussion paragraph' })
+    await test.webApi.commentCreate('user0/anchors', 1, '= Comment heading\n\n== Child\n\nComment paragraph')
+    const article = await Article.findOne({ where: { slug: 'user0/anchors' } })
+    const originalRenders = {
+      Article: article.render,
+      Issue: (await sequelize.models.Issue.findOne()).render,
+      Comment: (await sequelize.models.Comment.findOne()).render,
+    }
+    for (const name of Object.keys(originalRenders)) {
+      await sequelize.models[name].update({ render: '<p id="_toc">Old rendered HTML</p>' }, {
+        where: name === 'Article' ? { id: article.id } : {},
+      })
+    }
+    const tables = ['Article', 'Issue', 'Comment', 'File', 'Id', 'Ref', 'User']
+    const before = {}
+    for (const name of tables) before[name] = (await sequelize.query(`SELECT * FROM "${name}" ORDER BY "id"`))[0]
+    const migration = require('./migrations/21000101000042-named-anchor-namespace')
+    const qi = sequelize.getQueryInterface()
+    await migration.down(qi)
+    await migration.up(qi)
+    await migration.up(qi)
+    for (const name of tables) {
+      assert.deepStrictEqual((await sequelize.query(`SELECT * FROM "${name}" ORDER BY "id"`))[0], before[name], name)
+    }
+    await Article.rerender({ slugs: [article.slug] })
+    await sequelize.models.Issue.rerender()
+    await sequelize.models.Comment.rerender()
+    await article.reload()
+    assert.strictEqual(article.render, originalRenders.Article)
+    assert.strictEqual((await sequelize.models.Issue.findOne()).render, originalRenders.Issue)
+    const comment = await sequelize.models.Comment.findOne()
+    assert.strictEqual(comment.render, originalRenders.Comment)
+    assert(comment.render.includes('-/comment-1/'))
+    assert(!comment.render.includes('comment-undefined'))
+
+  })
+})
+
 it('api: reserved route separator cannot be an article or inline ID', async () => {
   await testApp(async test => {
     const user = await test.createUserApi(0)
     test.loginUser(user)
     for (const bodySource of ['{id=parent/-/child}', '\\i[text]{id=parent/-/child}']) {
       await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Reserved ID', bodySource }), {}, { expectStatus: 422 })
+    }
+    for (const id of ['_out', '.git', '_out/child', '.git/child']) {
+      await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Reserved ID', bodySource: `{id=${id}}` }), {}, { expectStatus: 422 })
+    }
+    for (const id of ['_toc', '_1', 'parent/_out', 'parent/.git']) {
+      await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Allowed ID', bodySource: `{id=${id}}` }), {}, { expectStatus: 200 })
     }
     for (const path of ['user0/-', 'user0/-/edit', 'user0/parent/-/child']) {
       const response = await test.webApi.uploadCreateOrUpdate(path, 'content')
@@ -5319,9 +5438,9 @@ it('api: uppercase article IDs are forbidden', async () => {
     // Uppercase is allowed with {file} however.
     ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/path/to/main.S', 'content-0'))
     article = createArticleArg({ i: 0, titleSource: 'path/to/main.S', bodySource: '{file}' })
-    ;({data, status} = await createOrUpdateArticleApi(test, article, { path: '_file/path/to/main.S' }))
+    ;({data, status} = await createOrUpdateArticleApi(test, article, { path: '-/file/path/to/main.S' }))
     assertStatus(status, data)
-    ;({data, status} = await test.webApi.article('user0/_file/path/to/main.S'))
+    ;({data, status} = await test.webApi.article('user0/-/file/path/to/main.S'))
     assertStatus(status, data)
     assert.notStrictEqual(data, undefined)
 
@@ -5330,7 +5449,7 @@ it('api: uppercase article IDs are forbidden', async () => {
     article = createArticleArg({ i: 0, titleSource: 'path/to/main2.S', bodySource: '{file}' })
     ;({data, status} = await createOrUpdateArticleApi(test, article))
     assertStatus(status, data)
-    ;({data, status} = await test.webApi.article('user0/_file/path/to/main2.S'))
+    ;({data, status} = await test.webApi.article('user0/-/file/path/to/main2.S'))
     assertStatus(status, data)
     assert.notStrictEqual(data, undefined)
 
@@ -7257,27 +7376,27 @@ it(`api: article with {file}`, async () => {
 
     ;({data, status} = await test.webApi.uploadCreateOrUpdate('user0/subdir/myfile.txt', 'content-0'))
 
-    // Create article user0/_file/subdir/myfile.txt
+    // Create article user0/-/file/subdir/myfile.txt
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
       titleSource: `subdir/myfile.txt`,
       bodySource: `{file}`
     })))
 
     // Check that the article is there
-    ;({data, status} = await test.webApi.article('user0/_file/subdir/myfile.txt'))
+    ;({data, status} = await test.webApi.article('user0/-/file/subdir/myfile.txt'))
     assert.strictEqual(data.titleRender, 'subdir/myfile.txt')
     assert_xpath(
-      `//x:a[@href='/user0/_dir' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}' and ` +
+      `//x:a[@href='/user0/-/dir' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}' and ` +
         `@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='@user0/${ourbigbook.FILE_PREFIX}/subdir/myfile.txt__']`,
       data.h1Render
     )
     assert_xpath(
-      `//x:a[@href='/user0/_dir/subdir' and text()='subdir' and ` +
+      `//x:a[@href='/user0/-/dir/subdir' and text()='subdir' and ` +
         `@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='@user0/${ourbigbook.FILE_PREFIX}/subdir/myfile.txt__subdir']`,
       data.h1Render
     )
     assert_xpath(
-      `//x:a[@href='/user0/_raw/subdir/myfile.txt' and text()='myfile.txt' and ` +
+      `//x:a[@href='/user0/-/raw/subdir/myfile.txt' and text()='myfile.txt' and ` +
         `@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='@user0/${ourbigbook.FILE_PREFIX}/subdir/myfile.txt__subdir/myfile.txt']`,
       data.h1Render
     )
@@ -7372,27 +7491,27 @@ it('web: user files retain the profile at root, with tree and list views', async
       test.disableToken()
       const tree = await test.sendJsonHttp('GET', routes.dir('user0'))
       assert.strictEqual(tree.status, 200)
-      assert_xpath('//x:a[@href="/user0/_dir" and contains(., "Files")]/x:span[contains(., "(2)")]', tree.data)
+      assert_xpath('//x:a[@href="/user0/-/dir" and contains(., "Files")]/x:span[contains(., "(2)")]', tree.data)
       assert_xpath('//x:a[contains(@class, "active") and normalize-space(text())="Tree"]', tree.data)
-      assert_xpath('//x:a[@href="/user0/_dir/images%20%5B1%5D"]', tree.data)
-      assert_xpath('//x:a[@href="/user0/_file/notes.txt"]', tree.data)
+      assert_xpath('//x:a[@href="/user0/-/dir/images%20%5B1%5D"]', tree.data)
+      assert_xpath('//x:a[@href="/user0/-/file/notes.txt"]', tree.data)
       const list = await test.sendJsonHttp('GET', routes.userFiles('user0', { sort: 'size' }))
       assert.strictEqual(list.status, 200)
       assert_xpath('//x:div[contains(@class, "user-info")]//x:h1/x:a[@href="/user0"]', list.data)
       assert_xpath('//x:a[contains(@class, "active") and normalize-space(text())="List"]', list.data)
-      assert_xpath('//x:table[contains(@class, "file-list")]//x:a[@href="/user0/_raw/images%20%5B1%5D/photo.png"]/x:img[@src="/user0/_raw/images%20%5B1%5D/photo.png"]', list.data)
+      assert_xpath('//x:table[contains(@class, "file-list")]//x:a[@href="/user0/-/raw/images%20%5B1%5D/photo.png"]/x:img[@src="/user0/-/raw/images%20%5B1%5D/photo.png"]', list.data)
       assert(!list.data.includes('user1/other.png'))
       assert(!list.data.includes('> Author</th>'))
       const alphabetical = await test.sendJsonHttp('GET', routes.userFiles('user0', { sort: 'path' }))
       assert.strictEqual(alphabetical.status, 200)
       assert_xpath('//x:a[contains(@class, "active") and @href="/user0/-/files?sort=path"]', alphabetical.data)
-      assert_xpath('(//x:td[@class="file-path"])[1]/x:a[@href="/user0/_file/images%20%5B1%5D/photo.png"]', alphabetical.data)
+      assert_xpath('(//x:td[@class="file-path"])[1]/x:a[@href="/user0/-/file/images%20%5B1%5D/photo.png"]', alphabetical.data)
       const users = await test.sendJsonHttp('GET', routes.users({ sort: 'files' }))
       assert.strictEqual(users.status, 200)
       assert_xpath('//x:a[contains(@class, "active") and @href="/-/users?sort=files"]', users.data)
       assert_xpath('//x:th[contains(., "Files")]', users.data)
-      assert_xpath('//x:td/x:a[@href="/user0/_dir" and text()="2"]', users.data)
-      assert_xpath('//x:td/x:a[@href="/user1/_dir" and text()="1"]', users.data)
+      assert_xpath('//x:td/x:a[@href="/user0/-/dir" and text()="2"]', users.data)
+      assert_xpath('//x:td/x:a[@href="/user1/-/dir" and text()="1"]', users.data)
       const usersBySize = await test.sendJsonHttp('GET', routes.users({ sort: 'file-size' }))
       assert.strictEqual(usersBySize.status, 200)
       assert_xpath('//x:a[contains(@class, "active") and @href="/-/users?sort=file-size"]', usersBySize.data)
@@ -7401,7 +7520,7 @@ it('web: user files retain the profile at root, with tree and list views', async
       assert.strictEqual(subdir.status, 200)
       assert_xpath('//x:div[contains(@class, "dir-page")]/x:h1', subdir.data)
       assert(!subdir.data.includes('class="user-info'))
-      assert_xpath('//x:a[@href="/user0/_file/images%20%5B1%5D/photo.png"]', subdir.data)
+      assert_xpath('//x:a[@href="/user0/-/file/images%20%5B1%5D/photo.png"]', subdir.data)
     }
     await test.sequelize.models.User.update({ admin: true }, { where: { id: user1.id } })
     test.loginUser(user1)
@@ -7435,8 +7554,8 @@ it('web: global file index lists metadata, image previews, and stable pages', as
     const page2 = await Upload.getFileIndex({ limit: 2, offset: 2 })
     assert.deepStrictEqual(page2.files.map(file => file.path), ['user0/images/a [1].png'])
     const image = page2.files[0]
-    assert.strictEqual(image.url, '/user0/_file/images/a%20%5B1%5D.png')
-    assert.strictEqual(image.previewUrl, '/user0/_raw/images/a%20%5B1%5D.png')
+    assert.strictEqual(image.url, '/user0/-/file/images/a%20%5B1%5D.png')
+    assert.strictEqual(image.previewUrl, '/user0/-/raw/images/a%20%5B1%5D.png')
     assert.strictEqual(image.size, PNG_1X1_WHITE_BUFFER.length)
     assert.strictEqual(image.createdAt, '2026-01-01T00:00:00.000Z')
     assert.deepStrictEqual(image.author, {
@@ -7474,7 +7593,7 @@ it('web: global file index lists metadata, image previews, and stable pages', as
       assert_xpath(`(//x:td[@class="file-path"])[1]/x:a[@href='${image.url}']`, alphabetical.data)
       const descending = await test.sendJsonHttp('GET', routes.files({ sort: 'path-desc' }))
       assert.strictEqual(descending.status, 200)
-      assert_xpath('(//x:td[@class="file-path"])[1]/x:a[@href="/user1/_file/data.txt"]', descending.data)
+      assert_xpath('(//x:td[@class="file-path"])[1]/x:a[@href="/user1/-/file/data.txt"]', descending.data)
       const empty = await test.sendJsonHttp('GET', routes.files({ page: 2 }))
       assert(empty.data.includes('There are no files to show.'))
     }
@@ -7610,8 +7729,8 @@ it('web: file unlisting permissions, listings, replacement and counts', async ()
     const other = await test.createUserApi(1)
     const fullPath = 'user0/private [1]/photo.png'
     const encoded = 'private%20%5B1%5D/photo.png'
-    const fileUrl = `/user0/_file/${encoded}`
-    const rawUrl = `/user0/_raw/${encoded}`
+    const fileUrl = `/user0/-/file/${encoded}`
+    const rawUrl = `/user0/-/raw/${encoded}`
     const unlistButton = '//x:button[normalize-space(text())="Unlist"]'
     test.loginUser(owner)
     await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER)
@@ -7654,16 +7773,16 @@ it('web: file unlisting permissions, listings, replacement and counts', async ()
         assert_xpath(`//x:a[@href='${fileUrl}']`, hidden.data, { count: 0 })
         assert_xpath('//x:a[contains(@href, "listed=2") and text()="also show them"]', hidden.data)
         const only = await test.sendJsonHttp('GET', `${url}?listed=0`)
-        assert_xpath('//x:a[@href="/user0/_file/visible.txt"]', only.data, { count: 0 })
+        assert_xpath('//x:a[@href="/user0/-/file/visible.txt"]', only.data, { count: 0 })
         if (url !== routes.dir('user0')) {
           assert_xpath(`//x:a[@href='${fileUrl}']`, only.data)
           assert_xpath(`//x:a[@href='${fileUrl}']`, (await test.sendJsonHttp('GET', `${url}?listed=2`)).data)
         } else {
-          assert_xpath('//x:a[contains(@href, "/user0/_dir/private%20%5B1%5D")]', hidden.data, { count: 0 })
-          assert_xpath('//x:a[@href="/user0/_dir/private%20%5B1%5D?listed=0"]', only.data)
+          assert_xpath('//x:a[contains(@href, "/user0/-/dir/private%20%5B1%5D")]', hidden.data, { count: 0 })
+          assert_xpath('//x:a[@href="/user0/-/dir/private%20%5B1%5D?listed=0"]', only.data)
         }
       }
-      const directory = '/user0/_dir/private%20%5B1%5D'
+      const directory = '/user0/-/dir/private%20%5B1%5D'
       assert_xpath(`//x:a[@href='${fileUrl}']`, (await test.sendJsonHttp('GET', directory)).data, { count: 0 })
       assert_xpath(`//x:a[@href='${fileUrl}']`, (await test.sendJsonHttp('GET', `${directory}?listed=0`)).data)
       assert.strictEqual((await test.sendJsonHttp('GET', fileUrl)).status, 200)
@@ -7687,8 +7806,8 @@ it('web: file unlisting permissions, listings, replacement and counts', async ()
     test.loginUser(owner)
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'visible.txt', bodySource: '{file}\n\nFile description' }))
     await test.webApi.uploadUpdate('user0/visible.txt', { list: false })
-    assert.strictEqual((await test.webApi.article('user0/_file/visible.txt')).data.list, true)
-    if (testNext) assert_xpath('//x:button[normalize-space(text())="List"]', (await test.sendJsonHttp('GET', '/user0/_file/visible.txt')).data)
+    assert.strictEqual((await test.webApi.article('user0/-/file/visible.txt')).data.list, true)
+    if (testNext) assert_xpath('//x:button[normalize-space(text())="List"]', (await test.sendJsonHttp('GET', '/user0/-/file/visible.txt')).data)
     await assertCounts(0, 0)
     await test.webApi.uploadUpdate('user0/visible.txt', { list: true })
     await assertCounts(1, 7)
@@ -7737,7 +7856,7 @@ it('web: only admins can delete uploaded files, including from their file pages'
     const admin = await test.createUserApi(1)
     const path = 'images [1]/photo.png'
     const fullPath = `user0/${path}`
-    const url = `/user0/_file/${ourbigbook.encodeUrlPath(path)}`
+    const url = `/user0/-/file/${ourbigbook.encodeUrlPath(path)}`
     const button = '//x:button[contains(., "Delete file")]'
     test.loginUser(owner)
     await test.webApi.uploadCreateOrUpdate(fullPath, PNG_1X1_WHITE_BUFFER)
@@ -7778,9 +7897,9 @@ it('web: only admins can delete uploaded files, including from their file pages'
     test.loginUser(owner)
     await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'notes')
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'notes.txt', bodySource: '{file}\n\nDescription' }))
-    if (testNext) assert_xpath(button, (await test.sendJsonHttp('GET', '/user0/_file/notes.txt')).data, { count: 0 })
+    if (testNext) assert_xpath(button, (await test.sendJsonHttp('GET', '/user0/-/file/notes.txt')).data, { count: 0 })
     test.loginUser(admin)
-    if (testNext) assert_xpath(button, (await test.sendJsonHttp('GET', '/user0/_file/notes.txt')).data)
+    if (testNext) assert_xpath(button, (await test.sendJsonHttp('GET', '/user0/-/file/notes.txt')).data)
     await test.webApi.uploadDelete('user0/notes.txt')
   }, { canTestNext: true })
 })
@@ -7801,34 +7920,34 @@ it('web: file previews are pages and raw URLs serve the original bytes', async (
       test.disableToken()
       for (const [path, bytes] of files) {
         const encoded = ourbigbook.encodeUrlPath(path)
-        const preview = await test.sendJsonHttp('GET', `/user0/_file/${encoded}`)
+        const preview = await test.sendJsonHttp('GET', `/user0/-/file/${encoded}`)
         assert.strictEqual(preview.status, 200)
         assert(preview.headers['content-type'].startsWith('text/html'))
         assert_xpath('//x:nav[@class="navbar"]', preview.data)
         assert_xpath('//x:footer', preview.data)
-        assert_xpath('//x:div[contains(@class, "file-page")]/x:h1/x:a[@href="/user0/_dir" and text()="user0"]', preview.data)
-        assert_xpath(`//x:div[contains(@class, "file-page")]/x:h1/x:a[@href='/user0/_raw/${encoded}']`, preview.data)
+        assert_xpath('//x:div[contains(@class, "file-page")]/x:h1/x:a[@href="/user0/-/dir" and text()="user0"]', preview.data)
+        assert_xpath(`//x:div[contains(@class, "file-page")]/x:h1/x:a[@href='/user0/-/raw/${encoded}']`, preview.data)
         assert_xpath('//x:div[contains(@class, "file-page")]/x:div[@class="article-info"]/x:a[@href="/user0"]/x:img[contains(@class, "profile-thumb")]', preview.data)
         assert_xpath('//x:div[contains(@class, "file-page")]/x:div[contains(@class, "file-content") and preceding-sibling::x:div[@class="article-info"]]', preview.data)
         assert_xpath('//x:h1', preview.data)
-        assert_xpath(`(//x:a[@href='/user0/_raw/${encoded}'])[1]`, preview.data)
+        assert_xpath(`(//x:a[@href='/user0/-/raw/${encoded}'])[1]`, preview.data)
         if (path.endsWith('.png')) {
-          assert_xpath(`//x:a[@href='/user0/_raw/${encoded}']/x:img[@src='/user0/_raw/${encoded}']`, preview.data)
-          assert_xpath('//x:div[contains(@class, "file-page")]/x:h1/x:a[@href="/user0/_dir/images%20%5B1%5D"]', preview.data)
+          assert_xpath(`//x:a[@href='/user0/-/raw/${encoded}']/x:img[@src='/user0/-/raw/${encoded}']`, preview.data)
+          assert_xpath('//x:div[contains(@class, "file-page")]/x:h1/x:a[@href="/user0/-/dir/images%20%5B1%5D"]', preview.data)
         } else if (path.endsWith('.html')) {
           assert_xpath('//x:pre//x:code[contains(., "<script>")]', preview.data)
           assert(!preview.data.includes('<script>alert('))
         } else if (path.endsWith('.bin')) {
           assert(preview.data.includes('binary file'))
         } else {
-          assert_xpath(`//x:video[@src='/user0/_raw/${encoded}']`, preview.data)
+          assert_xpath(`//x:video[@src='/user0/-/raw/${encoded}']`, preview.data)
         }
-        const raw = await web_api.sendJsonHttp('GET', `/user0/_raw/${encoded}`, { ...test.webApi.opts, responseType: 'arraybuffer' })
+        const raw = await web_api.sendJsonHttp('GET', `/user0/-/raw/${encoded}`, { ...test.webApi.opts, responseType: 'arraybuffer' })
         assert.strictEqual(raw.status, 200)
         assert.deepStrictEqual(raw.data, bytes)
         assert.strictEqual(raw.headers['content-security-policy'], "default-src 'none'")
       }
-      for (const url of ['/user0/_file/missing.png', '/missing-user/_file/notes.html', '/user0/_raw/missing.png']) {
+      for (const url of ['/user0/-/file/missing.png', '/missing-user/-/file/notes.html', '/user0/-/raw/missing.png']) {
         assert.strictEqual((await test.sendJsonHttp('GET', url)).status, 404)
       }
       assert.strictEqual(await test.sequelize.models.Article.count(), count)
@@ -7836,7 +7955,7 @@ it('web: file previews are pages and raw URLs serve the original bytes', async (
       await createOrUpdateArticleApi(test, createArticleArg({
         titleSource: 'notes.html', bodySource: '{file}\n\nAuthored file description',
       }))
-      const authored = await test.sendJsonHttp('GET', '/user0/_file/notes.html')
+      const authored = await test.sendJsonHttp('GET', '/user0/-/file/notes.html')
       assert.strictEqual(authored.status, 200)
       assert(authored.data.includes('Authored file description'))
     }
@@ -7855,7 +7974,7 @@ it('api: editor uploaded image markup resolves from nested articles', async () =
     const relative = getMarkupEdit('image', '', 0, 0, { imageSource: path })
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Root photo', bodySource: relative.text }))
     const rootArticle = await test.webApi.article('user0/root-photo')
-    const url = '/user0/_raw/images/my%20picture%5B1%5D.png'
+    const url = '/user0/-/raw/images/my%20picture%5B1%5D.png'
     assert_xpath(`//x:a[@href='${url}']/x:img[@src='${url}']`, rootArticle.data.render)
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Nested', bodySource: '{scope}' }))
     const { text } = getMarkupEdit('image', '', 0, 0, { imageSource: `/${path}` })
@@ -8000,7 +8119,7 @@ it(`api: upload simple`, async () => {
       bodySource: `\\a[subdir/myfile.txt]{id=link-to-another-file-same-user-dut}\n`
     })))
     ;({data, status} = await test.webApi.article('user0/link-to-another-file-same-user'))
-    assert_xpath(`//x:a[@id='user0/link-to-another-file-same-user-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+    assert_xpath(`//x:a[@id='user0/link-to-another-file-same-user-dut' and @href='/user0/-/raw/subdir/myfile.txt']`, data.render)
 
     // Ignored and does not blow up. An error message might be wise. But at least no blow up.
     ;({data, status} = await createOrUpdateArticleApi(test,
@@ -8024,8 +8143,8 @@ it(`api: upload simple`, async () => {
 ` })
     ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/subdir' }))
     ;({data, status} = await test.webApi.article('user0/subdir/child'))
-    assert_xpath(`//x:a[@id='user0/subdir/child-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
-    assert_xpath(`//x:a[@id='user0/subdir/child-dut-up' and @href='/user0/_raw/upload-0.png']`, data.render)
+    assert_xpath(`//x:a[@id='user0/subdir/child-dut' and @href='/user0/-/raw/subdir/myfile.txt']`, data.render)
+    assert_xpath(`//x:a[@id='user0/subdir/child-dut-up' and @href='/user0/-/raw/upload-0.png']`, data.render)
 
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
       titleSource: `Link to directory same user`,
@@ -8035,22 +8154,22 @@ it(`api: upload simple`, async () => {
 `
     })))
     ;({data, status} = await test.webApi.article('user0/link-to-directory-same-user'))
-    assert_xpath(`//x:a[@id='user0/link-to-directory-same-user-dut' and @href='/user0/_dir/subdir' and text()='subdir']`, data.render)
-    assert_xpath(`//x:a[@id='user0/link-to-directory-same-user-slash-dut' and @href='/user0/_dir/subdir' and text()='subdir/']`, data.render)
+    assert_xpath(`//x:a[@id='user0/link-to-directory-same-user-dut' and @href='/user0/-/dir/subdir' and text()='subdir']`, data.render)
+    assert_xpath(`//x:a[@id='user0/link-to-directory-same-user-slash-dut' and @href='/user0/-/dir/subdir' and text()='subdir/']`, data.render)
 
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
       titleSource: `Link to another file same user abs`,
       bodySource: `\\a[/subdir/myfile.txt]{id=link-to-another-file-same-user-abs-dut}\n`
     })))
     ;({data, status} = await test.webApi.article('user0/link-to-another-file-same-user-abs'))
-    assert_xpath(`//x:a[@id='user0/link-to-another-file-same-user-abs-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+    assert_xpath(`//x:a[@id='user0/link-to-another-file-same-user-abs-dut' and @href='/user0/-/raw/subdir/myfile.txt']`, data.render)
 
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
       titleSource: `Link to another file same user at`,
       bodySource: `\\a[@user0/subdir/myfile.txt]{id=link-to-another-file-same-user-at-dut}\n`
     })))
     ;({data, status} = await test.webApi.article('user0/link-to-another-file-same-user-at'))
-    assert_xpath(`//x:a[@id='user0/link-to-another-file-same-user-at-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+    assert_xpath(`//x:a[@id='user0/link-to-another-file-same-user-at-dut' and @href='/user0/-/raw/subdir/myfile.txt']`, data.render)
 
     test.loginUser(user1)
     ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
@@ -8058,7 +8177,7 @@ it(`api: upload simple`, async () => {
       bodySource: `\\a[@user0/subdir/myfile.txt]{id=link-to-another-file-another-user-dut}\n`
     })))
     ;({data, status} = await test.webApi.article('user1/link-to-another-file-another-user'))
-    assert_xpath(`//x:a[@id='user1/link-to-another-file-another-user-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+    assert_xpath(`//x:a[@id='user1/link-to-another-file-another-user-dut' and @href='/user0/-/raw/subdir/myfile.txt']`, data.render)
     test.loginUser(user0)
 
     // Create corresponding file articles.
@@ -8070,8 +8189,8 @@ it(`api: upload simple`, async () => {
 \\a[not-utf8.asdfqwer]{id=not-utf8.asdfqwer-dut}
 `
       })))
-      ;({data, status} = await test.webApi.article('user0/_file/not-utf8.asdfqwer'))
-      assert_xpath(`//x:a[@id='user0/not-utf8.asdfqwer-dut' and @href='/user0/_raw/not-utf8.asdfqwer']`, data.render)
+      ;({data, status} = await test.webApi.article('user0/-/file/not-utf8.asdfqwer'))
+      assert_xpath(`//x:a[@id='user0/not-utf8.asdfqwer-dut' and @href='/user0/-/raw/not-utf8.asdfqwer']`, data.render)
 
       ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({
         titleSource: `subdir/myfile.txt`,
@@ -8082,8 +8201,8 @@ it(`api: upload simple`, async () => {
 \\a[../subdir/myfile.txt]{id=up-subdir-myfile.txt-dut}
 `
       })))
-      ;({data, status} = await test.webApi.article('user0/_file/subdir/myfile.txt'))
-      assert_xpath(`//x:a[@id='user0/subdir-myfile.txt-dut' and @href='/user0/_raw/subdir/myfile.txt']`, data.render)
+      ;({data, status} = await test.webApi.article('user0/-/file/subdir/myfile.txt'))
+      assert_xpath(`//x:a[@id='user0/subdir-myfile.txt-dut' and @href='/user0/-/raw/subdir/myfile.txt']`, data.render)
 
     // Delete errors
 
@@ -8133,7 +8252,7 @@ it(`api: upload simple`, async () => {
   }, { defaultExpectStatus: 200 })
 })
 
-it(`api: upload delete automatically clears up associated _file`, async () => {
+it(`api: upload delete automatically clears up associated -/file`, async () => {
   // This is needed otherwise you are then unable to clean
   // the _file as conversion will fail due to missing \a.
   await testApp(async (test) => {

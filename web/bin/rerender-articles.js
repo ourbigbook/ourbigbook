@@ -9,7 +9,7 @@ const back_js = require('../back/js')
 const { cliInt } = require('ourbigbook/nodejs_webpack_safe')
 
 const program = commander.program
-program.description('Re-render articles https://docs.ourbigbook.com/_file/web/bin/rerender-articles.js')
+program.description('Re-render articles https://docs.ourbigbook.com/-/file/web/bin/rerender-articles.js')
 program.option('-a, --author <username>', 'only convert articles by this author', (v, p) => p.concat([v]), [])
 program.option('--automatic-topic-links-max-words <val>', 'maximum number of words to put on automatic topic links', cliInt)
 program.option('-A, --skip-author <username>', "don't convert articles by this author", (v, p) => p.concat([v]), [])

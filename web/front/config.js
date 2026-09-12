@@ -2,7 +2,7 @@ const ourbigbook = require('ourbigbook')
 const { read_include } = require('ourbigbook/web_api')
 const ourbigbook_nodejs_front = require('ourbigbook/nodejs_front')
 
-const escapeUsername = '-'
+const escapeUsername = ourbigbook.RESERVED_ID_SEPARATOR
 
 let databaseUrl
 if (process.env.NODE_ENV === 'test') {
@@ -91,8 +91,8 @@ module.exports = {
   // Max allowed to be set by user.
   articleLimitMax: 20,
   buttonActiveClass: 'active',
-  commentsHeaderId: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comments`,
-  commentIdPrefix: `${ourbigbook.Macro.RESERVED_ID_PREFIX}comment-`,
+  commentsHeaderId: `${ourbigbook.RESERVED_PATH_PREFIX}comments`,
+  commentIdPrefix: `${ourbigbook.RESERVED_PATH_PREFIX}comment-`,
   // Common convert options used by all frontend components: the backend and the editor,
   // for both issues and articles.
   contactUrl: `${docsUrl}/contact`,

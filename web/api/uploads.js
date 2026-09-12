@@ -5,7 +5,7 @@
 const router = require('express').Router()
 const { Op } = require('sequelize')
 
-const { FILE_PREFIX, Macro, URL_SEP } = require('ourbigbook')
+const { FILE_PREFIX, Macro, RESERVED_ID_SEPARATOR, URL_SEP } = require('ourbigbook')
 const { sequelizeWhereStartsWith } = require('ourbigbook/models')
 const { ARTICLE_HASH_LIMIT_MAX } = require('ourbigbook/web_api')
 
@@ -92,7 +92,7 @@ router.put('/', auth.required, async function(req, res, next) {
       if (!path) {
         throw new lib.ValidationError(`path must be given and cannot be empty`)
       }
-      if (path.split(URL_SEP).includes('-')) {
+      if (path.split(URL_SEP).includes(RESERVED_ID_SEPARATOR)) {
         throw new lib.ValidationError('The file path component "-" is reserved for website routes.')
       }
       const { path: actualPath, author } = await pathToActualPath(path, User, Upload, { transaction })

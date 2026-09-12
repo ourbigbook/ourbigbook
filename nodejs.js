@@ -15,7 +15,7 @@ exports.PACKAGE_NAME = PACKAGE_NAME
 const PACKAGE_PATH = path.dirname(require.resolve(path.join(PACKAGE_NAME, 'package.json')))
 exports.PACKAGE_PATH = PACKAGE_PATH
 
-const PUBLISH_OBB_PREFIX = `${ourbigbook.Macro.RESERVED_ID_PREFIX}obb`
+const PUBLISH_OBB_PREFIX = `${ourbigbook.RESERVED_PATH_PREFIX}obb`
 exports.PUBLISH_OBB_PREFIX = PUBLISH_OBB_PREFIX
 
 const PUBLISH_ASSET_DIST_PREFIX = `${PUBLISH_OBB_PREFIX}/${ourbigbook_nodejs_webpack_safe.DIST_BASENAME}`

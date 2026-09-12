@@ -94,7 +94,7 @@ export function DirectoryEntries({ author, childDirectories, childFiles }: Pick<
     {childFiles.map(e => {
       const p = e.path.substring(e.path.lastIndexOf(URL_SEP) + 1)
       return <li key={p}>
-        <a href={`/${author.username}/_file/${encodeUrlPath(uploadPathWithoutUser(e.path))}`}>{p}</a>
+        <a href={`/${author.username}/-/file/${encodeUrlPath(uploadPathWithoutUser(e.path))}`}>{p}</a>
         {e.list === false && <> <UnlistedIcon /></>}
       </li>
     })}
@@ -113,7 +113,7 @@ export function FileDirectoryHeader({ author, path, isFile=false }: { author: Us
         <Link href={dir(author.username, directories.slice(0, i + 1).join(URL_SEP))}>{part}</Link>
         <span className="meta">{URL_SEP}</span>
       </React.Fragment>)}
-      {isFile && <a href={`/${author.username}/_raw/${encodeUrlPath(path)}`}>{parts[parts.length - 1]}</a>}
+      {isFile && <a href={`/${author.username}/-/raw/${encodeUrlPath(path)}`}>{parts[parts.length - 1]}</a>}
     </h1>
     <div className="article-info">
       by{' '}<UserLinkWithImage user={author} showUsername={true} />

@@ -1458,6 +1458,6 @@ module.exports = {
   sequelizePostgresqlUserQueryToTsqueryPrefixLiteral,
   update_database_after_convert,
   SQLITE_MAGIC_MEMORY_NAME,
-  TMP_DIRNAME: ourbigbook.Macro.RESERVED_ID_PREFIX + 'out',
+  TMP_DIRNAME: '_out',
   DIST_BASENAME: 'dist',
 }

@@ -141,7 +141,7 @@ class AstNode {
     // The effective path of the the file counting from the toplevel directory,
     // coming either from the file=XXX or title if that is empty.
     // Examples:
-    // - _file/path/to/myfile.txt.bigb: .file = path/to/myfile.txt, without the _file prefix
+    // - -/file/path/to/myfile.txt.bigb: .file = path/to/myfile.txt, without the -/file prefix
     this.file = undefined
     this.first_toplevel_child = options.first_toplevel_child;
     this.is_first_header_in_input_file = options.is_first_header_in_input_file;
@@ -356,7 +356,7 @@ class AstNode {
       context.options.output_format === OUTPUT_FORMAT_MARKDOWN &&
       this.macro_name !== Macro.HEADER_MACRO_NAME &&
       this.id !== undefined &&
-      !/^_\d+$/.test(this.id) &&
+      !/(^|\/)-\/\d+$/.test(this.id) &&
       out
     ) {
       out = markupIdAnchor(this, context) + out
@@ -1526,16 +1526,21 @@ Macro.TITLE2_ARGUMENT_NAME = 'title2';
 //   about how to avoid ID duplication
 // - only a single ToC ever renders per document. So we can just have a fixed
 //   magic one.
-Macro.RESERVED_ID_PREFIX = '_'
+const RESERVED_ID_SEPARATOR = '-'
+exports.RESERVED_ID_SEPARATOR = RESERVED_ID_SEPARATOR
+const RESERVED_IDS = new Set(['_out', '.git', 'index', RESERVED_ID_SEPARATOR])
+exports.RESERVED_IDS = RESERVED_IDS
 Macro.UNORDERED_LIST_MACRO_NAME = 'Ul';
-const FILE_PREFIX = Macro.RESERVED_ID_PREFIX +  'file'
+const RESERVED_PATH_PREFIX = RESERVED_ID_SEPARATOR + Macro.HEADER_SCOPE_SEPARATOR
+exports.RESERVED_PATH_PREFIX = RESERVED_PATH_PREFIX
+const FILE_PREFIX = RESERVED_PATH_PREFIX + 'file'
 exports.FILE_PREFIX = FILE_PREFIX
 Macro.FILE_ID_PREFIX = FILE_PREFIX + Macro.HEADER_SCOPE_SEPARATOR
-const RAW_PREFIX = Macro.RESERVED_ID_PREFIX + 'raw'
+const RAW_PREFIX = RESERVED_PATH_PREFIX + 'raw'
 exports.RAW_PREFIX = RAW_PREFIX
-const DIR_PREFIX = Macro.RESERVED_ID_PREFIX + 'dir'
+const DIR_PREFIX = RESERVED_PATH_PREFIX + 'dir'
 exports.DIR_PREFIX = DIR_PREFIX
-Macro.TOC_ID = Macro.RESERVED_ID_PREFIX + 'toc';
+Macro.TOC_ID = RESERVED_PATH_PREFIX + 'toc';
 Macro.TOC_PREFIX = Macro.TOC_ID + '/'
 Macro.TOPLEVEL_MACRO_NAME = 'Toplevel';
 
@@ -2757,6 +2762,7 @@ function calculateId(
   let skip_scope = !!(ast.validation_output.synonymNoScope && ast.validation_output.synonymNoScope.boolean)
   let idIsEmpty = false
   let id
+  let unscopedId
   let file_header = ast.macro_name === Macro.HEADER_MACRO_NAME &&
     ast.validation_output.file.given
   let file_id_text_append
@@ -2819,7 +2825,7 @@ function calculateId(
           }
           id = id_text;
         } else {
-          id_text += '_'
+          id_text += RESERVED_PATH_PREFIX
         }
 
         if (id === undefined) {
@@ -2843,23 +2849,7 @@ function calculateId(
       } else {
         id = renderArgNoescape(macro_id_arg, new_context);
       }
-      if (
-        index_id &&
-        id !== undefined &&
-        id.startsWith(Macro.RESERVED_ID_PREFIX) &&
-        !file_header
-      ) {
-        let message = `IDs that start with "${Macro.RESERVED_ID_PREFIX}" are reserved: "${id}"`;
-        parseError(state, message, ast.source_location);
-      }
-      // TODO also reserve 'split'... or use a better convention for it.
-      if (id === INDEX_BASENAME_NOEXT) {
-        parseError(
-          state,
-          `the ID "${INDEX_BASENAME_NOEXT}" is reserved because it conflicts with HTML index files like index.html: https://github.com/ourbigbook/ourbigbook/issues/337`,
-          ast.source_location
-        )
-      }
+      unscopedId = id
       if (id === '') {
         if (!ignoreEmptyId) {
           parseError(state, 'ID cannot be empty except for the home article', ast.source_location);
@@ -2886,8 +2876,34 @@ function calculateId(
     if (ast.id && ast.subdir && !skip_scope) {
       ast.id = ast.subdir + Macro.HEADER_SCOPE_SEPARATOR + ast.id
     }
-    if (ast.id && ast.id.split(Macro.HEADER_SCOPE_SEPARATOR).includes('-')) {
+    let userId = ast.id
+    // Internal consumers can supply a generated scope (e.g. a web comment).
+    // Only its prefix is exempt; authored IDs inside it still obey the rules.
+    const generatedScope = context.options.generated_scope
+    if (userId && generatedScope && (userId === generatedScope || userId.startsWith(generatedScope + Macro.HEADER_SCOPE_SEPARATOR))) {
+      userId = userId.slice(generatedScope.length).replace(/^\//, '')
+    }
+    // File headers and generated directory listings own these reserved prefixes.
+    // Still reject '-' components in the actual user-supplied file/directory path.
+    const generatedPrefix = file_header ? FILE_PREFIX : (context.options.auto_generated_source ? DIR_PREFIX : undefined)
+    if (userId && generatedPrefix) {
+      userId = userId.replace(new RegExp(`(^|/)${generatedPrefix}(?=/|$)`), '$1')
+    }
+    if (index_id && userId && userId.split(Macro.HEADER_SCOPE_SEPARATOR).includes(RESERVED_ID_SEPARATOR)) {
       parseError(state, `The ID path component "-" is reserved for website routes: "${ast.id}"`, ast.source_location)
+    }
+    let rootId = ast.id
+    if (rootId && context.options.ref_prefix && rootId.startsWith(context.options.ref_prefix + Macro.HEADER_SCOPE_SEPARATOR)) {
+      rootId = rootId.slice(context.options.ref_prefix.length + 1)
+    }
+    const rootComponent = rootId && rootId.split(Macro.HEADER_SCOPE_SEPARATOR)[0]
+    // An index header can collide with index.html even inside an authored scope.
+    const reservedId = unscopedId === INDEX_BASENAME_NOEXT ? unscopedId : rootComponent
+    if (index_id && reservedId !== RESERVED_ID_SEPARATOR && RESERVED_IDS.has(reservedId)) {
+      const message = reservedId === INDEX_BASENAME_NOEXT
+        ? `the ID "${INDEX_BASENAME_NOEXT}" is reserved because it conflicts with HTML index files like index.html: https://github.com/ourbigbook/ourbigbook/issues/337`
+        : `The toplevel ID "${reservedId}" is reserved for local files: "${ast.id}"`
+      parseError(state, message, ast.source_location)
     }
     if (file_header && context.options.input_path !== undefined) {
       const [input_path, ext] = pathSplitext(context.options.input_path)
@@ -2898,7 +2914,7 @@ function calculateId(
         )
       }
       if (inputPathNoRefPrefix.startsWith(FILE_PREFIX + context.options.path_sep)) {
-        // This is e.g. for for _file/programming/hello.py
+        // This is e.g. for for -/file/programming/hello.py
         // In that case, the header contents are completely ignored and we just use the filename.
         ast.file = inputPathNoRefPrefix.substring(FILE_PREFIX.length + 1)
       } else {
@@ -2909,7 +2925,7 @@ function calculateId(
         // == hello.py
         // {file}
         //
-        // but not for _file/programming/hello.py
+        // but not for -/file/programming/hello.py
         const [inputDirNoPrefix, basename] = pathSplit(inputPathNoRefPrefix, context.options.path_sep)
         if (inputDirNoPrefix.length) {
           ast.file = inputDirNoPrefix + Macro.HEADER_SCOPE_SEPARATOR + ast.file
@@ -3839,8 +3855,8 @@ function convertInitOptions(options) {
   if (!('katex_macros' in options)) { options.katex_macros = {}; }
   if (!('logoPath' in options)) { options.logoPath = undefined; }
   if (!('prefixNonIndexedIdsWithParentId' in options)) {
-    // E.g. the first paragraph of a header would have ID `_1` without this.
-    // This this option it becomes instead `header-id/_1`.
+    // E.g. the first paragraph of a header would have ID `-/1` without this.
+    // With this option it becomes instead `header-id/-/1`.
     options.prefixNonIndexedIdsWithParentId = false;
   }
   if (!('log' in options)) { options.log = {}; }
@@ -3895,9 +3911,9 @@ function convertInitOptions(options) {
   if (!('rootRelpathPref' in options)) {
     // This is a nasty option that it seems we had to add in order to be able to make
     // _dir renderings work, because we are generating them from source code and rendering,
-    // and their virtual source path wants to be /_dir/path/to/index.bigb
-    // but unlike /_dir/path/to/index.bigb it renders to /_dir/path/to/index.html
-    // instead of /_dir/path/to.html so a change in relative path is needed to find _raw.
+    // and their virtual source path wants to be /-/dir/path/to/index.bigb
+    // but unlike /-/dir/path/to/index.bigb it renders to /-/dir/path/to/index.html
+    // instead of /-/dir/path/to.html so a change in relative path is needed to find _raw.
     options.rootRelpathPref = undefined
   }
   if (!('start_line' in options)) { options.start_line = 1; }
@@ -4087,7 +4103,7 @@ function convertInitContext(options={}, extra_returns={}) {
         inputDirNoRef = inputDirNoRef.substring(options.ref_prefix.length + URL_SEP.length)
       }
       let inputDirSplit = inputDirNoRef.split(options.path_sep)
-      if (inputDirSplit[0] === FILE_PREFIX) {
+      if (inputDirNoRef === FILE_PREFIX || inputDirNoRef.startsWith(FILE_PREFIX + options.path_sep)) {
         toplevel_parent_scope = ''
         inputIsInFileDirectory = true
       } else {
@@ -5380,7 +5396,7 @@ function outputPathBase(args={}) {
   }
   const [dirname, basename] = pathSplit(ast_input_path, path_sep);
   let renamed_basename_noext = noext(basename)
-  if (ast_input_path.split(path_sep)[0] !== FILE_PREFIX) {
+  if (!ast_input_path.startsWith(FILE_PREFIX + path_sep)) {
     renamed_basename_noext = renameBasename(renamed_basename_noext)
   }
   // We are the first header, or something that comes before it.
@@ -5663,7 +5679,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         parent_arg.push(error_ast);
         parseError(state, options.forbid_include, ast.source_location);
       } else {
-        const href = renderArgNoescape(ast.args.href, context);
+        const href = normalizeLegacyFileId(renderArgNoescape(ast.args.href, context));
         let input_dir
         if (options.input_path) {
           ;[input_dir, input_basename] = pathSplit(options.input_path, options.path_sep)
@@ -8011,8 +8027,10 @@ function resolveLinkToFile({
     if (context.options.ref_prefix) {
       input_path = input_path.substring(context.options.ref_prefix.length + context.options.path_sep.length)
     }
-    const split = input_path.split(context.options.path_sep)
-    inputDirectory = split.slice(split[0] === FILE_PREFIX ? 1 : 0, -1).join(context.options.path_sep)
+    if (input_path.startsWith(FILE_PREFIX + context.options.path_sep)) {
+      input_path = input_path.slice(FILE_PREFIX.length + context.options.path_sep.length)
+    }
+    inputDirectory = input_path.split(context.options.path_sep).slice(0, -1).join(context.options.path_sep)
     if (context.options.ref_prefix) {
       inputDirectory = pathJoin(context.options.ref_prefix, inputDirectory, context.options.path_sep)
     }
@@ -8438,12 +8456,20 @@ function xGetTargetAstBase({
   return { target_id: target_id_eff, target_ast }
 }
 
+// Existing sources may still refer to file IDs from before the /-/ namespace.
+// Once inside the new file namespace, underscore components are real filenames.
+function normalizeLegacyFileId(id) {
+  return id.includes(FILE_PREFIX + URL_SEP) ? id : id.replace(/(^|\/)_file(?=\/)/, '$1' + FILE_PREFIX)
+}
+
 function convertFileIdArg(ast, href_arg, context) {
   let target_id = convertIdArg(href_arg, context);
   if (
     ast.validation_output.file.given
   ) {
     target_id = Macro.FILE_ID_PREFIX + target_id
+  } else {
+    target_id = normalizeLegacyFileId(target_id)
   }
   return target_id
 }
@@ -9039,7 +9065,7 @@ const AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX_STR = '[.,:;!?"]+'
 const AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX = new RegExp(AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX_STR)
 const AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX_CAPTURE = new RegExp(`(${AUTOMATIC_TOPIC_LINK_PUNCTUATION_REGEX_STR})`)
 const ANCESTORS_ID_UNRESERVED = 'ancestors'
-const ANCESTORS_ID = `${Macro.RESERVED_ID_PREFIX}${ANCESTORS_ID_UNRESERVED}`
+const ANCESTORS_ID = `${RESERVED_PATH_PREFIX}${ANCESTORS_ID_UNRESERVED}`
 exports.ANCESTORS_ID = ANCESTORS_ID
 const ANCESTORS_MAX = 6
 exports.ANCESTORS_MAX = ANCESTORS_MAX
@@ -10448,7 +10474,7 @@ function createLinkList(context, ast, id, title, target_ids) {
   if (target_ids.size !== 0) {
     // TODO factor this out more with real headers.
     const target_asts = [];
-    const idWithPrefix = `${Macro.RESERVED_ID_PREFIX}${id}`
+    const idWithPrefix = `${RESERVED_PATH_PREFIX}${id}`
     const targetIdsArr = Array.from(target_ids)
     ret += htmlToplevelChildModifierById(`<h2 id="${idWithPrefix}"><a href="#${idWithPrefix}">${title} <span class="meta">(${targetIdsArr.length})</span></a></h2>`, idWithPrefix)
     let i = 0
@@ -11474,7 +11500,7 @@ const OUTPUT_FORMATS_LIST = [
               }
               if (context.options.add_test_instrumentation) {
                 astNodeArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [
-                  new PlaintextAstNode(ast.id + Macro.RESERVED_ID_PREFIX + Macro.RESERVED_ID_PREFIX)
+                  new PlaintextAstNode(ast.id + '__')
                 ]
               }
               pathArg.push(
@@ -11510,7 +11536,7 @@ const OUTPUT_FORMATS_LIST = [
                 }
                 if (context.options.add_test_instrumentation) {
                   astNodeArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [
-                    new PlaintextAstNode(ast.id + Macro.RESERVED_ID_PREFIX + Macro.RESERVED_ID_PREFIX + curp)
+                    new PlaintextAstNode(ast.id + '__' + curp)
                   ]
                 }
                 pathArg.push(new AstNode(AstType.MACRO, Macro.LINK_MACRO_NAME, astNodeArgs))

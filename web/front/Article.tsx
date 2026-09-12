@@ -51,7 +51,7 @@ import routes from 'front/routes'
 import { cant } from 'front/cant'
 import CustomLink from 'front/CustomLink'
 import FollowArticleButton from 'front/FollowArticleButton'
-import { encodeUrlPath, htmlEscapeAttr } from 'ourbigbook'
+import { encodeUrlPath, htmlEscapeAttr, RESERVED_PATH_PREFIX } from 'ourbigbook'
 
 import {
   ANCESTORS_ID,
@@ -169,10 +169,10 @@ function LinkList(
 ) {
   let { href } = opts
   if (href === undefined) {
-    href = `#${Macro.RESERVED_ID_PREFIX}${idUnreserved}`
+    href = `#${RESERVED_PATH_PREFIX}${idUnreserved}`
   }
   if (articles.length) return <>
-    <h2 id={`${Macro.RESERVED_ID_PREFIX}${idUnreserved}`}>
+    <h2 id={`${RESERVED_PATH_PREFIX}${idUnreserved}`}>
       <a
         href={href}
         className="ourbigbook-title"
@@ -298,7 +298,7 @@ function WebMeta({
                   e.preventDefault()
                   const a = e.currentTarget
                   // TODO: mouseleave does not fire after the modal opens. And I can't reproduce on pure JS:
-                  // https://cirosantilli.com/_file/js/mouseleave-after-click.html
+                  // https://cirosantilli.com/-/file/js/mouseleave-after-click.html
                   // Without this the onhover selflink does not go away after the modal is closed,
                   // unless we hover and leave again.
                   toplevelMouseleave(a.closest(`.${OURBIGBOOK_CSS_CLASS} > *`))
@@ -517,7 +517,7 @@ export default function Article({
   //    TODO: not staying at /barack-obama/barack-obama/mathematics. Something is making it scroll back to /barack-obama/mathematics after window.location.replace
   //    and it does not seem to be window.history.replaceState (tested by putting debugger; statements to stop execution) Whatever it is seems to be happening
   //    between location.replace and history.replaceState...
-  // * open new browser tab on http://localhost:3000/barack-obama#_toc/mathematics
+  // * open new browser tab on http://localhost:3000/barack-obama#-/toc/mathematics
   // * http://localhost:3000/barack-obama then by typing on URL bar: #mathematics -> #algebra then go back on back button
   // * http://localhost:3000/barack-obama then by typing on URL bar: #barack-obama/mathematics should to to barack-obama/barack-obama/mathematics
   // * http://localhost:3000/barack-obama -> toc click ->
@@ -531,10 +531,10 @@ export default function Article({
   // * empty fragment '#':
   //   * http://localhost:3000/barack-obama# on new tab
   //   * http://localhost:3000/barack-obama#mathematics then parent
-  // * _ancestors
-  //   * http://localhost:3000/barack-obama/mathematics#_ancestors
+  // * -/ancestors
+  //   * http://localhost:3000/barack-obama/mathematics#-/ancestors
   //   * http://localhost:3000/barack-obama/mathematics and click "Ancestors" header
-  //   * http://localhost:3000/barack-obama#_1 highlights the first paragraph. Does not get overridden by _ancestors handling even though it starts with _
+  //   * http://localhost:3000/barack-obama#-/1 highlights the first paragraph. Does not get overridden by -/ancestors handling
   // * subelement in another page: http://localhost:3000/barack-obama/test-child-1 click Equation "Test data long before ID"
   // * other articles in topic on the same page:
   //   * http://localhost:3000/barack-obama/test-data then at the bottom click "Equation 1. My favorite equation."
@@ -544,7 +544,7 @@ export default function Article({
   //     The @ is added to make sure an absolute path is used and remove otherwise inevitable ambiguity with short frags.
   //   * http://localhost:3000/barack-obama/test-data#@donald-trump/equation-my-favorite-equation should scroll to and highlight the correct header
   //   * http://localhost:3000/barack-obama/mathematics@donald-trump/physics should redirect to http://localhost:3000/donald-trump/physics because that abs id is not in page
-  // * click on the + link of ToC to add new articles before/after. Then click on a non _toc then on a _toc/ link.
+  // * click on the + link of ToC to add new articles before/after. Then click on a non -/toc then on a -/toc/ link.
   // We are not in the intermediate point where the URL is momentarily long.
   React.useEffect(
     () => {
@@ -590,14 +590,10 @@ export default function Article({
                   fragNoHashNoPrefix = fragNoHash.replace(prefix, '')
                 } else {
                   if (
-                    fragNoHash[0] === Macro.RESERVED_ID_PREFIX &&
-                    !(
-                      // Unnamed IDs like _1, _2, _3
-                      fragNoHash.length > 1 &&
-                      fragNoHash[1] >= '0' && fragNoHash[1] <= '9'
-                    )
+                    fragNoHash.startsWith(RESERVED_PATH_PREFIX) &&
+                    !/^-\/\d+$/.test(fragNoHash)
                   ) {
-                    // For metadata headers like _ancestors
+                    // For metadata headers like -/ancestors
                     return
                   }
                   prefix = ''
@@ -672,7 +668,7 @@ export default function Article({
     ]
   )
 
-  // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
+  // https://cirosantilli.com/-/file/nodejs/next/ref-twice/pages/index.js
   const staticHtmlRef = React.useRef(null)
   const staticHtmlRefMap = React.useRef(new WeakMap())
   React.useEffect(() => {
@@ -743,7 +739,7 @@ export default function Article({
         // WebMeta
         {
           // Minimal example of this "technique".
-          // https://cirosantilli.com/_file/nodejs/next/ref-twice/pages/index.js
+          // https://cirosantilli.com/-/file/nodejs/next/ref-twice/pages/index.js
           // https://stackoverflow.com/questions/78892868/how-to-inject-a-react-component-inside-static-pre-rendered-html-coming-from-the
           // TODO this still flickers no matter how hard I try:
           // https://github.com/ourbigbook/ourbigbook/issues/361
@@ -790,7 +786,7 @@ export default function Article({
               urlOrigin &&
               // Don't do processing for external links.
               url.origin === urlOrigin.origin &&
-              !href.match(/\/[^/]+\/_raw\//)
+              !href.match(/\/[^/]+\/-\/raw\//)
             ) {
               // E.g. barack-obama/mathematics
               let frag

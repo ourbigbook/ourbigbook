@@ -24,6 +24,9 @@ const legacyRoutePatterns = [
   ['/go/discussion/:number/:slug+', '/:slug+/-/discussion/:number'],
   ['/go/edit-discussion/:number/:slug+', '/:slug+/-/discussion/:number/edit'],
   ['/go/delete-discussion/:number/:slug+', '/:slug+/-/discussion/:number/delete'],
+  // Article actions above must match before file previews, whose path is a catch-all.
+  ['/:uid/_file/:path+', '/:uid/-/file/:path+'],
+  ['/:uid/_dir/:path*', '/:uid/-/dir/:path*'],
 ]
 
 module.exports = phase => ({
@@ -53,7 +56,7 @@ module.exports = phase => ({
   },
 })
 
-const redirects = [...legacyRoutePatterns, ['/go/:path*', '/-/:path*']].map(([source, destination]) => ({
+const redirects = [...legacyRoutePatterns, ['/:uid/_raw/:path+', '/:uid/-/raw/:path+'], ['/go/:path*', '/-/:path*']].map(([source, destination]) => ({
   match: match(source),
   destination: compile(destination),
 }))

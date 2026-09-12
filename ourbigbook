@@ -55,8 +55,8 @@ const SASS_EXT = '.scss';
 const DEFAULT_IGNORE_BASENAMES = [
   '.git',
   ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
-  RAW_PREFIX,
-  DIR_PREFIX,
+  '_raw',
+  '_dir',
 ];
 const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 const MESSAGE_PREFIX_EXTRACT_IDS = 'extract_ids'
@@ -888,7 +888,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
                 }
               } else {
                 targetHref = path.join(
-                  path.relative(input_path_relative_to_ourbigbook_json, '..'),
+                  path.relative(path.join(DIR_PREFIX, input_path_relative_to_ourbigbook_json), '.'),
                   FILE_PREFIX,
                   input_path_relative_to_ourbigbook_json,
                   target
@@ -1286,6 +1286,7 @@ function ignore_path(
     }
   }
   if (
+    [RAW_PREFIX, DIR_PREFIX, ourbigbook_nodejs.PUBLISH_OBB_PREFIX].some(prefix => _path === prefix || _path.startsWith(prefix + path.sep)) ||
     ignore_paths.has(_path) ||
     ignore_basenames.has(path.basename(_path))
   )
@@ -1645,7 +1646,7 @@ if (cli.helpMacros) {
         publishTargetIsWebsite = true
         publishIsPublic = true
 
-        // Otherwise _* paths are not added to the website, notably _raw/* and _file/*.
+        // Disable Jekyll processing, including its exclusion of underscore paths.
         publish_create_files['.nojekyll'] = ''
 
         const cname_path = path.join(ourbigbook_json_dir, 'CNAME')
@@ -1973,6 +1974,14 @@ if (cli.helpMacros) {
         'git', ['-C', input_dir, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory'], cmdOptsInfo
         ).split('\n').slice(0, -1).map(s => s.replace(/\/$/, '')).map(s => path.join(inputRelpath, s))
     ])
+  }
+  // A custom output directory inside the source tree must not become input on
+  // later passes, notably once it contains the generated -/ namespace.
+  const outputRelpath = path.relative(ourbigbook_json_dir, outdir)
+  if (outputRelpath && outputRelpath !== '..' && !outputRelpath.startsWith('..' + path.sep) && !path.isAbsolute(outputRelpath)) {
+    nonOurbigbookOptions.ignore_paths.add(outputRelpath)
+  } else if (outputRelpath === '') {
+    nonOurbigbookOptions.ignore_paths.add('-')
   }
   ourbigbook_options.outdir = path.relative(outdir, ourbigbook_json_dir)
   if (!nonOurbigbookOptions_log.db) {
@@ -2598,7 +2607,7 @@ if (cli.helpMacros) {
           }
         }
       }
-      if (cli.webNestedSetBulk) {
+      if (cli.webNestedSetBulk && !cli.webDry) {
         if (!nestedSetNeedsUpdate) {
           ;({ data, status } = await webApi.user(username))
           assertApiStatus(status, data)
@@ -2900,7 +2909,7 @@ if (cli.helpMacros) {
               )
             }
 
-            // Copy runtime assets from _obb/ into the output repository.
+            // Copy runtime assets from -/obb/ into the output repository.
             const dir = fs.opendirSync(ourbigbook_nodejs.DIST_PATH)
             let dirent
             while ((dirent = dir.readSync()) !== null) {

@@ -614,7 +614,7 @@ export async function setupUserLocalStorage(user, setErrors?) {
 /**
  * Based on the given URL path, decide the short version of a given long fragment:
  * on /user: user/mathematics -> mathematics
- * on /user: _toc/user/mathematics -> _toc/mathematics
+ * on /user: -/toc/user/mathematics -> -/toc/mathematics
  * on /user/mathematics: user/algebra -> algebra
  * on /user/has-scope: user/has-scope/no-scope -> no-scope
  */

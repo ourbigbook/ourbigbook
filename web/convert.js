@@ -1065,6 +1065,9 @@ async function convertComment({
   transaction,
   user,
 }) {
+  if (number === undefined && comment !== undefined) {
+    number = comment.number
+  }
   if (source === undefined) {
     source = comment.source
   } else if(comment !== undefined) {
@@ -1075,7 +1078,8 @@ async function convertComment({
       author: user,
       convertOptionsExtra: Object.assign({
         fixedScopeRemoval: 0,
-        tocIdPrefix: `${commentIdPrefix}${number}-`,
+        generated_scope: `@${user.username}/${commentIdPrefix}${number}`,
+        tocIdPrefix: `${commentIdPrefix}${number}/`,
       }, convertOptionsExtra),
       path: `@${user.username}/${commentIdPrefix}${number}/${INDEX_BASENAME_NOEXT}.${OURBIGBOOK_EXT}`,
       render: true,

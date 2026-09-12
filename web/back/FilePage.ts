@@ -12,7 +12,7 @@ const getArticleProps = getServerSidePropsArticleHoc({ includeIssues: true })
 export const getServerSidePropsFile: MyGetServerSideProps = async context => {
   const { params: { uid, path }, req, res } = context
   if (typeof uid !== 'string' || !Array.isArray(path)) return { notFound: true }
-  const slug = [uid, ourbigbook.FILE_PREFIX, ...path]
+  const slug = [uid, ...ourbigbook.FILE_PREFIX.split('/'), ...path]
   const { Article, User, Upload } = req.sequelize.models
   const author = await User.findOne({ where: { username: uid } })
   if (!author) return { notFound: true }

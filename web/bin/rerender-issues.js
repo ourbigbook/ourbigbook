@@ -8,7 +8,7 @@ const models = require('../models')
 const back_js = require('../back/js')
 
 const program = commander.program
-program.description('Re-render issues https://docs.ourbigbook.com/_file/web/bin/rerender-issues.js')
+program.description('Re-render issues https://docs.ourbigbook.com/-/file/web/bin/rerender-issues.js')
 program.option('-i, --ignore-errors', 'ignore errors', false);
 program.parse(process.argv);
 const opts = program.opts()

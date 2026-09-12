@@ -251,7 +251,7 @@ A full blown showcase knowledge base can be seen at:
 {border}
 {height=785}
 {provider=github}
-{source=https://cirosantilli.com/_dir/nodejs/}
+{source=https://cirosantilli.com/-/dir/nodejs/}
 
 \Image[github_com_ourbigbook_ourbigbook.png]
 {title=OurBigBook GitHub repository}
@@ -276,7 +276,7 @@ A full blown showcase knowledge base can be seen at:
 * https://github.com/ourbigbook/ourbigbook/blob/master/index.bigb[]: source for this document
 * https://docs.ourbigbook.com[]: rendered version of this document
   * https://github.com/ourbigbook/docs-md[]: a version of this document rendered as Markdown
-* https://docs.ourbigbook.com/_obb/dist/editor[]: live in-browser editor demo
+* https://docs.ourbigbook.com/-/obb/dist/editor[]: live in-browser editor demo
 * https://github.com/ourbigbook/template[]: good template to get started with <OurBigBook CLI>, see <OurBigBook CLI quick start>{full}
   * https://ourbigbook.github.io/template[]: the above <published to GitHub Pages>
 * https://cirosantilli.com/ourbigbook-media[]: media for the project such as for documentation and <publicity>, more info: <OurBigBook media repository>{full}
@@ -665,7 +665,7 @@ Some noteworthy non-mind-meld software include:
     ======== h8
     ``
   * generate lists of <incoming links> between internal headers: it shows every <internal link> coming into the current page
-* automatic file upload and directory listing of non OurBigBook files: <`_raw` directory>, e.g.:
+* automatic file upload and directory listing of non OurBigBook files: <`-/raw` directory>, e.g.:
   * link to a file:
     \OurBigBookExample[[
     The file \a[index.js] is cool.
@@ -674,7 +674,7 @@ Some noteworthy non-mind-meld software include:
     \OurBigBookExample[[
     The directory \a[file_demo] is cooler.
     ]]
-* is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: https://docs.ourbigbook.com/_obb/dist/editor[]
+* is written in JavaScript and therefore runs natively on the browser to allow live previews as shown at: https://docs.ourbigbook.com/-/obb/dist/editor[]
 * helps you with the publishing:
   * <ourbigbook --publish> publishes in a single command to the configured target (default <GitHub Pages>)
   * OurBigBook tries to deal with media such as images and video intelligently for you, e.g.: <where to store images>{full}. E.g. you can keep media in a separate media repository, `my-media-repository`, and then by configuring on <ourbigbook.json>:
@@ -1224,36 +1224,36 @@ When a link is an <internal path link> this has the following effects:
   Therefore, if we didn't do anything about it, the link to `index.js` would render as `href="index.js"` and thus point to `h2/index.js` instead of the correct `index.js`.
 
   Instead, OurBigBook automatically converts it to the correct `href="../index.js"`
-* the <`_raw` directory> prefix is added to the link
+* the <`-/raw` directory> prefix is added to the link
 * existence of the file is checked on compilation. If it does not exist, an error is given.
 
-= `_dir` directory
+= `-/dir` directory
 {parent=a `external` argument}
 
-The `_dir` directory tree contains file listings of files in the `_raw` directory.
+The `-/dir` directory tree contains file listings of files in the `-/raw` directory.
 
-We originally wanted to place these listings under `_raw` itself, but this leads to unsolvable conflicts when there are files called `index.html` present vs the index.
+We originally wanted to place these listings under `-/raw` itself, but this leads to unsolvable conflicts when there are files called `index.html` present vs the index.
 
-= `_file` output directory
+= `-/file` output directory
 {parent=a `external` argument}
 
-= `_file` directory
+= `-/file` directory
 {synonym}
 
-Analogous to the <`_raw` directory>, but contains an HTML page that displays the contents of the file inside of it.
+Analogous to the <`-/raw` directory>, but contains an HTML page that displays the contents of the file inside of it.
 
-As such, unlike in the <`_raw` directory> which just contains the file raw, the page can also contain useful metadata about the file, such as:
-* its location in the file tree pointing to the <_dir directory>
+As such, unlike in the <`-/raw` directory> which just contains the file raw, the page can also contain useful metadata about the file, such as:
+* its location in the file tree pointing to the <`-/dir` directory>
 * <ourbigbook.liquid.html> elements such as a commenting system like <#Giscus> and analytics like <#Google Analytics>
 
 If the file has a corresponding <`\H` `file` argument> section, and when using <--split-headers>, then the content of the corresponding section are shown. Otherwise, only the file is shown.
 
-= `_raw` directory
+= `-/raw` directory
 {parent=a `external` argument}
 
-<OurBigBook> places output files that are not the output of `.bigb` to `.html` conversion (i.e. `.html` output files) under the `_raw/` prefix of the output.
+<OurBigBook> places output files that are not the output of `.bigb` to `.html` conversion (i.e. `.html` output files) under the `-/raw/` prefix of the output.
 
-<Internal path links> then automatically add the `_raw/` prefix to every link.
+<Internal path links> then automatically add the `-/raw/` prefix to every link.
 
 For example, consider an input directory that contains:
 
@@ -1284,10 +1284,10 @@ ourbigbook .
 ``
 the following files would exist in the output directory:
 * `notindex.html`: converted output of `notindex.bigb`
-* `_raw/notindex.bigb`: a copy of the input source code `notindex.bigb`
-* `_raw/myfile.c`: a copy of the input file `myfile.c`
-* `_raw/myimg.png`: a copy of the input file `myimg.c`
-and all links/image references would work and automtically point to the correct locations under `_raw`.
+* `-/raw/notindex.bigb`: a copy of the input source code `notindex.bigb`
+* `-/raw/myfile.c`: a copy of the input file `myfile.c`
+* `-/raw/myimg.png`: a copy of the input file `myimg.c`
+and all links/image references would work and automtically point to the correct locations under `-/raw`.
 
 Some live examples:
 * link to a file:
@@ -1300,11 +1300,11 @@ Some live examples:
   The directory \a[file_demo] is cooler.
   ]]
 
-The reason why a `_raw` prefix is needed it to avoid naming conflicts with OurBigBook outputs, e.g. suppose we had the files:
+The reason why a `-/raw` prefix is needed it to avoid naming conflicts with OurBigBook outputs, e.g. suppose we had the files:
 * `configure`
 * `configure.bigb`
-Then, in a server that omits the `.html` extension, if we didn't have `_raw/` both `configure.html` and `configure` would be present under `/configure`. With `_raw` we instead get:
-* `_raw/configure`: the input `/configure` file
+Then, in a server that omits the `.html` extension, if we didn't have `-/raw/` both `configure.html` and `configure` would be present under `/configure`. With `-/raw` we instead get:
+* `-/raw/configure`: the input `/configure` file
 * `configure`: the HTML
 
 = URL with protocol
@@ -1882,7 +1882,7 @@ If given, the current section contains metadata about file or other resource wit
 {border}
 {height=785}
 {provider=github}
-{source=https://cirosantilli.com/_dir/nodejs/}
+{source=https://cirosantilli.com/-/dir/nodejs/}
 
 If empty, the URL of the file is extracted directly from the header. Otherwise, the given URL is used.
 
@@ -1896,7 +1896,7 @@ An explanation of what this file is about.
 renders a bit like:
 ```
 = path/to/myfile.c
-{id=_file/path/to/myfile.c}
+{id=-/file/path/to/myfile.c}
 
 An explanation of what this file is about.
 
@@ -1912,9 +1912,9 @@ int main() {
 so note how:
 * <automatic ID from title> does not normalize the path, e.g. it does not convert `/` to `-`.
 
-  Also, a <_file output directory>[`_file/` prefix] is automatically added to the ID. This is needed with <split headers> to avoid a collision between:
+  Also, a <`-/file` output directory>[`-/file/` prefix] is automatically added to the ID. This is needed with <split headers> to avoid a collision between:
   * `path/to/myfile.c`: the actual file
-  * `_file/path/to/myfile.c`: the metadata about that file. Note that locally the `.html` extension is added as in `file/path/to/myfile.c.html` which avoids the collision. But on a server deployment, the `.html` is not present, and there would be a conflict if we didn't add that `file/` prefix.
+  * `-/file/path/to/myfile.c`: the metadata about that file. Note that locally the `.html` extension is added as in `file/path/to/myfile.c.html` which avoids the collision. But on a server deployment, the `.html` is not present, and there would be a conflict if we didn't add that `file/` prefix.
 * a link to the is added automatically, since users won't be able to click it from the header, as clicking on the header will just link to the header itself
 * a preview is added. The type of preview is chosen as follows:
   * if the URL has an image extension, do an <image> preview
@@ -1936,7 +1936,7 @@ which renders something like:
 The video \x[tank-man-by-cnn-1989] is very useful.
 
 = Tank Man by CNN (1989)
-{id=_file/https://www.youtube.com/watch?v=YeFzeNAHEhU}
+{id=-/file/https://www.youtube.com/watch?v=YeFzeNAHEhU}
 
 \Video[https://www.youtube.com/watch?v=YeFzeNAHEhU]
 
@@ -1948,9 +1948,9 @@ To make <internal links> to `{file}` headers, use the <`\x` `file` argument>.
 = `\H` `file` argument toplevel header
 {parent=H file argument}
 
-To create a separate file with the <`\H` `file` argument> set on the <toplevel header>, you must put it under the special <`_file` input directory>. For example:
+To create a separate file with the <`\H` `file` argument> set on the <toplevel header>, you must put it under the special <`-/file` input directory>. For example:
 ``
-_file/path/to/myfile.txt.bigb
+-/file/path/to/myfile.txt.bigb
 ``
 could contain something like:
 ``
@@ -1964,12 +1964,12 @@ and it would be associated to the file:
 path/to/myfile.txt
 ``
 
-The content of the header `= myfile.txt` is arbitrary, as it can be fully inferred from the file path `_file/path/to/myfile.txt.bigb`. TODO add linting for it. Perhaps we should make adding a header be optional and auto-generate that header instead. But having at least an optional header is good as a way of being able to set header properties like <tags>.
+The content of the header `= myfile.txt` is arbitrary, as it can be fully inferred from the file path `-/file/path/to/myfile.txt.bigb`. TODO add linting for it. Perhaps we should make adding a header be optional and auto-generate that header instead. But having at least an optional header is good as a way of being able to set header properties like <tags>.
 
 = Interaction between `{file}` and `{scope}`
 {parent=H file argument}
 
-IDs defined under `_file/path/to/myfile.txt.bigb` don't have any scope, e.g.:
+IDs defined under `-/file/path/to/myfile.txt.bigb` don't have any scope, e.g.:
 ``
 = myfile.txt
 {file}
@@ -1991,19 +1991,19 @@ Headers marked with the <H file argument> never have any scope e.g. in:
 ``
 the <ID> of the third header is just:
 ``
-_file/myfile.txt
+-/file/myfile.txt
 ``
 and not:
 ``
-my-scope/_file/myfile.txt
+my-scope/-/file/myfile.txt
 ``
 or:
 ``
-_file/my-scope/myfile.txt
+-/file/my-scope/myfile.txt
 ``
 This is because a `{file}` header is already fully specified by its position in the tree or the given URL, so it doesn't make much sense to add more to it.
 
-= `_file` input directory
+= `-/file` input directory
 {parent=H file argument}
 
 See: <`\H` `file` argument toplevel header>{full}.
@@ -2054,7 +2054,7 @@ This file must be able to run in the browser, so it must not contain any Node.js
 
 It exposes the central `convert` function for markup conversion.
 
-You should normally use the packaged `_obb/ourbigbook.js` version of this file when using ourbigbook as an external dependency.
+You should normally use the packaged `-/obb/ourbigbook.js` version of this file when using ourbigbook as an external dependency.
 
 This file is large, and large text files are not previewed, as they would take up too much useless vertical space and disk memory/bandwidth.
 
@@ -6543,23 +6543,27 @@ and can therefore be linked to in a page with the corresponding fragment:
 animal.html#big-dog
 ``
 
-= Reserved IDs
+= Reserved ID
 {parent=element-id}
 
-= Reserved ID
+= Reserved IDs
 {synonym}
 
-IDs that start with an underscore `_` are reserved for OurBigBook usage, and will give an error if you try to use them, in order to prevent ID conflicts.
+The following IDs are reserved:
+* `-`: reserved as a path component anywhere in an ID, in both static and web output. This forbids `-`, `-/child`, `parent/-`, and `parent/-/child`.
+* `_out`: forbidden as the first component of an ID, to protect local build output.
+* `.git`: forbidden as the first component of an ID, to protect Git metadata.
+* `index`: reserved to prevent collisions with the home page's `index.html`. This check also applies to headers inside scopes.
 
-The path component `-` is also reserved in both static and web IDs. This forbids `-`, `-/child`, `parent/-`, and `parent/-/child`. Other uses of hyphens, such as `my-article`, are allowed.
+Other uses of hyphens, such as `my-article`, and leading underscores, such as `_toc` and `_1`, are allowed. `_out` and `.git` are allowed in nested IDs such as `parent/_out` and `parent/.git`.
 
-For example:
-* the <table of contents> uses an ID `_toc` the <ID> of the ToC is always fixed to `toc`. If you try to use that for another element, you will get the following error:
-* elements without an explicit ID may receive automatically generated IDs of type `_1`, `_2` and so on
+OurBigBook uses the `-/` namespace for generated IDs. For example:
+* the <table of contents> uses the fixed ID `-/toc`
+* elements without an explicit ID may receive automatically generated IDs of type `-/1`, `-/2` and so on
 
-If you use a reserved ID, you will get an error mesasge of type:
+If you use a reserved ID, you will get an error message such as:
 ``
-error: tmp.bigb:3:1: IDs that start with "_" are reserved: "_toc"
+error: tmp.bigb:3:1: The ID path component "-" is reserved for website routes: "-/toc"
 ``
 
 = OurBigBook CLI
@@ -6637,7 +6641,7 @@ Stdin converion is a bit different from conversion from a file in that it ignore
 = Play with the template
 {parent=OurBigBook CLI quick start}
 
-Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/_obb/dist/editor[].
+Learn the syntax basics in 5 minutes: https://docs.ourbigbook.com/-/obb/dist/editor[].
 
 First ensure that Node.js is installed in your computer. You should be able to successfully the following command successfully from a terminal:
 ``
@@ -6752,7 +6756,7 @@ printf 'ab\ncd\n' | ourbigbook > tmp.html
 ``
 You almost never want to do this except when <developing OurBigBook>, as it won't be clear what version of `ourbigbook` the document should be compiled with. Just be a good infant and use OurBigBook <play with the template>[with the template] that contains a `package.json` via `npx`, OK?
 
-Furthermore, the default install of Chromium on Ubuntu 21.04 uses Snap and blocks access to dotfiles. For example, in a sane NVM install, our global CSS would live under `/home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/ourbigbook/_obb/ourbigbook.css`, which gets blocked because of the `.nvm` part:
+Furthermore, the default install of Chromium on Ubuntu 21.04 uses Snap and blocks access to dotfiles. For example, in a sane NVM install, our global CSS would live under `/home/ciro/.nvm/versions/node/v14.17.0/lib/node_modules/ourbigbook/-/obb/ourbigbook.css`, which gets blocked because of the `.nvm` part:
 * https://forum.snapcraft.io/t/dot-files/7062
 * https://bugs.launchpad.net/snapd/+bug/1607067
 * https://superuser.com/questions/1546550/chromium-81-wont-display-dotfiles-anymore
@@ -7093,9 +7097,9 @@ ourbigbook index.bigb
 the output contains references to where OurBigBook is installed in our local filesystem:
 ``
 <style>
-@import "/home/ciro/bak/git/ourbigbook/_obb/ourbigbook.css";
+@import "/home/ciro/bak/git/ourbigbook/-/obb/ourbigbook.css";
 </style>
-<script src="/home/ciro/bak/git/ourbigbook/_obb/ourbigbook_runtime.js"></script>
+<script src="/home/ciro/bak/git/ourbigbook/-/obb/ourbigbook_runtime.js"></script>
 ``
 The advantage of this is that we don't have to duplicate this for every single file. But if you are giving this file to someone else, they would likely not have those files at those exact locations, which would break the HTML page.
 
@@ -7838,11 +7842,11 @@ You then will also want to set your default repository branch to `dev` in the se
 
 It's a GitHub bug/feature: https://github.com/orgs/community/discussions/52252
 
-Maybe we should just ignore the `.github` directory when publishing, otherwise it leads to a broken link on the <`_dir` directory> listings.
+Maybe we should just ignore the `.github` directory when publishing, otherwise it leads to a broken link on the <`-/dir` directory> listings.
 
-= `_raw` files are downloaded rather than displayed in browser for certain file extensions on GitHub Pages
+= `-/raw` files are downloaded rather than displayed in browser for certain file extensions on GitHub Pages
 {parent=publish-target-github-pages}
-{tag=`_raw` directory}
+{tag=`-/raw` directory}
 
 TODO find some upstream discussion.
 
@@ -8031,11 +8035,11 @@ you might also want to do that for all pages except your homepage with:
 
 The following variables are defined for usage inside your <ourbigbook.liquid.html> file:
 * `body`: the rendered body
-* `dir_relpath`: relative path from the rendered output to the <`_dir` directory>. Sample usage to link to the root directory listing:
+* `dir_relpath`: relative path from the rendered output to the <`-/dir` directory>. Sample usage to link to the root directory listing:
   ``
   <div><a href="{{ dir_relpath }}{{ html_index }}">Website source code</a></div>
   ``
-* `file_relpath`: similar to `raw_relpath`, but link to the <_file output directory> instead
+* `file_relpath`: similar to `raw_relpath`, but link to the <`-/file` output directory> instead
 * `git_sha`: SHA of the latest git commit of the source code if in a git repository
 * `github_prefix`: this variable is set only if if the "github" <ourbigbook.json/media-providers>[media provider]. It points to the URL prefix of the provider, e.g. if you have in your <ourbigbook.json>:
   ``
@@ -8060,12 +8064,12 @@ The following variables are defined for usage inside your <ourbigbook.liquid.htm
 * `html_index`: `/index.html` for local renders, empty for server renders
 * `image`: absolute URL of the first <image> of the rendered page if any. This is suitable for usage in `og:image` with something like:
   ``
-  <meta property="og:image" content="{% if image %}{{ image }}{% else %}{{ json.publishRootUrl }}/_raw/logo.svg{% endif %}">
+  <meta property="og:image" content="{% if image %}{{ image }}{% else %}{{ json.publishRootUrl }}/-/raw/logo.svg{% endif %}">
   ``
   Only the <Image macro> (<block macro>) is currently considered.
 * `input_path`: path to the <OurBigBook Markup> source file relative to the <project toplevel directory> that generated this output, e.g. `path/to/myfile.bigb`
 
-  May be an empty string in the case of autogenerated sources, notably <`_raw` directory>[automatic directory listings], so you should always check for that with something like:
+  May be an empty string in the case of autogenerated sources, notably <`-/raw` directory>[automatic directory listings], so you should always check for that with something like:
   ``
   {% if input_path != "" %}
   <div>Source code for this page: <a href="{{ raw_relpath }}/{{ input_path }}">{{ input_path }}</a></div>
@@ -8088,7 +8092,7 @@ The following variables are defined for usage inside your <ourbigbook.liquid.htm
   ``
   <meta property="og:image" content="{{ json.publishRootUrl }}/{{ raw_relpath }}/logo.svg">
   ``
-* `raw_relpath`: relative path from the rendered output to the <`_raw` directory>. Should be used to prefix all non-<OurBigBook Markup> output resources, which is the directory where such files are placed during conversion, e.g.
+* `raw_relpath`: relative path from the rendered output to the <`-/raw` directory>. Should be used to prefix all non-<OurBigBook Markup> output resources, which is the directory where such files are placed during conversion, e.g.
   ``
   <link rel="shortcut icon" href="{{ raw_relpath }}/logo.svg" />
   ``
@@ -8482,9 +8486,9 @@ Analogous to <dontIgnore> but acts on <ignoreRender> rather than <ignore>.
 = `generateSitemap`
 {parent=ourbigbook.json}
 
-If `true`, generate a https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#text[text sitemap] and place it in the <`_obb` directory> when publishing at path:
+If `true`, generate a https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap#text[text sitemap] and place it in the <`-/obb` directory> when publishing at path:
 ``
-_obb/sitemap.txt
+-/obb/sitemap.txt
 ``
 
 This options requires you to also set <publishRootUrl>.
@@ -8532,7 +8536,7 @@ TODO: also ignore during <watch>.
 
 Similar to <ignore>, but only ignore the files from rendering converesions such as bigb -> html, scss -> css.
 
-Unlike <ignore>, matching files are still placed under the <`_raw` directory> and can be publicly viewed.
+Unlike <ignore>, matching files are still placed under the <`-/raw` directory> and can be publicly viewed.
 
 You almost always want this option over <ignore>, with files that should not be in the repository being just ignored with your `.gitignore` instead: <ignore from `.gitignore`>{full}.
 
@@ -9921,7 +9925,7 @@ where:
   ``
   npm run webpack-dev
   ``
-  as mentioned at: <`_obb` directory>.
+  as mentioned at: <`-/obb` directory>.
 * \a[web/bin/generate-demo-data.js] also creates the database and is not optional. If you want to start with an empty database instead of the demo one, you can run instead \a[web/bin/sync-db.js]:
   ``
   ./bin/sync-db
@@ -9982,7 +9986,7 @@ This is just an exploratory step to future exports or generative AI.
 
 We don't have an amazing automation setup as we should, but the steps are:
 * obtain `enwiki.sqlite` containing the tables `page` and `categorylinks` https://stackoverflow.com/questions/17432254/wikipedia-category-hierarchy-from-dumps/77313490#77313490
-* Run https://cirosantilli.com/_raw/wikipedia/sqlite_preorder.py[], potentially differently parametrized, as:
+* Run https://cirosantilli.com/-/raw/wikipedia/sqlite_preorder.py[], potentially differently parametrized, as:
   ``
   rm -rf out
   ./sqlite_preorder.py -D3 -d6 -Obigb -m -N enwiki.sqlite Mathematics Physics Chemistry Biology Technology
@@ -11343,15 +11347,33 @@ Types:
 {c}
 {parent=OurBigBook Web URL standards}
 
-Browser URLs use `/-/` to separate a user or article ID from page actions:
+Browser URLs use `/-/` to separate a user or article <ID> from page actions:
 * global pages: `/-/users`, `/-/articles`, `/-/files`
 * user pages: `/username/-/articles`, `/username/-/files`, `/username/-/settings`
 * article pages: `/username/my/article/-/discussions`, `/username/my/article/-/edit`
-* individual discussions: `/username/my/article/-/discussion/1`
+* individual <OurBigBook Web discussions>[discussions]: `/username/my/article/-/discussion/1`
 
 For the user's home article, discussions and comments use `/username/-/article/discussions` and `/username/-/article/comments`. This distinguishes them from `/username/-/discussions` and `/username/-/comments`, which list content authored by that user.
 
-The `-` path component is reserved in IDs and uploaded file paths to prevent ambiguity. `go` remains a reserved username. Old `/go/` URLs permanently redirect to their new locations, preserving query parameters. Ordinary article URLs and `_dir`, `_file`, `_raw`, and `/api` routes keep their existing forms.
+The `-` path component is a <reserved ID> in both article IDs and uploaded file paths, to prevent ambiguity. `go` remains a reserved username. Old `/go/` URLs permanently redirect to their new locations, preserving query parameters. Ordinary article URLs and <OurBigBook Web API standards>[`/api` routes] keep their existing forms.
+
+File URLs use the same namespace on <static website>[static websites] and <OurBigBook Web>:
+* `/-/file/path`: <`-/file` output directory>[file preview page]; on web, `/username/-/file/path`
+* `/-/raw/path`: <`-/raw` directory>[original file bytes]; on web, `/username/-/raw/path`
+* `/-/dir/path`: <`-/dir` directory>[directory listing]; on web, `/username/-/dir/path`
+Static runtime assets and the <Browser editor with preview>[standalone editor] use the <`-/obb` directory>[`/-/obb/` directory]. Static file preview pages retain their usual `.html` extension when enabled. Temporary element anchors use `#-/1`, `#-/2` and so on. Named page anchors use the same namespace: `#-/toc`, `#-/ancestors`, `#-/incoming-links`, `#-/synonyms`, `#-/tagged`, `#-/comments`, `#-/comment-1`, and `#-/metadata`.
+
+The web migration `21000101000041-reserved-path-namespace.js` updates stored file article IDs, references, cached AST paths and local profile image URLs. It preserves uploaded bytes, storage paths, source text and rendered HTML. It runs through the normal <OurBigBook Web database migration setup>[deployment migration setup]; locally, run `cd web && ./bin/sync-db.js`. Legacy web `/_file/`, `/_raw/` and `/_dir/` URLs redirect permanently to the new paths.
+
+After migrating, rerender articles, discussions and comments to regenerate their links and anchors from source:
+``
+web/bin/rerender-articles.js
+web/bin/rerender-issues.js
+web/bin/rerender-comments.js
+``
+See <web/bin/rerender-articles.js>{file} for rerender options. Named anchors and comment scopes need no database transformation; `21000101000042-named-anchor-namespace.js` is retained as a no-op for migration history compatibility.
+
+Regenerate static websites with the updated <OurBigBook CLI> and <force-render>[`--force-render`] to publish the new paths and temporary anchors. If you keep `.bigb` sources under `_file/`, move that source directory to the <`-/file` input directory>[`-/file/` directory] before rebuilding. The CLI invalidates cached legacy file IDs automatically, and existing <internal link>[`\x[_file/path]` source references] still resolve. Old static URLs require redirects configured on the host if they must remain available.
 
 = OurBigBook Web URL standards: article ID comes last due to slash
 {synonym}
@@ -11473,7 +11495,7 @@ This section describes features present in \a[ourbigbook_runtime.js]
 
 That file contains JavaScript functionality to be included in the final documents to enable interactive document features such as the <table of contents>.
 
-You should use the packaged `_obb/ourbigbook_runtime.js` instead of this file directly however.
+You should use the packaged `-/obb/ourbigbook_runtime.js` instead of this file directly however.
 
 = JavaScript redirect to split on missing ID
 {c}
@@ -11967,7 +11989,7 @@ Possibilities we could reuse:
 
 The "static editor" is the <Browser editor with preview>.
 
-It can be viewed live at: https://docs.ourbigbook.com/_obb/dist/editor[] and its main source code is located at: \a[editor.html].
+It can be viewed live at: https://docs.ourbigbook.com/-/obb/dist/editor[] and its main source code is located at: \a[editor.html].
 
 The static editor is a browser-only toy/demo with no persistent storage. We call it "static" because it is able to run on a <static website>, as opposed to the more advanced editor present in <OurBigBook Web>, which interacts fully with a dynamic database. Both static and dynamic editor codebases are highly factored however, which is why they look identical.
 
@@ -12368,7 +12390,7 @@ npm run webpack
 ``
 which is called from `npm run build-assets`.
 
-When publishing with <OurBigBook CLI>, `dist` is placed under the <`_obb` directory>.
+When publishing with <OurBigBook CLI>, `dist` is placed under the <`-/obb` directory>.
 
 The files in that directory are:
 * `dist/ourbigbook.js`: OurBigBook <JavaScript API> converter for browser usage. The source entry point for it is located at \a[index.js]. Contains the code of every single dependency used from `node_modules` used by `index.js`. This is notably used for the live-preview of a <browser editor with preview>.
@@ -12387,12 +12409,12 @@ This runs Webpack in development mode, which has two huge advantages:
 
 This setup also works seamlessly when <OurBigBook Web development>[developing OurBigBook Web], just let the watch process run in a separate terminal.
 
-= `_obb` directory
+= `-/obb` directory
 {parent=Generated files}
 
-When publishing with <OurBigBook CLI>, certain files such as the <`dist` directory> are placed under the <`_obb` directory> on the final output.
+When publishing with <OurBigBook CLI>, certain files such as the <`dist` directory> are placed under the <`-/obb` directory> on the final output.
 
-Because `_obb` is a <reserved ID>, we can safely dump any autogenerated files under `_obb` without fear of name conflicts with other files.
+Because `-/obb` is a <reserved ID>, we can safely dump any autogenerated files under `-/obb` without fear of name conflicts with other files.
 
 = The `_out` directory
 {parent=Overview of files in this repository}

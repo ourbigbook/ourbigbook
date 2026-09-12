@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 
-// https://docs.ourbigbook.com/_file/web/bin/send-email
+// https://docs.ourbigbook.com/-/file/web/bin/send-email
 
 const path = require('path')
 

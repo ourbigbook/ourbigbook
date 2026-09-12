@@ -502,7 +502,7 @@ then after.
     assert(!markdown.includes('<a id="ordinary"></a>'))
     assert(markdown.includes('## Ordinary'))
     assert(markdown.includes('<h2 id="custom-id">Custom</h2>'))
-    assert(markdown.includes('<h2 id="_file/picture.png">picture.png</h2>\n\n↑ **Parent:** [Home]()\n\n![picture.png](_raw/picture.png)'))
+    assert(markdown.includes('<h2 id="-/file/picture.png">picture.png</h2>\n\n↑ **Parent:** [Home]()\n\n![picture.png](-/raw/picture.png)'))
   })
 
   it('starts fenced code on a new line after list-item text', async function () {
@@ -549,7 +549,7 @@ then after.
       output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
-    assert(markdown.includes('- [https://example.com](#_file/https://example.com)'))
+    assert(markdown.includes('- [https://example.com](#-/file/https://example.com)'))
     assert(!markdown.includes('[[https://example.com](https://example.com)]'))
   })
 
@@ -2290,7 +2290,7 @@ assert_lib_ast('table: table with description has caption',
         a('Td', [t('00')]),
         a('Td', [t('01')]),
       ]),
-    ], {}, { id: '_1' }),
+    ], {}, { id: '-/1' }),
   ],
   {
     assert_xpath_stdout: [
@@ -2543,7 +2543,7 @@ assert_lib_ast('image: image with description has caption',
     a('Image', undefined, {
       src: [t('aa')],
       description: [t('b b')],
-    }, {}, { id: '_1' }),
+    }, {}, { id: '-/1' }),
   ],
   {
     assert_xpath_stdout: [
@@ -2557,7 +2557,7 @@ assert_lib_ast('image: image with source has caption',
     a('Image', undefined, {
       src: [t('aa')],
       source: [t('b b')],
-    }, {}, { id: '_1' }),
+    }, {}, { id: '-/1' }),
   ],
   {
     assert_xpath_stdout: [
@@ -2571,7 +2571,7 @@ assert_lib_ast('image: image without id, title, description nor source does not 
   [
     a('Image', undefined, {
       src: [t('aa')],
-    }, {}, { id: '_1' }),
+    }, {}, { id: '-/1' }),
   ],
   {
     assert_not_xpath_stdout: [
@@ -2588,7 +2588,7 @@ assert_lib_ast('image: image without id, title, description nor source does not 
 `,
   [
     a('Image', undefined, { src: [t('aa')], }, {}, { id: 'aa' }),
-    a('Image', undefined, { src: [t('bb')], }, {}, { id: '_2' }),
+    a('Image', undefined, { src: [t('bb')], }, {}, { id: '-/2' }),
     a('Image', undefined, { src: [t('cc')], }, {}, { id: 'cc' }),
   ],
   {
@@ -6109,7 +6109,7 @@ assert_lib(
       'index.html': [
         // Would like to test like this, but it doesn't seem implemented in this crappy xpath implementation.
         // So we revert to instrumentation instead then.
-        //`//x:h2[@id='_incoming-links']/following:://x:a[@href='#h2']`,
+        //`//x:h2[@id='-/incoming-links']/following:://x:a[@href='#h2']`,
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']//x:a[@href='' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='0']`,
         // Check that incoming links are capitalized, e.g. here to "H2 2".
         `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='incoming-links']` +
@@ -7362,38 +7362,38 @@ assert_lib('header: numbered argument',
         "//x:blockquote//x:a[@href='#tmp-2' and text()='Section 1. \"tmp 2\"']",
         "//x:blockquote//x:a[@href='#tmp-4' and text()='Section \"tmp 4\"']",
         "//x:blockquote//x:a[@href='#tmp-8' and text()='Section 1.1. \"tmp 8\"']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2' and text()='tmp 2']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2']//x:i[@class='n' and text()='1. ']",
-        "//*[@id='_toc']//x:a[@href='#tmp-3' and text()='tmp 3']",
-        "//*[@id='_toc']//x:a[@href='#tmp-3']//x:i[@class='n' and text()='1.1. ']",
-        "//*[@id='_toc']//x:a[@href='#tmp-4' and text()='tmp 4']",
-        "//*[@id='_toc']//x:a[@href='#tmp-5' and text()='tmp 5']",
-        "//*[@id='_toc']//x:a[@href='#tmp-6' and text()='tmp 6']",
-        "//*[@id='_toc']//x:a[@href='#tmp-7' and text()='tmp 7']",
-        "//*[@id='_toc']//x:a[@href='#tmp-7']//x:i[@class='n' and text()='1. ']",
-        "//*[@id='_toc']//x:a[@href='#tmp-8' and text()='tmp 8']",
-        "//*[@id='_toc']//x:a[@href='#tmp-8']//x:i[@class='n' and text()='1.1. ']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2-2' and text()='tmp 2 2']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2-2']//x:i[@class='n' and text()='2. ']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2-2-3' and text()='tmp 2 2 3']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2-2-3']//x:i[@class='n' and text()='2.1. ']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2' and text()='tmp 2']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2']//x:i[@class='n' and text()='1. ']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-3' and text()='tmp 3']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-3']//x:i[@class='n' and text()='1.1. ']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-4' and text()='tmp 4']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-5' and text()='tmp 5']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-6' and text()='tmp 6']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-7' and text()='tmp 7']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-7']//x:i[@class='n' and text()='1. ']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-8' and text()='tmp 8']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-8']//x:i[@class='n' and text()='1.1. ']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2-2' and text()='tmp 2 2']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2-2']//x:i[@class='n' and text()='2. ']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2-2-3' and text()='tmp 2 2 3']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2-2-3']//x:i[@class='n' and text()='2.1. ']",
       ],
       'tmp-6.html': [
-        "//*[@id='_toc']//x:a[@href='index.html#tmp-7' and text()='tmp 7']",
-        "//*[@id='_toc']//x:a[@href='index.html#tmp-7']//x:i[@class='n' and text()='1. ']",
-        "//*[@id='_toc']//x:a[@href='index.html#tmp-8' and text()='tmp 8']",
-        "//*[@id='_toc']//x:a[@href='index.html#tmp-8']//x:i[@class='n' and text()='1.1. ']",
+        "//*[@id='-/toc']//x:a[@href='index.html#tmp-7' and text()='tmp 7']",
+        "//*[@id='-/toc']//x:a[@href='index.html#tmp-7']//x:i[@class='n' and text()='1. ']",
+        "//*[@id='-/toc']//x:a[@href='index.html#tmp-8' and text()='tmp 8']",
+        "//*[@id='-/toc']//x:a[@href='index.html#tmp-8']//x:i[@class='n' and text()='1.1. ']",
       ],
       'tmp-7.html': [
-        "//*[@id='_toc']//x:a[@href='index.html#tmp-8' and text()='tmp 8']",
-        "//*[@id='_toc']//x:a[@href='index.html#tmp-8']//x:i[@class='n' and text()='1. ']",
+        "//*[@id='-/toc']//x:a[@href='index.html#tmp-8' and text()='tmp 8']",
+        "//*[@id='-/toc']//x:a[@href='index.html#tmp-8']//x:i[@class='n' and text()='1. ']",
       ],
     },
     assert_not_xpath: {
       'index.html': [
-        "//*[@id='_toc']//x:a[@href='#tmp-4']//x:i[@class='n']",
-        "//*[@id='_toc']//x:a[@href='#tmp-5']//x:i[@class='n']",
-        "//*[@id='_toc']//x:a[@href='#tmp-6']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-4']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-5']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-6']//x:i[@class='n']",
       ]
     },
     convert_opts: { split_headers: true },
@@ -7410,35 +7410,35 @@ assert_lib('header: numbered ourbigbook.json',
         "//x:blockquote//x:a[@href='#tmp-2' and text()='Section \"tmp 2\"']",
         "//x:blockquote//x:a[@href='#tmp-4' and text()='Section \"tmp 4\"']",
         "//x:blockquote//x:a[@href='#tmp-8' and text()='Section 1.1. \"tmp 8\"']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2' and text()='tmp 2']",
-        "//*[@id='_toc']//x:a[@href='#tmp-3' and text()='tmp 3']",
-        "//*[@id='_toc']//x:a[@href='#tmp-4' and text()='tmp 4']",
-        "//*[@id='_toc']//x:a[@href='#tmp-5' and text()='tmp 5']",
-        "//*[@id='_toc']//x:a[@href='#tmp-6' and text()='tmp 6']",
-        "//*[@id='_toc']//x:a[@href='#tmp-7' and text()='tmp 7']",
-        "//*[@id='_toc']//x:a[@href='#tmp-7']//x:i[@class='n' and text()='1. ']",
-        "//*[@id='_toc']//x:a[@href='#tmp-8' and text()='tmp 8']",
-        "//*[@id='_toc']//x:a[@href='#tmp-8']//x:i[@class='n' and text()='1.1. ']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2-2' and text()='tmp 2 2']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2-2-3' and text()='tmp 2 2 3']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2' and text()='tmp 2']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-3' and text()='tmp 3']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-4' and text()='tmp 4']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-5' and text()='tmp 5']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-6' and text()='tmp 6']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-7' and text()='tmp 7']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-7']//x:i[@class='n' and text()='1. ']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-8' and text()='tmp 8']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-8']//x:i[@class='n' and text()='1.1. ']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2-2' and text()='tmp 2 2']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2-2-3' and text()='tmp 2 2 3']",
       ],
       'tmp-6.html': [
-        //"//*[@id='_toc']//x:a[@href='index.html#tmp-7' and text()='1. tmp 7']",
-        //"//*[@id='_toc']//x:a[@href='index.html#tmp-8' and text()='1.1. tmp 8']",
+        //"//*[@id='-/toc']//x:a[@href='index.html#tmp-7' and text()='1. tmp 7']",
+        //"//*[@id='-/toc']//x:a[@href='index.html#tmp-8' and text()='1.1. tmp 8']",
       ],
       'tmp-7.html': [
-        //"//*[@id='_toc']//x:a[@href='index.html#tmp-8' and text()='1. tmp 8']",
+        //"//*[@id='-/toc']//x:a[@href='index.html#tmp-8' and text()='1. tmp 8']",
       ],
     },
     assert_not_xpath: {
       'index.html': [
-        "//*[@id='_toc']//x:a[@href='#tmp-2']//x:i[@class='n']",
-        "//*[@id='_toc']//x:a[@href='#tmp-3']//x:i[@class='n']",
-        "//*[@id='_toc']//x:a[@href='#tmp-4']//x:i[@class='n']",
-        "//*[@id='_toc']//x:a[@href='#tmp-5']//x:i[@class='n']",
-        "//*[@id='_toc']//x:a[@href='#tmp-6']//x:i[@class='n']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2-2']//x:i[@class='n']",
-        "//*[@id='_toc']//x:a[@href='#tmp-2-2-3']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-3']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-4']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-5']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-6']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2-2']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#tmp-2-2-3']//x:i[@class='n']",
       ],
     },
     convert_opts: {
@@ -7468,11 +7468,11 @@ assert_lib('header: splitDefault on ourbigbook.json',
     },
     assert_xpath: {
       'index.html': [
-        "//*[@id='_toc']//x:a[@href='notindex.html' and text()='Notindex']",
-        "//*[@id='_toc']//x:a[@href='notindex-h2.html' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html' and text()='Notindex']",
+        "//*[@id='-/toc']//x:a[@href='notindex-h2.html' and text()='Notindex h2']",
       ],
       'notindex.html': [
-        "//*[@id='_toc']//x:a[@href='notindex-h2.html' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex-h2.html' and text()='Notindex h2']",
       ],
     },
   },
@@ -7521,26 +7521,26 @@ My Line 2
     assert_xpath: {
       'index.html': [
         // == path/to breadcrumb and contents
-        `//x:a[@href='_dir/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__']`,
-        `//x:a[@href='_dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__path']`,
-        `//x:a[@href='_dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__path/to']`,
+        `//x:a[@href='-/dir/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__']`,
+        `//x:a[@href='-/dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__path']`,
+        `//x:a[@href='-/dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to__path/to']`,
         "//x:div[@class='p' and text()='My directory']",
 
         // == path/to/my-file.txt breadcrumb and contents
-        `//x:a[@href='_dir/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__']`,
-        `//x:a[@href='_dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path']`,
-        `//x:a[@href='_dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to']`,
-        `//x:a[@href='_raw/path/to/my-file.txt' and text()='my-file.txt' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to/my-file.txt']`,
+        `//x:a[@href='-/dir/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__']`,
+        `//x:a[@href='-/dir/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path']`,
+        `//x:a[@href='-/dir/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to']`,
+        `//x:a[@href='-/raw/path/to/my-file.txt' and text()='my-file.txt' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to/my-file.txt']`,
         // Don't know how to include newlines in xPath!
         "//x:code[starts-with(text(), 'My Line 1')]",
         "//x:div[@class='p' and text()='My txt']",
 
-        "//x:a[@href='_raw/path/to/my-file.png' and text()='my-file.png']",
-        "//x:img[@src='_raw/path/to/my-file.png']",
+        "//x:a[@href='-/raw/path/to/my-file.png' and text()='my-file.png']",
+        "//x:img[@src='-/raw/path/to/my-file.png']",
         "//x:div[@class='p' and text()='My png']",
 
-        "//x:a[@href='_raw/path/to/my-file.mp4' and text()='my-file.mp4']",
-        "//x:video[@src='_raw/path/to/my-file.mp4']",
+        "//x:a[@href='-/raw/path/to/my-file.mp4' and text()='my-file.mp4']",
+        "//x:video[@src='-/raw/path/to/my-file.mp4']",
         "//x:div[@class='p' and text()='My mp4']",
 
         "//x:a[@href='https://www.youtube.com/watch?v=YeFzeNAHEhU' and text()='www.youtube.com/watch?v=YeFzeNAHEhU']",
@@ -7563,8 +7563,8 @@ assert_lib('header: file argument that is the last header adds the preview',
     },
     assert_xpath: {
       'index.html': [
-        "//x:a[@href='_raw/path/to/my-file.png' and text()='my-file.png']",
-        "//x:img[@src='_raw/path/to/my-file.png']",
+        "//x:a[@href='-/raw/path/to/my-file.png' and text()='my-file.png']",
+        "//x:img[@src='-/raw/path/to/my-file.png']",
       ]
     }
   },
@@ -7643,8 +7643,8 @@ assert_lib('header: file argument in _file directory toplevel header',
 
 <path/to/my-file.txt>{file}{id=toplevel-to-txt}
 
-\\Include[_file/path/to/my-file.txt]
-\\Include[_file/path/to/my-file.png]
+\\Include[-/file/path/to/my-file.txt]
+\\Include[-/file/path/to/my-file.png]
 `,
       [`${ourbigbook.FILE_PREFIX}/path/to/my-file.txt.bigb`]: `= my-file.txt
 {file}
@@ -7671,18 +7671,18 @@ My Line 2
         `//x:a[@id='toplevel-to-txt' and @href='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt.html' and text()='my-file.txt']`,
       ],
       [`${ourbigbook.FILE_PREFIX}/path/to/my-file.txt.html`]: [
-        "//x:a[@href='../../../_raw/path/to/my-file.txt' and text()='my-file.txt']",
+        "//x:a[@href='../../../../-/raw/path/to/my-file.txt' and text()='my-file.txt']",
         // We actually get the full path always on the title of a {file} header.
         "//x:h1//x:a[text()='path/to/my-file.txt']",
         "//x:div[@class='p' and text()='My txt.']",
         // Don't know how to include newlines in xPath!
         "//x:code[starts-with(text(), 'My Line 1')]",
-        `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
-        `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path']`,
-        `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to']`,
+        `//x:a[@href='../../../../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
+        `//x:a[@href='../../../../${ourbigbook.DIR_PREFIX}/path/index.html' and text()='path' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path']`,
+        `//x:a[@href='../../../../${ourbigbook.DIR_PREFIX}/path/to/index.html' and text()='to' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/path/to/my-file.txt__path/to']`,
       ],
       [`${ourbigbook.FILE_PREFIX}/path/to/my-file.png.html`]: [
-        "//x:img[@src='../../../_raw/path/to/my-file.png']",
+        "//x:img[@src='../../../../-/raw/path/to/my-file.png']",
       ],
     }
   },
@@ -7695,7 +7695,7 @@ assert_lib('header: ID defined inside _file directory does not receive _file sco
 
 \\x[dut-to]{id=dut-from}
 
-\\Include[_file/path/to/myfile.txt]
+\\Include[-/file/path/to/myfile.txt]
 `,
       [`${ourbigbook.FILE_PREFIX}/path/to/myfile.txt.bigb`]: `= myfile.txt
 {file}
@@ -7825,9 +7825,9 @@ assert_lib('header: toplevel argument',
         "//x:div[@class='p']//x:a[@href='notindex.html#notindex-1' and text()='toplevel to notindex 1']",
         "//x:div[@class='p']//x:a[@href='notindex-1-1.html' and text()='toplevel to notindex 1 1']",
         "//x:div[@class='p']//x:a[@href='notindex-1-1.html#notindex-1-1-1' and text()='toplevel to notindex 1 1 1']",
-        "//*[@id='_toc']//x:a[@href='#h-1' and text()='h 1']",
-        "//*[@id='_toc']//x:a[@href='h-1-1.html' and text()='h 1 1']",
-        "//*[@id='_toc']//x:a[@href='h-1-1.html#h-1-1-1' and text()='h 1 1 1']",
+        "//*[@id='-/toc']//x:a[@href='#h-1' and text()='h 1']",
+        "//*[@id='-/toc']//x:a[@href='h-1-1.html' and text()='h 1 1']",
+        "//*[@id='-/toc']//x:a[@href='h-1-1.html#h-1-1-1' and text()='h 1 1 1']",
 
         // Modified by toplevel.
         "//x:div[@class='p']//x:a[@href='h-1-1.html' and text()='toplevel to h 1 1']",
@@ -8211,7 +8211,7 @@ aa
 {description=b b}
 `,
   [
-    a('C', [t('aa')], { description: [t('b b')] }, { id: '_1'} ),
+    a('C', [t('aa')], { description: [t('b b')] }, { id: '-/1'} ),
   ],
   {
     assert_xpath_stdout: [
@@ -8225,7 +8225,7 @@ aa
 \`\`
 `,
   [
-    a('C', [t('aa')], {}, { id: '_1'} ),
+    a('C', [t('aa')], {}, { id: '-/1'} ),
   ],
   {
     assert_not_xpath_stdout: [
@@ -8250,7 +8250,7 @@ cc
 `,
   [
     a('C', [t('aa')], { id: [t('00')] }, { id: '00'} ),
-    a('C', [t('bb')], {}, { id: '_1'} ),
+    a('C', [t('bb')], {}, { id: '-/1'} ),
     a('C', [t('cc')], { id: [t('22')] }, { id: '22'} ),
   ],
   {
@@ -8544,52 +8544,52 @@ assert_lib_ast('toc: split headers have correct table of contents',
     assert_xpath: {
       'notindex.html': [
         // There is a self-link to the Toc.
-        "//*[@id='_toc']",
-        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
+        "//*[@id='-/toc']",
+        "//*[@id='-/toc']//x:a[@href='#-/toc' and text()=' Table of contents']",
 
         // ToC links have parent toc entry links.
         // Toplevel entries point to the ToC toplevel.
-        `//*[@id='_toc']//*[@id='_toc/h1-1']//x:a[@href='#_toc' and text()=' h1']`,
-        `//*[@id='_toc']//*[@id='_toc/h1-2']//x:a[@href='#_toc' and text()=' h1']`,
+        `//*[@id='-/toc']//*[@id='-/toc/h1-1']//x:a[@href='#-/toc' and text()=' h1']`,
+        `//*[@id='-/toc']//*[@id='-/toc/h1-2']//x:a[@href='#-/toc' and text()=' h1']`,
         // Inner entries point to their parent entries.
-        `//*[@id='_toc']//*[@id='_toc/h1-2-1']//x:a[@href='#_toc/h1-2' and text()=' h1 2']`,
+        `//*[@id='-/toc']//*[@id='-/toc/h1-2-1']//x:a[@href='#-/toc/h1-2' and text()=' h1 2']`,
 
         // The ToC numbers look OK.
-        "//*[@id='_toc']//x:a[@href='#h1-2' and text()='h1 2']",
+        "//*[@id='-/toc']//x:a[@href='#h1-2' and text()='h1 2']",
 
         // The headers have ToC links.
-        `${xpath_header(2, 'h1-1')}//x:a[@href='#_toc/h1-1' and @class='toc']`,
-        `${xpath_header(2, 'h1-2')}//x:a[@href='#_toc/h1-2' and @class='toc']`,
-        `${xpath_header(3, 'h1-2-1')}//x:a[@href='#_toc/h1-2-1' and @class='toc']`,
+        `${xpath_header(2, 'h1-1')}//x:a[@href='#-/toc/h1-1' and @class='toc']`,
+        `${xpath_header(2, 'h1-2')}//x:a[@href='#-/toc/h1-2' and @class='toc']`,
+        `${xpath_header(3, 'h1-2-1')}//x:a[@href='#-/toc/h1-2-1' and @class='toc']`,
 
         // Descendant count.
-        "//*[@id='_toc']//*[@class='title-div']//*[@class='descendant-count' and text()='4']",
-        "//*[@id='_toc']//*[@id='_toc/h1-2']//*[@class='descendant-count' and text()='2']",
+        "//*[@id='-/toc']//*[@class='title-div']//*[@class='descendant-count' and text()='4']",
+        "//*[@id='-/toc']//*[@id='-/toc/h1-2']//*[@class='descendant-count' and text()='2']",
       ],
       'notindex-split.html': [
         // Split output files get their own ToCs.
-        "//*[@id='_toc']",
-        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
+        "//*[@id='-/toc']",
+        "//*[@id='-/toc']//x:a[@href='#-/toc' and text()=' Table of contents']",
       ],
       'h1-2.html': [
         // Split output files get their own ToCs.
-        "//*[@id='_toc']",
-        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
+        "//*[@id='-/toc']",
+        "//*[@id='-/toc']//x:a[@href='#-/toc' and text()=' Table of contents']",
 
         // The Toc entries of split output headers automatically cull out a level
         // of the full number tree. E.g this entry is `2.1` on the toplevel ToC,
         // but on this sub-ToC it is just `1.`.
-        "//*[@id='_toc']//x:a[@href='notindex.html#h1-2-1' and text()='h1 2 1']",
-        "//*[@id='_toc']//x:a[@href='notindex.html#h1-2-1-1' and text()='h1 2 1 1']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html#h1-2-1' and text()='h1 2 1']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html#h1-2-1-1' and text()='h1 2 1 1']",
 
         // We have gone a bit back and forth on split vs nosplit here.
         // Related: https://github.com/ourbigbook/ourbigbook/issues/146
-        `//*[@id='_toc']//*[@id='_toc/h1-2-1']//x:a[@href='#_toc' and text()=' h1 2']`,
-        `//*[@id='_toc']//*[@id='_toc/h1-2-1-1']//x:a[@href='#_toc/h1-2-1' and text()=' h1 2 1']`,
+        `//*[@id='-/toc']//*[@id='-/toc/h1-2-1']//x:a[@href='#-/toc' and text()=' h1 2']`,
+        `//*[@id='-/toc']//*[@id='-/toc/h1-2-1-1']//x:a[@href='#-/toc/h1-2-1' and text()=' h1 2 1']`,
 
         // Descendant count.
-        "//*[@id='_toc']//*[@class='title-div']//*[@class='descendant-count' and text()='2']",
-        "//*[@id='_toc']//*[@id='_toc/h1-2-1']//*[@class='descendant-count' and text()='1']",
+        "//*[@id='-/toc']//*[@class='title-div']//*[@class='descendant-count' and text()='2']",
+        "//*[@id='-/toc']//*[@id='-/toc/h1-2-1']//*[@class='descendant-count' and text()='1']",
       ],
     },
     assert_not_xpath: {
@@ -8632,61 +8632,61 @@ assert_lib('toc: toplevel scope is removed from table of content IDs',
     assert_xpath: {
       'notindex.html': [
         // There is a self-link to the Toc.
-        "//*[@id='_toc']",
-        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
+        "//*[@id='-/toc']",
+        "//*[@id='-/toc']//x:a[@href='#-/toc' and text()=' Table of contents']",
 
         // ToC links have parent toc entry links.
         // Toplevel entries point to the ToC toplevel.
-        `//*[@id='_toc']//*[@id='_toc/h1-1']//x:a[@href='#_toc' and text()=' h1']`,
-        `//*[@id='_toc']//*[@id='_toc/h1-2']//x:a[@href='#_toc' and text()=' h1']`,
+        `//*[@id='-/toc']//*[@id='-/toc/h1-1']//x:a[@href='#-/toc' and text()=' h1']`,
+        `//*[@id='-/toc']//*[@id='-/toc/h1-2']//x:a[@href='#-/toc' and text()=' h1']`,
         // Inner entries point to their parent entries.
-        `//*[@id='_toc']//*[@id='_toc/h1-2-1']//x:a[@href='#_toc/h1-2' and text()=' h1 2']`,
+        `//*[@id='-/toc']//*[@id='-/toc/h1-2-1']//x:a[@href='#-/toc/h1-2' and text()=' h1 2']`,
 
         // The ToC numbers look OK.
-        "//*[@id='_toc']//x:a[@href='#h1-2' and text()='h1 2']",
+        "//*[@id='-/toc']//x:a[@href='#h1-2' and text()='h1 2']",
 
         // The headers have ToC links.
-        `${xpath_header(2, 'h1-1')}//x:a[@href='#_toc/h1-1' and @class='toc']`,
-        `${xpath_header(2, 'h1-2')}//x:a[@href='#_toc/h1-2' and @class='toc']`,
-        `${xpath_header(3, 'h1-2-1')}//x:a[@href='#_toc/h1-2-1' and @class='toc']`,
+        `${xpath_header(2, 'h1-1')}//x:a[@href='#-/toc/h1-1' and @class='toc']`,
+        `${xpath_header(2, 'h1-2')}//x:a[@href='#-/toc/h1-2' and @class='toc']`,
+        `${xpath_header(3, 'h1-2-1')}//x:a[@href='#-/toc/h1-2-1' and @class='toc']`,
 
         // Descendant count.
-        "//*[@id='_toc']//*[@class='title-div']//*[@class='descendant-count' and text()='4']",
-        "//*[@id='_toc']//*[@id='_toc/h1-2']//*[@class='descendant-count' and text()='2']",
+        "//*[@id='-/toc']//*[@class='title-div']//*[@class='descendant-count' and text()='4']",
+        "//*[@id='-/toc']//*[@id='-/toc/h1-2']//*[@class='descendant-count' and text()='2']",
       ],
       'notindex-split.html': [
         // Split output files get their own ToCs.
-        "//*[@id='_toc']",
-        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
+        "//*[@id='-/toc']",
+        "//*[@id='-/toc']//x:a[@href='#-/toc' and text()=' Table of contents']",
       ],
       'notindex/h1-2.html': [
         // Split output files get their own ToCs.
-        "//*[@id='_toc']",
-        "//*[@id='_toc']//x:a[@href='#_toc' and text()=' Table of contents']",
+        "//*[@id='-/toc']",
+        "//*[@id='-/toc']//x:a[@href='#-/toc' and text()=' Table of contents']",
 
         // The Toc entries of split output headers automatically cull out a level
         // of the full number tree. E.g this entry is `2.1` on the toplevel ToC,
         // but on this sub-ToC it is just `1.`.
-        "//*[@id='_toc']//x:a[@href='../notindex.html#h1-2-1' and text()='h1 2 1']",
-        "//*[@id='_toc']//x:a[@href='../notindex.html#h1-2-1-1' and text()='h1 2 1 1']",
+        "//*[@id='-/toc']//x:a[@href='../notindex.html#h1-2-1' and text()='h1 2 1']",
+        "//*[@id='-/toc']//x:a[@href='../notindex.html#h1-2-1-1' and text()='h1 2 1 1']",
 
         // We have gone a bit back and forth on split vs nosplit here.
         // Related: https://github.com/ourbigbook/ourbigbook/issues/146
-        `//*[@id='_toc']//*[@id='_toc/h1-2-1']//x:a[@href='#_toc' and text()=' h1 2']`,
-        `//*[@id='_toc']//*[@id='_toc/h1-2-1-1']//x:a[@href='#_toc/h1-2-1' and text()=' h1 2 1']`,
+        `//*[@id='-/toc']//*[@id='-/toc/h1-2-1']//x:a[@href='#-/toc' and text()=' h1 2']`,
+        `//*[@id='-/toc']//*[@id='-/toc/h1-2-1-1']//x:a[@href='#-/toc/h1-2-1' and text()=' h1 2 1']`,
 
         // Descendant count.
-        "//*[@id='_toc']//*[@class='title-div']//*[@class='descendant-count' and text()='2']",
-        "//*[@id='_toc']//*[@id='_toc/h1-2-1']//*[@class='descendant-count' and text()='1']",
+        "//*[@id='-/toc']//*[@class='title-div']//*[@class='descendant-count' and text()='2']",
+        "//*[@id='-/toc']//*[@id='-/toc/h1-2-1']//*[@class='descendant-count' and text()='1']",
       ],
     },
   },
 )
-assert_lib_error('toc: _toc is a reserved id',
+assert_lib_error('toc: -/toc is a reserved id',
   `= h1
 
 == toc
-{id=_toc}
+{id=-/toc}
 `,
   3, 1);
 for (const id of ['-', '-/child', 'parent/-', 'parent/-/child']) {
@@ -8697,6 +8697,30 @@ assert_lib_error('id: reserved route separator from input path', '= Header\n', 1
   input_path_noext: 'parent/-/child',
 })
 assert_lib_error('id: reserved route separator on file header', '= parent/-/file.txt\n{file}\n', 1, 1)
+for (const id of ['_out', '.git', '_out/child', '.git/child']) {
+  assert_lib_error(`id: reserved toplevel filesystem name ${id}`, `= Header\n{id=${id}}\n`, 1, 1)
+  assert_lib_error(`id: reserved toplevel filesystem name on inline macro ${id}`, `\\i[text]{id=${id}}`, 1, 1)
+  assert_lib_error(`id: reserved filesystem name from input path ${id}`, '= Header\n', 1, 1, `${id}.bigb`, {
+    input_path_noext: id,
+  })
+}
+it('lib: reserved IDs allow underscore names and nested filesystem names', async () => {
+  assert.strictEqual(ourbigbook.RESERVED_ID_SEPARATOR, '-')
+  assert.deepStrictEqual([...ourbigbook.RESERVED_IDS].sort(), ['-', '.git', '_out', 'index'])
+  for (const id of ['_toc', '_1', '_hello', '_out-other', '.git-other', 'parent/_out', 'parent/.git']) {
+    const extraReturns = {}
+    const html = await ourbigbook.convert(`\\i[text]{id=${id}}`, {}, extraReturns)
+    assert.deepStrictEqual(extraReturns.errors, [], id)
+    assert(html.includes(`id="${id}"`), id)
+  }
+  const extraReturns = {}
+  const html = await ourbigbook.convert('= Header\n\n== User toc\n{id=_toc}\n\n\\x[_toc]', {}, extraReturns)
+  assert.deepStrictEqual(extraReturns.errors, [])
+  assert(html.includes('id="-/toc"'))
+  assert(html.includes('id="_toc"'))
+})
+assert_lib_error('id: reserved index', '= Index\n', 1, 1)
+assert_lib_error('id: reserved scoped index', '= Parent\n{scope}\n\n== Index\n', 4, 1)
 assert_lib('toc: table of contents contains included headers numbered without embed includes',
   {
     convert_dir: true,
@@ -8733,29 +8757,29 @@ assert_lib('toc: table of contents contains included headers numbered without em
     assert_xpath: {
       'notindex.html': [
         "//x:blockquote//x:a[@href='notindex2.html' and text()='Section 1. \"Notindex2\"']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html' and @data-test='0' and text()='Notindex2']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html']//x:i[@class='n' and text()='1. ']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2' and @data-test='1' and text()='Notindex2 h2']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2']//x:i[@class='n' and text()='1.1. ']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h3' and @data-test='2' and text()='Notindex2 h3']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h3']//x:i[@class='n' and text()='1.2. ']",
-        "//*[@id='_toc']//x:a[@href='notindex3.html' and @data-test='3' and text()='Notindex3']",
-        "//*[@id='_toc']//x:a[@href='notindex3.html']//x:i[@class='n' and text()='1.2.1. ']",
-        "//*[@id='_toc']//x:a[@href='notindex3.html#notindex3-h2' and @data-test='4' and text()='Notindex3 h2']",
-        "//*[@id='_toc']//x:a[@href='notindex3.html#notindex3-h2']//x:i[@class='n' and text()='1.2.1.1. ']",
-        "//*[@id='_toc']//x:a[@href='notindex3.html#notindex3-h3' and @data-test='5' and text()='Notindex3 h3']",
-        "//*[@id='_toc']//x:a[@href='notindex3.html#notindex3-h3']//x:i[@class='n' and text()='1.2.1.2. ']",
-        "//*[@id='_toc']//x:a[@href='#notindex-h2' and @data-test='6' and text()='Notindex h2']",
-        "//*[@id='_toc']//x:a[@href='#notindex-h2']//x:i[@class='n' and text()='2. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html' and @data-test='0' and text()='Notindex2']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html']//x:i[@class='n' and text()='1. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2' and @data-test='1' and text()='Notindex2 h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2']//x:i[@class='n' and text()='1.1. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h3' and @data-test='2' and text()='Notindex2 h3']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h3']//x:i[@class='n' and text()='1.2. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex3.html' and @data-test='3' and text()='Notindex3']",
+        "//*[@id='-/toc']//x:a[@href='notindex3.html']//x:i[@class='n' and text()='1.2.1. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex3.html#notindex3-h2' and @data-test='4' and text()='Notindex3 h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex3.html#notindex3-h2']//x:i[@class='n' and text()='1.2.1.1. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex3.html#notindex3-h3' and @data-test='5' and text()='Notindex3 h3']",
+        "//*[@id='-/toc']//x:a[@href='notindex3.html#notindex3-h3']//x:i[@class='n' and text()='1.2.1.2. ']",
+        "//*[@id='-/toc']//x:a[@href='#notindex-h2' and @data-test='6' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='#notindex-h2']//x:i[@class='n' and text()='2. ']",
       ],
       'notindex-split.html': [
         // Links to external source files keep the default split just like regular links.
-        "//*[@id='_toc']//x:a[@href='notindex2.html' and text()='Notindex2']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html']//x:i[@class='n' and text()='1. ']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2']//x:i[@class='n' and text()='1.1. ']",
-        "//*[@id='_toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
-        "//*[@id='_toc']//x:a[@href='notindex.html#notindex-h2']//x:i[@class='n' and text()='2. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html' and text()='Notindex2']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html']//x:i[@class='n' and text()='1. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2']//x:i[@class='n' and text()='1.1. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html#notindex-h2']//x:i[@class='n' and text()='2. ']",
       ],
     },
   },
@@ -8783,16 +8807,16 @@ assert_lib('toc: table of contents respects numbered=0 of included headers',
     },
     assert_xpath: {
       'notindex.html': [
-        "//*[@id='_toc']//x:a[@href='notindex2.html' and text()='Notindex2']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html']//x:i[@class='n' and text()='1. ']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
-        "//*[@id='_toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
-        "//*[@id='_toc']//x:a[@href='#notindex-h2']//x:i[@class='n' and text()='2. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html' and text()='Notindex2']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html']//x:i[@class='n' and text()='1. ']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
+        "//*[@id='-/toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='#notindex-h2']//x:i[@class='n' and text()='2. ']",
       ],
     },
     assert_not_xpath: {
       'notindex.html': [
-        "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2']//x:i[@class='n']",
       ],
     },
   },
@@ -8826,10 +8850,10 @@ assert_lib('toc: json: table of contents respects tocMaxCrossSource',
     },
     assert_xpath: {
       'notindex.html': [
-        "//*[@id='_toc']//x:a[@href='#notindex-h2' and text()='1. Notindex h2']",
-        //"//*[@id='_toc']//x:a[@href='#notindex-h2' and text()='2. Notindex h2']",
-        //"//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
-        //"//*[@id='_toc']//x:a[@href='notindex2.html' and text()='1.1. Notindex h3']",
+        "//*[@id='-/toc']//x:a[@href='#notindex-h2' and text()='1. Notindex h2']",
+        //"//*[@id='-/toc']//x:a[@href='#notindex-h2' and text()='2. Notindex h2']",
+        //"//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
+        //"//*[@id='-/toc']//x:a[@href='notindex2.html' and text()='1.1. Notindex h3']",
       ],//
     },
   },
@@ -8861,16 +8885,16 @@ assert_lib('toc: table of contents include placeholder header has no number when
     assert_xpath: {
       'notindex.html': [
         "//x:blockquote//x:a[@href='notindex2.html' and text()='Section \"Notindex2\"']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html' and text()='Notindex2']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
-        "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2']//x:i[@class='n' and text()='1. ']",
-        "//*[@id='_toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html' and text()='Notindex2']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='Notindex2 h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2']//x:i[@class='n' and text()='1. ']",
+        "//*[@id='-/toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
       ],
     },
     assert_not_xpath: {
       'notindex.html': [
-        "//*[@id='_toc']//x:a[@href='notindex2.html']//x:i[@class='n']",
-        "//*[@id='_toc']//x:a[@href='#notindex2-h2']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='notindex2.html']//x:i[@class='n']",
+        "//*[@id='-/toc']//x:a[@href='#notindex2-h2']//x:i[@class='n']",
       ],
     },
   },
@@ -8899,14 +8923,14 @@ assert_lib('toc: table of contents does not show synonyms of included headers',
     },
     //assert_xpath: {
     //  'notindex.html': [
-    //    "//*[@id='_toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
-    //    "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
-    //    "//*[@id='_toc']//x:a[@href='notindex2.html#notindex2-h2-2' and text()='1.2. Notindex2 h2 2']",
+    //    "//*[@id='-/toc']//x:a[@href='notindex2.html' and text()='1. Notindex2']",
+    //    "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2' and text()='1.1. Notindex2 h2']",
+    //    "//*[@id='-/toc']//x:a[@href='notindex2.html#notindex2-h2-2' and text()='1.2. Notindex2 h2 2']",
     //  ],
     //},
     //assert_not_xpath: {
     //  'notindex.html': [
-    //    "//*[@id='_toc']//x:a[contains(text(),'synonym')]",
+    //    "//*[@id='-/toc']//x:a[contains(text(),'synonym')]",
     //  ],
     //},
   },
@@ -8932,12 +8956,12 @@ assert_lib('toc: header numbered=0 in ourbigbook.json works across source files 
     },
     assert_xpath: {
       'index.html': [
-        "//*[@id='_toc']//x:a[@href='notindex.html' and text()='Notindex']",
-        "//*[@id='_toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
-        "//*[@id='_toc']//x:a[@href='#h2' and text()='H2']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html' and text()='Notindex']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='#h2' and text()='H2']",
       ],
       'notindex.html': [
-        "//*[@id='_toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='#notindex-h2' and text()='Notindex h2']",
       ],
     },
   },
@@ -8960,7 +8984,7 @@ assert_lib('toc: split header with an include and no headers has a single table 
     },
     assert_xpath: {
       'split.html': [
-        "//*[@id='_toc']",
+        "//*[@id='-/toc']",
       ],
     },
   },
@@ -8985,12 +9009,12 @@ assert_lib('toc: toplevel scope gets removed on table of contents of included he
     assert_xpath: {
       'index.html': [
         "//x:blockquote//x:a[@href='notindex.html#notindex-h2' and text()='Section \"Notindex h2\"']",
-        "//*[@id='_toc']//x:a[@href='notindex.html' and text()='Notindex']",
-        "//*[@id='_toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html' and text()='Notindex']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
       ],
       'split.html': [
-        "//*[@id='_toc']//x:a[@href='notindex.html' and text()='Notindex']",
-        "//*[@id='_toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html' and text()='Notindex']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
       ],
     },
   },
@@ -9011,7 +9035,7 @@ assert_lib('toc: disambiguate shows on toc but title2 does not',
     },
     assert_xpath: {
       'index.html': [
-        "//*[@id='_toc']//x:a[@href='#asdf-zxcv' and text()='Asdf (zxcv)']",
+        "//*[@id='-/toc']//x:a[@href='#asdf-zxcv' and text()='Asdf (zxcv)']",
       ],
     },
   },
@@ -9029,12 +9053,12 @@ assert_lib('toc: title with x does not create nested links',
     },
     assert_xpath: {
       'index.html': [
-        "//*[@id='_toc']//x:a[@href='#target-tribute' and contains(., 'Target tribute')]",
+        "//*[@id='-/toc']//x:a[@href='#target-tribute' and contains(., 'Target tribute')]",
       ],
     },
     assert_not_xpath: {
       'index.html': [
-        "//*[@id='_toc']//x:a[@href='#target-tribute']//x:a",
+        "//*[@id='-/toc']//x:a[@href='#target-tribute']//x:a",
       ],
     },
   },
@@ -9055,7 +9079,7 @@ assert_lib_ast('toc: the toc is added before the first h1 when there are multipl
   {
     assert_xpath_stdout: [
       "//x:div[@class='p' and text()='aa']",
-      "//*[@id='_toc']",
+      "//*[@id='-/toc']",
       xpath_header(1, 'h1', undefined, { hasToc: true }),
       xpath_header(1, 'h2', undefined, { hasToc: false }),
     ],
@@ -9069,7 +9093,7 @@ assert_lib_ast('toc: the toc is added before the first h2 when there is a single
   undefined,
   {
     assert_xpath_stdout: [
-      "//*[@id='_toc']",
+      "//*[@id='-/toc']",
       xpath_header(1, 'h1', undefined, { hasToc: false }),
       xpath_header(2, 'h2', undefined, { hasToc: true }),
     ],
@@ -9085,7 +9109,7 @@ assert_lib_ast('toc: the toc is added before the first h2 when there is a single
   undefined,
   {
     assert_xpath_stdout: [
-      "//*[@id='_toc']",
+      "//*[@id='-/toc']",
       xpath_header(1, 'h1', undefined, { hasToc: false }),
       xpath_header(2, 'h2', undefined, { hasToc: true }),
       xpath_header(2, 'h2-2', undefined, { hasToc: false }),
@@ -9189,7 +9213,7 @@ aa
 $$
 {description=b b}
 `,
-  [a('M', [t('aa')], { description: [t('b b')] }, { id: '_1'})],
+  [a('M', [t('aa')], { description: [t('b b')] }, { id: '-/1'})],
   {
     assert_xpath_stdout: [
       "//x:span[@class='caption-prefix' and text()='Equation 1. ']",
@@ -9749,11 +9773,11 @@ assert_lib('include: relative include in subdirectory',
     convert_dir: true,
     assert_xpath: {
       's1.html': [
-        "//*[@id='_toc']//x:a[@href='s1/notindex.html' and @data-test='0' and text()='Notindex']",
-        "//*[@id='_toc']//x:a[@href='s1/notindex2.html' and @data-test='1' and text()='Notindex2']",
-        "//*[@id='_toc']//x:a[@href='s1/notindex.html#notindex-h2' and @data-test='2' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='s1/notindex.html' and @data-test='0' and text()='Notindex']",
+        "//*[@id='-/toc']//x:a[@href='s1/notindex2.html' and @data-test='1' and text()='Notindex2']",
+        "//*[@id='-/toc']//x:a[@href='s1/notindex.html#notindex-h2' and @data-test='2' and text()='Notindex h2']",
         // TODO https://github.com/ourbigbook/ourbigbook/issues/214
-        //"//*[@id='_toc']//x:a[@href='../top.html' and @data-test='2' and text()='2. Top']",
+        //"//*[@id='-/toc']//x:a[@href='../top.html' and @data-test='2' and text()='2. Top']",
       ],
     },
   }
@@ -9986,7 +10010,7 @@ assert_lib(
     },
     assert_not_xpath: {
       'included-by-index.html': [
-        `//x:h2[@id='_incoming-links']`,
+        `//x:h2[@id='-/incoming-links']`,
       ],
     }
   }
@@ -10112,16 +10136,16 @@ assert_lib('passthrough: xss_safe',
 // https://docs.ourbigbook.com/automatic-id-from-title
 assert_lib_ast('id autogen: without title',
   '\\P[aa]\n',
-  [a('P', [t('aa')], {}, {id: '_1'})],
+  [a('P', [t('aa')], {}, {id: '-/1'})],
 )
 assert_lib_error('id autogen: conflict with previous autogenerated id',
   `\\P[aa]
 
-\\P[bb]{id=_1}`,
+\\P[bb]{id=-/1}`,
   3, 1
 )
 assert_lib_error('id autogen: conflict with later autogenerated id',
-  `\\P[aa]{id=_1}
+  `\\P[aa]{id=-/1}
 
 \\P[bb]`,
   1, 1
@@ -10148,12 +10172,12 @@ assert_lib_ast('id autogen: nested',
   '\\Q[\\P[aa]]\n\n\\P[bb]\n',
   [
     a('Q', [
-        a('P', [t('aa')], {}, {id: '_2'})
+        a('P', [t('aa')], {}, {id: '-/2'})
       ],
       {},
-      {id: '_1'}
+      {id: '-/1'}
     ),
-    a('P', [t('bb')], {}, {id: '_3'}),
+    a('P', [t('bb')], {}, {id: '-/3'}),
   ],
 )
 assert_lib_ast('id autogen: unicode normalize',
@@ -12105,7 +12129,7 @@ assert_cli(
         // ToC entries of includes point directly to the separate file, not to the plceholder header.
         // e.g. `included-by-index.html` instead of `#included-by-index`.
         "//x:a[@href='included-by-index.html' and text()='link to included by index']",
-        "//*[@id='_toc']//x:a[@href='included-by-index.html' and text()='Included by index']",
+        "//*[@id='-/toc']//x:a[@href='included-by-index.html' and text()='Included by index']",
 
         xpath_header(2, 'included-by-index'),
         "//x:blockquote[text()='A Ourbigbook example!']",
@@ -12137,12 +12161,12 @@ assert_cli(
 
         // We have gone back and forth on split vs nosplit here a bit.
         // Related: https://github.com/ourbigbook/ourbigbook/issues/146
-        "//*[@id='_toc']//x:a[@href='index.html#h2' and text()='h2']",
+        "//*[@id='-/toc']//x:a[@href='index.html#h2' and text()='h2']",
         // ToC entries of includes always point directly to the separate file.
-        "//*[@id='_toc']//x:a[@href='included-by-index.html' and text()='Included by index']",
+        "//*[@id='-/toc']//x:a[@href='included-by-index.html' and text()='Included by index']",
         // TODO This is more correct with the `1. `. Maybe wait for https://github.com/ourbigbook/ourbigbook/issues/126
         // to make sure we don't have to rewrite everything.
-        //"//*[@id='_toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
+        //"//*[@id='-/toc']//x:a[@href='included-by-index-split.html' and text()='1. Included by index']",
       ],
       [`${TMP_DIRNAME}/html/subdir.html`]: [
         xpath_header(1),
@@ -12293,7 +12317,7 @@ assert_cli(
     ],
     assert_not_exists: [
       // logo.svg is not added when web.linkFromStaticHeaderMetaToWeb is not enabled on ourbigbook.json
-      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/_obb/logo.svg`,
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/-/obb/logo.svg`,
     ],
     assert_xpath: {
       [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/index.html`]: [
@@ -12367,7 +12391,7 @@ assert_cli(
         '[link to notindex](notindex.md)',
         '[link to notindex h2](notindex.md#notindex-h2)',
         '<img src="https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/topics/derivative.png" alt="Derivative" width="640">',
-        '![Local](_raw/local.png)',
+        '![Local](-/raw/local.png)',
       ],
       [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/notindex.md`]: [
         '[link to toplevel](README.md)',
@@ -12626,16 +12650,16 @@ assert_cli(
     },
     pre_exec: publish_pre_exec,
     assert_exists: [
-      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/_obb/logo.svg`,
+      `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/-/obb/logo.svg`,
     ],
     assert_xpath: {
       [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/index.html`]: [
-        "//x:div[contains(@class, \"h \")]//x:img[@class='logo' and @src='_obb/logo.svg']",
+        "//x:div[contains(@class, \"h \")]//x:img[@class='logo' and @src='-/obb/logo.svg']",
         "//x:div[contains(@class, \"h \")]//x:a[@href='https://ourbigbook.com/myusername' and text()=' OurBigBook.com']",
         "//x:div[@class='h' and @id='h2']//x:a[@href='https://ourbigbook.com/myusername/h2' and text()=' OurBigBook.com']",
       ],
       [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/h2/h2-2.html`]: [
-        "//x:div[contains(@class, \"h \") and @id='h2-2']//x:img[@class='logo' and @src='../_obb/logo.svg']",
+        "//x:div[contains(@class, \"h \") and @id='h2-2']//x:img[@class='logo' and @src='../-/obb/logo.svg']",
         "//x:div[contains(@class, \"h \") and @id='h2-2']//x:a[@href='https://ourbigbook.com/myusername/h2/h2-2' and text()=' OurBigBook.com']",
       ],
     },
@@ -13184,9 +13208,9 @@ assert_cli(
         "//x:a[@id='root-page' and @href='../../index.html']",
       ],
       [`${TMP_DIRNAME}/html/${DIR_PREFIX}/subdir/subdir2/index.html`]: [
-        "//x:a[@id='root-relpath' and @href='../../../']",
-        "//x:a[@id='root-page' and @href='../../../index.html']",
-        `//x:a[@id='raw-relpath' and @href='../../../${RAW_PREFIX}']`,
+        "//x:a[@id='root-relpath' and @href='../../../../']",
+        "//x:a[@id='root-page' and @href='../../../../index.html']",
+        `//x:a[@id='raw-relpath' and @href='../../../../${RAW_PREFIX}']`,
       ],
     }
   }
@@ -13369,17 +13393,17 @@ assert_cli(
       [`${TMP_DIRNAME}/html/subdir/notindex-split.html`]: [
         "//x:a[@id='dut' and @href='subdir/notindex']",
       ],
-      [`${TMP_DIRNAME}/html/_file/notbigb.txt.html`]: [
-        "//x:a[@id='dut' and @href='_file/notbigb.txt']",
+      [`${TMP_DIRNAME}/html/-/file/notbigb.txt.html`]: [
+        "//x:a[@id='dut' and @href='-/file/notbigb.txt']",
       ],
-      [`${TMP_DIRNAME}/html/_file/subdir/notbigb.txt.html`]: [
-        "//x:a[@id='dut' and @href='_file/subdir/notbigb.txt']",
+      [`${TMP_DIRNAME}/html/-/file/subdir/notbigb.txt.html`]: [
+        "//x:a[@id='dut' and @href='-/file/subdir/notbigb.txt']",
       ],
-      [`${TMP_DIRNAME}/html/_dir/index.html`]: [
-        "//x:a[@id='dut' and @href='_dir']",
+      [`${TMP_DIRNAME}/html/-/dir/index.html`]: [
+        "//x:a[@id='dut' and @href='-/dir']",
       ],
-      [`${TMP_DIRNAME}/html/_dir/subdir/index.html`]: [
-        "//x:a[@id='dut' and @href='_dir/subdir']",
+      [`${TMP_DIRNAME}/html/-/dir/subdir/index.html`]: [
+        "//x:a[@id='dut' and @href='-/dir/subdir']",
       ],
     }
   }
@@ -14140,12 +14164,12 @@ assert_cli('toplevel scope gets removed on table of contents of included headers
     },
     assert_xpath: {
       [`${TMP_DIRNAME}/html/index.html`]: [
-        "//*[@id='_toc']//x:a[@href='notindex.html' and text()='Notindex']",
-        "//*[@id='_toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html' and text()='Notindex']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
       ],
       [`${TMP_DIRNAME}/html/split.html`]: [
-        "//*[@id='_toc']//x:a[@href='notindex.html' and text()='Notindex']",
-        "//*[@id='_toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html' and text()='Notindex']",
+        "//*[@id='-/toc']//x:a[@href='notindex.html#notindex-h2' and text()='Notindex h2']",
       ],
     },
   },
@@ -14588,16 +14612,16 @@ myfile-subdir.txt line2
         `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir/subdir2/index.html' and text()='link to subdir2']`,
       ],
       [`${TMP_DIRNAME}/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/myfile.txt.html' and text()='myfile.txt']`,
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/index.bigb.html' and text()='index.bigb']`,
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/index.html.html' and text()='index.html']`,
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/_index.html.html' and text()='_index.html']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/myfile.txt.html' and text()='myfile.txt']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/index.bigb.html' and text()='index.bigb']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/index.html.html' and text()='index.html']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/_index.html.html' and text()='_index.html']`,
 
         `//x:a[@href='subdir/index.html' and text()='subdir/']`,
       ],
       [`${TMP_DIRNAME}/html/${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
-        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html' and text()='myfile-subdir.txt']`,
-        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/subdir/index.html.html' and text()='index.html']`,
+        `//x:a[@href='../../../${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html' and text()='myfile-subdir.txt']`,
+        `//x:a[@href='../../../${ourbigbook.FILE_PREFIX}/subdir/index.html.html' and text()='index.html']`,
 
         `//x:a[@href='subdir2/index.html' and text()='subdir2/']`,
         `//x:a[@href='../index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
@@ -14613,16 +14637,16 @@ myfile-subdir.txt line2
         // We actually get the full path always on the title of a {file} header.
         "//x:h1//x:a[text()='myfile.txt']",
         "//x:code[starts-with(text(), 'myfile.txt line1')]",
-        `//x:a[@href='../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
-        `//x:a[@href='../${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/myfile.txt__myfile.txt']`,
+        `//x:a[@href='../../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
+        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/myfile.txt' and text()='myfile.txt' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/myfile.txt__myfile.txt']`,
       ],
       [`${TMP_DIRNAME}/html/${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html`]: [
         "//x:title[text()='subdir/myfile-subdir.txt']",
         "//x:h1//x:a[text()='subdir/myfile-subdir.txt']",
         "//x:code[starts-with(text(), 'myfile-subdir.txt line1')]",
-        `//x:a[@href='../../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
-        `//x:a[@href='../../${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='subdir' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt__subdir']`,
-        `//x:a[@href='../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt__subdir/myfile-subdir.txt']`,
+        `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/index.html' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
+        `//x:a[@href='../../../${ourbigbook.DIR_PREFIX}/subdir/index.html' and text()='subdir' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt__subdir']`,
+        `//x:a[@href='../../../${ourbigbook.RAW_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt' and @${ourbigbook.Macro.TEST_DATA_HTML_PROP}='${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt__subdir/myfile-subdir.txt']`,
       ],
     },
     assert_not_xpath: {
@@ -14732,16 +14756,16 @@ assert_cli(
         `//x:a[@href='../${ourbigbook.DIR_PREFIX}/subdir/subdir2' and text()='link to subdir2']`,
       ],
       [`${TMP_DIRNAME}/html/${ourbigbook.DIR_PREFIX}/index.html`]: [
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/myfile.txt' and text()='myfile.txt']`,
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/index.bigb' and text()='index.bigb']`,
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/index.html' and text()='index.html']`,
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/_index.html' and text()='_index.html']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/myfile.txt' and text()='myfile.txt']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/index.bigb' and text()='index.bigb']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/index.html' and text()='index.html']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/_index.html' and text()='_index.html']`,
 
         `//x:a[@href='subdir' and text()='subdir/']`,
       ],
       [`${TMP_DIRNAME}/html/${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
-        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt']`,
-        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/subdir/index.html' and text()='index.html']`,
+        `//x:a[@href='../../../${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt' and text()='myfile-subdir.txt']`,
+        `//x:a[@href='../../../${ourbigbook.FILE_PREFIX}/subdir/index.html' and text()='index.html']`,
 
         `//x:a[@href='subdir2' and text()='subdir2/']`,
         `//x:a[@href='..' and text()='${ourbigbook.FILE_ROOT_PLACEHOLDER}']`,
@@ -14800,10 +14824,10 @@ myfile-subdir.txt line2
         // Link to _raw without split. This is a simple behaviour to work reasonably when {file} headers
         // don't get their own separate file. The other possibility would be to always autogen without split,
         // but then we would have to worry about not adding autogen to db to avoid ID conflicts. Doable as well,
-        `//x:a[@href='../${ourbigbook.FILE_PREFIX}/myfile.txt.html' and text()='myfile.txt']`,
+        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/myfile.txt.html' and text()='myfile.txt']`,
       ],
       [`${TMP_DIRNAME}/html/${ourbigbook.DIR_PREFIX}/subdir/index.html`]: [
-        `//x:a[@href='../../${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html' and text()='myfile-subdir.txt']`,
+        `//x:a[@href='../../../${ourbigbook.FILE_PREFIX}/subdir/myfile-subdir.txt.html' and text()='myfile-subdir.txt']`,
       ],
     },
   }
@@ -15241,7 +15265,7 @@ assert_cli(
     filesystem: {
       'index.bigb': `= Toplevel
 
-\\Include[_file/subdir/myfile.txt]
+\\Include[-/file/subdir/myfile.txt]
 
 == h2
 {scope}
@@ -15324,6 +15348,23 @@ assert_cli(
     },
   }
 )
+if (!ourbigbook_nodejs_front.postgres) assert_cli('file: legacy cached IDs are rebuilt without changing source timestamps', {
+  args: ['-S', '.'],
+  filesystem: {
+    'index.bigb': '= Home\n\n\\x[_file/example.txt]\n\n== example.txt\n{file}\n',
+    'example.txt': 'Example contents',
+    'ourbigbook.json': '{}',
+  },
+  pre_exec: [
+    ['ourbigbook', ['-S', '.']],
+    ['sqlite3', [`${TMP_DIRNAME}/db.sqlite3`, `UPDATE "Id" SET "idid" = REPLACE("idid", '-/file/', '_file/')`]],
+  ],
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/index.html`]: ["//x:div[@class='p']/x:a[@href='#-/file/example.txt']"],
+    [`${TMP_DIRNAME}/html/-/file/example.txt.html`]: ["//x:code[text()='Example contents']"],
+  },
+})
+
 assert_cli('file: _file auto-generation conversion image media provider works',
   {
     args: ['-S', 'project'],
@@ -15343,7 +15384,7 @@ assert_cli('file: _file auto-generation conversion image media provider works',
     },
     assert_xpath: {
       [`project/${TMP_DIRNAME}/html/${ourbigbook.FILE_PREFIX}/myimg.png.html`]: [
-        `//x:img[@src='../${ourbigbook.RAW_PREFIX}/myimg.png']`,
+        `//x:img[@src='../../${ourbigbook.RAW_PREFIX}/myimg.png']`,
       ],
     },
   },

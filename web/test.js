@@ -27,6 +27,7 @@ const {
   TRI_TRUE,
   getList,
   getLocked,
+  getTopicHasArticles,
   getVerified,
   openUserTabs,
 } = require('./front/js')
@@ -370,6 +371,20 @@ it('getList', function() {
   assert.deepStrictEqual(parse(TRI_ALL), [undefined, 200])
   assert.deepStrictEqual(parse('true'), [true, 422])
   assert.deepStrictEqual(parse([TRI_TRUE]), [true, 422])
+})
+
+it('getTopicHasArticles', function() {
+  function parse(empty) {
+    const res = { statusCode: 200 }
+    const ret = getTopicHasArticles({ query: { empty } }, res)
+    return [ret, res.statusCode]
+  }
+  assert.deepStrictEqual(parse(undefined), [true, 200])
+  assert.deepStrictEqual(parse(TRI_FALSE), [false, 200])
+  assert.deepStrictEqual(parse(TRI_ALL), [undefined, 200])
+  assert.deepStrictEqual(parse(TRI_TRUE), [true, 422])
+  assert.deepStrictEqual(parse('true'), [true, 422])
+  assert.deepStrictEqual(parse([TRI_FALSE]), [true, 422])
 })
 
 it('getLocked', function() {
@@ -1393,6 +1408,78 @@ it('Topic ID ordering index avoids sorting the last topic page', async function(
   await assertOrderedIndexScan()
 })
 
+it('Topic empty filters have ordered listing indexes', async function() {
+  const sequelize = this.test.sequelize
+  const qi = sequelize.getQueryInterface()
+  const migration = require('./migrations/21000101000053-topic-add-empty-order-indexes')
+  const indexNamesExpected = [
+    'topic_article_count_created_at',
+    'topic_article_count_topic_id_created_at',
+    'topic_created_at',
+    'topic_created_at_nonempty',
+    'topic_topic_id_asc_created_at',
+    'topic_topic_id_asc_created_at_nonempty',
+  ]
+  const indexNames = async () => (await qi.showIndex('Topic')).map(index => index.name).sort()
+  const originalIndexes = await indexNames()
+  for (const name of indexNamesExpected) assert(originalIndexes.includes(name), name)
+
+  const user = await createUser(sequelize, 0)
+  await createArticle(sequelize, user, { i: 0 })
+  await createArticle(sequelize, user, { i: 1, list: false })
+
+  async function assertOrderedIndexScans() {
+    if (sequelize.options.dialect !== 'postgres') return
+    await sequelize.transaction(async transaction => {
+      await sequelize.query('SET LOCAL enable_seqscan = off', { transaction })
+      await sequelize.query('SET LOCAL enable_sort = off', { transaction })
+      for (const [name, query] of [
+        [
+          'topic_article_count_created_at',
+          `SELECT "id" FROM "Topic" WHERE "articleCount" > 0
+           ORDER BY "articleCount" DESC, "createdAt" DESC LIMIT 20 OFFSET 2`,
+        ],
+        [
+          'topic_created_at_nonempty',
+          `SELECT "id" FROM "Topic" WHERE "articleCount" > 0
+           ORDER BY "createdAt" DESC LIMIT 20 OFFSET 2`,
+        ],
+        [
+          'topic_topic_id_asc_created_at_nonempty',
+          `SELECT "id" FROM "Topic" WHERE "articleCount" > 0
+           ORDER BY "topicId" ASC, "createdAt" DESC LIMIT 20 OFFSET 2`,
+        ],
+        [
+          'topic_article_count_topic_id_created_at',
+          `SELECT "id" FROM "Topic" WHERE "articleCount" = 0
+           ORDER BY "topicId" ASC, "createdAt" DESC LIMIT 20 OFFSET 2`,
+        ],
+      ]) {
+        const [rows] = await sequelize.query(`EXPLAIN (FORMAT JSON) ${query}`, { transaction })
+        const plan = rows[0]['QUERY PLAN'][0].Plan
+        const nodes = []
+        const visit = node => {
+          nodes.push(node)
+          for (const child of node.Plans || []) visit(child)
+        }
+        visit(plan)
+        assert(nodes.some(node => node['Index Name'] === name), JSON.stringify(plan))
+        assert(!nodes.some(node => node['Node Type'].includes('Sort')), JSON.stringify(plan))
+      }
+    })
+  }
+
+  await assertOrderedIndexScans()
+  await migration.down(qi)
+  assert.deepStrictEqual(
+    await indexNames(),
+    originalIndexes.filter(name => !indexNamesExpected.includes(name)),
+  )
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexNames(), originalIndexes)
+  await assertOrderedIndexScans()
+})
+
 it('Article author topic ordering index avoids filtering and sorting the author page', async function() {
   const sequelize = this.test.sequelize
   const qi = sequelize.getQueryInterface()
@@ -2100,12 +2187,13 @@ it('normalize nested-set', async function() {
 it('Article.updateTopicsNewArticles', async function() {
   const sequelize = this.test.sequelize
 
-  async function getTopicIds(topicIds, count=true) {
+  async function getTopicIds(topicIds, count=true, hasArticles=undefined) {
     const ret = await sequelize.models.Topic.getTopics({
       sequelize,
       articleOrder: 'topicId',
       articleWhere: { topicId: topicIds },
       count,
+      hasArticles,
     })
     if (count) {
       return ret.rows
@@ -2124,6 +2212,11 @@ it('Article.updateTopicsNewArticles', async function() {
   const unlistedArticle = await createArticle(sequelize, users[0], { i: 100, list: false })
   assertRows(
     await getTopicIds(['title-100']),
+    [{ articleId: unlistedArticle.id, articleCount: 0 }]
+  )
+  assertRows(await getTopicIds(['title-100'], true, true), [])
+  assertRows(
+    await getTopicIds(['title-100'], true, false),
     [{ articleId: unlistedArticle.id, articleCount: 0 }]
   )
 
@@ -8426,6 +8519,23 @@ it(`api: discussion and comment listing`, async () => {
     assert.deepStrictEqual(data.counts, [2, 1, 1, 0])
     await assertUserCounts(0, 0)
 
+    // Topics whose articles are all unlisted remain available for direct
+    // inspection, but disappear from listings and their pagination count.
+    for (const sort of [undefined, 'article-count', 'id']) {
+      ;({data, status} = await test.webApi.topics({ sort }))
+      assertStatus(status, data)
+      assert.deepStrictEqual(data.topics, [])
+      assert.strictEqual(data.topicsCount, 0)
+      ;({data, status} = await test.webApi.topics({ empty: TRI_ALL, sort }))
+      assertStatus(status, data)
+      assertRows(data.topics, [{ articleCount: 0, topicId: 'title-0' }])
+      assert.strictEqual(data.topicsCount, 1)
+      ;({data, status} = await test.webApi.topics({ empty: TRI_FALSE, sort }))
+      assertStatus(status, data)
+      assertRows(data.topics, [{ articleCount: 0, topicId: 'title-0' }])
+      assert.strictEqual(data.topicsCount, 1)
+    }
+
     if (testNext) {
       ;({data, status} = await test.sendJsonHttp('GET', routes.issues()))
       assertStatus(status, data)
@@ -8448,6 +8558,33 @@ it(`api: discussion and comment listing`, async () => {
       assertStatus(status, data)
       assert.match(data, /Unlisted comments are being shown/)
       assert.match(data, />comment</)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.topics({ loggedInUser: true })))
+      assertStatus(status, data)
+      let topicProps = JSON.parse(data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1]).props.pageProps
+      assert.deepStrictEqual(topicProps.articles, [])
+      assert.strictEqual(topicProps.articlesCount, 0)
+      assert.strictEqual(topicProps.totalTopics, 0)
+      assert.strictEqual(topicProps.hasEmptyTopics, true)
+      assert.match(data, /There are empty topics/)
+      assert.match(data, /href="\/-\/topics\?empty=2"[^>]*>also show empty topics/)
+      assert.match(data, /href="\/-\/topics\?empty=0"[^>]*>only show empty topics/)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.topics({ loggedInUser: true, empty: TRI_ALL })))
+      assertStatus(status, data)
+      topicProps = JSON.parse(data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1]).props.pageProps
+      assertRows(topicProps.articles, [{ articleCount: 0, topicId: 'title-0' }])
+      assert.strictEqual(topicProps.articlesCount, 1)
+      assert.strictEqual(topicProps.totalTopics, 0)
+      assert.match(data, /Empty topics are being shown/)
+
+      ;({data, status} = await test.sendJsonHttp('GET', routes.topics({ loggedInUser: true, empty: TRI_FALSE })))
+      assertStatus(status, data)
+      topicProps = JSON.parse(data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1]).props.pageProps
+      assertRows(topicProps.articles, [{ articleCount: 0, topicId: 'title-0' }])
+      assert.strictEqual(topicProps.articlesCount, 1)
+      assert.strictEqual(topicProps.totalTopics, 0)
+      assert.match(data, /Only empty topics are being shown/)
     }
 
     // Marking a spammer locks them, blacklists their signup IP, and unlists their content.

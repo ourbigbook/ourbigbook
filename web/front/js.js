@@ -48,6 +48,23 @@ function getList(req, res) {
   return getTri(req, res, 'listed', true)
 }
 
+// Topic listings use the same 0/2 URLs as unlisted content, but expose them as
+// empty= because empty topics are derived from articleCount rather than having
+// their own list column. The returned value answers whether the topic has
+// articles: default = nonempty, empty=0 = empty, empty=2 = both.
+function getTopicHasArticles(req, res) {
+  const value = req.query.empty
+  if (value === undefined) {
+    return true
+  } else if (value === TRI_FALSE) {
+    return false
+  } else if (value === TRI_ALL) {
+    return undefined
+  }
+  res.statusCode = 422
+  return true
+}
+
 function getLocked(req, res) {
   return getTri(req, res, 'locked', false)
 }
@@ -321,6 +338,7 @@ module.exports = {
   getCommentSlug,
   getList,
   getLocked,
+  getTopicHasArticles,
   getVerified,
   getOrder,
   getOrderAndPage,

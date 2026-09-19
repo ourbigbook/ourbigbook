@@ -69,6 +69,7 @@ export type ArticleListProps = {
   articlesCount: number;
   followed?: boolean;
   handleShortFragmentSkipOnce?: React.MutableRefObject<boolean>;
+  hasEmptyTopics?: boolean;
   hasUnlisted?: boolean;
   issueArticle?: ArticleType;
   itemType?: 'article' | 'discussion' | 'like' | 'topic';
@@ -89,6 +90,7 @@ const ArticleList = ({
   followed=false,
   itemType='article',
   handleShortFragmentSkipOnce,
+  hasEmptyTopics,
   hasUnlisted,
   issueArticle,
   list,
@@ -175,6 +177,8 @@ const ArticleList = ({
       case 'all':
         if (followed) {
           emptyMessage = `Follow some users to see their posts here.`
+        } else if (itemType === 'topic') {
+          emptyMessage = 'There are no matching topics.'
         } else {
           emptyMessage = <>
             There are no matching {isIssue ? 'discussions' : 'articles'}{isIssue ? ' on this article' : ''}.
@@ -584,6 +588,30 @@ const ArticleList = ({
                   href={routes.currentPageHref(router, { listed: undefined })}
                 >
                   {`click here to show only listed ${itemType === 'discussion' ? 'discussions' : 'articles'}`}
+                </Link>.
+              </>
+          }
+        </p>
+      }
+      {(itemType === 'topic' && hasEmptyTopics === true) &&
+        <p className="content-not-ourbigbook">
+          <UnlistedIcon />{' '}
+          {list === true
+            ? <>
+                There are empty topics,{' '}
+                <Link href={routes.currentPageHref(router, { empty: TRI_ALL })}>
+                  also show empty topics
+                </Link>
+                {' '}or{' '}
+                <Link href={routes.currentPageHref(router, { empty: TRI_FALSE })}>
+                  only show empty topics
+                </Link>.
+              </>
+            : <>
+                {list === false ? 'Only empty topics are being shown' : 'Empty topics are being shown'},
+                {' '}
+                <Link href={routes.currentPageHref(router, { empty: undefined })}>
+                  click here to show only nonempty topics
                 </Link>.
               </>
           }

@@ -70,7 +70,7 @@ function buildPaths(db, { limit=20, pages=true }={}) {
   const add = (pathname, params) => paths.add(requestPath(pathname, params))
   const listings = [
     ['articles', db.articles, ['created', 'updated', 'score', 'id', 'follower-count', 'issues']],
-    ['topics', db.topics, ['created', 'updated', 'article-count', 'id']],
+    ['topics', db.nonempty_topics, ['created', 'updated', 'article-count', 'id']],
     ['users', db.users, ['created', 'score', 'discussions', 'comments', 'files', 'file-size']],
   ]
   for (const [object, count, sorts] of listings) {
@@ -141,8 +141,9 @@ async function collectDatabase(sequelize, { author: username }={}) {
   })) {
     db[key] = await sequelize.models[model].count()
   }
-  const { Article, User, Issue } = sequelize.models
+  const { Article, User, Issue, Topic } = sequelize.models
   db.listed_articles = await Article.count({ where: { list: true } })
+  db.nonempty_topics = await Topic.count({ where: { articleCount: { [Op.gt]: 0 } } })
   if (db.dialect === 'postgres') {
     const [[details]] = await sequelize.query(`SELECT current_database() AS name,
       current_setting('server_version') AS version,

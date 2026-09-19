@@ -2,6 +2,7 @@ const router = require('express').Router()
 
 const auth = require('../auth')
 const lib = require('./lib')
+const { getTopicHasArticles } = require('../front/js')
 
 router.get('/', auth.optional, async function(req, res, next) {
   try {
@@ -17,6 +18,7 @@ router.get('/', auth.optional, async function(req, res, next) {
       Topic.getTopics({
         articleWhere,
         author: req.query.author,
+        hasArticles: getTopicHasArticles(req, res),
         limit,
         offset,
         order: lib.getOrder(req, {

@@ -1,8 +1,9 @@
 import { getLoggedInUser } from 'back'
 import { articleLimit } from 'front/config'
-import { getList, getOrderAndPage } from 'front/js'
+import { getList, getOrderAndPage, getTopicHasArticles } from 'front/js'
 import { IndexPageProps } from 'front/IndexPage'
 import { MyGetServerSideProps } from 'front/types'
+import { Op } from 'sequelize'
 
 export const getServerSidePropsIndexHoc = ({
   followed=false,
@@ -10,7 +11,6 @@ export const getServerSidePropsIndexHoc = ({
 }={}): MyGetServerSideProps => {
   return async ({ query, req, res }) => {
     const loggedInUser = await getLoggedInUser(req, res)
-    const list = getList(req, res)
     let followedEff = followed
     if (!loggedInUser) {
       followedEff = false;
@@ -23,6 +23,9 @@ export const getServerSidePropsIndexHoc = ({
         itemTypeEff = 'topic'
       }
     }
+    const list = itemTypeEff === 'topic'
+      ? getTopicHasArticles(req, res)
+      : getList(req, res)
     const getOrderAndPageOpts: {
       defaultOrder?: string;
       allowedSortsExtra?: any;
@@ -61,7 +64,7 @@ export const getServerSidePropsIndexHoc = ({
       totalUsers,
       totalFiles,
       fileIndex,
-      unlistedCount,
+      hiddenCount,
     ] = await Promise.all([
       (async () => {
         let articles
@@ -113,6 +116,7 @@ export const getServerSidePropsIndexHoc = ({
             break
           case 'topic':
             articlesAndCounts = await Topic.getTopics({
+              hasArticles: list,
               limit,
               offset,
               order,
@@ -155,12 +159,13 @@ export const getServerSidePropsIndexHoc = ({
       // totalDiscussions
       Issue.count({ where: { list: true } }),
       // totalTopics
-      Topic.count(),
+      Topic.count({ where: { articleCount: { [Op.gt]: 0 } } }),
       // totalUsers
       User.count({ where: { locked: false, verified: true } }),
       Upload.count({ where: { ...Upload.fileIndexWhere(), list: true } }),
       itemTypeEff === 'file' ? Upload.getFileIndex({ list, limit, offset, order, orderAscDesc: ascDesc }) : null,
-      itemTypeEff === 'file' ? Upload.count({ where: { ...Upload.fileIndexWhere(), list: false } }) : itemTypeEff === 'discussion'
+      itemTypeEff === 'topic' ? Topic.count({ where: { articleCount: 0 } })
+        : itemTypeEff === 'file' ? Upload.count({ where: { ...Upload.fileIndexWhere(), list: false } }) : itemTypeEff === 'discussion'
         ? Issue.count({ where: { list: false } })
         : itemTypeEff === 'comment'
           ? Comment.count({ where: { list: false } })
@@ -168,7 +173,8 @@ export const getServerSidePropsIndexHoc = ({
     ])
     const props: IndexPageProps = {
       followed: followedEff,
-      hasUnlisted: !!unlistedCount,
+      hasEmptyTopics: itemTypeEff === 'topic' && !!hiddenCount,
+      hasUnlisted: itemTypeEff !== 'topic' && !!hiddenCount,
       itemType: itemTypeEff,
       list: list === undefined ? null : list,
       order,

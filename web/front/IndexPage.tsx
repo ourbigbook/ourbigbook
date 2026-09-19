@@ -52,6 +52,7 @@ export interface IndexPageProps extends CommonPropsType {
   commentsCount?: number;
   issueArticle?: ArticleType;
   followed?: boolean;
+  hasEmptyTopics?: boolean;
   hasLocked?: boolean;
   hasUnlisted?: boolean;
   hasUnverified?: boolean;
@@ -90,6 +91,7 @@ function IndexPageHoc({
     files,
     filesCount,
     totalFiles,
+    hasEmptyTopics,
     hasLocked,
     hasUnlisted,
     hasUnverified,
@@ -409,6 +411,7 @@ function IndexPageHoc({
               articles,
               articlesCount,
               followed,
+              hasEmptyTopics,
               hasUnlisted,
               issueArticle,
               itemType,

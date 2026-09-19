@@ -42,6 +42,48 @@ module.exports = (sequelize) => {
             { name: 'createdAt', order: 'DESC' },
           ],
         },
+        // Listing indexes for the three topic tabs and their empty-topic
+        // filters. The partial indexes keep the default, nonempty listing from
+        // walking past large runs of spam-created empty topics.
+        {
+          name: 'topic_article_count_created_at',
+          fields: [
+            { name: 'articleCount', order: 'DESC' },
+            { name: 'createdAt', order: 'DESC' },
+          ],
+        },
+        {
+          name: 'topic_created_at',
+          fields: [{ name: 'createdAt', order: 'DESC' }],
+        },
+        {
+          name: 'topic_created_at_nonempty',
+          fields: [{ name: 'createdAt', order: 'DESC' }],
+          where: { articleCount: { [Op.gt]: 0 } },
+        },
+        {
+          name: 'topic_topic_id_asc_created_at',
+          fields: [
+            { name: 'topicId', order: 'ASC' },
+            { name: 'createdAt', order: 'DESC' },
+          ],
+        },
+        {
+          name: 'topic_topic_id_asc_created_at_nonempty',
+          fields: [
+            { name: 'topicId', order: 'ASC' },
+            { name: 'createdAt', order: 'DESC' },
+          ],
+          where: { articleCount: { [Op.gt]: 0 } },
+        },
+        {
+          name: 'topic_article_count_topic_id_created_at',
+          fields: [
+            'articleCount',
+            { name: 'topicId', order: 'ASC' },
+            { name: 'createdAt', order: 'DESC' },
+          ],
+        },
       ]
     }
   )
@@ -50,6 +92,7 @@ module.exports = (sequelize) => {
     articleOrder,
     articleWhere,
     count,
+    hasArticles,
     limit,
     logging,
     offset,
@@ -69,6 +112,11 @@ module.exports = (sequelize) => {
 
     // where
     const where = {}
+    if (hasArticles === true) {
+      where.articleCount = { [Op.gt]: 0 }
+    } else if (hasArticles === false) {
+      where.articleCount = 0
+    }
     let whereFts
     /** Get a starts with that will be accelerated both in SQLite and PostgreSQL.
      * In sequelize we need GLOB: https://stackoverflow.com/questions/8584499/should-like-searchstr-use-an-index/76512019#76512019

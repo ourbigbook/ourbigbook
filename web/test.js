@@ -605,6 +605,9 @@ it('web: scoped magic URLs and permanent legacy redirects', async () => {
       const navigation = await test.sendJsonHttp('GET', `/_next/data/${nextData.buildId}${url}.json`)
       assert.strictEqual(navigation.status, 200, `Client navigation to ${url}`)
       assert(navigation.data.pageProps, `Missing page props for ${url}`)
+      if (url === '/-/topic/parent/child') {
+        assert.strictEqual(navigation.data.pageProps.topicId, 'parent/child')
+      }
     }
     for (const [oldUrl, newUrl] of redirectCases) {
       const response = await web_api.sendJsonHttp('GET', `/_next/data/${buildId}${oldUrl}.json?search=a%20b`, {
@@ -3176,9 +3179,13 @@ Welcome to my home page hacked!
         // Topic
         ;({data, status} = await test.sendJsonHttp('GET', routes.topic('title-0'), ))
         assertStatus(status, data)
+        const topicPageProps = JSON.parse(data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1]).props.pageProps
+        assert.strictEqual(topicPageProps.topicId, 'title-0')
         // Empty topic.
         ;({data, status} = await test.sendJsonHttp('GET', routes.topic('dontexist'), ))
         assertStatus(status, data)
+        const emptyTopicPageProps = JSON.parse(data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1]).props.pageProps
+        assert.strictEqual(emptyTopicPageProps.topicId, 'dontexist')
 
         // Comments
         ;({data, status} = await test.sendJsonHttp('GET', routes.comments(), ))

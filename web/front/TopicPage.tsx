@@ -8,7 +8,6 @@ import {
   SeeIcon,
   TopicIcon,
   TopicsHelp,
-  slugFromArray
 } from 'front'
 import { idToTitle } from 'ourbigbook'
 import ArticleList from 'front/ArticleList'
@@ -31,6 +30,7 @@ export interface TopicPageProps extends CommonPropsType {
   order: string;
   orderAscDesc: string;
   topic: TopicType;
+  topicId: string;
   page: number;
   what: string;
 }
@@ -45,10 +45,10 @@ export const TopicPage = ({
   order,
   page,
   topic,
+  topicId,
   what
 }: TopicPageProps) => {
   const router = useRouter();
-  const topicId = slugFromArray(router.query.id)
   let titleText
   if (topic) {
     titleText = topic.titleRenderPlaintext

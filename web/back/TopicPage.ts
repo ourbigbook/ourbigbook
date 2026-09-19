@@ -81,6 +81,7 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
         hasUnlisted: !!unlistedArticles.count,
         list: list === undefined ? null : list,
         topic: topicJson,
+        topicId,
         order,
         orderAscDesc: ascDesc,
         page,

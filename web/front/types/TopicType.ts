@@ -4,6 +4,6 @@ export type TopicType = {
   titleRender: string;
   titleRenderPlaintext: string;
   titleSource: string;
-  topicId: number;
+  topicId: string;
   updatedAt: number;
 };

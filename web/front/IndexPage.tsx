@@ -213,13 +213,15 @@ function IndexPageHoc({
               }} />
             </span>
           }
-          <CustomLink
-            className="tab-item btn small"
-            href={(!isHomepage) ? routes.issueNew(issueArticle.slug) : routes.articleNew()}
-            updatePreviousPage={true}
-          >
-            <NewArticleIcon /> New {isDiscussionIndex ? 'discussion' : 'article'}
-          </CustomLink>
+          <span className="tab-item">
+            <CustomLink
+              className="btn small"
+              href={(!isHomepage) ? routes.issueNew(issueArticle.slug) : routes.articleNew()}
+              updatePreviousPage={true}
+            >
+              <NewArticleIcon /> New {isDiscussionIndex ? 'discussion' : 'article'}
+            </CustomLink>
+          </span>
         </div>
         {isHomepage &&
           <div className="tab-list content-not-ourbigbook">

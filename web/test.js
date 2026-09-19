@@ -1277,7 +1277,11 @@ it('Article descending topic ordering index avoids sorting the last article page
 
   await assertOrderedIndexScan()
   await migration.down(qi)
+  await migration.down(qi)
   assert.deepStrictEqual(await indexNames(), originalIndexes.filter(name => name !== indexName))
+  await models.sync(sequelize)
+  assert.deepStrictEqual(await indexNames(), originalIndexes.filter(name => name !== indexName))
+  await migration.up(qi)
   await migration.up(qi)
   assert.deepStrictEqual(await indexNames(), originalIndexes)
   await assertOrderedIndexScan()
@@ -8050,6 +8054,72 @@ it('api: article: parent and parent-type', async () => {
       assertStatus(status, data)
       assertRows(data.articles, [
         { slug: 'user0/calculus' },
+      ])
+
+      // Lazy ToC expansion returns one complete level in tree order.
+      ;({data, status} = await test.webApi.articleToc('user0'))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { hasChild: 1, slug: 'user0/mathematics' },
+        { hasChild: 0, slug: 'user0/good' },
+      ])
+      ;({data, status} = await test.webApi.articleToc('user0/mathematics'))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { hasChild: 0, slug: 'user0/calculus' },
+      ])
+
+      const rootArticle = await sequelize.models.Article.getArticle({
+        sequelize,
+        slug: 'user0',
+      })
+      let tocRows, tocCount
+      ;[tocRows, tocCount] = await sequelize.models.Article.getArticlesInSamePage({
+        article: rootArticle,
+        getCount: true,
+        getHasChild: true,
+        limit: 1,
+        list: true,
+        sequelize,
+        toc: true,
+      })
+      assert.strictEqual(tocCount, 3)
+      assertRows(tocRows, [
+        { hasChild: 1, slug: 'user0/mathematics' },
+      ])
+      let hasMoreDirectChildren
+      ;[tocRows, tocCount, hasMoreDirectChildren] = await sequelize.models.Article.getArticlesInSamePageForToc({
+        article: rootArticle,
+        maxEntries: 1,
+        preloadEntries: 2,
+        sequelize,
+      })
+      assert.strictEqual(tocCount, 3)
+      assert.strictEqual(hasMoreDirectChildren, true)
+      assertRows(tocRows, [
+        { hasChild: 1, slug: 'user0/mathematics' },
+        { hasChild: 0, slug: 'user0/calculus' },
+      ])
+      ;[tocRows, tocCount, hasMoreDirectChildren] = await sequelize.models.Article.getArticlesInSamePageForToc({
+        article: rootArticle,
+        maxEntries: 3,
+        preloadEntries: 1,
+        sequelize,
+      })
+      assert.strictEqual(tocCount, 3)
+      assert.strictEqual(hasMoreDirectChildren, false)
+      assertRows(tocRows, [
+        { slug: 'user0/mathematics' },
+        { slug: 'user0/calculus' },
+        { slug: 'user0/good' },
+      ])
+      ;({data, status} = await test.webApi.articleSamePage('user0', {
+        limit: 1,
+        offset: 1,
+      }))
+      assertStatus(status, data)
+      assertRows(data.articles, [
+        { hasChild: 0, slug: 'user0/calculus' },
       ])
 
       // Mathematics is tagged as good

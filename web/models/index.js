@@ -384,7 +384,13 @@ async function sync(sequelize, opts={}) {
       dbExists = false
     }
   }
-  await sequelize.sync(opts)
+  // Existing databases are changed exclusively through migrations. Calling
+  // sync() here would create newly declared indexes before their migrations
+  // run, leaving SequelizeMeta behind and making the migration fail because
+  // the index already exists.
+  if (!dbExists || opts.force) {
+    await sequelize.sync(opts)
+  }
 
   // Database triggers.
 

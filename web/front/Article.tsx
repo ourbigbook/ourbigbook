@@ -104,6 +104,42 @@ function LinkListNoTitle({
   </ul>
 }
 
+function openTocTarget(target: HTMLElement) {
+  const tocContainer = target.closest('.toc-container')
+  if (tocContainer) {
+    let current = target.parentElement
+    while (current && current !== tocContainer) {
+      current.classList.remove('close')
+      current = current.parentElement
+    }
+  }
+}
+
+function findTocTarget(targetId: string, articleSlug: string) {
+  let target = document.getElementById(targetId)
+  if (!target && targetId.startsWith(Macro.TOC_PREFIX)) {
+    const targetIdNoPrefix = targetId.slice(Macro.TOC_PREFIX.length)
+    const candidateSlugs = [articleSlug]
+    const lastSlash = articleSlug.lastIndexOf('/')
+    if (lastSlash !== -1) {
+      candidateSlugs.push(articleSlug.slice(0, lastSlash))
+    }
+    for (const candidateSlug of candidateSlugs) {
+      target = document.getElementById(`${Macro.TOC_PREFIX}${candidateSlug}/${targetIdNoPrefix}`)
+      if (target) break
+    }
+  }
+  return target
+}
+
+function mergeTocArticles(current: ArticleType[], incoming: ArticleType[]) {
+  const bySlug = new Map(current.map(article => [article.slug, article]))
+  for (const article of incoming) {
+    bySlug.set(article.slug, { ...bySlug.get(article.slug), ...article })
+  }
+  return Array.from(bySlug.values()).sort((a, b) => a.nestedSetIndex - b.nestedSetIndex)
+}
+
 function AnnounceModal({
   article,
   router,
@@ -390,6 +426,7 @@ export default function Article({
   articlesInSamePageCount,
   articlesInSamePageForToc,
   articlesInSamePageForTocCount,
+  articlesInSamePageForTocHasMoreDirectChildren=false,
   comments,
   commentsCount=0,
   commentCountByLoggedInUser=undefined,
@@ -412,7 +449,8 @@ export default function Article({
   // as soon as you finish announcing. In general we need to use this pattern whenever the data
   // is modified and we want to show an update to user immediately on the same page.
   let [article, setArticle] = React.useState(articleInit)
-  if (articleInit.id !== article.id) {
+  const articleChanged = articleInit.id !== article.id
+  if (articleChanged) {
     // We moved between articles, and haven't updated yet.
     // articlesInSamePageForToc could be out-of-sync with article
     // which led to a negative level blowup in renderTocFromEntryList
@@ -424,6 +462,20 @@ export default function Article({
   const authorUsername = article.author.username
   const [curComments, setComments] = React.useState(comments)
   const [curCommentsCount, setCommentsCount] = React.useState(commentsCount)
+  const [curArticlesInSamePageState, setCurArticlesInSamePage] = React.useState(articlesInSamePage || [])
+  const curArticlesInSamePage = articleChanged
+    ? (articlesInSamePage || [])
+    : curArticlesInSamePageState
+  const [curArticlesInSamePageForTocState, setCurArticlesInSamePageForToc] = React.useState(articlesInSamePageForToc || [])
+  const curArticlesInSamePageForToc = articleChanged
+    ? (articlesInSamePageForToc || [])
+    : curArticlesInSamePageForTocState
+  const [tocLoadedChildren, setTocLoadedChildren] = React.useState(
+    new Set<string>(articlesInSamePageForTocHasMoreDirectChildren ? [] : [articleInit.slug])
+  )
+  const [tocOpen, setTocOpen] = React.useState(new Set<string>())
+  const [loadMoreError, setLoadMoreError] = React.useState(undefined)
+  const [loadingMore, setLoadingMore] = React.useState(false)
   const router = useRouter()
   const queryNew = router.query[NEW_QUERY_PARAM]
   const [showNew, setShowNew] = React.useState(queryNew)
@@ -438,6 +490,22 @@ export default function Article({
     setComments(comments)
     setCommentsCount(commentsCount)
   }, [getParamString, articleInit, comments, commentsCount])
+  React.useEffect(() => {
+    setCurArticlesInSamePage(articlesInSamePage || [])
+    setCurArticlesInSamePageForToc(articlesInSamePageForToc || [])
+    setTocLoadedChildren(
+      new Set(articlesInSamePageForTocHasMoreDirectChildren ? [] : [articleInit.slug])
+    )
+    setTocOpen(new Set())
+    setLoadMoreError(undefined)
+    setLoadingMore(false)
+  }, [
+    articleInit.id,
+    articleInit.slug,
+    articlesInSamePage,
+    articlesInSamePageForToc,
+    articlesInSamePageForTocHasMoreDirectChildren,
+  ])
   React.useEffect(() => {
     setShowNew(queryNew)
   }, [queryNew])
@@ -484,21 +552,57 @@ export default function Article({
   const articlesInSamePageMap = {}
   const articlesInSamePageMapForToc = {}
   if (!isIssue) {
-    for (const article of articlesInSamePage) {
+    for (const article of curArticlesInSamePage) {
       articlesInSamePageMap[article.slug] = article
     }
     articlesInSamePageMap[article.slug] = article
-    for (const article of articlesInSamePageForToc) {
+    for (const article of curArticlesInSamePageForToc) {
       articlesInSamePageMapForToc[article.slug] = article
     }
     articlesInSamePageMapForToc[article.slug] = article
   }
-  const hasArticlesInSamePage = articlesInSamePage !== undefined && !!articlesInSamePage.length
+  const hasArticlesInSamePage = !!curArticlesInSamePage.length
   const canAnnounce = isIssue ? false : !cant.announceArticle(loggedInUser, authorUsername)
   const canEdit = isIssue ? !cant.editIssue(loggedInUser, article.author.username) : !cant.editArticle(loggedInUser, authorUsername)
   const canDelete = isIssue ? !cant.deleteIssue(loggedInUser, article) : !cant.deleteArticle(loggedInUser, article)
   const aElemToMetaMap = React.useRef(new Map())
-  const showNewArticle = showNew === undefined ? undefined : articlesInSamePageMapForToc[uidTopicIdToSlug(authorUsername, showNew)]
+  const showNewArticle = showNew === undefined
+    ? undefined
+    : articlesInSamePageMapForToc[uidTopicIdToSlug(authorUsername, showNew)] ||
+      articlesInSamePageMap[uidTopicIdToSlug(authorUsername, showNew)]
+  const tocIsLazy = !isIssue && articlesInSamePageForTocCount > maxArticlesFetchToc
+
+  const articleToTocEntry = React.useCallback((a, {
+    addLink=true,
+    closed=false,
+    hasChild,
+    lazy=false,
+    level,
+    parentContent,
+    parentHref,
+  }) => {
+    return {
+      addLink: (addLink && loggedInUser && loggedInUser.username === article.author.username)
+        ? ` <a href="${
+            htmlEscapeAttr(addParameterToUrlPath(router.asPath, NEW_QUERY_PARAM, slugToTopic(a.slug)))
+          }" title="New..." class="btn abs ${NEW_MODAL_BUTTON_CLASS}">` +
+          `${renderToString(<NewArticleIcon title={null}/>)}` +
+          `</a>`
+        : undefined,
+      content: a.titleRender,
+      closed,
+      has_child: hasChild,
+      href: ` href="${htmlEscapeAttr(routes.article(a.slug))}"`,
+      // A quick hack as it will be easier to do it here than to modify the link generation.
+      // https://docs.ourbigbook.com/TODO/remove-scope-from-toc-entry-ids
+      id_prefix: AT_MENTION_CHAR + authorUsername + '/',
+      lazy,
+      level,
+      parent_href: ` href="#${parentHref ? tocId(parentHref) : Macro.TOC_ID}"`,
+      parent_content: parentContent,
+      target_id: a.slug,
+    }
+  }, [article.author.username, authorUsername, loggedInUser, router.asPath])
 
   // Input state: browser bar contains a short fragment like algebra in page /username/mathematics#algebra
   // Output state: browser still contains the unchanged short input fragment, #algebra but everything else works as if
@@ -615,6 +719,10 @@ export default function Article({
               }
             }
             if (elem) {
+              // Header ToC links use short fragments, while Web ToC entry IDs
+              // include the current article path. Open the collapsed branch
+              // only after the short-fragment resolver has found that entry.
+              openTocTarget(elem)
               fragSetTarget(elem)
             }
             if (handleShortFragmentCurrentFragType !== 'short') {
@@ -677,8 +785,9 @@ export default function Article({
       // Without this check, the callbacks do get added twice after
       // pressing the + button which opens a modal. This was noticed with
       // console.log on the selflink mouseenter and mouseleave.
-      if (!staticHtmlRefMap.current.get(elem)) {
-        staticHtmlRefMap.current.set(elem, true)
+      const runtimeKey = `${article.slug}:${curArticlesInSamePage.length}:${curArticlesInSamePageForToc.length}:${tocLoadedChildren.size}:${tocOpen.size}`
+      if (staticHtmlRefMap.current.get(elem) !== runtimeKey) {
+        staticHtmlRefMap.current.set(elem, runtimeKey)
         ourbigbook_runtime(
           elem,
           {
@@ -699,7 +808,27 @@ export default function Article({
                   }
                 )
               }
-            }
+            },
+            tocLoadChildrenCallback: tocIsLazy
+              ? async parentLi => {
+                  let parentSlug
+                  if (parentLi.classList.contains('toplevel')) {
+                    parentSlug = article.slug
+                  } else {
+                    const parentLink = parentLi.querySelector(':scope > div > span.not-arrow > a')
+                    parentSlug = routes.decodeUrlPath(
+                      new URL(parentLink.getAttribute('href'), window.location.href).pathname.substring(1)
+                    )
+                  }
+                  const { data, status } = await webApi.articleToc(parentSlug)
+                  if (status !== 200) {
+                    throw new Error(`Could not load table of contents children: HTTP ${status}`)
+                  }
+                  setCurArticlesInSamePageForToc(current => mergeTocArticles(current, data.articles))
+                  setTocLoadedChildren(current => new Set(current).add(parentSlug))
+                  setTocOpen(current => new Set(current).add(parentSlug))
+                }
+              : undefined,
           }
         )
       }
@@ -708,6 +837,12 @@ export default function Article({
     isIssue,
     handleShortFragmentSkipOnce,
     getParamString,
+    article.slug,
+    curArticlesInSamePage.length,
+    curArticlesInSamePageForToc.length,
+    tocIsLazy,
+    tocLoadedChildren.size,
+    tocOpen.size,
   ])
   React.useEffect(() => {
     const elem = staticHtmlRef.current
@@ -937,8 +1072,8 @@ export default function Article({
     if (log.perf) {
       t0 = performance.now()
     }
-    for (let i = 0; i < articlesInSamePageForToc.length; i++) {
-      const a = articlesInSamePageForToc[i]
+    for (let i = 0; i < curArticlesInSamePageForToc.length; i++) {
+      const a = curArticlesInSamePageForToc[i]
       let level = a.depth - article.depth
       const href = a.slug
       const content = a.titleRender
@@ -960,51 +1095,42 @@ export default function Article({
         parent_content = article.titleRender
       }
       levelToHeader[level] = { href, content }
-      const entry = {
-        addLink: (loggedInUser && loggedInUser.username === article.author.username)
-          ? ` <a href="${
-              htmlEscapeAttr(addParameterToUrlPath(router.asPath, NEW_QUERY_PARAM, slugToTopic(a.slug)))
-            }" title="New..." class="btn abs ${NEW_MODAL_BUTTON_CLASS}">` +
-            `${renderToString(<NewArticleIcon title={null}/>)}` +
-            `</a>`
-          : undefined
-        ,
-        content,
-        href: ` href="${htmlEscapeAttr(routes.article(href))}"`,
+      const hasChild = !!a.hasChild
+      const entry = articleToTocEntry(a, {
+        closed: tocIsLazy && hasChild && !tocOpen.has(a.slug),
+        hasChild,
+        lazy: tocIsLazy && hasChild && !tocLoadedChildren.has(a.slug),
         level,
-        has_child: i < articlesInSamePageForToc.length - 1 && articlesInSamePageForToc[i + 1].depth > a.depth,
-        // A quick hack as it will be easier to do it here than to modify the link generation.
-        // We'll later fix both at once to remove the user prefix one day. Maybe.
-        // https://docs.ourbigbook.com/TODO/remove-scope-from-toc-entry-ids
-        id_prefix: AT_MENTION_CHAR + authorUsername + '/',
-        parent_href: ` href="#${parent_href ? tocId(parent_href) : Macro.TOC_ID}"`,
-        parent_content,
-        target_id: a.slug,
-      }
+        parentContent: parent_content,
+        parentHref: parent_href,
+      })
       entry_list.push(entry)
     }
     if (entry_list.length) {
       html += htmlToplevelChildModifierById(
         renderTocFromEntryList({
           entry_list,
-          hasSearch: false
+          hasSearch: false,
+          toplevelLazy: tocIsLazy && !tocLoadedChildren.has(article.slug),
         }),
         Macro.TOC_ID
       )
       if (articlesInSamePageForTocCount > maxArticlesFetchToc) {
         html += renderToString(
           <div className="toc-limited">
-            <HelpIcon /> The table of contents was limited to the first {maxArticlesFetchToc} articles out of {articlesInSamePageForTocCount} total.
-            {' '}
-            <a href={routes.userArticlesChildren(authorUsername, article.topicId)}>
-              Click here to view all children of
+            <HelpIcon /> The initial table of content was limited to the first level because it is larger than {maxArticlesFetchToc} articles. There are {articlesInSamePageForTocCount} articles in total. Expand a branch to load its children.
+            {articlesInSamePageForTocHasMoreDirectChildren && <>
               {' '}
-              <span
-                className="ourbigbook-title"
-              >
-                <span dangerouslySetInnerHTML={{ __html: article.titleRender }} />
-              </span>
-            </a>.
+              <a href={routes.userArticlesChildren(authorUsername, article.topicId)}>
+                Click here to view all children of
+                {' '}
+                <span
+                  className="ourbigbook-title"
+                >
+                  <span dangerouslySetInnerHTML={{ __html: article.titleRender }} />
+                </span> as a list
+              </a>.
+            </>}
           </div>
         )
       }
@@ -1015,7 +1141,7 @@ export default function Article({
     if (log.perf) {
       t0 = performance.now()
     }
-    for (const a of articlesInSamePage) {
+    for (const a of curArticlesInSamePage) {
       const elem = parse(a.h2Render)
       elem.querySelector(`.${H_WEB_CLASS}`).innerHTML = renderToString(<WebMeta {...{
         article,
@@ -1100,21 +1226,67 @@ export default function Article({
     <div
       dangerouslySetInnerHTML={{ __html: html }}
       className="ourbigbook"
+      key={`${article.slug}:${curArticlesInSamePage.length}:${curArticlesInSamePageForToc.length}:${tocLoadedChildren.size}:${tocOpen.size}`}
+      onClick={event => {
+        const link = event.target instanceof Element
+          ? event.target.closest(`a.${TOC_LINK_ELEM_CLASS_NAME}`)
+          : null
+        if (link && event.currentTarget.contains(link)) {
+          const href = link.getAttribute('href')
+          if (href && href.startsWith('#')) {
+            const target = findTocTarget(routes.decodeUrlPath(href.slice(1)), article.slug)
+            if (target) {
+              openTocTarget(target)
+              target.scrollIntoView()
+            }
+          }
+        }
+      }}
       ref={staticHtmlRef}
     />
-    {(articlesInSamePageCount > maxArticlesFetch) &&
+    {(articlesInSamePageCount > curArticlesInSamePage.length) &&
       <div className="content-not-ourbigbook toc-limited">
-        <HelpIcon /> Articles were limited to the first {maxArticlesFetch} out of {articlesInSamePageForTocCount} total.
+        <HelpIcon /> Articles were limited to the first {curArticlesInSamePage.length} out of {articlesInSamePageCount} total.
         {' '}
-        <a href={routes.userArticlesChildren(authorUsername, article.topicId)}>
-          Click here to view all children of
+        <button
+          className="btn"
+          disabled={loadingMore}
+          onClick={async () => {
+            setLoadingMore(true)
+            setLoadMoreError(undefined)
+            try {
+              const { data, status } = await webApi.articleSamePage(article.slug, {
+                limit: maxArticlesFetch,
+                offset: curArticlesInSamePage.length,
+              })
+              if (status !== 200) {
+                throw new Error(`HTTP ${status}`)
+              }
+              setCurArticlesInSamePage(current => current.concat(data.articles))
+              setCurArticlesInSamePageForToc(current => mergeTocArticles(current, data.articles))
+            } catch (error) {
+              setLoadMoreError(error.message)
+            } finally {
+              setLoadingMore(false)
+            }
+          }}
+          type="button"
+        >
+          {loadingMore ? 'Loading…' : 'Load more'}
+        </button>
+        {articlesInSamePageForTocHasMoreDirectChildren && <>
           {' '}
-          <span
-            className="ourbigbook-title"
-          >
-            <span dangerouslySetInnerHTML={{ __html: article.titleRender }} />
-          </span>
-        </a>.
+          <a href={routes.userArticlesChildren(authorUsername, article.topicId)}>
+            Click here to view all children of
+            {' '}
+            <span
+              className="ourbigbook-title"
+            >
+              <span dangerouslySetInnerHTML={{ __html: article.titleRender }} />
+            </span>
+          </a>.
+        </>}
+        {loadMoreError && <><br/><span className="error">Could not load more articles: {loadMoreError}</span></>}
       </div>
     }
     <div className="meta">

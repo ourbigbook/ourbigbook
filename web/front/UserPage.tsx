@@ -69,6 +69,7 @@ export interface UserPageProps extends CommonPropsType {
   articlesInSamePageCount?: number;
   articlesInSamePageForToc?: ArticleType[];
   articlesInSamePageForTocCount?: number;
+  articlesInSamePageForTocHasMoreDirectChildren?: boolean;
   commentCountByLoggedInUser?: number;
   comments?: CommentType[];
   commentsCount?: number;
@@ -131,6 +132,7 @@ export default function UserPage({
   articlesInSamePageCount,
   articlesInSamePageForToc,
   articlesInSamePageForTocCount,
+  articlesInSamePageForTocHasMoreDirectChildren,
   ancestors,
   comments,
   commentsCount,
@@ -495,6 +497,7 @@ export default function UserPage({
           articlesInSamePageCount,
           articlesInSamePageForToc,
           articlesInSamePageForTocCount,
+          articlesInSamePageForTocHasMoreDirectChildren,
           comments,
           commentCountByLoggedInUser,
           handleShortFragmentSkipOnce,

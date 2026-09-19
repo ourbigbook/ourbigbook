@@ -249,6 +249,10 @@ module.exports = (sequelize) => {
 
         // Per author searches.
         { fields: ['authorId', 'list', 'nestedSetIndex'], },
+        {
+          name: 'article_author_list_depth_nested_set_index',
+          fields: ['authorId', 'list', 'depth', 'nestedSetIndex'],
+        },
         // Maybe this will be useful without list for article updates?
         { fields: ['authorId', 'nestedSetIndex'], },
         // For parent searches. TODO do these need list?
@@ -934,6 +938,44 @@ WHERE
           required: true,
         }]
       }]
+    })
+  }
+
+  /** Direct children used to expand one level of the Web ToC. */
+  Article.prototype.getTocChildren = async function({ limit }={}) {
+    const where = {
+      authorId: this.authorId,
+      depth: this.depth + 1,
+      list: true,
+      nestedSetIndex: {
+        [Op.gt]: this.nestedSetIndex,
+        [Op.lt]: this.nestedSetNextSibling,
+      },
+    }
+    return sequelize.models.Article.findAll({
+      attributes: [
+        'depth',
+        'nestedSetIndex',
+        'slug',
+        'titleRender',
+        [
+          sequelize.literal(
+            `CASE WHEN EXISTS (
+              SELECT 1 FROM "${sequelize.models.Article.tableName}" AS "tocChild"
+              WHERE "tocChild"."authorId" = "Article"."authorId"
+                AND "tocChild"."list"
+                AND "tocChild"."depth" = "Article"."depth" + 1
+                AND "tocChild"."nestedSetIndex" > "Article"."nestedSetIndex"
+                AND "tocChild"."nestedSetIndex" < "Article"."nestedSetNextSibling"
+            ) THEN 1 ELSE 0 END`
+          ),
+          'hasChild',
+        ],
+      ],
+      limit,
+      raw: true,
+      where,
+      order: [['nestedSetIndex', 'ASC']],
     })
   }
 
@@ -1640,6 +1682,7 @@ WHERE
   Article.getArticlesInSamePage = async ({
     article,
     getCount,
+    getHasChild,
     getTagged,
     logging,
     loggedInUser,
@@ -1652,6 +1695,7 @@ WHERE
     h1,
     limit,
     list,
+    offset,
     // Create a highly optimized version of the query just for the ToC.
     // This is essential for performance as the toc has 10x more entries, and can be
     // the performance bottleneck according to our testing.
@@ -1808,12 +1852,22 @@ WHERE
 
     const { File, Id, Ref } = sequelize.models
     function getQuery(countOnly) {
+      const articleTableName = sequelize.models.Article.tableName
       return `SELECT
   ${countOnly
     ? 'COUNT(*) AS "count"'
     : `"Article"."depth" AS "depth",
   "Article"."slug" AS "slug",
-  "Article"."titleRender" AS "titleRender"${!toc ? `,
+  "Article"."titleRender" AS "titleRender"${getHasChild ? `,
+  "Article"."nestedSetIndex" AS "nestedSetIndex",
+  CASE WHEN EXISTS (
+    SELECT 1 FROM "${articleTableName}" AS "TocChild"
+    WHERE "TocChild"."authorId" = "Article"."authorId"
+      AND "TocChild"."list"
+      AND "TocChild"."depth" = "Article"."depth" + 1
+      AND "TocChild"."nestedSetIndex" > "Article"."nestedSetIndex"
+      AND "TocChild"."nestedSetIndex" < "Article"."nestedSetNextSibling"
+  ) THEN 1 ELSE 0 END AS "hasChild"` : ''}${!toc ? `,
   "Article"."id" AS "id",
   "Article"."list" AS "list",
   "Article"."score" AS "score",
@@ -1850,7 +1904,8 @@ ${h1
   "Article"."nestedSetIndex" < :nestedSetNextSibling`
 }${countOnly ? '' : `
 ORDER BY "Article"."nestedSetIndex" ASC${limit !== undefined ? `
-LIMIT ${limit}` : ''}`}
+LIMIT ${limit}${offset !== undefined ? `
+OFFSET ${offset}` : ''}` : ''}`}
 `
     }
     const queryOpts = {
@@ -1954,6 +2009,58 @@ LIMIT ${limit}` : ''}`}
     } else {
       return rows
     }
+  }
+
+  /**
+   * Initial Web ToC payload. Small trees are returned in full. Large trees
+   * contain the first rendered-article batch plus the first level, capped
+   * independently so header links and tree navigation are both useful.
+   */
+  Article.getArticlesInSamePageForToc = async ({
+    article,
+    loggedInUser,
+    maxEntries,
+    preloadEntries,
+    sequelize,
+  }) => {
+    const [preload, count] = await Article.getArticlesInSamePage({
+      article,
+      getCount: true,
+      getHasChild: true,
+      limit: preloadEntries,
+      list: true,
+      loggedInUser,
+      sequelize,
+      toc: true,
+    })
+    if (count <= maxEntries) {
+      if (count <= preload.length) {
+        return [preload, count, false]
+      }
+      return [await Article.getArticlesInSamePage({
+        article,
+        getHasChild: true,
+        limit: maxEntries,
+        list: true,
+        loggedInUser,
+        sequelize,
+        toc: true,
+      }), count, false]
+    }
+    const directChildrenWithExtra = await article.getTocChildren({
+      limit: maxEntries + 1,
+    })
+    const hasMoreDirectChildren = directChildrenWithExtra.length > maxEntries
+    const directChildren = directChildrenWithExtra.slice(0, maxEntries)
+    const bySlug = new Map()
+    for (const row of preload.concat(directChildren)) {
+      bySlug.set(row.slug, row)
+    }
+    return [
+      Array.from(bySlug.values()).sort((a, b) => a.nestedSetIndex - b.nestedSetIndex),
+      count,
+      hasMoreDirectChildren,
+    ]
   }
 
   /**

@@ -1,4 +1,5 @@
 const { Op } = require('sequelize')
+const { addIndexIfMissing, removeIndexIfExists } = require('../migration_helpers')
 
 const indexes = [
   {
@@ -46,12 +47,12 @@ module.exports = {
   // PostgreSQL concurrent index creation must run outside a transaction.
   up: async queryInterface => {
     for (const { fields, ...options } of indexes) {
-      await queryInterface.addIndex('Topic', fields, { ...options, concurrently: true })
+      await addIndexIfMissing(queryInterface, 'Topic', fields, { ...options, concurrently: true })
     }
   },
   down: async queryInterface => {
     for (const { name } of [...indexes].reverse()) {
-      await queryInterface.removeIndex('Topic', name, { concurrently: true })
+      await removeIndexIfExists(queryInterface, 'Topic', name, { concurrently: true })
     }
   },
 }

@@ -112,7 +112,11 @@ export const getServerSidePropsArticleHoc = ({
         ancestors,
         articleJson,
         articlesInSamePage,
-        [articlesInSamePageForToc, articlesInSamePageForTocCount],
+        [
+          articlesInSamePageForToc,
+          articlesInSamePageForTocCount,
+          articlesInSamePageForTocHasMoreDirectChildren,
+        ],
         articleInTopicByLoggedInUser,
         h1ArticlesInSamePage,
         incomingLinks,
@@ -137,16 +141,11 @@ export const getServerSidePropsArticleHoc = ({
           toplevelId: true,
         }),
         // articlesInSamePageForToc
-        Article.getArticlesInSamePage({
+        Article.getArticlesInSamePageForToc({
           article,
-          getCount: true,
           loggedInUser,
-          // This 10x made this be the dominating query on /wikibot when we last benchmarked.
-          // (lots or empty articles) On /cirosantilli it didn't matter as much.
-          limit: maxArticlesFetchToc,
-          list: true,
-          // Fundamental optimization to alleviate the 10x.
-          toc: true,
+          maxEntries: maxArticlesFetchToc,
+          preloadEntries: maxArticlesFetch,
           sequelize,
         }),
         Article.getArticleJsonInTopicBy(loggedInUser, article.topicId),
@@ -234,6 +233,7 @@ export const getServerSidePropsArticleHoc = ({
         articlesInSamePageCount: articlesInSamePageForTocCount,
         articlesInSamePageForToc,
         articlesInSamePageForTocCount,
+        articlesInSamePageForTocHasMoreDirectChildren,
         incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRenderWithScope: a.titleRenderWithScope } }),
         isIndex,
         loggedInUser,

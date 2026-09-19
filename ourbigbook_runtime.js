@@ -66,7 +66,7 @@ export function ourbigbook_runtime(toplevel, opts={}) {
   if (opts.hoverSelfLinkCallback === undefined) {
     hoverSelfLinkCallback = () => {}
   }
-
+  const tocLoadChildrenCallback = opts.tocLoadChildrenCallback
   if (
     window.ourbigbook_split_headers &&
     window.location.hash &&
@@ -163,11 +163,27 @@ export function ourbigbook_runtime(toplevel, opts={}) {
 
     // Open close arrows
     {
-      const toc_arrows = tocContainerElem.querySelectorAll(`div.arrow`)
-      for (const toc_arrow of toc_arrows) {
-        toc_arrow.addEventListener('click', () => {
+      tocContainerElem.addEventListener('click', async event => {
+        const toc_arrow = event.target.closest('div.arrow')
+        if (toc_arrow && tocContainerElem.contains(toc_arrow)) {
           // https://docs.ourbigbook.com#table-of-contents-javascript-open-close-interaction
           const parent_li = toc_arrow.parentElement.parentElement
+          if (
+            parent_li.classList.contains('lazy') &&
+            tocLoadChildrenCallback !== undefined
+          ) {
+            if (parent_li.classList.contains('loading')) return
+            parent_li.classList.add('loading')
+            try {
+              await tocLoadChildrenCallback(parent_li)
+              parent_li.classList.remove('lazy', CLOSE_CLASS)
+            } catch (error) {
+              console.error(error)
+            } finally {
+              parent_li.classList.remove('loading')
+            }
+            return
+          }
           const directChildren = []
           for (const child of parent_li.children) {
             if (child.tagName === 'UL') {
@@ -204,8 +220,8 @@ export function ourbigbook_runtime(toplevel, opts={}) {
               }
             }
           }
-        })
-      }
+        }
+      })
     }
   }
 
@@ -213,7 +229,10 @@ export function ourbigbook_runtime(toplevel, opts={}) {
   const h_to_tocs = toplevel.getElementsByClassName('ourbigbook-h-to-toc');
   for (const h_to_toc of h_to_tocs) {
     h_to_toc.addEventListener('click', () => {
-      let cur_elem = myDocument.getElementById(h_to_toc.getAttribute('href').slice(1)).parentElement;
+      const target = myDocument.getElementById(h_to_toc.getAttribute('href').slice(1))
+      // A capped Web ToC may not have this entry yet.
+      if (!target) return
+      let cur_elem = target.parentElement;
       while (!cur_elem.classList.contains(TOC_CONTAINER_CLASS)) {
         cur_elem.classList.remove(CLOSE_CLASS);
         cur_elem = cur_elem.parentElement;

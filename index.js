@@ -7960,6 +7960,7 @@ function renderTocFromEntryList({
   showSplitOnToc,
   tocHasSelflinks,
   tocIdPrefix,
+  toplevelLazy,
 }) {
   let top_level = 0;
   if (tocIdPrefix === undefined) {
@@ -7976,8 +7977,12 @@ function renderTocFromEntryList({
     // and we decided to drop it by default, but keep the code around just in case.
     tocHasSelflinks = false
   }
+  const toplevelClasses = [TOC_HAS_CHILD_CLASS, 'toplevel']
+  if (toplevelLazy) {
+    toplevelClasses.push('lazy')
+  }
   let ret = `<div class="toc-container" id="${tocIdPrefix}${Macro.TOC_ID}">` +
-    `<ul><li${htmlClassAttr([TOC_HAS_CHILD_CLASS, 'toplevel'])}>` +
+    `<ul><li${htmlClassAttr(toplevelClasses)}>` +
     `<div class="title-div">` +
     `${TOC_ARROW_HTML}<span class="not-arrow">` +
     `<a class="title toc" href="#${tocIdPrefix}${Macro.TOC_ID}"> Table of contents</a>`
@@ -7995,8 +8000,10 @@ function renderTocFromEntryList({
       content,
       href,
       level,
+      closed,
       has_child,
       id_prefix,
+      lazy,
       link_to_split,
       parent_href,
       parent_content,
@@ -8014,7 +8021,14 @@ function renderTocFromEntryList({
     }
     ret += '<li';
     if (has_child) {
-      ret += htmlClassAttr([TOC_HAS_CHILD_CLASS]);
+      const classes = [TOC_HAS_CHILD_CLASS]
+      if (closed) {
+        classes.push('close')
+      }
+      if (lazy) {
+        classes.push('lazy')
+      }
+      ret += htmlClassAttr(classes);
     }
     ret += '>'
     const my_toc_id = tocIdWithScopeRemoval(target_id, context);

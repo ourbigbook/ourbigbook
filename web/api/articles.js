@@ -83,6 +83,47 @@ router.get('/', auth.optional, async function(req, res, next) {
   }
 })
 
+// Fetch one complete level of a lazily expanded table of contents.
+router.get('/toc', auth.optional, async function(req, res, next) {
+  try {
+    const article = await lib.getArticle(req, res)
+    return res.json({ articles: await article.getTocChildren() })
+  } catch(error) {
+    next(error)
+  }
+})
+
+// Fetch another rendered batch from an article's descendant page.
+router.get('/same-page', auth.optional, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const { User } = sequelize.models
+    const [limit, offset] = lib.getLimitAndOffset(req, res, {
+      defaultLimit: config.maxArticlesFetch,
+      limitMax: config.maxArticlesFetch,
+    })
+    const [article, loggedInUser] = await Promise.all([
+      lib.getArticle(req, res),
+      req.payload ? User.findByPk(req.payload.id) : null,
+    ])
+    return res.json({
+      articles: await sequelize.models.Article.getArticlesInSamePage({
+        article,
+        getHasChild: true,
+        getTagged: true,
+        limit,
+        list: true,
+        loggedInUser,
+        offset,
+        sequelize,
+        toplevelId: true,
+      }),
+    })
+  } catch(error) {
+    next(error)
+  }
+})
+
 router.get('/redirects', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')

@@ -128,6 +128,39 @@ describe('theme', function () {
 })
 
 describe('toc runtime', function () {
+  it('renders branches closed', function () {
+    const html = ourbigbook.renderTocFromEntryList({
+      entry_list: [{
+        content: 'Child',
+        has_child: true,
+        href: ' href="/user/child"',
+        closed: true,
+        level: 1,
+        target_id: 'user/child',
+      }],
+      hasSearch: false,
+    })
+    assert(html.includes('<li class="has-child close">'))
+  })
+
+  it('marks preloaded branches and the ToC root for lazy expansion', function () {
+    const html = ourbigbook.renderTocFromEntryList({
+      entry_list: [{
+        content: 'Child',
+        closed: true,
+        has_child: true,
+        href: ' href="/user/child"',
+        lazy: true,
+        level: 1,
+        target_id: 'user/child',
+      }],
+      hasSearch: false,
+      toplevelLazy: true,
+    })
+    assert(html.includes('<li class="has-child toplevel lazy">'))
+    assert(html.includes('<li class="has-child close lazy">'))
+  })
+
   it('cycles summarized, closed, and recursively open states', function () {
     const leaf = { closed: false, hasChildren: false }
     const closedBranch = { closed: true, hasChildren: true }

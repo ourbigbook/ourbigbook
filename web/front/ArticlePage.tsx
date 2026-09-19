@@ -36,6 +36,7 @@ export interface ArticlePageProps extends CommonPropsType {
   articlesInSamePageCount?: number;
   articlesInSamePageForToc?: ArticleType[];
   articlesInSamePageForTocCount?: number;
+  articlesInSamePageForTocHasMoreDirectChildren?: boolean;
   comments?: CommentType[];
   commentsCount?: number;
   hasUnlistedComments?: boolean;
@@ -62,6 +63,7 @@ const ArticlePageHoc = (isIssue=false) => {
     articlesInSamePageCount,
     articlesInSamePageForToc,
     articlesInSamePageForTocCount,
+    articlesInSamePageForTocHasMoreDirectChildren,
     commentCountByLoggedInUser,
     comments,
     commentsCount,
@@ -134,6 +136,7 @@ const ArticlePageHoc = (isIssue=false) => {
             articlesInSamePageCount,
             articlesInSamePageForToc,
             articlesInSamePageForTocCount,
+            articlesInSamePageForTocHasMoreDirectChildren,
             commentCountByLoggedInUser,
             comments,
             commentsCount,

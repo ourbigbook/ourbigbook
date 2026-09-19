@@ -35,12 +35,14 @@ export type ArticleType = {
   };
   h1Render: string;
   h2Render: string;
+  hasChild?: number;
   id: number;
   issueCount?: number;
   liked: boolean;
   likedBy?: UserType;
   likedByDate?: string;
   list?: boolean;
+  nestedSetIndex?: number;
   followed?: boolean;
   followerCount?: number;
   image?: string;

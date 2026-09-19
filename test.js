@@ -9032,6 +9032,29 @@ assert_lib_error('id: reserved route separator from input path', '= Header\n', 1
   input_path_noext: 'parent/-/child',
 })
 assert_lib_error('id: reserved route separator on file header', '= parent/-/file.txt\n{file}\n', 1, 1)
+it('lib: file paths retain their namespace without a file argument', async () => {
+  for (const ref_prefix of ['', '@user0']) {
+    const prefix = ref_prefix ? ref_prefix + '/' : ''
+    for (const [path, body, valid] of [
+      ['-/file/c/mul_loop_asm_n.c', '', true],
+      ['-/file/c/-/example.c', '', false],
+      ['-/file/c/example.c', '\n== Other\n{id=-/file/other.c}\n', false],
+      ['-/file/c/example.c', '\n\\i[Other]{id=-/file/other.c}\n', false],
+      ['-/raw/c/example.c', '', false],
+    ]) {
+      const extra = {}
+      await ourbigbook.convert('= c/example.c\n' + body, {
+        input_path: prefix + path + '.bigb', path_sep: '/', ref_prefix, render: false,
+      }, extra)
+      if (valid) {
+        assert.deepStrictEqual(extra.errors, [])
+        assert.strictEqual(extra.context.header_tree.children[0].ast.id, prefix + path)
+      } else {
+        assert(extra.errors.some(error => error.message.includes('reserved for website routes')), path + body)
+      }
+    }
+  }
+})
 for (const id of ['_out', '.git', '_out/child', '.git/child']) {
   assert_lib_error(`id: reserved toplevel filesystem name ${id}`, `= Header\n{id=${id}}\n`, 1, 1)
   assert_lib_error(`id: reserved toplevel filesystem name on inline macro ${id}`, `\\i[text]{id=${id}}`, 1, 1)

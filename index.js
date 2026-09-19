@@ -2916,9 +2916,15 @@ function calculateId(
     if (userId && generatedScope && (userId === generatedScope || userId.startsWith(generatedScope + Macro.HEADER_SCOPE_SEPARATOR))) {
       userId = userId.slice(generatedScope.length).replace(/^\//, '')
     }
+    // A file article can retain its path after cleanup removes its {file} argument.
+    // Exempt that namespace only on the header whose ID comes from the input path.
+    const filePathHeader = macro_name === Macro.HEADER_MACRO_NAME &&
+      ast.is_first_header_in_input_file && context.inputIsInFileDirectory &&
+      ast.id === context.options.toplevel_id
     // File headers and generated directory listings own these reserved prefixes.
     // Still reject '-' components in the actual user-supplied file/directory path.
-    const generatedPrefix = file_header ? FILE_PREFIX : (context.options.auto_generated_source ? DIR_PREFIX : undefined)
+    const generatedPrefix = file_header || filePathHeader ? FILE_PREFIX :
+      (context.options.auto_generated_source ? DIR_PREFIX : undefined)
     if (userId && generatedPrefix) {
       userId = userId.replace(new RegExp(`(^|/)${generatedPrefix}(?=/|$)`), '$1')
     }

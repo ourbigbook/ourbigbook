@@ -1213,6 +1213,47 @@ $$
   })
 })
 
+it('Article.rerender: migrated empty file articles and deleted-file cleanup', async () => {
+  await testApp(async test => {
+    const { sequelize } = test
+    const { Article, File } = sequelize.models
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const path = '-/file/c/mul_loop_asm_n.c'
+    const slug = `user0/${path}`
+    await test.webApi.uploadCreateOrUpdate('user0/c/mul_loop_asm_n.c', 'int main() {}\n')
+    await createOrUpdateArticleApi(test, createArticleArg({
+      titleSource: 'c/mul_loop_asm_n.c', bodySource: '{file}\n\nDescription',
+    }))
+    const article = await Article.findOne({ where: { slug } })
+    const file = await File.findByPk(article.fileId)
+    // Old CLI cleanup left the file ID in place while clearing the entire body,
+    // including {file}. Namespace migration deliberately preserves that source.
+    await file.update({ bodySource: '' })
+    await article.update({ list: false })
+    const updatedAt = article.updatedAt
+    const hash = file.hash
+    const migration = require('./migrations/21000101000041-reserved-path-namespace')
+    await migration.down(sequelize.getQueryInterface())
+    await migration.up(sequelize.getQueryInterface())
+    await Article.rerender({ slugs: [slug] })
+    await article.reload()
+    await file.reload()
+    assert.strictEqual(article.slug, slug)
+    assert.strictEqual(article.list, false)
+    assert.deepStrictEqual(article.updatedAt, updatedAt)
+    assert.strictEqual(file.path, `@user0/${path}.bigb`)
+    assert.strictEqual(file.bodySource, '')
+    assert.strictEqual(file.hash, hash)
+    // The normal API cleanup used by --web must also continue to work.
+    await test.webApi.articleCreateOrUpdate({ bodySource: '{file}\n\nRestored' }, { path })
+    await test.webApi.articleCreateOrUpdate({ bodySource: '' }, { path, list: false })
+    await Article.rerender({ slugs: [slug] })
+    await file.reload()
+    assert.strictEqual(file.bodySource, '')
+  }, { defaultExpectStatus: 200 })
+})
+
 it('normalize nested-set', async function() {
   await testApp(async (test) => {
     let data, status, article

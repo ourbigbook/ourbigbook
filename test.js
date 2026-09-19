@@ -8535,30 +8535,25 @@ assert_lib('header: implicit tags are restored when cached include ancestry chan
   },
 })
 
-it('lib: header: duplicateTags checks nested links during extraction without a database', async () => {
+it('lib: header: duplicate tags are checked during extraction without a database', async () => {
   for (const title of ['<Animal>', '\\x[animal]', '\\i[\\b[<Animal>]]']) {
-    for (const duplicateTags of [false, true]) {
-      const extra_returns = {}
-      // The target need not have been defined or extracted yet.
-      await ourbigbook.convert(`= Home\n\n== About ${title}\n{tag=Animal}\n`, {
-        input_path: 'index.bigb',
-        render: false,
-        ourbigbook_json: { lint: { duplicateTags } },
-      }, extra_returns)
-      assert.strictEqual(extra_returns.errors.length, duplicateTags ? 1 : 0)
-      if (duplicateTags) {
-        const error = extra_returns.errors[0]
-        assert.deepStrictEqual(error.source_location, new ourbigbook.SourceLocation(4, 1, 'index.bigb'))
-        assert(error.message.startsWith('duplicate tag "animal" on header "about-animal", previous tag at index.bigb:3:'))
-        assert(error.message.endsWith(
-          'Links such as <...> in a header title automatically tag that header when the target is not an ancestor; consider removing the redundant {tag=...}.'
-        ))
-      }
-    }
+    const extra_returns = {}
+    // The target need not have been defined or extracted yet.
+    await ourbigbook.convert(`= Home\n\n== About ${title}\n{tag=Animal}\n`, {
+      input_path: 'index.bigb',
+      render: false,
+    }, extra_returns)
+    assert.strictEqual(extra_returns.errors.length, 1)
+    const error = extra_returns.errors[0]
+    assert.deepStrictEqual(error.source_location, new ourbigbook.SourceLocation(4, 1, 'index.bigb'))
+    assert(error.message.startsWith('duplicate tag "animal" on header "about-animal", previous tag at index.bigb:3:'))
+    assert(error.message.endsWith(
+      'Links such as <...> in a header title automatically tag that header when the target is not an ancestor; consider removing the redundant {tag=...}.'
+    ))
   }
 })
 
-it('lib: header: duplicateTags defers differing plural candidates to the database', async () => {
+it('lib: header: duplicate tag checking defers differing plural candidates to the database', async () => {
   const extra_returns = {}
   // <Animals> may resolve to a scoped singular "animal", while the explicit
   // tag resolves to "animals" elsewhere. Matching spellings alone aren't enough.
@@ -8569,19 +8564,17 @@ it('lib: header: duplicateTags defers differing plural candidates to the databas
   assert.deepStrictEqual(extra_returns.errors, [])
 })
 
-for (const duplicateTags of [false, true]) {
-  assert_lib(`header: duplicateTags lint ${duplicateTags} resolves nested cross-file links`, {
-    convert_dir: true,
-    convert_opts: { ourbigbook_json: { lint: { duplicateTags } } },
-    assert_check_db_errors: duplicateTags ? 1 : 0,
-    filesystem: {
-      'index.bigb': String.raw`= Toplevel
+assert_lib('header: duplicate tags resolve nested cross-file links', {
+  convert_dir: true,
+  assert_check_db_errors: 1,
+  filesystem: {
+    'index.bigb': String.raw`= Toplevel
 
 \Include[scope]
 
 == Dog
 `,
-      'scope.bigb': String.raw`= Scope
+    'scope.bigb': String.raw`= Scope
 {scope}
 
 \Include[scope/dog]
@@ -8591,30 +8584,28 @@ for (const duplicateTags of [false, true]) {
 
 == Both <Dog> and </Dog>
 `,
-      'scope/dog.bigb': '= Dog\n',
-    },
-    postConvert: async ({ sequelize, convertOpts }) => {
-      const { Ref } = sequelize.models
-      assertRows(await Ref.findAll({
-        where: { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] },
-        order: [['defined_at_line', 'ASC'], ['defined_at_col', 'ASC']],
-      }), [
-        { from_id: 'scope/dog', to_id: 'scope/about-dogs' },
-        { from_id: 'scope/dog', to_id: 'scope/about-dogs' },
-        { from_id: 'scope/dog', to_id: 'scope/both-dog-and-dog' },
-        { from_id: 'dog', to_id: 'scope/both-dog-and-dog' },
-      ])
-      // Omitting options must also enable the lint (as in the Web caller).
-      const errors = await ourbigbook_nodejs_webpack_safe.check_db(sequelize, undefined,
-        duplicateTags ? {} : { options: convertOpts })
-      assert.deepStrictEqual(errors, duplicateTags ? [
-        'scope.bigb:7:1: duplicate tag "scope/dog" on header "scope/about-dogs", previous tag at scope.bigb:6:14',
-      ] : [])
-    },
-  })
-}
+    'scope/dog.bigb': '= Dog\n',
+  },
+  postConvert: async ({ sequelize }) => {
+    const { Ref } = sequelize.models
+    assertRows(await Ref.findAll({
+      where: { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] },
+      order: [['defined_at_line', 'ASC'], ['defined_at_col', 'ASC']],
+    }), [
+      { from_id: 'scope/dog', to_id: 'scope/about-dogs' },
+      { from_id: 'scope/dog', to_id: 'scope/about-dogs' },
+      { from_id: 'scope/dog', to_id: 'scope/both-dog-and-dog' },
+      { from_id: 'dog', to_id: 'scope/both-dog-and-dog' },
+    ])
+    // Check duplicates without conversion options, as in the Web caller.
+    const errors = await ourbigbook_nodejs_webpack_safe.check_db(sequelize)
+    assert.deepStrictEqual(errors, [
+      'scope.bigb:7:1: duplicate tag "scope/dog" on header "scope/about-dogs", previous tag at scope.bigb:6:14',
+    ])
+  },
+})
 
-assert_lib('header: duplicateTags retains database checks for reverse child relationships', {
+assert_lib('header: duplicate tag checking retains database checks for reverse child relationships', {
   convert_dir: true,
   convert_opts: { ourbigbook_json: { enableArg: { H: { child: true } } } },
   assert_check_db_errors: 1,
@@ -8628,11 +8619,10 @@ assert_lib('header: duplicateTags retains database checks for reverse child rela
   },
 })
 
-for (const cached of [false, true]) {
-  assert_cli(`duplicateTags lint reports all duplicate locations, cached=${cached}`, {
-    args: cached ? ['.'] : ['--no-check-db', '.'],
-    filesystem: {
-      'index.bigb': String.raw`= Toplevel
+assert_cli('duplicate tag checking reports all duplicate locations before check_db', {
+  args: ['--no-check-db', '.'],
+  filesystem: {
+    'index.bigb': String.raw`= Toplevel
 
 == Animal
 
@@ -8645,22 +8635,15 @@ for (const cached of [false, true]) {
 
 == Repeated <Animal> and <Animal>
 `,
-      'ourbigbook.json': JSON.stringify(cached ? { lint: { duplicateTags: false } } : {}),
-    },
-    pre_exec: cached ? [
-      ['ourbigbook', ['.']],
-      { filesystem_update: {
-        'ourbigbook.json': JSON.stringify({ lint: { duplicateTags: true } }),
-      } },
-    ] : [],
-    assert_exit_status: 1,
-    assert_stderr_contains: [
-      'index.bigb:6:1: duplicate tag "animal" on header "about-animal", previous tag at index.bigb:5:14',
-      'index.bigb:10:1: duplicate tag "animal" on header "another", previous tag at index.bigb:9:1',
-      'index.bigb:12:27: duplicate tag "animal" on header "repeated-animal-and-animal", previous tag at index.bigb:12:14',
-    ],
-  })
-}
+    'ourbigbook.json': '{}',
+  },
+  assert_exit_status: 1,
+  assert_stderr_contains: [
+    'index.bigb:6:1: duplicate tag "animal" on header "about-animal", previous tag at index.bigb:5:14',
+    'index.bigb:10:1: duplicate tag "animal" on header "another", previous tag at index.bigb:9:1',
+    'index.bigb:12:27: duplicate tag "animal" on header "repeated-animal-and-animal", previous tag at index.bigb:12:14',
+  ],
+})
 
 // lint h-tag
 assert_lib_error('header: lint: h-tag child failure',
@@ -14042,10 +14025,16 @@ assert_cli(
   }
 )
 
+for (const cached of [false, true]) {
 assert_cli(
-  "multiple incoming child and parent links don't blow up with duplicateTags disabled",
+  `duplicate tags from multiple incoming child and parent links are rejected, cached=${cached}`,
   {
     args: ['.'],
+    pre_exec: cached ? [['ourbigbook', ['--no-check-db', '.']]] : [],
+    assert_stdout_contains: cached ? [
+      'extract_ids: index.bigb (skipped by timestamp)',
+      'extract_ids: notindex.bigb (skipped by timestamp)',
+    ] : [],
     filesystem: {
       'index.bigb': `= Toplevel
 
@@ -14061,18 +14050,16 @@ assert_cli(
 
 \\x[toplevel]{parent}
 `,
-      'ourbigbook.json': `{ "lint": { "duplicateTags": false }, "enableArg": { "x": {
+      'ourbigbook.json': `{ "enableArg": { "x": {
   "child": true,
   "parent": true
 } } }`,
     },
-    assert_xpath: {
-      [`${TMP_DIRNAME}/html/index.html`]: [
-        `//x:ul[@${ourbigbook.Macro.TEST_DATA_HTML_PROP}='tagged']//x:a[@href='notindex.html']`,
-      ],
-    },
+    assert_exit_status: 1,
+    assert_stderr_contains: ['duplicate tag'],
   }
 )
+}
 assert_cli(
   'ourbigbook.json: outputOutOfTree=true',
   {

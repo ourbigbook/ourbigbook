@@ -5658,7 +5658,6 @@ async function parse(tokens, options, context, extra_returns={}) {
   const header_ast_ancestors = []
   const header_tags = new Map()
   function recordHeaderTag(header, target_id, source_location, { inflected_target_id, implicit=false }={}) {
-    if (!options.ourbigbook_json.lint.duplicateTags) return
     if (!header_tags.has(header)) header_tags.set(header, [])
     header_tags.get(header).push({ target_id, source_location, inflected_target_id, implicit })
   }
@@ -9345,7 +9344,6 @@ const OURBIGBOOK_JSON_DEFAULT = {
   ignore: [],
   ignoreConvert: [],
   lint: {
-    duplicateTags: true,
     startsWithH1Header: false,
     filesAreIncluded: true,
     'h-tag': undefined,

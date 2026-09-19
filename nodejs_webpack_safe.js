@@ -1294,22 +1294,20 @@ JOIN "${Ref.tableName}" r ON r.to_id = a.ancestor AND r.type = :synonymType
     await Ref.destroy({ where: { id: [...deleted] }, transaction })
   }
 
-  if (options.ourbigbook_json?.lint?.duplicateTags ?? ourbigbook.OURBIGBOOK_JSON_DEFAULT.lint.duplicateTags) {
-    // Only compare resolved references: different spellings, scopes and plurals
-    // can refer to the same tag. Keep their locations for actionable diagnostics.
-    const tags = new Map()
-    for (const ref of new_refs) {
-      if (ref.type !== Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] || deleted.has(ref.id)) continue
-      const key = JSON.stringify([ref.from_id, ref.to_id])
-      const location = `${ref.definedAt.path}:${ref.defined_at_line}:${ref.defined_at_col}`
-      const previous = tags.get(key)
-      if (previous !== undefined) {
-        error_messages.push(
-          `${location}: ${ourbigbook.duplicateTagMessage(ref.from_id, ref.to_id, previous)}`
-        )
-      } else {
-        tags.set(key, location)
-      }
+  // Only compare resolved references: different spellings, scopes and plurals
+  // can refer to the same tag. Keep their locations for actionable diagnostics.
+  const tags = new Map()
+  for (const ref of new_refs) {
+    if (ref.type !== Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] || deleted.has(ref.id)) continue
+    const key = JSON.stringify([ref.from_id, ref.to_id])
+    const location = `${ref.definedAt.path}:${ref.defined_at_line}:${ref.defined_at_col}`
+    const previous = tags.get(key)
+    if (previous !== undefined) {
+      error_messages.push(
+        `${location}: ${ourbigbook.duplicateTagMessage(ref.from_id, ref.to_id, previous)}`
+      )
+    } else {
+      tags.set(key, location)
     }
   }
 

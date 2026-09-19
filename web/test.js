@@ -6989,7 +6989,7 @@ it('api: article: parent and parent-type', async () => {
   })
 })
 
-it('api: header descendant links are tags and duplicate tags fail by default', async () => {
+it('api: header descendant links are tags and duplicate tags are rejected', async () => {
   await testApp(async (test) => {
     const user = await test.createUserApi(0)
     test.loginUser(user)

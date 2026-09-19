@@ -58,7 +58,7 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
         [loggedInUser, articleCountByLoggedInUser],
       ] = await Promise.all([
         slugString ? sequelize.models.Article.getArticle({
-          includeParentAndPreviousSibling: true,
+          includeParentAndPreviousSibling: !isIssue,
           sequelize,
           slug: slugString,
         }) : null,

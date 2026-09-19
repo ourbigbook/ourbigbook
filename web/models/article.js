@@ -1208,8 +1208,13 @@ WHERE
       article.parentRef = parentRef
       article.parentId = parentId
       article.idid = articleId.idid
-      article.parentArticle = parentId.toplevelId.articles[0]
-      article.parentArticle.file = parentId.toplevelId
+      // The parent File and Id can exist before its Article is rendered during
+      // a web upload. The editor can still use parentId in that state.
+      const parentArticle = parentId.toplevelId.articles[0]
+      if (parentArticle) {
+        article.parentArticle = parentArticle
+        parentArticle.file = parentId.toplevelId
+      }
       const previousSiblingRef = parentId.from[0]
       if (previousSiblingRef) {
         article.previousSiblingRef = previousSiblingRef

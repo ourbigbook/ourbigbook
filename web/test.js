@@ -5409,6 +5409,7 @@ it('api: article tree render=false', async () => {
 it('api: article tree render=true on parent that only has render=false does not blow up', async () => {
   await testApp(async (test) => {
     let data, status, article, ref
+    const sequelize = test.sequelize
     const user = await test.createUserApi(0)
     test.loginUser(user)
 
@@ -5432,6 +5433,17 @@ it('api: article tree render=true on parent that only has render=false does not 
       article = createArticleArg({ i: 0, titleSource: 'Calculus' })
       ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: '@user0/mathematics', render }))
       assertStatus(status, data)
+
+      // This is the state seen by /-/new-discussion during a partially
+      // rendered web upload: the child Article exists, but its parent only
+      // has Id and File rows.
+      article = await sequelize.models.Article.getArticle({
+        includeParentAndPreviousSibling: true,
+        sequelize,
+        slug: 'user0/calculus',
+      })
+      assert.strictEqual(article.parentId.idid, '@user0/mathematics')
+      assert.strictEqual(article.parentArticle, undefined)
   })
 })
 

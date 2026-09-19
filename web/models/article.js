@@ -725,28 +725,29 @@ WHERE
       t0 = performance.now();
       console.error('perf: treeOpenSpace.start');
     }
-    if (
-      // Happens for the root node. The root cannot move, so we just skip that case.
-      parentNestedSetIndex !== undefined
-    ) {
-      if (logging) {
-        console.log('Article.treeOpenSpace')
-        console.log({
-          nestedSetIndex,
-          parentId,
-          parentNestedSetIndex,
-          shiftNestedSetBy,
-          shiftRefBy,
-          to_id_index,
-          updateNestedSetIndex,
-          username,
-        })
-        console.log(await Article.treeToString({ transaction }))
-      }
-      await sequelize.transaction({ transaction }, async (transaction) => {
-        return Promise.all([
-          // Increment sibling indexes after point we are inserting from.
-          updateRef && sequelize.models.Ref.increment('to_id_index', {
+    if (logging) {
+      console.log('Article.treeOpenSpace')
+      console.log({
+        nestedSetIndex,
+        parentId,
+        parentNestedSetIndex,
+        shiftNestedSetBy,
+        shiftRefBy,
+        to_id_index,
+        updateNestedSetIndex,
+        username,
+      })
+      console.log(await Article.treeToString({ transaction }))
+    }
+    await sequelize.transaction({ transaction }, async (transaction) => {
+      return Promise.all([
+        // Ref is the canonical tree representation and must remain ordered even
+        // when nested-set data is unavailable. In particular, render=false bulk
+        // uploads have no Article row for newly created parents yet, so
+        // parentNestedSetIndex is undefined.
+        parentId !== undefined &&
+          updateRef &&
+          sequelize.models.Ref.increment('to_id_index', {
             logging: logging ? console.log : false,
             by: shiftRefBy,
             where: {
@@ -756,9 +757,9 @@ WHERE
             },
             transaction,
           }),
-          // Increase nested set index and next sibling of all nodes that come after.
-          // We need a raw query because Sequelize does not support UPDATE with JOIN:
-          // https://github.com/sequelize/sequelize/issues/3957
+        // Happens for the root node, or when the parent has not been rendered
+        // yet. There is no nested-set state to update in those cases.
+        parentNestedSetIndex !== undefined &&
           updateNestedSetIndex && sequelize.query(`
 UPDATE "Article" SET
   "nestedSetIndex" = "nestedSetIndex" + :shiftNestedSetBy,
@@ -774,18 +775,17 @@ WHERE
     WHERE "User"."username" = :username
   )
 `,
-            {
-              logging: logging ? console.log : false,
-              transaction,
-              replacements: {
-                username,
-                nestedSetIndex,
-                shiftNestedSetBy,
-              },
+          {
+            logging: logging ? console.log : false,
+            transaction,
+            replacements: {
+              username,
+              nestedSetIndex,
+              shiftNestedSetBy,
             },
-          ),
-
-          // Increase nested set next sibling of ancestors. Their index is unchanged.
+          },
+        ),
+        parentNestedSetIndex !== undefined &&
           updateNestedSetIndex && sequelize.query(`
 UPDATE "Article" SET
   "nestedSetNextSibling" = "nestedSetNextSibling" + :shiftNestedSetBy
@@ -801,20 +801,19 @@ WHERE
     WHERE "User"."username" = :username
   )
 `,
-            {
-              logging: logging ? console.log : false,
-              transaction,
-              replacements: {
-                username,
-                nestedSetIndex,
-                parentNestedSetIndex,
-                shiftNestedSetBy,
-              },
+          {
+            logging: logging ? console.log : false,
+            transaction,
+            replacements: {
+              username,
+              nestedSetIndex,
+              parentNestedSetIndex,
+              shiftNestedSetBy,
             },
-          ),
-        ])
-      })
-    }
+          },
+        ),
+      ])
+    })
     if (perf) {
       console.error(`perf: treeOpenSpace.finish ${performance.now() - t0} ms`);
     }

@@ -166,15 +166,22 @@ async function get_noscopes_base_fetch_rows(sequelize, ids, ignore_paths_set) {
 async function fetch_ancestors(sequelize, id, opts={}) {
   const { limit, onlyIncludeId, stopAt, transaction } = opts
   const { Id, Ref } = sequelize.models
+  // Both SQLite and PostgreSQL support concatenation, but expose different
+  // functions for converting arbitrary text to a delimiter-safe value. Track
+  // hexadecimal IDs in the recursive path so malformed parent cycles terminate.
+  const hex = value => sequelize.options.dialect === 'postgres'
+    ? `encode(convert_to(${value}, 'UTF8'), 'hex')`
+    : `hex(${value})`
   ;const [rows, meta] = await sequelize.query(`
 SELECT * FROM "${Id.tableName}"
 INNER JOIN (
 WITH RECURSIVE
-  tree_search (to_id, level, from_id) AS (
+  tree_search (to_id, level, from_id, path) AS (
     SELECT
       to_id,
       0,
-      from_id
+      from_id,
+      '/' || ${hex('to_id')} || '/' || ${hex('from_id')} || '/'
     FROM "${Ref.tableName}"
     WHERE to_id = :id AND type = :type
 
@@ -183,11 +190,13 @@ WITH RECURSIVE
     SELECT
       ts.from_id,
       ts.level + 1,
-      t.from_id
+      t.from_id,
+      ts.path || ${hex('t.from_id')} || '/'
     FROM "${Ref.tableName}" t, tree_search ts
     WHERE t.to_id = ts.from_id AND type = :type${
 stopAt === undefined ? '' : ' AND ts.from_id <> :stopAt'}${
 limit === undefined ? '' : ' AND ts.level < :limit'}
+      AND ts.path NOT LIKE '%/' || ${hex('t.from_id')} || '/%'
   )
   SELECT * FROM tree_search
 ) AS "RecRefs"
@@ -208,6 +217,89 @@ ORDER BY "RecRefs".level DESC
     }
   )
   return rows
+}
+
+/** Return every cycle in the parent Ref graph.
+ *
+ * This intentionally does the graph walk in JavaScript. It is an integrity
+ * checker, not a request-path operation, and must also be able to inspect a
+ * database whose recursive SQL traversal is unsafe because it already
+ * contains a cycle.
+ */
+async function find_parent_cycles(sequelize, opts={}) {
+  const { idPrefix, transaction } = opts
+  const { Ref } = sequelize.models
+  const refs = await Ref.findAll({
+    attributes: ['from_id', 'to_id'],
+    raw: true,
+    transaction,
+    where: { type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
+  })
+  const parents = new Map()
+  for (const ref of refs) {
+    let nodeParents = parents.get(ref.to_id)
+    if (nodeParents === undefined) {
+      nodeParents = []
+      parents.set(ref.to_id, nodeParents)
+    }
+    nodeParents.push(ref.from_id)
+  }
+
+  const color = new Map()
+  const path = []
+  const pathIndexes = new Map()
+  const cycleKeys = new Set()
+  const cycles = []
+  const addCycle = (cycle) => {
+    // The last node repeats the first. Rotate the remaining nodes to produce a
+    // stable representation and avoid reporting the same cycle more than once.
+    const nodes = cycle.slice(0, -1)
+    let first = 0
+    for (let i = 1; i < nodes.length; i++) {
+      if (nodes[i] < nodes[first]) first = i
+    }
+    const normalized = nodes.slice(first).concat(nodes.slice(0, first))
+    const key = JSON.stringify(normalized)
+    if (!cycleKeys.has(key)) {
+      cycleKeys.add(key)
+      cycles.push(normalized.concat(normalized[0]))
+    }
+  }
+
+  // Use an explicit stack so a badly corrupted, very deep graph cannot exceed
+  // the JavaScript call-stack limit while it is being diagnosed.
+  for (const start of parents.keys()) {
+    if (color.get(start)) continue
+    const stack = [{ nextParent: 0, node: start }]
+    while (stack.length) {
+      const frame = stack[stack.length - 1]
+      if (!color.get(frame.node)) {
+        color.set(frame.node, 1)
+        pathIndexes.set(frame.node, path.length)
+        path.push(frame.node)
+      }
+      const nodeParents = parents.get(frame.node) || []
+      if (frame.nextParent < nodeParents.length) {
+        const parent = nodeParents[frame.nextParent++]
+        const parentColor = color.get(parent) || 0
+        if (parentColor === 0) {
+          stack.push({ nextParent: 0, node: parent })
+        } else if (parentColor === 1) {
+          addCycle(path.slice(pathIndexes.get(parent)).concat(parent))
+        }
+      } else {
+        stack.pop()
+        path.pop()
+        pathIndexes.delete(frame.node)
+        color.set(frame.node, 2)
+      }
+    }
+  }
+  if (idPrefix === undefined) return cycles
+  const prefix = `${idPrefix}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}`
+  return cycles.filter(cycle => cycle.some(
+    id => id === idPrefix || id.startsWith(prefix)
+  ))
 }
 
 /**
@@ -1555,6 +1647,7 @@ module.exports = {
   ENCODING,
   fetch_ancestors,
   fetch_header_tree_ids,
+  find_parent_cycles,
   findOurbigbookJsonDir,
   get_noscopes_base_fetch_rows,
   ID_FTS_POSTGRESL_LANGUAGE,

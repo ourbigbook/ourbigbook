@@ -7,6 +7,10 @@ const {
   assert_xpath,
 } = require('ourbigbook/test_lib')
 const ourbigbook = require('ourbigbook')
+const {
+  fetch_ancestors,
+  find_parent_cycles,
+} = require('ourbigbook/nodejs_webpack_safe')
 const sharp = require('sharp')
 
 const app = require('./app')
@@ -5569,6 +5573,134 @@ it('api: article tree: updateNestedSetIndex=false circular loop check is done wi
       // The database was semi-safe because we also did a check for this at render time, but it was horrendous.
       ;({data, status} = await createOrUpdateArticleApi(test, createArticleArg({ i: 1 }), { parentId: '@user0/title-2', updateNestedSetIndex: false }))
       assertStatus(status, data)
+  })
+})
+
+it('api: article tree: render=false sibling insertion does not make later moves create a cycle', async () => {
+  // Reproduces the @codex/arithmetic-function <-> @codex/analytic-number-theory
+  // cycle found in the 2026-09-22 production dump. In bulk upload mode there
+  // are no Article rows yet, so Ref sibling indexes must be maintained without
+  // relying on the nested-set columns.
+  await testApp(async (test) => {
+    let data, status
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const bulkOpts = { render: false, updateNestedSetIndex: false }
+    const create = async (titleSource, opts={}) => {
+      ;({ data, status } = await createArticleApi(
+        test,
+        createArticleArg({ i: 0, titleSource }),
+        { ...bulkOpts, ...opts },
+      ))
+      assertStatus(status, data)
+    }
+    const update = async (titleSource, opts={}) => {
+      ;({ data, status } = await createOrUpdateArticleApi(
+        test,
+        createArticleArg({ i: 0, titleSource }),
+        { ...bulkOpts, ...opts },
+      ))
+      assertStatus(status, data)
+    }
+
+    await create('Number theory')
+    await create('Old child 0', { parentId: '@user0/number-theory' })
+    await create('Old child 1', {
+      parentId: '@user0/number-theory',
+      previousSiblingId: '@user0/old-child-0',
+    })
+
+    // Insert two new siblings ahead of the old children. The production bug
+    // left both pairs sharing to_id_index values 0 and 1.
+    await create('Arithmetic function', { parentId: '@user0/number-theory' })
+    await create('Analytic number theory', {
+      parentId: '@user0/number-theory',
+      previousSiblingId: '@user0/arithmetic-function',
+    })
+
+    // Moving an old child used to move the new sibling with the same index.
+    // These two moves then made Arithmetic and Analytic parents of each other.
+    await update('Old child 0', { parentId: '@user0/analytic-number-theory' })
+    await update('Old child 1', { parentId: '@user0/arithmetic-function' })
+
+    const refs = await sequelize.models.Ref.findAll({
+      attributes: ['from_id', 'to_id', 'to_id_index'],
+      order: [['to_id', 'ASC']],
+      where: {
+        to_id: [
+          '@user0/analytic-number-theory',
+          '@user0/arithmetic-function',
+          '@user0/old-child-0',
+          '@user0/old-child-1',
+        ],
+        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      },
+    })
+    assert.deepStrictEqual(refs.map(ref => ref.toJSON()), [
+      {
+        from_id: '@user0/number-theory',
+        to_id: '@user0/analytic-number-theory',
+        to_id_index: 1,
+      },
+      {
+        from_id: '@user0/number-theory',
+        to_id: '@user0/arithmetic-function',
+        to_id_index: 0,
+      },
+      {
+        from_id: '@user0/analytic-number-theory',
+        to_id: '@user0/old-child-0',
+        to_id_index: 0,
+      },
+      {
+        from_id: '@user0/arithmetic-function',
+        to_id: '@user0/old-child-1',
+        to_id_index: 0,
+      },
+    ])
+  })
+})
+
+it('fetch_ancestors terminates on an existing parent cycle', async () => {
+  await testApp(async (test) => {
+    let data, status
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    ;({ data, status } = await createArticleApi(
+      test,
+      createArticleArg({ i: 0, titleSource: 'Cycle 0' }),
+    ))
+    assertStatus(status, data)
+    ;({ data, status } = await createArticleApi(
+      test,
+      createArticleArg({ i: 0, titleSource: 'Cycle 1' }),
+      { parentId: '@user0/cycle-0' },
+    ))
+    assertStatus(status, data)
+
+    // Bypass convertArticle's guard to model a database that was already
+    // corrupted by an older server version.
+    await sequelize.models.Ref.update(
+      { from_id: '@user0/cycle-1' },
+      {
+        where: {
+          to_id: '@user0/cycle-0',
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+        },
+      },
+    )
+
+    const ancestors = await fetch_ancestors(sequelize, '@user0/cycle-0')
+    assert.deepStrictEqual(
+      new Set(ancestors.map(ancestor => ancestor.idid)),
+      new Set(['@user0/cycle-1']),
+    )
+    assert.deepStrictEqual(
+      await find_parent_cycles(sequelize, { idPrefix: '@user0' }),
+      [['@user0/cycle-0', '@user0/cycle-1', '@user0/cycle-0']],
+    )
   })
 })
 

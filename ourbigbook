@@ -2666,6 +2666,43 @@ if (cli.helpMacros) {
           }
         ))
       }
+      // A single-file or single-ID upload may not fetch the surrounding header
+      // tree. Fetch missing parent and previous-sibling metadata explicitly so
+      // it still uses the authoritative cross-file Ref graph rather than the
+      // lossy split-file web cache.
+      if (input_path_is_file || cli.webId) {
+        const { Ref } = nonOurbigbookOptions.sequelize.models
+        for (const headerTreeEntry of header_tree) {
+          if (headerTreeEntry.from_id === undefined && headerTreeEntry.to_id !== '') {
+            const parentRef = await Ref.findOne({
+              attributes: ['from_id', 'to_id_index'],
+              raw: true,
+              where: {
+                to_id: headerTreeEntry.to_id,
+                type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+              },
+            })
+            if (parentRef) {
+              headerTreeEntry.from_id = parentRef.from_id
+              if (parentRef.to_id_index > 0) {
+                const previousSiblingRef = await Ref.findOne({
+                  attributes: ['to_id'],
+                  order: [['to_id_index', 'DESC']],
+                  raw: true,
+                  where: {
+                    from_id: parentRef.from_id,
+                    to_id_index: { [Op.lt]: parentRef.to_id_index },
+                    type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+                  },
+                })
+                if (previousSiblingRef) {
+                  headerTreeEntry.previous_sibling_id = previousSiblingRef.to_id
+                }
+              }
+            }
+          }
+        }
+      }
       let webStartIndex = 0
       if (cli.webStartId !== undefined) {
         webStartIndex = header_tree.findIndex(entry => entry.to_id === cli.webStartId)
@@ -2695,20 +2732,36 @@ if (cli.helpMacros) {
       for (const article of localArticles) {
         idToArticleMeta[article.idid] = article
       }
-      // Calculate previous siblings over the complete tree before applying
-      // --web-start-id. Resumed uploads need this both for the selected suffix
-      // and for any skipped prerequisite articles that have to be replayed.
+      // The split-file cache cannot represent a toplevel header's cross-file
+      // Include parent. Derive all upload tree metadata from the authoritative
+      // Ref graph returned in header_tree. Calculate it before applying
+      // --web-start-id so resumed uploads can replay skipped prerequisites.
+      const idToWebTreeMeta = {}
+      const lastChildIdByParentId = new Map()
       for (const header_tree_entry of header_tree) {
         const articleMeta = idToArticleMeta[header_tree_entry.to_id]
         // Can fail for synonyms.
         if (articleMeta) {
-          const parentArticle = idToArticleMeta[articleMeta.parentId]
-          if (parentArticle) {
-            const lastChildArticleProcessed = parentArticle.lastChildArticleProcessed
-            if (lastChildArticleProcessed) {
-              articleMeta.previousSiblingId = lastChildArticleProcessed.idid
-            }
-            parentArticle.lastChildArticleProcessed = articleMeta
+          const parentId = header_tree_entry.from_id === undefined
+            // The synthetic index entry, and a single file whose parent is not
+            // present in the local database, have no Ref metadata to override.
+            ? articleMeta.parentId
+            : header_tree_entry.from_id
+          let previousSiblingId = header_tree_entry.previous_sibling_id
+          if (previousSiblingId === undefined && parentId !== null && parentId !== undefined) {
+            previousSiblingId = lastChildIdByParentId.get(parentId)
+          }
+          if (parentId !== null && parentId !== undefined) {
+            lastChildIdByParentId.set(parentId, header_tree_entry.to_id)
+          }
+          idToWebTreeMeta[header_tree_entry.to_id] = {
+            parentId,
+            previousSiblingId,
+          }
+          if (cli.addTestInstrumentation) {
+            console.error(
+              `web_upload_tree: ${JSON.stringify(header_tree_entry.to_id)} parent=${JSON.stringify(parentId)} previous=${JSON.stringify(previousSiblingId)}`
+            )
           }
         }
       }
@@ -2724,11 +2777,11 @@ if (cli.helpMacros) {
         ))
         const pendingIds = header_tree.slice(webStartIndex).map(entry => entry.to_id)
         for (let pendingIndex = 0; pendingIndex < pendingIds.length; pendingIndex++) {
-          const articleMeta = idToArticleMeta[pendingIds[pendingIndex]]
-          if (!articleMeta) {
+          const webTreeMeta = idToWebTreeMeta[pendingIds[pendingIndex]]
+          if (!webTreeMeta) {
             continue
           }
-          for (const dependencyId of [articleMeta.parentId, articleMeta.previousSiblingId]) {
+          for (const dependencyId of [webTreeMeta.parentId, webTreeMeta.previousSiblingId]) {
             const dependencyIndex = headerTreeIdToIndex.get(dependencyId)
             if (
               dependencyIndex !== undefined &&
@@ -2833,9 +2886,10 @@ if (cli.helpMacros) {
         for (const [headerTreeIndex, header_tree_entry] of header_tree.entries()) {
           const id = header_tree_entry.to_id
           const articleMeta = idToArticleMeta[id]
+          const webTreeMeta = idToWebTreeMeta[id]
           if (
             // Can fail for synonyms.
-            articleMeta
+            articleMeta && webTreeMeta
           ) {
             // Prerequisites only need their ID extraction replayed. Rendering
             // still begins exactly at the requested marker.
@@ -2855,11 +2909,11 @@ if (cli.helpMacros) {
               source: articleMeta.source,
               list: true,
             }
-            const parentId = addUsername(articleMeta.parentId, username)
+            const parentId = addUsername(webTreeMeta.parentId, username)
             if (parentId !== null) {
               articleHashProps.parentId = parentId
             }
-            const previousSiblingId = addUsername(articleMeta.previousSiblingId, username)
+            const previousSiblingId = addUsername(webTreeMeta.previousSiblingId, username)
             if (previousSiblingId !== null) {
               articleHashProps.previousSiblingId = previousSiblingId
             }

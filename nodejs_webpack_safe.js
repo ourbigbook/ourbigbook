@@ -229,11 +229,18 @@ ORDER BY "RecRefs".level DESC
 async function find_parent_cycles(sequelize, opts={}) {
   const { idPrefix, transaction } = opts
   const { Ref } = sequelize.models
+  const refWhere = { type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] }
+  if (idPrefix !== undefined) {
+    refWhere.to_id = { [sequelize.Sequelize.Op.or]: [
+      idPrefix,
+      { [sequelize.Sequelize.Op.startsWith]: `${idPrefix}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}` },
+    ]}
+  }
   const refs = await Ref.findAll({
     attributes: ['from_id', 'to_id'],
     raw: true,
     transaction,
-    where: { type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
+    where: refWhere,
   })
   const parents = new Map()
   for (const ref of refs) {
@@ -295,11 +302,119 @@ async function find_parent_cycles(sequelize, opts={}) {
       }
     }
   }
-  if (idPrefix === undefined) return cycles
-  const prefix = `${idPrefix}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}`
-  return cycles.filter(cycle => cycle.some(
-    id => id === idPrefix || id.startsWith(prefix)
-  ))
+  return cycles
+}
+
+/** Check that every rendered non-index Article has exactly one parent and
+ * that following parent Refs reaches that article author's index.
+ *
+ * This deliberately permits ancestors without Article rows: ID extraction
+ * creates Id and Ref rows before rendering during bulk web uploads.
+ */
+async function find_article_parent_issues(sequelize, opts={}) {
+  const { idPrefix } = opts
+  const { Article, Id, Ref } = sequelize.models
+  let articleWhere
+  let idWhere
+  const refWhere = { type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] }
+  const prefix = idPrefix === undefined
+    ? undefined
+    : `${idPrefix}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}`
+  if (idPrefix !== undefined) {
+    const Op = sequelize.Sequelize.Op
+    articleWhere = { [Op.or]: [
+      { slug: idPrefix.slice(ourbigbook.AT_MENTION_CHAR.length) },
+      { slug: { [Op.startsWith]: prefix.slice(ourbigbook.AT_MENTION_CHAR.length) } },
+    ]}
+    idWhere = { [Op.or]: [
+      { idid: idPrefix },
+      { idid: { [Op.startsWith]: prefix } },
+    ]}
+    refWhere.to_id = { [Op.or]: [
+      idPrefix,
+      { [Op.startsWith]: prefix },
+    ]}
+  }
+  const [articles, ids, refs] = await Promise.all([
+    Article.findAll({ attributes: ['slug'], raw: true, where: articleWhere }),
+    Id.findAll({ attributes: ['idid'], raw: true, where: idWhere }),
+    Ref.findAll({
+      attributes: ['from_id', 'to_id'],
+      order: [['to_id', 'ASC'], ['from_id', 'ASC']],
+      raw: true,
+      where: refWhere,
+    }),
+  ])
+  const idExists = new Set(ids.map(id => id.idid))
+  const parentsByChild = new Map()
+  for (const ref of refs) {
+    let parents = parentsByChild.get(ref.to_id)
+    if (parents === undefined) {
+      parents = []
+      parentsByChild.set(ref.to_id, parents)
+    }
+    parents.push(ref.from_id)
+  }
+  const issues = []
+  const articleIds = articles
+    .map(article => `${ourbigbook.AT_MENTION_CHAR}${article.slug}`)
+    .filter(id => idPrefix === undefined || id === idPrefix || id.startsWith(prefix))
+    .sort()
+  for (const articleId of articleIds) {
+    if (!idExists.has(articleId)) {
+      issues.push({ articleId, type: 'article-id-missing' })
+      continue
+    }
+    const scopeSeparatorIndex = articleId.indexOf(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR)
+    const expectedRoot = scopeSeparatorIndex === -1
+      ? articleId
+      : articleId.slice(0, scopeSeparatorIndex)
+    const directParents = parentsByChild.get(articleId) || []
+    if (articleId === expectedRoot) {
+      if (directParents.length) {
+        issues.push({ articleId, parents: directParents, type: 'index-has-parent' })
+      }
+      continue
+    }
+    if (directParents.length === 0) {
+      issues.push({ articleId, type: 'missing-parent' })
+      continue
+    }
+    if (directParents.length > 1) {
+      issues.push({ articleId, parents: directParents, type: 'multiple-parents' })
+      continue
+    }
+    let currentId = articleId
+    const seen = new Set([currentId])
+    while (currentId !== expectedRoot) {
+      const parents = parentsByChild.get(currentId) || []
+      if (parents.length !== 1) {
+        issues.push({
+          articleId,
+          at: currentId,
+          parents,
+          type: 'broken-ancestor-chain',
+        })
+        break
+      }
+      const parentId = parents[0]
+      if (idPrefix !== undefined && parentId !== idPrefix && !parentId.startsWith(prefix)) {
+        issues.push({ articleId, parentId, type: 'parent-outside-author' })
+        break
+      }
+      if (!idExists.has(parentId)) {
+        issues.push({ articleId, parentId, type: 'parent-id-missing' })
+        break
+      }
+      if (seen.has(parentId)) {
+        // find_parent_cycles reports the complete cycle. Avoid looping here.
+        break
+      }
+      seen.add(parentId)
+      currentId = parentId
+    }
+  }
+  return issues
 }
 
 /**
@@ -1647,6 +1762,7 @@ module.exports = {
   ENCODING,
   fetch_ancestors,
   fetch_header_tree_ids,
+  find_article_parent_issues,
   find_parent_cycles,
   findOurbigbookJsonDir,
   get_noscopes_base_fetch_rows,

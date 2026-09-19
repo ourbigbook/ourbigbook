@@ -16135,6 +16135,46 @@ const webStartIdFilesystem = {
 `,
 }
 
+const webIncludeFilesystem = {
+  'index.bigb': `= Home
+
+\\Include[chapter]
+`,
+  'chapter.bigb': `= Chapter
+
+\\Include[section-a]
+
+\\Include[section-b]
+`,
+  'section-a.bigb': `= Section A
+`,
+  'section-b.bigb': `= Section B
+`,
+}
+
+assert_cli('web upload preserves parents across Include file boundaries', {
+  args: [
+    '--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer', '.',
+  ],
+  filesystem: webIncludeFilesystem,
+  assert_stderr_contains: [
+    'web_upload_tree: "chapter" parent="" previous=undefined',
+    'web_upload_tree: "section-a" parent="chapter" previous=undefined',
+    'web_upload_tree: "section-b" parent="chapter" previous="section-a"',
+  ],
+})
+
+assert_cli('web-id preserves parent and previous sibling across Include file boundaries', {
+  args: [
+    '--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer',
+    '--web-id', 'section-b', '.',
+  ],
+  filesystem: webIncludeFilesystem,
+  assert_stderr_contains: [
+    'web_upload_tree: "section-b" parent="chapter" previous="section-a"',
+  ],
+})
+
 assert_cli('web-start-id resumes both article passes inclusively', {
   args: [
     '-S', '--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer',

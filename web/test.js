@@ -9,6 +9,7 @@ const {
 const ourbigbook = require('ourbigbook')
 const {
   fetch_ancestors,
+  find_article_parent_issues,
   find_parent_cycles,
 } = require('ourbigbook/nodejs_webpack_safe')
 const sharp = require('sharp')
@@ -5812,6 +5813,35 @@ it('fetch_ancestors terminates on an existing parent cycle', async () => {
     assert.deepStrictEqual(
       await find_parent_cycles(sequelize, { idPrefix: '@user0' }),
       [['@user0/cycle-0', '@user0/cycle-1', '@user0/cycle-0']],
+    )
+  })
+})
+
+it('find_article_parent_issues detects a rendered article without a parent', async () => {
+  await testApp(async (test) => {
+    let data, status
+    const sequelize = test.sequelize
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    ;({ data, status } = await createArticleApi(
+      test,
+      createArticleArg({ i: 0, titleSource: 'Mathematics' }),
+    ))
+    assertStatus(status, data)
+    assert.deepStrictEqual(
+      await find_article_parent_issues(sequelize, { idPrefix: '@user0' }),
+      [],
+    )
+
+    await sequelize.models.Ref.destroy({
+      where: {
+        to_id: '@user0/mathematics',
+        type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      },
+    })
+    assert.deepStrictEqual(
+      await find_article_parent_issues(sequelize, { idPrefix: '@user0' }),
+      [{ articleId: '@user0/mathematics', type: 'missing-parent' }],
     )
   })
 })

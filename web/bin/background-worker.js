@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 const path = require('path')
+const config = require('../front/config')
 const id = Number(process.argv[2])
 if (!Number.isSafeInteger(id) || id <= 0) throw new Error('Usage: background-worker.js JOB_ID')
 // Bound runtime even if a connection or query hangs. PostgreSQL rolls back on disconnect.
-const deadline = setTimeout(() => process.exit(1), 15 * 60 * 1000)
+const deadline = setTimeout(() => process.exit(1), config.buildWorkerLifetimeSeconds * 1000)
 ;(async () => {
   let sequelize
   try {

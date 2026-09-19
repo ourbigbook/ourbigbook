@@ -90,6 +90,8 @@ module.exports = {
   articleLimit: 20,
   // Max allowed to be set by user.
   articleLimitMax: 20,
+  // Maximum background worker lifetime, in seconds (also used for Heroku dyno TTL).
+  buildWorkerLifetimeSeconds: 900,
   buttonActiveClass: 'active',
   commentsHeaderId: `${ourbigbook.RESERVED_PATH_PREFIX}comments`,
   commentIdPrefix: `${ourbigbook.RESERVED_PATH_PREFIX}comment-`,

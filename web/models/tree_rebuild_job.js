@@ -2,7 +2,7 @@ const { DataTypes, Op } = require('sequelize')
 const config = require('../front/config')
 
 // Includes dyno startup time. Workers must not commit after this deadline.
-const timeoutMs = 20 * 60 * 1000
+const timeoutMs = (config.buildWorkerLifetimeSeconds + 5 * 60) * 1000
 
 module.exports = sequelize => {
   const Job = sequelize.define('TreeRebuildJob', {
@@ -69,7 +69,7 @@ module.exports = sequelize => {
         {
           command: `node web/bin/background-worker.js ${job.id}${articles ? ' --articles' : ''}${queueId ? ` --queue ${queueId} --worker-token ${workerToken}` : ''}`,
           attach: false,
-          time_to_live: 900,
+          time_to_live: config.buildWorkerLifetimeSeconds,
           ...(process.env.OURBIGBOOK_HEROKU_WORKER_SIZE
             ? { size: process.env.OURBIGBOOK_HEROKU_WORKER_SIZE } : {}),
         },

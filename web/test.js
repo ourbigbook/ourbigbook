@@ -7002,11 +7002,13 @@ it('nested-set jobs: Heroku launch request and credential redaction', async () =
   await testApp(async test => {
     const axios = require('axios')
     const originalPost = axios.post
+    const originalLifetime = config.buildWorkerLifetimeSeconds
     const keys = ['OURBIGBOOK_HEROKU_APP', 'OURBIGBOOK_HEROKU_TOKEN', 'OURBIGBOOK_HEROKU_WORKER_SIZE']
     const previous = keys.map(key => process.env[key])
     process.env.OURBIGBOOK_HEROKU_APP = 'test-app'
     process.env.OURBIGBOOK_HEROKU_TOKEN = 'test-secret'
     process.env.OURBIGBOOK_HEROKU_WORKER_SIZE = 'standard-1X'
+    config.buildWorkerLifetimeSeconds = 600
     try {
       let calls = 0
       axios.post = async (url, body, options) => {
@@ -7014,7 +7016,7 @@ it('nested-set jobs: Heroku launch request and credential redaction', async () =
         assert.strictEqual(url, 'https://api.heroku.com/apps/test-app/dynos')
         assert.deepStrictEqual(body, {
           command: 'node web/bin/background-worker.js 123',
-          attach: false, time_to_live: 900, size: 'standard-1X',
+          attach: false, time_to_live: 600, size: 'standard-1X',
         })
         assert.strictEqual(options.timeout, 10000)
         assert.strictEqual(options.headers.Authorization, 'Bearer test-secret')
@@ -7042,6 +7044,7 @@ it('nested-set jobs: Heroku launch request and credential redaction', async () =
       }
     } finally {
       axios.post = originalPost
+      config.buildWorkerLifetimeSeconds = originalLifetime
       keys.forEach((key, i) => {
         if (previous[i] === undefined) delete process.env[key]
         else process.env[key] = previous[i]

@@ -1,9 +1,9 @@
 const { DataTypes, Op } = require('sequelize')
 const config = require('../front/config')
 
-// Longer than the worker's hard 15-minute lifetime. An ambiguous launch must
+// Five minutes longer than the worker's hard lifetime. An ambiguous launch must
 // retain its slot: the platform may have started the dyno despite a timeout.
-const leaseMs = 20 * 60 * 1000
+const leaseMs = (config.buildWorkerLifetimeSeconds + 5 * 60) * 1000
 
 module.exports = sequelize => {
   const Queue = sequelize.define('BuildQueue', {

@@ -60,7 +60,7 @@ router.param('username', function(req, res, next, username) {
 })
 
 async function unlistUserContent(sequelize, user, transaction) {
-  const { Article, Comment, Issue, User } = sequelize.models
+  const { Article, Comment, Issue, Upload, User } = sequelize.models
   const counts = []
   for (const Model of [Article, Issue, Comment]) {
     const [count] = await Model.update(
@@ -69,6 +69,11 @@ async function unlistUserContent(sequelize, user, transaction) {
     )
     counts.push(count)
   }
+  const [uploadCount] = await Upload.update(
+    { list: false },
+    { where: { ...Upload.fileIndexWhere(user.id), list: true }, transaction },
+  )
+  counts.push(uploadCount)
   await User.update(
     { discussionCount: 0, commentCount: 0 },
     { where: { id: user.id }, transaction },

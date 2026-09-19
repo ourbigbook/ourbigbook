@@ -7388,7 +7388,7 @@ it(`api: discussion and comment listing`, async () => {
     ;({data, status} = await test.webApi.userUnlistContent('user0'))
     assertStatus(status, data)
     assert.strictEqual(data.count, 4)
-    assert.deepStrictEqual(data.counts, [2, 1, 1])
+    assert.deepStrictEqual(data.counts, [2, 1, 1, 0])
     await assertUserCounts(0, 0)
 
     if (testNext) {
@@ -7428,6 +7428,64 @@ it(`api: discussion and comment listing`, async () => {
     }
   }, { canTestNext: true, defaultExpectStatus: 200 })
 })
+
+for (const action of ['userUnlistContent', 'userMarkSpammer']) {
+  it(`api: ${action} unlists uploaded files`, async () => {
+    await testApp(async test => {
+      const { Article, Upload, User } = test.sequelize.models
+      const owner = await test.createUserApi(0)
+      const admin = await test.createUserApi(1)
+      test.loginUser(owner)
+      await test.webApi.uploadCreateOrUpdate('user0/photo.png', PNG_1X1_WHITE_BUFFER)
+      await test.webApi.uploadCreateOrUpdate('user0/subdir/file.txt', 'nested file')
+      await test.webApi.uploadCreateOrUpdate('user0/hidden.txt', 'already unlisted')
+      await test.webApi.uploadUpdate('user0/hidden.txt', { list: false })
+      const uploads = await Upload.findAll({ where: Upload.fileIndexWhere(owner.id), order: [['id', 'ASC']] })
+      // Only files remain listed, so both moderation buttons must still be available.
+      await Article.update({ list: false }, { where: { authorId: owner.id } })
+      await Upload.upsertSideEffects({
+        ...Upload.getCreateObj({ path: `profile/${owner.id}`, bytes: PNG_1X1_WHITE_BUFFER }),
+        contentType: 'image/png',
+      })
+      test.loginUser(admin)
+      await test.webApi.uploadCreateOrUpdate('user1/other.txt', 'other user')
+      await test.webApi[action]('user0', { expectStatus: 403 })
+      assert.strictEqual((await Upload.getFileIndex({ authorId: owner.id, list: true })).count, 2)
+      await User.update({ admin: true }, { where: { id: admin.id } })
+      async function assertListedContent(expected) {
+        if (testNext) {
+          const { data } = await test.sendJsonHttp('GET', '/user0/-/articles')
+          const nextData = JSON.parse(data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1])
+          assert.strictEqual(nextData.props.pageProps.hasListedContent, expected)
+        }
+      }
+      await assertListedContent(true)
+      const { data } = await test.webApi[action]('user0')
+      assert.strictEqual(data.count, 2)
+      assert.deepStrictEqual(data.counts, [0, 0, 0, 2])
+      await assertListedContent(false)
+      assert.strictEqual((await Upload.getFileIndex({ authorId: owner.id, list: true })).count, 0)
+      assert.strictEqual((await Upload.getFileIndex({ authorId: owner.id, list: false })).count, 3)
+      for (const upload of uploads) {
+        const bytes = upload.bytes
+        const hash = upload.hash
+        await upload.reload()
+        assert.strictEqual(upload.list, false)
+        assert.deepStrictEqual(upload.bytes, bytes)
+        assert.strictEqual(upload.hash, hash)
+      }
+      const ownerRow = await User.findByPk(owner.id)
+      assert.strictEqual(ownerRow.fileCount, 0)
+      assert.strictEqual(ownerRow.fileSize, 0)
+      assert.strictEqual(ownerRow.locked, action === 'userMarkSpammer')
+      assert.strictEqual((await Upload.getFileIndex({ authorId: admin.id, list: true })).count, 1)
+      assert.strictEqual((await Upload.findOne({ where: { path: `profile/${owner.id}` } })).list, true)
+      const repeated = await test.webApi[action]('user0')
+      assert.strictEqual(repeated.data.count, 0)
+      assert.deepStrictEqual(repeated.data.counts, [0, 0, 0, 0])
+    }, { canTestNext: true, defaultExpectStatus: 200 })
+  })
+}
 
 it(`api: article with {file}`, async () => {
   await testApp(async (test) => {

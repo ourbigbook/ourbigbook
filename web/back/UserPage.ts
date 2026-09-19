@@ -232,6 +232,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
           Article.findOne({ where: { authorId: user.id, list: true }, attributes: ['id'] }),
           Issue.findOne({ where: { authorId: user.id, list: true }, attributes: ['id'] }),
           Comment.findOne({ where: { authorId: user.id, list: true }, attributes: ['id'] }),
+          Upload.findOne({ where: { ...Upload.fileIndexWhere(user.id), list: true }, attributes: ['id'] }),
         ]).then(items => items.some(item => !!item)),
         // lockedUsers
         lockedUsersPromise,

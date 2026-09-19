@@ -8526,7 +8526,7 @@ Note however that if an upper directory is ignored, then we don't recurse into i
 = `dontIgnoreConvert`
 {parent=ourbigbook.json}
 
-Analogous to <dontIgnore> but acts on <ignoreRender> rather than <ignore>.
+Analogous to <dontIgnore> but acts on <ignoreConvert> rather than <ignore>.
 
 = `generateSitemap`
 {parent=ourbigbook.json}
@@ -8576,10 +8576,10 @@ Examples:
 
 TODO: also ignore during <watch>.
 
-= `ignoreRender`
+= `ignoreConvert`
 {parent=ourbigbook.json}
 
-Similar to <ignore>, but only ignore the files from rendering converesions such as bigb -> html, scss -> css.
+Similar to <ignore>, but only skips conversion of matching files. <dontIgnoreConvert> overrides these patterns.
 
 Unlike <ignore>, matching files are still placed under the <`-/raw` directory> and can be publicly viewed.
 

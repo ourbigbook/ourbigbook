@@ -105,20 +105,52 @@ function read_include({exists, read, path_sep, ext}) {
   }
 }
 
+async function retryWebApiRequest(fn, {
+  label='request',
+  log=console.error,
+  retries=0,
+  retryDelayMs=1000,
+  sleep=ms => new Promise(resolve => setTimeout(resolve, ms)),
+}={}) {
+  const retryableErrorCodes = new Set([
+    'ECONNABORTED', 'ECONNREFUSED', 'ECONNRESET', 'EAI_AGAIN', 'ETIMEDOUT',
+  ])
+  for (let attempt = 0; ; attempt++) {
+    let response
+    try {
+      response = await fn()
+    } catch (error) {
+      const status = error.response?.status
+      const reason = status === 503
+        ? 'HTTP 503'
+        : retryableErrorCodes.has(error.code) ? error.code : undefined
+      if (reason === undefined || attempt >= retries) throw error
+      log(`${label}: ${reason}; retry ${attempt + 1}/${retries} in ${retryDelayMs} ms`)
+      await sleep(retryDelayMs)
+      continue
+    }
+    if (response.status !== 503 || attempt >= retries) return response
+    log(`${label}: HTTP 503; retry ${attempt + 1}/${retries} in ${retryDelayMs} ms`)
+    await sleep(retryDelayMs)
+  }
+}
+
 class WebApi {
   constructor(opts) {
     this.opts = opts
   }
 
   async req(method, path, opts={}) {
-    return sendJsonHttp(
-      method,
-      `/${ourbigbook.WEB_API_PATH}/${path}`,
-      Object.assign(
-        {},
-        this.opts,
-        opts
-      )
+    const requestPath = `/${ourbigbook.WEB_API_PATH}/${path}`
+    const requestOpts = Object.assign({}, this.opts, opts)
+    return retryWebApiRequest(
+      () => sendJsonHttp(method, requestPath, requestOpts),
+      {
+        label: `${method.toUpperCase()} ${requestPath}`,
+        log: requestOpts.retryLog,
+        retries: requestOpts.retries,
+        retryDelayMs: requestOpts.retryDelayMs,
+      }
     )
   }
 
@@ -721,5 +753,6 @@ module.exports = {
   hashToHex,
   queryValToBool,
   read_include,
+  retryWebApiRequest,
   sendJsonHttp,
 }

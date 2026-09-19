@@ -65,7 +65,8 @@ const DEFAULT_IGNORE_BASENAMES_SET = new Set(DEFAULT_IGNORE_BASENAMES);
 const MESSAGE_PREFIX_EXTRACT_IDS = 'extract_ids'
 const MESSAGE_PREFIX_RENDER = 'render'
 const MESSAGE_SKIP_BY_TIMESTAMP = `skipped by timestamp`
-const WEB_MAX_RETRIES = 5
+const WEB_MAX_RETRIES = 3
+const WEB_RETRY_DELAY_MS = 1000
 
 // A bounded pool reused across the extraction and rendering barriers. Each
 // worker runs one file at a time; the coordinator serializes its transactions.
@@ -1542,35 +1543,6 @@ function printStatus({
   console.log(msg)
 }
 
-async function tryCreateOrUpdate(fn) {
-  let tries = 0
-  while (true) {
-    let retry = false
-    try {
-      return fn()
-    } catch(err) {
-      if (tries < WEB_MAX_RETRIES || (
-        // Happens if the server is restarted in the middle of a conversion after it was killed by nodemon.
-        tries === 0 && err.code === 'ECONNRESET' &&
-        // Here we are waiting for the server to get up again.
-        tries > 0 && err.code === 'ECONNREFUSED'
-      )) {
-        retry = true
-        console.error(`connection error, retry: ${tries}`)
-        console.error(err)
-      } else {
-        handleWebApiErr(err)
-      }
-    }
-    if (!retry) {
-      break
-    }
-    // Give the server some time to restart after update.
-    await new Promise(r => setTimeout(r, 500))
-    tries++
-  }
-}
-
 async function updateNestedSet(webApi, username) {
   const t1 = now()
   console.log(`nested_set`)
@@ -1632,10 +1604,7 @@ async function webCreateOrUpdate({
   const t0 = now()
   let data, status
   if (!webDry) {
-    // Retry the transaction a few times. This designed to work well during development when nodemon
-    // restarts the server after a file update that adds some logging, often for perf. This way
-    // you can just turn logs on and off during a large conversion and it will just keep running fine.
-    ;({ data, status } = await tryCreateOrUpdate(fn))
+    ;({ data, status } = await fn())
     assertApiStatus(status, data)
     //if (render && i % 100 == 0) {
     //  runCmd('bin/pg', ['bin/normalize', '-c', '-u', 'cirosantilli', 'nested-set'], {
@@ -2554,6 +2523,8 @@ if (cli.helpMacros) {
         https: url.protocol === 'https:',
         port: url.port,
         hostname: url.hostname,
+        retries: WEB_MAX_RETRIES,
+        retryDelayMs: WEB_RETRY_DELAY_MS,
         validateStatus: () => true,
       })
       let tokenOk = true

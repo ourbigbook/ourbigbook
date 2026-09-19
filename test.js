@@ -19,7 +19,7 @@ const theme = require('./runtime_common')
 const { OurbigbookEditor, getMarkupEdit, applyEditorMarkup } = require('./editor')
 const { markdownToOurbigbook } = ourbigbook
 const { TMP_DIRNAME } = ourbigbook_nodejs_webpack_safe
-const { DbProviderBase, read_include } = require('./web_api');
+const { DbProviderBase, read_include, retryWebApiRequest, WebApi } = require('./web_api');
 const {
   assertRows,
   assert_xpath,
@@ -35,6 +35,63 @@ const MAKE_GIT_REPO_PRE_EXEC = [
   ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/ourbigbook-generate.git']],
 ]
 const PATH_SEP = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR
+
+describe('WebApi retries', function () {
+  it('retries HTTP 503 three times before succeeding', async function () {
+    const http = require('http')
+    let requests = 0
+    const server = http.createServer((req, res) => {
+      requests++
+      res.statusCode = requests <= 3 ? 503 : 200
+      res.setHeader('Content-Type', 'application/json')
+      res.end('{}')
+    })
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+    const logs = []
+    try {
+      const webApi = new WebApi({
+        hostname: '127.0.0.1',
+        port: server.address().port,
+        retries: 3,
+        retryDelayMs: 1,
+        retryLog: message => logs.push(message),
+        validateStatus: () => true,
+      })
+      assert.strictEqual((await webApi.min()).status, 200)
+      assert.strictEqual(requests, 4)
+      assert.strictEqual(logs.length, 3)
+      assert(logs.every((message, i) => message.includes(`retry ${i + 1}/3`)))
+    } finally {
+      server.closeAllConnections()
+      await new Promise(resolve => server.close(resolve))
+    }
+  })
+
+  it('awaits and retries asynchronous connection errors only', async function () {
+    let requests = 0
+    const sleeps = []
+    const response = await retryWebApiRequest(async () => {
+      requests++
+      if (requests < 3) throw Object.assign(new Error('reset'), { code: 'ECONNRESET' })
+      return { status: 200 }
+    }, {
+      retries: 3,
+      retryDelayMs: 1000,
+      sleep: async milliseconds => sleeps.push(milliseconds),
+      log: () => {},
+    })
+    assert.strictEqual(response.status, 200)
+    assert.strictEqual(requests, 3)
+    assert.deepStrictEqual(sleeps, [1000, 1000])
+
+    requests = 0
+    assert.strictEqual((await retryWebApiRequest(async () => {
+      requests++
+      return { status: 500 }
+    }, { retries: 3 })).status, 500)
+    assert.strictEqual(requests, 1)
+  })
+})
 
 describe('theme', function () {
   it('toggles, persists, and updates every toggle button', function () {

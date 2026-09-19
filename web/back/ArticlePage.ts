@@ -111,7 +111,7 @@ export const getServerSidePropsArticleHoc = ({
       const [
         ancestors,
         articleJson,
-        [articlesInSamePage, articlesInSamePageCount],
+        articlesInSamePage,
         [articlesInSamePageForToc, articlesInSamePageForTocCount],
         articleInTopicByLoggedInUser,
         h1ArticlesInSamePage,
@@ -129,7 +129,6 @@ export const getServerSidePropsArticleHoc = ({
         // articlesInSamePage
         Article.getArticlesInSamePage({
           article,
-          getCount: true,
           getTagged: true,
           loggedInUser,
           limit: maxArticlesFetch,
@@ -230,7 +229,9 @@ export const getServerSidePropsArticleHoc = ({
         article: articleJson,
         articleInTopicByLoggedInUser,
         articlesInSamePage,
-        articlesInSamePageCount,
+        // Both lists have the same predicate. Reuse the ToC count, whose
+        // count-only query does not need the hydration joins used above.
+        articlesInSamePageCount: articlesInSamePageForTocCount,
         articlesInSamePageForToc,
         articlesInSamePageForTocCount,
         incomingLinks: incomingLinks.map(a => { return { slug: a.slug, titleRenderWithScope: a.titleRenderWithScope } }),

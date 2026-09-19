@@ -47,6 +47,24 @@ function pageOffsets(count, limit) {
   return [...new Set([0, Math.floor(last / 2), last])].map(page => page * limit)
 }
 
+function normalizePaths(paths) {
+  const base = 'http://benchmark.invalid'
+  const normalized = new Set()
+  for (const request of paths) {
+    let url
+    try {
+      url = new URL(request, base)
+    } catch (error) {
+      throw new Error(`Invalid benchmark path: ${request}`)
+    }
+    if (!request.startsWith('/') || request.startsWith('//') || url.origin !== base || url.hash) {
+      throw new Error(`Benchmark paths must be same-origin paths without fragments: ${request}`)
+    }
+    normalized.add(request)
+  }
+  return [...normalized]
+}
+
 function buildPaths(db, { limit=20, pages=true }={}) {
   const paths = new Set(['/api/', '/api/min'])
   const add = (pathname, params) => paths.add(requestPath(pathname, params))
@@ -93,6 +111,7 @@ function buildPaths(db, { limit=20, pages=true }={}) {
     add(`/api/issues/${issue.number}/comments`, { id: issue.slug })
   }
   if (pages) {
+    add('/cirosantilli')
     // HTML listings apply filters/order directions that differ from the API.
     // In particular these reproduce the expensive global article-list queries.
     for (const offset of pageOffsets(db.listed_articles, 20)) {
@@ -319,8 +338,10 @@ async function main() {
     .option('--api-only', 'skip HTML listing pages')
     .option('--explain [directory]', 'automatically collect traces when enabled on server (default directory: tmp/benchmark-explain)')
     .option('--no-explain', 'disable automatic query-plan collection')
+    .argument('[paths...]', 'paths to benchmark instead of the automatically generated set')
     .parse()
   const opts = program.opts()
+  const requestedPaths = normalizePaths(program.args)
   const url = new URL(opts.url)
   if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
     throw new Error('--url must be an HTTP(S) origin without credentials, a path, or query parameters')
@@ -341,7 +362,7 @@ async function main() {
   const cpus = os.cpus()
   const entry = await benchmark({
     ...opts, baseUrl: url.origin, output: path.resolve(opts.output),
-    paths: buildPaths(db, { limit: opts.limit, pages: !opts.apiOnly }),
+    paths: requestedPaths.length ? requestedPaths : buildPaths(db, { limit: opts.limit, pages: !opts.apiOnly }),
     about: {
       git_sha: git(['rev-parse', 'HEAD']),
       git_dirty: git(['status', '--porcelain']) !== '',
@@ -362,7 +383,7 @@ async function main() {
   if (!entry.about.completed) process.exitCode = 1
 }
 
-module.exports = { benchmark, buildPaths, collectDatabase, detectDatabaseDialect }
+module.exports = { benchmark, buildPaths, collectDatabase, detectDatabaseDialect, normalizePaths }
 if (require.main === module) main().catch(error => {
   console.error(error.message)
   process.exitCode = 1

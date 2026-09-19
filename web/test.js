@@ -900,7 +900,7 @@ it('benchmark discovers requests and appends runs with database metadata', async
   const fs = require('fs')
   const path = require('path')
   const os = require('os')
-  const { benchmark, buildPaths, collectDatabase, detectDatabaseDialect } = require('./bin/benchmark')
+  const { benchmark, buildPaths, collectDatabase, detectDatabaseDialect, normalizePaths } = require('./bin/benchmark')
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ourbigbook-benchmark-'))
   try {
     await testApp(async test => {
@@ -927,7 +927,16 @@ it('benchmark discovers requests and appends runs with database metadata', async
       assert(paths.includes('/api/articles?limit=20&search=title-0'))
       assert(paths.includes('/api/topics?limit=20&search=title-0'))
       assert(paths.includes('/api/articles?limit=20&topicId=title-0'))
-      assert(buildPaths({ ...db, listed_articles: 115401 }).includes('/-/articles?page=5771&sort=id'))
+      assert(!paths.includes('/cirosantilli'))
+      const htmlPaths = buildPaths({ ...db, listed_articles: 115401 })
+      assert(htmlPaths.includes('/cirosantilli'))
+      assert(htmlPaths.includes('/-/articles?page=5771&sort=id'))
+      assert.deepStrictEqual(normalizePaths(['/cirosantilli', '/api/min?x=1', '/cirosantilli']), [
+        '/cirosantilli', '/api/min?x=1',
+      ])
+      for (const invalid of ['cirosantilli', '//example.com/path', '/path#fragment', '/\\example.com/path']) {
+        assert.throws(() => normalizePaths([invalid]), /Benchmark paths must be same-origin paths without fragments/)
+      }
       const output = path.join(directory, 'api.json')
       assert.strictEqual(await detectDatabaseDialect(`http://localhost:${test.webApi.opts.port}`), test.sequelize.getDialect())
       const opts = {
@@ -953,6 +962,7 @@ it('benchmark discovers requests and appends runs with database metadata', async
         await require('util').promisify(require('child_process').execFile)(process.execPath, [
           path.join(__dirname, 'bin/benchmark'),
           '--url', opts.baseUrl, '--output', output, '--api-only', '--runs', '1', '--warmup', '0',
+          '/api/min', '/api/', '/api/min',
         ], { env: { ...process.env, OURBIGBOOK_POSTGRES: '0' } })
         const cliHistory = JSON.parse(fs.readFileSync(output, 'utf8'))
         assert.strictEqual(cliHistory.length, 3)
@@ -961,6 +971,7 @@ it('benchmark discovers requests and appends runs with database metadata', async
         assert.strictEqual(cliHistory[2].about.db.dialect, 'postgres')
         assert.strictEqual(cliHistory[2].about.db.articles, db.articles)
         assert.deepStrictEqual(cliHistory[2].about.db.samples, db.samples)
+        assert.deepStrictEqual(Object.keys(cliHistory[2].results), ['/api/min', '/api/'])
         assert.strictEqual(cliHistory[2].about.system.hostname, os.hostname())
         assert(cliHistory[2].about.system.os_version === null || typeof cliHistory[2].about.system.os_version === 'string')
         assert(cliHistory[2].about.completed)
@@ -3195,6 +3206,8 @@ Welcome to my home page hacked!
         // User
         ;({data, status} = await test.sendJsonHttp('GET', routes.user('user0'), ))
         assertStatus(status, data)
+        const userPageProps = JSON.parse(data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1]).props.pageProps
+        assert.strictEqual(userPageProps.articlesInSamePageCount, userPageProps.articlesInSamePageForTocCount)
         // User that doesn't exist.
         ;({data, status} = await test.sendJsonHttp('GET', routes.user('dontexist'), ))
         assert.strictEqual(status, 404)

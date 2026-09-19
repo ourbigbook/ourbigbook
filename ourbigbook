@@ -8,6 +8,9 @@ if (!china_dictatorship.get_data().includes("Tiannmen Square protests")) throw 0
 const child_process = require('child_process')
 const fs = require('fs')
 const path = require('path')
+const os = require('os')
+const isConversionWorker = process.argv[2] === '--internal-conversion-worker' && !!process.send
+let workerData, grantDatabaseWrite
 
 // This library is terrible, too much magic, hard to understand interface,
 // does not do some obvious basics.
@@ -63,6 +66,118 @@ const MESSAGE_PREFIX_EXTRACT_IDS = 'extract_ids'
 const MESSAGE_PREFIX_RENDER = 'render'
 const MESSAGE_SKIP_BY_TIMESTAMP = `skipped by timestamp`
 const WEB_MAX_RETRIES = 5
+
+// A bounded pool reused across the extraction and rendering barriers. Each
+// worker runs one file at a time; the coordinator serializes its transactions.
+// Processes also isolate native SQLite bindings from concurrent JS runtimes.
+class CliWorkerPool {
+  constructor(filename, jobs, workerData) {
+    this.filename = filename
+    this.jobs = jobs
+    this.workerData = workerData
+    this.workers = []
+    this.writeQueue = []
+  }
+
+  addWorker() {
+    const worker = child_process.fork(this.filename, ['--internal-conversion-worker'], {
+      serialization: 'advanced',
+      stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
+    })
+    const slot = { worker }
+    slot.ready = new Promise((resolve, reject) => { slot.startup = { resolve, reject } })
+    slot.exited = new Promise(resolve => {
+      worker.on('exit', code => {
+        if (!this.closing && !this.error) {
+          this.fail(new Error(`conversion worker exited unexpectedly (status ${code})`))
+        }
+        resolve()
+      })
+    })
+    worker.on('error', error => this.fail(error))
+    worker.on('message', result => {
+      if (this.error) return
+      if (result.ready) {
+        slot.startup.resolve()
+        slot.startup = undefined
+        return
+      }
+      if (result.acquireWrite) {
+        this.writeQueue.push(slot)
+        this.grantWrite()
+        return
+      }
+      if (result.releaseWrite) {
+        this.writer = undefined
+        this.grantWrite()
+        return
+      }
+      const pending = slot.pending
+      slot.pending = undefined
+      if (result.error) {
+        this.fail(new Error(result.error))
+        if (pending) pending.reject(this.error)
+      } else if (pending) {
+        pending.resolve(result)
+      }
+    })
+    this.workers.push(slot)
+    worker.send(this.workerData)
+  }
+
+  grantWrite() {
+    if (!this.writer && this.writeQueue.length && !this.error) {
+      this.writer = this.writeQueue.shift()
+      this.writer.worker.send({ writeGranted: true })
+    }
+  }
+
+  fail(error) {
+    if (this.error) return
+    this.error = error
+    for (const slot of this.workers) {
+      if (slot.startup) slot.startup.reject(error)
+      if (slot.pending) {
+        slot.pending.reject(error)
+        slot.pending = undefined
+      }
+      // A crashed worker may have held the write lock. Stop its peers rather
+      // than leaving them waiting forever; SQLite rolls back open transactions.
+      slot.worker.kill()
+    }
+  }
+
+  async run(tasks) {
+    if (this.error) throw this.error
+    while (this.workers.length < Math.min(this.jobs, tasks.length)) this.addWorker()
+    const results = new Array(tasks.length)
+    let next = 0
+    let hadError = false
+    await Promise.all(this.workers.map(async slot => {
+      await slot.ready
+      while (!hadError && !this.error && next < tasks.length) {
+        const i = next++
+        const result = await new Promise((resolve, reject) => {
+          slot.pending = { resolve, reject }
+          slot.worker.send(tasks[i])
+        })
+        results[i] = result
+        if (result.had_error) hadError = true
+      }
+    }))
+    return results.filter(result => result !== undefined)
+  }
+
+  async close() {
+    this.closing = true
+    for (const slot of this.workers) {
+      if (!this.error) slot.worker.send({ close: true })
+    }
+    await Promise.all(this.workers.map(slot => slot.exited))
+    if (this.error) throw this.error
+  }
+}
+
 
 class DbProviderDbAdapter {
   constructor(nonOurbigbookOptions) {
@@ -220,7 +335,7 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, nonOu
 // so if you e.g. move an ID from one file to another, a common operation, then it would still see
 // the ID in the previous file depending on conversion order. So we are moving it here instead at the end.
 // Having this single query at the end also be slightly more efficient than doing each query separately per file conversion.
-async function check_db(nonOurbigbookOptions) {
+async function check_db(nonOurbigbookOptions, { exitOnError=true }={}) {
   if (nonOurbigbookOptions.cli.checkDb) {
     const t1 = now();
     console.log(`check_db`)
@@ -238,7 +353,9 @@ async function check_db(nonOurbigbookOptions) {
       )
       if (error_messages.length > 0) {
         console.error(error_messages.map(m => 'error: ' + m).join('\n'))
-        cli_error()
+        nonOurbigbookOptions.had_error = true
+        if (exitOnError) cli_error()
+        return
       }
     }
     console.log(`check_db: ${finished_in_ms(now() - t1)}`)
@@ -259,6 +376,7 @@ function cli_error(message) {
 
 async function convert_directory_callback(input_path, ourbigbook_options, nonOurbigbookOptions, cb) {
   nonOurbigbookOptions.ourbigbook_paths_converted = []
+  const tasks = []
   for (const onePath of walk_directory_recursively(
     input_path,
     DEFAULT_IGNORE_BASENAMES_SET,
@@ -267,10 +385,66 @@ async function convert_directory_callback(input_path, ourbigbook_options, nonOur
     nonOurbigbookOptions.dont_ignore_path_regexps,
     nonOurbigbookOptions.ourbigbook_json_dir,
   )) {
-    await cb(onePath, ourbigbook_options, nonOurbigbookOptions)
+    const relpath = path.relative(nonOurbigbookOptions.ourbigbook_json_dir, onePath)
+    const isPreview = cb === convert_file_preview
+    const previewPath = path.join(nonOurbigbookOptions.outdir, FILE_PREFIX, relpath + '.' + ourbigbook.HTML_EXT)
+    if (
+      nonOurbigbookOptions.parallel &&
+      !nonOurbigbookOptions.ourbigbook_paths_converted_only &&
+      (
+        (isPreview && ourbigbook_options.render && !fs.lstatSync(onePath).isDirectory() &&
+          (nonOurbigbookOptions.cli.forceRender || !fs.existsSync(previewPath) ||
+            fs.statSync(onePath).mtime > fs.statSync(previewPath).mtime)) ||
+        (cb === convert_path_to_file && isBigbPath(onePath, nonOurbigbookOptions.cli) &&
+          !do_ignore_convert_path(relpath, nonOurbigbookOptions.ignore_convert_path_regexps,
+            nonOurbigbookOptions.dont_ignore_convert_path_regexps) &&
+          !skipFileConversion(onePath, relpath, ourbigbook_options, nonOurbigbookOptions))
+      )
+    ) {
+      const row = nonOurbigbookOptions.file_rows_dict[nonOurbigbookOptions.renderType]?.[relpath]
+      tasks.push({
+        input_path: onePath,
+        preview: isPreview,
+        relpath,
+        file_row: row ? row.toJSON() : undefined,
+        render: ourbigbook_options.render,
+        is_render_after_extract: nonOurbigbookOptions.is_render_after_extract,
+      })
+    } else {
+      await cb(onePath, ourbigbook_options, nonOurbigbookOptions)
+    }
     if (nonOurbigbookOptions.had_error) {
       break
     }
+  }
+  if (nonOurbigbookOptions.had_error || !tasks.length) return
+  // Do not pay worker startup costs for an incremental build of one file.
+  if (tasks.length === 1 && !nonOurbigbookOptions.parallel.pool) {
+    await cb(tasks[0].input_path, ourbigbook_options, nonOurbigbookOptions)
+    return
+  }
+  const parallel = nonOurbigbookOptions.parallel
+  if (!parallel.pool) {
+    const sequelize = nonOurbigbookOptions.sequelize
+    if (sequelize.getDialect() === 'sqlite') {
+      // Readers run alongside the single writer without blocking its commit.
+      await sequelize.query('PRAGMA journal_mode=WAL')
+    }
+    const plainOptions = Object.fromEntries(Object.entries(ourbigbook_options).filter(
+      ([key, value]) => !['db_provider', 'katex_macros'].includes(key) && typeof value !== 'function'))
+    const plainNonOptions = Object.fromEntries(Object.entries(nonOurbigbookOptions).filter(
+      ([key, value]) => !['sequelize', 'options', 'extra_returns', 'parallel', 'file_rows_dict'].includes(key) &&
+        typeof value !== 'function'))
+    parallel.pool = new CliWorkerPool(__filename, nonOurbigbookOptions.cli.jobs, {
+      options: plainOptions,
+      nonOptions: plainNonOptions,
+    })
+  }
+  for (const result of await parallel.pool.run(tasks)) {
+    nonOurbigbookOptions.ourbigbook_paths_converted.push(...result.paths)
+    nonOurbigbookOptions.sitemap.push(...result.sitemap)
+    nonOurbigbookOptions.had_error ||= result.had_error
+    nonOurbigbookOptions.last_output_path = result.last_output_path
   }
 }
 
@@ -291,6 +465,29 @@ async function convert_directory_extract_ids(input_path, ourbigbook_options, non
 }
 
 async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_options, nonOurbigbookOptions) {
+  if (
+    nonOurbigbookOptions.cli.jobs > 1 &&
+    !nonOurbigbookOptions.cli.watch && !nonOurbigbookOptions.cli.formatSource &&
+    !ourbigbook_options.embed_includes &&
+    nonOurbigbookOptions.db_options.storage !== ourbigbook_nodejs_webpack_safe.SQLITE_MAGIC_MEMORY_NAME
+  ) {
+    nonOurbigbookOptions.parallel = {}
+  }
+  try {
+    await convert_directory_stages(input_dir, ourbigbook_options, nonOurbigbookOptions)
+  } finally {
+    const pool = nonOurbigbookOptions.parallel?.pool
+    if (pool) {
+      await pool.close()
+      if (nonOurbigbookOptions.sequelize.getDialect() === 'sqlite') {
+        await nonOurbigbookOptions.sequelize.query('PRAGMA wal_checkpoint(TRUNCATE)')
+      }
+    }
+    delete nonOurbigbookOptions.parallel
+  }
+}
+
+async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbigbookOptions) {
   await reconcile_db_and_filesystem(input_dir, ourbigbook_options, nonOurbigbookOptions)
   await convert_directory_extract_ids(input_dir, ourbigbook_options, nonOurbigbookOptions)
 
@@ -304,7 +501,8 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
         path.relative(nonOurbigbookOptions.ourbigbook_json_dir, input_dir) === ''
       )
     ) {
-      await check_db(nonOurbigbookOptions)
+      await check_db(nonOurbigbookOptions, { exitOnError: false })
+      if (nonOurbigbookOptions.had_error) return
     }
 
     if (ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML) {
@@ -317,73 +515,7 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
         input_dir,
         ourbigbook_options,
         nonOurbigbookOptions,
-        async (onePath, ourbigbook_options, nonOurbigbookOptions) => {
-          const messagePrefix = 'file'
-          if (
-            // TODO move dir conversion here, remove this check:
-            // https://docs.ourbigbook.com/todo/show-directory-listings-on-file-headers
-            !fs.lstatSync(onePath).isDirectory()
-          ) {
-            const inputPathRelativeToOurbigbookJson = path.relative(nonOurbigbookOptions.ourbigbook_json_dir, onePath);
-            const outputPathRelativeToOutdir = path.join(
-              ourbigbook.FILE_PREFIX,
-              inputPathRelativeToOurbigbookJson + '.' + ourbigbook.HTML_EXT
-            )
-            const outpath = path.join(nonOurbigbookOptions.outdir, outputPathRelativeToOutdir)
-            const msgRet = convert_path_to_file_print_starting(ourbigbook_options, onePath, messagePrefix)
-            if (
-              nonOurbigbookOptions.publish &&
-              ourbigbook_options.ourbigbook_json.generateSitemap &&
-              ourbigbook_options.render
-            ) {
-              nonOurbigbookOptions.sitemap.push(outputPathRelativeToOutdir)
-            }
-            let skip
-            if (
-              fs.existsSync(outpath) &&
-              fs.statSync(onePath).mtime <= fs.statSync(outpath).mtime &&
-              !nonOurbigbookOptions.cli.forceRender
-            ) {
-              skip = true
-            } else {
-              const sequelize = nonOurbigbookOptions.sequelize
-              if (
-                // Without --split-headers, we create a dummy {file} for the file even if it has a .bigb ID.
-                // This allows _dir listings and the bigb section to link to it to see full txt if too large.
-                !ourbigbook_options.split_headers ||
-                !sequelize ||
-                (
-                  await ourbigbook_nodejs_webpack_safe.get_noscopes_base_fetch_rows(
-                    sequelize,
-                    [ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson]
-                  )
-                ).length === 0
-              ) {
-                const src = `${ourbigbook.SHORTHAND_HEADER_CHAR} ${ourbigbook.ourbigbookEscapeNotStart(inputPathRelativeToOurbigbookJson)}\n{file}\n`
-                const inputPath = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson + '.' + ourbigbook.OURBIGBOOK_EXT
-                const newOptions = {
-                  ...ourbigbook_options,
-                  auto_generated_source: true,
-                  split_headers: false,
-                  hFileShowLarge: true,
-                }
-                const newNonOurbigbookOptions = { ...nonOurbigbookOptions }
-                newNonOurbigbookOptions.input_path = inputPath
-                const output = await convert_input(src, newOptions, newNonOurbigbookOptions);
-                if (newNonOurbigbookOptions.had_error) {
-                  throw new Error(`src: ${src}`)
-                }
-                if (newOptions.render) {
-                  fs.mkdirSync(path.dirname(outpath), { recursive: true });
-                  fs.writeFileSync(outpath, output)
-                }
-              } else {
-                skip = 'skipped ID already exists'
-              }
-            }
-            convert_path_to_file_print_finish(ourbigbook_options, onePath, outpath, { skip, message_prefix: messagePrefix, t0: msgRet.t0 })
-          }
-        }
+        convert_file_preview
       )
       // Not ideal, but we'll do it simple for now. This needs to be restored or a test fails.
       nonOurbigbookOptions.ourbigbook_paths_converted = ourbigbook_paths_converted
@@ -402,6 +534,74 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
       )
       nonOurbigbookOptions.had_error = newNonOurbigbookOptions.had_error
     }
+  }
+}
+
+async function convert_file_preview(onePath, ourbigbook_options, nonOurbigbookOptions) {
+  const messagePrefix = 'file'
+  if (
+    // TODO move dir conversion here, remove this check:
+    // https://docs.ourbigbook.com/todo/show-directory-listings-on-file-headers
+    !fs.lstatSync(onePath).isDirectory()
+  ) {
+    const inputPathRelativeToOurbigbookJson = path.relative(nonOurbigbookOptions.ourbigbook_json_dir, onePath);
+    const outputPathRelativeToOutdir = path.join(
+      ourbigbook.FILE_PREFIX,
+      inputPathRelativeToOurbigbookJson + '.' + ourbigbook.HTML_EXT
+    )
+    const outpath = path.join(nonOurbigbookOptions.outdir, outputPathRelativeToOutdir)
+    const msgRet = convert_path_to_file_print_starting(ourbigbook_options, onePath, messagePrefix)
+    if (
+      nonOurbigbookOptions.publish &&
+      ourbigbook_options.ourbigbook_json.generateSitemap &&
+      ourbigbook_options.render
+    ) {
+      nonOurbigbookOptions.sitemap.push(outputPathRelativeToOutdir)
+    }
+    let skip
+    if (
+      fs.existsSync(outpath) &&
+      fs.statSync(onePath).mtime <= fs.statSync(outpath).mtime &&
+      !nonOurbigbookOptions.cli.forceRender
+    ) {
+      skip = true
+    } else {
+      const sequelize = nonOurbigbookOptions.sequelize
+      if (
+        // Without --split-headers, we create a dummy {file} for the file even if it has a .bigb ID.
+        // This allows _dir listings and the bigb section to link to it to see full txt if too large.
+        !ourbigbook_options.split_headers ||
+        !sequelize ||
+        (
+          await ourbigbook_nodejs_webpack_safe.get_noscopes_base_fetch_rows(
+            sequelize,
+            [ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson]
+          )
+        ).length === 0
+      ) {
+        const src = `${ourbigbook.SHORTHAND_HEADER_CHAR} ${ourbigbook.ourbigbookEscapeNotStart(inputPathRelativeToOurbigbookJson)}\n{file}\n`
+        const inputPath = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson + '.' + ourbigbook.OURBIGBOOK_EXT
+        const newOptions = {
+          ...ourbigbook_options,
+          auto_generated_source: true,
+          split_headers: false,
+          hFileShowLarge: true,
+        }
+        const newNonOurbigbookOptions = { ...nonOurbigbookOptions }
+        newNonOurbigbookOptions.input_path = inputPath
+        const output = await convert_input(src, newOptions, newNonOurbigbookOptions);
+        if (newNonOurbigbookOptions.had_error) {
+          throw new Error(`src: ${src}`)
+        }
+        if (newOptions.render) {
+          fs.mkdirSync(path.dirname(outpath), { recursive: true });
+          fs.writeFileSync(outpath, output)
+        }
+      } else {
+        skip = 'skipped ID already exists'
+      }
+    }
+    convert_path_to_file_print_finish(ourbigbook_options, onePath, outpath, { skip, message_prefix: messagePrefix, t0: msgRet.t0 })
   }
 }
 
@@ -537,6 +737,37 @@ async function convert_input(input, ourbigbook_options, nonOurbigbookOptions={})
   return output;
 }
 
+function isBigbPath(input_path, cli) {
+  const ext = path.extname(input_path)
+  const markdownExplicit = cli.inputFormat === 'markdown' || cli.inputFormat === 'md'
+  return ((ext === `.${OURBIGBOOK_EXT}` && !markdownExplicit) || ext === '.md' || ext === '.markdown') &&
+    !fs.lstatSync(input_path).isDirectory()
+}
+
+function skipFileConversion(input_path, relpath, options, nonOptions) {
+  const row = nonOptions.file_rows_dict[nonOptions.renderType]?.[relpath]
+  if (!row) return false
+  if (options.render) {
+    return !!row.Render && !nonOptions.cli.forceRender && !row.Render.outdated && !nonOptions.cli.formatSource
+  }
+  const skip = row.last_parse !== null && row.last_parse > fs.statSync(input_path).mtime
+  if (!skip && row.Render) row.Render.outdated = true
+  return skip
+}
+
+async function withDatabaseWrite(callback) {
+  if (!isConversionWorker) return callback()
+  await new Promise(resolve => {
+    grantDatabaseWrite = resolve
+    process.send({ acquireWrite: true })
+  })
+  try {
+    return await callback()
+  } finally {
+    process.send({ releaseWrite: true })
+  }
+}
+
 /** Convert filetypes that ourbigbook knows how to convert, and just copy those that we don't, e.g.:
  *
  * * .bigb to .html
@@ -559,13 +790,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
     input_path_relative_to_ourbigbook_json = path.relative(nonOurbigbookOptions.ourbigbook_json_dir, input_path);
   }
   let new_options
-  const inputExt = input_path_parse.ext
-  const markdownExplicit = nonOurbigbookOptions.cli.inputFormat === 'markdown' || nonOurbigbookOptions.cli.inputFormat === 'md'
-  const isbigb = (
-    (inputExt === `.${ourbigbook.OURBIGBOOK_EXT}` && !markdownExplicit) ||
-    inputExt === '.md' ||
-    inputExt === '.markdown'
-  ) && !is_directory
+  const isbigb = isBigbPath(input_path, nonOurbigbookOptions.cli)
   if (is_directory || isbigb) {
     nonOurbigbookOptions.ourbigbook_paths_converted.push(input_path_relative_to_ourbigbook_json)
     if (nonOurbigbookOptions.ourbigbook_paths_converted_only) {
@@ -589,40 +814,8 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
       message_prefix = msg_ret.message_prefix
       let newNonOurbigbookOptions = { ...nonOurbigbookOptions }
       let input = fs.readFileSync(full_path, newNonOurbigbookOptions.encoding);
-      if (input_path_relative_to_ourbigbook_json) {
-        const file_row_type = nonOurbigbookOptions.file_rows_dict[nonOurbigbookOptions.renderType]
-        if (
-          // Can not be present on single file (non directory) conversion. In that case we always convert.
-          file_row_type
-        ) {
-          const file_row = file_row_type[input_path_relative_to_ourbigbook_json]
-          if (
-            // File has previously been rendered.
-            file_row !== undefined
-          ) {
-            const file_row_render = file_row.Render
-            if (
-              ourbigbook_options.render
-            ) {
-              if (file_row_render) {
-                skip = !nonOurbigbookOptions.cli.forceRender &&
-                  !file_row_render.outdated &&
-                  // TODO add a Render magic format for this use case. Or maybe
-                  // start tracking output paths as well in Render to also cover -o.
-                  // But lazy now, just never use timestamp for --format-source.
-                  !nonOurbigbookOptions.cli.formatSource
-              }
-            } else {
-              skip = file_row.last_parse !== null && file_row.last_parse > fs.statSync(input_path).mtime
-              if (!skip && file_row_render) {
-                // We are going to update the parse, so mark as outdated here.
-                // This way we don't need to fetch from DB again.
-                file_row_render.outdated = true
-              }
-            }
-          }
-        }
-      }
+      skip = skipFileConversion(input_path, input_path_relative_to_ourbigbook_json,
+        ourbigbook_options, nonOurbigbookOptions)
       if (!skip) {
         newNonOurbigbookOptions.input_path = input_path_relative_to_ourbigbook_json;
 
@@ -704,7 +897,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
         // Update the Sqlite database with results from the conversion.
         ourbigbook.perfPrint(context, 'convert_path_pre_sqlite')
         if ('sequelize' in nonOurbigbookOptions && !nonOurbigbookOptions.options.embed_includes) {
-          await ourbigbook_nodejs_webpack_safe.update_database_after_convert({
+          await withDatabaseWrite(() => ourbigbook_nodejs_webpack_safe.update_database_after_convert({
             extra_returns,
             db_provider: new_options.db_provider,
             had_error: nonOurbigbookOptions.had_error,
@@ -714,7 +907,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
             path: input_path_relative_to_ourbigbook_json,
             render: ourbigbook_options.render,
             sequelize: nonOurbigbookOptions.sequelize,
-          })
+          }))
         }
       }
     } else {
@@ -1033,7 +1226,7 @@ async function create_db(ourbigbook_options, nonOurbigbookOptions) {
   perfPrint('create_db_begin', ourbigbook_options)
   const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize(
     nonOurbigbookOptions.db_options,
-    { force: cli.clearDb },
+    { force: nonOurbigbookOptions.cli.clearDb },
   )
   nonOurbigbookOptions.sequelize = sequelize;
   ourbigbook_options.db_provider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize);
@@ -1456,6 +1649,266 @@ async function webCreateOrUpdate({
   return { nestedSetNeedsUpdate: data ? data.nestedSetNeedsUpdate : true }
 }
 
+function fileConversionOptions(ourbigbook_json_dir) {
+  return {
+    getAFileTypes: (aRefs) => {
+      let ret = {}
+      for (const a of aRefs) {
+        ret[a] = fs.lstatSync(path.join(ourbigbook_json_dir,a)).isFile() ? FILE_TYPE_FILE : FILE_TYPE_DIRECTORY
+      }
+      return ret
+    },
+    fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
+    read_include: read_include({
+      exists: (inpath) => fs.existsSync(path.join(ourbigbook_json_dir, inpath)),
+      read: (inpath) => fs.readFileSync(path.join(ourbigbook_json_dir, inpath), ourbigbook_nodejs_webpack_safe.ENCODING),
+      path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
+    }),
+    read_file: (readpath, context, opts={}) => {
+      readpath = path.join(path.join(ourbigbook_json_dir, readpath))
+      if (
+        // Let's prevent path transversal a bit by default.
+        path.resolve(readpath).startsWith(path.resolve(ourbigbook_json_dir)) &&
+        fs.existsSync(readpath)
+      ) {
+        if (fs.lstatSync(readpath).isFile()) {
+          return fs.readFileSync(readpath, ourbigbook_nodejs_webpack_safe.ENCODING)
+        }
+      } else {
+        return undefined
+      }
+    },
+  }
+}
+
+async function createWebCache(outdir, { sync=true }={}) {
+  const titleRegex = new RegExp(`${ourbigbook.SHORTHAND_HEADER_CHAR} (.*)`)
+  const sequelizeWeb = new Sequelize({
+    dialect: 'sqlite',
+    storage: path.join(outdir, 'web.sqlite3'),
+    logging: false,
+  })
+  const sequelizeWebArticle = sequelizeWeb.define('Article', {
+    idid: { type: DataTypes.TEXT, unique: true },
+    title: { type: DataTypes.TEXT },
+    body: { type: DataTypes.TEXT },
+    inpath: { type: DataTypes.TEXT },
+    parentId: { type: DataTypes.TEXT },
+    source: { type: DataTypes.TEXT },
+    definedAt: { type: DataTypes.TEXT },
+  })
+  // Just to store the ID of the index.
+  const sequelizeWebIndexId = sequelizeWeb.define('IndexId', {
+    idid: { type: DataTypes.TEXT },
+    // upsert helper.
+    uniqueHack: { type: DataTypes.INTEGER, unique: true },
+  })
+  if (sync) await sequelizeWeb.sync()
+  const postConvert = async (definedAt, extra_returns) => {
+    if (extra_returns.errors.length === 0) {
+      // Use the coordinator's write lock for this second SQLite database too.
+      // Replace each source file's cached articles in one transaction.
+      await withDatabaseWrite(() => sequelizeWeb.transaction(async transaction => {
+        await sequelizeWebArticle.destroy({ where: { definedAt }, transaction })
+        const rendered_outputs = extra_returns.rendered_outputs
+        for (let inpath in rendered_outputs) {
+          const rendered_outputs_entry = rendered_outputs[inpath]
+          if (rendered_outputs_entry.split) {
+            // To convert:
+            //
+            // linux-kernel-module-cheat-split.bigb
+            //
+            // to:
+            //
+            // linux-kernel-module-cheat.bigb
+            //
+            // on:
+            //
+            // = Linux kernel module cheat
+            // {splitSuffix}
+            //
+            // otherwise the ID becomes linux-kernel-module-cheat and \x links fail.
+            let source = rendered_outputs_entry.full;
+            const lines = source.split('\n')
+            let title
+            if (lines.length) {
+              const line0 = lines[0]
+              const titleMatch = line0.match(titleRegex)
+              if (titleMatch && titleMatch.length >= 2) {
+                title = titleMatch[1]
+              }
+            }
+            if (title === undefined) {
+              cli_error(`every bigb must start with a "= Header" for --web upload, failed for: ${inpath}`)
+            }
+            const inpathParse = path.parse(inpath)
+            const pathNoext = path.join(inpathParse.dir, inpathParse.name)
+            if (rendered_outputs_entry.split_suffix) {
+              inpath = pathNoext.slice(0, -(rendered_outputs_entry.split_suffix.length + 1)) + `.${ourbigbook.OURBIGBOOK_EXT}`
+            }
+            let addId
+            let addSubdir
+            let isToplevelIndex = false
+            const header_ast = rendered_outputs_entry.header_ast
+            if (ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(inpathParse.name)) {
+              if (inpathParse.dir) {
+                const dirPathParse = path.parse(inpathParse.dir)
+                const titleId = ourbigbook.titleToId(title)
+                if (titleId !== dirPathParse.name) {
+                  // This would be ideal, allowing us to store all information about the article in the body itself.
+                  // But it was hard to implement, since now the input path is an important input of conversion.
+                  // So to start with we will just always provide the input path as a separate parameter.
+                  // id= for toplevel was ignored as of writing, which is bad, should be either used or error.
+                  //addId = dirPathParse.name
+                }
+                if (dirPathParse.dir) {
+                  // Same as addId
+                  //addSubdir = dirPathParse.dir
+                }
+              } else {
+                // Hack source for subsequent hash calculation to match what we have on server, which
+                // currently forces "Index" (TODO "index" et al. are likely also possible and would break this hack).
+                // Ideally we should actually alter the file under _out/web/index.bigb
+                // but that would be slightly more involved (a new option to convert?) so lazy.
+                source = source.replace(titleRegex, `${ourbigbook.SHORTHAND_HEADER_CHAR} ${title}`)
+                await sequelizeWebIndexId.upsert({ idid: header_ast.id, uniqueHack: 0 }, { transaction })
+                isToplevelIndex = true
+              }
+              inpath = `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`
+            } else {
+              const titleId = ourbigbook.titleToId(title)
+              if (titleId !== inpathParse.name) {
+                //addId = inpathParse.name
+              }
+              if (inpathParse.dir) {
+                //addSubdir = inpathParse.dir
+              }
+            }
+            let bodyStart
+            if (lines[1] === '' && !addId && !addSubdir) {
+              bodyStart = 2
+            } else {
+              bodyStart = 1
+            }
+            let body = ''
+            if (addId) {
+              // Restore this if we ever remove the separate path magic input.
+              // Also id of toplevel header is currently ignored as of writing:
+              //body += `{id=${addId}}\n`
+            }
+            if (addSubdir) {
+              // Restore this if we ever remove the separate path magic input.
+              //body += `{subdir=${addSubdir}}\n`
+            }
+            body += lines.slice(bodyStart).join('\n')
+            const parent_ast = rendered_outputs_entry.header_ast.get_header_parent_asts(extra_returns.context)[0]
+            const article = {
+              body,
+              inpath,
+              definedAt,
+              source,
+              title,
+            }
+            if (parent_ast) {
+              let parentId
+              if (
+                parent_ast.id !== ourbigbook.INDEX_BASENAME_NOEXT &&
+                // Force every child of the topevel to add it as "@username" and instead of deducing it from title
+                // as done on CLI. This means that giving the toplevel a custom ID and using that ID will fail to upload...
+                // there is no solution to that. We should just force the toplevel to have no ID then on CLI for compatibility?
+                !(
+                  parent_ast.is_first_header_in_input_file &&
+                  ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(path.parse(parent_ast.source_location.path).name)
+                )
+              ) {
+                parentId = `${parent_ast.id}`
+              } else {
+                parentId = ''
+              }
+              article.parentId = parentId
+            }
+            let id_to_article_key
+            if (isToplevelIndex) {
+              id_to_article_key = ''
+            } else {
+              id_to_article_key = header_ast.id
+            }
+            article.idid = id_to_article_key
+            await sequelizeWebArticle.upsert(article, { transaction })
+          }
+        }
+      }))
+    }
+  }
+  return { sequelize: sequelizeWeb, postConvert }
+}
+
+async function runDirectoryWorker() {
+  // Do not leave workers behind if the coordinator is interrupted or killed.
+  process.on('disconnect', () => process.exit())
+  const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize(
+    workerData.nonOptions.db_options, {}, { sync: false })
+  const webCache = workerData.nonOptions.web
+    ? await createWebCache(workerData.nonOptions.outdir, { sync: false }) : undefined
+  // KaTeX macro tokens contain class instances that cannot cross IPC intact.
+  const katex_macros = {}
+  ourbigbook_nodejs_webpack_safe.preload_katex_from_file(ourbigbook_nodejs.DEFAULT_TEX_PATH, katex_macros)
+  const texPath = path.join(workerData.nonOptions.filesystem_root, OURBIGBOOK_TEX_BASENAME)
+  if (fs.existsSync(texPath)) ourbigbook_nodejs_webpack_safe.preload_katex_from_file(texPath, katex_macros)
+  process.on('message', async task => {
+    try {
+      if (task.writeGranted) {
+        grantDatabaseWrite()
+        return
+      }
+      if (task.close) {
+        if (webCache) await webCache.sequelize.close()
+        await sequelize.close()
+        process.disconnect()
+        return
+      }
+      const options = {
+        ...structuredClone(workerData.options),
+        ...fileConversionOptions(workerData.nonOptions.filesystem_root),
+        katex_macros,
+        render: task.render,
+        // Never carry extraction or another file's cached refs into rendering.
+        db_provider: new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize),
+      }
+      const nonOptions = {
+        ...structuredClone(workerData.nonOptions),
+        file_rows_dict: {
+          [workerData.nonOptions.renderType]: task.file_row ? { [task.relpath]: task.file_row } : {},
+        },
+        had_error: false,
+        is_render_after_extract: task.is_render_after_extract,
+        options: ourbigbook.convertInitOptions(options),
+        post_convert_callback: webCache?.postConvert,
+        ourbigbook_paths_converted: [],
+        sequelize,
+        sitemap: [],
+      }
+      await (task.preview ? convert_file_preview : convert_path_to_file)(task.input_path, options, nonOptions)
+      process.send({
+        paths: nonOptions.ourbigbook_paths_converted,
+        sitemap: nonOptions.sitemap,
+        had_error: nonOptions.had_error,
+        last_output_path: nonOptions.last_output_path,
+      })
+    } catch (error) {
+      process.send({ error: error.stack || String(error) })
+    }
+  })
+  process.send({ ready: true })
+}
+
+if (isConversionWorker) {
+  process.once('message', data => {
+    workerData = data
+    runDirectoryWorker().catch(error => { throw error })
+  })
+} else {
+
 // CLI options.
 const cli_parser = commander.program
 cli_parser.allowExcessArguments(false);
@@ -1477,6 +1930,12 @@ cli_parser.option('--fakeroot <fakeroot>', 'Stop searching for ourbigbook.json a
 cli_parser.option('--generate <name>', 'https://docs.ourbigbook.com#generate', false);
 cli_parser.option('--help-macros', 'print the metadata of all macros to stdout in JSON format. https://docs.ourbigbook.com#help-macros', false);
 cli_parser.option('-I, --input-format <input-format>', 'input format: bigb or markdown. Inferred from .md and .markdown extensions by default');
+cli_parser.option('-j, --jobs <n>', 'parallel directory conversion workers; defaults to available CPUs: https://docs.ourbigbook.com#jobs', value => {
+  if (!/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value))) {
+    throw new commander.InvalidArgumentError('jobs must be a positive integer')
+  }
+  return Number(value)
+}, os.availableParallelism ? os.availableParallelism() : os.cpus().length || 1);
 cli_parser.option('-l, --log <log...>', 'https://docs.ourbigbook.com#log');
 cli_parser.option('--no-check-db', 'Skip the database sanity check that is normally done after conversions https://docs.ourbigbook.com#no-check-db');
 cli_parser.option('--no-html-x-extension <bool>', 'https://docs.ourbigbook.com#no-html-x-extension', undefined);
@@ -1711,18 +2170,11 @@ if (cli.helpMacros) {
   }
   const output_format = (cli.formatSource || web) ? ourbigbook.OUTPUT_FORMAT_OURBIGBOOK : cli.outputFormat
   const ourbigbook_options = {
+    ...fileConversionOptions(ourbigbook_json_dir),
     add_test_instrumentation: cli.addTestInstrumentation,
     body_only: cli.bodyOnly,
-    getAFileTypes: (aRefs) => {
-      let ret = {}
-      for (const a of aRefs) {
-        ret[a] = fs.lstatSync(path.join(ourbigbook_json_dir,a)).isFile() ? FILE_TYPE_FILE : FILE_TYPE_DIRECTORY
-      }
-      return ret
-    },
     ourbigbook_json,
     embed_includes: cli.embedIncludes,
-    fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
     htmlXExtension,
     markdownIndexBasename: publish_target === 'github-md' ? 'README' : undefined,
     markdownMaxBytes,
@@ -1730,25 +2182,6 @@ if (cli.helpMacros) {
     outfile: cli.outfile,
     path_sep: path.sep,
     publish,
-    read_include: read_include({
-      exists: (inpath) => fs.existsSync(path.join(ourbigbook_json_dir, inpath)),
-      read: (inpath) => fs.readFileSync(path.join(ourbigbook_json_dir, inpath), ourbigbook_nodejs_webpack_safe.ENCODING),
-      path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
-    }),
-    read_file: (readpath, context, opts={}) => {
-      readpath = path.join(path.join(ourbigbook_json_dir, readpath))
-      if (
-        // Let's prevent path transversal a bit by default.
-        path.resolve(readpath).startsWith(path.resolve(ourbigbook_json_dir)) &&
-        fs.existsSync(readpath)
-      ) {
-        if (fs.lstatSync(readpath).isFile()) {
-          return fs.readFileSync(readpath, ourbigbook_nodejs_webpack_safe.ENCODING)
-        }
-      } else {
-        return undefined
-      }
-    },
     render: cli.render,
     showSplitOnToc: ourbigbook_json.showSplitOnToc,
     split_headers: split_headers,
@@ -1905,6 +2338,7 @@ if (cli.helpMacros) {
   // but rather used only by this ourbigbook executable.
   const nonOurbigbookOptions = {
     ourbigbook_json_dir,
+    filesystem_root: ourbigbook_json_dir,
     ourbigbook_paths_converted: [],
     ourbigbook_paths_converted_only: false,
     cli,
@@ -2194,7 +2628,6 @@ if (cli.helpMacros) {
       ourbigbook_options.split_headers = true
       ourbigbook_options.render_include = false
       ourbigbook_options.forbid_multi_h1 = true
-      const titleRegex = new RegExp(`${ourbigbook.SHORTHAND_HEADER_CHAR} (.*)`)
       // We create this quick and dirty separate database to store information for upload.
       // Technically much of this information is part of Article, but factoring that would be risky/hard,
       // it is not worth it.
@@ -2202,158 +2635,11 @@ if (cli.helpMacros) {
       // Adding this cache because I had an unminimizable error on the main document, and we have to save some time
       // or else I can't minimize it, this way we can skip the initial bigb split render conversion and go
       // straight to upload.
-      const sequelizeWeb = new Sequelize({
-        dialect: 'sqlite',
-        storage: path.join(nonOurbigbookOptions.outdir, 'web.sqlite3'),
-        logging: false,
-      })
-      const sequelizeWebArticle = sequelizeWeb.define('Article', {
-        idid: { type: DataTypes.TEXT, unique: true },
-        title: { type: DataTypes.TEXT },
-        body: { type: DataTypes.TEXT },
-        inpath: { type: DataTypes.TEXT },
-        parentId: { type: DataTypes.TEXT },
-        source: { type: DataTypes.TEXT },
-        definedAt: { type: DataTypes.TEXT },
-      })
-      // Just to store the ID of the index.
-      const sequelizeWebIndexId = sequelizeWeb.define('IndexId', {
-        idid: { type: DataTypes.TEXT },
-        // upsert helper.
-        uniqueHack: { type: DataTypes.INTEGER, unique: true },
-      })
-      await sequelizeWeb.sync()
-      nonOurbigbookOptions.post_convert_callback = async (definedAt, extra_returns) => {
-        if (extra_returns.errors.length === 0) {
-          await sequelizeWebArticle.destroy({ where: { definedAt }})
-          const rendered_outputs = extra_returns.rendered_outputs
-          for (let inpath in rendered_outputs) {
-            const rendered_outputs_entry = rendered_outputs[inpath]
-            if (rendered_outputs_entry.split) {
-              // To convert:
-              //
-              // linux-kernel-module-cheat-split.bigb
-              //
-              // to:
-              //
-              // linux-kernel-module-cheat.bigb
-              //
-              // on:
-              //
-              // = Linux kernel module cheat
-              // {splitSuffix}
-              //
-              // otherwise the ID becomes linux-kernel-module-cheat and \x links fail.
-              let source = rendered_outputs_entry.full;
-              const lines = source.split('\n')
-              let title
-              if (lines.length) {
-                const line0 = lines[0]
-                const titleMatch = line0.match(titleRegex)
-                if (titleMatch && titleMatch.length >= 2) {
-                  title = titleMatch[1]
-                }
-              }
-              if (title === undefined) {
-                cli_error(`every bigb must start with a "= Header" for --web upload, failed for: ${inpath}`)
-              }
-              const inpathParse = path.parse(inpath)
-              const pathNoext = path.join(inpathParse.dir, inpathParse.name)
-              if (rendered_outputs_entry.split_suffix) {
-                inpath = pathNoext.slice(0, -(rendered_outputs_entry.split_suffix.length + 1)) + `.${ourbigbook.OURBIGBOOK_EXT}`
-              }
-              let addId
-              let addSubdir
-              let isToplevelIndex = false
-              const header_ast = rendered_outputs_entry.header_ast
-              if (ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(inpathParse.name)) {
-                if (inpathParse.dir) {
-                  const dirPathParse = path.parse(inpathParse.dir)
-                  const titleId = ourbigbook.titleToId(title)
-                  if (titleId !== dirPathParse.name) {
-                    // This would be ideal, allowing us to store all information about the article in the body itself.
-                    // But it was hard to implement, since now the input path is an important input of conversion.
-                    // So to start with we will just always provide the input path as a separate parameter.
-                    // id= for toplevel was ignored as of writing, which is bad, should be either used or error.
-                    //addId = dirPathParse.name
-                  }
-                  if (dirPathParse.dir) {
-                    // Same as addId
-                    //addSubdir = dirPathParse.dir
-                  }
-                } else {
-                  // Hack source for subsequent hash calculation to match what we have on server, which
-                  // currently forces "Index" (TODO "index" et al. are likely also possible and would break this hack).
-                  // Ideally we should actually alter the file under _out/web/index.bigb
-                  // but that would be slightly more involved (a new option to convert?) so lazy.
-                  source = source.replace(titleRegex, `${ourbigbook.SHORTHAND_HEADER_CHAR} ${title}`)
-                  await sequelizeWebIndexId.upsert({ idid: header_ast.id, uniqueHack: 0 })
-                  isToplevelIndex = true
-                }
-                inpath = `${ourbigbook.INDEX_BASENAME_NOEXT}.${ourbigbook.OURBIGBOOK_EXT}`
-              } else {
-                const titleId = ourbigbook.titleToId(title)
-                if (titleId !== inpathParse.name) {
-                  //addId = inpathParse.name
-                }
-                if (inpathParse.dir) {
-                  //addSubdir = inpathParse.dir
-                }
-              }
-              let bodyStart
-              if (lines[1] === '' && !addId && !addSubdir) {
-                bodyStart = 2
-              } else {
-                bodyStart = 1
-              }
-              let body = ''
-              if (addId) {
-                // Restore this if we ever remove the separate path magic input.
-                // Also id of toplevel header is currently ignored as of writing:
-                //body += `{id=${addId}}\n`
-              }
-              if (addSubdir) {
-                // Restore this if we ever remove the separate path magic input.
-                //body += `{subdir=${addSubdir}}\n`
-              }
-              body += lines.slice(bodyStart).join('\n')
-              const parent_ast = rendered_outputs_entry.header_ast.get_header_parent_asts(extra_returns.context)[0]
-              const article = {
-                body,
-                inpath,
-                definedAt,
-                source,
-                title,
-              }
-              if (parent_ast) {
-                if (
-                  parent_ast.id !== ourbigbook.INDEX_BASENAME_NOEXT &&
-                  // Force every child of the topevel to add it as "@username" and instead of deducing it from title
-                  // as done on CLI. This means that giving the toplevel a custom ID and using that ID will fail to upload...
-                  // there is no solution to that. We should just force the toplevel to have no ID then on CLI for compatibility?
-                  !(
-                    parent_ast.is_first_header_in_input_file &&
-                    ourbigbook.INDEX_FILE_BASENAMES_NOEXT.has(path.parse(parent_ast.source_location.path).name)
-                  )
-                ) {
-                  parentId = `${parent_ast.id}`
-                } else {
-                  parentId = ''
-                }
-                article.parentId = parentId
-              }
-              let id_to_article_key
-              if (isToplevelIndex) {
-                id_to_article_key = ''
-              } else {
-                id_to_article_key = header_ast.id
-              }
-              article.idid = id_to_article_key
-              await sequelizeWebArticle.upsert(article)
-            }
-          }
-        }
-      } // post_convert_callback
+      const webCache = await createWebCache(nonOurbigbookOptions.outdir)
+      const sequelizeWeb = webCache.sequelize
+      const sequelizeWebArticle = sequelizeWeb.models.Article
+      const sequelizeWebIndexId = sequelizeWeb.models.IndexId
+      nonOurbigbookOptions.post_convert_callback = webCache.postConvert
       let treeToplevelId, treeToplevelFileId
       if (input_path_is_file) {
         await convert_path_to_file(inputPath, ourbigbook_options, nonOurbigbookOptions)
@@ -2619,6 +2905,7 @@ if (cli.helpMacros) {
           await updateNestedSet(webApi, username)
         }
       }
+      await sequelizeWeb.close()
     } else if (cli.watch) {
       if (cli.stdout) {
         cli_error('--stdout and --watch are incompatible');
@@ -2978,6 +3265,7 @@ if (cli.helpMacros) {
   }
   perfPrint('exit', ourbigbook_options)
   if (!cli.watch) {
+    if (nonOurbigbookOptions.sequelize) await nonOurbigbookOptions.sequelize.close()
     process.exit(nonOurbigbookOptions.had_error ? 1 : 0)
   }
 }
@@ -2985,3 +3273,4 @@ if (cli.helpMacros) {
   console.error(e);
   process.exit(1);
 })
+}

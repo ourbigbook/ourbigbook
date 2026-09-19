@@ -7548,6 +7548,35 @@ and OurBigBook will integrate it into the current project seamlessly. Live demo:
 
 \Include[not-index-md]
 
+= `-j`, `--jobs <n>`
+{id=jobs}
+{parent=OurBigBook CLI options}
+
+= Parallel build
+{c}
+{synonym}
+{title2}
+
+Directory builds use the available CPUs by default:
+``
+ourbigbook .
+``
+
+Use `-j N` or `--jobs N` to limit the number of worker processes. For example, `ourbigbook -j 4 .` uses up to four workers, and `ourbigbook -j 1 .` builds serially. The default is the number of CPUs available to the process, respecting CPU affinity. Workers are started only for files that need conversion and reused throughout the build.
+
+There are two parallel conversion stages, separated by a database check:
+* extract IDs from source files in parallel
+* wait for all extraction to finish, then run the <--check-db-only>[database consistency check] once, serially
+* render in parallel using the checked IDs and references
+
+Extraction or database errors stop the build before rendering. <--no-render> runs only extraction and the database check. Timestamp-based skipping still applies in both stages.
+
+SQLite uses write-ahead logging so readers can run while a writer commits. Only one worker at a time may update the ID database; the whole per-file transaction holds that write lock. Workers use fresh reference caches for each conversion. Generated file previews also render in parallel, before authored pages so explicit file headers retain precedence. Asset copying, Sass compilation, and directory listings remain serial.
+
+Web builds also extract IDs and render local split files in parallel, using the same `-j` setting. Updates to the local Web article cache are serialized. Uploads and server-side `web_render` requests remain serial.
+
+Single-file conversions, watch mode, source formatting, embedded includes, and builds without a persistent database retain their serial behavior.
+
 = `-O --output-format <outformat>`
 {id=output-format}
 {parent=OurBigBook CLI options}
@@ -9187,26 +9216,6 @@ We are strict about this in order to prevent accidentally polluting the database
 {parent=Ignored files}
 
 If the project is a <Git tracked project>, the standard `git` ignore rules are used for ignores. This includes `.git/info/exclude`, `.gitignore` and the user's global gitingnore file if any.
-
-= Parallel build
-{c}
-{parent=OurBigBook CLI}
-
-TODO: get this working. Maybe we should also bake it into the `ourbigbook` CLI tool as well for greater portability. Starting like this as a faster way to prototype:
-``
-rm -rf _out/parallel
-mkdir -p _out/parallel
-# ID extraction.
-git ls-files | grep -E '\.bigb$' | parallel -X ourbigbook --no-render --no-check-db --outdir '_out/parallel/{%}' '{}'
-./merge-dbs _out/db.sqlite3 _out/parallel/*/db.sqlite3
-ourbigbook --check-db
-# Render.
-git ls-files | grep -E '\.bigb$' | parallel -X ourbigbook --no-check-db '{}'
-``
-
-Observed `--no-render`  speedup on 1k small files from the <Wikipedia bot> and 8 cores: 3x. So not bad.
-
-Observed render speedup on 1k small files from the <Wikipedia bot> and 8 cores: none. TODO. Is this because of database contention?
 
 = OurBigBook CLI test matrix
 {c}

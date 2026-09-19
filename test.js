@@ -15708,6 +15708,177 @@ assert_cli('file: _file auto-generation conversion image media provider works',
   },
 )
 
+// CLI parallel directory conversion.
+for (const jobs of ['0', '-1', '1.5', 'nope', '9007199254740992']) {
+  assert_cli(`parallel: rejects invalid jobs ${jobs}`, {
+    args: ['-j', jobs, '.'],
+    assert_exit_status: 1,
+    assert_stderr_contains: ['jobs must be a positive integer'],
+  })
+}
+
+const parallelFilesystem = {
+  'ourbigbook.json': JSON.stringify({ ignoreConvert: ['ignored\\.bigb'] }),
+  'index.bigb': '= Home\n\n\\Include[chapter0]\n\\Include[chapter1]\n\\Include[chapter2]\n\\Include[chapter3]\n\\Include[markdown]\n',
+  'chapter0.bigb': '= Chapter 0\n\n== Shared\n\n\\a[asset.txt]\n\n\\m[[\\testmacro + \\abs{x}]]\n',
+  'chapter1.bigb': '= Chapter 1\n\n<Shared>\n',
+  'chapter2.bigb': '= Chapter 2\n\n== About \\i[<chapter1>]\n',
+  'chapter3.bigb': '= Chapter 3\n\n<chapter2>\n',
+  'markdown.md': '# Markdown\n\nA **Markdown** paragraph.\n',
+  'ignored.bigb': '\\not-a-macro',
+  'ourbigbook.tex': '\\newcommand{\\testmacro}{x+y}\n',
+  'asset.txt': 'An asset\n',
+  'main.scss': 'body { color: red; }\n',
+}
+
+const parallelWebArgs = ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
+
+for (const web of [false, true]) {
+if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web' : 'HTML'} builds have identical output and database contents`, async function() {
+  this.timeout(30000)
+  const roots = ['serial', 'parallel'].map(name => path.join(testdir, `parallel-equivalence-${web}`, name))
+  for (const root of roots) {
+    fs.mkdirSync(root, { recursive: true })
+    update_filesystem(parallelFilesystem, root)
+  }
+  function build(i, extraArgs=[]) {
+    const out = child_process.spawnSync(process.execPath, [
+      path.join(__dirname, 'ourbigbook'), '-j', i === 0 ? '1' : '3', '-S', ...extraArgs, '.',
+      ...(web ? parallelWebArgs : []),
+    ], { cwd: roots[i], encoding: 'utf8', timeout: 15000 })
+    assert.strictEqual(out.status, 0, out.stdout + out.stderr)
+    assert(!out.stderr.includes('SQLITE_BUSY'), out.stderr)
+    return out.stdout
+  }
+  function outputFiles(root, dir=path.join(TMP_DIRNAME, web ? 'web' : 'html')) {
+    const ret = {}
+    for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
+      const rel = path.join(dir, entry.name)
+      if (entry.isDirectory()) Object.assign(ret, outputFiles(root, rel))
+      else if (!entry.name.startsWith('web.sqlite3')) ret[rel] = fs.readFileSync(path.join(root, rel), 'utf8')
+    }
+    return ret
+  }
+  async function database(root, webCache=false) {
+    const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
+      storage: path.join(root, TMP_DIRNAME, ...(webCache ? ['web', 'web.sqlite3'] : ['db.sqlite3'])), logging: false,
+    }, {}, { sync: false })
+    try {
+      assert.deepStrictEqual((await sequelize.query('PRAGMA integrity_check'))[0], [{ integrity_check: 'ok' }])
+      // Forget dry-run credentials so repeated offline builds do not validate a saved login.
+      if (web && !webCache) await sequelize.models.Cli.destroy({ where: {} })
+      const queries = webCache ? [
+        'SELECT "idid", "title", "body", "inpath", "parentId", "source", "definedAt" FROM "Articles" ORDER BY "idid"',
+        'SELECT "idid", "uniqueHack" FROM "IndexIds"',
+      ] : [
+        'SELECT "idid", "macro_name", "toplevel_id", "ast_json" FROM "Id" ORDER BY "idid"',
+        'SELECT r."from_id", r."to_id", r."type", r."defined_at_line", r."defined_at_col", r."inflected", f."path" FROM "Ref" r JOIN "File" f ON r."defined_at" = f."id" ORDER BY 1, 2, 3, 4, 5, 6, 7',
+        'SELECT i."idid", a."to", a."defined_at_line", a."defined_at_col", f."path" FROM "ARef" a JOIN "Id" i ON a."from" = i."id" JOIN "File" f ON a."defined_at" = f."id" ORDER BY 1, 2, 3, 4, 5',
+        'SELECT f."path", f."toplevel_id", r."type", r."outdated" FROM "File" f JOIN "Render" r ON r."fileId" = f."id" ORDER BY 1, 3',
+      ]
+      return await Promise.all(queries.map(async sql => (await sequelize.query(sql))[0]))
+    } finally {
+      await sequelize.close()
+    }
+  }
+  async function compare() {
+    assert.deepStrictEqual(outputFiles(roots[1]), outputFiles(roots[0]))
+    assert.deepStrictEqual(await database(roots[1]), await database(roots[0]))
+    if (web) assert.deepStrictEqual(await database(roots[1], true), await database(roots[0], true))
+  }
+  const serialLog = build(0)
+  const log = build(1)
+  assert.strictEqual((log.match(/^check_db$/gm) || []).length, 1)
+  assert(log.lastIndexOf('\nextract_ids:') < log.indexOf('\ncheck_db\n'))
+  assert(log.indexOf('\nrender:') > log.indexOf('check_db:'))
+  if (web) {
+    const uploadLog = text => text.split('\n').filter(line => line.startsWith('web_') && !line.includes('finished in'))
+    assert.deepStrictEqual(uploadLog(log), uploadLog(serialLog))
+    assert(log.lastIndexOf('\nrender:') < log.indexOf('\nweb_'))
+    assert(log.lastIndexOf('\nweb_extract_ids:') < log.indexOf('\nweb_render:'))
+  }
+  await compare()
+  // Cached builds skip conversion and retain exactly the same rendered output.
+  for (const i of [0, 1]) {
+    const cached = build(i)
+    assert(cached.includes('extract_ids: chapter0.bigb (skipped by timestamp)'))
+    assert(cached.includes('render: chapter0.bigb (skipped by timestamp)'))
+  }
+  await compare()
+  // Move an ID between files, and remove a file and its Include. All extraction
+  // must finish before checking references or rendering with the new ownership.
+  for (const root of roots) {
+    update_filesystem({
+      'index.bigb': parallelFilesystem['index.bigb'].replace('\\Include[chapter3]\n', ''),
+      'chapter0.bigb': '= Chapter 0\n\n<Shared>\n',
+      'chapter1.bigb': '= Chapter 1\n\n== Shared\n\n\\a[asset.txt]\n',
+    }, root)
+    fs.unlinkSync(path.join(root, 'chapter3.bigb'))
+  }
+  build(0)
+  build(1)
+  await compare()
+  build(0, ['--force-render'])
+  build(1, ['--force-render'])
+  await compare()
+})
+}
+
+assert_cli('parallel: no-render extracts IDs and checks the database', {
+  args: ['-j', '2', '--no-render', '.'],
+  filesystem: parallelFilesystem,
+  assert_stdout_contains: [/^check_db$/m],
+  assert_not_exists: [`${TMP_DIRNAME}/html/index.html`],
+})
+
+assert_cli('parallel: extraction errors prevent rendering', {
+  args: ['-j', '2', '.'],
+  filesystem: { ...parallelFilesystem, 'chapter0.bigb': '= Chapter 0\n\n\\unknown-macro\n' },
+  assert_exit_status: 1,
+  assert_stderr_contains: ['unknown macro name'],
+  assert_not_exists: [`${TMP_DIRNAME}/html/index.html`],
+})
+
+assert_cli('parallel: duplicate IDs stop at the database barrier', {
+  args: ['-j', '2', '.'],
+  filesystem: { ...parallelFilesystem, 'chapter1.bigb': '= Chapter 1\n\n== Shared\n' },
+  assert_exit_status: 1,
+  assert_stderr_contains: ['duplicated ID: "shared"'],
+  assert_not_exists: [`${TMP_DIRNAME}/html/index.html`, `${TMP_DIRNAME}/html/-/file/index.bigb.html`],
+})
+
+assert_cli('parallel: render errors return a failing exit status', {
+  args: ['-j', '2', '.'],
+  filesystem: {
+    ...parallelFilesystem,
+    'chapter0.bigb': '= Chapter 0\n\n\\m[[\\unknowncommand]]\n\n== Shared\n',
+  },
+  assert_exit_status: 1,
+  assert_stdout_contains: [/^check_db$/m, 'render: chapter0.bigb'],
+  assert_stderr_contains: ['Undefined control sequence'],
+})
+
+for (const web of [false, true]) {
+it(`cli: parallel ${web ? 'Web' : 'HTML'} worker exits fail promptly instead of hanging`, function() {
+  this.timeout(10000)
+  const root = path.join(testdir, `parallel-worker-exit-${web}`)
+  fs.mkdirSync(root)
+  update_filesystem({
+    ...parallelFilesystem,
+    'crash-worker.js': "if (process.argv[2] === '--internal-conversion-worker') process.exit(42)\n",
+  }, root)
+  const out = child_process.spawnSync(process.execPath, [
+    '--require', path.join(root, 'crash-worker.js'),
+    path.join(__dirname, 'ourbigbook'), '-j', '2', '.',
+    ...(web ? parallelWebArgs : []),
+  ], { cwd: root, encoding: 'utf8', timeout: 8000 })
+  assert.strictEqual(out.status, 1, out.stdout + out.stderr)
+  assert.match(out.stderr, /conversion worker exited unexpectedly \(status 42\)/)
+  assert(!out.stdout.includes('check_db'))
+  assert(!out.stdout.includes('render:'))
+})
+}
+
 // CLI include: tests
 assert_cli(
   'include: double parents are forbidden clean',

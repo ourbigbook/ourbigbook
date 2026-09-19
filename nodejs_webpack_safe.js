@@ -686,7 +686,7 @@ class SqlDbProvider extends web_api.DbProviderBase {
         for (const id of ids) {
           ididToId[id.idid] = id.id
         }
-        sequelize.models.ARef.bulkCreate(
+        return sequelize.models.ARef.bulkCreate(
           context.aRefs.map(r => {
             return {
               from: ididToId[r.from],
@@ -718,7 +718,7 @@ class SqlDbProvider extends web_api.DbProviderBase {
   }
 }
 
-async function createSequelize(db_options, sync_opts={}) {
+async function createSequelize(db_options, sync_opts={}, { sync=true }={}) {
   db_options = Object.assign({ timestamps: false }, db_options, DB_OPTIONS)
   const storage = db_options.storage
   delete db_options.storage
@@ -746,11 +746,11 @@ async function createSequelize(db_options, sync_opts={}) {
     sequelize = new Sequelize(db_options)
   }
   models.addModels(sequelize, { cli: true })
-  if (
+  if (sync && (
     db_options.dialect !== 'sqlite' ||
     storage === SQLITE_MAGIC_MEMORY_NAME ||
     (storage && !fs.existsSync(storage))
-  ) {
+  )) {
     await sequelize.sync(sync_opts)
   }
   return sequelize

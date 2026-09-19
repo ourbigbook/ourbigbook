@@ -28,7 +28,7 @@ const encodeGetParamsWithPage = (opts, opts2={}) => {
 }
 
 function articleScope(slug) {
-  return `/${encodeUrlPath(slug)}/${escapeUsername}${slug.includes('/') ? '' : '/article'}`
+  return `/${encodeUrlPath(slug)}/${escapeUsername}${slug.includes('/') ? '' : '/home'}`
 }
 
 function issue(slug, number) {

@@ -11386,7 +11386,7 @@ Browser URLs use `/-/` to separate a user or article <ID> from page actions:
 * article pages: `/username/my/article/-/discussions`, `/username/my/article/-/edit`
 * individual <OurBigBook Web discussions>[discussions]: `/username/my/article/-/discussion/1`
 
-For the user's home article, discussions and comments use `/username/-/article/discussions` and `/username/-/article/comments`. This distinguishes them from `/username/-/discussions` and `/username/-/comments`, which list content authored by that user.
+For the user's home article, discussions and comments use `/username/-/home/discussions` and `/username/-/home/comments`. This distinguishes them from `/username/-/discussions` and `/username/-/comments`, which list content authored by that user. The previous `/username/-/article/discussions` and `/username/-/article/comments` URLs permanently redirect to these home article URLs.
 
 The `-` path component is a <reserved ID> in both article IDs and uploaded file paths, to prevent ambiguity. `go` remains a reserved username. Old `/go/` URLs permanently redirect to their new locations, preserving query parameters. Ordinary article URLs and <OurBigBook Web API standards>[`/api` routes] keep their existing forms.
 

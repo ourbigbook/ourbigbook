@@ -327,6 +327,10 @@ it('routes percent-encode article and topic path components', function() {
   assert.strictEqual(routes.decodeUrlPath('user0/%not-an-escape'), 'user0/%not-an-escape')
   assert.strictEqual(routes.article(slug), `/${encodedSlug}`)
   assert.strictEqual(routes.articleSource(slug), `/${encodedSlug}/-/source`)
+  assert.strictEqual(routes.articleComments(slug), `/${encodedSlug}/-/comments`)
+  assert.strictEqual(routes.articleIssues(slug), `/${encodedSlug}/-/discussions`)
+  assert.strictEqual(routes.articleComments('user0'), '/user0/-/home/comments')
+  assert.strictEqual(routes.articleIssues('user0'), '/user0/-/home/discussions')
   assert.strictEqual(routes.issue(slug, 1), `/${encodedSlug}/-/discussion/1`)
   assert.strictEqual(routes.topic(slug), `/-/topic/${encodedSlug}`)
   assert.strictEqual(routes.userArticlesChildren('user0', slug), `/user0/${encodedSlug}/-/children`)
@@ -539,7 +543,10 @@ it('web: scoped magic URLs and permanent legacy redirects', async () => {
       ...['children', 'incoming', 'tagged'].map(action => [
         `/go/user/user0/${action}/parent/child`, `/${slug}/-/${action}`,
       ]),
-      ...['comments', 'discussions'].map(action => [`/go/${action}/user0`, `/user0/-/article/${action}`]),
+      ...['comments', 'discussions'].flatMap(action => [
+        [`/go/${action}/user0`, `/user0/-/home/${action}`],
+        [`/user0/-/article/${action}`, `/user0/-/home/${action}`],
+      ]),
       ...['comments', 'discussions', 'edit', 'delete', 'source', 'new', 'new-discussion'].map(action => [
         `/go/${action}/${slug}`, `/${slug}/-/${action}`,
       ]),
@@ -562,7 +569,7 @@ it('web: scoped magic URLs and permanent legacy redirects', async () => {
       '/-/users', '/-/files', '/-/articles', '/-/discussions', '/-/comments', '/-/topic/parent/child',
       '/user0/-/settings', '/user0/-/articles', '/user0/-/discussions', '/user0/-/comments',
       '/user0/-/files', '/user0/-/children', '/user0/-/incoming', '/user0/-/tagged',
-      '/user0/-/article/discussions', '/user0/-/article/comments',
+      '/user0/-/home/discussions', '/user0/-/home/comments',
       ...['comments', 'discussions', 'edit', 'source', 'new', 'new-discussion', 'children', 'incoming', 'tagged', 'discussion/1', 'discussion/1/edit'].map(action => `/${slug}/-/${action}`),
     ]
     let buildId
@@ -600,6 +607,9 @@ it('web: scoped magic URLs and permanent legacy redirects', async () => {
       ['/go/discussions', '/-/discussions'],
       [`/go/discussions/${slug}`, `/${slug}/-/discussions`],
       ['/go/user/user0/articles?sort=updated', '/user0/-/articles?sort=updated'],
+      ...['comments', 'discussions'].map(action => [
+        `/user0/-/article/${action}?sort=updated`, `/user0/-/home/${action}?sort=updated`,
+      ]),
       ['/user0/_file/image.png', '/user0/-/file/image.png'],
       ['/user0/_dir', '/user0/-/dir'],
       ['/', '/'],

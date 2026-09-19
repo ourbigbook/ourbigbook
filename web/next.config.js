@@ -16,7 +16,7 @@ const legacyRoutePatterns = [
     `/go/user/:uid/${action}`, `/:uid/-/${action}`,
   ]),
   ...['comments', 'discussions'].map(action => [
-    `/go/${action}/:uid`, `/:uid/-/article/${action}`,
+    `/go/${action}/:uid`, `/:uid/-/home/${action}`,
   ]),
   ...['comments', 'discussions', 'edit', 'delete', 'source', 'new', 'new-discussion'].map(action => [
     `/go/${action}/:slug+`, `/:slug+/-/${action}`,
@@ -56,7 +56,14 @@ module.exports = phase => ({
   },
 })
 
-const redirects = [...legacyRoutePatterns, ['/:uid/_raw/:path+', '/:uid/-/raw/:path+'], ['/go/:path*', '/-/:path*']].map(([source, destination]) => ({
+const redirects = [
+  ...['comments', 'discussions'].map(action => [
+    `/:uid/-/article/${action}`, `/:uid/-/home/${action}`,
+  ]),
+  ...legacyRoutePatterns,
+  ['/:uid/_raw/:path+', '/:uid/-/raw/:path+'],
+  ['/go/:path*', '/-/:path*'],
+].map(([source, destination]) => ({
   match: match(source),
   destination: compile(destination),
 }))
@@ -72,7 +79,9 @@ function middleware(request) {
       // The Pages Router adds dynamic route parameters to data request queries.
       // They already belong to the path and must not leak into the redirect URL.
       if (request.headers.has('x-nextjs-data')) {
-        for (const [key, value] of Object.entries(matched.params)) {
+        // Redirect-only aliases can be resolved through the generic [...slug] page.
+        const routeParams = { slug: request.nextUrl.pathname.slice(1).split('/'), ...matched.params }
+        for (const [key, value] of Object.entries(routeParams)) {
           const parts = (Array.isArray(value) ? value : [value]).map(part => decodeURIComponent(String(part)))
           const query = url.searchParams.getAll(key)
           if (query.length === parts.length && query.every((part, i) => part === parts[i])) {

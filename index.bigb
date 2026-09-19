@@ -8386,6 +8386,24 @@ That ID must belong to a file being converted for everything to work well. e.g.:
 ourbigbook --web --web-id quantum-mechanics physics.bigb
 ``
 
+= `--web-start-id`
+{parent=OurBigBook CLI options}
+
+Start the article upload passes at the selected ID, inclusively, while still
+replaying any earlier parent and previous-sibling prerequisites needed by the
+selected suffix. Unrelated articles before the selected ID are skipped. This
+is useful for resuming a long
+<`--web-force-id-extraction`> run after a failure, for example:
+
+``
+ourbigbook --web --web-force-id-extraction --web-start-id mobius-function
+``
+
+The ID must use the local, username-free form and must exist in the upload
+tree. This option cannot be combined with <--web-id>. It does not save a
+checkpoint automatically; use the ID from the first unfinished
+`web_extract_ids` status line.
+
 = `--web-force-id-extraction`
 {parent=OurBigBook CLI options}
 

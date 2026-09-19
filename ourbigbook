@@ -1935,6 +1935,7 @@ cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered
 cli_parser.option('--web-nested-set', `only update the nested set index, don't do anything else. Implies --web: https://docs.ourbigbook.com#web-nested-set-option`, false);
 cli_parser.option('--no-web-nested-set-bulk', `only update the nested set index after all articles have been uploaded: https://docs.ourbigbook.com#web-nested-set-bulk`);
 cli_parser.option('--web-password <password>', 'Set password from CLI. Really bad idea for non-test users due e.g. to Bash history: https://docs.ourbigbook.com#web-user');
+cli_parser.option('--web-start-id <id>', 'Start the Web article upload passes from this ID, inclusive: https://docs.ourbigbook.com#web-start-id');
 cli_parser.option('--web-test', 'Convenient --web-* defaults local development: https://docs.ourbigbook.com#web-test', false);
 cli_parser.option('--web-url <url>', 'Set a custom sync URL for --web: https://docs.ourbigbook.com#web-url');
 cli_parser.option('--web-user <username>', 'Set username from CLI: https://docs.ourbigbook.com#web-user');
@@ -1964,6 +1965,14 @@ if (cli.helpMacros) {
   let publishTargetIsWebsite
   let input_dir;
   const web = cli.web || cli.webTest || cli.nestedSet
+  if (cli.webStartId !== undefined) {
+    if (!web) {
+      cli_error('--web-start-id requires --web or --web-test')
+    }
+    if (cli.webId !== undefined) {
+      cli_error('--web-start-id cannot be combined with --web-id')
+    }
+  }
   if (inputPaths.length === 0) {
     if (web || publish || cli.watch || cli.generate || cli.checkDbOnly || cli.webNestedSet) {
       inputPaths = ['.'];
@@ -2657,6 +2666,13 @@ if (cli.helpMacros) {
           }
         ))
       }
+      let webStartIndex = 0
+      if (cli.webStartId !== undefined) {
+        webStartIndex = header_tree.findIndex(entry => entry.to_id === cli.webStartId)
+        if (webStartIndex === -1) {
+          cli_error(`--web-start-id ID not found in the upload tree: "${cli.webStartId}"`)
+        }
+      }
       const dorender = [false]
       if (cli.webRender) {
         dorender.push(true)
@@ -2678,6 +2694,52 @@ if (cli.helpMacros) {
       const localArticles = await sequelizeWebArticle.findAll({ attributes: ['source', 'title', 'idid', 'inpath', 'parentId'] })
       for (const article of localArticles) {
         idToArticleMeta[article.idid] = article
+      }
+      // Calculate previous siblings over the complete tree before applying
+      // --web-start-id. Resumed uploads need this both for the selected suffix
+      // and for any skipped prerequisite articles that have to be replayed.
+      for (const header_tree_entry of header_tree) {
+        const articleMeta = idToArticleMeta[header_tree_entry.to_id]
+        // Can fail for synonyms.
+        if (articleMeta) {
+          const parentArticle = idToArticleMeta[articleMeta.parentId]
+          if (parentArticle) {
+            const lastChildArticleProcessed = parentArticle.lastChildArticleProcessed
+            if (lastChildArticleProcessed) {
+              articleMeta.previousSiblingId = lastChildArticleProcessed.idid
+            }
+            parentArticle.lastChildArticleProcessed = articleMeta
+          }
+        }
+      }
+      // A suffix is not necessarily self-contained because fetch_header_tree_ids
+      // returns breadth-first order. A child after the resume marker can therefore
+      // have a parent before it. Replay skipped parents and previous siblings (and
+      // their own prerequisites) so resuming also works when those server rows are
+      // absent, while still avoiding unrelated completed subtrees.
+      const webResumeDependencyIds = new Set()
+      if (webStartIndex > 0) {
+        const headerTreeIdToIndex = new Map(header_tree.map(
+          (entry, index) => [entry.to_id, index]
+        ))
+        const pendingIds = header_tree.slice(webStartIndex).map(entry => entry.to_id)
+        for (let pendingIndex = 0; pendingIndex < pendingIds.length; pendingIndex++) {
+          const articleMeta = idToArticleMeta[pendingIds[pendingIndex]]
+          if (!articleMeta) {
+            continue
+          }
+          for (const dependencyId of [articleMeta.parentId, articleMeta.previousSiblingId]) {
+            const dependencyIndex = headerTreeIdToIndex.get(dependencyId)
+            if (
+              dependencyIndex !== undefined &&
+              dependencyIndex < webStartIndex &&
+              !webResumeDependencyIds.has(dependencyId)
+            ) {
+              webResumeDependencyIds.add(dependencyId)
+              pendingIds.push(dependencyId)
+            }
+          }
+        }
       }
       let nestedSetNeedsUpdate = false
       if (
@@ -2768,26 +2830,20 @@ if (cli.helpMacros) {
       for (const render of dorender) {
         let i = 0
         // This ordering ensures parents come before children.
-        for (const header_tree_entry of header_tree) {
+        for (const [headerTreeIndex, header_tree_entry] of header_tree.entries()) {
           const id = header_tree_entry.to_id
           const articleMeta = idToArticleMeta[id]
           if (
             // Can fail for synonyms.
             articleMeta
           ) {
+            // Prerequisites only need their ID extraction replayed. Rendering
+            // still begins exactly at the requested marker.
             if (
-              // Do only once no norender pass or else lastChildArticleProcessed loops around and goes wrong on the render pass.
-              !render
-            ){
-              // Calculate previousSiblingId. This works because header_tree is guaranteed to be in-order transversed.
-              const parentArticle = idToArticleMeta[articleMeta.parentId]
-              if (parentArticle) {
-                const lastChildArticleProcessed = parentArticle.lastChildArticleProcessed
-                if (lastChildArticleProcessed) {
-                  articleMeta.previousSiblingId = lastChildArticleProcessed.idid
-                }
-                parentArticle.lastChildArticleProcessed = articleMeta
-              }
+              headerTreeIndex < webStartIndex &&
+              (render || !webResumeDependencyIds.has(id))
+            ) {
+              continue
             }
             const inpathParse = path.parse(articleMeta.inpath)
             const articlePath = path.join(inpathParse.dir, inpathParse.name)
@@ -2819,7 +2875,10 @@ if (cli.helpMacros) {
               ) ||
               (
                 !render &&
-                cli.webForceIdExtraction
+                (
+                  cli.webForceIdExtraction ||
+                  webResumeDependencyIds.has(id)
+                )
               )
             ) {
               // OK, we are going to render this article, so fetch it fully now including the source.

@@ -1231,6 +1231,10 @@ function assert_cli(
       // Assert that stdout contains string/regex matches.
       options.assert_stdout_contains = []
     }
+    if (!('assert_stdout_not_contains' in options)) {
+      // Assert that stdout does not contain string/regex matches.
+      options.assert_stdout_not_contains = []
+    }
     if (!('assert_not_xpath' in options)) {
       options.assert_not_xpath = {};
     }
@@ -1318,6 +1322,21 @@ function assert_cli(
           stdout_str.match(contains),
           null,
           `stdout should match "${contains}"\n\n${assert_msg}`
+        )
+      }
+    }
+    for (const contains of options.assert_stdout_not_contains) {
+      if (typeof contains === 'string') {
+        assert.strictEqual(
+          stdout_str.indexOf(contains),
+          -1,
+          `stdout should not contain "${contains}"\n\n${assert_msg}`
+        )
+      } else if (contains.constructor === RegExp) {
+        assert.strictEqual(
+          stdout_str.match(contains),
+          null,
+          `stdout should not match "${contains}"\n\n${assert_msg}`
         )
       }
     }
@@ -16100,6 +16119,50 @@ const parallelFilesystem = {
 }
 
 const parallelWebArgs = ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
+
+const webStartIdFilesystem = {
+  'index.bigb': `= Home
+
+== First
+
+=== First child
+
+=== First leaf
+
+== Second
+
+=== Second child
+`,
+}
+
+assert_cli('web-start-id resumes both article passes inclusively', {
+  args: [
+    '-S', '--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer',
+    '--web-start-id', 'second-child', '.',
+  ],
+  filesystem: webStartIdFilesystem,
+  assert_stdout_contains: [
+    /^web_extract_ids: 0: Home /m,
+    /^web_extract_ids: 1: First /m,
+    /^web_extract_ids: 2: Second /m,
+    /^web_extract_ids: 3: Second child /m,
+    /^web_render: 0: Second child /m,
+  ],
+  assert_stdout_not_contains: [
+    /^web_(?:extract_ids|render): \d+: (?:First child|First leaf) \(/m,
+    /^web_render: \d+: (?:Home|First|Second) \(/m,
+  ],
+})
+
+assert_cli('web-start-id rejects an ID outside the upload tree', {
+  args: [
+    '-S', '--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer',
+    '--web-start-id', 'missing', '.',
+  ],
+  filesystem: webStartIdFilesystem,
+  assert_exit_status: 1,
+  assert_stderr_contains: ['--web-start-id ID not found in the upload tree: "missing"'],
+})
 
 for (const web of [false, true]) {
 if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web' : 'HTML'} builds have identical output and database contents`, async function() {

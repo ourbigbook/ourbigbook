@@ -1712,6 +1712,8 @@ it('Comment listing eagerly loads article files before serialization', async fun
   }
   assert.strictEqual(serializationQueries, 0)
   assert.strictEqual(json.issue.article.author.username, user.username)
+  const ownJson = await rows[0].toJson(user)
+  assert.notStrictEqual(ownJson.issue.article.author.emailNotificationsForArticleAnnouncement, undefined)
 })
 
 it('User.findAndCountArticlesByFollowed', async function() {

@@ -93,10 +93,6 @@ module.exports = (sequelize) => {
       include: [{
         model: sequelize.models.File,
         as: 'file',
-        include: [{
-          model: sequelize.models.User,
-          as: 'author',
-        }],
       }],
     }
     if (articleId) {
@@ -106,7 +102,7 @@ module.exports = (sequelize) => {
     if (issueId) {
       issueIncludeWhere = { id: issueId }
     }
-    return sequelize.models.Comment.findAndCountAll({
+    const ret = await sequelize.models.Comment.findAndCountAll({
       include: [
         {
           model: sequelize.models.User,
@@ -129,6 +125,23 @@ module.exports = (sequelize) => {
       transaction,
       where,
     })
+    // A nested issue->article->file->author include produces PostgreSQL column
+    // aliases longer than 63 bytes. PostgreSQL truncates them, which leaves
+    // some User fields undefined and makes Next.js reject the page props.
+    // Hydrate all file authors in one direct query instead.
+    const files = ret.rows
+      .map(comment => comment.issue.article.file)
+      .filter(file => file)
+    const authorIds = [...new Set(files.map(file => file.authorId))]
+    if (authorIds.length) {
+      const authors = await sequelize.models.User.findAll({
+        transaction,
+        where: { id: authorIds },
+      })
+      const authorsById = new Map(authors.map(author => [author.id, author]))
+      for (const file of files) file.author = authorsById.get(file.authorId)
+    }
+    return ret
   }
 
   Comment.prototype.destroySideEffects = async function(fields, opts={}) {

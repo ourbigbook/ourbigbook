@@ -28,7 +28,7 @@ export const getServerSidePropsIndexHoc = ({
       allowedSortsExtra?: any;
     } = {}
     const sequelize = req.sequelize
-    const { Article, Comment, Issue, Site, Topic, Upload, User } = sequelize.models
+    const { Article, Comment, File, Issue, Site, Topic, Upload, User } = sequelize.models
     switch (itemTypeEff) {
       case 'article':
         getOrderAndPageOpts.allowedSortsExtra = Article.ALLOWED_SORTS_EXTRA
@@ -94,6 +94,7 @@ export const getServerSidePropsIndexHoc = ({
           case 'comment':
             articles = null
             articlesCount = null
+            break
           case 'discussion':
             articlesAndCounts = await Issue.getIssues({
               sequelize,
@@ -138,6 +139,14 @@ export const getServerSidePropsIndexHoc = ({
         [{
           model: Article,
           as: 'pinnedArticle',
+          include: [{
+            model: File,
+            as: 'file',
+            include: [{
+              model: User,
+              as: 'author',
+            }],
+          }],
         }]
       }).then(site => {
         const pinnedArticle = site.pinnedArticle

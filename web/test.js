@@ -1683,6 +1683,37 @@ it('Article and Topic keep offset pagination narrow until page hydration', async
   assert(topicSql.some(sql => sql.includes('articleCount') && / IN \(/.test(sql)), topicSql.join('\n'))
 })
 
+it('Comment listing eagerly loads article files before serialization', async function() {
+  const sequelize = this.test.sequelize
+  const { Comment, Issue } = sequelize.models
+  const user = await createUser(sequelize, 0)
+  const article = await createArticle(sequelize, user, { i: 0 })
+  const issue = await Issue.createSideEffects(user, article, {
+    number: 1,
+    titleSource: 'Discussion',
+  })
+  await Comment.createSideEffects(user, issue, {
+    number: 1,
+    source: 'Comment',
+  })
+
+  const { rows } = await Comment.getComments({ limit: 20, list: true })
+  assert.strictEqual(rows.length, 1)
+  assert.strictEqual(rows[0].issue.article.file.author.id, user.id)
+
+  let serializationQueries = 0
+  const hookName = 'countCommentSerializationQueries'
+  sequelize.addHook('beforeQuery', hookName, () => { serializationQueries++ })
+  let json
+  try {
+    json = await rows[0].toJson(null)
+  } finally {
+    sequelize.removeHook('beforeQuery', hookName)
+  }
+  assert.strictEqual(serializationQueries, 0)
+  assert.strictEqual(json.issue.article.author.username, user.username)
+})
+
 it('User.findAndCountArticlesByFollowed', async function() {
   const sequelize = this.test.sequelize
   const user0 = await createUser(sequelize, 0)

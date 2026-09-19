@@ -90,6 +90,14 @@ module.exports = (sequelize) => {
       as: 'article',
       required: true,
       subQuery: false,
+      include: [{
+        model: sequelize.models.File,
+        as: 'file',
+        include: [{
+          model: sequelize.models.User,
+          as: 'author',
+        }],
+      }],
     }
     if (articleId) {
       articleInclude.where = { id: articleId }

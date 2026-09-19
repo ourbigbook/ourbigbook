@@ -37,7 +37,6 @@ import { encodeGetParams, QUERY_FALSE_VAL, QUERY_TRUE_VAL } from 'ourbigbook/web
 import {
   AT_MENTION_CHAR,
   UNICODE_SEARCH_CHAR,
-  encodeUrlPath,
   formatDate,
 } from 'ourbigbook'
 import {
@@ -353,12 +352,12 @@ const ArticleList = ({
                                               longFrag = AT_MENTION_CHAR + frag
                                               if (targetElem) {
                                                 goToTargetInPage = true
-                                                a.href = '#' + encodeUrlPath(longFrag)
+                                                a.href = '#' + routes.encodeUrlFragment(longFrag)
                                               }
                                             }
                                             if (!goToTargetInPage) {
                                               const frag = getShortFragFromLongForPath(urlFrag, urlPath)
-                                              a.href = url.pathname + (frag ? ('#' + encodeUrlPath(frag)) : '')
+                                              a.href = url.pathname + (frag ? ('#' + routes.encodeUrlFragment(frag)) : '')
                                             }
                                             a.addEventListener('click', e => {
                                               if (

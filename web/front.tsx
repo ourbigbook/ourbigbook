@@ -10,7 +10,6 @@ import ourbigbook, {
   INCOMING_LINKS_MARKER,
   TAGS_MARKER,
   URL_SEP,
-  encodeUrlPath,
   htmlCreatedUpdatedPills,
 } from 'ourbigbook'
 
@@ -648,7 +647,7 @@ export function getShortFragFromLong(fragNoHash) {
 
 /** Modify the current URL to have this hash. Do not add alter browser history. */
 export function replaceFrag(fragNoHash) {
-  const newUrl = window.location.pathname + window.location.search + '#' + encodeUrlPath(fragNoHash)
+  const newUrl = window.location.pathname + window.location.search + '#' + routes.encodeUrlFragment(fragNoHash)
   // Using this internal-looking API works. Not amazing, bu we can't find a better way.
   // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
   // https://github.com/vercel/next.js/discussions/18072
@@ -683,7 +682,7 @@ export function shortFragGoTo(
   targetElem: HTMLElement
 ) {
   handleShortFragmentSkipOnce.current = true
-  window.location.hash = encodeUrlPath(longFrag)
+  window.location.hash = routes.encodeUrlFragment(longFrag)
   replaceFrag(shortFrag)
   fragSetTarget(targetElem)
 }

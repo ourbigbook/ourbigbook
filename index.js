@@ -4903,9 +4903,11 @@ function htmlEscapeAttr(str) {
 }
 exports.htmlEscapeAttr = htmlEscapeAttr
 
-/** Percent-encode a URL path while preserving its component separators. */
+/** Percent-encode a URL path, preserving separators and RFC 3986 pchar characters. */
 function encodeUrlPath(path, pathSep='/') {
-  return path.split(pathSep).map(encodeURIComponent).join(pathSep)
+  return path.split(pathSep).map(part => encodeURIComponent(part).replace(
+    /%(?:24|26|2B|2C|3A|3B|3D|40)/g, escape => decodeURIComponent(escape),
+  )).join(pathSep)
 }
 exports.encodeUrlPath = encodeUrlPath
 

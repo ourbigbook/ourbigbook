@@ -622,7 +622,7 @@ export default function Article({
               // jump to the ID and highlight it.. This triggers a onhashchange event
               // which will call this function once again. The next call will then immediately
               // convert long ID to short ID.
-              window.location.replace('#' + encodeUrlPath(fullid))
+              window.location.replace('#' + routes.encodeUrlFragment(fullid))
             } else {
               // ID is not on page anymore because too many articles were added before it on the same page,
               // assume toplevel does not have scope for now. TODO get that information from DB and make the
@@ -638,9 +638,9 @@ export default function Article({
             // https://github.com/vercel/next.js/discussions/18072
             let newUrl
             if (handleShortFragmentCurrentFragType === 'long') {
-              newUrl = window.location.pathname + window.location.search + '#' + encodeUrlPath(getShortFragFromLong(fragNoHash))
+              newUrl = window.location.pathname + window.location.search + '#' + routes.encodeUrlFragment(getShortFragFromLong(fragNoHash))
             } else if (handleShortFragmentCurrentFragType === 'abs') {
-              newUrl = window.location.pathname + window.location.search + '#' + encodeUrlPath(AT_MENTION_CHAR + fragNoHash)
+              newUrl = window.location.pathname + window.location.search + '#' + routes.encodeUrlFragment(AT_MENTION_CHAR + fragNoHash)
             }
             window.history.replaceState({ ...window.history.state, as: newUrl, url: newUrl }, '', newUrl)
             // Makes user/mathematics -> user/mathematics#algebra -> user/linear-algebra -> browser back history button work
@@ -689,7 +689,7 @@ export default function Article({
                 // E.g. barack-obama/mathematics. So the handling can be a bit simplified.
                 const frag = routes.decodeUrlPath(new URL(a.href).hash.substring(1))
                 const shortFrag = getShortFragFromLong(frag)
-                a.href = '#' + encodeUrlPath(shortFrag)
+                a.href = '#' + routes.encodeUrlFragment(shortFrag)
                 a.addEventListener(
                   'click',
                   (ev) => {
@@ -815,11 +815,11 @@ export default function Article({
                 !url.search
               ) {
                 goToTargetInPage = true
-                a.href = '#' + encodeUrlPath(shortFrag)
+                a.href = '#' + routes.encodeUrlFragment(shortFrag)
               } else {
                 goToTargetInPage = false
                 const frag = getShortFragFromLongForPath(urlFrag, urlPath)
-                a.href = url.pathname + url.search + (frag ? ('#' + encodeUrlPath(frag)) : '')
+                a.href = url.pathname + url.search + (frag ? ('#' + routes.encodeUrlFragment(frag)) : '')
               }
               a.addEventListener('click', e => {
                 if (

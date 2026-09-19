@@ -321,8 +321,8 @@ afterEach(async function () {
 })
 
 it('routes percent-encode article and topic path components', function() {
-  const slug = 'user0/%51978?#[] 你好'
-  const encodedSlug = 'user0/%2551978%3F%23%5B%5D%20%E4%BD%A0%E5%A5%BD'
+  const slug = "user0/:@$&+,;=!'()*/%51978?#[] 你好"
+  const encodedSlug = "user0/:@$&+,;=!'()*/%2551978%3F%23%5B%5D%20%E4%BD%A0%E5%A5%BD"
   assert.strictEqual(routes.decodeUrlPath(encodedSlug), slug)
   assert.strictEqual(routes.decodeUrlPath('user0/%not-an-escape'), 'user0/%not-an-escape')
   assert.strictEqual(routes.article(slug), `/${encodedSlug}`)
@@ -334,6 +334,24 @@ it('routes percent-encode article and topic path components', function() {
   assert.strictEqual(routes.issue(slug, 1), `/${encodedSlug}/-/discussion/1`)
   assert.strictEqual(routes.topic(slug), `/-/topic/${encodedSlug}`)
   assert.strictEqual(routes.userArticlesChildren('user0', slug), `/user0/${encodedSlug}/-/children`)
+  const url = new URL(routes.article(slug), 'http://localhost:3000')
+  assert.strictEqual(routes.decodeUrlPath(url.pathname), '/' + slug)
+  assert.strictEqual(url.search, '')
+  assert.strictEqual(url.hash, '')
+})
+
+it('article fragments preserve allowed characters while escaping percent signs and delimiters', function() {
+  for (const [fragment, expected] of [
+    ['@barack-obama/mathematics/-/1', '@barack-obama/mathematics/-/1'],
+    ["@user0/:@$&+,;=!'()*?/-/1", "@user0/:@$&+,;=!'()*?/-/1"],
+    ['@user0/%40/%3F/%26/%51978', '@user0/%2540/%253F/%2526/%2551978'],
+    ['@user0/a?#[] 你好', '@user0/a?%23%5B%5D%20%E4%BD%A0%E5%A5%BD'],
+  ]) {
+    const url = new URL('http://localhost:3000/barack-obama')
+    url.hash = routes.encodeUrlFragment(fragment)
+    assert.strictEqual(url.href, `http://localhost:3000/barack-obama#${expected}`)
+    assert.strictEqual(routes.decodeUrlPath(url.hash.slice(1)), fragment)
+  }
 })
 
 it('getList', function() {
@@ -6444,7 +6462,26 @@ it(`api: explicit id`, async () => {
     ))
     assertStatus(status, data)
     assert.match(data.articles[0].render, /href="\/user0\/%2551978"/)
-  })
+    const punctuationPath = "punctuation:@$&+,;=!'()*"
+    ;({data, status} = await createOrUpdateArticleApi(
+      test,
+      createArticleArg({ titleSource: 'Punctuation ID' }),
+      { path: punctuationPath },
+    ))
+    assertStatus(status, data)
+    ;({data, status} = await createOrUpdateArticleApi(
+      test,
+      createArticleArg({ titleSource: 'Link to punctuation ID', bodySource: `\\x[[${punctuationPath}]]` }),
+    ))
+    assertStatus(status, data)
+    assert_xpath(`//x:a[@href="/user0/${punctuationPath}"]`, data.articles[0].render)
+    if (testNext) {
+      for (const path of ['%51978', punctuationPath]) {
+        const page = await test.sendJsonHttp('GET', routes.article(`user0/${path}`))
+        assert.strictEqual(page.status, 200)
+      }
+    }
+  }, { canTestNext: true })
 })
 
 it(`api: comment: that starts with title does not blow up`, async () => {

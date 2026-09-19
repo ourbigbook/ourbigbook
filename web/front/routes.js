@@ -15,6 +15,11 @@ function decodeUrlPath(path) {
   }
 }
 
+// Fragments allow all path characters and literal question marks (RFC 3986).
+function encodeUrlFragment(fragment) {
+  return encodeUrlPath(fragment).replace(/%3F/g, '?')
+}
+
 const encodeGetParamsWithPage = (opts, opts2={}) => {
   opts = Object.assign({}, opts)
   if (opts.page === 1) {
@@ -45,6 +50,7 @@ function currentPageHref(router, changes={}) {
 module.exports = {
   currentPageHref,
   decodeUrlPath,
+  encodeUrlFragment,
   home: () => `/`,
   articles: (opts={}) => `/${escapeUsername}/articles${encodeGetParamsWithPage(opts)}`,
   articleComments: (slug, opts={}) => `${articleScope(slug)}/comments${encodeGetParamsWithPage(opts)}`,

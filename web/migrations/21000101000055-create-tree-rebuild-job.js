@@ -6,6 +6,7 @@ module.exports = {
       activeUserId: { type: Sequelize.INTEGER, unique: true },
       status: { type: Sequelize.STRING, allowNull: false, defaultValue: 'pending' },
       error: Sequelize.TEXT,
+      startedAt: Sequelize.DATE,
       finishedAt: Sequelize.DATE,
       createdAt: { type: Sequelize.DATE, allowNull: false },
       updatedAt: { type: Sequelize.DATE, allowNull: false },

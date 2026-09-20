@@ -5682,21 +5682,46 @@ it('build history: TODO ordering, newest finished first, runtime, build IDs and 
 })
 
 
-it('build history: runtime migration preserves rows and indexes', async () => {
+it('background jobs: consolidated migrations reach the model schema and preserve existing data', async () => {
   await testApp(async test => {
-    const { ArticleJob, TreeRebuildJob } = test.sequelize.models
+    const user = await test.createUserApi(0)
     const qi = test.sequelize.getQueryInterface()
-    const migration = require('./migrations/21000101000062-build-job-runtime')
-    const job = await ArticleJob.create({ userId: 1, requestId: 'runtime-migration', requestHash: 'hash', items: '[]', total: 1 })
-    const tree = await TreeRebuildJob.create({ userId: 1 })
-    const indexes = async () => Promise.all(['ArticleJob', 'TreeRebuildJob', 'ArticleBuild'].map(async table =>
-      (await qi.showIndex(table)).map(index => JSON.stringify([index.unique, index.fields.map(field => field.attribute)])).sort()))
-    const before = await indexes()
-    await migration.down(qi)
-    await migration.up(qi, require('sequelize'))
-    assert.deepStrictEqual(await indexes(), before)
-    assert.strictEqual((await job.reload()).startedAt, null)
-    assert.strictEqual((await tree.reload()).startedAt, null)
+    const tables = ['TreeRebuildJob', 'ArticleJob', 'BuildQueue', 'ArticleBuild', 'User', 'File']
+    const schema = async () => {
+      const ret = {}
+      for (const table of tables) {
+        const columns = await qi.describeTable(table)
+        ret[table] = {
+          columns: Object.fromEntries(Object.keys(columns).sort().map(name => [name, [columns[name].type, columns[name].allowNull]])),
+          indexes: (await qi.showIndex(table)).map(index => JSON.stringify([index.unique, index.fields.map(field => field.attribute)])).sort(),
+        }
+      }
+      return ret
+    }
+    const before = await schema()
+    const fileCount = await test.sequelize.models.File.count()
+    const articleCount = await test.sequelize.models.Article.count()
+    const idCount = await test.sequelize.models.Id.count()
+    const migrations = [
+      '21000101000055-create-tree-rebuild-job',
+      '21000101000056-create-article-job',
+      '21000101000057-build-queue',
+      '21000101000058-file-checked-hash',
+      '21000101000059-article-build',
+    ].map(name => require('./migrations/' + name))
+    // Roll back to the schema before the undeployed background-job feature,
+    // then apply the complete simplified sequence twice.
+    for (let round = 0; round < 2; round++) {
+      for (const migration of [...migrations].reverse()) await migration.down(qi)
+      assert.strictEqual((await qi.describeTable('User')).dedicatedBuildWorker, undefined)
+      assert.strictEqual((await qi.describeTable('File')).checkedHash, undefined)
+      for (const migration of migrations) await migration.up(qi, require('sequelize'))
+      assert.deepStrictEqual(await schema(), before)
+      assert.strictEqual((await test.sequelize.models.User.findByPk(user.id)).username, user.username)
+      assert.strictEqual(await test.sequelize.models.File.count(), fileCount)
+      assert.strictEqual(await test.sequelize.models.Article.count(), articleCount)
+      assert.strictEqual(await test.sequelize.models.Id.count(), idCount)
+    }
   })
 })
 
@@ -5899,14 +5924,10 @@ it('build queue: migration preserves existing users and defaults to the shared w
     const qi = test.sequelize.getQueryInterface()
     await migration.down(qi)
     await migration.up(qi, require('sequelize'))
-    await require('./migrations/21000101000058-build-worker-recovery').up(qi, require('sequelize'))
     assert.strictEqual((await test.sequelize.models.User.findByPk(user.id)).dedicatedBuildWorker, false)
     const entry = await test.sequelize.models.BuildQueue.create({ userId: user.id, kind: 'TreeRebuildJob', jobId: 1 })
     assert.strictEqual(entry.status, 'queued')
     assert.strictEqual((await entry.reload()).activeSlot, null)
-    const recoveryMigration = require('./migrations/21000101000058-build-worker-recovery')
-    await recoveryMigration.down(qi)
-    await recoveryMigration.up(qi, require('sequelize'))
     await entry.reload()
     assert.strictEqual(entry.jobId, 1)
     assert.strictEqual(entry.recoveries, 0)
@@ -6584,7 +6605,7 @@ it('background builds: reject phase order, incomplete batches and concurrent sub
 it('background builds: migration preserves existing standalone jobs', async () => {
   await testApp(async test => {
     const qi = test.sequelize.getQueryInterface()
-    const migration = require('./migrations/21000101000061-article-build')
+    const migration = require('./migrations/21000101000059-article-build')
     const Job = test.sequelize.models.ArticleJob
     const job = await Job.create({ userId: 1, requestId: 'old-standalone-job', requestHash: 'hash', items: '[]', total: 0 })
     const definitions = async () => (await qi.showIndex('ArticleJob')).map(index =>
@@ -6674,7 +6695,7 @@ it('background renders: staged extraction and database-check failures preserve c
 it('background renders: check checkpoint migration preserves files', async () => {
   await testApp(async test => {
     await test.createUserApi(0)
-    const migration = require('./migrations/21000101000059-file-checked-hash')
+    const migration = require('./migrations/21000101000058-file-checked-hash')
     const qi = test.sequelize.getQueryInterface()
     const before = await test.sequelize.models.File.count()
     const indexDefinitions = async () => (await qi.showIndex('File')).map(index =>
@@ -6694,25 +6715,24 @@ it('background renders: migration matches the model', async () => {
     const qi = test.sequelize.getQueryInterface()
     await migration.down(qi)
     await migration.up(qi, require('sequelize'))
-    await require('./migrations/21000101000060-article-job-batch-position').up(qi, require('sequelize'))
-    await qi.dropTable('ArticleBuild')
-    await require('./migrations/21000101000061-article-build').up(qi, require('sequelize'))
-    await qi.addColumn('ArticleJob', 'startedAt', { type: require('sequelize').DATE, allowNull: true })
     const job = await test.sequelize.models.ArticleJob.create({
       userId: 1, activeUserId: 1, requestId: 'test-request', requestHash: 'hash', items: '[]', total: 0,
     })
     assert.strictEqual(job.completed, 0)
     assert.strictEqual(job.status, 'staged')
-    const batchMigration = require('./migrations/21000101000060-article-job-batch-position')
     const indexDefinitions = async () => (await qi.showIndex('ArticleJob')).map(index =>
       JSON.stringify([index.unique, index.fields.map(field => field.attribute)])).sort()
     const indexes = await indexDefinitions()
-    await batchMigration.down(qi)
-    await batchMigration.up(qi, require('sequelize'))
+    await migration.down(qi)
+    await migration.up(qi, require('sequelize'))
     assert.deepStrictEqual(await indexDefinitions(), indexes)
-    await job.reload()
-    assert.strictEqual(job.batchIndex, null)
-    assert.strictEqual(job.batchCount, null)
+    const fresh = await test.sequelize.models.ArticleJob.create({
+      userId: 1, requestId: 'new-job', requestHash: 'hash', items: '[]', total: 0,
+    })
+    await fresh.reload()
+    assert.strictEqual(fresh.batchIndex, null)
+    assert.strictEqual(fresh.batchCount, null)
+    assert.strictEqual(fresh.startedAt, null)
   })
 })
 
@@ -6872,7 +6892,6 @@ it('nested-set jobs: migration creates a usable model', async () => {
     const queryInterface = test.sequelize.getQueryInterface()
     await migration.down(queryInterface)
     await migration.up(queryInterface, require('sequelize'))
-    await queryInterface.addColumn('TreeRebuildJob', 'startedAt', { type: require('sequelize').DATE, allowNull: true })
     const [job] = await test.sequelize.models.TreeRebuildJob.enqueue(1)
     assert.strictEqual(job.status, 'pending')
     const [same, created] = await test.sequelize.models.TreeRebuildJob.enqueue(1)

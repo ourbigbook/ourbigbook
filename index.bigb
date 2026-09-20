@@ -8425,7 +8425,16 @@ This is analogous to <force-render>.
 = `--web-individual-upload`
 {parent=OurBigBook CLI options}
 
-Debug fallback for <--web>: use the original per-article HTTP requests for remote ID extraction, database checks, and rendering instead of background batches, and rebuild the nested set synchronously in the foreground. It also applies to `ourbigbook --web-nested-set --web-individual-upload`, providing a foreground fallback for standalone tree rebuilding. Foreground operations remain subject to the web router's request timeout.
+Upload to <OurBigBook Web> one article at a time.
+
+This is an older upload mechanism. This option was added mostly as a debug fallback in case there are issues with the newer <background upload> mechanism.
+
+It could however also be faster in case the background build queue is full and you are doing a single upload.
+
+= Background build
+{parent=--web-individual-upload}
+
+<--web>: use the original per-article HTTP requests for remote ID extraction, database checks, and rendering instead of background batches, and rebuild the nested set synchronously in the foreground. It also applies to `ourbigbook --web-nested-set --web-individual-upload`, providing a foreground fallback for standalone tree rebuilding. Foreground operations remain subject to the web router's request timeout.
 
 By default, <--web> manages one current build per user through `PUT /api/articles/bulk/build`, stages extraction, database-check, and render batches through `PUT /api/articles/bulk`, then submits the complete plan through `PUT /api/articles/bulk/build/commit`. Starting a replacement removes the user's previous jobs and history, but never articles. An in-flight article or tree transaction finishes before replacement can proceed; old workers cannot start further articles. Build identity in the CLI and UI is simply the user. An internal generation token rejects delayed requests belonging to a replaced upload. Nothing runs until submission verifies that every batch is present and in phase order. Each batch contains at most 100 articles and the CLI limits its serialized payload to approximately 4 MiB. Each phase can stage at most the larger of the user's article quota and existing article count, bounding job storage even for one-article batches. Source bodies stay on disk until their individual staging request. Local source splitting and its checks still happen in the CLI. Asset uploads and cleanup of removed articles retain their existing behavior.
 
@@ -10987,12 +10996,31 @@ which also fakes an IP with <OURBIGBOOK_DEV_IP>.
 {c}
 {parent=OurBigBook Web deployment}
 
-Nested-set rebuilds and bulk article processing can run in on-demand one-off dynos instead of hitting the router's request timeout. Deploy the code and database migration first (the normal build runs `web/bin/sync-db.js`). Then set these config vars in the Heroku dashboard:
-* `OURBIGBOOK_HEROKU_APP`: the app name, e.g. `ourbigbook`.
-* `OURBIGBOOK_HEROKU_TOKEN`: a Heroku API/OAuth credential allowed to create dynos for that app. Treat it as a deployment secret; do not commit it or expose it to the frontend.
-* optional `OURBIGBOOK_HEROKU_WORKER_SIZE`: the one-off dyno size; when omitted Heroku chooses its default.
+Nested-set rebuilds and bulk article processing can run in on-demand one-off dynos instead of hitting the router's request timeout. Deploy the code and database migration first (the normal build runs `web/bin/sync-db.js`). Then set these config vars:
+``
+./heroku config:set OURBIGBOOK_HEROKU_APP=ourbigbook
+``
 
-Create a dedicated authorization with `heroku authorizations:create --description "OurBigBook rebuild worker"` and put its Token value in `OURBIGBOOK_HEROKU_TOKEN` through the dashboard. The default authorization grants broad account access, not just permission to run this worker; use a dedicated account limited to this app if you need stronger isolation. See https://devcenter.heroku.com/articles/platform-api-quickstart[Heroku's Platform API setup].
+Next for the <background build> one-off dynos:
+``
+heroku authorizations:create --description "OurBigBook rebuild worker"
+``
+This outputs something like:
+``
+Creating OAuth Authorization... done
+Client:      <none>
+ID:          96a32534-a330-4d72-8bc5-e49351caf220
+Description: OurBigBook rebuild worker
+Scope:       global
+Token:       HRKU-.......
+Updated at:  Sat Sep 26 2026 05:22:31 GMT+0100 (British Summer Time) (less than a minute ago)
+``
+and then you will copy the token to:
+``
+./heroku config:set OURBIGBOOK_HEROKU_TOKEN=HRKU-.......
+``
+
+Create a dedicated authorization with `` and put its Token value in `OURBIGBOOK_HEROKU_TOKEN` through the dashboard. The default authorization grants broad account access, not just permission to run this worker; use a dedicated account limited to this app if you need stronger isolation. See https://devcenter.heroku.com/articles/platform-api-quickstart[Heroku's Platform API setup].
 
 No Procfile worker, `ps:scale worker=1`, Redis, or external scheduler is required. The web server dispatches the durable build queue and launches `node web/bin/background-worker.js JOB_ID --queue QUEUE_ID` via the Heroku Platform API, adding `--articles` for bulk article jobs. The one-off uses the deployed app and its existing database config, and exits when its queue is empty or its runtime budget is reached. Update the local CLI too: `ourbigbook --web-nested-set` polls the job until its transaction commits, and fails on launch/rebuild errors. Production servers without `OURBIGBOOK_HEROKU_APP` retain synchronous nested-set rebuilding, but bulk uploads require worker configuration; use <--web-individual-upload> until configured. When first deploying the shared-queue migration, let existing workers finish beforehand so workers from the old implementation do not overlap the new queue.
 

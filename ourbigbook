@@ -2068,7 +2068,7 @@ cli_parser.option('--web-cancel-build', 'Cancel the current web build without co
 cli_parser.option('--web-watch', 'Only watch the current web build; do not convert or upload (implies --web)');
 cli_parser.option('--web-force-render', "same as --force-render but for --web upload: https://docs.ourbigbook.com#web-force-render");
 cli_parser.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id');
-cli_parser.option('--web-individual-upload', 'Debug fallback: per-article foreground extraction/rendering and foreground nested-set rebuilding');
+cli_parser.option('--web-individual-upload', 'Upload articles individually on foreground https://docs.ourbigbook.com/#web-individual-upload');
 cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered: https://docs.ourbigbook.com#web-max-renders', cliInt);
 cli_parser.option('--web-nested-set', `only update the nested set index, don't do anything else. Implies --web: https://docs.ourbigbook.com#web-nested-set-option`, false);
 cli_parser.option('--no-web-nested-set-bulk', `only update the nested set index after all articles have been uploaded: https://docs.ourbigbook.com#web-nested-set-bulk`);

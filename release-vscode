@@ -1,12 +1,31 @@
 #!/usr/bin/env bash
-set -eux
+set -euxo pipefail
 version="$(awk -F \" '$2=="version"{print $4}' package.json)"
-sed -i "s/  \"ourbigbook\":[^,]*/  \"ourbigbook\": \"${version}\"/" vscode/package.json
-ext_version="$(./inc-version vscode/package.json)"
+ext_version="$(node -p 'require("./vscode/package.json").version')"
+committed_ext_version="$(git show HEAD:vscode/package.json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')"
+# A failed install may already have bumped the working tree version.
+if [ "$ext_version" = "$committed_ext_version" ]; then
+  ext_version="$(./inc-version vscode/package.json)"
+fi
 cd vscode
+# A successful publish can precede the new version appearing in registry reads.
+# Check from this directory so npm uses the same configuration as the install.
+for attempt in {1..12}; do
+  if published_version="$(npm view "ourbigbook@$version" version --prefer-online --fetch-retries=0 --fetch-timeout=10000)" &&
+    [ "$published_version" = "$version" ]; then
+    break
+  fi
+  if [ "$attempt" -eq 12 ]; then
+    echo "ourbigbook@$version is not available from the configured npm registry; retry ./release-vscode once it is available." >&2
+    exit 1
+  fi
+  echo "Waiting for ourbigbook@$version to appear in the npm registry ($attempt/12)..." >&2
+  sleep 5
+done
+sed -i "s/  \"ourbigbook\":[^,]*/  \"ourbigbook\": \"${version}\"/" package.json
 sed -i "s/  \"version\":[^,]*/  \"version\": \"${ext_version}\"/" package.json
 rm -rf node_modules
-npm install
+npm install --prefer-online --include=dev
 git add package.json package-lock.json
 git commit -m "vscode: version $ext_version"
 git tag -m "vscode-$ext_version" "vscode-$ext_version"

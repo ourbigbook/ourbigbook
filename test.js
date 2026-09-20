@@ -9125,6 +9125,50 @@ assert_lib('toc: table of contents contains included headers numbered without em
     },
   },
 )
+for (const splitDefault of [false, true]) {
+  for (const tocMaxEntries of [0, 3]) {
+    assert_lib(`toc: subheader containing an include splitDefault=${splitDefault} tocMaxEntries=${tocMaxEntries}`, {
+      convert_dir: true,
+      convert_opts: {
+        split_headers: true,
+        ourbigbook_json: { h: { splitDefault }, tocMaxEntries },
+      },
+      filesystem: {
+        'index.bigb': '= Home\n\n\\Include[university]\n',
+        'university.bigb': `= University
+
+= Courses
+{parent=University}
+
+= Mathematics course
+{parent=Courses}
+
+= Mathematical Tripos
+{synonym}{title2}
+
+\\Include[exams]
+`,
+        'exams.bigb': '= Exams\n\n== Paper\n\nExam content.\n',
+      },
+      assert_xpath: {
+        'index.html': [
+          `//*[@id='-/toc']//x:a[@data-test and @href='${splitDefault ? 'mathematics-course.html' : 'university.html#mathematics-course'}' and text()='Mathematics course']`,
+        ],
+        'mathematics-course.html': [
+          // An included header still links to its own page, independently of
+          // the split preference of the ordinary header that contains it.
+          "//*[@id='-/toc']//x:a[@data-test and @href='exams.html' and text()='Exams']",
+        ],
+        'paper.html': [
+          "//x:div[@class='p' and text()='Exam content.']",
+        ],
+      },
+      assert_not_xpath: tocMaxEntries ? {
+        'index.html': [`//*[@id='${ourbigbook.tocId('exams')}']`],
+      } : {},
+    })
+  }
+}
 assert_lib('toc: table of contents respects numbered=0 of included headers',
   {
     convert_dir: true,
@@ -9162,6 +9206,118 @@ assert_lib('toc: table of contents respects numbered=0 of included headers',
     },
   },
 )
+const tocLimitSource = `= Home
+
+== A
+
+=== Aa
+
+==== Aaa
+
+===== Aaaa
+
+=== Ab
+
+== B
+
+=== Ba
+
+==== Baa
+
+== C
+`
+for (const [limit, depth, count] of [
+  [undefined, 4, 9], [0, 4, 9], [10, 4, 9], [9, 4, 9],
+  [8, 3, 8], [7, 2, 6], [6, 2, 6], [5, 1, 3], [3, 1, 3], [2, 1, 3], [1, 1, 3],
+]) {
+  it(`lib: toc: tocMaxEntries=${limit} keeps complete depth levels`, async () => {
+    const extra = {}
+    const html = await ourbigbook.convert(tocLimitSource, {
+      add_test_instrumentation: true,
+      ourbigbook_json: { tocMaxEntries: limit },
+    }, extra)
+    assert.deepStrictEqual(extra.errors, [])
+    assert_xpath("//*[@id='-/toc']//x:a[@data-test]", html, { count })
+    assert_xpath("//*[@id='-/toc']//x:li[contains(@class, 'has-child') and not(x:ul)]", html, { count: 0 })
+    for (const [id, level] of [['a', 1], ['aa', 2], ['aaa', 3], ['aaaa', 4], ['ab', 2], ['b', 1], ['ba', 2], ['baa', 3], ['c', 1]]) {
+      const visible = level <= depth
+      assert_xpath(`//*[@id='${ourbigbook.tocId(id)}']`, html, { count: visible ? 1 : 0 })
+      // Culling only affects the outline; every section remains in the page,
+      // and its TOC shortcut points to an existing anchor.
+      assert_xpath(`//x:div[@id='${id}']`, html)
+      assert_xpath(`//x:div[@id='${id}']//x:nav//x:a[@class='toc' and @href='#${visible ? ourbigbook.tocId(id) : ourbigbook.Macro.TOC_ID}']`, html)
+    }
+  })
+}
+
+it('lib: toc: tocMaxEntries does not limit Web rendering', async () => {
+  const extra = {}
+  const html = await ourbigbook.convert(tocLimitSource, {
+    add_test_instrumentation: true, webMode: true,
+    ourbigbook_json: { tocMaxEntries: 1 },
+  }, extra)
+  assert.deepStrictEqual(extra.errors, [])
+  assert_xpath("//*[@id='-/toc']//x:a[@data-test]", html, { count: 9 })
+})
+
+it('lib: toc: tocMaxEntries preserves multiple toplevel headers even over budget', async () => {
+  const extra = {}
+  const html = await ourbigbook.convert('= One\n\n== Child\n\n= Two\n', {
+    add_test_instrumentation: true, ourbigbook_json: { tocMaxEntries: 1 },
+  }, extra)
+  assert.deepStrictEqual(extra.errors, [])
+  assert_xpath("//*[@id='-/toc']//x:a[@data-test]", html, { count: 2 })
+  for (const id of ['one', 'two']) assert_xpath(`//*[@id='${ourbigbook.tocId(id)}']`, html)
+  assert_xpath(`//*[@id='${ourbigbook.tocId('child')}']`, html, { count: 0 })
+})
+
+it('lib: toc: tocMaxEntries rejects invalid configuration', () => {
+  for (const tocMaxEntries of [-1, 1.5, '3', null, true, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.throws(() => ourbigbook.convertInitOptions({ ourbigbook_json: { tocMaxEntries } }),
+      /tocMaxEntries must be a non-negative integer/)
+  }
+})
+
+assert_lib('toc: tocMaxEntries applies independently to split pages and includes', {
+  convert_dir: true,
+  convert_opts: { split_headers: true },
+  filesystem: {
+    'ourbigbook.json': '{ "tocMaxEntries": 2 }',
+    'index.bigb': '= Home\n\n\\Include[branch]\n\n== Other\n',
+    'branch.bigb': '= Branch\n\n== Child one\n\n=== Deep\n\n== Child two\n',
+  },
+  assert_xpath: {
+    'index.html': [
+      "//*[@id='-/toc'][count(.//x:a[@data-test])=2]",
+      "//*[@id='-/toc']//x:a[@data-test and @href='branch.html']",
+      "//*[@id='-/toc']//x:a[@data-test and @href='#other']",
+    ],
+    'branch.html': [
+      "//*[@id='-/toc'][count(.//x:a[@data-test])=2]",
+      "//*[@id='-/toc']//x:a[@data-test and @href='#child-one']",
+      "//*[@id='-/toc']//x:a[@data-test and @href='#child-two']",
+      "//x:div[@id='deep']//x:nav//x:a[@class='toc' and @href='#-/toc']",
+    ],
+    'child-one.html': [
+      "//*[@id='-/toc'][count(.//x:a[@data-test])=1]",
+      `//*[@id='${ourbigbook.tocId('deep')}']`,
+    ],
+  },
+})
+
+assert_cli('toc: tocMaxEntries is passed to parallel static workers', {
+  args: ['-j', '2', '.'],
+  filesystem: {
+    'ourbigbook.json': '{ "tocMaxEntries": 1 }',
+    'index.bigb': '= Home\n\n\\Include[branch]\n',
+    'branch.bigb': '= Branch\n\n== Child one\n\n== Child two\n\n=== Deep\n',
+  },
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/index.html`]: ["//*[@id='-/toc'][count(.//x:a[@data-test])=1]"],
+    [`${TMP_DIRNAME}/html/branch.html`]: ["//*[@id='-/toc'][count(.//x:a[@data-test])=2]"],
+  },
+})
+
 if (false) {
 // Not implemented yet.
 assert_lib('toc: json: table of contents respects tocMaxCrossSource',
@@ -15717,6 +15873,99 @@ assert_cli('file: _file auto-generation conversion image media provider works',
     },
   },
 )
+
+it('release-vscode waits for npm visibility and resumes failed installs without another version bump', function() {
+  this.timeout(15000)
+  for (const scenario of ['delayed', 'unavailable', 'retry']) {
+    const root = path.join(testdir, `release-vscode-${scenario}`)
+    const bin = path.join(root, 'bin')
+    fs.mkdirSync(bin, { recursive: true })
+    fs.mkdirSync(path.join(root, 'vscode/node_modules'), { recursive: true })
+    const manifestPath = path.join(root, 'vscode/package.json')
+    const manifest = { version: '0.0.66', dependencies: { ourbigbook: '0.9.40' } }
+    fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2))
+    fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ version: '0.9.42' }, null, 2))
+    const marker = path.join(root, 'vscode/node_modules/preserve')
+    fs.writeFileSync(marker, '')
+    fs.symlinkSync(path.join(__dirname, 'inc-version'), path.join(root, 'inc-version'))
+    const statePath = path.join(root, 'state.json')
+    fs.writeFileSync(statePath, JSON.stringify({
+      failures: scenario === 'unavailable' ? 99 : 2,
+      failInstall: scenario === 'retry',
+      views: 0,
+    }))
+    // Exercise the actual release script, replacing external commands so tests
+    // never publish, push, install dependencies, or wait for a real registry.
+    const shim = path.join(bin, 'shim')
+    fs.writeFileSync(shim, `#!/usr/bin/env node
+const fs = require('fs')
+const path = require('path')
+const root = process.env.RELEASE_TEST_DIR
+const args = process.argv.slice(2)
+const tool = path.basename(process.argv[1])
+const statePath = path.join(root, 'state.json')
+const state = JSON.parse(fs.readFileSync(statePath))
+fs.appendFileSync(path.join(root, 'calls.jsonl'), JSON.stringify({
+  tool, args, cwd: process.cwd(),
+  manifest: JSON.parse(fs.readFileSync(path.join(root, 'vscode/package.json'))),
+  marker: fs.existsSync(path.join(root, 'vscode/node_modules/preserve')),
+}) + '\\n')
+if (tool === 'git' && args[0] === 'show') {
+  console.log(JSON.stringify({ version: '0.0.66' }))
+} else if (tool === 'npm' && args[0] === 'view') {
+  state.views++
+  fs.writeFileSync(statePath, JSON.stringify(state))
+  if (state.views <= state.failures) process.exit(1)
+  console.log('0.9.42')
+} else if (tool === 'npm' && args[0] === 'install' && state.failInstall) {
+  process.exit(1)
+}
+`, { mode: 0o755 })
+    for (const tool of ['npm', 'npx', 'git', 'sleep']) fs.symlinkSync(shim, path.join(bin, tool))
+    function run() {
+      return child_process.spawnSync('bash', [path.join(__dirname, 'release-vscode')], {
+        cwd: root,
+        env: { ...process.env, PATH: bin + path.delimiter + process.env.PATH, RELEASE_TEST_DIR: root },
+        encoding: 'utf8', timeout: 10000,
+      })
+    }
+    const out = run()
+    assert.strictEqual(out.status, scenario === 'delayed' ? 0 : 1, out.stdout + out.stderr)
+    const calls = () => fs.readFileSync(path.join(root, 'calls.jsonl'), 'utf8').trim().split('\n').map(JSON.parse)
+    const views = calls().filter(call => call.tool === 'npm' && call.args[0] === 'view')
+    assert.strictEqual(views.length, scenario === 'unavailable' ? 12 : 3)
+    for (const call of views) {
+      assert.deepStrictEqual(call.manifest, manifest)
+      assert(call.marker)
+      assert.strictEqual(call.cwd, path.join(root, 'vscode'))
+      assert(call.args.includes('--prefer-online'))
+      assert(call.args.includes('ourbigbook@0.9.42'))
+    }
+    if (scenario === 'unavailable') {
+      assert.deepStrictEqual(JSON.parse(fs.readFileSync(manifestPath)), manifest)
+      assert(fs.existsSync(marker))
+      assert(!calls().some(call => call.tool === 'npx' || call.args[0] === 'install' || call.args[0] === 'commit'))
+      assert(out.stderr.includes('not available from the configured npm registry'))
+    } else {
+      assert.strictEqual(JSON.parse(fs.readFileSync(manifestPath)).version, '0.0.67')
+      if (scenario === 'retry') {
+        assert(!calls().some(call => call.tool === 'npx' || call.args[0] === 'commit'))
+        fs.writeFileSync(statePath, JSON.stringify({ failures: 0, views: 0, failInstall: false }))
+        const retried = run()
+        assert.strictEqual(retried.status, 0, retried.stdout + retried.stderr)
+      }
+      const current = JSON.parse(fs.readFileSync(manifestPath))
+      assert.strictEqual(current.version, '0.0.67')
+      assert.strictEqual(current.dependencies.ourbigbook, '0.9.42')
+      assert.strictEqual(calls().filter(call => call.tool === 'git' && call.args[0] === 'tag').length, 1)
+      assert(calls().some(call => call.tool === 'npx' && call.args.join(' ') === 'vsce publish'))
+      for (const call of calls().filter(call => call.tool === 'npm' && call.args[0] === 'install')) {
+        assert(call.args.includes('--prefer-online'))
+        assert(call.args.includes('--include=dev'))
+      }
+    }
+  }
+})
 
 // CLI parallel directory conversion.
 for (const jobs of ['0', '-1', '1.5', 'nope', '9007199254740992']) {

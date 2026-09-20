@@ -3113,6 +3113,8 @@ Table of Contents
 
 The ToC ignores <the toplevel header> if you have one.
 
+Use <tocMaxEntries> to limit the size of static tables of contents by removing whole depth levels.
+
 For when you want a quick outline of the header tree on the terminal, also consider the <--log headers> option.
 
 = Table of contents JavaScript open close interaction
@@ -8992,6 +8994,22 @@ If this option is not given, and if a file <ourbigbook.liquid.html> exists in th
 
 If <ourbigbook.liquid.html> exists but you don't want to use it, set the option to `null` and it won't be used.
 
+= `tocMaxEntries`
+{parent=ourbigbook.json}
+
+Maximum number of entries in each static HTML <table of contents>. Set a non-negative integer; `0` (the default) means unlimited. For example:
+``
+{
+  "tocMaxEntries": 1000
+}
+``
+
+If the table exceeds this limit, the deepest level is removed in full, repeatedly, until the remaining entries fit. Every retained depth level remains complete across all branches. The first level is always kept, even if it alone exceeds the limit.
+
+For example, if successive levels contain 4, 10, and 20 entries, a limit of 15 keeps the first two levels (14 entries). A limit of 10 keeps only the first level (4 entries), and a limit of 2 still keeps all 4 first-level entries.
+
+The limit is calculated independently for each output page, including <split headers> and <includes>. Only TOC entries are removed; all document sections remain. TOC shortcuts on omitted headings link to the table of contents itself. This setting does not change <OurBigBook Web> tables of contents.
+
 = `toSplitHeaders`
 {parent=ourbigbook.json}
 
@@ -13065,8 +13083,10 @@ So for now, we ignore the problem and take the "easy to get started" approach of
 If changes are made only to the extension, it is also possible to release a new version of the extension alone with \a[release-vscode]:
 
 ``
-./relese-vscode
+./release-vscode
 ``
+
+The script waits for the current OurBigBook version to be visible in the npm registry before updating the extension manifest and reinstalling dependencies. If an install fails after the extension version was bumped, rerunning `./release-vscode` reuses that uncommitted version.
 
 = OurBigBook media repository
 {parent=Developing OurBigBook}

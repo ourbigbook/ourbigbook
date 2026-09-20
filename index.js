@@ -3679,6 +3679,7 @@ function renderAstList({ asts, context, first_toplevel, header_count, split }) {
     }
     // Do the conversion.
     context.toc_was_rendered = false
+    context.toc_entry_ids = undefined
     if (!context.options.webMode) {
       // We set this so that on local conversion the project toplevel header
       // will actually render as is rather than HOME.
@@ -4228,6 +4229,7 @@ function convertInitContext(options={}, extra_returns={}) {
     // Set of all the headers that have synonym set on them.
     // Originally used to generate redirects to the heade they point to.
     synonym_headers: new Set(),
+    toc_entry_ids: undefined,
     toc_was_rendered: false,
     toplevel_id: options.toplevel_id,
     // Map from each toplevel_id to a list of AstNodes with that toplevel_id.
@@ -4250,6 +4252,9 @@ exports.convertInitContext = convertInitContext
 function convertInitOurbigbookJson(ourbigbook_json={}) {
   const ourbigbook_json_orig = ourbigbook_json
   ourbigbook_json = lodash.merge({}, OURBIGBOOK_JSON_DEFAULT, ourbigbook_json)
+  if (!Number.isSafeInteger(ourbigbook_json.tocMaxEntries) || ourbigbook_json.tocMaxEntries < 0) {
+    throw new Error('tocMaxEntries must be a non-negative integer (0 means unlimited)')
+  }
   {
     if (!('media-providers' in ourbigbook_json)) { ourbigbook_json['media-providers'] = {}; }
     {
@@ -8051,6 +8056,23 @@ function renderToc(context) {
   if (root_node.children.length === 1) {
     root_node = root_node.children[0];
   }
+  let max_level = Infinity
+  const max_entries = context.options.webMode ? 0 : context.options.ourbigbook_json.tocMaxEntries
+  if (max_entries) {
+    // Admit whole depth levels, always retaining the first even if it exceeds
+    // the budget. Count before rendering so omitted titles cost no render work.
+    let nodes = root_node.children
+    let count = 0
+    max_level = 0
+    while (nodes.length) {
+      if (max_level && count + nodes.length > max_entries) break
+      count += nodes.length
+      max_level++
+      if (count >= max_entries) break
+      nodes = nodes.flatMap(node => node.children)
+    }
+    context.toc_entry_ids = new Set()
+  }
   let descendant_count_html = getDescendantCountHtml(context, root_node, { long_style: false, show_descendant_count: true });
   for (let i = root_node.children.length - 1; i >= 0; i--) {
     todo_visit.push([root_node.children[i], 1]);
@@ -8059,7 +8081,7 @@ function renderToc(context) {
     const entry = {}
     const [tree_node, level] = todo_visit.pop();
     entry.level = level
-    const has_child = tree_node.children.length > 0
+    const has_child = level < max_level && tree_node.children.length > 0
     entry.has_child = has_child
     let target_ast = context.db_provider.get(tree_node.ast.id, context);
     if (
@@ -8093,6 +8115,7 @@ function renderToc(context) {
       });
       entry.href = xHrefAttr(target_ast, context);
       entry.target_id = target_ast.id
+      if (context.toc_entry_ids) context.toc_entry_ids.add(target_ast.id)
       if (context.options.split_headers) {
         entry.link_to_split = linkToSplitOpposite(target_ast, context)
       }
@@ -9352,6 +9375,7 @@ const OURBIGBOOK_JSON_DEFAULT = {
   openLinksOnNewTabs: false,
   redirects: [],
   publishRootUrl: undefined,
+  tocMaxEntries: 0,
   'unsafeXss': false,
   web: {
     host: OURBIGBOOK_DEFAULT_HOST,
@@ -11734,6 +11758,11 @@ const OUTPUT_FORMATS_LIST = [
               } else {
                 id = tocIdWithScopeRemoval(id, context)
               }
+              if (context.toc_entry_ids && !context.toc_entry_ids.has(ast.id)) {
+                // The section still exists, but its entry was culled. Link to
+                // the outline itself rather than an absent TOC entry.
+                id = context.options.tocIdPrefix + Macro.TOC_ID
+              }
               toc_link_html = `<a${htmlAttr(
                 'href',
                 '#' + htmlEscapeAttr(id)
@@ -11854,6 +11883,7 @@ const OUTPUT_FORMATS_LIST = [
           }
           // Variables we want permanently modify the context.
           context_old.toc_was_rendered = context.toc_was_rendered
+          context_old.toc_entry_ids = context.toc_entry_ids
 
           // file handling 2
           const renderPostAsts = []

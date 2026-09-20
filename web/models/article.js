@@ -263,6 +263,15 @@ module.exports = (sequelize) => {
             { name: 'id', order: 'DESC' },
           ],
         },
+        // API author sort=created, also without a list constraint.
+        {
+          name: 'article_author_id_created_at_id',
+          fields: [
+            'authorId',
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         // Does the logged in user have their own version of this topic?
         { fields: ['authorId', 'topicId'], },
 

@@ -46,8 +46,20 @@ module.exports = sequelize => {
 
   Job.launchHeroku = async (job, { articles = false, queueId, workerToken } = {}) => {
     const axios = require('axios')
-    if (!process.env.OURBIGBOOK_HEROKU_APP || !process.env.OURBIGBOOK_HEROKU_TOKEN) {
-      throw new Error('Configure OURBIGBOOK_HEROKU_APP and OURBIGBOOK_HEROKU_TOKEN')
+    const launchError = message => {
+      // Only explicitly selected diagnostic text crosses into logs/job history.
+      // Heroku can echo request values; never include axios config or headers.
+      for (const secret of [process.env.OURBIGBOOK_HEROKU_TOKEN, workerToken]) {
+        if (secret) message = message.split(secret).join('[redacted]')
+      }
+      message = message.replace(/Bearer\s+\S+/gi, 'Bearer [redacted]').replace(/[\r\n\t]/g, ' ').slice(0, 1000)
+      const error = new Error(message)
+      error.workerLaunchMessage = message
+      return error
+    }
+    const missing = ['OURBIGBOOK_HEROKU_APP', 'OURBIGBOOK_HEROKU_TOKEN'].filter(key => !process.env[key])
+    if (missing.length) {
+      throw launchError(`Could not launch build worker: missing ${missing.join(', ')}. Set these config vars on the Heroku app.`)
     }
     try {
       const response = await axios.post(
@@ -70,8 +82,11 @@ module.exports = sequelize => {
       )
       if (queueId) await sequelize.models.BuildQueue.update({ dynoId: response.data.id }, { where: { id: queueId, workerToken } })
     } catch (error) {
-      // Never log axios errors: their config contains the Heroku credential.
-      throw new Error(`Could not launch rebuild worker (Heroku ${error.response ? error.response.status : 'request failed'}). Retry --web-nested-set.`)
+      const status = error.response && error.response.status
+      const code = ['ECONNABORTED', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN'].includes(error.code) ? error.code : 'request failed'
+      const data = error.response && error.response.data
+      const detail = data && typeof data.message === 'string' ? ': ' + data.message : ''
+      throw launchError(`Could not launch build worker (Heroku ${Number.isInteger(status) ? 'HTTP ' + status : code})${detail}`)
     }
   }
 

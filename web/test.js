@@ -6903,6 +6903,82 @@ it('nested-set jobs: migration creates a usable model', async () => {
   })
 })
 
+it('build queue: launch errors are logged and saved without credentials', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const { ArticleJob, BuildQueue } = test.sequelize.models
+    const axios = require('axios')
+    const post = axios.post
+    const log = console.error
+    const production = config.isProduction
+    const keys = ['OURBIGBOOK_HEROKU_APP', 'OURBIGBOOK_HEROKU_TOKEN']
+    const previous = keys.map(key => process.env[key])
+    const logs = []
+    try {
+      config.isProduction = true
+      console.error = (...args) => logs.push(args.join(' '))
+      process.env.OURBIGBOOK_HEROKU_TOKEN = 'private-heroku-token'
+      delete process.env.OURBIGBOOK_HEROKU_APP
+      let calls = 0
+      axios.post = async () => { calls++; throw new Error('Must not call Heroku with missing configuration') }
+      const missing = await ArticleJob.create({ userId: user.id, requestId: 'missing-config-job', requestHash: 'hash', items: '[]', total: 1, status: 'pending' })
+      await BuildQueue.enqueue(missing, { articles: true })
+      assert.strictEqual(calls, 0)
+      assert.strictEqual((await missing.reload()).status, 'failed')
+      assert(missing.error.includes('missing OURBIGBOOK_HEROKU_APP'))
+      assert(logs.some(line => line.includes(missing.error)))
+      assert(logs.some(line => line.includes('@user0:')))
+      let root = await BuildQueue.findOne({ where: { activeSlot: 'shared' } })
+      // This change must not accidentally release ambiguous launch slots.
+      assert(root)
+      await BuildQueue.workerExited(root.id, root.workerToken)
+      process.env.OURBIGBOOK_HEROKU_APP = 'test-app'
+      const cases = [
+        { status: 401, message: 'Invalid credentials', expected: 'Heroku HTTP 401' },
+        { status: 422, message: 'Invalid dyno size', expected: 'Invalid dyno size' },
+        { code: 'ETIMEDOUT', expected: 'Heroku ETIMEDOUT' },
+      ]
+      for (const [i, failure] of cases.entries()) {
+        const job = await ArticleJob.create({ userId: user.id, requestId: `rejected-launch-${i}`, requestHash: 'hash', items: '[]', total: 1, status: 'pending' })
+        let workerToken
+        axios.post = async (url, body) => {
+          workerToken = body.command.split('--worker-token ')[1]
+          throw {
+            code: failure.code,
+            message: 'RAW ERROR private-heroku-token',
+            config: { headers: { Authorization: 'Bearer private-heroku-token' } },
+            ...(failure.status ? { response: { status: failure.status, data: {
+              message: failure.message + '\nprivate-heroku-token ' + workerToken,
+              unrelatedSecret: 'not-for-logs',
+            } } } : {}),
+          }
+        }
+        await BuildQueue.enqueue(job, { articles: true })
+        await job.reload()
+        assert.strictEqual(job.status, 'failed')
+        assert(job.error.includes(failure.expected))
+        assert(logs.some(line => line.includes(job.error)))
+        assert(!job.error.includes(workerToken))
+        assert(!logs.join('\n').includes(workerToken))
+        root = await BuildQueue.findOne({ where: { activeSlot: 'shared' } })
+        assert(root)
+        await BuildQueue.workerExited(root.id, root.workerToken)
+      }
+      assert(!logs.join('\n').includes('private-heroku-token'))
+      assert(!logs.join('\n').includes('RAW ERROR'))
+      assert(!logs.join('\n').includes('not-for-logs'))
+    } finally {
+      axios.post = post
+      console.error = log
+      config.isProduction = production
+      keys.forEach((key, i) => {
+        if (previous[i] === undefined) delete process.env[key]
+        else process.env[key] = previous[i]
+      })
+    }
+  })
+})
+
 it('nested-set jobs: Heroku launch request and credential redaction', async () => {
   await testApp(async test => {
     const axios = require('axios')
@@ -6929,7 +7005,7 @@ it('nested-set jobs: Heroku launch request and credential redaction', async () =
       axios.post = async () => { throw new Error('test-secret') }
       await assert.rejects(test.sequelize.models.TreeRebuildJob.launchHeroku({ id: 123 }), error => {
         assert(!error.message.includes('test-secret'))
-        return /Could not launch rebuild worker/.test(error.message)
+        return /Could not launch build worker/.test(error.message)
       })
     } finally {
       axios.post = originalPost

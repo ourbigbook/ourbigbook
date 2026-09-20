@@ -95,7 +95,7 @@ module.exports = sequelize => {
           if (await Queue.findOne({ where: { activeSlot: lane.slot }, transaction })) return
           entry = await Queue.findOne({
             where: { status: 'queued' },
-            include: [{ model: sequelize.models.User, as: 'user', where: lane.where, attributes: [] }],
+            include: [{ model: sequelize.models.User, as: 'user', where: lane.where, attributes: ['username'] }],
             order: [['id', 'ASC']], transaction,
           })
           if (!entry) return
@@ -131,12 +131,14 @@ module.exports = sequelize => {
           articles: entry.kind === 'ArticleJob', queueId: entry.id, workerToken,
         })
       } catch (error) {
+        const message = error.workerLaunchMessage || 'Could not launch build worker. Check worker configuration and retry.'
+        console.error(`build_worker: queue ${entry.id}, ${entry.kind} job ${entry.jobId}, @${entry.user.username}: ${message}`)
         await sequelize.transaction(sequelize.getDialect() === 'sqlite' ? { type: 'IMMEDIATE' } : {}, async transaction => {
           const current = await Queue.findOne({
             where: { id: entry.id, workerToken, status: 'launched' }, transaction, lock: transaction.LOCK.UPDATE,
           })
           if (current) await model(entry).update({ status: 'failed', activeUserId: null, finishedAt: new Date(),
-            error: 'Could not launch build worker. Check worker configuration and retry.',
+            error: message,
           }, { where: { id: entry.jobId, status: 'pending' }, transaction })
         })
         // Do not release: a timed-out launch could still be running.

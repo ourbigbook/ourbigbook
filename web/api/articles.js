@@ -109,33 +109,46 @@ router.get('/redirects', auth.optional, async function(req, res, next) {
 router.get('/hash', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
+    const { Article, File, Render, User } = sequelize.models
     const [limit, offset] = lib.getLimitAndOffset(req, res, {
       limitMax: webApi.ARTICLE_HASH_LIMIT_MAX,
     })
-    const authorInclude = {
-      model: sequelize.models.User,
-      as: 'author',
-      required: true,
-      attributes: [],
+    let where
+    if (req.query.author) {
+      const author = await User.findOne({
+        attributes: ['id'],
+        where: { username: req.query.author },
+      })
+      if (!author) return res.json({ articles: [], articlesCount: 0 })
+      where = { authorId: author.id }
     }
-    const author = req.query.author
-    if (author) {
-      authorInclude.where = { username: author }
-    }
-    const { count: filesCount, rows: files } = await sequelize.models.File.findAndCountAll({
-      subQuery: false,
+
+    // Select and count narrow File rows first. Render and Article are needed
+    // only to construct the response for the selected page.
+    const [filesCount, page] = await Promise.all([
+      File.count({ where }),
+      File.findAll({
+        attributes: ['id'],
+        limit,
+        offset,
+        order: [['path', 'ASC']],
+        raw: true,
+        where,
+      }),
+    ])
+    if (!page.length) return res.json({ articles: [], articlesCount: filesCount })
+    const files = await File.findAll({
       include: [
-        authorInclude,
         {
-          model: sequelize.models.Render,
+          model: Render,
           where: {
-            type: sequelize.models.Render.Types[ourbigbook.OUTPUT_FORMAT_HTML],
+            type: Render.Types[ourbigbook.OUTPUT_FORMAT_HTML],
           },
           required: false,
           attributes: [],
         },
         {
-          model: sequelize.models.Article,
+          model: Article,
           as: 'articles',
           attributes: ['list'],
         },
@@ -158,9 +171,8 @@ router.get('/hash', auth.optional, async function(req, res, next) {
           'renderOutdated'
         ],
       ],
-      limit,
-      offset,
       order: [['path', 'ASC']],
+      where: { id: { [Op.in]: page.map(file => file.id) } },
     })
     const articlesJson = []
     for (const file of files) {

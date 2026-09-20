@@ -1248,6 +1248,47 @@ it('Article author topic ordering index avoids filtering and sorting the author 
   await assertOrderedIndexScan()
 })
 
+it('File author path ordering index avoids sorting article hash manifests', async function() {
+  const sequelize = this.test.sequelize
+  const qi = sequelize.getQueryInterface()
+  const migration = require('./migrations/21000101000045-file-add-author-path-index')
+  const indexName = 'file_author_id_path'
+  const indexNames = async () => (await qi.showIndex('File')).map(index => index.name).sort()
+  const originalIndexes = await indexNames()
+  assert(originalIndexes.includes(indexName))
+
+  const user = await createUser(sequelize, 0)
+  await createArticle(sequelize, user, { i: 0 })
+
+  async function assertOrderedIndexScan() {
+    if (sequelize.options.dialect !== 'postgres') return
+    await sequelize.transaction(async transaction => {
+      await sequelize.query('SET LOCAL enable_seqscan = off', { transaction })
+      const [rows] = await sequelize.query(`EXPLAIN (FORMAT JSON)
+        SELECT "id" FROM "File" WHERE "authorId" = :authorId
+        ORDER BY "path" ASC LIMIT 20 OFFSET 2`, {
+        replacements: { authorId: user.id }, transaction,
+      })
+      const plan = rows[0]['QUERY PLAN'][0].Plan
+      const nodes = []
+      const visit = node => {
+        nodes.push(node)
+        for (const child of node.Plans || []) visit(child)
+      }
+      visit(plan)
+      assert(nodes.some(node => node['Index Name'] === indexName), JSON.stringify(plan))
+      assert(!nodes.some(node => node['Node Type'].includes('Sort')), JSON.stringify(plan))
+    })
+  }
+
+  await assertOrderedIndexScan()
+  await migration.down(qi)
+  assert.deepStrictEqual(await indexNames(), originalIndexes.filter(name => name !== indexName))
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexNames(), originalIndexes)
+  await assertOrderedIndexScan()
+})
+
 it('new user index article has null dates and sorts after dated articles', async function() {
   const sequelize = this.test.sequelize
   const { Article } = sequelize.models

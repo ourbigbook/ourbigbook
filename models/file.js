@@ -54,6 +54,11 @@ module.exports = (sequelize, web=false) => {
   if (web) {
     // Foreign key indexes https://docs.ourbigbook.com/database-guidelines
     indexes.push({ fields: ['authorId'], })
+    // Author-scoped hash manifests are returned in path order.
+    indexes.push({
+      name: 'file_author_id_path',
+      fields: ['authorId', { name: 'path', order: 'ASC' }],
+    })
   }
   const File = sequelize.define(
     'File',

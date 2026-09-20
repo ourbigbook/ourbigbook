@@ -31,7 +31,6 @@ router.get('/jobs', auth.optional, async function(req, res, next) {
     res.json({ ...history, jobs: history.jobs.map(job => ({
       username: usernames.get(job.userId),
       id: job.id,
-      buildId: job.buildId,
       batchIndex: job.batchIndex,
       batchCount: job.batchCount,
       phase: job.phase,

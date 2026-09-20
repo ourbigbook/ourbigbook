@@ -104,6 +104,11 @@ module.exports = sequelize => {
           const job = await model(entry).findByPk(entry.jobId, {
             attributes: entry.kind === 'ArticleJob' ? ['completed'] : ['id'], transaction,
           })
+          if (!job) {
+            await Queue.update({ status: 'finished' }, { where: { id: entry.id, status: 'queued' }, transaction })
+            entry = null
+            return
+          }
           const [claimed] = await Queue.update({ status: 'launched', activeSlot: lane.slot, workerId: entry.id, workerToken,
             dynoId: null, checkedAt: null, localPid: null, localHost: null, localIdentity: null, checkpoint: job.completed || 0,
             expiresAt: new Date(Date.now() + leaseMs),
@@ -118,6 +123,10 @@ module.exports = sequelize => {
       if (!entry) continue
       try {
         const job = await model(entry).findByPk(entry.jobId)
+        if (!job) {
+          await Queue.workerExited(entry.id, workerToken)
+          continue
+        }
         await sequelize.models.TreeRebuildJob.launchWorker(job, {
           articles: entry.kind === 'ArticleJob', queueId: entry.id, workerToken,
         })
@@ -155,7 +164,14 @@ module.exports = sequelize => {
         await current.update({ status: retry ? 'queued' : 'finished', activeSlot: null, recoveries }, { transaction })
       })
     }
+    await Queue.removeFinished()
   }
+
+  // Event-driven housekeeping only: preserve identities of live shared workers.
+  Queue.removeFinished = async (userId, transaction) => Queue.destroy({ where: {
+    ...(userId === undefined ? {} : { userId }), status: 'finished', activeSlot: null,
+    id: { [Op.notIn]: sequelize.literal('(SELECT "workerId" FROM "BuildQueue" WHERE "activeSlot" IS NOT NULL AND "workerId" IS NOT NULL)') },
+  }, transaction })
 
   Queue.run = async (id, workerToken) => {
     let entry = await Queue.findByPk(id)
@@ -193,6 +209,12 @@ module.exports = sequelize => {
             const job = await model(next).findByPk(next.jobId, {
               attributes: next.kind === 'ArticleJob' ? ['completed'] : ['id'], transaction,
             })
+            if (!job) {
+              await next.update({ status: 'finished' }, { transaction })
+              next = null
+              await Queue.update({ activeSlot: entry.activeSlot }, { where: { id: entry.id }, transaction })
+              return
+            }
             await next.update({ status: 'running', activeSlot: entry.activeSlot, expiresAt: entry.expiresAt, workerId: entry.workerId,
               workerToken: entry.workerToken, checkpoint: job.completed || 0,
             }, { transaction })
@@ -205,55 +227,6 @@ module.exports = sequelize => {
       clearTimeout(deadline)
     }
   }
-  Queue.prune = async ({ now=new Date(), keep=1000 }={}) => {
-    const { ArticleJob, ArticleBuild, TreeRebuildJob } = sequelize.models
-    const cutoff = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-    const replacements = { cutoff, keep }
-    await ArticleJob.expire()
-    await TreeRebuildJob.expire()
-    await ArticleBuild.update({ status: 'failed', error: 'Unsubmitted build expired.', finishedAt: now }, {
-      where: { status: 'staged', createdAt: { [Op.lt]: cutoff } },
-    })
-    // Rank article and tree jobs together so the limit is per user, not per
-    // job type. Protect complete active/recent builds and live worker roots.
-    for (let page = 0; page < 10; page++) {
-      const rows = await sequelize.query(`SELECT "id", "kind" FROM (
-        SELECT history.*, ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY COALESCE("finishedAt", "createdAt") DESC, "id" DESC, "kind" ASC) AS "historyRank"
-        FROM (${ArticleJob.historySql}) AS history WHERE "status" IN ('completed', 'failed')
-      ) AS ranked WHERE "historyRank" > :keep AND COALESCE("finishedAt", "createdAt") < :cutoff
-        AND NOT EXISTS (SELECT 1 FROM "ArticleBuild" b WHERE b."id" = ranked."buildId"
-          AND (b."status" NOT IN ('completed', 'failed') OR COALESCE(b."finishedAt", b."createdAt") >= :cutoff))
-        AND NOT EXISTS (SELECT 1 FROM "BuildQueue" q WHERE q."kind" = ranked."kind" AND q."jobId" = ranked."id"
-          AND (q."activeSlot" IS NOT NULL OR q."id" IN (SELECT "workerId" FROM "BuildQueue" WHERE "activeSlot" IS NOT NULL)))
-        LIMIT 1000`, { replacements, type: sequelize.QueryTypes.SELECT })
-      if (!rows.length) break
-      for (const kind of ['ArticleJob', 'TreeRebuildJob']) {
-        const ids = rows.filter(row => row.kind === kind).map(row => row.id)
-        if (ids.length) await sequelize.models[kind].destroy({ where: { id: ids, status: ['completed', 'failed'] } })
-      }
-    }
-    for (let page = 0; page < 10; page++) {
-      const rows = await sequelize.query(`SELECT "id" FROM (
-        SELECT "id", "treeJobId", "finishedAt", "createdAt", ROW_NUMBER() OVER (PARTITION BY "userId" ORDER BY COALESCE("finishedAt", "createdAt") DESC, "id" DESC) AS "historyRank"
-        FROM "ArticleBuild" WHERE "status" IN ('completed', 'failed')
-      ) AS ranked WHERE "historyRank" > :keep AND COALESCE("finishedAt", "createdAt") < :cutoff
-        AND NOT EXISTS (SELECT 1 FROM "ArticleJob" j WHERE j."buildId" = ranked."id")
-        AND NOT EXISTS (SELECT 1 FROM "TreeRebuildJob" t WHERE t."id" = ranked."treeJobId") LIMIT 1000`, {
-        replacements, type: sequelize.QueryTypes.SELECT,
-      })
-      if (!rows.length) break
-      await ArticleBuild.destroy({ where: { id: rows.map(row => row.id), status: ['completed', 'failed'] } })
-    }
-    for (let page = 0; page < 10; page++) {
-      const rows = await Queue.findAll({ attributes: ['id'], where: {
-        status: 'finished', activeSlot: null, updatedAt: { [Op.lt]: cutoff },
-        id: { [Op.notIn]: sequelize.literal('(SELECT "workerId" FROM "BuildQueue" WHERE "activeSlot" IS NOT NULL AND "workerId" IS NOT NULL)') },
-      }, limit: 1000 })
-      if (!rows.length) break
-      await Queue.destroy({ where: { id: rows.map(row => row.id), status: 'finished', activeSlot: null } })
-    }
-  }
-  let nextPruneAt = 0
   Queue.tick = async () => {
     await sequelize.models.ArticleBuild.advance()
     // A crash between recording a pending job and enqueueing it must not
@@ -271,10 +244,6 @@ module.exports = sequelize => {
       group: ['BuildQueue.userId'], raw: true,
     })
     for (const entry of waiting) await Queue.kick(entry.userId)
-    if (!config.isTest && Date.now() >= nextPruneAt) {
-      await Queue.prune()
-      nextPruneAt = Date.now() + 60 * 60 * 1000
-    }
   }
   return Queue
 }

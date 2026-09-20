@@ -1592,22 +1592,6 @@ function checkWebBulkBusy(status, data) {
   }
 }
 
-async function waitForActiveWebArticles(webApi, username) {
-  while (true) {
-    const { data, status } = await webApi.articlesBulkStatus(username, { timeout: 15000 })
-    assertApiStatus(status, data)
-    if (data.activeBuild) {
-      console.log(`web_upload: waiting for active build ${data.activeBuild.id}`)
-      await waitWebBuild(webApi, data.activeBuild.id, { allowFailure: true })
-      continue
-    }
-    if (!data.active.length) return
-    for (const job of data.active) {
-      console.log(`web_upload: waiting for active ${job.phase} job ${job.id}`)
-      await waitWebArticles(webApi, job.id, job.phase, { allowFailure: true })
-    }
-  }
-}
 
 async function queueWebArticles(webApi, articles, { phase='render', start=true, batchIndex, batchCount, onQueued, buildId, buildIndex }={}) {
   const requestId = require('crypto').randomBytes(16).toString('hex')
@@ -1625,13 +1609,14 @@ async function queueWebArticles(webApi, articles, { phase='render', start=true, 
   return id
 }
 
-async function waitWebArticles(webApi, id, phase, { allowFailure=false, batchIndex, batchCount, firstArticle }={}) {
+async function waitWebArticles(webApi, id, phase, { allowFailure=false, allowMissing=false, batchIndex, batchCount, firstArticle }={}) {
   const startedAt = now()
   let previousProgress
   let deadline = Date.now() + 21 * 60 * 1000
   while (true) {
     if (Date.now() > deadline) throw new Error(`Render job ${id} timed out; rerun --web to resume`)
     const result = await webApi.articlesBulkJob(id, { timeout: 15000 })
+    if (allowMissing && result.status === 404) return
     assertApiStatus(result.status, result.data)
     const job = result.data.job
     if (batchIndex === undefined && job.batchIndex != null) batchIndex = job.batchIndex
@@ -1665,12 +1650,36 @@ async function waitWebBuild(webApi, id, { allowFailure=false }={}) {
     const build = data.build
     if (build.status === 'completed') return
     if (build.status === 'failed') {
-      if (!allowFailure) throw new Error(build.error || `Build ${id} failed`)
-      console.error(`web_upload: build ${id} failed: ${build.error || 'unknown error'}`)
+      if (!allowFailure) throw new Error(build.error || 'Build failed')
+      console.error(`web_upload: build failed: ${build.error || 'unknown error'}`)
       return
     }
     if (build.status !== 'running') throw new Error(`Unexpected build status: ${build.status}`)
     if (data.job) await waitWebArticles(webApi, data.job.id, data.job.phase, { allowFailure })
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+}
+
+// Watch the user's current build, including staging by another CLI. No writes.
+async function watchWebBuild(webApi, username) {
+  let previous
+  while (true) {
+    const { data, status } = await webApi.articlesCurrentBuild({ timeout: 15000 })
+    assertApiStatus(status, data)
+    const { build, job, tree } = data
+    let message
+    if (job) {
+      await waitWebArticles(webApi, job.id, job.phase, { allowFailure: true, allowMissing: true })
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      continue
+    } else {
+      message = `web_upload: @${username}: ${tree ? 'tree ' + tree.status : build ? build.status : 'no build'}`
+    }
+    if (message !== previous) { console.log(message); previous = message }
+    if (!job && !tree && (!build || ['completed', 'failed'].includes(build.status))) {
+      if (build?.status === 'failed') throw new Error(build.error || 'Build failed')
+      return
+    }
     await new Promise(resolve => setTimeout(resolve, 1000))
   }
 }
@@ -2054,6 +2063,8 @@ cli_parser.option('-W, --web', 'sync to ourbigbook web https://docs.ourbigbook.c
 cli_parser.option('--web-ask-password', 'Ask the password in case it had some default https://docs.ourbigbook.com#web-ask-password');
 cli_parser.option('--web-dry', 'web dry run, skip any --web operations that would interact with the server https://docs.ourbigbook.com#web-dry', false);
 cli_parser.option('--web-force-id-extraction', "Force ID extraction on Web: https://docs.ourbigbook.com#web-force-id-extraction");
+cli_parser.option('--web-force', 'Replace the current web build without asking for confirmation (implies --web)');
+cli_parser.option('--web-watch', 'Only watch the current web build; do not convert or upload (implies --web)');
 cli_parser.option('--web-force-render', "same as --force-render but for --web upload: https://docs.ourbigbook.com#web-force-render");
 cli_parser.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id');
 cli_parser.option('--web-individual-upload', 'Debug fallback: per-article foreground extraction/rendering and foreground nested-set rebuilding');
@@ -2090,7 +2101,7 @@ if (cli.helpMacros) {
   let htmlXExtension;
   let publishTargetIsWebsite
   let input_dir;
-  const web = cli.web || cli.webTest || cli.webNestedSet
+  const web = cli.web || cli.webTest || cli.webNestedSet || cli.webWatch || cli.webForce
   if (cli.webStartId !== undefined) {
     if (!web) {
       cli_error('--web-start-id requires --web or --web-test')
@@ -2725,6 +2736,39 @@ if (cli.helpMacros) {
         })
       }
 
+      let currentBuildToken
+      if (cli.webWatch) {
+        await watchWebBuild(webApi, username)
+        process.exit(0)
+      }
+      if (!cli.webDry && !cli.webIndividualUpload && !cli.webNestedSet) {
+        const { data, status } = await webApi.articlesCurrentBuild({ timeout: 15000 })
+        assertApiStatus(status, data)
+        const ongoing = data.job || data.tree || (data.build && !['completed', 'failed'].includes(data.build.status))
+        if (ongoing && !cli.webForce) {
+          let answer = ''
+          if (process.stdin.isTTY) {
+            const [error, response] = await read({ prompt: 'A web build exists. Discard it and start a new upload? [y/N] ' })
+            if (error) throw error
+            answer = response
+          } else {
+            console.log('A web build exists; watching it. Use --web-force to replace it non-interactively.')
+          }
+          if (!/^y(es)?$/i.test(answer.trim())) {
+            await watchWebBuild(webApi, username)
+            process.exit(0)
+          }
+        }
+        currentBuildToken = require('crypto').randomBytes(16).toString('hex')
+        while (true) {
+          const result = await webApi.articlesBuildReplace(currentBuildToken, data.build?.token || null, { timeout: 15000 })
+          if (result.status !== 202) assertApiStatus(result.status, result.data)
+          if (result.data.build.status !== 'cancelling') break
+          console.log('web_upload: waiting for the current article/tree transaction to finish before replacement')
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      }
+
       if (cli.webNestedSet) {
         await updateNestedSet(webApi, username, { foreground: cli.webIndividualUpload })
         process.exit(0)
@@ -3008,7 +3052,7 @@ if (cli.helpMacros) {
             }
           }
         }
-        let buildId
+        let buildId = currentBuildToken
         const buildJobs = []
         for (const render of dorender) {
           let i = 0
@@ -3148,7 +3192,7 @@ if (cli.helpMacros) {
           for (const [batchIndex, batch] of phaseBatches.entries()) {
             if (!buildId) {
               buildId = require('crypto').randomBytes(16).toString('hex')
-              const { data, status } = await webApi.articlesBuildCreate(buildId, { timeout: 20000 })
+              const { data, status } = await webApi.articlesBuildReplace(buildId, null, { timeout: 20000 })
               checkWebBulkBusy(status, data)
               if ([404, 405].includes(status)) console.error('Durable background uploads require an updated server. Use --web-individual-upload for the legacy path.')
               if (status !== 202) assertApiStatus(status, data)
@@ -3167,10 +3211,16 @@ if (cli.helpMacros) {
           }
         }
         if (buildId) {
-          const { data, status } = await webApi.articlesBuildCommit(buildId, buildJobs.length, Boolean(cli.webNestedSetBulk), { timeout: 20000 })
+          let rebuildTree = Boolean(cli.webNestedSetBulk && (buildJobs.length || nestedSetNeedsUpdate))
+          if (cli.webNestedSetBulk && !rebuildTree) {
+            const result = await webApi.user(username)
+            assertApiStatus(result.status, result.data)
+            rebuildTree = Boolean(result.data.nestedSetNeedsUpdate)
+          }
+          const { data, status } = await webApi.articlesCurrentBuildCommit(buildId, buildJobs.length, rebuildTree, { timeout: 20000 })
           checkWebBulkBusy(status, data)
           if (status !== 202) assertApiStatus(status, data)
-          console.log(`web_upload: build ${buildId} submitted (${buildJobs.length} jobs); the server will finish without the CLI`)
+          console.log(`web_upload: @${username}: submitted (${buildJobs.length} jobs); the server will finish without the CLI`)
           for (const job of buildJobs) await waitWebArticles(webApi, job.id, job.phase, job)
           await waitWebBuild(webApi, buildId)
         }
@@ -3187,16 +3237,7 @@ if (cli.helpMacros) {
           }
         }
       }
-      while (true) {
-        try {
-          await upload()
-          break
-        } catch (error) {
-          if (!(error instanceof WebBulkBusyError)) throw error
-          await waitForActiveWebArticles(webApi, username)
-          console.log("web_upload: active job finished; restarting upload with fresh server hashes")
-        }
-      }
+      await upload()
       await sequelizeWeb.close()
     } else if (cli.watch) {
       if (cli.stdout) {

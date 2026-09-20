@@ -15,6 +15,42 @@ module.exports = sequelize => {
   const transactionOptions = () => sequelize.getDialect() === 'sqlite' ? { type: 'IMMEDIATE' } : {}
   const invalid = (message, status=422) => new (require('../api/lib').ValidationError)(message, status)
 
+  // IDs are internal generation tokens. Delayed requests from an old uploader
+  // must never modify its replacement; the public identity is the user.
+  Build.current = userId => Build.findOne({ where: { userId }, order: [['createdAt', 'DESC'], ['id', 'DESC']] })
+  const lockOptions = async transaction => {
+    if (sequelize.getDialect() === 'postgres') await sequelize.query("SET LOCAL lock_timeout = '1s'", { transaction })
+  }
+  Build.lockBusy = error => ['55P03', '40P01', 'SQLITE_BUSY'].includes((error.original || error).code)
+  Build.replace = async (userId, token, expected) => {
+    // Stop new work first. The caller retries while an in-flight article or
+    // tree transaction drains, rather than waiting past the router timeout.
+    await sequelize.transaction(transactionOptions(), async transaction => {
+      await lockOptions(transaction)
+      const builds = await Build.findAll({ where: { userId }, transaction, lock: transaction.LOCK.UPDATE,
+        order: [['createdAt', 'DESC'], ['id', 'DESC']] })
+      if (builds.some(build => build.id === token)) return
+      if ((builds[0]?.id || null) !== expected) throw invalid('Build changed; check current status before replacing it.', 409)
+      await Build.update({ status: 'cancelling' }, { where: { userId }, transaction })
+    })
+    return sequelize.transaction(transactionOptions(), async transaction => {
+      await lockOptions(transaction)
+      await sequelize.models.User.findByPk(userId, { transaction, lock: transaction.LOCK.UPDATE })
+      const existing = await Build.findOne({ where: { userId, id: token }, transaction })
+      if (existing) return existing
+      const current = await Build.findOne({ where: { userId }, transaction, order: [['createdAt', 'DESC'], ['id', 'DESC']] })
+      if ((current?.id || null) !== expected) throw invalid('Build changed; check current status before replacing it.', 409)
+      // Preserve worker semaphores until actual exit. A shared worker can also
+      // be serving another user, so killing its process is not safe.
+      await sequelize.models.BuildQueue.update({ status: 'finished' }, { where: { userId }, transaction })
+      await sequelize.models.BuildQueue.removeFinished(userId, transaction)
+      await sequelize.models.ArticleJob.destroy({ where: { userId }, transaction })
+      await sequelize.models.TreeRebuildJob.destroy({ where: { userId }, transaction })
+      await Build.destroy({ where: { userId }, transaction })
+      return Build.create({ id: token, userId }, { transaction })
+    })
+  }
+
   Build.assertIdle = async (userId, transaction) => {
     if (await Build.findOne({ where: { activeUserId: userId }, transaction }) ||
         await sequelize.models.ArticleJob.findOne({ where: { activeUserId: userId }, transaction })) {
@@ -59,6 +95,29 @@ module.exports = sequelize => {
 
   Build.advance = async userId => {
     const { User, ArticleJob, TreeRebuildJob, BuildQueue } = sequelize.models
+    // Finish cancellation even if the replacing CLI disconnected. No new
+    // upload is staged until the replacement request succeeds.
+    const cancelling = await Build.findAll({ attributes: ['id', 'userId'], where: {
+      status: 'cancelling', ...(userId === undefined ? {} : { userId }),
+    } })
+    for (const candidate of cancelling) {
+      try {
+        await sequelize.transaction(transactionOptions(), async transaction => {
+          await lockOptions(transaction)
+          await User.findByPk(candidate.userId, { transaction, lock: transaction.LOCK.UPDATE })
+          const build = await Build.findByPk(candidate.id, { transaction, lock: transaction.LOCK.UPDATE })
+          if (!build || build.status !== 'cancelling') return
+          await BuildQueue.update({ status: 'finished' }, { where: { userId: candidate.userId }, transaction })
+          for (const Job of [ArticleJob, TreeRebuildJob]) await Job.update({
+            status: 'failed', activeUserId: null, error: 'Build cancelled by a new upload.', finishedAt: new Date(),
+            ...(Job === ArticleJob ? { items: '[]' } : {}),
+          }, { where: { userId: candidate.userId, status: { [Op.notIn]: ['completed', 'failed'] } }, transaction })
+          await build.update({ status: 'failed', activeUserId: null, error: 'Build cancelled by a new upload.', finishedAt: new Date() }, { transaction })
+        })
+      } catch (error) {
+        if (!Build.lockBusy(error)) throw error
+      }
+    }
     const builds = await Build.findAll({ attributes: ['id', 'userId'], where: {
       status: 'running', ...(userId === undefined ? {} : { userId }),
     } })
@@ -66,7 +125,7 @@ module.exports = sequelize => {
       // Same lock order as commit and standalone Job.start.
       await User.findByPk(candidate.userId, { transaction, lock: transaction.LOCK.UPDATE })
       const build = await Build.findByPk(candidate.id, { transaction, lock: transaction.LOCK.UPDATE })
-      if (build.status !== 'running') return
+      if (!build || build.status !== 'running') return
       const finish = async (error=null) => {
         if (error) await ArticleJob.update({ status: 'failed', error: 'Build stopped after an earlier job failed.', items: '[]', finishedAt: new Date() }, {
           where: { buildId: build.id, status: 'waiting' }, transaction,

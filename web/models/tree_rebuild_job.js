@@ -26,10 +26,15 @@ module.exports = sequelize => {
 
   Job.enqueue = async userId => {
     await Job.expire()
-    const create = transaction => Job.findOrCreate({ where: { activeUserId: userId }, defaults: { userId }, transaction })
-    return sequelize.getDialect() === 'sqlite'
-      ? sequelize.transaction({ type: 'IMMEDIATE' }, create)
-      : create()
+    return sequelize.transaction(sequelize.getDialect() === 'sqlite' ? { type: 'IMMEDIATE' } : {}, async transaction => {
+      await sequelize.models.User.findByPk(userId, { transaction, lock: transaction.LOCK.UPDATE })
+      const active = await Job.findOne({ where: { activeUserId: userId }, transaction })
+      if (active) return [active, false]
+      // Standalone tree updates also retain just their latest result.
+      await Job.destroy({ where: { userId, status: ['completed', 'failed'] }, transaction })
+      await sequelize.models.BuildQueue.removeFinished(userId, transaction)
+      return [await Job.create({ userId, activeUserId: userId }, { transaction }), true]
+    })
   }
 
   Job.useBackground = () => !config.isProduction || Boolean(process.env.OURBIGBOOK_HEROKU_APP)
@@ -172,9 +177,14 @@ module.exports = sequelize => {
           await sequelize.query("SET LOCAL statement_timeout = '10min'", { transaction })
           await sequelize.query("SET LOCAL lock_timeout = '10s'", { transaction })
         }
-        const job = await Job.findByPk(id, { transaction })
+        let job = await Job.findByPk(id, { transaction })
+        if (!job) return
         const user = await sequelize.models.User.findByPk(job.userId, { transaction, lock: transaction.LOCK.UPDATE })
         if (!user) throw new Error('Rebuild user no longer exists')
+        job = await Job.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE })
+        if (!job || job.status !== 'running') return
+        const build = await sequelize.models.ArticleBuild.findOne({ where: { treeJobId: id }, transaction })
+        if (build && build.status !== 'running') throw new Error('Build replaced or cancelled')
         await sequelize.models.Article.updateNestedSets(user.username, { transaction })
         await user.update({ nestedSetNeedsUpdate: false }, { transaction })
         const [completed] = await Job.update({

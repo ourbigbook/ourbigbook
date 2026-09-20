@@ -41,14 +41,11 @@ module.exports = sequelize => {
       id: { [Op.notIn]: sequelize.literal(`(SELECT "jobId" FROM "BuildQueue" WHERE "kind" = 'ArticleJob' AND ("status" != 'finished' OR "activeSlot" IS NOT NULL))`) },
       queuedAt: { [Op.lt]: new Date(Date.now() - timeoutMs) },
     } })
-    await Job.update({ status: 'failed', items: '[]', finishedAt: new Date(), error: 'Staged upload expired; rerun --web.' }, {
-      where: { status: 'staged', createdAt: { [Op.lt]: new Date(Date.now() - 24 * 60 * 60 * 1000) } },
-    })
   }
 
   Job.launch = job => sequelize.models.TreeRebuildJob.launch(job, { articles: true })
 
-  // Shared shape for Settings and retention; never load job source payloads.
+  // Shared shape for user and site Settings; never load job source payloads.
   Job.historySql = `SELECT "id", "userId", 'ArticleJob' AS "kind", "phase", "status", "completed", "total", "error", "createdAt", "startedAt", "finishedAt", "buildId", "batchIndex", "batchCount" FROM "ArticleJob"
     UNION ALL SELECT "id", "userId", 'TreeRebuildJob' AS "kind", 'tree' AS "phase", "status", NULL AS "completed", NULL AS "total", "error", "createdAt", "startedAt", "finishedAt",
       (SELECT "id" FROM "ArticleBuild" WHERE "treeJobId" = "TreeRebuildJob"."id" LIMIT 1) AS "buildId", NULL AS "batchIndex", NULL AS "batchCount" FROM "TreeRebuildJob"`
@@ -110,6 +107,7 @@ module.exports = sequelize => {
     let currentPath
     try {
       const initial = await Job.findByPk(id)
+      if (!initial) return
       const items = JSON.parse(initial.items)
       const { createOrUpdateArticleData } = require('../api/articles')
       const { cant } = require('../front/cant')
@@ -125,11 +123,17 @@ module.exports = sequelize => {
             await sequelize.query("SET LOCAL statement_timeout = '10min'", { transaction })
             await sequelize.query("SET LOCAL lock_timeout = '10s'", { transaction })
           }
+          // Replacement and conversion share this lock. A replaced worker may
+          // finish its current article, but cannot begin another afterwards.
+          const user = await sequelize.models.User.findByPk(initial.userId, { transaction, lock: transaction.LOCK.UPDATE })
           const job = await Job.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE })
-          if (job.status !== 'running' || Date.now() - job.queuedAt.getTime() >= timeoutMs) {
+          if (!job || job.status !== 'running' || Date.now() - job.queuedAt.getTime() >= timeoutMs) {
             throw new Error('Render job expired')
           }
-          const user = await sequelize.models.User.findByPk(job.userId, { transaction })
+          if (job.buildId) {
+            const build = await sequelize.models.ArticleBuild.findByPk(job.buildId, { transaction })
+            if (!build || build.status !== 'running') throw new Error('Build replaced or cancelled')
+          }
           const denied = cant.editArticle(user, user && user.username)
           if (denied) throw new Error(String(denied))
           logPrefix = `web_${initial.phase}: job ${initial.batchIndex == null ? '?' : initial.batchIndex + 1}/${initial.batchCount == null ? '?' : initial.batchCount}, job id: ${id} (${i + 1}/${items.length}) @${user.username}/${currentPath}`

@@ -828,11 +828,22 @@ router.put('/bulk', auth.required, async function(req, res, next) {
         })
       }
       const createJob = async transaction => {
+        await User.findByPk(user.id, { transaction, lock: transaction.LOCK.UPDATE })
+        const existing = await Job.findOne({ where: { userId: user.id, requestId }, transaction })
+        if (existing) return [existing, false]
         if (buildId !== undefined) {
           const build = await Build.findOne({ where: { id: buildId, userId: user.id }, transaction, lock: transaction.LOCK.UPDATE })
           if (!build) throw new lib.ValidationError('Build not found', 404)
           if (build.status !== 'staged') throw new lib.ValidationError('Build is already submitted', 409)
+        } else if (await Build.findOne({ where: { userId: user.id, status: ['staged', 'running', 'cancelling'] }, transaction })) {
+          throw new lib.ValidationError('Another bulk job is active for this user', 409)
         }
+        // Bound staged storage even for clients sending one target per job.
+        // Each phase gets at most the user's article quota (or existing count).
+        const articleCount = await sequelize.models.Article.count({ where: { authorId: user.id }, transaction })
+        const targetLimit = Math.max(user.maxArticles, articleCount, 1)
+        const targetCount = Number(await Job.sum('total', { where: { userId: user.id, phase }, transaction }) || 0)
+        if (targetCount + items.length > targetLimit) throw new lib.ValidationError('Build exceeds the per-phase article limit', 422)
         return Job.findOrCreate({
           where: { userId: user.id, requestId },
           defaults: { phase, requestHash, items: JSON.stringify(items), total: items.length, batchIndex, batchCount, buildId, buildIndex },
@@ -885,6 +896,55 @@ router.get('/bulk', auth.required, async function(req, res, next) {
   }
 })
 
+// The authenticated user identifies the build. Tokens only fence stale clients.
+router.get('/bulk/build', auth.required, async function(req, res, next) {
+  try {
+    const { ArticleBuild, ArticleJob, TreeRebuildJob } = req.app.get('sequelize').models
+    const build = await ArticleBuild.current(req.payload.id)
+    const job = build && build.status === 'running' ? await ArticleJob.findOne({
+      attributes: ['id', 'phase'], where: { buildId: build.id, status: { [Op.ne]: 'completed' } }, order: [['buildIndex', 'ASC']],
+    }) : null
+    const active = await ArticleJob.findOne({ attributes: ['id', 'phase', 'status'],
+      where: { userId: req.payload.id, status: ['pending', 'queued', 'running'] }, order: [['id', 'ASC']] })
+    const tree = await TreeRebuildJob.findOne({ where: { activeUserId: req.payload.id } })
+    res.json({ build: build && { token: build.id, status: build.status, error: build.error, jobCount: build.jobCount },
+      job: job || active, tree: tree && { id: tree.id, status: tree.status } })
+  } catch (error) { next(error) }
+})
+
+router.put('/bulk/build', auth.required, async function(req, res, next) {
+  const { ArticleBuild: Build, User } = req.app.get('sequelize').models
+  try {
+    const user = await User.findByPk(req.payload.id)
+    const denied = cant.editArticle(user, user && user.username)
+    if (denied) throw new lib.ValidationError([String(denied)], 403)
+    const { token, expected = null } = req.body || {}
+    if (typeof token !== 'string' || !/^[a-zA-Z0-9-]{16,64}$/.test(token) ||
+        (expected !== null && (typeof expected !== 'string' || expected.length > 64))) throw new lib.ValidationError('Invalid build token')
+    const build = await Build.replace(user.id, token, expected)
+    res.status(202).json({ build: { token: build.id, status: build.status } })
+  } catch (error) {
+    if (Build.lockBusy(error)) return res.status(202).json({ build: { status: 'cancelling' } })
+    next(error)
+  }
+})
+
+router.put('/bulk/build/commit', auth.required, async function(req, res, next) {
+  try {
+    const sequelize = req.app.get('sequelize')
+    const user = await sequelize.models.User.findByPk(req.payload.id)
+    const denied = cant.editArticle(user, user && user.username)
+    if (denied) throw new lib.ValidationError([String(denied)], 403)
+    const { token, jobCount, rebuildTree } = req.body || {}
+    if (typeof token !== 'string' || !Number.isInteger(jobCount) || jobCount < 0 || jobCount > 100000 || typeof rebuildTree !== 'boolean') {
+      throw new lib.ValidationError('Invalid build submission')
+    }
+    await sequelize.models.ArticleBuild.commit(token, user.id, jobCount, rebuildTree)
+    res.status(202).json({ build: { status: 'running' } })
+    sequelize.models.BuildQueue.tick().catch(error => console.error('Could not dispatch build; queue timer will retry', error))
+  } catch (error) { next(error) }
+})
+
 router.put('/bulk/builds', auth.required, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')
@@ -900,6 +960,9 @@ router.put('/bulk/builds', auth.required, async function(req, res, next) {
       build = await Build.findOne({ where: { id, userId: user.id }, transaction })
       if (build) return
       await Build.assertIdle(user.id, transaction)
+      if (await Build.findOne({ where: { userId: user.id }, transaction })) {
+        throw new lib.ValidationError('Use an updated CLI to replace the current build', 409)
+      }
       build = await Build.create({ id, userId: user.id }, { transaction })
     })
     res.status(202).json({ build })

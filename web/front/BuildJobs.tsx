@@ -8,18 +8,17 @@ import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { formatNumberApprox } from 'ourbigbook'
 
-type BulkJob = { username?: string; id: number; buildId: string | null; batchIndex?: number | null; batchCount?: number | null; phase: string; status: string; completed: number | null; total: number | null; error: string | null; createdAt: string; runtimeMs: number | null }
+type BulkJob = { username?: string; id: number; batchIndex?: number | null; batchCount?: number | null; phase: string; status: string; completed: number | null; total: number | null; error: string | null; createdAt: string; runtimeMs: number | null }
 type BulkStatus = { jobs: BulkJob[]; jobsCount: number; todoCount: number; doneCount: number }
 
 const BuildJobTable = ({ jobs, loading, error, done, global }: { jobs: BulkJob[]; loading: boolean; error: string; done: boolean; global: boolean }) => {
   return <table className="list" aria-label="Build jobs">
-    <thead><tr>{global && <th>Username</th>}<th>Build ID</th><th>Job</th><th>Job ID</th><th>Phase</th><th>Status</th><th>Progress</th><th>Created (UTC)</th>{done && <th>Runtime</th>}<th>Error</th></tr></thead>
+    <thead><tr>{global && <th>Username</th>}<th>Job</th><th>Job ID</th><th>Phase</th><th>Status</th><th>Progress</th><th>Created (UTC)</th>{done && <th>Runtime</th>}<th>Error</th></tr></thead>
     <tbody>
-      {error && <tr><td colSpan={(done ? 9 : 8) + (global ? 1 : 0)} role="alert">{error}</td></tr>}
-      {!jobs.length && !error && <tr><td colSpan={(done ? 9 : 8) + (global ? 1 : 0)}>{loading ? 'Loading jobs…' : 'No jobs yet.'}</td></tr>}
+      {error && <tr><td colSpan={(done ? 8 : 7) + (global ? 1 : 0)} role="alert">{error}</td></tr>}
+      {!jobs.length && !error && <tr><td colSpan={(done ? 8 : 7) + (global ? 1 : 0)}>{loading ? 'Loading jobs…' : 'No jobs yet.'}</td></tr>}
       {jobs.map(job => <tr key={`${job.phase}-${job.id}`}>
       {global && <td><CustomLink href={routes.user(job.username)}>{job.username}</CustomLink></td>}
-      <td>{job.buildId || '—'}</td>
       <td>{job.batchIndex == null || job.batchCount == null ? '—' : `${job.batchIndex + 1}/${job.batchCount}`}</td>
       <td>{job.id}</td>
       <td>{{ extract: 'ID extraction', check: 'Database check', render: 'Rendering', tree: 'Tree rebuild' }[job.phase] || job.phase}</td>

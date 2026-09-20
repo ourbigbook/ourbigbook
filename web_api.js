@@ -253,6 +253,18 @@ class WebApi {
     return this.req('put', 'articles/bulk/builds', { body: { id }, ...reqOpts })
   }
 
+  async articlesCurrentBuild(reqOpts={}) {
+    return this.req('get', 'articles/bulk/build', reqOpts)
+  }
+
+  async articlesBuildReplace(token, expected, reqOpts={}) {
+    return this.req('put', 'articles/bulk/build', { body: { token, expected }, ...reqOpts })
+  }
+
+  async articlesCurrentBuildCommit(token, jobCount, rebuildTree, reqOpts={}) {
+    return this.req('put', 'articles/bulk/build/commit', { body: { token, jobCount, rebuildTree }, ...reqOpts })
+  }
+
   async articlesBuildCommit(id, jobCount, rebuildTree, reqOpts={}) {
     return this.req('put', `articles/bulk/builds/${encodeURIComponent(id)}`, { body: { jobCount, rebuildTree }, ...reqOpts })
   }

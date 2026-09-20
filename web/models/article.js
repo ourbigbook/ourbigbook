@@ -242,6 +242,17 @@ module.exports = (sequelize) => {
             { name: 'id', order: 'DESC' },
           ],
         },
+        // API author sort=score. Unlike the author-page indexes above, this
+        // query does not constrain list.
+        {
+          name: 'article_author_id_score_created_at_id',
+          fields: [
+            'authorId',
+            { name: 'score', order: 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         // Does the logged in user have their own version of this topic?
         { fields: ['authorId', 'topicId'], },
 

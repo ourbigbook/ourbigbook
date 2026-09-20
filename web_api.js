@@ -414,6 +414,10 @@ class WebApi {
     return this.req('get', `min${encodeGetParams(opts)}`, reqOpts)
   }
 
+  async siteJobs(reqOpts={}, { view, limit, offset }={}) {
+    return this.req('get', `site/jobs${encodeGetParams({ view, limit, offset })}`, reqOpts)
+  }
+
   async siteSettingsGet(opts={}, reqOpts={}) {
     return this.req('get', `site`, { body: opts, ...reqOpts })
   }

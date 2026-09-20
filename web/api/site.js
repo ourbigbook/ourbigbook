@@ -15,6 +15,38 @@ const {
   validateParam,
 } = lib
 
+// Public history deliberately omits precise timestamps, payloads and private error details.
+router.get('/jobs', auth.optional, async function(req, res, next) {
+  try {
+    const { ArticleJob, User } = req.app.get('sequelize').models
+    const view = req.query.view || 'todo'
+    if (!['todo', 'done'].includes(view)) throw new ValidationError('Invalid job view', 422)
+    const [limit, offset] = lib.getLimitAndOffset(req, res, { limitMax: 100 })
+    const history = await ArticleJob.history(null, { view, limit, offset })
+    const users = await User.findAll({
+      attributes: ['id', 'username'],
+      where: { id: [...new Set(history.jobs.map(job => job.userId))] },
+    })
+    const usernames = new Map(users.map(user => [user.id, user.username]))
+    res.json({ ...history, jobs: history.jobs.map(job => ({
+      username: usernames.get(job.userId),
+      id: job.id,
+      buildId: job.buildId,
+      batchIndex: job.batchIndex,
+      batchCount: job.batchCount,
+      phase: job.phase,
+      status: job.status,
+      completed: job.completed,
+      total: job.total,
+      createdAt: new Date(job.createdAt).toISOString().slice(0, 10),
+      runtimeMs: job.runtimeMs,
+      error: job.error ? 'Job failed' : null,
+    })) })
+  } catch (error) {
+    next(error)
+  }
+})
+
 router.get('/', auth.optional, async function(req, res, next) {
   try {
     const sequelize = req.app.get('sequelize')

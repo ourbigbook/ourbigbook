@@ -5555,6 +5555,72 @@ it('settings: account and build jobs use separate tabs', async function() {
   }, { canTestNext: true })
 })
 
+it('settings: public site build jobs reuse the settings tabs', async function() {
+  if (!testNext) return this.skip()
+  await testApp(async test => {
+    test.loginUser()
+    const parse = require('node-html-parser').parse
+    const settings = await test.sendJsonHttp('GET', routes.siteSettings())
+    assert.strictEqual(settings.status, 200)
+    assert.strictEqual(parse(settings.data).querySelector('#background-uploads'), null)
+    assert(parse(settings.data).querySelector('.tab-item.active').text.trim().endsWith('Settings'))
+    for (const view of ['todo', 'done']) {
+      const ret = await test.sendJsonHttp('GET', `${routes.siteSettings()}?tab=builds&jobs=${view}`)
+      assert.strictEqual(ret.status, 200)
+      const html = parse(ret.data)
+      assert.strictEqual(html.querySelectorAll('#background-uploads table.list').length, 1)
+      assert.strictEqual(html.querySelector('#background-uploads th').text, 'Username')
+      assert.strictEqual(html.querySelector('#background-uploads tbody td').getAttribute('colspan'), view === 'done' ? '10' : '9')
+      assert(html.querySelector('.tab-item.active').text.includes('Build jobs'))
+      assert(html.querySelector('#background-uploads .tab-item.active').text.endsWith(view === 'done' ? 'Done' : 'TODO'))
+      assert.strictEqual(html.querySelector('form'), null)
+    }
+  }, { canTestNext: true })
+})
+
+it('build history: public jobs include all users without precise timestamps or private details', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    const { ArticleJob, TreeRebuildJob } = test.sequelize.models
+    const createdAt = new Date('2026-09-25T12:34:56Z')
+    const first = await ArticleJob.create({ userId: user.id, requestId: 'private-request', requestHash: 'private-hash',
+      phase: 'render', status: 'running', items: '[{"private":"source"}]', total: 100, completed: 10, createdAt })
+    const second = await ArticleJob.create({ userId: other.id, requestId: 'other-request', requestHash: 'hash',
+      phase: 'check', status: 'waiting', items: '[]', total: 1, createdAt })
+    await TreeRebuildJob.create({ userId: other.id, status: 'failed', error: 'Private article source',
+      createdAt, startedAt: createdAt, finishedAt: new Date(createdAt.getTime() + 1234) })
+    test.loginUser()
+    let ret = await test.webApi.siteJobs({}, { limit: 1 })
+    assert.strictEqual(ret.status, 200)
+    assert.strictEqual(ret.data.todoCount, 2)
+    assert.strictEqual(ret.data.doneCount, 1)
+    assert.strictEqual(ret.data.jobsCount, 2)
+    assert.deepStrictEqual(ret.data.jobs.map(job => [job.id, job.username]), [[first.id, 'user0']])
+    ret = await test.webApi.siteJobs({}, { limit: 1, offset: 1 })
+    assert.deepStrictEqual(ret.data.jobs.map(job => [job.id, job.username]), [[second.id, 'user1']])
+    ret = await test.webApi.siteJobs({}, { view: 'done' })
+    assert.strictEqual(ret.data.jobsCount, 1)
+    const job = ret.data.jobs[0]
+    assert.strictEqual(job.username, 'user1')
+    assert.strictEqual(job.phase, 'tree')
+    assert.strictEqual(job.createdAt, '2026-09-25')
+    assert.strictEqual(job.runtimeMs, 1234)
+    assert.strictEqual(job.error, 'Job failed')
+    assert.deepStrictEqual(Object.keys(job).sort(), [
+      'username', 'id', 'buildId', 'batchIndex', 'batchCount', 'phase', 'status',
+      'completed', 'total', 'createdAt', 'runtimeMs', 'error',
+    ].sort())
+    assert(!JSON.stringify(ret.data).includes('Private'))
+    await first.update({ status: 'completed', finishedAt: new Date() })
+    ret = await test.webApi.siteJobs()
+    assert.strictEqual(ret.data.todoCount, 1)
+    assert.strictEqual(ret.data.doneCount, 2)
+    assert.strictEqual((await test.webApi.siteJobs({}, { view: 'invalid' })).status, 422)
+    assert.strictEqual((await test.webApi.articlesBulkStatus('user0', {}, { view: 'todo' })).status, 401)
+  })
+})
+
 it('build history: TODO ordering, newest finished first, runtime, build IDs and pagination', async () => {
   await testApp(async test => {
     const user = await test.createUserApi(0)

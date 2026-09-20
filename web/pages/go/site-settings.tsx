@@ -1,4 +1,4 @@
-import Router from 'next/router'
+import Router, { useRouter } from 'next/router'
 import React, { useRef } from 'react'
 
 import { cant } from 'front/cant'
@@ -13,11 +13,14 @@ import {
 import ErrorList from 'front/ErrorList'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
+import BuildJobs from 'front/BuildJobs'
+import CustomLink from 'front/CustomLink'
 import {
   disableButton,
   enableButton,
   MyHead,
   SettingsIcon,
+  BuildIcon,
   useCtrlEnterSubmit,
   useConfirmExitPage,
   PinnedArticleIcon,
@@ -54,6 +57,7 @@ export default function SiteSettings({
   loggedInUser,
   site: siteInit,
 }: SiteSettingsProps) {
+  const buildsTab = useRouter().query.tab === 'builds'
   const [loading, setLoading] = React.useState(false)
   const [errors, setErrors] = React.useState([])
   if (siteInit.pinnedArticle === undefined) {
@@ -167,6 +171,12 @@ export default function SiteSettings({
     <MyHead title={title} />
     <div className="settings-page content-not-ourbigbook">
       <h1><SettingsIcon /> {title}</h1>
+      <div className="tab-list" role="navigation" aria-label="Site settings">
+        <CustomLink href={routes.siteSettings()} className={`tab-item${!buildsTab ? ' active' : ''}`}><SettingsIcon /> Settings</CustomLink>
+        {' '}
+        <CustomLink href={`${routes.siteSettings()}?tab=builds`} className={`tab-item${buildsTab ? ' active' : ''}`}><BuildIcon /> Build jobs</CustomLink>
+      </div>
+      {buildsTab ? <BuildJobs baseUrl={routes.siteSettings()} /> : <>
       <p>This page contains global settings that affect the entire website. It can only be edited by <a href={`${docsAdminUrl}`}>admins</a>.</p>
       <MapErrors errors={errors} />
       <form onSubmit={handleSubmit}>
@@ -223,6 +233,7 @@ export default function SiteSettings({
           </div>
         }
       </form>
+      </>}
     </div>
   </>
 }

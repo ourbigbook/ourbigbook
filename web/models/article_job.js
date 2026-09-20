@@ -53,7 +53,8 @@ module.exports = sequelize => {
     UNION ALL SELECT "id", "userId", 'TreeRebuildJob' AS "kind", 'tree' AS "phase", "status", NULL AS "completed", NULL AS "total", "error", "createdAt", "startedAt", "finishedAt",
       (SELECT "id" FROM "ArticleBuild" WHERE "treeJobId" = "TreeRebuildJob"."id" LIMIT 1) AS "buildId", NULL AS "batchIndex", NULL AS "batchCount" FROM "TreeRebuildJob"`
   Job.history = async (userId, { view, limit, offset }) => {
-    const where = `"userId" = :userId AND "status" ${view === 'done' ? '' : 'NOT'} IN ('completed', 'failed')`
+    const userWhere = userId == null ? '1 = 1' : '"userId" = :userId'
+    const where = `${userWhere} AND "status" ${view === 'done' ? '' : 'NOT'} IN ('completed', 'failed')`
     const order = view === 'done'
       ? 'COALESCE("finishedAt", "createdAt") DESC, "id" DESC, "kind" ASC'
       : `CASE "status" WHEN 'running' THEN 0 WHEN 'pending' THEN 1 WHEN 'queued' THEN 2 WHEN 'waiting' THEN 3 ELSE 4 END, "createdAt" ASC, "id" ASC, "kind" ASC`
@@ -63,7 +64,7 @@ module.exports = sequelize => {
       sequelize.query(`SELECT
         COUNT(CASE WHEN "status" NOT IN ('completed', 'failed') THEN 1 END) AS "todoCount",
         COUNT(CASE WHEN "status" IN ('completed', 'failed') THEN 1 END) AS "doneCount"
-        FROM (${Job.historySql}) AS history WHERE "userId" = :userId`, { replacements, type: sequelize.QueryTypes.SELECT }),
+        FROM (${Job.historySql}) AS history WHERE ${userWhere}`, { replacements, type: sequelize.QueryTypes.SELECT }),
     ])
     const todoCount = Number(counts[0].todoCount)
     const doneCount = Number(counts[0].doneCount)

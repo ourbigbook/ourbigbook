@@ -16,7 +16,7 @@ import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
-import Pagination from 'front/Pagination'
+import BuildJobs from 'front/BuildJobs'
 import {
   addCommasToInteger,
   AppContext,
@@ -24,7 +24,6 @@ import {
   ErrorIcon,
   HelpIcon,
   LockIcon,
-  ListIcon,
   MyHead,
   OkIcon,
   SettingsIcon,
@@ -51,29 +50,6 @@ interface SettingsProps extends CommonPropsType {
   user?: UserType;
 }
 
-type BulkJob = { id: number; buildId: string | null; batchIndex?: number | null; batchCount?: number | null; phase: string; status: string; completed: number | null; total: number | null; error: string | null; createdAt: string; runtimeMs: number | null }
-type BulkStatus = { jobs: BulkJob[]; jobsCount: number; todoCount: number; doneCount: number }
-
-const BuildJobTable = ({ jobs, loading, error, done }: { jobs: BulkJob[]; loading: boolean; error: string; done: boolean }) => {
-  return <table className="list" aria-label="Build jobs">
-    <thead><tr><th>Build ID</th><th>Job</th><th>Job ID</th><th>Phase</th><th>Status</th><th>Progress</th><th>Created (UTC)</th>{done && <th>Runtime</th>}<th>Error</th></tr></thead>
-    <tbody>
-      {error && <tr><td colSpan={done ? 9 : 8} role="alert">{error}</td></tr>}
-      {!jobs.length && !error && <tr><td colSpan={done ? 9 : 8}>{loading ? 'Loading jobs…' : 'No jobs yet.'}</td></tr>}
-      {jobs.map(job => <tr key={`${job.phase}-${job.id}`}>
-      <td>{job.buildId || '—'}</td>
-      <td>{job.batchIndex == null || job.batchCount == null ? '—' : `${job.batchIndex + 1}/${job.batchCount}`}</td>
-      <td>{job.id}</td>
-      <td>{{ extract: 'ID extraction', check: 'Database check', render: 'Rendering', tree: 'Tree rebuild' }[job.phase] || job.phase}</td>
-      <td>{job.status}</td>
-      <td className="right">{job.total === null ? '—' : `${job.completed} / ${job.total}`}</td>
-      <td><time dateTime={job.createdAt}>{job.createdAt ? new Date(job.createdAt).toISOString().slice(0, 19).replace('T', ' ') : '—'}</time></td>
-      {done && <td className="right">{job.runtimeMs == null ? '—' : `${(job.runtimeMs / 1000).toFixed(3)} s`}</td>}
-      <td>{job.error || ''}</td>
-    </tr>)}</tbody>
-  </table>
-}
-
 const Settings = ({
   user: user0,
   loggedInUser,
@@ -84,36 +60,6 @@ const Settings = ({
   const username = user0.username
   const router = useRouter()
   const buildsTab = router.query.tab === 'builds'
-  const jobsView = router.query.jobs === 'done' ? 'done' : 'todo'
-  const requestedPage = Number(router.query.page || 1)
-  const jobsPage = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage - 1 : 0
-  const jobsPerPage = 20
-  const [bulkStatus, setBulkStatus] = React.useState<BulkStatus | null>(null)
-  const [bulkError, setBulkError] = React.useState('')
-  React.useEffect(() => {
-    if (!buildsTab) return
-    let active = true
-    let timer: ReturnType<typeof setTimeout>
-    setBulkStatus(null)
-    const poll = async () => {
-      try {
-        const { data, status } = await webApi.articlesBulkStatus(username, { timeout: 15000 }, {
-          view: jobsView, limit: jobsPerPage, offset: jobsPage * jobsPerPage,
-        })
-        if (status !== 200) throw new Error('Could not load background upload status')
-        if (active) {
-          setBulkStatus(data)
-          setBulkError('')
-        }
-      } catch {
-        if (active) setBulkError('Could not load background upload status. Retrying…')
-      } finally {
-        if (active) timer = setTimeout(poll, 3000)
-      }
-    }
-    poll()
-    return () => { active = false; clearTimeout(timer) }
-  }, [username, buildsTab, jobsView, jobsPage])
   const [userInfo, setUserInfo] = React.useState(lodash.pick(
     user0,
     [
@@ -267,15 +213,7 @@ const Settings = ({
         {' '}
         <CustomLink href={`${routes.userEdit(username)}?tab=builds`} className={`tab-item${buildsTab ? ' active' : ''}`}><BuildIcon /> Build jobs</CustomLink>
       </div>
-      {buildsTab ? <div id="background-uploads" className="list-container">
-        <div className="tab-list" role="navigation" aria-label="Build job status">
-          <CustomLink href={`${routes.userEdit(username)}?tab=builds`} className={`tab-item${jobsView === 'todo' ? ' active' : ''}`}><ListIcon /> TODO{bulkStatus && <span className="mobile-hide"> ({formatNumberApprox(bulkStatus.todoCount)})</span>}</CustomLink>
-          {' '}
-          <CustomLink href={`${routes.userEdit(username)}?tab=builds&jobs=done`} className={`tab-item${jobsView === 'done' ? ' active' : ''}`}><OkIcon /> Done{bulkStatus && <span className="mobile-hide"> ({formatNumberApprox(bulkStatus.doneCount)})</span>}</CustomLink>
-        </div>
-        <BuildJobTable jobs={bulkStatus?.jobs || []} loading={!bulkStatus} error={bulkError} done={jobsView === 'done'} />
-        {bulkStatus && <Pagination currentPage={jobsPage} itemsCount={bulkStatus.jobsCount} itemsPerPage={jobsPerPage} what="jobs" wrap={false} />}
-      </div> : <>
+      {buildsTab ? <BuildJobs username={username} baseUrl={routes.userEdit(username)} /> : <>
         <MapErrors errors={errors} />
         <form onSubmit={handleSubmit}>
           <Label label="Username">

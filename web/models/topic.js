@@ -42,6 +42,7 @@ module.exports = (sequelize) => {
     articleWhere,
     count,
     limit,
+    logging,
     offset,
     order,
     orderAscDesc,
@@ -110,6 +111,7 @@ module.exports = (sequelize) => {
     const findArgs = {
       include,
       limit,
+      logging,
       offset,
       order: orderList,
       where,
@@ -122,12 +124,55 @@ module.exports = (sequelize) => {
       })
     }
 
+    const hasArticleWhere = articleWhere && Reflect.ownKeys(articleWhere).length
+    const articleFilterInclude = () => hasArticleWhere ? [{
+      model: Article,
+      as: 'article',
+      attributes: [],
+      where: articleWhere,
+    }] : []
+    const pageInclude = () => hasArticleWhere || articleOrder !== undefined ? [{
+      model: Article,
+      as: 'article',
+      attributes: [],
+      ...(hasArticleWhere ? { where: articleWhere } : {}),
+    }] : []
+
+    async function findPage(findArgs) {
+      if (findArgs.limit === undefined) return Topic.findAll(findArgs)
+      const idRows = await Topic.findAll({
+        ...findArgs,
+        attributes: ['id'],
+        include: pageInclude(),
+        raw: true,
+      })
+      if (!idRows.length) return []
+      const idWhere = { id: { [Op.in]: idRows.map(row => row.id) } }
+      return Topic.findAll({
+        ...findArgs,
+        limit: undefined,
+        offset: undefined,
+        where: { [Op.and]: [findArgs.where, idWhere] },
+      })
+    }
+
     // Do the searches.
     const rets = await Promise.all(findArgss.map(async (findArgs) => {
       if (count) {
-        return Topic.findAndCountAll(findArgs)
+        const [retCount, retRows] = await Promise.all([
+          Topic.count({
+            ...findArgs,
+            attributes: undefined,
+            include: articleFilterInclude(),
+            limit: undefined,
+            offset: undefined,
+            order: undefined,
+          }),
+          findPage(findArgs),
+        ])
+        return { count: retCount, rows: retRows }
       } else {
-        return { rows: await Topic.findAll(findArgs) }
+        return { rows: await findPage(findArgs) }
       }
     }))
 

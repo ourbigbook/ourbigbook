@@ -1305,6 +1305,22 @@ WHERE
         sequelize, topicIdSearchArgs, '"Article"."topicId"'
       )
     }
+    if (author) {
+      // Article.authorId is deliberately denormalized from File.authorId. Use
+      // it for filtering so pagination can use the Article indexes instead of
+      // reaching Article through every File owned by the requested user.
+      const authorRow = await User.findOne({
+        attributes: ['id'],
+        transaction,
+        where: { username: author },
+      })
+      if (!authorRow) {
+        if (count) return rows ? { count: 0, rows: [] } : { count: 0 }
+        return []
+      }
+      where.authorId = authorRow.id
+      if (whereFts) whereFts.authorId = authorRow.id
+    }
     if (Object.keys(where).length === 0) {
       where = undefined;
     }
@@ -1314,9 +1330,6 @@ WHERE
       as: 'author',
       required: true,
       subQuery: false,
-    }
-    if (author) {
-      authorInclude.where = { username: author }
     }
     const fileInclude = []
     fileInclude.push(authorInclude)
@@ -1355,19 +1368,41 @@ WHERE
       required: true,
       subQuery: false,
     }]
+    const narrowIncludes = includes => includes.map(include => ({
+      ...include,
+      attributes: [],
+      ...(include.include ? { include: narrowIncludes(include.include) } : {}),
+      ...(include.through ? { through: { ...include.through, attributes: [] } } : {}),
+    }))
+    const filterInclude = []
+    // Keep joins needed only for filtering in the ID and count queries. The
+    // complete include tree is applied after LIMIT/OFFSET, to at most one page.
+    if (parentId) {
+      filterInclude.push(...narrowIncludes([{
+        model: File,
+        as: 'file',
+        required: true,
+        subQuery: false,
+        include: fileInclude.slice(-1),
+      }]))
+    }
     if (followedBy) {
-      include.push({
+      const followedInclude = {
         model: User,
         as: 'followers',
         where: { username: followedBy },
-      })
+      }
+      include.push(followedInclude)
+      filterInclude.push(...narrowIncludes([{ ...followedInclude, through: {} }]))
     }
     if (likedBy) {
-      include.push({
+      const likedInclude = {
         model: User,
         as: 'articleLikedBy',
         where: { username: likedBy },
-      })
+      }
+      include.push(likedInclude)
+      filterInclude.push(...narrowIncludes([{ ...likedInclude, through: {} }]))
     }
     const orderList = []
     if (topicIdSearch === undefined) {
@@ -1413,16 +1448,54 @@ WHERE
       })
     }
 
-    // Do the searches
+    async function findPage(findArgs) {
+      // Avoid materializing and sorting the wide Article/File/User rows before
+      // OFFSET. The public pagination parameters and result order stay intact.
+      if (findArgs.limit === undefined) return Article.findAll(findArgs)
+      const idRows = await Article.findAll({
+        ...findArgs,
+        attributes: ['id'],
+        include: narrowIncludes(filterInclude),
+        raw: true,
+      })
+      if (!idRows.length) return []
+      const idWhere = { id: { [Op.in]: idRows.map(row => row.id) } }
+      return Article.findAll({
+        ...findArgs,
+        limit: undefined,
+        offset: undefined,
+        where: findArgs.where ? { [Op.and]: [findArgs.where, idWhere] } : idWhere,
+      })
+    }
+
+    // Do the searches.
     const rets = await Promise.all(findArgss.map(async (findArgs) => {
       if (count) {
         if (rows) {
-          return Article.findAndCountAll(findArgs)
+          const [retCount, retRows] = await Promise.all([
+            Article.count({
+              ...findArgs,
+              attributes: undefined,
+              include: narrowIncludes(filterInclude),
+              limit: undefined,
+              offset: undefined,
+              order: undefined,
+            }),
+            findPage(findArgs),
+          ])
+          return { count: retCount, rows: retRows }
         } else {
-          return { count: await Article.count(findArgs) }
+          return { count: await Article.count({
+            ...findArgs,
+            attributes: undefined,
+            include: narrowIncludes(filterInclude),
+            limit: undefined,
+            offset: undefined,
+            order: undefined,
+          }) }
         }
       } else {
-        return { rows: await Article.findAll(findArgs) }
+        return { rows: await findPage(findArgs) }
       }
     }))
 

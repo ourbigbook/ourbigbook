@@ -1233,6 +1233,80 @@ it('new user index article has null dates and sorts after dated articles', async
   }
 })
 
+it('Article and Topic keep offset pagination narrow until page hydration', async function() {
+  const sequelize = this.test.sequelize
+  const { Article, Topic } = sequelize.models
+  const user = await createUser(sequelize, 0)
+  for (let i = 0; i < 4; i++) await createArticle(sequelize, user, { i })
+
+  const articleArgs = {
+    count: false,
+    order: 'topicId',
+    orderAscDesc: 'ASC',
+    sequelize,
+  }
+  const allArticles = await Article.getArticles(articleArgs)
+  const articleSql = []
+  const { count: articleCount, rows: articlePage } = await Article.getArticles({
+    ...articleArgs,
+    count: true,
+    limit: 2,
+    logging: sql => articleSql.push(sql),
+    offset: 1,
+  })
+  assert.strictEqual(articleCount, allArticles.length)
+  assert.deepStrictEqual(articlePage.map(article => article.id), allArticles.slice(1, 3).map(article => article.id))
+  assert.strictEqual(articleSql.length, 3, articleSql.join('\n'))
+  const articleCountSql = articleSql.find(sql => /SELECT count\(/i.test(sql))
+  assert(articleCountSql, articleSql.join('\n'))
+  assert(!/ JOIN /.test(articleCountSql), articleCountSql)
+  const articleIdSql = articleSql.find(sql => /SELECT [`"]id[`"] FROM [`"]Article[`"]/.test(sql))
+  assert(articleIdSql, articleSql.join('\n'))
+  assert(!/ JOIN /.test(articleIdSql), articleIdSql)
+  assert(!articleIdSql.includes('titleRender'), articleIdSql)
+  assert(articleSql.some(sql => sql.includes('titleRender') && / IN \(/.test(sql)), articleSql.join('\n'))
+
+  const authorSql = []
+  await Article.getArticles({
+    ...articleArgs,
+    author: user.username,
+    limit: 2,
+    logging: sql => authorSql.push(sql),
+    offset: 1,
+  })
+  const authorIdSql = authorSql.find(sql => /SELECT [`"]id[`"] FROM [`"]Article[`"]/.test(sql))
+  assert(authorIdSql, authorSql.join('\n'))
+  assert(/[`"]Article[`"]\.[`"]authorId[`"] =/.test(authorIdSql), authorIdSql)
+  assert(!/ JOIN /.test(authorIdSql), authorIdSql)
+
+  const topicArgs = {
+    count: false,
+    order: 'topicId',
+    orderAscDesc: 'ASC',
+    sequelize,
+  }
+  const allTopics = await Topic.getTopics(topicArgs)
+  const topicSql = []
+  const { count: topicCount, rows: topicPage } = await Topic.getTopics({
+    ...topicArgs,
+    count: true,
+    limit: 2,
+    logging: sql => topicSql.push(sql),
+    offset: 1,
+  })
+  assert.strictEqual(topicCount, allTopics.length)
+  assert.deepStrictEqual(topicPage.map(topic => topic.id), allTopics.slice(1, 3).map(topic => topic.id))
+  assert.strictEqual(topicSql.length, 3, topicSql.join('\n'))
+  const topicCountSql = topicSql.find(sql => /SELECT count\(/i.test(sql))
+  assert(topicCountSql, topicSql.join('\n'))
+  assert(!/ JOIN /.test(topicCountSql), topicCountSql)
+  const topicIdSql = topicSql.find(sql => /SELECT [`"]id[`"] FROM [`"]Topic[`"]/.test(sql))
+  assert(topicIdSql, topicSql.join('\n'))
+  assert(!/ JOIN /.test(topicIdSql), topicIdSql)
+  assert(!topicIdSql.includes('articleCount'), topicIdSql)
+  assert(topicSql.some(sql => sql.includes('articleCount') && / IN \(/.test(sql)), topicSql.join('\n'))
+})
+
 it('User.findAndCountArticlesByFollowed', async function() {
   const sequelize = this.test.sequelize
   const user0 = await createUser(sequelize, 0)

@@ -33,6 +33,15 @@ module.exports = (sequelize) => {
         { fields: ['articleCount'] },
         { fields: ['articleId'] },
         { fields: ['topicId'] },
+        // Global sort=id: stable topic ordering without sorting the complete
+        // Topic table before applying a deep offset.
+        {
+          name: 'topic_topic_id_created_at',
+          fields: [
+            { name: 'topicId', order: 'DESC' },
+            { name: 'createdAt', order: 'DESC' },
+          ],
+        },
       ]
     }
   )

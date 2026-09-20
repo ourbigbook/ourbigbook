@@ -12970,6 +12970,58 @@ ${githubMdTestTitles.map((title, index) =>
 ).join('\n')}`
 const githubMdTestOutputPrefix = `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md`
 assert_cli(
+  'publish: github-md oversized directory indexes resolve links from the canonical output',
+  {
+    args: ['--dry-run', '--publish', '--publish-target', 'github-md', '.'],
+    filesystem: {
+      'index.bigb': '= Home\n\n== Courses\n\n\\Include[exams]\n',
+      'exams/index.bigb': `= Exams
+
+\\x[home][Home link]
+
+\\Image[picture.png][Picture]
+
+\\Include[2026]
+`,
+      'exams/picture.png': 'image',
+      'exams/2026/index.bigb': `= 2026
+{scope}
+
+${githubMdTestTitles.map((title, index) =>
+  `${'='.repeat(index + 2)} ${title}\n{id=level-${index + 1}}\n`
+).join('\n')}`,
+      'ourbigbook.json': JSON.stringify({
+        target: { 'github-md': { githubMarkdownMaxBytes: 1200 } },
+      }),
+    },
+    pre_exec: [...publish_pre_exec, ['git', ['checkout', '-b', 'dev']]],
+    assert_contains: {
+      [`${githubMdTestOutputPrefix}/exams.md`]: [
+        '- [2026](exams/2026.md)',
+        '↑ **Parent:** [Courses](courses.md)',
+        '[Home link](split.md)',
+        '![Picture](-/raw/exams/picture.png)',
+      ],
+      [`${githubMdTestOutputPrefix}/exams/split.md`]: [
+        '- [2026](2026.md)',
+        '↑ **Parent:** [Courses](../courses.md)',
+        '[Home link](../split.md)',
+        '![Picture](../-/raw/exams/picture.png)',
+      ],
+      [`${githubMdTestOutputPrefix}/exams/2026.md`]: [
+        `[${githubMdTestTitles[0]}](2026/level-1.md)`,
+        '↑ **Parent:** [Exams](split.md)',
+      ],
+    },
+    assert_not_contains: {
+      [`${githubMdTestOutputPrefix}/exams.md`]: [githubMdTestTitles[0]],
+    },
+    assert_file_max_bytes: {
+      [`${githubMdTestOutputPrefix}/exams.md`]: 1200,
+    },
+  },
+)
+assert_cli(
   'publish: github-md splits oversized pages and shortens oversized ToCs',
   {
     args: ['--dry-run', '--publish', '--publish-target', 'github-md', '.'],

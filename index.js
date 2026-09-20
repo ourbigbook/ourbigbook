@@ -3452,6 +3452,33 @@ function enforceMarkdownMaxBytes(context) {
   const renderedOutputs = context.extra_returns.rendered_outputs
   const byteLength = value => new TextEncoder().encode(value).length
 
+  // Preserve canonical filenames (especially README.md), but render oversized
+  // nonsplit pages as single sections. Render at the destination path: a
+  // directory index can have exams.md and exams/split.md as its two outputs,
+  // so copying the split output would break every relative link and image.
+  const splitById = new Map()
+  for (const renderedOutput of Object.values(renderedOutputs)) {
+    if (renderedOutput.split && renderedOutput.header_ast !== undefined) {
+      splitById.set(renderedOutput.header_ast.id, renderedOutput)
+    }
+  }
+  for (const [outputPath, renderedOutput] of Object.entries(renderedOutputs)) {
+    if (
+      !renderedOutput.split &&
+      renderedOutput.header_ast !== undefined &&
+      byteLength(renderedOutput.full) >= maxBytes
+    ) {
+      const splitOutput = splitById.get(renderedOutput.header_ast.id)
+      if (splitOutput !== undefined) {
+        renderAstList({
+          ...splitOutput.markdownRenderArgs,
+          context,
+          outputPathOverride: outputPath,
+        })
+      }
+    }
+  }
+
   // A split page contains only one section, but its recursive ToC can still be
   // larger than GitHub will render. In that case retain only direct children.
   for (const renderedOutput of Object.values(renderedOutputs)) {
@@ -3476,30 +3503,10 @@ function enforceMarkdownMaxBytes(context) {
     }
   }
 
-  // Preserve canonical filenames (especially README.md), but give an oversized
-  // nonsplit page the content and cross-file links of its split counterpart.
-  const splitById = new Map()
-  for (const renderedOutput of Object.values(renderedOutputs)) {
-    if (renderedOutput.split && renderedOutput.header_ast !== undefined) {
-      splitById.set(renderedOutput.header_ast.id, renderedOutput)
-    }
-  }
-  for (const renderedOutput of Object.values(renderedOutputs)) {
-    if (
-      !renderedOutput.split &&
-      renderedOutput.header_ast !== undefined &&
-      byteLength(renderedOutput.full) >= maxBytes
-    ) {
-      const splitOutput = splitById.get(renderedOutput.header_ast.id)
-      if (splitOutput !== undefined) {
-        renderedOutput.full = splitOutput.full
-      }
-    }
-  }
-
   // A single header section has no safe automatic boundary left. Keep it so no
   // content is lost, but warn that GitHub might not render it.
   for (const [outputPath, renderedOutput] of Object.entries(renderedOutputs)) {
+    delete renderedOutput.markdownRenderArgs
     const bytes = byteLength(renderedOutput.full)
     if (bytes >= maxBytes) {
       context.extra_returns.warnings.push(new WarningMessage(
@@ -3597,9 +3604,10 @@ function renderTitlePossibleHomeMarker(ast, context) {
  * @param {List[Ast]} asts
  * @param {boolean} first_toplevel
  * @param {Number} header_count
+ * @param {String} outputPathOverride Render relative links from this output path.
  * @param {boolean} split
  */
-function renderAstList({ asts, context, first_toplevel, header_count, split }) {
+function renderAstList({ asts, context, first_toplevel, header_count, outputPathOverride, split }) {
   if (
     // Can fail if:
     // * the first thing in the document is a header
@@ -3630,7 +3638,8 @@ function renderAstList({ asts, context, first_toplevel, header_count, split }) {
     const output_path_ret = first_ast.output_path(
       cloneAndSet(context, 'to_split_headers', split)
     )
-    const { path: output_path, split_suffix } = output_path_ret
+    const { path: default_output_path, split_suffix } = output_path_ret
+    const output_path = outputPathOverride === undefined ? default_output_path : outputPathOverride
     if (options.log['split-headers']) {
       console.error(`split-headers${split ? '' : ' nosplit'}: ` + output_path);
     }
@@ -3696,6 +3705,13 @@ function renderAstList({ asts, context, first_toplevel, header_count, split }) {
       rendered_outputs_entry.header_ast = first_ast
       rendered_outputs_entry.split_suffix = split_suffix
       rendered_outputs_entry.image = context.firstImageSrc
+      if (
+        split &&
+        options.output_format === OUTPUT_FORMAT_MARKDOWN &&
+        options.markdownMaxBytes !== undefined
+      ) {
+        rendered_outputs_entry.markdownRenderArgs = { asts, first_toplevel, header_count, split }
+      }
       if (
         options.renderH2 &&
         first_ast.macro_name === Macro.HEADER_MACRO_NAME

@@ -30,6 +30,9 @@ async function start(port, startNext, cb) {
   }
 
   const sequelize = models.getSequelize(__dirname)
+  if (process.env.OURBIGBOOK_EXPLAIN && process.env.OURBIGBOOK_EXPLAIN !== '0') {
+    app.use(back_js.installExplain(sequelize, process.env.OURBIGBOOK_EXPLAIN))
+  }
   // https://stackoverflow.com/questions/57467589/req-protocol-is-always-http-and-not-https
   // req.protocol was fixed to HTTP instead of HTTPS, leading to emails sent from HTTPS having HTTP links.
   app.enable('trust proxy')

@@ -1,0 +1,369 @@
+#!/usr/bin/env node
+
+const { execFileSync } = require('child_process')
+const crypto = require('crypto')
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
+const { performance } = require('perf_hooks')
+const { databaseDialectHeader, explainDirectory, explainHeader } = require('../back/js')
+
+const repoRoot = path.resolve(__dirname, '../..')
+const defaultOutput = path.resolve(repoRoot, '../ourbigbook-media/benchmark.json')
+
+async function detectDatabaseDialect(baseUrl, timeout=60000) {
+  const response = await fetch(new URL('/api/', baseUrl), {
+    redirect: 'manual', signal: AbortSignal.timeout(timeout),
+  })
+  await response.arrayBuffer()
+  if (response.status !== 200) throw new Error(`Database detection failed: HTTP ${response.status} from /api/`)
+  const dialect = response.headers.get(databaseDialectHeader)
+  if (!['postgres', 'sqlite'].includes(dialect)) {
+    throw new Error('Server did not report a supported database dialect. Restart it with the updated code.')
+  }
+  return dialect
+}
+
+function osVersion() {
+  for (const filename of ['/etc/os-release', '/usr/lib/os-release']) {
+    try {
+      const match = fs.readFileSync(filename, 'utf8').match(/^PRETTY_NAME=(?:"([^"\r\n]*)"|'([^'\r\n]*)'|([^\r\n]*))$/m)
+      if (match) return match[1] ?? match[2] ?? match[3]
+    } catch (error) {
+      // Distribution metadata is optional, including on non-Linux hosts.
+    }
+  }
+  return null
+}
+
+function requestPath(pathname, params={}) {
+  const query = new URLSearchParams(params)
+  query.sort()
+  return pathname + (query.size ? `?${query}` : '')
+}
+
+function pageOffsets(count, limit) {
+  const last = Math.max(0, Math.ceil(count / limit) - 1)
+  return [...new Set([0, Math.floor(last / 2), last])].map(page => page * limit)
+}
+
+function buildPaths(db, { limit=20, pages=true }={}) {
+  const paths = new Set(['/api/', '/api/min'])
+  const add = (pathname, params) => paths.add(requestPath(pathname, params))
+  const listings = [
+    ['articles', db.articles, ['created', 'updated', 'score', 'id', 'follower-count', 'issues']],
+    ['topics', db.topics, ['created', 'updated', 'article-count', 'id']],
+    ['users', db.users, ['created', 'score', 'discussions', 'comments', 'files', 'file-size']],
+  ]
+  for (const [object, count, sorts] of listings) {
+    for (const offset of pageOffsets(count, limit)) {
+      for (const sort of sorts) add(`/api/${object}`, { limit, offset, sort })
+    }
+  }
+  const { author, article, issue } = db.samples
+  if (author) {
+    add('/api/users', { username: author.username })
+    add('/api/users', { followedBy: author.username, limit })
+    add('/api/users', { following: author.username, limit })
+    for (const offset of pageOffsets(author.articles, limit)) {
+      for (const sort of ['created', 'score', 'id']) {
+        add('/api/articles', { author: author.username, limit, offset, sort })
+      }
+    }
+    add('/api/articles', { followedBy: author.username, limit })
+    add('/api/articles', { likedBy: author.username, limit })
+    add('/api/articles', { parent: `@${author.username}`, limit })
+    add('/api/articles/hash', { author: author.username, limit })
+    add('/api/uploads/hash', { author: author.username, limit })
+  }
+  if (article) {
+    add('/api/articles', { id: article.slug })
+    add('/api/articles', { topicId: article.topicId, limit })
+    if (article.topicId) {
+      const search = article.topicId.slice(0, 8)
+      add('/api/articles', { search, limit })
+      add('/api/topics', { search, limit })
+    }
+    for (const sort of ['created', 'updated', 'score']) {
+      add('/api/issues', { id: article.slug, sort })
+    }
+  }
+  if (issue) {
+    add('/api/issues', { id: issue.slug, number: issue.number })
+    add(`/api/issues/${issue.number}/comments`, { id: issue.slug })
+  }
+  if (pages) {
+    // HTML listings apply filters/order directions that differ from the API.
+    // In particular these reproduce the expensive global article-list queries.
+    for (const offset of pageOffsets(db.listed_articles, 20)) {
+      for (const sort of ['created', 'score', 'id', 'id-desc']) {
+        add('/-/articles', { page: offset / 20 + 1, sort })
+      }
+    }
+    for (const [pathname, sorts] of [
+      ['/', ['article-count', 'id']],
+      ['/-/users', ['created', 'score']],
+      ['/-/discussions', ['created', 'score']],
+      ['/-/comments', ['created']],
+      ['/-/files', ['created', 'size']],
+    ]) {
+      for (const sort of sorts) add(pathname, { sort })
+    }
+  }
+  return [...paths]
+}
+
+async function collectDatabase(sequelize, { author: username }={}) {
+  const { Op } = require('sequelize')
+  const db = { dialect: sequelize.getDialect() }
+  for (const [key, model] of Object.entries({
+    articles: 'Article', users: 'User', topics: 'Topic', issues: 'Issue',
+    comments: 'Comment', uploads: 'Upload', files: 'File', ids: 'Id', refs: 'Ref',
+  })) {
+    db[key] = await sequelize.models[model].count()
+  }
+  const { Article, User, Issue } = sequelize.models
+  db.listed_articles = await Article.count({ where: { list: true } })
+  if (db.dialect === 'postgres') {
+    const [[details]] = await sequelize.query(`SELECT current_database() AS name,
+      current_setting('server_version') AS version,
+      pg_database_size(current_database())::text AS size_bytes,
+      current_setting('lc_collate') AS collation,
+      current_setting('work_mem') AS work_mem,
+      current_setting('shared_buffers') AS shared_buffers,
+      current_setting('max_parallel_workers_per_gather') AS max_parallel_workers_per_gather,
+      current_setting('jit') AS jit`)
+    Object.assign(db, details, { size_bytes: Number(details.size_bytes) })
+  } else {
+    const [[details]] = await sequelize.query('SELECT sqlite_version() AS version')
+    db.version = details.version
+  }
+
+  let author
+  if (username) {
+    author = await User.findOne({ where: { username }, attributes: ['id', 'username'], raw: true })
+    if (!author) throw new Error(`Unknown author: ${username}`)
+  } else {
+    // Choose the largest author so per-author requests exercise real lists.
+    const [largest] = await Article.findAll({
+      attributes: ['authorId', [sequelize.fn('COUNT', sequelize.col('id')), 'n']],
+      group: ['authorId'], order: [[sequelize.literal('n'), 'DESC'], ['authorId', 'ASC']],
+      limit: 1, raw: true,
+    })
+    if (largest) author = await User.findByPk(largest.authorId, { attributes: ['id', 'username'], raw: true })
+  }
+  if (author) author.articles = await Article.count({ where: { authorId: author.id } })
+  const article = await Article.findOne({
+    // Home articles have an empty topicId: they would skip search benchmarks
+    // and turn the topicId lookup into another unfiltered article listing.
+    attributes: ['slug', 'topicId'], where: { list: true, topicId: { [Op.ne]: '' } },
+    order: [['issueCount', 'DESC'], ['id', 'ASC']], raw: true,
+  })
+  const issue = await Issue.findOne({
+    attributes: ['number'], where: { list: true }, order: [['id', 'ASC']],
+    include: [{ model: Article, as: 'article', attributes: ['slug'], required: true }],
+  })
+  db.samples = {
+    author: author || null,
+    article,
+    issue: issue ? { number: issue.number, slug: issue.article.slug } : null,
+  }
+  return db
+}
+
+function saveHistory(output, history) {
+  fs.mkdirSync(path.dirname(output), { recursive: true })
+  const temporary = `${output}.${process.pid}.tmp`
+  try {
+    fs.writeFileSync(temporary, JSON.stringify(history, null, 2) + '\n')
+    fs.renameSync(temporary, output)
+  } finally {
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary)
+  }
+}
+
+async function benchmark({ paths, about, output, explain, baseUrl='http://localhost:3000', runs=3, warmup=1, timeout=60000, log=console.log }) {
+  if (explain === undefined) {
+    explain = process.env.OURBIGBOOK_EXPLAIN && process.env.OURBIGBOOK_EXPLAIN !== '0'
+      ? process.env.OURBIGBOOK_EXPLAIN : true
+  }
+  const history = fs.existsSync(output) ? JSON.parse(fs.readFileSync(output, 'utf8')) : []
+  if (!Array.isArray(history)) throw new Error(`${output}: expected a JSON array; existing data was not changed`)
+  const entry = {
+    about: {
+      ...about,
+      timestamp: new Date().toISOString(),
+      run_id: crypto.randomUUID(),
+      base_url: baseUrl,
+      timing_unit: 'ms',
+      statistic: 'median',
+      runs, warmup, timeout_ms: timeout,
+      concurrency: 1,
+      authentication: 'anonymous',
+      planned_paths: paths.length,
+      planned_requests: paths.length * (warmup + runs),
+      completed: false,
+    },
+    results: {},
+    samples: {},
+    errors: {},
+  }
+  let explainOutput
+  history.push(entry)
+  saveHistory(output, history)
+  for (const request of paths) {
+    const samples = []
+    try {
+      for (let i = 0; i < warmup + runs; i++) {
+        const requestId = explain ? crypto.randomUUID() : undefined
+        if (requestId && entry.explain) {
+          // Keep the ID even on HTTP timeout: the server may finish later and
+          // leave a recoverable trace with this name in the spool directory.
+          ;(entry.explain.requests[request] ||= []).push(requestId)
+          saveHistory(output, history)
+        }
+        const start = performance.now()
+        const response = await fetch(new URL(request, baseUrl), {
+          redirect: 'manual', signal: AbortSignal.timeout(timeout),
+          headers: requestId ? { [explainHeader]: requestId } : {},
+        })
+        // Include the complete response transfer, not just time to headers.
+        const body = await response.arrayBuffer()
+        const elapsed = performance.now() - start
+        if (response.headers.has(explainHeader)) {
+          entry.about.db_instrumentation = { provider: 'auto_explain', analyze: true, buffers: true, timing: false }
+        }
+        if (explain && response.headers.has(explainHeader)) {
+          if (response.headers.get(explainHeader) !== requestId) {
+            throw new Error('Server returned a mismatched query-plan request ID')
+          }
+          // Detect support using the actual benchmark response, including the
+          // first warmup. Servers without tracing need no extra requests/files.
+          if (!entry.explain) {
+            const explainFilename = `${entry.about.run_id}.explain.jsonl`
+            const explainRelative = path.join('benchmark', explainFilename)
+            explainOutput = path.join(path.dirname(output), explainRelative)
+            fs.mkdirSync(path.dirname(explainOutput), { recursive: true, mode: 0o700 })
+            entry.explain = { file: explainRelative, format: 'jsonl', requests: { [request]: [requestId] } }
+            fs.writeFileSync(explainOutput, '', { flag: 'wx', mode: 0o600 })
+            saveHistory(output, history)
+          }
+          const filename = path.join(explainDirectory(explain), `${requestId}.json`)
+          const deadline = performance.now() + timeout
+          // The response can finish before an outstanding request-tracking query.
+          while (!fs.existsSync(filename)) {
+            if (performance.now() >= deadline) throw new Error(`Timed out waiting for query plans: ${filename}`)
+            await new Promise(resolve => setTimeout(resolve, 25))
+          }
+          const trace = JSON.parse(fs.readFileSync(filename, 'utf8'))
+          fs.appendFileSync(explainOutput, JSON.stringify({
+            ...trace, run_id: entry.about.run_id,
+            phase: i < warmup ? 'warmup' : 'sample',
+            iteration: i < warmup ? i : i - warmup,
+          }) + '\n', { mode: 0o600 })
+          fs.unlinkSync(filename)
+          saveHistory(output, history)
+        }
+        if (response.status !== 200) {
+          const detail = Buffer.from(body).toString('utf8').slice(0, 2000)
+          const hint = response.status === 404 ? ' Check that DATABASE_URL and database data match the running server.' : ''
+          throw new Error(`HTTP ${response.status}: ${detail}${hint}`)
+        }
+        if (request.startsWith('/api/') && !request.startsWith('/api/uploads?')) {
+          if (!response.headers.get('content-type')?.includes('application/json')) {
+            throw new Error('Expected an API JSON response')
+          }
+          JSON.parse(Buffer.from(body).toString('utf8'))
+        }
+        if (i >= warmup) samples.push(elapsed)
+      }
+      const sorted = [...samples].sort((a, b) => a - b)
+      const middle = Math.floor(sorted.length / 2)
+      const median = sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
+      entry.results[request] = Number(median.toFixed(3))
+      entry.samples[request] = samples.map(value => Number(value.toFixed(3)))
+      log(`${entry.results[request]} ms ${request}`)
+    } catch (error) {
+      entry.results[request] = null
+      entry.samples[request] = samples
+      entry.errors[request] = `${error.name}: ${error.message}`
+      log(`FAILED ${request}: ${entry.errors[request]}`)
+      // A timed-out server request may still be executing. Avoid piling on.
+      break
+    } finally {
+      saveHistory(output, history)
+    }
+  }
+  entry.about.completed = Object.keys(entry.results).length === paths.length && !Object.keys(entry.errors).length
+  entry.about.finished_at = new Date().toISOString()
+  saveHistory(output, history)
+  return entry
+}
+
+async function main() {
+  const { Command, InvalidArgumentError } = require('commander')
+  const integer = minimum => value => {
+    const number = Number(value)
+    if (!Number.isSafeInteger(number) || number < minimum) throw new InvalidArgumentError(`Expected an integer >= ${minimum}`)
+    return number
+  }
+  const program = new Command()
+    .description('Benchmark local read APIs and listing pages; append median milliseconds and metadata to a JSON history.')
+    .option('--url <url>', 'server origin', 'http://localhost:3000')
+    .option('-o, --output <path>', 'benchmark history JSON', defaultOutput)
+    .option('--runs <n>', 'measured requests per path', integer(1), 3)
+    .option('--warmup <n>', 'unmeasured requests per path', integer(0), 1)
+    .option('--timeout <ms>', 'request timeout in milliseconds', integer(1), 60000)
+    .option('--limit <n>', 'API list page size', integer(1), 20)
+    .option('--author <username>', 'author to benchmark (default: largest author)')
+    .option('--api-only', 'skip HTML listing pages')
+    .option('--explain [directory]', 'automatically collect traces when enabled on server (default directory: tmp/benchmark-explain)')
+    .option('--no-explain', 'disable automatic query-plan collection')
+    .parse()
+  const opts = program.opts()
+  const url = new URL(opts.url)
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.pathname !== '/' || url.search || url.hash) {
+    throw new Error('--url must be an HTTP(S) origin without credentials, a path, or query parameters')
+  }
+  // Detect before loading models: their configuration is cached on import.
+  const dialect = await detectDatabaseDialect(url.origin, opts.timeout)
+  process.env.OURBIGBOOK_POSTGRES = dialect === 'postgres' ? '1' : '0'
+  console.log(`Detected server database: ${dialect}`)
+  const models = require('../models')
+  const sequelize = models.getSequelize(path.resolve(__dirname, '..'))
+  let db
+  try {
+    db = await collectDatabase(sequelize, opts)
+  } finally {
+    await sequelize.close()
+  }
+  const git = args => execFileSync('git', ['-C', repoRoot, ...args], { encoding: 'utf8' }).trim()
+  const cpus = os.cpus()
+  const entry = await benchmark({
+    ...opts, baseUrl: url.origin, output: path.resolve(opts.output),
+    paths: buildPaths(db, { limit: opts.limit, pages: !opts.apiOnly }),
+    about: {
+      git_sha: git(['rev-parse', 'HEAD']),
+      git_dirty: git(['status', '--porcelain']) !== '',
+      api_only: !!opts.apiOnly,
+      limit: opts.limit,
+      db,
+      system: {
+        pg_version: db.dialect === 'postgres' ? db.version : null,
+        hostname: os.hostname(), platform: os.platform(), release: os.release(),
+        os_version: osVersion(),
+        arch: os.arch(), node_version: process.version,
+        cpu_model: cpus[0]?.model, logical_cpus: cpus.length,
+        memory_bytes: os.totalmem(),
+      },
+    },
+  })
+  console.log(`Saved ${Object.keys(entry.results).length} paths to ${path.resolve(opts.output)}`)
+  if (!entry.about.completed) process.exitCode = 1
+}
+
+module.exports = { benchmark, buildPaths, collectDatabase, detectDatabaseDialect }
+if (require.main === module) main().catch(error => {
+  console.error(error.message)
+  process.exitCode = 1
+})

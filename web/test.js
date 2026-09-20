@@ -895,6 +895,268 @@ it('User fileSize cache and migration', async function() {
   await assertSizes(0, 0)
 })
 
+it('benchmark discovers requests and appends runs with database metadata', async function() {
+  this.timeout(15000)
+  const fs = require('fs')
+  const path = require('path')
+  const os = require('os')
+  const { benchmark, buildPaths, collectDatabase, detectDatabaseDialect } = require('./bin/benchmark')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ourbigbook-benchmark-'))
+  try {
+    await testApp(async test => {
+      const user = await test.createUserApi(0)
+      test.loginUser(user)
+      await createOrUpdateArticleApi(test, createArticleArg({ i: 0 }))
+      assertStatus((await test.webApi.issueCreate('user0/title-0', { titleSource: 'Discussion' })).status)
+      assertStatus((await test.webApi.commentCreate('user0/title-0', 1, 'Comment')).status)
+      // A home article can tie for the highest discussion count, but its
+      // empty topic ID must not suppress the search and topic lookup cases.
+      assertStatus((await test.webApi.issueCreate('user0', { titleSource: 'Home discussion' })).status)
+      const db = await collectDatabase(test.sequelize)
+      assert.strictEqual(db.articles, 2)
+      assert.strictEqual(db.users, 1)
+      assert.strictEqual(db.issues, 2)
+      assert.strictEqual(db.comments, 1)
+      assert(!('migrations' in db))
+      assert(!('article_indexes' in db))
+      assert.strictEqual(db.samples.author.username, 'user0')
+      assert.strictEqual(db.samples.article.topicId, 'title-0')
+      const paths = buildPaths(db, { pages: false })
+      assert(paths.includes('/api/articles?limit=20&offset=0&sort=id'))
+      assert(paths.includes('/api/issues/1/comments?id=user0%2Ftitle-0'))
+      assert(paths.includes('/api/articles?limit=20&search=title-0'))
+      assert(paths.includes('/api/topics?limit=20&search=title-0'))
+      assert(paths.includes('/api/articles?limit=20&topicId=title-0'))
+      assert(buildPaths({ ...db, listed_articles: 115401 }).includes('/-/articles?page=5771&sort=id'))
+      const output = path.join(directory, 'api.json')
+      assert.strictEqual(await detectDatabaseDialect(`http://localhost:${test.webApi.opts.port}`), test.sequelize.getDialect())
+      const opts = {
+        output, baseUrl: `http://localhost:${test.webApi.opts.port}`,
+        runs: 1, warmup: 0, log: () => {}, about: { git_sha: 'same-sha', db },
+      }
+      const first = await benchmark({ ...opts, paths })
+      assert.deepStrictEqual(first.errors, {})
+      assert(first.about.completed)
+      assert.strictEqual(Object.keys(first.results).length, paths.length)
+      assert(Object.values(first.results).every(time => Number.isFinite(time) && time >= 0))
+      assert(Object.values(first.samples).every(samples => samples.length === 1))
+      const second = await benchmark({ ...opts, paths: ['/api/min'] })
+      const history = JSON.parse(fs.readFileSync(output, 'utf8'))
+      assert.strictEqual(history.length, 2)
+      assert.deepStrictEqual(history[0], first)
+      assert.deepStrictEqual(history[1], second)
+      assert.notStrictEqual(first.about.run_id, second.about.run_id)
+      assert(first.about.timestamp <= second.about.timestamp)
+      if (test.sequelize.getDialect() === 'postgres') {
+        // The executable connects independently to the same test PostgreSQL
+        // database and fetches requests from the running test HTTP server.
+        await require('util').promisify(require('child_process').execFile)(process.execPath, [
+          path.join(__dirname, 'bin/benchmark'),
+          '--url', opts.baseUrl, '--output', output, '--api-only', '--runs', '1', '--warmup', '0',
+        ], { env: { ...process.env, OURBIGBOOK_POSTGRES: '0' } })
+        const cliHistory = JSON.parse(fs.readFileSync(output, 'utf8'))
+        assert.strictEqual(cliHistory.length, 3)
+        assert(/^[0-9a-f]{40}$/.test(cliHistory[2].about.git_sha))
+        assert.strictEqual(cliHistory[2].about.system.pg_version, db.version)
+        assert.strictEqual(cliHistory[2].about.db.dialect, 'postgres')
+        assert.strictEqual(cliHistory[2].about.db.articles, db.articles)
+        assert.deepStrictEqual(cliHistory[2].about.db.samples, db.samples)
+        assert.strictEqual(cliHistory[2].about.system.hostname, os.hostname())
+        assert(cliHistory[2].about.system.os_version === null || typeof cliHistory[2].about.system.os_version === 'string')
+        assert(cliHistory[2].about.completed)
+      }
+    })
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+it('benchmark saves failures and stops after a request timeout', async function() {
+  const fs = require('fs')
+  const path = require('path')
+  const os = require('os')
+  const http = require('http')
+  const { benchmark } = require('./bin/benchmark')
+  const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ourbigbook-benchmark-'))
+  const received = []
+  const server = http.createServer((req, res) => {
+    received.push(req.url)
+    if (req.url === '/api/slow') return
+    res.setHeader('Content-Type', 'application/json')
+    if (req.url === '/api/missing') {
+      res.statusCode = 404
+      return res.end('{"errors":["Article slug not found"]}')
+    }
+    res.end('{}')
+  })
+  await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+  try {
+    const output = path.join(directory, 'api.json')
+    const result = await benchmark({
+      output, baseUrl: `http://127.0.0.1:${server.address().port}`,
+      paths: ['/api/ok', '/api/slow', '/api/unreached'],
+      runs: 2, warmup: 1, timeout: 100, log: () => {}, about: { git_sha: 'test' },
+    })
+    assert.deepStrictEqual(received, ['/api/ok', '/api/ok', '/api/ok', '/api/slow'])
+    assert.strictEqual(result.samples['/api/ok'].length, 2)
+    assert.strictEqual(result.results['/api/slow'], null)
+    assert(result.errors['/api/slow'].includes('TimeoutError'))
+    assert.strictEqual(result.about.completed, false)
+    assert.strictEqual(result.explain, undefined)
+    assert.deepStrictEqual(JSON.parse(fs.readFileSync(output, 'utf8')), [result])
+    const noCapture = await benchmark({
+      output, explain: directory, baseUrl: `http://127.0.0.1:${server.address().port}`,
+      paths: ['/api/ok'], runs: 1, warmup: 0, timeout: 100, log: () => {},
+    })
+    assert.deepStrictEqual(noCapture.errors, {})
+    assert(noCapture.about.completed)
+    assert.strictEqual(noCapture.explain, undefined)
+    assert(!fs.readdirSync(directory).some(filename => filename.endsWith('.explain.jsonl')))
+    const missing = await benchmark({
+      output, baseUrl: `http://127.0.0.1:${server.address().port}`,
+      paths: ['/api/missing'], runs: 1, warmup: 0, log: () => {},
+    })
+    assert(missing.errors['/api/missing'].includes('Article slug not found'))
+    assert(missing.errors['/api/missing'].includes('DATABASE_URL'))
+    fs.writeFileSync(output, '{"legacy":true}')
+    await assert.rejects(benchmark({ output, paths: [], about: {} }), /expected a JSON array/)
+    assert.strictEqual(fs.readFileSync(output, 'utf8'), '{"legacy":true}')
+  } finally {
+    server.closeAllConnections()
+    await new Promise(resolve => server.close(resolve))
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+it('benchmark captures auto_explain plans for each API request', async function() {
+  if (!config.postgres) this.skip()
+  this.timeout(15000)
+  const fs = require('fs')
+  const path = require('path')
+  const { benchmark } = require('./bin/benchmark')
+  const directory = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ourbigbook-explain-'))
+  const spool = path.join(directory, 'spool')
+  const previous = process.env.OURBIGBOOK_EXPLAIN
+  process.env.OURBIGBOOK_EXPLAIN = spool
+  try {
+    await testApp(async test => {
+      await test.createUserApi(0)
+      const articlePath = '/api/articles?limit=20&sort=id'
+      const output = path.join(directory, 'benchmark.json')
+      const result = await benchmark({
+        output, baseUrl: `http://localhost:${test.webApi.opts.port}`,
+        paths: [articlePath, '/api/min'], runs: 2, warmup: 1, log: () => {},
+      })
+      assert.deepStrictEqual(result.errors, {})
+      assert(result.about.completed)
+      assert.strictEqual(result.about.db_instrumentation.provider, 'auto_explain')
+      assert.strictEqual(result.explain.file, path.join('benchmark', `${result.about.run_id}.explain.jsonl`))
+      const traces = fs.readFileSync(path.join(directory, result.explain.file), 'utf8').trim().split('\n').map(JSON.parse)
+      assert.strictEqual(traces.length, 6)
+      assert.deepStrictEqual(result.explain.requests[articlePath], traces.slice(0, 3).map(trace => trace.request_id))
+      assert.deepStrictEqual(traces.slice(0, 3).map(trace => trace.phase), ['warmup', 'sample', 'sample'])
+      for (const trace of traces.slice(0, 3)) {
+        assert.strictEqual(trace.path, articlePath)
+        assert(trace.queries.some(query => /count\(/i.test(query.sql)))
+        assert(trace.queries.some(query => /LIMIT/i.test(query.sql)))
+        for (const query of trace.queries) {
+          assert(!query.error, query.error)
+          assert.strictEqual(query.plans.length, 1, query.sql)
+          assert('Actual Rows' in query.plans[0].Plan)
+          assert('Shared Hit Blocks' in query.plans[0].Plan)
+          assert(query.plans[0]['Query Text'].includes(trace.request_id))
+        }
+      }
+      assert.deepStrictEqual(fs.readdirSync(spool), [])
+      await require('util').promisify(require('child_process').execFile)(process.execPath, [
+        path.join(__dirname, 'bin/benchmark'),
+        '--url', `http://localhost:${test.webApi.opts.port}`, '--output', output,
+        '--api-only', '--runs', '1', '--warmup', '0',
+      ])
+      const cliResult = JSON.parse(fs.readFileSync(output, 'utf8'))[1]
+      assert(cliResult.about.completed)
+      assert(fs.statSync(path.join(directory, cliResult.explain.file)).size > 0)
+      // Explicit opt-out still flags timing overhead on an instrumented server.
+      const untraced = await benchmark({
+        output, explain: false, baseUrl: `http://localhost:${test.webApi.opts.port}`,
+        paths: ['/api/min'], runs: 1, warmup: 0, log: () => {},
+      })
+      assert.strictEqual(untraced.about.db_instrumentation.provider, 'auto_explain')
+      assert.strictEqual(untraced.explain, undefined)
+    })
+  } finally {
+    if (previous === undefined) delete process.env.OURBIGBOOK_EXPLAIN
+    else process.env.OURBIGBOOK_EXPLAIN = previous
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+it('benchmark auto_explain correlates concurrent bound queries and executes writes once', async function() {
+  if (!config.postgres) this.skip()
+  const fs = require('fs')
+  const path = require('path')
+  const { randomUUID } = require('crypto')
+  const { explainHeader, installExplain } = require('./back/js')
+  const directory = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ourbigbook-explain-'))
+  const sequelize = models.getSequelize()
+  const serverApp = require('express')()
+  serverApp.use(installExplain(sequelize, directory))
+  serverApp.get('/:value', async (req, res, next) => {
+    try {
+      const rows = await sequelize.transaction(async transaction => {
+        await sequelize.query('CREATE TEMP TABLE benchmark_write (value text) ON COMMIT DROP', { transaction })
+        await sequelize.query('INSERT INTO benchmark_write VALUES ($value)', { bind: { value: req.params.value }, transaction })
+        // Concurrent queries sharing a transaction/connection must also retain
+        // their individual plan and parameter associations.
+        const [result] = await Promise.all([
+          sequelize.query('SELECT value, count(*)::int AS n FROM benchmark_write GROUP BY value', { transaction }),
+          sequelize.query('SELECT $value::text AS value, pg_sleep(0.02)', { bind: { value: req.params.value }, transaction }),
+        ])
+        if (req.params.value === 'error') await sequelize.query('SELECT 1 / 0', { transaction })
+        return result[0]
+      })
+      res.json(rows)
+    } catch (error) { next(error) }
+  })
+  serverApp.use((err, req, res, next) => res.status(500).json({ error: err.message }))
+  const server = await new Promise(resolve => {
+    const server = serverApp.listen(0, '127.0.0.1', () => resolve(server))
+  })
+  try {
+    const requestIds = [randomUUID(), randomUUID()]
+    await Promise.all(requestIds.map(async (requestId, i) => {
+      const response = await fetch(`http://127.0.0.1:${server.address().port}/value${i}`, {
+        headers: { [explainHeader]: requestId },
+      })
+      assert.strictEqual(response.status, 200)
+      assert.deepStrictEqual(await response.json(), [{ value: `value${i}`, n: 1 }])
+      const trace = JSON.parse(fs.readFileSync(path.join(directory, `${requestId}.json`), 'utf8'))
+      assert.strictEqual(trace.queries.length, 6)
+      const bound = trace.queries.filter(query => query.parameters.length)
+      assert.strictEqual(bound.length, 2)
+      for (const query of bound) {
+        assert.deepStrictEqual(query.parameters, [`value${i}`])
+        assert.strictEqual(query.plans.length, 1, JSON.stringify(trace))
+        assert(query.plans[0]['Query Text'].includes(`${requestId}:${query.query_id}`))
+      }
+    }))
+    const failedId = randomUUID()
+    const failed = await fetch(`http://127.0.0.1:${server.address().port}/error`, {
+      headers: { [explainHeader]: failedId },
+    })
+    assert.strictEqual(failed.status, 500)
+    await failed.arrayBuffer()
+    const failedTrace = JSON.parse(fs.readFileSync(path.join(directory, `${failedId}.json`), 'utf8'))
+    assert(failedTrace.queries.some(query => query.error?.includes('division by zero')))
+    assert(failedTrace.queries.some(query => query.sql === 'ROLLBACK;'))
+  } finally {
+    server.closeAllConnections()
+    await new Promise(resolve => server.close(resolve))
+    await sequelize.close()
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 it('Article topic ordering index migration preserves prefix indexes and avoids sorting', async function() {
   const sequelize = this.test.sequelize
   const qi = sequelize.getQueryInterface()

@@ -2,6 +2,7 @@ const router = require('express').Router()
 
 // heroku bootstrap
 router.get('/', function(req, res) {
+  res.setHeader(require('../back/js').databaseDialectHeader, req.app.get('sequelize').getDialect())
   res.json({message: 'backend is up'})
 });
 router.use('/', require('./users'))

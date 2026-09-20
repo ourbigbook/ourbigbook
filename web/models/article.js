@@ -174,6 +174,16 @@ module.exports = (sequelize) => {
         { fields: ['updatedAt', 'createdAt'], },
         // For WHERE list = 1 ORDER BY creatdAt
         { fields: ['list', 'createdAt'], },
+        // Deep HTML sort=created pages. Match NULL placement and the stable
+        // pagination tie-breaker used by getArticles.
+        {
+          name: 'article_list_created_at_id',
+          fields: [
+            'list',
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         // For WHERE list = 1 ORDER BY updatedAt
         { fields: ['list', 'updatedAt', 'createdAt'], },
         { fields: ['list', 'announcedAt'], },

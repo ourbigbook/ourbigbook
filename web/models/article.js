@@ -2315,31 +2315,39 @@ OFFSET ${offset}` : ''}` : ''}`}
       depth: s.depth,
     }})
     return sequelize.transaction({ transaction }, async (transaction) => {
-      for (const val of vals) {
-        await sequelize.models.Article.update(
-          {
-            nestedSetIndex: val.nestedSetIndex,
-            nestedSetNextSibling: val.nestedSetNextSibling,
-            depth: val.depth,
-          },
-          {
-            transaction,
-            where: { slug: val.slug },
-          },
-        )
+      // Batch existing-row updates to avoid a round trip per article. Derived
+      // tree positions must not change article timestamps or require INSERTs.
+      const columns = ['nestedSetIndex', 'nestedSetNextSibling', 'depth']
+      const table = sequelize.getQueryInterface().queryGenerator.quoteTable(Article.tableName)
+      for (let offset = 0; offset < vals.length; offset += 500) {
+        const batch = vals.slice(offset, offset + 500)
+        const replacements = {}
+        for (let i = 0; i < batch.length; i++) {
+          replacements[`slug${i}`] = batch[i].slug
+          for (const column of columns) replacements[`${column}${i}`] = batch[i][column]
+        }
+        let sql
+        if (sequelize.getDialect() === 'postgres') {
+          const values = batch.map((_, i) =>
+            `(:slug${i}, ${columns.map(column => `:${column}${i}`).join(', ')})`
+          ).join(', ')
+          sql = `UPDATE ${table} AS a SET
+            ${columns.map(column => `"${column}" = v."${column}"`).join(', ')}
+            FROM (VALUES ${values}) AS v("slug", ${columns.map(column => `"${column}"`).join(', ')})
+            WHERE a."slug" = v."slug" AND (
+              ${columns.map(column => `a."${column}" IS DISTINCT FROM v."${column}"`).join(' OR ')}
+            )`
+        } else {
+          // Compatible with SQLite versions predating UPDATE FROM.
+          sql = `UPDATE ${table} SET ${columns.map(column =>
+            `"${column}" = CASE "slug" ${batch.map((_, i) =>
+              `WHEN :slug${i} THEN :${column}${i}`
+            ).join(' ')} END`
+          ).join(', ')} WHERE "slug" IN (${batch.map((_, i) => `:slug${i}`).join(', ')})`
+        }
+        await sequelize.query(sql, { replacements, transaction })
       }
     })
-    // Would be nice, but doesn't work because of NOT NULL columns:
-    // https://stackoverflow.com/questions/48816629/on-conflict-do-nothing-in-postgres-with-a-not-null-constraint
-    //return Article.bulkCreate(
-    //  vals,
-    //  {
-    //    updateOnDuplicate: [
-    //      'nestedSetIndex',
-    //      'nestedSetNextSibling',
-    //    ]
-    //  }
-    //)
   }
 
   Article.slugTransform = slugTransform

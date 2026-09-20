@@ -1546,7 +1546,8 @@ function printStatus({
 async function updateNestedSet(webApi, username) {
   const t1 = now()
   console.log(`nested_set`)
-  await webApi.articleUpdatedNestedSet(username)
+  const { data, status } = await webApi.articleUpdatedNestedSet(username)
+  assertApiStatus(status, data)
   console.log(`nested_set: ${finished_in_ms(now() - t1)}`)
 }
 

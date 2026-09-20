@@ -210,6 +210,16 @@ module.exports = (sequelize) => {
             { name: 'id', order: 'DESC' },
           ],
         },
+        // Global API sort=id. API queries may include unlisted articles, so
+        // the list-prefixed indexes above cannot provide this ordering.
+        {
+          name: 'article_topic_id_created_at_id',
+          fields: [
+            { name: 'topicId', order: 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         // Top articles in the entire site.
         { fields: ['list', 'score', 'createdAt'], },
 

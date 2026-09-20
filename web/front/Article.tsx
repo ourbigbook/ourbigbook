@@ -81,12 +81,15 @@ import { ourbigbook_runtime, toplevelMouseleave } from 'ourbigbook/dist/ourbigbo
 import { encodeGetParams, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import { ArticleType } from 'front/types/ArticleType'
-import { slugToTopic, uidTopicIdToSlug } from './js'
+import { captureTocState, restoreTocState, slugToTopic, uidTopicIdToSlug } from './js'
 import { formatDate } from './date'
 
 const ANNOUNCE_QUERY_PARAM = 'announce'
 const NEW_QUERY_PARAM = 'new'
 const NEW_MODAL_BUTTON_CLASS = 'new-modal'
+// Restore imperative ToC state before the browser paints replaced HTML.
+// On the server there is no layout to restore.
+const useBrowserLayoutEffect = typeof window === 'undefined' ? React.useEffect : React.useLayoutEffect
 
 function LinkListNoTitle({
   articles,
@@ -779,6 +782,26 @@ export default function Article({
   // https://cirosantilli.com/-/file/nodejs/next/ref-twice/pages/index.js
   const staticHtmlRef = React.useRef(null)
   const staticHtmlRefMap = React.useRef(new WeakMap())
+  const pendingTocState = React.useRef(null)
+  const preserveTocState = React.useCallback((openingLi=null) => {
+    const elem = staticHtmlRef.current
+    if (!elem) return
+    // The runtime toggles DOM classes, including when following header links.
+    // Preserve those choices when React replaces the HTML after a fetch.
+    const branches = captureTocState(elem, openingLi)
+    pendingTocState.current = { slug: article.slug, branches }
+  }, [article.slug])
+  useBrowserLayoutEffect(() => {
+    const elem = staticHtmlRef.current
+    const saved = pendingTocState.current
+    if (elem && saved && saved.slug === article.slug) {
+      restoreTocState(elem, saved.branches)
+    }
+    // Keep the snapshot through every render from this response: React may
+    // commit the entries, loaded flags, and open flags separately.
+    if (saved && saved.slug !== article.slug) pendingTocState.current = null
+  }, [article.slug, curArticlesInSamePage.length, curArticlesInSamePageForToc.length,
+    tocLoadedChildren.size, tocOpen.size])
   React.useEffect(() => {
     const elem = staticHtmlRef.current
     if (elem) {
@@ -824,6 +847,9 @@ export default function Article({
                   if (status !== 200) {
                     throw new Error(`Could not load table of contents children: HTTP ${status}`)
                   }
+                  // Ignore a response from a page/DOM that has since changed.
+                  if (!parentLi.isConnected) return
+                  preserveTocState(parentLi)
                   setCurArticlesInSamePageForToc(current => mergeTocArticles(current, data.articles))
                   setTocLoadedChildren(current => new Set(current).add(parentSlug))
                   setTocOpen(current => new Set(current).add(parentSlug))
@@ -843,6 +869,7 @@ export default function Article({
     tocIsLazy,
     tocLoadedChildren.size,
     tocOpen.size,
+    preserveTocState,
   ])
   React.useEffect(() => {
     const elem = staticHtmlRef.current
@@ -1262,6 +1289,7 @@ export default function Article({
               if (status !== 200) {
                 throw new Error(`HTTP ${status}`)
               }
+              preserveTocState()
               setCurArticlesInSamePage(current => current.concat(data.articles))
               setCurArticlesInSamePageForToc(current => mergeTocArticles(current, data.articles))
             } catch (error) {

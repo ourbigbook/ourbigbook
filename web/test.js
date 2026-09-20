@@ -1,4 +1,5 @@
 const assert = require('assert');
+const { parse } = require('node-html-parser')
 
 const { WebApi } = require('ourbigbook/web_api')
 const {
@@ -23,6 +24,8 @@ const test_lib = require('./test_lib')
 const { INVALID_UTF8_BUFFER } = test_lib
 const {
   AUTH_COOKIE_NAME,
+  captureTocState,
+  restoreTocState,
   TRI_ALL,
   TRI_FALSE,
   TRI_TRUE,
@@ -37,6 +40,30 @@ const web_api = require('ourbigbook/web_api');
 const { QUERY_TRUE_VAL } = web_api
 
 const testNext = process.env.OURBIGBOOK_TEST_NEXT === 'true'
+
+describe('ToC state after lazy loading', () => {
+  it('keeps opened ancestors and the requested branch open while preserving closed siblings', () => {
+    const html = `<div class="toc-container"><ul><li class="has-child toplevel">
+      <div></div><ul><li class="has-child close"><div id="parent"></div>
+      <ul><li class="has-child close lazy"><div id="child"></div></li></ul></li>
+      <li class="has-child close"><div id="sibling"></div></li></ul></li></ul></div>`
+    const before = parse(html)
+    // A header link (or an arrow) opened this ancestor directly in the DOM.
+    before.querySelector('#parent').parentNode.classList.remove('close')
+    const saved = captureTocState(before, before.querySelector('#child').parentNode)
+    const after = parse(html)
+    restoreTocState(after, saved)
+    for (const id of ['parent', 'child']) {
+      assert(!after.querySelector(`#${id}`).parentNode.classList.contains('close'))
+    }
+    assert(after.querySelector('#sibling').parentNode.classList.contains('close'))
+    // Subsequent article loads must preserve manual closing too.
+    after.querySelector('#parent').parentNode.classList.add('close')
+    const next = parse(html)
+    restoreTocState(next, captureTocState(after))
+    assert(next.querySelector('#parent').parentNode.classList.contains('close'))
+  })
+})
 
 // Generated with:
 // convert -size 1x1 xc:white empty.png

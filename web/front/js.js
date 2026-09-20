@@ -316,6 +316,28 @@ function querySearchToTopicId(search) {
   return search === undefined ? undefined : titleToId(search, undefined, convertContext)
 }
 
+// Runtime arrow/header clicks change the DOM without changing React state.
+// Carry those choices across replacement of the rendered article HTML.
+function captureTocState(elem, openingLi=null) {
+  const branches = new Map()
+  for (const li of elem.querySelectorAll('.toc-container li.has-child')) {
+    const header = li.querySelector(':scope > div')
+    branches.set(header.id || ourbigbook.Macro.TOC_ID, li !== openingLi && li.classList.contains('close'))
+  }
+  return branches
+}
+
+function restoreTocState(elem, branches) {
+  for (const li of elem.querySelectorAll('.toc-container li.has-child')) {
+    const header = li.querySelector(':scope > div')
+    const id = header.id || ourbigbook.Macro.TOC_ID
+    if (branches.has(id)) {
+      if (branches.get(id)) li.classList.add('close')
+      else li.classList.remove('close')
+    }
+  }
+}
+
 function openUserTabs(users, openWindow) {
   // Open newest first: browsers normally place subsequent related tabs after
   // the earlier ones. Sort a copy so the displayed table stays unchanged.
@@ -334,6 +356,8 @@ module.exports = {
   TRI_ALL,
   TRI_FALSE,
   TRI_TRUE,
+  captureTocState,
+  restoreTocState,
   getClientIp,
   getCommentSlug,
   getList,

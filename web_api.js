@@ -245,8 +245,20 @@ class WebApi {
     return this.req('get', `articles/update-nested-set/${encodeURIComponent(user)}/${encodeURIComponent(id)}`, reqOpts)
   }
 
-  async articlesBulk(articles, requestId, reqOpts={}, { phase='render', start=true }={}) {
-    return this.req('put', 'articles/bulk', { body: { articles, requestId, phase, start }, ...reqOpts })
+  async articlesBulk(articles, requestId, reqOpts={}, { phase='render', start=true, batchIndex, batchCount, buildId, buildIndex }={}) {
+    return this.req('put', 'articles/bulk', { body: { articles, requestId, phase, start, batchIndex, batchCount, buildId, buildIndex }, ...reqOpts })
+  }
+
+  async articlesBuildCreate(id, reqOpts={}) {
+    return this.req('put', 'articles/bulk/builds', { body: { id }, ...reqOpts })
+  }
+
+  async articlesBuildCommit(id, jobCount, rebuildTree, reqOpts={}) {
+    return this.req('put', `articles/bulk/builds/${encodeURIComponent(id)}`, { body: { jobCount, rebuildTree }, ...reqOpts })
+  }
+
+  async articlesBuild(id, reqOpts={}) {
+    return this.req('get', `articles/bulk/builds/${encodeURIComponent(id)}`, reqOpts)
   }
 
   async articlesBulkJob(id, reqOpts={}) {
@@ -257,8 +269,8 @@ class WebApi {
     return this.req('put', `articles/bulk/${encodeURIComponent(id)}`, reqOpts)
   }
 
-  async articlesBulkStatus(author, reqOpts={}) {
-    return this.req('get', `articles/bulk${encodeGetParams({ author })}`, reqOpts)
+  async articlesBulkStatus(author, reqOpts={}, { view, limit, offset }={}) {
+    return this.req('get', `articles/bulk${encodeGetParams({ author, view, limit, offset })}`, reqOpts)
   }
 
   async editorFetchFiles(paths, reqOpts={}) {

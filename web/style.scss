@@ -690,6 +690,9 @@ span.shortcut {
 }
 
 .settings-page {
+  #background-uploads > .pagination {
+    margin-top: 1em;
+  }
   .profile-picture-container {
     $size: 250px;
     cursor: pointer;

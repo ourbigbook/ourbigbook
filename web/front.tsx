@@ -190,6 +190,10 @@ export function ArticleIcon(opts) {
   return FontAwesomeIcon(0xf518, { opts, title: "Article" })
 }
 
+export function BuildIcon(opts) {
+  return FontAwesomeIcon(0xf6e3, { opts, title: "Build jobs" })
+}
+
 export function ArrowLeftIcon(opts) {
   return FontAwesomeIcon(0xf060, { opts })
 }

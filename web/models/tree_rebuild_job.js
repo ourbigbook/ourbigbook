@@ -12,6 +12,7 @@ module.exports = sequelize => {
     status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'pending' },
     error: DataTypes.TEXT,
     finishedAt: DataTypes.DATE,
+    startedAt: DataTypes.DATE,
   })
 
   Job.expire = async () => Job.update({
@@ -19,12 +20,16 @@ module.exports = sequelize => {
     error: 'Rebuild deadline exceeded. Run --web-nested-set again to retry.',
   }, { where: {
     status: { [Op.in]: ['pending', 'running'] },
+    id: { [Op.notIn]: sequelize.literal(`(SELECT "jobId" FROM "BuildQueue" WHERE "kind" = 'TreeRebuildJob' AND ("status" != 'finished' OR "activeSlot" IS NOT NULL))`) },
     updatedAt: { [Op.lt]: new Date(Date.now() - timeoutMs) },
   } })
 
   Job.enqueue = async userId => {
     await Job.expire()
-    return Job.findOrCreate({ where: { activeUserId: userId }, defaults: { userId } })
+    const create = transaction => Job.findOrCreate({ where: { activeUserId: userId }, defaults: { userId }, transaction })
+    return sequelize.getDialect() === 'sqlite'
+      ? sequelize.transaction({ type: 'IMMEDIATE' }, create)
+      : create()
   }
 
   Job.useBackground = () => !config.isProduction || Boolean(process.env.OURBIGBOOK_HEROKU_APP)
@@ -34,7 +39,7 @@ module.exports = sequelize => {
   Job.launch = (job, options) => sequelize.models.BuildQueue.enqueue(job, options)
   Job.launchWorker = (job, options) => config.isProduction ? Job.launchHeroku(job, options) : Job.launchLocal(job, options)
 
-  Job.launchHeroku = async (job, { articles = false, queueId } = {}) => {
+  Job.launchHeroku = async (job, { articles = false, queueId, workerToken } = {}) => {
     const axios = require('axios')
     if (!process.env.OURBIGBOOK_HEROKU_APP || !process.env.OURBIGBOOK_HEROKU_TOKEN) {
       throw new Error('Configure OURBIGBOOK_HEROKU_APP and OURBIGBOOK_HEROKU_TOKEN')
@@ -43,7 +48,7 @@ module.exports = sequelize => {
       const response = await axios.post(
         `https://api.heroku.com/apps/${encodeURIComponent(process.env.OURBIGBOOK_HEROKU_APP)}/dynos`,
         {
-          command: `node web/bin/background-worker.js ${job.id}${articles ? ' --articles' : ''}${queueId ? ` --queue ${queueId}` : ''}`,
+          command: `node web/bin/background-worker.js ${job.id}${articles ? ' --articles' : ''}${queueId ? ` --queue ${queueId} --worker-token ${workerToken}` : ''}`,
           attach: false,
           time_to_live: 900,
           ...(process.env.OURBIGBOOK_HEROKU_WORKER_SIZE
@@ -58,7 +63,7 @@ module.exports = sequelize => {
           },
         },
       )
-      if (queueId) await sequelize.models.BuildQueue.update({ dynoId: response.data.id }, { where: { id: queueId } })
+      if (queueId) await sequelize.models.BuildQueue.update({ dynoId: response.data.id }, { where: { id: queueId, workerToken } })
     } catch (error) {
       // Never log axios errors: their config contains the Heroku credential.
       throw new Error(`Could not launch rebuild worker (Heroku ${error.response ? error.response.status : 'request failed'}). Retry --web-nested-set.`)
@@ -81,7 +86,28 @@ module.exports = sequelize => {
     }
   }
 
-  Job.launchLocal = async (job, { articles = false, queueId } = {}) => {
+  Job.localProcessIdentity = pid => {
+    try {
+      const fs = require('fs')
+      const stat = fs.readFileSync(`/proc/${pid}/stat`, 'utf8')
+      return `${fs.readFileSync('/proc/sys/kernel/random/boot_id', 'utf8').trim()}:${stat.slice(stat.lastIndexOf(')') + 2).split(' ')[19]}`
+    } catch { return null }
+  }
+
+  Job.localWorkerStopped = root => {
+    if (!root.localPid || root.localHost !== require('os').hostname()) return false
+    try { process.kill(root.localPid, 0) } catch (error) { return error.code === 'ESRCH' }
+    // kill(pid, 0) also succeeds for an exited child awaiting reaping. This
+    // happens when a server restart leaves the worker with a different parent.
+    try {
+      const stat = require('fs').readFileSync(`/proc/${root.localPid}/stat`, 'utf8')
+      if (['Z', 'X'].includes(stat.slice(stat.lastIndexOf(')') + 2).split(' ')[0])) return true
+    } catch { /* Preserve the conservative identity check on non-Linux hosts. */ }
+    const identity = Job.localProcessIdentity(root.localPid)
+    return Boolean(identity && root.localIdentity && identity !== root.localIdentity)
+  }
+
+  Job.launchLocal = async (job, { articles = false, queueId, workerToken } = {}) => {
     const path = require('path')
     const dialect = sequelize.getDialect()
     const storage = sequelize.options.storage
@@ -89,7 +115,7 @@ module.exports = sequelize => {
       throw new Error('Local rebuild workers require a file-backed SQLite database or PostgreSQL')
     }
     const child = require('child_process').fork(
-      path.join(__dirname, '../bin/background-worker.js'), [String(job.id), '--local', ...(articles ? ['--articles'] : []), ...(queueId ? ['--queue', String(queueId)] : [])],
+      path.join(__dirname, '../bin/background-worker.js'), [String(job.id), '--local', ...(articles ? ['--articles'] : []), ...(queueId ? ['--queue', String(queueId), '--worker-token', workerToken] : [])],
       {
         cwd: path.join(__dirname, '..'),
         // Do not inherit an inspector port or the test runner's preload hooks.
@@ -97,9 +123,11 @@ module.exports = sequelize => {
         stdio: ['ignore', 'inherit', 'inherit', 'ipc'],
       },
     )
+    let spawnError
+    child.on('error', error => { spawnError = error })
     child.once('exit', (code, signal) => {
       if (queueId) {
-        sequelize.models.BuildQueue.workerExited(queueId)
+        child.buildQueueExit = sequelize.models.BuildQueue.workerExited(queueId, workerToken)
           .catch(() => console.error(`Could not record local build worker ${queueId} exit; job will expire`))
         return
       }
@@ -115,7 +143,11 @@ module.exports = sequelize => {
       }, { where: { id: job.id, status: { [Op.in]: ['pending', 'running'] } } })
         .catch(() => console.error(`Could not record local rebuild worker ${job.id} exit; job will expire`))
     })
+    if (queueId) await sequelize.models.BuildQueue.update({
+      localPid: child.pid, localHost: require('os').hostname(), localIdentity: Job.localProcessIdentity(child.pid),
+    }, { where: { id: queueId, workerToken, status: 'launched' } })
     await new Promise((resolve, reject) => {
+      if (spawnError) { reject(spawnError); return }
       child.once('error', reject)
       // IPC avoids exposing database credentials in command arguments and
       // preserves overrides (notably local PostgreSQL SSL and SQLite paths).
@@ -130,12 +162,12 @@ module.exports = sequelize => {
   }
 
   Job.run = async id => {
-    const [claimed] = await Job.update({ status: 'running' }, {
+    const [claimed] = await Job.update({ status: 'running', startedAt: sequelize.fn('COALESCE', sequelize.col('startedAt'), new Date()) }, {
       where: { id, status: 'pending', updatedAt: { [Op.gte]: new Date(Date.now() - timeoutMs) } },
     })
     if (!claimed) return
     try {
-      await sequelize.transaction(async transaction => {
+      await sequelize.transaction(sequelize.getDialect() === 'sqlite' ? { type: 'IMMEDIATE' } : {}, async transaction => {
         if (sequelize.options.dialect === 'postgres') {
           await sequelize.query("SET LOCAL statement_timeout = '10min'", { transaction })
           await sequelize.query("SET LOCAL lock_timeout = '10s'", { transaction })

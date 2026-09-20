@@ -45,6 +45,8 @@ module.exports = (sequelize, web=false) => {
       type: DataTypes.STRING(512),
       allowNull: true,
     }
+    // Durable checkpoint for the bulk upload's separate pre-render check pass.
+    cols.checkedHash = { type: DataTypes.STRING(512), allowNull: true }
   }
   const indexes = [
     { fields: ['last_parse'], },

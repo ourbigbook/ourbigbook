@@ -235,14 +235,18 @@ async function start(port, startNext, cb) {
   await models.sync(sequelize)
   return new Promise((resolve, reject) => {
     let queueTick
-    const queueTimer = !config.isTest && setInterval(() => {
+    const tickQueue = () => {
       if (!queueTick) {
         queueTick = sequelize.models.BuildQueue.tick()
-          .catch(() => console.error('Background build queue check failed; will retry'))
+          .catch(error => console.error('Background build queue check failed; will retry', error))
           .finally(() => { queueTick = undefined })
       }
-    }, 5000)
-    if (queueTimer) queueTimer.unref()
+    }
+    const queueTimer = !config.isTest && setInterval(tickQueue, 5000)
+    if (queueTimer) {
+      queueTimer.unref()
+      tickQueue()
+    }
     const server = app.listen(port, async function () {
       try {
         cb && (await cb(server, sequelize, app))

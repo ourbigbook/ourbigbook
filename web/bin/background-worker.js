@@ -15,17 +15,17 @@ const deadline = setTimeout(() => process.exit(1), 15 * 60 * 1000)
     }
     sequelize = require('../models').getSequelize(path.dirname(__dirname), undefined, databaseOptions)
     const articles = process.argv.includes('--articles')
-    const label = articles ? 'articles' : 'tree_rebuild'
-    console.log(`${label}: ${id}`)
+    if (!articles) console.log(`tree_rebuild: ${id}`)
     const queueIndex = process.argv.indexOf('--queue')
     if (queueIndex !== -1) {
       const queueId = Number(process.argv[queueIndex + 1])
       if (!Number.isSafeInteger(queueId) || queueId <= 0) throw new Error('Invalid queue ID')
-      await sequelize.models.BuildQueue.run(queueId)
+      const tokenIndex = process.argv.indexOf('--worker-token')
+      await sequelize.models.BuildQueue.run(queueId, tokenIndex === -1 ? undefined : process.argv[tokenIndex + 1])
     } else {
       await sequelize.models[articles ? 'ArticleJob' : 'TreeRebuildJob'].run(id)
     }
-    console.log(`${label}: ${id} finished`)
+    if (!articles) console.log(`tree_rebuild: ${id} finished`)
   } catch (error) {
     console.error(error)
     process.exitCode = 1

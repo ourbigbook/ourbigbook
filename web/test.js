@@ -5519,6 +5519,161 @@ it('api: article tree render=true on previousSiblingId that only has render=fals
   })
 })
 
+it('settings: account and build jobs use separate tabs', async function() {
+  if (!testNext) return this.skip()
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const parse = require('node-html-parser').parse
+    const account = await test.sendJsonHttp('GET', routes.userEdit('user0'))
+    assert.strictEqual(account.status, 200)
+    const accountHtml = parse(account.data)
+    assert(accountHtml.querySelector('div.tab-list'))
+    assert.strictEqual(accountHtml.querySelector('#background-uploads'), null)
+    assert(accountHtml.querySelector('.tab-item.active').text.includes('Account'))
+    const builds = await test.sendJsonHttp('GET', `${routes.userEdit('user0')}?tab=builds`)
+    assert.strictEqual(builds.status, 200)
+    const buildsHtml = parse(builds.data)
+    assert(buildsHtml.querySelector('#background-uploads'))
+    assert.strictEqual(buildsHtml.querySelectorAll('#background-uploads table').length, 1)
+    assert(buildsHtml.querySelector('div.list-container table.list'))
+    assert.deepStrictEqual(buildsHtml.querySelectorAll('#background-uploads th').map(cell => cell.text),
+      ['Build ID', 'Job', 'Job ID', 'Phase', 'Status', 'Progress', 'Created (UTC)', 'Error'])
+    assert.strictEqual(buildsHtml.querySelector('#background-uploads tbody td').getAttribute('colspan'), '8')
+    assert(buildsHtml.querySelector('#background-uploads').text.includes('Created (UTC)'))
+    assert.strictEqual(buildsHtml.querySelector('#background-uploads h2, #background-uploads h3, #background-uploads p'), null)
+    assert(buildsHtml.querySelector('.tab-item.active').text.includes('Build jobs'))
+    assert.strictEqual(buildsHtml.querySelector('input[autocomplete="username"]'), null)
+    assert.strictEqual(buildsHtml.querySelectorAll('.tab-item .icon').length, 4)
+    assert(buildsHtml.querySelector('#background-uploads .tab-item.active').text.trim().endsWith('TODO'))
+    const done = await test.sendJsonHttp('GET', `${routes.userEdit('user0')}?tab=builds&jobs=done`)
+    assert.strictEqual(done.status, 200)
+    assert(parse(done.data).querySelector('#background-uploads .tab-item.active').text.trim().endsWith('Done'))
+    assert(parse(done.data).querySelectorAll('#background-uploads th').some(cell => cell.text === 'Runtime'))
+    assert.strictEqual(buildsHtml.querySelector('.tab-item.active .icon').text, String.fromCharCode(0xf6e3))
+    assert(buildsHtml.querySelector('div.tab-list').innerHTML.includes('</a> <a'))
+  }, { canTestNext: true })
+})
+
+it('build history: TODO ordering, newest finished first, runtime, build IDs and pagination', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    test.loginUser(user)
+    const { ArticleJob, TreeRebuildJob, ArticleBuild } = test.sequelize.models
+    const base = Date.now() - 60000
+    const makeJob = (i, status, extra={}) => ArticleJob.create({
+      userId: user.id, requestId: `history-${i}`, requestHash: 'hash', items: '[]', total: 1,
+      phase: 'render', status, createdAt: new Date(base + i * 1000), ...extra,
+    })
+    const staged = await makeJob(0, 'staged')
+    const waiting = await makeJob(1, 'waiting')
+    const queued = await makeJob(2, 'queued')
+    const running = await makeJob(3, 'running')
+    const older = await makeJob(4, 'completed', { finishedAt: new Date(base + 10000) })
+    const latest = await makeJob(5, 'failed', { startedAt: new Date(base), finishedAt: new Date(base + 12345) })
+    const tree = await TreeRebuildJob.create({ userId: user.id, status: 'completed', startedAt: new Date(base), finishedAt: new Date(base + 11000) })
+    await ArticleBuild.create({ id: 'history-build-0001', userId: user.id, status: 'completed', treeJobId: tree.id })
+    await latest.update({ buildId: 'history-build-0001' })
+    const todo = await test.webApi.articlesBulkStatus('user0', {}, { view: 'todo', limit: 2, offset: 0 })
+    assert.strictEqual(todo.status, 200)
+    assert.strictEqual(todo.data.jobsCount, 4)
+    assert.strictEqual(todo.data.todoCount, 4)
+    assert.strictEqual(todo.data.doneCount, 3)
+    assert.deepStrictEqual(todo.data.jobs.map(job => job.id), [running.id, queued.id])
+    const next = await test.webApi.articlesBulkStatus('user0', {}, { view: 'todo', limit: 2, offset: 2 })
+    assert.deepStrictEqual(next.data.jobs.map(job => job.id), [waiting.id, staged.id])
+    const done = await test.webApi.articlesBulkStatus('user0', {}, { view: 'done' })
+    assert.strictEqual(done.data.jobsCount, 3)
+    assert.strictEqual(done.data.todoCount, 4)
+    assert.strictEqual(done.data.doneCount, 3)
+    assert.deepStrictEqual(done.data.jobs.map(job => [job.phase, job.id]), [['render', latest.id], ['tree', tree.id], ['render', older.id]])
+    assert.strictEqual(done.data.jobs[0].runtimeMs, 12345)
+    assert.strictEqual(done.data.jobs[1].runtimeMs, 11000)
+    assert.strictEqual(done.data.jobs[2].runtimeMs, null)
+    assert.strictEqual(done.data.jobs[0].buildId, 'history-build-0001')
+    assert.strictEqual(done.data.jobs[1].buildId, 'history-build-0001')
+    await running.update({ status: 'completed', finishedAt: new Date() })
+    const refreshed = await test.webApi.articlesBulkStatus('user0', {}, { view: 'todo', limit: 1 })
+    assert.strictEqual(refreshed.data.todoCount, 3)
+    assert.strictEqual(refreshed.data.doneCount, 4)
+    assert.strictEqual(refreshed.data.jobsCount, 3)
+    assert.strictEqual((await test.webApi.articlesBulkStatus('user0', {}, { view: 'invalid' })).status, 422)
+    test.loginUser(other)
+    assert.strictEqual((await test.webApi.articlesBulkStatus('user0', {}, { view: 'todo' })).status, 403)
+    const empty = await test.webApi.articlesBulkStatus('user1', {}, { view: 'done' })
+    assert.strictEqual(empty.data.todoCount, 0)
+    assert.strictEqual(empty.data.doneCount, 0)
+  })
+})
+
+it('build history: bounded cleanup protects active builds, recent jobs and live worker roots', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    const { ArticleJob, TreeRebuildJob, ArticleBuild, BuildQueue } = test.sequelize.models
+    const now = new Date()
+    const old = new Date(now.getTime() - 3 * 24 * 60 * 60 * 1000)
+    let i = 0
+    const makeJob = extra => ArticleJob.create({ userId: user.id, requestId: `retention-${i++}`, requestHash: 'hash',
+      status: 'completed', items: '[]', total: 1, createdAt: old, finishedAt: old, ...extra,
+    })
+    const obsolete = await makeJob()
+    const otherLatest = await makeJob({ userId: other.id })
+    const obsoleteTree = await TreeRebuildJob.create({ userId: user.id, status: 'completed', createdAt: old, finishedAt: old })
+    const activeBuild = await ArticleBuild.create({ id: 'retention-active-build', userId: user.id, activeUserId: user.id, status: 'running', createdAt: old })
+    const protectedJob = await makeJob({ buildId: activeBuild.id })
+    const recentBuild = await ArticleBuild.create({ id: 'retention-recent-build', userId: user.id, status: 'completed', createdAt: old, finishedAt: now })
+    const recentBuildJob = await makeJob({ buildId: recentBuild.id })
+    const rootJob = await makeJob()
+    const root = await BuildQueue.create({ userId: user.id, kind: 'ArticleJob', jobId: rootJob.id, status: 'finished', createdAt: old, updatedAt: old })
+    const live = await BuildQueue.create({ userId: user.id, kind: 'ArticleJob', jobId: 123456, status: 'running', activeSlot: 'shared', workerId: root.id })
+    const oldQueue = await BuildQueue.create({ userId: user.id, kind: 'ArticleJob', jobId: obsolete.id, status: 'finished', createdAt: old, updatedAt: old })
+    await test.sequelize.query('UPDATE "BuildQueue" SET "updatedAt" = :old WHERE "id" IN (:ids)', {
+      replacements: { old, ids: [oldQueue.id, root.id] },
+    })
+    const recent = await makeJob({ finishedAt: now })
+    const newestTree = await TreeRebuildJob.create({ userId: user.id, status: 'completed', createdAt: now, finishedAt: now })
+    const waiting = await makeJob({ status: 'waiting', finishedAt: null, buildId: activeBuild.id })
+    const abandoned = await makeJob({ status: 'staged', finishedAt: null, items: '[{"article":{"bodySource":"old source"}}]' })
+    for (const id of ['retention-old-build-1', 'retention-old-build-2', 'retention-old-build-3']) {
+      await ArticleBuild.create({ id, userId: user.id, status: 'completed', createdAt: old, finishedAt: old })
+    }
+    await BuildQueue.prune({ now, keep: 2 })
+    assert.strictEqual(await ArticleJob.findByPk(obsolete.id), null)
+    assert(await ArticleJob.findByPk(otherLatest.id))
+    assert.strictEqual(await TreeRebuildJob.findByPk(obsoleteTree.id), null)
+    for (const job of [protectedJob, recentBuildJob, rootJob, recent, waiting]) assert(await ArticleJob.findByPk(job.id))
+    assert(await TreeRebuildJob.findByPk(newestTree.id))
+    assert(await BuildQueue.findByPk(root.id))
+    assert(await BuildQueue.findByPk(live.id))
+    assert.strictEqual(await BuildQueue.findByPk(oldQueue.id), null)
+    assert.strictEqual((await abandoned.reload()).status, 'failed')
+    assert.strictEqual(abandoned.items, '[]')
+    assert.strictEqual(await ArticleBuild.findByPk('retention-old-build-1'), null)
+    assert(await ArticleBuild.findByPk(activeBuild.id))
+    assert(await ArticleBuild.findByPk(recentBuild.id))
+  })
+})
+
+it('build history: runtime migration preserves rows and indexes', async () => {
+  await testApp(async test => {
+    const { ArticleJob, TreeRebuildJob } = test.sequelize.models
+    const qi = test.sequelize.getQueryInterface()
+    const migration = require('./migrations/21000101000062-build-job-runtime')
+    const job = await ArticleJob.create({ userId: 1, requestId: 'runtime-migration', requestHash: 'hash', items: '[]', total: 1 })
+    const tree = await TreeRebuildJob.create({ userId: 1 })
+    const indexes = async () => Promise.all(['ArticleJob', 'TreeRebuildJob', 'ArticleBuild'].map(async table =>
+      (await qi.showIndex(table)).map(index => JSON.stringify([index.unique, index.fields.map(field => field.attribute)])).sort()))
+    const before = await indexes()
+    await migration.down(qi)
+    await migration.up(qi, require('sequelize'))
+    assert.deepStrictEqual(await indexes(), before)
+    assert.strictEqual((await job.reload()).startedAt, null)
+    assert.strictEqual((await tree.reload()).startedAt, null)
+  })
+})
+
 it('build queue: admin-only dedicated workers, shared FIFO, both job kinds, and exit-confirmed slots', async () => {
   await testApp(async test => {
     const users = []
@@ -5537,6 +5692,9 @@ it('build queue: admin-only dedicated workers, shared FIFO, both job kinds, and 
     test.loginUser(users[0])
     const tree = await test.webApi.articleUpdatedNestedSet('user0')
     assert.strictEqual(tree.status, 202)
+    const treeStatus = await test.webApi.articlesBulkStatus('user0')
+    assert.strictEqual(treeStatus.data.nestedSet.id, tree.data.job.id)
+    assert(Number.isFinite(Date.parse(treeStatus.data.nestedSet.createdAt)))
     test.loginUser(users[1])
     const target = i => [{ path: 'a', article: { titleSource: 'A', bodySource: 'Body' }, parentId: `@user${i}`, updateNestedSetIndex: false }]
     const bulk = await test.webApi.articlesBulk(target(1), 'shared-queue-extract', {}, { phase: 'extract' })
@@ -5593,7 +5751,7 @@ it('build queue: admin-only dedicated workers, shared FIFO, both job kinds, and 
     assert.strictEqual(launches.length, 3)
     // Unexpected process exit fails the current job and releases its slot.
     await BuildQueue.workerExited(launches[2].queueId)
-    assert.strictEqual((await TreeRebuildJob.findByPk(next.data.job.id)).status, 'failed')
+    assert.strictEqual((await TreeRebuildJob.findByPk(next.data.job.id)).status, 'queued')
     await BuildQueue.tick()
     assert.strictEqual(launches.length, 4)
   }, { backgroundJobs: true })
@@ -5618,6 +5776,96 @@ it('build queue: ambiguous launch retains its slot until the hard recovery deadl
   }, { backgroundJobs: true })
 })
 
+it('build queue: a restarted server resumes committed checkpoints and ignores stale worker callbacks', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const { ArticleJob, TreeRebuildJob, BuildQueue, File } = test.sequelize.models
+    const launches = []
+    TreeRebuildJob.launchWorker = async (job, options) => { launches.push(options) }
+    const first = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'A' }), { render: false })
+    assertStatus(first.status, first.data)
+    const before = await File.findOne({ where: { path: '@user0/a.bigb' } })
+    const beforeUpdatedAt = before.updatedAt.getTime()
+    const targets = ['a', 'b'].map(path => ({ path, parentId: '@user0',
+      article: { titleSource: path.toUpperCase(), bodySource: 'Body' }, updateNestedSetIndex: false,
+    }))
+    const queued = await test.webApi.articlesBulk(targets, 'restart-checkpoint-test', {}, { phase: 'extract' })
+    const job = await ArticleJob.findByPk(queued.data.job.id)
+    const startedAt = new Date(Date.now() - 21 * 60 * 1000)
+    await job.update({ status: 'running', completed: 1, queuedAt: startedAt, startedAt })
+    const entry = await BuildQueue.findOne({ where: { jobId: job.id, kind: 'ArticleJob' } })
+    const oldToken = entry.workerToken
+    await entry.update({ status: 'running', localPid: 2147483647, localHost: require('os').hostname(), localIdentity: 'old-process' })
+    // Expiration must not erase the source payload needed for crash recovery.
+    await ArticleJob.expire()
+    assert.strictEqual((await job.reload()).completed, 1)
+    assert.strictEqual(job.status, 'running')
+    await BuildQueue.tick() // no old server exit listener is involved
+    assert.strictEqual(launches.length, 2)
+    assert.strictEqual((await job.reload()).status, 'pending')
+    assert.strictEqual(job.completed, 1)
+    await BuildQueue.workerExited(entry.id, oldToken)
+    await BuildQueue.run(entry.id, oldToken)
+    assert.strictEqual((await job.reload()).status, 'pending')
+    await BuildQueue.run(entry.id, launches[1].workerToken)
+    assert.strictEqual((await job.reload()).status, 'completed')
+    assert.strictEqual(job.completed, 2)
+    assert.strictEqual(job.startedAt.getTime(), startedAt.getTime())
+    assert(job.finishedAt >= job.startedAt)
+    assert.strictEqual((await before.reload()).updatedAt.getTime(), beforeUpdatedAt)
+    assert(await File.findOne({ where: { path: '@user0/b.bigb' } }))
+  })
+})
+
+it('build queue: restart adopts orphan pending jobs without a client and leaves staged jobs alone', async () => {
+  await testApp(async test => {
+    const sharedUser = await test.createUserApi(0)
+    const dedicatedUser = await test.createUserApi(1)
+    const { ArticleJob, TreeRebuildJob, BuildQueue, User } = test.sequelize.models
+    await User.update({ dedicatedBuildWorker: true }, { where: { id: dedicatedUser.id } })
+    const launches = []
+    TreeRebuildJob.launchWorker = async (job, options) => { launches.push({ id: job.id, ...options }) }
+    const article = await ArticleJob.create({
+      userId: dedicatedUser.id, activeUserId: dedicatedUser.id, status: 'pending',
+      requestId: 'orphan-pending-job', requestHash: 'hash', items: '[{"path":"a"},{"path":"b"}]',
+      completed: 1, total: 2, queuedAt: new Date(Date.now() - 60000),
+    })
+    const tree = await TreeRebuildJob.create({ userId: sharedUser.id, activeUserId: sharedUser.id })
+    const staged = await ArticleJob.create({
+      userId: sharedUser.id, requestId: 'unsubmitted-staged-job', requestHash: 'hash', items: '[]', total: 0,
+    })
+    await BuildQueue.tick()
+    assert.strictEqual(launches.length, 2)
+    assert.strictEqual((await article.reload()).completed, 1)
+    assert.strictEqual(article.status, 'pending')
+    assert.strictEqual((await tree.reload()).status, 'pending')
+    assert.strictEqual((await staged.reload()).status, 'staged')
+    assert.strictEqual(await BuildQueue.count(), 2)
+    await BuildQueue.tick()
+    assert.strictEqual(launches.length, 2)
+  })
+})
+
+it('build queue: exited zombie workers do not keep their slot', async () => {
+  await testApp(async test => {
+    const { TreeRebuildJob } = test.sequelize.models
+    const root = { localPid: process.pid, localHost: require('os').hostname(), localIdentity: TreeRebuildJob.localProcessIdentity(process.pid) }
+    assert.strictEqual(TreeRebuildJob.localWorkerStopped(root), false)
+    const fs = require('fs')
+    const readFileSync = fs.readFileSync
+    try {
+      fs.readFileSync = function(file, ...args) {
+        if (file === `/proc/${process.pid}/stat`) return `${process.pid} (exited worker) Z 1 0 0`
+        return readFileSync.call(this, file, ...args)
+      }
+      assert.strictEqual(TreeRebuildJob.localWorkerStopped(root), true)
+    } finally {
+      fs.readFileSync = readFileSync
+    }
+  })
+})
+
 it('build queue: migration preserves existing users and defaults to the shared worker', async () => {
   await testApp(async test => {
     const user = await test.createUserApi(0)
@@ -5625,10 +5873,18 @@ it('build queue: migration preserves existing users and defaults to the shared w
     const qi = test.sequelize.getQueryInterface()
     await migration.down(qi)
     await migration.up(qi, require('sequelize'))
+    await require('./migrations/21000101000058-build-worker-recovery').up(qi, require('sequelize'))
     assert.strictEqual((await test.sequelize.models.User.findByPk(user.id)).dedicatedBuildWorker, false)
     const entry = await test.sequelize.models.BuildQueue.create({ userId: user.id, kind: 'TreeRebuildJob', jobId: 1 })
     assert.strictEqual(entry.status, 'queued')
     assert.strictEqual((await entry.reload()).activeSlot, null)
+    const recoveryMigration = require('./migrations/21000101000058-build-worker-recovery')
+    await recoveryMigration.down(qi)
+    await recoveryMigration.up(qi, require('sequelize'))
+    await entry.reload()
+    assert.strictEqual(entry.jobId, 1)
+    assert.strictEqual(entry.recoveries, 0)
+    assert.strictEqual(entry.workerToken, null)
   })
 })
 
@@ -5802,7 +6058,10 @@ it('background renders: real CLI uploads all sources first, batches large reposi
           assert(job.total <= 100)
         }
         const child = await originalLaunch(job, options)
-        children.push({ child, exited: new Promise(resolve => child.once('close', resolve)) })
+        children.push({ child, exited: new Promise(resolve => child.once('close', async () => {
+          await child.buildQueueExit
+          resolve()
+        })) })
         return child
       }
       const run = args => require('util').promisify(require('child_process').execFile)(process.execPath, [
@@ -5812,12 +6071,33 @@ it('background renders: real CLI uploads all sources first, batches large reposi
       try {
         const first = await run([])
         firstUpload = false
-        assert(first.stdout.includes('web_render: job'))
+        assert(first.stdout.includes('web_render_run: job'))
+        assert(first.stdout.includes('web_extract_stage: job 1/2 (100 articles)'))
+        assert(first.stdout.includes('web_extract_stage: job 2/2 (6 articles)'))
+        for (const phase of ['extract', 'check', 'render']) {
+          assert(new RegExp(`web_${phase}_run: job 1/2, article 100/100, job id: \\d+, status: completed`).test(first.stdout))
+          assert(new RegExp(`web_${phase}_run: job 2/2, article 6/6, job id: \\d+, status: completed`).test(first.stdout))
+          const lines = first.stdout.split('\n').filter(line => line.startsWith(`web_${phase}_run: `))
+          for (const line of lines) {
+            const [, completed, total] = line.match(/, article ( *\d+)\/(\d+),/)
+            assert.strictEqual(completed.length, total.length)
+          }
+          for (const batch of [1, 2]) {
+            const batchLines = lines.filter(line => line.includes(`job ${batch}/2,`))
+            assert(batchLines[0].includes(`, first article: ${batch === 1 ? 'index' : 'entry-99'}`))
+            assert(batchLines.slice(1).every(line => !line.includes('first article:')))
+            assert(/\(finished in \d+ ms\)$/.test(batchLines[batchLines.length - 1]))
+          }
+        }
+        assert(!first.stdout.includes('completed 100/100'))
         const jobs = await Job.findAll({ order: [['id', 'ASC']] })
         assert.deepStrictEqual(jobs.map(job => [job.phase, job.total]), [
           ['extract', 100], ['extract', 6], ['check', 100], ['check', 6], ['render', 100], ['render', 6],
         ])
         assert(jobs.every(job => job.status === 'completed' && job.completed === job.total))
+        assert.deepStrictEqual(jobs.map(job => [job.batchIndex, job.batchCount]), [
+          [0, 2], [1, 2], [0, 2], [1, 2], [0, 2], [1, 2],
+        ])
         assert(jobs.filter(job => job.phase === 'extract').every(job => !job.items.includes('bodySource')))
         assert.strictEqual(await Article.count({ where: { authorId: user.id } }), count + 1)
         assert((await Article.findOne({ where: { slug: 'user0/entry-0' } })).render.includes('user0/entry-104'))
@@ -5829,14 +6109,19 @@ it('background renders: real CLI uploads all sources first, batches large reposi
         assert(!before.some(article => article.nestedSetIndex === null))
         await run([]) // unchanged repositories enqueue nothing
         assert.strictEqual(await Job.count(), 6)
-        await run(['--web-force-render', '--web-max-renders', '3'])
+        // Simulate a restart with committed checks but unfinished renders.
+        await test.sequelize.models.Render.update({ outdated: true }, { where: {} })
+        const resumed = await run(['--web-max-renders', '3'])
+        assert(resumed.stdout.includes('web_render_run: job'))
+        assert(!resumed.stdout.includes('web_check_run: job'))
+        assert.strictEqual(await Job.count({ where: { phase: 'check' } }), 2)
         assert.strictEqual((await Job.findOne({ order: [['id', 'DESC']] })).total, 3)
         await test.sequelize.models.User.update({ nestedSetNeedsUpdate: true }, { where: { id: user.id } })
         const treeJobsBeforeFallback = await TreeRebuildJob.count()
         const fallback = await run(['--web-force-render', '--web-max-renders', '2', '--web-individual-upload'])
-        assert(!fallback.stdout.includes('web_render: job'))
+        assert(!fallback.stdout.includes('web_render_run: job'))
         assert(fallback.stdout.includes('web_render:'))
-        assert.strictEqual(await Job.count(), 8)
+        assert.strictEqual(await Job.count(), 7)
         assert(fallback.stdout.includes('nested_set: (finished'))
         assert(!fallback.stdout.includes('nested_set: job'))
         assert.strictEqual(await TreeRebuildJob.count(), treeJobsBeforeFallback)
@@ -5853,6 +6138,107 @@ it('background renders: real CLI uploads all sources first, batches large reposi
         await run([])
         assert.strictEqual(await Article.count({ where: { slug: 'user0/extra' } }), 1)
         assert.notStrictEqual((await Article.findOne({ where: { slug: 'user0/extra' } })).nestedSetIndex, null)
+        // A competing upload at build submission must be monitored before
+        // restarting the plan with fresh hashes.
+        for (const extraction of [false, true]) {
+          const Build = test.sequelize.models.ArticleBuild
+          const commit = Build.commit
+          let blocker
+          let polls = 0
+          let hashes = 0
+          Build.commit = async (...args) => {
+            if (!blocker) blocker = await Job.create({
+              userId: user.id, activeUserId: user.id, requestId: `busy-upload-${extraction}`,
+              requestHash: 'hash', items: '[]', total: 1, status: 'running', phase: 'check', queuedAt: new Date(),
+            })
+            return commit(...args)
+          }
+          test.app.use(async (req, res, next) => {
+            try {
+              const pathname = req.url.split('?')[0]
+              if (req.method === 'GET' && pathname === '/api/articles/hash') hashes++
+              if (blocker && req.method === 'GET' && pathname === `/api/articles/bulk/${blocker.id}` && ++polls === 2) {
+                await blocker.update({ status: extraction ? 'failed' : 'completed', completed: extraction ? 0 : 1,
+                  activeUserId: null, finishedAt: new Date(), error: extraction ? 'Previous upload failed' : null,
+                })
+              }
+              next()
+            } catch (error) { next(error) }
+          })
+          const middleware = test.app._router.stack.pop()
+          test.app._router.stack.unshift(middleware)
+          try {
+            const resumed = await run(['--web-id', 'entry-104', extraction ? '--web-force-id-extraction' : '--web-force-render'])
+            assert(resumed.stdout.includes(`waiting for active check job ${blocker.id}`))
+            assert(resumed.stdout.includes('restarting upload with fresh server hashes'))
+            assert(!resumed.stderr.includes('requires an updated server'))
+            assert(hashes >= 2)
+            assert(polls >= 2)
+          } finally {
+            Build.commit = commit
+            test.app._router.stack.splice(test.app._router.stack.indexOf(middleware), 1)
+          }
+        }
+        // An active durable build also blocks a new uploader until completion.
+        const busyBuild = await test.sequelize.models.ArticleBuild.create({
+          id: 'busy-durable-build-001', userId: user.id, activeUserId: user.id, status: 'running', jobCount: 0,
+        })
+        let buildPolls = 0
+        test.app.use(async (req, res, next) => {
+          try {
+            if (req.method === 'GET' && req.url === `/api/articles/bulk/builds/${busyBuild.id}` && ++buildPolls === 2) {
+              await busyBuild.update({ status: 'completed', activeUserId: null, finishedAt: new Date() })
+            }
+            next()
+          } catch (error) { next(error) }
+        })
+        const buildMiddleware = test.app._router.stack.pop()
+        test.app._router.stack.unshift(buildMiddleware)
+        try {
+          const resumed = await run(['--web-id', 'entry-104', '--web-force-render'])
+          assert(resumed.stdout.includes(`waiting for active build ${busyBuild.id}`))
+          assert(resumed.stdout.includes('restarting upload with fresh server hashes'))
+          assert(buildPolls >= 2)
+        } finally {
+          test.app._router.stack.splice(test.app._router.stack.indexOf(buildMiddleware), 1)
+        }
+        // Kill the CLI before the first extraction starts. Every phase and
+        // the final tree rebuild must still finish using the persisted plan.
+        const launchWorker = TreeRebuildJob.launchWorker
+        let heldJob, signalSubmitted
+        const submitted = new Promise(resolve => { signalSubmitted = resolve })
+        TreeRebuildJob.launchWorker = async (job, options) => {
+          if (!heldJob && options.articles) {
+            heldJob = { job, options }
+            signalSubmitted()
+            return
+          }
+          return launchWorker(job, options)
+        }
+        const disconnected = run(['--web-force-id-extraction', '--web-force-render'])
+        const disconnectedResult = disconnected.catch(error => error)
+        let timeout
+        try {
+          await Promise.race([submitted, new Promise((resolve, reject) => {
+            timeout = setTimeout(() => reject(new Error('Build was not submitted')), 15000)
+          })])
+          disconnected.child.kill('SIGTERM')
+          await disconnectedResult
+          const build = await test.sequelize.models.ArticleBuild.findByPk(heldJob.job.buildId)
+          assert.strictEqual(build.jobCount, 6)
+          assert.strictEqual(build.rebuildTree, true)
+          assert.strictEqual(await Job.count({ where: { buildId: build.id, status: 'waiting' } }), 5)
+          const worker = await launchWorker(heldJob.job, heldJob.options)
+          await children.find(entry => entry.child === worker).exited
+          assert.strictEqual((await build.reload()).status, 'completed')
+          assert.strictEqual(await Job.count({ where: { buildId: build.id, status: 'completed' } }), 6)
+          assert.strictEqual((await TreeRebuildJob.findByPk(build.treeJobId)).status, 'completed')
+        } finally {
+          clearTimeout(timeout)
+          TreeRebuildJob.launchWorker = launchWorker
+          if (disconnected.child.exitCode === null) disconnected.child.kill('SIGTERM')
+          await disconnectedResult
+        }
       } finally {
         TreeRebuildJob.launchLocal = originalLaunch
         for (const { child, exited } of children) {
@@ -5867,6 +6253,169 @@ it('background renders: real CLI uploads all sources first, batches large reposi
   }
 })
 
+it('background builds: commit is atomic, ordered and durable across a batch-boundary crash', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    test.loginUser(user)
+    const { ArticleBuild: Build, ArticleJob: Job, BuildQueue, TreeRebuildJob, File, Article } = test.sequelize.models
+    const launches = []
+    TreeRebuildJob.launchWorker = async (job, options) => { launches.push({ job, options }) }
+    const buildId = 'durable-build-test-0001'
+    assert.strictEqual((await test.webApi.articlesBuildCreate(buildId)).status, 202)
+    const targets = ['a', 'b'].map((path, i) => ({
+      path, parentId: '@user0', ...(i ? { previousSiblingId: '@user0/a' } : {}), list: true,
+      updateNestedSetIndex: false, article: { titleSource: path.toUpperCase(), bodySource: i ? 'Body b' : 'See \\x[b].' },
+    }))
+    const hashes = targets.map(target => web_api.articleHash({
+      source: ourbigbook.modifyEditorInput(target.article.titleSource, target.article.bodySource).new,
+      list: true, parentId: target.parentId, ...(target.previousSiblingId ? { previousSiblingId: target.previousSiblingId } : {}),
+    }))
+    const jobs = []
+    for (const phase of ['extract', 'check', 'render']) {
+      for (const [i, target] of targets.entries()) {
+        const item = phase === 'extract' ? target : { ...target, hash: hashes[i], article: {} }
+        const staged = await test.webApi.articlesBulk([item], `durable-${phase}-batch-${i}`, {}, {
+          phase, start: false, buildId, buildIndex: jobs.length, batchIndex: i, batchCount: 2,
+        })
+        assert.strictEqual(staged.status, 202)
+        jobs.push(staged.data.job)
+        if (jobs.length === 1) assert.strictEqual((await test.webApi.articlesBuildCommit(buildId, 6, true)).status, 422)
+      }
+    }
+    assert.strictEqual(launches.length, 0)
+    assert.strictEqual(await File.count({ where: { path: '@user0/a.bigb' } }), 0)
+    test.loginUser(other)
+    assert.strictEqual((await test.webApi.articlesBuildCommit(buildId, 6, true)).status, 404)
+    assert.strictEqual((await test.webApi.articlesBuild(buildId)).status, 404)
+    test.loginUser(user)
+    assert.strictEqual((await test.webApi.articlesBulkStart(jobs[0].id)).status, 409)
+    assert.strictEqual((await test.webApi.articlesBuildCommit(buildId, 6, true)).status, 202)
+    assert.strictEqual((await test.webApi.articlesBuildCommit(buildId, 6, true)).status, 202)
+    assert.strictEqual(launches.length, 1)
+    assert.strictEqual((await test.webApi.articlesBuildCreate('competing-build-0001')).status, 409)
+    assert.strictEqual((await test.webApi.articlesBulk([targets[0]], 'late-build-batch-0001', {}, {
+      phase: 'extract', start: false, buildId, buildIndex: 6, batchIndex: 0, batchCount: 1,
+    })).status, 409)
+    assert.strictEqual((await test.webApi.articlesBulkStatus('user0')).data.activeBuild.id, buildId)
+    // Waiting jobs must survive the old staged-upload expiry window.
+    await Job.update({ createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000) }, { where: { buildId, status: 'waiting' } })
+    await Job.expire()
+    assert.strictEqual(await Job.count({ where: { buildId, status: 'waiting' } }), 5)
+    // A small upload from another user gets a turn before our next batch.
+    const otherTree = await TreeRebuildJob.create({ userId: other.id, activeUserId: other.id })
+    await BuildQueue.enqueue(otherTree)
+    // The first batch commits, then its worker/server dies before advancing.
+    await Job.run(jobs[0].id)
+    const entry = await BuildQueue.findByPk(launches[0].options.queueId)
+    await entry.update({ status: 'running', localPid: 2147483647, localHost: require('os').hostname(), localIdentity: 'dead-worker' })
+    await BuildQueue.tick()
+    assert.strictEqual(launches.length, 2)
+    assert.strictEqual(launches[1].options.articles, false)
+    assert.strictEqual(launches[1].job.id, otherTree.id)
+    // No more client requests: the worker advances every remaining phase.
+    await BuildQueue.run(launches[1].options.queueId, launches[1].options.workerToken)
+    assert.strictEqual((await otherTree.reload()).status, 'completed')
+    const build = await Build.findByPk(buildId)
+    assert.strictEqual(build.status, 'completed')
+    assert.strictEqual(build.activeUserId, null)
+    assert.strictEqual(await Job.count({ where: { buildId, status: 'completed' } }), 6)
+    assert.strictEqual((await TreeRebuildJob.findByPk(build.treeJobId)).status, 'completed')
+    assert((await Article.findOne({ where: { slug: 'user0/a' } })).render.includes('user0/b'))
+  })
+})
+
+it('background builds: failed checks stop rendering and tree rebuilding', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const { ArticleBuild: Build, ArticleJob: Job, BuildQueue, TreeRebuildJob, File, Article } = test.sequelize.models
+    let launch
+    TreeRebuildJob.launchWorker = async (job, options) => { launch = options }
+    await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource: 'Bad', bodySource: 'See \\x[missing].' }), { render: false })
+    const file = await File.findOne({ where: { path: '@user0/bad.bigb' } })
+    const id = 'failed-build-test-0001'
+    assert.strictEqual((await test.webApi.articlesBuildCreate(id)).status, 202)
+    for (const [i, phase] of ['check', 'render'].entries()) {
+      assert.strictEqual((await test.webApi.articlesBulk([{ path: 'bad', hash: file.hash }], `failed-build-${phase}`, {}, {
+        phase, start: false, buildId: id, buildIndex: i, batchIndex: 0, batchCount: 1,
+      })).status, 202)
+    }
+    assert.strictEqual((await test.webApi.articlesBuildCommit(id, 2, true)).status, 202)
+    await BuildQueue.run(launch.queueId, launch.workerToken)
+    const build = await Build.findByPk(id)
+    assert.strictEqual(build.status, 'failed')
+    assert(build.error.includes('missing'))
+    assert.strictEqual(build.activeUserId, null)
+    assert.strictEqual(await Job.count({ where: { buildId: id, status: 'failed' } }), 2)
+    assert.strictEqual(await TreeRebuildJob.count(), 0)
+    assert.strictEqual(await Article.count({ where: { slug: 'user0/bad' } }), 0)
+  })
+})
+
+it('background builds: reject phase order, incomplete batches and concurrent submissions', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    test.loginUser(user)
+    const { ArticleBuild: Build, BuildQueue, ArticleJob: Job, TreeRebuildJob } = test.sequelize.models
+    TreeRebuildJob.launchWorker = async () => {}
+    const id = 'out-of-order-build-001'
+    await test.webApi.articlesBuildCreate(id)
+    for (const [i, phase] of ['render', 'check'].entries()) {
+      assert.strictEqual((await test.webApi.articlesBulk([{ path: 'a', hash: 'hash' }], `out-of-order-${phase}`, {}, {
+        phase, start: false, buildId: id, buildIndex: i, batchIndex: 0, batchCount: 1,
+      })).status, 202)
+    }
+    assert.strictEqual((await test.webApi.articlesBuildCommit(id, 2, false)).status, 422)
+    assert.strictEqual(await BuildQueue.count(), 0)
+    test.loginUser(other)
+    assert.strictEqual((await test.webApi.articlesBulk([{ path: 'a', hash: 'hash' }], 'unauthorized-build-batch', {}, {
+      phase: 'check', start: false, buildId: id, buildIndex: 2, batchIndex: 0, batchCount: 1,
+    })).status, 404)
+    // Two fully staged plans race for the same user's one active build slot.
+    const ids = ['concurrent-build-0001', 'concurrent-build-0002']
+    for (const buildId of ids) {
+      await Build.create({ id: buildId, userId: user.id })
+      await Job.create({ userId: user.id, buildId, buildIndex: 0, batchIndex: 0, batchCount: 1,
+        phase: 'check', requestId: buildId, requestHash: 'hash', items: '[{"path":"a","hash":"hash"}]', total: 1,
+      })
+    }
+    // SQLite uses one connection for in-memory test databases; PostgreSQL
+    // additionally exercises simultaneous transaction/row-lock contention.
+    if (config.postgres) {
+      const results = await Promise.allSettled(ids.map(id => Build.commit(id, user.id, 1, false)))
+      assert.strictEqual(results.filter(result => result.status === 'fulfilled').length, 1)
+      assert.strictEqual(results.find(result => result.status === 'rejected').reason.status, 409)
+    } else {
+      await Build.commit(ids[0], user.id, 1, false)
+      await assert.rejects(Build.commit(ids[1], user.id, 1, false), error => error.status === 409)
+    }
+    assert.strictEqual(await Build.count({ where: { activeUserId: user.id } }), 1)
+    await BuildQueue.tick()
+    assert.strictEqual(await BuildQueue.count(), 1)
+  })
+})
+
+it('background builds: migration preserves existing standalone jobs', async () => {
+  await testApp(async test => {
+    const qi = test.sequelize.getQueryInterface()
+    const migration = require('./migrations/21000101000061-article-build')
+    const Job = test.sequelize.models.ArticleJob
+    const job = await Job.create({ userId: 1, requestId: 'old-standalone-job', requestHash: 'hash', items: '[]', total: 0 })
+    const definitions = async () => (await qi.showIndex('ArticleJob')).map(index =>
+      JSON.stringify([index.unique, index.fields.map(field => field.attribute)])).sort()
+    const before = await definitions()
+    await migration.down(qi)
+    await migration.up(qi, require('sequelize'))
+    assert.deepStrictEqual(await definitions(), before)
+    await job.reload()
+    assert.strictEqual(job.buildId, null)
+    assert.strictEqual(job.buildIndex, null)
+    assert.strictEqual(job.status, 'staged')
+  })
+})
+
 it('background renders: staged extraction and database-check failures preserve checkpoints', async () => {
   await testApp(async test => {
     const user = await test.createUserApi(0)
@@ -5878,31 +6427,80 @@ it('background renders: staged extraction and database-check failures preserve c
       { path: 'a', parentId: '@user0', article: { titleSource: 'A', bodySource: 'See \\x[missing].' }, updateNestedSetIndex: false },
       { path: 'b', parentId: '@user0', previousSiblingId: '@user0/a', article: { titleSource: 'B', bodySource: 'Body b' }, updateNestedSetIndex: false },
     ]
-    const staged = await test.webApi.articlesBulk(targets, 'staged-extraction', {}, { phase: 'extract', start: false })
+    const staged = await test.webApi.articlesBulk(targets, 'staged-extraction', {}, { phase: 'extract', start: false, batchIndex: 1, batchCount: 3 })
     assert.strictEqual(staged.status, 202)
     assert.strictEqual(staged.data.job.status, 'staged')
+    assert.strictEqual(staged.data.job.batchIndex, 1)
+    assert.strictEqual(staged.data.job.batchCount, 3)
+    assert.strictEqual((await test.webApi.articlesBulk(targets, 'bad-batch-position', {}, {
+      phase: 'extract', start: false, batchIndex: 3, batchCount: 3,
+    })).status, 422)
     assert.strictEqual(launches, 0)
     assert.strictEqual(await File.count({ where: { path: '@user0/a.bigb' } }), 0)
     const state = await test.webApi.articlesBulkStatus('user0')
     assert.strictEqual(state.data.stagedArticles, 2)
     assert.strictEqual(state.data.stagedBatches, 1)
+    const listedJob = state.data.recent.find(job => job.id === staged.data.job.id)
+    assert.strictEqual(listedJob.batchIndex, 1)
+    assert.strictEqual(listedJob.batchCount, 3)
     assert.strictEqual((await test.webApi.articlesBulkStart(staged.data.job.id)).status, 202)
     await test.webApi.articlesBulkStart(staged.data.job.id)
     assert.strictEqual(launches, 1)
-    await Job.run(staged.data.job.id)
+    const logs = []
+    const log = console.log
+    try {
+      console.log = (...args) => { logs.push(args.join(' ')); log(...args) }
+      await Job.run(staged.data.job.id)
+    } finally {
+      console.log = log
+    }
+    const articleLogs = logs.filter(line => line.startsWith(`web_extract: job 2/3, job id: ${staged.data.job.id} `))
+    assert.strictEqual(articleLogs.length, 4)
+    for (const [i, path] of ['a', 'b'].entries()) {
+      const prefix = `web_extract: job 2/3, job id: ${staged.data.job.id} (${i + 1}/2) @user0/${path}`
+      assert.strictEqual(articleLogs[i * 2], prefix)
+      assert(articleLogs[i * 2 + 1].startsWith(`${prefix} (finished in `))
+      assert(/\(finished in \d+ ms\)$/.test(articleLogs[i * 2 + 1]))
+    }
     assert.strictEqual(await File.count({ where: { path: '@user0/a.bigb' } }), 1)
     assert.strictEqual(await Article.count({ where: { slug: 'user0/a' } }), 0)
-    const check = await test.webApi.articlesBulk([{ path: 'a' }, { path: 'b' }], 'check-invalid-link', {}, { phase: 'check' })
+    const check = await test.webApi.articlesBulk([{ path: 'b' }, { path: 'a' }], 'check-invalid-link', {}, { phase: 'check' })
     await assert.rejects(Job.run(check.data.job.id))
     const failed = await test.webApi.articlesBulkJob(check.data.job.id)
     assert.strictEqual(failed.data.job.phase, 'check')
     assert.strictEqual(failed.data.job.status, 'failed')
+    assert.strictEqual(failed.data.job.completed, 1)
     assert(failed.data.job.error.includes('missing'))
+    assert.strictEqual((await File.findOne({ where: { path: '@user0/a.bigb' } })).checkedHash, null)
+    const manifest = await test.webApi.articlesHash({ author: 'user0' })
+    const checked = manifest.data.articles.find(file => file.path === '@user0/b.bigb')
+    assert(checked.hash)
+    assert.strictEqual(checked.checkedHash, checked.hash)
+    const reextract = await test.webApi.articlesBulk([targets[1]], 'reextract-checked-source', {}, { phase: 'extract' })
+    await Job.run(reextract.data.job.id)
+    assert.strictEqual((await File.findOne({ where: { path: '@user0/b.bigb' } })).checkedHash, null)
     assert.strictEqual(await Article.count({ where: { slug: 'user0/a' } }), 0)
     const stale = await test.webApi.articlesBulk(targets, 'expired-staged-upload', {}, { phase: 'extract', start: false })
     await Job.update({ createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000) }, { where: { id: stale.data.job.id } })
     assert.strictEqual((await test.webApi.articlesBulkJob(stale.data.job.id)).data.job.status, 'failed')
     assert.strictEqual((await Job.findByPk(stale.data.job.id)).items, '[]')
+  })
+})
+
+it('background renders: check checkpoint migration preserves files', async () => {
+  await testApp(async test => {
+    await test.createUserApi(0)
+    const migration = require('./migrations/21000101000059-file-checked-hash')
+    const qi = test.sequelize.getQueryInterface()
+    const before = await test.sequelize.models.File.count()
+    const indexDefinitions = async () => (await qi.showIndex('File')).map(index =>
+      JSON.stringify([index.unique, index.fields.map(field => field.attribute)])).sort()
+    const indexes = await indexDefinitions()
+    await migration.down(qi)
+    await migration.up(qi, require('sequelize'))
+    assert.deepStrictEqual(await indexDefinitions(), indexes)
+    assert.strictEqual(await test.sequelize.models.File.count(), before)
+    assert.strictEqual((await test.sequelize.models.File.findOne()).checkedHash, null)
   })
 })
 
@@ -5912,11 +6510,25 @@ it('background renders: migration matches the model', async () => {
     const qi = test.sequelize.getQueryInterface()
     await migration.down(qi)
     await migration.up(qi, require('sequelize'))
+    await require('./migrations/21000101000060-article-job-batch-position').up(qi, require('sequelize'))
+    await qi.dropTable('ArticleBuild')
+    await require('./migrations/21000101000061-article-build').up(qi, require('sequelize'))
+    await qi.addColumn('ArticleJob', 'startedAt', { type: require('sequelize').DATE, allowNull: true })
     const job = await test.sequelize.models.ArticleJob.create({
       userId: 1, activeUserId: 1, requestId: 'test-request', requestHash: 'hash', items: '[]', total: 0,
     })
     assert.strictEqual(job.completed, 0)
     assert.strictEqual(job.status, 'staged')
+    const batchMigration = require('./migrations/21000101000060-article-job-batch-position')
+    const indexDefinitions = async () => (await qi.showIndex('ArticleJob')).map(index =>
+      JSON.stringify([index.unique, index.fields.map(field => field.attribute)])).sort()
+    const indexes = await indexDefinitions()
+    await batchMigration.down(qi)
+    await batchMigration.up(qi, require('sequelize'))
+    assert.deepStrictEqual(await indexDefinitions(), indexes)
+    await job.reload()
+    assert.strictEqual(job.batchIndex, null)
+    assert.strictEqual(job.batchCount, null)
   })
 })
 
@@ -6008,7 +6620,10 @@ it('nested-set jobs: real local worker and CLI, including crash and retry', asyn
       let crash = false
       Job.launchLocal = async (job, options) => {
         const child = await launchLocal(job, options)
-        const exited = new Promise(resolve => child.once('close', resolve))
+        const exited = new Promise(resolve => child.once('close', async () => {
+          await child.buildQueueExit
+          resolve()
+        }))
         children.push({ child, exited })
         assert.notStrictEqual(child.pid, process.pid)
         if (crash) child.kill('SIGKILL')
@@ -6034,7 +6649,7 @@ it('nested-set jobs: real local worker and CLI, including crash and retry', asyn
         await User.update({ nestedSetNeedsUpdate: true }, { where: { id: user.id } })
         crash = true
         await assert.rejects(run(), error => {
-          assert(error.stderr.includes('Build worker exited before completing'))
+          assert(error.stderr.includes('Build worker repeatedly exited without progress'))
           assert(!error.stdout.includes('nested_set: (finished'))
           return error.code !== 0
         })
@@ -6073,6 +6688,7 @@ it('nested-set jobs: migration creates a usable model', async () => {
     const queryInterface = test.sequelize.getQueryInterface()
     await migration.down(queryInterface)
     await migration.up(queryInterface, require('sequelize'))
+    await queryInterface.addColumn('TreeRebuildJob', 'startedAt', { type: require('sequelize').DATE, allowNull: true })
     const [job] = await test.sequelize.models.TreeRebuildJob.enqueue(1)
     assert.strictEqual(job.status, 'pending')
     const [same, created] = await test.sequelize.models.TreeRebuildJob.enqueue(1)

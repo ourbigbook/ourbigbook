@@ -1545,12 +1545,24 @@ function printStatus({
 }
 
 async function updateNestedSet(webApi, username, { foreground=false }={}) {
+  await waitNestedSetUpdate(webApi, username, await queueNestedSetUpdate(webApi, username, { foreground }))
+}
+
+async function queueNestedSetUpdate(webApi, username, { foreground=false }={}) {
   const t1 = now()
   console.log(`nested_set`)
   const { data, status } = await webApi.articleUpdatedNestedSet(username, { body: { foreground } })
   if (status === 202) {
     const id = data.job.id
     console.log(`nested_set: job ${id} queued; waiting for worker`)
+    return { id, t1 }
+  }
+  assertApiStatus(status, data)
+  return { t1 }
+}
+
+async function waitNestedSetUpdate(webApi, username, { id, t1 }) {
+  if (id !== undefined) {
     let previousStatus
     let deadline = Date.now() + 21 * 60 * 1000
     while (true) {
@@ -1568,27 +1580,53 @@ async function updateNestedSet(webApi, username, { foreground=false }={}) {
       }
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
-  } else {
-    assertApiStatus(status, data)
   }
   console.log(`nested_set: ${finished_in_ms(now() - t1)}`)
 }
 
-async function queueWebArticles(webApi, articles, { phase='render', start=true }={}) {
+class WebBulkBusyError extends Error {}
+
+function checkWebBulkBusy(status, data) {
+  if (status === 409 && [data && data.errors].flat().includes('Another bulk job is active for this user')) {
+    throw new WebBulkBusyError('Another bulk job is active for this user')
+  }
+}
+
+async function waitForActiveWebArticles(webApi, username) {
+  while (true) {
+    const { data, status } = await webApi.articlesBulkStatus(username, { timeout: 15000 })
+    assertApiStatus(status, data)
+    if (data.activeBuild) {
+      console.log(`web_upload: waiting for active build ${data.activeBuild.id}`)
+      await waitWebBuild(webApi, data.activeBuild.id, { allowFailure: true })
+      continue
+    }
+    if (!data.active.length) return
+    for (const job of data.active) {
+      console.log(`web_upload: waiting for active ${job.phase} job ${job.id}`)
+      await waitWebArticles(webApi, job.id, job.phase, { allowFailure: true })
+    }
+  }
+}
+
+async function queueWebArticles(webApi, articles, { phase='render', start=true, batchIndex, batchCount, onQueued, buildId, buildIndex }={}) {
   const requestId = require('crypto').randomBytes(16).toString('hex')
-  const { data, status } = await webApi.articlesBulk(articles, requestId, { timeout: 20000 }, { phase, start })
+  const { data, status } = await webApi.articlesBulk(articles, requestId, { timeout: 20000 }, { phase, start, batchIndex, batchCount, buildId, buildIndex })
   if (status !== 202) {
-    console.error('Background rendering requires an updated server. Use --web-individual-upload for the legacy render path.')
+    checkWebBulkBusy(status, data)
+    if ([404, 405].includes(status)) console.error('Background rendering requires an updated server. Use --web-individual-upload for the legacy render path.')
     assertApiStatus(status, data)
     throw new Error(`Expected HTTP 202 when queueing renders, got ${status}`)
   }
   const id = data.job.id
-  console.log(`web_${phase}: job ${id} ${start ? 'queued' : 'staged'} (${articles.length} articles)`)
-  if (start) await waitWebArticles(webApi, id, phase)
+  if (!start) console.log(`web_${phase}_stage: job ${batchIndex + 1}/${batchCount} (${articles.length} articles)`)
+  if (onQueued) await onQueued()
+  if (start) await waitWebArticles(webApi, id, phase, { batchIndex, batchCount, firstArticle: articles[0].path })
   return id
 }
 
-async function waitWebArticles(webApi, id, phase) {
+async function waitWebArticles(webApi, id, phase, { allowFailure=false, batchIndex, batchCount, firstArticle }={}) {
+  const startedAt = now()
   let previousProgress
   let deadline = Date.now() + 21 * 60 * 1000
   while (true) {
@@ -1596,15 +1634,43 @@ async function waitWebArticles(webApi, id, phase) {
     const result = await webApi.articlesBulkJob(id, { timeout: 15000 })
     assertApiStatus(result.status, result.data)
     const job = result.data.job
-    if (job.status === 'queued') deadline = Date.now() + 21 * 60 * 1000
-    const progress = `${job.status} ${job.completed}/${job.total}`
+    if (batchIndex === undefined && job.batchIndex != null) batchIndex = job.batchIndex
+    if (batchCount === undefined && job.batchCount != null) batchCount = job.batchCount
+    if (['queued', 'waiting'].includes(job.status)) deadline = Date.now() + 21 * 60 * 1000
+    // An existing job from another CLI invocation has no local batch plan.
+    const completed = String(job.completed).padStart(String(job.total).length)
+    const progress = `job ${batchIndex === undefined ? '?' : batchIndex + 1}/${batchCount === undefined ? '?' : batchCount}, article ${completed}/${job.total}, job id: ${id}, status: ${job.status}`
     if (progress !== previousProgress) {
-      console.log(`web_${phase}: job ${id}: ${progress}`)
+      deadline = Date.now() + 21 * 60 * 1000
+      const first = previousProgress === undefined ? `, first article: ${firstArticle || job.firstArticle || 'unknown'}` : ''
+      const finished = job.status === 'completed' ? ` ${finished_in_ms(now() - startedAt)}` : ''
+      console.log(`web_${phase}_run: ${progress}${first}${finished}`)
       previousProgress = progress
     }
-    if (job.status === 'failed') throw new Error(job.error || `Render job ${id} failed`)
+    if (job.status === 'failed') {
+      if (!allowFailure) throw new Error(job.error || `Render job ${id} failed`)
+      console.error(`web_${phase}_run: ${progress}, error: ${job.error || 'unknown error'}`)
+      return
+    }
     if (job.status === 'completed') break
-    if (!['queued', 'pending', 'running'].includes(job.status)) throw new Error(`Unknown render job status: ${job.status}`)
+    if (!['waiting', 'queued', 'pending', 'running'].includes(job.status)) throw new Error(`Unknown render job status: ${job.status}`)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
+}
+
+async function waitWebBuild(webApi, id, { allowFailure=false }={}) {
+  while (true) {
+    const { data, status } = await webApi.articlesBuild(id, { timeout: 15000 })
+    assertApiStatus(status, data)
+    const build = data.build
+    if (build.status === 'completed') return
+    if (build.status === 'failed') {
+      if (!allowFailure) throw new Error(build.error || `Build ${id} failed`)
+      console.error(`web_upload: build ${id} failed: ${build.error || 'unknown error'}`)
+      return
+    }
+    if (build.status !== 'running') throw new Error(`Unexpected build status: ${build.status}`)
+    if (data.job) await waitWebArticles(webApi, data.job.id, data.job.phase, { allowFailure })
     await new Promise(resolve => setTimeout(resolve, 1000))
   }
 }
@@ -2704,380 +2770,431 @@ if (cli.helpMacros) {
         process.exit(1)
       }
 
-      let header_tree = []
-      if (input_path_is_file || cli.webId) {
-        let toPush
-        if (cli.webId) {
-          toPush = cli.webId
+      const upload = async () => {
+        let header_tree = []
+        if (input_path_is_file || cli.webId) {
+          let toPush
+          if (cli.webId) {
+            toPush = cli.webId
+          } else {
+            toPush = treeToplevelId
+          }
+          header_tree.push({ to_id: toPush })
         } else {
-          toPush = treeToplevelId
+          // Fake an index entry at the end so that the index will get rendered.
+          // It is not otherwise present as it has no parents.
+          header_tree.push({ to_id: '' })
         }
-        header_tree.push({ to_id: toPush })
-      } else {
-        // Fake an index entry at the end so that the index will get rendered.
-        // It is not otherwise present as it has no parents.
-        header_tree.push({ to_id: '' })
-      }
-      if (!cli.webId) {
-        header_tree = header_tree.concat(await ourbigbook_options.db_provider.fetch_header_tree_ids(
-          [treeToplevelId],
+        if (!cli.webId) {
+          header_tree = header_tree.concat(await ourbigbook_options.db_provider.fetch_header_tree_ids(
+            [treeToplevelId],
+            {
+              definedAtFileId: treeToplevelFileId,
+            }
+          ))
+        }
+        // A single-file or single-ID upload may not fetch the surrounding header
+        // tree. Fetch missing parent and previous-sibling metadata explicitly so
+        // it still uses the authoritative cross-file Ref graph rather than the
+        // lossy split-file web cache.
+        if (input_path_is_file || cli.webId) {
+          const { Ref } = nonOurbigbookOptions.sequelize.models
+          for (const headerTreeEntry of header_tree) {
+            if (headerTreeEntry.from_id === undefined && headerTreeEntry.to_id !== '') {
+              const parentRef = await Ref.findOne({
+                attributes: ['from_id', 'to_id_index'],
+                raw: true,
+                where: {
+                  to_id: headerTreeEntry.to_id,
+                  type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+                },
+              })
+              if (parentRef) {
+                headerTreeEntry.from_id = parentRef.from_id
+                if (parentRef.to_id_index > 0) {
+                  const previousSiblingRef = await Ref.findOne({
+                    attributes: ['to_id'],
+                    order: [['to_id_index', 'DESC']],
+                    raw: true,
+                    where: {
+                      from_id: parentRef.from_id,
+                      to_id_index: { [Op.lt]: parentRef.to_id_index },
+                      type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+                    },
+                  })
+                  if (previousSiblingRef) {
+                    headerTreeEntry.previous_sibling_id = previousSiblingRef.to_id
+                  }
+                }
+              }
+            }
+          }
+        }
+        let webStartIndex = 0
+        if (cli.webStartId !== undefined) {
+          webStartIndex = header_tree.findIndex(entry => entry.to_id === cli.webStartId)
+          if (webStartIndex === -1) {
+            cli_error(`--web-start-id ID not found in the upload tree: "${cli.webStartId}"`)
+          }
+        }
+        const dorender = [false]
+        if (!cli.webIndividualUpload) dorender.push('check')
+        if (cli.webRender) {
+          dorender.push(true)
+        }
+        let data, status, i = 0
+        const webPathToArticle = {}
+        if (!cli.webDry) {
+          do {
+            ;({ data, status } = await webApi.articlesHash({ author: username, offset: i }))
+            assertApiStatus(status, data)
+            const articles = data.articles
+            for (const article of articles) {
+              webPathToArticle[article.path] = article
+            }
+            i += articles.length
+          } while (data.articles.length === ARTICLE_HASH_LIMIT_MAX)
+        }
+        const idToArticleMeta = {}
+        const localArticles = await sequelizeWebArticle.findAll({ attributes: ['source', 'title', 'idid', 'inpath', 'parentId'] })
+        for (const article of localArticles) {
+          idToArticleMeta[article.idid] = article
+        }
+        // The split-file cache cannot represent a toplevel header's cross-file
+        // Include parent. Derive all upload tree metadata from the authoritative
+        // Ref graph returned in header_tree. Calculate it before applying
+        // --web-start-id so resumed uploads can replay skipped prerequisites.
+        const idToWebTreeMeta = {}
+        const lastChildIdByParentId = new Map()
+        for (const header_tree_entry of header_tree) {
+          const articleMeta = idToArticleMeta[header_tree_entry.to_id]
+          // Can fail for synonyms.
+          if (articleMeta) {
+            const parentId = header_tree_entry.from_id === undefined
+              // The synthetic index entry, and a single file whose parent is not
+              // present in the local database, have no Ref metadata to override.
+              ? articleMeta.parentId
+              : header_tree_entry.from_id
+            let previousSiblingId = header_tree_entry.previous_sibling_id
+            if (previousSiblingId === undefined && parentId !== null && parentId !== undefined) {
+              previousSiblingId = lastChildIdByParentId.get(parentId)
+            }
+            if (parentId !== null && parentId !== undefined) {
+              lastChildIdByParentId.set(parentId, header_tree_entry.to_id)
+            }
+            idToWebTreeMeta[header_tree_entry.to_id] = {
+              parentId,
+              previousSiblingId,
+            }
+            if (cli.addTestInstrumentation) {
+              console.error(
+                `web_upload_tree: ${JSON.stringify(header_tree_entry.to_id)} parent=${JSON.stringify(parentId)} previous=${JSON.stringify(previousSiblingId)}`
+              )
+            }
+          }
+        }
+        // A suffix is not necessarily self-contained because fetch_header_tree_ids
+        // returns breadth-first order. A child after the resume marker can therefore
+        // have a parent before it. Replay skipped parents and previous siblings (and
+        // their own prerequisites) so resuming also works when those server rows are
+        // absent, while still avoiding unrelated completed subtrees.
+        const webResumeDependencyIds = new Set()
+        if (webStartIndex > 0) {
+          const headerTreeIdToIndex = new Map(header_tree.map(
+            (entry, index) => [entry.to_id, index]
+          ))
+          const pendingIds = header_tree.slice(webStartIndex).map(entry => entry.to_id)
+          for (let pendingIndex = 0; pendingIndex < pendingIds.length; pendingIndex++) {
+            const webTreeMeta = idToWebTreeMeta[pendingIds[pendingIndex]]
+            if (!webTreeMeta) {
+              continue
+            }
+            for (const dependencyId of [webTreeMeta.parentId, webTreeMeta.previousSiblingId]) {
+              const dependencyIndex = headerTreeIdToIndex.get(dependencyId)
+              if (
+                dependencyIndex !== undefined &&
+                dependencyIndex < webStartIndex &&
+                !webResumeDependencyIds.has(dependencyId)
+              ) {
+                webResumeDependencyIds.add(dependencyId)
+                pendingIds.push(dependencyId)
+              }
+            }
+          }
+        }
+        let nestedSetNeedsUpdate = false
+        if (
+          // These are needed otherwise we were deleting every header that was not selected when doing
+          // ourbigbook --web myinput.bigb or ourbigbook --web-id myid
+          inputPath === '.' &&
+          !cli.webId
+        ) {
+          // Handle uploads
           {
-            definedAtFileId: treeToplevelFileId,
-          }
-        ))
-      }
-      // A single-file or single-ID upload may not fetch the surrounding header
-      // tree. Fetch missing parent and previous-sibling metadata explicitly so
-      // it still uses the authoritative cross-file Ref graph rather than the
-      // lossy split-file web cache.
-      if (input_path_is_file || cli.webId) {
-        const { Ref } = nonOurbigbookOptions.sequelize.models
-        for (const headerTreeEntry of header_tree) {
-          if (headerTreeEntry.from_id === undefined && headerTreeEntry.to_id !== '') {
-            const parentRef = await Ref.findOne({
-              attributes: ['from_id', 'to_id_index'],
-              raw: true,
-              where: {
-                to_id: headerTreeEntry.to_id,
-                type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-              },
-            })
-            if (parentRef) {
-              headerTreeEntry.from_id = parentRef.from_id
-              if (parentRef.to_id_index > 0) {
-                const previousSiblingRef = await Ref.findOne({
-                  attributes: ['to_id'],
-                  order: [['to_id_index', 'DESC']],
-                  raw: true,
-                  where: {
-                    from_id: parentRef.from_id,
-                    to_id_index: { [Op.lt]: parentRef.to_id_index },
-                    type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-                  },
-                })
-                if (previousSiblingRef) {
-                  headerTreeEntry.previous_sibling_id = previousSiblingRef.to_id
+            const uploadHashes = {}
+            const serverOnlyUploads = []
+            let i = 0
+            if (!cli.webDry) {
+              do {
+                ;({ data, status } = await webApi.uploadHash({ author: username, offset: i }))
+                assertApiStatus(status, data)
+                const uploads = data.uploads
+                for (const upload of uploads) {
+                  const pathNoUsername = upload.path.substring(username.length + URL_SEP.length)
+                  uploadHashes[pathNoUsername] = upload.hash
+                  if (!nonOurbigbookOptions.nonBigbPathsConverted.has(pathNoUsername)) {
+                    serverOnlyUploads.push(pathNoUsername)
+                  }
                 }
-              }
+                i += uploads.length
+              } while (data.uploads.length === ARTICLE_HASH_LIMIT_MAX)
             }
-          }
-        }
-      }
-      let webStartIndex = 0
-      if (cli.webStartId !== undefined) {
-        webStartIndex = header_tree.findIndex(entry => entry.to_id === cli.webStartId)
-        if (webStartIndex === -1) {
-          cli_error(`--web-start-id ID not found in the upload tree: "${cli.webStartId}"`)
-        }
-      }
-      const dorender = [false]
-      if (!cli.webIndividualUpload) dorender.push('check')
-      if (cli.webRender) {
-        dorender.push(true)
-      }
-      let data, status, i = 0
-      const webPathToArticle = {}
-      if (!cli.webDry) {
-        do {
-          ;({ data, status } = await webApi.articlesHash({ author: username, offset: i }))
-          assertApiStatus(status, data)
-          const articles = data.articles
-          for (const article of articles) {
-            webPathToArticle[article.path] = article
-          }
-          i += articles.length
-        } while (data.articles.length === ARTICLE_HASH_LIMIT_MAX)
-      }
-      const idToArticleMeta = {}
-      const localArticles = await sequelizeWebArticle.findAll({ attributes: ['source', 'title', 'idid', 'inpath', 'parentId'] })
-      for (const article of localArticles) {
-        idToArticleMeta[article.idid] = article
-      }
-      // The split-file cache cannot represent a toplevel header's cross-file
-      // Include parent. Derive all upload tree metadata from the authoritative
-      // Ref graph returned in header_tree. Calculate it before applying
-      // --web-start-id so resumed uploads can replay skipped prerequisites.
-      const idToWebTreeMeta = {}
-      const lastChildIdByParentId = new Map()
-      for (const header_tree_entry of header_tree) {
-        const articleMeta = idToArticleMeta[header_tree_entry.to_id]
-        // Can fail for synonyms.
-        if (articleMeta) {
-          const parentId = header_tree_entry.from_id === undefined
-            // The synthetic index entry, and a single file whose parent is not
-            // present in the local database, have no Ref metadata to override.
-            ? articleMeta.parentId
-            : header_tree_entry.from_id
-          let previousSiblingId = header_tree_entry.previous_sibling_id
-          if (previousSiblingId === undefined && parentId !== null && parentId !== undefined) {
-            previousSiblingId = lastChildIdByParentId.get(parentId)
-          }
-          if (parentId !== null && parentId !== undefined) {
-            lastChildIdByParentId.set(parentId, header_tree_entry.to_id)
-          }
-          idToWebTreeMeta[header_tree_entry.to_id] = {
-            parentId,
-            previousSiblingId,
-          }
-          if (cli.addTestInstrumentation) {
-            console.error(
-              `web_upload_tree: ${JSON.stringify(header_tree_entry.to_id)} parent=${JSON.stringify(parentId)} previous=${JSON.stringify(previousSiblingId)}`
-            )
-          }
-        }
-      }
-      // A suffix is not necessarily self-contained because fetch_header_tree_ids
-      // returns breadth-first order. A child after the resume marker can therefore
-      // have a parent before it. Replay skipped parents and previous siblings (and
-      // their own prerequisites) so resuming also works when those server rows are
-      // absent, while still avoiding unrelated completed subtrees.
-      const webResumeDependencyIds = new Set()
-      if (webStartIndex > 0) {
-        const headerTreeIdToIndex = new Map(header_tree.map(
-          (entry, index) => [entry.to_id, index]
-        ))
-        const pendingIds = header_tree.slice(webStartIndex).map(entry => entry.to_id)
-        for (let pendingIndex = 0; pendingIndex < pendingIds.length; pendingIndex++) {
-          const webTreeMeta = idToWebTreeMeta[pendingIds[pendingIndex]]
-          if (!webTreeMeta) {
-            continue
-          }
-          for (const dependencyId of [webTreeMeta.parentId, webTreeMeta.previousSiblingId]) {
-            const dependencyIndex = headerTreeIdToIndex.get(dependencyId)
-            if (
-              dependencyIndex !== undefined &&
-              dependencyIndex < webStartIndex &&
-              !webResumeDependencyIds.has(dependencyId)
-            ) {
-              webResumeDependencyIds.add(dependencyId)
-              pendingIds.push(dependencyId)
-            }
-          }
-        }
-      }
-      let nestedSetNeedsUpdate = false
-      if (
-        // These are needed otherwise we were deleting every header that was not selected when doing
-        // ourbigbook --web myinput.bigb or ourbigbook --web-id myid
-        inputPath === '.' &&
-        !cli.webId
-      ) {
-        // Handle uploads
-        {
-          const uploadHashes = {}
-          const serverOnlyUploads = []
-          let i = 0
-          if (!cli.webDry) {
-            do {
-              ;({ data, status } = await webApi.uploadHash({ author: username, offset: i }))
-              assertApiStatus(status, data)
-              const uploads = data.uploads
-              for (const upload of uploads) {
-                const pathNoUsername = upload.path.substring(username.length + URL_SEP.length)
-                uploadHashes[pathNoUsername] = upload.hash
-                if (!nonOurbigbookOptions.nonBigbPathsConverted.has(pathNoUsername)) {
-                  serverOnlyUploads.push(pathNoUsername)
-                }
-              }
-              i += uploads.length
-            } while (data.uploads.length === ARTICLE_HASH_LIMIT_MAX)
-          }
-          i = 0
-          for (const p of serverOnlyUploads) {
-            await webCreateOrUpdate({
-              cleanupDeleted: true,
-              fn: async () => webApi.uploadDelete(`${username}${URL_SEP}${p}`),
-              i: i++,
-              isUpload: true,
-              title: p,
-              webDry: cli.webDry,
-            })
-          }
-          for (const p of nonOurbigbookOptions.nonBigbPathsConverted) {
-            const content = fs.readFileSync(p)
-            if (hashToHex(content) !== uploadHashes[p]) {
+            i = 0
+            for (const p of serverOnlyUploads) {
               await webCreateOrUpdate({
-                cleanupDeleted: false,
-                fn: async () => webApi.uploadCreateOrUpdate(`${username}${URL_SEP}${p}`, content),
+                cleanupDeleted: true,
+                fn: async () => webApi.uploadDelete(`${username}${URL_SEP}${p}`),
                 i: i++,
                 isUpload: true,
                 title: p,
                 webDry: cli.webDry,
               })
             }
+            for (const p of nonOurbigbookOptions.nonBigbPathsConverted) {
+              const content = fs.readFileSync(p)
+              if (hashToHex(content) !== uploadHashes[p]) {
+                await webCreateOrUpdate({
+                  cleanupDeleted: false,
+                  fn: async () => webApi.uploadCreateOrUpdate(`${username}${URL_SEP}${p}`, content),
+                  i: i++,
+                  isUpload: true,
+                  title: p,
+                  webDry: cli.webDry,
+                })
+              }
+            }
+          }
+
+          // https://docs.ourbigbook.com/todo/make-articles-removed-locally-empty-on-web-upload
+          const serverOnlyPaths = new Set(Object.keys(webPathToArticle))
+          for (const header_tree_entry of header_tree) {
+            serverOnlyPaths.delete(pathUsernameAndExt(username, header_tree_entry.to_id))
+          }
+          let i = 0
+          for (const path of serverOnlyPaths) {
+            if (webPathToArticle[path].cleanupIfDeleted) {
+              const render = true
+              const ret = await webCreateOrUpdate({
+                cleanupDeleted: true,
+                fn: async () => webApi.articleCreateOrUpdate(
+                  {
+                    bodySource: '',
+                  },
+                  {
+                    path: pathNoUsernameNoext(path),
+                    render,
+                    list: false,
+                    updateNestedSetIndex: !cli.webNestedSetBulk,
+                  },
+                ),
+                i: i++,
+                inpath: path,
+                render,
+                webDry: cli.webDry,
+              })
+              if (ret.nestedSetNeedsUpdate) {
+                nestedSetNeedsUpdate = true
+              }
+            }
           }
         }
-
-        // https://docs.ourbigbook.com/todo/make-articles-removed-locally-empty-on-web-upload
-        const serverOnlyPaths = new Set(Object.keys(webPathToArticle))
-        for (const header_tree_entry of header_tree) {
-          serverOnlyPaths.delete(pathUsernameAndExt(username, header_tree_entry.to_id))
-        }
-        let i = 0
-        for (const path of serverOnlyPaths) {
-          if (webPathToArticle[path].cleanupIfDeleted) {
-            const render = true
-            const ret = await webCreateOrUpdate({
-              cleanupDeleted: true,
-              fn: async () => webApi.articleCreateOrUpdate(
-                {
-                  bodySource: '',
-                },
-                {
-                  path: pathNoUsernameNoext(path),
-                  render,
-                  list: false,
-                  updateNestedSetIndex: !cli.webNestedSetBulk,
-                },
-              ),
-              i: i++,
-              inpath: path,
-              render,
-              webDry: cli.webDry,
+        let buildId
+        const buildJobs = []
+        for (const render of dorender) {
+          let i = 0
+          let renderBatch = []
+          let batchSourceIds = []
+          const phase = !render ? 'extract' : render === 'check' ? 'check' : 'render'
+          const phaseBatches = []
+          const flushRenderBatch = async () => {
+            if (renderBatch.length) {
+              if (cli.webDry) console.log(`web_${phase}: would queue ${renderBatch.length} articles`)
+              else {
+                // Plan exact count- and byte-limited batches before staging so
+                // progress has a real denominator. Keep source bodies on disk.
+                phaseBatches.push({
+                  targets: renderBatch.map(({ article, ...target }) => target),
+                  sourceIds: batchSourceIds,
+                })
+              }
+              renderBatch = []
+              batchSourceIds = []
+            }
+          }
+          // This ordering ensures parents come before children.
+          for (const [headerTreeIndex, header_tree_entry] of header_tree.entries()) {
+            const id = header_tree_entry.to_id
+            const articleMeta = idToArticleMeta[id]
+            const webTreeMeta = idToWebTreeMeta[id]
+            if (
+              // Can fail for synonyms.
+              articleMeta && webTreeMeta
+            ) {
+              // Prerequisites only need their ID extraction replayed. Rendering
+              // still begins exactly at the requested marker.
+              if (
+                headerTreeIndex < webStartIndex &&
+                (render || !webResumeDependencyIds.has(id))
+              ) {
+                continue
+              }
+              const inpathParse = path.parse(articleMeta.inpath)
+              const articlePath = path.join(inpathParse.dir, inpathParse.name)
+              const webPathToArticleEntry = webPathToArticle[pathUsernameAndExt(username, articlePath)]
+              if (webPathToArticleEntry === undefined ) {
+                webPathToArticleEntry
+              }
+              const articleHashProps = {
+                source: articleMeta.source,
+                list: true,
+              }
+              const parentId = addUsername(webTreeMeta.parentId, username)
+              if (parentId !== null) {
+                articleHashProps.parentId = parentId
+              }
+              const previousSiblingId = addUsername(webTreeMeta.previousSiblingId, username)
+              if (previousSiblingId !== null) {
+                articleHashProps.previousSiblingId = previousSiblingId
+              }
+              // A completed preflight survives worker/client restarts even when
+              // rendering is still outstanding. Render itself always validates
+              // against the current database; this only skips the separate pass.
+              if (
+                render === 'check' &&
+                !cli.webForceIdExtraction &&
+                webPathToArticleEntry &&
+                webPathToArticleEntry.hash === articleHash(articleHashProps) &&
+                webPathToArticleEntry.checkedHash === webPathToArticleEntry.hash
+              ) continue
+              if (
+                webPathToArticleEntry === undefined ||
+                webPathToArticleEntry.hash !== articleHash(articleHashProps) ||
+                (
+                  render &&
+                  (
+                    webPathToArticleEntry.renderOutdated ||
+                    cli.webForceRender ||
+                    (render === 'check' && cli.webForceIdExtraction)
+                  )
+                ) ||
+                (
+                  !render &&
+                  (
+                    cli.webForceIdExtraction ||
+                    webResumeDependencyIds.has(id)
+                  )
+                )
+              ) {
+                // OK, we are going to render this article, so fetch it fully now including the source.
+                const article = await sequelizeWebArticle.findOne({ where: { idid: id } })
+                let data, status
+                const articleArgs = {}
+                if (!render) {
+                  articleArgs.titleSource = article.title
+                  articleArgs.bodySource = article.body
+                }
+                const extraArgs = {
+                  path: articlePath,
+                  render: Boolean(render),
+                }
+                if (parentId) {
+                  extraArgs.parentId = parentId
+                }
+                if (previousSiblingId) {
+                  extraArgs.previousSiblingId = previousSiblingId
+                }
+                extraArgs.updateNestedSetIndex = !cli.webNestedSetBulk
+                extraArgs.list = true
+                if (!cli.webIndividualUpload) {
+                  const target = { ...extraArgs, ...(render ? { hash: articleHash(articleHashProps) } : { article: articleArgs }) }
+                  if (renderBatch.length === ARTICLE_RENDER_BATCH_LIMIT || Buffer.byteLength(JSON.stringify([...renderBatch, target])) > 4 * 1024 * 1024) await flushRenderBatch()
+                  renderBatch.push(target)
+                  if (!render) batchSourceIds.push(id)
+                  i++
+                } else {
+                  const ret = await webCreateOrUpdate({
+                    fn: async () => webApi.articleCreateOrUpdate(articleArgs, extraArgs),
+                    i: i++,
+                    inpath: article.inpath,
+                    render,
+                    title: article.title,
+                    webDry: cli.webDry,
+                  })
+                  if (render && ret.nestedSetNeedsUpdate) {
+                    nestedSetNeedsUpdate = true
+                  }
+                }
+                if (
+                  render &&
+                  cli.webMaxRenders !== undefined &&
+                  i === cli.webMaxRenders
+                ) {
+                  break
+                }
+              }
+            }
+          }
+          await flushRenderBatch()
+          for (const [batchIndex, batch] of phaseBatches.entries()) {
+            if (!buildId) {
+              buildId = require('crypto').randomBytes(16).toString('hex')
+              const { data, status } = await webApi.articlesBuildCreate(buildId, { timeout: 20000 })
+              checkWebBulkBusy(status, data)
+              if ([404, 405].includes(status)) console.error('Durable background uploads require an updated server. Use --web-individual-upload for the legacy path.')
+              if (status !== 202) assertApiStatus(status, data)
+            }
+            const sources = !render && new Map((await sequelizeWebArticle.findAll({
+              attributes: ['idid', 'title', 'body'], where: { idid: { [Op.in]: batch.sourceIds } },
+            })).map(article => [article.idid, article]))
+            const targets = render ? batch.targets : batch.targets.map((target, index) => {
+              const article = sources.get(batch.sourceIds[index])
+              return { ...target, article: { titleSource: article.title, bodySource: article.body } }
             })
-            if (ret.nestedSetNeedsUpdate) {
+            const id = await queueWebArticles(webApi, targets, {
+              phase, start: false, batchIndex, batchCount: phaseBatches.length, buildId, buildIndex: buildJobs.length,
+            })
+            buildJobs.push({ id, phase, batchIndex, batchCount: phaseBatches.length, firstArticle: targets[0].path })
+          }
+        }
+        if (buildId) {
+          const { data, status } = await webApi.articlesBuildCommit(buildId, buildJobs.length, Boolean(cli.webNestedSetBulk), { timeout: 20000 })
+          checkWebBulkBusy(status, data)
+          if (status !== 202) assertApiStatus(status, data)
+          console.log(`web_upload: build ${buildId} submitted (${buildJobs.length} jobs); the server will finish without the CLI`)
+          for (const job of buildJobs) await waitWebArticles(webApi, job.id, job.phase, job)
+          await waitWebBuild(webApi, buildId)
+        }
+        if (!buildId && cli.webNestedSetBulk && !cli.webDry) {
+          if (!nestedSetNeedsUpdate) {
+            ;({ data, status } = await webApi.user(username))
+            assertApiStatus(status, data)
+            if (data.nestedSetNeedsUpdate) {
               nestedSetNeedsUpdate = true
             }
           }
+          if (nestedSetNeedsUpdate) {
+            await updateNestedSet(webApi, username, { foreground: cli.webIndividualUpload })
+          }
         }
       }
-      for (const render of dorender) {
-        let i = 0
-        let renderBatch = []
-        const phase = !render ? 'extract' : render === 'check' ? 'check' : 'render'
-        const stagedJobs = []
-        const flushRenderBatch = async () => {
-          if (renderBatch.length) {
-            if (cli.webDry) console.log(`web_${phase}: would queue ${renderBatch.length} articles`)
-            else {
-              const id = await queueWebArticles(webApi, renderBatch, { phase, start: Boolean(render) })
-              if (!render) stagedJobs.push(id)
-            }
-            renderBatch = []
-          }
-        }
-        // This ordering ensures parents come before children.
-        for (const [headerTreeIndex, header_tree_entry] of header_tree.entries()) {
-          const id = header_tree_entry.to_id
-          const articleMeta = idToArticleMeta[id]
-          const webTreeMeta = idToWebTreeMeta[id]
-          if (
-            // Can fail for synonyms.
-            articleMeta && webTreeMeta
-          ) {
-            // Prerequisites only need their ID extraction replayed. Rendering
-            // still begins exactly at the requested marker.
-            if (
-              headerTreeIndex < webStartIndex &&
-              (render || !webResumeDependencyIds.has(id))
-            ) {
-              continue
-            }
-            const inpathParse = path.parse(articleMeta.inpath)
-            const articlePath = path.join(inpathParse.dir, inpathParse.name)
-            const webPathToArticleEntry = webPathToArticle[pathUsernameAndExt(username, articlePath)]
-            if (webPathToArticleEntry === undefined ) {
-              webPathToArticleEntry
-            }
-            const articleHashProps = {
-              source: articleMeta.source,
-              list: true,
-            }
-            const parentId = addUsername(webTreeMeta.parentId, username)
-            if (parentId !== null) {
-              articleHashProps.parentId = parentId
-            }
-            const previousSiblingId = addUsername(webTreeMeta.previousSiblingId, username)
-            if (previousSiblingId !== null) {
-              articleHashProps.previousSiblingId = previousSiblingId
-            }
-            if (
-              webPathToArticleEntry === undefined ||
-              webPathToArticleEntry.hash !== articleHash(articleHashProps) ||
-              (
-                render &&
-                (
-                  webPathToArticleEntry.renderOutdated ||
-                  cli.webForceRender ||
-                  (render === 'check' && cli.webForceIdExtraction)
-                )
-              ) ||
-              (
-                !render &&
-                (
-                  cli.webForceIdExtraction ||
-                  webResumeDependencyIds.has(id)
-                )
-              )
-            ) {
-              // OK, we are going to render this article, so fetch it fully now including the source.
-              const article = await sequelizeWebArticle.findOne({ where: { idid: id } })
-              let data, status
-              const articleArgs = {}
-              if (!render) {
-                articleArgs.titleSource = article.title
-                articleArgs.bodySource = article.body
-              }
-              const extraArgs = {
-                path: articlePath,
-                render: Boolean(render),
-              }
-              if (parentId) {
-                extraArgs.parentId = parentId
-              }
-              if (previousSiblingId) {
-                extraArgs.previousSiblingId = previousSiblingId
-              }
-              extraArgs.updateNestedSetIndex = !cli.webNestedSetBulk
-              extraArgs.list = true
-              if (!cli.webIndividualUpload) {
-                const target = { ...extraArgs, ...(render ? { hash: articleHash(articleHashProps) } : { article: articleArgs }) }
-                if (Buffer.byteLength(JSON.stringify([...renderBatch, target])) > 4 * 1024 * 1024) await flushRenderBatch()
-                renderBatch.push(target)
-                i++
-                if (renderBatch.length === ARTICLE_RENDER_BATCH_LIMIT) await flushRenderBatch()
-              } else {
-                const ret = await webCreateOrUpdate({
-                  fn: async () => webApi.articleCreateOrUpdate(articleArgs, extraArgs),
-                  i: i++,
-                  inpath: article.inpath,
-                  render,
-                  title: article.title,
-                  webDry: cli.webDry,
-                })
-                if (render && ret.nestedSetNeedsUpdate) {
-                  nestedSetNeedsUpdate = true
-                }
-              }
-              if (
-                render &&
-                cli.webMaxRenders !== undefined &&
-                i === cli.webMaxRenders
-              ) {
-                break
-              }
-            }
-          }
-        }
-        await flushRenderBatch()
-        // Do not start ID extraction until every source batch has been staged.
-        // Process in upload order so parents and previous siblings exist first.
-        for (const id of stagedJobs) {
-          const { data, status } = await webApi.articlesBulkStart(id, { timeout: 20000 })
-          if (status !== 202) assertApiStatus(status, data)
-          await waitWebArticles(webApi, id, phase)
-        }
-      }
-      if (cli.webNestedSetBulk && !cli.webDry) {
-        if (!nestedSetNeedsUpdate) {
-          ;({ data, status } = await webApi.user(username))
-          assertApiStatus(status, data)
-          if (data.nestedSetNeedsUpdate) {
-            nestedSetNeedsUpdate = true
-          }
-        }
-        if (nestedSetNeedsUpdate) {
-          await updateNestedSet(webApi, username, { foreground: cli.webIndividualUpload })
+      while (true) {
+        try {
+          await upload()
+          break
+        } catch (error) {
+          if (!(error instanceof WebBulkBusyError)) throw error
+          await waitForActiveWebArticles(webApi, username)
+          console.log("web_upload: active job finished; restarting upload with fresh server hashes")
         }
       }
       await sequelizeWeb.close()

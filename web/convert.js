@@ -631,6 +631,8 @@ async function convertArticle({
       update_database_after_convert_arg.hash = articleHash({ list, parentId, previousSiblingId, source })
     }
     const { file: newFile } = await update_database_after_convert(update_database_after_convert_arg)
+    // Even forced extraction of identical source must rerun its preflight check.
+    if (!render) await newFile.update({ checkedHash: null }, { transaction })
 
     // Set the article of the parent. The previously existing ref, if there was one,
     // has already been necessarily removed during update_database_after_convert.

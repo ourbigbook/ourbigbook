@@ -895,6 +895,56 @@ it('User fileSize cache and migration', async function() {
   await assertSizes(0, 0)
 })
 
+it('Article topic ordering index migration preserves prefix indexes and avoids sorting', async function() {
+  const sequelize = this.test.sequelize
+  const qi = sequelize.getQueryInterface()
+  const migration = require('./migrations/21000101000043-article-add-topic-order-index')
+  const indexName = 'article_list_topic_id_created_at_id'
+  const indexNames = async () => (await qi.showIndex('Article')).map(index => index.name).sort()
+  const originalIndexes = await indexNames()
+  assert(originalIndexes.includes(indexName))
+  assert(originalIndexes.includes('article_list_topic_id_created_at'))
+  assert(originalIndexes.includes('article_list_topic_id_score_created_at'))
+
+  const user = await createUser(sequelize, 0)
+  await createUser(sequelize, 1)
+  await createArticle(sequelize, user, { i: 0 })
+  const getIds = async () => (await sequelize.models.Article.getArticles({
+    sequelize, list: true, order: 'topicId', orderAscDesc: 'ASC', count: false,
+  })).map(article => article.id)
+  const originalIds = await getIds()
+
+  async function assertOrderedIndexScan() {
+    if (sequelize.options.dialect !== 'postgres') return
+    await sequelize.transaction(async transaction => {
+      // A tiny fixture normally favours a sequential scan. Check that the
+      // index can supply the complete order, without a Sort/Incremental Sort.
+      await sequelize.query('SET LOCAL enable_seqscan = off', { transaction })
+      const [rows] = await sequelize.query(`EXPLAIN (FORMAT JSON)
+        SELECT "id" FROM "Article" WHERE "list" = true
+        ORDER BY "topicId" ASC, "createdAt" DESC NULLS LAST, "id" DESC
+        LIMIT 20 OFFSET 2`, { transaction })
+      const plan = rows[0]['QUERY PLAN'][0].Plan
+      const nodes = []
+      const visit = node => {
+        nodes.push(node)
+        for (const child of node.Plans || []) visit(child)
+      }
+      visit(plan)
+      assert(nodes.some(node => node['Index Name'] === indexName), JSON.stringify(plan))
+      assert(!nodes.some(node => node['Node Type'].includes('Sort')), JSON.stringify(plan))
+    })
+  }
+  await assertOrderedIndexScan()
+  await migration.down(qi)
+  assert.deepStrictEqual(await indexNames(), originalIndexes.filter(name => name !== indexName))
+  assert.deepStrictEqual(await getIds(), originalIds)
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexNames(), originalIndexes)
+  assert.deepStrictEqual(await getIds(), originalIds)
+  await assertOrderedIndexScan()
+})
+
 it('new user index article has null dates and sorts after dated articles', async function() {
   const sequelize = this.test.sequelize
   const { Article } = sequelize.models

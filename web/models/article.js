@@ -186,6 +186,18 @@ module.exports = (sequelize) => {
         { fields: ['list', { name: 'topicId', operator: 'text_pattern_ops' }, 'score', 'createdAt'], },
         // Newest articles in a given topic.
         { fields: ['list', { name: 'topicId', operator: 'text_pattern_ops' }, 'createdAt'], },
+        // Global sort=id: ordinary text ordering, then newest first, with
+        // undated articles last and a stable tie-breaker for pagination.
+        // Keep the pattern_ops indexes above for prefix searches.
+        {
+          name: 'article_list_topic_id_created_at_id',
+          fields: [
+            'list',
+            { name: 'topicId', order: 'ASC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         // Top articles in the entire site.
         { fields: ['list', 'score', 'createdAt'], },
 

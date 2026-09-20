@@ -8440,6 +8440,11 @@ By default, all users share one background build worker slot, covering both arti
 
 Replace the current web build without confirmation. Implies <--web>. Previous job history and staged payloads are removed, but articles and committed conversion checkpoints are preserved. This does not force re-extraction or re-rendering; use <--web-force-id-extraction> or <--web-force-render> for that.
 
+= `--web-cancel-build`
+{parent=OurBigBook CLI options}
+
+Request cancellation of the authenticated user's current build without converting or uploading. Implies <--web>. Cancellation is saved on the server and continues even if the CLI exits; an in-flight article or tree transaction may finish first. Completed articles are preserved. The build owner and administrators can also use the red Cancel build button below pagination in that user's Build jobs settings; it appears only while a build is ongoing.
+
 = `--web-watch`
 {parent=OurBigBook CLI options}
 

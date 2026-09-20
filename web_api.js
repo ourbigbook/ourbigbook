@@ -253,8 +253,12 @@ class WebApi {
     return this.req('put', 'articles/bulk/builds', { body: { id }, ...reqOpts })
   }
 
-  async articlesCurrentBuild(reqOpts={}) {
-    return this.req('get', 'articles/bulk/build', reqOpts)
+  async articlesCurrentBuild(reqOpts={}, author) {
+    return this.req('get', `articles/bulk/build${encodeGetParams({ author })}`, reqOpts)
+  }
+
+  async articlesCancelBuild(token, author, reqOpts={}) {
+    return this.req('post', 'articles/bulk/build/cancel', { body: { token, author }, ...reqOpts })
   }
 
   async articlesBuildReplace(token, expected, reqOpts={}) {

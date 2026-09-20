@@ -22,6 +22,26 @@ module.exports = sequelize => {
     if (sequelize.getDialect() === 'postgres') await sequelize.query("SET LOCAL lock_timeout = '1s'", { transaction })
   }
   Build.lockBusy = error => ['55P03', '40P01', 'SQLITE_BUSY'].includes((error.original || error).code)
+  Build.cancel = async (userId, token) => {
+    await sequelize.transaction(transactionOptions(), async transaction => {
+      await lockOptions(transaction)
+      // A persisted cancellation survives disconnects and server restarts.
+      // Fence it to the version the caller saw, not a newer replacement.
+      if (token === null) {
+        await sequelize.models.User.findByPk(userId, { transaction, lock: transaction.LOCK.UPDATE })
+        const current = await Build.findOne({ where: { userId }, transaction })
+        if (current?.status === 'cancelling') return
+        if (current) throw invalid('Build changed; refresh before cancelling.', 409)
+        await Build.create({ id: require('crypto').randomBytes(16).toString('hex'), userId, status: 'cancelling' }, { transaction })
+      } else {
+        const build = await Build.findOne({ where: { userId, id: token }, transaction, lock: transaction.LOCK.UPDATE })
+        if (!build) throw invalid('Build changed; refresh before cancelling.', 409)
+        const unfinished = await sequelize.models.ArticleJob.count({ where: { userId, status: { [Op.notIn]: ['completed', 'failed'] } }, transaction })
+        const tree = await sequelize.models.TreeRebuildJob.findOne({ where: { activeUserId: userId }, transaction })
+        if (!['completed', 'failed'].includes(build.status) || unfinished || tree) await build.update({ status: 'cancelling' }, { transaction })
+      }
+    })
+  }
   Build.replace = async (userId, token, expected) => {
     // Stop new work first. The caller retries while an in-flight article or
     // tree transaction drains, rather than waiting past the router timeout.
@@ -109,10 +129,10 @@ module.exports = sequelize => {
           if (!build || build.status !== 'cancelling') return
           await BuildQueue.update({ status: 'finished' }, { where: { userId: candidate.userId }, transaction })
           for (const Job of [ArticleJob, TreeRebuildJob]) await Job.update({
-            status: 'failed', activeUserId: null, error: 'Build cancelled by a new upload.', finishedAt: new Date(),
+            status: 'failed', activeUserId: null, error: 'Build cancelled.', finishedAt: new Date(),
             ...(Job === ArticleJob ? { items: '[]' } : {}),
           }, { where: { userId: candidate.userId, status: { [Op.notIn]: ['completed', 'failed'] } }, transaction })
-          await build.update({ status: 'failed', activeUserId: null, error: 'Build cancelled by a new upload.', finishedAt: new Date() }, { transaction })
+          await build.update({ status: 'failed', activeUserId: null, error: 'Build cancelled.', finishedAt: new Date() }, { transaction })
         })
       } catch (error) {
         if (!Build.lockBusy(error)) throw error

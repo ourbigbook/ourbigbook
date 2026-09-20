@@ -873,7 +873,11 @@ router.get('/bulk', auth.required, async function(req, res, next) {
     if (req.query.view !== undefined) {
       if (!['todo', 'done'].includes(req.query.view)) throw new lib.ValidationError('Invalid job view')
       const [limit, offset] = lib.getLimitAndOffset(req, res, { limitMax: 100 })
-      return res.json(await Job.history(user.id, { view: req.query.view, limit, offset }))
+      const history = await Job.history(user.id, { view: req.query.view, limit, offset })
+      const ongoing = history.todoCount > 0 || Boolean(await req.app.get('sequelize').models.ArticleBuild.findOne({
+        attributes: ['id'], where: { userId: user.id, status: ['staged', 'running', 'cancelling'] },
+      }))
+      return res.json({ ...history, ongoing })
     }
     const activeBuild = await req.app.get('sequelize').models.ArticleBuild.findOne({ where: { activeUserId: user.id } })
     if (!activeBuild) {
@@ -899,16 +903,36 @@ router.get('/bulk', auth.required, async function(req, res, next) {
 // The authenticated user identifies the build. Tokens only fence stale clients.
 router.get('/bulk/build', auth.required, async function(req, res, next) {
   try {
-    const { ArticleBuild, ArticleJob, TreeRebuildJob } = req.app.get('sequelize').models
-    const build = await ArticleBuild.current(req.payload.id)
+    const { ArticleBuild, ArticleJob, TreeRebuildJob, User } = req.app.get('sequelize').models
+    const loggedInUser = await User.findByPk(req.payload.id)
+    if (req.query.author !== undefined && typeof req.query.author !== 'string') throw new lib.ValidationError('Invalid author')
+    const user = req.query.author === undefined ? loggedInUser : await User.findOne({ where: { username: req.query.author } })
+    if (!user) throw new lib.ValidationError('User not found', 404)
+    if (cant.viewUserSettings(loggedInUser, user)) throw new lib.ValidationError('Only the build owner or an admin can view this build', 403)
+    const build = await ArticleBuild.current(user.id)
     const job = build && build.status === 'running' ? await ArticleJob.findOne({
       attributes: ['id', 'phase'], where: { buildId: build.id, status: { [Op.ne]: 'completed' } }, order: [['buildIndex', 'ASC']],
     }) : null
     const active = await ArticleJob.findOne({ attributes: ['id', 'phase', 'status'],
-      where: { userId: req.payload.id, status: ['pending', 'queued', 'running'] }, order: [['id', 'ASC']] })
-    const tree = await TreeRebuildJob.findOne({ where: { activeUserId: req.payload.id } })
+      where: { userId: user.id, status: ['pending', 'queued', 'running'] }, order: [['id', 'ASC']] })
+    const tree = await TreeRebuildJob.findOne({ where: { activeUserId: user.id } })
     res.json({ build: build && { token: build.id, status: build.status, error: build.error, jobCount: build.jobCount },
       job: job || active, tree: tree && { id: tree.id, status: tree.status } })
+  } catch (error) { next(error) }
+})
+
+router.post('/bulk/build/cancel', auth.required, async function(req, res, next) {
+  try {
+    const { ArticleBuild, User } = req.app.get('sequelize').models
+    const loggedInUser = await User.findByPk(req.payload.id)
+    const { author, token } = req.body || {}
+    if ((author !== undefined && typeof author !== 'string') ||
+        (token !== null && (typeof token !== 'string' || token.length > 64))) throw new lib.ValidationError('Invalid cancellation')
+    const user = author === undefined ? loggedInUser : await User.findOne({ where: { username: author } })
+    if (!user) throw new lib.ValidationError('User not found', 404)
+    if (cant.viewUserSettings(loggedInUser, user)) throw new lib.ValidationError('Only the build owner or an admin can cancel this build', 403)
+    await ArticleBuild.cancel(user.id, token)
+    res.status(202).json({ message: 'Cancellation requested. The current article or tree transaction may finish first.' })
   } catch (error) { next(error) }
 })
 

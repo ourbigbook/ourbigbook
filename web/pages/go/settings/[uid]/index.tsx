@@ -213,7 +213,7 @@ const Settings = ({
         {' '}
         <CustomLink href={`${routes.userEdit(username)}?tab=builds`} className={`tab-item${buildsTab ? ' active' : ''}`}><BuildIcon /> Build jobs</CustomLink>
       </div>
-      {buildsTab ? <BuildJobs username={username} baseUrl={routes.userEdit(username)} /> : <>
+      {buildsTab ? <BuildJobs username={username} baseUrl={routes.userEdit(username)} canCancel={!!loggedInUser && (!!loggedInUser.admin || loggedInUser.id === user0.id)} /> : <>
         <MapErrors errors={errors} />
         <form onSubmit={handleSubmit}>
           <Label label="Username">

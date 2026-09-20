@@ -5552,6 +5552,13 @@ it('settings: account and build jobs use separate tabs', async function() {
     assert(parse(done.data).querySelectorAll('#background-uploads th').some(cell => cell.text === 'Runtime'))
     assert.strictEqual(buildsHtml.querySelector('.tab-item.active .icon').text, String.fromCharCode(0xf6e3))
     assert(buildsHtml.querySelector('div.tab-list').innerHTML.includes('</a> <a'))
+    assert.strictEqual(buildsHtml.querySelector('#background-uploads button'), null)
+    const admin = await test.createUserApi(1)
+    await test.sequelize.models.User.update({ admin: true }, { where: { id: admin.id } })
+    test.loginUser(admin)
+    const adminBuilds = await test.sendJsonHttp('GET', `${routes.userEdit('user0')}?tab=builds`)
+    assert.strictEqual(adminBuilds.status, 200)
+    assert.strictEqual(parse(adminBuilds.data).querySelector('#background-uploads button'), null)
   }, { canTestNext: true })
 })
 
@@ -5574,6 +5581,7 @@ it('settings: public site build jobs reuse the settings tabs', async function() 
       assert(html.querySelector('.tab-item.active').text.includes('Build jobs'))
       assert(html.querySelector('#background-uploads .tab-item.active').text.endsWith(view === 'done' ? 'Done' : 'TODO'))
       assert.strictEqual(html.querySelector('form'), null)
+      assert.strictEqual(html.querySelector('#background-uploads button'), null)
     }
   }, { canTestNext: true })
 })
@@ -6204,6 +6212,14 @@ it('background renders: real CLI uploads all sources first, batches large reposi
           const accepted = await run(['--web-force-render', '--web-max-renders', '1'], 'y')
           assert((accepted.stdout + accepted.stderr).includes('Discard it and start a new upload?'))
           assert(accepted.stdout.includes('web_render_stage:'))
+          current = await Build.current(user.id)
+          await current.update({ status: 'staged' })
+          const cancelled = await run(['--web-cancel-build'])
+          assert(cancelled.stdout.includes('Cancellation requested'))
+          assert(!cancelled.stdout.includes('render: index.bigb'))
+          assert(!cancelled.stdout.includes('web_render_stage:'))
+          await Build.advance(user.id)
+          assert.strictEqual((await current.reload()).status, 'failed')
         } finally {
           test.app._router.stack.splice(test.app._router.stack.indexOf(buildMiddleware), 1)
         }
@@ -6256,6 +6272,80 @@ it('background renders: real CLI uploads all sources first, batches large reposi
     models.getSequelize = getSequelize
     fs.rmSync(directory, { recursive: true, force: true })
   }
+})
+
+it('build history: ongoing flag includes empty staged builds and updates after completion', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const status = view => test.webApi.articlesBulkStatus('user0', {}, { view, limit: 1, offset: 100 })
+    assert.strictEqual((await status('todo')).data.ongoing, false)
+    const build = await test.sequelize.models.ArticleBuild.create({ id: 'empty-staged-build', userId: user.id })
+    for (const view of ['todo', 'done']) {
+      const ret = await status(view)
+      assert.strictEqual(ret.data.jobs.length, 0)
+      assert.strictEqual(ret.data.ongoing, true)
+    }
+    await build.update({ status: 'completed' })
+    assert.strictEqual((await status('done')).data.ongoing, false)
+    await test.sequelize.models.TreeRebuildJob.create({ userId: user.id, status: 'queued' })
+    assert.strictEqual((await status('done')).data.ongoing, true)
+  })
+})
+
+it('background builds: owner/admin cancellation is durable, fenced and preserves completed work', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    const { ArticleBuild: Build, ArticleJob: Job, User, Article, BuildQueue, TreeRebuildJob } = test.sequelize.models
+    const build = await Build.create({ id: 'cancel-owner-build', userId: user.id, status: 'running', activeUserId: user.id })
+    const done = await Job.create({ userId: user.id, buildId: build.id, phase: 'extract', status: 'completed', items: '[]', total: 1, completed: 1, requestId: 'cancel-completed-job', requestHash: 'hash' })
+    const waiting = await Job.create({ userId: user.id, buildId: build.id, phase: 'render', status: 'waiting', items: '[{"path":"private"}]', total: 1, requestId: 'cancel-waiting-job', requestHash: 'hash' })
+    const tree = await TreeRebuildJob.create({ userId: user.id, status: 'queued', activeUserId: user.id })
+    const root = await BuildQueue.create({ userId: user.id, kind: 'TreeRebuildJob', jobId: tree.id, status: 'launched', activeSlot: 'shared' })
+    const articles = await Article.count()
+    test.disableToken()
+    assert.strictEqual((await test.webApi.articlesCancelBuild(build.id, 'user0')).status, 401)
+    test.loginUser(other)
+    assert.strictEqual((await test.webApi.articlesCurrentBuild({}, 'user0')).status, 403)
+    assert.strictEqual((await test.webApi.articlesCancelBuild(build.id, 'user0')).status, 403)
+    assert.strictEqual((await build.reload()).status, 'running')
+    test.loginUser(user)
+    const transaction = config.postgres ? await test.sequelize.transaction() : null
+    try {
+      if (transaction) await User.findByPk(user.id, { transaction, lock: transaction.LOCK.UPDATE })
+      // Cancellation submission must not wait for the worker's user lock.
+      assert.strictEqual((await test.webApi.articlesCancelBuild(build.id)).status, 202)
+    } finally { if (transaction) await transaction.rollback() }
+    assert.strictEqual((await build.reload()).status, 'cancelling')
+    assert.strictEqual((await test.webApi.articlesCancelBuild(build.id)).status, 202)
+    // Only the durable recovery loop is needed after the request returns.
+    await Build.advance()
+    assert.strictEqual((await build.reload()).status, 'failed')
+    assert.strictEqual(build.activeUserId, null)
+    assert.strictEqual((await done.reload()).status, 'completed')
+    assert.strictEqual((await waiting.reload()).status, 'failed')
+    assert.strictEqual(waiting.items, '[]')
+    assert.strictEqual((await tree.reload()).status, 'failed')
+    assert.strictEqual((await root.reload()).activeSlot, 'shared')
+    assert.strictEqual(await Article.count(), articles)
+    const next = await Build.replace(user.id, 'cancel-next-build', build.id)
+    assert.strictEqual((await test.webApi.articlesCancelBuild(build.id)).status, 409)
+    assert.strictEqual((await next.reload()).status, 'staged')
+    await User.update({ admin: true }, { where: { id: other.id } })
+    test.loginUser(other)
+    assert.strictEqual((await test.webApi.articlesCurrentBuild({}, 'user0')).data.build.token, next.id)
+    assert.strictEqual((await test.webApi.articlesCancelBuild(next.id, 'user0')).status, 202)
+    await Build.advance()
+    assert.strictEqual((await next.reload()).status, 'failed')
+    // Legacy staged jobs without a build also have a durable cancellation.
+    await Build.destroy({ where: { userId: user.id } })
+    const legacy = await Job.create({ userId: user.id, phase: 'check', items: '[]', total: 1, requestId: 'cancel-legacy-job', requestHash: 'hash' })
+    assert.strictEqual((await test.webApi.articlesCancelBuild(null, 'user0')).status, 202)
+    assert.strictEqual((await test.webApi.articlesCancelBuild(null, 'user0')).status, 202)
+    await Build.advance()
+    assert.strictEqual((await legacy.reload()).status, 'failed')
+  })
 })
 
 it('background builds: replacement removes old jobs, fences stale requests and bounds staging', async () => {

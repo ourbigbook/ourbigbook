@@ -3,13 +3,13 @@ import React from 'react'
 
 import CustomLink from 'front/CustomLink'
 import Pagination from 'front/Pagination'
-import { ListIcon, OkIcon } from 'front'
+import { CancelIcon, ListIcon, OkIcon } from 'front'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { formatNumberApprox } from 'ourbigbook'
 
 type BulkJob = { username?: string; id: number; batchIndex?: number | null; batchCount?: number | null; phase: string; status: string; completed: number | null; total: number | null; error: string | null; createdAt: string; runtimeMs: number | null }
-type BulkStatus = { jobs: BulkJob[]; jobsCount: number; todoCount: number; doneCount: number }
+type BulkStatus = { jobs: BulkJob[]; jobsCount: number; todoCount: number; doneCount: number; ongoing?: boolean }
 
 const BuildJobTable = ({ jobs, loading, error, done, global }: { jobs: BulkJob[]; loading: boolean; error: string; done: boolean; global: boolean }) => {
   return <table className="list" aria-label="Build jobs">
@@ -31,7 +31,7 @@ const BuildJobTable = ({ jobs, loading, error, done, global }: { jobs: BulkJob[]
   </table>
 }
 
-export default function BuildJobs({ username, baseUrl }: { username?: string; baseUrl: string }) {
+export default function BuildJobs({ username, baseUrl, canCancel=false }: { username?: string; baseUrl: string; canCancel?: boolean }) {
   const router = useRouter()
   const jobsView = router.query.jobs === 'done' ? 'done' : 'todo'
   const requestedPage = Number(router.query.page || 1)
@@ -39,6 +39,24 @@ export default function BuildJobs({ username, baseUrl }: { username?: string; ba
   const jobsPerPage = 20
   const [bulkStatus, setBulkStatus] = React.useState<BulkStatus | null>(null)
   const [bulkError, setBulkError] = React.useState('')
+  const [cancelling, setCancelling] = React.useState(false)
+  const [cancelMessage, setCancelMessage] = React.useState('')
+  const cancelBuild = async () => {
+    setCancelling(true)
+    setCancelMessage('')
+    try {
+      const current = await webApi.articlesCurrentBuild({ timeout: 15000 }, username)
+      if (current.status !== 200) throw new Error('Could not load the current build.')
+      if (!window.confirm('Cancel this build? Completed articles will be kept.')) return
+      const result = await webApi.articlesCancelBuild(current.data.build?.token || null, username, { timeout: 15000 })
+      if (result.status !== 202) throw new Error('Could not cancel the build. It may have changed; refresh and try again.')
+      setCancelMessage(result.data.message)
+    } catch (error) {
+      setCancelMessage(error.message)
+    } finally {
+      setCancelling(false)
+    }
+  }
   React.useEffect(() => {
     let active = true
     let timer: ReturnType<typeof setTimeout>
@@ -72,5 +90,9 @@ export default function BuildJobs({ username, baseUrl }: { username?: string; ba
     </div>
     <BuildJobTable jobs={bulkStatus?.jobs || []} loading={!bulkStatus} error={bulkError} done={jobsView === 'done'} global={!username} />
     {bulkStatus && <Pagination currentPage={jobsPage} itemsCount={bulkStatus.jobsCount} itemsPerPage={jobsPerPage} what="jobs" wrap={false} />}
+    {canCancel && username && bulkStatus?.ongoing && <div className="build-actions">
+      <button type="button" className="btn cancel-build" onClick={cancelBuild} disabled={cancelling}><CancelIcon title={null} /> {cancelling ? 'Cancelling…' : 'Cancel build'}</button>
+    </div>}
+    {cancelMessage && <div role="status">{cancelMessage}</div>}
   </div>
 }

@@ -2064,6 +2064,7 @@ cli_parser.option('--web-ask-password', 'Ask the password in case it had some de
 cli_parser.option('--web-dry', 'web dry run, skip any --web operations that would interact with the server https://docs.ourbigbook.com#web-dry', false);
 cli_parser.option('--web-force-id-extraction', "Force ID extraction on Web: https://docs.ourbigbook.com#web-force-id-extraction");
 cli_parser.option('--web-force', 'Replace the current web build without asking for confirmation (implies --web)');
+cli_parser.option('--web-cancel-build', 'Cancel the current web build without converting or uploading (implies --web)');
 cli_parser.option('--web-watch', 'Only watch the current web build; do not convert or upload (implies --web)');
 cli_parser.option('--web-force-render', "same as --force-render but for --web upload: https://docs.ourbigbook.com#web-force-render");
 cli_parser.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id');
@@ -2101,7 +2102,7 @@ if (cli.helpMacros) {
   let htmlXExtension;
   let publishTargetIsWebsite
   let input_dir;
-  const web = cli.web || cli.webTest || cli.webNestedSet || cli.webWatch || cli.webForce
+  const web = cli.web || cli.webTest || cli.webNestedSet || cli.webWatch || cli.webForce || cli.webCancelBuild
   if (cli.webStartId !== undefined) {
     if (!web) {
       cli_error('--web-start-id requires --web or --web-test')
@@ -2737,6 +2738,14 @@ if (cli.helpMacros) {
       }
 
       let currentBuildToken
+      if (cli.webCancelBuild) {
+        const current = await webApi.articlesCurrentBuild({ timeout: 15000 })
+        assertApiStatus(current.status, current.data)
+        const result = await webApi.articlesCancelBuild(current.data.build?.token || null, undefined, { timeout: 15000 })
+        if (result.status !== 202) assertApiStatus(result.status, result.data)
+        console.log(`web_upload: @${username}: ${result.data.message}`)
+        process.exit(0)
+      }
       if (cli.webWatch) {
         await watchWebBuild(webApi, username)
         process.exit(0)
@@ -3220,7 +3229,7 @@ if (cli.helpMacros) {
           const { data, status } = await webApi.articlesCurrentBuildCommit(buildId, buildJobs.length, rebuildTree, { timeout: 20000 })
           checkWebBulkBusy(status, data)
           if (status !== 202) assertApiStatus(status, data)
-          console.log(`web_upload: @${username}: submitted (${buildJobs.length} jobs); the server will finish without the CLI`)
+          console.log(`web_upload: @${username}: submitted (${buildJobs.length} jobs); the server can now finish by itself even if you close the CLI`)
           for (const job of buildJobs) await waitWebArticles(webApi, job.id, job.phase, job)
           await waitWebBuild(webApi, buildId)
         }

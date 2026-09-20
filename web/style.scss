@@ -690,6 +690,18 @@ span.shortcut {
 }
 
 .settings-page {
+  #background-uploads .build-actions {
+    margin-top: 1em;
+    .cancel-build {
+      background-color: #b91c1c;
+      border-color: #b91c1c;
+      color: white;
+      &:hover:not(:disabled) {
+        background-color: #991b1b;
+        border-color: #991b1b;
+      }
+    }
+  }
   #background-uploads > .pagination {
     margin-top: 1em;
   }

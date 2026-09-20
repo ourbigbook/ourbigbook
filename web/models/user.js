@@ -121,6 +121,11 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: false,
       },
+      dedicatedBuildWorker: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      },
       verified: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -350,6 +355,7 @@ module.exports = (sequelize) => {
         ret.emailNotifications = this.emailNotifications
         ret.emailNotificationsForArticleAnnouncement = this.emailNotificationsForArticleAnnouncement
         ret.hideArticleDates = this.hideArticleDates
+        ret.dedicatedBuildWorker = Boolean(this.dedicatedBuildWorker)
         if (loggedInUser.token) {
           ret.token = loggedInUser.token
         }

@@ -5519,6 +5519,179 @@ it('api: article tree render=true on previousSiblingId that only has render=fals
   })
 })
 
+it('build queue: admin-only dedicated workers, shared FIFO, both job kinds, and exit-confirmed slots', async () => {
+  await testApp(async test => {
+    const users = []
+    for (let i = 0; i < 4; i++) users.push(await test.createUserApi(i))
+    const { User, TreeRebuildJob, ArticleJob, BuildQueue, File } = test.sequelize.models
+    const launches = []
+    TreeRebuildJob.launchWorker = async (job, options) => { launches.push({ job, ...options }) }
+    test.loginUser(users[2])
+    assert.strictEqual((await test.webApi.userUpdate('user2', { dedicatedBuildWorker: true })).status, 403)
+    assert.strictEqual((await User.findByPk(users[2].id)).dedicatedBuildWorker, false)
+    await User.update({ admin: true }, { where: { id: users[3].id } })
+    test.loginUser(users[3])
+    assert.strictEqual((await test.webApi.userUpdate('user2', { dedicatedBuildWorker: true })).status, 200)
+    assert.strictEqual((await User.findByPk(users[2].id)).dedicatedBuildWorker, true)
+    assert.strictEqual((await test.webApi.userUpdate('user2', { dedicatedBuildWorker: 'true' })).status, 422)
+    test.loginUser(users[0])
+    const tree = await test.webApi.articleUpdatedNestedSet('user0')
+    assert.strictEqual(tree.status, 202)
+    test.loginUser(users[1])
+    const target = i => [{ path: 'a', article: { titleSource: 'A', bodySource: 'Body' }, parentId: `@user${i}`, updateNestedSetIndex: false }]
+    const bulk = await test.webApi.articlesBulk(target(1), 'shared-queue-extract', {}, { phase: 'extract' })
+    assert.strictEqual(bulk.status, 202)
+    assert.strictEqual(bulk.data.job.status, 'queued')
+    assert.strictEqual(launches.length, 1)
+    // Queue time must not consume the execution timeout.
+    await ArticleJob.update({ queuedAt: new Date(Date.now() - 60 * 60 * 1000) }, { where: { id: bulk.data.job.id } })
+    assert.strictEqual((await test.webApi.articlesBulkJob(bulk.data.job.id)).data.job.status, 'queued')
+    // Browser edits still go directly through the foreground API.
+    const edit = await createOrUpdateArticleApi(test, createArticleArg({ i: 1, titleSource: 'Browser edit' }))
+    assertStatus(edit.status, edit.data)
+    assert.strictEqual(launches.length, 1)
+    test.loginUser(users[2])
+    await test.webApi.articleUpdatedNestedSet('user2')
+    const dedicatedBulk = await test.webApi.articlesBulk(target(2), 'dedicated-extract', {}, { phase: 'extract' })
+    assert.strictEqual(dedicatedBulk.data.job.status, 'queued')
+    assert.strictEqual(launches.length, 2)
+    assert.strictEqual(await BuildQueue.count({ where: { activeSlot: 'shared' } }), 1)
+    assert.strictEqual(await BuildQueue.count({ where: { activeSlot: `user-${users[2].id}` } }), 1)
+    const order = []
+    for (const model of [TreeRebuildJob, ArticleJob]) {
+      const run = model.run
+      model.run = async id => { order.push([model.name, id]); return run(id) }
+    }
+    await BuildQueue.run(launches[0].queueId)
+    assert.deepStrictEqual(order, [['TreeRebuildJob', tree.data.job.id], ['ArticleJob', bulk.data.job.id]])
+    assert(await File.findOne({ where: { path: '@user1/a.bigb' } }))
+    assert.strictEqual((await ArticleJob.findByPk(bulk.data.job.id)).status, 'completed')
+    assert.strictEqual(await BuildQueue.count({ where: { activeSlot: 'shared' } }), 1)
+    // Even a completed worker holds the slot until its process has exited.
+    test.loginUser(users[0])
+    const next = await test.webApi.articleUpdatedNestedSet('user0')
+    await BuildQueue.kick(users[0].id)
+    assert.strictEqual(launches.length, 2)
+    assert.strictEqual((await TreeRebuildJob.findByPk(next.data.job.id)).status, 'queued')
+    await BuildQueue.workerExited(launches[0].queueId)
+    if (config.postgres) {
+      await Promise.all(Array.from({ length: 8 }, () => BuildQueue.kick(users[0].id)))
+    } else {
+      await BuildQueue.kick(users[0].id)
+      await BuildQueue.kick(users[0].id)
+    }
+    assert.strictEqual(launches.length, 3)
+    assert.strictEqual(await BuildQueue.count({ where: { activeSlot: 'shared' } }), 1)
+    await BuildQueue.run(launches[1].queueId)
+    assert.strictEqual((await ArticleJob.findByPk(dedicatedBulk.data.job.id)).status, 'completed')
+    await BuildQueue.workerExited(launches[1].queueId)
+    test.loginUser(users[3])
+    assert.strictEqual((await test.webApi.userUpdate('user2', { dedicatedBuildWorker: false })).status, 200)
+    test.loginUser(users[2])
+    const demoted = await test.webApi.articleUpdatedNestedSet('user2')
+    assert.strictEqual((await TreeRebuildJob.findByPk(demoted.data.job.id)).status, 'queued')
+    assert.strictEqual(launches.length, 3)
+    // Unexpected process exit fails the current job and releases its slot.
+    await BuildQueue.workerExited(launches[2].queueId)
+    assert.strictEqual((await TreeRebuildJob.findByPk(next.data.job.id)).status, 'failed')
+    await BuildQueue.tick()
+    assert.strictEqual(launches.length, 4)
+  }, { backgroundJobs: true })
+})
+
+it('build queue: ambiguous launch retains its slot until the hard recovery deadline', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const { TreeRebuildJob, BuildQueue } = test.sequelize.models
+    let launches = 0
+    TreeRebuildJob.launchWorker = async () => { launches++; throw new Error('ambiguous timeout') }
+    test.loginUser(user)
+    const first = await test.webApi.articleUpdatedNestedSet('user0')
+    assert.strictEqual((await TreeRebuildJob.findByPk(first.data.job.id)).status, 'failed')
+    const second = await test.webApi.articleUpdatedNestedSet('user0')
+    assert.strictEqual((await TreeRebuildJob.findByPk(second.data.job.id)).status, 'queued')
+    await BuildQueue.tick()
+    assert.strictEqual(launches, 1)
+    await BuildQueue.update({ expiresAt: new Date(Date.now() - 1) }, { where: { activeSlot: 'shared' } })
+    await BuildQueue.tick()
+    assert.strictEqual(launches, 2)
+  }, { backgroundJobs: true })
+})
+
+it('build queue: migration preserves existing users and defaults to the shared worker', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const migration = require('./migrations/21000101000057-build-queue')
+    const qi = test.sequelize.getQueryInterface()
+    await migration.down(qi)
+    await migration.up(qi, require('sequelize'))
+    assert.strictEqual((await test.sequelize.models.User.findByPk(user.id)).dedicatedBuildWorker, false)
+    const entry = await test.sequelize.models.BuildQueue.create({ userId: user.id, kind: 'TreeRebuildJob', jobId: 1 })
+    assert.strictEqual(entry.status, 'queued')
+    assert.strictEqual((await entry.reload()).activeSlot, null)
+  })
+})
+
+it('build queue: Heroku termination confirmation gates replacement dynos', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const { TreeRebuildJob, BuildQueue } = test.sequelize.models
+    const axios = require('axios')
+    const get = axios.get
+    const post = axios.post
+    const production = config.isProduction
+    const app = process.env.OURBIGBOOK_HEROKU_APP
+    const token = process.env.OURBIGBOOK_HEROKU_TOKEN
+    let launches = 0
+    let stopped = false
+    try {
+      config.isProduction = true
+      process.env.OURBIGBOOK_HEROKU_APP = 'queue-test'
+      process.env.OURBIGBOOK_HEROKU_TOKEN = 'test-secret'
+      axios.post = async (url, body) => {
+        assert(body.command.includes('--queue'))
+        launches++
+        return { data: { id: `dyno-${launches}` } }
+      }
+      axios.get = async url => {
+        assert.strictEqual(url, 'https://api.heroku.com/apps/queue-test/dynos/dyno-1')
+        return { data: { state: stopped ? 'down' : 'up' } }
+      }
+      let [job] = await TreeRebuildJob.enqueue(user.id)
+      await TreeRebuildJob.launch(job)
+      const root = await BuildQueue.findOne()
+      assert.strictEqual(root.dynoId, 'dyno-1')
+      await BuildQueue.run(root.id)
+      ;[job] = await TreeRebuildJob.enqueue(user.id)
+      await TreeRebuildJob.launch(job)
+      assert.strictEqual(launches, 1)
+      assert.strictEqual((await job.reload()).status, 'queued')
+      // Platform errors are not evidence that a worker has stopped.
+      axios.get = async () => { throw new Error('test-secret') }
+      await BuildQueue.update({ checkedAt: null }, { where: { id: root.id } })
+      await BuildQueue.kick(user.id)
+      assert.strictEqual(launches, 1)
+      stopped = true
+      axios.get = async () => ({ data: { state: 'down' } })
+      await BuildQueue.update({ checkedAt: null }, { where: { id: root.id } })
+      await BuildQueue.kick(user.id)
+      assert.strictEqual(launches, 2)
+      axios.get = async () => { throw { response: { status: 404 } } }
+      assert.strictEqual(await TreeRebuildJob.herokuStopped('removed-dyno'), true)
+      axios.get = async () => { throw { response: { status: 503 } } }
+      assert.strictEqual(await TreeRebuildJob.herokuStopped('unknown-dyno'), false)
+    } finally {
+      axios.get = get
+      axios.post = post
+      config.isProduction = production
+      if (app === undefined) delete process.env.OURBIGBOOK_HEROKU_APP
+      else process.env.OURBIGBOOK_HEROKU_APP = app
+      if (token === undefined) delete process.env.OURBIGBOOK_HEROKU_TOKEN
+      else process.env.OURBIGBOOK_HEROKU_TOKEN = token
+    }
+  })
+})
+
 it('background renders: batching, authorization, idempotency, checkpoints and changed sources', async () => {
   await testApp(async test => {
     const user = await test.createUserApi(0)
@@ -5833,8 +6006,8 @@ it('nested-set jobs: real local worker and CLI, including crash and retry', asyn
       const launchLocal = Job.launchLocal
       const children = []
       let crash = false
-      Job.launchLocal = async job => {
-        const child = await launchLocal(job)
+      Job.launchLocal = async (job, options) => {
+        const child = await launchLocal(job, options)
         const exited = new Promise(resolve => child.once('close', resolve))
         children.push({ child, exited })
         assert.notStrictEqual(child.pid, process.pid)
@@ -5861,7 +6034,7 @@ it('nested-set jobs: real local worker and CLI, including crash and retry', asyn
         await User.update({ nestedSetNeedsUpdate: true }, { where: { id: user.id } })
         crash = true
         await assert.rejects(run(), error => {
-          assert(error.stderr.includes('Local rebuild worker exited before completing'))
+          assert(error.stderr.includes('Build worker exited before completing'))
           assert(!error.stdout.includes('nested_set: (finished'))
           return error.code !== 0
         })
@@ -6029,7 +6202,9 @@ it('api: nested-set jobs: deduplication, authorization, completion, failure and 
       assert.strictEqual((await test.webApi.articleNestedSetJob('user0', failed.data.job.id)).data.job.status, 'failed')
 
       const expired = await test.webApi.articleUpdatedNestedSet('user0')
-      await Job.update({ createdAt: new Date(Date.now() - 21 * 60 * 1000) }, { where: { id: expired.data.job.id } })
+      await test.sequelize.query('UPDATE "TreeRebuildJob" SET "updatedAt" = :date WHERE id = :id', {
+        replacements: { date: new Date(Date.now() - 21 * 60 * 1000).toISOString().replace('T', ' ').replace('Z', ' +00:00'), id: expired.data.job.id },
+      })
       assert.strictEqual((await test.webApi.articleNestedSetJob('user0', expired.data.job.id)).data.job.status, 'failed')
       await Job.run(expired.data.job.id)
       assert.strictEqual((await Job.findByPk(expired.data.job.id)).status, 'failed')

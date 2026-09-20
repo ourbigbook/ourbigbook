@@ -1552,15 +1552,16 @@ async function updateNestedSet(webApi, username, { foreground=false }={}) {
     const id = data.job.id
     console.log(`nested_set: job ${id} queued; waiting for worker`)
     let previousStatus
-    const deadline = Date.now() + 21 * 60 * 1000
+    let deadline = Date.now() + 21 * 60 * 1000
     while (true) {
       if (Date.now() > deadline) throw new Error(`Nested-set job ${id} timed out; check worker logs`)
       const result = await webApi.articleNestedSetJob(username, id, { timeout: 15000 })
       assertApiStatus(result.status, result.data)
       const job = result.data.job
+      if (job.status === 'queued') deadline = Date.now() + 21 * 60 * 1000
       if (job.status === 'failed') throw new Error(job.error || `Nested-set job ${id} failed`)
       if (job.status === 'completed') break
-      if (!['pending', 'running'].includes(job.status)) throw new Error(`Unknown job status: ${job.status}`)
+      if (!['queued', 'pending', 'running'].includes(job.status)) throw new Error(`Unknown job status: ${job.status}`)
       if (job.status !== previousStatus) {
         console.log(`nested_set: job ${id} ${job.status}`)
         previousStatus = job.status
@@ -1589,12 +1590,13 @@ async function queueWebArticles(webApi, articles, { phase='render', start=true }
 
 async function waitWebArticles(webApi, id, phase) {
   let previousProgress
-  const deadline = Date.now() + 21 * 60 * 1000
+  let deadline = Date.now() + 21 * 60 * 1000
   while (true) {
     if (Date.now() > deadline) throw new Error(`Render job ${id} timed out; rerun --web to resume`)
     const result = await webApi.articlesBulkJob(id, { timeout: 15000 })
     assertApiStatus(result.status, result.data)
     const job = result.data.job
+    if (job.status === 'queued') deadline = Date.now() + 21 * 60 * 1000
     const progress = `${job.status} ${job.completed}/${job.total}`
     if (progress !== previousProgress) {
       console.log(`web_${phase}: job ${id}: ${progress}`)
@@ -1602,7 +1604,7 @@ async function waitWebArticles(webApi, id, phase) {
     }
     if (job.status === 'failed') throw new Error(job.error || `Render job ${id} failed`)
     if (job.status === 'completed') break
-    if (!['pending', 'running'].includes(job.status)) throw new Error(`Unknown render job status: ${job.status}`)
+    if (!['queued', 'pending', 'running'].includes(job.status)) throw new Error(`Unknown render job status: ${job.status}`)
     await new Promise(resolve => setTimeout(resolve, 1000))
   }
 }

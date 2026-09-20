@@ -835,10 +835,11 @@ router.get('/bulk', auth.required, async function(req, res, next) {
     if (denied) throw new lib.ValidationError('Cannot view another user’s upload status', 403)
     await Job.expire()
     await TreeRebuildJob.expire()
+    await req.app.get('sequelize').models.BuildQueue.kick(user.id)
     const attributes = ['id', 'phase', 'status', 'completed', 'total', 'error', 'createdAt', 'finishedAt']
     const where = { userId: user.id }
     const [active, recent, stagedBatches, stagedArticles, trees] = await Promise.all([
-      Job.findAll({ attributes, where: { ...where, status: { [Op.in]: ['pending', 'running'] } }, order: [['id', 'DESC']], limit: 10 }),
+      Job.findAll({ attributes, where: { ...where, status: { [Op.in]: ['queued', 'pending', 'running'] } }, order: [['id', 'DESC']], limit: 10 }),
       Job.findAll({ attributes, where, order: [['id', 'DESC']], limit: 20 }),
       Job.count({ where: { ...where, status: 'staged' } }),
       Job.sum('total', { where: { ...where, status: 'staged' } }),
@@ -879,6 +880,8 @@ router.get('/bulk/:id', auth.required, async function(req, res, next) {
       where: { id, userId: req.payload.id },
     })
     if (!job) throw new lib.ValidationError('Render job not found', 404)
+    await req.app.get('sequelize').models.BuildQueue.kick(req.payload.id)
+    await job.reload()
     return res.json({ job: renderJobJson(job) })
   } catch (error) {
     next(error)
@@ -942,6 +945,7 @@ router.get('/update-nested-set/:user/:job', auth.required, async function(req, r
     const job = user && await Job.findOne({ where: { id, userId: user.id } })
     if (!job) throw new lib.ValidationError(['Job not found'], 404)
     await Job.expire()
+    await req.app.get('sequelize').models.BuildQueue.kick(user.id)
     await job.reload()
     return res.json({ job: { id: job.id, status: job.status, error: job.error } })
   } catch (error) {

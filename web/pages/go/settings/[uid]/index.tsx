@@ -200,6 +200,7 @@ const Settings = ({
     user0,
     [
       'locked',
+      'dedicatedBuildWorker',
       'maxArticles',
       'maxArticleSize',
       'maxUploads',
@@ -462,6 +463,16 @@ const Settings = ({
               type="number"
               value={userInfoLimits.maxIssuesPerHour}
               onChange={updateStateLimits("maxIssuesPerHour")}
+            />
+          </Label>
+          <Label label="Dedicated build worker" inline={true}>
+            <input
+              disabled={cantSetUserLimit}
+              type="checkbox"
+              checked={Boolean(userInfoLimits.dedicatedBuildWorker)}
+              onChange={() => setUserInfoLimits(state => ({
+                ...state, dedicatedBuildWorker: !state.dedicatedBuildWorker,
+              }))}
             />
           </Label>
           <Label

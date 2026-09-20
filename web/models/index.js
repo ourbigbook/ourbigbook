@@ -67,6 +67,7 @@ function getSequelize(toplevelDir, toplevelBasename, databaseOptions) {
   const Topic = require('./topic')(sequelize)
   require('./tree_rebuild_job')(sequelize)
   require('./article_job')(sequelize)
+  require('./build_queue')(sequelize)
   ourbigbook_models.addModels(sequelize, { web: true })
   const File = sequelize.models.File
 

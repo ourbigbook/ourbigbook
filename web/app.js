@@ -234,6 +234,15 @@ async function start(port, startNext, cb) {
   // Just a convenience DB create so we don't have to force new users to do it manually.
   await models.sync(sequelize)
   return new Promise((resolve, reject) => {
+    let queueTick
+    const queueTimer = !config.isTest && setInterval(() => {
+      if (!queueTick) {
+        queueTick = sequelize.models.BuildQueue.tick()
+          .catch(() => console.error('Background build queue check failed; will retry'))
+          .finally(() => { queueTick = undefined })
+      }
+    }, 5000)
+    if (queueTimer) queueTimer.unref()
     const server = app.listen(port, async function () {
       try {
         cb && (await cb(server, sequelize, app))
@@ -244,6 +253,8 @@ async function start(port, startNext, cb) {
       }
     })
     server.on('close', async function () {
+      if (queueTimer) clearInterval(queueTimer)
+      if (queueTick) await queueTick
       if (startNext) {
         // Didn't help either.
         // https://github.com/ourbigbook/ourbigbook/issues/353

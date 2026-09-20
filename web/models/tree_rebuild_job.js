@@ -19,7 +19,7 @@ module.exports = sequelize => {
     error: 'Rebuild deadline exceeded. Run --web-nested-set again to retry.',
   }, { where: {
     status: { [Op.in]: ['pending', 'running'] },
-    createdAt: { [Op.lt]: new Date(Date.now() - timeoutMs) },
+    updatedAt: { [Op.lt]: new Date(Date.now() - timeoutMs) },
   } })
 
   Job.enqueue = async userId => {
@@ -31,18 +31,19 @@ module.exports = sequelize => {
 
   // Development always uses its own database, even if Heroku settings were
   // inherited from the developer's shell.
-  Job.launch = (job, options) => config.isProduction ? Job.launchHeroku(job, options) : Job.launchLocal(job, options)
+  Job.launch = (job, options) => sequelize.models.BuildQueue.enqueue(job, options)
+  Job.launchWorker = (job, options) => config.isProduction ? Job.launchHeroku(job, options) : Job.launchLocal(job, options)
 
-  Job.launchHeroku = async (job, { articles = false } = {}) => {
+  Job.launchHeroku = async (job, { articles = false, queueId } = {}) => {
     const axios = require('axios')
     if (!process.env.OURBIGBOOK_HEROKU_APP || !process.env.OURBIGBOOK_HEROKU_TOKEN) {
       throw new Error('Configure OURBIGBOOK_HEROKU_APP and OURBIGBOOK_HEROKU_TOKEN')
     }
     try {
-      await axios.post(
+      const response = await axios.post(
         `https://api.heroku.com/apps/${encodeURIComponent(process.env.OURBIGBOOK_HEROKU_APP)}/dynos`,
         {
-          command: `node web/bin/background-worker.js ${job.id}${articles ? ' --articles' : ''}`,
+          command: `node web/bin/background-worker.js ${job.id}${articles ? ' --articles' : ''}${queueId ? ` --queue ${queueId}` : ''}`,
           attach: false,
           time_to_live: 900,
           ...(process.env.OURBIGBOOK_HEROKU_WORKER_SIZE
@@ -57,13 +58,30 @@ module.exports = sequelize => {
           },
         },
       )
+      if (queueId) await sequelize.models.BuildQueue.update({ dynoId: response.data.id }, { where: { id: queueId } })
     } catch (error) {
       // Never log axios errors: their config contains the Heroku credential.
       throw new Error(`Could not launch rebuild worker (Heroku ${error.response ? error.response.status : 'request failed'}). Retry --web-nested-set.`)
     }
   }
 
-  Job.launchLocal = async (job, { articles = false } = {}) => {
+  Job.herokuStopped = async dynoId => {
+    try {
+      const response = await require('axios').get(
+        `https://api.heroku.com/apps/${encodeURIComponent(process.env.OURBIGBOOK_HEROKU_APP)}/dynos/${encodeURIComponent(dynoId)}`,
+        { timeout: 10000, maxRedirects: 0, headers: {
+          Accept: 'application/vnd.heroku+json; version=3',
+          Authorization: `Bearer ${process.env.OURBIGBOOK_HEROKU_TOKEN}`,
+        } },
+      )
+      return response.data.state === 'down'
+    } catch (error) {
+      // Unknown state is not permission to launch another billable dyno.
+      return Boolean(error.response && error.response.status === 404)
+    }
+  }
+
+  Job.launchLocal = async (job, { articles = false, queueId } = {}) => {
     const path = require('path')
     const dialect = sequelize.getDialect()
     const storage = sequelize.options.storage
@@ -71,7 +89,7 @@ module.exports = sequelize => {
       throw new Error('Local rebuild workers require a file-backed SQLite database or PostgreSQL')
     }
     const child = require('child_process').fork(
-      path.join(__dirname, '../bin/background-worker.js'), [String(job.id), '--local', ...(articles ? ['--articles'] : [])],
+      path.join(__dirname, '../bin/background-worker.js'), [String(job.id), '--local', ...(articles ? ['--articles'] : []), ...(queueId ? ['--queue', String(queueId)] : [])],
       {
         cwd: path.join(__dirname, '..'),
         // Do not inherit an inspector port or the test runner's preload hooks.
@@ -80,6 +98,11 @@ module.exports = sequelize => {
       },
     )
     child.once('exit', (code, signal) => {
+      if (queueId) {
+        sequelize.models.BuildQueue.workerExited(queueId)
+          .catch(() => console.error(`Could not record local build worker ${queueId} exit; job will expire`))
+        return
+      }
       if (code === 0) return
       // A crash can happen before the worker connects to the database. Report
       // it promptly, without overwriting a committed completion/failure.
@@ -108,7 +131,7 @@ module.exports = sequelize => {
 
   Job.run = async id => {
     const [claimed] = await Job.update({ status: 'running' }, {
-      where: { id, status: 'pending', createdAt: { [Op.gte]: new Date(Date.now() - timeoutMs) } },
+      where: { id, status: 'pending', updatedAt: { [Op.gte]: new Date(Date.now() - timeoutMs) } },
     })
     if (!claimed) return
     try {
@@ -125,7 +148,7 @@ module.exports = sequelize => {
         const [completed] = await Job.update({
           status: 'completed', activeUserId: null, finishedAt: new Date(),
         }, { transaction, where: {
-          id, status: 'running', createdAt: { [Op.gte]: new Date(Date.now() - timeoutMs) },
+          id, status: 'running', updatedAt: { [Op.gte]: new Date(Date.now() - timeoutMs) },
         } })
         if (!completed) throw new Error('Rebuild expired; rolling back')
       })

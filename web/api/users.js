@@ -537,6 +537,13 @@ router.put('/users/:username', auth.required, async function(req, res, next) {
             }
           }
           set(
+            validateParam(userArg, 'dedicatedBuildWorker', {
+              validators: [front.isBoolean],
+              defaultValue: undefined,
+            }),
+            'dedicatedBuildWorker',
+          )
+          set(
             validateParam(userArg, 'maxArticles', {
               typecast: front.typecastInteger,
               validators: [front.isPositiveInteger],

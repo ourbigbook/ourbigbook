@@ -219,6 +219,17 @@ module.exports = (sequelize) => {
         // Alphabetic list of articles by user.
         // Find article by user that has a given topicId prefix.
         { fields: ['authorId', 'list', { name: 'topicId', operator: 'text_pattern_ops' }], },
+        // API author sort=id. This query does not constrain list, and needs
+        // ordinary text ordering rather than the prefix-search operator class.
+        {
+          name: 'article_author_id_topic_id_created_at_id',
+          fields: [
+            'authorId',
+            { name: 'topicId', order: 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         // Does the logged in user have their own version of this topic?
         { fields: ['authorId', 'topicId'], },
 

@@ -290,6 +290,11 @@ function testApp(cb, opts={}) {
       app,
       sequelize
     }
+    // Most API tests use in-memory SQLite and expect immediate results. The
+    // real-worker integration test explicitly exercises the default launcher.
+    if (!opts.backgroundJobs) {
+      sequelize.models.TreeRebuildJob.useBackground = () => Boolean(process.env.OURBIGBOOK_HEROKU_APP)
+    }
     test.user = undefined
     test.userSave = undefined
     test.loginUser = function(newUser) {
@@ -5511,6 +5516,299 @@ it('api: article tree render=true on previousSiblingId that only has render=fals
       article = createArticleArg({ i: 0, titleSource: 'Algebra' })
       ;({data, status} = await createOrUpdateArticleApi(test, article, { parentId: undefined, previousSiblingId: '@user0/calculus', render }))
       assertStatus(status, data)
+  })
+})
+
+it('nested-set jobs: CLI polls to completion, reports failure, and accepts synchronous servers', async function() {
+  this.timeout(15000)
+  const fs = require('fs')
+  const path = require('path')
+  const directory = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ourbigbook-worker-cli-'))
+  let outcome = 'completed'
+  let polls = 0
+  const server = require('http').createServer((req, res) => {
+    req.resume()
+    res.setHeader('Content-Type', 'application/json')
+    if (req.url === '/api/login') {
+      res.end(JSON.stringify({ user: { token: 'test-token' } }))
+    } else if (req.url === '/api/min') {
+      res.end(JSON.stringify({ loggedIn: true }))
+    } else if (req.url === '/api/articles/update-nested-set/user0' && req.method === 'PUT') {
+      res.statusCode = outcome === 'sync' ? 200 : 202
+      res.end(JSON.stringify(outcome === 'sync' ? {} : { job: { id: 1 } }))
+    } else if (req.url === '/api/articles/update-nested-set/user0/1') {
+      polls++
+      res.end(JSON.stringify({ job: { id: 1, status: polls === 1 ? 'running' : outcome, error: 'test worker failure' } }))
+    } else {
+      res.statusCode = 404
+      res.end('{}')
+    }
+  })
+  try {
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+    fs.writeFileSync(path.join(directory, 'index.bigb'), '= Test\n')
+    // This subprocess uses its own temporary local CLI database, even when
+    // the web suite is running against PostgreSQL.
+    const cliEnv = { ...process.env }
+    delete cliEnv.OURBIGBOOK_POSTGRES
+    const run = () => require('util').promisify(require('child_process').execFile)(process.execPath, [
+      path.join(__dirname, '../ourbigbook'), '--web-nested-set',
+      '--web-url', `http://127.0.0.1:${server.address().port}`,
+      '--web-user', 'user0', '--web-password', 'test-password',
+    ], { cwd: directory, env: cliEnv, timeout: 10000 })
+    const success = await run()
+    assert.strictEqual(polls, 2)
+    assert(success.stdout.includes('job 1 running'))
+    assert(success.stdout.includes('nested_set: (finished'))
+    outcome = 'failed'
+    polls = 0
+    await assert.rejects(run(), error => {
+      assert(error.stderr.includes('test worker failure'))
+      assert(!error.stdout.includes('nested_set: (finished'))
+      return error.code !== 0
+    })
+    outcome = 'sync'
+    polls = 0
+    assert((await run()).stdout.includes('nested_set: (finished'))
+    assert.strictEqual(polls, 0)
+  } finally {
+    server.closeAllConnections()
+    await new Promise(resolve => server.close(resolve))
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+it('nested-set jobs: real local worker and CLI, including crash and retry', async function() {
+  this.timeout(30000)
+  const fs = require('fs')
+  const path = require('path')
+  const models = require('./models')
+  const directory = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ourbigbook-local-worker-'))
+  const getSequelize = models.getSequelize
+  const previousApp = process.env.OURBIGBOOK_HEROKU_APP
+  delete process.env.OURBIGBOOK_HEROKU_APP
+  if (!config.postgres) {
+    models.getSequelize = (dir, basename) => getSequelize(dir, basename, {
+      dialect: 'sqlite', storage: path.join(directory, 'web.sqlite3'),
+    })
+  }
+  try {
+    fs.writeFileSync(path.join(directory, 'index.bigb'), '= Test\n')
+    await testApp(async test => {
+      const user = await test.createUserApi(0)
+      test.loginUser(user)
+      const result = await createOrUpdateArticleApi(test,
+        createArticleArg({ i: 0, titleSource: 'Mathematics' }), { updateNestedSetIndex: false })
+      assertStatus(result.status, result.data)
+      const { TreeRebuildJob: Job, User } = test.sequelize.models
+      assert.strictEqual(Job.useBackground(), true)
+      const launchLocal = Job.launchLocal
+      const children = []
+      let crash = false
+      Job.launchLocal = async job => {
+        const child = await launchLocal(job)
+        const exited = new Promise(resolve => child.once('close', resolve))
+        children.push({ child, exited })
+        assert.notStrictEqual(child.pid, process.pid)
+        if (crash) child.kill('SIGKILL')
+        return child
+      }
+      const cliEnv = { ...process.env, OURBIGBOOK_POSTGRES: '0' }
+      const run = () => require('util').promisify(require('child_process').execFile)(process.execPath, [
+        path.join(__dirname, '../ourbigbook'), '--web-nested-set',
+        '--web-url', `http://localhost:${test.webApi.opts.port}`,
+        '--web-user', 'user0', '--web-password', 'asdf',
+      ], { cwd: directory, env: cliEnv, timeout: 15000 })
+      try {
+        const success = await run()
+        assert(success.stdout.includes('queued; waiting for worker'))
+        assert(success.stdout.includes('nested_set: (finished'))
+        assert.strictEqual(await Job.count({ where: { status: 'completed' } }), 1)
+        // Local development must also win if Heroku config is in the shell.
+        process.env.OURBIGBOOK_HEROKU_APP = 'must-not-launch-a-real-dyno'
+        await assertNestedSets(test.sequelize, [
+          { nestedSetIndex: 0, nestedSetNextSibling: 2, depth: 0, to_id_index: null, slug: 'user0' },
+          { nestedSetIndex: 1, nestedSetNextSibling: 2, depth: 1, to_id_index: 0, slug: 'user0/mathematics' },
+        ])
+        await User.update({ nestedSetNeedsUpdate: true }, { where: { id: user.id } })
+        crash = true
+        await assert.rejects(run(), error => {
+          assert(error.stderr.includes('Local rebuild worker exited before completing'))
+          assert(!error.stdout.includes('nested_set: (finished'))
+          return error.code !== 0
+        })
+        assert.strictEqual(await Job.count({ where: { status: 'failed' } }), 1)
+        assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, true)
+        crash = false
+        assert((await run()).stdout.includes('nested_set: (finished'))
+        assert.strictEqual(await Job.count({ where: { status: 'completed' } }), 2)
+        assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, false)
+      } finally {
+        Job.launchLocal = launchLocal
+        for (const { child, exited } of children) {
+          if (child.exitCode === null && child.signalCode === null) child.kill()
+          await exited
+        }
+      }
+    }, { backgroundJobs: true })
+  } finally {
+    models.getSequelize = getSequelize
+    if (previousApp === undefined) delete process.env.OURBIGBOOK_HEROKU_APP
+    else process.env.OURBIGBOOK_HEROKU_APP = previousApp
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+it('nested-set jobs: migration creates a usable model', async () => {
+  await testApp(async test => {
+    const migration = require('./migrations/21000101000055-create-tree-rebuild-job')
+    const queryInterface = test.sequelize.getQueryInterface()
+    await migration.down(queryInterface)
+    await migration.up(queryInterface, require('sequelize'))
+    const [job] = await test.sequelize.models.TreeRebuildJob.enqueue(1)
+    assert.strictEqual(job.status, 'pending')
+    const [same, created] = await test.sequelize.models.TreeRebuildJob.enqueue(1)
+    assert.strictEqual(same.id, job.id)
+    assert.strictEqual(created, false)
+    if (!config.postgres) {
+      await assert.rejects(test.sequelize.models.TreeRebuildJob.launchLocal(job), /file-backed SQLite/)
+    }
+  })
+})
+
+it('nested-set jobs: Heroku launch request and credential redaction', async () => {
+  await testApp(async test => {
+    const axios = require('axios')
+    const originalPost = axios.post
+    const keys = ['OURBIGBOOK_HEROKU_APP', 'OURBIGBOOK_HEROKU_TOKEN', 'OURBIGBOOK_HEROKU_WORKER_SIZE']
+    const previous = keys.map(key => process.env[key])
+    process.env.OURBIGBOOK_HEROKU_APP = 'test-app'
+    process.env.OURBIGBOOK_HEROKU_TOKEN = 'test-secret'
+    process.env.OURBIGBOOK_HEROKU_WORKER_SIZE = 'standard-1X'
+    try {
+      let calls = 0
+      axios.post = async (url, body, options) => {
+        calls++
+        assert.strictEqual(url, 'https://api.heroku.com/apps/test-app/dynos')
+        assert.deepStrictEqual(body, {
+          command: 'node web/bin/tree-rebuild-worker.js 123',
+          attach: false, time_to_live: 900, size: 'standard-1X',
+        })
+        assert.strictEqual(options.timeout, 10000)
+        assert.strictEqual(options.headers.Authorization, 'Bearer test-secret')
+      }
+      await test.sequelize.models.TreeRebuildJob.launchHeroku({ id: 123 })
+      assert.strictEqual(calls, 1)
+      axios.post = async () => { throw new Error('test-secret') }
+      await assert.rejects(test.sequelize.models.TreeRebuildJob.launchHeroku({ id: 123 }), error => {
+        assert(!error.message.includes('test-secret'))
+        return /Could not launch rebuild worker/.test(error.message)
+      })
+    } finally {
+      axios.post = originalPost
+      keys.forEach((key, i) => {
+        if (previous[i] === undefined) delete process.env[key]
+        else process.env[key] = previous[i]
+      })
+    }
+  })
+})
+
+it('nested-set jobs: PostgreSQL concurrent claims and per-author lock', async function() {
+  if (!config.postgres) this.skip()
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    await test.createUserApi(1)
+    const { TreeRebuildJob: Job, Article } = test.sequelize.models
+    const enqueues = await Promise.all([Job.enqueue(user.id), Job.enqueue(user.id)])
+    assert.strictEqual(enqueues[0][0].id, enqueues[1][0].id)
+    assert.strictEqual(enqueues.filter(([, created]) => created).length, 1)
+    const rebuild = Article.updateNestedSets
+    let calls = 0
+    Article.updateNestedSets = async (...args) => {
+      calls++
+      await assert.rejects(test.sequelize.transaction(transaction => test.sequelize.query(
+        'SELECT id FROM "User" WHERE username = :username FOR UPDATE NOWAIT',
+        { replacements: { username: 'user0' }, transaction },
+      )), error => error.original.code === '55P03')
+      await test.sequelize.transaction(transaction => test.sequelize.query(
+        'SELECT id FROM "User" WHERE username = :username FOR UPDATE NOWAIT',
+        { replacements: { username: 'user1' }, transaction },
+      ))
+      return rebuild(...args)
+    }
+    try {
+      await Promise.all([Job.run(enqueues[0][0].id), Job.run(enqueues[0][0].id)])
+      assert.strictEqual(calls, 1)
+      assert.strictEqual((await enqueues[0][0].reload()).status, 'completed')
+    } finally {
+      Article.updateNestedSets = rebuild
+    }
+  })
+})
+
+it('api: nested-set jobs: deduplication, authorization, completion, failure and expiry', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    test.loginUser(user)
+    const { TreeRebuildJob: Job, Article, User } = test.sequelize.models
+    const previousApp = process.env.OURBIGBOOK_HEROKU_APP
+    const launch = Job.launch
+    let launches = 0
+    process.env.OURBIGBOOK_HEROKU_APP = 'test-app'
+    Job.launch = async () => { launches++ }
+    try {
+      const first = await test.webApi.articleUpdatedNestedSet('user0')
+      assert.strictEqual(first.status, 202)
+      const id = first.data.job.id
+      const second = await test.webApi.articleUpdatedNestedSet('user0')
+      assert.strictEqual(second.data.job.id, id)
+      assert.strictEqual(launches, 1)
+      test.loginUser(other)
+      assert.strictEqual((await test.webApi.articleNestedSetJob('user0', id)).status, 403)
+      assert.strictEqual((await test.webApi.articleUpdatedNestedSet('user0')).status, 403)
+      assert.strictEqual((await test.webApi.articleNestedSetJob('user1', id)).status, 404)
+      test.loginUser(user)
+      await User.update({ nestedSetNeedsUpdate: true }, { where: { username: 'user0' } })
+      await Job.run(id)
+      await Job.run(id) // duplicate dyno must be harmless
+      const done = await test.webApi.articleNestedSetJob('user0', id)
+      assert.strictEqual(done.data.job.status, 'completed')
+      assert.strictEqual((await User.findOne({ where: { username: 'user0' } })).nestedSetNeedsUpdate, false)
+
+      const failed = await test.webApi.articleUpdatedNestedSet('user0')
+      assert.notStrictEqual(failed.data.job.id, id)
+      const rebuild = Article.updateNestedSets
+      Article.updateNestedSets = async (username, { transaction }) => {
+        await User.update({ nestedSetNeedsUpdate: false }, { where: { username }, transaction })
+        throw new Error('test rebuild failure')
+      }
+      await User.update({ nestedSetNeedsUpdate: true }, { where: { username: 'user0' } })
+      try {
+        await assert.rejects(Job.run(failed.data.job.id), /test rebuild failure/)
+      } finally {
+        Article.updateNestedSets = rebuild
+      }
+      assert.strictEqual((await User.findOne({ where: { username: 'user0' } })).nestedSetNeedsUpdate, true)
+      assert.strictEqual((await test.webApi.articleNestedSetJob('user0', failed.data.job.id)).data.job.status, 'failed')
+
+      const expired = await test.webApi.articleUpdatedNestedSet('user0')
+      await Job.update({ createdAt: new Date(Date.now() - 21 * 60 * 1000) }, { where: { id: expired.data.job.id } })
+      assert.strictEqual((await test.webApi.articleNestedSetJob('user0', expired.data.job.id)).data.job.status, 'failed')
+      await Job.run(expired.data.job.id)
+      assert.strictEqual((await Job.findByPk(expired.data.job.id)).status, 'failed')
+
+      Job.launch = async () => { throw new Error('test launch failure') }
+      const launchFailed = await test.webApi.articleUpdatedNestedSet('user0')
+      const launchStatus = await test.webApi.articleNestedSetJob('user0', launchFailed.data.job.id)
+      assert.strictEqual(launchStatus.data.job.status, 'failed')
+      assert.strictEqual(launchStatus.data.job.error, 'test launch failure')
+    } finally {
+      Job.launch = launch
+      if (previousApp === undefined) delete process.env.OURBIGBOOK_HEROKU_APP
+      else process.env.OURBIGBOOK_HEROKU_APP = previousApp
+    }
   })
 })
 

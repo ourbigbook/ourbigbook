@@ -1547,7 +1547,28 @@ async function updateNestedSet(webApi, username) {
   const t1 = now()
   console.log(`nested_set`)
   const { data, status } = await webApi.articleUpdatedNestedSet(username)
-  assertApiStatus(status, data)
+  if (status === 202) {
+    const id = data.job.id
+    console.log(`nested_set: job ${id} queued; waiting for worker`)
+    let previousStatus
+    const deadline = Date.now() + 21 * 60 * 1000
+    while (true) {
+      if (Date.now() > deadline) throw new Error(`Nested-set job ${id} timed out; check worker logs`)
+      const result = await webApi.articleNestedSetJob(username, id, { timeout: 15000 })
+      assertApiStatus(result.status, result.data)
+      const job = result.data.job
+      if (job.status === 'failed') throw new Error(job.error || `Nested-set job ${id} failed`)
+      if (job.status === 'completed') break
+      if (!['pending', 'running'].includes(job.status)) throw new Error(`Unknown job status: ${job.status}`)
+      if (job.status !== previousStatus) {
+        console.log(`nested_set: job ${id} ${job.status}`)
+        previousStatus = job.status
+      }
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
+  } else {
+    assertApiStatus(status, data)
+  }
   console.log(`nested_set: ${finished_in_ms(now() - t1)}`)
 }
 
@@ -1965,7 +1986,7 @@ if (cli.helpMacros) {
   let htmlXExtension;
   let publishTargetIsWebsite
   let input_dir;
-  const web = cli.web || cli.webTest || cli.nestedSet
+  const web = cli.web || cli.webTest || cli.webNestedSet
   if (cli.webStartId !== undefined) {
     if (!web) {
       cli_error('--web-start-id requires --web or --web-test')

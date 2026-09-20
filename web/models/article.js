@@ -826,6 +826,9 @@ WHERE
   // TODO https://docs.ourbigbook.com/todo/delete-articles
   Article.prototype.destroySideEffects = async function(opts={}) {
     return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
+      await sequelize.models.User.findByPk(this.authorId, { transaction, lock: transaction.LOCK.UPDATE })
+      // The instance may have been loaded before waiting for a rebuild.
+      await this.reload({ transaction })
       const [articles, topic, _] = await Promise.all([
         sequelize.models.Article.findAll({
           where: { topicId: this.topicId },
@@ -2307,14 +2310,15 @@ OFFSET ${offset}` : ''}` : ''}`}
    * @param {string} username
    */
   Article.updateNestedSets = async function(username, { transaction }={}) {
-    const nestedSet = await Article.getNestedSetsFromRefs(username, { transaction })
-    const vals = nestedSet.map(s => { return {
-      slug: s.id.slice(ourbigbook.AT_MENTION_CHAR.length),
-      nestedSetIndex: s.nestedSetIndex,
-      nestedSetNextSibling: s.nestedSetNextSibling,
-      depth: s.depth,
-    }})
     return sequelize.transaction({ transaction }, async (transaction) => {
+      await sequelize.models.User.findOne({ where: { username }, transaction, lock: transaction.LOCK.UPDATE })
+      const nestedSet = await Article.getNestedSetsFromRefs(username, { transaction })
+      const vals = nestedSet.map(s => { return {
+        slug: s.id.slice(ourbigbook.AT_MENTION_CHAR.length),
+        nestedSetIndex: s.nestedSetIndex,
+        nestedSetNextSibling: s.nestedSetNextSibling,
+        depth: s.depth,
+      }})
       // Batch existing-row updates to avoid a round trip per article. Derived
       // tree positions must not change article timestamps or require INSERTs.
       const columns = ['nestedSetIndex', 'nestedSetNextSibling', 'depth']

@@ -241,6 +241,10 @@ class WebApi {
     return this.req('put', `articles/update-nested-set/${encodeURIComponent(user)}`, reqOpts)
   }
 
+  async articleNestedSetJob(user, id, reqOpts={}) {
+    return this.req('get', `articles/update-nested-set/${encodeURIComponent(user)}/${encodeURIComponent(id)}`, reqOpts)
+  }
+
   async editorFetchFiles(paths, reqOpts={}) {
     return this.req('post',
       `editor/fetch-files`,
@@ -543,6 +547,7 @@ async function sendJsonHttp(method, path, opts={}) {
     hostname,
     port,
     responseType,
+    timeout,
     validateStatus
   } = opts
   let http
@@ -576,6 +581,7 @@ async function sendJsonHttp(method, path, opts={}) {
     maxRedirects: 0,
     method,
     responseType,
+    timeout,
     url,
     validateStatus,
   })

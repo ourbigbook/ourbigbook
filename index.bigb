@@ -10959,6 +10959,24 @@ which also fakes an IP with <OURBIGBOOK_DEV_IP>.
 {c}
 {parent=OurBigBook Web deployment}
 
+Nested-set rebuilds can run in on-demand one-off dynos instead of hitting the router's request timeout. Deploy the code and database migration first (the normal build runs `web/bin/sync-db.js`). Then set these config vars in the Heroku dashboard:
+* `OURBIGBOOK_HEROKU_APP`: the app name, e.g. `ourbigbook`.
+* `OURBIGBOOK_HEROKU_TOKEN`: a Heroku API/OAuth credential allowed to create dynos for that app. Treat it as a deployment secret; do not commit it or expose it to the frontend.
+* optional `OURBIGBOOK_HEROKU_WORKER_SIZE`: the one-off dyno size; when omitted Heroku chooses its default.
+
+Create a dedicated authorization with `heroku authorizations:create --description "OurBigBook rebuild worker"` and put its Token value in `OURBIGBOOK_HEROKU_TOKEN` through the dashboard. The default authorization grants broad account access, not just permission to run this worker; use a dedicated account limited to this app if you need stronger isolation. See https://devcenter.heroku.com/articles/platform-api-quickstart[Heroku's Platform API setup].
+
+No Procfile worker, `ps:scale worker=1`, Redis, or scheduler is required. The server creates a durable job and launches `node web/bin/tree-rebuild-worker.js JOB_ID` via the Heroku Platform API. The one-off uses the deployed app and its existing database config, and exits after the job. Update the local CLI too: `ourbigbook --web-nested-set` now polls the job until its transaction commits, and fails on launch/rebuild errors. Production servers without `OURBIGBOOK_HEROKU_APP` retain their synchronous behavior.
+
+Local development uses the same asynchronous workflow by default, without extra environment variables. It starts the same worker script as a separate local process, with the server's actual database connection settings passed over a private process channel, even if Heroku settings are present in your shell. It supports PostgreSQL and file-backed SQLite, but not in-memory SQLite. Worker output appears in the web server terminal; crashes are reported to the CLI without waiting for job expiry. For PostgreSQL, from `web/`, run:
+``
+bin/pg bin/sync-db.js
+npm run dev-pg
+``
+Then, from your wiki directory in another terminal, run `ourbigbook --web-nested-set --web-url http://localhost:3000`. For SQLite, use `bin/sync-db.js` and `npm run dev` instead. No Heroku credentials, Redis, or separately managed worker are needed. The `nested-set jobs: real local worker` test exercises a real CLI, HTTP API, worker subprocess, database rebuild, worker crash, and retry on both database backends.
+
+Only one active rebuild per author is allowed. Upload/tree edits for that author serialize with the rebuild; other authors are not locked. The worker has a 15-minute runtime limit. Jobs abandoned by a crash or interrupted launch expire after 20 minutes when polled or another rebuild is requested. There is no automatic retry or always-on queue consumer: after failure, rerun `ourbigbook --web-nested-set`. Inspect the one-off dyno logs with `./heroku logs --tail`. Disabling the feature is `heroku config:unset OURBIGBOOK_HEROKU_APP --app APP_NAME`; this does not cancel an already running job. This worker currently handles nested sets only, not full article rendering.
+
 Got it running perfectly at as of April 2021 https://ourbigbook.com with the following steps.
 
 Initial setup for a Heroku project called `ourbigbook`:

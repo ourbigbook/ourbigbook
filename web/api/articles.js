@@ -735,6 +735,27 @@ router.put('/update-nested-set/:user', auth.required, async function(req, res, n
   try {
     const username = req.params.user
     const sequelize = req.app.get('sequelize')
+    if (sequelize.models.TreeRebuildJob.useBackground()) {
+      const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
+      const msg = cant.updateNestedSet(loggedInUser, username)
+      if (msg) throw new lib.ValidationError([msg], 403)
+      const user = await sequelize.models.User.findOne({ where: { username } })
+      if (!user) throw new lib.ValidationError(['User not found'], 404)
+      const Job = sequelize.models.TreeRebuildJob
+      const [job, created] = await Job.enqueue(user.id)
+      if (created) {
+        try {
+          await Job.launch(job)
+        } catch (error) {
+          // A timed-out launch may still start a dyno. Only pending jobs can be
+          // cancelled; a worker that already claimed it must finish normally.
+          await Job.update({ status: 'failed', activeUserId: null, error: error.message, finishedAt: new Date() }, {
+            where: { id: job.id, status: 'pending' },
+          })
+        }
+      }
+      return res.status(202).json({ job: { id: job.id } })
+    }
     await sequelize.transaction(async (transaction) => {
       const loggedInUser = await sequelize.models.User.findByPk(req.payload.id, { transaction })
       const msg = cant.updateNestedSet(loggedInUser, username)
@@ -749,6 +770,25 @@ router.put('/update-nested-set/:user', auth.required, async function(req, res, n
     return res.json({})
   } catch(error) {
     next(error);
+  }
+})
+
+router.get('/update-nested-set/:user/:job', auth.required, async function(req, res, next) {
+  try {
+    const { User, TreeRebuildJob: Job } = req.app.get('sequelize').models
+    const loggedInUser = await User.findByPk(req.payload.id)
+    const msg = cant.updateNestedSet(loggedInUser, req.params.user)
+    if (msg) throw new lib.ValidationError([msg], 403)
+    const id = Number(req.params.job)
+    if (!Number.isSafeInteger(id) || id <= 0) throw new lib.ValidationError(['Invalid job ID'], 422)
+    const user = await User.findOne({ where: { username: req.params.user } })
+    const job = user && await Job.findOne({ where: { id, userId: user.id } })
+    if (!job) throw new lib.ValidationError(['Job not found'], 404)
+    await Job.expire()
+    await job.reload()
+    return res.json({ job: { id: job.id, status: job.status, error: job.error } })
+  } catch (error) {
+    next(error)
   }
 })
 

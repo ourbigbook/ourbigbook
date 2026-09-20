@@ -252,6 +252,8 @@ async function convertArticle({
   const source = ourbigbook.modifyEditorInput(titleSource, bodySource).new
   const idPrefix = `${AT_MENTION_CHAR}${author.username}`
   await sequelize.transaction({ transaction }, async (transaction) => {
+    // Serialize tree edits with background rebuilds, before reading parent positions.
+    await sequelize.models.User.findByPk(author.id, { transaction, lock: transaction.LOCK.UPDATE })
     // Determine the correct parentId from parentId and previousSiblingId
     let newParentId = parentId
     let newParentArticle

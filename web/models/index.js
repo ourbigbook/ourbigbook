@@ -20,7 +20,7 @@ const {
 const config = require('../front/config')
 const { uploadPathComponent } = config
 
-function getSequelize(toplevelDir, toplevelBasename) {
+function getSequelize(toplevelDir, toplevelBasename, databaseOptions) {
   const sequelizeParams = Object.assign(
     {
       logging: config.log.db ? console.log : false,
@@ -32,7 +32,10 @@ function getSequelize(toplevelDir, toplevelBasename) {
     ourbigbook_nodejs_webpack_safe.DB_OPTIONS,
   );
   let sequelize;
-  if (config.isProduction || config.postgres) {
+  if (databaseOptions) {
+    // Local workers receive the server's actual connection settings over IPC.
+    sequelize = new Sequelize({ ...sequelizeParams, ...databaseOptions })
+  } else if (config.isProduction || config.postgres) {
     sequelizeParams.dialect = config.production.dialect;
     sequelizeParams.dialectOptions = config.production.dialectOptions;
     sequelize = new Sequelize(config.production.url, sequelizeParams);
@@ -62,6 +65,7 @@ function getSequelize(toplevelDir, toplevelBasename) {
   const Upload = require('./upload')(sequelize)
   const UploadDirectory = require('./upload_directory')(sequelize)
   const Topic = require('./topic')(sequelize)
+  require('./tree_rebuild_job')(sequelize)
   ourbigbook_models.addModels(sequelize, { web: true })
   const File = sequelize.models.File
 

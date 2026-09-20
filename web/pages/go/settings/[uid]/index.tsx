@@ -46,6 +46,9 @@ interface SettingsProps extends CommonPropsType {
   user?: UserType;
 }
 
+type BulkJob = { id: number; phase: string; status: string; completed: number; total: number; error: string | null }
+type BulkStatus = { active: BulkJob[]; recent: BulkJob[]; stagedBatches: number; stagedArticles: number; nestedSet: { status: string; error: string | null } | null }
+
 const Settings = ({
   user: user0,
   loggedInUser,
@@ -54,6 +57,33 @@ const Settings = ({
   const [errors, setErrors] = React.useState([]);
   const { setLoggedInUserEffectiveImage } = React.useContext(AppContext)
   const username = user0.username
+  const [bulkStatus, setBulkStatus] = React.useState<BulkStatus | null>(null)
+  const [bulkError, setBulkError] = React.useState('')
+  React.useEffect(() => {
+    let active = true
+    let timer: ReturnType<typeof setTimeout>
+    setBulkStatus(null)
+    const poll = async () => {
+      try {
+        const { data, status } = await webApi.articlesBulkStatus(username, { timeout: 15000 })
+        if (status !== 200) throw new Error('Could not load background upload status')
+        if (active) {
+          setBulkStatus(data)
+          setBulkError('')
+        }
+      } catch {
+        if (active) setBulkError('Could not load background upload status. Retrying…')
+      } finally {
+        if (active) timer = setTimeout(poll, 3000)
+      }
+    }
+    poll()
+    return () => { active = false; clearTimeout(timer) }
+  }, [username])
+  const bulkJobs = bulkStatus ? [
+    ...bulkStatus.active,
+    ...bulkStatus.recent.filter(job => !bulkStatus.active.some(activeJob => activeJob.id === job.id)),
+  ] : []
   const [userInfo, setUserInfo] = React.useState(lodash.pick(
     user0,
     [
@@ -201,6 +231,25 @@ const Settings = ({
     <MyHead title={`${title} - ${displayAndUsernameText(userInfo)}`} />
     <div className="settings-page content-not-ourbigbook">
       <h1><SettingsIcon /> {title}</h1>
+      <section id="background-uploads">
+        <h2>Background uploads</h2>
+        {bulkError && <p role="alert">{bulkError}</p>}
+        {!bulkStatus && !bulkError && <p>Loading upload status…</p>}
+        {bulkStatus && <>
+          <p>{bulkStatus.stagedArticles} articles in {bulkStatus.stagedBatches} uploaded batches waiting to start.</p>
+          {bulkJobs.length ? <table>
+            <thead><tr><th>Job</th><th>Phase</th><th>Status</th><th>Progress</th><th>Error</th></tr></thead>
+            <tbody>{bulkJobs.map(job => <tr key={job.id}>
+              <td>{job.id}</td>
+              <td>{{ extract: 'ID extraction', check: 'Database check', render: 'Rendering' }[job.phase] || job.phase}</td>
+              <td>{job.status}</td>
+              <td>{job.completed} / {job.total}</td>
+              <td>{job.error || ''}</td>
+            </tr>)}</tbody>
+          </table> : <p>No background uploads yet.</p>}
+          {bulkStatus.nestedSet && <p>Nested set: {bulkStatus.nestedSet.status}{bulkStatus.nestedSet.error ? ` — ${bulkStatus.nestedSet.error}` : ''}</p>}
+        </>}
+      </section>
       <>
         <MapErrors errors={errors} />
         <form onSubmit={handleSubmit}>

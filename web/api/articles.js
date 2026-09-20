@@ -433,159 +433,168 @@ router.post('/announce', auth.required, async function(req, res, next) {
 
 async function createOrUpdateArticle(req, res, opts) {
   const sequelize = req.app.get('sequelize')
-  return res.json(
-    await sequelize.transaction(async (transaction) => {
-      const forceNew = opts.forceNew
-      const { Article, File, Site, User } = sequelize.models
-      const [loggedInUser, site] = await Promise.all([
-        User.findByPk(req.payload.id, { transaction }),
-        Site.findOne({ transaction }),
-      ])
-      if (forceNew) {
-        const msg = cant.createArticle(loggedInUser)
-        if (msg) {
-          throw new lib.ValidationError([msg], 403)
-        }
-      }
+  return res.json(await createOrUpdateArticleData(sequelize, req.payload.id, lib.validateParam(req, 'body'), opts))
+}
 
-      // API params.
-      const body = lib.validateParam(req, 'body')
-      const articleData = lib.validateParam(body, 'article')
-      let bodySource = lib.validateParam(articleData, 'bodySource', {
-        validators: [front.isString],
-        defaultValue: undefined,
-      })
-      if (bodySource !== undefined) {
-        lib.validateBodySize(loggedInUser, bodySource)
+async function createOrUpdateArticleData(sequelize, userId, body, opts) {
+  return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
+    const forceNew = opts.forceNew
+    const { Article, File, Site, User } = sequelize.models
+    const [loggedInUser, site] = await Promise.all([
+      User.findByPk(userId, { transaction }),
+      Site.findOne({ transaction }),
+    ])
+    if (forceNew) {
+      const msg = cant.createArticle(loggedInUser)
+      if (msg) {
+        throw new lib.ValidationError([msg], 403)
       }
-      let titleSource = lib.validateParam(articleData, 'titleSource', {
-        validators: [front.isString],
-        defaultValue: undefined,
-      })
-      const path = lib.validateParam(body, 'path', { validators: [
-        front.isString, front.isTruthy ], defaultValue: undefined })
-      const owner = lib.validateParam(body, 'owner', { validators: [
-        front.isString ], defaultValue: undefined })
-      const render = lib.validateParam(body, 'render', {
-        validators: [front.isBoolean], defaultValue: true})
-      let list = lib.validateParam(body, 'list', {
-        validators: [front.isBoolean], defaultValue: undefined})
-      const updateNestedSetIndex = lib.validateParam(body, 'updateNestedSetIndex', {
-        validators: [front.isBoolean], defaultValue: true})
-      const parentId = lib.validateParam(body,
-        // ID of article that will be the parent of this article, including the @username/ part.
-        // However, at least to start with, @username/ will have to match your own username to
-        // simplify things a bit.
-        'parentId',
-        // If undefined:
-        // - if previousSiblingId is given, deduce parentId from it
-        // - else if article already exists (i.e. this is an update), keep existing parent
-        // - else (article does not already exist and previousSiblingId not given): throw an error
-        {
-          validators: [front.isString],
-          defaultValue: undefined
-        }
-      )
-      if (!render && titleSource === undefined) {
-        // When rendering we can just take from DB from the previous ID extraction step.
-        throw new lib.ValidationError(`titleSource param is mandatory when not rendering`)
-      }
+    }
 
-      let author
-      if (owner === undefined) {
-        author = loggedInUser
-      } else {
-        const msg = cant.editArticle(loggedInUser, owner)
-        if (msg) {
-          throw new lib.ValidationError([msg], 403)
-        }
-        author = await User.findOne({ where: { username: owner }, transaction })
-        if (!author) {
-          throw new lib.ValidationError(`owner: there is no user with username owner="${owner}"`)
-        }
+    // API params.
+    const articleData = lib.validateParam(body, 'article')
+    let bodySource = lib.validateParam(articleData, 'bodySource', {
+      validators: [front.isString],
+      defaultValue: undefined,
+    })
+    if (bodySource !== undefined) {
+      lib.validateBodySize(loggedInUser, bodySource)
+    }
+    let titleSource = lib.validateParam(articleData, 'titleSource', {
+      validators: [front.isString],
+      defaultValue: undefined,
+    })
+    const path = lib.validateParam(body, 'path', { validators: [
+      front.isString, front.isTruthy ], defaultValue: undefined })
+    const owner = lib.validateParam(body, 'owner', { validators: [
+      front.isString ], defaultValue: undefined })
+    const render = lib.validateParam(body, 'render', {
+      validators: [front.isBoolean], defaultValue: true})
+    let list = lib.validateParam(body, 'list', {
+      validators: [front.isBoolean], defaultValue: undefined})
+    const updateNestedSetIndex = lib.validateParam(body, 'updateNestedSetIndex', {
+      validators: [front.isBoolean], defaultValue: true})
+    const parentId = lib.validateParam(body,
+      // ID of article that will be the parent of this article, including the @username/ part.
+      // However, at least to start with, @username/ will have to match your own username to
+      // simplify things a bit.
+      'parentId',
+      // If undefined:
+      // - if previousSiblingId is given, deduce parentId from it
+      // - else if article already exists (i.e. this is an update), keep existing parent
+      // - else (article does not already exist and previousSiblingId not given): throw an error
+      {
+        validators: [front.isString],
+        defaultValue: undefined
       }
-      if (path !== undefined) {
-        const file = await File.findOne({
-          where: {
-            path: `${ourbigbook.AT_MENTION_CHAR}${author.username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${path}.${ourbigbook.OURBIGBOOK_EXT}`
-          },
-          include: {
-            model: Article,
-            as: 'articles',
-          },
-          transaction,
-        })
-        if (file) {
-          if (render) {
-            if (bodySource === undefined) {
-              bodySource = file.bodySource
-            }
-            if (titleSource === undefined) {
-              titleSource = file.titleSource
-            }
-            if (list === undefined) {
-              list = file.articles[0].list
-            }
+    )
+    if (!render && titleSource === undefined) {
+      // When rendering we can just take from DB from the previous ID extraction step.
+      throw new lib.ValidationError(`titleSource param is mandatory when not rendering`)
+    }
+
+    let author
+    if (owner === undefined) {
+      author = loggedInUser
+    } else {
+      const msg = cant.editArticle(loggedInUser, owner)
+      if (msg) {
+        throw new lib.ValidationError([msg], 403)
+      }
+      author = await User.findOne({ where: { username: owner }, transaction })
+      if (!author) {
+        throw new lib.ValidationError(`owner: there is no user with username owner="${owner}"`)
+      }
+    }
+    if (path !== undefined) {
+      // Background renders must not read a source snapshot before waiting
+      // for a concurrent upload/tree edit to finish.
+      if (opts.expectedHash !== undefined) {
+        await User.findByPk(author.id, { transaction, lock: transaction.LOCK.UPDATE })
+      }
+      const file = await File.findOne({
+        where: {
+          path: `${ourbigbook.AT_MENTION_CHAR}${author.username}${ourbigbook.Macro.HEADER_SCOPE_SEPARATOR}${path}.${ourbigbook.OURBIGBOOK_EXT}`
+        },
+        include: {
+          model: Article,
+          as: 'articles',
+        },
+        transaction,
+      })
+      if (file) {
+        if (opts.expectedHash !== undefined && file.hash !== opts.expectedHash) {
+          throw new lib.ValidationError(`Source changed since render was queued: ${path}`, 409)
+        }
+        if (render) {
+          if (bodySource === undefined) {
+            bodySource = file.bodySource
+          }
+          if (titleSource === undefined) {
+            titleSource = file.titleSource
+          }
+          if (list === undefined) {
+            list = file.articles[0].list
           }
         }
       }
+    }
 
-      // Check that we got titleSource and bodySource from either input parameters, or from an existing path on database.
-      let missingName
-      if (titleSource === undefined) {
-        missingName = 'titleSource'
-      }
-      if (bodySource === undefined) {
-        missingName = 'bodySource'
-      }
-      if (missingName) {
-        throw new lib.ValidationError(`param "${missingName}" is mandatory when not rendering or when "path" to an existing article is not given. path="${path}"`)
-      }
+    // Check that we got titleSource and bodySource from either input parameters, or from an existing path on database.
+    let missingName
+    if (titleSource === undefined) {
+      missingName = 'titleSource'
+    }
+    if (bodySource === undefined) {
+      missingName = 'bodySource'
+    }
+    if (missingName) {
+      throw new lib.ValidationError(`param "${missingName}" is mandatory when not rendering or when "path" to an existing article is not given. path="${path}"`)
+    }
 
-      // Render.
-      let articles = []
-      let nestedSetNeedsUpdate
-      const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
-      if (!(
-        parentId === undefined ||
-        parentId === idPrefix ||
-        parentId.startsWith(`${idPrefix}/`)
-      )) {
-        throw new lib.ValidationError(`parentId="${parentId}" cannot belong to another user: "${parentId}"`)
-      }
-      const previousSiblingId = lib.validateParam(body,
-        'previousSiblingId',
-        // If undefined, make it the first child. This happens even on update:
-        // the previous value is not kept, since undefined is the only way to indicate parent.
-        { defaultValue: undefined }
-      )
-      const ret = await convert.convertArticle({
-        author,
-        bodySource,
-        convertOptionsExtra: {
-          automaticTopicLinksMaxWords: site.automaticTopicLinksMaxWords,
-        },
-        forceNew,
-        list,
-        sequelize,
-        // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
-        path,
-        parentId,
-        previousSiblingId,
-        perf: config.log.perf,
-        render,
-        titleSource,
-        transaction,
-        updateNestedSetIndex,
-      })
-      articles = ret.articles
-      nestedSetNeedsUpdate = ret.nestedSetNeedsUpdate
-      return {
-        articles: await Promise.all(articles.map(article => article.toJson(loggedInUser))),
-        nestedSetNeedsUpdate,
-      }
+    // Render.
+    let articles = []
+    let nestedSetNeedsUpdate
+    const idPrefix = `${ourbigbook.AT_MENTION_CHAR}${author.username}`
+    if (!(
+      parentId === undefined ||
+      parentId === idPrefix ||
+      parentId.startsWith(`${idPrefix}/`)
+    )) {
+      throw new lib.ValidationError(`parentId="${parentId}" cannot belong to another user: "${parentId}"`)
+    }
+    const previousSiblingId = lib.validateParam(body,
+      'previousSiblingId',
+      // If undefined, make it the first child. This happens even on update:
+      // the previous value is not kept, since undefined is the only way to indicate parent.
+      { defaultValue: undefined }
+    )
+    const ret = await convert.convertArticle({
+      author,
+      bodySource,
+      convertOptionsExtra: {
+        automaticTopicLinksMaxWords: site.automaticTopicLinksMaxWords,
+      },
+      forceNew,
+      list,
+      sequelize,
+      // TODO https://docs.ourbigbook.com/todo/remove-the-path-parameter-from-the-article-creation-api
+      path,
+      parentId,
+      previousSiblingId,
+      perf: config.log.perf,
+      render,
+      titleSource,
+      transaction,
+      updateNestedSetIndex,
     })
-  )
+    articles = ret.articles
+    nestedSetNeedsUpdate = ret.nestedSetNeedsUpdate
+    return {
+      articles: opts.skipJson ? [] : await Promise.all(articles.map(article => article.toJson(loggedInUser))),
+      nestedSetNeedsUpdate,
+    }
+  })
 }
 
 //// delete article
@@ -731,11 +740,159 @@ router.delete('/follow', auth.required, async function(req, res, next) {
   }
 })
 
+function renderJobJson(job) {
+  return { id: job.id, phase: job.phase, status: job.status, completed: job.completed, total: job.total, error: job.error }
+}
+
+router.put('/bulk', auth.required, async function(req, res, next) {
+  try {
+    const { ArticleJob: Job, File, User } = req.app.get('sequelize').models
+    const user = await User.findByPk(req.payload.id)
+    const denied = cant.editArticle(user, user && user.username)
+    if (denied) throw new lib.ValidationError([String(denied)], 403)
+    const requestId = req.body && req.body.requestId
+    if (typeof requestId !== 'string' || !/^[a-zA-Z0-9-]{16,64}$/.test(requestId)) {
+      throw new lib.ValidationError('requestId must be a unique 16–64 character alphanumeric/hyphen string')
+    }
+    const input = req.body.articles
+    const phase = req.body.phase || 'render'
+    if (!['extract', 'check', 'render'].includes(phase)) throw new lib.ValidationError('Invalid bulk phase')
+    const start = req.body.start === undefined ? true : req.body.start
+    if (typeof start !== 'boolean') throw new lib.ValidationError('start must be a boolean')
+    if (!Array.isArray(input) || input.length < 1 || input.length > webApi.ARTICLE_RENDER_BATCH_LIMIT) {
+      throw new lib.ValidationError(`articles must contain 1–${webApi.ARTICLE_RENDER_BATCH_LIMIT} render targets`)
+    }
+    const seen = new Set()
+    const items = input.map(item => {
+      if (!item || typeof item.path !== 'string' || !item.path || item.path.length > 4096 || seen.has(item.path)) {
+        throw new lib.ValidationError('Each render target must have a distinct, nonempty path of at most 4096 characters')
+      }
+      seen.add(item.path)
+      const target = { path: item.path, article: {}, render: phase !== 'extract' }
+      if (phase === 'extract') {
+        for (const key of ['titleSource', 'bodySource']) {
+          if (!item.article || typeof item.article[key] !== 'string') throw new lib.ValidationError(`Missing ${key}`)
+          lib.validateBodySize(user, item.article[key])
+          target.article[key] = item.article[key]
+        }
+      }
+      for (const key of ['parentId', 'previousSiblingId', 'hash']) {
+        if (item[key] !== undefined) {
+          if (typeof item[key] !== 'string' || item[key].length > 4096) throw new lib.ValidationError(`Invalid ${key}`)
+          target[key] = item[key]
+        }
+      }
+      for (const key of ['list', 'updateNestedSetIndex']) {
+        if (item[key] !== undefined) {
+          if (typeof item[key] !== 'boolean') throw new lib.ValidationError(`Invalid ${key}`)
+          target[key] = item[key]
+        }
+      }
+      return target
+    })
+    if (Buffer.byteLength(JSON.stringify(items)) > 8 * 1024 * 1024) throw new lib.ValidationError('Bulk batch exceeds 8 MiB')
+    const requestHash = webApi.hashToHex(JSON.stringify({ phase, items }))
+    await Job.expire()
+    let job = await Job.findOne({ where: { userId: user.id, requestId } })
+    if (!job) {
+      // One bounded query, selecting metadata only. Sources are read individually
+      // by the worker, after every source upload has finished.
+      if (phase !== 'extract') {
+        const paths = items.map(item => `@${user.username}/${item.path}.bigb`)
+        const files = await File.findAll({
+          attributes: ['path', 'hash'], where: { authorId: user.id, path: paths }, raw: true,
+        })
+        const byPath = new Map(files.map(file => [file.path, file]))
+        items.forEach((item, i) => {
+          const file = byPath.get(paths[i])
+          if (!file) throw new lib.ValidationError(`Uploaded source not found: ${item.path}`, 404)
+          if (item.hash !== undefined && item.hash !== file.hash) throw new lib.ValidationError(`Source changed: ${item.path}`, 409)
+          item.hash = file.hash
+        })
+      }
+      ;[job] = await Job.findOrCreate({
+        where: { userId: user.id, requestId },
+        defaults: { phase, requestHash, items: JSON.stringify(items), total: items.length },
+      })
+    }
+    if (job.requestHash !== requestHash) throw new lib.ValidationError('requestId was already used for a different render batch', 409)
+    if (start) await Job.start(job)
+    return res.status(202).json({ job: renderJobJson(await job.reload()) })
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.get('/bulk', auth.required, async function(req, res, next) {
+  try {
+    const { ArticleJob: Job, TreeRebuildJob, User } = req.app.get('sequelize').models
+    const loggedInUser = await User.findByPk(req.payload.id)
+    const username = req.query.author || loggedInUser.username
+    if (typeof username !== 'string') throw new lib.ValidationError('Invalid author')
+    const user = await User.findOne({ where: { username } })
+    if (!user) throw new lib.ValidationError('User not found', 404)
+    const denied = cant.viewUserSettings(loggedInUser, user)
+    if (denied) throw new lib.ValidationError('Cannot view another user’s upload status', 403)
+    await Job.expire()
+    await TreeRebuildJob.expire()
+    const attributes = ['id', 'phase', 'status', 'completed', 'total', 'error', 'createdAt', 'finishedAt']
+    const where = { userId: user.id }
+    const [active, recent, stagedBatches, stagedArticles, trees] = await Promise.all([
+      Job.findAll({ attributes, where: { ...where, status: { [Op.in]: ['pending', 'running'] } }, order: [['id', 'DESC']], limit: 10 }),
+      Job.findAll({ attributes, where, order: [['id', 'DESC']], limit: 20 }),
+      Job.count({ where: { ...where, status: 'staged' } }),
+      Job.sum('total', { where: { ...where, status: 'staged' } }),
+      TreeRebuildJob.findAll({ attributes: ['id', 'status', 'error'], where, order: [['id', 'DESC']], limit: 1 }),
+    ])
+    return res.json({ active, recent, stagedBatches, stagedArticles: Number(stagedArticles || 0), nestedSet: trees[0] || null })
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.put('/bulk/:id', auth.required, async function(req, res, next) {
+  try {
+    const { ArticleJob: Job, User } = req.app.get('sequelize').models
+    const user = await User.findByPk(req.payload.id)
+    const denied = cant.editArticle(user, user && user.username)
+    if (denied) throw new lib.ValidationError([String(denied)], 403)
+    const id = Number(req.params.id)
+    if (!Number.isSafeInteger(id) || id < 1) throw new lib.ValidationError('Invalid job ID')
+    const job = await Job.findOne({ where: { id, userId: req.payload.id } })
+    if (!job) throw new lib.ValidationError('Bulk job not found', 404)
+    await Job.expire()
+    await job.reload()
+    return res.status(202).json({ job: renderJobJson(await Job.start(job)) })
+  } catch (error) {
+    next(error)
+  }
+})
+
+router.get('/bulk/:id', auth.required, async function(req, res, next) {
+  try {
+    const Job = req.app.get('sequelize').models.ArticleJob
+    const id = Number(req.params.id)
+    if (!Number.isSafeInteger(id) || id < 1) throw new lib.ValidationError('Invalid job ID')
+    await Job.expire()
+    const job = await Job.findOne({
+      attributes: ['id', 'phase', 'status', 'completed', 'total', 'error'],
+      where: { id, userId: req.payload.id },
+    })
+    if (!job) throw new lib.ValidationError('Render job not found', 404)
+    return res.json({ job: renderJobJson(job) })
+  } catch (error) {
+    next(error)
+  }
+})
+
 router.put('/update-nested-set/:user', auth.required, async function(req, res, next) {
   try {
     const username = req.params.user
     const sequelize = req.app.get('sequelize')
-    if (sequelize.models.TreeRebuildJob.useBackground()) {
+    const foreground = lib.validateParam(req.body || {}, 'foreground', {
+      validators: [front.isBoolean], defaultValue: false,
+    })
+    if (!foreground && sequelize.models.TreeRebuildJob.useBackground()) {
       const loggedInUser = await sequelize.models.User.findByPk(req.payload.id)
       const msg = cant.updateNestedSet(loggedInUser, username)
       if (msg) throw new lib.ValidationError([msg], 403)
@@ -793,3 +950,4 @@ router.get('/update-nested-set/:user/:job', auth.required, async function(req, r
 })
 
 module.exports = router
+module.exports.createOrUpdateArticleData = createOrUpdateArticleData

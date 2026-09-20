@@ -39,6 +39,7 @@ const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
 const { cliInt } = ourbigbook_nodejs_webpack_safe
 const {
   ARTICLE_HASH_LIMIT_MAX,
+  ARTICLE_RENDER_BATCH_LIMIT,
   articleHash,
   hashToHex,
   read_include,
@@ -1543,10 +1544,10 @@ function printStatus({
   console.log(msg)
 }
 
-async function updateNestedSet(webApi, username) {
+async function updateNestedSet(webApi, username, { foreground=false }={}) {
   const t1 = now()
   console.log(`nested_set`)
-  const { data, status } = await webApi.articleUpdatedNestedSet(username)
+  const { data, status } = await webApi.articleUpdatedNestedSet(username, { body: { foreground } })
   if (status === 202) {
     const id = data.job.id
     console.log(`nested_set: job ${id} queued; waiting for worker`)
@@ -1570,6 +1571,40 @@ async function updateNestedSet(webApi, username) {
     assertApiStatus(status, data)
   }
   console.log(`nested_set: ${finished_in_ms(now() - t1)}`)
+}
+
+async function queueWebArticles(webApi, articles, { phase='render', start=true }={}) {
+  const requestId = require('crypto').randomBytes(16).toString('hex')
+  const { data, status } = await webApi.articlesBulk(articles, requestId, { timeout: 20000 }, { phase, start })
+  if (status !== 202) {
+    console.error('Background rendering requires an updated server. Use --web-individual-upload for the legacy render path.')
+    assertApiStatus(status, data)
+    throw new Error(`Expected HTTP 202 when queueing renders, got ${status}`)
+  }
+  const id = data.job.id
+  console.log(`web_${phase}: job ${id} ${start ? 'queued' : 'staged'} (${articles.length} articles)`)
+  if (start) await waitWebArticles(webApi, id, phase)
+  return id
+}
+
+async function waitWebArticles(webApi, id, phase) {
+  let previousProgress
+  const deadline = Date.now() + 21 * 60 * 1000
+  while (true) {
+    if (Date.now() > deadline) throw new Error(`Render job ${id} timed out; rerun --web to resume`)
+    const result = await webApi.articlesBulkJob(id, { timeout: 15000 })
+    assertApiStatus(result.status, result.data)
+    const job = result.data.job
+    const progress = `${job.status} ${job.completed}/${job.total}`
+    if (progress !== previousProgress) {
+      console.log(`web_${phase}: job ${id}: ${progress}`)
+      previousProgress = progress
+    }
+    if (job.status === 'failed') throw new Error(job.error || `Render job ${id} failed`)
+    if (job.status === 'completed') break
+    if (!['pending', 'running'].includes(job.status)) throw new Error(`Unknown render job status: ${job.status}`)
+    await new Promise(resolve => setTimeout(resolve, 1000))
+  }
 }
 
 /**
@@ -1953,6 +1988,7 @@ cli_parser.option('--web-dry', 'web dry run, skip any --web operations that woul
 cli_parser.option('--web-force-id-extraction', "Force ID extraction on Web: https://docs.ourbigbook.com#web-force-id-extraction");
 cli_parser.option('--web-force-render', "same as --force-render but for --web upload: https://docs.ourbigbook.com#web-force-render");
 cli_parser.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id');
+cli_parser.option('--web-individual-upload', 'Debug fallback: per-article foreground extraction/rendering and foreground nested-set rebuilding');
 cli_parser.option('--web-max-renders <n>', 'stop after <n> articles are rendered: https://docs.ourbigbook.com#web-max-renders', cliInt);
 cli_parser.option('--web-nested-set', `only update the nested set index, don't do anything else. Implies --web: https://docs.ourbigbook.com#web-nested-set-option`, false);
 cli_parser.option('--no-web-nested-set-bulk', `only update the nested set index after all articles have been uploaded: https://docs.ourbigbook.com#web-nested-set-bulk`);
@@ -2622,7 +2658,7 @@ if (cli.helpMacros) {
       }
 
       if (cli.webNestedSet) {
-        await updateNestedSet(webApi, username)
+        await updateNestedSet(webApi, username, { foreground: cli.webIndividualUpload })
         process.exit(0)
       }
 
@@ -2733,6 +2769,7 @@ if (cli.helpMacros) {
         }
       }
       const dorender = [false]
+      if (!cli.webIndividualUpload) dorender.push('check')
       if (cli.webRender) {
         dorender.push(true)
       }
@@ -2904,6 +2941,19 @@ if (cli.helpMacros) {
       }
       for (const render of dorender) {
         let i = 0
+        let renderBatch = []
+        const phase = !render ? 'extract' : render === 'check' ? 'check' : 'render'
+        const stagedJobs = []
+        const flushRenderBatch = async () => {
+          if (renderBatch.length) {
+            if (cli.webDry) console.log(`web_${phase}: would queue ${renderBatch.length} articles`)
+            else {
+              const id = await queueWebArticles(webApi, renderBatch, { phase, start: Boolean(render) })
+              if (!render) stagedJobs.push(id)
+            }
+            renderBatch = []
+          }
+        }
         // This ordering ensures parents come before children.
         for (const [headerTreeIndex, header_tree_entry] of header_tree.entries()) {
           const id = header_tree_entry.to_id
@@ -2946,7 +2996,8 @@ if (cli.helpMacros) {
                 render &&
                 (
                   webPathToArticleEntry.renderOutdated ||
-                  cli.webForceRender
+                  cli.webForceRender ||
+                  (render === 'check' && cli.webForceIdExtraction)
                 )
               ) ||
               (
@@ -2967,7 +3018,7 @@ if (cli.helpMacros) {
               }
               const extraArgs = {
                 path: articlePath,
-                render,
+                render: Boolean(render),
               }
               if (parentId) {
                 extraArgs.parentId = parentId
@@ -2977,16 +3028,24 @@ if (cli.helpMacros) {
               }
               extraArgs.updateNestedSetIndex = !cli.webNestedSetBulk
               extraArgs.list = true
-              const ret = await webCreateOrUpdate({
-                fn: async () => webApi.articleCreateOrUpdate(articleArgs, extraArgs),
-                i: i++,
-                inpath: article.inpath,
-                render,
-                title: article.title,
-                webDry: cli.webDry,
-              })
-              if (render && ret.nestedSetNeedsUpdate) {
-                nestedSetNeedsUpdate = true
+              if (!cli.webIndividualUpload) {
+                const target = { ...extraArgs, ...(render ? { hash: articleHash(articleHashProps) } : { article: articleArgs }) }
+                if (Buffer.byteLength(JSON.stringify([...renderBatch, target])) > 4 * 1024 * 1024) await flushRenderBatch()
+                renderBatch.push(target)
+                i++
+                if (renderBatch.length === ARTICLE_RENDER_BATCH_LIMIT) await flushRenderBatch()
+              } else {
+                const ret = await webCreateOrUpdate({
+                  fn: async () => webApi.articleCreateOrUpdate(articleArgs, extraArgs),
+                  i: i++,
+                  inpath: article.inpath,
+                  render,
+                  title: article.title,
+                  webDry: cli.webDry,
+                })
+                if (render && ret.nestedSetNeedsUpdate) {
+                  nestedSetNeedsUpdate = true
+                }
               }
               if (
                 render &&
@@ -2998,6 +3057,14 @@ if (cli.helpMacros) {
             }
           }
         }
+        await flushRenderBatch()
+        // Do not start ID extraction until every source batch has been staged.
+        // Process in upload order so parents and previous siblings exist first.
+        for (const id of stagedJobs) {
+          const { data, status } = await webApi.articlesBulkStart(id, { timeout: 20000 })
+          if (status !== 202) assertApiStatus(status, data)
+          await waitWebArticles(webApi, id, phase)
+        }
       }
       if (cli.webNestedSetBulk && !cli.webDry) {
         if (!nestedSetNeedsUpdate) {
@@ -3008,7 +3075,7 @@ if (cli.helpMacros) {
           }
         }
         if (nestedSetNeedsUpdate) {
-          await updateNestedSet(webApi, username)
+          await updateNestedSet(webApi, username, { foreground: cli.webIndividualUpload })
         }
       }
       await sequelizeWeb.close()

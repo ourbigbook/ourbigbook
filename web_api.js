@@ -245,6 +245,22 @@ class WebApi {
     return this.req('get', `articles/update-nested-set/${encodeURIComponent(user)}/${encodeURIComponent(id)}`, reqOpts)
   }
 
+  async articlesBulk(articles, requestId, reqOpts={}, { phase='render', start=true }={}) {
+    return this.req('put', 'articles/bulk', { body: { articles, requestId, phase, start }, ...reqOpts })
+  }
+
+  async articlesBulkJob(id, reqOpts={}) {
+    return this.req('get', `articles/bulk/${encodeURIComponent(id)}`, reqOpts)
+  }
+
+  async articlesBulkStart(id, reqOpts={}) {
+    return this.req('put', `articles/bulk/${encodeURIComponent(id)}`, reqOpts)
+  }
+
+  async articlesBulkStatus(author, reqOpts={}) {
+    return this.req('get', `articles/bulk${encodeGetParams({ author })}`, reqOpts)
+  }
+
   async editorFetchFiles(paths, reqOpts={}) {
     return this.req('post',
       `editor/fetch-files`,
@@ -757,6 +773,7 @@ function queryValToBool(s) {
 
 module.exports = {
   ARTICLE_HASH_LIMIT_MAX: 10000,
+  ARTICLE_RENDER_BATCH_LIMIT: 100,
   DbProviderBase,
   QUERY_FALSE_VAL,
   QUERY_TRUE_VAL,

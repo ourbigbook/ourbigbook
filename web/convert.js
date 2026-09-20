@@ -29,6 +29,22 @@ const {
 const { path_sep } = convertOptions
 const { hasReachedMaxItemCount, idToSlug, slugToId } = require('./front/js')
 
+async function checkArticleDb(sequelize, paths, author, { transaction, parentOverride, perf } = {}) {
+  return ourbigbook_nodejs_webpack_safe.check_db(sequelize, paths, {
+    parentOverride, web: true, transaction, perf,
+    filterFilesThatDontExist: async aRefs => {
+      const { Upload, UploadDirectory } = sequelize.models
+      const { actualPaths, pathToActualPath } = await getActualPaths(sequelize, aRefs.map(a => a.to), author, transaction)
+      const [uploads, directories] = await Promise.all([
+        Upload.findAll({ where: { path: actualPaths }, transaction }),
+        UploadDirectory.findAll({ where: { path: actualPaths }, transaction }),
+      ])
+      const exists = new Set(uploads.concat(directories).map(upload => upload.path))
+      return aRefs.filter(aRef => !exists.has(pathToActualPath[aRef.to]))
+    },
+  })
+}
+
 async function getActualPaths(sequelize, aRefs, author, transaction) {
   const { Upload, User } = sequelize.models
   const usernameIds = {
@@ -696,6 +712,9 @@ async function convertArticle({
     }
     nestedSetNeedsUpdate = !doUpdateNestedSetIndex &&
       (
+        // ID extraction can create a parent Ref before an Article exists. A
+        // later render still needs tree indices even if that Ref did not move.
+        (render && !isIndex && !oldArticle) ||
         newParentId !== oldParentId ||
         new_to_id_index !== old_to_id_index
       )
@@ -750,32 +769,14 @@ async function convertArticle({
 
     if (render) {
       const [check_db_errors, file] = await Promise.all([
-        ourbigbook_nodejs_webpack_safe.check_db(
+        checkArticleDb(
           sequelize,
           [input_path],
+          author,
           {
             // Existing articles are moved after validation. Implicit tags must
             // use the requested tree, rather than their previous ancestry.
             parentOverride: !isIndex ? { id: toplevelId, parentId: newParentId } : undefined,
-            // All paths here are the fully qualified paths, e.g. @user0/subdir/myfile.txt
-            filterFilesThatDontExist: async (aRefs) => {
-              const { Upload, UploadDirectory } = sequelize.models
-              const { actualPaths, pathToActualPath } = await getActualPaths(
-                sequelize, aRefs.map(a => a.to), author, transaction)
-              const [uploads, uploadDirectories] = await Promise.all([
-                Upload.findAll({
-                  where: { path: actualPaths },
-                  transaction,
-                }),
-                UploadDirectory.findAll({
-                  where: { path: actualPaths },
-                  transaction,
-                }),
-              ])
-              const exists = new Set(uploads.concat(uploadDirectories).map(upload => upload.path))
-              return aRefs.filter(aRef => !(exists.has(pathToActualPath[aRef.to])))
-            },
-            web: true,
             perf,
             transaction,
           },
@@ -1225,6 +1226,7 @@ async function convertDiscussion({
 }
 
 module.exports = {
+  checkArticleDb,
   convert,
   convertArticle,
   convertComment,

@@ -8422,6 +8422,17 @@ This is analogous to <force-render>.
 
 <web-force-render> does not skip the local pre-conversion to split `bigb` format that is done before upload, only the remote render. Conversely, when used together with <web>, <force-render> does wkip the local bigb conversion, and not the remove one.
 
+= `--web-individual-upload`
+{parent=OurBigBook CLI options}
+
+Debug fallback for <--web>: use the original per-article HTTP requests for remote ID extraction, database checks, and rendering instead of background batches, and rebuild the nested set synchronously in the foreground. It also applies to `ourbigbook --web-nested-set --web-individual-upload`, providing a foreground fallback for standalone tree rebuilding. Foreground operations remain subject to the web router's request timeout.
+
+By default, <--web> stages all changed sources through `PUT /api/articles/bulk` before starting remote ID extraction. The CLI then waits for extraction batches in parent-first order, database-check batches, and finally render batches. Each batch contains at most 100 articles and the CLI limits its serialized payload to approximately 4 MiB, so large repositories do not require a single huge request or transaction. Local source splitting and its checks still happen in the CLI. Asset uploads and cleanup of removed articles retain their existing behavior.
+
+Workers save progress after each article. The CLI prints the phase and completed count and waits for each batch; keep it running to start subsequent batches. If a batch fails or the CLI disconnects, rerun <--web> to resume using the normal hashes and render-outdated markers; already committed work is retained. Unstarted staged sources expire after 24 hours when job status is next queried, and staged source bodies are discarded when their extraction batch finishes. <--web-id>, <--web-start-id>, <--web-max-renders>, <--web-force-render>, and <--no-web-render> still apply; <--no-web-render> runs extraction and database checks without rendering.
+
+The user settings page shows background-upload phases, progress, staged article counts, errors, and nested-set status, refreshing every three seconds. Local workers run automatically. Production uses the same Heroku credentials as background nested-set rebuilding; update the server, CLI, and database migration before using the new default. The individual-upload fallback also works against older servers.
+
 = `--web-max-renders`
 {parent=OurBigBook CLI options}
 
@@ -10959,14 +10970,14 @@ which also fakes an IP with <OURBIGBOOK_DEV_IP>.
 {c}
 {parent=OurBigBook Web deployment}
 
-Nested-set rebuilds can run in on-demand one-off dynos instead of hitting the router's request timeout. Deploy the code and database migration first (the normal build runs `web/bin/sync-db.js`). Then set these config vars in the Heroku dashboard:
+Nested-set rebuilds and bulk article processing can run in on-demand one-off dynos instead of hitting the router's request timeout. Deploy the code and database migration first (the normal build runs `web/bin/sync-db.js`). Then set these config vars in the Heroku dashboard:
 * `OURBIGBOOK_HEROKU_APP`: the app name, e.g. `ourbigbook`.
 * `OURBIGBOOK_HEROKU_TOKEN`: a Heroku API/OAuth credential allowed to create dynos for that app. Treat it as a deployment secret; do not commit it or expose it to the frontend.
 * optional `OURBIGBOOK_HEROKU_WORKER_SIZE`: the one-off dyno size; when omitted Heroku chooses its default.
 
 Create a dedicated authorization with `heroku authorizations:create --description "OurBigBook rebuild worker"` and put its Token value in `OURBIGBOOK_HEROKU_TOKEN` through the dashboard. The default authorization grants broad account access, not just permission to run this worker; use a dedicated account limited to this app if you need stronger isolation. See https://devcenter.heroku.com/articles/platform-api-quickstart[Heroku's Platform API setup].
 
-No Procfile worker, `ps:scale worker=1`, Redis, or scheduler is required. The server creates a durable job and launches `node web/bin/tree-rebuild-worker.js JOB_ID` via the Heroku Platform API. The one-off uses the deployed app and its existing database config, and exits after the job. Update the local CLI too: `ourbigbook --web-nested-set` now polls the job until its transaction commits, and fails on launch/rebuild errors. Production servers without `OURBIGBOOK_HEROKU_APP` retain their synchronous behavior.
+No Procfile worker, `ps:scale worker=1`, Redis, or scheduler is required. The server creates a durable job and launches `node web/bin/background-worker.js JOB_ID` via the Heroku Platform API, adding `--articles` for bulk article jobs. The one-off uses the deployed app and its existing database config, and exits after the job. Update the local CLI too: `ourbigbook --web-nested-set` polls the job until its transaction commits, and fails on launch/rebuild errors. Production servers without `OURBIGBOOK_HEROKU_APP` retain synchronous nested-set rebuilding, but bulk uploads require worker configuration; use <--web-individual-upload> until configured.
 
 Local development uses the same asynchronous workflow by default, without extra environment variables. It starts the same worker script as a separate local process, with the server's actual database connection settings passed over a private process channel, even if Heroku settings are present in your shell. It supports PostgreSQL and file-backed SQLite, but not in-memory SQLite. Worker output appears in the web server terminal; crashes are reported to the CLI without waiting for job expiry. For PostgreSQL, from `web/`, run:
 ``
@@ -10975,7 +10986,7 @@ npm run dev-pg
 ``
 Then, from your wiki directory in another terminal, run `ourbigbook --web-nested-set --web-url http://localhost:3000`. For SQLite, use `bin/sync-db.js` and `npm run dev` instead. No Heroku credentials, Redis, or separately managed worker are needed. The `nested-set jobs: real local worker` test exercises a real CLI, HTTP API, worker subprocess, database rebuild, worker crash, and retry on both database backends.
 
-Only one active rebuild per author is allowed. Upload/tree edits for that author serialize with the rebuild; other authors are not locked. The worker has a 15-minute runtime limit. Jobs abandoned by a crash or interrupted launch expire after 20 minutes when polled or another rebuild is requested. There is no automatic retry or always-on queue consumer: after failure, rerun `ourbigbook --web-nested-set`. Inspect the one-off dyno logs with `./heroku logs --tail`. Disabling the feature is `heroku config:unset OURBIGBOOK_HEROKU_APP --app APP_NAME`; this does not cancel an already running job. This worker currently handles nested sets only, not full article rendering.
+Only one active rebuild and one active bulk article job per author are allowed. Upload/tree edits for that author serialize with the rebuild; other authors are not locked. Each worker has a 15-minute runtime limit. Jobs abandoned by a crash or interrupted launch expire after 20 minutes when polled or another job is requested. There is no automatic retry or always-on queue consumer: after failure, rerun `ourbigbook --web-nested-set` or `ourbigbook --web` as appropriate. Inspect the one-off dyno logs with `./heroku logs --tail`. Disabling the feature is `./heroku config:unset OURBIGBOOK_HEROKU_APP`; this does not cancel an already running job.
 
 Got it running perfectly at as of April 2021 https://ourbigbook.com with the following steps.
 

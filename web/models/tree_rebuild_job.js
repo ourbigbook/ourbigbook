@@ -31,9 +31,9 @@ module.exports = sequelize => {
 
   // Development always uses its own database, even if Heroku settings were
   // inherited from the developer's shell.
-  Job.launch = job => config.isProduction ? Job.launchHeroku(job) : Job.launchLocal(job)
+  Job.launch = (job, options) => config.isProduction ? Job.launchHeroku(job, options) : Job.launchLocal(job, options)
 
-  Job.launchHeroku = async job => {
+  Job.launchHeroku = async (job, { articles = false } = {}) => {
     const axios = require('axios')
     if (!process.env.OURBIGBOOK_HEROKU_APP || !process.env.OURBIGBOOK_HEROKU_TOKEN) {
       throw new Error('Configure OURBIGBOOK_HEROKU_APP and OURBIGBOOK_HEROKU_TOKEN')
@@ -42,7 +42,7 @@ module.exports = sequelize => {
       await axios.post(
         `https://api.heroku.com/apps/${encodeURIComponent(process.env.OURBIGBOOK_HEROKU_APP)}/dynos`,
         {
-          command: `node web/bin/tree-rebuild-worker.js ${job.id}`,
+          command: `node web/bin/background-worker.js ${job.id}${articles ? ' --articles' : ''}`,
           attach: false,
           time_to_live: 900,
           ...(process.env.OURBIGBOOK_HEROKU_WORKER_SIZE
@@ -63,7 +63,7 @@ module.exports = sequelize => {
     }
   }
 
-  Job.launchLocal = async job => {
+  Job.launchLocal = async (job, { articles = false } = {}) => {
     const path = require('path')
     const dialect = sequelize.getDialect()
     const storage = sequelize.options.storage
@@ -71,7 +71,7 @@ module.exports = sequelize => {
       throw new Error('Local rebuild workers require a file-backed SQLite database or PostgreSQL')
     }
     const child = require('child_process').fork(
-      path.join(__dirname, '../bin/tree-rebuild-worker.js'), [String(job.id), '--local'],
+      path.join(__dirname, '../bin/background-worker.js'), [String(job.id), '--local', ...(articles ? ['--articles'] : [])],
       {
         cwd: path.join(__dirname, '..'),
         // Do not inherit an inspector port or the test runner's preload hooks.
@@ -83,9 +83,12 @@ module.exports = sequelize => {
       if (code === 0) return
       // A crash can happen before the worker connects to the database. Report
       // it promptly, without overwriting a committed completion/failure.
-      Job.update({
+      const model = articles ? sequelize.models.ArticleJob : Job
+      model.update({
         status: 'failed', activeUserId: null, finishedAt: new Date(),
-        error: `Local rebuild worker exited before completing (${signal || code}). Retry --web-nested-set.`,
+        error: articles
+          ? `Local article worker exited before completing (${signal || code}). Rerun --web to resume.`
+          : `Local rebuild worker exited before completing (${signal || code}). Retry --web-nested-set.`,
       }, { where: { id: job.id, status: { [Op.in]: ['pending', 'running'] } } })
         .catch(() => console.error(`Could not record local rebuild worker ${job.id} exit; job will expire`))
     })

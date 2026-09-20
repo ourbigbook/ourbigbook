@@ -5519,6 +5519,234 @@ it('api: article tree render=true on previousSiblingId that only has render=fals
   })
 })
 
+it('background renders: batching, authorization, idempotency, checkpoints and changed sources', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    test.loginUser(user)
+    const { ArticleJob: Job, Article, File } = test.sequelize.models
+    let launches = 0
+    Job.launch = async () => { launches++ }
+    const targets = [
+      { path: 'a', parentId: '@user0', list: true, updateNestedSetIndex: false },
+      { path: 'b', parentId: '@user0', previousSiblingId: '@user0/a', list: true, updateNestedSetIndex: false },
+    ]
+    for (const target of targets) {
+      const result = await createOrUpdateArticleApi(test,
+        createArticleArg({ i: 0, titleSource: target.path.toUpperCase(), bodySource: `Body ${target.path}` }),
+        { ...target, render: false })
+      assertStatus(result.status, result.data)
+    }
+    const queue = (items, key) => test.webApi.articlesBulk(items, key.padEnd(16, '0'))
+    assert.strictEqual((await queue([], 'empty')).status, 422)
+    assert.strictEqual((await queue(Array.from({ length: 101 }, (_, i) => ({ path: `${i}` })), 'large')).status, 422)
+    assert.strictEqual((await queue([targets[0], targets[0]], 'duplicate')).status, 422)
+    assert.strictEqual((await queue([{ path: 'missing' }], 'missing')).status, 404)
+    const first = await queue(targets, 'first')
+    assert.strictEqual(first.status, 202)
+    const id = first.data.job.id
+    assert.strictEqual((await queue(targets, 'first')).data.job.id, id)
+    assert.strictEqual(launches, 1)
+    assert.strictEqual((await queue(targets.slice(0, 1), 'first')).status, 409)
+    assert.strictEqual((await queue(targets, 'another-active')).status, 409)
+    test.loginUser(other)
+    assert.strictEqual((await test.webApi.articlesBulkJob(id)).status, 404)
+    assert.strictEqual((await test.webApi.articlesBulkStatus('user0')).status, 403)
+    assert.strictEqual((await queue(targets, 'foreign')).status, 404)
+    test.loginUser(user)
+    const statusForSettings = await test.webApi.articlesBulkStatus('user0')
+    assert.strictEqual(statusForSettings.status, 200)
+    assert.strictEqual(statusForSettings.data.active[0].id, id)
+    assert.strictEqual(statusForSettings.data.active[0].phase, 'render')
+    assert(!JSON.stringify(statusForSettings.data).includes('Body a'))
+    assert(statusForSettings.data.recent.every(job => job.items === undefined))
+    await Job.run(id)
+    await Job.run(id)
+    const finished = await test.webApi.articlesBulkJob(id)
+    assert.strictEqual(finished.data.job.status, 'completed')
+    assert.strictEqual(finished.data.job.completed, 2)
+    assert((await Article.findOne({ where: { slug: 'user0/a' } })).render.includes('Body a'))
+    assert.strictEqual((await queue(targets, 'first')).data.job.id, id)
+    assert.strictEqual(launches, 1)
+
+    const partial = await queue(targets, 'partial')
+    const changed = await createOrUpdateArticleApi(test,
+      createArticleArg({ i: 0, titleSource: 'B', bodySource: 'New source must not be overwritten' }),
+      { ...targets[1], render: false })
+    assertStatus(changed.status, changed.data)
+    await assert.rejects(Job.run(partial.data.job.id))
+    const failed = await test.webApi.articlesBulkJob(partial.data.job.id)
+    assert.strictEqual(failed.data.job.status, 'failed')
+    assert.strictEqual(failed.data.job.completed, 1)
+    assert(failed.data.job.error.includes('b'))
+    assert.strictEqual((await File.findOne({ where: { path: '@user0/b.bigb' } })).bodySource, 'New source must not be overwritten')
+    const retry = await queue([targets[1]], 'retry')
+    await Job.run(retry.data.job.id)
+    assert.strictEqual((await test.webApi.articlesBulkJob(retry.data.job.id)).data.job.status, 'completed')
+
+    const expired = await queue(targets, 'expired')
+    await Job.update({ queuedAt: new Date(Date.now() - 21 * 60 * 1000) }, { where: { id: expired.data.job.id } })
+    assert.strictEqual((await test.webApi.articlesBulkJob(expired.data.job.id)).data.job.status, 'failed')
+    Job.launch = async () => { throw new Error('launch failed') }
+    assert.strictEqual((await queue(targets, 'launch-failed')).data.job.status, 'failed')
+  })
+})
+
+it('background renders: real CLI uploads all sources first, batches large repositories and supports individual fallback', async function() {
+  this.timeout(120000)
+  const fs = require('fs')
+  const path = require('path')
+  const models = require('./models')
+  const directory = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ourbigbook-render-cli-'))
+  const wiki = path.join(directory, 'wiki')
+  fs.mkdirSync(wiki)
+  fs.writeFileSync(path.join(wiki, 'ourbigbook.json'), '{}')
+  const getSequelize = models.getSequelize
+  if (!config.postgres) models.getSequelize = (dir, basename) => getSequelize(dir, basename, {
+    dialect: 'sqlite', storage: path.join(directory, 'web.sqlite3'),
+  })
+  try {
+    const count = 105
+    fs.writeFileSync(path.join(wiki, 'index.bigb'), '= Home\n\n' + Array.from({ length: count }, (_, i) =>
+      `== Entry ${i}\n\n${i === 0 ? 'See \\x[entry-104].' : `Body ${i}`}\n`).join('\n'))
+    await testApp(async test => {
+      const user = await test.createUserApi(0)
+      const { ArticleJob: Job, TreeRebuildJob, File, Article } = test.sequelize.models
+      test.loginUser(user)
+      const originalLaunch = TreeRebuildJob.launchLocal
+      const children = []
+      let firstUpload = true
+      TreeRebuildJob.launchLocal = async (job, options) => {
+        if (firstUpload && options && options.articles) {
+          if (job.phase === 'extract') {
+            assert.strictEqual(await Job.sum('total', { where: { phase: 'extract' } }), count + 1)
+            const status = await test.webApi.articlesBulkStatus('user0')
+            assert.strictEqual(status.status, 200)
+            assert.strictEqual(status.data.active[0].phase, 'extract')
+          } else {
+            assert.strictEqual(await File.count({ where: { authorId: user.id } }), count + 1)
+          }
+          assert(job.total <= 100)
+        }
+        const child = await originalLaunch(job, options)
+        children.push({ child, exited: new Promise(resolve => child.once('close', resolve)) })
+        return child
+      }
+      const run = args => require('util').promisify(require('child_process').execFile)(process.execPath, [
+        path.join(__dirname, '../ourbigbook'), '--web', '--web-url', `http://localhost:${test.webApi.opts.port}`,
+        '--web-user', 'user0', '--web-password', 'asdf', ...args,
+      ], { cwd: wiki, env: { ...process.env, OURBIGBOOK_POSTGRES: '0' }, timeout: 90000, maxBuffer: 4 * 1024 * 1024 })
+      try {
+        const first = await run([])
+        firstUpload = false
+        assert(first.stdout.includes('web_render: job'))
+        const jobs = await Job.findAll({ order: [['id', 'ASC']] })
+        assert.deepStrictEqual(jobs.map(job => [job.phase, job.total]), [
+          ['extract', 100], ['extract', 6], ['check', 100], ['check', 6], ['render', 100], ['render', 6],
+        ])
+        assert(jobs.every(job => job.status === 'completed' && job.completed === job.total))
+        assert(jobs.filter(job => job.phase === 'extract').every(job => !job.items.includes('bodySource')))
+        assert.strictEqual(await Article.count({ where: { authorId: user.id } }), count + 1)
+        assert((await Article.findOne({ where: { slug: 'user0/entry-0' } })).render.includes('user0/entry-104'))
+        const tree = () => Article.findAll({
+          attributes: ['slug', 'nestedSetIndex', 'nestedSetNextSibling', 'depth'],
+          where: { authorId: user.id }, order: [['slug', 'ASC']], raw: true,
+        })
+        const before = await tree()
+        assert(!before.some(article => article.nestedSetIndex === null))
+        await run([]) // unchanged repositories enqueue nothing
+        assert.strictEqual(await Job.count(), 6)
+        await run(['--web-force-render', '--web-max-renders', '3'])
+        assert.strictEqual((await Job.findOne({ order: [['id', 'DESC']] })).total, 3)
+        await test.sequelize.models.User.update({ nestedSetNeedsUpdate: true }, { where: { id: user.id } })
+        const treeJobsBeforeFallback = await TreeRebuildJob.count()
+        const fallback = await run(['--web-force-render', '--web-max-renders', '2', '--web-individual-upload'])
+        assert(!fallback.stdout.includes('web_render: job'))
+        assert(fallback.stdout.includes('web_render:'))
+        assert.strictEqual(await Job.count(), 8)
+        assert(fallback.stdout.includes('nested_set: (finished'))
+        assert(!fallback.stdout.includes('nested_set: job'))
+        assert.strictEqual(await TreeRebuildJob.count(), treeJobsBeforeFallback)
+        assert.deepStrictEqual(await tree(), before)
+        await run(['--web-id', 'entry-104', '--web-force-render'])
+        const single = await Job.findOne({ order: [['id', 'DESC']] })
+        assert.strictEqual(single.total, 1)
+        assert.strictEqual(JSON.parse(single.items)[0].path, 'entry-104')
+        fs.appendFileSync(path.join(wiki, 'index.bigb'), '\n== Extra\n\nNo rendering yet.\n')
+        await run(['--no-web-render'])
+        assert.strictEqual(await File.count({ where: { path: '@user0/extra.bigb' } }), 1)
+        assert.strictEqual(await Article.count({ where: { slug: 'user0/extra' } }), 0)
+        assert.strictEqual((await Job.findOne({ order: [['id', 'DESC']] })).phase, 'check')
+        await run([])
+        assert.strictEqual(await Article.count({ where: { slug: 'user0/extra' } }), 1)
+        assert.notStrictEqual((await Article.findOne({ where: { slug: 'user0/extra' } })).nestedSetIndex, null)
+      } finally {
+        TreeRebuildJob.launchLocal = originalLaunch
+        for (const { child, exited } of children) {
+          if (child.exitCode === null && child.signalCode === null) child.kill()
+          await exited
+        }
+      }
+    }, { backgroundJobs: true })
+  } finally {
+    models.getSequelize = getSequelize
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+it('background renders: staged extraction and database-check failures preserve checkpoints', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const { ArticleJob: Job, File, Article } = test.sequelize.models
+    let launches = 0
+    Job.launch = async () => { launches++ }
+    const targets = [
+      { path: 'a', parentId: '@user0', article: { titleSource: 'A', bodySource: 'See \\x[missing].' }, updateNestedSetIndex: false },
+      { path: 'b', parentId: '@user0', previousSiblingId: '@user0/a', article: { titleSource: 'B', bodySource: 'Body b' }, updateNestedSetIndex: false },
+    ]
+    const staged = await test.webApi.articlesBulk(targets, 'staged-extraction', {}, { phase: 'extract', start: false })
+    assert.strictEqual(staged.status, 202)
+    assert.strictEqual(staged.data.job.status, 'staged')
+    assert.strictEqual(launches, 0)
+    assert.strictEqual(await File.count({ where: { path: '@user0/a.bigb' } }), 0)
+    const state = await test.webApi.articlesBulkStatus('user0')
+    assert.strictEqual(state.data.stagedArticles, 2)
+    assert.strictEqual(state.data.stagedBatches, 1)
+    assert.strictEqual((await test.webApi.articlesBulkStart(staged.data.job.id)).status, 202)
+    await test.webApi.articlesBulkStart(staged.data.job.id)
+    assert.strictEqual(launches, 1)
+    await Job.run(staged.data.job.id)
+    assert.strictEqual(await File.count({ where: { path: '@user0/a.bigb' } }), 1)
+    assert.strictEqual(await Article.count({ where: { slug: 'user0/a' } }), 0)
+    const check = await test.webApi.articlesBulk([{ path: 'a' }, { path: 'b' }], 'check-invalid-link', {}, { phase: 'check' })
+    await assert.rejects(Job.run(check.data.job.id))
+    const failed = await test.webApi.articlesBulkJob(check.data.job.id)
+    assert.strictEqual(failed.data.job.phase, 'check')
+    assert.strictEqual(failed.data.job.status, 'failed')
+    assert(failed.data.job.error.includes('missing'))
+    assert.strictEqual(await Article.count({ where: { slug: 'user0/a' } }), 0)
+    const stale = await test.webApi.articlesBulk(targets, 'expired-staged-upload', {}, { phase: 'extract', start: false })
+    await Job.update({ createdAt: new Date(Date.now() - 25 * 60 * 60 * 1000) }, { where: { id: stale.data.job.id } })
+    assert.strictEqual((await test.webApi.articlesBulkJob(stale.data.job.id)).data.job.status, 'failed')
+    assert.strictEqual((await Job.findByPk(stale.data.job.id)).items, '[]')
+  })
+})
+
+it('background renders: migration matches the model', async () => {
+  await testApp(async test => {
+    const migration = require('./migrations/21000101000056-create-article-job')
+    const qi = test.sequelize.getQueryInterface()
+    await migration.down(qi)
+    await migration.up(qi, require('sequelize'))
+    const job = await test.sequelize.models.ArticleJob.create({
+      userId: 1, activeUserId: 1, requestId: 'test-request', requestHash: 'hash', items: '[]', total: 0,
+    })
+    assert.strictEqual(job.completed, 0)
+    assert.strictEqual(job.status, 'staged')
+  })
+})
+
 it('nested-set jobs: CLI polls to completion, reports failure, and accepts synchronous servers', async function() {
   this.timeout(15000)
   const fs = require('fs')
@@ -5614,10 +5842,10 @@ it('nested-set jobs: real local worker and CLI, including crash and retry', asyn
         return child
       }
       const cliEnv = { ...process.env, OURBIGBOOK_POSTGRES: '0' }
-      const run = () => require('util').promisify(require('child_process').execFile)(process.execPath, [
+      const run = (args=[]) => require('util').promisify(require('child_process').execFile)(process.execPath, [
         path.join(__dirname, '../ourbigbook'), '--web-nested-set',
         '--web-url', `http://localhost:${test.webApi.opts.port}`,
-        '--web-user', 'user0', '--web-password', 'asdf',
+        '--web-user', 'user0', '--web-password', 'asdf', ...args,
       ], { cwd: directory, env: cliEnv, timeout: 15000 })
       try {
         const success = await run()
@@ -5642,6 +5870,13 @@ it('nested-set jobs: real local worker and CLI, including crash and retry', asyn
         crash = false
         assert((await run()).stdout.includes('nested_set: (finished'))
         assert.strictEqual(await Job.count({ where: { status: 'completed' } }), 2)
+        assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, false)
+        await User.update({ nestedSetNeedsUpdate: true }, { where: { id: user.id } })
+        const totalBeforeFallback = await Job.count()
+        const foreground = await run(['--web-individual-upload'])
+        assert(foreground.stdout.includes('nested_set: (finished'))
+        assert(!foreground.stdout.includes('queued; waiting for worker'))
+        assert.strictEqual(await Job.count(), totalBeforeFallback)
         assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, false)
       } finally {
         Job.launchLocal = launchLocal
@@ -5691,7 +5926,7 @@ it('nested-set jobs: Heroku launch request and credential redaction', async () =
         calls++
         assert.strictEqual(url, 'https://api.heroku.com/apps/test-app/dynos')
         assert.deepStrictEqual(body, {
-          command: 'node web/bin/tree-rebuild-worker.js 123',
+          command: 'node web/bin/background-worker.js 123',
           attach: false, time_to_live: 900, size: 'standard-1X',
         })
         assert.strictEqual(options.timeout, 10000)

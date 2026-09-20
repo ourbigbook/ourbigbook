@@ -66,6 +66,7 @@ function getSequelize(toplevelDir, toplevelBasename, databaseOptions) {
   const UploadDirectory = require('./upload_directory')(sequelize)
   const Topic = require('./topic')(sequelize)
   require('./tree_rebuild_job')(sequelize)
+  require('./article_job')(sequelize)
   ourbigbook_models.addModels(sequelize, { web: true })
   const File = sequelize.models.File
 

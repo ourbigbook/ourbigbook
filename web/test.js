@@ -1207,6 +1207,48 @@ it('Article topic ordering index migration preserves prefix indexes and avoids s
   await assertOrderedIndexScan()
 })
 
+it('Article descending topic ordering index avoids sorting the last article page', async function() {
+  const sequelize = this.test.sequelize
+  const qi = sequelize.getQueryInterface()
+  const migration = require('./migrations/21000101000046-article-add-topic-desc-order-index')
+  const indexName = 'article_list_topic_id_desc_created_at_id'
+  const indexNames = async () => (await qi.showIndex('Article')).map(index => index.name).sort()
+  const originalIndexes = await indexNames()
+  assert(originalIndexes.includes(indexName))
+
+  const user = await createUser(sequelize, 0)
+  await createArticle(sequelize, user, { i: 0 })
+
+  async function assertOrderedIndexScan() {
+    if (sequelize.options.dialect !== 'postgres') return
+    await sequelize.transaction(async transaction => {
+      // The small fixture would normally favour a sequential scan. This is the
+      // selector query used by /-/articles?page=5965&sort=id-desc.
+      await sequelize.query('SET LOCAL enable_seqscan = off', { transaction })
+      const [rows] = await sequelize.query(`EXPLAIN (FORMAT JSON)
+        SELECT "id" FROM "Article" WHERE "list" = true
+        ORDER BY "topicId" DESC NULLS LAST, "createdAt" DESC NULLS LAST, "id" DESC
+        LIMIT 20 OFFSET 2`, { transaction })
+      const plan = rows[0]['QUERY PLAN'][0].Plan
+      const nodes = []
+      const visit = node => {
+        nodes.push(node)
+        for (const child of node.Plans || []) visit(child)
+      }
+      visit(plan)
+      assert(nodes.some(node => node['Index Name'] === indexName), JSON.stringify(plan))
+      assert(!nodes.some(node => node['Node Type'].includes('Sort')), JSON.stringify(plan))
+    })
+  }
+
+  await assertOrderedIndexScan()
+  await migration.down(qi)
+  assert.deepStrictEqual(await indexNames(), originalIndexes.filter(name => name !== indexName))
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexNames(), originalIndexes)
+  await assertOrderedIndexScan()
+})
+
 it('Article author topic ordering index avoids filtering and sorting the author page', async function() {
   const sequelize = this.test.sequelize
   const qi = sequelize.getQueryInterface()

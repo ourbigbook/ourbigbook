@@ -198,6 +198,18 @@ module.exports = (sequelize) => {
             { name: 'id', order: 'DESC' },
           ],
         },
+        // Global sort=id-desc. PostgreSQL cannot obtain this order by scanning
+        // the preceding mixed-direction index backwards, because that would
+        // also reverse createdAt, id, and the NULL placement.
+        {
+          name: 'article_list_topic_id_desc_created_at_id',
+          fields: [
+            'list',
+            { name: 'topicId', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         // Top articles in the entire site.
         { fields: ['list', 'score', 'createdAt'], },
 

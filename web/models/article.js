@@ -232,6 +232,17 @@ module.exports = (sequelize) => {
         },
         // Top articles in the entire site.
         { fields: ['list', 'score', 'createdAt'], },
+        // Deep HTML sort=score pages. Match NULL placement and the stable
+        // pagination tie-breaker used by getArticles.
+        {
+          name: 'article_list_score_created_at_id',
+          fields: [
+            'list',
+            { name: 'score', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
 
         // Find a topic by slug.
         { fields: ['slug'], },

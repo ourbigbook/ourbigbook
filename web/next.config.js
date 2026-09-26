@@ -57,6 +57,8 @@ module.exports = phase => ({
 })
 
 const redirects = [
+  ['/-/site-settings', '/-/settings'],
+  ['/go/site-settings', '/-/settings'],
   ...['comments', 'discussions'].map(action => [
     `/:uid/-/article/${action}`, `/:uid/-/home/${action}`,
   ]),

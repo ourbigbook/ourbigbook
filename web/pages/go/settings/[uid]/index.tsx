@@ -16,7 +16,7 @@ import CustomImage from 'front/CustomImage'
 import CustomLink from 'front/CustomLink'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
-import BuildJobs from 'front/BuildJobs'
+import BuildJobs, { useBuildJobs } from 'front/BuildJobs'
 import {
   addCommasToInteger,
   AppContext,
@@ -60,6 +60,7 @@ const Settings = ({
   const username = user0.username
   const router = useRouter()
   const buildsTab = router.query.tab === 'builds'
+  const buildJobs = useBuildJobs(username)
   const [userInfo, setUserInfo] = React.useState(lodash.pick(
     user0,
     [
@@ -212,9 +213,9 @@ const Settings = ({
       <div className="tab-list" role="navigation" aria-label="Settings">
         <CustomLink href={routes.userEdit(username)} className={`tab-item${!buildsTab ? ' active' : ''}`}><UserIcon /> Account</CustomLink>
         {' '}
-        <CustomLink href={`${routes.userEdit(username)}?tab=builds`} className={`tab-item${buildsTab ? ' active' : ''}`}><BuildIcon /> Build jobs</CustomLink>
+        <CustomLink href={`${routes.userEdit(username)}?tab=builds`} className={`tab-item${buildsTab ? ' active' : ''}`}><BuildIcon /> Build jobs{buildJobs.bulkStatus && <> ({formatNumberApprox(buildJobs.bulkStatus.todoCount)})</>}</CustomLink>
       </div>
-      {buildsTab ? <BuildJobs username={username} baseUrl={routes.userEdit(username)} canCancel={!!loggedInUser && (!!loggedInUser.admin || loggedInUser.id === user0.id)} /> : <>
+      {buildsTab ? <BuildJobs username={username} baseUrl={routes.userEdit(username)} canCancel={!!loggedInUser && (!!loggedInUser.admin || loggedInUser.id === user0.id)} buildJobs={buildJobs} /> : <>
         <MapErrors errors={errors} />
         <form onSubmit={handleSubmit}>
           <Label label="Username">

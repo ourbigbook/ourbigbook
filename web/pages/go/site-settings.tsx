@@ -13,7 +13,7 @@ import {
 import ErrorList from 'front/ErrorList'
 import Label from 'front/Label'
 import MapErrors from 'front/MapErrors'
-import BuildJobs from 'front/BuildJobs'
+import BuildJobs, { useBuildJobs } from 'front/BuildJobs'
 import CustomLink from 'front/CustomLink'
 import {
   disableButton,
@@ -32,6 +32,7 @@ import { webApi } from 'front/api'
 import routes from 'front/routes'
 import { CommonPropsType } from 'front/types/CommonPropsType'
 import { SiteType } from 'front/types/SiteType'
+import { formatNumberApprox } from 'ourbigbook'
 
 interface SiteSettingsProps extends CommonPropsType {
   site: SiteType;
@@ -58,6 +59,7 @@ export default function SiteSettings({
   site: siteInit,
 }: SiteSettingsProps) {
   const buildsTab = useRouter().query.tab === 'builds'
+  const buildJobs = useBuildJobs()
   const [loading, setLoading] = React.useState(false)
   const [errors, setErrors] = React.useState([])
   if (siteInit.pinnedArticle === undefined) {
@@ -174,9 +176,9 @@ export default function SiteSettings({
       <div className="tab-list" role="navigation" aria-label="Site settings">
         <CustomLink href={routes.siteSettings()} className={`tab-item${!buildsTab ? ' active' : ''}`}><SettingsIcon /> Settings</CustomLink>
         {' '}
-        <CustomLink href={`${routes.siteSettings()}?tab=builds`} className={`tab-item${buildsTab ? ' active' : ''}`}><BuildIcon /> Build jobs</CustomLink>
+        <CustomLink href={`${routes.siteSettings()}?tab=builds`} className={`tab-item${buildsTab ? ' active' : ''}`}><BuildIcon /> Build jobs{buildJobs.bulkStatus && <> ({formatNumberApprox(buildJobs.bulkStatus.todoCount)})</>}</CustomLink>
       </div>
-      {buildsTab ? <BuildJobs baseUrl={routes.siteSettings()} /> : <>
+      {buildsTab ? <BuildJobs baseUrl={routes.siteSettings()} buildJobs={buildJobs} /> : <>
       <p>This page contains global settings that affect the entire website. It can only be edited by <a href={`${docsAdminUrl}`}>admins</a>.</p>
       <MapErrors errors={errors} />
       <form onSubmit={handleSubmit}>

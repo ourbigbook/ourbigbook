@@ -31,14 +31,47 @@ const BuildJobTable = ({ jobs, loading, error, done, global }: { jobs: BulkJob[]
   </table>
 }
 
-export default function BuildJobs({ username, baseUrl, canCancel=false }: { username?: string; baseUrl: string; canCancel?: boolean }) {
+// Fetch the tab count once on Settings; poll only while the jobs table is open.
+// The outer tab and the table share the same request and counts.
+export function useBuildJobs(username?: string) {
   const router = useRouter()
-  const jobsView = router.query.jobs === 'done' ? 'done' : 'todo'
-  const requestedPage = Number(router.query.page || 1)
+  const buildsTab = router.query.tab === 'builds'
+  const jobsView = buildsTab && router.query.jobs === 'done' ? 'done' : 'todo'
+  const requestedPage = buildsTab ? Number(router.query.page || 1) : 1
   const jobsPage = Number.isSafeInteger(requestedPage) && requestedPage > 0 ? requestedPage - 1 : 0
   const jobsPerPage = 20
   const [bulkStatus, setBulkStatus] = React.useState<BulkStatus | null>(null)
   const [bulkError, setBulkError] = React.useState('')
+  React.useEffect(() => {
+    let active = true
+    let timer: ReturnType<typeof setTimeout>
+    setBulkStatus(null)
+    const poll = async () => {
+      try {
+        const options = { view: jobsView, limit: buildsTab ? jobsPerPage : 0, offset: buildsTab ? jobsPage * jobsPerPage : 0 }
+        const requestOptions = { timeout: 15000 }
+        const { data, status } = await (username
+          ? webApi.articlesBulkStatus(username, requestOptions, options)
+          : webApi.siteJobs(requestOptions, options))
+        if (status !== 200) throw new Error('Could not load background upload status')
+        if (active) {
+          setBulkStatus(data)
+          setBulkError('')
+        }
+      } catch {
+        if (active) setBulkError(`Could not load background upload status.${buildsTab ? ' Retrying…' : ''}`)
+      } finally {
+        if (active && buildsTab) timer = setTimeout(poll, 3000)
+      }
+    }
+    poll()
+    return () => { active = false; clearTimeout(timer) }
+  }, [username, buildsTab, jobsView, jobsPage])
+  return { bulkStatus, bulkError, jobsView, jobsPage, jobsPerPage }
+}
+
+export default function BuildJobs({ username, baseUrl, canCancel=false, buildJobs }: { username?: string; baseUrl: string; canCancel?: boolean; buildJobs: ReturnType<typeof useBuildJobs> }) {
+  const { bulkStatus, bulkError, jobsView, jobsPage, jobsPerPage } = buildJobs
   const [cancelling, setCancelling] = React.useState(false)
   const [cancelMessage, setCancelMessage] = React.useState('')
   const cancelBuild = async () => {
@@ -57,31 +90,6 @@ export default function BuildJobs({ username, baseUrl, canCancel=false }: { user
       setCancelling(false)
     }
   }
-  React.useEffect(() => {
-    let active = true
-    let timer: ReturnType<typeof setTimeout>
-    setBulkStatus(null)
-    const poll = async () => {
-      try {
-        const options = { view: jobsView, limit: jobsPerPage, offset: jobsPage * jobsPerPage }
-        const requestOptions = { timeout: 15000 }
-        const { data, status } = await (username
-          ? webApi.articlesBulkStatus(username, requestOptions, options)
-          : webApi.siteJobs(requestOptions, options))
-        if (status !== 200) throw new Error('Could not load background upload status')
-        if (active) {
-          setBulkStatus(data)
-          setBulkError('')
-        }
-      } catch {
-        if (active) setBulkError('Could not load background upload status. Retrying…')
-      } finally {
-        if (active) timer = setTimeout(poll, 3000)
-      }
-    }
-    poll()
-    return () => { active = false; clearTimeout(timer) }
-  }, [username, jobsView, jobsPage])
   return <div id="background-uploads" className="list-container">
     <div className="tab-list" role="navigation" aria-label="Build job status">
       <CustomLink href={`${baseUrl}?tab=builds`} className={`tab-item${jobsView === 'todo' ? ' active' : ''}`}><ListIcon /> TODO{bulkStatus && <span className="mobile-hide"> ({formatNumberApprox(bulkStatus.todoCount)})</span>}</CustomLink>

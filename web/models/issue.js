@@ -201,6 +201,21 @@ module.exports = (sequelize) => {
     })
   }
 
+  // HTML previews need discussions and their authors, not another copy of the
+  // article's rendered body and source for every discussion in the join.
+  Issue.getArticleIssues = ({ articleId, limit, logging, order='createdAt' }) => {
+    const orderList = [[order, 'DESC']]
+    if (order !== 'createdAt') orderList.push(['createdAt', 'DESC'])
+    orderList.push(['id', 'DESC'])
+    return Issue.findAll({
+      where: { articleId },
+      include: [{ model: sequelize.models.User, as: 'author' }],
+      limit,
+      logging,
+      order: orderList,
+    })
+  }
+
   Issue.getIssues = async ({
     articleId,
     author,

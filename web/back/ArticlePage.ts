@@ -79,26 +79,8 @@ export const getServerSidePropsArticleHoc = ({
       const sequelize = req.sequelize
       const { Article, File, Issue, Id, Ref } = sequelize.models
       const limit = articleLimitSmall
-      const [article, articleTopIssues, loggedInUser] = await Promise.all([
+      const [article, loggedInUser] = await Promise.all([
         Article.getArticle({
-          limit,
-          includeIssues,
-          sequelize,
-          slug: slugString,
-        }),
-        //// TODO benchmark the effect of this monstrous query on article pages.
-        //// If very slow, we could move it to after page load.
-        //// TODO don't run this on split pages? But it requires doing a separate query step, which
-        //// would possibly slow things down more than this actual query?
-        //Article.getArticlesInSamePage({
-        //  sequelize,
-        //  slug: slugString,
-        //  loggedInUser,
-        //}),
-        Article.getArticle({
-          includeIssues,
-          includeIssuesOrder: 'score',
-          limit,
           sequelize,
           slug: slugString,
         }),
@@ -108,6 +90,9 @@ export const getServerSidePropsArticleHoc = ({
         return await findSynonymOr404(sequelize, slugString, routes.article)
       }
       const isIndex = article.isIndex()
+      const getIssueJson = async order => Promise.all((await Issue.getArticleIssues({
+        articleId: article.id, limit, order,
+      })).map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]>
       const [
         ancestors,
         articleJson,
@@ -201,10 +186,10 @@ export const getServerSidePropsArticleHoc = ({
             }]
           }]
         }),
-        includeIssues ? Promise.all(article.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
+        includeIssues ? getIssueJson('createdAt') : null,
         // Tagged.
         getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X_CHILD, from: 'to', to: 'from' }),
-        includeIssues ? Promise.all(articleTopIssues.issues.map(issue => issue.toJson(loggedInUser))) as Promise<IssueType[]> : null,
+        includeIssues ? getIssueJson('score') : null,
       ])
       const h1ArticleInSamePage = h1ArticlesInSamePage[0]
       if (

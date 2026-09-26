@@ -1968,6 +1968,7 @@ OFFSET ${offset}` : ''}` : ''}`}
       }
       // TODO limit to n tags. This can be done with ROW_NUMBER() in a raw query.
       const refs = await Ref.findAll({
+        attributes: ['id', 'from_id'],
         where: {
           from_id: rows.map(a => a.toplevel_id),
           type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_X_CHILD],
@@ -1976,13 +1977,14 @@ OFFSET ${offset}` : ''}` : ''}`}
           model: Id,
           as: 'to',
           required: true,
-          //attributes: [],
+          attributes: ['id'],
           include: [{
             model: File,
             as: 'toplevelId',
             required: true,
-            // No you can't because bugs: https://github.com/sequelize/sequelize/issues/16436
-            //attributes: [],
+            // Retain primary keys for nested association hydration. Empty
+            // attributes hit https://github.com/sequelize/sequelize/issues/16436.
+            attributes: ['id'],
             include: [{
               model: Article,
               as: 'articles',

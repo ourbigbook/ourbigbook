@@ -2007,6 +2007,155 @@ it('User.findAndCountArticlesByFollowed', async function() {
   }
 })
 
+it('HTML discussion previews fetch only issues and authors with stable limits and ordering', async function() {
+  const sequelize = this.test.sequelize
+  const { Article, Issue } = sequelize.models
+  const author = await createUser(sequelize, 0)
+  const otherAuthor = await createUser(sequelize, 1)
+  const article = await createArticle(sequelize, author, { i: 0 })
+  const emptyArticle = await createArticle(sequelize, author, { i: 1 })
+  const issues = []
+  for (let i = 0; i < 8; i++) {
+    issues.push(await Issue.createSideEffects(i % 2 ? otherAuthor : author, article, {
+      number: i + 1, titleSource: `Discussion ${i}`, titleRender: `Discussion ${i}`,
+      titleRenderPlaintext: `Discussion ${i}`, bodySource: `Body ${i}`, render: `<p>Body ${i}</p>`,
+      score: i % 2 ? 2 : 10, list: i !== 6,
+      createdAt: new Date(1600000000000 + Math.floor(i / 2) * 1000),
+    }))
+  }
+  await Issue.createSideEffects(otherAuthor, emptyArticle, { number: 1, titleSource: 'Other article', score: 100 })
+  const sql = []
+  const latest = await Issue.getArticleIssues({ articleId: article.id, limit: 3, logging: statement => sql.push(statement) })
+  const top = await Issue.getArticleIssues({ articleId: article.id, limit: 3, order: 'score', logging: statement => sql.push(statement) })
+  assert.deepStrictEqual(latest.map(issue => issue.id), [issues[7].id, issues[6].id, issues[5].id])
+  assert.deepStrictEqual(top.map(issue => issue.id), [issues[6].id, issues[4].id, issues[2].id])
+  assert.strictEqual(sql.length, 2)
+  for (const statement of sql) {
+    assert(!/JOIN [`"](?:Article|File)[`"]/i.test(statement), statement)
+    assert(/JOIN [`"]User[`"]/.test(statement), statement)
+  }
+  // Preserve the existing HTML preview visibility; this optimization is not a
+  // change to unlisted-discussion policy.
+  assert.strictEqual(top[0].list, false)
+  assert.deepStrictEqual(latest.map(issue => issue.author.username), ['user1', 'user0', 'user1'])
+  let serializationQueries = 0
+  sequelize.addHook('beforeQuery', 'previewSerialization', () => { serializationQueries++ })
+  let json
+  try {
+    json = await Promise.all(latest.map(issue => issue.toJson(null)))
+  } finally {
+    sequelize.removeHook('beforeQuery', 'previewSerialization')
+  }
+  assert.strictEqual(serializationQueries, 0)
+  assert.strictEqual(json[0].author.username, 'user1')
+  assert.strictEqual(json[0].render, '<p>Body 7</p>')
+  assert.strictEqual(json[0].bodySource, 'Body 7')
+  assert(!Object.hasOwn(json[0], 'article'))
+  assert.deepStrictEqual(await Issue.getArticleIssues({ articleId: article.id, limit: 0 }), [])
+  const noDiscussions = await createArticle(sequelize, author, { i: 2 })
+  assert.deepStrictEqual(await Issue.getArticleIssues({ articleId: noDiscussions.id, limit: 5 }), [])
+})
+
+it('HTML article pages hydrate the main article once and load separate discussion previews', async function() {
+  if (!testNext) return this.skip()
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    await createOrUpdateArticleApi(test, createArticleArg({ i: 0 }))
+    await createOrUpdateArticleApi(test, createArticleArg({ i: 1 }))
+    const { Article, Issue } = test.sequelize.models
+    const author = await test.sequelize.models.User.findByPk(user.id)
+    const article = await Article.findOne({ where: { slug: 'user0/title-0' } })
+    const issues = []
+    for (let i = 0; i < 7; i++) {
+      issues.push(await Issue.createSideEffects(author, article, {
+        number: i + 1, titleSource: `Discussion ${i}`, titleRender: `Discussion ${i}`,
+        titleRenderPlaintext: `Discussion ${i}`, bodySource: '', render: '', score: i % 2 ? 0 : 10,
+        createdAt: new Date(1600000000000 + i * 1000),
+      }))
+    }
+    test.disableToken()
+    const articleFinds = []
+    const issueFinds = []
+    Article.addHook('beforeFind', 'articlePreviewQueries', options => articleFinds.push(options))
+    Issue.addHook('beforeFind', 'issuePreviewQueries', options => issueFinds.push(options))
+    let response
+    try {
+      response = await test.sendJsonHttp('GET', '/user0/title-0')
+    } finally {
+      Article.removeHook('beforeFind', 'articlePreviewQueries')
+      Issue.removeHook('beforeFind', 'issuePreviewQueries')
+    }
+    assert.strictEqual(response.status, 200)
+    const props = JSON.parse(parse(response.data).querySelector('#__NEXT_DATA__').text).props.pageProps
+    assert.deepStrictEqual(props.latestIssues.map(issue => issue.id), issues.slice(2).reverse().map(issue => issue.id))
+    assert.deepStrictEqual(props.topIssues.map(issue => issue.id), [6, 4, 2, 0, 5].map(i => issues[i].id))
+    assert.strictEqual(props.latestIssues[0].author.username, 'user0')
+    const mainArticleFinds = articleFinds.filter(options => options.where?.slug === article.slug)
+    assert.strictEqual(mainArticleFinds.length, 1)
+    assert(mainArticleFinds[0].include.every(include => include.as !== 'issues'))
+    assert.strictEqual(issueFinds.length, 2)
+    const empty = await test.sendJsonHttp('GET', '/user0/title-1')
+    assert.strictEqual(empty.status, 200)
+    const emptyProps = JSON.parse(parse(empty.data).querySelector('#__NEXT_DATA__').text).props.pageProps
+    assert.deepStrictEqual(emptyProps.latestIssues, [])
+    assert.deepStrictEqual(emptyProps.topIssues, [])
+    assert.strictEqual((await test.sendJsonHttp('GET', '/user0/missing')).status, 404)
+    const home = await test.sendJsonHttp('GET', '/user0')
+    assert.strictEqual(home.status, 200)
+    const homeProps = JSON.parse(parse(home.data).querySelector('#__NEXT_DATA__').text).props.pageProps
+    assert.deepStrictEqual(homeProps.latestIssues, [])
+    assert.deepStrictEqual(homeProps.topIssues, [])
+    await author.addIssueLikeSideEffects(issues[6])
+    test.loginUser(user)
+    const loggedIn = await test.sendJsonHttp('GET', '/user0/title-0')
+    assert.strictEqual(loggedIn.status, 200)
+    const ownProps = JSON.parse(parse(loggedIn.data).querySelector('#__NEXT_DATA__').text).props.pageProps
+    assert.strictEqual(ownProps.latestIssues[0].liked, true)
+    assert.strictEqual(ownProps.latestIssues[0].followed, true)
+    assert.strictEqual(ownProps.latestIssues[0].author.username, 'user0')
+    // The existing API's issue-number selection still uses getArticle's join.
+    const api = await test.webApi.issues({ id: article.slug, number: issues[0].number })
+    assert.strictEqual(api.status, 200)
+    assert.deepStrictEqual(api.data.issues.map(issue => issue.id), [issues[0].id])
+  }, { canTestNext: true })
+})
+
+it('Article.getArticlesInSamePage tags hydrate nested links without source or AST data', async function() {
+  const sequelize = this.test.sequelize
+  const { Article } = sequelize.models
+  const user = await createUser(sequelize, 0)
+  const otherUser = await createUser(sequelize, 1)
+  await createArticle(sequelize, user, { titleSource: 'Target' })
+  await createArticle(sequelize, user, { titleSource: 'Alpha', bodySource: '{tag=Target}\n\nAlpha body' })
+  await createArticle(sequelize, user, { titleSource: 'Beta', bodySource: '{tag=Target}\n\nBeta body' })
+  await createArticle(sequelize, otherUser, { titleSource: 'Foreign', bodySource: '{tag=@user0/target}\n\nForeign body' })
+  const article = await Article.getArticle({ sequelize, slug: 'user0' })
+  const sql = []
+  const originalLogging = sequelize.options.logging
+  let rows
+  try {
+    sequelize.options.logging = statement => sql.push(statement)
+    rows = await Article.getArticlesInSamePage({ article, getTagged: true, sequelize })
+  } finally {
+    sequelize.options.logging = originalLogging
+  }
+  const target = rows.find(row => row.slug === 'user0/target')
+  assert.deepStrictEqual(target.taggedArticles.map(tag => tag.slug), ['user0/alpha', 'user0/beta', 'user1/foreign'])
+  for (const tag of target.taggedArticles) {
+    const expected = await Article.findOne({ where: { slug: tag.slug } })
+    assert.deepStrictEqual(tag, { slug: expected.slug, titleRenderWithScope: expected.titleRenderWithScope })
+  }
+  const tagSql = sql.find(statement => /FROM [`"]Ref[`"]/.test(statement))
+  assert(tagSql, sql.join('\n'))
+  const selected = tagSql.slice(0, tagSql.indexOf(' FROM '))
+  assert(!selected.includes('bodySource'), selected)
+  assert(!selected.includes('ast_json'), selected)
+  assert(!selected.includes('titleSource'), selected)
+  assert(selected.includes('titleRenderWithScope'), selected)
+  assert.deepStrictEqual(await Article.getArticlesInSamePage({ article, getTagged: true, sequelize, limit: 0 }), [])
+})
+
 it('Article.getArticlesInSamePage simple', async function test_Article__getArticlesInSamePage() {
   let rows
   let article_0_0, article_0_0_0, article_1_0, article

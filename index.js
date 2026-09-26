@@ -13282,6 +13282,29 @@ function ourbigbookConvertArgs(ast, context, options={}) {
   return ret
 }
 
+function ourbigbookConvertMedia(ast, context) {
+  return ourbigbookConvertSimpleElem(ast, context, { modify_callbacks: {
+    src: (ast, context, src) => {
+      const rawSrc = renderArgNoescape(ast.args.src, cloneAndSet(context, 'id_conversion', true))
+      if (
+        !context.options.input_path || context.toplevel_output_path_dir === undefined ||
+        ast.validation_output.external.boolean || protocolIsGiven(rawSrc) ||
+        rawSrc.startsWith(URL_SEP) ||
+        (context.options.x_remove_leading_at && rawSrc.startsWith(AT_MENTION_CHAR)) ||
+        macroImageVideoResolveParams(ast, context).media_provider_type !== 'local'
+      ) return src
+      // Splitting scoped headers moves their source into new directories.
+      // Keep media pointing to its original location, including local provider prefixes.
+      const localPath = context.options.ourbigbook_json['media-providers'].local.path
+      const prefix = path.relative(
+        path.join(context.toplevel_output_path_dir, localPath),
+        path.join(path.dirname(context.options.input_path), localPath),
+      )
+      return prefix ? prefix + URL_SEP + src : src
+    },
+  } })
+}
+
 function ourbigbookConvertSimpleElem(ast, context, opts={}) {
   const ret = []
   ret.push(ESCAPE_CHAR + ast.macro_name)
@@ -13432,8 +13455,8 @@ OUTPUT_FORMATS_LIST.push(
         },
         'Hr': ourbigbookConvertSimpleElem,
         'i': ourbigbookConvertSimpleElem,
-        'Image': ourbigbookConvertSimpleElem,
-        'image': ourbigbookConvertSimpleElem,
+        'Image': ourbigbookConvertMedia,
+        'image': ourbigbookConvertMedia,
         [Macro.INCLUDE_MACRO_NAME]: function (ast, context) {
           return ourbigbookConvertSimpleElem(ast, context, { onelineArg: true })
         },
@@ -13593,7 +13616,7 @@ OUTPUT_FORMATS_LIST.push(
           return `${newline}${SHORTHAND_X_START}${href}${SHORTHAND_X_END}` +
             ourbigbookConvertArgs(ast, context, { skip: new Set(['c', 'href', 'magic', 'p']) }).join('')
         },
-        'Video': ourbigbookConvertSimpleElem,
+        'Video': ourbigbookConvertMedia,
         [Macro.TEST_SANE_ONLY]: ourbigbookConvertSimpleElem,
         [decapitalizeFirstLetter(Macro.TEST_SANE_ONLY)]: ourbigbookConvertSimpleElem,
       }

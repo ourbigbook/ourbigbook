@@ -12092,6 +12092,49 @@ Paragraph in notindex 3.
     }
   }
 )
+assert_lib('bigb output: split media paths stay relative to the original source directory',
+  {
+    convert_opts: { split_headers: true },
+    convert_dir: true,
+    filesystem: {
+      'index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
+      'subdir/paper.bigb': `= Paper
+{scope}
+
+== Question
+{scope}
+
+=== Solution
+
+\\Image[diagram.svg]
+
+\\image[diagram.svg]
+
+\\Video[clip.mp4]
+
+\\Image[/subdir/diagram.svg]
+
+\\Image[https://example.com/diagram.svg]
+`,
+      'subdir/diagram.svg': '<svg></svg>',
+      'subdir/clip.mp4': '',
+    },
+    assert_bigb: {
+      'subdir/paper/question/solution.bigb': `= Solution
+
+\\Image[../../diagram.svg]
+
+\\image[../../diagram.svg]
+
+\\Video[../../clip.mp4]
+
+\\Image[/subdir/diagram.svg]
+
+\\Image[https://example.com/diagram.svg]
+`,
+    },
+  }
+)
 assert_lib('bigb output: sane quotes to shorthand quotes',
   {
     convert_opts: { split_headers: true },

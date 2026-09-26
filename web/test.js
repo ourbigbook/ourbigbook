@@ -6313,6 +6313,20 @@ it('background renders: real CLI uploads all sources first, batches large reposi
           if (disconnected.child.exitCode === null) disconnected.child.kill('SIGTERM')
           await disconnectedResult
         }
+        // A split article's image remains beside its original source, not in
+        // the new directory introduced by scoped parent headers.
+        fs.mkdirSync(path.join(wiki, 'subdir'))
+        fs.writeFileSync(path.join(wiki, 'subdir', 'diagram.svg'), '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"></svg>')
+        fs.writeFileSync(path.join(wiki, 'subdir', 'paper.bigb'), '= Paper\n{scope}\n\n== Question\n{scope}\n\n=== Solution\n\n\\Image[diagram.svg]\n')
+        fs.appendFileSync(path.join(wiki, 'index.bigb'), '\n\\Include[subdir/paper]\n')
+        for (const args of [[], ['--web-individual-upload', '--web-force-id-extraction', '--web-force-render']]) {
+          await run(args)
+          const file = await File.findOne({ where: { path: '@user0/subdir/paper/question/solution.bigb' } })
+          assert(file.bodySource.includes('\\Image[../../diagram.svg]'))
+          const article = await Article.findOne({ where: { slug: 'user0/subdir/paper/question/solution' } })
+          assert(article.render.includes('subdir/diagram.svg'))
+          assert(!article.render.includes('paper/question/diagram.svg'))
+        }
       } finally {
         TreeRebuildJob.launchLocal = originalLaunch
         for (const { child, exited } of children) {

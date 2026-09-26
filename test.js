@@ -355,7 +355,7 @@ describe('Markdown and AsciiDoc formats', function () {
   it('sets the generalized out_ext template variable from the output format', function () {
     for (const [outputFormat, outExt] of [
       [ourbigbook.OUTPUT_FORMAT_HTML, '.html'],
-      [ourbigbook.OUTPUT_FORMAT_MARKDOWN, '.md'],
+      [ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN, '.md'],
       [ourbigbook.OUTPUT_FORMAT_ASCIIDOC, '.adoc'],
     ]) {
       assert.strictEqual(
@@ -389,6 +389,31 @@ two
 ]
 `
     )
+  })
+
+  it('Markdown preserves native paragraph boundaries around embedded blocks', async function () {
+    for (const separator of ['\n', '\n\n']) {
+      for (const [bigbBlock, markdownBlock] of [
+        ['``\ncode\n``', '```\ncode\n```'],
+        ['\\Q[quote]', '\\Q[quote]'],
+        ['\\Ul[\\L[item]]', '\\Ul[\\L[item]]'],
+        ['\\Table[\\Tr[\\Td[cell]]]', '\\Table[\\Tr[\\Td[cell]]]'],
+      ]) {
+        const bigb = `Before:${separator}${bigbBlock}${separator}after.`
+        const markdown = `Before:${separator}${markdownBlock}${separator}after.`
+        const extra = {}
+        const html = await ourbigbook.convert(await markdownToOurbigbook(markdown), { body_only: true }, extra)
+        assert.deepStrictEqual(extra.errors, [])
+        assert.strictEqual(html, await ourbigbook.convert(bigb, { body_only: true }), markdown)
+      }
+    }
+    assert.strictEqual(await markdownToOurbigbook('one\ntwo'), 'one\ntwo\n')
+    for (const markdown of ['one  \ntwo', 'one\\\ntwo']) {
+      const extra = {}
+      const html = await ourbigbook.convert(await markdownToOurbigbook(markdown), { body_only: true }, extra)
+      assert.deepStrictEqual(extra.errors, [])
+      assert.strictEqual(html, await ourbigbook.convert('one\\br[]two', { body_only: true }))
+    }
   })
 
   it('Markdown macros share positional, named, nested and literal argument syntax', async function () {
@@ -587,7 +612,7 @@ Text with \\b[bold], \\i[italic], and \\a[https://example.com][link].
     const markdownExtraReturns = {}
     const markdown = await ourbigbook.convert(input, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, markdownExtraReturns)
     assert.deepStrictEqual(markdownExtraReturns.errors, [])
     assert.strictEqual(markdown, `# Hello
@@ -625,7 +650,7 @@ code
 after.
 `, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert.strictEqual(markdown, `# Input
@@ -649,7 +674,7 @@ Reference to a header: <paragraphs, links, code, math>.
 Same reference: \\x[paragraphs-links-code-math].
 `, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert.strictEqual(markdown, `# Home
@@ -675,7 +700,7 @@ Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
 \\Q[In #mathematics I really like the <#fundamental theorem of calculus>.]
 `, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert.strictEqual(markdown, `# Home
@@ -703,7 +728,7 @@ Same reference: [paragraphs, links, code, math](#paragraphs-links-code-math).
 == Topic
 `, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert(markdown.includes('**Notable features**:\n1. **[topics](#topic)**: details.'))
@@ -729,7 +754,7 @@ then after.
 \\Image[single-line.png]{title=Single line}{description=Short.}{external}
 `, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert(markdown.includes(`**[Figure 1](#image-multiline). Multiline**. For example:
@@ -751,7 +776,7 @@ then after.
 {disambiguate=option}
 `, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert(markdown.includes('- [`--web-nested-set` (option)](#web-nested-set-option)'))
@@ -771,7 +796,7 @@ then after.
 {file}
 `, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert(!markdown.includes('<a id="ordinary"></a>'))
@@ -792,7 +817,7 @@ then after.
 ]
 `, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert(markdown.includes('- text:\n  ```\n  code\n  ```'))
@@ -807,7 +832,7 @@ then after.
 {id=custom-code}
 `, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert(markdown.includes('<a id="custom-code"></a>\n```\ncode\n```'))
@@ -821,7 +846,7 @@ then after.
 {file}
 `, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, extraReturns)
     assert.deepStrictEqual(extraReturns.errors, [])
     assert(markdown.includes('- [https://example.com](#-/file/https://example.com)'))
@@ -834,7 +859,7 @@ then after.
       (_, index) => `${'='.repeat(index + 1)} H${index + 1}\n`
     ).join('\n')
     for (const [outputFormat, marker] of [
-      [ourbigbook.OUTPUT_FORMAT_MARKDOWN, '#'],
+      [ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN, '#'],
       [ourbigbook.OUTPUT_FORMAT_ASCIIDOC, '='],
     ]) {
       const extraReturns = {}
@@ -867,7 +892,7 @@ Introduction.
     const markdownExtraReturns = {}
     const markdown = await ourbigbook.convert(input, {
       input_path: 'index.bigb',
-      output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+      output_format: ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN,
     }, markdownExtraReturns)
     assert.deepStrictEqual(markdownExtraReturns.errors, [])
     assert.strictEqual(markdown, `# Home
@@ -12694,15 +12719,24 @@ assert_cli(
   }
 )
 assert_cli(
-  '-O md selects the Markdown output format',
+  '-O github-md selects the GitHub Markdown output format',
   {
-    args: ['-O', 'md', 'index.bigb'],
+    args: ['-O', 'github-md', 'index.bigb'],
     filesystem: {
       'index.bigb': '= Input\n\nText with \\b[bold].\n',
     },
     assert_bigb: {
-      [`${TMP_DIRNAME}/md/index.md`]: '# Input\n\nText with **bold**.\n',
+      [`${TMP_DIRNAME}/github-md/index.md`]: '# Input\n\nText with **bold**.\n',
     },
+  }
+)
+assert_cli(
+  '-O md directs users to the GitHub deployment output format',
+  {
+    args: ['-O', 'md', 'index.bigb'],
+    filesystem: { 'index.bigb': '= Input\n' },
+    assert_exit_status: 1,
+    assert_stderr_contains: ['md is an input format; use -O github-md'],
   }
 )
 assert_cli(
@@ -12731,7 +12765,7 @@ assert_cli(
 assert_cli(
   'Markdown cross-file links and included-header TOC entries target Markdown files',
   {
-    args: ['-O', 'md', '.'],
+    args: ['-O', 'github-md', '.'],
     filesystem: {
       'index.bigb': `= Home
 
@@ -12747,7 +12781,7 @@ assert_cli(
 `,
     },
     assert_contains: {
-      [`${TMP_DIRNAME}/md/index.md`]: [
+      [`${TMP_DIRNAME}/github-md/index.md`]: [
         '- [Not the index](not-index.md)',
         '  - [h2 not in the index](not-index.md#h2-not-in-the-index)',
         '[h2 not in the index](not-index.md#h2-not-in-the-index)',

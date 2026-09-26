@@ -353,7 +353,7 @@ class AstNode {
     }
 
     if (
-      context.options.output_format === OUTPUT_FORMAT_MARKDOWN &&
+      context.options.output_format === OUTPUT_FORMAT_GITHUB_MARKDOWN &&
       this.macro_name !== Macro.HEADER_MACRO_NAME &&
       this.id !== undefined &&
       !/(^|\/)-\/\d+$/.test(this.id) &&
@@ -710,7 +710,7 @@ class AstNode {
         const { dirname, split_suffix: split_suffix_used } = ret
         let { basename } = ret
         if (
-          context.options.output_format === OUTPUT_FORMAT_MARKDOWN &&
+          context.options.output_format === OUTPUT_FORMAT_GITHUB_MARKDOWN &&
           basename === INDEX_BASENAME_NOEXT
         ) {
           basename = context.options.markdownIndexBasename
@@ -3536,7 +3536,7 @@ exports.convert = convert;
 function enforceMarkdownMaxBytes(context) {
   const maxBytes = context.options.markdownMaxBytes
   if (
-    context.options.output_format !== OUTPUT_FORMAT_MARKDOWN ||
+    context.options.output_format !== OUTPUT_FORMAT_GITHUB_MARKDOWN ||
     maxBytes === undefined
   ) {
     return
@@ -3799,7 +3799,7 @@ function renderAstList({ asts, context, first_toplevel, header_count, outputPath
       rendered_outputs_entry.image = context.firstImageSrc
       if (
         split &&
-        options.output_format === OUTPUT_FORMAT_MARKDOWN &&
+        options.output_format === OUTPUT_FORMAT_GITHUB_MARKDOWN &&
         options.markdownMaxBytes !== undefined
       ) {
         rendered_outputs_entry.markdownRenderArgs = { asts, first_toplevel, header_count, split }
@@ -8994,7 +8994,7 @@ function xHrefParts(target_ast, context) {
         target_output_path_basename = '';
       } else {
         if (
-          context.options.output_format === OUTPUT_FORMAT_MARKDOWN ||
+          context.options.output_format === OUTPUT_FORMAT_GITHUB_MARKDOWN ||
           context.options.output_format === OUTPUT_FORMAT_ASCIIDOC
         ) {
           target_output_path_basename += '.' + OUTPUT_FORMATS[context.options.output_format].ext
@@ -9547,8 +9547,8 @@ const RENDER_TYPE_WEB = 'web'
 exports.RENDER_TYPE_WEB = RENDER_TYPE_WEB
 const OUTPUT_FORMAT_HTML = 'html';
 exports.OUTPUT_FORMAT_HTML = OUTPUT_FORMAT_HTML
-const OUTPUT_FORMAT_MARKDOWN = 'md';
-exports.OUTPUT_FORMAT_MARKDOWN = OUTPUT_FORMAT_MARKDOWN
+const OUTPUT_FORMAT_GITHUB_MARKDOWN = 'github-md';
+exports.OUTPUT_FORMAT_GITHUB_MARKDOWN = OUTPUT_FORMAT_GITHUB_MARKDOWN
 // GitHub documents a general formatted-text preview threshold around 2 MB, but
 // repository landing pages truncate README blobs at 512 KiB. github-md always
 // produces README files, so use the lower limit for every output consistently.
@@ -10974,7 +10974,7 @@ function githubMarkdownSlug(title, context) {
 }
 
 function markupHeaderAnchor(ast, context) {
-  if (context.options.output_format !== OUTPUT_FORMAT_MARKDOWN) return undefined
+  if (context.options.output_format !== OUTPUT_FORMAT_GITHUB_MARKDOWN) return undefined
   const href = xHref(ast, context)
   const hashIndex = href.indexOf('#')
   const plaintextContext = cloneAndSet(
@@ -12882,7 +12882,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
     }
   ),
   new OutputFormat(
-    OUTPUT_FORMAT_MARKDOWN,
+    OUTPUT_FORMAT_GITHUB_MARKDOWN,
     { ext: 'md', convert_funcs: makeMarkupConvertFuncs(false) }
   ),
   new OutputFormat(
@@ -13807,7 +13807,10 @@ function markdownInputRenderInline(tokens=[]) {
         break
       case 'text':
       case 'escape':
-        ret += token.tokens ? markdownInputRenderInline(token.tokens) : ourbigbookEscape(token.text)
+        // Markdown soft line breaks are source whitespace, not explicit \br.
+        // Escape each line separately so native shorthand at line starts is
+        // still escaped, without turning a newline into a hard line break.
+        ret += token.tokens ? markdownInputRenderInline(token.tokens) : token.text.split('\n').map(ourbigbookEscape).join('\n')
         break
       case 'strong':
         ret += `\\b${markdownInputArgument(markdownInputRenderInline(token.tokens))}`
@@ -13822,7 +13825,7 @@ function markdownInputRenderInline(tokens=[]) {
         ret += `\\c${markdownInputLiteralArgument(token.text)}`
         break
       case 'br':
-        ret += '\\br'
+        ret += '\\br[]'
         break
       case 'checkbox':
         ret += token.checked ? '[x] ' : '[ ] '
@@ -13879,8 +13882,19 @@ function markdownInputRenderTable(token) {
 
 function markdownInputRenderBlocks(tokens=[]) {
   let ret = ''
+  let previousToken, previousRaw = ''
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i]
+    if (token.type === 'space' || token.type === 'def') {
+      previousRaw += token.raw
+      continue
+    }
+    // Single newlines keep block content inside the same native paragraph.
+    // Only a source blank line (or a header boundary) starts a new paragraph.
+    if (previousToken && previousToken.type !== 'heading' && token.type !== 'heading' &&
+        !/\n[ \t]*\n$/.test(previousRaw)) {
+      ret = ret.replace(/\n+$/, '\n')
+    }
     const macro = token.type === 'list' && token.ordered ? 'Ol' : MARKDOWN_BLOCK_MACROS[token.type]
     const nextArgs = tokens[i + 1]?.type === 'ourbigbookArguments' ? tokens[i + 1] : undefined
     let args = macro && nextArgs ? tokens[++i] : undefined
@@ -13948,6 +13962,8 @@ function markdownInputRenderBlocks(tokens=[]) {
         }
     }
     if (args) ret = ret.replace(/\n+$/, '') + (token.type === 'heading' ? '\n' : '') + args.forMacro(macro) + '\n\n'
+    previousToken = token
+    previousRaw = tokens[i].raw
   }
   return ret
 }

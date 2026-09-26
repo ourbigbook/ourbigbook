@@ -7550,6 +7550,8 @@ Directory conversion remains BigB-only unless `-I markdown` is given, so that Ma
 
 OurBigBook has some level of support for markdown input.
 
+Single newlines preserve paragraph grouping, including around fenced code and native block macros; blank lines separate paragraphs. This allows block content inside paragraphs without explicit `\P` wrappers. Markdown lists and block quotes still follow Markdown's continuation rules: use native `\Ul[...]` or `\Q[...]` when those rules would absorb text that belongs outside the list or quote. OurBigBook macro arguments can themselves contain Markdown. The <github-md output format> is for GitHub deployment, not lossless conversion to editable Markdown source.
+
 Markdown wikilinks use native OurBigBook cross-reference resolution: `[[fundamental theorem of calculus]]` is equivalent to `<fundamental theorem of calculus>`, and `[[my id|my text]]` is equivalent to `<my id>[my text]`. Custom display text can contain Markdown. Wikilinks remain literal inside code; escape the first bracket as `\[[my id]]` to display the syntax in normal text.
 
 You can transparently <include> standard markdown files such as \a[markdown-example.md] with:
@@ -7628,24 +7630,24 @@ This was tracked at: https://github.com/ourbigbook/ourbigbook/issues/83
 
 The default output format. Web pages!!!
 
-= `md` output format
+= `github-md` output format
 {parent=output format}
 
-Outputs Markdown to a `.md` file.
+Outputs GitHub deployment Markdown to a `.md` file. This is distinct from the editable `md` input format with OurBigBook extensions.
 
 The portable common subset of OurBigBook headers, paragraphs, emphasis, links, images, code, quotes, lists, horizontal rules, mathematics and tables is converted to the closest Markdown construct.
 
 For example:
 ``
-ourbigbook -O md index.bigb
+ourbigbook -O github-md index.bigb
 ``
 
-Markdown output is generally viewed as a downgrade of data structures, since markdown is a subset of <OurBigBook>. One major use case is to publish directly GitHub, thus treating the markdown as an output entirely.
+This output targets GitHub's renderer, including its heading anchors, generated navigation and size limits. It is a rendered deployment format, not a lossless source conversion. `--publish-target github-md` selects it automatically. `md` and `markdown` remain input format names, not output formats.
 
 = `adoc` output format
 {parent=output format}
 
-Outputs AsciiDoc to an `.adoc` file. It supports the same portable common subset as the <md output format>.
+Outputs AsciiDoc to an `.adoc` file. It supports the same portable common subset as the <github-md output format>.
 
 For example:
 ``

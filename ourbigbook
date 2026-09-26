@@ -2350,7 +2350,7 @@ if (cli.helpMacros) {
         if (!publish_target_options || publish_target_options.generateSitemap === undefined) {
           ourbigbook_json.generateSitemap = false
         }
-        cli.outputFormat = ourbigbook.OUTPUT_FORMAT_MARKDOWN
+        cli.outputFormat = ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN
         htmlXExtension = true
         split_headers = true
         publish_uses_git = true
@@ -2399,6 +2399,9 @@ if (cli.helpMacros) {
 
   // Options that will be passed directly to ourbigbook.convert().
   if (!(cli.outputFormat in ourbigbook.OUTPUT_FORMATS)) {
+    if (cli.outputFormat === 'md') {
+      cli_error('md is an input format; use -O github-md for GitHub deployment Markdown')
+    }
     cli_error(`unknown output format: ${cli.outputFormat}`)
   }
   const output_format = (cli.formatSource || web) ? ourbigbook.OUTPUT_FORMAT_OURBIGBOOK : cli.outputFormat

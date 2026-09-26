@@ -135,13 +135,19 @@ module.exports = sequelize => {
         console.error(`build_worker: queue ${entry.id}, ${entry.kind} job ${entry.jobId}, @${entry.user.username}: ${message}`)
         await sequelize.transaction(sequelize.getDialect() === 'sqlite' ? { type: 'IMMEDIATE' } : {}, async transaction => {
           const current = await Queue.findOne({
-            where: { id: entry.id, workerToken, status: 'launched' }, transaction, lock: transaction.LOCK.UPDATE,
+            where: { id: entry.id, workerToken, activeSlot: { [Op.ne]: null } }, transaction, lock: transaction.LOCK.UPDATE,
           })
-          if (current) await model(entry).update({ status: 'failed', activeUserId: null, finishedAt: new Date(),
-            error: message,
-          }, { where: { id: entry.jobId, status: 'pending' }, transaction })
+          if (current) {
+            await model(entry).update({ status: 'failed', activeUserId: null, finishedAt: new Date(),
+              error: message,
+            }, { where: { id: entry.jobId, status: 'pending' }, transaction })
+            if (error.workerLaunchNotStarted === true) {
+              await current.update({ status: 'finished', activeSlot: null }, { transaction })
+            }
+          }
         })
-        // Do not release: a timed-out launch could still be running.
+        if (error.workerLaunchNotStarted === true) await Queue.removeFinished(entry.userId)
+        // Otherwise retain the slot: an ambiguous launch could still be running.
       }
     }
   }

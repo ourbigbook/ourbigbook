@@ -6929,13 +6929,13 @@ it('build queue: launch errors are logged and saved without credentials', async 
       assert(logs.some(line => line.includes(missing.error)))
       assert(logs.some(line => line.includes('@user0:')))
       let root = await BuildQueue.findOne({ where: { activeSlot: 'shared' } })
-      // This change must not accidentally release ambiguous launch slots.
-      assert(root)
-      await BuildQueue.workerExited(root.id, root.workerToken)
+      assert.strictEqual(root, null)
       process.env.OURBIGBOOK_HEROKU_APP = 'test-app'
       const cases = [
-        { status: 401, message: 'Invalid credentials', expected: 'Heroku HTTP 401' },
-        { status: 422, message: 'Invalid dyno size', expected: 'Invalid dyno size' },
+        { status: 401, message: 'Invalid credentials', expected: 'Heroku HTTP 401', notStarted: true },
+        { status: 422, message: 'Invalid dyno size', expected: 'Invalid dyno size', notStarted: true },
+        { status: 503, message: 'Unavailable', expected: 'Heroku HTTP 503' },
+        { status: 408, message: 'Timeout', expected: 'Heroku HTTP 408' },
         { code: 'ETIMEDOUT', expected: 'Heroku ETIMEDOUT' },
       ]
       for (const [i, failure] of cases.entries()) {
@@ -6961,9 +6961,28 @@ it('build queue: launch errors are logged and saved without credentials', async 
         assert(!job.error.includes(workerToken))
         assert(!logs.join('\n').includes(workerToken))
         root = await BuildQueue.findOne({ where: { activeSlot: 'shared' } })
-        assert(root)
-        await BuildQueue.workerExited(root.id, root.workerToken)
+        if (failure.notStarted) {
+          assert.strictEqual(root, null)
+        } else {
+          assert(root)
+          await BuildQueue.workerExited(root.id, root.workerToken)
+        }
       }
+      // Dedicated users must also be able to resubmit immediately after fixing config.
+      await test.sequelize.models.User.update({ dedicatedBuildWorker: true }, { where: { id: user.id } })
+      delete process.env.OURBIGBOOK_HEROKU_APP
+      const dedicated = await ArticleJob.create({ userId: user.id, requestId: 'dedicated-missing-config', requestHash: 'hash', items: '[]', total: 1, status: 'pending' })
+      await BuildQueue.enqueue(dedicated, { articles: true })
+      assert.strictEqual((await dedicated.reload()).status, 'failed')
+      assert.strictEqual(await BuildQueue.count({ where: { activeSlot: `user-${user.id}` } }), 0)
+      process.env.OURBIGBOOK_HEROKU_APP = 'test-app'
+      calls = 0
+      axios.post = async () => { calls++; return { data: { id: 'replacement-dyno' } } }
+      const replacement = await ArticleJob.create({ userId: user.id, requestId: 'dedicated-replacement', requestHash: 'hash', items: '[]', total: 1, status: 'pending' })
+      await BuildQueue.enqueue(replacement, { articles: true })
+      assert.strictEqual(calls, 1)
+      root = await BuildQueue.findOne({ where: { activeSlot: `user-${user.id}` } })
+      assert.strictEqual(root.dynoId, 'replacement-dyno')
       assert(!logs.join('\n').includes('private-heroku-token'))
       assert(!logs.join('\n').includes('RAW ERROR'))
       assert(!logs.join('\n').includes('not-for-logs'))
@@ -7005,8 +7024,22 @@ it('nested-set jobs: Heroku launch request and credential redaction', async () =
       axios.post = async () => { throw new Error('test-secret') }
       await assert.rejects(test.sequelize.models.TreeRebuildJob.launchHeroku({ id: 123 }), error => {
         assert(!error.message.includes('test-secret'))
+        assert.strictEqual(error.workerLaunchNotStarted, false)
         return /Could not launch build worker/.test(error.message)
       })
+      // A successful launch followed by a persistence failure must retain its slot.
+      const Queue = test.sequelize.models.BuildQueue
+      const update = Queue.update
+      try {
+        axios.post = async () => ({ data: { id: 'accepted-dyno' } })
+        Queue.update = async () => { throw { response: { status: 401 } } }
+        await assert.rejects(test.sequelize.models.TreeRebuildJob.launchHeroku({ id: 123 }, { queueId: 1, workerToken: 'worker-token' }), error => {
+          assert.strictEqual(error.workerLaunchNotStarted, false)
+          return true
+        })
+      } finally {
+        Queue.update = update
+      }
     } finally {
       axios.post = originalPost
       keys.forEach((key, i) => {

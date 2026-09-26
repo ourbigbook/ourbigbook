@@ -46,7 +46,7 @@ module.exports = sequelize => {
 
   Job.launchHeroku = async (job, { articles = false, queueId, workerToken } = {}) => {
     const axios = require('axios')
-    const launchError = message => {
+    const launchError = (message, notStarted=false) => {
       // Only explicitly selected diagnostic text crosses into logs/job history.
       // Heroku can echo request values; never include axios config or headers.
       for (const secret of [process.env.OURBIGBOOK_HEROKU_TOKEN, workerToken]) {
@@ -55,12 +55,14 @@ module.exports = sequelize => {
       message = message.replace(/Bearer\s+\S+/gi, 'Bearer [redacted]').replace(/[\r\n\t]/g, ' ').slice(0, 1000)
       const error = new Error(message)
       error.workerLaunchMessage = message
+      error.workerLaunchNotStarted = notStarted
       return error
     }
     const missing = ['OURBIGBOOK_HEROKU_APP', 'OURBIGBOOK_HEROKU_TOKEN'].filter(key => !process.env[key])
     if (missing.length) {
-      throw launchError(`Could not launch build worker: missing ${missing.join(', ')}. Set these config vars on the Heroku app.`)
+      throw launchError(`Could not launch build worker: missing ${missing.join(', ')}. Set these config vars on the Heroku app.`, true)
     }
+    let launchAccepted = false
     try {
       const response = await axios.post(
         `https://api.heroku.com/apps/${encodeURIComponent(process.env.OURBIGBOOK_HEROKU_APP)}/dynos`,
@@ -80,13 +82,17 @@ module.exports = sequelize => {
           },
         },
       )
+      launchAccepted = true
       if (queueId) await sequelize.models.BuildQueue.update({ dynoId: response.data.id }, { where: { id: queueId, workerToken } })
     } catch (error) {
       const status = error.response && error.response.status
       const code = ['ECONNABORTED', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'EAI_AGAIN'].includes(error.code) ? error.code : 'request failed'
       const data = error.response && error.response.data
       const detail = data && typeof data.message === 'string' ? ': ' + data.message : ''
-      throw launchError(`Could not launch build worker (Heroku ${Number.isInteger(status) ? 'HTTP ' + status : code})${detail}`)
+      // Explicit API rejections cannot have created a dyno. Timeouts, 5xx,
+      // and failures recording an accepted launch remain ambiguous.
+      const notStarted = !launchAccepted && [400, 401, 403, 404, 422, 429].includes(status)
+      throw launchError(`Could not launch build worker (Heroku ${Number.isInteger(status) ? 'HTTP ' + status : code})${detail}`, notStarted)
     }
   }
 

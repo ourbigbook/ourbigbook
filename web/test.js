@@ -358,6 +358,37 @@ afterEach(async function () {
   return this.currentTest.sequelize.close()
 })
 
+it('startup sync leaves an existing database unchanged', async function() {
+  const sequelize = this.test.sequelize
+  const queries = []
+  const logging = sequelize.options.logging
+  try {
+    sequelize.options.logging = sql => queries.push(sql)
+    assert.strictEqual(await models.sync(sequelize), true)
+    assert(queries.length > 0)
+    assert(!queries.some(sql => /\b(CREATE|DROP|ALTER|INSERT|UPDATE|DELETE)\b/i.test(sql)), queries.join('\n'))
+  } finally {
+    sequelize.options.logging = logging
+  }
+})
+
+it('startup sync completes while a build worker holds an article transaction', async function() {
+  if (!config.postgres) this.skip()
+  const sequelize = this.test.sequelize
+  const startup = models.getSequelize()
+  startup.addHook('afterConnect', connection => connection.query("SET lock_timeout = '500ms'"))
+  try {
+    await sequelize.transaction(async transaction => {
+      // Keep the same table lock as a worker reading an article before commit.
+      await sequelize.query('SELECT "id" FROM "Article" LIMIT 1', { transaction })
+      assert.strictEqual(await models.sync(startup), true)
+      await sequelize.query('SELECT "id" FROM "Article" LIMIT 1')
+    })
+  } finally {
+    await startup.close()
+  }
+})
+
 it('routes percent-encode article and topic path components', function() {
   const slug = "user0/:@$&+,;=!'()*/%51978?#[] 你好"
   const encodedSlug = "user0/:@$&+,;=!'()*/%2551978%3F%23%5B%5D%20%E4%BD%A0%E5%A5%BD"

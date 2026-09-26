@@ -395,6 +395,9 @@ async function sync(sequelize, opts={}) {
   // sync() here would create newly declared indexes before their migrations
   // run, leaving SequelizeMeta behind and making the migration fail because
   // the index already exists.
+  // This includes triggers: recreating them takes table locks and can block
+  // startup behind a live build worker. Migrations maintain existing triggers.
+  if (dbExists && !opts.force) return true
   if (!dbExists || opts.force) {
     await sequelize.sync(opts)
   }

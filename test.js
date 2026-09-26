@@ -9347,6 +9347,12 @@ for (const [limit, depth, count] of [
     }, extra)
     assert.deepStrictEqual(extra.errors, [])
     assert_xpath("//*[@id='-/toc']//x:a[@data-test]", html, { count })
+    assert_xpath('//x:div[@class="toc-limited"]', html, { count: count < 9 ? 1 : 0 })
+    if (count < 9) {
+      assert_xpath(`//*[@id='-/toc']/following-sibling::*[1][self::x:div and @class='toc-limited']`, html)
+      assert_xpath('//x:div[@class="toc-limited"]/x:span[@title="Help" and @class="icon fa-solid-900" and text()="\u{f05a}"]', html)
+      assert(html.includes(`This table of contents was limited to ${depth} ${depth === 1 ? 'level' : 'levels'} because the full table had more than ${limit} entries. There are 9 articles in total. Navigate to descendant articles to view more entries.`))
+    }
     assert_xpath("//*[@id='-/toc']//x:li[contains(@class, 'has-child') and not(x:ul)]", html, { count: 0 })
     for (const [id, level] of [['a', 1], ['aa', 2], ['aaa', 3], ['aaaa', 4], ['ab', 2], ['b', 1], ['ba', 2], ['baa', 3], ['c', 1]]) {
       const visible = level <= depth
@@ -9367,6 +9373,7 @@ it('lib: toc: tocMaxEntries does not limit Web rendering', async () => {
   }, extra)
   assert.deepStrictEqual(extra.errors, [])
   assert_xpath("//*[@id='-/toc']//x:a[@data-test]", html, { count: 9 })
+  assert_xpath('//x:div[@class="toc-limited"]', html, { count: 0 })
 })
 
 it('lib: toc: tocMaxEntries preserves multiple toplevel headers even over budget', async () => {
@@ -9400,16 +9407,19 @@ assert_lib('toc: tocMaxEntries applies independently to split pages and includes
       "//*[@id='-/toc'][count(.//x:a[@data-test])=2]",
       "//*[@id='-/toc']//x:a[@data-test and @href='branch.html']",
       "//*[@id='-/toc']//x:a[@data-test and @href='#other']",
+      "//x:div[@class='toc-limited' and contains(., 'There are 5 articles in total.') ]",
     ],
     'branch.html': [
       "//*[@id='-/toc'][count(.//x:a[@data-test])=2]",
       "//*[@id='-/toc']//x:a[@data-test and @href='#child-one']",
       "//*[@id='-/toc']//x:a[@data-test and @href='#child-two']",
       "//x:div[@id='deep']//x:nav//x:a[@class='toc' and @href='#-/toc']",
+      "//x:div[@class='toc-limited' and contains(., 'There are 3 articles in total.') ]",
     ],
     'child-one.html': [
       "//*[@id='-/toc'][count(.//x:a[@data-test])=1]",
       `//*[@id='${ourbigbook.tocId('deep')}']`,
+      "//x:body[not(.//x:div[@class='toc-limited'])]",
     ],
   },
 })

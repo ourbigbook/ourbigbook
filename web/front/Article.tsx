@@ -17,6 +17,7 @@ import {
   ArrowRightIcon,
   ArrowUpIcon,
   ArticleCreatedUpdatedPills,
+  addCommasToInteger,
   ChildrenIcon,
   CreateMyOwnVersionOfThisTopic,
   CommentIcon,
@@ -1145,7 +1146,7 @@ export default function Article({
       if (articlesInSamePageForTocCount > maxArticlesFetchToc) {
         html += renderToString(
           <div className="toc-limited">
-            <HelpIcon /> The initial table of content was limited to the first level because it is larger than {maxArticlesFetchToc} articles. There are {articlesInSamePageForTocCount} articles in total. Expand a branch to load its children.
+            <HelpIcon /> The initial table of content was limited to the first level because it is larger than {maxArticlesFetchToc} articles. There are {addCommasToInteger(articlesInSamePageForTocCount)} articles in total. Expand a branch to load its children.
             {articlesInSamePageForTocHasMoreDirectChildren && <>
               {' '}
               <a href={routes.userArticlesChildren(authorUsername, article.topicId)}>

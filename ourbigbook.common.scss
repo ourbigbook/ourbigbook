@@ -851,6 +851,10 @@ ol, ul {
 }
 
 // Table of contents.
+.toc-limited {
+  font-weight: bold;
+}
+
 .toc-container {
   line-height: $line-height * 0.9;
   overflow-x: auto;

@@ -8087,6 +8087,7 @@ function renderToc(context) {
     root_node = root_node.children[0];
   }
   let max_level = Infinity
+  let toc_limited = false
   const max_entries = context.options.webMode ? 0 : context.options.ourbigbook_json.tocMaxEntries
   if (max_entries) {
     // Admit whole depth levels, always retaining the first even if it exceeds
@@ -8112,6 +8113,7 @@ function renderToc(context) {
     const [tree_node, level] = todo_visit.pop();
     entry.level = level
     const has_child = level < max_level && tree_node.children.length > 0
+    if (level === max_level && tree_node.children.length > 0) toc_limited = true
     entry.has_child = has_child
     let target_ast = context.db_provider.get(tree_node.ast.id, context);
     if (
@@ -8179,7 +8181,7 @@ function renderToc(context) {
     }
     entry_list.push(entry)
   }
-  return renderTocFromEntryList({
+  let ret = renderTocFromEntryList({
     add_test_instrumentation: context.options.add_test_instrumentation,
     context,
     descendant_count_html,
@@ -8187,6 +8189,10 @@ function renderToc(context) {
     showSplitOnToc: context.options.showSplitOnToc,
     tocIdPrefix: context.options.tocIdPrefix,
   })
+  if (toc_limited) {
+    ret += `<div class="toc-limited"><span title="Help" class="icon fa-solid-900">\u{f05a}</span> This table of contents was limited to ${max_level} ${max_level === 1 ? 'level' : 'levels'} because the full table had more than ${max_entries} entries. There are ${root_node.descendant_count.toLocaleString('en-US')} articles in total. Navigate to descendant articles to view more entries.</div>`
+  }
+  return ret
 }
 
 /**

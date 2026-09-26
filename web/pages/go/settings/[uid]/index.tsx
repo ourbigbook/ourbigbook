@@ -205,7 +205,7 @@ const Settings = ({
   const emailNotificationsForArticleAnnouncementRef = React.useRef(null)
   const cantSetUserLimit = !!cant.setUserLimits(loggedInUser)
   return <>
-    <MyHead title={`${title} - ${displayAndUsernameText(userInfo)}`} />
+    <MyHead title={`${title} - ${displayAndUsernameText({ ...userInfo, username })}`} />
     <div className="settings-page content-not-ourbigbook">
       <h1><SettingsIcon /> {title}</h1>
       <div className="tab-list" role="navigation" aria-label="Settings">

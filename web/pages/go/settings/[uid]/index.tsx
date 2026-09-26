@@ -204,10 +204,11 @@ const Settings = ({
 
   const emailNotificationsForArticleAnnouncementRef = React.useRef(null)
   const cantSetUserLimit = !!cant.setUserLimits(loggedInUser)
+  const pageTitle = `${title} - ${displayAndUsernameText({ ...userInfo, username })}`
   return <>
-    <MyHead title={`${title} - ${displayAndUsernameText({ ...userInfo, username })}`} />
+    <MyHead title={pageTitle} />
     <div className="settings-page content-not-ourbigbook">
-      <h1><SettingsIcon /> {title}</h1>
+      <h1><SettingsIcon /> {pageTitle}</h1>
       <div className="tab-list" role="navigation" aria-label="Settings">
         <CustomLink href={routes.userEdit(username)} className={`tab-item${!buildsTab ? ' active' : ''}`}><UserIcon /> Account</CustomLink>
         {' '}

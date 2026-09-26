@@ -7550,9 +7550,11 @@ Directory conversion remains BigB-only unless `-I markdown` is given, so that Ma
 
 OurBigBook has some level of support for markdown input.
 
-Single newlines preserve paragraph grouping, including around fenced code and native block macros; blank lines separate paragraphs. This allows block content inside paragraphs without explicit `\P` wrappers. Markdown lists and block quotes still follow Markdown's continuation rules: use native `\Ul[...]` or `\Q[...]` when those rules would absorb text that belongs outside the list or quote. OurBigBook macro arguments can themselves contain Markdown. The <github-md output format> is for GitHub deployment, not lossless conversion to editable Markdown source.
+Single newlines preserve paragraph grouping, including around fenced code and native block macros; blank lines separate paragraphs. This allows block content inside paragraphs without explicit `\P` wrappers. Unlike standard Markdown's lazy continuation, unindented prose ends a list, and unquoted prose ends a block quote. Indent every continuation line of a list item and prefix every line of a block quote with `>`. This keeps following prose outside those containers without forcing a paragraph break. OurBigBook macro arguments can themselves contain Markdown. The <github-md output format> is for GitHub deployment, not lossless conversion to editable Markdown source.
 
 Markdown wikilinks use native OurBigBook cross-reference resolution: `[[fundamental theorem of calculus]]` is equivalent to `<fundamental theorem of calculus>`, and `[[my id|my text]]` is equivalent to `<my id>[my text]`. Custom display text can contain Markdown. Wikilinks remain literal inside code; escape the first bracket as `\[[my id]]` to display the syntax in normal text.
+
+Topic links use `[[#personal knowledge bases]]`, equivalent to `\x[personal knowledge bases]{topic}`. Use `[[#personal knowledge bases|my text]]` for a custom label. Unlike ordinary wikilinks, topic links do not require a matching local header.
 
 You can transparently <include> standard markdown files such as \a[markdown-example.md] with:
 ``
@@ -7642,7 +7644,17 @@ For example:
 ourbigbook -O github-md index.bigb
 ``
 
-This output targets GitHub's renderer, including its heading anchors, generated navigation and size limits. It is a rendered deployment format, not a lossless source conversion. `--publish-target github-md` selects it automatically. `md` and `markdown` remain input format names, not output formats.
+This output targets GitHub's renderer, including its heading anchors, generated navigation and size limits. It is a rendered deployment format, not a lossless source conversion. `--publish-target github-md` selects it automatically.
+
+= `md` output format
+{parent=output format}
+
+Exports editable Markdown with OurBigBook extensions, rather than GitHub deployment Markdown:
+``
+ourbigbook -O md index.bigb
+``
+
+The output is written to `_out/md/index.md`. Headers, ordinary paragraphs, emphasis, code, unordered lists and block images prefer Markdown shorthand. Magic cross-references use `[[target]]` or `[[target|label]]`, and labelled external links use `https://example.com[label]`. Native macros and arguments remain available where shorthand cannot preserve meaning. Includes remain includes rather than being expanded into the exported source. Assets are copied alongside the Markdown with their relative paths preserved; original markup files are not copied into `-/raw`. The goal is semantic AST equivalence after reading the Markdown back, including paragraph nesting, IDs and scope. Regression tests compare both ASTs and rendered HTML. Explicit paragraph macros remain necessary for empty paragraphs and certain nested or whitespace-sensitive paragraphs. This is not yet an automatic in-place repository migration: verify the exported sources, includes, configuration and media paths before replacing existing files.
 
 = `adoc` output format
 {parent=output format}
@@ -7992,8 +8004,7 @@ would produce the following output files:
 * `hello-split.html`: contains only the contents directly under `= h1`, but not under any of the subheaders, e.g.:
   * `h1 content.` appears in this rendered output
   * `h1-1-1` does not appear in this rendered output
-  The `-split` suffix can be customized with the <\H splitSuffix argument> option.
-  The `-split` suffix is appended in order to differentiate the output path from `hello.html`
+  The `-split` suffix can be customized with the <\H splitSuffix argument> option. The `-split` suffix is appended in order to differentiate the output path from `hello.html`
 * `h1-1.html`, `h1-1-1.html`, `h1-1-2.html`: contain only the contents direcly under their headers, analogously to `hello-split.html`, but now we don't need to worry about the input filename and collisiont, and just directly use the ID of each header
 
 `--split-headers` is implied by the <--publish option>: the published website will automatically get the split pages. There is no way to turn it off currently. A pull request would be accepted, especially if it offers a <ourbigbook.json> way to do it. Maybe it would be nice to have a more generalized way of setting any CLI option equivalent from the `ourbigbook.json`, and an option `cli` vs `cli-publish` so that `cli-publish` is publish only. Just lazy for now/not enough pressing use case met.
@@ -8397,20 +8408,13 @@ ourbigbook --web --web-id quantum-mechanics physics.bigb
 = `--web-start-id`
 {parent=OurBigBook CLI options}
 
-Start the article upload passes at the selected ID, inclusively, while still
-replaying any earlier parent and previous-sibling prerequisites needed by the
-selected suffix. Unrelated articles before the selected ID are skipped. This
-is useful for resuming a long
-<`--web-force-id-extraction`> run after a failure, for example:
+Start the article upload passes at the selected ID, inclusively, while still replaying any earlier parent and previous-sibling prerequisites needed by the selected suffix. Unrelated articles before the selected ID are skipped. This is useful for resuming a long <`--web-force-id-extraction`> run after a failure, for example:
 
 ``
 ourbigbook --web --web-force-id-extraction --web-start-id mobius-function
 ``
 
-The ID must use the local, username-free form and must exist in the upload
-tree. This option cannot be combined with <--web-id>. It does not save a
-checkpoint automatically; use the ID from the first unfinished
-`web_extract_ids` status line.
+The ID must use the local, username-free form and must exist in the upload tree. This option cannot be combined with <--web-id>. It does not save a checkpoint automatically; use the ID from the first unfinished `web_extract_ids` status line.
 
 = `--web-force-id-extraction`
 {parent=OurBigBook CLI options}
@@ -10784,8 +10788,7 @@ In order to test migrations locally interactively, you can:
   cd web
   ./bin/generate-demo-data.js --clear
   ``
-* Move back to master:
-  `git checkout -`
+* Move back to master: `git checkout -`
 * Run the migration:
   ``
   ./bin/sync-db.js
@@ -11968,9 +11971,7 @@ It's the standard procedure for any extension:
 
 Sometimes you need to change ourbigbook files like \a[index.js] when working on a new extension feature.
 
-TODO: we don't have a neat way to handle this now. Currently;
-\a[vscode/package.json]
-uses fixed `ourbigbook` versions such as:
+TODO: we don't have a neat way to handle this now. Currently, \a[vscode/package.json] uses fixed `ourbigbook` versions such as:
 ``
   "dependencies": {
     "ourbigbook": "0.9.11"
@@ -12516,8 +12517,7 @@ This works since the `tmp` directory is not deleted in case of failure.
 {parent=Test system}
 
 There are two types of test in our test suite:
-* tests that call the `ourbigbook.convert` <JavaScript API> directly.
-  These tests are prefixed with `lib: `
+* tests that call the `ourbigbook.convert` <JavaScript API> directly. These tests are prefixed with `lib: `
 
   These tests don't actually create files in the filesystem, and just mock the filesystem instead with a dictionary.
 

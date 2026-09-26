@@ -288,7 +288,7 @@ class AstNode {
         !this.from_ourbigbook_example
       ) ||
       (
-        context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK &&
+        [OUTPUT_FORMAT_OURBIGBOOK, OUTPUT_FORMAT_MARKDOWN].includes(context.options.output_format) &&
         this.from_ourbigbook_example &&
         !context.id_conversion
       )
@@ -3620,7 +3620,7 @@ function enforceMarkdownMaxBytes(context) {
 function renderArg(arg, context) {
   let converted_arg = [];
   if (arg !== undefined) {
-    if (context.options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
+    if ([OUTPUT_FORMAT_OURBIGBOOK, OUTPUT_FORMAT_MARKDOWN].includes(context.options.output_format)) {
       // TODO should be done in parse not render. And should be done for all output formats.
       for (const ast of arg) {
         if (ast.macro_name === Macro.PARAGRAPH_MACRO_NAME) {
@@ -6039,7 +6039,7 @@ async function parse(tokens, options, context, extra_returns={}) {
                   })
                 }
               }
-              if (options.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
+              if ([OUTPUT_FORMAT_OURBIGBOOK, OUTPUT_FORMAT_MARKDOWN].includes(options.output_format)) {
                 if (options.render_include) {
                   parent_arg.push(ast)
                 }
@@ -6064,7 +6064,7 @@ async function parse(tokens, options, context, extra_returns={}) {
         ? await markdownToOurbigbook(exampleSource)
         : exampleSource
       const ourbigbookExampleOptions = cloneAndSet(options, 'fromOurBigBookExample', true)
-      if (ourbigbookExampleOptions.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
+      if ([OUTPUT_FORMAT_OURBIGBOOK, OUTPUT_FORMAT_MARKDOWN].includes(ourbigbookExampleOptions.output_format)) {
         parent_arg.push(ast)
       }
       // We need to add these asts on OUTPUT_FORMAT_OURBIGBOOK so that we can extract their IDs later on.
@@ -9543,6 +9543,8 @@ const OURBIGBOOK_JSON_DEFAULT = {
 exports.OURBIGBOOK_JSON_DEFAULT = OURBIGBOOK_JSON_DEFAULT
 const OUTPUT_FORMAT_OURBIGBOOK = 'bigb';
 exports.OUTPUT_FORMAT_OURBIGBOOK = OUTPUT_FORMAT_OURBIGBOOK
+const OUTPUT_FORMAT_MARKDOWN = 'md';
+exports.OUTPUT_FORMAT_MARKDOWN = OUTPUT_FORMAT_MARKDOWN
 const RENDER_TYPE_WEB = 'web'
 exports.RENDER_TYPE_WEB = RENDER_TYPE_WEB
 const OUTPUT_FORMAT_HTML = 'html';
@@ -13223,7 +13225,8 @@ function ourbigbookPreferLiteral(ast, context, ast_arg, arg, open, close) {
     const text = ast_arg.asts[0].text
     if (
       // Prefer literals if any escapes would be needed.
-      arg.ourbigbook_output_prefer_literal
+      arg.ourbigbook_output_prefer_literal ||
+      (context.options.output_format === OUTPUT_FORMAT_MARKDOWN && /^\s|\s$/.test(text))
       // In the past we had more complicated rules here that would consider
       // how many escapes wre needed. But I've been feeling that I never want
       // literals except for specific arguments where I always want a literal.
@@ -13245,6 +13248,13 @@ function ourbigbookPreferLiteral(ast, context, ast_arg, arg, open, close) {
         delim_repeat++
       }
       has_newline = rendered_arg.indexOf('\n') !== -1
+      if (context.options.output_format === OUTPUT_FORMAT_MARKDOWN &&
+          (has_newline || /^[\\\[\]{}]|[\\\[\]{}]$/.test(rendered_arg))) {
+        // Literal syntax removes one boundary newline; retain actual leading
+        // and trailing newlines in the argument by supplying that padding.
+        rendered_arg = '\n' + rendered_arg + '\n'
+        has_newline = true
+      }
       if (
         rendered_arg[0] === open &&
         !has_newline
@@ -13263,6 +13273,10 @@ function ourbigbookPreferLiteral(ast, context, ast_arg, arg, open, close) {
     // Not a literal.
     delim_repeat = 1
     rendered_arg = renderArg(ast_arg, context)
+    if (context.options.output_format === OUTPUT_FORMAT_MARKDOWN && open === '[' &&
+        rendered_arg.startsWith('[')) {
+      rendered_arg = '\n' + rendered_arg + '\n'
+    }
     has_newline = rendered_arg.indexOf('\n') !== -1
   }
   return { delim_repeat, has_newline, rendered_arg }
@@ -13324,8 +13338,10 @@ function ourbigbookConvertArgs(ast, context, options={}) {
       ret_args.push(ret_arg)
     }
   }
-  const orderedNamedArgs = []
-  for (const argname of [
+  const editableMarkdown = context.options.output_format === OUTPUT_FORMAT_MARKDOWN
+  // Source order also determines generated IDs in nested argument content.
+  const orderedNamedArgs = editableMarkdown ? Object.keys(ast.args).filter(name => named_args.includes(name)) : []
+  for (const argname of editableMarkdown ? [] : [
     Macro.TITLE_ARGUMENT_NAME,
     Macro.ID_ARGUMENT_NAME,
     Macro.DISAMBIGUATE_ARGUMENT_NAME,
@@ -13336,7 +13352,7 @@ function ourbigbookConvertArgs(ast, context, options={}) {
       named_args.splice(idx, 1)
     }
   }
-  orderedNamedArgs.push(...named_args.sort())
+  if (!editableMarkdown) orderedNamedArgs.push(...named_args.sort())
   for (const argname of orderedNamedArgs) {
     const arg = macro.named_args[argname]
     const validation_output = ast.validation_output[argname]
@@ -13362,7 +13378,7 @@ function ourbigbookConvertArgs(ast, context, options={}) {
         rendered_arg = modify_callbacks[argname](ast, context, ast_arg, rendered_arg)
       }
       let skip_val = false
-      if (macro_arg.boolean) {
+      if (macro_arg.boolean && context.options.output_format !== OUTPUT_FORMAT_MARKDOWN) {
         const argstr_default = macro_arg.default === undefined ? Macro.BOOLEAN_ARGUMENT_FALSE : Macro.BOOLEAN_ARGUMENT_TRUE
         const argstr_eff = validation_output.boolean ? Macro.BOOLEAN_ARGUMENT_TRUE : Macro.BOOLEAN_ARGUMENT_FALSE
         if (argstr_default === argstr_eff) {
@@ -13756,6 +13772,188 @@ OUTPUT_FORMATS_LIST.push(
   )
 )
 
+// Editable Markdown uses the source serializer's argument and paragraph rules,
+// not the GitHub renderer (which resolves links and adds deployment metadata).
+// Prefer native macros over a lossy approximation when shorthand is ambiguous.
+const bigbSourceFuncs = OUTPUT_FORMATS_LIST.find(format => format.id === OUTPUT_FORMAT_OURBIGBOOK).convert_funcs
+const markdownSourceFuncs = Object.fromEntries(Object.keys(bigbSourceFuncs).map(name => [name, ourbigbookConvertSimpleElem]))
+markdownSourceFuncs[Macro.PARAGRAPH_MACRO_NAME] = (ast, context) => {
+  // A solitary nested paragraph is distinct from plain argument content.
+  if (!ast.args.content?.asts.length || /^\s/.test(ast.args.content.asts[0]?.text || '') ||
+      /\s$/.test(ast.args.content.asts.at(-1)?.text || '') ||
+      (ast.parent_ast.macro_name !== Macro.TOPLEVEL_MACRO_NAME && ast.parent_argument.asts.length === 1)) {
+    return ourbigbookConvertSimpleElem(ast, context)
+  }
+  return bigbSourceFuncs[Macro.PARAGRAPH_MACRO_NAME](ast, context)
+}
+markdownSourceFuncs[Macro.TOPLEVEL_MACRO_NAME] = (ast, context) => {
+  const args = ourbigbookConvertArgs(context.extra_returns.ast, context, { skip: new Set(['content']) }).join('')
+  return (args ? args + '\n\n' : '') + bigbSourceFuncs[Macro.TOPLEVEL_MACRO_NAME](ast, context)
+}
+markdownSourceFuncs[Macro.PLAINTEXT_MACRO_NAME] = (ast, context) => {
+  if (context.in_literal) return ast.text
+  const arg = context.macros[ast.parent_ast?.macro_name]?.name_to_arg[ast.parent_argument?.argument_name]
+  if (arg && (!arg.count_words || arg.ourbigbook_output_prefer_literal)) {
+    return bigbSourceFuncs[Macro.PLAINTEXT_MACRO_NAME](ast, context)
+  }
+  // Escape Markdown punctuation as well as native argument delimiters.
+  // Literal newlines in text need an entity to distinguish them from native
+  // line-break nodes and structural newlines emitted by block serializers.
+  return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) +
+    ast.text.replace(/[\\`*_{}\[\]<>|~@&]/g, '\\$&')
+      .replace(/^(\s*)([#+=-])/gm, '$1\\$2').replace(/^(\s*\d+)([.)])/gm, '$1\\$2')
+      .replace(/(https?):/g, '$1\\:').replace(/www\./g, 'www\\.').replace(/\n/g, '&#10;')
+}
+markdownSourceFuncs.c = (ast, context) => {
+  const content = ast.args.content?.asts
+  if (content?.length === 1 && content[0].node_type === AstType.PLAINTEXT &&
+      content[0].text && !content[0].text.includes('\n') &&
+      [ast.parent_argument.get(ast.parent_argument_index - 1), ast.parent_argument.get(ast.parent_argument_index + 1)]
+        .every(sibling => sibling?.macro_name !== 'c')) {
+    let text = content[0].text
+    let delimiter = '`'
+    while (text.includes(delimiter)) delimiter += '`'
+    if (/^`|`$/.test(text) || (/^ .* $/.test(text) && /[^ ]/.test(text))) text = ' ' + text + ' '
+    return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + delimiter + text + delimiter +
+      ourbigbookConvertArgs(ast, context, { skip: new Set(['content']) }).join('')
+  }
+  return ourbigbookConvertSimpleElem(ast, context)
+}
+for (const [name, delimiter] of [['b', '**'], ['i', '*']]) {
+  markdownSourceFuncs[name] = (ast, context) => {
+    const content = renderArg(ast.args.content, context)
+    const previous = ast.parent_argument.get(ast.parent_argument_index - 1)
+    const next = ast.parent_argument.get(ast.parent_argument_index + 1)
+    if (!content || /^\s|\s$/.test(content) || content.includes('\n') ||
+        ast.parent_ast.macro_name === name ||
+        [previous, next].some(sibling => sibling && ['b', 'i'].includes(sibling.macro_name))) {
+      return ourbigbookConvertSimpleElem(ast, context)
+    }
+    const marker = name === 'i' && (ast.parent_ast.macro_name === 'b' || content.startsWith('**') || content.endsWith('**')) ? '_' : delimiter
+    return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + marker + content + marker +
+      ourbigbookConvertArgs(ast, context, { skip: new Set(['content']) }).join('')
+  }
+}
+markdownSourceFuncs.a = (ast, context) => {
+  const href = renderArgNoescape(ast.args.href, cloneAndSet(context, 'id_conversion', true))
+  const next = ast.parent_argument.get(ast.parent_argument_index + 1)
+  if (!/^https?:\/\/[^\s\[\]{}<>]+$/.test(href)) {
+    return ourbigbookConvertSimpleElem(ast, context)
+  }
+  const bounded = !ast.validation_output.content.given &&
+    (['b', 'i'].includes(ast.parent_ast.macro_name) ||
+     (next && context.macros[next.macro_name].inline && !/^\s/.test(next.text || '')))
+  return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + (bounded ? `<${href}>` : href) +
+    ourbigbookConvertArgs(ast, context, { skip: new Set(['href']), onelineArg: true }).join('')
+}
+markdownSourceFuncs.x = (ast, context) => {
+  const href = renderArgNoescape(ast.args.href, cloneAndSet(context, 'id_conversion', true))
+  const content = ast.args.content ? renderArg(ast.args.content, context) : undefined
+  const topic = ast.validation_output.topic.boolean
+  if ((!topic && (!ast.validation_output.magic.boolean || href.startsWith('#'))) || !href || /[\[\]|\n\\]/.test(href) || content?.includes(']]')) {
+    return ourbigbookConvertSimpleElem(ast, context)
+  }
+  return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + '[[' + (topic ? '#' : '') + href +
+    (content === undefined ? '' : '|' + content) + ']]' +
+    ourbigbookConvertArgs(ast, context, { skip: new Set(['href', 'content', topic ? 'topic' : 'magic']) }).join('')
+}
+markdownSourceFuncs.Image = (ast, context) => {
+  const src = renderArgNoescape(ast.args.src, cloneAndSet(context, 'id_conversion', true))
+  if (!src || /[\s()<>\\]/.test(src)) return ourbigbookConvertSimpleElem(ast, context)
+  const args = ourbigbookConvertArgs(ast, context, { skip: new Set(['src']) }).join('')
+  // Keep captions as named arguments: Markdown alt text is not a block title.
+  if (args.startsWith('[') || ast.parent_ast.macro_name === Macro.PARAGRAPH_MACRO_NAME) {
+    return ourbigbookConvertSimpleElem(ast, context)
+  }
+  return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + `![](${src})` + (args ? '\n' + args : '')
+}
+markdownSourceFuncs.Ul = markdownSourceFuncs.Ol = (ast, context) => {
+  const items = ast.args.content?.asts
+  const next = ast.parent_argument.get(ast.parent_argument_index + 1)
+  const previous = ast.parent_argument.get(ast.parent_argument_index - 1)
+  if (Object.keys(ast.args).length !== 1 || !items?.length ||
+      [previous, next].some(sibling => sibling?.macro_name === ast.macro_name) ||
+      items.some(item => item.macro_name !== 'L' || Object.keys(item.args).length !== 1 || !item.args.content)) {
+    return ourbigbookConvertSimpleElem(ast, context)
+  }
+  const contents = items.map(item => renderArg(item.args.content, context))
+  return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + contents.map((content, i) => {
+    const marker = ast.macro_name === 'Ol' ? `${i + 1}. ` : '- '
+    return marker + content.replace(/\n/g, '\n' + ' '.repeat(marker.length))
+  }).join('\n')
+}
+markdownSourceFuncs.Q = (ast, context) => {
+  if (!ast.args.content?.asts.length ||
+      [ast.parent_argument.get(ast.parent_argument_index - 1), ast.parent_argument.get(ast.parent_argument_index + 1)]
+        .some(sibling => sibling?.macro_name === 'Q')) return ourbigbookConvertSimpleElem(ast, context)
+  const content = renderArg(ast.args.content, context)
+  const args = ourbigbookConvertArgs(ast, context, { skip: new Set(['content']) }).join('')
+  return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + '> ' + content.replace(/\n/g, '\n> ') + (args ? '\n' + args : '')
+}
+markdownSourceFuncs.Hr = (ast, context) => {
+  if (ast.parent_ast.macro_name === 'P') return ourbigbookConvertSimpleElem(ast, context)
+  const args = ourbigbookConvertArgs(ast, context).join('')
+  return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + '---' + (args ? '\n' + args : '')
+}
+markdownSourceFuncs.Table = (ast, context) => {
+  const rows = ast.args.content?.asts
+  if (!rows?.length || rows.some((row, i) => row.macro_name !== 'Tr' || Object.keys(row.args).length !== 1 ||
+      !row.args.content?.asts.length || row.args.content.asts.length !== rows[0].args.content.asts.length ||
+      row.args.content.asts.some(cell => cell.macro_name !== (i === 0 ? 'Th' : 'Td') ||
+        Object.keys(cell.args).length !== 1 || !cell.args.content?.asts.every(child => context.macros[child.macro_name].inline)))) {
+    return ourbigbookConvertSimpleElem(ast, context)
+  }
+  const contents = rows.map(row => row.args.content.asts.map(cell => renderArg(cell.args.content, context)))
+  if (contents.some(row => row.some(cell => cell.includes('\n') || /(^|[^\\])\|/.test(cell)))) {
+    return ourbigbookConvertSimpleElem(ast, context)
+  }
+  const lines = contents.map(row => '| ' + row.join(' | ') + ' |')
+  lines.splice(1, 0, '| ' + contents[0].map(() => '---').join(' | ') + ' |')
+  const args = ourbigbookConvertArgs(ast, context, { skip: new Set(['content']) }).join('')
+  return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + lines.join('\n') + (args ? '\n' + args : '')
+}
+markdownSourceFuncs[Macro.HEADER_MACRO_NAME] = (ast, context) => {
+  const level = ast.validation_output.parent.given || ast.isSynonym() ? 1 : Number(renderArg(ast.args.level, context))
+  const title = renderArg(ast.args.title, context)
+  if (!(level >= 1 && level <= 6) || title.includes('\n')) return ourbigbookConvertSimpleElem(ast, context)
+  const args = ourbigbookConvertArgs(ast, context, { skip: new Set(['level', 'title']) }).join('')
+  return (ast.parent_argument_index === 0 ? '' : '\n\n') + '#'.repeat(level) + ' ' + title + (args ? '\n' + args : '')
+}
+markdownSourceFuncs[Macro.CODE_MACRO_NAME.toUpperCase()] = (ast, context) => {
+  const content = ast.args.content?.asts
+  if (content?.length !== 1 || content[0].node_type !== AstType.PLAINTEXT) {
+    return ourbigbookConvertSimpleElem(ast, context)
+  }
+  const text = content[0].text
+  let fence = '```'
+  while (text.includes(fence)) fence += '`'
+  const args = ourbigbookConvertArgs(ast, context, { skip: new Set(['content']) }).join('')
+  return '\n'.repeat(ourbigbookNewlinesBefore(ast, context)) + fence + '\n' + text + '\n' + fence + (args ? '\n' + args : '')
+}
+markdownSourceFuncs[Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME] = (ast, context) => {
+  const rendered = ourbigbookConvertSimpleElem(ast, context)
+  // Without an explicit flag Markdown input treats examples as Markdown.
+  return rendered + (ast.validation_output.markdown.given ? '' : '{markdown=0}')
+}
+markdownSourceFuncs[Macro.LINE_BREAK_MACRO_NAME] = (ast, context) => {
+  let rawArgument = false
+  for (let node = ast; node.parent_ast || node.parent_argument?.parent_ast; node = node.parent_ast || node.parent_argument.parent_ast) {
+    const parent = node.parent_ast || node.parent_argument.parent_ast
+    const arg = context.macros[parent.macro_name]?.name_to_arg[node.parent_argument.argument_name]
+    if (arg && (!arg.count_words || arg.ourbigbook_output_prefer_literal)) rawArgument = true
+  }
+  const previous = ast.parent_argument.get(ast.parent_argument_index - 1)
+  const next = ast.parent_argument.get(ast.parent_argument_index + 1)
+  if (!rawArgument && [previous, next].every(sibling => sibling && sibling.macro_name !== 'br' && context.macros[sibling.macro_name].inline) &&
+      !/\s$/.test(previous.text || '') && !/^\s/.test(next.text || '') &&
+      Object.entries(ast.args).every(([name, arg]) => name === 'content' && arg.asts.length === 0)) {
+    return '  \n'
+  }
+  const rendered = ourbigbookConvertSimpleElem(ast, context)
+  return rendered.endsWith('\\br') ? rendered + '[]' : rendered
+}
+OUTPUT_FORMATS_LIST.push(new OutputFormat(OUTPUT_FORMAT_MARKDOWN, { ext: 'md', convert_funcs: markdownSourceFuncs }))
+
 let markedPromise
 
 async function loadMarked() {
@@ -13771,8 +13969,8 @@ async function loadMarked() {
   return markedPromise
 }
 
-function markdownInputLiteralArgument(text) {
-  let delimiterLength = /[\\[\]{}<`$*#\n]/.test(text) ? 2 : 1
+function markdownInputLiteralArgument(text, forceLiteral=false) {
+  let delimiterLength = forceLiteral || /[\\[\]{}<`$*#\n]/.test(text) ? 2 : 1
   for (const match of text.matchAll(/\]+/g)) {
     delimiterLength = Math.max(delimiterLength, match[0].length + 1)
   }
@@ -13788,16 +13986,19 @@ function markdownInputArgument(text) {
 const MARKDOWN_INLINE_MACROS = { strong: 'b', em: 'i', codespan: 'c', link: 'a', image: 'Image', br: 'br', ourbigbookWikilink: 'x' }
 const MARKDOWN_BLOCK_MACROS = { heading: 'H', code: 'C', blockquote: 'Q', list: 'Ul', table: 'Table', hr: 'Hr' }
 
-function markdownInputRenderInline(tokens=[]) {
+function markdownInputRenderInline(tokens=[], blockImage=false) {
   let ret = ''
   for (let i = 0; i < tokens.length; i++) {
     const token = tokens[i]
     const macro = MARKDOWN_INLINE_MACROS[token.type]
     const args = macro && tokens[i + 1]?.type === 'ourbigbookArguments' ? tokens[++i] : undefined
     switch (token.type) {
+      case 'ourbigbookTextNewline':
+        ret += '\\\n'
+        break
       case 'ourbigbookWikilink':
         ret += `\\x${markdownInputLiteralArgument(token.target)}` +
-          (token.tokens ? markdownInputArgument(markdownInputRenderInline(token.tokens)) : '') + '{magic}'
+          (token.tokens ? markdownInputArgument(markdownInputRenderInline(token.tokens)) : '') + (token.topic ? '{topic}' : '{magic}')
         break
       case 'ourbigbookArguments':
         ret += ourbigbookEscape(token.raw)
@@ -13806,12 +14007,21 @@ function markdownInputRenderInline(tokens=[]) {
         ret += token.convert ? token.convert() : token.raw
         break
       case 'text':
-      case 'escape':
+      case 'escape': {
         // Markdown soft line breaks are source whitespace, not explicit \br.
         // Escape each line separately so native shorthand at line starts is
         // still escaped, without turning a newline into a hard line break.
-        ret += token.tokens ? markdownInputRenderInline(token.tokens) : token.text.split('\n').map(ourbigbookEscape).join('\n')
+        if (token.tokens) {
+          ret += markdownInputRenderInline(token.tokens)
+        } else {
+          let text = token.text
+          // Escape the combined text: escapes can split a URL protocol across
+          // Marked tokens, but native auto-link detection sees it as one word.
+          while (['text', 'escape'].includes(tokens[i + 1]?.type) && !tokens[i + 1].tokens) text += tokens[++i].text
+          ret += text.split('\n').map(ourbigbookEscape).join('\n')
+        }
         break
+      }
       case 'strong':
         ret += `\\b${markdownInputArgument(markdownInputRenderInline(token.tokens))}`
         break
@@ -13822,7 +14032,9 @@ function markdownInputRenderInline(tokens=[]) {
         ret += `\\passthrough${markdownInputLiteralArgument('<del>')}${markdownInputRenderInline(token.tokens)}\\passthrough${markdownInputLiteralArgument('</del>')}`
         break
       case 'codespan':
-        ret += `\\c${markdownInputLiteralArgument(token.text)}`
+        // Use escaped single-line syntax: padding a literal argument with
+        // newlines would make code spans illegal inside shorthand headings.
+        ret += `\\c[${ourbigbookEscape(token.text)}]`
         break
       case 'br':
         ret += '\\br[]'
@@ -13831,11 +14043,12 @@ function markdownInputRenderInline(tokens=[]) {
         ret += token.checked ? '[x] ' : '[ ] '
         break
       case 'link':
-        ret += `\\a${markdownInputLiteralArgument(token.href)}${markdownInputArgument(markdownInputRenderInline(token.tokens))}`
+        ret += `\\a${markdownInputLiteralArgument(token.href)}` +
+          (/^<https?:\/\//.test(token.raw) ? '' : markdownInputArgument(markdownInputRenderInline(token.tokens)))
         break
       case 'image': {
         const alt = token.text ? markdownInputArgument(ourbigbookEscape(token.text)) : ''
-        ret += `\\${args ? 'Image' : 'image'}${markdownInputLiteralArgument(token.href)}${alt}`
+        ret += `\\${args || blockImage ? 'Image' : 'image'}${markdownInputLiteralArgument(token.href)}${alt}`
         break
       }
       case 'html':
@@ -13898,17 +14111,6 @@ function markdownInputRenderBlocks(tokens=[]) {
     const macro = token.type === 'list' && token.ordered ? 'Ol' : MARKDOWN_BLOCK_MACROS[token.type]
     const nextArgs = tokens[i + 1]?.type === 'ourbigbookArguments' ? tokens[i + 1] : undefined
     let args = macro && nextArgs ? tokens[++i] : undefined
-    // Marked absorbs lazy continuation lines into block quotes and list items.
-    // Pull a trailing argument line back out so it decorates the whole block.
-    if (!args && (token.type === 'blockquote' || token.type === 'list')) {
-      const body = token.type === 'list' ? token.items.at(-1)?.tokens : token.tokens
-      const last = body?.at(-1)
-      if (last?.type === 'ourbigbookArguments') {
-        args = body.pop()
-      } else if (last?.tokens?.at(-1)?.type === 'ourbigbookArguments' && last.tokens.at(-1).raw.startsWith('\n')) {
-        args = last.tokens.pop()
-      }
-    }
     if (token.type === 'heading' && token.tokens?.at(-1)?.type === 'ourbigbookArguments') {
       const inlineArgs = token.tokens.pop()
       const followingArgs = args
@@ -13916,7 +14118,7 @@ function markdownInputRenderBlocks(tokens=[]) {
     }
     switch (token.type) {
       case 'ourbigbookArguments':
-        ret += ourbigbookEscape(token.raw) + '\n\n'
+        ret += (previousToken ? ourbigbookEscape(token.raw) : token.forMacro(Macro.TOPLEVEL_MACRO_NAME)) + '\n\n'
         break
       case 'ourbigbookMacro':
         ret += (token.convert ? token.convert() : token.raw) + '\n\n'
@@ -13933,11 +14135,11 @@ function markdownInputRenderBlocks(tokens=[]) {
           ret += `${markdownInputRenderInline([...token.tokens, nextArgs])}\n\n`
           i++
         } else {
-          ret += `${markdownInputRenderInline(token.tokens || [])}\n\n`
+          ret += `${markdownInputRenderInline(token.tokens || [], token.tokens?.length === 1 && token.tokens[0].type === 'image')}\n\n`
         }
         break
       case 'code':
-        ret += `\\C${markdownInputLiteralArgument(token.text)}\n\n`
+        ret += `\\C${markdownInputLiteralArgument(token.text, true)}\n\n`
         break
       case 'blockquote':
         ret += `\\Q[\n${markdownInputRenderBlocks(token.tokens).replace(/\n+$/, '')}\n]\n\n`
@@ -13979,10 +14181,12 @@ async function markdownToOurbigbook(input) {
       if (src[i] === ESCAPE_CHAR) { i++; continue }
       if (src[i] === '|' && separator < 0) separator = i
       if (src.startsWith(']]', i)) {
-        const target = src.slice(2, separator < 0 ? i : separator).trim().replace(/\\([\\|\]])/g, '$1')
+        let target = src.slice(2, separator < 0 ? i : separator).trim().replace(/\\([\\|\]])/g, '$1')
+        const topic = target.startsWith('#')
+        if (topic) target = target.slice(1)
         if (!target) return
         return {
-          type: 'ourbigbookWikilink', raw: src.slice(0, i + 2), target,
+          type: 'ourbigbookWikilink', raw: src.slice(0, i + 2), target, topic,
           label: separator < 0 ? undefined : src.slice(separator + 1, i),
         }
       }
@@ -13999,6 +14203,18 @@ async function markdownToOurbigbook(input) {
       tokenizer.tokenize({ macroOnly: true })
       if (length >= src.length || tokenizer.i + 2 < tokenizer.chars.length) {
         const raw = tokenizer.chars.slice(0, tokenizer.i).join('')
+        const positionalCount = macros[name]?.positional_args.length
+        if (tokenizer.macroPositionalIndex > positionalCount) {
+          // A wikilink on the following line is prose, not an extra literal
+          // argument of an already complete native macro.
+          for (const match of raw.matchAll(/\n(?=\[\[)/g)) {
+            const prefix = new Tokenizer(raw.slice(0, match.index))
+            prefix.tokenize({ macroOnly: true })
+            if (prefix.macroDepth <= 0 && prefix.macroPositionalIndex === positionalCount) {
+              return { type: 'ourbigbookMacro', raw: raw.slice(0, match.index), name, arguments: prefix.macroArguments }
+            }
+          }
+        }
         return { type: 'ourbigbookMacro', raw, name, arguments: tokenizer.macroArguments }
       }
     }
@@ -14045,7 +14261,7 @@ async function markdownToOurbigbook(input) {
         : macros[token.name]?.named_args[arg.name]
       // Literal delimiters are excluded by the shared tokenizer. Keep code,
       // URLs and configuration arguments in their native syntax as well.
-      if (definition && (!definition.count_words || definition.ourbigbook_output_prefer_literal)) continue
+      if (definition && ((!definition.count_words && arg.name !== 'title2') || definition.ourbigbook_output_prefer_literal)) continue
       const value = chars.slice(arg.start, arg.end).join('')
       const leading = value.startsWith('\n') ? '\n' : ''
       const trailing = value.endsWith('\n') ? '\n' : ''
@@ -14053,7 +14269,9 @@ async function markdownToOurbigbook(input) {
       const argumentLexer = new MacroLexer(marked.defaults)
       Object.assign(argumentLexer.tokens.links, lexer.tokens.links)
       converted += chars.slice(end, arg.start).join('') + leading +
-        markdownInputRenderBlocks(argumentLexer.lex(content)).replace(/\n+$/, '') + trailing
+        (definition?.inlineOnly || arg.name === 'title2'
+          ? markdownInputRenderInline(argumentLexer.inlineTokens(content))
+          : markdownInputRenderBlocks(argumentLexer.lex(content)).replace(/(?<!\\)\n+$/, '')) + trailing
       end = arg.end
     }
     let result = converted + chars.slice(end).join('')
@@ -14066,6 +14284,29 @@ async function markdownToOurbigbook(input) {
     return result
   }
   const marked = new Marked({ gfm: true }, { tokenizer: {
+    blockquote(src) {
+      if (!/^ {0,3}>/.test(src)) return false
+      const end = src.search(/\n(?! {0,3}>)/)
+      return Object.getPrototypeOf(this).blockquote.call(this, end < 0 ? src : src.slice(0, end + 1)) || false
+    },
+    list(src) {
+      // As in native OurBigBook, unindented prose ends a list. Markdown's
+      // lazy continuation would otherwise swallow following paragraph text.
+      // Explicit indentation still supports arbitrarily rich list items.
+      if (!/^ {0,3}(?:[-+*]|\d+[.)])(?:[ \t]|$)/.test(src)) return false
+      let end = src.indexOf('\n') + 1
+      if (!end) return false
+      while (end < src.length) {
+        const next = src.indexOf('\n', end)
+        const line = src.slice(end, next < 0 ? src.length : next)
+        // A completely unindented blank line separates native lists. Blank
+        // lines inside exported items carry their item's indentation.
+        if (line === '' && next >= 0 && /^(?:[-+*]|\d+[.)])(?:[ \t]|$)/.test(src.slice(next + 1))) break
+        if (line && !/^\s/.test(line) && !/^(?:[-+*]|\d+[.)])(?:[ \t]|$)/.test(line)) break
+        end = next < 0 ? src.length : next + 1
+      }
+      return Object.getPrototypeOf(this).list.call(this, src.slice(0, end)) || false
+    },
     table(src) {
       // GFM otherwise treats an argument-only line as another table row.
       const end = src.search(/\n\{+[A-Za-z0-9]+(?:=|\})/)
@@ -14132,6 +14373,29 @@ async function markdownToOurbigbook(input) {
     },
   }, extensions: [
     {
+      name: 'ourbigbookUrl',
+      level: 'inline',
+      start: src => src.search(/https?:\/\//),
+      tokenizer(src) {
+        const match = /^(https?:\/\/[^\s\[\]{}<>]+)/.exec(src)
+        if (!match || this.lexer.state.inRawBlock) return
+        const prefix = '\\a' + markdownInputLiteralArgument(match[1])
+        const token = macroToken(prefix + src.slice(match[1].length))
+        const lexer = this.lexer
+        return { type: 'ourbigbookMacro', raw: src.slice(0, token.raw.length - prefix.length + match[1].length),
+          convert: () => convertMacroArguments(token, lexer) }
+      },
+    },
+    {
+      name: 'ourbigbookTextNewline',
+      level: 'inline',
+      start: src => src.indexOf('&#'),
+      tokenizer(src) {
+        const match = /^&#(?:10|x0*a);/i.exec(src)
+        if (match) return { type: 'ourbigbookTextNewline', raw: match[0] }
+      },
+    },
+    {
       name: 'ourbigbookWikilink',
       level: 'inline',
       start: src => src.indexOf('[['),
@@ -14172,7 +14436,7 @@ async function markdownToOurbigbook(input) {
       },
     },
   ] })
-  return markdownInputRenderBlocks(new MacroLexer(marked.defaults).lex(input)).replace(/\n+$/, '\n')
+  return markdownInputRenderBlocks(new MacroLexer(marked.defaults).lex(input)).replace(/(?<!\\)\n+$/, '\n')
 }
 exports.markdownToOurbigbook = markdownToOurbigbook
 

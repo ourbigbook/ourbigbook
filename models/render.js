@@ -14,6 +14,7 @@ const RENDER_TYPES = {
   [ourbigbook.RENDER_TYPE_WEB]: 2,
   [ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN]: 3,
   [ourbigbook.OUTPUT_FORMAT_ASCIIDOC]: 4,
+  [ourbigbook.OUTPUT_FORMAT_MARKDOWN]: 5,
 };
 exports.RENDER_TYPES = RENDER_TYPES
 

@@ -942,12 +942,13 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   // _raw and _dir auto-generation. --split-headers on explicit headers with {file}
   // still happens outside of this, this is just for auto-generation.
   const convertNonBigb = ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
-  const copyToRaw = ourbigbook_options.output_format !== ourbigbook.OUTPUT_FORMAT_OURBIGBOOK
+  const editableMarkdown = ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_MARKDOWN
+  const copyToRaw = ourbigbook_options.output_format !== ourbigbook.OUTPUT_FORMAT_OURBIGBOOK && !(editableMarkdown && isbigb)
   let output_path_noext
   const forceRender = nonOurbigbookOptions.input_path_is_file || nonOurbigbookOptions.cli.forceRender
   if (ourbigbook_options.output_format !== ourbigbook.OUTPUT_FORMAT_OURBIGBOOK) {
     output_path_noext = path.join(
-      is_directory ? DIR_PREFIX : RAW_PREFIX,
+      editableMarkdown ? '' : (is_directory ? DIR_PREFIX : RAW_PREFIX),
       path.relative(
         nonOurbigbookOptions.ourbigbook_json_dir,
         path.join(
@@ -2399,9 +2400,6 @@ if (cli.helpMacros) {
 
   // Options that will be passed directly to ourbigbook.convert().
   if (!(cli.outputFormat in ourbigbook.OUTPUT_FORMATS)) {
-    if (cli.outputFormat === 'md') {
-      cli_error('md is an input format; use -O github-md for GitHub deployment Markdown')
-    }
     cli_error(`unknown output format: ${cli.outputFormat}`)
   }
   const output_format = (cli.formatSource || web) ? ourbigbook.OUTPUT_FORMAT_OURBIGBOOK : cli.outputFormat

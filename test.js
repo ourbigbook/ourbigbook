@@ -18,6 +18,7 @@ const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe');
 const theme = require('./runtime_common')
 const { OurbigbookEditor, getMarkupEdit, applyEditorMarkup } = require('./editor')
 const { markdownToOurbigbook } = ourbigbook
+const markdownRoundTripFixtures = []
 const { TMP_DIRNAME } = ourbigbook_nodejs_webpack_safe
 const { DbProviderBase, read_include, retryWebApiRequest, WebApi } = require('./web_api');
 const {
@@ -348,6 +349,159 @@ ${body}`, {
 })
 
 describe('Markdown and AsciiDoc formats', function () {
+  it('editable Markdown prefers shorthand', async function () {
+    for (const [source, expected] of [
+      ['\\b[bold, with punctuation!]', '**bold, with punctuation!**\n'],
+      ['\\Ul[\\L[one]\\L[two]]', '- one\n- two\n'],
+      ['\\Ol[\\L[one]\\L[two]]', '1. one\n2. two\n'],
+      ['\\c[[index.html]]', '`index.html`\n'],
+      ['\\c[[a`b]]', '``a`b``\n'],
+      ['\\Q[quote]', '> quote\n'],
+      ['Roses are red\nViolets are blue', 'Roses are red  \nViolets are blue\n'],
+      ['* one\n  * nested\n* two', '- one\n  - nested\n- two\n'],
+      ['\\a[https://github.com/ourbigbook/ourbigbook][open source]', 'https://github.com/ourbigbook/ourbigbook[open source]\n'],
+      ['\\a[https://johnsmith.github.io/template]', 'https://johnsmith.github.io/template\n'],
+      ['= Publish\n\n\\x[publish]{magic}', '# Publish\n\n[[publish]]\n'],
+      ['\\x[personal knowledge bases]{topic}', '[[#personal knowledge bases]]\n'],
+      ['\\x[personal knowledge bases][my \\b[notes]]{topic}', '[[#personal knowledge bases|my **notes**]]\n'],
+      ['\\Image[logo.png]', '![](logo.png)\n'],
+      [
+        '= OurBigBook Project\n\n== Project logo\n\n\\Image[logo.png]\n{title=<project logo>[Logo of] the <OurBigBook Project>}\n{height=150}',
+        '# OurBigBook Project\n\n## Project logo\n\n![](logo.png)\n{title=[[project logo|Logo of]] the [[OurBigBook Project]]}\n{height=150}\n',
+      ],
+    ]) {
+      const original = {}, reparsed = {}, exported = {}
+      const markdown = await ourbigbook.convert(source, { output_format: 'md', body_only: true }, exported)
+      assert.deepStrictEqual(exported.errors, [])
+      assert.strictEqual(markdown, expected)
+      const html = await ourbigbook.convert(source, { body_only: true }, original)
+      const roundTripHtml = await ourbigbook.convert(await markdownToOurbigbook(markdown), { body_only: true }, reparsed)
+      assert.deepStrictEqual(reparsed.errors, [])
+      assert.deepStrictEqual(sourceAst(reparsed.ast), sourceAst(original.ast))
+      assert.strictEqual(roundTripHtml, html)
+    }
+  })
+  // Compare the semantic tree, not source coordinates or parser bookkeeping.
+  // Keep every macro and argument (including paragraph grouping), text, IDs,
+  // and scope. Do not normalize away differences in rendered meaning.
+  function sourceAst(ast) {
+    return {
+      macro: ast.macro_name,
+      text: ast.text,
+      id: ast.id,
+      scope: ast.scope,
+      args: Object.fromEntries(Object.entries(ast.args)
+        // A terminating [] on a no-content line break is only lexical.
+        .filter(([name, arg]) => !(ast.macro_name === 'br' && name === 'content' && arg.asts.length === 0))
+        .map(([name, arg]) => [name, arg.asts.map(sourceAst)])),
+    }
+  }
+  it('editable Markdown AST round trip: existing standalone syntax corpus', async function () {
+    this.timeout(30000)
+    let checked = 0
+    for (const [description, source] of markdownRoundTripFixtures) {
+      const original = {}, exported = {}, reparsed = {}
+      const options = { body_only: true }
+      const html = await ourbigbook.convert(source, options, original)
+      // This corpus also contains intentionally invalid input and fixtures
+      // requiring other files/options. Dedicated tests cover those separately.
+      if (original.errors.length) continue
+      const markdown = await ourbigbook.convert(source, { ...options, output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN }, exported) || ''
+      const message = `${description}\nBigB:\n${source}\nMarkdown:\n${markdown}`
+      assert.deepStrictEqual(exported.errors, [], message)
+      const roundTripHtml = await ourbigbook.convert(await markdownToOurbigbook(markdown), options, reparsed)
+      assert.deepStrictEqual(reparsed.errors, [], message)
+      assert.deepStrictEqual(sourceAst(reparsed.ast), sourceAst(original.ast), message)
+      assert.strictEqual(roundTripHtml, html, message)
+      checked++
+    }
+    assert(checked > 100, `Only checked ${checked} standalone fixtures`)
+    this.test.title += ` (${checked} fixtures)`
+  })
+  for (const [name, source] of [
+    ['empty', ''],
+    ['paragraphs', 'First paragraph.\n\nSecond paragraph.'],
+    ['emphasis', 'Hello \\b[bold \\i[nested]] and \\i[italic] world.'],
+    ['punctuation', '\\c[[* _ [x](y) # + - ! < > &]] and escaped \\*stars\\*.'],
+    ['code in paragraph', 'Before:\n``\na[b]\\c\n``\nafter.'],
+    ['separate code', 'Before.\n\n``\ncode\n``\n\nAfter.'],
+    ['inline code and math', 'A `code` and $x^2$ formula.'],
+    ['block math', 'Before:\n$$\nx^2\n$$\nafter.'],
+    ['quote in paragraph', 'Before:\n\\Q[First.\n\nSecond.]\nafter.'],
+    ['list in paragraph', 'Before:\n\\Ul[\\L[one]\\L[two]]\nafter.'],
+    ['nested list', '* one\n  * nested\n* two'],
+    ['ordered list', '\\Ol[\\L[first]\\L[second]]'],
+    ['rich feature list', '\\b[Notable features]:\n\\Ol[\\L[First.\n\n\\Image[logo.png]{title=My logo}{height=150}]\\L[Local editing:\n\\Ul[\\L[Web]\\L[Static]]\nThis text is outside the nested list.\n\nAnother paragraph.]]'],
+    ['code whitespace', '\\c[[ leading]] \\c[[trailing ]] \\c[[ both ]] \\c[[   ]]'],
+    ['code in heading', '= \\c[[\\a]] macro\n\n\\c[[http://example.com]]'],
+    ['code delimiters in secondary title', '= Code\n{title2=\\c[[``]], \\c[[`]], `\\C`, `\\c`}'],
+    ['named argument order and generated IDs', '= Root\n{title2=Secondary}\n{tag=Target}\n\n== Target'],
+    ['separate lists', 'First:\n* one\n\n* two'],
+    ['literal URL code block', '``\nhttp://example.com\n``'],
+    ['example followed by wikilink', '= Root\n\n\\OurBigBookExample[[Hello]]\n<Root> after the example.'],
+    ['attributed code inside list', '* text\n\n  ``\n  code\n  ``\n  {id=my-code}'],
+    ['table', '|| A\n|| B\n\n| one\n| two'],
+    ['line breaks', 'one\ntwo\n\n\\br[]three\\br[]\\br[]four'],
+    ['paragraph arguments', '\\P[Hello]{id=paragraph}'],
+    ['links', '\\a[https://example.com/a_b?q=x][A \\b[label]]'],
+    ['unlabelled link punctuation', '\\a[https://example.com]. Followed by punctuation.'],
+    ['image', '\\Image[https://example.com/a.png][Title]\n{description=First \\b[bold].\n\nSecond paragraph.}'],
+    ['inline image', 'Before \\image[https://example.com/a.png] after.'],
+    ['video', '\\Video[https://example.com/a.mp4]{title=My video}'],
+    ['comments', '\\Comment[[comment * with markup]]\n\nText \\comment[[inline]] end.'],
+    ['passthrough', '\\Passthrough[[<div>Hello</div>]]'],
+    ['headers and references', '= Root\n\n<child> and \\x[child][label].\n\n== Child\n{id=child}'],
+    ['scope', '= Root\n{scope}\n\n== Child\n\n<Child>'],
+    ['parent', '= Root\n\n= Child\n{parent=Root}'],
+    ['synonym', '= Root\n\n= Alias\n{synonym}'],
+    ['repeated arguments', '= Root\n{title2=One}\n{title2=Two}'],
+    ['example', '\\OurBigBookExample[[Hello \\b[world].]]'],
+    ...['    indented text', 'trailing spaces  ', '1. not a list', '1) not a list',
+      '---', '# not a header', 'www.example.com', 'a@example.com',
+      'literal &amp; and &#10;', 'http://example.com', '*literal* _underscores_ $dollars$',
+    ].map(text => [`literal text ${JSON.stringify(text)}`, `\\P[[${text}]]`]),
+  ]) {
+    it(`editable Markdown AST round trip: ${name}`, async function () {
+      const original = {}, exported = {}, reparsed = {}
+      const options = { body_only: true }
+      const html = await ourbigbook.convert(source, options, original)
+      assert.deepStrictEqual(original.errors, [])
+      const markdown = await ourbigbook.convert(source, { ...options, output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN }, exported) || ''
+      assert.deepStrictEqual(exported.errors, [])
+      const roundTripHtml = await ourbigbook.convert(await markdownToOurbigbook(markdown), options, reparsed)
+      assert.deepStrictEqual(reparsed.errors, [], markdown)
+      assert.deepStrictEqual(sourceAst(reparsed.ast), sourceAst(original.ast), markdown)
+      assert.strictEqual(roundTripHtml, html, markdown)
+    })
+  }
+
+  it('editable Markdown AST round trip: cross-file includes', async function () {
+    const files = { index: '= Home\n\n\\Include[child]\n', child: '= Child\n\nA \\b[child].\n\n== Grandchild\n' }
+    const markdown = {}
+    for (const [name, source] of Object.entries(files)) {
+      const extra = {}
+      markdown[name] = await ourbigbook.convert(source, {
+        input_path: `${name}.bigb`, output_format: ourbigbook.OUTPUT_FORMAT_MARKDOWN,
+        embed_includes: true, read_include: href => [`${href}.bigb`, files[href]],
+      }, extra)
+      assert.deepStrictEqual(extra.errors, [])
+    }
+    assert(markdown.index.includes('\\Include[child]'))
+    assert(!markdown.index.includes('Grandchild'))
+    const original = {}, reparsed = {}
+    await ourbigbook.convert(files.index, {
+      input_path: 'index.bigb', embed_includes: true,
+      read_include: href => [`${href}.bigb`, files[href]],
+    }, original)
+    await ourbigbook.convert(await markdownToOurbigbook(markdown.index), {
+      input_path: 'index.md', embed_includes: true,
+      read_include: href => [`${href}.md`, markdown[href]],
+    }, reparsed)
+    assert.deepStrictEqual(original.errors, [])
+    assert.deepStrictEqual(reparsed.errors, [])
+    assert.deepStrictEqual(sourceAst(reparsed.ast), sourceAst(original.ast))
+  })
+
   it('uses GitHub repository landing page Markdown byte limit', function () {
     assert.strictEqual(ourbigbook.GITHUB_MARKDOWN_MAX_BYTES, 512 * 1024)
   })
@@ -591,7 +745,7 @@ Another paragraph with \`code [brackets]\`.
 `)
     assert(bigb.includes('\\Ol['))
     assert(bigb.includes('\\Q['))
-    assert(bigb.includes('\\image[image.png][Alt]'))
+    assert(bigb.includes('\\Image[image.png][Alt]'))
     assert(bigb.includes('\\Table['))
     const extraReturns = {}
     await ourbigbook.convert(bigb, {
@@ -964,6 +1118,7 @@ function assert_lib_ast(
   assert_ast,
   options={}
 ) {
+  markdownRoundTripFixtures.push([description, stdin])
   options = Object.assign({}, options)
   options.stdin = stdin
   options.assert_ast = assert_ast
@@ -12731,14 +12886,25 @@ assert_cli(
   }
 )
 assert_cli(
-  '-O md directs users to the GitHub deployment output format',
+  '-O md produces editable Markdown source',
   {
     args: ['-O', 'md', 'index.bigb'],
     filesystem: { 'index.bigb': '= Input\n' },
-    assert_exit_status: 1,
-    assert_stderr_contains: ['md is an input format; use -O github-md'],
+    assert_bigb: { [`${TMP_DIRNAME}/md/index.md`]: '# Input\n' },
   }
 )
+assert_cli('editable Markdown copies assets without raw source copies', {
+  args: ['-O', 'md', '.'],
+  filesystem: {
+    'index.bigb': '= Home\n\n\\Image[images/logo.png]\n',
+    'images/logo.png': 'test image',
+  },
+  assert_bigb: {
+    [`${TMP_DIRNAME}/md/index.md`]: '# Home\n\n![](images/logo.png)\n',
+    [`${TMP_DIRNAME}/md/images/logo.png`]: 'test image',
+  },
+  assert_not_exists: [`${TMP_DIRNAME}/md/-/raw/index.bigb`, `${TMP_DIRNAME}/md/index.bigb`],
+})
 assert_cli(
   '-O markdown is not an output format identifier',
   {

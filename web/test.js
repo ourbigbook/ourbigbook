@@ -6124,9 +6124,10 @@ it('background renders: real CLI uploads all sources first, batches large reposi
         const first = await run([])
         firstUpload = false
         assert(first.stdout.includes('web_render_run: job'))
-        assert(first.stdout.includes('web_extract_stage: job 1/2 (100 articles)'))
-        assert(first.stdout.includes('web_extract_stage: job 2/2 (6 articles)'))
+        assert(first.stdout.includes('Web upload has submission complete (6 jobs). The server can now finish by itself even if you close the CLI.'))
         for (const phase of ['extract', 'check', 'render']) {
+          assert(first.stdout.includes(`web_${phase}_stage: job 1/2 (100 articles), first article: index`))
+          assert(first.stdout.includes(`web_${phase}_stage: job 2/2 (6 articles), first article: entry-99`))
           assert(new RegExp(`web_${phase}_run: job 1/2, article 100/100, job id: \\d+, status: completed`).test(first.stdout))
           assert(new RegExp(`web_${phase}_run: job 2/2, article 6/6, job id: \\d+, status: completed`).test(first.stdout))
           const lines = first.stdout.split('\n').filter(line => line.startsWith(`web_${phase}_run: `))

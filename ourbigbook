@@ -1603,7 +1603,7 @@ async function queueWebArticles(webApi, articles, { phase='render', start=true, 
     throw new Error(`Expected HTTP 202 when queueing renders, got ${status}`)
   }
   const id = data.job.id
-  if (!start) console.log(`web_${phase}_stage: job ${batchIndex + 1}/${batchCount} (${articles.length} articles)`)
+  if (!start) console.log(`web_${phase}_stage: job ${batchIndex + 1}/${batchCount} (${articles.length} articles), first article: ${articles[0].path}`)
   if (onQueued) await onQueued()
   if (start) await waitWebArticles(webApi, id, phase, { batchIndex, batchCount, firstArticle: articles[0].path })
   return id
@@ -3229,7 +3229,7 @@ if (cli.helpMacros) {
           const { data, status } = await webApi.articlesCurrentBuildCommit(buildId, buildJobs.length, rebuildTree, { timeout: 20000 })
           checkWebBulkBusy(status, data)
           if (status !== 202) assertApiStatus(status, data)
-          console.log(`web_upload: @${username}: submitted (${buildJobs.length} jobs); the server can now finish by itself even if you close the CLI`)
+          console.log(`Web upload has submission complete (${buildJobs.length} jobs). The server can now finish by itself even if you close the CLI.`)
           for (const job of buildJobs) await waitWebArticles(webApi, job.id, job.phase, job)
           await waitWebBuild(webApi, buildId)
         }

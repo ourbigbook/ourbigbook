@@ -696,6 +696,9 @@ span.shortcut {
       background-color: #b91c1c;
       border-color: #b91c1c;
       color: white;
+      .icon-cancel {
+        color: inherit;
+      }
       &:hover:not(:disabled) {
         background-color: #991b1b;
         border-color: #991b1b;

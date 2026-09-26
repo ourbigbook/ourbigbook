@@ -6329,6 +6329,31 @@ it('background renders: real CLI uploads all sources first, batches large reposi
           assert(article.render.includes('subdir/diagram.svg'))
           assert(!article.render.includes('paper/question/diagram.svg'))
         }
+        // Media under the reserved namespace is uploaded separately in both CLI modes.
+        // Removing the old uploaded path is currently restricted to admins.
+        await test.sequelize.models.User.update({ admin: true }, { where: { id: user.id } })
+        const media = path.join(wiki, '-/media')
+        fs.mkdirSync(media, { recursive: true })
+        require('child_process').execFileSync('git', ['init', '-q', media])
+        fs.writeFileSync(path.join(media, '.gitignore'), 'ignored.svg\n')
+        fs.writeFileSync(path.join(media, 'ignored.svg'), '<svg/>')
+        fs.renameSync(path.join(wiki, 'subdir/diagram.svg'), path.join(media, 'diagram.svg'))
+        fs.writeFileSync(path.join(wiki, 'ourbigbook.json'), JSON.stringify({
+          'media-providers': { local: { path: '-/media' } },
+        }))
+        fs.writeFileSync(path.join(wiki, '-/invalid.bigb'), '\\UnknownMacro')
+        for (const args of [[], ['--web-individual-upload']]) {
+          await run([...args, '--web-force-id-extraction', '--web-force-render'])
+          const file = await File.findOne({ where: { path: '@user0/subdir/paper/question/solution.bigb' } })
+          assert(file.bodySource.includes('\\Image[/media/diagram.svg]'))
+          const article = await Article.findOne({ where: { slug: 'user0/subdir/paper/question/solution' } })
+          assert(article.render.includes('/user0/-/raw/media/diagram.svg'))
+          const { Upload } = test.sequelize.models
+          assert(await Upload.findOne({ where: { path: Upload.uidAndPathToUploadPath(user.id, 'media/diagram.svg') } }))
+          for (const missing of ['subdir/diagram.svg', 'media/ignored.svg', 'media/.git/config']) {
+            assert.strictEqual(await Upload.count({ where: { path: Upload.uidAndPathToUploadPath(user.id, missing) } }), 0)
+          }
+        }
       } finally {
         TreeRebuildJob.launchLocal = originalLaunch
         for (const { child, exited } of children) {

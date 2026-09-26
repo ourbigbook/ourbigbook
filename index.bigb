@@ -8853,6 +8853,12 @@ Properties that are valid for every provider:
 Direct children of media-providers and subproperties that are valid only for them specifically:
 * `local`: tracked in the current Git repository as mentioned at <store images inside the repository itself>{full}
   * `path`: location of the cloned local repository relative to the root the main repository
+
+    For example, set `"local": {"path": "-/media"}` to keep media in a separate repository or Git submodule under `-/media`. Media paths such as `\Image[diagram.svg]` are relative to this directory even in articles in subdirectories. Without `path`, they remain relative to the source file.
+
+    Normal source conversion skips `-/` directories and the configured media directory. Local renders reference the media files directly. When publishing to GitHub, the media directory must be its own Git repository with a GitHub `origin`: OurBigBook pushes its current commit and renders links to that commit's raw files. Commit media changes before publishing; `--dry-run` and `--dry-run-push` suppress the push.
+
+    With `--web`, files from the media directory are uploaded as `media/<path>` under your username, and image and video references are rewritten automatically. This avoids the reserved `-` path component on the website. Git-ignored files and Git metadata are excluded; unchanged files are skipped by hash. Do not also use `media/<path>` for unrelated files in your main repository, as upload path collisions are rejected.
 * `github`: tracked in a separate Git repository as mentioned at <store images in a separate media repository>{full}
   * `path`: analogous to `path` for `local`: a local location for this GitHub provider, where the repository can optionally be cloned.
 

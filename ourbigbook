@@ -57,6 +57,7 @@ const LOG_OPTIONS = new Set([
 ]);
 const SASS_EXT = '.scss';
 const DEFAULT_IGNORE_BASENAMES = [
+  ourbigbook.RESERVED_ID_SEPARATOR,
   '.git',
   ourbigbook_nodejs_webpack_safe.TMP_DIRNAME,
   '_raw',
@@ -749,6 +750,10 @@ function isBigbPath(input_path, cli) {
 function skipFileConversion(input_path, relpath, options, nonOptions) {
   const row = nonOptions.file_rows_dict[nonOptions.renderType]?.[relpath]
   if (!row) return false
+  if (row.last_parse && new Date(row.last_parse).getTime() <= nonOptions.configMtime) {
+    if (row.Render) row.Render.outdated = true
+    return false
+  }
   if (options.render) {
     return !!row.Render && !nonOptions.cli.forceRender && !row.Render.outdated && !nonOptions.cli.formatSource
   }
@@ -2309,6 +2314,8 @@ if (cli.helpMacros) {
   }
   // Resolved options.
   const options = ourbigbook.convertInitOptions(ourbigbook_options)
+  const localMediaPath = options.ourbigbook_json['media-providers'].local.path
+  const localMediaDir = localMediaPath ? path.resolve(ourbigbook_json_dir, localMediaPath) : undefined
 
   ourbigbook_options.log = {};
   const nonOurbigbookOptions_log = {};
@@ -2516,6 +2523,11 @@ if (cli.helpMacros) {
   cmdOptsNoStdout.ignoreStdout = true
 
   const isInGitRepo = git_is_in_repo(ourbigbook_json_dir)
+  const configPath = path.join(ourbigbook_json_dir, ourbigbook.OURBIGBOOK_JSON_BASENAME)
+  nonOurbigbookOptions.configMtime = fs.existsSync(configPath) ? fs.statSync(configPath).mtimeMs : 0
+  if (localMediaDir) {
+    nonOurbigbookOptions.ignore_paths.add(path.relative(ourbigbook_json_dir, localMediaDir))
+  }
   if (isInGitRepo && inputPath !== undefined) {
     const inputRelpath  = path.relative(ourbigbook_json_dir, input_dir)
     nonOurbigbookOptions.ignore_paths = new Set([
@@ -2976,14 +2988,27 @@ if (cli.helpMacros) {
           }
         }
         let nestedSetNeedsUpdate = false
-        if (
-          // These are needed otherwise we were deleting every header that was not selected when doing
-          // ourbigbook --web myinput.bigb or ourbigbook --web-id myid
-          inputPath === '.' &&
-          !cli.webId
-        ) {
+        // Partial uploads must not delete unrelated server articles or files.
+        const fullWebUpload = inputPath === '.' && !cli.webId
+        if (fullWebUpload || localMediaDir) {
           // Handle uploads
           {
+            const uploadPaths = new Map(fullWebUpload
+              ? [...nonOurbigbookOptions.nonBigbPathsConverted].map(p => [p, p]) : [])
+            if (localMediaDir) {
+              const ignored = git_is_in_repo(localMediaDir)
+                ? new Set(runCmd('git', ['-C', localMediaDir, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory', '-z'], cmdOptsInfo)
+                  .split('\0').filter(Boolean).map(p => p.replace(/\/$/, '')))
+                : new Set()
+              // Walk this repository separately: source discovery deliberately skips -/.
+              for (const file of walk_directory_recursively(localMediaDir,
+                DEFAULT_IGNORE_BASENAMES_SET, ignored, [], [], localMediaDir)) {
+                if (!fs.lstatSync(file).isFile()) continue
+                const destination = path.join('media', path.relative(localMediaDir, file))
+                if (uploadPaths.has(destination)) cli_error(`media upload path collision: ${destination}`)
+                uploadPaths.set(destination, file)
+              }
+            }
             const uploadHashes = {}
             const serverOnlyUploads = []
             let i = 0
@@ -2995,7 +3020,7 @@ if (cli.helpMacros) {
                 for (const upload of uploads) {
                   const pathNoUsername = upload.path.substring(username.length + URL_SEP.length)
                   uploadHashes[pathNoUsername] = upload.hash
-                  if (!nonOurbigbookOptions.nonBigbPathsConverted.has(pathNoUsername)) {
+                  if (fullWebUpload && !uploadPaths.has(pathNoUsername)) {
                     serverOnlyUploads.push(pathNoUsername)
                   }
                 }
@@ -3013,8 +3038,8 @@ if (cli.helpMacros) {
                 webDry: cli.webDry,
               })
             }
-            for (const p of nonOurbigbookOptions.nonBigbPathsConverted) {
-              const content = fs.readFileSync(p)
+            for (const [p, file] of uploadPaths) {
+              const content = fs.readFileSync(file)
               if (hashToHex(content) !== uploadHashes[p]) {
                 await webCreateOrUpdate({
                   cleanupDeleted: false,
@@ -3028,6 +3053,8 @@ if (cli.helpMacros) {
             }
           }
 
+        }
+        if (fullWebUpload) {
           // https://docs.ourbigbook.com/todo/make-articles-removed-locally-empty-on-web-upload
           const serverOnlyPaths = new Set(Object.keys(webPathToArticle))
           for (const header_tree_entry of header_tree) {
@@ -3315,6 +3342,27 @@ if (cli.helpMacros) {
         let srcBranch;
 
         if (publish) {
+          if (localMediaDir && publish_uses_git) {
+            const mediaGit = args => chomp(runCmd('git', ['-C', localMediaDir, ...args], cmdOptsInfo))
+            if (fs.realpathSync(mediaGit(['rev-parse', '--show-toplevel'])) !== fs.realpathSync(localMediaDir)) {
+              cli_error('local media path must be the root of its own Git repository for GitHub publishing')
+            }
+            const remote = require('git-url-parse')(mediaGit(['remote', 'get-url', 'origin']))
+            if (remote.source !== 'github.com') cli_error('local media repository origin must be on github.com for GitHub publishing')
+            const commit = mediaGit(['rev-parse', 'HEAD'])
+            let branch = mediaGit(['rev-parse', '--abbrev-ref', 'HEAD'])
+            // A submodule can pin an older, already published commit. Do not try
+            // to rewind its remote branch to that commit.
+            const alreadyPublished = branch === 'HEAD' && mediaGit([
+              'for-each-ref', '--contains', commit, '--format=%(refname)', 'refs/remotes/origin',
+            ]) !== ''
+            if (branch === 'HEAD' && !alreadyPublished) {
+              branch = mediaGit(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']).replace(/^origin\//, '')
+            }
+            ourbigbook_options.localMediaPublishUrl = `https://raw.githubusercontent.com/${remote.owner}/${remote.name}/${commit}`
+            // Publish media first, including before cloning a source repository with submodules.
+            if (!cli.dryRunPush && !alreadyPublished) runCmd('git', ['-C', localMediaDir, 'push', 'origin', `HEAD:refs/heads/${branch}`], cmdOpts)
+          }
           // Clone the source to ensure that only git tracked changes get built and published.
           ourbigbook_options.template_vars.publishTargetIsWebsite = publishTargetIsWebsite
           if (!isInGitRepo) {

@@ -5366,7 +5366,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
     ast.macro_name === 'Image'
   ) {
     let firstImageSrc = srcNoShift
-    if (media_provider_type === 'local' && context.options.ourbigbook_json.publishRootUrl) {
+    if (media_provider_type === 'local' && !protocolIsGiven(firstImageSrc) && context.options.ourbigbook_json.publishRootUrl) {
       firstImageSrc = context.options.ourbigbook_json.publishRootUrl +
         (firstImageSrc[0] === URL_SEP ? '' : URL_SEP) +
         firstImageSrc
@@ -8286,14 +8286,21 @@ function resolveLinkToFileGetHref({
       // Modify external paths to account for scope + --split-headers
       let pref = context.root_relpath_shift
       if (media_provider_type === 'local') {
-        let filetypeString 
-        if (type === FILE_TYPE_DIRECTORY) {
-          filetypeString = DIR_PREFIX
+        const localPath = context.options.ourbigbook_json['media-providers'].local.path
+        if (localPath && (href === path.normalize(localPath) || href.startsWith(path.normalize(localPath).replace(/\/$/, '') + URL_SEP))) {
+          // Configured media lives outside the generated output, including in ignored submodules.
+          pref = path.join(pref, context.options.outdir || '.')
+          hrefNoShift = path.join(context.options.outdir || '.', href)
         } else {
-          filetypeString = RAW_PREFIX
+          let filetypeString
+          if (type === FILE_TYPE_DIRECTORY) {
+            filetypeString = DIR_PREFIX
+          } else {
+            filetypeString = RAW_PREFIX
+          }
+          pref = path.join(pref, filetypeString)
+          hrefNoShift = path.join(filetypeString, href)
         }
-        pref = path.join(pref, filetypeString)
-        hrefNoShift = path.join(filetypeString, href)
       } else {
         hrefNoShift = href
       }
@@ -9661,9 +9668,15 @@ function macroImageVideoResolveParams(ast, context) {
   // Fixup src depending for certain providers.
   let relpath_prefix
   if (media_provider_type === 'local') {
-    const path = context.options.ourbigbook_json['media-providers'].local.path;
-    if (path !== '') {
-      src = path + URL_SEP + src;
+    const localPath = context.options.ourbigbook_json['media-providers'].local.path;
+    if (localPath !== '') {
+      if (context.options.localMediaPublishUrl) {
+        src = context.options.localMediaPublishUrl + URL_SEP + src
+        is_url = true
+      } else {
+        // A configured provider path is relative to ourbigbook.json, not each source file.
+        src = URL_SEP + path.join(localPath, src)
+      }
     }
   } else if (media_provider_type === 'github') {
     const github_path = context.options.ourbigbook_json['media-providers'].github.path;
@@ -13302,6 +13315,10 @@ function ourbigbookConvertMedia(ast, context) {
       // Splitting scoped headers moves their source into new directories.
       // Keep media pointing to its original location, including local provider prefixes.
       const localPath = context.options.ourbigbook_json['media-providers'].local.path
+      if (localPath) {
+        // The web server does not receive ourbigbook.json. Bake in its upload namespace.
+        return context.options.webLocalConvert ? URL_SEP + path.join('media', src) : src
+      }
       const prefix = path.relative(
         path.join(context.toplevel_output_path_dir, localPath),
         path.join(path.dirname(context.options.input_path), localPath),

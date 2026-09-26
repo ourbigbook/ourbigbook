@@ -1338,6 +1338,7 @@ function assert_cli(
     const out = child_process.spawnSync(cmd, args, {
       cwd: cwd,
       input: options.stdin,
+      env: { ...process.env, ...options.env },
     });
     const assert_msg = exec_assert_message(out, cmd, args, cwd);
     const stdout_str = out.stdout.toString(ourbigbook_nodejs_webpack_safe.ENCODING)
@@ -15039,6 +15040,83 @@ assert_cli(
     },
   }
 )
+assert_cli('link: local media repository resolves from nested sources and skips reserved directories', {
+  args: ['.'],
+  filesystem: {
+    'ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '-/media' } } }),
+    'index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
+    'subdir/paper.bigb': '= Paper\n\n\\Image[diagram.svg]\n',
+    '-/media/diagram.svg': '<svg/>',
+    '-/media/invalid.bigb': '\\UnknownMacro',
+    'subdir/-/invalid.bigb': '\\UnknownMacro',
+  },
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/subdir/paper.html`]: ["//x:img[@src='../../../-/media/diagram.svg']"],
+  },
+  assert_not_exists: [`${TMP_DIRNAME}/html/-/media/invalid.html`, `${TMP_DIRNAME}/html/subdir/-/invalid.html`],
+})
+for (const publishTarget of ['github-pages', 'github-md']) {
+assert_cli(`publish: local media repository is pushed and rendered as GitHub URLs (${publishTarget})`, {
+  args: ['--dry-run', '--publish', '--publish-target', publishTarget],
+  cwd: 'wiki',
+  filesystem: {
+    'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
+    'wiki/index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
+    'wiki/subdir/paper.bigb': '= Paper\n\n\\Image[diagram.svg]\n',
+    'wiki-media/diagram.svg': '<svg/>',
+  },
+  pre_exec: [
+    ['git', ['-C', '../wiki-media', 'init', '-b', 'main']],
+    ['git', ['-C', '../wiki-media', 'add', '.']],
+    ['git', ['-C', '../wiki-media', 'commit', '-m', 'media']],
+    ['git', ['-C', '../wiki-media', 'remote', 'add', 'origin', 'git@github.com:ourbigbook/wiki-media.git']],
+    ...MAKE_GIT_REPO_PRE_EXEC,
+    ['git', ['checkout', '-b', 'dev']],
+  ],
+  assert_stdout_contains: ['push origin HEAD:refs/heads/main'],
+  assert_xpath: publishTarget === 'github-pages' ? {
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/subdir/paper.html`]: [
+      "//x:img[starts-with(@src, 'https://raw.githubusercontent.com/ourbigbook/wiki-media/') and contains(@src, '/diagram.svg')]",
+    ],
+  } : {},
+  assert_contains: publishTarget === 'github-md' ? {
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/subdir/paper.md`]: [
+      /https:\/\/raw\.githubusercontent\.com\/ourbigbook\/wiki-media\/[0-9a-f]+\/diagram\.svg/,
+    ],
+  } : {},
+})
+}
+assert_cli('publish: local media repository can be a detached submodule under -/media', {
+  args: ['--dry-run', '--publish'],
+  cwd: 'wiki',
+  env: { GIT_ALLOW_PROTOCOL: 'file' },
+  filesystem: {
+    'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '-/media' } } }),
+    'wiki/index.bigb': '= Home\n\n\\Image[diagram.svg]\n',
+    'wiki/-/placeholder': '',
+    'wiki-media/diagram.svg': '<svg/>',
+    'wiki-media/not-an-article.bigb': '\\UnknownMacro',
+  },
+  pre_exec: [
+    ['git', ['-C', '../wiki-media', 'init', '-b', 'main']],
+    ['git', ['-C', '../wiki-media', 'add', '.']],
+    ['git', ['-C', '../wiki-media', 'commit', '-m', 'media']],
+    ['git', ['init']],
+    ['git', ['-c', 'protocol.file.allow=always', 'submodule', 'add', '--', '../wiki-media', 'media']],
+    ['git', ['mv', '--', 'media', '-/media']],
+    ['git', ['-C', '-/media', 'remote', 'set-url', 'origin', 'git@github.com:ourbigbook/wiki-media.git']],
+    ['git', ['-C', '-/media', 'checkout', '--detach']],
+    ['git', ['add', '.']],
+    ['git', ['commit', '-m', 'source']],
+    ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/wiki.git']],
+  ],
+  assert_stdout_not_contains: ['push origin HEAD:refs/heads/'],
+  assert_xpath: {
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/index.html`]: [
+      "//x:img[starts-with(@src, 'https://raw.githubusercontent.com/ourbigbook/wiki-media/') and contains(@src, '/diagram.svg')]",
+    ],
+  },
+})
 assert_cli(
   'timestamps are tracked separately for different --output-format',
   {

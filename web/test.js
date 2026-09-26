@@ -983,6 +983,77 @@ it('User fileSize cache and migration', async function() {
   await assertSizes(0, 0)
 })
 
+describe('memory benchmark helpers', () => {
+  const { trafficPaths, cleanEnv, compatibleSql, positiveInteger, replay } = require('./bin/benchmark-memory')
+
+  it('replays weighted HTML GET paths only and isolates service credentials', () => {
+    assert.deepStrictEqual(trafficPaths([
+      'heroku[router]: method=GET path="/cirosantilli"',
+      'heroku[router]: method=GET path="/cirosantilli"',
+      'heroku[router]: method=GET path="/-/articles?page=2"',
+      'heroku[router]: method=PUT path="/api/articles"',
+      'heroku[router]: method=GET path="//example.com"',
+      'heroku[router]: method=GET path="/api/users"',
+      'heroku[router]: method=GET path="/_next/data/x"',
+      'heroku[router]: method=GET path="/codex/-/raw/image.png"',
+      'app[web.1]: method=GET path="/unrelated"',
+    ].join('\n')), ['/cirosantilli', '/cirosantilli', '/-/articles?page=2'])
+    assert.throws(() => trafficPaths('heroku[router]: method=GET path="//example.com"'))
+    assert.throws(() => positiveInteger('1;oops', 'rate'))
+    assert.throws(() => positiveInteger('0', 'rate'))
+    const env = cleanEnv()
+    for (const key of ['DATABASE_URL', 'OURBIGBOOK_HEROKU_TOKEN', 'OURBIGBOOK_HEROKU_APP', 'AWS_SECRET_ACCESS_KEY']) {
+      assert.strictEqual(env[key], undefined)
+    }
+  })
+
+  it('preserves UTF-8 and strips only the unsupported default setting on older PostgreSQL', async () => {
+    const { Readable } = require('stream')
+    const input = "SET transaction_timeout = 0;\nSET statement_timeout = 0;\nSELECT 'Möbius';\n"
+    for (const version of [15, 17]) {
+      let output = ''
+      const stream = Readable.from([...Buffer.from(input)].map(byte => Buffer.from([byte])))
+        .pipe(compatibleSql(version))
+      for await (const chunk of stream) output += chunk.toString()
+      assert.strictEqual(output, version === 15 ? input.replace('SET transaction_timeout = 0;\n', '') : input)
+    }
+  })
+
+  it('caps simultaneous localhost requests without following redirects', async () => {
+    const http = require('http')
+    let active = 0
+    let peak = 0
+    let received = 0
+    const server = http.createServer((req, res) => {
+      assert.strictEqual(req.method, 'GET')
+      assert.strictEqual(req.url, '/redirect')
+      received++
+      active++
+      peak = Math.max(peak, active)
+      setTimeout(() => {
+        res.writeHead(302, { Location: 'https://ourbigbook.com/' })
+        res.end('redirect')
+        active--
+      }, 80)
+    })
+    await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
+    try {
+      const result = await replay({
+        port: server.address().port, paths: ['/redirect'], rate: 25,
+        seconds: 1, connections: 1, alive: () => true,
+      })
+      assert.strictEqual(peak, 1)
+      assert.strictEqual(result.sent, received)
+      assert.strictEqual(result.sent + result.skipped, 25)
+      assert(result.skipped > 0)
+      assert.strictEqual(result.statuses[302], received)
+      assert.deepStrictEqual(result.errors, {})
+    } finally {
+      await new Promise(resolve => server.close(resolve))
+    }
+  })
+})
+
 it('benchmark discovers requests and appends runs with database metadata', async function() {
   this.timeout(15000)
   const fs = require('fs')
@@ -6330,8 +6401,8 @@ it('background renders: real CLI uploads all sources first, batches large reposi
           assert(!article.render.includes('paper/question/diagram.svg'))
         }
         // Media under the reserved namespace is uploaded separately in both CLI modes.
-        // Removing the old uploaded path is currently restricted to admins.
-        await test.sequelize.models.User.update({ admin: true }, { where: { id: user.id } })
+        // Removed files are unlisted, not deleted: non-admin owners can move media.
+        assert.strictEqual((await test.sequelize.models.User.findByPk(user.id)).admin, false)
         const media = path.join(wiki, '-/media')
         fs.mkdirSync(media, { recursive: true })
         require('child_process').execFileSync('git', ['init', '-q', media])
@@ -6343,14 +6414,20 @@ it('background renders: real CLI uploads all sources first, batches large reposi
         }))
         fs.writeFileSync(path.join(wiki, '-/invalid.bigb'), '\\UnknownMacro')
         for (const args of [[], ['--web-individual-upload']]) {
-          await run([...args, '--web-force-id-extraction', '--web-force-render'])
+          const uploaded = await run([...args, '--web-force-id-extraction', '--web-force-render'])
+          assert.strictEqual(uploaded.stdout.includes('web_unlist_upload:'), args.length === 0)
+          assert(!uploaded.stdout.includes('web_delete_upload:'))
           const file = await File.findOne({ where: { path: '@user0/subdir/paper/question/solution.bigb' } })
           assert(file.bodySource.includes('\\Image[/media/diagram.svg]'))
           const article = await Article.findOne({ where: { slug: 'user0/subdir/paper/question/solution' } })
           assert(article.render.includes('/user0/-/raw/media/diagram.svg'))
           const { Upload } = test.sequelize.models
           assert(await Upload.findOne({ where: { path: Upload.uidAndPathToUploadPath(user.id, 'media/diagram.svg') } }))
-          for (const missing of ['subdir/diagram.svg', 'media/ignored.svg', 'media/.git/config']) {
+          const oldUpload = await Upload.findOne({ where: { path: Upload.uidAndPathToUploadPath(user.id, 'subdir/diagram.svg') } })
+          assert(oldUpload)
+          assert.strictEqual(oldUpload.list, false)
+          assert(oldUpload.bytes.equals(fs.readFileSync(path.join(media, 'diagram.svg'))))
+          for (const missing of ['media/ignored.svg', 'media/.git/config']) {
             assert.strictEqual(await Upload.count({ where: { path: Upload.uidAndPathToUploadPath(user.id, missing) } }), 0)
           }
         }
@@ -10896,6 +10973,11 @@ it('web: file unlisting permissions, listings, replacement and counts', async ()
     await User.update({ locked: false }, { where: { id: owner.id } })
     await test.webApi.uploadUpdate(fullPath, { list: false })
     await test.webApi.uploadUpdate(fullPath, { list: false })
+    const hashes = await test.webApi.uploadHash({ author: 'user0' })
+    assertRows(hashes.data.uploads, [
+      { path: fullPath, list: false },
+      { path: 'user0/visible.txt', list: true },
+    ])
     const assertCounts = async (count, size) => {
       const user = await User.findByPk(owner.id)
       assert.strictEqual(user.fileCount, count)

@@ -1585,7 +1585,7 @@ function printStatus({
   let pref
   if (isUpload) {
     if (cleanupDeleted) {
-      pref = 'delete_upload'
+      pref = 'unlist_upload'
     } else {
       pref = 'upload'
     }
@@ -3137,7 +3137,7 @@ if (cli.helpMacros) {
                 for (const upload of uploads) {
                   const pathNoUsername = upload.path.substring(username.length + URL_SEP.length)
                   uploadHashes[pathNoUsername] = upload.hash
-                  if (fullWebUpload && !uploadPaths.has(pathNoUsername)) {
+                  if (fullWebUpload && !uploadPaths.has(pathNoUsername) && upload.list !== false) {
                     serverOnlyUploads.push(pathNoUsername)
                   }
                 }
@@ -3146,9 +3146,11 @@ if (cli.helpMacros) {
             }
             i = 0
             for (const p of serverOnlyUploads) {
+              // Preserve existing raw URLs and bytes; removal from listings is
+              // allowed for owners, unlike the admin-only deletion endpoint.
               await webCreateOrUpdate({
                 cleanupDeleted: true,
-                fn: async () => webApi.uploadDelete(`${username}${URL_SEP}${p}`),
+                fn: async () => webApi.uploadUpdate(`${username}${URL_SEP}${p}`, { list: false }),
                 i: i++,
                 isUpload: true,
                 title: p,

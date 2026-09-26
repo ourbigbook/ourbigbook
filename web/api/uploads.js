@@ -306,7 +306,7 @@ router.get('/hash', auth.optional, async function(req, res, next) {
       where.path = sequelizeWhereStartsWith(sequelize, Upload.uidAndPathToUploadPath(author.id, ''), 'path')
     }
     const { count, rows: uploads } = await Upload.findAndCountAll({
-      attributes: ['path', 'hash'],
+      attributes: ['path', 'hash', 'list'],
       limit,
       offset,
       order: [['path', 'ASC']],
@@ -315,6 +315,7 @@ router.get('/hash', auth.optional, async function(req, res, next) {
     return res.json({
       uploads: uploads.map(upload => { return {
         hash: upload.hash,
+        list: upload.list,
         path: `${authorUsername}${URL_SEP}${upload.path.split(URL_SEP).slice(2).join(URL_SEP)}`,
       }}),
       count,

@@ -118,10 +118,6 @@ $navbar-color-discrete: $color-discreet;
 $navbar-non-brandname-color: $a-color;
 $footer-color: $color;
 
-@font-face { font-family: fa-brands-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-brands-400.woff2); }
-@font-face { font-family: fa-regular-400; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-regular-400.woff2); }
-@font-face { font-family: fa-solid-900; src: url(node_modules/@fortawesome/fontawesome-free/webfonts/fa-solid-900.woff2); }
-
 /** This is just the minimal generic-looking body style. We use it to make
  * web style look like rendered ourbigbook by default. In those cases, ourbigbook-title
  * would also work I think, but including that large mixin a bunch of times would generate

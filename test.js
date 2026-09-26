@@ -34,6 +34,32 @@ const MAKE_GIT_REPO_PRE_EXEC = [
   ['git', ['commit', '-m', '0']],
   ['git', ['remote', 'add', 'origin', 'git@github.com:ourbigbook/ourbigbook-generate.git']],
 ]
+it('Font Awesome declarations are only emitted by bundled stylesheets', function () {
+  this.timeout(10000)
+  const sass = require('sass')
+  for (const [file, expected] of [
+    ['ourbigbook.common.scss', 0],
+    ['main.scss', 0],
+    ['editor.scss', 0],
+    ['ourbigbook.scss', 3],
+    ['web/style.scss', 3],
+  ]) {
+    const css = sass.renderSync({
+      file: path.join(__dirname, file),
+      includePaths: [path.join(__dirname, 'node_modules'), path.dirname(__dirname)],
+      outputStyle: 'compressed',
+    }).css.toString()
+    const fonts = css.match(/@font-face\{font-family:fa-[^}]+\}/g) || []
+    assert.strictEqual(fonts.length, expected, file)
+    if (expected) {
+      for (const font of ['brands-400', 'regular-400', 'solid-900']) {
+        assert(fonts.some(rule => rule.includes(`fa-${font}.woff2`)), file)
+      }
+    } else {
+      assert(!css.includes('fontawesome-free/webfonts'), file)
+    }
+  }
+})
 const PATH_SEP = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR
 
 describe('WebApi retries', function () {

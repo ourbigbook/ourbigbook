@@ -11528,6 +11528,9 @@ Types:
 {c}
 {parent=OurBigBook Web URL standards}
 
+= OurBigBook Web URL standards: article ID comes last due to slash
+{synonym}
+
 Browser URLs use `/-/` to separate a user or article <ID> from page actions:
 * global pages: `/-/users`, `/-/articles`, `/-/files`
 * user pages: `/username/-/articles`, `/username/-/files`, `/username/-/settings`
@@ -11555,9 +11558,6 @@ web/bin/rerender-comments.js
 See <web/bin/rerender-articles.js>{file} for rerender options. Named anchors and comment scopes need no database transformation; `21000101000042-named-anchor-namespace.js` is retained as a no-op for migration history compatibility.
 
 Regenerate static websites with the updated <OurBigBook CLI> and <force-render>[`--force-render`] to publish the new paths and temporary anchors. If you keep `.bigb` sources under `_file/`, move that source directory to the <`-/file` input directory>[`-/file/` directory] before rebuilding. The CLI invalidates cached legacy file IDs automatically, and existing <internal link>[`\x[_file/path]` source references] still resolve. Old static URLs require redirects configured on the host if they must remain available.
-
-= OurBigBook Web URL standards: article ID comes last due to slash
-{synonym}
 
 = OurBigBook Web API standards
 {parent=OurBigBook Web URL standards}

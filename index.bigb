@@ -7548,19 +7548,15 @@ Directory conversion remains BigB-only unless `-I markdown` is given, so that Ma
 {synonym}
 {title2}
 
-OurBigBook has basic support for markdown input.
+OurBigBook has some level of support for markdown input.
 
-Markdown input also accepts arbitrary OurBigBook macros, including their positional and named arguments. For example, `\b[my bold]` is the sane counterpart of `**my bold**`, and `\Image[https://example.com/image.svg]{title=My image}{border}` includes named arguments. Argument delimiters use OurBigBook syntax, including nested macros, multiline content, repeated named arguments and literal arguments such as `\C[[literal content]]`. Text content inside nonliteral arguments recursively uses Markdown, e.g. `\Q[Hello **world**!]{description=A [link](https://example.com).}`. Code, literal arguments and nontext parameters such as URLs and IDs retain their native syntax. Unknown macros and invalid arguments produce the usual OurBigBook validation errors.
-
-Markdown code spans and fenced code blocks keep backslashes literal. Outside code, write `\\b` to display a literal `\b` instead of invoking it. This integration uses Marked extensions backed by the same tokenizer as native OurBigBook input.
-
-For now, you can transparently <include> standard markdown files such as \a[not-index-md.md] with:
+You can transparently <include> standard markdown files such as \a[markdown-example.md] with:
 ``
-\Include[not-index-md]
+\Include[markdown-example]
 ``
 and OurBigBook will integrate it into the current project seamlessly. Live demo:
 
-\Include[not-index-md]
+\Include[markdown-example]
 
 = `-j`, `--jobs <n>`
 {id=jobs}

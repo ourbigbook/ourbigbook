@@ -13785,10 +13785,19 @@ function markdownInputArgument(text) {
   return `[${text}]`
 }
 
+const MARKDOWN_INLINE_MACROS = { strong: 'b', em: 'i', codespan: 'c', link: 'a', image: 'Image', br: 'br' }
+const MARKDOWN_BLOCK_MACROS = { heading: 'H', code: 'C', blockquote: 'Q', list: 'Ul', table: 'Table', hr: 'Hr' }
+
 function markdownInputRenderInline(tokens=[]) {
   let ret = ''
-  for (const token of tokens) {
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]
+    const macro = MARKDOWN_INLINE_MACROS[token.type]
+    const args = macro && tokens[i + 1]?.type === 'ourbigbookArguments' ? tokens[++i] : undefined
     switch (token.type) {
+      case 'ourbigbookArguments':
+        ret += ourbigbookEscape(token.raw)
+        break
       case 'ourbigbookMacro':
         ret += token.convert ? token.convert() : token.raw
         break
@@ -13819,7 +13828,7 @@ function markdownInputRenderInline(tokens=[]) {
         break
       case 'image': {
         const alt = token.text ? markdownInputArgument(ourbigbookEscape(token.text)) : ''
-        ret += `\\image${markdownInputLiteralArgument(token.href)}${alt}`
+        ret += `\\${args ? 'Image' : 'image'}${markdownInputLiteralArgument(token.href)}${alt}`
         break
       }
       case 'html':
@@ -13832,6 +13841,7 @@ function markdownInputRenderInline(tokens=[]) {
           ret += ourbigbookEscape(token.text)
         }
     }
+    if (args) ret += args.forMacro(macro)
   }
   return ret
 }
@@ -13865,8 +13875,31 @@ function markdownInputRenderTable(token) {
 
 function markdownInputRenderBlocks(tokens=[]) {
   let ret = ''
-  for (const token of tokens) {
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]
+    const macro = token.type === 'list' && token.ordered ? 'Ol' : MARKDOWN_BLOCK_MACROS[token.type]
+    const nextArgs = tokens[i + 1]?.type === 'ourbigbookArguments' ? tokens[i + 1] : undefined
+    let args = macro && nextArgs ? tokens[++i] : undefined
+    // Marked absorbs lazy continuation lines into block quotes and list items.
+    // Pull a trailing argument line back out so it decorates the whole block.
+    if (!args && (token.type === 'blockquote' || token.type === 'list')) {
+      const body = token.type === 'list' ? token.items.at(-1)?.tokens : token.tokens
+      const last = body?.at(-1)
+      if (last?.type === 'ourbigbookArguments') {
+        args = body.pop()
+      } else if (last?.tokens?.at(-1)?.type === 'ourbigbookArguments' && last.tokens.at(-1).raw.startsWith('\n')) {
+        args = last.tokens.pop()
+      }
+    }
+    if (token.type === 'heading' && token.tokens?.at(-1)?.type === 'ourbigbookArguments') {
+      const inlineArgs = token.tokens.pop()
+      const followingArgs = args
+      args = { forMacro: name => inlineArgs.forMacro(name) + (followingArgs?.forMacro(name) || '') }
+    }
     switch (token.type) {
+      case 'ourbigbookArguments':
+        ret += ourbigbookEscape(token.raw) + '\n\n'
+        break
       case 'ourbigbookMacro':
         ret += (token.convert ? token.convert() : token.raw) + '\n\n'
         break
@@ -13878,7 +13911,12 @@ function markdownInputRenderBlocks(tokens=[]) {
         break
       case 'paragraph':
       case 'text':
-        ret += `${markdownInputRenderInline(token.tokens || [])}\n\n`
+        if (nextArgs && token.tokens?.length === 1 && MARKDOWN_INLINE_MACROS[token.tokens[0].type]) {
+          ret += `${markdownInputRenderInline([...token.tokens, nextArgs])}\n\n`
+          i++
+        } else {
+          ret += `${markdownInputRenderInline(token.tokens || [])}\n\n`
+        }
         break
       case 'code':
         ret += `\\C${markdownInputLiteralArgument(token.text)}\n\n`
@@ -13905,6 +13943,7 @@ function markdownInputRenderBlocks(tokens=[]) {
           ret += `${ourbigbookEscape(token.text)}\n\n`
         }
     }
+    if (args) ret = ret.replace(/\n+$/, '') + (token.type === 'heading' ? '\n' : '') + args.forMacro(macro) + '\n\n'
   }
   return ret
 }
@@ -13946,6 +13985,19 @@ async function markdownToOurbigbook(input) {
     token.convert = () => convertMacroArguments(token, lexer)
     return token
   }
+  function argumentToken(src, lexer) {
+    const newline = src.startsWith('\n') ? '\n' : ''
+    const content = src.slice(newline.length)
+    if (!/^\{+[A-Za-z0-9]+(?:=|\})/.test(content)) return
+    // Reuse native argument boundaries, including literal and nested arguments.
+    const token = macroToken('\\Q' + content)
+    if (!token) return
+    return {
+      type: 'ourbigbookArguments',
+      raw: newline + token.raw.slice(2),
+      forMacro: name => convertMacroArguments({ ...token, name }, lexer).slice(2),
+    }
+  }
   function convertMacroArguments(token, lexer) {
     const chars = Array.from(token.raw)
     let end = 0
@@ -13978,6 +14030,12 @@ async function markdownToOurbigbook(input) {
     return result
   }
   const marked = new Marked({ gfm: true }, { tokenizer: {
+    table(src) {
+      // GFM otherwise treats an argument-only line as another table row.
+      const end = src.search(/\n\{+[A-Za-z0-9]+(?:=|\})/)
+      if (end < 0) return false
+      return Object.getPrototypeOf(this).table.call(this, src.slice(0, end + 1)) || false
+    },
     paragraph(src) {
       const cap = this.rules.block.paragraph.exec(src)
       if (!cap) return false
@@ -13989,9 +14047,9 @@ async function markdownToOurbigbook(input) {
           const code = this.codespan(src.slice(i))
           if (code) { i += code.raw.length - 1; continue }
         }
-        if (src[i] !== ESCAPE_CHAR) continue
-        if (src[i + 1] === ESCAPE_CHAR) { i++; continue }
-        const token = macroToken(src.slice(i))
+        if (src[i] !== ESCAPE_CHAR && src[i] !== '{') continue
+        if (src[i] === ESCAPE_CHAR && src[i + 1] === ESCAPE_CHAR) { i++; continue }
+        const token = src[i] === '{' ? argumentToken(src.slice(i), this.lexer) : macroToken(src.slice(i))
         if (!token) continue
         const macroEnd = i + token.raw.length
         if (macroEnd > end) {
@@ -14019,9 +14077,9 @@ async function markdownToOurbigbook(input) {
           const code = macroLexer.tokenizer.codespan(src.slice(i))
           if (code) { i += code.raw.length - 1; continue }
         }
-        if (src[i] !== ESCAPE_CHAR) continue
-        if (src[i + 1] === ESCAPE_CHAR) { i++; continue }
-        const token = macroToken(src.slice(i))
+        if (src[i] !== ESCAPE_CHAR && src[i] !== '{') continue
+        if (src[i] === ESCAPE_CHAR && src[i + 1] === ESCAPE_CHAR) { i++; continue }
+        const token = src[i] === '{' ? argumentToken(src.slice(i), macroLexer) : macroToken(src.slice(i))
         if (!token) continue
         chunks.push(maskedSrc.slice(last, i), 'a'.repeat(token.raw.length))
         i += token.raw.length - 1
@@ -14030,6 +14088,19 @@ async function markdownToOurbigbook(input) {
       return chunks.join('') + maskedSrc.slice(last)
     },
   }, extensions: [
+    {
+      name: 'ourbigbookArguments',
+      level: 'block',
+      tokenizer(src) { return argumentToken(src, this.lexer) },
+    },
+    {
+      name: 'ourbigbookArguments',
+      level: 'inline',
+      start: src => src.search(/\n?\{+[A-Za-z0-9]+(?:=|\})/),
+      tokenizer(src) {
+        if (!this.lexer.state.inRawBlock) return argumentToken(src, this.lexer)
+      },
+    },
     {
       name: 'ourbigbookMacro',
       level: 'block',

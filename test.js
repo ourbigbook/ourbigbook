@@ -402,6 +402,42 @@ two
     }
   })
 
+  it('Markdown constructs accept trailing native named arguments', async function () {
+    const source = '# Not index md\n\n# OurBigBook Markdown extensions\n{parent=Not index md}\n\n' +
+      '![](https://example.com/image.png)\n{description=My **nice** [image](https://example.com).}{border}\n\n' +
+      '**bold**{id=bold-id} and *italic*{id=italic-id} and [link](https://example.com){id=link-id} and `code`{id=code-id}.\n\n' +
+      '> Quote\n{description=My *quote*}\n\n' +
+      '```\nraw {id=not-an-argument}\n```\n{description=My **code**}\n\n' +
+      '- First\n- Second\n{id=my-list}\n\n' +
+      '| A | B |\n| - | - |\n| C | D |\n{id=my-table}\n\n' +
+      '---\n{id=my-line}\n'
+    const extra = {}
+    const html = await ourbigbook.convert(await markdownToOurbigbook(source), { input_path: 'not-index-md.bigb' }, extra)
+    assert.deepStrictEqual(extra.errors, [])
+    for (const xpath of [
+      '//x:img[@src="https://example.com/image.png"]',
+      '//x:figcaption//x:b[text()="nice"]',
+      '//x:figcaption//x:a[@href="https://example.com" and text()="image"]',
+      '//*[@id="bold-id"]', '//*[@id="italic-id"]', '//*[@id="link-id"]', '//*[@id="code-id"]',
+      '//*[@id="my-list"]', '//*[@id="my-table"]',
+      '//x:code[contains(., "raw {id=not-an-argument}")]',
+    ]) assert_xpath(xpath, html)
+    assert((await markdownToOurbigbook(source)).includes('\\Hr{id=my-line}'))
+  })
+
+  it('Markdown argument suffixes preserve literal braces and normal validation', async function () {
+    assert.strictEqual(await markdownToOurbigbook('# Heading{id=heading}'), '= Heading\n{id=heading}\n')
+    assert.strictEqual(await markdownToOurbigbook('**bold**\\{id=literal}'), '\\b[bold]\\{id=literal\\}\n')
+    assert.strictEqual(await markdownToOurbigbook('text {id=literal}'), 'text \\{id=literal\\}\n')
+    assert.strictEqual(await markdownToOurbigbook('**bold**\n\n{id=literal}'), '\\b[bold]\n\n\\{id=literal\\}\n')
+    assert.strictEqual(await markdownToOurbigbook('![](image.png){{description=literal **bold**}}'), '\\Image[image.png]{{description=literal **bold**}}\n')
+    for (const source of ['**bold**{noSuchArgument=value}', '# Heading\n{noSuchArgument=value}']) {
+      const extra = {}
+      await ourbigbook.convert(await markdownToOurbigbook(source), { input_path: 'index.bigb' }, extra)
+      assert(extra.errors.length, source)
+    }
+  })
+
   it('Markdown macros recursively render positional and named argument content', async function () {
     const source = `# Input
 
@@ -12498,6 +12534,21 @@ assert_cli(`missing local file diagnostic: ${macro} ${target}`, {
 })
 }
 }
+assert_cli('Markdown constructs: CLI accepts heading and image argument lines', {
+  args: ['index.md'],
+  filesystem: {
+    'ourbigbook.json': '{}',
+    'index.md': '# Home\n\n## Child\n{id=renamed}\n\n![](image.svg)\n{description=My **nice** image}\n',
+    'image.svg': '<svg/>',
+  },
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/index.html`]: [
+      '//*[@id="renamed"]',
+      '//x:img',
+      '//x:figcaption//x:b[text()="nice"]',
+    ],
+  },
+})
 assert_cli('Markdown macros: CLI includes native articles and validates named arguments', {
   args: ['--embed-includes', '.'],
   filesystem: {

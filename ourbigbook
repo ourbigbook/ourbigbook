@@ -349,7 +349,7 @@ async function check_db(nonOurbigbookOptions, { exitOnError=true }={}) {
         nonOurbigbookOptions.ourbigbook_paths_converted,
         {
           filterFilesThatDontExist: (aRefs) => aRefs.filter(
-            aRef => !fs.existsSync(path.join(nonOurbigbookOptions.ourbigbook_json_dir, aRef.to))),
+            aRef => !fs.existsSync(resolvePublishedMediaPath(nonOurbigbookOptions.ourbigbook_json_dir, aRef.to, nonOurbigbookOptions))),
           options: nonOurbigbookOptions.options,
           perf: false,
         }
@@ -1757,16 +1757,27 @@ async function webCreateOrUpdate({
   return { nestedSetNeedsUpdate: data ? data.nestedSetNeedsUpdate : true }
 }
 
-function fileConversionOptions(ourbigbook_json_dir) {
+function resolvePublishedMediaPath(root, file, { localMediaPath, localMediaSnapshot }={}) {
+  if (localMediaSnapshot) {
+    const prefix = path.normalize(localMediaPath).replace(/\/$/, '')
+    if (file === prefix || file.startsWith(prefix + path.sep)) {
+      return path.join(localMediaSnapshot, path.relative(prefix, file))
+    }
+  }
+  return path.join(root, file)
+}
+
+function fileConversionOptions(ourbigbook_json_dir, mediaOptions) {
+  const resolveFile = file => resolvePublishedMediaPath(ourbigbook_json_dir, file, mediaOptions)
   return {
     getAFileTypes: (aRefs) => {
       let ret = {}
       for (const a of aRefs) {
-        ret[a] = fs.lstatSync(path.join(ourbigbook_json_dir,a)).isFile() ? FILE_TYPE_FILE : FILE_TYPE_DIRECTORY
+        ret[a] = fs.lstatSync(resolveFile(a)).isFile() ? FILE_TYPE_FILE : FILE_TYPE_DIRECTORY
       }
       return ret
     },
-    fs_exists_sync: (my_path) => fs.existsSync(path.join(ourbigbook_json_dir, my_path)),
+    fs_exists_sync: (my_path) => fs.existsSync(resolveFile(my_path)),
     read_include: read_include({
       exists: (inpath) => fs.existsSync(path.join(ourbigbook_json_dir, inpath)),
       read: (inpath) => fs.readFileSync(path.join(ourbigbook_json_dir, inpath), ourbigbook_nodejs_webpack_safe.ENCODING),
@@ -1977,7 +1988,7 @@ async function runDirectoryWorker() {
       }
       const options = {
         ...structuredClone(workerData.options),
-        ...fileConversionOptions(workerData.nonOptions.filesystem_root),
+        ...fileConversionOptions(workerData.nonOptions.filesystem_root, workerData.nonOptions),
         katex_macros,
         render: task.render,
         // Never carry extraction or another file's cached refs into rendering.
@@ -3359,7 +3370,13 @@ if (cli.helpMacros) {
             if (branch === 'HEAD' && !alreadyPublished) {
               branch = mediaGit(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']).replace(/^origin\//, '')
             }
-            ourbigbook_options.localMediaPublishUrl = `https://raw.githubusercontent.com/${remote.owner}/${remote.name}/${commit}`
+            ourbigbook_options.localMediaPublish = true
+            const snapshot = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ourbigbook-publish-media-'))
+            process.on('exit', () => fs.rmSync(snapshot, { recursive: true, force: true }))
+            runCmd('git', ['clone', '--shared', '--no-checkout', '--', localMediaDir, snapshot], cmdOptsNoDry)
+            runCmd('git', ['-C', snapshot, 'checkout', '--detach', commit], cmdOptsNoDry)
+            Object.assign(nonOurbigbookOptions, { localMediaPath, localMediaSnapshot: snapshot })
+            Object.assign(ourbigbook_options, fileConversionOptions(ourbigbook_json_dir, nonOurbigbookOptions))
             // Publish media first, including before cloning a source repository with submodules.
             if (!cli.dryRunPush && !alreadyPublished) runCmd('git', ['-C', localMediaDir, 'push', 'origin', `HEAD:refs/heads/${branch}`], cmdOpts)
           }
@@ -3605,6 +3622,30 @@ if (cli.helpMacros) {
           }
 
           if (publish_uses_git) {
+            if (nonOurbigbookOptions.localMediaSnapshot) {
+              // Merge only the committed snapshot, never dirty/untracked files or Git metadata.
+              const copyMedia = (validateOnly, relative='') => {
+                for (const entry of fs.readdirSync(path.join(nonOurbigbookOptions.localMediaSnapshot, relative), { withFileTypes: true })) {
+                  if (['.git', '.gitignore', '.gitattributes', '.gitmodules'].includes(entry.name)) continue
+                  const mediaPath = path.join(relative, entry.name)
+                  const destination = path.join(publishOutPublishDir, mediaPath)
+                  if (entry.isSymbolicLink()) cli_error(`cannot publish local media symbolic link: ${mediaPath}`)
+                  if (entry.isDirectory()) {
+                    if (fs.existsSync(destination) && !fs.lstatSync(destination).isDirectory()) {
+                      cli_error(`local media collides with generated output: ${mediaPath}`)
+                    }
+                    if (!validateOnly) fs.mkdirSync(destination, { recursive: true })
+                    copyMedia(validateOnly, mediaPath)
+                  } else {
+                    if (fs.existsSync(destination)) cli_error(`local media collides with generated output: ${mediaPath}`)
+                    if (!validateOnly) fs.copyFileSync(path.join(nonOurbigbookOptions.localMediaSnapshot, mediaPath), destination, fs.constants.COPYFILE_EXCL)
+                  }
+                }
+              }
+              // Detect every collision before copying any media into the output.
+              copyMedia(true)
+              copyMedia(false)
+            }
             // Commit and push.
             runCmd('git', ['-C', publishOutPublishDirCwd, 'add', '.'], cmdOpts);
             const args = ['-C', publishOutPublishDirCwd, 'commit', '-m', sourceCommit]

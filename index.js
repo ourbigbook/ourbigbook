@@ -8377,9 +8377,14 @@ function resolveLinkToFileGetHref({
       if (media_provider_type === 'local') {
         const localPath = context.options.ourbigbook_json['media-providers'].local.path
         if (localPath && (href === path.normalize(localPath) || href.startsWith(path.normalize(localPath).replace(/\/$/, '') + URL_SEP))) {
-          // Configured media lives outside the generated output, including in ignored submodules.
-          pref = path.join(pref, context.options.outdir || '.')
-          hrefNoShift = path.join(context.options.outdir || '.', href)
+          if (context.options.localMediaPublish) {
+            href = path.relative(path.normalize(localPath), href)
+            hrefNoShift = href
+          } else {
+            // Configured media lives outside the generated output, including in ignored submodules.
+            pref = path.join(pref, context.options.outdir || '.')
+            hrefNoShift = path.join(context.options.outdir || '.', href)
+          }
         } else {
           let filetypeString
           if (type === FILE_TYPE_DIRECTORY) {
@@ -9761,13 +9766,8 @@ function macroImageVideoResolveParams(ast, context) {
   if (media_provider_type === 'local') {
     const localPath = context.options.ourbigbook_json['media-providers'].local.path;
     if (localPath !== '') {
-      if (context.options.localMediaPublishUrl) {
-        src = context.options.localMediaPublishUrl + URL_SEP + src
-        is_url = true
-      } else {
-        // A configured provider path is relative to ourbigbook.json, not each source file.
-        src = URL_SEP + path.join(localPath, src)
-      }
+      // A configured provider path is relative to ourbigbook.json, not each source file.
+      src = URL_SEP + path.join(localPath, src)
     }
   } else if (media_provider_type === 'github') {
     const github_path = context.options.ourbigbook_json['media-providers'].github.path;

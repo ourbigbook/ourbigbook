@@ -15185,34 +15185,41 @@ assert_cli('link: local media repository resolves from nested sources and skips 
   assert_not_exists: [`${TMP_DIRNAME}/html/-/media/invalid.html`, `${TMP_DIRNAME}/html/subdir/-/invalid.html`],
 })
 for (const publishTarget of ['github-pages', 'github-md']) {
-assert_cli(`publish: local media repository is pushed and rendered as GitHub URLs (${publishTarget})`, {
+assert_cli(`publish: local media repository is pushed and merged into output (${publishTarget})`, {
   args: ['--dry-run', '--publish', '--publish-target', publishTarget],
   cwd: 'wiki',
   filesystem: {
     'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
     'wiki/index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
-    'wiki/subdir/paper.bigb': '= Paper\n\n\\Image[diagram.svg]\n',
+    'wiki/subdir/paper.bigb': '= Paper\n\n\\Image[diagram.svg]\n\n\\Image[subdir/other.svg]\n',
     'wiki-media/diagram.svg': '<svg/>',
+    'wiki-media/subdir/other.svg': '<svg>other</svg>',
+    'wiki-media/.gitignore': '*.html\n',
   },
   pre_exec: [
     ['git', ['-C', '../wiki-media', 'init', '-b', 'main']],
     ['git', ['-C', '../wiki-media', 'add', '.']],
     ['git', ['-C', '../wiki-media', 'commit', '-m', 'media']],
     ['git', ['-C', '../wiki-media', 'remote', 'add', 'origin', 'git@github.com:ourbigbook/wiki-media.git']],
+    { filesystem_update: { 'wiki-media/diagram.svg': 'uncommitted change', 'wiki-media/untracked.svg': '<svg/>' } },
     ...MAKE_GIT_REPO_PRE_EXEC,
     ['git', ['checkout', '-b', 'dev']],
   ],
   assert_stdout_contains: ['push origin HEAD:refs/heads/main'],
   assert_xpath: publishTarget === 'github-pages' ? {
     [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/subdir/paper.html`]: [
-      "//x:img[starts-with(@src, 'https://raw.githubusercontent.com/ourbigbook/wiki-media/') and contains(@src, '/diagram.svg')]",
+      "//x:img[@src='../diagram.svg']",
+      "//x:img[@src='../subdir/other.svg']",
     ],
   } : {},
-  assert_contains: publishTarget === 'github-md' ? {
-    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/subdir/paper.md`]: [
-      /https:\/\/raw\.githubusercontent\.com\/ourbigbook\/wiki-media\/[0-9a-f]+\/diagram\.svg/,
-    ],
-  } : {},
+  assert_contains: {
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/diagram.svg`]: ['<svg/>'],
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/subdir/other.svg`]: ['<svg>other</svg>'],
+    ...(publishTarget === 'github-md' ? {
+      [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/subdir/paper.md`]: ['../diagram.svg', 'other.svg'],
+    } : {}),
+  },
+  assert_not_exists: [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/untracked.svg`],
 })
 }
 assert_cli('publish: local media repository can be a detached submodule under -/media', {
@@ -15242,10 +15249,39 @@ assert_cli('publish: local media repository can be a detached submodule under -/
   assert_stdout_not_contains: ['push origin HEAD:refs/heads/'],
   assert_xpath: {
     [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/index.html`]: [
-      "//x:img[starts-with(@src, 'https://raw.githubusercontent.com/ourbigbook/wiki-media/') and contains(@src, '/diagram.svg')]",
+      "//x:img[@src='diagram.svg']",
     ],
   },
+  assert_contains: {
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/diagram.svg`]: ['<svg/>'],
+  },
 })
+for (const collision of ['index.html', 'index.html/diagram.svg', 'subdir']) {
+assert_cli(`publish: local media repository rejects output collision ${collision}`, {
+  args: ['--dry-run', '--publish'],
+  cwd: 'wiki',
+  filesystem: {
+    'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
+    'wiki/index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
+    'wiki/subdir/paper.bigb': '= Paper\n',
+    [`wiki-media/${collision}`]: 'must not overwrite output',
+  },
+  pre_exec: [
+    ['git', ['-C', '../wiki-media', 'init', '-b', 'main']],
+    ['git', ['-C', '../wiki-media', 'add', '.']],
+    ['git', ['-C', '../wiki-media', 'commit', '-m', 'media']],
+    ['git', ['-C', '../wiki-media', 'remote', 'add', 'origin', 'git@github.com:ourbigbook/wiki-media.git']],
+    ...MAKE_GIT_REPO_PRE_EXEC,
+    ['git', ['checkout', '-b', 'dev']],
+  ],
+  assert_exit_status: 1,
+  assert_stderr_contains: [`local media collides with generated output: ${collision.split('/')[0]}`],
+  assert_stdout_not_contains: ['push -f origin'],
+  assert_xpath: {
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/index.html`]: ["//x:h1"],
+  },
+})
+}
 assert_cli(
   'timestamps are tracked separately for different --output-format',
   {

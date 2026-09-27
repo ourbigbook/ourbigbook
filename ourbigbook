@@ -3543,13 +3543,12 @@ if (cli.helpMacros) {
           if (!cli.publishNoConvert) {
             if (publish_uses_git) {
               if (fs.existsSync(path.join(publishOutPublishDir, '.git'))) {
-                // git rm -rf . blows up on an empty directory.
-                // This check blows up for a very large directory. We could instead just get one line,
-                // but requires modifying the runCmd function: https://stackoverflow.com/questions/63796633/spawnsync-bin-sh-enobufs/77420941#77420941
-                //if (git_ls_files(publishOutPublishDir).length > 0) {
-                // So instead I'm lazy and just throwOnError false here.
-                runCmd('git', ['-C', publishOutPublishDirCwd, 'rm', '-r', '-f', '.'],
-                  ourbigbook.cloneAndSet(cmdOpts, 'throwOnError', false))
+                // Quiet avoids overflowing spawnSync's output buffer on large sites.
+                // Empty indexes are OK; actual cleanup failures must abort the build.
+                // Dry runs also rebuild locally, so they need the same clean output.
+                runCmd('git', ['-C', publishOutPublishDirCwd, 'rm', '--quiet', '-r', '-f', '--ignore-unmatch', '--', '.'], cmdOptsNoDry)
+                // An interrupted publish can also leave untracked/ignored output.
+                runCmd('git', ['-C', publishOutPublishDirCwd, 'clean', '--quiet', '-fdx'], cmdOptsNoDry)
               }
             } else {
               fs.rmSync(publishOutPublishDir, { recursive: true, force: true })
@@ -3626,7 +3625,7 @@ if (cli.helpMacros) {
             runCmd('git', ['-C', publishOutPublishDirCwd, 'fetch', 'origin'], cmdOpts);
             runCmd(
               'git',
-              ['-C', publishOutPublishDirCwd, 'reset', `origin/${publishBranch}`],
+              ['-C', publishOutPublishDirCwd, 'reset', '--quiet', `origin/${publishBranch}`],
               // Fails on the first commit in an empty repository.
               ourbigbook.cloneAndSet(cmdOpts, 'throwOnError', false)
             );

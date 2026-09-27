@@ -15282,6 +15282,53 @@ assert_cli(`publish: local media repository rejects output collision ${collision
   },
 })
 }
+for (const previousOutput of ['large', 'empty', 'locked']) {
+  const output = `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages`
+  // Without quiet cleanup these names produce more than spawnSync's 1 MiB buffer.
+  const staleFiles = Object.fromEntries(Array.from({ length: previousOutput === 'large' ? 6000 : 0 }, (_, i) => [
+    `wiki/${output}/stale/${String(i).padStart(5, '0')}-${'x'.repeat(180)}.txt`, 'old',
+  ]))
+  assert_cli(`publish: local media repository cleanup ${previousOutput} previous output`, {
+    args: ['--dry-run', '--publish'],
+    cwd: 'wiki',
+    filesystem: {
+      'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
+      'wiki/index.bigb': '= Home\n\n\\Image[diagram.svg]\n',
+      'wiki-media/diagram.svg': '<svg>current</svg>',
+    },
+    pre_exec: [
+      ['git', ['-C', '../wiki-media', 'init', '-b', 'main']],
+      ['git', ['-C', '../wiki-media', 'add', '.']],
+      ['git', ['-C', '../wiki-media', 'commit', '-m', 'media']],
+      ['git', ['-C', '../wiki-media', 'remote', 'add', 'origin', 'git@github.com:ourbigbook/wiki-media.git']],
+      ...MAKE_GIT_REPO_PRE_EXEC,
+      ['git', ['checkout', '-b', 'dev']],
+      ['git', ['clone', '.', `${TMP_DIRNAME}/publish`]],
+      { filesystem_update: {
+        ...staleFiles,
+        [`wiki/${output}/diagram.svg`]: '<svg>previous publish</svg>',
+      } },
+      ['git', ['-C', output, 'init']],
+      ...(previousOutput !== 'empty' ? [
+        ['git', ['-C', output, 'add', '.']],
+        ['git', ['-C', output, 'commit', '--quiet', '-m', 'previous output']],
+      ] : []),
+      { filesystem_update: {
+        [`wiki/${output}/untracked.txt`]: 'left by interrupted publish',
+        ...(previousOutput === 'locked' ? { [`wiki/${output}/.git/index.lock`]: '' } : {}),
+      } },
+    ],
+    ...(previousOutput === 'locked' ? {
+      assert_exit_status: 1,
+      assert_stderr_contains: ['index.lock'],
+      assert_stdout_not_contains: ['extract_ids:', 'push -f origin'],
+    } : {
+      assert_contains: { [`wiki/${output}/diagram.svg`]: ['<svg>current</svg>'] },
+      assert_not_exists: [`wiki/${output}/stale`, `wiki/${output}/untracked.txt`],
+      assert_xpath: { [`wiki/${output}/index.html`]: ["//x:img[@src='diagram.svg']"] },
+    }),
+  })
+}
 assert_cli(
   'timestamps are tracked separately for different --output-format',
   {

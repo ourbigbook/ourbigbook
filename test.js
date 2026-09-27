@@ -7245,6 +7245,27 @@ assert_lib_error('header: tag and synonym arguments are incompatible',
 `,
   5, 1
 )
+for (const synonymArg of ['synonym', 'synonymNoScope']) {
+  for (const [name, content] of [
+    ['paragraph', 'Section body.'],
+    ['inline macro', '\\b[Section body.]'],
+    ['list', '* Item'],
+    ['code block', '\\C[code]'],
+  ]) {
+    assert_lib_error(`header: ${synonymArg} cannot follow ${name}`,
+      `= Header\n\n${content}\n\n= Alias\n{${synonymArg}}\n`,
+      5, 1,
+    )
+  }
+}
+assert_lib_ast('header: consecutive synonyms follow a formatted header with arguments',
+  '= Header \\i[title]\n{scope}\n\n= Alias\n{synonym}\n\n= Other alias\n{synonymNoScope}\n\nBody.\n',
+  undefined,
+)
+assert_lib_error('header: synonym cannot follow content after another synonym',
+  '= Header\n\n= Alias\n{synonym}\n\nBody.\n\n= Other alias\n{synonym}\n',
+  8, 1,
+)
 assert_lib_error('header: synonym without preceeding header fails gracefully',
   `asdf
 

@@ -2638,6 +2638,8 @@ This option is similar to <\H title2 argument> but it additionally:
 * the synonym header is not rendered at all, including in the <table of contents>
 * when using <split headers>, a redirect output file is generated from the synonym to the main ID
 
+Synonym headers must immediately follow another header, before any body content. Blank lines and consecutive synonym headers are allowed. This also applies to `synonymNoScope`.
+
 Example:
 ``
 = Parent

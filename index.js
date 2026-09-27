@@ -5683,6 +5683,7 @@ async function parse(tokens, options, context, extra_returns={}) {
     header_tags.get(header).push({ target_id, source_location, inflected_target_id, implicit })
   }
   const header_ids = []
+  const previousContentByArgument = new WeakMap()
   let prevAst, ast, parent_arg
   let isFirstAst = true
   const lintStartsWithH1Header =
@@ -5715,6 +5716,11 @@ async function parse(tokens, options, context, extra_returns={}) {
     let parent_arg_push_before = []
     const macro_name = ast.macro_name
     const nodeType = ast.node_type
+    const previousContent = previousContentByArgument.get(parent_arg)
+    if (nodeType !== AstType.PARAGRAPH && nodeType !== AstType.NEWLINE &&
+        !(nodeType === AstType.PLAINTEXT && ast.text.trim() === '')) {
+      previousContentByArgument.set(parent_arg, ast)
+    }
     ast.from_include = options.from_include;
     ast.from_ourbigbook_example = options.from_ourbigbook_example;
     ast.source_location.path = options.input_path;
@@ -6073,6 +6079,9 @@ async function parse(tokens, options, context, extra_returns={}) {
             // Hack it to behave like a non-synonym. This is the easiest way to avoid further errors.
             is_synonym = false
           } else {
+            if (previousContent?.macro_name !== Macro.HEADER_MACRO_NAME) {
+              parseError(state, 'synonym headers must immediately follow another header, before any non-header content', ast.source_location)
+            }
             if (header_level !== 1) {
               const message = `synonym headers must be h1, got: ${header_level}`;
               parseError(state, message, ast.args.level.source_location);

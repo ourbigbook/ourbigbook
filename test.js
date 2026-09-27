@@ -12481,6 +12481,23 @@ Markdown paragraph.
     },
   }
 )
+for (const macro of ['Image', 'a']) {
+for (const target of ['asdf', 'file.txt/child']) {
+assert_cli(`missing local file diagnostic: ${macro} ${target}`, {
+  args: ['index.bigb'],
+  filesystem: {
+    'ourbigbook.json': '{}',
+    'index.bigb': `= Top\n\n\\${macro}[${target}]\n`,
+    'file.txt': 'not a directory',
+  },
+  assert_exit_status: 1,
+  assert_stderr_contains: [
+    `error: index.bigb:3:1: link to file that does not exist: "${target}"`,
+    /^(?![\s\S]*(?:Error: ENOENT|Error: ENOTDIR|at Object\.lstatSync))[\s\S]*$/,
+  ],
+})
+}
+}
 assert_cli('Markdown macros: CLI includes native articles and validates named arguments', {
   args: ['--embed-includes', '.'],
   filesystem: {

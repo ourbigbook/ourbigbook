@@ -9,6 +9,10 @@ def myfunc(i):
     return i + 1
 ```
 
+And an image:
+
+![](logo.png)
+
 ## OurBigBook Markdown extensions
 
 You can use any sane named argument that you want:

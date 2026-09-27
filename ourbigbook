@@ -1830,7 +1830,13 @@ function fileConversionOptions(ourbigbook_json_dir, mediaOptions) {
     getAFileTypes: (aRefs) => {
       let ret = {}
       for (const a of aRefs) {
-        ret[a] = fs.lstatSync(resolveFile(a)).isFile() ? FILE_TYPE_FILE : FILE_TYPE_DIRECTORY
+        try {
+          ret[a] = fs.lstatSync(resolveFile(a)).isFile() ? FILE_TYPE_FILE : FILE_TYPE_DIRECTORY
+        } catch (error) {
+          // Missing targets are reported by check_db with their source locations.
+          // Metadata lookup must not preempt that diagnostic with a Node stack.
+          if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error
+        }
       }
       return ret
     },

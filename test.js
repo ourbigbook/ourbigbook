@@ -16450,6 +16450,111 @@ const parallelFilesystem = {
 
 const parallelWebArgs = ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
 
+for (const input of ['.', 'index.bigb']) {
+assert_cli(`web committed snapshot ignores working tree changes (${input})`, {
+  args: [...parallelWebArgs, input],
+  filesystem: {
+    'ourbigbook.json': '{}',
+    'index.bigb': '= Committed title\n\nCommitted content.\n',
+    'asset.txt': 'committed asset',
+  },
+  pre_exec: [
+    ...MAKE_GIT_REPO_PRE_EXEC,
+    { filesystem_update: {
+      'index.bigb': '= Dirty title\n\n\\UnknownMacro\n',
+      'ourbigbook.json': 'invalid dirty JSON',
+      'untracked.bigb': '\\UnknownMacro',
+      'asset.txt': 'dirty asset',
+    } },
+  ],
+  assert_stdout_contains: ['Web upload uses committed source:'],
+  assert_contains: {
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['Committed title', 'Committed content.'],
+    [`${TMP_DIRNAME}/publish/asset.txt`]: ['committed asset'],
+    'index.bigb': ['Dirty title'],
+  },
+  assert_not_exists: [`${TMP_DIRNAME}/web`, `${TMP_DIRNAME}/publish/untracked.bigb`],
+})
+}
+
+assert_cli('web committed snapshot refreshes HEAD and preserves cache', {
+  args: [...parallelWebArgs, '--web-user', 'second-user', '.'],
+  filesystem: { 'ourbigbook.json': '{}', 'index.bigb': '= First commit\n' },
+  pre_exec: [
+    ...MAKE_GIT_REPO_PRE_EXEC,
+    ['ourbigbook', [...parallelWebArgs, '.']],
+    { filesystem_update: {
+      'index.bigb': '= Second commit\n',
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/keep-cache`]: 'keep me',
+      [`${TMP_DIRNAME}/publish/stale.bigb`]: '\\UnknownMacro',
+    } },
+    ['git', ['add', 'index.bigb']],
+    ['git', ['commit', '-m', 'second']],
+  ],
+  assert_contains: {
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['Second commit'],
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/keep-cache`]: ['keep me'],
+  },
+  assert_not_exists: [`${TMP_DIRNAME}/publish/stale.bigb`],
+})
+
+assert_cli('web committed snapshot includes committed external local media', {
+  args: [...parallelWebArgs, '.'],
+  cwd: 'wiki',
+  filesystem: {
+    'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
+    'wiki/index.bigb': '= Home\n\n\\Image[diagram.svg]\n',
+    'wiki-media/diagram.svg': '<svg/>',
+  },
+  pre_exec: [
+    ['git', ['-C', '../wiki-media', 'init']],
+    ['git', ['-C', '../wiki-media', 'add', '.']],
+    ['git', ['-C', '../wiki-media', 'commit', '-m', 'media']],
+    ...MAKE_GIT_REPO_PRE_EXEC,
+    { filesystem_update: { 'wiki-media/untracked.svg': '<svg/>', 'wiki-media/diagram.svg': 'dirty media' } },
+  ],
+  assert_contains: {
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['media/diagram.svg'],
+  },
+  assert_stdout_contains: ['media/diagram.svg'],
+  assert_stdout_not_contains: ['untracked.svg'],
+})
+
+assert_cli('web committed snapshot uses pinned media submodule', {
+  args: [...parallelWebArgs, '.'],
+  cwd: 'wiki',
+  env: { GIT_ALLOW_PROTOCOL: 'file' },
+  filesystem: {
+    'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '-/media' } } }),
+    'wiki/index.bigb': '= Home\n\n\\Image[diagram.svg]\n',
+    'wiki/-/placeholder': '',
+    'wiki-media/diagram.svg': '<svg/>',
+  },
+  pre_exec: [
+    ['git', ['-C', '../wiki-media', 'init']],
+    ['git', ['-C', '../wiki-media', 'add', '.']],
+    ['git', ['-C', '../wiki-media', 'commit', '-m', 'media']],
+    ['git', ['init']],
+    ['git', ['-c', 'protocol.file.allow=always', 'submodule', 'add', '--', '../wiki-media', 'media']],
+    ['git', ['mv', '--', 'media', '-/media']],
+    ['git', ['add', '.']],
+    ['git', ['commit', '-m', 'source']],
+    { filesystem_update: { 'wiki/-/media/diagram.svg': '<svg>pinned</svg>' } },
+    ['git', ['-C', '-/media', 'add', '.']],
+    ['git', ['-C', '-/media', 'commit', '-m', 'unpushed pinned media']],
+    ['git', ['add', '--', '-/media']],
+    ['git', ['commit', '-m', 'pin media']],
+    { filesystem_update: { 'wiki/-/media/diagram.svg': 'newer unpinned media' } },
+    ['git', ['-C', '-/media', 'add', '.']],
+    ['git', ['-C', '-/media', 'commit', '-m', 'unpinned']],
+  ],
+  assert_contains: {
+    [`wiki/${TMP_DIRNAME}/publish/-/media/diagram.svg`]: ['<svg>pinned</svg>'],
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['media/diagram.svg'],
+  },
+  assert_stdout_contains: ['media/diagram.svg'],
+})
+
 const webStartIdFilesystem = {
   'index.bigb': `= Home
 

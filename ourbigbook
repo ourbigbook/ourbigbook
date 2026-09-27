@@ -1354,6 +1354,53 @@ function gitSha(input_path, srcBranch) {
   return chomp(runCmd('git', args, {showCmd: false, throwOnError: true}))
 }
 
+// A reusable, disposable checkout. Keep conversion caches, but never source edits.
+function checkoutWebSnapshot(source, destination) {
+  const opts = { throwOnError: true, showCmd: false }
+  const commit = gitSha(source)
+  if (!fs.existsSync(destination)) {
+    fs.mkdirSync(path.dirname(destination), { recursive: true })
+    runCmd('git', ['clone', '--no-checkout', '--', source, destination], opts)
+  } else {
+    const origin = chomp(runCmd('git', ['-C', destination, 'remote', 'get-url', 'origin'], opts))
+    if (path.resolve(origin) !== path.resolve(source)) cli_error(`unexpected snapshot repository origin: ${destination}`)
+    runCmd('git', ['-C', destination, 'fetch', 'origin', commit], opts)
+  }
+  runCmd('git', ['-C', destination, 'checkout', '--force', '--detach', commit], opts)
+  runCmd('git', ['-C', destination, 'clean', '-ffd', '-x', '-e', '_out/'], opts)
+  const updateSubmodules = (original, checkout) => {
+    const modules = path.join(checkout, '.gitmodules')
+    if (!fs.existsSync(modules)) return
+    const entries = runCmd('git', ['config', '--file', modules, '--null', '--get-regexp', '^submodule\\..*\\.path$'], {
+      ...opts, throwOnError: false,
+    }).split('\0').filter(Boolean)
+    for (const entry of entries) {
+      const newline = entry.indexOf('\n')
+      const relative = entry.slice(newline + 1)
+      const local = path.join(original, relative)
+      const nested = path.join(checkout, relative)
+      const initialized = fs.existsSync(path.join(local, '.git'))
+      if (initialized) {
+        // Use local objects even when the pinned commit has not been pushed yet.
+        // Clone directly: Git's submodule helper rejects paths starting with '-'.
+        const pinned = chomp(runCmd('git', ['-C', checkout, 'rev-parse', `HEAD:${relative}`], opts))
+        if (!fs.existsSync(path.join(nested, '.git'))) {
+          runCmd('git', ['clone', '--no-checkout', '--', local, nested], opts)
+        } else {
+          runCmd('git', ['-C', nested, 'fetch', local, pinned], opts)
+        }
+        runCmd('git', ['-C', nested, 'checkout', '--force', '--detach', pinned], opts)
+      } else {
+        runCmd('git', ['-C', checkout, 'submodule', 'update', '--init', '--force', '--', relative], opts)
+      }
+      runCmd('git', ['-C', nested, 'clean', '-ffd', '-x'], opts)
+      updateSubmodules(local, nested)
+    }
+  }
+  updateSubmodules(source, destination)
+  return commit
+}
+
 function git_toplevel(input_path) {
   return chomp(runCmd('git', ['rev-parse', '--show-toplevel'], {
     showCmd: false,
@@ -2189,9 +2236,45 @@ if (cli.helpMacros) {
           ourbigbook_json_dir = inputPath
         }
       }
-    } else {
+    } else if (!web || !git_is_in_repo(ourbigbook_json_dir)) {
       Object.assign(ourbigbook_json, JSON.parse(fs.readFileSync(
         path.join(ourbigbook_json_dir, ourbigbook.OURBIGBOOK_JSON_BASENAME), ourbigbook_nodejs_webpack_safe.ENCODING)))
+    }
+  }
+  let webSourceRoot, webMediaSnapshot
+  if (web && git_is_in_repo(ourbigbook_json_dir)) {
+    const opts = { throwOnError: true, showCmd: false }
+    const source = chomp(runCmd('git', ['-C', ourbigbook_json_dir, 'rev-parse', '--show-toplevel'], opts))
+    webSourceRoot = path.resolve(ourbigbook_json_dir)
+    const snapshot = path.join(webSourceRoot, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'publish')
+    const project = path.join(snapshot, path.relative(source, webSourceRoot))
+    const absoluteInputs = inputPaths.map(p => path.resolve(p))
+    for (const p of absoluteInputs) {
+      if (path.relative(source, p).startsWith('..' + path.sep)) cli_error(`web input is outside the Git repository: ${p}`)
+    }
+    if (cli.outdir !== undefined) cli.outdir = path.resolve(cli.outdir)
+    if (cli.template !== undefined) cli.template = path.join(snapshot, path.relative(source, path.resolve(cli.template)))
+    const commit = checkoutWebSnapshot(source, snapshot)
+    console.log(`Web upload uses committed source: ${commit} (checkout: ${project})`)
+    process.chdir(project)
+    inputPaths = absoluteInputs.map(p => path.relative(project, path.join(snapshot, path.relative(source, p))) || '.')
+    inputPath = inputPaths[0]
+    inputPathCwd = relpathCwd(inputPath)
+    input_dir = input_path_is_file ? path.dirname(inputPath) : inputPath
+    ourbigbook_json_dir = project
+    const config = path.join(project, ourbigbook.OURBIGBOOK_JSON_BASENAME)
+    ourbigbook_json = fs.existsSync(config) ? JSON.parse(fs.readFileSync(config, 'utf8')) : {}
+    const mediaPath = ourbigbook_json['media-providers']?.local?.path
+    if (mediaPath) {
+      const mediaSource = path.resolve(webSourceRoot, mediaPath)
+      // Submodules inside the source checkout already use the superproject's pinned commit.
+      if (!is_subpath(source, mediaSource)) {
+        if (!git_is_in_repo(mediaSource)) cli_error(`local media provider must be a Git repository for committed web uploads: ${mediaSource}`)
+        webMediaSnapshot = fs.mkdtempSync(path.join(os.tmpdir(), 'ourbigbook-web-media-'))
+        process.on('exit', () => fs.rmSync(webMediaSnapshot, { recursive: true, force: true }))
+        runCmd('git', ['clone', '--shared', '--no-checkout', '--', mediaSource, webMediaSnapshot], opts)
+        runCmd('git', ['-C', webMediaSnapshot, 'checkout', '--detach', gitSha(mediaSource)], opts)
+      }
     }
   }
   const publish_target = cli.publishTarget
@@ -2326,7 +2409,7 @@ if (cli.helpMacros) {
   // Resolved options.
   const options = ourbigbook.convertInitOptions(ourbigbook_options)
   const localMediaPath = options.ourbigbook_json['media-providers'].local.path
-  const localMediaDir = localMediaPath ? path.resolve(ourbigbook_json_dir, localMediaPath) : undefined
+  const localMediaDir = webMediaSnapshot || (localMediaPath ? path.resolve(ourbigbook_json_dir, localMediaPath) : undefined)
 
   ourbigbook_options.log = {};
   const nonOurbigbookOptions_log = {};
@@ -2514,6 +2597,10 @@ if (cli.helpMacros) {
   }
 
   // CLI options
+  if (webMediaSnapshot) {
+    Object.assign(nonOurbigbookOptions, { localMediaPath, localMediaSnapshot: webMediaSnapshot })
+    Object.assign(ourbigbook_options, fileConversionOptions(ourbigbook_json_dir, nonOurbigbookOptions))
+  }
   const cmdOpts = {
     dry_run: cli.dryRun,
     env_extra: {},

@@ -8334,14 +8334,10 @@ This requires that all external IDs that `physics.bigb` might depend on have alr
 
 The source code is uploaded, and conversion to HTML happens on the server, no conversion is done locally.
 
-This option is not amazing right now. It was introduced mostly to allow uploading the reference demo content from https://cirosantilli.com to https://ourbigbook.com/cirosantilli[], and it is not expected that it will be a major use case for end users for a long time, as most users are likely to just edit on <OurBigBook Web> directly.
+Inside a Git repository, uploads use a clean checkout of the current `HEAD` commit, including committed configuration, assets, and pinned submodules. Commit your changes first: uncommitted and untracked files are not uploaded. The checkout is under `_out/publish`, with web output under `_out/publish/_out/web` for a project at the repository root. Configured external local media repositories also use their current commit. Outside Git, uploads continue to use the current files directly, with output under `_out/web`.
 
-Some important known limitations:
-* every local file has to be uploaded every time to check if it needs rebuilding or not by comparing old vs new file contents. At <todo/Store SHA of each article + descendants and skip API re-renders for entire subtrees> we describe a better Git-like Merkle tree method where entire unchanged subtress can be skipped, that will be Nirvana.
-* file renaming does not work, it will think that you are creating a new file and blows up duplicates
+Some limitations:
 * if there's an error in a later file, the database is still modified by the previous files, i.e. there is no atomicity. A way to improve that would be to upload all files to the server in one go, and let the server convert everything in one transaction. However, this would lead to a very long server action, which would block any other incoming request (I tested, everything is single threaded)
-
-However, all of those are fixable, and in an ideal world, will be fixed. Patches welcome.
 
 = Local header deletion on web upload
 {parent=web}

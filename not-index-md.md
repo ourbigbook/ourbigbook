@@ -19,7 +19,7 @@ Hello my \b[bold text]!
 And here a sane quote:
 
 \Q[Hello world!]
-{description=My nice quote. Markdown [link to example](http://example.com) site.}
+{description=My nice quote. This is also markdown: [link to example](http://example.com) site.}
 ]]
 
 \Include[not-index-md-child]

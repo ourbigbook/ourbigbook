@@ -369,7 +369,6 @@ two
     for (const macro of [
       '\\b[my bold]',
       '\\a[https://example.com][label]{id=my-link}',
-      '\\b[outer \\i[inner] and **bold**]',
       '\\Image[https://example.com/image.svg][Caption]\n{height=20}\n{border}',
       '\\H[1][Title]{title2=first}{title2=second}',
       '\\Q[\nFirst \\b[bold].\n\nSecond paragraph.\n]',
@@ -382,6 +381,7 @@ two
     ]) {
       assert.strictEqual(await markdownToOurbigbook(macro), macro + '\n')
     }
+    assert.strictEqual(await markdownToOurbigbook('\\b[outer \\i[inner] and **bold**]'), '\\b[outer \\i[inner] and \\b[bold]]\n')
     assert.strictEqual(await markdownToOurbigbook('Before \\b[🙂] after.'), 'Before \\b[🙂] after.\n')
     assert.strictEqual(await markdownToOurbigbook('**before \\c[[**]] after**'), '\\b[before \\c[[**]] after]\n')
     const multiline = 'Before \\Q[first\n\nsecond] after.'
@@ -400,6 +400,42 @@ two
     for (const xpath of ['//x:h1//x:i[text()="title"]', '//x:b[text()="bold"]', '//x:a[@href="https://example.com"]/x:i', '//x:li//x:b[text()="item"]', '//x:blockquote']) {
       assert_xpath(xpath, html)
     }
+  })
+
+  it('Markdown macros recursively render positional and named argument content', async function () {
+    const source = `# Input
+
+\\Q[Hello **world**! \\i[nested [link](http://example.com)]]
+{description=My nice quote. Markdown [link to example](http://example.com) site.}
+
+\\b[\\i[Reference [example][target]]]
+
+\\Q[
+- *first*
+- **second** with \\b[more *nesting*]
+
+Another paragraph with \`code [brackets]\`.
+]
+
+\\Q[[literal **bold** [link](http://example.com)]]
+{{description=literal *description*}}
+
+[target]: https://example.org
+`
+    const extra = {}
+    const html = await ourbigbook.convert(await markdownToOurbigbook(source), { input_path: 'index.bigb' }, extra)
+    assert.deepStrictEqual(extra.errors, [])
+    for (const xpath of [
+      '//x:blockquote//x:b[text()="world"]',
+      '//x:blockquote//x:i/x:a[@href="http://example.com" and text()="link"]',
+      '//x:a[@href="http://example.com" and text()="link to example"]',
+      '//x:blockquote//x:li//x:i[text()="first"]',
+      '//x:blockquote//x:b/x:i[text()="nesting"]',
+      '//x:blockquote//x:code[text()="code [brackets]"]',
+      '//x:b/x:i/x:a[@href="https://example.org" and text()="example"]',
+    ]) assert_xpath(xpath, html)
+    assert(html.includes('literal **bold** [link](http://example.com)'))
+    assert(html.includes('literal *description*'))
   })
 
   it('Markdown macros preserve code and escaped backslashes', async function () {
@@ -12456,6 +12492,20 @@ assert_cli('Markdown macros: CLI includes native articles and validates named ar
     [`${TMP_DIRNAME}/html/index.html`]: [
       '//x:b[text()="bold"]',
       xpath_header(2, 'child'),
+    ],
+  },
+})
+assert_cli('Markdown macros: examples preserve source and render Markdown recursively', {
+  args: ['index.md'],
+  filesystem: {
+    'ourbigbook.json': '{}',
+    'index.md': '# Example\n\n\\OurBigBookExample[[\nHello **world**!\n\n\\Q[Hello world!]\n{description=My nice quote. Markdown [link to example](http://example.com) site.}\n]]\n',
+  },
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/index.html`]: [
+      '//x:pre//x:code[contains(., "Hello **world**!") and contains(., "[link to example](http://example.com)")]',
+      '//x:blockquote//x:b[text()="world"]',
+      '//x:blockquote//x:a[@href="http://example.com" and text()="link to example"]',
     ],
   },
 })

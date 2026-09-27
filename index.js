@@ -1838,6 +1838,8 @@ class Tokenizer {
   tokenize({ macroOnly=false }={}) {
     this.macroOnly = macroOnly
     this.macroDepth = 0
+    this.macroArguments = []
+    this.macroPositionalIndex = 0
     // Ignore the last newline of the file.
     // It is good practice to always have a newline
     // at the end of files, but it doesn't really mean
@@ -1907,8 +1909,12 @@ class Tokenizer {
             this.error(`expected character: '${NAMED_ARGUMENT_EQUAL_CHAR}' or '${END_NAMED_ARGUMENT_CHAR}', got '${this.cur_c}'`);
           }
           if (open_length === 1) {
+            if (macroOnly && this.macroDepth === 1) {
+              this.macroArguments.push({ start: this.i, name: arg_name })
+            }
             this.consume_optional_newline();
           } else {
+            if (macroOnly && this.macroDepth === 1) this.macroArguments.push({ name: arg_name })
             // Literal argument.
             let close_string = closingChar(
               START_NAMED_ARGUMENT_CHAR).repeat(open_length);
@@ -1920,6 +1926,7 @@ class Tokenizer {
           }
         }
       } else if (this.cur_c === END_NAMED_ARGUMENT_CHAR) {
+        if (macroOnly && this.macroDepth === 1) this.macroArguments.at(-1).end = this.i
         this.consume_optional_newline_before_close();
         this.push_token(TokenType.NAMED_ARGUMENT_END, END_NAMED_ARGUMENT_CHAR);
         this.consume();
@@ -1932,6 +1939,10 @@ class Tokenizer {
         ).length;
         this.push_token(TokenType.POSITIONAL_ARGUMENT_START,
           START_POSITIONAL_ARGUMENT_CHAR.repeat(open_length), source_location);
+        if (macroOnly && this.macroDepth === 1) {
+          const position = this.macroPositionalIndex++
+          if (open_length === 1) this.macroArguments.push({ start: this.i, position })
+        }
         if (open_length === 1) {
           this.consume_optional_newline();
         } else {
@@ -1945,6 +1956,7 @@ class Tokenizer {
           this.consume_optional_newline_after_argument()
         }
       } else if (this.cur_c === END_POSITIONAL_ARGUMENT_CHAR) {
+        if (macroOnly && this.macroDepth === 1) this.macroArguments.at(-1).end = this.i
         this.consume_optional_newline_before_close();
         this.push_token(TokenType.POSITIONAL_ARGUMENT_END);
         this.consume();
@@ -5930,7 +5942,7 @@ async function parse(tokens, options, context, extra_returns={}) {
             } else {
               let new_child_nodes;
               if (options.embed_includes) {
-                // Only included files need format conversion; inline examples are already BigB.
+                // Included files infer their format from their own extension.
                 const includeExt = pathSplitext(include_path)[1].toLowerCase()
                 const includeInput = includeExt === 'md' || includeExt === 'markdown'
                   ? await markdownToOurbigbook(include_content)
@@ -6046,6 +6058,11 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       }
     } else if (macro_name === Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME) {
+      validateAst(ast, context)
+      const exampleSource = renderArgNoescape(ast.args.content, cloneAndSet(context, 'id_conversion', true))
+      const exampleInput = ast.validation_output.markdown.boolean
+        ? await markdownToOurbigbook(exampleSource)
+        : exampleSource
       const ourbigbookExampleOptions = cloneAndSet(options, 'fromOurBigBookExample', true)
       if (ourbigbookExampleOptions.output_format === OUTPUT_FORMAT_OURBIGBOOK) {
         parent_arg.push(ast)
@@ -6080,7 +6097,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           Macro.QUOTE_MACRO_NAME,
           {
             [Macro.CONTENT_ARGUMENT_NAME]: await parseInclude(
-              renderArgNoescape(ast.args.content, cloneAndSet(context, 'id_conversion', true)),
+              exampleInput,
               ourbigbookExampleOptions,
               0,
               ourbigbookExampleOptions.input_path,
@@ -10077,6 +10094,7 @@ const DEFAULT_MACRO_LIST = [
       }),
     ],
     {
+      named_args: [new MacroArgument({ name: 'markdown', boolean: true })],
       macro_counts_ignore: function(ast) { return true; }
     }
   ),
@@ -13772,7 +13790,7 @@ function markdownInputRenderInline(tokens=[]) {
   for (const token of tokens) {
     switch (token.type) {
       case 'ourbigbookMacro':
-        ret += token.raw
+        ret += token.convert ? token.convert() : token.raw
         break
       case 'text':
       case 'escape':
@@ -13850,7 +13868,7 @@ function markdownInputRenderBlocks(tokens=[]) {
   for (const token of tokens) {
     switch (token.type) {
       case 'ourbigbookMacro':
-        ret += token.raw + '\n\n'
+        ret += (token.convert ? token.convert() : token.raw) + '\n\n'
         break
       case 'space':
       case 'def':
@@ -13906,7 +13924,7 @@ async function markdownToOurbigbook(input) {
       tokenizer.tokenize({ macroOnly: true })
       if (length >= src.length || tokenizer.i + 2 < tokenizer.chars.length) {
         const raw = tokenizer.chars.slice(0, tokenizer.i).join('')
-        return { type: 'ourbigbookMacro', raw, name }
+        return { type: 'ourbigbookMacro', raw, name, arguments: tokenizer.macroArguments }
       }
     }
   }
@@ -13920,6 +13938,44 @@ async function markdownToOurbigbook(input) {
       try { return super.inlineTokens(src, tokens) }
       finally { macroSource = previous; macroLexer = previousLexer }
     }
+  }
+  function convertMacroToken(src, lexer) {
+    const token = macroToken(src)
+    if (!token) return
+    // Defer until the enclosing document has collected its reference definitions.
+    token.convert = () => convertMacroArguments(token, lexer)
+    return token
+  }
+  function convertMacroArguments(token, lexer) {
+    const chars = Array.from(token.raw)
+    let end = 0
+    let converted = ''
+    for (const arg of token.arguments) {
+      if (arg.end === undefined) continue // Leave malformed arguments for native validation.
+      const definition = arg.name === undefined
+        ? macros[token.name]?.positional_args[arg.position]
+        : macros[token.name]?.named_args[arg.name]
+      // Literal delimiters are excluded by the shared tokenizer. Keep code,
+      // URLs and configuration arguments in their native syntax as well.
+      if (definition && (!definition.count_words || definition.ourbigbook_output_prefer_literal)) continue
+      const value = chars.slice(arg.start, arg.end).join('')
+      const leading = value.startsWith('\n') ? '\n' : ''
+      const trailing = value.endsWith('\n') ? '\n' : ''
+      const content = value.slice(leading.length, trailing ? -1 : undefined)
+      const argumentLexer = new MacroLexer(marked.defaults)
+      Object.assign(argumentLexer.tokens.links, lexer.tokens.links)
+      converted += chars.slice(end, arg.start).join('') + leading +
+        markdownInputRenderBlocks(argumentLexer.lex(content)).replace(/\n+$/, '') + trailing
+      end = arg.end
+    }
+    let result = converted + chars.slice(end).join('')
+    if (token.name === Macro.OURBIGBOOK_EXAMPLE_MACRO_NAME &&
+        !token.arguments.some(arg => arg.name === 'markdown')) {
+      // Keep the example's literal source for display; only its rendered copy
+      // uses Markdown. Persist this through intermediate BigB/Web conversions.
+      result += '{markdown}'
+    }
+    return result
   }
   const marked = new Marked({ gfm: true }, { tokenizer: {
     paragraph(src) {
@@ -13979,7 +14035,7 @@ async function markdownToOurbigbook(input) {
       level: 'block',
       tokenizer(src) {
         const name = /^\\([A-Za-z0-9]+)/.exec(src)?.[1]
-        if (name && macros[name] && !macros[name].inline) return macroToken(src)
+        if (name && macros[name] && !macros[name].inline) return convertMacroToken(src, this.lexer)
       },
     },
     {
@@ -13987,7 +14043,7 @@ async function markdownToOurbigbook(input) {
       level: 'inline',
       start: src => src.indexOf(ESCAPE_CHAR),
       tokenizer(src) {
-        if (!this.lexer.state.inRawBlock) return macroToken(src)
+        if (!this.lexer.state.inRawBlock) return convertMacroToken(src, this.lexer)
       },
     },
   ] })

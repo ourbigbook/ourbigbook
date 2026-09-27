@@ -16811,6 +16811,41 @@ assert_cli('parallel: render errors return a failing exit status', {
   assert_stderr_contains: ['Undefined control sequence'],
 })
 
+for (const phase of ['extraction', 'render']) {
+it(`cli: parallel ${phase} errors are repeated after all progress output`, function() {
+  this.timeout(15000)
+  const root = path.join(testdir, `parallel-final-errors-${phase}`)
+  fs.mkdirSync(root)
+  const bad = phase === 'extraction' ? '\\unknownmacro' : '\\m[[\\unknowncommand]]'
+  update_filesystem({
+    'ourbigbook.json': '{}',
+    'index.bigb': `= Home\n\n${bad}\n\n\\Include[other]\n`,
+    'other.bigb': `= Other\n\n${bad}\n`,
+  }, root)
+  // One descriptor for both streams reproduces the ordering seen in a terminal.
+  const logPath = path.join(root, 'build.log')
+  const fd = fs.openSync(logPath, 'w')
+  let out
+  try {
+    out = child_process.spawnSync(process.execPath, [
+      path.join(__dirname, 'ourbigbook'), '--fakeroot', root, '-j', '2', '.',
+    ], { cwd: root, stdio: ['ignore', fd, fd], timeout: 12000 })
+  } finally {
+    fs.closeSync(fd)
+  }
+  const log = fs.readFileSync(logPath, 'utf8')
+  assert.strictEqual(out.status, 1, log)
+  const marker = '\nBuild failed. Errors:\n'
+  assert.strictEqual(log.split(marker).length, 2, log)
+  const summary = log.slice(log.indexOf(marker) + marker.length)
+  assert(summary.includes('index.bigb'), log)
+  assert(summary.includes('other.bigb'), log)
+  assert(!/^(render|extract_ids|copy|file|dir):/m.test(summary), log)
+  const errors = summary.trim().split(/\n(?=error:)/)
+  assert.strictEqual(new Set(errors).size, errors.length, summary)
+})
+}
+
 for (const web of [false, true]) {
 it(`cli: parallel ${web ? 'Web' : 'HTML'} worker exits fail promptly instead of hanging`, function() {
   this.timeout(10000)

@@ -447,6 +447,7 @@ async function convert_directory_callback(input_path, ourbigbook_options, nonOur
     nonOurbigbookOptions.ourbigbook_paths_converted.push(...result.paths)
     nonOurbigbookOptions.sitemap.push(...result.sitemap)
     nonOurbigbookOptions.had_error ||= result.had_error
+    nonOurbigbookOptions.build_errors.push(...result.build_errors)
     nonOurbigbookOptions.last_output_path = result.last_output_path
   }
 }
@@ -468,6 +469,8 @@ async function convert_directory_extract_ids(input_path, ourbigbook_options, non
 }
 
 async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_options, nonOurbigbookOptions) {
+  // Shared by the coordinator's shallow option copies throughout this build.
+  nonOurbigbookOptions.build_errors = []
   if (
     nonOurbigbookOptions.cli.jobs > 1 &&
     !nonOurbigbookOptions.cli.watch && !nonOurbigbookOptions.cli.formatSource &&
@@ -487,6 +490,12 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
       }
     }
     delete nonOurbigbookOptions.parallel
+    if (pool && nonOurbigbookOptions.build_errors.length) {
+      // Workers inherit stdout/stderr. Wait for their exit before repeating errors,
+      // so no in-flight progress output can bury the final diagnostics.
+      console.error('\nBuild failed. Errors:')
+      for (const error of new Set(nonOurbigbookOptions.build_errors)) console.error(error)
+    }
   }
 }
 
@@ -727,6 +736,7 @@ async function convert_input(input, ourbigbook_options, nonOurbigbookOptions={})
   for (const error_string of ourbigbook_nodejs_webpack_safe.remove_duplicates_sorted_array(
       new_options.extra_returns.errors.map(e => e.toString()))) {
     console.error(error_string);
+    nonOurbigbookOptions.build_errors?.push(error_string)
   }
   for (const warning_string of ourbigbook_nodejs_webpack_safe.remove_duplicates_sorted_array(
       new_options.extra_returns.warnings.map(warning => warning.toString()))) {
@@ -2047,6 +2057,7 @@ async function runDirectoryWorker() {
           [workerData.nonOptions.renderType]: task.file_row ? { [task.relpath]: task.file_row } : {},
         },
         had_error: false,
+        build_errors: [],
         is_render_after_extract: task.is_render_after_extract,
         options: ourbigbook.convertInitOptions(options),
         post_convert_callback: webCache?.postConvert,
@@ -2059,6 +2070,7 @@ async function runDirectoryWorker() {
         paths: nonOptions.ourbigbook_paths_converted,
         sitemap: nonOptions.sitemap,
         had_error: nonOptions.had_error,
+        build_errors: nonOptions.build_errors,
         last_output_path: nonOptions.last_output_path,
       })
     } catch (error) {

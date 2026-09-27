@@ -2149,6 +2149,21 @@ class Tokenizer {
           }
         }
 
+        if (this.cur_c === '*') {
+          this.hasEmphasis = true
+          const location = this.source_location.clone()
+          const before = this.chars[this.i - 1]
+          const stars = this.tokenize_func(c => c === '*')
+          const after = this.cur_c
+          this.push_token(TokenType.EMPHASIS, stars, location)
+          const token = this.tokens[this.tokens.length - 1]
+          const whitespace = c => c === undefined || /\s/u.test(c)
+          const punctuation = c => c !== undefined && /[\p{P}\p{S}]/u.test(c)
+          token.canOpen = !whitespace(after) && (!punctuation(after) || whitespace(before) || punctuation(before))
+          token.canClose = !whitespace(before) && (!punctuation(before) || whitespace(after) || punctuation(after))
+          continue
+        }
+
         // Character is nothing else, so finally it is a regular plaintext character.
         this.log_debug(`plaintext ${JSON.stringify(this.cur_c)}`);
         this.consume_plaintext_char()
@@ -2170,7 +2185,63 @@ class Tokenizer {
 
     this.push_token(TokenType.PARAGRAPH);
     this.push_token(TokenType.INPUT_END);
-    return this.tokens;
+    return this.hasEmphasis ? this.resolveEmphasis() : this.tokens;
+  }
+
+  // Resolve only unescaped stars from ordinary text. Literal arguments, code,
+  // math and escaped characters never produce EMPHASIS tokens. Each explicit
+  // argument has its own stack so delimiters cannot cross argument boundaries.
+  resolveEmphasis() {
+    const frames = [[]]
+    const output = []
+    for (const token of this.tokens) {
+      if (token.type === TokenType.POSITIONAL_ARGUMENT_START || token.type === TokenType.NAMED_ARGUMENT_START) {
+        frames.push([])
+      } else if (token.type === TokenType.POSITIONAL_ARGUMENT_END || token.type === TokenType.NAMED_ARGUMENT_END) {
+        if (frames.length > 1) frames.pop()
+      }
+      if (token.type !== TokenType.EMPHASIS) {
+        output.push(token)
+        continue
+      }
+      const stack = frames[frames.length - 1]
+      if (stack.length && stack[0].location.line !== token.source_location.line) stack.length = 0
+      let remaining = token.value.length
+      // Longer runs stay literal (e.g. separators made of asterisks).
+      if (remaining > 3) {
+        output.push(new Token(TokenType.PLAINTEXT, token.source_location, token.value))
+        continue
+      }
+      if (token.canClose) {
+        while (stack.length && stack[stack.length - 1].width <= remaining) {
+          const opener = stack.pop()
+          opener.tokens = [
+            new Token(TokenType.MACRO_NAME, opener.location, opener.width === 2 ? 'b' : 'i'),
+            new Token(TokenType.POSITIONAL_ARGUMENT_START, opener.location),
+          ]
+          output.push(new Token(TokenType.POSITIONAL_ARGUMENT_END, token.source_location))
+          remaining -= opener.width
+        }
+      }
+      while (remaining) {
+        const width = remaining >= 2 ? 2 : 1
+        const location = token.source_location.clone()
+        location.column += token.value.length - remaining
+        const opener = { width, location, tokens: [new Token(TokenType.PLAINTEXT, location, '*'.repeat(width))] }
+        output.push(opener)
+        if (token.canOpen) stack.push(opener)
+        remaining -= width
+      }
+    }
+    const ret = []
+    for (const entry of output) {
+      for (const token of entry.tokens || [entry]) {
+        const previous = ret[ret.length - 1]
+        if (token.type === TokenType.PLAINTEXT && previous?.type === TokenType.PLAINTEXT) previous.value += token.value
+        else ret.push(token)
+      }
+    }
+    return ret
   }
 
   // Create a token with all consecutive chars that are accepted
@@ -9507,6 +9578,7 @@ const SHORTHAND_STARTS_TO_MACRO_NAME = {
   [SHORTHAND_TH_START]: Macro.TH_MACRO_NAME,
 };
 const MUST_ESCAPE_CHARS_REGEX_CHAR_CLASS = [
+  '*',
   `\\${ESCAPE_CHAR}`,
   START_POSITIONAL_ARGUMENT_CHAR,
   `\\${END_POSITIONAL_ARGUMENT_CHAR}`,
@@ -9549,6 +9621,7 @@ const AstType = makeEnum([
   'NEWLINE',
 ]);
 const TokenType = makeEnum([
+  'EMPHASIS',
   'INPUT_END',
   'NEWLINE',
   'MACRO_NAME',

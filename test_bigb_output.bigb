@@ -3,7 +3,7 @@
 Escape chars: \\, \[, \], \{, \}, \<, \`, \$
 
 Escape at start of newline only:
-\* *
+\* \*
 \= =
 \|| ||
 \| |
@@ -11,7 +11,7 @@ Escape at start of newline only:
 Same in list indent:
 
 * the list
-  \* *
+  \* \*
   \= =
   \|| ||
   \| |

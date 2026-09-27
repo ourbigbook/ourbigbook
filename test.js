@@ -1656,6 +1656,43 @@ assert_lib_ast('tokenizer: CRLF',
 )
 
 // Paragraphs.
+for (const [input, contents] of [
+  ['$a*b*c$', [a('m', [t('a*b*c')])]],
+  ['**bold** and *italic*', [a('b', [t('bold')]), t(' and '), a('i', [t('italic')])]],
+  ['***both***', [a('b', [a('i', [t('both')])])]],
+  ['**bold *italic***', [a('b', [t('bold '), a('i', [t('italic')])])]],
+  ['*italic **bold***', [a('i', [t('italic '), a('b', [t('bold')])])]],
+  ['**with \\i[a macro]**', [a('b', [t('with '), a('i', [t('a macro')])])]],
+  ['\\b[*nested*]', [a('b', [a('i', [t('nested')])])]],
+  ['\\*literal\\* and \\*\\*literal\\*\\*', [t('*literal* and **literal**')]],
+  ['unmatched *star and **stars', [t('unmatched *star and **stars')]],
+  ['a * b and ** spaced **', [t('a * b and ** spaced **')]],
+  ['*across\nlines*', [t('*across'), a('br'), t('lines*')]],
+  ['`*code*`', [a('c', [t('*code*')])]],
+  ['\\i[[**literal**]]', [a('i', [t('**literal**')])]],
+  ['*before \\i[inside*]', [t('*before '), a('i', [t('inside*')])]],
+]) {
+  assert_lib_ast(`emphasis shorthand: ${JSON.stringify(input)}`, input, [a('P', contents)])
+}
+assert_lib_ast('emphasis shorthand: list markers still work', '* **bold**\n* *italic*\n',
+  [a('Ul', [a('L', [a('b', [t('bold')])]), a('L', [a('i', [t('italic')])])])],
+)
+assert_lib_ast('emphasis shorthand: headers', '= **Bold** *italic*', undefined, {
+  assert_xpath_stdout: [
+    '//x:h1//x:b[text()="Bold"]',
+    '//x:h1//x:i[text()="italic"]',
+  ],
+})
+assert_lib_ast('emphasis shorthand: asterisks do not terminate automatic URLs',
+  'https://example.com/a*b*c https://example.com/*\n\n*https://example.com*', undefined, {
+    assert_xpath_stdout: [
+      '//x:a[@href="https://example.com/a*b*c" and text()="example.com/a*b*c"]',
+      '//x:a[@href="https://example.com/*"]',
+      '//x:a[@href="https://example.com*"]',
+    ],
+    assert_not_xpath_stdout: ['//x:i', '//x:b'],
+  },
+)
 assert_lib_ast('p: one paragraph implicit no split headers', 'ab\n',
   [a('P', [t('ab')])],
 )
@@ -11231,7 +11268,7 @@ assert_lib_stdin('bigb output: converts plaintext literal arguments to arguments
   {
     assert_bigb_stdout: `\\TestSaneOnly[\\\\ \\[ \\] \\{ \\} \\< \\\` \\$]
 
-\\TestSaneOnly[\\* *]
+\\TestSaneOnly[\\* \\*]
 
 \\TestSaneOnly[\\= =]
 
@@ -16102,7 +16139,8 @@ My txt.
 
 \\a[../ourbigbook.json]
 `,
-      'ourbigbook.json': `{}\n`,
+      // This fixture deliberately opts into hand-written sources under -/file.
+      'ourbigbook.json': JSON.stringify({ dontIgnore: ['-', '-/file(/.*)?'] }),
       'subdir/myfile.txt': `file contents\n`,
       'subdir/myfile2.txt': `file contents 2\n`,
     },
@@ -16362,7 +16400,7 @@ assert_cli('web-id preserves parent and previous sibling across Include file bou
 
 assert_cli('web-start-id resumes both article passes inclusively', {
   args: [
-    '-S', '--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer',
+    '-S', '--web', '--web-individual-upload', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer',
     '--web-start-id', 'second-child', '.',
   ],
   filesystem: webStartIdFilesystem,

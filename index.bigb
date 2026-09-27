@@ -1411,6 +1411,10 @@ The only exception for this is the percent sign itself `%`, which it leaves unto
 
 \OurBigBookExample[[Some \b[bold] text.]]
 
+The insane shorthand `**bold**` is equivalent to `\b[bold]`. It can contain other inline macros, including `*italic*`. Use `***both***` for bold italics. Delimiters must be on the same line, with no whitespace immediately inside them. Unmatched delimiters remain literal; use `\*` for a literal asterisk. Code, math and literal arguments do not interpret this shorthand. The list marker `* ` keeps its existing meaning.
+
+\OurBigBookExample[[Some **bold** and **bold *italic*** text.]]
+
 = Line break
 {parent=Macro}
 {title2=`\br`}
@@ -3815,6 +3819,10 @@ This shows what includes render as.
 {synonym}
 
 \OurBigBookExample[[Some \i[italic] text.]]
+
+The insane shorthand `*italic*` is equivalent to `\i[italic]`, with the same delimiter rules as <bold>.
+
+\OurBigBookExample[[Some *italic* text.]]
 
 = `\JsCanvasDemo`
 {parent=Macro}

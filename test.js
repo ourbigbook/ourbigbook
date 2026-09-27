@@ -365,6 +365,63 @@ two
     )
   })
 
+  it('Markdown macros share positional, named, nested and literal argument syntax', async function () {
+    for (const macro of [
+      '\\b[my bold]',
+      '\\a[https://example.com][label]{id=my-link}',
+      '\\b[outer \\i[inner] and **bold**]',
+      '\\Image[https://example.com/image.svg][Caption]\n{height=20}\n{border}',
+      '\\H[1][Title]{title2=first}{title2=second}',
+      '\\Q[\nFirst \\b[bold].\n\nSecond paragraph.\n]',
+      '\\C[[brackets [x] and \\b[not bold]\n]]',
+      '\\Image[https://example.com/image.svg]{{title=literal {braces}\n}}',
+      '\\b[escaped \\] bracket and \\{ brace]',
+      '\\b[🙂 Unicode]',
+      `\\b[${'🙂'.repeat(300)}]`,
+      '\\arbitrary[arg]{named=value}{flag}',
+    ]) {
+      assert.strictEqual(await markdownToOurbigbook(macro), macro + '\n')
+    }
+    assert.strictEqual(await markdownToOurbigbook('Before \\b[🙂] after.'), 'Before \\b[🙂] after.\n')
+    assert.strictEqual(await markdownToOurbigbook('**before \\c[[**]] after**'), '\\b[before \\c[[**]] after]\n')
+    const multiline = 'Before \\Q[first\n\nsecond] after.'
+    assert.strictEqual(await markdownToOurbigbook(multiline), multiline + '\n')
+    for (const length of [249, 250, 251, 252, 253, 254, 255, 256]) {
+      const macro = `\\b[${'x'.repeat(length)}]\n{id=boundary}`
+      assert.strictEqual(await markdownToOurbigbook(macro), macro + '\n')
+    }
+  })
+
+  it('Markdown macros render inside headings, links and lists', async function () {
+    const source = '# A \\i[title]\n\nText \\b[bold]{id=bold}.\n\n[\\i[label]](https://example.com)\n\n- \\b[item]\n\n\\Q[\nA quote.\n\nAnother paragraph.\n]\n'
+    const extra = {}
+    const html = await ourbigbook.convert(await markdownToOurbigbook(source), { input_path: 'index.bigb' }, extra)
+    assert.deepStrictEqual(extra.errors, [])
+    for (const xpath of ['//x:h1//x:i[text()="title"]', '//x:b[text()="bold"]', '//x:a[@href="https://example.com"]/x:i', '//x:li//x:b[text()="item"]', '//x:blockquote']) {
+      assert_xpath(xpath, html)
+    }
+  })
+
+  it('Markdown macros preserve code and escaped backslashes', async function () {
+    const extra = {}
+    const source = '# Input\n\n`\\b[code]`\n\n```\n\\i[fenced]\n```\n\n\\\\b[escaped]\n\n**before `\\b[` after**\n'
+    const html = await ourbigbook.convert(await markdownToOurbigbook(source), { input_path: 'index.bigb' }, extra)
+    assert.deepStrictEqual(extra.errors, [])
+    assert_xpath('//x:code[contains(., "\\b[code]")]', html)
+    assert_xpath('//x:code[contains(., "\\i[fenced]")]', html)
+    assert(!html.includes('<b>escaped</b>'))
+    assert(html.includes('\\b[escaped]'))
+    assert_xpath('//x:b/x:code[text()="\\b["]', html)
+  })
+
+  it('Markdown macros report normal macro validation errors', async function () {
+    for (const source of ['\\NoSuchMacro[hello]', '\\b[unterminated', '\\b[text]{noSuchArgument=value}']) {
+      const extra = {}
+      await ourbigbook.convert(await markdownToOurbigbook(source), { input_path: 'index.bigb' }, extra)
+      assert(extra.errors.length, source)
+    }
+  })
+
   it('feeds representative GFM blocks through the normal AST pipeline', async function () {
     const bigb = await markdownToOurbigbook(`# Input
 
@@ -12388,6 +12445,20 @@ Markdown paragraph.
     },
   }
 )
+assert_cli('Markdown macros: CLI includes native articles and validates named arguments', {
+  args: ['--embed-includes', '.'],
+  filesystem: {
+    'ourbigbook.json': '{}',
+    'index.md': '# Home\n\nText with \\b[bold]{id=my-bold}.\n\n\\Include[child]\n',
+    'child.bigb': '= Child\n\nNative child.\n',
+  },
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/index.html`]: [
+      '//x:b[text()="bold"]',
+      xpath_header(2, 'child'),
+    ],
+  },
+})
 assert_cli(
   'embed Include parses Markdown before inserting it',
   {

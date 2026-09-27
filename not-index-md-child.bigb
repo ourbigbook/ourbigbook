@@ -1,0 +1,5 @@
+= Included from Markdown
+
+This native OurBigBook article was included by \c[not-index-md.md] using \c[\\Include].
+
+It supports the usual \b[bold] and \i[italic] macros.

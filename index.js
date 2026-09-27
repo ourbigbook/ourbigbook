@@ -1811,6 +1811,11 @@ class Tokenizer {
   }
 
   push_token(token, value, source_location) {
+    if (this.macroOnly) {
+      if (token === TokenType.MACRO_NAME) this.macroStarted = true
+      if (token === TokenType.POSITIONAL_ARGUMENT_START || token === TokenType.NAMED_ARGUMENT_START) this.macroDepth++
+      if (token === TokenType.POSITIONAL_ARGUMENT_END || token === TokenType.NAMED_ARGUMENT_END) this.macroDepth--
+    }
     this.log_debug(`push_token ${token.toString()}${value === undefined ? '' : ` ${JSON.stringify(value)}`}`)
     let new_source_location;
     if (source_location === undefined) {
@@ -1830,7 +1835,9 @@ class Tokenizer {
   /**
    * @return {Array[Token]}
    */
-  tokenize() {
+  tokenize({ macroOnly=false }={}) {
+    this.macroOnly = macroOnly
+    this.macroDepth = 0
     // Ignore the last newline of the file.
     // It is good practice to always have a newline
     // at the end of files, but it doesn't really mean
@@ -1841,6 +1848,8 @@ class Tokenizer {
     let unterminated_literal = false;
     let start_source_location;
     while (!this.is_end()) {
+      if (macroOnly && this.macroStarted && this.macroDepth <= 0 &&
+          this.cur_c !== START_POSITIONAL_ARGUMENT_CHAR && this.cur_c !== START_NAMED_ARGUMENT_CHAR) break
       this.log_debug(`loop ${JSON.stringify(this.cur_c)}`);
       if (this.in_shorthand_header && this.cur_c === '\n') {
         this.in_shorthand_header = false;
@@ -13745,11 +13754,13 @@ async function loadMarked() {
 }
 
 function markdownInputLiteralArgument(text) {
-  let delimiterLength = 1
+  let delimiterLength = /[\\[\]{}<`$*#\n]/.test(text) ? 2 : 1
   for (const match of text.matchAll(/\]+/g)) {
     delimiterLength = Math.max(delimiterLength, match[0].length + 1)
   }
-  return '['.repeat(delimiterLength) + text + ']'.repeat(delimiterLength)
+  // Padding prevents leading/trailing brackets from joining the delimiters.
+  // The shared tokenizer removes exactly one boundary newline in literals.
+  return '['.repeat(delimiterLength) + (delimiterLength > 1 ? '\n' + text + '\n' : text) + ']'.repeat(delimiterLength)
 }
 
 function markdownInputArgument(text) {
@@ -13760,6 +13771,9 @@ function markdownInputRenderInline(tokens=[]) {
   let ret = ''
   for (const token of tokens) {
     switch (token.type) {
+      case 'ourbigbookMacro':
+        ret += token.raw
+        break
       case 'text':
       case 'escape':
         ret += token.tokens ? markdownInputRenderInline(token.tokens) : ourbigbookEscape(token.text)
@@ -13835,6 +13849,9 @@ function markdownInputRenderBlocks(tokens=[]) {
   let ret = ''
   for (const token of tokens) {
     switch (token.type) {
+      case 'ourbigbookMacro':
+        ret += token.raw + '\n\n'
+        break
       case 'space':
       case 'def':
         break
@@ -13876,8 +13893,105 @@ function markdownInputRenderBlocks(tokens=[]) {
 
 /** Convert Markdown into canonical OurBigBook source through Marked's lexer. */
 async function markdownToOurbigbook(input) {
-  const { lexer } = await loadMarked()
-  return markdownInputRenderBlocks(lexer(input, { gfm: true })).replace(/\n+$/, '\n')
+  const { Marked, Lexer } = await loadMarked()
+  const macros = macroListToMacros(false)
+  function macroToken(src) {
+    const name = /^\\([A-Za-z0-9]+)/.exec(src)?.[1]
+    if (!name || [...KNOWN_URL_PROTOCOLS].some(protocol => src.startsWith(ESCAPE_CHAR + protocol))) return
+    // Avoid copying/tokenizing the entire remaining document for each macro.
+    // Grow the window only for long arguments, keeping lookahead for a following
+    // argument on the next line. Counts inside Tokenizer are Unicode code points.
+    for (let length = 256; ; length *= 2) {
+      const tokenizer = new Tokenizer(src.slice(0, length))
+      tokenizer.tokenize({ macroOnly: true })
+      if (length >= src.length || tokenizer.i + 2 < tokenizer.chars.length) {
+        const raw = tokenizer.chars.slice(0, tokenizer.i).join('')
+        return { type: 'ourbigbookMacro', raw, name }
+      }
+    }
+  }
+  let macroSource, macroLexer
+  class MacroLexer extends Lexer {
+    inlineTokens(src, tokens) {
+      const previous = macroSource
+      const previousLexer = macroLexer
+      macroSource = src
+      macroLexer = this
+      try { return super.inlineTokens(src, tokens) }
+      finally { macroSource = previous; macroLexer = previousLexer }
+    }
+  }
+  const marked = new Marked({ gfm: true }, { tokenizer: {
+    paragraph(src) {
+      const cap = this.rules.block.paragraph.exec(src)
+      if (!cap) return false
+      let end = cap[0].length
+      // Markdown paragraph boundaries inside a macro argument belong to the
+      // macro, including when a block macro follows text on the same line.
+      for (let i = 0; i < end; i++) {
+        if (src[i] === '`') {
+          const code = this.codespan(src.slice(i))
+          if (code) { i += code.raw.length - 1; continue }
+        }
+        if (src[i] !== ESCAPE_CHAR) continue
+        if (src[i + 1] === ESCAPE_CHAR) { i++; continue }
+        const token = macroToken(src.slice(i))
+        if (!token) continue
+        const macroEnd = i + token.raw.length
+        if (macroEnd > end) {
+          end = macroEnd
+          const rest = this.rules.block.paragraph.exec(src.slice(end))
+          if (rest) end += rest[0].length
+        }
+        i = macroEnd - 1
+      }
+      if (end === cap[0].length) return false
+      const raw = src.slice(0, end)
+      const text = raw.replace(/\n$/, '')
+      return { type: 'paragraph', raw, text, tokens: this.lexer.inline(text) }
+    },
+  }, hooks: {
+    emStrongMask(maskedSrc) {
+      // Marked must not treat delimiters inside macro arguments as the end of
+      // surrounding Markdown emphasis. Preserve offsets in its masked source.
+      const src = macroSource
+      if (src === undefined) return maskedSrc
+      const chunks = []
+      let last = 0
+      for (let i = 0; i < src.length; i++) {
+        if (src[i] === '`') {
+          const code = macroLexer.tokenizer.codespan(src.slice(i))
+          if (code) { i += code.raw.length - 1; continue }
+        }
+        if (src[i] !== ESCAPE_CHAR) continue
+        if (src[i + 1] === ESCAPE_CHAR) { i++; continue }
+        const token = macroToken(src.slice(i))
+        if (!token) continue
+        chunks.push(maskedSrc.slice(last, i), 'a'.repeat(token.raw.length))
+        i += token.raw.length - 1
+        last = i + 1
+      }
+      return chunks.join('') + maskedSrc.slice(last)
+    },
+  }, extensions: [
+    {
+      name: 'ourbigbookMacro',
+      level: 'block',
+      tokenizer(src) {
+        const name = /^\\([A-Za-z0-9]+)/.exec(src)?.[1]
+        if (name && macros[name] && !macros[name].inline) return macroToken(src)
+      },
+    },
+    {
+      name: 'ourbigbookMacro',
+      level: 'inline',
+      start: src => src.indexOf(ESCAPE_CHAR),
+      tokenizer(src) {
+        if (!this.lexer.state.inRawBlock) return macroToken(src)
+      },
+    },
+  ] })
+  return markdownInputRenderBlocks(new MacroLexer(marked.defaults).lex(input)).replace(/\n+$/, '\n')
 }
 exports.markdownToOurbigbook = markdownToOurbigbook
 

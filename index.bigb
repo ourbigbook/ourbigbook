@@ -7550,6 +7550,8 @@ Directory conversion remains BigB-only unless `-I markdown` is given, so that Ma
 
 OurBigBook has some level of support for markdown input.
 
+Markdown wikilinks use native OurBigBook cross-reference resolution: `[[fundamental theorem of calculus]]` is equivalent to `<fundamental theorem of calculus>`, and `[[my id|my text]]` is equivalent to `<my id>[my text]`. Custom display text can contain Markdown. Wikilinks remain literal inside code; escape the first bracket as `\[[my id]]` to display the syntax in normal text.
+
 You can transparently <include> standard markdown files such as \a[markdown-example.md] with:
 ``
 \Include[markdown-example]

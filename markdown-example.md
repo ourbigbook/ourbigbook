@@ -36,6 +36,22 @@ And you can add OurBigBook arguments to shortcut Markup syntax:
 
 \Include[markdown-example-child]
 
+# OurBigBook Markdown shorthand extensions
+{parent=OurBigBook Markdown extensions}
+
+# OurBigBook Markdown wikilinks
+{parent=OurBigBook Markdown shorthand extensions}
+
+Analogous to Obsidian, generates [[internal cross references]]:
+
+\OurBigBookExample[[[
+Hello my [[OurBigBook]]!
+
+I like [[headers]].
+
+And here with custom text [[header|fancy headers]].
+]]]
+
 # OurBigBook Markdown extensions h3
 {parent=OurBigBook Markdown extensions}
 

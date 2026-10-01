@@ -402,6 +402,36 @@ two
     }
   })
 
+  it('Markdown wikilinks have native magic cross-reference semantics', async function () {
+    const markdown = '# Root\n\n## Fundamental theorem of calculus\n\n' +
+      '[[fundamental theorem of calculus]] and [[fundamental theorem of calculus|my text]].\n'
+    const native = '= Root\n\n== Fundamental theorem of calculus\n\n' +
+      '<fundamental theorem of calculus> and <fundamental theorem of calculus>[my text].\n'
+    const options = { input_path: 'index.bigb' }
+    const extra = {}
+    const html = await ourbigbook.convert(await markdownToOurbigbook(markdown), options, extra)
+    assert.deepStrictEqual(extra.errors, [])
+    assert.strictEqual(html, await ourbigbook.convert(native, options))
+    assert_xpath('//x:a[@href="#fundamental-theorem-of-calculus" and text()="my text"]', html)
+  })
+
+  it('Markdown wikilinks support nested Markdown and keep literal syntax literal', async function () {
+    assert.strictEqual(await markdownToOurbigbook('[[my id|my **text**]]'), '\\x[my id][my \\b[text]]{magic}\n')
+    assert.strictEqual(await markdownToOurbigbook('**before [[my id|my *text*]] after**'), '\\b[before \\x[my id][my \\i[text]]{magic} after]\n')
+    assert.strictEqual(await markdownToOurbigbook('\\b[See [[my id]]]'), '\\b[See \\x[my id]{magic}]\n')
+    assert.strictEqual(await markdownToOurbigbook('[[my id]]{full}'), '\\x[my id]{magic}{full}\n')
+    assert.strictEqual(await markdownToOurbigbook('\\[[literal]]'), '\\[\\[literal\\]\\]\n')
+    for (const source of ['`[[literal]]`', '```\n[[literal]]\n```', '\\C[[[\n[[literal]]\n]]]']) {
+      const extra = {}
+      const html = await ourbigbook.convert(await markdownToOurbigbook(source), {}, extra)
+      assert.deepStrictEqual(extra.errors, [])
+      assert_xpath('//x:code[contains(., "[[literal]]")]', html)
+    }
+    const extra = {}
+    await ourbigbook.convert(await markdownToOurbigbook('[[missing target]]'), {}, extra)
+    assert(extra.errors.some(error => error.message.includes('missing target') || error.message.includes('missing-target')))
+  })
+
   it('Markdown constructs accept trailing native named arguments', async function () {
     const source = '# Not index md\n\n# OurBigBook Markdown extensions\n{parent=Not index md}\n\n' +
       '![](https://example.com/image.png)\n{description=My **nice** [image](https://example.com).}{border}\n\n' +
@@ -12534,6 +12564,19 @@ assert_cli(`missing local file diagnostic: ${macro} ${target}`, {
 })
 }
 }
+assert_cli('Markdown wikilinks: CLI resolves cross-file targets', {
+  args: ['.'],
+  filesystem: {
+    'ourbigbook.json': '{}',
+    'index.md': '# Home\n\n[[fundamental theorem of calculus|my text]]\n\n\\Include[fundamental-theorem-of-calculus]\n',
+    'fundamental-theorem-of-calculus.md': '# Fundamental theorem of calculus\n',
+  },
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/index.html`]: [
+      '//x:a[contains(@href, "fundamental-theorem-of-calculus") and text()="my text"]',
+    ],
+  },
+})
 assert_cli('Markdown constructs: CLI accepts heading and image argument lines', {
   args: ['index.md'],
   filesystem: {

@@ -13785,7 +13785,7 @@ function markdownInputArgument(text) {
   return `[${text}]`
 }
 
-const MARKDOWN_INLINE_MACROS = { strong: 'b', em: 'i', codespan: 'c', link: 'a', image: 'Image', br: 'br' }
+const MARKDOWN_INLINE_MACROS = { strong: 'b', em: 'i', codespan: 'c', link: 'a', image: 'Image', br: 'br', ourbigbookWikilink: 'x' }
 const MARKDOWN_BLOCK_MACROS = { heading: 'H', code: 'C', blockquote: 'Q', list: 'Ul', table: 'Table', hr: 'Hr' }
 
 function markdownInputRenderInline(tokens=[]) {
@@ -13795,6 +13795,10 @@ function markdownInputRenderInline(tokens=[]) {
     const macro = MARKDOWN_INLINE_MACROS[token.type]
     const args = macro && tokens[i + 1]?.type === 'ourbigbookArguments' ? tokens[++i] : undefined
     switch (token.type) {
+      case 'ourbigbookWikilink':
+        ret += `\\x${markdownInputLiteralArgument(token.target)}` +
+          (token.tokens ? markdownInputArgument(markdownInputRenderInline(token.tokens)) : '') + '{magic}'
+        break
       case 'ourbigbookArguments':
         ret += ourbigbookEscape(token.raw)
         break
@@ -13952,6 +13956,22 @@ function markdownInputRenderBlocks(tokens=[]) {
 async function markdownToOurbigbook(input) {
   const { Marked, Lexer } = await loadMarked()
   const macros = macroListToMacros(false)
+  function wikilinkToken(src) {
+    if (!src.startsWith('[[')) return
+    let separator = -1
+    for (let i = 2; i < src.length && src[i] !== '\n'; i++) {
+      if (src[i] === ESCAPE_CHAR) { i++; continue }
+      if (src[i] === '|' && separator < 0) separator = i
+      if (src.startsWith(']]', i)) {
+        const target = src.slice(2, separator < 0 ? i : separator).trim().replace(/\\([\\|\]])/g, '$1')
+        if (!target) return
+        return {
+          type: 'ourbigbookWikilink', raw: src.slice(0, i + 2), target,
+          label: separator < 0 ? undefined : src.slice(separator + 1, i),
+        }
+      }
+    }
+  }
   function macroToken(src) {
     const name = /^\\([A-Za-z0-9]+)/.exec(src)?.[1]
     if (!name || [...KNOWN_URL_PROTOCOLS].some(protocol => src.startsWith(ESCAPE_CHAR + protocol))) return
@@ -14077,6 +14097,13 @@ async function markdownToOurbigbook(input) {
           const code = macroLexer.tokenizer.codespan(src.slice(i))
           if (code) { i += code.raw.length - 1; continue }
         }
+        const wikilink = wikilinkToken(src.slice(i))
+        if (wikilink) {
+          chunks.push(maskedSrc.slice(last, i), 'a'.repeat(wikilink.raw.length))
+          i += wikilink.raw.length - 1
+          last = i + 1
+          continue
+        }
         if (src[i] !== ESCAPE_CHAR && src[i] !== '{') continue
         if (src[i] === ESCAPE_CHAR && src[i + 1] === ESCAPE_CHAR) { i++; continue }
         const token = src[i] === '{' ? argumentToken(src.slice(i), macroLexer) : macroToken(src.slice(i))
@@ -14088,6 +14115,17 @@ async function markdownToOurbigbook(input) {
       return chunks.join('') + maskedSrc.slice(last)
     },
   }, extensions: [
+    {
+      name: 'ourbigbookWikilink',
+      level: 'inline',
+      start: src => src.indexOf('[['),
+      tokenizer(src) {
+        if (this.lexer.state.inRawBlock) return
+        const token = wikilinkToken(src)
+        if (token && token.label !== undefined) token.tokens = this.lexer.inlineTokens(token.label)
+        return token
+      },
+    },
     {
       name: 'ourbigbookArguments',
       level: 'block',

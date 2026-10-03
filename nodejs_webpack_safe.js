@@ -624,6 +624,18 @@ class SqlDbProvider extends web_api.DbProviderBase {
     return this.rows_to_asts(rows, context)
   }
 
+  async get_scope_titles_fetch(ids, context) {
+    if (!ids.length) return []
+    // Labels need title ASTs, not joins to every child of a potentially huge
+    // scope. Nested title links render as text while already inside a link.
+    const rows = await this.sequelize.models.Id.findAll({
+      attributes: ['idid', 'ast_json', 'toplevel_id'],
+      where: { idid: ids },
+      raw: true,
+    })
+    return rows.map(row => this.add_row_to_id_cache(row, context))
+  }
+
   async fetchTopics(ids, context) {
     const topics = await this.sequelize.models.Topic.findAll({
       order: [['topicId', 'ASC']],

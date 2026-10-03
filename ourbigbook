@@ -606,7 +606,7 @@ async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbig
 
 function filePreviewUsageMarker(relpath, nonOptions) {
   const hash = nonOptions.fileUsageHash || nonOptions.fileUsageHashes?.[FILE_PREFIX + URL_SEP + relpath] || hashToHex('[]')
-  return `<!--ourbigbook-file-usage-v2:${hash}-->`
+  return `<!--ourbigbook-file-usage-v3:${hash}-->`
 }
 
 function outputHasMarker(outpath, marker) {

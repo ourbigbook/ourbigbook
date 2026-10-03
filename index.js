@@ -1146,6 +1146,10 @@ class DbProvider {
   async fetch_files(path, context) { throw new Error('unimplemented'); }
 
   async get_file_usage_fetch(paths, opts) { return [] }
+
+  async get_scope_titles_fetch(ids, context) {
+    return this.get_noscopes_base_fetch(ids, new Set(), context)
+  }
 }
 exports.DbProvider = DbProvider;
 
@@ -7647,6 +7651,34 @@ async function parse(tokens, options, context, extra_returns={}) {
           cached_ast.numbered = ast.numbered
         }
       }
+
+      if (options.render_metadata && options.output_format === OUTPUT_FORMAT_HTML && options.db_provider) {
+        // Scope prefixes identify the headers needed for metadata labels. Fetch
+        // their union, not an ancestor query for every incoming link/media use.
+        const targets = new Set()
+        for (const id of header_ids) {
+          for (const type of [REFS_TABLE_X, REFS_TABLE_X_CHILD, REFS_TABLE_SYNONYM]) {
+            for (const target of context.db_provider.get_refs_to_as_ids(type, id)) targets.add(target)
+          }
+          for (const target of context.db_provider.get_refs_to_as_ids(REFS_TABLE_X_CHILD, id, true)) targets.add(target)
+        }
+        for (const sources of context.fileUsage.values()) {
+          for (const source of sources) targets.add(source)
+        }
+        const scopes = new Set()
+        for (const target of targets) {
+          const ast = context.db_provider.get_noscope(target, context)
+          if (!ast) continue
+          for (const scope of metadataScopeIds(ast, context)) {
+            if (!context.db_provider.get_noscope(scope, context)) scopes.add(scope)
+          }
+        }
+        const ids = Array.from(scopes)
+        // Bound SQL parameter counts even on pages with many backlinks.
+        for (let i = 0; i < ids.length; i += 500) {
+          await options.db_provider.get_scope_titles_fetch(ids.slice(i, i + 500), context)
+        }
+      }
     }
   }
 
@@ -10829,6 +10861,16 @@ const DEFAULT_MACRO_LIST = [
   ),
 ];
 
+function metadataScopeIds(ast, context) {
+  const ids = []
+  const parts = (ast.scope || '').split(Macro.HEADER_SCOPE_SEPARATOR)
+  for (let i = 1; i <= parts.length; i++) {
+    const id = parts.slice(0, i).join(Macro.HEADER_SCOPE_SEPARATOR)
+    if (id && id !== ast.id && id !== context.options.ref_prefix) ids.push(id)
+  }
+  return ids
+}
+
 function createLinkList(context, ast, id, title, target_ids) {
   let ret = '';
   if (target_ids.size !== 0) {
@@ -10860,6 +10902,20 @@ function createLinkList(context, ast, id, title, target_ids) {
           ),
           showDisambiguate: new AstArgument(),
         }
+        const xAst = new AstNode(AstType.MACRO, Macro.X_MACRO_NAME, xArgs)
+        const scopes = metadataScopeIds(target_ast, context).map(
+          id => context.db_provider.get_noscope(id, context)
+        ).filter(ast => ast && ast.macro_name === Macro.HEADER_MACRO_NAME)
+        if (scopes.length) {
+          const titleContext = { ...context, in_a: true }
+          // Trusted, escaped renderer output on this synthetic link only. Do
+          // not use a passthrough macro or relax user-source HTML safety.
+          xAst.metadataTitleHtml = [...scopes, target_ast].map(ast => xTextBase(ast, titleContext, {
+            from_x: true,
+            capitalize: true,
+            caption_prefix_span: false,
+          }).innerWithDisambiguate).join(` <span class="meta">${Macro.HEADER_SCOPE_SEPARATOR}</span> `)
+        }
         if (context.options.add_test_instrumentation) {
           xArgs[Macro.TEST_DATA_ARGUMENT_NAME] = [new PlaintextAstNode(i.toString())]
         }
@@ -10869,7 +10925,7 @@ function createLinkList(context, ast, id, title, target_ids) {
           {
             [Macro.CONTENT_ARGUMENT_NAME]: new AstArgument(
               [
-                new AstNode( AstType.MACRO, Macro.X_MACRO_NAME, xArgs),
+                xAst,
                 //new AstNode(
                 //  AstType.MACRO,
                 //  Macro.PASSTHROUGH_MACRO_NAME,
@@ -12772,7 +12828,9 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
             }
 
             if (content_arg === undefined) {
-              if (target_id === context.options.ref_prefix) {
+              if (ast.metadataTitleHtml !== undefined) {
+                content = ast.metadataTitleHtml
+              } else if (target_id === context.options.ref_prefix) {
                 content = HTML_HOME_MARKER
               } else if (context.renderXAsHref) {
                 content = renderArg(href_arg, context)

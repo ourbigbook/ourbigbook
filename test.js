@@ -16911,6 +16911,33 @@ assert_cli('file: authored media pages show Used by backlinks', {
 })
 
 for (const jobs of [1, 2]) {
+  assert_cli(`file: metadata links show full scopes across files, jobs=${jobs}`, {
+    args: ['.', '--jobs', String(jobs)],
+    timeout: 15000,
+    filesystem: {
+      'index.bigb': '= Home\n\n\\Include[exam]\n\\Include[target]\n',
+      'exam.bigb': '= Exams\n{scope}\n\n\\Include[exam/year]\n',
+      'exam/year.bigb': '= 2017\n{scope}\n\n\\Include[year/paper]\n',
+      'exam/year/paper.bigb': '= Paper \\b[1]\n{scope}\n\n== 9E\n{scope}\n\n=== Solution\n\n\\Image[/plot.png]\n\n</target>\n',
+      'target.bigb': '= Target\n',
+      'plot.png': 'image',
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/-/file/plot.png.html`]: [
+        "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../exam/year/paper.html#9e/solution' and normalize-space(.)='Exams / 2017 / Paper 1 / 9E / Solution']",
+        "//x:ul[@data-ourbigbook-test='used-by']//x:a/x:b[text()='1']",
+      ],
+      [`${TMP_DIRNAME}/html/target.html`]: [
+        "//x:ul[@data-ourbigbook-test='incoming-links']/x:li/x:a[@href='exam/year/paper.html#9e/solution' and normalize-space(.)='Exams / 2017 / Paper 1 / 9E / Solution']",
+      ],
+    },
+    assert_not_xpath: {
+      [`${TMP_DIRNAME}/html/-/file/plot.png.html`]: ["//x:ul[@data-ourbigbook-test='used-by']//x:a//x:a"],
+    },
+  })
+}
+
+for (const jobs of [1, 2]) {
   for (const remove of [false, true]) {
     assert_cli(`file: Used by refreshes unchanged media after ${remove ? 'removing' : 'adding'} an embedding, jobs=${jobs}`, {
       args: ['.', '--jobs', String(jobs)],

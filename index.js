@@ -13433,7 +13433,6 @@ function ourbigbookConvertMedia(ast, context) {
       if (
         !context.options.input_path || context.toplevel_output_path_dir === undefined ||
         ast.validation_output.external.boolean || protocolIsGiven(rawSrc) ||
-        rawSrc.startsWith(URL_SEP) ||
         (context.options.x_remove_leading_at && rawSrc.startsWith(AT_MENTION_CHAR)) ||
         macroImageVideoResolveParams(ast, context).media_provider_type !== 'local'
       ) return src
@@ -13441,9 +13440,11 @@ function ourbigbookConvertMedia(ast, context) {
       // Keep media pointing to its original location, including local provider prefixes.
       const localPath = context.options.ourbigbook_json['media-providers'].local.path
       if (localPath) {
-        // The web server does not receive ourbigbook.json. Bake in its upload namespace.
-        return context.options.webLocalConvert ? URL_SEP + path.join('media', src) : src
+        // Provider files are merged into the user's upload root. The server does
+        // not receive ourbigbook.json, so anchor relative sources there as well.
+        return context.options.webLocalConvert ? path.join(URL_SEP, src) : src
       }
+      if (rawSrc.startsWith(URL_SEP)) return src
       const prefix = path.relative(
         path.join(context.toplevel_output_path_dir, localPath),
         path.join(path.dirname(context.options.input_path), localPath),

@@ -3119,10 +3119,20 @@ if (cli.helpMacros) {
                 : new Set()
               // Walk this repository separately: source discovery deliberately skips -/.
               for (const file of walk_directory_recursively(localMediaDir,
-                DEFAULT_IGNORE_BASENAMES_SET, ignored, [], [], localMediaDir)) {
-                if (!fs.lstatSync(file).isFile()) continue
-                const destination = path.join('media', path.relative(localMediaDir, file))
-                if (uploadPaths.has(destination)) cli_error(`media upload path collision: ${destination}`)
+                new Set([...DEFAULT_IGNORE_BASENAMES_SET, '.gitignore', '.gitattributes', '.gitmodules']),
+                ignored, [], [], localMediaDir)) {
+                const stat = fs.lstatSync(file)
+                const destination = path.relative(localMediaDir, file)
+                const sourcePath = path.join(ourbigbook_json_dir, destination)
+                // Validate the source tree too, including partial uploads and
+                // article sources that are not in the ordinary upload manifest.
+                // Shared directories are fine; files must never overwrite either.
+                if (uploadPaths.has(destination) ||
+                  (fs.existsSync(sourcePath) &&
+                    !(stat.isDirectory() && fs.lstatSync(sourcePath).isDirectory()))) {
+                  cli_error(`media upload path collision: ${destination}`)
+                }
+                if (!stat.isFile()) continue
                 uploadPaths.set(destination, file)
               }
             }

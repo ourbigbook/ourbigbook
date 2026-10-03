@@ -6559,7 +6559,7 @@ it('background renders: real CLI uploads all sources first, batches large reposi
           assert(article.render.includes('subdir/diagram.svg'))
           assert(!article.render.includes('paper/question/diagram.svg'))
         }
-        // Media under the reserved namespace is uploaded separately in both CLI modes.
+        // Media under the reserved source namespace is merged into the upload root in both CLI modes.
         // Removed files are unlisted, not deleted: non-admin owners can move media.
         assert.strictEqual((await test.sequelize.models.User.findByPk(user.id)).admin, false)
         const media = path.join(wiki, '-/media')
@@ -6568,28 +6568,51 @@ it('background renders: real CLI uploads all sources first, batches large reposi
         fs.writeFileSync(path.join(media, '.gitignore'), 'ignored.svg\n')
         fs.writeFileSync(path.join(media, 'ignored.svg'), '<svg/>')
         fs.renameSync(path.join(wiki, 'subdir/diagram.svg'), path.join(media, 'diagram.svg'))
+        fs.mkdirSync(path.join(media, 'nested'))
+        fs.copyFileSync(path.join(media, 'diagram.svg'), path.join(media, 'nested/diagram.svg'))
+        fs.appendFileSync(path.join(wiki, 'subdir/paper.bigb'), '\n\\Image[/nested/diagram.svg]\n')
         fs.writeFileSync(path.join(wiki, 'ourbigbook.json'), JSON.stringify({
           'media-providers': { local: { path: '-/media' } },
         }))
         fs.writeFileSync(path.join(wiki, '-/invalid.bigb'), '\\UnknownMacro')
+        // Existing uploads from the old prefixed layout retain their URLs/bytes.
+        await test.webApi.uploadCreateOrUpdate('user0/media/diagram.svg', fs.readFileSync(path.join(media, 'diagram.svg')))
         for (const args of [[], ['--web-individual-upload']]) {
           const uploaded = await run([...args, '--web-force-id-extraction', '--web-force-render'])
           assert.strictEqual(uploaded.stdout.includes('web_unlist_upload:'), args.length === 0)
           assert(!uploaded.stdout.includes('web_delete_upload:'))
           const file = await File.findOne({ where: { path: '@user0/subdir/paper/question/solution.bigb' } })
-          assert(file.bodySource.includes('\\Image[/media/diagram.svg]'))
+          assert(file.bodySource.includes('\\Image[/diagram.svg]'))
+          assert(file.bodySource.includes('\\Image[/nested/diagram.svg]'))
           const article = await Article.findOne({ where: { slug: 'user0/subdir/paper/question/solution' } })
-          assert(article.render.includes('/user0/-/raw/media/diagram.svg'))
+          assert(article.render.includes('/user0/-/raw/diagram.svg'))
+          assert(article.render.includes('/user0/-/raw/nested/diagram.svg'))
           const { Upload } = test.sequelize.models
-          assert(await Upload.findOne({ where: { path: Upload.uidAndPathToUploadPath(user.id, 'media/diagram.svg') } }))
-          const oldUpload = await Upload.findOne({ where: { path: Upload.uidAndPathToUploadPath(user.id, 'subdir/diagram.svg') } })
-          assert(oldUpload)
-          assert.strictEqual(oldUpload.list, false)
-          assert(oldUpload.bytes.equals(fs.readFileSync(path.join(media, 'diagram.svg'))))
-          for (const missing of ['media/ignored.svg', 'media/.git/config']) {
+          assert(await Upload.findOne({ where: { path: Upload.uidAndPathToUploadPath(user.id, 'diagram.svg') } }))
+          for (const oldPath of ['subdir/diagram.svg', 'media/diagram.svg']) {
+            const oldUpload = await Upload.findOne({ where: { path: Upload.uidAndPathToUploadPath(user.id, oldPath) } })
+            assert(oldUpload)
+            assert.strictEqual(oldUpload.list, false)
+            assert(oldUpload.bytes.equals(fs.readFileSync(path.join(media, 'diagram.svg'))))
+          }
+          for (const missing of ['ignored.svg', '.git/config', '.gitignore']) {
             assert.strictEqual(await Upload.count({ where: { path: Upload.uidAndPathToUploadPath(user.id, missing) } }), 0)
           }
         }
+        // A collision fails before changing uploads, even when other media
+        // entries sort before the offending file in the directory walk.
+        const { Upload } = test.sequelize.models
+        const uploads = () => Upload.findAll({ order: [['id', 'ASC']], raw: true })
+        const beforeCollision = await uploads()
+        fs.mkdirSync(path.join(wiki, 'nested'))
+        fs.writeFileSync(path.join(wiki, 'nested/diagram.svg'), '<svg>source</svg>')
+        await assert.rejects(run([]), error => {
+          assert(error.stderr.includes('media upload path collision: nested/diagram.svg'))
+          assert(!error.stdout.includes('web_upload:'))
+          assert(!error.stdout.includes('web_unlist_upload:'))
+          return true
+        })
+        assert.deepStrictEqual(await uploads(), beforeCollision)
       } finally {
         TreeRebuildJob.launchLocal = originalLaunch
         for (const { child, exited } of children) {

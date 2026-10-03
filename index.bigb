@@ -8347,6 +8347,8 @@ The source code is uploaded, and conversion to HTML happens on the server, no co
 
 Inside a Git repository, uploads use a clean checkout of the current `HEAD` commit, including committed configuration, assets, and pinned submodules. Commit your changes first: uncommitted and untracked files are not uploaded. The checkout is under `_out/publish`, with web output under `_out/publish/_out/web` for a project at the repository root. Configured external local media repositories also use their current commit. Outside Git, uploads continue to use the current files directly, with output under `_out/web`.
 
+Files from a configured local media provider are merged into the user's upload root, without an extra `media/` prefix, just like GitHub publishing. For example, `figures/diagram.svg` in the media repository becomes `/USERNAME/-/raw/figures/diagram.svg`. Git metadata is excluded. Collisions with source-repository files or directories abort before any files are uploaded or unlisted.
+
 Some limitations:
 * if there's an error in a later file, the database is still modified by the previous files, i.e. there is no atomicity. A way to improve that would be to upload all files to the server in one go, and let the server convert everything in one transaction. However, this would lead to a very long server action, which would block any other incoming request (I tested, everything is single threaded)
 

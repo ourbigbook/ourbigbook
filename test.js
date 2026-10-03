@@ -16884,6 +16884,58 @@ const parallelFilesystem = {
 
 const parallelWebArgs = ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
 
+for (const mediaPath of ['_media', '-/media']) {
+assert_cli(`web local media root-relative paths match local builds (${mediaPath === '_media' ? 'ignored directory' : 'reserved namespace'})`, {
+  args: [...parallelWebArgs, '.'],
+  filesystem: {
+    '.gitignore': '_out/\n',
+    'ourbigbook.json': JSON.stringify({
+      ignoreConvert: [mediaPath],
+      'media-providers': { local: { path: mediaPath, 'default-for': ['image'] } },
+    }),
+    'index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
+    'subdir/paper.bigb': '= Paper\n{scope}\n\n== Question\n{scope}\n\n=== Solution\n\n\\Image[/nested/diagram.svg]\n\n\\Image[nested/diagram.svg]\n',
+    [`${mediaPath}/nested/diagram.svg`]: '<svg/>',
+    [`${mediaPath}/.gitignore`]: 'ignored.svg\n',
+    [`${mediaPath}/.gitattributes`]: '*.svg text\n',
+    [`${mediaPath}/.gitmodules`]: '',
+  },
+  pre_exec: [...MAKE_GIT_REPO_PRE_EXEC, ['ourbigbook', ['.']]],
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/subdir/paper.html`]: [
+      `(//x:img[@src='../../../${mediaPath}/nested/diagram.svg'])[1]`,
+      `(//x:img[@src='../../../${mediaPath}/nested/diagram.svg'])[2]`,
+    ],
+  },
+  assert_contains: {
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/subdir/paper/question/solution.bigb`]: ['\\Image[/nested/diagram.svg]\n\n\\Image[/nested/diagram.svg]'],
+  },
+  assert_stdout_contains: [/web_upload: \d+: nested\/diagram\.svg /],
+  assert_stdout_not_contains: ['media/nested/diagram.svg'],
+})
+}
+
+for (const input of ['.', 'index.bigb']) {
+for (const [kind, files, collision] of [
+  ['same file', { 'diagram.svg': 'source', '-/media/diagram.svg': 'media' }, 'diagram.svg'],
+  ['article source', { '-/media/index.bigb': 'media' }, 'index.bigb'],
+  ['media file over source directory', { 'images/source.txt': 'source', '-/media/images': 'media' }, 'images'],
+  ['media directory over source file', { 'images': 'source', '-/media/images/diagram.svg': 'media' }, 'images'],
+]) {
+assert_cli(`web local media rejects root merge collisions (${kind}, ${input === '.' ? 'full' : 'partial'})`, {
+  args: [...parallelWebArgs, input],
+  filesystem: {
+    'ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '-/media' } } }),
+    'index.bigb': '= Home\n',
+    ...files,
+  },
+  assert_exit_status: 1,
+  assert_stderr_contains: [`media upload path collision: ${collision}`],
+  assert_stdout_not_contains: ['web_upload:', 'web_unlist_upload:'],
+})
+}
+}
+
 for (const input of ['.', 'index.bigb']) {
 assert_cli(`web committed snapshot ignores working tree changes (${input})`, {
   args: [...parallelWebArgs, input],
@@ -16948,9 +17000,9 @@ assert_cli('web committed snapshot includes committed external local media', {
     { filesystem_update: { 'wiki-media/untracked.svg': '<svg/>', 'wiki-media/diagram.svg': 'dirty media' } },
   ],
   assert_contains: {
-    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['media/diagram.svg'],
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['\\Image[/diagram.svg]'],
   },
-  assert_stdout_contains: ['media/diagram.svg'],
+  assert_stdout_contains: [/web_upload: \d+: diagram\.svg /],
   assert_stdout_not_contains: ['untracked.svg'],
 })
 
@@ -16984,9 +17036,9 @@ assert_cli('web committed snapshot uses pinned media submodule', {
   ],
   assert_contains: {
     [`wiki/${TMP_DIRNAME}/publish/-/media/diagram.svg`]: ['<svg>pinned</svg>'],
-    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['media/diagram.svg'],
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['\\Image[/diagram.svg]'],
   },
-  assert_stdout_contains: ['media/diagram.svg'],
+  assert_stdout_contains: [/web_upload: \d+: diagram\.svg /],
 })
 
 const webStartIdFilesystem = {

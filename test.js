@@ -15733,6 +15733,50 @@ assert_cli(`publish: local media repository is pushed and merged into output (${
   assert_not_exists: [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/untracked.svg`],
 })
 }
+for (const publish of [false, true]) {
+  const output = `wiki/${TMP_DIRNAME}/${publish ? `publish/${TMP_DIRNAME}/github-pages` : 'html'}`
+  // Deeper than the test process's cwd: relative('../..', ...) must not
+  // resolve these virtual output paths against the real filesystem root.
+  const extraScopes = Array.from({ length: process.cwd().split(path.sep).length + 10 }, (_, i) => `s${i}`)
+  const solution = `exam/2017/paper/3/b/${extraScopes.join('/')}/solution.html`
+  const scopedHeaders = extraScopes.map((scope, i) => `= ${scope}\n{parent=${i ? extraScopes[i - 1] : 'b'}}\n{scope}\n\n`).join('')
+  const imagePath = 'exam/2017/band.png'
+  const videoPath = 'exam/2017/band.mp4'
+  const relative = target => path.posix.join(path.relative(path.dirname(`${output}/${solution}`), output), path.relative(output, target))
+  const mediaRoot = publish ? output : 'wiki-media'
+  const imageHref = relative(`${mediaRoot}/${imagePath}`)
+  const videoHref = relative(`${mediaRoot}/${videoPath}`)
+  const fileHref = relative(`${output}/-/raw/exam/2017/notes.txt`)
+  assert_cli(`link: local media and file paths in deeply scoped split pages, publish=${publish}`, {
+    args: publish ? ['--dry-run', '--publish'] : ['.', '--split-headers'],
+    cwd: 'wiki',
+    timeout: 15000,
+    filesystem: {
+      'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
+      'wiki/index.bigb': '= Home\n\n\\Include[exam]\n',
+      'wiki/exam/index.bigb': '= Exam\n\n\\Include[2017/paper]\n',
+      'wiki/exam/2017/paper.bigb': '= Paper\n{scope}\n\n\\Image[band.png]\n\n= 3\n{parent=Paper}\n{scope}\n\n= b\n{parent=3}\n{scope}\n\n' + scopedHeaders + `= Solution\n{parent=${extraScopes.at(-1)}}\n\n\\Image[band.png]\n\n\\Video[band.mp4]\n\n\\a[notes.txt]\n`,
+      'wiki/exam/2017/notes.txt': 'notes',
+      [`wiki-media/${imagePath}`]: 'image',
+      [`wiki-media/${videoPath}`]: 'video',
+    },
+    pre_exec: publish ? [
+      ['git', ['-C', '../wiki-media', 'init', '-b', 'main']],
+      ['git', ['-C', '../wiki-media', 'add', '.']],
+      ['git', ['-C', '../wiki-media', 'commit', '-m', 'media']],
+      ['git', ['-C', '../wiki-media', 'remote', 'add', 'origin', 'git@github.com:ourbigbook/wiki-media.git']],
+      ...MAKE_GIT_REPO_PRE_EXEC,
+      ['git', ['checkout', '-b', 'dev']],
+    ] : [],
+    assert_xpath: {
+      [`${output}/${solution}`]: [
+        `//x:a[@href='${imageHref}']/x:img[@src='${imageHref}']`,
+        `//x:video[@src='${videoHref}']`,
+        `//x:a[@href='${fileHref}' and text()='notes.txt']`,
+      ],
+    },
+  })
+}
 assert_cli('publish: local media repository can be a detached submodule under -/media', {
   args: ['--dry-run', '--publish'],
   cwd: 'wiki',

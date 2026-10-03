@@ -3772,9 +3772,16 @@ function renderAstList({ asts, context, first_toplevel, header_count, outputPath
       // root_relpath
       options.template_vars = { ...options.template_vars }
       const new_root_relpath = getRootRelpath(output_path, context)
+      const old_root_relpath = options.template_vars.root_relpath
+      // These are virtual output paths, not paths relative to process.cwd().
+      // Anchor deeply enough that neither ../ chain can hit the filesystem
+      // root: otherwise deeply scoped pages silently lose leading ../ steps.
+      const virtualRoot = path.sep + Array(
+        old_root_relpath.split(path.sep).length + new_root_relpath.split(path.sep).length
+      ).fill('_').join(path.sep)
       context.root_relpath_shift = path.relative(
-        options.template_vars.root_relpath,
-        new_root_relpath
+        path.resolve(virtualRoot, old_root_relpath),
+        path.resolve(virtualRoot, new_root_relpath),
       )
       options.template_vars.root_relpath = new_root_relpath
       options.template_vars.raw_relpath = path.join(new_root_relpath, RAW_PREFIX)

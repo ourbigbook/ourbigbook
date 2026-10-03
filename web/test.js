@@ -6570,7 +6570,9 @@ it('background renders: real CLI uploads all sources first, batches large reposi
         fs.renameSync(path.join(wiki, 'subdir/diagram.svg'), path.join(media, 'diagram.svg'))
         fs.mkdirSync(path.join(media, 'nested'))
         fs.copyFileSync(path.join(media, 'diagram.svg'), path.join(media, 'nested/diagram.svg'))
-        fs.appendFileSync(path.join(wiki, 'subdir/paper.bigb'), '\n\\Image[/nested/diagram.svg]\n')
+        fs.mkdirSync(path.join(media, 'subdir'))
+        fs.copyFileSync(path.join(media, 'diagram.svg'), path.join(media, 'subdir/local.svg'))
+        fs.appendFileSync(path.join(wiki, 'subdir/paper.bigb'), '\n\\Image[/nested/diagram.svg]\n\n\\Image[local.svg]\n')
         fs.writeFileSync(path.join(wiki, 'ourbigbook.json'), JSON.stringify({
           'media-providers': { local: { path: '-/media' } },
         }))
@@ -6584,9 +6586,11 @@ it('background renders: real CLI uploads all sources first, batches large reposi
           const file = await File.findOne({ where: { path: '@user0/subdir/paper/question/solution.bigb' } })
           assert(file.bodySource.includes('\\Image[/diagram.svg]'))
           assert(file.bodySource.includes('\\Image[/nested/diagram.svg]'))
+          assert(file.bodySource.includes('\\Image[/subdir/local.svg]'))
           const article = await Article.findOne({ where: { slug: 'user0/subdir/paper/question/solution' } })
           assert(article.render.includes('/user0/-/raw/diagram.svg'))
           assert(article.render.includes('/user0/-/raw/nested/diagram.svg'))
+          assert(article.render.includes('/user0/-/raw/subdir/local.svg'))
           const { Upload } = test.sequelize.models
           assert(await Upload.findOne({ where: { path: Upload.uidAndPathToUploadPath(user.id, 'diagram.svg') } }))
           for (const oldPath of ['subdir/diagram.svg', 'media/diagram.svg']) {

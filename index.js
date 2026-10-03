@@ -9782,11 +9782,23 @@ function macroImageVideoResolveParams(ast, context) {
 
   // Fixup src depending for certain providers.
   let relpath_prefix
+  let localSrcPrefix
   if (media_provider_type === 'local') {
     const localPath = context.options.ourbigbook_json['media-providers'].local.path;
     if (localPath !== '') {
-      // A configured provider path is relative to ourbigbook.json, not each source file.
-      src = URL_SEP + path.join(localPath, src)
+      localSrcPrefix = ''
+      if (!src.startsWith(URL_SEP) && !protocolIsGiven(src)) {
+        // Mirror the source directory inside the provider, using the original
+        // source location even when this AST was included or split elsewhere.
+        const sourceDir = path.dirname(ast.source_location.path || context.options.input_path || '')
+        const exists = context.options.fs_exists_sync
+        if (!exists || exists(path.join(localPath, sourceDir, src)) || !exists(path.join(localPath, src))) {
+          localSrcPrefix = sourceDir
+        }
+        // Keep existing unprefixed provider-root paths working when the
+        // source-relative file is absent. A leading / always selects the root.
+      }
+      src = URL_SEP + path.join(localPath, localSrcPrefix, src)
     }
   } else if (media_provider_type === 'github') {
     const github_path = context.options.ourbigbook_json['media-providers'].github.path;
@@ -9814,6 +9826,7 @@ function macroImageVideoResolveParams(ast, context) {
     media_provider_type,
     is_url,
     relpath_prefix,
+    localSrcPrefix,
     src,
   }
 }
@@ -13433,16 +13446,17 @@ function ourbigbookConvertMedia(ast, context) {
       if (
         !context.options.input_path || context.toplevel_output_path_dir === undefined ||
         ast.validation_output.external.boolean || protocolIsGiven(rawSrc) ||
-        (context.options.x_remove_leading_at && rawSrc.startsWith(AT_MENTION_CHAR)) ||
-        macroImageVideoResolveParams(ast, context).media_provider_type !== 'local'
+        (context.options.x_remove_leading_at && rawSrc.startsWith(AT_MENTION_CHAR))
       ) return src
+      const params = macroImageVideoResolveParams(ast, context)
+      if (params.media_provider_type !== 'local') return src
       // Splitting scoped headers moves their source into new directories.
       // Keep media pointing to its original location, including local provider prefixes.
       const localPath = context.options.ourbigbook_json['media-providers'].local.path
       if (localPath) {
         // Provider files are merged into the user's upload root. The server does
         // not receive ourbigbook.json, so anchor relative sources there as well.
-        return context.options.webLocalConvert ? path.join(URL_SEP, src) : src
+        return context.options.webLocalConvert ? path.join(URL_SEP, params.localSrcPrefix, src) : src
       }
       if (rawSrc.startsWith(URL_SEP)) return src
       const prefix = path.relative(

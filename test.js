@@ -15571,6 +15571,32 @@ assert_cli('link: local media repository resolves from nested sources and skips 
   },
   assert_not_exists: [`${TMP_DIRNAME}/html/-/media/invalid.html`, `${TMP_DIRNAME}/html/subdir/-/invalid.html`],
 })
+const relativeLocalMediaFilesystem = {
+  'ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '-/media' } } }),
+  'index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
+  'subdir/paper.bigb': '= Paper\n{scope}\n\n== Question\n{scope}\n\n=== Solution\n\n\\Image[figure.svg]\n\n\\Image[/figure.svg]\n\n\\Image[../shared.svg]\n\n\\Image[subdir/legacy.svg]\n\n\\Image[figure \\[1\\].svg]\n\n\\Video[video.mp4]\n',
+  '-/media/figure.svg': '<svg>root</svg>',
+  '-/media/shared.svg': '<svg>shared</svg>',
+  '-/media/subdir/figure.svg': '<svg>relative</svg>',
+  '-/media/subdir/legacy.svg': '<svg>legacy</svg>',
+  '-/media/subdir/figure [1].svg': '<svg>escaped</svg>',
+  '-/media/subdir/video.mp4': 'video',
+}
+assert_cli('link: local media provider supports file-relative paths across scoped includes', {
+  args: ['.', '--embed-includes'],
+  filesystem: relativeLocalMediaFilesystem,
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/subdir/paper.html`]: [
+      "//x:img[@src='../../../-/media/subdir/figure.svg']",
+      "//x:img[@src='../../../-/media/figure.svg']",
+      "//x:img[@src='../../../-/media/shared.svg']",
+      "//x:img[@src='../../../-/media/subdir/legacy.svg']",
+      "//x:img[@src='../../../-/media/subdir/figure%20%5B1%5D.svg']",
+      "//x:video[@src='../../../-/media/subdir/video.mp4']",
+    ],
+    [`${TMP_DIRNAME}/html/index.html`]: ["//x:img[@src='../../-/media/subdir/figure.svg']"],
+  },
+})
 for (const publishTarget of ['github-pages', 'github-md']) {
 assert_cli(`publish: local media repository is pushed and merged into output (${publishTarget})`, {
   args: ['--dry-run', '--publish', '--publish-target', publishTarget],
@@ -15578,9 +15604,10 @@ assert_cli(`publish: local media repository is pushed and merged into output (${
   filesystem: {
     'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
     'wiki/index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
-    'wiki/subdir/paper.bigb': '= Paper\n\n\\Image[diagram.svg]\n\n\\Image[subdir/other.svg]\n',
+    'wiki/subdir/paper.bigb': '= Paper\n\n\\Image[diagram.svg]\n\n\\Image[subdir/other.svg]\n\n\\Image[relative.svg]\n',
     'wiki-media/diagram.svg': '<svg/>',
     'wiki-media/subdir/other.svg': '<svg>other</svg>',
+    'wiki-media/subdir/relative.svg': '<svg>relative</svg>',
     'wiki-media/.gitignore': '*.html\n',
   },
   pre_exec: [
@@ -15597,13 +15624,14 @@ assert_cli(`publish: local media repository is pushed and merged into output (${
     [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/subdir/paper.html`]: [
       "//x:img[@src='../diagram.svg']",
       "//x:img[@src='../subdir/other.svg']",
+      "//x:img[@src='../subdir/relative.svg']",
     ],
   } : {},
   assert_contains: {
     [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/diagram.svg`]: ['<svg/>'],
     [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/subdir/other.svg`]: ['<svg>other</svg>'],
     ...(publishTarget === 'github-md' ? {
-      [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/subdir/paper.md`]: ['../diagram.svg', 'other.svg'],
+      [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/subdir/paper.md`]: ['../diagram.svg', 'other.svg', 'relative.svg'],
     } : {}),
   },
   assert_not_exists: [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/untracked.svg`],
@@ -16883,6 +16911,32 @@ const parallelFilesystem = {
 }
 
 const parallelWebArgs = ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
+
+assert_cli('web local media provider preserves file-relative paths when splitting scoped headers', {
+  args: [...parallelWebArgs, '.'],
+  filesystem: relativeLocalMediaFilesystem,
+  pre_exec: MAKE_GIT_REPO_PRE_EXEC,
+  assert_contains: {
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/subdir/paper/question/solution.bigb`]: [
+      '\\Image[/subdir/figure.svg]', '\\Image[/figure.svg]', '\\Image[/shared.svg]',
+      '\\Image[/subdir/legacy.svg]', '\\Image[/subdir/figure \\[1\\].svg]', '\\Video[/subdir/video.mp4]',
+    ],
+  },
+})
+
+for (const web of [false, true]) {
+assert_cli(`local media provider reports missing file-relative images cleanly (${web ? 'web' : 'static'})`, {
+  args: web ? [...parallelWebArgs, '.'] : ['.'],
+  filesystem: {
+    'ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '-/media' } } }),
+    'index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
+    'subdir/paper.bigb': '= Paper\n\n\\Image[missing.svg]\n',
+    '-/media/other.svg': '<svg/>',
+  },
+  assert_exit_status: 1,
+  assert_stderr_contains: ['link to file that does not exist: "-/media/subdir/missing.svg"'],
+})
+}
 
 for (const mediaPath of ['_media', '-/media']) {
 assert_cli(`web local media root-relative paths match local builds (${mediaPath === '_media' ? 'ignored directory' : 'reserved namespace'})`, {

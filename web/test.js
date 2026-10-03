@@ -6524,6 +6524,72 @@ it('background renders: batching, authorization, idempotency, checkpoints and ch
   })
 })
 
+it('background renders: web-no-watch exits after submission and the server finishes without the CLI', async function() {
+  this.timeout(30000)
+  const fs = require('fs')
+  const path = require('path')
+  const directory = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ourbigbook-no-watch-'))
+  const wiki = path.join(directory, 'wiki')
+  fs.mkdirSync(wiki)
+  fs.writeFileSync(path.join(wiki, 'ourbigbook.json'), '{}')
+  fs.writeFileSync(path.join(wiki, 'index.bigb'), '= Home\n\nUploaded without watching.\n')
+  const getSequelize = models.getSequelize
+  if (!config.postgres) models.getSequelize = (dir, basename) => getSequelize(dir, basename, {
+    dialect: 'sqlite', storage: path.join(directory, 'web.sqlite3'),
+  })
+  try {
+    await testApp(async test => {
+      const user = await test.createUserApi(0)
+      const { ArticleBuild: Build, ArticleJob: Job, TreeRebuildJob, Article } = test.sequelize.models
+      const launchWorker = TreeRebuildJob.launchWorker
+      let heldJob, launchTimeout, signalLaunch
+      const launched = new Promise(resolve => { signalLaunch = resolve })
+      TreeRebuildJob.launchWorker = async (job, options) => {
+        heldJob = { job, options }
+        signalLaunch()
+      }
+      const run = () => require('util').promisify(require('child_process').execFile)(process.execPath, [
+        path.join(__dirname, '../ourbigbook'), '--web-no-watch',
+        '--web-url', `http://localhost:${test.webApi.opts.port}`, '--web-user', 'user0', '--web-password', 'asdf',
+      ], { cwd: wiki, env: { ...process.env, OURBIGBOOK_POSTGRES: '0' }, timeout: 15000 })
+      try {
+        const detached = await run()
+        assert(detached.stdout.includes('Web upload has submission complete (3 jobs)'))
+        for (const phase of ['extract', 'check', 'render']) {
+          assert(detached.stdout.includes(`web_${phase}_stage:`))
+          assert(!detached.stdout.includes(`web_${phase}_run:`))
+        }
+        const build = await Build.current(user.id)
+        assert.strictEqual(build.jobCount, 3)
+        assert.strictEqual(build.rebuildTree, true)
+        assert.notStrictEqual(build.status, 'completed')
+        await Promise.race([launched, new Promise((resolve, reject) => {
+          launchTimeout = setTimeout(() => reject(new Error('Build worker was not queued')), 15000)
+        })])
+        assert.strictEqual(heldJob.job.buildId, build.id)
+        const existing = await run()
+        assert(existing.stdout.includes('leaving it running'))
+        assert(!existing.stdout.includes('web_extract_stage:'))
+        assert.strictEqual((await Build.current(user.id)).id, build.id)
+        TreeRebuildJob.launchWorker = launchWorker
+        const worker = await launchWorker(heldJob.job, heldJob.options)
+        await new Promise(resolve => worker.once('close', resolve))
+        await worker.buildQueueExit
+        assert.strictEqual((await build.reload()).status, 'completed')
+        assert.strictEqual(await Job.count({ where: { buildId: build.id, status: 'completed' } }), 3)
+        assert.strictEqual((await TreeRebuildJob.findByPk(build.treeJobId)).status, 'completed')
+        assert((await Article.findOne({ where: { slug: 'user0' } })).render.includes('Uploaded without watching.'))
+      } finally {
+        clearTimeout(launchTimeout)
+        TreeRebuildJob.launchWorker = launchWorker
+      }
+    }, { backgroundJobs: true })
+  } finally {
+    models.getSequelize = getSequelize
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 it('background renders: real CLI uploads all sources first, batches large repositories and supports individual fallback', async function() {
   this.timeout(120000)
   const fs = require('fs')

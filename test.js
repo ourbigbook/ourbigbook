@@ -17328,6 +17328,20 @@ assert_cli('web committed snapshot uses pinned media submodule', {
   assert_stdout_contains: [/web_upload: \d+: diagram\.svg /],
 })
 
+for (const option of ['--web-watch', '--web-individual-upload']) {
+  assert_cli(`web-no-watch rejects ${option}`, {
+    args: ['--web-no-watch', option],
+    assert_exit_status: 1,
+    assert_stderr_contains: [`--web-no-watch cannot be combined with ${option}`],
+  })
+}
+
+assert_cli('web-no-watch implies web', {
+  args: ['--web-no-watch', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer'],
+  filesystem: { 'index.bigb': '= Home\n' },
+  assert_stdout_contains: ['web_extract: would queue 1 articles'],
+})
+
 const webStartIdFilesystem = {
   'index.bigb': `= Home
 

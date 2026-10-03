@@ -1669,17 +1669,18 @@ function printStatus({
   console.log(msg)
 }
 
-async function updateNestedSet(webApi, username, { foreground=false }={}) {
-  await waitNestedSetUpdate(webApi, username, await queueNestedSetUpdate(webApi, username, { foreground }))
+async function updateNestedSet(webApi, username, { foreground=false, watch=true }={}) {
+  const queued = await queueNestedSetUpdate(webApi, username, { foreground, watch })
+  if (watch) await waitNestedSetUpdate(webApi, username, queued)
 }
 
-async function queueNestedSetUpdate(webApi, username, { foreground=false }={}) {
+async function queueNestedSetUpdate(webApi, username, { foreground=false, watch=true }={}) {
   const t1 = now()
   console.log(`nested_set`)
   const { data, status } = await webApi.articleUpdatedNestedSet(username, { body: { foreground } })
   if (status === 202) {
     const id = data.job.id
-    console.log(`nested_set: job ${id} queued; waiting for worker`)
+    console.log(`nested_set: job ${id} queued${watch ? '; waiting for worker' : ''}`)
     return { id, t1 }
   }
   assertApiStatus(status, data)
@@ -2274,6 +2275,7 @@ cli_parser.option('--web-force-id-extraction', "Force ID extraction on Web: http
 cli_parser.option('--web-force', 'Replace the current web build without asking for confirmation (implies --web)');
 cli_parser.option('--web-cancel-build', 'Cancel the current web build without converting or uploading (implies --web)');
 cli_parser.option('--web-watch', 'Only watch the current web build; do not convert or upload (implies --web)');
+cli_parser.option('--web-no-watch', 'Exit after submitting the web build, without waiting for completion (implies --web)');
 cli_parser.option('--web-force-render', "same as --force-render but for --web upload: https://docs.ourbigbook.com#web-force-render");
 cli_parser.option('--web-id <id>', 'Upload only the selected ID. It must belong to a file being converted. https://docs.ourbigbook.com/#web-id');
 cli_parser.option('--web-individual-upload', 'Upload articles individually on foreground https://docs.ourbigbook.com/#web-individual-upload');
@@ -2310,7 +2312,12 @@ if (cli.helpMacros) {
   let htmlXExtension;
   let publishTargetIsWebsite
   let input_dir;
-  const web = cli.web || cli.webTest || cli.webNestedSet || cli.webWatch || cli.webForce || cli.webCancelBuild
+  const web = cli.web || cli.webTest || cli.webNestedSet || cli.webWatch || cli.webNoWatch || cli.webForce || cli.webCancelBuild
+  if (cli.webNoWatch) {
+    for (const [option, enabled] of [['--web-watch', cli.webWatch], ['--web-individual-upload', cli.webIndividualUpload]]) {
+      if (enabled) cli_error(`--web-no-watch cannot be combined with ${option}`)
+    }
+  }
   if (cli.webStartId !== undefined) {
     if (!web) {
       cli_error('--web-start-id requires --web or --web-test')
@@ -3023,10 +3030,10 @@ if (cli.helpMacros) {
             if (error) throw error
             answer = response
           } else {
-            console.log('A web build exists; watching it. Use --web-force to replace it non-interactively.')
+            console.log(`A web build exists; ${cli.webNoWatch ? 'leaving it running' : 'watching it'}. Use --web-force to replace it non-interactively.`)
           }
           if (!/^y(es)?$/i.test(answer.trim())) {
-            await watchWebBuild(webApi, username)
+            if (!cli.webNoWatch) await watchWebBuild(webApi, username)
             process.exit(0)
           }
         }
@@ -3041,7 +3048,7 @@ if (cli.helpMacros) {
       }
 
       if (cli.webNestedSet) {
-        await updateNestedSet(webApi, username, { foreground: cli.webIndividualUpload })
+        await updateNestedSet(webApi, username, { foreground: cli.webIndividualUpload, watch: !cli.webNoWatch })
         process.exit(0)
       }
 
@@ -3519,8 +3526,10 @@ if (cli.helpMacros) {
           checkWebBulkBusy(status, data)
           if (status !== 202) assertApiStatus(status, data)
           console.log(`Web upload has submission complete (${buildJobs.length} jobs). The server can now finish by itself even if you close the CLI.`)
-          for (const job of buildJobs) await waitWebArticles(webApi, job.id, job.phase, job)
-          await waitWebBuild(webApi, buildId)
+          if (!cli.webNoWatch) {
+            for (const job of buildJobs) await waitWebArticles(webApi, job.id, job.phase, job)
+            await waitWebBuild(webApi, buildId)
+          }
         }
         if (!buildId && cli.webNestedSetBulk && !cli.webDry) {
           if (!nestedSetNeedsUpdate) {

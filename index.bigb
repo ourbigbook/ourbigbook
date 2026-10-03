@@ -8478,6 +8478,11 @@ Request cancellation of the authenticated user's current build without convertin
 
 Only monitor the user's current web build, including staging, until it finishes or fails. Implies <--web>; performs no local conversion or upload. Use Ctrl-C to stop watching without cancelling the server build.
 
+= `--web-no-watch`
+{parent=OurBigBook CLI options}
+
+Exit successfully once the server has accepted the complete upload plan, without waiting for extraction, database checks, rendering, or the final tree rebuild. Implies <--web>. The server continues processing by itself; exit success confirms submission, not that the build succeeded. Check progress and errors in the Build jobs settings tab or reconnect with <--web-watch>. Also works with <--web-nested-set-option> to queue a tree rebuild without waiting. Cannot be combined with <--web-watch> or <--web-individual-upload>. If an existing build is not replaced, exit without watching or submitting a new build; use <--web-force> to replace it non-interactively.
+
 = `--web-max-renders`
 {parent=OurBigBook CLI options}
 

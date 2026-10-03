@@ -632,6 +632,28 @@ class SqlDbProvider extends web_api.DbProviderBase {
     return topics.map(topic => topic.topicId)
   }
 
+  async get_file_usage_fetch(paths, { context, ignore_paths_set }) {
+    if (!paths.length) return []
+    const { ARef, File, Id } = this.sequelize.models
+    const rows = await ARef.findAll({
+      attributes: ['to'],
+      where: { to: paths },
+      include: [{
+        model: Id, as: 'fromId', required: true,
+        include: [{
+          model: File, as: 'idDefinedAt', required: true,
+          where: { path: { [this.sequelize.Sequelize.Op.notIn]: Array.from(ignore_paths_set || []) } },
+          include: [{ model: Id, as: 'toplevelId' }],
+        }],
+      }],
+    })
+    return rows.map(row => {
+      this.add_row_to_id_cache(row.fromId, context)
+      this.add_file_row_to_cache(row.fromId.idDefinedAt, context)
+      return { to: row.to, from: row.fromId.idid }
+    })
+  }
+
   async get_refs_to_fetch(types, to_ids, { reversed, ignore_paths_set, context }) {
     if (reversed === undefined) {
       reversed = false
@@ -1156,9 +1178,9 @@ async function check_db(sequelize, paths_converted, opts={}) {
     aRefs,
   ] = await Promise.all([
     Ref.findAll({
-      // Media targets are generated file pages, not ordinary header IDs.
-      // Their existence is checked through ARef below, like other file links.
-      where: { type: { [Op.ne]: Ref.Types[ourbigbook.REFS_TABLE_MEDIA] } },
+      // Ignore obsolete reference types left by older versions. File targets
+      // are validated through ARef below, rather than as header IDs.
+      where: { type: { [Op.in]: Object.values(Ref.Types) } },
       order: [
         ['defined_at', 'ASC'],
         ['defined_at_line', 'ASC'],

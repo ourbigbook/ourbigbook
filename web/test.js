@@ -2406,7 +2406,7 @@ $$
 it('Article.rerender: filtered ID extraction backfills media without changing articles or their tree', async () => {
   await testApp(async test => {
     const { sequelize } = test
-    const { Article, File, Id, Ref, Render, User } = sequelize.models
+    const { ARef, Article, File, Id, Ref, Render, User } = sequelize.models
     for (let i = 0; i < 2; i++) {
       test.loginUser(await test.createUserApi(i))
       await test.webApi.uploadCreateOrUpdate(`user${i}/image.png`, PNG_1X1_WHITE_BUFFER)
@@ -2420,8 +2420,8 @@ it('Article.rerender: filtered ID extraction backfills media without changing ar
         await createOrUpdateArticleApi(test, createArticleArg({ titleSource, bodySource }))
       }
     }
-    const mediaWhere = { type: Ref.Types[ourbigbook.REFS_TABLE_MEDIA] }
-    await Ref.destroy({ where: mediaWhere }) // Simulate articles parsed before MEDIA refs existed.
+    const mediaWhere = { to: ['@user0/image.png', '@user0/movie.mp4', '@user1/image.png', '@user1/movie.mp4'] }
+    await ARef.destroy({ where: mediaWhere }) // Simulate missing file references for this repair utility.
     const snapshot = async () => ({
       articles: await Article.findAll({ order: [['id', 'ASC']], raw: true }),
       files: await File.findAll({ order: [['id', 'ASC']], raw: true }),
@@ -2432,18 +2432,18 @@ it('Article.rerender: filtered ID extraction backfills media without changing ar
     const before = await snapshot()
     const opts = { extractIds: true, media: true, batchSize: 1 }
     assert.deepStrictEqual(await Article.rerender({ ...opts, dryRun: true }), { scanned: 10, matched: 6, converted: 0 })
-    assert.strictEqual(await Ref.count({ where: mediaWhere }), 0)
+    assert.strictEqual(await ARef.count({ where: mediaWhere }), 0)
     assert.deepStrictEqual(await Article.rerender({ ...opts, authors: ['user0'] }), { scanned: 5, matched: 3, converted: 3 })
     assert.deepStrictEqual((await Article.getFileUsage('@user0/-/file/image.png')).map(a => a.slug), ['user0/inline', 'user0/picture'])
     assert.deepStrictEqual(await Article.getFileUsage('@user1/-/file/image.png'), [])
     // Resume alphabetically; the skipped first media article stays untouched.
     assert.deepStrictEqual(await Article.rerender({ ...opts, skipAuthors: ['user0'], startFrom: 'user1/picture' }), { scanned: 3, matched: 2, converted: 2 })
-    assert.strictEqual(await Ref.count({ where: mediaWhere }), 5)
+    assert.strictEqual(await ARef.count({ where: mediaWhere }), 5)
     assert.deepStrictEqual(await Article.rerender({ extractIds: true, sourcePattern: String.raw`\\image\[`, batchSize: 1 }), { scanned: 10, matched: 2, converted: 2 })
-    assert.strictEqual(await Ref.count({ where: mediaWhere }), 6)
+    assert.strictEqual(await ARef.count({ where: mediaWhere }), 6)
     // A repeat is idempotent. Ordinary cross-references are still normalized.
     await Article.rerender(opts)
-    assert.strictEqual(await Ref.count({ where: mediaWhere }), 6)
+    assert.strictEqual(await ARef.count({ where: mediaWhere }), 6)
     assert.strictEqual(await Ref.count({ where: { from_id: '@user0/picture', to_id: '@user0/plain', type: Ref.Types[ourbigbook.REFS_TABLE_X] } }), 1)
     assert.deepStrictEqual(await snapshot(), before)
     // Root articles have no parent; generic re-extraction also supports them.
@@ -11373,11 +11373,11 @@ it('web: only admins can delete uploaded files, including from their file pages'
   }, { canTestNext: true })
 })
 
-it('media Used by: images/videos have separate, deduplicated backlinks on uploaded and authored file pages', async () => {
+it('file Used by: existing ARefs provide deduplicated media and link backlinks without re-extraction', async () => {
   await testApp(async test => {
     const owner = await test.createUserApi(0)
     const other = await test.createUserApi(1)
-    const { Article, Id, Ref } = test.sequelize.models
+    const { ARef, Article, Id, Ref } = test.sequelize.models
     const photo = 'pictures/photo.png'
     const fileId = `@user0/-/file/${photo}`
     test.loginUser(owner)
@@ -11385,18 +11385,24 @@ it('media Used by: images/videos have separate, deduplicated backlinks on upload
     await test.webApi.uploadCreateOrUpdate('user0/movie.mp4', 'video')
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'A', bodySource:
       `\\Image[/${photo}]\n\nInline \\image[/${photo}].\n\n\\Video[/movie.mp4]\n\n\\a[/${photo}]` }))
-    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'B', bodySource: `\\Image[@user0/${photo}]` }))
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'B', bodySource: `\\a[@user0/${photo}]` }))
+    await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'notes')
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Notes link', bodySource: '\\a[/notes.txt]\n\n\\a[https://example.com/external.png]' }))
     test.loginUser(other)
     await test.webApi.uploadCreateOrUpdate(`user1/${photo}`, PNG_1X1_WHITE_BUFFER)
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Other', bodySource: `\\Image[/${photo}]` }))
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Cross user', bodySource: `\\Image[@user0/${photo}]` }))
     const usage = async id => (await Article.getFileUsage(id)).map(article => article.slug)
+    // No special Ref type exists: the ordinary ARefs recorded by old versions
+    // suffice, even when the target file has no authored Id/Article.
+    assert.strictEqual(await Ref.count({ where: { type: { [test.sequelize.Sequelize.Op.notIn]: Object.values(Ref.Types) } } }), 0)
     assert.deepStrictEqual(await usage(fileId), ['user0/a', 'user0/b', 'user1/cross-user'])
     assert.deepStrictEqual(await usage('@user0/-/file/movie.mp4'), ['user0/a'])
     assert.deepStrictEqual(await usage('@user1/-/file/pictures/photo.png'), ['user1/other'])
     assert.deepStrictEqual(await usage('@user0/-/file/missing.png'), [])
+    assert.deepStrictEqual(await usage('@user0/-/file/notes.txt'), ['user0/notes-link'])
     assert.strictEqual(await Id.count({ where: { idid: fileId } }), 0)
-    assert.strictEqual(await Ref.count({ where: { type: Ref.Types[ourbigbook.REFS_TABLE_MEDIA], to_id: fileId } }), 4)
+    assert.strictEqual(await ARef.count({ where: { to: `@user0/${photo}` } }), 5)
     assert.deepStrictEqual(await convert.checkArticleDb(test.sequelize, ['@user0/a.bigb', '@user0/b.bigb'], owner), [])
     if (testNext) {
       test.disableToken()

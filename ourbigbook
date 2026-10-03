@@ -377,18 +377,22 @@ function cli_error(message) {
   process.exit(1)
 }
 
-async function convert_directory_callback(input_path, ourbigbook_options, nonOurbigbookOptions, cb) {
+async function convert_directory_callback(input_path, ourbigbook_options, nonOurbigbookOptions, cb, extraPaths=[]) {
   nonOurbigbookOptions.ourbigbook_paths_converted = []
   const tasks = []
-  for (const onePath of walk_directory_recursively(
+  const sourcePaths = walk_directory_recursively(
     input_path,
     DEFAULT_IGNORE_BASENAMES_SET,
     nonOurbigbookOptions.ignore_paths,
     nonOurbigbookOptions.ignore_path_regexps,
     nonOurbigbookOptions.dont_ignore_path_regexps,
     nonOurbigbookOptions.ourbigbook_json_dir,
-  )) {
-    const relpath = path.relative(nonOurbigbookOptions.ourbigbook_json_dir, onePath)
+  )
+  function* paths() { yield* sourcePaths; yield* extraPaths }
+  for (const entry of paths()) {
+    const onePath = typeof entry === 'string' ? entry : entry.path
+    const virtualPath = typeof entry === 'string' ? undefined : entry.relpath
+    const relpath = virtualPath ?? path.relative(nonOurbigbookOptions.ourbigbook_json_dir, onePath)
     const isPreview = cb === convert_file_preview
     const previewPath = path.join(nonOurbigbookOptions.outdir, FILE_PREFIX, relpath + '.' + ourbigbook.HTML_EXT)
     if (
@@ -408,13 +412,15 @@ async function convert_directory_callback(input_path, ourbigbook_options, nonOur
         input_path: onePath,
         preview: isPreview,
         relpath,
-        mediaUsageHash: nonOurbigbookOptions.mediaUsageHashes?.[FILE_PREFIX + URL_SEP + relpath],
+        virtualPath,
+        fileUsageHash: nonOurbigbookOptions.fileUsageHashes?.[FILE_PREFIX + URL_SEP + relpath],
         file_row: row ? row.toJSON() : undefined,
         render: ourbigbook_options.render,
         is_render_after_extract: nonOurbigbookOptions.is_render_after_extract,
       })
     } else {
-      await cb(onePath, ourbigbook_options, nonOurbigbookOptions)
+      await cb(onePath, ourbigbook_options, virtualPath === undefined
+        ? nonOurbigbookOptions : { ...nonOurbigbookOptions, virtualPath })
     }
     if (nonOurbigbookOptions.had_error) {
       break
@@ -423,7 +429,8 @@ async function convert_directory_callback(input_path, ourbigbook_options, nonOur
   if (nonOurbigbookOptions.had_error || !tasks.length) return
   // Do not pay worker startup costs for an incremental build of one file.
   if (tasks.length === 1 && !nonOurbigbookOptions.parallel.pool) {
-    await cb(tasks[0].input_path, ourbigbook_options, nonOurbigbookOptions)
+    await cb(tasks[0].input_path, ourbigbook_options, tasks[0].virtualPath === undefined
+      ? nonOurbigbookOptions : { ...nonOurbigbookOptions, virtualPath: tasks[0].virtualPath })
     return
   }
   const parallel = nonOurbigbookOptions.parallel
@@ -436,7 +443,7 @@ async function convert_directory_callback(input_path, ourbigbook_options, nonOur
     const plainOptions = Object.fromEntries(Object.entries(ourbigbook_options).filter(
       ([key, value]) => !['db_provider', 'katex_macros'].includes(key) && typeof value !== 'function'))
     const plainNonOptions = Object.fromEntries(Object.entries(nonOurbigbookOptions).filter(
-      ([key, value]) => !['sequelize', 'options', 'extra_returns', 'parallel', 'file_rows_dict', 'mediaUsageHashes'].includes(key) &&
+      ([key, value]) => !['sequelize', 'options', 'extra_returns', 'parallel', 'file_rows_dict', 'fileUsageHashes', 'localMediaDirectories'].includes(key) &&
         typeof value !== 'function'))
     parallel.pool = new CliWorkerPool(__filename, nonOurbigbookOptions.cli.jobs, {
       options: plainOptions,
@@ -500,6 +507,10 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
 }
 
 async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbigbookOptions) {
+  const localMedia = ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML &&
+    path.resolve(input_dir) === path.resolve(nonOurbigbookOptions.ourbigbook_json_dir)
+    ? collectLocalMedia(nonOurbigbookOptions) : undefined
+  nonOurbigbookOptions.localMediaDirectories = localMedia?.directories
   await reconcile_db_and_filesystem(input_dir, ourbigbook_options, nonOurbigbookOptions)
   await convert_directory_extract_ids(input_dir, ourbigbook_options, nonOurbigbookOptions)
 
@@ -523,18 +534,23 @@ async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbig
       const usage = {}
       const sequelize = nonOurbigbookOptions.sequelize
       if (sequelize) {
-        const { File, Ref } = sequelize.models
-        const refs = await Ref.findAll({
-          attributes: ['to_id', 'from_id'],
-          where: { type: Ref.Types[ourbigbook.REFS_TABLE_MEDIA] },
-          include: [{ model: File, as: 'definedAt', attributes: ['last_parse'], required: true }],
-          order: [['to_id', 'ASC'], ['from_id', 'ASC']],
+        const { ARef, File, Id } = sequelize.models
+        const refs = await ARef.findAll({
+          attributes: ['to'],
+          raw: true,
+          include: [
+            { model: File, as: 'aRefDefinedAt', attributes: ['last_parse'], required: true },
+            { model: Id, as: 'fromId', attributes: ['idid'], required: true },
+          ],
+          order: [['to', 'ASC'], [{ model: Id, as: 'fromId' }, 'idid', 'ASC']],
         })
         for (const ref of refs) {
-          ;(usage[ref.to_id] ||= []).push([ref.from_id, ref.definedAt.last_parse])
+          const target = FILE_PREFIX + URL_SEP + ourbigbook.fileUsagePath(ref.to, nonOurbigbookOptions.localMediaPath)
+          if (ref['fromId.idid'] === target) continue
+          ;(usage[target] ||= []).push([ref['fromId.idid'], ref['aRefDefinedAt.last_parse']])
         }
       }
-      nonOurbigbookOptions.mediaUsageHashes = Object.fromEntries(
+      nonOurbigbookOptions.fileUsageHashes = Object.fromEntries(
         Object.entries(usage).map(([id, refs]) => [id, hashToHex(JSON.stringify(refs))]))
       // Auto-generate a {file} _file page for each file in the project that does not have one already.
       // Auto-generate source, and convert it on the fly, a bit like for _dir conversion.
@@ -545,7 +561,8 @@ async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbig
         input_dir,
         ourbigbook_options,
         nonOurbigbookOptions,
-        convert_file_preview
+        convert_file_preview,
+        localMedia?.files,
       )
       // Not ideal, but we'll do it simple for now. This needs to be restored or a test fails.
       nonOurbigbookOptions.ourbigbook_paths_converted = ourbigbook_paths_converted
@@ -563,19 +580,37 @@ async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbig
         newNonOurbigbookOptions,
       )
       nonOurbigbookOptions.had_error = newNonOurbigbookOptions.had_error
+      if (localMedia && !nonOurbigbookOptions.had_error) {
+        for (const { path: source, relpath } of localMedia.files) {
+          const destination = path.join(nonOurbigbookOptions.outdir, RAW_PREFIX, relpath)
+          if (nonOurbigbookOptions.cli.forceRender || !fs.existsSync(destination) ||
+              fs.statSync(source).mtimeMs > fs.statSync(destination).mtimeMs) {
+            fs.mkdirSync(path.dirname(destination), { recursive: true })
+            fs.copyFileSync(source, destination)
+          }
+        }
+        // Shared directories were rendered in the ordinary source walk above.
+        for (const relpath of Object.keys(localMedia.directories)) {
+          if (fs.existsSync(path.join(nonOurbigbookOptions.ourbigbook_json_dir, relpath))) continue
+          const listingDir = path.join(nonOurbigbookOptions.outdir, DIR_PREFIX, relpath)
+          if (fs.existsSync(listingDir) && !fs.statSync(listingDir).isDirectory()) {
+            cli_error(`local media collides with generated output: ${relpath}`)
+          }
+          await convert_path_to_file(path.join(localMedia.root, relpath), ourbigbook_options,
+            { ...nonOurbigbookOptions, virtualPath: relpath })
+        }
+      }
     }
   }
 }
 
 function filePreviewUsageMarker(relpath, nonOptions) {
-  const hash = nonOptions.mediaUsageHash || nonOptions.mediaUsageHashes?.[FILE_PREFIX + URL_SEP + relpath] || hashToHex('[]')
-  return `<!--ourbigbook-file-usage:${hash}-->`
+  const hash = nonOptions.fileUsageHash || nonOptions.fileUsageHashes?.[FILE_PREFIX + URL_SEP + relpath] || hashToHex('[]')
+  return `<!--ourbigbook-file-usage-v2:${hash}-->`
 }
 
-function skipFilePreview(onePath, outpath, relpath, nonOptions) {
-  if (nonOptions.cli.forceRender || !fs.existsSync(outpath) ||
-      fs.statSync(onePath).mtime > fs.statSync(outpath).mtime) return false
-  const marker = filePreviewUsageMarker(relpath, nonOptions)
+function outputHasMarker(outpath, marker) {
+  if (!fs.existsSync(outpath)) return false
   const size = fs.statSync(outpath).size
   if (size < marker.length) return false
   // Read only the cache marker, even when the preview contains a large file.
@@ -589,6 +624,12 @@ function skipFilePreview(onePath, outpath, relpath, nonOptions) {
   }
 }
 
+function skipFilePreview(onePath, outpath, relpath, nonOptions) {
+  return !nonOptions.cli.forceRender && fs.existsSync(outpath) &&
+    fs.statSync(onePath).mtime <= fs.statSync(outpath).mtime &&
+    outputHasMarker(outpath, filePreviewUsageMarker(relpath, nonOptions))
+}
+
 async function convert_file_preview(onePath, ourbigbook_options, nonOurbigbookOptions) {
   const messagePrefix = 'file'
   if (
@@ -596,7 +637,7 @@ async function convert_file_preview(onePath, ourbigbook_options, nonOurbigbookOp
     // https://docs.ourbigbook.com/todo/show-directory-listings-on-file-headers
     !fs.lstatSync(onePath).isDirectory()
   ) {
-    const inputPathRelativeToOurbigbookJson = path.relative(nonOurbigbookOptions.ourbigbook_json_dir, onePath);
+    const inputPathRelativeToOurbigbookJson = nonOurbigbookOptions.virtualPath ?? path.relative(nonOurbigbookOptions.ourbigbook_json_dir, onePath);
     const outputPathRelativeToOutdir = path.join(
       ourbigbook.FILE_PREFIX,
       inputPathRelativeToOurbigbookJson + '.' + ourbigbook.HTML_EXT
@@ -617,17 +658,15 @@ async function convert_file_preview(onePath, ourbigbook_options, nonOurbigbookOp
       skip = true
     } else {
       const sequelize = nonOurbigbookOptions.sequelize
+      const idid = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson
       if (
-        // Without --split-headers, we create a dummy {file} for the file even if it has a .bigb ID.
-        // This allows _dir listings and the bigb section to link to it to see full txt if too large.
-        !ourbigbook_options.split_headers ||
         !sequelize ||
-        (
-          await ourbigbook_nodejs_webpack_safe.get_noscopes_base_fetch_rows(
-            sequelize,
-            [ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson]
-          )
-        ).length === 0
+        !(await sequelize.models.Id.findOne({
+          attributes: ['id'],
+          // Without splitting, an inline {file} section still needs a preview,
+          // but an authored standalone file page must never be overwritten.
+          where: { idid, ...(ourbigbook_options.split_headers ? {} : { toplevel_id: idid }) },
+        }))
       ) {
         const src = `${ourbigbook.SHORTHAND_HEADER_CHAR} ${ourbigbook.ourbigbookEscapeNotStart(inputPathRelativeToOurbigbookJson)}\n{file}\n`
         const inputPath = ourbigbook.FILE_PREFIX + ourbigbook.URL_SEP + inputPathRelativeToOurbigbookJson + '.' + ourbigbook.OURBIGBOOK_EXT
@@ -842,7 +881,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   let input_path_parse = path.parse(input_path);
   let input_path_relative_to_ourbigbook_json;
   if (nonOurbigbookOptions.ourbigbook_json_dir !== undefined) {
-    input_path_relative_to_ourbigbook_json = path.relative(nonOurbigbookOptions.ourbigbook_json_dir, input_path);
+    input_path_relative_to_ourbigbook_json = nonOurbigbookOptions.virtualPath ?? path.relative(nonOurbigbookOptions.ourbigbook_json_dir, input_path);
   }
   let new_options
   const isbigb = isBigbPath(input_path, nonOurbigbookOptions.cli)
@@ -987,13 +1026,8 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
   if (ourbigbook_options.output_format !== ourbigbook.OUTPUT_FORMAT_OURBIGBOOK) {
     output_path_noext = path.join(
       editableMarkdown ? '' : (is_directory ? DIR_PREFIX : RAW_PREFIX),
-      path.relative(
-        nonOurbigbookOptions.ourbigbook_json_dir,
-        path.join(
-          input_path_parse.dir,
-          input_path_parse.name
-        )
-      ),
+      is_directory ? input_path_relative_to_ourbigbook_json
+        : path.join(path.dirname(input_path_relative_to_ourbigbook_json), path.parse(input_path_relative_to_ourbigbook_json).name),
     )
     if (is_directory) {
       if (
@@ -1032,10 +1066,14 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
         if (knownType) {
           showFinish = true
         }
+        const directoryEntries = is_directory ? mergedDirectoryEntries(
+          input_path_relative_to_ourbigbook_json, nonOurbigbookOptions) : undefined
+        const directoryMarker = is_directory
+          ? `<!--ourbigbook-directory:${hashToHex(JSON.stringify(directoryEntries))}-->` : ''
         if (
           fs.existsSync(first_output_path) &&
           fs.statSync(input_path).mtime <= fs.statSync(first_output_path).mtime &&
-          !forceRender
+          !forceRender && (!is_directory || outputHasMarker(first_output_path, directoryMarker))
         ) {
           skip = true
         } else {
@@ -1056,24 +1094,10 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
             //  arr.push(`<li><a href=${target + (isdir ? 'index.html' : '')}>${target}</a></li>`)
             //}
             //fs.writeFileSync(output_path, arr.join('') + '</ul></body></html>')
-            const dirents = fs.readdirSync(full_path, { withFileTypes: true });
             const dirs = []
             const files = []
-            for (const dirent of dirents) {
-              const name = dirent.name
-              if (!ignore_path(
-                DEFAULT_IGNORE_BASENAMES_SET,
-                nonOurbigbookOptions.ignore_paths,
-                nonOurbigbookOptions.ignore_path_regexps,
-                nonOurbigbookOptions.dont_ignore_path_regexps,
-                path.join(input_path, name)
-              )) {
-                if (dirent.isDirectory()) {
-                  dirs.push(name)
-                } else {
-                  files.push(name)
-                }
-              }
+            for (const [name, isdir] of directoryEntries) {
+              ;(isdir ? dirs : files).push(name)
             }
             const dirArr = []
             const crumbArr = []
@@ -1156,7 +1180,7 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
             if (newNonOurbigbookOptions.had_error) {
               throw new Error()
             }
-            fs.writeFileSync(first_output_path, output)
+            fs.writeFileSync(first_output_path, output + directoryMarker)
           } else {
             if (isSass) {
               fs.writeFileSync(
@@ -1853,6 +1877,61 @@ async function webCreateOrUpdate({
   return { nestedSetNeedsUpdate: data ? data.nestedSetNeedsUpdate : true }
 }
 
+// Media has its own physical root but shares the site's logical file namespace.
+function collectLocalMedia(nonOptions) {
+  if (!nonOptions.localMediaPath) return
+  const root = nonOptions.localMediaSnapshot || path.resolve(nonOptions.ourbigbook_json_dir, nonOptions.localMediaPath)
+  if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
+    cli_error(`local media directory does not exist: ${root}`)
+  }
+  const ignored = git_is_in_repo(root)
+    ? new Set(runCmd('git', ['-C', root, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory', '-z'],
+        { showCmd: false, throwOnError: true }).split('\0').filter(Boolean).map(p => p.replace(/\/$/, '')))
+    : new Set()
+  const directories = { '': [] }
+  const files = []
+  for (const file of walk_directory_recursively(root,
+    new Set([...DEFAULT_IGNORE_BASENAMES_SET, '.gitignore', '.gitattributes', '.gitmodules']),
+    ignored, [], [], root)) {
+    const relpath = path.relative(root, file)
+    if (!relpath) continue
+    const stat = fs.lstatSync(file)
+    if (stat.isSymbolicLink()) cli_error(`local media symlinks are not supported: ${relpath}`)
+    const source = path.join(nonOptions.ourbigbook_json_dir, relpath)
+    if (fs.existsSync(source) && !(stat.isDirectory() && fs.statSync(source).isDirectory())) {
+      cli_error(`local media collides with source: ${relpath}`)
+    }
+    const dirname = path.dirname(relpath)
+    directories[dirname === '.' ? '' : dirname].push([path.basename(relpath), stat.isDirectory()])
+    if (stat.isDirectory()) directories[relpath] = []
+    else if (stat.isFile()) files.push({ path: file, relpath })
+  }
+  return { root, directories, files }
+}
+
+function mergedDirectoryEntries(relpath, nonOptions) {
+  const entries = new Map()
+  const source = path.join(nonOptions.ourbigbook_json_dir, relpath)
+  if (fs.existsSync(source)) {
+    for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
+      if (!ignore_path(DEFAULT_IGNORE_BASENAMES_SET, nonOptions.ignore_paths,
+        nonOptions.ignore_path_regexps, nonOptions.dont_ignore_path_regexps,
+        path.join(relpath, entry.name))) {
+        entries.set(entry.name, entry.isDirectory())
+      }
+    }
+  }
+  for (const [name, isDirectory] of nonOptions.localMediaDirectories?.[relpath] || []) {
+    entries.set(name, isDirectory)
+  }
+  return [...entries].sort(([a], [b]) => a.localeCompare(b))
+}
+
+function pathIsWithin(root, file) {
+  const relative = path.relative(root, file)
+  return relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative)
+}
+
 function resolvePublishedMediaPath(root, file, { localMediaPath, localMediaSnapshot }={}) {
   if (localMediaSnapshot) {
     const prefix = path.normalize(localMediaPath).replace(/\/$/, '')
@@ -1860,7 +1939,12 @@ function resolvePublishedMediaPath(root, file, { localMediaPath, localMediaSnaps
       return path.join(localMediaSnapshot, path.relative(prefix, file))
     }
   }
-  return path.join(root, file)
+  const source = path.join(root, file)
+  if (localMediaPath && !fs.existsSync(source) && pathIsWithin(root, source)) {
+    const media = path.join(localMediaSnapshot || path.resolve(root, localMediaPath), file)
+    if (fs.existsSync(media)) return media
+  }
+  return source
 }
 
 function fileConversionOptions(ourbigbook_json_dir, mediaOptions) {
@@ -1886,10 +1970,12 @@ function fileConversionOptions(ourbigbook_json_dir, mediaOptions) {
       path_sep: ourbigbook.Macro.HEADER_SCOPE_SEPARATOR,
     }),
     read_file: (readpath, context, opts={}) => {
-      readpath = path.join(path.join(ourbigbook_json_dir, readpath))
+      readpath = resolveFile(readpath)
+      const mediaRoot = mediaOptions?.localMediaSnapshot || (mediaOptions?.localMediaPath &&
+        path.resolve(ourbigbook_json_dir, mediaOptions.localMediaPath))
       if (
         // Let's prevent path transversal a bit by default.
-        path.resolve(readpath).startsWith(path.resolve(ourbigbook_json_dir)) &&
+        (pathIsWithin(ourbigbook_json_dir, readpath) || (mediaRoot && pathIsWithin(mediaRoot, readpath))) &&
         fs.existsSync(readpath)
       ) {
         if (fs.lstatSync(readpath).isFile()) {
@@ -2098,7 +2184,8 @@ async function runDirectoryWorker() {
       }
       const nonOptions = {
         ...structuredClone(workerData.nonOptions),
-        mediaUsageHash: task.mediaUsageHash,
+        virtualPath: task.virtualPath,
+        fileUsageHash: task.fileUsageHash,
         file_rows_dict: {
           [workerData.nonOptions.renderType]: task.file_row ? { [task.relpath]: task.file_row } : {},
         },
@@ -2614,6 +2701,7 @@ if (cli.helpMacros) {
   const nonOurbigbookOptions = {
     ourbigbook_json_dir,
     filesystem_root: ourbigbook_json_dir,
+    localMediaPath,
     ourbigbook_paths_converted: [],
     ourbigbook_paths_converted_only: false,
     cli,
@@ -2657,8 +2745,8 @@ if (cli.helpMacros) {
   // CLI options
   if (webMediaSnapshot) {
     Object.assign(nonOurbigbookOptions, { localMediaPath, localMediaSnapshot: webMediaSnapshot })
-    Object.assign(ourbigbook_options, fileConversionOptions(ourbigbook_json_dir, nonOurbigbookOptions))
   }
+  Object.assign(ourbigbook_options, fileConversionOptions(ourbigbook_json_dir, nonOurbigbookOptions))
   const cmdOpts = {
     dry_run: cli.dryRun,
     env_extra: {},
@@ -2682,7 +2770,13 @@ if (cli.helpMacros) {
   const configPath = path.join(ourbigbook_json_dir, ourbigbook.OURBIGBOOK_JSON_BASENAME)
   nonOurbigbookOptions.configMtime = fs.existsSync(configPath) ? fs.statSync(configPath).mtimeMs : 0
   if (localMediaDir) {
-    nonOurbigbookOptions.ignore_paths.add(path.relative(ourbigbook_json_dir, localMediaDir))
+    const mediaRelpath = path.relative(ourbigbook_json_dir, localMediaDir)
+    nonOurbigbookOptions.ignore_paths.add(mediaRelpath)
+    if (mediaRelpath && pathIsWithin(ourbigbook_json_dir, localMediaDir)) {
+      // This also applies to explicitly selected paths, not just directory walks.
+      nonOurbigbookOptions.ignore_convert_path_regexps.push(
+        new RegExp(`^${lodash.escapeRegExp(mediaRelpath)}($|${lodash.escapeRegExp(path.sep)})`))
+    }
   }
   if (isInGitRepo && inputPath !== undefined) {
     const inputRelpath  = path.relative(ourbigbook_json_dir, input_dir)

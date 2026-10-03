@@ -1692,19 +1692,23 @@ WHERE
       : null
   }
 
-  // Media file previews do not need an authored Article/Id of their own.
+  // Existing ARefs cover media embeds and ordinary file links alike.
+  // File previews do not need an authored Article/Id of their own.
   Article.getFileUsage = async function(fileId) {
-    const { File, Id, Ref } = sequelize.models
+    const { ARef, File, Id } = sequelize.models
+    const filePath = fileId.replace(/^(@[^/]+)\/-\/file\//, '$1/')
     return Article.findAll({
       attributes: ['slug', 'titleRenderWithScope'],
+      // An authored {file} header records its own file; don't link to itself.
+      where: { slug: { [Op.ne]: fileId.slice(1) } },
       order: [['slug', 'ASC']],
       include: [{
         model: File, as: 'file', required: true, attributes: [],
         include: [{
           model: Id, as: 'toplevelId', required: true, attributes: [],
           include: [{
-            model: Ref, as: 'from', required: true, attributes: [],
-            where: { type: Ref.Types[ourbigbook.REFS_TABLE_MEDIA], to_id: fileId },
+            model: ARef, as: 'fromId', required: true, attributes: [],
+            where: { to: filePath },
           }],
         }],
       }],

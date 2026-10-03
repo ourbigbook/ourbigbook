@@ -1,7 +1,5 @@
-/* Models different types of references between two sections, e.g.
- * \x from one link to the other. */
-
-const ourbigbook = require('../index');
+// References from headers to local files: \a links, image/video embeds and
+// {file} headers. Used for file-existence validation and "Used by" backlinks.
 
 module.exports = (sequelize) => {
   const { DataTypes } = sequelize.Sequelize

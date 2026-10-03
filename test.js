@@ -15582,6 +15582,102 @@ const relativeLocalMediaFilesystem = {
   '-/media/subdir/figure [1].svg': '<svg>escaped</svg>',
   '-/media/subdir/video.mp4': 'video',
 }
+for (const providerPath of ['_media', '../external-media']) {
+  for (const jobs of [1, 2]) {
+    assert_cli(`file: local provider merges listings and previews at root, path=${providerPath}, jobs=${jobs}`, {
+      args: ['.', '--jobs', String(jobs), '--split-headers'],
+      cwd: 'wiki',
+      timeout: 20000,
+      filesystem: {
+        'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: providerPath } } }),
+        'wiki/index.bigb': '= Home\n\n\\Include[subdir/chapter]\n\n== authored.png\n{file}\n\nAuthored description.\n',
+        'wiki/subdir/chapter.bigb': '= Chapter\n\n\\Image[figure.png]\n',
+        [`wiki/${providerPath}/subdir/figure.png`]: 'image',
+        [`wiki/${providerPath}/authored.png`]: 'image',
+        [`wiki/${providerPath}/only/media/movie.mp4`]: 'video',
+        [`wiki/${providerPath}/invalid.bigb`]: '\\UnknownMacro',
+        [`wiki/${providerPath}/.git/config`]: 'not a repository',
+      },
+      assert_xpath: {
+        [`wiki/${TMP_DIRNAME}/html/-/dir/subdir/index.html`]: [
+          "//x:a[@href='../../../-/file/subdir/figure.png.html']",
+          "//x:a[contains(@href, 'chapter.bigb.html')]",
+        ],
+        [`wiki/${TMP_DIRNAME}/html/-/dir/index.html`]: ["//x:a[@href='only/index.html']"],
+        [`wiki/${TMP_DIRNAME}/html/-/dir/only/media/index.html`]: ["//x:a[contains(@href, 'movie.mp4.html')]"],
+        [`wiki/${TMP_DIRNAME}/html/-/file/subdir/figure.png.html`]: [
+          "//x:img[contains(@src, 'subdir/figure.png')]",
+          "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../../subdir/chapter.html']",
+        ],
+        [`wiki/${TMP_DIRNAME}/html/-/file/authored.png.html`]: ["//x:div[@class='p' and contains(., 'Authored description.') ]"],
+        [`wiki/${TMP_DIRNAME}/html/-/file/only/media/movie.mp4.html`]: ["//x:video"],
+      },
+      assert_contains: {
+        [`wiki/${TMP_DIRNAME}/html/-/raw/subdir/figure.png`]: ['image'],
+        [`wiki/${TMP_DIRNAME}/html/-/file/invalid.bigb.html`]: ['UnknownMacro'],
+      },
+      assert_not_exists: [
+        `wiki/${TMP_DIRNAME}/html/invalid.html`,
+        `wiki/${TMP_DIRNAME}/html/-/file/.git/config.html`,
+        `wiki/${TMP_DIRNAME}/html/-/dir/_media/index.html`,
+      ],
+    })
+  }
+}
+
+assert_cli('file: local provider additions refresh shared directory listings incrementally', {
+  args: ['.', '--jobs', '1'],
+  timeout: 15000,
+  filesystem: {
+    'ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '_media' } } }),
+    'index.bigb': '= Home\n',
+    'subdir/notes.txt': 'notes',
+    '_media/subdir/old.png': 'old',
+  },
+  pre_exec: [
+    ['ourbigbook', ['.', '--jobs', '1']],
+    { filesystem_update: { '_media/subdir/new.png': 'new' } },
+  ],
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/-/dir/subdir/index.html`]: ["//x:a[contains(@href, 'new.png.html')]"],
+    [`${TMP_DIRNAME}/html/-/file/subdir/new.png.html`]: ["//x:img"],
+  },
+})
+
+assert_cli('file: local provider preserves standalone authored pages on incremental builds without splitting', {
+  args: ['.', '--jobs', '1'],
+  timeout: 15000,
+  filesystem: {
+    'ourbigbook.json': JSON.stringify({
+      'media-providers': { local: { path: '_media' } },
+    }),
+    'index.bigb': '= Home\n\n== plot.png\n{file}\n{toplevel}\n\nAuthored description.\n',
+    '_media/plot.png': 'image',
+  },
+  pre_exec: [['ourbigbook', ['.', '--jobs', '1']]],
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/-/file/plot.png.html`]: ["//x:div[@class='p' and contains(., 'Authored description.')]"],
+  },
+})
+
+assert_cli('file: local provider honors its gitignore and does not convert Markdown', {
+  args: ['.', '--jobs', '1'],
+  filesystem: {
+    'ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '_media' } } }),
+    'index.bigb': '= Home\n',
+    '_media/.gitignore': 'ignored.png\n',
+    '_media/ignored.png': 'ignored',
+    '_media/notes.md': '# Media notes\n\n\\UnknownMacro\n',
+  },
+  pre_exec: [['git', ['-C', '_media', 'init']]],
+  assert_contains: { [`${TMP_DIRNAME}/html/-/file/notes.md.html`]: ['UnknownMacro'] },
+  assert_not_exists: [
+    `${TMP_DIRNAME}/html/-/file/ignored.png.html`,
+    `${TMP_DIRNAME}/html/-/file/.gitignore.html`,
+    `${TMP_DIRNAME}/html/notes.html`,
+  ],
+})
+
 assert_cli('link: local media provider supports file-relative paths across scoped includes', {
   args: ['.', '--embed-includes'],
   filesystem: relativeLocalMediaFilesystem,
@@ -15690,9 +15786,9 @@ assert_cli(`publish: local media repository rejects output collision ${collision
     ['git', ['checkout', '-b', 'dev']],
   ],
   assert_exit_status: 1,
-  assert_stderr_contains: [`local media collides with generated output: ${collision.split('/')[0]}`],
+  assert_stderr_contains: [`local media collides with ${collision === 'subdir' ? 'source' : 'generated output'}: ${collision.split('/')[0]}`],
   assert_stdout_not_contains: ['push -f origin'],
-  assert_xpath: {
+  assert_xpath: collision === 'subdir' ? {} : {
     [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/index.html`]: ["//x:h1"],
   },
 })
@@ -16769,24 +16865,29 @@ assert_cli(
     },
   }
 )
-assert_cli('file: media previews show deduplicated Used by backlinks from images and videos', {
+assert_cli('file: previews show deduplicated Used by backlinks from images, videos and ordinary links', {
   args: ['.'],
   filesystem: {
     'index.bigb': '= Home\n\n\\Include[subdir/chapter]\n\\Include[other]\n',
     'subdir/chapter.bigb': '= Chapter\n{scope}\n\n== Solution\n\n\\Image[../images/plot.svg]\n\n\\Video[../movie.mp4]\n',
-    'other.bigb': '= Other\n\n\\Image[/images/plot.svg]\n\nInline \\image[images/plot.svg].\n\n\\a[images/plot.svg]\n\n\\Image[https://example.com/external.svg]\n',
+    'other.bigb': '= Other\n\n\\Image[/images/plot.svg]\n\nInline \\image[images/plot.svg].\n\n\\a[images/plot.svg]\n\n\\Image[https://example.com/external.svg]\n\n== Link only\n\n\\a[images/plot.svg]\n\n\\a[notes.txt]\n',
     'images/plot.svg': '<svg/>',
     'movie.mp4': 'video',
     'unused.svg': '<svg/>',
+    'notes.txt': 'notes',
   },
   assert_xpath: {
     [`${TMP_DIRNAME}/html/-/file/images/plot.svg.html`]: [
-      "//x:h2[@id='-/used-by']//x:a[contains(., 'Used by')]/x:span[@class='meta' and text()='(2)']",
+      "//x:h2[@id='-/used-by']//x:a[contains(., 'Used by')]/x:span[@class='meta' and text()='(3)']",
       "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../../subdir/chapter.html#solution']",
       "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../../other.html']",
+      "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../../other.html#link-only']",
     ],
     [`${TMP_DIRNAME}/html/-/file/movie.mp4.html`]: [
       "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../subdir/chapter.html#solution']",
+    ],
+    [`${TMP_DIRNAME}/html/-/file/notes.txt.html`]: [
+      "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../other.html#link-only']",
     ],
   },
   assert_not_xpath: {

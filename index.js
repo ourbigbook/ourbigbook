@@ -1144,6 +1144,8 @@ class DbProvider {
   get_file(path) { throw new Error('unimplemented'); }
 
   async fetch_files(path, context) { throw new Error('unimplemented'); }
+
+  async get_file_usage_fetch(paths, opts) { return [] }
 }
 exports.DbProvider = DbProvider;
 
@@ -4279,6 +4281,7 @@ function convertInitContext(options={}, extra_returns={}) {
     // List of references to filesystem files e.g. by \a[myfile.txt].
     // [{ path: string, sourceLocation: SourceLocation }]
     aRefs: [],
+    fileUsage: new Map(),
     // Plaintexts for which we want to check if topic IDs exists
     automaticTopicLinkPlaintexts: [],
     // Topic Ids of interest that we have checked do exist
@@ -6593,17 +6596,6 @@ async function parse(tokens, options, context, extra_returns={}) {
             to: href,
             sourceLocation: ast.source_location,
           })
-          if (cur_header && ['Image', 'image', 'Video'].includes(macro_name)) {
-            // Media targets are file-page IDs, not necessarily authored IDs:
-            // web previews are generated on demand and static previews later.
-            const parts = href.split(URL_SEP)
-            const mediaTarget = options.ref_prefix && parts[0].startsWith(AT_MENTION_CHAR)
-              ? pathJoin(parts[0], FILE_PREFIX + URL_SEP + parts.slice(1).join(URL_SEP), URL_SEP)
-              : FILE_PREFIX + URL_SEP + href
-            addToRefsTo(mediaTarget, context, cur_header.id, REFS_TABLE_MEDIA, {
-              source_location: ast.source_location,
-            })
-          }
         }
       }
 
@@ -7360,6 +7352,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
     if (context.options.render) {
       perfPrint(context, 'db_queries')
+      let fileUsage = []
 
       if (options.db_provider !== undefined) {
         const prefetch_ids = new Set()
@@ -7458,6 +7451,7 @@ async function parse(tokens, options, context, extra_returns={}) {
           fetch_ancestors_rows,
           automaticTopicLinkIds,
           aFileTypes,
+          fileUsage,
         ] = await Promise.all([
           options.db_provider.get_noscopes_base_fetch(
             Array.from(prefetch_ids),
@@ -7478,7 +7472,6 @@ async function parse(tokens, options, context, extra_returns={}) {
 
               // This is needed for the Incoming links at the bottom of each output file.
               REFS_TABLE_X,
-              REFS_TABLE_MEDIA,
             ],
             header_ids,
             {
@@ -7515,6 +7508,17 @@ async function parse(tokens, options, context, extra_returns={}) {
             : [],
           // aFileTypes
           context.options.getAFileTypes(context.aRefs.map(aRef => aRef.to)),
+          context.options.render_metadata
+            ? options.db_provider.get_file_usage_fetch(
+                Object.values(options.indexed_ids).filter(ast => ast.file !== undefined).flatMap(ast => {
+                  const localPath = options.ourbigbook_json['media-providers'].local.path
+                  const file = fileUsagePath(ast.file, localPath)
+                  return options.ref_prefix ? [options.ref_prefix + URL_SEP + file]
+                    : localPath ? [file, path.join(localPath, file)] : [file]
+                }),
+                { context, ignore_paths_set: context.options.include_path_set },
+              )
+            : [],
         ])
         context.automaticTopicLinkIds = new Set(automaticTopicLinkIds)
         context.aFileTypes = aFileTypes
@@ -7526,6 +7530,14 @@ async function parse(tokens, options, context, extra_returns={}) {
             parseError(state, `ID already taken: "${db_id}"`, ast.source_location)
           }
         }
+      }
+
+      // Current-source references replace cached ones excluded by the fetch.
+      for (const { to, from } of fileUsage.concat(context.aRefs)) {
+        if (from === undefined) continue
+        const file = fileUsagePath(to, options.ourbigbook_json['media-providers'].local.path)
+        if (!context.fileUsage.has(file)) context.fileUsage.set(file, new Set())
+        context.fileUsage.get(file).add(from)
       }
 
       // Reconcile the dummy include header with our actual knowledge from the DB, e.g.:
@@ -9430,9 +9442,6 @@ exports.REFS_TABLE_X_TITLE_TITLE = REFS_TABLE_X_TITLE_TITLE;
 // Header is synonym of another one.
 const REFS_TABLE_SYNONYM = 'SYNONYM';
 exports.REFS_TABLE_SYNONYM = REFS_TABLE_SYNONYM;
-// A header embeds an image or video. The target is its canonical file-page ID.
-const REFS_TABLE_MEDIA = 'MEDIA'
-exports.REFS_TABLE_MEDIA = REFS_TABLE_MEDIA
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\'
@@ -11093,6 +11102,16 @@ function headerMetadata(ast, context, firstHeader) {
   return ret
 }
 
+// Local media is physically separate but appears at the site's logical root.
+function fileUsagePath(file, localPath) {
+  if (localPath) {
+    const prefix = path.normalize(localPath).replace(/\/$/, '')
+    if (file.startsWith(prefix + URL_SEP)) return file.slice(prefix.length + 1)
+  }
+  return file
+}
+exports.fileUsagePath = fileUsagePath
+
 /** Collect the metadata sections attached to the current output page. */
 function toplevelMetadata(context) {
   const ast = context.toplevel_ast
@@ -11103,7 +11122,10 @@ function toplevelMetadata(context) {
     ancestors: ast.ancestors(context),
     incomingIds: context.db_provider.get_refs_to_as_ids(REFS_TABLE_X, ast.id),
     taggedIds: context.db_provider.get_refs_to_as_ids(REFS_TABLE_X_CHILD, ast.id, true),
-    usedByIds: ast.file === undefined ? new Set() : context.db_provider.get_refs_to_as_ids(REFS_TABLE_MEDIA, ast.id),
+    usedByIds: new Set(ast.file === undefined ? [] :
+      Array.from(context.fileUsage.get(context.options.ref_prefix
+        ? context.options.ref_prefix + URL_SEP + ast.file
+        : fileUsagePath(ast.file, context.options.ourbigbook_json['media-providers'].local.path)) || []).filter(id => id !== ast.id)),
   }
 }
 
@@ -11823,7 +11845,9 @@ const OUTPUT_FORMATS_LIST = [
           const renderPostAstsContext = cloneAndSet(context, 'validateAst', true)
           renderPostAstsContext.source_location = ast.source_location
           if (ast.file) {
-            if (!ast.file.match(media_provider_type_youtube_re)) {
+            const fileExtension = pathSplitext(ast.file)[1]
+            if (!ast.file.match(media_provider_type_youtube_re) &&
+                !IMAGE_EXTENSIONS.has(fileExtension) && !VIDEO_EXTENSIONS.has(fileExtension)) {
               fileContent = context.options.read_file(ast.file, context)
             }
             // This section is about.

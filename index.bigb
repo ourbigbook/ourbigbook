@@ -3179,9 +3179,9 @@ since those pages link to the `tmp-1` ID.
 = Used by
 {parent=Header metadata section}
 
-Image and video <`\H` `file` argument>[file pages] have a "Used by" section linking back to the articles that embed them with \\Image, \\image or \\Video. Repeated uses in the same article appear only once. This works in static HTML and on the website, including automatically generated file previews. Ordinary file links and external media URLs are not counted as embeds.
+<`\H` `file` argument>[File pages] have a "Used by" section linking back to articles that link to the file with \\a or embed it with \\Image, \\image or \\Video. Repeated uses in the same article appear only once, and a file page does not link back to itself. This works in static HTML and on the website, including automatically generated file previews. External URLs are not included.
 
-Existing articles need to be re-extracted to populate these backlinks. For static builds, run `ourbigbook . --force-render`. On the server, use <web/bin/rerender-articles.js>{file} with `--extract-ids --media` to backfill from stored sources. Re-uploading with `ourbigbook --web --web-force-id-extraction` also works.
+These backlinks use the existing file references (`ARef`), so existing web articles need no backfill or re-extraction. Rebuild static output to display the new section; `ourbigbook . --force-render` also refreshes cached authored file pages.
 
 = Tagged metadata section
 {parent=Header metadata section}
@@ -8659,6 +8659,8 @@ Similar to <ignore>, but only skips conversion of matching files. <dontIgnoreCon
 
 Unlike <ignore>, matching files are still placed under the <`-/raw` directory> and can be publicly viewed.
 
+A local directory configured in <ourbigbook.json/media-providers> implicitly skips source conversion too; you do not need to repeat its path in `ignoreConvert`.
+
 You almost always want this option over <ignore>, with files that should not be in the repository being just ignored with your `.gitignore` instead: <ignore from `.gitignore`>{full}.
 
 = `ourbigbook.json` `id`
@@ -8875,7 +8877,9 @@ Direct children of media-providers and subproperties that are valid only for the
 
     For example, set `"local": {"path": "-/media"}` to keep media in a separate repository or Git submodule under `-/media`. Relative image and video paths mirror the source file's directory inside the media directory: `\Image[diagram.svg]` in `subdir/paper.bigb` selects `-/media/subdir/diagram.svg`, and `\Image[../shared.svg]` selects `-/media/shared.svg`. A leading `/` explicitly selects the provider root: `\Image[/diagram.svg]` selects `-/media/diagram.svg`. For compatibility, an unprefixed path also falls back to the provider root if the source-relative file does not exist there. Without `path`, media paths remain relative to the source file.
 
-    Normal source conversion skips `-/` directories and the configured media directory. Local renders reference the media files directly. When publishing to GitHub, the media directory must be its own Git repository with a GitHub `origin`: OurBigBook pushes its current commit and merges its committed files into the generated site's root directory, preserving their relative paths. Images and videos use relative links on the site's own domain, without a Git commit SHA in their URLs. Git metadata is excluded, and collisions with generated files and symbolic links are rejected. Commit media changes before publishing; `--dry-run` and `--dry-run-push` suppress the push but still copy the media into the local publish output.
+    Normal source conversion skips `-/` directories and the configured media directory, without needing an explicit `ignoreConvert` entry. Running `ourbigbook .` at the project root also walks the media directory, even when it is outside the project (for example `../wiki-media`). Its files appear at the logical site root in `-/dir` listings, with automatic `-/file` previews unless an explicit file page already exists, and copies under `-/raw`. Media repository `.bigb` and `.md` files are treated as files to preview, not articles to convert. Git metadata and Git-ignored files are excluded. Local image and video renders still reference the media files directly.
+
+    When publishing to GitHub, the media directory must be its own Git repository with a GitHub `origin`: OurBigBook pushes its current commit and merges its committed files into the generated site's root directory, preserving their relative paths. Images and videos use relative links on the site's own domain, without a Git commit SHA in their URLs. Git metadata is excluded, and collisions with generated files and symbolic links are rejected. Commit media changes before publishing; `--dry-run` and `--dry-run-push` suppress the push but still copy the media into the local publish output.
 
     With `--web`, files from the media directory are merged into your upload root, preserving their paths without an extra `media/` prefix. Image and video references are rewritten automatically, preserving source-relative paths even when scoped headers become separate articles. Git-ignored files and Git metadata are excluded; unchanged files are skipped by hash. Collisions with source-repository files or directories abort before any files are uploaded or unlisted.
 * `github`: tracked in a separate Git repository as mentioned at <store images in a separate media repository>{full}
@@ -11645,15 +11649,17 @@ Rerender articles by all authors except `johnsmith` and `maryjane`:
 web/bin/rerender-articles.js -A johnsmith -A maryjane
 ``
 
-Re-extract IDs and references without rerendering HTML, changing sources or hashes, updating article dates, or moving articles in the tree. To backfill <Used by> links, select sources containing `\Image`, `\image` or `\Video`:
+Re-extract IDs and references without rerendering HTML, changing sources or hashes, updating article dates, or moving articles in the tree. For example, to repair missing references in sources containing `\Image`, `\image` or `\Video`:
 ``
 web/bin/rerender-articles.js --extract-ids --media
 ``
 
-After deploying the code, run the same backfill on Heroku with:
+Run the same repair on Heroku with:
 ``
 ./heroku run 'node web/bin/rerender-articles.js --extract-ids --media'
 ``
+
+This repair is not needed to enable <Used by>: those backlinks use existing `ARef` rows directly.
 
 Add `--dry-run` to print matching slugs without changing the database, `-a codex` to limit it to one author, or `--start-from codex/some-article` to resume alphabetically, inclusively. Articles commit individually and a failed validation rolls back that article's extraction. Successful earlier articles remain committed, and repeating the command is safe. The script loads at most 100 articles at once by default (`--batch-size` adjusts this), scans using a slug cursor, and prints progress after each batch.
 

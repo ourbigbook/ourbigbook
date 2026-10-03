@@ -16769,6 +16769,67 @@ assert_cli(
     },
   }
 )
+assert_cli('file: media previews show deduplicated Used by backlinks from images and videos', {
+  args: ['.'],
+  filesystem: {
+    'index.bigb': '= Home\n\n\\Include[subdir/chapter]\n\\Include[other]\n',
+    'subdir/chapter.bigb': '= Chapter\n{scope}\n\n== Solution\n\n\\Image[../images/plot.svg]\n\n\\Video[../movie.mp4]\n',
+    'other.bigb': '= Other\n\n\\Image[/images/plot.svg]\n\nInline \\image[images/plot.svg].\n\n\\a[images/plot.svg]\n\n\\Image[https://example.com/external.svg]\n',
+    'images/plot.svg': '<svg/>',
+    'movie.mp4': 'video',
+    'unused.svg': '<svg/>',
+  },
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/-/file/images/plot.svg.html`]: [
+      "//x:h2[@id='-/used-by']//x:a[contains(., 'Used by')]/x:span[@class='meta' and text()='(2)']",
+      "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../../subdir/chapter.html#solution']",
+      "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../../other.html']",
+    ],
+    [`${TMP_DIRNAME}/html/-/file/movie.mp4.html`]: [
+      "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../subdir/chapter.html#solution']",
+    ],
+  },
+  assert_not_xpath: {
+    [`${TMP_DIRNAME}/html/-/file/unused.svg.html`]: ["//x:h2[@id='-/used-by']"],
+    [`${TMP_DIRNAME}/html/other.html`]: ["//x:h2[@id='-/used-by']"],
+  },
+})
+
+assert_cli('file: authored media pages show Used by backlinks', {
+  args: ['.', '--split-headers'],
+  filesystem: {
+    'index.bigb': '= Home\n\n== plot.svg\n{file}\n\nAuthored description.\n\n== Embedding\n\n\\Image[plot.svg]\n',
+    'plot.svg': '<svg/>',
+  },
+  assert_xpath: {
+    [`${TMP_DIRNAME}/html/-/file/plot.svg.html`]: [
+      "//x:h2[@id='-/used-by']//x:a[contains(., 'Used by')]",
+      "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../index.html#embedding']",
+    ],
+  },
+})
+
+for (const jobs of [1, 2]) {
+  for (const remove of [false, true]) {
+    assert_cli(`file: Used by refreshes unchanged media after ${remove ? 'removing' : 'adding'} an embedding, jobs=${jobs}`, {
+      args: ['.', '--jobs', String(jobs)],
+      timeout: 15000,
+      filesystem: {
+        'index.bigb': '= Home\n\n\\Include[chapter]\n',
+        'chapter.bigb': '= Chapter\n\n' + (remove ? '\\Image[/plot.svg]\n' : 'No image yet.\n'),
+        'plot.svg': '<svg/>',
+      },
+      pre_exec: [
+        ['ourbigbook', ['.', '--jobs', String(jobs)]],
+        { filesystem_update: { 'chapter.bigb': '= Chapter\n\n' + (remove ? 'No image now.\n' : '\\Image[/plot.svg]\n') } },
+      ],
+      [remove ? 'assert_not_xpath' : 'assert_xpath']: {
+        [`${TMP_DIRNAME}/html/-/file/plot.svg.html`]: ["//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[@href='../../chapter.html']"],
+      },
+    })
+  }
+}
+
 assert_cli('file: _file auto-generation conversion image media provider works',
   {
     args: ['-S', 'project'],

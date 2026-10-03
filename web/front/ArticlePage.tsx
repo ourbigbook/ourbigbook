@@ -42,6 +42,7 @@ export interface ArticlePageProps extends CommonPropsType {
   hasUnlistedComments?: boolean;
   commentCountByLoggedInUser?: number;
   incomingLinks?: ArticleLinkType[];
+  usedBy?: ArticleLinkType[];
   issueArticle?: ArticleType;
   list?: boolean;
   issuesCount?: number;
@@ -69,6 +70,7 @@ const ArticlePageHoc = (isIssue=false) => {
     commentsCount,
     hasUnlistedComments,
     incomingLinks,
+    usedBy,
     issueArticle,
     list,
     issuesCount,
@@ -143,6 +145,7 @@ const ArticlePageHoc = (isIssue=false) => {
             hasUnlistedComments,
             handleShortFragmentSkipOnce,
             incomingLinks,
+            usedBy,
             issueArticle,
             list,
             isIndex: false,

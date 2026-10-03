@@ -3,11 +3,13 @@ import { useRouter } from 'next/router'
 
 import { DeleteIcon, MyHead, SeeIcon, UnlistedIcon } from 'front'
 import { webApi } from 'front/api'
+import { LinkList } from 'front/Article'
 import ArticlePageHoc, { ArticlePageProps } from 'front/ArticlePage'
 import { cant } from 'front/cant'
 import { FileDirectoryHeader } from 'front/DirPage'
 import routes from 'front/routes'
 import { UserType } from 'front/types/UserType'
+import { USED_BY_ID_UNRESERVED, USED_BY_MARKER } from 'ourbigbook'
 
 export { getServerSidePropsFile as getServerSideProps } from 'back/FilePage'
 
@@ -84,6 +86,9 @@ export default function FilePage(props: ArticlePageProps & { fileUpload?: FileUp
       <FileDirectoryHeader author={filePreview.author} path={filePreview.path} isFile={true} />
       {actions}
       <div className="file-content ourbigbook" dangerouslySetInnerHTML={{ __html: filePreview.render }} />
+      <div className="ourbigbook-title">
+        {LinkList(props.usedBy || [], USED_BY_ID_UNRESERVED, USED_BY_MARKER, 'Used by')}
+      </div>
     </div>
   </>
 }

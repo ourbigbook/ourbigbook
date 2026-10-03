@@ -1063,13 +1063,21 @@ WHERE
     return ret
   }
 
-  Article.prototype.rerender = async function({ convertOptionsExtra, ignoreErrors, transaction }={}) {
-    const file = await this.getFileCached()
+  Article.prototype.rerender = async function({ convertOptionsExtra, extractIds=false, ignoreErrors, transaction }={}) {
+    let file = await this.getFileCached()
     if (ignoreErrors === undefined)
       ignoreErrors = false
-    await sequelize.transaction({ transaction }, async (transaction) => {
+    return sequelize.transaction({ transaction }, async (transaction) => {
+      if (extractIds) {
+        // Reload after the same lock used by edits/uploads, so a maintenance
+        // backfill cannot replace the IDs of a concurrent edit with stale ones.
+        await sequelize.models.User.findByPk(file.authorId, { transaction, lock: transaction.LOCK.UPDATE })
+        file = await sequelize.models.File.findByPk(file.id, {
+          include: [{ model: sequelize.models.User, as: 'author' }], transaction,
+        })
+      }
       const toplevelId = this.file.toplevelId
-      const parentId = toplevelId ? toplevelId.to[0].from.idid : undefined
+      const parentId = !extractIds && toplevelId ? toplevelId.to[0].from.idid : undefined
       try {
         await convert.convertArticle({
           author: file.author,
@@ -1078,7 +1086,8 @@ WHERE
           forceNew: false,
           path: ourbigbook.pathSplitext(file.path.split(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR).slice(1).join(ourbigbook.Macro.HEADER_SCOPE_SEPARATOR))[0],
           parentId,
-          render: true,
+          referencesOnly: extractIds,
+          render: !extractIds,
           sequelize,
           titleSource: file.titleSource,
           transaction,
@@ -1087,9 +1096,11 @@ WHERE
           updateTree: false,
           updateUpdatedAt: false,
         })
+        return true
       } catch(e) {
         if (ignoreErrors) {
           console.log(e)
+          return false
         } else {
           throw e
         }
@@ -1681,6 +1692,25 @@ WHERE
       : null
   }
 
+  // Media file previews do not need an authored Article/Id of their own.
+  Article.getFileUsage = async function(fileId) {
+    const { File, Id, Ref } = sequelize.models
+    return Article.findAll({
+      attributes: ['slug', 'titleRenderWithScope'],
+      order: [['slug', 'ASC']],
+      include: [{
+        model: File, as: 'file', required: true, attributes: [],
+        include: [{
+          model: Id, as: 'toplevelId', required: true, attributes: [],
+          include: [{
+            model: Ref, as: 'from', required: true, attributes: [],
+            where: { type: Ref.Types[ourbigbook.REFS_TABLE_MEDIA], to_id: fileId },
+          }],
+        }],
+      }],
+    })
+  }
+
   // Maybe try to merge into getArticle one day?
   Article.getArticlesInSamePage = async ({
     article,
@@ -2182,14 +2212,23 @@ OFFSET ${offset}` : ''}` : ''}`}
    */
   Article.rerender = async ({
     authors,
+    batchSize=config.maxArticlesInMemory,
     convertOptionsExtra,
     descendants,
+    dryRun=false,
+    extractIds=false,
     ignoreErrors,
     log,
+    media=false,
     skipAuthors,
-    slugs,
+    slugs=[],
+    sourcePattern,
     startFrom,
   }={}) => {
+    if (!Number.isSafeInteger(batchSize) || batchSize < 1) throw new Error('batchSize must be a positive integer')
+    const sourceRegex = sourcePattern === undefined ? undefined : new RegExp(sourcePattern)
+    const mediaRegex = /\\(?:Image|image|Video)\b/
+    const summary = { scanned: 0, matched: 0, converted: 0 }
     if (authors === undefined) {
       authors = []
     }
@@ -2235,7 +2274,7 @@ OFFSET ${offset}` : ''}` : ''}`}
     } else if (skipAuthors.length) {
       authorWhere.username = { [Op.notIn]: skipAuthors }
     }
-    let offset = 0
+    let afterSlug
     const site = await Site.findOne()
     convertOptionsExtra = {...convertOptionsExtra}
     if (convertOptionsExtra.automaticTopicLinksMaxWords === undefined) {
@@ -2243,7 +2282,9 @@ OFFSET ${offset}` : ''}` : ''}`}
     }
     while (true) {
       const articles = await Article.findAll({
-        where,
+        where: afterSlug === undefined ? where : { [Op.and]: [where, { slug: { [Op.gt]: afterSlug } }] },
+        // Extraction never needs the rendered HTML, which can dwarf sources.
+        ...(extractIds ? { attributes: ['id', 'slug', 'fileId'] } : {}),
         subQuery: false,
         include: [
           {
@@ -2251,6 +2292,7 @@ OFFSET ${offset}` : ''}` : ''}`}
             as: 'file',
             subQuery: false,
             required: true,
+            ...(extractIds ? { attributes: ['id', 'authorId', 'path', 'titleSource', 'bodySource'] } : {}),
             include: [
               {
                 model: User,
@@ -2260,7 +2302,7 @@ OFFSET ${offset}` : ''}` : ''}`}
                 where: authorWhere,
               },
               // Also get the parent ID in one go which is used in rendering.
-              {
+              ...(extractIds ? [] : [{
                 model: Id,
                 as: 'toplevelId',
                 subQuery: false,
@@ -2278,28 +2320,38 @@ OFFSET ${offset}` : ''}` : ''}`}
                     required: true,
                   }],
                 }],
-              }
+              }])
             ],
           },
         ],
         order: [['slug', 'ASC']],
-        offset,
-        limit: config.maxArticlesInMemory,
+        limit: batchSize,
       })
       if (articles.length === 0)
         break
       for (const article of articles) {
+        summary.scanned++
+        const source = ourbigbook.modifyEditorInput(article.file.titleSource, article.file.bodySource).new
+        if ((media && !mediaRegex.test(source)) || (sourceRegex && !sourceRegex.test(source))) continue
+        summary.matched++
+        if (dryRun) {
+          if (log) console.log(`Would ${extractIds ? 'extract IDs' : 'render'}: ${article.slug}`)
+          continue
+        }
         if (log) {
           console.log(article.slug)
         }
         let t0 = performance.now()
-        await article.rerender({ convertOptionsExtra, ignoreErrors })
+        const converted = await article.rerender({ convertOptionsExtra, extractIds, ignoreErrors })
+        if (converted) summary.converted++
         if (log) {
-          console.log(`${article.slug} finished in ${performance.now() - t0} ms`)
+          console.log(`${article.slug} ${converted ? 'finished' : 'failed'} in ${performance.now() - t0} ms`)
         }
       }
-      offset += config.maxArticlesInMemory
+      afterSlug = articles[articles.length - 1].slug
+      if (log) console.log(`Scanned ${summary.scanned}, matched ${summary.matched}, processed ${summary.converted}; last slug: ${afterSlug}`)
     }
+    return summary
   }
 
   Article.prototype.getSlug = function() {

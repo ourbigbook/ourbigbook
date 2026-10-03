@@ -396,8 +396,7 @@ async function convert_directory_callback(input_path, ourbigbook_options, nonOur
       !nonOurbigbookOptions.ourbigbook_paths_converted_only &&
       (
         (isPreview && ourbigbook_options.render && !fs.lstatSync(onePath).isDirectory() &&
-          (nonOurbigbookOptions.cli.forceRender || !fs.existsSync(previewPath) ||
-            fs.statSync(onePath).mtime > fs.statSync(previewPath).mtime)) ||
+          !skipFilePreview(onePath, previewPath, relpath, nonOurbigbookOptions)) ||
         (cb === convert_path_to_file && isBigbPath(onePath, nonOurbigbookOptions.cli) &&
           !do_ignore_convert_path(relpath, nonOurbigbookOptions.ignore_convert_path_regexps,
             nonOurbigbookOptions.dont_ignore_convert_path_regexps) &&
@@ -409,6 +408,7 @@ async function convert_directory_callback(input_path, ourbigbook_options, nonOur
         input_path: onePath,
         preview: isPreview,
         relpath,
+        mediaUsageHash: nonOurbigbookOptions.mediaUsageHashes?.[FILE_PREFIX + URL_SEP + relpath],
         file_row: row ? row.toJSON() : undefined,
         render: ourbigbook_options.render,
         is_render_after_extract: nonOurbigbookOptions.is_render_after_extract,
@@ -436,7 +436,7 @@ async function convert_directory_callback(input_path, ourbigbook_options, nonOur
     const plainOptions = Object.fromEntries(Object.entries(ourbigbook_options).filter(
       ([key, value]) => !['db_provider', 'katex_macros'].includes(key) && typeof value !== 'function'))
     const plainNonOptions = Object.fromEntries(Object.entries(nonOurbigbookOptions).filter(
-      ([key, value]) => !['sequelize', 'options', 'extra_returns', 'parallel', 'file_rows_dict'].includes(key) &&
+      ([key, value]) => !['sequelize', 'options', 'extra_returns', 'parallel', 'file_rows_dict', 'mediaUsageHashes'].includes(key) &&
         typeof value !== 'function'))
     parallel.pool = new CliWorkerPool(__filename, nonOurbigbookOptions.cli.jobs, {
       options: plainOptions,
@@ -518,6 +518,24 @@ async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbig
     }
 
     if (ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML) {
+      // File bytes can stay unchanged while their embedding articles change.
+      // Fetch lightweight usage dependencies once, not once per preview.
+      const usage = {}
+      const sequelize = nonOurbigbookOptions.sequelize
+      if (sequelize) {
+        const { File, Ref } = sequelize.models
+        const refs = await Ref.findAll({
+          attributes: ['to_id', 'from_id'],
+          where: { type: Ref.Types[ourbigbook.REFS_TABLE_MEDIA] },
+          include: [{ model: File, as: 'definedAt', attributes: ['last_parse'], required: true }],
+          order: [['to_id', 'ASC'], ['from_id', 'ASC']],
+        })
+        for (const ref of refs) {
+          ;(usage[ref.to_id] ||= []).push([ref.from_id, ref.definedAt.last_parse])
+        }
+      }
+      nonOurbigbookOptions.mediaUsageHashes = Object.fromEntries(
+        Object.entries(usage).map(([id, refs]) => [id, hashToHex(JSON.stringify(refs))]))
       // Auto-generate a {file} _file page for each file in the project that does not have one already.
       // Auto-generate source, and convert it on the fly, a bit like for _dir conversion.
       const ourbigbook_paths_converted = nonOurbigbookOptions.ourbigbook_paths_converted
@@ -549,6 +567,28 @@ async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbig
   }
 }
 
+function filePreviewUsageMarker(relpath, nonOptions) {
+  const hash = nonOptions.mediaUsageHash || nonOptions.mediaUsageHashes?.[FILE_PREFIX + URL_SEP + relpath] || hashToHex('[]')
+  return `<!--ourbigbook-file-usage:${hash}-->`
+}
+
+function skipFilePreview(onePath, outpath, relpath, nonOptions) {
+  if (nonOptions.cli.forceRender || !fs.existsSync(outpath) ||
+      fs.statSync(onePath).mtime > fs.statSync(outpath).mtime) return false
+  const marker = filePreviewUsageMarker(relpath, nonOptions)
+  const size = fs.statSync(outpath).size
+  if (size < marker.length) return false
+  // Read only the cache marker, even when the preview contains a large file.
+  const fd = fs.openSync(outpath, 'r')
+  try {
+    const tail = Buffer.alloc(marker.length)
+    fs.readSync(fd, tail, 0, tail.length, size - tail.length)
+    return tail.toString() === marker
+  } finally {
+    fs.closeSync(fd)
+  }
+}
+
 async function convert_file_preview(onePath, ourbigbook_options, nonOurbigbookOptions) {
   const messagePrefix = 'file'
   if (
@@ -572,9 +612,7 @@ async function convert_file_preview(onePath, ourbigbook_options, nonOurbigbookOp
     }
     let skip
     if (
-      fs.existsSync(outpath) &&
-      fs.statSync(onePath).mtime <= fs.statSync(outpath).mtime &&
-      !nonOurbigbookOptions.cli.forceRender
+      skipFilePreview(onePath, outpath, inputPathRelativeToOurbigbookJson, nonOurbigbookOptions)
     ) {
       skip = true
     } else {
@@ -607,7 +645,7 @@ async function convert_file_preview(onePath, ourbigbook_options, nonOurbigbookOp
         }
         if (newOptions.render) {
           fs.mkdirSync(path.dirname(outpath), { recursive: true });
-          fs.writeFileSync(outpath, output)
+          fs.writeFileSync(outpath, output + filePreviewUsageMarker(inputPathRelativeToOurbigbookJson, nonOurbigbookOptions))
         }
       } else {
         skip = 'skipped ID already exists'
@@ -767,7 +805,7 @@ function skipFileConversion(input_path, relpath, options, nonOptions) {
   if (options.render) {
     return !!row.Render && !nonOptions.cli.forceRender && !row.Render.outdated && !nonOptions.cli.formatSource
   }
-  const skip = row.last_parse !== null && row.last_parse > fs.statSync(input_path).mtime
+  const skip = !nonOptions.cli.forceRender && row.last_parse !== null && row.last_parse > fs.statSync(input_path).mtime
   if (!skip && row.Render) row.Render.outdated = true
   return skip
 }
@@ -2060,6 +2098,7 @@ async function runDirectoryWorker() {
       }
       const nonOptions = {
         ...structuredClone(workerData.nonOptions),
+        mediaUsageHash: task.mediaUsageHash,
         file_rows_dict: {
           [workerData.nonOptions.renderType]: task.file_row ? { [task.relpath]: task.file_row } : {},
         },

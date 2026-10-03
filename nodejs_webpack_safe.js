@@ -1156,6 +1156,9 @@ async function check_db(sequelize, paths_converted, opts={}) {
     aRefs,
   ] = await Promise.all([
     Ref.findAll({
+      // Media targets are generated file pages, not ordinary header IDs.
+      // Their existence is checked through ARef below, like other file links.
+      where: { type: { [Op.ne]: Ref.Types[ourbigbook.REFS_TABLE_MEDIA] } },
       order: [
         ['defined_at', 'ASC'],
         ['defined_at_line', 'ASC'],

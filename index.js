@@ -6593,6 +6593,17 @@ async function parse(tokens, options, context, extra_returns={}) {
             to: href,
             sourceLocation: ast.source_location,
           })
+          if (cur_header && ['Image', 'image', 'Video'].includes(macro_name)) {
+            // Media targets are file-page IDs, not necessarily authored IDs:
+            // web previews are generated on demand and static previews later.
+            const parts = href.split(URL_SEP)
+            const mediaTarget = options.ref_prefix && parts[0].startsWith(AT_MENTION_CHAR)
+              ? pathJoin(parts[0], FILE_PREFIX + URL_SEP + parts.slice(1).join(URL_SEP), URL_SEP)
+              : FILE_PREFIX + URL_SEP + href
+            addToRefsTo(mediaTarget, context, cur_header.id, REFS_TABLE_MEDIA, {
+              source_location: ast.source_location,
+            })
+          }
         }
       }
 
@@ -7467,6 +7478,7 @@ async function parse(tokens, options, context, extra_returns={}) {
 
               // This is needed for the Incoming links at the bottom of each output file.
               REFS_TABLE_X,
+              REFS_TABLE_MEDIA,
             ],
             header_ids,
             {
@@ -9418,6 +9430,9 @@ exports.REFS_TABLE_X_TITLE_TITLE = REFS_TABLE_X_TITLE_TITLE;
 // Header is synonym of another one.
 const REFS_TABLE_SYNONYM = 'SYNONYM';
 exports.REFS_TABLE_SYNONYM = REFS_TABLE_SYNONYM;
+// A header embeds an image or video. The target is its canonical file-page ID.
+const REFS_TABLE_MEDIA = 'MEDIA'
+exports.REFS_TABLE_MEDIA = REFS_TABLE_MEDIA
 const END_NAMED_ARGUMENT_CHAR = '}';
 const END_POSITIONAL_ARGUMENT_CHAR = ']';
 const ESCAPE_CHAR = '\\'
@@ -9448,6 +9463,10 @@ const HTML_HOME_MARKER = `<span title="${TXT_HOME_MARKER}" class="fa-solid-900 i
 exports.HTML_HOME_MARKER = HTML_HOME_MARKER
 const INCOMING_LINKS_ID_UNRESERVED = 'incoming-links'
 exports.INCOMING_LINKS_ID_UNRESERVED = INCOMING_LINKS_ID_UNRESERVED
+const USED_BY_ID_UNRESERVED = 'used-by'
+exports.USED_BY_ID_UNRESERVED = USED_BY_ID_UNRESERVED
+const USED_BY_MARKER = INCOMING_LINKS_MARKER.replace('Incoming links', 'Used by')
+exports.USED_BY_MARKER = USED_BY_MARKER
 const SYNONYM_LINKS_ID_UNRESERVED = 'synonyms'
 exports.SYNONYM_LINKS_ID_UNRESERVED = SYNONYM_LINKS_ID_UNRESERVED
 const ID_SEPARATOR = runtime_common.ID_SEPARATOR
@@ -11078,12 +11097,13 @@ function headerMetadata(ast, context, firstHeader) {
 function toplevelMetadata(context) {
   const ast = context.toplevel_ast
   if (ast === undefined) {
-    return { ancestors: [], incomingIds: new Set(), taggedIds: new Set() }
+    return { ancestors: [], incomingIds: new Set(), taggedIds: new Set(), usedByIds: new Set() }
   }
   return {
     ancestors: ast.ancestors(context),
     incomingIds: context.db_provider.get_refs_to_as_ids(REFS_TABLE_X, ast.id),
     taggedIds: context.db_provider.get_refs_to_as_ids(REFS_TABLE_X_CHILD, ast.id, true),
+    usedByIds: ast.file === undefined ? new Set() : context.db_provider.get_refs_to_as_ids(REFS_TABLE_MEDIA, ast.id),
   }
 }
 
@@ -11172,6 +11192,7 @@ function markdownToplevelMetadata(context) {
     metadata.incomingIds,
     context,
   )
+  ret += markdownMetadataSection('Used by', UNICODE_INCOMING_LINKS_MARKER, metadata.usedByIds, context)
   return ret
 }
 
@@ -12538,6 +12559,8 @@ const OUTPUT_FORMATS_LIST = [
                 sharedToplevelMetadata.incomingIds,
               )
             }
+            body += createLinkList(context, ast, USED_BY_ID_UNRESERVED,
+              `${USED_BY_MARKER} Used by`, sharedToplevelMetadata.usedByIds)
             {
               const target_ids = context.db_provider.get_refs_to_as_ids(REFS_TABLE_SYNONYM, context.toplevel_ast.id);
               body += createLinkList(context, ast, SYNONYM_LINKS_ID_UNRESERVED, `${SYNONYM_LINKS_MARKER} Synonyms`, target_ids)

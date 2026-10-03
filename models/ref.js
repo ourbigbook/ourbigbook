@@ -79,6 +79,9 @@ module.exports = (sequelize) => {
     // From: the synonym
     // To: the main header
     [ourbigbook.REFS_TABLE_SYNONYM]: 4,
+    // A header embeds an image/video; to_id is the file-page ID, which may
+    // have no Id row (e.g. an on-demand web upload preview).
+    [ourbigbook.REFS_TABLE_MEDIA]: 5,
   };
   return Ref;
 }

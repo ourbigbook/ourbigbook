@@ -2403,6 +2403,63 @@ $$
   })
 })
 
+it('Article.rerender: filtered ID extraction backfills media without changing articles or their tree', async () => {
+  await testApp(async test => {
+    const { sequelize } = test
+    const { Article, File, Id, Ref, Render, User } = sequelize.models
+    for (let i = 0; i < 2; i++) {
+      test.loginUser(await test.createUserApi(i))
+      await test.webApi.uploadCreateOrUpdate(`user${i}/image.png`, PNG_1X1_WHITE_BUFFER)
+      await test.webApi.uploadCreateOrUpdate(`user${i}/movie.mp4`, 'video')
+      for (const [titleSource, bodySource] of [
+        ['Plain', 'No media here.'],
+        ['Picture', '\\Image[/image.png]\n\n<Plain>'],
+        ['Inline', 'Inline \\image[/image.png].'],
+        ['Video', '\\Video[/movie.mp4]'],
+      ]) {
+        await createOrUpdateArticleApi(test, createArticleArg({ titleSource, bodySource }))
+      }
+    }
+    const mediaWhere = { type: Ref.Types[ourbigbook.REFS_TABLE_MEDIA] }
+    await Ref.destroy({ where: mediaWhere }) // Simulate articles parsed before MEDIA refs existed.
+    const snapshot = async () => ({
+      articles: await Article.findAll({ order: [['id', 'ASC']], raw: true }),
+      files: await File.findAll({ order: [['id', 'ASC']], raw: true }),
+      renders: await Render.findAll({ order: [['id', 'ASC']], raw: true }),
+      parents: await Ref.findAll({ where: { type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] }, order: [['id', 'ASC']], raw: true }),
+      users: await User.findAll({ attributes: ['id', 'nestedSetNeedsUpdate'], order: [['id', 'ASC']], raw: true }),
+    })
+    const before = await snapshot()
+    const opts = { extractIds: true, media: true, batchSize: 1 }
+    assert.deepStrictEqual(await Article.rerender({ ...opts, dryRun: true }), { scanned: 10, matched: 6, converted: 0 })
+    assert.strictEqual(await Ref.count({ where: mediaWhere }), 0)
+    assert.deepStrictEqual(await Article.rerender({ ...opts, authors: ['user0'] }), { scanned: 5, matched: 3, converted: 3 })
+    assert.deepStrictEqual((await Article.getFileUsage('@user0/-/file/image.png')).map(a => a.slug), ['user0/inline', 'user0/picture'])
+    assert.deepStrictEqual(await Article.getFileUsage('@user1/-/file/image.png'), [])
+    // Resume alphabetically; the skipped first media article stays untouched.
+    assert.deepStrictEqual(await Article.rerender({ ...opts, skipAuthors: ['user0'], startFrom: 'user1/picture' }), { scanned: 3, matched: 2, converted: 2 })
+    assert.strictEqual(await Ref.count({ where: mediaWhere }), 5)
+    assert.deepStrictEqual(await Article.rerender({ extractIds: true, sourcePattern: String.raw`\\image\[`, batchSize: 1 }), { scanned: 10, matched: 2, converted: 2 })
+    assert.strictEqual(await Ref.count({ where: mediaWhere }), 6)
+    // A repeat is idempotent. Ordinary cross-references are still normalized.
+    await Article.rerender(opts)
+    assert.strictEqual(await Ref.count({ where: mediaWhere }), 6)
+    assert.strictEqual(await Ref.count({ where: { from_id: '@user0/picture', to_id: '@user0/plain', type: Ref.Types[ourbigbook.REFS_TABLE_X] } }), 1)
+    assert.deepStrictEqual(await snapshot(), before)
+    // Root articles have no parent; generic re-extraction also supports them.
+    await Article.rerender({ extractIds: true, slugs: ['user0'], batchSize: 1 })
+    assert.deepStrictEqual(await snapshot(), before)
+    // Validation failure must roll back the entire reference replacement.
+    const file = await File.findOne({ where: { path: '@user0/picture.bigb' } })
+    await file.update({ bodySource: file.bodySource + '\n\n\\x[missing-id]' })
+    const idsBefore = await Id.findAll({ where: { defined_at: file.id }, raw: true, order: [['id', 'ASC']] })
+    const refsBefore = await Ref.findAll({ where: { defined_at: file.id }, raw: true, order: [['id', 'ASC']] })
+    await assert.rejects(Article.rerender({ extractIds: true, slugs: ['user0/picture'] }), e => e.errors.some(message => message.includes('missing-id')))
+    assert.deepStrictEqual(await Id.findAll({ where: { defined_at: file.id }, raw: true, order: [['id', 'ASC']] }), idsBefore)
+    assert.deepStrictEqual(await Ref.findAll({ where: { defined_at: file.id }, raw: true, order: [['id', 'ASC']] }), refsBefore)
+  }, { defaultExpectStatus: 200 })
+})
+
 it('Article.rerender: migrated empty file articles and deleted-file cleanup', async () => {
   await testApp(async test => {
     const { sequelize } = test
@@ -11313,6 +11370,55 @@ it('web: only admins can delete uploaded files, including from their file pages'
     test.loginUser(admin)
     if (testNext) assert_xpath(button, (await test.sendJsonHttp('GET', '/user0/-/file/notes.txt')).data)
     await test.webApi.uploadDelete('user0/notes.txt')
+  }, { canTestNext: true })
+})
+
+it('media Used by: images/videos have separate, deduplicated backlinks on uploaded and authored file pages', async () => {
+  await testApp(async test => {
+    const owner = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    const { Article, Id, Ref } = test.sequelize.models
+    const photo = 'pictures/photo.png'
+    const fileId = `@user0/-/file/${photo}`
+    test.loginUser(owner)
+    await test.webApi.uploadCreateOrUpdate(`user0/${photo}`, PNG_1X1_WHITE_BUFFER)
+    await test.webApi.uploadCreateOrUpdate('user0/movie.mp4', 'video')
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'A', bodySource:
+      `\\Image[/${photo}]\n\nInline \\image[/${photo}].\n\n\\Video[/movie.mp4]\n\n\\a[/${photo}]` }))
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'B', bodySource: `\\Image[@user0/${photo}]` }))
+    test.loginUser(other)
+    await test.webApi.uploadCreateOrUpdate(`user1/${photo}`, PNG_1X1_WHITE_BUFFER)
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Other', bodySource: `\\Image[/${photo}]` }))
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Cross user', bodySource: `\\Image[@user0/${photo}]` }))
+    const usage = async id => (await Article.getFileUsage(id)).map(article => article.slug)
+    assert.deepStrictEqual(await usage(fileId), ['user0/a', 'user0/b', 'user1/cross-user'])
+    assert.deepStrictEqual(await usage('@user0/-/file/movie.mp4'), ['user0/a'])
+    assert.deepStrictEqual(await usage('@user1/-/file/pictures/photo.png'), ['user1/other'])
+    assert.deepStrictEqual(await usage('@user0/-/file/missing.png'), [])
+    assert.strictEqual(await Id.count({ where: { idid: fileId } }), 0)
+    assert.strictEqual(await Ref.count({ where: { type: Ref.Types[ourbigbook.REFS_TABLE_MEDIA], to_id: fileId } }), 4)
+    assert.deepStrictEqual(await convert.checkArticleDb(test.sequelize, ['@user0/a.bigb', '@user0/b.bigb'], owner), [])
+    if (testNext) {
+      test.disableToken()
+      const html = (await test.sendJsonHttp('GET', `/user0/-/file/${photo}`)).data
+      assert_xpath('//x:h2[@id="-/used-by"]/x:a[contains(., "Used by")]/x:span[.="(3)"]', html)
+      for (const slug of ['user0/a', 'user0/b', 'user1/cross-user']) {
+        assert_xpath(`//x:h2[@id='-/used-by']/following-sibling::x:ul/x:li/x:a[@href='/${slug}']`, html)
+      }
+      test.loginUser(owner)
+      await createOrUpdateArticleApi(test, createArticleArg({ titleSource: photo, bodySource: '{file}\n\nAuthored media description' }))
+      const authored = (await test.sendJsonHttp('GET', `/user0/-/file/${photo}`)).data
+      assert(authored.includes('Authored media description'))
+      assert_xpath('//x:h2[@id="-/used-by"]/x:a[contains(., "Used by")]/x:span[.="(3)"]', authored)
+    }
+    test.loginUser(owner)
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'A', bodySource: 'Removed media.' }))
+    assert.deepStrictEqual(await usage(fileId), ['user0/b', 'user1/cross-user'])
+    assert.deepStrictEqual(await usage('@user0/-/file/movie.mp4'), [])
+    await (await Article.findOne({
+      where: { slug: 'user0/b' }, include: [{ model: test.sequelize.models.File, as: 'file' }],
+    })).destroySideEffects()
+    assert.deepStrictEqual(await usage(fileId), ['user1/cross-user'])
   }, { canTestNext: true })
 })
 

@@ -21,10 +21,13 @@ export const getServerSidePropsFile: MyGetServerSideProps = async context => {
     where: { path: Upload.uidAndPathToUploadPath(author.id, filePath) },
   })
   const fileUpload = upload ? { username: uid, path: filePath, list: upload.list } : null
+  const getUsedBy = async () => (await Article.getFileUsage(`@${slug.join('/')}`)).map(article => ({
+    slug: article.slug, titleRenderWithScope: article.titleRenderWithScope,
+  }))
   // Keep file visibility separate from the authored article's visibility.
   if (await Article.findOne({ where: { slug: slug.join('/') }, attributes: ['id'] })) {
     const result = await getArticleProps({ ...context, params: { slug } })
-    return 'props' in result ? { props: { ...await result.props, fileUpload } } : result
+    return 'props' in result ? { props: { ...await result.props, fileUpload, usedBy: await getUsedBy() } } : result
   }
   if (!upload) return { notFound: true }
   const loggedInUser = await getLoggedInUser(req, res)
@@ -48,6 +51,7 @@ export const getServerSidePropsFile: MyGetServerSideProps = async context => {
   preview.querySelector('.h.top')?.remove()
   return { props: {
     fileUpload,
+    usedBy: await getUsedBy(),
     filePreview: {
       author: await author.toJson(loggedInUser),
       path: filePath,

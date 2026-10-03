@@ -60,6 +60,8 @@ import {
   AT_MENTION_CHAR,
   INCOMING_LINKS_ID_UNRESERVED,
   INCOMING_LINKS_MARKER,
+  USED_BY_ID_UNRESERVED,
+  USED_BY_MARKER,
   H_ANCESTORS_CLASS,
   H_WEB_CLASS,
   Macro,
@@ -81,7 +83,7 @@ import {
 import { ourbigbook_runtime, toplevelMouseleave } from 'ourbigbook/dist/ourbigbook_runtime.js'
 import { encodeGetParams, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
 import UserLinkWithImage from 'front/UserLinkWithImage'
-import { ArticleType } from 'front/types/ArticleType'
+import { ArticleLinkType, ArticleType } from 'front/types/ArticleType'
 import { captureTocState, restoreTocState, slugToTopic, uidTopicIdToSlug } from './js'
 import { formatDate } from './date'
 
@@ -95,7 +97,7 @@ const useBrowserLayoutEffect = typeof window === 'undefined' ? React.useEffect :
 function LinkListNoTitle({
   articles,
 }: {
-  articles: ArticleType[],
+  articles: ArticleLinkType[],
 }) {
   return <ul>
     {articles.map(a =>
@@ -200,8 +202,8 @@ function AnnounceModal({
   </div>
 }
 
-function LinkList(
-  articles: ArticleType[],
+export function LinkList(
+  articles: ArticleLinkType[],
   idUnreserved: string,
   marker: string,
   title: string,
@@ -437,6 +439,7 @@ export default function Article({
   hasUnlistedComments=false,
   handleShortFragmentSkipOnce,
   incomingLinks,
+  usedBy=[],
   isIndex=false,
   isIssue=false,
   issueArticle=undefined,
@@ -1399,6 +1402,7 @@ export default function Article({
                   { href: routes.userArticlesIncoming(article.author.username, article.topicId) },
                 )}
                 {LinkList(synonymLinks, SYNONYM_LINKS_ID_UNRESERVED, SYNONYM_LINKS_MARKER, 'Synonyms')}
+                {LinkList(usedBy, USED_BY_ID_UNRESERVED, USED_BY_MARKER, 'Used by')}
                 <p className="navlink"><CustomLink href={routes.articleSource(article.slug)}><SourceIcon /> View article source</CustomLink></p>
               </div>
               <h2>

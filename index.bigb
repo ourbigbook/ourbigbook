@@ -3176,6 +3176,13 @@ the page `tmp-1.html` would contain a list of incoming links as:
 * `tmp-2`
 since those pages link to the `tmp-1` ID.
 
+= Used by
+{parent=Header metadata section}
+
+Image and video <`\H` `file` argument>[file pages] have a "Used by" section linking back to the articles that embed them with \\Image, \\image or \\Video. Repeated uses in the same article appear only once. This works in static HTML and on the website, including automatically generated file previews. Ordinary file links and external media URLs are not counted as embeds.
+
+Existing articles need to be re-extracted to populate these backlinks. For static builds, run `ourbigbook . --force-render`. On the server, use <web/bin/rerender-articles.js>{file} with `--extract-ids --media` to backfill from stored sources. Re-uploading with `ourbigbook --web --web-force-id-extraction` also works.
+
 = Tagged metadata section
 {parent=Header metadata section}
 
@@ -7178,7 +7185,7 @@ Always render all selected files, irrespectively of if they are known to be outd
 
 OurBigBook stores the timestamp of the last successful <ID extraction> step for each file.
 
-For <ID extraction>, we always skip the extraction if the filesystem timestamp of a source file is older than the last successful extraction.
+For <ID extraction>, we skip the extraction if the filesystem timestamp of a source file is older than the last successful extraction, unless `--force-render` was given.
 
 For render:
 * we mark output files as outdated when the corresponding source file is parsed
@@ -7187,7 +7194,7 @@ For render:
 
 However, note that skipping renders, unlike for ID extraction, can lead to some outdated pages.
 
-This option disables the timestamp skip for rendering, so ensure that you will get a fully clean updated render.
+This option disables the timestamp skip for extraction and rendering, to ensure that you will get a fully clean updated render.
 
 E.g. consider if you had two files:
 
@@ -8423,9 +8430,7 @@ The ID must use the local, username-free form and must exist in the upload tree.
 
 Force <ID extraction> on <web>, even if article content is unchanged.
 
-The only use case so far for this has been as a hack for incomplete database updates.
-
-The correct approach is instead to actually re-extract server side as part of the migration. We should do this by implementing a `Article.reextract` analogous to `Article.rerender`, and a helper <web/bin/rerender-articles.js>{file}.
+This can populate newly introduced IDs or reference types on existing articles. To do this directly from sources already stored on the server, use <web/bin/rerender-articles.js>{file} with `--extract-ids`, optionally filtering with `--media` or `--source-pattern`.
 
 = `--web-force-render`
 {parent=OurBigBook CLI options}
@@ -11639,6 +11644,25 @@ Rerender articles by all authors except `johnsmith` and `maryjane`:
 ``
 web/bin/rerender-articles.js -A johnsmith -A maryjane
 ``
+
+Re-extract IDs and references without rerendering HTML, changing sources or hashes, updating article dates, or moving articles in the tree. To backfill <Used by> links, select sources containing `\Image`, `\image` or `\Video`:
+``
+web/bin/rerender-articles.js --extract-ids --media
+``
+
+After deploying the code, run the same backfill on Heroku with:
+``
+./heroku run 'node web/bin/rerender-articles.js --extract-ids --media'
+``
+
+Add `--dry-run` to print matching slugs without changing the database, `-a codex` to limit it to one author, or `--start-from codex/some-article` to resume alphabetically, inclusively. Articles commit individually and a failed validation rolls back that article's extraction. Successful earlier articles remain committed, and repeating the command is safe. The script loads at most 100 articles at once by default (`--batch-size` adjusts this), scans using a slug cursor, and prints progress after each batch.
+
+For other backfills, `--source-pattern` accepts a JavaScript regular expression matched against the stored title and body. For example, select sources containing explicit `\x[` links:
+``
+web/bin/rerender-articles.js --extract-ids --source-pattern '\\x\['
+``
+
+Omit both `--media` and `--source-pattern` to re-extract every selected article. Source filters are textual, so examples or code blocks mentioning a macro may also match. ID extraction still parses the complete article and checks its references before committing.
 
 Rerendering has to be done to see updates on OurBigBook changes that change the render output.
 

@@ -221,6 +221,7 @@ async function convertArticle({
   perf,
   parentId,
   previousSiblingId,
+  referencesOnly=false,
   render,
   sequelize,
   setDates,
@@ -595,6 +596,20 @@ async function convertArticle({
       type: convertType,
     }))
     const toplevelAst = extra_returns.context.header_tree.children[0].ast
+
+    if (referencesOnly) {
+      // Maintenance backfills update only parsed IDs and references. In
+      // particular, keep source hashes, HTML, timestamps and tree order intact.
+      const file = await File.findOne({ where: { path: input_path }, transaction })
+      if (!file || file.toplevel_id !== toplevelAst.id) {
+        throw new ValidationError(`Cannot re-extract a changed article ID: ${input_path}`)
+      }
+      await db_provider.update(extra_returns, sequelize, transaction, { newFile: file, synonymHeaderPaths: [] })
+      const errors = await checkArticleDb(sequelize, [input_path], author, { transaction })
+      if (errors.length) throw new ValidationError(errors)
+      nestedSetNeedsUpdate = false
+      return
+    }
 
     // Synonym handling part 1
     const synonymHeadersArr = Array.from(extra_returns.context.synonym_headers)

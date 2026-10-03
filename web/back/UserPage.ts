@@ -146,6 +146,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       if (err) { res.statusCode = 422 }
       const offset = page * articleLimit
       const getArticlesOpts = {
+        forList: true,
         author,
         followedBy: articlesFollowedBy,
         likedBy,

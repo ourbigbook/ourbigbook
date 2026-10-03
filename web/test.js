@@ -1929,6 +1929,103 @@ it('Article and Topic keep offset pagination narrow until page hydration', async
   assert(topicSql.some(sql => sql.includes('articleCount') && / IN \(/.test(sql)), topicSql.join('\n'))
 })
 
+it('HTML article lists omit unused source and headers without changing list content or pagination', async function() {
+  const sequelize = this.test.sequelize
+  const { Article } = sequelize.models
+  const user = await createUser(sequelize, 0)
+  const reader = await createUser(sequelize, 1)
+  await createArticle(sequelize, user, { titleSource: 'Parent' })
+  const child = await createArticle(sequelize, user, {
+    titleSource: 'Child', parentId: '@user0/parent', bodySource: 'Large source paragraph. '.repeat(1024),
+  })
+  await reader.addArticleLikeSideEffects(child)
+  for (const filter of [
+    { author: user.username },
+    { parentId: '@user0/parent' },
+    { likedBy: reader.username },
+    { topicIdSearch: 'child' },
+  ]) {
+    const args = { ...filter, sequelize, limit: 20, order: 'createdAt' }
+    const full = await Article.getArticles(args)
+    const sql = []
+    const lean = await Article.getArticles({ ...args, forList: true, logging: statement => sql.push(statement) })
+    assert.strictEqual(lean.count, full.count)
+    assert.deepStrictEqual(lean.rows.map(a => a.id), full.rows.map(a => a.id))
+    for (let i = 0; i < lean.rows.length; i++) {
+      for (const loggedInUser of [undefined, reader]) {
+        const expected = await full.rows[i].toJson(loggedInUser)
+        const actual = await lean.rows[i].toJson(loggedInUser)
+        if (lean.rows[i].id === child.id) {
+          assert(Buffer.byteLength(JSON.stringify(expected)) - Buffer.byteLength(JSON.stringify(actual)) > 23000)
+          assert(actual.render.includes('Large source paragraph.'))
+        }
+        delete expected.h1Render
+        delete expected.h2Render
+        expected.file = {}
+        assert.deepStrictEqual(actual, expected)
+      }
+    }
+    const hydrationSql = sql.find(statement => statement.includes('titleRender'))
+    assert(hydrationSql, sql.join('\n'))
+    const selected = hydrationSql.slice(0, hydrationSql.indexOf(' FROM '))
+    for (const unused of ['bodySource', 'h1Render', 'h2Render', 'ast_json']) {
+      assert(!selected.includes(unused), selected)
+    }
+  }
+  // Full API/editor reads still retain their sources and headers.
+  const full = await Article.getArticle({ sequelize, slug: child.slug })
+  assert(full.file.bodySource.includes('Large source paragraph.'))
+  assert(full.h1Render)
+  assert(full.h2Render)
+  for (const loggedInUser of [undefined, reader, user]) {
+    const sql = []
+    const args = { article: full, loggedInUser, h1: true, sequelize }
+    const wide = await Article.getArticlesInSamePage(args)
+    const metadata = await Article.getArticlesInSamePage({
+      ...args, metadataOnly: true, logging: statement => sql.push(statement),
+    })
+    assert.deepStrictEqual(metadata, wide.map(({ topicCount, hasSameTopic }) => ({ topicCount, hasSameTopic })))
+    assert.strictEqual(sql.length, 1)
+    const selected = sql[0].slice(0, sql[0].indexOf('FROM'))
+    assert(!selected.includes('render'), selected)
+    assert(!selected.includes('h1Render'), selected)
+  }
+})
+
+it('HTML ancestor metadata avoids loading ancestor source files', async function() {
+  const sequelize = this.test.sequelize
+  const { Article } = sequelize.models
+  const user = await createUser(sequelize, 0)
+  await createArticle(sequelize, user, {
+    titleSource: 'Parent', bodySource: '{scope}\n\n' + 'Large ancestor source. '.repeat(1024),
+  })
+  const child = await createArticle(sequelize, user, { titleSource: 'Child', parentId: '@user0/parent' })
+  const article = await Article.getArticle({ sequelize, slug: child.slug })
+  const opts = { attributes: ['slug', 'titleRender', 'titleRenderPlaintext'] }
+  const full = await article.treeFindAncestors(opts)
+  const sql = []
+  const originalLogging = sequelize.options.logging
+  let lean
+  try {
+    sequelize.options.logging = statement => sql.push(statement)
+    lean = await article.treeFindAncestors({ ...opts, metadataOnly: true })
+  } finally {
+    sequelize.options.logging = originalLogging
+  }
+  const metadata = ancestors => ancestors.map(a => ({
+    slug: a.slug, titleRender: a.titleRender, titleRenderPlaintext: a.titleRenderPlaintext,
+    ast: a.file.toplevelId.ast_json,
+  }))
+  assert.deepStrictEqual(metadata(lean), metadata(full))
+  assert(lean.length >= 2)
+  assert(full.some(a => a.file.bodySource.includes('Large ancestor source.')))
+  assert(lean.every(a => a.file.bodySource === undefined))
+  assert.strictEqual(sql.length, 1)
+  const selected = sql[0].slice(0, sql[0].indexOf(' FROM '))
+  assert(!selected.includes('bodySource'), selected)
+  assert(!selected.includes('titleSource'), selected)
+})
+
 it('Comment listing eagerly loads article files before serialization', async function() {
   const sequelize = this.test.sequelize
   const { Comment, Issue } = sequelize.models
@@ -2118,6 +2215,45 @@ it('HTML article pages hydrate the main article once and load separate discussio
     const api = await test.webApi.issues({ id: article.slug, number: issues[0].number })
     assert.strictEqual(api.status, 200)
     assert.deepStrictEqual(api.data.issues.map(issue => issue.id), [issues[0].id])
+  }, { canTestNext: true })
+})
+
+it('HTML list projections retain previews on global, user, topic and article pages', async function() {
+  if (!testNext) return this.skip()
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    await test.createUserApi(1)
+    const { User } = test.sequelize.models
+    const author = await User.findByPk(user.id)
+    const otherAuthor = await User.findOne({ where: { username: 'user1' } })
+    await createArticle(test.sequelize, author, { titleSource: 'Parent' })
+    const article = await createArticle(test.sequelize, author, {
+      i: 0, parentId: '@user0/parent', bodySource: 'Preview retained.',
+    })
+    await createArticle(test.sequelize, otherAuthor, { i: 0, bodySource: 'Other preview retained.' })
+    test.disableToken()
+    async function getProps(url) {
+      const response = await test.sendJsonHttp('GET', url)
+      assert.strictEqual(response.status, 200, url)
+      return JSON.parse(parse(response.data).querySelector('#__NEXT_DATA__').text).props.pageProps
+    }
+    for (const url of [routes.articles(), routes.userArticles('user0'), routes.topic('title-0')]) {
+      const props = await getProps(url)
+      const row = props.articles.find(a => a.slug === article.slug)
+      assert(row, url)
+      assert(row.render.includes('Preview retained.'), url)
+      assert.deepStrictEqual(row.file, {}, url)
+      assert.strictEqual(row.h1Render, undefined, url)
+      assert.strictEqual(row.h2Render, undefined, url)
+      assert.strictEqual(row.author.username, 'user0', url)
+    }
+    const props = await getProps(routes.article(article.slug))
+    assert(props.ancestors.some(a => a.slug === 'user0/parent'))
+    assert(props.article.render.includes('Preview retained.'))
+    assert.strictEqual(props.article.topicCount, 2)
+    const other = props.otherArticlesInTopic.find(a => a.slug === 'user1/title-0')
+    assert(other.render.includes('Other preview retained.'))
+    assert.deepStrictEqual(other.file, {})
   }, { canTestNext: true })
 })
 

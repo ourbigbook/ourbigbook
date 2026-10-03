@@ -81,6 +81,7 @@ export const getServerSidePropsIndexHoc = ({
               articlesCount = articlesAndCounts.articlesCount
             } else {
               articlesAndCounts = await Article.getArticles({
+                forList: true,
                 limit,
                 list: true,
                 offset,

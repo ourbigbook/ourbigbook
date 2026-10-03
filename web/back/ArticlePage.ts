@@ -113,7 +113,10 @@ export const getServerSidePropsArticleHoc = ({
         topIssues
       ] = await Promise.all([
         // ancestors
-        article.treeFindAncestors({ attributes: ['slug', 'titleRender', 'titleRenderPlaintext'] }),
+        article.treeFindAncestors({
+          attributes: ['slug', 'titleRender', 'titleRenderPlaintext'],
+          metadataOnly: true,
+        }),
         article.toJson(loggedInUser),
         // articlesInSamePage
         Article.getArticlesInSamePage({
@@ -140,6 +143,7 @@ export const getServerSidePropsArticleHoc = ({
           loggedInUser,
           list: undefined,
           h1: true,
+          metadataOnly: true,
           sequelize,
         }),
         getIncomingLinks(sequelize, article, { type: ourbigbook.REFS_TABLE_X, from: 'from', to: 'to' }),
@@ -147,6 +151,7 @@ export const getServerSidePropsArticleHoc = ({
         isIndex
           ? { rows: [] }
           : Article.getArticles({
+              forList: true,
               excludeIds: [article.id],
               limit,
               offset: 0,
@@ -157,6 +162,7 @@ export const getServerSidePropsArticleHoc = ({
         ,
         // synonymIds
         Id.findAll({
+          attributes: ['idid'],
           include: [{
             model: Ref,
             as: 'from',

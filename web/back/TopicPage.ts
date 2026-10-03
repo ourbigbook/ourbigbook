@@ -23,6 +23,7 @@ export const getServerSidePropsTopicHoc = (): MyGetServerSideProps => {
     ) {
       const topicId = id.join('/')
       const getArticlesOpts = {
+        forList: true,
         limit: articleLimit,
         list,
         offset: page * articleLimit,

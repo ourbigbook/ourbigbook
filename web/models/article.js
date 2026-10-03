@@ -1185,10 +1185,12 @@ WHERE
         model: sequelize.models.File,
         as: 'file',
         required: true,
+        attributes: opts.metadataOnly ? ['id'] : undefined,
         where: { authorId: this.file.authorId },
         include: [{
           model: sequelize.models.Id,
           as: 'toplevelId',
+          attributes: opts.metadataOnly ? ['id', 'ast_json'] : undefined,
         }]
       }],
       order: [['nestedSetIndex', 'ASC']],
@@ -1360,6 +1362,9 @@ WHERE
     count,
     excludeIds,
     followedBy,
+    // HTML list cards need the body preview, but not editor source or headers.
+    // Opt in only on SSR callers; the API's default representation is unchanged.
+    forList=false,
     // TODO this is quite broken on true:
     // https://docs.ourbigbook.com/todo/fix-parentid-and-previoussiblingid-on-articles-api
     includeParentAndPreviousSibling,
@@ -1475,11 +1480,13 @@ WHERE
       fileInclude.push({
         model: Id,
         as: 'toplevelId',
+        attributes: forList ? [] : undefined,
         required: true,
         subQuery: false,
         include: [{
           model: Ref,
           as: parentFromTo,
+          attributes: forList ? [] : undefined,
           required: true,
           subQuery: false,
           where: {
@@ -1489,6 +1496,7 @@ WHERE
           include: [{
             model: Id,
             as: parentFromToOther,
+            attributes: forList ? [] : undefined,
             required: true,
             subQuery: false,
           }]
@@ -1498,6 +1506,7 @@ WHERE
     const include = [{
       model: File,
       as: 'file',
+      attributes: forList ? ['id'] : undefined,
       include: fileInclude,
       required: true,
       subQuery: false,
@@ -1563,6 +1572,7 @@ WHERE
       orderList.push(['topicId', 'ASC'])
     }
     const findArgs = {
+      attributes: forList ? { exclude: ['h1Render', 'h2Render'] } : undefined,
       include,
       limit,
       offset,
@@ -1730,6 +1740,9 @@ WHERE
     // We don't want to pull both of them together because then we'd be pulling
     // both h1 and h2 renders which we don't need. Talk about premature optimization!
     h1,
+    // SSR already has the main article body; its second lookup only needs
+    // topic counts and whether the reader has their own version.
+    metadataOnly=false,
     limit,
     list,
     offset,
@@ -1893,6 +1906,7 @@ WHERE
       return `SELECT
   ${countOnly
     ? 'COUNT(*) AS "count"'
+    : metadataOnly ? `"Topic"."articleCount" AS "topicCount"${loggedInUser ? ',\n  "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic"' : ''}`
     : `"Article"."depth" AS "depth",
   "Article"."slug" AS "slug",
   "Article"."titleRender" AS "titleRender"${getHasChild ? `,
@@ -1983,6 +1997,7 @@ OFFSET ${offset}` : ''}` : ''}`}
     if (!toc) {
       for (const row of rows) {
         row.hasSameTopic = row.hasSameTopic ? true : false
+        if (metadataOnly) continue
         row.liked = row.liked ? true : false
         row.author = {
           id: row['author.id'],

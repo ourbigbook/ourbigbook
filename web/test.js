@@ -11586,14 +11586,21 @@ it('file Used by: existing ARefs provide deduplicated media and link backlinks w
     await test.webApi.uploadCreateOrUpdate(`user0/${photo}`, PNG_1X1_WHITE_BUFFER)
     await test.webApi.uploadCreateOrUpdate('user0/movie.mp4', 'video')
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'A', bodySource:
-      `\\Image[/${photo}]\n\nInline \\image[/${photo}].\n\n\\Video[/movie.mp4]\n\n\\a[/${photo}]` }))
+      `\\Image[/${photo}]{title=Photo}{source=https://example.com/source}{description=Photo description.}\n\nInline \\image[/${photo}].\n\n\\Video[/movie.mp4]\n\n\\a[/${photo}]` }))
+    const imageArticle = await Article.findOne({ where: { slug: 'user0/a' } })
+    assert_xpath(`//x:figcaption/x:a[@href='/user0/-/file/${photo}']/x:b[text()=' Details']/x:span[@aria-hidden='true']`, imageArticle.render)
+    assert_xpath("//x:figcaption//x:a[@href='https://example.com/source']/x:b[text()=' Source']/x:span[@aria-hidden='true' and text()='\u{f15c}']", imageArticle.render)
+    assert_xpath("//x:figcaption/x:a[@href='https://example.com/source']/following-sibling::node()[1][self::text() and .='. ']/following-sibling::node()[1][self::x:a and x:b/text()=' Details']/following-sibling::node()[1][self::text() and .='. Photo description.']", imageArticle.render)
+    assert_xpath(`//x:figure//x:a[@href='/user0/-/raw/${photo}']/x:img[@src='/user0/-/raw/${photo}']`, imageArticle.render)
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'B', bodySource: `\\a[@user0/${photo}]` }))
     await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'notes')
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Notes link', bodySource: '\\a[/notes.txt]\n\n\\a[https://example.com/external.png]' }))
     test.loginUser(other)
     await test.webApi.uploadCreateOrUpdate(`user1/${photo}`, PNG_1X1_WHITE_BUFFER)
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Other', bodySource: `\\Image[/${photo}]` }))
-    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Cross user', bodySource: `\\Image[@user0/${photo}]` }))
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Cross user', bodySource: `\\Image[@user0/${photo}]{title=Shared photo}` }))
+    assert_xpath(`//x:figcaption/x:a[@href='/user0/-/file/${photo}']/x:b[text()=' Details']`,
+      (await Article.findOne({ where: { slug: 'user1/cross-user' } })).render)
     const usage = async id => (await Article.getFileUsage(id)).map(article => article.slug)
     // No special Ref type exists: the ordinary ARefs recorded by old versions
     // suffice, even when the target file has no authored Id/Article.

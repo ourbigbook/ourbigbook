@@ -5438,7 +5438,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
   }
   if (source !== '') {
     force_separator = true;
-    source = `<a${htmlAttr('href', source)}>Source</a>.`;
+    source = `<a${htmlAttr('href', source)}><b><span class="fa-solid-900 icon" aria-hidden="true">\u{f15c}</span> Source</b></a>.`;
   }
   let alt_val;
   const has_caption = (ast.id !== undefined) && captionNumberVisible(ast, context);
@@ -5481,6 +5481,26 @@ function macroImageVideoBlockConvertFunction(ast, context) {
   }
   ret += html
   if (has_caption) {
+    if (ast.macro_name === 'Image' && media_provider_type === 'local') {
+      const { href, external } = resolveLinkToFile({
+        context,
+        href: src,
+        external: ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined,
+      })
+      if (!external) {
+        let fileHref
+        if (context.options.webMode) {
+          const [username, ...filePath] = href.split(URL_SEP)
+          fileHref = `${URL_SEP}${username.slice(AT_MENTION_CHAR.length)}${URL_SEP}${FILE_PREFIX}${URL_SEP}${filePath.join(URL_SEP)}`
+        } else {
+          const filePath = fileUsagePath(href, context.options.ourbigbook_json['media-providers'].local.path)
+          fileHref = path.join(context.root_relpath_shift, FILE_PREFIX, filePath) + (context.options.htmlXExtension ? `.${HTML_EXT}` : '')
+        }
+        force_separator = true
+        if (source) source += ' '
+        source += `<a${htmlAttr('href', htmlEscapeHrefAttr(fileHref))}><b><span class="fa-solid-900 icon" aria-hidden="true">\u{f05a}</span> Details</b></a>.`
+      }
+    }
     const { full: title, inner, innerNoDiv } = xTextBase(ast, context, { addTitleDiv: true, href_prefix, force_separator })
     const title_and_description = getTitleAndDescription({ title, description, source, inner, innerNoDiv })
     ret += `<figcaption>${title_and_description}</figcaption>`;

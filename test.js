@@ -3336,7 +3336,8 @@ assert_lib_ast('image: escapes HTML correctly block',
     filesystem: { [`"'<&`]: '' },
     assert_xpath_stdout: [
       `//x:a[@href="${ourbigbook.RAW_PREFIX}/%22'%3C&"]//x:img[@src="${ourbigbook.RAW_PREFIX}/%22'%3C&" and @alt=concat('"', "'<&")]`,
-      `//x:a[@href="%22'%3C&" and text()='Source']`,
+      `//x:a[@href="%22'%3C&"]/x:b[text()=' Source']/x:span[@aria-hidden='true']`,
+      `//x:figcaption/x:a[@href="${ourbigbook.FILE_PREFIX}/%22'%3C&.html"]/x:b[text()=' Details']`,
     ],
   },
 )
@@ -3400,7 +3401,7 @@ assert_lib_ast('video: escapes HTML correctly',
     filesystem: { '"<': '' },
     assert_xpath_stdout: [
       `//x:video[@src='${ourbigbook.RAW_PREFIX}/%22%3C']`,
-      `//x:a[@href='%22%3C' and text()='Source']`,
+      `//x:a[@href='%22%3C']/x:b[text()=' Source']/x:span[@aria-hidden='true']`,
     ],
   },
 )
@@ -15755,7 +15756,7 @@ for (const publish of [false, true]) {
       'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
       'wiki/index.bigb': '= Home\n\n\\Include[exam]\n',
       'wiki/exam/index.bigb': '= Exam\n\n\\Include[2017/paper]\n',
-      'wiki/exam/2017/paper.bigb': '= Paper\n{scope}\n\n\\Image[band.png]\n\n= 3\n{parent=Paper}\n{scope}\n\n= b\n{parent=3}\n{scope}\n\n' + scopedHeaders + `= Solution\n{parent=${extraScopes.at(-1)}}\n\n\\Image[band.png]\n\n\\Video[band.mp4]\n\n\\a[notes.txt]\n`,
+      'wiki/exam/2017/paper.bigb': '= Paper\n{scope}\n\n\\Image[band.png]\n\n= 3\n{parent=Paper}\n{scope}\n\n= b\n{parent=3}\n{scope}\n\n' + scopedHeaders + `= Solution\n{parent=${extraScopes.at(-1)}}\n\n\\Image[band.png]{title=Band}\n\n\\Video[band.mp4]\n\n\\a[notes.txt]\n`,
       'wiki/exam/2017/notes.txt': 'notes',
       [`wiki-media/${imagePath}`]: 'image',
       [`wiki-media/${videoPath}`]: 'video',
@@ -15771,6 +15772,7 @@ for (const publish of [false, true]) {
     assert_xpath: {
       [`${output}/${solution}`]: [
         `//x:a[@href='${imageHref}']/x:img[@src='${imageHref}']`,
+        `//x:figcaption/x:a[@href='${relative(`${output}/-/file/${imagePath}${publish ? '' : '.html'}`)}']/x:b[text()=' Details']/x:span[@aria-hidden='true']`,
         `//x:video[@src='${videoHref}']`,
         `//x:a[@href='${fileHref}' and text()='notes.txt']`,
       ],
@@ -16909,6 +16911,29 @@ assert_cli(
     },
   }
 )
+for (const htmlXExtension of [false, true]) {
+  assert_cli(`image: caption Details and Source links, htmlXExtension=${htmlXExtension}`, {
+    args: ['.'],
+    filesystem: {
+      'ourbigbook.json': JSON.stringify({ htmlXExtension }),
+      'index.bigb': '= Home\n\n\\Include[subdir/chapter]\n',
+      'subdir/chapter.bigb': '= Chapter\n\n\\Image[plot.svg]{title=Plot}{source=https://example.com/source}{description=With source.}\n\n\\Image[plot.svg]{description=Without source.}\n\n\\Image[plot.svg]\n\n\\Image[https://example.com/external.svg]{title=Remote}\n\n\\Image[plot.svg]{external}{title=External}\n',
+      'subdir/plot.svg': '<svg/>',
+    },
+    assert_xpath: {
+      [`${TMP_DIRNAME}/html/subdir/chapter.html`]: [
+        "//x:figure[@id='image-plot']//x:a[@href='../-/raw/subdir/plot.svg']/x:img[@src='../-/raw/subdir/plot.svg']",
+        `//x:figure[@id='image-plot']/x:figcaption/x:a[@href='../-/file/subdir/plot.svg${htmlXExtension ? '.html' : ''}']/x:b[text()=' Details']/x:span[@aria-hidden='true']`,
+        "//x:figcaption//x:a[@href='https://example.com/source']/x:b[text()=' Source']/x:span[@aria-hidden='true' and text()='\u{f15c}']",
+        "//x:figcaption/x:a[@href='https://example.com/source']/following-sibling::node()[1][self::text() and .='. ']/following-sibling::node()[1][self::x:a and x:b/text()=' Details']/following-sibling::node()[1][self::text() and .='. With source.']",
+        "//x:figcaption/x:a[x:b/text()=' Details']/following-sibling::node()[1][self::text() and .='. Without source.']",
+        "//x:body[count(.//x:figcaption/x:a/x:b[contains(., 'Details')])=2]",
+        '//x:body[count(.//x:figcaption)=4]',
+      ],
+    },
+  })
+}
+
 assert_cli('file: previews show deduplicated Used by backlinks from images, videos and ordinary links', {
   args: ['.'],
   filesystem: {

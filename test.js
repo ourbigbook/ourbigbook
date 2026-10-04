@@ -9140,6 +9140,90 @@ assert_lib('header: implicit tags are restored when cached include ancestry chan
   },
 })
 
+it('lib: check_db bounds reference loading by source file and keeps cross-file checks', async () => {
+  const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
+    storage: ourbigbook_nodejs_webpack_safe.SQLITE_MAGIC_MEMORY_NAME,
+    logging: false,
+  })
+  try {
+    const { File, Id, Ref } = sequelize.models
+    const files = await File.bulkCreate(['a', 'b', 'c'].map(id => ({ path: `${id}.bigb` })))
+    await Id.bulkCreate(['a', 'b', 'c', 'animal'].map((idid, i) => ({
+      idid,
+      defined_at: files[Math.min(i, 2)].id,
+      macro_name: 'H',
+      ast_json: JSON.stringify({ macro_name: 'H', args: {} }),
+    })))
+    const refs = []
+    for (const [i, file] of files.entries()) {
+      for (let line = 1; line <= 60; line++) {
+        // Both candidates for a source location must be checked together, even
+        // when their IDs live in a different file from the reference.
+        for (const to_id of ['scope/animal', 'animal']) {
+          refs.push({
+            type: Ref.Types[ourbigbook.REFS_TABLE_X],
+            from_id: ['a', 'b', 'c'][i], to_id,
+            defined_at: file.id, defined_at_line: line, defined_at_col: 1,
+            inflected: false,
+          })
+        }
+      }
+    }
+    for (const file of files.slice(0, 2)) {
+      refs.push({
+        type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD], from_id: 'animal', to_id: 'a',
+        defined_at: file.id, defined_at_line: 61, defined_at_col: 1, inflected: false,
+      })
+    }
+    refs.push({
+      type: Ref.Types[ourbigbook.REFS_TABLE_X], from_id: 'c', to_id: 'missing',
+      defined_at: files[2].id, defined_at_line: 62, defined_at_col: 1, inflected: false,
+    })
+    await Ref.bulkCreate(refs)
+    const findAll = Ref.findAll
+    const loadedFiles = []
+    Ref.findAll = async function(options) {
+      // Fail if check_db ever goes back to loading all reference candidates.
+      assert(files.some(file => file.id === options.where.defined_at))
+      loadedFiles.push(options.where.defined_at)
+      const rows = await findAll.call(this, options)
+      assert(rows.length <= 121)
+      return rows
+    }
+    await sequelize.transaction(async transaction => {
+      assert.deepStrictEqual(await ourbigbook_nodejs_webpack_safe.check_db(sequelize, ['a.bigb'], {
+        transaction, web: true,
+      }), [])
+      assert.deepStrictEqual(loadedFiles, [files[0].id])
+      // A partial check must not resolve or delete other files' candidates.
+      assert.strictEqual(await Ref.count({ where: { defined_at: files[1].id }, transaction }), 121)
+      loadedFiles.length = 0
+      assert.deepStrictEqual(await ourbigbook_nodejs_webpack_safe.check_db(sequelize, undefined, {
+        transaction, web: true,
+      }), [
+        `b.bigb:61:1: ${ourbigbook.duplicateTagMessage('animal', 'a', 'a.bigb:61:1')}`,
+        'c.bigb:62:1: internal link \\x to unknown id: "missing"',
+      ])
+      assert.deepStrictEqual(loadedFiles, files.map(file => file.id))
+      assert.strictEqual(await Ref.count({ transaction }), 182)
+      Ref.findAll = findAll
+      await Ref.bulkCreate(files.slice(0, 2).map((file, i) => ({
+        type: Ref.Types[ourbigbook.REFS_TABLE_PARENT], from_id: ['a', 'b'][i], to_id: 'c',
+        defined_at: file.id, defined_at_line: 63, defined_at_col: 1, inflected: false,
+      })), { transaction })
+      // The duplicate-parent prefilter must still find the other parent even
+      // when only one of the two defining files is being checked.
+      assert.deepStrictEqual(await ourbigbook_nodejs_webpack_safe.check_db(sequelize, ['a.bigb'], {
+        transaction, options: { ourbigbook_json: { lint: { filesAreIncluded: false } } },
+      }), [
+        'ID "c" has two parents: "a" defined at a.bigb:63:1 and "b" defined at b.bigb:63:1',
+      ])
+    })
+  } finally {
+    await sequelize.close()
+  }
+})
+
 it('lib: header: duplicate tags are checked during extraction without a database', async () => {
   for (const title of ['<Animal>', '\\x[animal]', '\\i[\\b[<Animal>]]']) {
     const extra_returns = {}

@@ -1181,7 +1181,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
       !options.ourbigbook_json.lint.filesAreIncluded
     )
   const [
-    new_refs,
+    files,
     doubleParents,
     noParents,
     unreachableFiles,
@@ -1189,98 +1189,15 @@ async function check_db(sequelize, paths_converted, opts={}) {
     invalid_title_title_rows,
     aRefs,
   ] = await Promise.all([
-    Ref.findAll({
-      // Ignore obsolete reference types left by older versions. File targets
-      // are validated through ARef below, rather than as header IDs.
-      where: { type: { [Op.in]: Object.values(Ref.Types) } },
-      order: [
-        ['defined_at', 'ASC'],
-        ['defined_at_line', 'ASC'],
-        ['defined_at_col', 'ASC'],
-        ['type', 'ASC'],
-        ['inflected', 'ASC'],
-        // Longest matching scope first, we then ignore all others.
-        [sequelize.fn('length', sequelize.col('to_id')), 'DESC'],
-        // For tags the candidate target is from_id, rather than to_id.
-        [sequelize.fn('length', sequelize.col('from_id')), 'DESC'],
-      ],
-      include: [
-        {
-          model: Id,
-          as: 'to',
-          attributes: ['id'],
-        },
-        {
-          model: Id,
-          as: 'from',
-          attributes: ['id'],
-        },
-        Object.assign(
-          {
-            model: File,
-            as: 'definedAt',
-          },
-          paths_converted === undefined ? {} : { where: { path: paths_converted } }
-        )
-      ],
+    File.findAll({
+      attributes: ['id', 'path'],
+      where: paths_converted === undefined ? {} : { path: paths_converted },
+      order: [['id', 'ASC']],
+      raw: true,
       transaction,
     }),
     // doubleParents
-    web
-      ? []
-      : Ref.findAll({
-          where: {
-            type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-          },
-          include: [
-            {
-              model: Ref,
-              as: 'duplicate',
-              required: true,
-              on: {
-                '$Ref.to_id$': { [Op.col]: 'duplicate.to_id' },
-                '$Ref.id$': { [Op.ne]: { [Op.col]: 'duplicate.id' } },
-                type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
-              },
-              include: [
-                {
-                  model: File,
-                  as: 'definedAt',
-                  required: true,
-                },
-                {
-                  model: Id,
-                  as: 'to',
-                },
-                {
-                  model: Id,
-                  as: 'from',
-                },
-              ],
-            },
-            Object.assign(
-              {
-                model: File,
-                as: 'definedAt',
-                required: true,
-              },
-              paths_converted === undefined ? {} : { where: { path: paths_converted } }
-            ),
-            {
-              model: Id,
-              as: 'to',
-            },
-            {
-              model: Id,
-              as: 'from',
-            },
-          ],
-          order: [
-            [sequelize.col('definedAt.path'), 'ASC'],
-          ],
-          transaction,
-        })
-    ,
+    web ? [] : check_db_double_parent_refs(sequelize, paths_converted, transaction),
     // noParents
     dontLintFilesAreIncluded
       ? []
@@ -1347,6 +1264,181 @@ async function check_db(sequelize, paths_converted, opts={}) {
   }
   const error_messages = []
 
+  // Candidate scopes and inflections for one source location must stay together.
+  // Process one defining file at a time instead of hydrating the entire reference
+  // table (millions of rows on large repositories). Keep duplicate-tag state
+  // across files, and run the structural checks above only once.
+  const tags = new Map()
+  for (const file of files) {
+    error_messages.push(...await check_db_file_refs(sequelize, file, opts, tags))
+  }
+
+  if (filterFilesThatDontExist) {
+    for (const a of await filterFilesThatDontExist(aRefs)) {
+      error_messages.push(
+        `${a.aRefDefinedAt.path}:${a.defined_at_line}:${a.defined_at_col}: link ` +
+        `to file that does not exist: "${a.to}"`
+      )
+    }
+  }
+
+  if (duplicate_rows.length > 0) {
+    for (const duplicate_row of duplicate_rows) {
+      const ast = ourbigbook.AstNode.fromJSON(duplicate_row.ast_json)
+      const source_location = ast.source_location
+      const other_ast = ourbigbook.AstNode.fromJSON(duplicate_row.duplicate[0].ast_json)
+      const other_source_location = other_ast.source_location
+      error_messages.push(
+        `${source_location.path}:${source_location.line}:${source_location.column}: duplicated ID: "${duplicate_row.idid}". Previous definition at: ${other_source_location.path}:${other_source_location.line}:${other_source_location.column}`
+      )
+    }
+  }
+  if (invalid_title_title_rows.length > 0) {
+    for (const invalid_title_title_row of invalid_title_title_rows) {
+      const ast = ourbigbook.AstNode.fromJSON(invalid_title_title_row.ast_json)
+      const source_location = ast.source_location
+      error_messages.push(
+        `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://docs.ourbigbook.com/x-within-title-restrictions`
+      )
+    }
+  }
+  if (noParents.length > 0) {
+    for (const id of noParents) {
+      error_messages.push(
+        `ID "${id.idid}" defined in file "${id.idDefinedAt.path}" has no parent and won't show on the toplevel table of contents, and is not Web uploadable, make sure to either include that file from another file with \\Include https://docs.ourbigbook.com/#include or add it to your ignored files: https://docs.ourbigbook.com/#ourbigbook-json/ignore`
+      )
+    }
+  } else {
+    // Only check for reachability when there are no files without parent.
+    // Otherwise, e.g. if we have aaa.bigb without parent and Include chain:
+    // aaa.bigb -> bbb.bigb -> ccc.bigb
+    // then this error would give three possible paths, which is less precise and more confusing.
+    // This check exists only to prevent cycling includes: https://github.com/ourbigbook/ourbigbook/issues/204
+    // e.g. such as:
+    // aaa.bigb -> bbb.bigb -> ccc.bigb -> aaa.bigb
+    // because in that case all files have a parent, but we have a loop. But because double parent
+    // is also forbidden, this can only happen if there is a loop.
+    if (unreachableFiles.length) {
+      error_messages.push(
+        `the following files cannot be reached from the toplevel index file via ` +
+        `${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.INCLUDE_MACRO_NAME}, ` +
+        `did you forget some ${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.INCLUDE_MACRO_NAME}? ` +
+        unreachableFiles.map(f => `"${f.path}"`).join(', ')
+      )
+    }
+  }
+  if (doubleParents.length > 0) {
+    for (const ref of doubleParents) {
+      const new_ref = ref
+      const oldRef = ref.duplicate[0]
+      error_messages.push(
+        `ID "${new_ref.to.idid}" has two parents: ` +
+        `"${new_ref.from.idid}" defined at ${new_ref.definedAt.path}:${new_ref.defined_at_line}:${new_ref.defined_at_col} and ` +
+        `"${oldRef.from.idid}" defined at ${oldRef.definedAt.path}:${oldRef.defined_at_line}:${oldRef.defined_at_col}`
+      )
+    }
+  }
+  if (perf) {
+    console.error(`perf: check_db.finish: ${performance.now() - t0} ms`);
+  }
+  return error_messages
+}
+
+async function check_db_double_parent_refs(sequelize, paths_converted, transaction) {
+  const { Op } = sequelize.Sequelize
+  const { File, Id, Ref } = sequelize.models
+  const parentType = Ref.Types[ourbigbook.REFS_TABLE_PARENT]
+  // Find offending targets before hydrating the joins used for diagnostics.
+  // Joining every parent to every File first can give SQLite a quadratic plan.
+  const [targets] = await sequelize.query(
+    `SELECT "to_id" FROM "${Ref.tableName}" WHERE "type" = :parentType
+     GROUP BY "to_id" HAVING COUNT(*) > 1`,
+    { replacements: { parentType }, transaction },
+  )
+  if (!targets.length) return []
+  return Ref.findAll({
+    where: {
+      type: parentType,
+      to_id: targets.map(row => row.to_id),
+    },
+    include: [
+      {
+        model: Ref,
+        as: 'duplicate',
+        required: true,
+        on: {
+          '$Ref.to_id$': { [Op.col]: 'duplicate.to_id' },
+          '$Ref.id$': { [Op.ne]: { [Op.col]: 'duplicate.id' } },
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+        },
+        include: [
+          {
+            model: File,
+            as: 'definedAt',
+            required: true,
+          },
+          {
+            model: Id,
+            as: 'to',
+            attributes: ['idid'],
+          },
+          {
+            model: Id,
+            as: 'from',
+            attributes: ['idid'],
+          },
+        ],
+      },
+      Object.assign(
+        {
+          model: File,
+          as: 'definedAt',
+          required: true,
+        },
+        paths_converted === undefined ? {} : { where: { path: paths_converted } }
+      ),
+      {
+        model: Id,
+        as: 'to',
+        attributes: ['idid'],
+      },
+      {
+        model: Id,
+        as: 'from',
+        attributes: ['idid'],
+      },
+    ],
+    order: [
+      [sequelize.col('definedAt.path'), 'ASC'],
+    ],
+    transaction,
+  })
+}
+
+async function check_db_file_refs(sequelize, file, { parentOverride, transaction }, tags) {
+  const { Op } = sequelize.Sequelize
+  const { Id, Ref } = sequelize.models
+  const error_messages = []
+  const new_refs = await Ref.findAll({
+    // Ignore obsolete reference types left by older versions.
+    where: { defined_at: file.id, type: { [Op.in]: Object.values(Ref.Types) } },
+    order: [
+      ['defined_at_line', 'ASC'],
+      ['defined_at_col', 'ASC'],
+      ['type', 'ASC'],
+      ['inflected', 'ASC'],
+      // Longest matching scope first. For tags the target is from_id.
+      [sequelize.fn('length', sequelize.col('to_id')), 'DESC'],
+      [sequelize.fn('length', sequelize.col('from_id')), 'DESC'],
+    ],
+    include: [
+      { model: Id, as: 'to', attributes: ['id'] },
+      { model: Id, as: 'from', attributes: ['id'] },
+    ],
+    transaction,
+  })
+  // The defining file is identical for every row; don't hydrate it per reference.
+  for (const ref of new_refs) ref.definedAt = file
   // Check that each link has at least one hit for the available magic inflections if any.
   // If there are multiple matches pick the one that is either:
   // - on the longest scope
@@ -1366,6 +1458,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
   //  inflected: r.inflected,
   //} }), { maxArrayLength: null } );
   while (i < new_refs.length) {
+    let shortest_not_inflected_ref
     let new_ref = new_refs[i]
     let new_ref_next = new_ref
     let not_inflected_match_local_idx, inflected_match_local_idx, not_inflected_match_global_idx, inflected_match_global_idx
@@ -1540,7 +1633,6 @@ JOIN "${Ref.tableName}" r ON r.to_id = a.ancestor AND r.type = :synonymType
 
   // Only compare resolved references: different spellings, scopes and plurals
   // can refer to the same tag. Keep their locations for actionable diagnostics.
-  const tags = new Map()
   for (const ref of new_refs) {
     if (ref.type !== Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] || deleted.has(ref.id)) continue
     const key = JSON.stringify([ref.from_id, ref.to_id])
@@ -1555,76 +1647,9 @@ JOIN "${Ref.tableName}" r ON r.to_id = a.ancestor AND r.type = :synonymType
     }
   }
 
-  if (filterFilesThatDontExist) {
-    for (const a of await filterFilesThatDontExist(aRefs)) {
-      error_messages.push(
-        `${a.aRefDefinedAt.path}:${a.defined_at_line}:${a.defined_at_col}: link ` +
-        `to file that does not exist: "${a.to}"`
-      )
-    }
-  }
-
-  if (duplicate_rows.length > 0) {
-    for (const duplicate_row of duplicate_rows) {
-      const ast = ourbigbook.AstNode.fromJSON(duplicate_row.ast_json)
-      const source_location = ast.source_location
-      const other_ast = ourbigbook.AstNode.fromJSON(duplicate_row.duplicate[0].ast_json)
-      const other_source_location = other_ast.source_location
-      error_messages.push(
-        `${source_location.path}:${source_location.line}:${source_location.column}: duplicated ID: "${duplicate_row.idid}". Previous definition at: ${other_source_location.path}:${other_source_location.line}:${other_source_location.column}`
-      )
-    }
-  }
-  if (invalid_title_title_rows.length > 0) {
-    for (const invalid_title_title_row of invalid_title_title_rows) {
-      const ast = ourbigbook.AstNode.fromJSON(invalid_title_title_row.ast_json)
-      const source_location = ast.source_location
-      error_messages.push(
-        `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://docs.ourbigbook.com/x-within-title-restrictions`
-      )
-    }
-  }
-  if (noParents.length > 0) {
-    for (const id of noParents) {
-      error_messages.push(
-        `ID "${id.idid}" defined in file "${id.idDefinedAt.path}" has no parent and won't show on the toplevel table of contents, and is not Web uploadable, make sure to either include that file from another file with \\Include https://docs.ourbigbook.com/#include or add it to your ignored files: https://docs.ourbigbook.com/#ourbigbook-json/ignore`
-      )
-    }
-  } else {
-    // Only check for reachability when there are no files without parent.
-    // Otherwise, e.g. if we have aaa.bigb without parent and Include chain:
-    // aaa.bigb -> bbb.bigb -> ccc.bigb
-    // then this error would give three possible paths, which is less precise and more confusing.
-    // This check exists only to prevent cycling includes: https://github.com/ourbigbook/ourbigbook/issues/204
-    // e.g. such as:
-    // aaa.bigb -> bbb.bigb -> ccc.bigb -> aaa.bigb
-    // because in that case all files have a parent, but we have a loop. But because double parent
-    // is also forbidden, this can only happen if there is a loop.
-    if (unreachableFiles.length) {
-      error_messages.push(
-        `the following files cannot be reached from the toplevel index file via ` +
-        `${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.INCLUDE_MACRO_NAME}, ` +
-        `did you forget some ${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.INCLUDE_MACRO_NAME}? ` +
-        unreachableFiles.map(f => `"${f.path}"`).join(', ')
-      )
-    }
-  }
-  if (doubleParents.length > 0) {
-    for (const ref of doubleParents) {
-      const new_ref = ref
-      const oldRef = ref.duplicate[0]
-      error_messages.push(
-        `ID "${new_ref.to.idid}" has two parents: ` +
-        `"${new_ref.from.idid}" defined at ${new_ref.definedAt.path}:${new_ref.defined_at_line}:${new_ref.defined_at_col} and ` +
-        `"${oldRef.from.idid}" defined at ${oldRef.definedAt.path}:${oldRef.defined_at_line}:${oldRef.defined_at_col}`
-      )
-    }
-  }
-  if (perf) {
-    console.error(`perf: check_db.finish: ${performance.now() - t0} ms`);
-  }
   return error_messages
 }
+
 
 function preload_katex_from_file(tex_path, katex_macros) {
   if (katex_macros === undefined) {

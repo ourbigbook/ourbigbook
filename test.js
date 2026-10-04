@@ -2925,6 +2925,30 @@ assert_lib_error('table: forbid th in the middle of td',
 // \Image
 // \image
 describe('image dimensions', function () {
+  it('loads Node helpers without resolving a package self-link', function () {
+    const result = child_process.spawnSync(process.execPath, ['-e', `
+      const assert = require('assert')
+      const fs = require('fs')
+      const path = require('path')
+      const Module = require('module')
+      const resolve = Module._resolveFilename
+      Module._resolveFilename = function(request, ...args) {
+        if (request === 'ourbigbook/package.json') {
+          const error = new Error("Cannot find module 'ourbigbook/package.json'")
+          error.code = 'MODULE_NOT_FOUND'
+          throw error
+        }
+        return resolve.call(this, request, ...args)
+      }
+      const helpers = require('./nodejs')
+      assert.strictEqual(helpers.PACKAGE_PATH, process.cwd())
+      assert.strictEqual(helpers.DIST_PATH, path.join(process.cwd(), 'dist'))
+      assert(fs.existsSync(helpers.DEFAULT_TEX_PATH))
+      assert.strictEqual(typeof helpers.imageDimensions, 'function')
+    `], { cwd: __dirname, encoding: 'utf8', timeout: 10000 })
+    assert.strictEqual(result.status, 0, result.stdout + result.stderr)
+  })
+
   it('reads raster, SVG and oriented JPEG metadata, with nulls for unknown files', async function () {
     const sharp = require('sharp')
     const { imageDimensions } = require('./nodejs')

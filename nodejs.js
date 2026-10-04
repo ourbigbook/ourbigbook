@@ -179,9 +179,10 @@ exports.imageDimensionsReader = imageDimensionsReader
 const PACKAGE_NAME = 'ourbigbook'
 exports.PACKAGE_NAME = PACKAGE_NAME
 
-// This does not work in webpack. It also does not work in web/bin executables on Heroku.
-// https://stackoverflow.com/questions/10111163/in-node-js-how-can-i-get-the-path-of-a-module-i-have-loaded-via-require-that-is
-const PACKAGE_PATH = path.dirname(require.resolve(path.join(PACKAGE_NAME, 'package.json')))
+// This Node-only module lives at the package root, both in a checkout and in
+// node_modules. Resolving our own package name would require a self-link that
+// isn't present when Heroku's build runs web/bin/sync-db.js.
+const PACKAGE_PATH = __dirname
 exports.PACKAGE_PATH = PACKAGE_PATH
 
 const PUBLISH_OBB_PREFIX = `${ourbigbook.RESERVED_PATH_PREFIX}obb`

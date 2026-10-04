@@ -11652,7 +11652,7 @@ web/bin/normalize -f upload-image-dimensions
 ``
 This processes one file at a time and preserves file bytes, hashes, and timestamps. Add `-u username` to limit it to one user. On Heroku, from the `web` directory:
 ``
-./heroku run bin/normalize -f upload-image-dimensions
+./heroku run -- web/bin/normalize -f upload-image-dimensions
 ``
 File previews use the metadata immediately. Existing article HTML needs a rerender, for example with `ourbigbook --web --web-force-render` after the backfill.
 

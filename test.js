@@ -8791,6 +8791,47 @@ assert_lib_stdin('header: wiki argument with a value adds a link to wikipedia wi
   }
 )
 
+for (const render of [false, true]) {
+  for (const [name, title, args, wiki, line] of [
+    ['underscores', 'My topic', '', 'My_topic', 2],
+    ['spaces', 'My topic', '', 'My topic', 2],
+    ['formatted title', 'My \\b[topic]', '', 'My_topic', 2],
+    ['custom ID', 'My topic', '{id=custom}\n', 'My_topic', 3],
+    ['disambiguation', 'My topic', '{disambiguate=Some meaning}\n', 'My_topic_(Some_meaning)', 3],
+  ]) {
+    assert_lib_error(`header: wiki rejects redundant explicit value: ${name}, render=${render}`,
+      `= ${title}\n${args}{wiki=${wiki}}\n`, line, 1, undefined, {
+        convert_opts: { render },
+        error_message: 'redundant explicit wiki value: the header title already implies this Wikipedia page; use {wiki} instead',
+      }
+    )
+  }
+}
+assert_lib_stdin('header: wiki implicit value includes disambiguation',
+  '= My topic\n{disambiguate=Some meaning}\n{wiki}\n', {
+    assert_xpath_stdout: ["//x:a[@href='https://en.wikipedia.org/wiki/My_topic_(Some_meaning)']"],
+  }
+)
+assert_lib_stdin('header: wiki explicit value can omit disambiguation',
+  '= My topic\n{disambiguate=Some meaning}\n{wiki=My_topic}\n', {
+    assert_xpath_stdout: ["//x:a[@href='https://en.wikipedia.org/wiki/My_topic']"],
+  }
+)
+assert_lib_stdin('header: wiki explicit value can link to a subsection',
+  '= My topic\n{{wiki=My_topic#History}}\n', {
+    assert_xpath_stdout: ["//x:a[@href='https://en.wikipedia.org/wiki/My_topic#History']"],
+  }
+)
+it('header: wiki rejects redundant explicit values in Markdown during extraction', async function () {
+  const extra = {}
+  await ourbigbook.convert(await markdownToOurbigbook('# My **topic**\n{wiki=My_topic}\n'), {
+    render: false,
+  }, extra)
+  assert.strictEqual(extra.errors.length, 1)
+  assert.strictEqual(extra.errors[0].message,
+    'redundant explicit wiki value: the header title already implies this Wikipedia page; use {wiki} instead')
+})
+
 // Code.
 assert_lib_ast('code: inline sane',
   'a \\c[b c] d\n',

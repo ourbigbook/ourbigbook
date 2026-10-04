@@ -6200,6 +6200,15 @@ async function parse(tokens, options, context, extra_returns={}) {
         // Required by calculateId.
         validateAst(ast, context);
 
+        if (ast.validation_output.wiki.given) {
+          const { wiki, defaultWiki } = headerWikiParams(ast, context)
+          if (wiki !== '' && wiki.replace(/ /g, '_') === defaultWiki) {
+            parseError(state,
+              'redundant explicit wiki value: the header title already implies this Wikipedia page; use {wiki} instead',
+              ast.args.wiki.source_location)
+          }
+        }
+
         if (
           !is_first_header &&
           !ast.isSynonym() &&
@@ -11187,6 +11196,21 @@ function markupFilePreview(ast, context, asciidoc) {
   return asciidoc ? `image::${src}[${alt}]\n\n` : `![${alt}](${src})\n\n`
 }
 
+// Keep validation and rendering in agreement about the implicit Wikipedia page.
+function headerWikiParams(ast, context) {
+  const plaintextContext = cloneAndSet(
+    context,
+    'options',
+    cloneAndSet(context.options, 'output_format', OUTPUT_FORMAT_ID)
+  )
+  const wiki = renderArg(ast.args.wiki, plaintextContext)
+  let defaultWiki = renderArg(ast.args[Macro.TITLE_ARGUMENT_NAME], plaintextContext).replace(/ /g, '_')
+  if (ast.validation_output[Macro.DISAMBIGUATE_ARGUMENT_NAME].given) {
+    defaultWiki += `_(${renderArg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], plaintextContext).replace(/ /g, '_')})`
+  }
+  return { wiki, defaultWiki }
+}
+
 /** Collect header metadata once so output formats only decide presentation. */
 function headerMetadata(ast, context, firstHeader) {
   const ret = {
@@ -11197,19 +11221,8 @@ function headerMetadata(ast, context, firstHeader) {
     wikiHref: undefined,
   }
   if (ast.validation_output.wiki.given) {
-    const plaintextContext = cloneAndSet(
-      context,
-      'options',
-      cloneAndSet(context.options, 'output_format', OUTPUT_FORMAT_ID)
-    )
-    let wiki = renderArg(ast.args.wiki, plaintextContext)
-    if (wiki === '') {
-      wiki = renderArg(ast.args[Macro.TITLE_ARGUMENT_NAME], plaintextContext).replace(/ /g, '_')
-      if (ast.validation_output[Macro.DISAMBIGUATE_ARGUMENT_NAME].given) {
-        wiki += `_(${renderArg(ast.args[Macro.DISAMBIGUATE_ARGUMENT_NAME], plaintextContext).replace(/ /g, '_')})`
-      }
-    }
-    ret.wikiHref = `https://en.wikipedia.org/wiki/${wiki}`
+    const { wiki, defaultWiki } = headerWikiParams(ast, context)
+    ret.wikiHref = `https://en.wikipedia.org/wiki/${wiki || defaultWiki}`
   }
   if (ret.showTags) {
     const referenceContext = cloneAndSet(context, 'validateAst', true)

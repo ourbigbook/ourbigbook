@@ -3030,21 +3030,23 @@ If given, show a link to the Wikipedia article that corresponds to the header.
 
 If a value is not given, automatically link to the Wiki page that matches the header exactly with spaces converted to underscores.
 
+Use an explicit value only when the Wikipedia page differs from the title. Redundant explicit values are an error; use `{wiki}` instead.
+
 Here is an example with an explicit wiki argument:
 
 ``
-==== Tiananmen Square
+==== Beijing's Tiananmen Square
 {wiki=Tiananmen_Square}
 ``
 
 which looks like:
 
-= Tiananmen Square
+= Beijing's Tiananmen Square
 {id=wiki-explicit}
 {parent=H wiki argument}
 {wiki=Tiananmen_Square}
 
-or equivalently with the value deduced from the title:
+When the title matches the Wikipedia page, let the value be deduced from the title:
 
 ``
 = Tiananmen Square

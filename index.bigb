@@ -11284,7 +11284,7 @@ With the web server running at `http://localhost:3000`, run from the repository 
 web/bin/benchmark
 ``
 
-This appends a run to `../ourbigbook-media/benchmark.json`, creating its directory if needed. The file is a JSON array with the oldest run first. Repeated runs of the same commit are kept separately. Each entry contains:
+This appends a run to `media/benchmark.json`, creating its directory if needed. The file is a JSON array with the oldest run first. Repeated runs of the same commit are kept separately. Each entry contains:
 * `about`: UTC start and finish timestamps, Git SHA and dirty status, database object counts, PostgreSQL version and settings, OS distribution and version when available (e.g. Ubuntu version), hostname, CPU, memory, Node.js version, and benchmark options.
 * `results`: request paths mapped to median elapsed milliseconds.
 * `samples`: individual measured timings in milliseconds.
@@ -11316,7 +11316,7 @@ sudo -u postgres psql -c 'ALTER ROLE ourbigbook_user NOSUPERUSER;'
 
 Query-plan collection is enabled by default: the benchmark detects tracing from the server's response headers. If tracing is disabled on the server, it continues normally without creating a plans file. Use `--no-explain` to disable collection explicitly.
 
-The server temporarily saves request traces under `tmp/benchmark-explain`. The benchmark moves them into `benchmark/RUN_ID.explain.jsonl` relative to the results file. With the default output, plans are therefore stored under `../ourbigbook-media/benchmark`. Each JSONL line contains one HTTP request's SQL, bind parameters, plans, request ID, and warmup/sample iteration. The run's `explain.file` and `explain.requests` link timings to those records. `about.db_instrumentation` marks instrumented runs: their timings include instrumentation overhead and should be compared with other instrumented runs.
+The server temporarily saves request traces under `tmp/benchmark-explain`. The benchmark moves them into `benchmark/RUN_ID.explain.jsonl` relative to the results file. With the default output, plans are therefore stored under `media/benchmark`. Each JSONL line contains one HTTP request's SQL, bind parameters, plans, request ID, and warmup/sample iteration. The run's `explain.file` and `explain.requests` link timings to those records. `about.db_instrumentation` marks instrumented runs: their timings include instrumentation overhead and should be compared with other instrumented runs.
 
 Server and benchmark must share the trace directory. To use another directory, set `OURBIGBOOK_EXPLAIN=/absolute/path` on the server and pass `--explain /absolute/path` to the benchmark. The benchmark also reads `OURBIGBOOK_EXPLAIN` when set in its own environment. Traces contain SQL and parameter values and are written as private local files, rather than exposed through an HTTP endpoint. Disable the server variable when finished profiling.
 

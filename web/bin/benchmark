@@ -9,7 +9,7 @@ const { performance } = require('perf_hooks')
 const { databaseDialectHeader, explainDirectory, explainHeader } = require('../back/js')
 
 const repoRoot = path.resolve(__dirname, '../..')
-const defaultOutput = path.resolve(repoRoot, '../ourbigbook-media/benchmark.json')
+const defaultOutput = path.resolve(repoRoot, 'media/benchmark.json')
 
 async function detectDatabaseDialect(baseUrl, timeout=60000) {
   const response = await fetch(new URL('/api/', baseUrl), {

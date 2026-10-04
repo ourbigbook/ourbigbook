@@ -1,3 +1,6 @@
 [submodule "marked"]
 	path = marked
 	url = https://github.com/markedjs/marked
+[submodule "media"]
+	path = media
+	url = https://github.com/ourbigbook/ourbigbook-media

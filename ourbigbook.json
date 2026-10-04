@@ -21,7 +21,7 @@
   ],
   "media-providers": {
     "media-repo": {
-      "path": "../ourbigbook-media",
+      "path": "media",
       "type": "local"
     }
   },

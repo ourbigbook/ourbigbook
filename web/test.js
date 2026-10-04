@@ -11702,13 +11702,22 @@ it('file Used by: existing ARefs provide deduplicated media and link backlinks w
     test.loginUser(owner)
     await test.webApi.uploadCreateOrUpdate(`user0/${photo}`, PNG_1X1_WHITE_BUFFER)
     await test.webApi.uploadCreateOrUpdate('user0/movie.mp4', 'video')
-    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'A', bodySource:
-      `\\Image[/${photo}]{title=Photo}{source=https://example.com/source}{description=Photo description.}\n\nInline \\image[/${photo}].\n\n\\Video[/movie.mp4]\n\n\\a[/${photo}]` }))
-    const imageArticle = await Article.findOne({ where: { slug: 'user0/a' } })
-    assert_xpath(`//x:figcaption/x:a[@href='/user0/-/file/${photo}']/x:b[text()=' Details']/x:span[@aria-hidden='true']`, imageArticle.render)
-    assert_xpath("//x:figcaption//x:a[@href='https://example.com/source']/x:b[text()=' Source']/x:span[@aria-hidden='true' and text()='\u{f15c}']", imageArticle.render)
-    assert_xpath("//x:figcaption/x:a[@href='https://example.com/source']/following-sibling::node()[1][self::text() and .='. ']/following-sibling::node()[1][self::x:a and x:b/text()=' Details']/following-sibling::node()[1][self::text() and .='. Photo description.']", imageArticle.render)
-    assert_xpath(`//x:figure//x:a[@href='/user0/-/raw/${photo}']/x:img[@src='/user0/-/raw/${photo}']`, imageArticle.render)
+    for (const description of ['Photo description.', 'First paragraph.\n\nSecond paragraph.', 'For example:\n* One\n* Two\nAfter the list.']) {
+      const multiline = description.includes('\n')
+      await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'A', bodySource:
+        `\\Image[/${photo}]{title=Photo}{source=https://example.com/source}{description=${description}}\n\nInline \\image[/${photo}].\n\n\\Video[/movie.mp4]\n\n\\a[/${photo}]` }))
+      const imageArticle = await Article.findOne({ where: { slug: 'user0/a' } })
+      assert_xpath(`//x:figcaption/x:a[@href='/user0/-/file/${photo}']/x:b[text()=' Details']/x:span[@aria-hidden='true']`, imageArticle.render)
+      assert_xpath("//x:figcaption//x:a[@href='https://example.com/source']/x:b[text()=' Source']/x:span[@aria-hidden='true' and text()='\u{f15c}']", imageArticle.render)
+      assert_xpath("//x:figcaption/x:a[@href='https://example.com/source']/following-sibling::node()[1][self::text() and .='. ']/following-sibling::node()[1][self::x:a and x:b/text()=' Details']", imageArticle.render)
+      assert_xpath(multiline
+        ? "//x:figure[@class='multiline']/x:figcaption/x:a[x:b/text()=' Details']/following-sibling::x:div[@class='description']"
+        : "//x:figure[not(@class)]/x:figcaption/x:a[@href='https://example.com/source']/preceding-sibling::node()[1][self::text() and .='. Photo description. ']", imageArticle.render)
+      if (description.startsWith('For example:')) {
+        assert_xpath("//x:figcaption/x:div[@class='description' and text()='For example:']/x:div[@class='list']", imageArticle.render)
+      }
+      assert_xpath(`//x:figure//x:a[@href='/user0/-/raw/${photo}']/x:img[@src='/user0/-/raw/${photo}']`, imageArticle.render)
+    }
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'B', bodySource: `\\a[@user0/${photo}]` }))
     await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'notes')
     await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Notes link', bodySource: '\\a[/notes.txt]\n\n\\a[https://example.com/external.png]' }))

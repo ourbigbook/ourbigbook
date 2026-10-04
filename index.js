@@ -4741,6 +4741,7 @@ function getTitleAndDescription({
   description,
   inner,
   innerNoDiv,
+  multiline_caption,
   source,
   title,
 }) {
@@ -4756,7 +4757,12 @@ function getTitleAndDescription({
   if (source && inner !== undefined) {
     source = ' ' + source
   }
-  if (inner !== undefined || source !== '') {
+  if (multiline_caption) {
+    // Leading inline text can precede a list/block without being a paragraph.
+    // Bordered captions must nevertheless start the entire description below
+    // the title and metadata, not just break when the first block is reached.
+    description = `<div class="description">${description}</div>`
+  } else if (inner !== undefined || source !== '') {
     description = ' ' + description
   }
   return `${title}${sep}${source}${description}`
@@ -5017,7 +5023,7 @@ function htmlRenderSimpleElem(elem_name, options={}) {
         href_prefix: htmlSelfLink(ast, context),
         force_separator
       })
-      const title_and_description = getTitleAndDescription({ title, description, inner, innerNoDiv })
+      const title_and_description = getTitleAndDescription({ title, description, inner, innerNoDiv, multiline_caption })
       res += `<div${attrs}><div${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`;
       res += `<div class="caption">${title_and_description}</div>`;
       elem_attrs = ''
@@ -5236,7 +5242,7 @@ function htmlTitleAndDescription(ast, context, opts={}) {
       force_separator,
       href_prefix: href,
     })
-    title_and_description += `<div class="caption">${getTitleAndDescription({ title, description, inner, innerNoDiv })}</div>`
+    title_and_description += `<div class="caption">${getTitleAndDescription({ title, description, inner, innerNoDiv, multiline_caption })}</div>`
   }
   return { title_and_description, multiline_caption, href }
 }
@@ -5517,7 +5523,13 @@ function macroImageVideoBlockConvertFunction(ast, context) {
       }
     }
     const { full: title, inner, innerNoDiv } = xTextBase(ast, context, { addTitleDiv: true, href_prefix, force_separator })
-    const title_and_description = getTitleAndDescription({ title, description, source, inner, innerNoDiv })
+    // Use the same block/inline distinction as the indented caption styling,
+    // rather than viewport-dependent line wrapping.
+    if (!multiline_caption && description && source) {
+      description += ' ' + source
+      source = ''
+    }
+    const title_and_description = getTitleAndDescription({ title, description, source, inner, innerNoDiv, multiline_caption })
     ret += `<figcaption>${title_and_description}</figcaption>`;
   }
   ret += '</figure></div>';
@@ -12573,7 +12585,7 @@ const OUTPUT_FORMATS_LIST = [
               href_prefix: href,
               force_separator,
             })
-            const title_and_description = getTitleAndDescription({ title, description, inner, innerNoDiv })
+            const title_and_description = getTitleAndDescription({ title, description, inner, innerNoDiv, multiline_caption })
             ret += `<div class="caption">${title_and_description}</div>`;
           }
           ret += `<table>${content}</table>`;

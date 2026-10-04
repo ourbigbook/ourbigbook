@@ -599,7 +599,9 @@ div.float-wrap {
   }
 }
 
-div.p {
+// Multiline descriptions may start with bare text before a list, rather than
+// a paragraph. Give both the same spacing; nested paragraph margins collapse.
+div.p, div.description {
   @include toplevel-elem;
 }
 

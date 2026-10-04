@@ -3390,7 +3390,7 @@ f()
         "//x:div[@class='caption' and text()='. My quote 1.']//x:div[@class='title' and text()='My title 1']",
         "//x:div[@class='caption' and text()=' My quote 2.']//x:div[@class='title' and text()='My title 2.']",
         "//x:figcaption[text()='My image no title.']",
-        "//x:figcaption[text()='. My image source no title.']",
+        "//x:figcaption[text()='My image source no title. ']/x:a[@href='http://example.com']",
       ],
     },
   }
@@ -17281,6 +17281,68 @@ assert_cli(
     },
   }
 )
+it('bordered caption descriptions use paragraph spacing in static and web styles', function () {
+  this.timeout(10000)
+  for (const file of ['ourbigbook.scss', 'web/style.scss']) {
+    const css = require('sass').renderSync({
+      file: path.join(__dirname, file),
+      includePaths: [path.join(__dirname, 'node_modules'), path.dirname(__dirname)],
+    }).css.toString()
+    let found = false
+    require('postcss').parse(css).walkRules(rule => {
+      if (!rule.selectors.some(selector => /(?:^|\s)div\.description$/.test(selector))) return
+      assert(rule.selectors.some(selector => /(?:^|\s)div\.p$/.test(selector)))
+      const margins = {}
+      rule.walkDecls(/^margin-(top|bottom)$/, declaration => { margins[declaration.prop] = declaration.value })
+      assert(margins['margin-top'])
+      assert.notStrictEqual(margins['margin-top'], '0')
+      assert.strictEqual(margins['margin-top'], margins['margin-bottom'])
+      found = true
+    })
+    assert(found, file)
+  }
+})
+
+it('lib: bordered captions wrap leading inline text and lists below the title', async () => {
+  for (const content of ['\\Image[media.png]', '\\Video[media.mp4]', '\\C[code]', '\\Q[quote]', '\\Table[\\Tr[\\Td[cell]]]', '\\M[x]']) {
+    const extra = {}
+    const html = await ourbigbook.convert(`${content}{title=Title}{description=For example:\n* One\n* Two\nAfter the list.}`, { body_only: true }, extra)
+    assert.deepStrictEqual(extra.errors, [])
+    assert_xpath("//*[@class='multiline']//x:div[@class='description' and text()='For example:']/x:div[@class='list']", html)
+    assert_xpath("//x:div[@class='description' and text()='After the list.']", html)
+  }
+})
+
+it('lib: media metadata follows inline descriptions but precedes block descriptions', async () => {
+  for (const macro of ['Image', 'Video']) {
+    for (const source of ['', '{source=https://example.com/source}']) {
+      for (const description of ['', 'Inline \\b[description].', 'First paragraph.\n\nSecond paragraph.']) {
+        const html = await ourbigbook.convert(`\\${macro}[media.${macro === 'Image' ? 'png' : 'mp4'}]{title=Media title}${source}{description=${description}}`, { body_only: true })
+        const caption = html.match(/<figcaption>(.*?)<\/figcaption>/s)[1]
+        const multiline = description.includes('\n\n')
+        assert_xpath(`//x:figure[${multiline ? "@class='multiline'" : 'not(@class)'}]`, html)
+        assert_xpath(`//x:figcaption[count(x:div[@class='description'])=${multiline ? 1 : 0}]`, html)
+        for (const label of ['Source', 'Details']) {
+          const expected = label === 'Source' ? !!source : macro === 'Image'
+          const position = caption.indexOf(` ${label}</b></a>.`)
+          assert.strictEqual(position !== -1, expected)
+          if (expected) {
+            assert(position > caption.indexOf('Media title'))
+            if (description) {
+              const descPosition = caption.indexOf(multiline ? 'First paragraph.' : 'description</b>')
+              assert(multiline ? position < descPosition : position > descPosition, caption)
+            }
+          }
+        }
+        if (source && macro === 'Image') {
+          assert(caption.includes(' Source</b></a>. <a'))
+          assert(caption.indexOf(' Source</b>') < caption.indexOf(' Details</b>'))
+        }
+      }
+    }
+  }
+})
+
 for (const htmlXExtension of [false, true]) {
   assert_cli(`image: caption Details and Source links, htmlXExtension=${htmlXExtension}`, {
     args: ['.'],
@@ -17295,8 +17357,9 @@ for (const htmlXExtension of [false, true]) {
         "//x:figure[@id='image-plot']//x:a[@href='../-/raw/subdir/plot.svg']/x:img[@src='../-/raw/subdir/plot.svg']",
         `//x:figure[@id='image-plot']/x:figcaption/x:a[@href='../-/file/subdir/plot.svg${htmlXExtension ? '.html' : ''}']/x:b[text()=' Details']/x:span[@aria-hidden='true']`,
         "//x:figcaption//x:a[@href='https://example.com/source']/x:b[text()=' Source']/x:span[@aria-hidden='true' and text()='\u{f15c}']",
-        "//x:figcaption/x:a[@href='https://example.com/source']/following-sibling::node()[1][self::text() and .='. ']/following-sibling::node()[1][self::x:a and x:b/text()=' Details']/following-sibling::node()[1][self::text() and .='. With source.']",
-        "//x:figcaption/x:a[x:b/text()=' Details']/following-sibling::node()[1][self::text() and .='. Without source.']",
+        "//x:figcaption/x:a[@href='https://example.com/source']/preceding-sibling::node()[1][self::text() and .='. With source. ']",
+        "//x:figcaption/x:a[@href='https://example.com/source']/following-sibling::node()[1][self::text() and .='. ']/following-sibling::node()[1][self::x:a and x:b/text()=' Details']/following-sibling::node()[1][self::text() and .='.']",
+        "//x:figcaption/x:a[x:b/text()=' Details']/preceding-sibling::node()[1][self::text() and .='Without source. ']",
         "//x:body[count(.//x:figcaption/x:a/x:b[contains(., 'Details')])=2]",
         '//x:body[count(.//x:figcaption)=4]',
       ],

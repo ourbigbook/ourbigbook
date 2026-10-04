@@ -2924,6 +2924,62 @@ assert_lib_error('table: forbid th in the middle of td',
 // Images.
 // \Image
 // \image
+describe('image dimensions', function () {
+  it('reads raster, SVG and oriented JPEG metadata, with nulls for unknown files', async function () {
+    const sharp = require('sharp')
+    const { imageDimensions } = require('./nodejs')
+    const image = () => sharp({ create: { width: 7, height: 5, channels: 3, background: 'white' } })
+    for (const format of ['png', 'jpeg', 'webp', 'gif', 'tiff']) {
+      assert.deepStrictEqual(await imageDimensions(await image().toFormat(format).toBuffer()), { width: 7, height: 5 })
+    }
+    assert.deepStrictEqual(await imageDimensions(await image().jpeg().withMetadata({ orientation: 6 }).toBuffer()), { width: 5, height: 7 })
+    for (const [svg, expected] of [
+      ['<svg xmlns="http://www.w3.org/2000/svg" width="10cm" height="5cm"/>', { width: 283, height: 142 }],
+      ['<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="12" height="8"/></svg>', { width: 800, height: 600 }],
+      ['<svg', { width: null, height: null }],
+    ]) assert.deepStrictEqual(await imageDimensions(Buffer.from(svg)), expected)
+    assert.deepStrictEqual(await imageDimensions(Buffer.from('text')), { width: null, height: null })
+    assert.deepStrictEqual(await imageDimensions(__dirname), { width: null, height: null })
+  })
+
+  it('preserves explicit sizes, fallback heights and inline anchors without a database', async function () {
+    const cases = [
+      ['\\Image[photo.png]', /<img[^>]*height="5" width="7"/],
+      ['\\Image[photo.png]{height=20}', /<img[^>]*height="20"(?! width)/],
+      ['\\Image[photo.png]{width=30}', /<img[^>]*width="30"/],
+      ['\\Image[photo.png]{height=20}{width=30}', /<img[^>]*height="20" width="30"/],
+      ['\\Image[missing.png]', /<img[^>]*height="315"/],
+      ['\\Image[https://example.com/photo.png]', /<img[^>]*height="315"/],
+      ['\\Video[movie.mp4]', /<video[^>]*height="315"/],
+      ['\\image[photo.png]{id=picture}\n\n\\x[picture]', /<img[^>]*id="picture"[^>]*height="5" width="7"/],
+    ]
+    for (const [source, expected] of cases) {
+      const extra = {}
+      const html = await ourbigbook.convert(source, {
+        body_only: true,
+        getAFileMetadata: () => ({ 'photo.png': { width: 7, height: 5 } }),
+      }, extra)
+      assert.deepStrictEqual(extra.errors, [])
+      assert.match(html, expected)
+      if (source === '\\Image[photo.png]{width=30}') assert(!/<img[^>]*height=/.test(html))
+    }
+  })
+
+  it('caches local reads and refreshes dimensions when the image changes', async function () {
+    const { imageDimensionsReader } = require('./nodejs')
+    const dir = fs.mkdtempSync(path.join(testdir, 'image-dimensions-'))
+    const filename = path.join(dir, 'photo.svg')
+    fs.writeFileSync(filename, '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="8"/>')
+    const read = imageDimensionsReader()
+    const first = await read(filename)
+    assert.deepStrictEqual(first, { width: 12, height: 8 })
+    assert.strictEqual(await read(filename), first)
+    fs.writeFileSync(filename, '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"/>')
+    assert.deepStrictEqual(await read(filename), { width: 120, height: 80 })
+    assert.deepStrictEqual(await read(dir), {})
+  })
+})
+
 assert_lib_ast('image: block simple',
   `ab
 
@@ -2940,6 +2996,21 @@ gh
     filesystem: { cd: '' },
     assert_xpath_stdout: [
       `//x:a[@href='${ourbigbook.RAW_PREFIX}/cd']//x:img[@src='${ourbigbook.RAW_PREFIX}/cd']`,
+    ],
+  },
+)
+assert_lib_ast('image: detected natural dimensions are used when no size is given',
+  `\\Image[cd]\n`,
+  [
+    a('Image', undefined, {src: [t('cd')]}),
+  ],
+  {
+    filesystem: { cd: '' },
+    convert_opts: {
+      getAFileMetadata: () => ({ cd: { width: 123, height: 45 } }),
+    },
+    assert_xpath_stdout: [
+      `//x:img[@src='${ourbigbook.RAW_PREFIX}/cd' and @height='45' and @width='123']`,
     ],
   },
 )
@@ -15825,7 +15896,7 @@ assert_cli(`publish: local media repository is pushed and merged into output (${
     'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
     'wiki/index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
     'wiki/subdir/paper.bigb': '= Paper\n\n\\Image[diagram.svg]\n\n\\Image[subdir/other.svg]\n\n\\Image[relative.svg]\n',
-    'wiki-media/diagram.svg': '<svg/>',
+    'wiki-media/diagram.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"/>',
     'wiki-media/subdir/other.svg': '<svg>other</svg>',
     'wiki-media/subdir/relative.svg': '<svg>relative</svg>',
     'wiki-media/.gitignore': '*.html\n',
@@ -15842,13 +15913,16 @@ assert_cli(`publish: local media repository is pushed and merged into output (${
   assert_stdout_contains: ['push origin HEAD:refs/heads/main'],
   assert_xpath: publishTarget === 'github-pages' ? {
     [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/subdir/paper.html`]: [
-      "//x:img[@src='../diagram.svg']",
+      "//x:img[@src='../diagram.svg' and @width='120' and @height='80']",
       "//x:img[@src='../subdir/other.svg']",
       "//x:img[@src='../subdir/relative.svg']",
     ],
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/-/file/diagram.svg.html`]: [
+      "//x:img[@width='120' and @height='80']",
+    ],
   } : {},
   assert_contains: {
-    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/diagram.svg`]: ['<svg/>'],
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/diagram.svg`]: ['<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"/>'],
     [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/subdir/other.svg`]: ['<svg>other</svg>'],
     ...(publishTarget === 'github-md' ? {
       [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/subdir/paper.md`]: ['../diagram.svg', 'other.svg', 'relative.svg'],
@@ -17149,6 +17223,31 @@ for (const jobs of [1, 2]) {
     })
   }
 }
+
+assert_cli('image dimensions: local providers, relative paths, previews and image-named directories', {
+  args: ['-j', '1', 'project'],
+  filesystem: {
+    'project/ourbigbook.json': JSON.stringify({ 'media-providers': {
+      local: { path: '../media' }, 'media-repo': { type: 'local', path: '../media2' },
+    } }),
+    'project/index.bigb': '= Home\n\n\\Include[subdir]\n',
+    'project/subdir/index.bigb': '= Subdir\n\n\\Image[photo.svg]\n\n\\Image[photo.svg]{height=25}\n\n\\Image[photo.svg]{width=50}\n\n\\Image[other.svg]{provider=media-repo}\n\n\\a[/photos.png/]\n',
+    'project/photos.png/notes.txt': 'Directory with an image extension',
+    'media/subdir/photo.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"/>',
+    'media2/subdir/other.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="480" height="320"/>',
+  },
+  assert_xpath: {
+    [`project/${TMP_DIRNAME}/html/subdir.html`]: [
+      '//x:img[@width="120" and @height="80"]',
+      '//x:img[@height="25" and not(@width)]',
+      '//x:img[@width="50" and not(@height)]',
+      '//x:img[@width="480" and @height="320"]',
+    ],
+    [`project/${TMP_DIRNAME}/html/${ourbigbook.FILE_PREFIX}/subdir/photo.svg.html`]: [
+      '//x:img[@width="120" and @height="80"]',
+    ],
+  },
+})
 
 assert_cli('file: _file auto-generation conversion image media provider works',
   {

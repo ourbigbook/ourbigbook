@@ -11310,6 +11310,79 @@ it('web: global file index lists metadata, image previews, and stable pages', as
   }, { canTestNext: true })
 })
 
+it('image dimensions migration preserves uploads, indexes and triggers', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    await test.webApi.uploadCreateOrUpdate('user0/photo.png', PNG_1X1_WHITE_BUFFER)
+    const { sequelize } = test
+    const qi = sequelize.getQueryInterface()
+    const migration = require('./migrations/21000101000060-upload-add-image-dimensions')
+    const schema = async () => sequelize.getDialect() === 'sqlite'
+      ? (await sequelize.query(`SELECT sql FROM sqlite_master WHERE tbl_name = 'Upload' AND type IN ('index', 'trigger') AND sql IS NOT NULL ORDER BY name`))[0]
+      : []
+    const before = await schema()
+    await migration.down(qi, sequelize.Sequelize)
+    assert(!('height' in await qi.describeTable('Upload')))
+    await migration.up(qi, sequelize.Sequelize)
+    assert.deepStrictEqual(await schema(), before)
+    const row = await sequelize.models.Upload.findOne()
+    assert.deepStrictEqual(row.bytes, PNG_1X1_WHITE_BUFFER)
+    assert.deepStrictEqual([row.width, row.height], [null, null])
+    // Counters still respond to new uploads after SQLite's table rebuild.
+    await test.webApi.uploadCreateOrUpdate('user0/second.png', PNG_1X1_WHITE_BUFFER)
+    assert.strictEqual((await sequelize.models.User.findByPk(user.id)).fileCount, 2)
+  })
+})
+
+it('api: image dimensions survive upload, rendering and backfill and clear on replacement', async () => {
+  await testApp(async test => {
+    const owner = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    const { Upload, Article } = test.sequelize.models
+    test.loginUser(owner)
+    const bytes = await sharp(PNG_1X1_WHITE_BUFFER).resize(7, 5).png().toBuffer()
+    await test.webApi.uploadCreateOrUpdate('user0/photo.png', bytes)
+    const where = { path: Upload.uidAndPathToUploadPath(owner.id, 'photo.png') }
+    const row = await Upload.findOne({ where })
+    assert.deepStrictEqual([row.width, row.height], [7, 5])
+    test.loginUser(other)
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Picture', bodySource: '\\Image[@user0/photo.png]\n' }))
+    assert_xpath('//x:img[@width="7" and @height="5"]', (await Article.findOne({ where: { slug: 'user1/picture' } })).render)
+    const preview = await convert.convert({
+      author: owner, sequelize: test.sequelize, path: '@user0/-/file/photo.png.bigb',
+      source: '= photo.png\n{file}\n', splitHeaders: false,
+      convertOptionsExtra: { hFileShowLarge: true },
+    })
+    assert_xpath('//x:img[@width="7" and @height="5"]', Object.values(preview.extra_returns.rendered_outputs)[0].full)
+    // Simulate an upload predating the migration, then backfill without changing
+    // its bytes, hash, timestamps, visibility or the user's file counters.
+    await row.update({ width: null, height: null, list: false })
+    const updatedAt = row.updatedAt.toISOString()
+    await models.normalize({ fix: true, sequelize: test.sequelize, usernames: ['user1'], whats: ['upload-image-dimensions'] })
+    await row.reload()
+    assert.strictEqual(row.height, null)
+    await models.normalize({ fix: true, sequelize: test.sequelize, usernames: ['user0'], whats: ['upload-image-dimensions'] })
+    await row.reload()
+    assert.deepStrictEqual([row.width, row.height], [7, 5])
+    assert.strictEqual(row.updatedAt.toISOString(), updatedAt)
+    assert.deepStrictEqual(row.bytes, bytes)
+    assert.strictEqual(row.hash, web_api.hashToHex(bytes))
+    assert.strictEqual(row.list, false)
+    await models.normalize({ check: true, sequelize: test.sequelize, usernames: ['user0'], whats: ['upload-image-dimensions'] })
+    test.loginUser(owner)
+    await test.webApi.uploadCreateOrUpdate('user0/photo.png', 'invalid image')
+    await row.reload()
+    assert.deepStrictEqual([row.width, row.height], [null, null])
+    await test.webApi.uploadCreateOrUpdate('user0/notes.txt', 'text')
+    const text = await Upload.findOne({ where: { path: Upload.uidAndPathToUploadPath(owner.id, 'notes.txt') } })
+    assert.deepStrictEqual([text.width, text.height], [null, null])
+    await test.webApi.uploadCreateOrUpdate('user0/photo.png', bytes)
+    await row.reload()
+    assert.deepStrictEqual([row.width, row.height], [7, 5])
+  })
+})
+
 it('api: upload metadata and conditional replacement protect existing files', async () => {
   await testApp(async test => {
     const user0 = await test.createUserApi(0)

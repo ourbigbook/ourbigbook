@@ -1,5 +1,6 @@
 const mime = require('mime')
 const Sequelize = require('sequelize')
+const { imageDimensions } = require('ourbigbook/nodejs')
 
 const { DataTypes } = Sequelize
 
@@ -43,6 +44,17 @@ module.exports = (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      // Natural image dimensions, populated when image bytes are uploaded.
+      // These remain NULL for non-images or formats whose dimensions cannot be
+      // read safely from the bytes.
+      width: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
+      height: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+      },
       hash: {
         type: DataTypes.STRING(512),
         allowNull: false,
@@ -69,6 +81,10 @@ module.exports = (sequelize) => {
   Upload.upsertSideEffects = async function(obj, opts={}) {
     const { transaction } = opts
     const { UploadDirectory } = sequelize.models
+    if (obj.bytes !== undefined) {
+      obj = { ...obj, ...(obj.contentType?.startsWith('image/')
+        ? await imageDimensions(obj.bytes) : { width: null, height: null }) }
+    }
     return sequelize.transaction({ transaction }, async (transaction) => {
       // Replacing bytes must not silently relist a file.
       if (obj.list === undefined) {
@@ -197,6 +213,7 @@ module.exports = (sequelize) => {
       size: bytes.length,
     }
   }
+
 
   Upload.pathToActualPath = async function(path, User, Upload, opts={})  {
     const { transaction } = opts

@@ -27,6 +27,7 @@
     "read": "1.0.7",
     "sass": "1.34.0",
     "sequelize": "6.14.0",
+    "sharp": "0.33.5",
     "sqlite3": "5.0.2"
   },
   "devDependencies": {

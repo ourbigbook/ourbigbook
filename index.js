@@ -3979,6 +3979,10 @@ function convertInitOptions(options) {
     options.auto_generated_source = false;
   }
   if (!('getAFileTypes' in options)) { options.getAFileTypes = aRefs => { return {} } }
+  // Optional metadata for referenced files. Values may contain image width and
+  // height; unlike getAFileTypes this is deliberately kept separate so the
+  // long-standing file-type callback API remains backwards compatible.
+  if (!('getAFileMetadata' in options)) { options.getAFileMetadata = aRefs => { return {} } }
   if (!('html_embed' in options)) { options.html_embed = false; }
   if (!('hFileShowLarge' in options)) { options.hFileShowLarge = false }
   if (!('h_parse_level_offset' in options)) {
@@ -4284,6 +4288,8 @@ function convertInitContext(options={}, extra_returns={}) {
   const context = {
     // path -> { 'directory', 'file' }
     aFileTypes: {},
+    // path -> { width?: number, height?: number }
+    aFileMetadata: {},
     // List of references to filesystem files e.g. by \a[myfile.txt].
     // [{ path: string, sourceLocation: SourceLocation }]
     aRefs: [],
@@ -4965,6 +4971,20 @@ function htmlRenderAttrsId(
   return htmlRenderAttrs(ast, context, arg_names, custom_args);
 }
 
+// Explicit sizes win; otherwise use the resolved local image metadata.
+function htmlRenderMediaAttrs(ast, context, src, media_provider_type) {
+  if (ast.macro_name === 'Video') return htmlRenderAttrs(ast, context, ['height', 'width'])
+  if (ast.validation_output.height.given) return htmlRenderAttrs(ast, context, ['height', 'width'])
+  if (ast.validation_output.width.given) return htmlRenderAttrs(ast, context, ['width'])
+  const { href, external } = resolveLinkToFile({
+    context, href: src,
+    external: ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined,
+  })
+  const metadata = !external && media_provider_type === 'local' && context.aFileMetadata[href]
+  if (!metadata?.height) return htmlRenderAttrs(ast, context, ['height'])
+  return htmlAttr('height', metadata.height) + (metadata.width ? htmlAttr('width', metadata.width) : '')
+}
+
 /** Helper for the most common HTML function type that does "nothing magic":
  * only has "id" as a possible attribute, and uses ast.args.content as the
  * main element child.
@@ -5410,7 +5430,6 @@ const macro_image_video_block_convert_function_wikimedia_source_image_re = new R
 const macro_image_video_block_convert_function_wikimedia_source_video_re = new RegExp('^([^.]+\.[^.]+).*');
 
 function macroImageVideoBlockConvertFunction(ast, context) {
-  let rendered_attrs = htmlRenderAttrs(ast, context, ['height', 'width']);
   let figure_attrs = htmlRenderAttrsId(ast, context);
   let { description, force_separator, multiline_caption } = getDescription(ast.args.description, context)
   let ret = `<div class="figure"><figure${figure_attrs}${multiline_caption ?  ` class="${MULTILINE_CAPTION_CLASS}"` : ''}>`
@@ -5431,6 +5450,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
   if (error_message !== undefined) {
     return error_message;
   }
+  let rendered_attrs = htmlRenderMediaAttrs(ast, context, src, media_provider_type);
   if (source !== '') {
     force_separator = true;
     source = `<a${htmlAttr('href', source)}><b><span class="fa-solid-900 icon" aria-hidden="true">\u{f15c}</span> Source</b></a>.`;
@@ -7558,6 +7578,10 @@ async function parse(tokens, options, context, extra_returns={}) {
         }
       }
 
+      if (options.output_format === OUTPUT_FORMAT_HTML) {
+        context.aFileMetadata = await options.getAFileMetadata([...new Set(context.aRefs.map(ref => ref.to))])
+      }
+
       // Current-source references replace cached ones excluded by the fetch.
       for (const { to, from } of fileUsage.concat(context.aRefs)) {
         if (from === undefined) continue
@@ -9568,6 +9592,7 @@ const IMAGE_EXTENSIONS = new Set([
   'webp',
 ])
 const MULTILINE_CAPTION_CLASS = 'multiline'
+exports.IMAGE_EXTENSIONS = IMAGE_EXTENSIONS
 const OURBIGBOOK_JSON_BASENAME = 'ourbigbook.json';
 exports.OURBIGBOOK_JSON_BASENAME = OURBIGBOOK_JSON_BASENAME
 const OURBIGBOOK_DEFAULT_HOST = 'ourbigbook.com'
@@ -12365,8 +12390,8 @@ const OUTPUT_FORMATS_LIST = [
             alt_arg = ast.args.alt;
           }
           let alt = htmlAttr('alt', htmlEscapeAttr(renderArg(alt_arg, context)));
-          let rendered_attrs = htmlRenderAttrsId(ast, context, ['height', 'width']);
           let { error_message, media_provider_type, src } = macroImageVideoResolveParams(ast, context);
+          let rendered_attrs = htmlRenderAttrsId(ast, context) + htmlRenderMediaAttrs(ast, context, src, media_provider_type);
           const external = ast.validation_output.external.given ? ast.validation_output.external.boolean : undefined
           let { html: imgHtml } = htmlImg({ alt, ast, context, external, inline: true, media_provider_type, rendered_attrs, src })
           if (error_message) {

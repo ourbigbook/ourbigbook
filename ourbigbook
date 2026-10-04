@@ -1965,6 +1965,8 @@ function resolvePublishedMediaPath(root, file, { localMediaProviders=[] }={}) {
   return source
 }
 
+const readLocalImageDimensions = ourbigbook_nodejs.imageDimensionsReader()
+
 function fileConversionOptions(ourbigbook_json_dir, mediaOptions) {
   const resolveFile = file => resolvePublishedMediaPath(ourbigbook_json_dir, file, mediaOptions)
   return {
@@ -1977,6 +1979,25 @@ function fileConversionOptions(ourbigbook_json_dir, mediaOptions) {
           // Missing targets are reported by check_db with their source locations.
           // Metadata lookup must not preempt that diagnostic with a Node stack.
           if (error.code !== 'ENOENT' && error.code !== 'ENOTDIR') throw error
+        }
+      }
+      return ret
+    },
+    getAFileMetadata: async (aRefs) => {
+      const ret = {}
+      for (const a of new Set(aRefs)) {
+        if (ourbigbook.IMAGE_EXTENSIONS.has(path.extname(a).slice(1).toLowerCase())) {
+          const filename = resolveFile(a)
+          const dimensions = await readLocalImageDimensions(filename)
+          ret[a] = dimensions
+          // File previews refer to the logical upload path while their Image
+          // macro can use a configured local provider's physical prefix.
+          ret[path.relative(ourbigbook_json_dir, filename)] = dimensions
+          for (const provider of mediaOptions?.localMediaProviders || []) {
+            if (provider.snapshot && pathIsWithin(provider.snapshot, filename)) {
+              ret[path.join(provider.path, path.relative(provider.snapshot, filename))] = dimensions
+            }
+          }
         }
       }
       return ret

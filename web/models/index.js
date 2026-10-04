@@ -524,6 +524,36 @@ async function normalize({
   for (const what of whats) {
     if (log)
       console.log(what);
+    if (what === 'upload-image-dimensions') {
+      const { imageDimensions } = require('ourbigbook/nodejs')
+      // Read one blob at a time, with keyset pagination, so large upload
+      // collections do not fill memory. Preserve upload timestamps and hashes.
+      for (const username of usernames) {
+        const user = await User.findOne({ where: { username }, attributes: ['id'], transaction })
+        let afterId = 0
+        while (true) {
+          const upload = await Upload.findOne({
+            attributes: ['id', 'path', 'bytes', 'contentType', 'width', 'height', 'hash'],
+            where: { ...Upload.fileIndexWhere(user.id), id: { [Sequelize.Op.gt]: afterId } },
+            order: [['id', 'ASC']], transaction,
+          })
+          if (!upload) break
+          afterId = upload.id
+          const dimensions = upload.contentType.startsWith('image/')
+            ? await imageDimensions(upload.bytes) : { width: null, height: null }
+          if (fix) {
+            await Upload.update(dimensions, {
+              // Do not overwrite metadata for a concurrently replaced image.
+              where: { id: upload.id, hash: upload.hash }, silent: true, transaction,
+            })
+          } else if (check) {
+            for (const key of ['width', 'height']) assert.strictEqual(upload[key], dimensions[key], `${upload.path}: ${key}`)
+          }
+          if (log || print) console.log(`${upload.path}: ${JSON.stringify(dimensions)}`)
+        }
+      }
+      continue
+    }
     if (
       // The Upload contentType can be deduced from the filename and content of the upload.
       // UTF-8 content checks could be "slow" however, so we cache it.

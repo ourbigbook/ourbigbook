@@ -1,11 +1,58 @@
 // Contains exports that should only be visible from Node.js but not browser.
 
 const path = require('path')
+const fs = require('fs')
 
 const ourbigbook = require('./index.js')
 const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe.js')
 
 const commander = require('commander')
+
+// Metadata only: never decode full-size pixels just to obtain dimensions.
+// Return explicit nulls so replacing an upload clears any previous dimensions.
+async function imageDimensions(input) {
+  try {
+    if (typeof input === 'string') {
+      if (!(await fs.promises.stat(input)).isFile()) return { width: null, height: null }
+      // libvips caches file inputs by pathname and can return stale metadata
+      // after --watch replaces a file. Buffer inputs identify the new bytes.
+      input = await fs.promises.readFile(input)
+    }
+    const metadata = await require('sharp')(input).metadata()
+    let width = metadata.width
+    let height = metadata.pageHeight || metadata.height
+    if (metadata.orientation >= 5 && metadata.orientation <= 8) {
+      ;[width, height] = [height, width]
+    }
+    const dimension = n => Number.isInteger(n) && n > 0 ? n : null
+    return { width: dimension(width), height: dimension(height) }
+  } catch (_) {
+    // Missing, unsupported or malformed images must not abort conversion.
+    return { width: null, height: null }
+  }
+}
+exports.imageDimensions = imageDimensions
+
+// Each CLI process keeps a bounded metadata cache. Stat signatures also make
+// --watch pick up an image replaced during the same invocation.
+function imageDimensionsReader() {
+  const cache = new Map()
+  return async filename => {
+    filename = path.resolve(filename)
+    let stat
+    try { stat = await fs.promises.stat(filename) } catch (_) { return {} }
+    if (!stat.isFile()) return {}
+    const signature = `${stat.size}:${stat.mtimeMs}:${stat.ctimeMs}`
+    const previous = cache.get(filename)
+    if (previous?.signature === signature) return previous.dimensions
+    const dimensions = imageDimensions(filename)
+    cache.delete(filename)
+    if (cache.size >= 1024) cache.delete(cache.keys().next().value)
+    cache.set(filename, { signature, dimensions })
+    return dimensions
+  }
+}
+exports.imageDimensionsReader = imageDimensionsReader
 
 const PACKAGE_NAME = 'ourbigbook'
 exports.PACKAGE_NAME = PACKAGE_NAME

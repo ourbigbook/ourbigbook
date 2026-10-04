@@ -91,27 +91,37 @@ function getConvertOpts({
   transaction,
 }) {
   const db_provider = new SqlDbProvider(sequelize)
+  const referencedUploads = new Map()
+  function getReferencedUploads(aRefs) {
+    const paths = [...new Set(aRefs)].sort()
+    const key = JSON.stringify(paths)
+    if (!referencedUploads.has(key)) {
+      referencedUploads.set(key, (async () => {
+        const types = {}, metadata = {}
+        if (!paths.length) return { types, metadata }
+        const { actualPaths, pathToActualPath } = await getActualPaths(sequelize, paths, author, transaction)
+        const uploads = await sequelize.models.Upload.findAll({
+          attributes: ['path', 'width', 'height'],
+          where: { path: actualPaths }, transaction,
+        })
+        const byPath = new Map(uploads.map(upload => [upload.path, upload]))
+        for (const path of paths) {
+          const upload = byPath.get(pathToActualPath[path])
+          types[path] = upload ? ourbigbook.FILE_TYPE_FILE : ourbigbook.FILE_TYPE_DIRECTORY
+          if (upload) metadata[path] = { width: upload.width, height: upload.height }
+        }
+        return { types, metadata }
+      })())
+    }
+    return referencedUploads.get(key)
+  }
   return {
     db_provider,
     convertOptions: lodash.merge(
       {
         db_provider,
-        getAFileTypes: async (aRefs) => {
-          const { Upload } = sequelize.models
-          const { actualPaths, pathToActualPath } = await getActualPaths(
-            sequelize, aRefs, author, transaction)
-          const uploads = await Upload.findAll({
-            where: { path: actualPaths },
-            transaction,
-          })
-          const exists = new Set(uploads.map(upload => upload.path))
-          let ret = {}
-          for (const aRef of aRefs) {
-            ret[aRef] = exists.has(pathToActualPath[aRef])
-              ? ourbigbook.FILE_TYPE_FILE : ourbigbook.FILE_TYPE_DIRECTORY
-          }
-          return ret
-        },
+        getAFileTypes: async aRefs => (await getReferencedUploads(aRefs)).types,
+        getAFileMetadata: async aRefs => (await getReferencedUploads(aRefs)).metadata,
         input_path,
         ourbigbook_json: {
           h: {

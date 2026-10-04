@@ -8905,6 +8905,22 @@ Provider types and their type-specific properties:
     When publishing to GitHub, the media directory must be its own Git repository with a GitHub `origin`: OurBigBook pushes its current commit and merges its committed files into the generated site's root directory, preserving their relative paths. Images and videos use relative links on the site's own domain, without a Git commit SHA in their URLs. Git metadata is excluded, and collisions with generated files and symbolic links are rejected. Commit media changes before publishing; `--dry-run` and `--dry-run-push` suppress the push but still copy the media into the local publish output.
 
     With `--web`, files from the media directory are merged into your upload root, preserving their paths without an extra `media/` prefix. Image and video references are rewritten automatically, preserving source-relative paths even when scoped headers become separate articles. Git-ignored files and Git metadata are excluded; unchanged files are skipped by hash. Collisions with source-repository files or directories abort before any files are uploaded or unlisted.
+  * `usedMediaOnly`: default `false`. When `true`, only copy files from this provider that are referenced by the project's markup, both during ordinary local directory conversion and publishing. For example:
+    ``
+    "media-providers": {
+      "media-repo": {
+        "type": "local",
+        "path": "../ourbigbook-media",
+        "usedMediaOnly": true
+      }
+    }
+    ``
+
+    This avoids duplicating unused media, such as large videos, in the output. Images, videos, ordinary file links and explicit file headers count as references, including those in included files and Markdown input. Unused provider files are omitted from new `-/raw` copies, automatic `-/file` previews, `-/dir` listings and the published root. Linking to a directory does not include all its files. Other providers and files in the main source repository are unaffected. Web uploads are unchanged. Per-target overrides under <ourbigbook.json/target> are supported.
+
+    As with ordinary local conversion, old generated files are not deleted. Use a clean output directory to remove copies left by earlier builds. Publishing rebuilds its output directory automatically.
+
+    This setting cannot be combined with <--publish-no-convert>, because selection requires extracting the source references. Publishing still uses committed media snapshots and retains the normal media repository push behavior. Files referenced only by custom HTML, CSS or JavaScript are not detected; leave this setting off if those files are needed.
 * `github`: tracked in a separate Git repository as mentioned at <store images in a separate media repository>{full}
   * `path`: analogous to `path` for `local`: a local location for this GitHub provider, where the repository can optionally be cloned.
 

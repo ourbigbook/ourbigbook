@@ -4400,6 +4400,9 @@ function convertInitOurbigbookJson(ourbigbook_json={}) {
         if (media_provider.path !== undefined && typeof media_provider.path !== 'string') {
           throw new Error(`media provider "${media_provider_name}" path must be a string`)
         }
+        if (media_provider.usedMediaOnly !== undefined && typeof media_provider.usedMediaOnly !== 'boolean') {
+          throw new Error(`media provider "${media_provider_name}" usedMediaOnly must be a boolean`)
+        }
         if (!('title-from-src' in media_provider)) {
           media_provider['title-from-src'] = false;
         }

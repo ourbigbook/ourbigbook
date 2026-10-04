@@ -510,8 +510,9 @@ async function convert_directory_extract_ids_and_render(input_dir, ourbigbook_op
 }
 
 async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbigbookOptions) {
-  const localMedia = ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML &&
+  const collectMedia = ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML &&
     path.resolve(input_dir) === path.resolve(nonOurbigbookOptions.ourbigbook_json_dir)
+  let localMedia = collectMedia && !nonOurbigbookOptions.usedMediaOnly
     ? collectLocalMedia(nonOurbigbookOptions) : undefined
   nonOurbigbookOptions.localMediaDirectories = localMedia?.directories
   await reconcile_db_and_filesystem(input_dir, ourbigbook_options, nonOurbigbookOptions)
@@ -529,6 +530,14 @@ async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbig
     ) {
       await check_db(nonOurbigbookOptions, { exitOnError: false })
       if (nonOurbigbookOptions.had_error) return
+    }
+
+    if (nonOurbigbookOptions.usedMediaOnly) {
+      // Read source references before automatic file previews can add references
+      // of their own. Extraction has already resolved scopes and provider paths.
+      await selectUsedLocalMedia(nonOurbigbookOptions)
+      if (collectMedia) localMedia = collectLocalMedia(nonOurbigbookOptions)
+      nonOurbigbookOptions.localMediaDirectories = localMedia?.directories
     }
 
     if (ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML) {
@@ -1881,6 +1890,28 @@ async function webCreateOrUpdate({
   return { nestedSetNeedsUpdate: data ? data.nestedSetNeedsUpdate : true }
 }
 
+async function selectUsedLocalMedia(nonOptions) {
+  const providers = nonOptions.localMediaProviders.filter(provider => provider.usedMediaOnly)
+  for (const provider of providers) provider.selectedPaths = new Set()
+  const refs = await nonOptions.sequelize.models.ARef.findAll({
+    attributes: ['to'], group: ['to'], raw: true,
+  })
+  for (const ref of refs) {
+    const source = resolvePublishedMediaPath(nonOptions.ourbigbook_json_dir, ref.to, nonOptions)
+    for (const provider of providers) {
+      const root = provider.snapshot || provider.dir
+      if (!pathIsWithin(root, source)) continue
+      let relative = path.relative(root, source)
+      // Include ancestor directories for listings, but a directory link does
+      // not implicitly select all the otherwise unused files below it.
+      while (relative && relative !== '.') {
+        provider.selectedPaths.add(relative)
+        relative = path.dirname(relative)
+      }
+    }
+  }
+}
+
 // Media has its own physical root but shares the site's logical file namespace.
 function collectLocalMedia(nonOptions) {
   if (!nonOptions.localMediaProviders?.length) return
@@ -1903,6 +1934,7 @@ function collectLocalMedia(nonOptions) {
       ignored, [], [], root)) {
       const relpath = path.relative(root, file)
       if (!relpath) continue
+      if (provider.selectedPaths && !provider.selectedPaths.has(relpath)) continue
       const stat = fs.lstatSync(file)
       if (stat.isSymbolicLink()) cli_error(`local media symlinks are not supported: ${relpath}`)
       const source = path.join(nonOptions.ourbigbook_json_dir, relpath)
@@ -2608,6 +2640,10 @@ if (cli.helpMacros) {
     .map(provider => ({ ...provider, snapshot: webMediaSnapshots[provider.name],
       dir: webMediaSnapshots[provider.name] || path.resolve(ourbigbook_json_dir, provider.path) }))
     .sort((a, b) => b.path.length - a.path.length)
+  const usedMediaOnly = !web && localMediaProviders.some(provider => provider.usedMediaOnly)
+  if (usedMediaOnly && cli.publishNoConvert) {
+    cli_error('media provider usedMediaOnly cannot be combined with --publish-no-convert')
+  }
 
   ourbigbook_options.log = {};
   const nonOurbigbookOptions_log = {};
@@ -2755,6 +2791,7 @@ if (cli.helpMacros) {
     ourbigbook_json_dir,
     filesystem_root: ourbigbook_json_dir,
     localMediaProviders,
+    usedMediaOnly,
     ourbigbook_paths_converted: [],
     ourbigbook_paths_converted_only: false,
     cli,
@@ -3909,10 +3946,12 @@ if (cli.helpMacros) {
             if (localMediaProviders.length) {
               // Merge only the committed snapshot, never dirty/untracked files or Git metadata.
               const destinations = new Map()
-              const copyMedia = (snapshot, validateOnly, relative='') => {
+              const copyMedia = (provider, validateOnly, relative='') => {
+                const { snapshot, selectedPaths } = provider
                 for (const entry of fs.readdirSync(path.join(snapshot, relative), { withFileTypes: true })) {
                   if (['.git', '.gitignore', '.gitattributes', '.gitmodules'].includes(entry.name)) continue
                   const mediaPath = path.join(relative, entry.name)
+                  if (selectedPaths && !selectedPaths.has(mediaPath)) continue
                   const destination = path.join(publishOutPublishDir, mediaPath)
                   if (validateOnly) {
                     if (destinations.has(mediaPath) && !(entry.isDirectory() && destinations.get(mediaPath))) {
@@ -3926,7 +3965,7 @@ if (cli.helpMacros) {
                       cli_error(`local media collides with generated output: ${mediaPath}`)
                     }
                     if (!validateOnly) fs.mkdirSync(destination, { recursive: true })
-                    copyMedia(snapshot, validateOnly, mediaPath)
+                    copyMedia(provider, validateOnly, mediaPath)
                   } else {
                     if (fs.existsSync(destination)) cli_error(`local media collides with generated output: ${mediaPath}`)
                     if (!validateOnly) fs.copyFileSync(path.join(snapshot, mediaPath), destination, fs.constants.COPYFILE_EXCL)
@@ -3934,8 +3973,8 @@ if (cli.helpMacros) {
                 }
               }
               // Detect every collision before copying any media into the output.
-              for (const provider of localMediaProviders) copyMedia(provider.snapshot, true)
-              for (const provider of localMediaProviders) copyMedia(provider.snapshot, false)
+              for (const provider of localMediaProviders) copyMedia(provider, true)
+              for (const provider of localMediaProviders) copyMedia(provider, false)
             }
             // Commit and push.
             runCmd('git', ['-C', publishOutPublishDirCwd, 'add', '.'], cmdOpts);

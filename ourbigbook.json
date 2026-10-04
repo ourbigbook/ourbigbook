@@ -22,20 +22,21 @@
   "media-providers": {
     "media-repo": {
       "path": "../ourbigbook-media",
-      "type": "local"
+      "type": "local",
+      "usedMediaOnly": true
     }
   },
   "prepublish": "prepublish",
   "publishCommitDate": "2000-01-01T00:00:00",
   "publishCommitAuthorSameAsSource": true,
   "publishRemoteUrl": "git@github.com:ourbigbook/ourbigbook.git",
+  "publishRootUrl": "https://docs.ourbigbook.com",
   "target": {
     "github-md": {
       "prepublish": null,
       "publishRemoteUrl": "git@github.com:ourbigbook/docs-md.git"
     }
   },
-  "publishRootUrl": "https://docs.ourbigbook.com",
   "sitemap": true,
   "unsafeXss": true
 }

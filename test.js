@@ -15897,25 +15897,26 @@ assert_lib('media providers: named github defaults and title settings belong to 
   ],
 })
 
-for (const mode of ['html', 'parallel', 'publish', 'web']) {
-  const publish = mode === 'publish'
+for (const mode of ['html', 'html-used', 'html-external-used', 'parallel', 'parallel-used', 'publish', 'publish-used', 'web']) {
+  const publish = mode.startsWith('publish')
+  const usedOnly = mode.endsWith('-used')
   const web = mode === 'web'
   const committed = publish || web
-  const firstPath = committed ? '../media-one' : '_media'
+  const firstPath = committed || mode === 'html-external-used' ? '../media-one' : '_media'
   const output = `wiki/${TMP_DIRNAME}/${publish ? `publish/${TMP_DIRNAME}/github-pages` : web ? `publish/${TMP_DIRNAME}/web` : 'html'}`
   const solution = 'subdir/paper/question/solution'
   const mediaOne = `wiki/${firstPath}`
   const relative = target => path.relative(`${output}/subdir/paper/question`, target)
   // A built-in name can also explicitly select a different implementation.
-  const pictureProvider = mode === 'parallel' ? 'github' : 'media-repo'
+  const pictureProvider = mode.startsWith('parallel') ? 'github' : 'media-repo'
   const config = { 'media-providers': {
-    [pictureProvider]: { type: 'local', path: firstPath },
+    [pictureProvider]: { type: 'local', path: firstPath, usedMediaOnly: usedOnly || web },
     clips: { type: 'local', path: '../media-two', 'default-for': ['video'] },
   } }
   assert_cli(`media providers: multiple local roots and ordinary source files, ${mode}`, {
-    args: publish ? ['--publish', '--dry-run'] : web
+    args: publish ? ['--publish', '--dry-run', '--jobs', '2'] : web
       ? ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
-      : ['.', '--split-headers', '--jobs', mode === 'parallel' ? '2' : '1'],
+      : ['.', '--split-headers', '--jobs', mode.startsWith('parallel') ? '2' : '1'],
     cwd: 'wiki',
     timeout: 20000,
     filesystem: {
@@ -15951,7 +15952,7 @@ for (const mode of ['html', 'parallel', 'publish', 'web']) {
         `//x:figcaption/x:a[@href='../../../-/file/subdir/plot.svg${publish ? '' : '.html'}']`,
       ],
       [`${output}/-/dir/only/shared/index.html`]: [
-        "//x:a[contains(@href, 'one.txt')]", "//x:a[contains(@href, 'two.txt')]",
+        ...(!usedOnly ? ["//x:a[contains(@href, 'one.txt')]"] : []), "//x:a[contains(@href, 'two.txt')]",
       ],
       [`${output}/-/file/subdir/plot.svg.html`]: [
         "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[contains(@href, 'solution')]",
@@ -15963,10 +15964,13 @@ for (const mode of ['html', 'parallel', 'publish', 'web']) {
       ],
     } : {
       [`${output}/-/raw/root.svg`]: ['<svg>root</svg>'],
+      [`${output}/-/raw/only/shared/two.txt`]: ['two'],
       ...(publish ? { [`${output}/root.svg`]: ['<svg>root</svg>'], [`${output}/subdir/movie.mp4`]: ['video'] } : {}),
     },
     assert_stdout_not_contains: web ? ['uncommitted.svg'] : [],
-    assert_not_exists: web ? [] : [`${output}/invalid.html`, `${output}/-/dir/_media/index.html`],
+    assert_not_exists: web ? [] : [`${output}/invalid.html`, `${output}/-/dir/_media/index.html`,
+      ...(usedOnly ? [`${output}/only/shared/one.txt`, `${output}/invalid.bigb`, `${output}/-/raw/only/shared/one.txt`, `${output}/-/file/invalid.bigb.html`] : [])],
+    assert_not_contains: usedOnly ? { [`${output}/-/dir/only/shared/index.html`]: ['one.txt'] } : {},
   })
 }
 
@@ -16127,16 +16131,32 @@ assert_cli('link: local media provider supports file-relative paths across scope
   },
 })
 for (const publishTarget of ['github-pages', 'github-md']) {
-assert_cli(`publish: local media repository is pushed and merged into output (${publishTarget})`, {
-  args: ['--dry-run', '--publish', '--publish-target', publishTarget],
+for (const usedOnly of [false, true]) {
+const output = `wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}`
+assert_cli(`publish: local media repository is pushed and merged into output (${publishTarget}, usedOnly=${usedOnly})`, {
+  args: ['--dry-run', '--publish', '--publish-target', publishTarget,
+    '--jobs', '1'],
   cwd: 'wiki',
+  timeout: 15000,
   filesystem: {
-    'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
-    'wiki/index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
-    'wiki/subdir/paper.bigb': '= Paper\n\n\\Image[diagram.svg]\n\n\\Image[subdir/other.svg]\n\n\\Image[relative.svg]\n',
+    'wiki/ourbigbook.json': JSON.stringify({
+      ...(publishTarget === 'github-md'
+        ? { target: { 'github-md': { 'media-providers': { local: { usedMediaOnly: usedOnly } } } } }
+        : {}),
+      'media-providers': { local: { path: '../wiki-media', usedMediaOnly: publishTarget === 'github-md' ? !usedOnly : usedOnly } },
+    }),
+    'wiki/index.bigb': '= Home\n\n\\Include[subdir/paper]\n\n\\Include[markdown]\n\n== metadata.txt\n{file}\n\nAuthored metadata.\n\n``\n\\Video[unused/big.mp4]\n``\n',
+    'wiki/markdown.md': '# Markdown\n\n![](markdown.svg)\n',
+    'wiki-media/markdown.svg': '<svg>Markdown image</svg>',
+    'wiki-media/metadata.txt': 'explicit file page',
+    'wiki/subdir/paper.bigb': '= Paper\n\n\\Image[diagram.svg]\n\n\\Image[subdir/other.svg]\n\n\\Image[relative.svg]\n\n\\Video[clip.mp4]\n\n\\a[notes.txt]\n',
     'wiki-media/diagram.svg': '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"/>',
     'wiki-media/subdir/other.svg': '<svg>other</svg>',
     'wiki-media/subdir/relative.svg': '<svg>relative</svg>',
+    'wiki-media/subdir/clip.mp4': 'used video',
+    'wiki-media/subdir/notes.txt': 'linked notes',
+    'wiki-media/subdir/unused.mp4': 'unused video alongside used files',
+    'wiki-media/unused/big.mp4': 'unused large video',
     'wiki-media/.gitignore': '*.html\n',
   },
   pre_exec: [
@@ -16160,14 +16180,35 @@ assert_cli(`publish: local media repository is pushed and merged into output (${
     ],
   } : {},
   assert_contains: {
+    [`${output}/markdown.svg`]: ['Markdown image'],
+    [`${output}/metadata.txt`]: ['explicit file page'],
+    [`${output}/subdir/clip.mp4`]: ['used video'],
+    [`${output}/subdir/notes.txt`]: ['linked notes'],
+    ...(!usedOnly ? {
+      [`${output}/unused/big.mp4`]: ['unused large video'],
+      [`${output}/subdir/unused.mp4`]: ['unused video alongside used files'],
+    } : {}),
+    ...(publishTarget === 'github-pages' ? {
+      [`${output}/-/raw/subdir/clip.mp4`]: ['used video'],
+      [`${output}/-/file/subdir/notes.txt.html`]: ['linked notes'],
+    } : {}),
     [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/diagram.svg`]: ['<svg xmlns="http://www.w3.org/2000/svg" width="120" height="80"/>'],
     [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/subdir/other.svg`]: ['<svg>other</svg>'],
     ...(publishTarget === 'github-md' ? {
       [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/subdir/paper.md`]: ['../diagram.svg', 'other.svg', 'relative.svg'],
     } : {}),
   },
-  assert_not_exists: [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}/untracked.svg`],
+  assert_not_exists: [`${output}/untracked.svg`, ...(usedOnly ? [
+    `${output}/unused`, `${output}/subdir/unused.mp4`,
+    `${output}/-/raw/unused`, `${output}/-/raw/subdir/unused.mp4`,
+    `${output}/-/file/unused`, `${output}/-/file/subdir/unused.mp4.html`,
+    `${output}/-/dir/unused`,
+  ] : [])],
+  assert_not_contains: usedOnly && publishTarget === 'github-pages' ? {
+    [`${output}/-/dir/subdir/index.html`]: ['unused.mp4'],
+  } : {},
 })
+}
 }
 for (const publish of [false, true]) {
   const output = `wiki/${TMP_DIRNAME}/${publish ? `publish/${TMP_DIRNAME}/github-pages` : 'html'}`
@@ -16274,6 +16315,104 @@ assert_cli(`publish: local media repository rejects output collision ${collision
   },
 })
 }
+for (const used of [false, true]) {
+  const output = `wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages`
+  assert_cli(`publish: used media only preserves collision checks for selected files, used=${used}`, {
+    args: ['--dry-run', '--publish', '--jobs', '1'],
+    cwd: 'wiki',
+    timeout: 15000,
+    filesystem: {
+      'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media', usedMediaOnly: true } } }),
+      'wiki/index.bigb': `= Home\n${used ? '\n\\a[index.html]\n' : ''}`,
+      'wiki-media/index.html': 'must not overwrite output',
+    },
+    pre_exec: [
+      ['git', ['-C', '../wiki-media', 'init', '-b', 'main']],
+      ['git', ['-C', '../wiki-media', 'add', '.']],
+      ['git', ['-C', '../wiki-media', 'commit', '-m', 'media']],
+      ['git', ['-C', '../wiki-media', 'remote', 'add', 'origin', 'git@github.com:ourbigbook/wiki-media.git']],
+      ...MAKE_GIT_REPO_PRE_EXEC,
+      ['git', ['checkout', '-b', 'dev']],
+    ],
+    assert_exit_status: used ? 1 : 0,
+    assert_stderr_contains: used ? ['local media collides with generated output: index.html'] : [],
+    assert_xpath: { [`${output}/index.html`]: ['//x:h1'] },
+  })
+}
+assert_cli('publish: used media only removes previously published unused files', {
+  args: ['--dry-run', '--publish', '--jobs', '1'],
+  cwd: 'wiki',
+  timeout: 15000,
+  filesystem: {
+    'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media' } } }),
+    'wiki/index.bigb': '= Home\n',
+    'wiki/ordinary.txt': 'ordinary source asset',
+    'wiki-media/unused.mp4': 'unused video',
+  },
+  pre_exec: [
+    ['git', ['-C', '../wiki-media', 'init', '-b', 'main']],
+    ['git', ['-C', '../wiki-media', 'add', '.']],
+    ['git', ['-C', '../wiki-media', 'commit', '-m', 'media']],
+    ['git', ['-C', '../wiki-media', 'remote', 'add', 'origin', 'git@github.com:ourbigbook/wiki-media.git']],
+    ...MAKE_GIT_REPO_PRE_EXEC,
+    ['git', ['checkout', '-b', 'dev']],
+    ['ourbigbook', ['--dry-run', '--publish', '--jobs', '1']],
+    { filesystem_update: {
+      'wiki/ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '../wiki-media', usedMediaOnly: true } } }),
+    } },
+    ['git', ['add', 'ourbigbook.json']],
+    ['git', ['commit', '-m', 'publish only used media']],
+  ],
+  assert_contains: {
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/-/raw/ordinary.txt`]: ['ordinary source asset'],
+  },
+  assert_not_exists: ['unused.mp4', '-/raw/unused.mp4', '-/file/unused.mp4.html'].map(
+    p => `wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages/${p}`),
+})
+for (const value of [true, 'true']) {
+  assert_cli(`publish: used media only rejects invalid configuration, value=${JSON.stringify(value)}`, {
+    args: ['--publish-no-convert'],
+    filesystem: {
+      'index.bigb': '= Home\n',
+      'ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '_media', usedMediaOnly: value } } }),
+    },
+    assert_exit_status: 1,
+    assert_stderr_contains: [value === true
+      ? 'media provider usedMediaOnly cannot be combined with --publish-no-convert'
+      : 'media provider "local" usedMediaOnly must be a boolean'],
+  })
+}
+assert_cli('media providers: usedMediaOnly tracks edited references in cached local builds', {
+  args: ['.', '--jobs', '2'],
+  timeout: 15000,
+  filesystem: {
+    'ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '_media', usedMediaOnly: true } } }),
+    'index.bigb': '= Home\n\n\\Image[first.svg]\n',
+    '_media/first.svg': '<svg>first</svg>',
+    '_media/second.svg': '<svg>second</svg>',
+    '_media/unused.mp4': 'unused video',
+  },
+  pre_exec: [
+    ['ourbigbook', ['.', '--jobs', '1']],
+    ['ourbigbook', ['.', '--jobs', '2']],
+    { filesystem_update: { 'index.bigb': '= Home\n\n\\Image[second.svg]\n' } },
+  ],
+  assert_contains: { [`${TMP_DIRNAME}/html/-/raw/second.svg`]: ['second'] },
+  assert_xpath: { [`${TMP_DIRNAME}/html/-/dir/index.html`]: ["//x:a[contains(@href, 'second.svg')]" ] },
+  assert_not_contains: { [`${TMP_DIRNAME}/html/-/dir/index.html`]: ['first.svg', 'unused.mp4'] },
+  assert_not_exists: [`${TMP_DIRNAME}/html/-/raw/unused.mp4`, `${TMP_DIRNAME}/html/-/file/unused.mp4.html`],
+})
+assert_cli('media providers: usedMediaOnly works with --no-db', {
+  args: ['.', '--no-db'],
+  filesystem: {
+    'ourbigbook.json': JSON.stringify({ 'media-providers': { local: { path: '_media', usedMediaOnly: true } } }),
+    'index.bigb': '= Home\n\n\\Image[used.svg]\n',
+    '_media/used.svg': '<svg>used</svg>',
+    '_media/unused.mp4': 'unused video',
+  },
+  assert_contains: { [`${TMP_DIRNAME}/html/-/raw/used.svg`]: ['used'] },
+  assert_not_exists: [`${TMP_DIRNAME}/html/-/raw/unused.mp4`, `${TMP_DIRNAME}/html/-/file/unused.mp4.html`],
+})
 for (const previousOutput of ['large', 'empty', 'locked']) {
   const output = `${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-pages`
   // Without quiet cleanup these names produce more than spawnSync's 1 MiB buffer.

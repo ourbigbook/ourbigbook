@@ -17992,8 +17992,9 @@ if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web
   }
   const serialLog = build(0)
   const log = build(1)
-  assert.strictEqual((log.match(/^check_db$/gm) || []).length, 1)
-  assert(log.lastIndexOf('\nextract_ids:') < log.indexOf('\ncheck_db\n'))
+  assert(!/^check_db$/m.test(log), log)
+  assert.strictEqual((log.match(/^check_db: \d+ files to check, \d+ cached$/gm) || []).length, 1)
+  assert(log.lastIndexOf('\nextract_ids:') < log.indexOf('\ncheck_db:'))
   assert(log.indexOf('\nrender:') > log.indexOf('check_db:'))
   if (web) {
     const uploadLog = text => text.split('\n').filter(line => line.startsWith('web_') && !line.includes('finished in'))
@@ -18008,6 +18009,7 @@ if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web
     assert(cached.includes('extract_ids: chapter0.bigb (skipped by timestamp)'))
     assert(cached.includes('render: chapter0.bigb (skipped by timestamp)'))
     assert(cached.includes('check_db: 0 files to check, 6 cached'), cached)
+    assert(!/^check_db$/m.test(cached), cached)
   }
   await compare()
   // A body-only edit re-extracts one file, including in a worker, but leaves
@@ -18042,7 +18044,7 @@ if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web
 assert_cli('parallel: no-render extracts IDs and checks the database', {
   args: ['-j', '2', '--no-render', '.'],
   filesystem: parallelFilesystem,
-  assert_stdout_contains: [/^check_db$/m],
+  assert_stdout_contains: [/^check_db:/m],
   assert_not_exists: [`${TMP_DIRNAME}/html/index.html`],
 })
 
@@ -18069,7 +18071,7 @@ assert_cli('parallel: render errors return a failing exit status', {
     'chapter0.bigb': '= Chapter 0\n\n\\m[[\\unknowncommand]]\n\n== Shared\n',
   },
   assert_exit_status: 1,
-  assert_stdout_contains: [/^check_db$/m, 'render: chapter0.bigb'],
+  assert_stdout_contains: [/^check_db:/m, 'render: chapter0.bigb'],
   assert_stderr_contains: ['Undefined control sequence'],
 })
 

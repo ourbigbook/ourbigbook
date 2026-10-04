@@ -341,7 +341,6 @@ async function reconcile_db_and_filesystem(input_path, ourbigbook_options, nonOu
 async function check_db(nonOurbigbookOptions, { exitOnError=true }={}) {
   if (nonOurbigbookOptions.cli.checkDb) {
     const t1 = now();
-    console.log(`check_db`)
     const sequelize = nonOurbigbookOptions.sequelize
     if (sequelize && (nonOurbigbookOptions.cli.render || nonOurbigbookOptions.cli.checkDb)) {
       const error_messages = await ourbigbook_nodejs.checkDbWithCache(
@@ -353,7 +352,7 @@ async function check_db(nonOurbigbookOptions, { exitOnError=true }={}) {
             aRef => !fs.existsSync(resolvePublishedMediaPath(nonOurbigbookOptions.ourbigbook_json_dir, aRef.to, nonOurbigbookOptions))),
           options: nonOurbigbookOptions.options,
           onCache: ({ checked, reused }) => {
-            if (reused) console.log(`check_db: ${checked} files to check, ${reused} cached`)
+            console.log(`check_db: ${checked} files to check, ${reused} cached`)
           },
           perf: false,
         }

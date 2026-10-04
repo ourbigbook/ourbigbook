@@ -9224,6 +9224,95 @@ it('lib: check_db bounds reference loading by source file and keeps cross-file c
   }
 })
 
+if (!ourbigbook_nodejs_front.postgres) assert_lib('check_db cache invalidates changed files, structure and configuration', {
+  convert_dir: true,
+  filesystem: {
+    'index.bigb': '= Home\n\n\\Include[branch]\n\n== Animal\n',
+    'branch.bigb': '= Branch\n\n\\Include[leaf]\n',
+    'leaf.bigb': '= About <Animal>\n\n\\a[asset.txt]\n',
+    'asset.txt': 'An asset',
+  },
+  postConvert: async ({ sequelize }) => {
+    const { File, Id, Ref } = sequelize.models
+    let stats
+    let missingMedia = false
+    const options = {
+      filterFilesThatDontExist: refs => missingMedia ? refs : [],
+      onCache: value => { stats = value },
+    }
+    const check = extra => ourbigbook_nodejs.checkDbWithCache(sequelize, undefined, { ...options, ...extra })
+    const warm = async () => {
+      assert.deepStrictEqual(await check(), [])
+      assert.deepStrictEqual(stats, { checked: 0, reused: 3, structural: false })
+    }
+    assert.deepStrictEqual(await check(), [])
+    assert.deepStrictEqual(stats, { checked: 3, reused: 0, structural: true })
+    await warm()
+    await File.update({ last_parse: new Date() }, { where: {} })
+    await warm() // Rendering alone must not invalidate extraction checks.
+    const leaf = await File.findOne({ where: { path: 'leaf.bigb' } })
+    await sequelize.query('UPDATE "Id" SET ast_json = ast_json || \' \' WHERE defined_at = :id', { replacements: { id: leaf.id } })
+    assert.deepStrictEqual(await check(), [])
+    assert.deepStrictEqual(stats, { checked: 1, reused: 2, structural: false })
+    await warm()
+    const broken = await Ref.create({
+      type: Ref.Types[ourbigbook.REFS_TABLE_X], from_id: 'leaf', to_id: 'missing',
+      defined_at: leaf.id, defined_at_line: 5, defined_at_col: 1, inflected: false,
+    })
+    for (let i = 0; i < 2; i++) {
+      assert.deepStrictEqual(await check(), ['leaf.bigb:5:1: internal link \\x to unknown id: "missing"'])
+      assert.deepStrictEqual(stats, { checked: 1, reused: 2, structural: false })
+    }
+    await broken.destroy()
+    assert.deepStrictEqual(await check(), [])
+    missingMedia = true
+    assert((await check())[0].includes('link to file that does not exist: "asset.txt"'))
+    missingMedia = false
+    await warm()
+    // A changed file must also be compared against tags cached for other files.
+    const tag = await Ref.findOne({ where: { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] } })
+    const branch = await File.findOne({ where: { path: 'branch.bigb' } })
+    const duplicate = await Ref.create({
+      ...tag.toJSON(), id: undefined, defined_at: branch.id, defined_at_line: 8,
+    })
+    assert((await check()).some(error => error.includes('duplicate tag')))
+    await duplicate.destroy()
+    assert.deepStrictEqual(await check(), [])
+    // Global checks must notice IDs added by another file, even if every old
+    // reference still points at an existing target.
+    const animal = await Id.findOne({ where: { idid: 'animal' } })
+    const duplicateId = await Id.create({ ...animal.toJSON(), id: undefined, defined_at: branch.id })
+    assert((await check()).some(error => error.includes('duplicated ID: "animal"')))
+    assert.strictEqual(stats.structural, true)
+    await duplicateId.destroy()
+    assert.deepStrictEqual(await check(), [])
+    // Reparenting changes whether a previously cached title link implies a tag.
+    await Ref.update({ from_id: 'animal' }, { where: { type: Ref.Types[ourbigbook.REFS_TABLE_PARENT], to_id: 'branch' } })
+    assert.deepStrictEqual(await check(), [])
+    assert.strictEqual(stats.structural, true)
+    assert.strictEqual(await Ref.count({ where: { type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] } }), 0)
+    await warm()
+    assert.deepStrictEqual(await check({ force: true }), [])
+    assert.strictEqual(stats.structural, true)
+    await warm()
+    // A missing trigger cannot leave behind a trusted cache after a DB rebuild.
+    await sequelize.query('DROP TRIGGER "cli_check_Id_INSERT"')
+    assert.deepStrictEqual(await check(), [])
+    assert.strictEqual(stats.structural, true)
+    await warm()
+    // Checking only one file cannot hide unchecked changes from the next build.
+    assert.deepStrictEqual(await ourbigbook_nodejs.checkDbWithCache(sequelize, ['leaf.bigb'], options), [])
+    assert.deepStrictEqual(await check(), [])
+    assert.strictEqual(stats.structural, true)
+    assert.deepStrictEqual(await check({ options: { ourbigbook_json: { lint: { filesAreIncluded: false } } } }), [])
+    assert.strictEqual(stats.structural, true)
+    // Deleted files are invalidations even when all surviving revisions match.
+    await File.destroy({ where: { id: leaf.id } })
+    assert((await check()).some(error => error.includes('unknown id: "leaf"')))
+    assert.strictEqual(stats.structural, true)
+  },
+})
+
 it('lib: header: duplicate tags are checked during extraction without a database', async () => {
   for (const title of ['<Animal>', '\\x[animal]', '\\i[\\b[<Animal>]]']) {
     const extra_returns = {}
@@ -17779,7 +17868,11 @@ if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web
     for (const entry of fs.readdirSync(path.join(root, dir), { withFileTypes: true })) {
       const rel = path.join(dir, entry.name)
       if (entry.isDirectory()) Object.assign(ret, outputFiles(root, rel))
-      else if (!entry.name.startsWith('web.sqlite3')) ret[rel] = fs.readFileSync(path.join(root, rel), 'utf8')
+      else if (!entry.name.startsWith('web.sqlite3')) {
+        // This private invalidation marker includes extraction timestamps,
+        // which necessarily differ between independent builds.
+        ret[rel] = fs.readFileSync(path.join(root, rel), 'utf8').replace(/<!--ourbigbook-file-usage-v\d+:[a-f0-9]+-->/g, '')
+      }
     }
     return ret
   }
@@ -17827,6 +17920,17 @@ if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web
     const cached = build(i)
     assert(cached.includes('extract_ids: chapter0.bigb (skipped by timestamp)'))
     assert(cached.includes('render: chapter0.bigb (skipped by timestamp)'))
+    assert(cached.includes('check_db: 0 files to check, 6 cached'), cached)
+  }
+  await compare()
+  // A body-only edit re-extracts one file, including in a worker, but leaves
+  // the other five files' successful reference checks reusable.
+  for (const root of roots) {
+    update_filesystem({ 'chapter1.bigb': parallelFilesystem['chapter1.bigb'] + '\nAnother <Shared> link.\n' }, root)
+  }
+  for (const i of [0, 1]) {
+    const edited = build(i)
+    assert(edited.includes('check_db: 1 files to check, 5 cached'), edited)
   }
   await compare()
   // Move an ID between files, and remove a file and its Include. All extraction

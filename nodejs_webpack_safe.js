@@ -1159,7 +1159,9 @@ async function check_db(sequelize, paths_converted, opts={}) {
   //   * directory based scopes
   //   * \x magic pluralization variants
   // * ensure that all \x targets exist
-  let { filterFilesThatDontExist, parentOverride, perf, options, ref_prefix, transaction, web } = opts
+  // fileCache/skipStructuralChecks are supplied only by the CLI cache after
+  // validating extraction revisions and dependency fingerprints.
+  let { fileCache, filterFilesThatDontExist, parentOverride, perf, options, ref_prefix, skipStructuralChecks, transaction, web } = opts
   if (ref_prefix === undefined) {
     ref_prefix = ''
   }
@@ -1197,9 +1199,9 @@ async function check_db(sequelize, paths_converted, opts={}) {
       transaction,
     }),
     // doubleParents
-    web ? [] : check_db_double_parent_refs(sequelize, paths_converted, transaction),
+    web || skipStructuralChecks ? [] : check_db_double_parent_refs(sequelize, paths_converted, transaction),
     // noParents
-    dontLintFilesAreIncluded
+    dontLintFilesAreIncluded || skipStructuralChecks
       ? []
       : Id.findAll({
           include: [
@@ -1234,7 +1236,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
     // infinite loops if filesAreIncluded check is disabled by user
     // on ourbigbook.json. But good enough for now.
     // https://github.com/ourbigbook/ourbigbook/issues/204
-    dontLintFilesAreIncluded
+    dontLintFilesAreIncluded || skipStructuralChecks
       ? []
       : fetch_header_tree_ids(
           sequelize,
@@ -1247,7 +1249,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
           },
         )
     ,
-    Id.findDuplicates(paths_converted, transaction),
+    skipStructuralChecks ? [] : Id.findDuplicates(paths_converted, transaction),
     Id.findInvalidTitleTitle(paths_converted, transaction),
     // aRefs
     ARef.findAll({
@@ -1270,7 +1272,24 @@ async function check_db(sequelize, paths_converted, opts={}) {
   // across files, and run the structural checks above only once.
   const tags = new Map()
   for (const file of files) {
-    error_messages.push(...await check_db_file_refs(sequelize, file, opts, tags))
+    let tagRefs = fileCache?.get(file.id)
+    if (tagRefs === undefined) {
+      const result = await check_db_file_refs(sequelize, file, opts)
+      error_messages.push(...result.error_messages)
+      tagRefs = result.tagRefs
+      fileCache?.set(file.id, tagRefs)
+    }
+    // Cached files still participate, in file order, in cross-file tag checks.
+    for (const ref of tagRefs) {
+      const key = JSON.stringify([ref.from_id, ref.to_id])
+      const location = `${file.path}:${ref.defined_at_line}:${ref.defined_at_col}`
+      const previous = tags.get(key)
+      if (previous !== undefined) {
+        error_messages.push(`${location}: ${ourbigbook.duplicateTagMessage(ref.from_id, ref.to_id, previous)}`)
+      } else {
+        tags.set(key, location)
+      }
+    }
   }
 
   if (filterFilesThatDontExist) {
@@ -1415,7 +1434,7 @@ async function check_db_double_parent_refs(sequelize, paths_converted, transacti
   })
 }
 
-async function check_db_file_refs(sequelize, file, { parentOverride, transaction }, tags) {
+async function check_db_file_refs(sequelize, file, { parentOverride, transaction }) {
   const { Op } = sequelize.Sequelize
   const { Id, Ref } = sequelize.models
   const error_messages = []
@@ -1631,23 +1650,11 @@ JOIN "${Ref.tableName}" r ON r.to_id = a.ancestor AND r.type = :synonymType
     await Ref.destroy({ where: { id: [...deleted] }, transaction })
   }
 
-  // Only compare resolved references: different spellings, scopes and plurals
-  // can refer to the same tag. Keep their locations for actionable diagnostics.
-  for (const ref of new_refs) {
-    if (ref.type !== Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] || deleted.has(ref.id)) continue
-    const key = JSON.stringify([ref.from_id, ref.to_id])
-    const location = `${ref.definedAt.path}:${ref.defined_at_line}:${ref.defined_at_col}`
-    const previous = tags.get(key)
-    if (previous !== undefined) {
-      error_messages.push(
-        `${location}: ${ourbigbook.duplicateTagMessage(ref.from_id, ref.to_id, previous)}`
-      )
-    } else {
-      tags.set(key, location)
-    }
-  }
-
-  return error_messages
+  // Cache only the resolved tags, not Sequelize instances or header ASTs.
+  const tagRefs = new_refs
+    .filter(ref => ref.type === Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] && !deleted.has(ref.id))
+    .map(({ from_id, to_id, defined_at_line, defined_at_col }) => ({ from_id, to_id, defined_at_line, defined_at_col }))
+  return { error_messages, tagRefs }
 }
 
 

@@ -344,13 +344,17 @@ async function check_db(nonOurbigbookOptions, { exitOnError=true }={}) {
     console.log(`check_db`)
     const sequelize = nonOurbigbookOptions.sequelize
     if (sequelize && (nonOurbigbookOptions.cli.render || nonOurbigbookOptions.cli.checkDb)) {
-      const error_messages = await ourbigbook_nodejs_webpack_safe.check_db(
+      const error_messages = await ourbigbook_nodejs.checkDbWithCache(
         sequelize,
-        nonOurbigbookOptions.ourbigbook_paths_converted,
+        nonOurbigbookOptions.cli.checkDbOnly ? undefined : nonOurbigbookOptions.ourbigbook_paths_converted,
         {
+          force: nonOurbigbookOptions.cli.checkDbOnly,
           filterFilesThatDontExist: (aRefs) => aRefs.filter(
             aRef => !fs.existsSync(resolvePublishedMediaPath(nonOurbigbookOptions.ourbigbook_json_dir, aRef.to, nonOurbigbookOptions))),
           options: nonOurbigbookOptions.options,
+          onCache: ({ checked, reused }) => {
+            if (reused) console.log(`check_db: ${checked} files to check, ${reused} cached`)
+          },
           perf: false,
         }
       )

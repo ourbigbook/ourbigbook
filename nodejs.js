@@ -8,6 +8,128 @@ const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe.js')
 
 const commander = require('commander')
 
+let checkDbCodeHash
+
+// CLI SQLite only. Revision triggers also see extraction done by worker processes;
+// rendering timestamps are deliberately not used as an extraction generation.
+// These disposable cache tables need no migration of existing CLI databases.
+async function checkDbWithCache(sequelize, paths, opts = {}) {
+  const check = ourbigbook_nodejs_webpack_safe.check_db
+  if (sequelize.getDialect() !== 'sqlite' || opts.web || opts.transaction || opts.parentOverride) {
+    return check(sequelize, paths, opts)
+  }
+  const crypto = require('crypto')
+  const hash = value => crypto.createHash('sha256').update(value).digest('hex')
+  if (checkDbCodeHash === undefined) {
+    // Also invalidate between unversioned development changes to the checker.
+    checkDbCodeHash = hash(['index.js', 'nodejs.js', 'nodejs_webpack_safe.js', 'models/id.js', 'models/ref.js', 'models/file.js', 'package.json']
+      .map(file => fs.readFileSync(path.join(__dirname, file), 'utf8')).join('\n'))
+  }
+  const context = hash(JSON.stringify([checkDbCodeHash, opts.options?.ourbigbook_json, opts.ref_prefix]))
+  let failure
+  try {
+    return await sequelize.transaction({ type: sequelize.Sequelize.Transaction.TYPES.IMMEDIATE }, async transaction => {
+      const query = (sql, replacements) => sequelize.query(sql, { replacements, transaction })
+      await query('CREATE TABLE IF NOT EXISTS "CliCheckRevision" ("fileId" INTEGER PRIMARY KEY, "revision" INTEGER NOT NULL)')
+      await query('CREATE TABLE IF NOT EXISTS "CliCheckCache" ("id" INTEGER PRIMARY KEY, "value" TEXT NOT NULL)')
+      const [installed] = await query("SELECT name FROM sqlite_master WHERE type = 'trigger' AND name LIKE 'cli_check_%'")
+      const triggerNames = new Set(installed.map(row => row.name))
+      let reset = false
+      for (const table of ['Id', 'Ref', 'File']) {
+        for (const event of ['INSERT', 'UPDATE', 'DELETE']) {
+          const name = `cli_check_${table}_${event}`
+          if (triggerNames.has(name)) continue
+          reset = true
+          const column = table === 'File' ? 'id' : 'defined_at'
+          const versions = event === 'UPDATE' ? ['OLD', 'NEW'] : [event === 'DELETE' ? 'OLD' : 'NEW']
+          await query(`CREATE TRIGGER "${name}" AFTER ${event} ON "${table}"${
+            table === 'File' && event === 'UPDATE'
+              ? ' WHEN OLD.path IS NOT NEW.path OR OLD.toplevel_id IS NOT NEW.toplevel_id' : ''}
+BEGIN
+${versions.map(version => `  INSERT INTO "CliCheckRevision" ("fileId", "revision")
+  SELECT ${version}."${column}", 1 WHERE ${version}."${column}" IS NOT NULL
+  ON CONFLICT ("fileId") DO UPDATE SET "revision" = "revision" + 1;`).join('\n')}
+END`)
+        }
+      }
+      // Dropping/recreating source tables (e.g. --clear-db) drops their triggers.
+      if (reset) await query('DELETE FROM "CliCheckCache"')
+      const readFiles = async () => (await query(`SELECT f.id, f.path, f.toplevel_id, COALESCE(r.revision, 0) AS revision
+        FROM "File" f LEFT JOIN "CliCheckRevision" r ON r."fileId" = f.id ORDER BY f.id`))[0]
+      const files = await readFiles()
+      const selected = paths === undefined ? undefined : new Set(paths)
+      // A partial-directory check cannot certify the entire database. Keep its
+      // existing behavior, but invalidate any full-build certificate afterwards.
+      if (selected && files.some(file => !selected.has(file.path))) {
+        await query('DELETE FROM "CliCheckCache"')
+        const errors = await check(sequelize, paths, { ...opts, transaction })
+        if (errors.length) {
+          failure = { errors }
+          throw failure
+        }
+        return errors
+      }
+      const [rows] = await query('SELECT value FROM "CliCheckCache" WHERE id = 1')
+      let previous
+      try { previous = JSON.parse(rows[0]?.value) } catch (_) { /* cold or invalid cache */ }
+      if (opts.force || previous?.context !== context) previous = undefined
+      const entries = {}
+      const fileCache = new Map()
+      let sameStructure = !!previous && Object.keys(previous.files).length === files.length
+      const structure = async file => {
+        // Ignore numeric Id/Ref primary keys and AST source positions: re-extracting
+        // a text edit replaces those, without changing other files' dependencies.
+        const [ids] = await query('SELECT idid, macro_name FROM "Id" WHERE defined_at = :id ORDER BY idid, macro_name', { id: file.id })
+        const [parents] = await query(`SELECT type, from_id, to_id FROM "Ref"
+          WHERE defined_at = :id AND type IN (:types) ORDER BY type, from_id, to_id`, {
+          id: file.id,
+          types: [sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT], sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_SYNONYM]],
+        })
+        return hash(JSON.stringify([file.path, file.toplevel_id, ids, parents]))
+      }
+      for (const file of files) {
+        const old = previous?.files[file.id]
+        if (old && old.revision === file.revision) {
+          entries[file.id] = old
+          fileCache.set(file.id, old.tags)
+        } else {
+          const fingerprint = await structure(file)
+          entries[file.id] = { revision: file.revision, structure: fingerprint }
+          if (old?.structure !== fingerprint) sameStructure = false
+        }
+      }
+      // A new ID can shadow an existing target in another file. Reparenting can
+      // alter implicit tags anywhere below it. Neither is a local invalidation.
+      if (!sameStructure) fileCache.clear()
+      opts.onCache?.({ checked: files.length - fileCache.size, reused: fileCache.size, structural: !sameStructure })
+      const errors = await check(sequelize, paths, {
+        ...opts, transaction, fileCache, skipStructuralChecks: sameStructure,
+      })
+      if (errors.length) {
+        // Failed reference resolution deletes unmatched candidates. Roll it back
+        // so a subsequent check cannot mistake their absence for success.
+        failure = { errors }
+        throw failure
+      }
+      for (const file of await readFiles()) {
+        const entry = entries[file.id]
+        if (entry.revision !== file.revision) entry.structure = await structure(file)
+        entry.revision = file.revision
+        entry.tags = fileCache.get(file.id)
+      }
+      await query('INSERT INTO "CliCheckCache" (id, value) VALUES (1, :value) ON CONFLICT (id) DO UPDATE SET value = excluded.value', {
+        value: JSON.stringify({ context, files: entries }),
+      })
+      await query('DELETE FROM "CliCheckRevision" WHERE "fileId" NOT IN (SELECT id FROM "File")')
+      return errors
+    })
+  } catch (error) {
+    if (error === failure) return failure.errors
+    throw error
+  }
+}
+exports.checkDbWithCache = checkDbWithCache
+
 // Metadata only: never decode full-size pixels just to obtain dimensions.
 // Return explicit nulls so replacing an upload clears any previous dimensions.
 async function imageDimensions(input) {

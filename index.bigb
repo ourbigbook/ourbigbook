@@ -7004,6 +7004,8 @@ Internally, the general philosophy is that the JavaScript API in \a[index.js] wo
 
 Check the database for consistency, e.g. duplicated IDs. Don't do anything else, including <ID extraction>, which must have been done previously.
 
+Normal full-directory builds cache successful database checks in the local SQLite database. Text and link edits recheck the changed files, while changes to available IDs, synonyms, the parent tree, configuration or checker code invalidate the broader cache. Media-file existence is checked on every build. Failed checks are not cached. This also applies to the local preparation of <--web> uploads, not the server-side build jobs. Use `--check-db-only` to force a complete database check without using the cache.
+
 The initial use case was for usage in <parallel builds>.
 
 = `--china`

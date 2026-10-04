@@ -20,9 +20,9 @@
     "web/.*\\.scss"
   ],
   "media-providers": {
-    "github": {
+    "media-repo": {
       "path": "../ourbigbook-media",
-      "remote": "ourbigbook/ourbigbook-media"
+      "type": "local"
     }
   },
   "prepublish": "prepublish",

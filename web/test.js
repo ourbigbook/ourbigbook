@@ -6524,6 +6524,50 @@ it('background renders: batching, authorization, idempotency, checkpoints and ch
   })
 })
 
+it('media providers: real CLI merges named local providers and uploads server-independent source', async function() {
+  this.timeout(30000)
+  const fs = require('fs')
+  const path = require('path')
+  const directory = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ourbigbook-media-providers-'))
+  const wiki = path.join(directory, 'wiki')
+  fs.mkdirSync(path.join(wiki, '_media'), { recursive: true })
+  fs.mkdirSync(path.join(directory, 'videos'))
+  fs.writeFileSync(path.join(wiki, 'ourbigbook.json'), JSON.stringify({ 'media-providers': {
+    'media-repo': { type: 'local', path: '_media' },
+    clips: { type: 'local', path: '../videos', 'default-for': ['video'] },
+    pictures: { type: 'github', remote: 'user/pictures' },
+  } }))
+  fs.writeFileSync(path.join(wiki, 'index.bigb'), '= Home\n\n\\Image[own.svg]{title=Own}\n\n\\Image[plot.svg]{provider=media-repo}{title=Plot}\n\nInline \\image[plot.svg]{provider=media-repo}.\n\n\\Video[movie.mp4]\n\n\\Image[remote \\[plot\\].svg]{provider=pictures}\n')
+  fs.writeFileSync(path.join(wiki, 'own.svg'), '<svg>own</svg>')
+  fs.writeFileSync(path.join(wiki, '_media/plot.svg'), '<svg>plot</svg>')
+  fs.writeFileSync(path.join(directory, 'videos/movie.mp4'), 'video')
+  try {
+    await testApp(async test => {
+      await test.createUserApi(0)
+      await require('util').promisify(require('child_process').execFile)(process.execPath, [
+        path.join(__dirname, '../ourbigbook'), '--web', '--web-individual-upload',
+        '--web-url', `http://localhost:${test.webApi.opts.port}`, '--web-user', 'user0', '--web-password', 'asdf',
+      ], { cwd: wiki, env: { ...process.env, OURBIGBOOK_POSTGRES: '0' }, timeout: 20000 })
+      const { Article, File, Upload } = test.sequelize.models
+      const article = await Article.findOne({ where: { slug: 'user0' } })
+      const file = await File.findOne({ where: { path: '@user0/index.bigb' } })
+      assert(!file.bodySource.includes('provider=media-repo'))
+      assert(file.bodySource.includes('provider=local'))
+      assert_xpath("//x:figure//x:img[@src='/user0/-/raw/own.svg']", article.render)
+      assert_xpath("//x:figure//x:img[@src='/user0/-/raw/plot.svg']", article.render)
+      assert_xpath("//x:video[@src='/user0/-/raw/movie.mp4']", article.render)
+      assert_xpath("//x:img[@src='https://raw.githubusercontent.com/user/pictures/master/remote%20%5Bplot%5D.svg']", article.render)
+      assert_xpath("//x:figcaption/x:a[@href='/user0/-/file/plot.svg']", article.render)
+      for (const name of ['own.svg', 'plot.svg', 'movie.mp4']) {
+        assert.deepStrictEqual((await Article.getFileUsage(`@user0/-/file/${name}`)).map(a => a.slug), ['user0'])
+      }
+      assert.strictEqual(await Upload.count(), 4) // Includes ourbigbook.json.
+    })
+  } finally {
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 it('background renders: web-no-watch exits after submission and the server finishes without the CLI', async function() {
   this.timeout(30000)
   const fs = require('fs')

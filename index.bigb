@@ -62,7 +62,7 @@ A full blown showcase knowledge base can be seen at:
   \Image[feature/topics/derivative.png]
   {title=The <topics feature> allows you to find the best version of a subject written by other users user}
   {description=Live demo: <#derivative>.}
-  {provider=github}
+  {provider=media-repo}
   {height=1000}
   {border}
 
@@ -84,13 +84,13 @@ A full blown showcase knowledge base can be seen at:
   * https://ourbigbook.com/cirosantilli (dynamic)
   are generated from the exact same source code at: https://github.com/cirosantilli/cirosantilli.github.io[].
   }
-  {provider=github}
+  {provider=media-repo}
   {height=600}
   {disambiguate=intro}
 
   \Image[feature/vscode/tree.png]
   {title=<Visual Studio Code extension> tree navigation}
-  {provider=github}
+  {provider=media-repo}
   {height=1100}
   {disambiguate=intro}
   {border}
@@ -98,7 +98,7 @@ A full blown showcase knowledge base can be seen at:
   \Image[feature/web-editor/cirosantilli-derivative.png]
   {title=<Web editor>}
   {description=You can also edit articles on the <Web editor> without installing anything locally.}
-  {provider=github}
+  {provider=media-repo}
   {height=800}
   {border}
   {disambiguate=intro}
@@ -107,7 +107,7 @@ A full blown showcase knowledge base can be seen at:
   {title=Creating a new article on the web editor}
   {border}
   {height=457}
-  {provider=github}
+  {provider=media-repo}
 
   \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
   {title=Edit locally and <publish> demo}
@@ -122,7 +122,7 @@ A full blown showcase knowledge base can be seen at:
   {height=600}
 * \Image[feature/x/hilbert-space-arrow.png]
   {title=<Internal cross file internal link>}
-  {provider=github}
+  {provider=media-repo}
   {height=571}
   {border}
   {disambiguate=intro}
@@ -169,14 +169,14 @@ A full blown showcase knowledge base can be seen at:
 
   This allows you to add arbitrary comments to your tags explaining them as the need arises.
   }
-  {provider=github}
+  {provider=media-repo}
   {border}
   {height=950}
 * \Image[feature/scope/h1-breadcrumb-arrow.png]
   {title=If your ID prefixes are getting too large, we have <scopes> for you.}
   {border}
   {height=499}
-  {provider=github}
+  {provider=media-repo}
   {source=https://ourbigbook.com/cirosantilli/x86-paging/sample-code}
 * \b[infinitely deep table of contents]: never again be limited to only 6 levels of HTML `h6` legacy limitations! With <OurBigBook>, the sky is the limit!
 
@@ -191,7 +191,7 @@ A full blown showcase knowledge base can be seen at:
 
   Descendant pages can also show up as toplevel e.g.: https://ourbigbook.com/cirosantilli/chordate-subclade[]
   }
-  {provider=github}
+  {provider=media-repo}
   {height=2700}
   {border}
   {disambiguate=intro}
@@ -199,7 +199,7 @@ A full blown showcase knowledge base can be seen at:
   \Image[cirosantilli.com/chordate/main.png]
   {title=And this is how the same article looks on the static website}
   {description=Live URL: https://cirosantilli.com/taxonomy#chordate}
-  {provider=github}
+  {provider=media-repo}
   {height=1700}
   {border}
   {disambiguate=intro}
@@ -210,7 +210,7 @@ A full blown showcase knowledge base can be seen at:
 
   Visible live at: https://ourbigbook.com/-/articles?body=false&search=physics-and
   }
-  {provider=github}
+  {provider=media-repo}
   {border}
   {height=650}
   {disambiguate=intro}
@@ -220,27 +220,27 @@ A full blown showcase knowledge base can be seen at:
   {title=<OurBigBook Web discussion> links from the section headers}
   {border}
   {height=725}
-  {provider=github}
+  {provider=media-repo}
   {description=Every section has a "Discussions" button where  URL: https://ourbigbook.com/barack-obama/integral#fundamental-theorem-of-calculus[]}
 
   \Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussions.png]
   {title=<OurBigBook Web discussion> list for a given article}
   {border}
   {height=423}
-  {provider=github}
+  {provider=media-repo}
   {description=We can then list all the existing discussions for a given header. URL: https://ourbigbook.com/barack-obama/fundamental-theorem-of-calculus/-/discussions[]}
 
   \Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png]
   {title=<OurBigBook Web discussion> example}
   {border}
   {height=1043}
-  {provider=github}
+  {provider=media-repo}
   {description=This is how a specific discussion looks like. URL: https://ourbigbook.com/barack-obama/fundamental-theorem-of-calculus/-/discussion/1[]}
 * \Image[feature/announce/button-arrow.png]
   {title=With </article announcement> you can send a link to your articles to your followers}
   {border}
   {height=712}
-  {provider=github}
+  {provider=media-repo}
   {source=https://ourbigbook.com/cirosantilli/chain-rule}
 ]
 
@@ -250,14 +250,14 @@ A full blown showcase knowledge base can be seen at:
 {description=You can create OurBigBook articles that talk about specific files such as images or source code. Such articles appear inside the global <table of contents> like other articles,. A preview of the file is automatically shown in the article when possible. Directory listings are also automatically generated to allow readers to navigate through all your files.}
 {border}
 {height=785}
-{provider=github}
+{provider=media-repo}
 {source=https://cirosantilli.com/-/dir/nodejs/}
 
 \Image[github_com_ourbigbook_ourbigbook.png]
 {title=OurBigBook GitHub repository}
 {source=https://github.com/ourbigbook/ourbigbook}
 {description=Everything that the <OurBigBook Project> does is open source.}
-{provider=github}
+{provider=media-repo}
 {height=1000}
 
 \b[Key links]:
@@ -1885,7 +1885,7 @@ If given, the current section contains metadata about file or other resource wit
 {title=OurBigBook <`\H` `file` argument>[file feature]}
 {border}
 {height=785}
-{provider=github}
+{provider=media-repo}
 {source=https://cirosantilli.com/-/dir/nodejs/}
 
 If empty, the URL of the file is extracted directly from the header. Otherwise, the given URL is used.
@@ -2859,14 +2859,14 @@ So here we see that `Bat` and `Humming bird` have their unique position in the t
 \Image[feature/tag/non-toplevel-documentary-arrows.png]
 {title=Non-toplevel <tagged> headers demo}
 {description=Visible live at: https://cirosantilli.com/film#documentary-film}
-{provider=github}
+{provider=media-repo}
 {border}
 {height=650}
 
 \Image[feature/tagged-list/tagged.png]
 {title=<OurBigBook Web> tagged article list with body demo}
 {description=On <OurBigBook Web>, you can also list all articles tagged by an article while also showing the tagged article bodies rather than just their titles. Live URL: https://ourbigbook.com/cirosantilli/classification-mathematics/-/tagged}
-{provider=github}
+{provider=media-repo}
 {border}
 {height=1081}
 
@@ -3381,9 +3381,9 @@ The directory and repository names are not mandatory, but if you place media in 
 
 This particular documentation repository does have a different setup as can be seen from its \a[ourbigbook.json]. Then, when everything is setup correctly, we can refer to images simply as:
 \OurBigBookExample[[
-\Image[Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png]{provider=github}
+\Image[Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png]{provider=media-repo}
 ]]
-In this example, we also needed to set `{provider=github}` explicitly since it was not set as the default image provider in our `ourbigbook.json`. In most projects however, all of your images will be in the default repository, so this won't be needed.
+In this example, we also needed to set `{provider=media-repo}` explicitly since it was not set as the default image provider in our `ourbigbook.json`. In most projects however, all of your images will be in the default repository, so this won't be needed.
 
 `provider` must not be given when a full URL is given because we automatically detect providers from URLs, e.g.:
 ``
@@ -5096,7 +5096,7 @@ A closely related limitation is the simplistic approach to <\x id output format>
 
 \Image[feature/x/hilbert-space-arrow.png]
 {title=<Cross file internal link>}
-{provider=github}
+{provider=media-repo}
 {height=571}
 {border}
 
@@ -5232,7 +5232,7 @@ If you really want to to use scopes, e.g. enforce the ID of "superconductivity" 
 \Image[feature/x/hilbert-space-arrow.png]
 {title=<Cross file internal link>}
 {disambiguate=Link to IDs, not URL path}
-{provider=github}
+{provider=media-repo}
 {height=571}
 {border}
 
@@ -6832,7 +6832,7 @@ The trade-offs between the two options are highlighted at: <OurBigBook Web vs st
 
 \Image[feature/local-editing/bigb-publish-to-web-or-static-editor-logos.svg]
 {title=You can <publish> local lightweight markup files to either <OurBigBook Web> or as a <static website>}
-{provider=github}
+{provider=media-repo}
 {height=600}
 
 \Video[https://www.youtube.com/watch?v=Ghvlztiu6rI]
@@ -8869,6 +8869,7 @@ The general format of `media-providers` looks like:
 ``
 
 Properties that are valid for every provider:
+* `type`: the provider implementation: `local`, `github`, `wikimedia`, `youtube`, or `unknown`. Provider names are arbitrary and are selected with `{provider=NAME}`. When `type` is omitted, it defaults to the provider's name, so existing configurations and markup continue to work unchanged. Custom names require an explicit `type`.
 * `default-for`: use this provider as the default for the given types of listed macros.
 
   The first character of the macros are case insensitive and must be given as lower case. Therefore e.g.:
@@ -8876,7 +8877,19 @@ Properties that are valid for every provider:
   * giving `Image` is an error because that starts with an upper case character
 * `title-from-src` (`bool`): extract the `title` argument from the `src` by default for media such as <images> and <videos> as if the `titleFromSrc` macro argument had been given, see also: <image ID>{full}
 
-Direct children of media-providers and subproperties that are valid only for them specifically:
+For example, keep the implicit `local` provider for images next to your source files and add another local provider for a separate media repository:
+``
+"media-providers": {
+  "media-repo": {
+    "type": "local",
+    "path": "../ourbigbook-media"
+  }
+}
+``
+
+Then `\Image[logo.png]` uses the source directory, while `\Image[screenshot.png]{provider=media-repo}` uses the media repository. You can also give a custom provider `default-for` and `title-from-src` settings, or explicitly override the type of a built-in name. Multiple local providers are walked for file previews and listings, uploaded by <--web>, and merged into the published website. All share the site's root file namespace: their relative paths must not collide with each other or with source/generated files. Publishing uses each media repository's committed files, and uploaded article source is rewritten so the web server does not need your provider configuration.
+
+Provider types and their type-specific properties:
 * `local`: tracked in the current Git repository as mentioned at <store images inside the repository itself>{full}
   * `path`: location of the cloned local repository relative to the root the main repository
 
@@ -9440,7 +9453,7 @@ Topics are a bit like Twitter hashtags or Quora questions: their goal is to cent
 \Image[Integral_by_Barack_showing_fundamental_theorem_of_calculus_child_topic.png]
 {height=600}
 {border}
-{provider=github}
+{provider=media-repo}
 {description=
 https://ourbigbook.com/barack-obama/integral#barack-obama/fundamental-theorem-of-calculus[Mr. Obama's article about the fundamental theorem of calculus] was not very good, and we were left clueless.
 
@@ -9449,7 +9462,7 @@ But we can see that there are 3 articles in total about "Fundamental theorem of 
 
 \Image[Fundamental_theorem_of_calculus_topic_page_arrow_to_full_article.png]
 {border}
-{provider=github}
+{provider=media-repo}
 {height=600}
 {description=
 After clicking that button, we reach <#fundamental theorem of calculus>[the "Fundamental theorem of calculus" topic page].
@@ -9462,7 +9475,7 @@ After a quick read, it does look like it might be interesting. Let's click on "R
 \Image[Fundamental_theorem_of_calculus_by_Donald_Trump.png]
 {border}
 {height=600}
-{provider=github}
+{provider=media-repo}
 {description=
 This leads us to https://ourbigbook.com/donald-trump/fundamental-theorem-of-calculus[Mr. Trump's version of the fundamental theorem page].
 
@@ -9481,19 +9494,19 @@ There are a few ways to do that.
 
 \Image[Fundamental_theorem_of_calculus_topic_page_new_article.png]
 {border}
-{provider=github}
+{provider=media-repo}
 {height=500}
 {description=One easy way to create an article about a given topic is to use the "New Article in Topic" button from the topic page. URL: https://ourbigbook.com/-/topic/fundamental-theorem-of-calculus[]}
 
 \Image[Fundamental_theorem_of_calculus_subheader_create_my.png]
 {border}
-{provider=github}
+{provider=media-repo}
 {height=200}
 {description=Another option is to click the "Create my version of this topic button". URL: https://ourbigbook.com/barack-obama/mathematics#fundamental-theorem-of-calculus[]}
 
 \Image[Fundamental_theorem_of_calculus_editor_new.png]
 {border}
-{provider=github}
+{provider=media-repo}
 {height=300}
 {description=If you click do any of the above links, you will be redirected to the editor page, and the title will be preset. By simply using that exact same title to create your new article, your article will then appear in the correct "Fundamental theorem of calculus" topic where others might see it. https://ourbigbook.com/-/new?title=Proof%20of%20the%20fundamental%20theorem%20of%20calculus[].}
 
@@ -9527,7 +9540,7 @@ Related:
 {title=<Automatic topic linking> demo}
 {border}
 {height=1181}
-{provider=github}
+{provider=media-repo}
 {source=https://ourbigbook.com/cirosantilli/things-that-i-like}
 
 = OurBigBook Web dynamic article tree
@@ -9554,14 +9567,14 @@ Live URL: https://ourbigbook.com/cirosantilli/chordate
 
 Descendant pages can also show up as toplevel e.g.: https://ourbigbook.com/cirosantilli/chordate-subclade[]
 }
-{provider=github}
+{provider=media-repo}
 {height=2000}
 {border}
 
 \Image[cirosantilli.com/chordate/main.png]
 {title=And this is how the same article looks on the static website}
 {description=Live URL: https://cirosantilli.com/taxonomy#chordate}
-{provider=github}
+{provider=media-repo}
 {height=1700}
 {border}
 
@@ -9630,19 +9643,19 @@ Each article has their own discussion section. This way you can easily see if ot
 \Image[Fundamental_theorem_of_calculus_subheader_discussion_arrow.png]
 {border}
 {height=725}
-{provider=github}
+{provider=media-repo}
 {description=Every section has a "Discussions" button where you can see if other people hit the same problem as you and created a discussion thread for it. We see that there are 2 total discussions about the section "Fundamental theorem of calculus", so let's check them out. URL: https://ourbigbook.com/barack-obama/integral#fundamental-theorem-of-calculus[]}
 
 \Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussions.png]
 {border}
 {height=423}
-{provider=github}
+{provider=media-repo}
 {description=From these 2 recent threads, in the first one seems that someone found the same difficulty that we did. URL: https://ourbigbook.com/barack-obama/fundamental-theorem-of-calculus/-/discussions[]}
 
 \Image[Fundamental_theorem_of_calculus_by_Barack_Obama_discussion_1.png]
 {border}
 {height=1043}
-{provider=github}
+{provider=media-repo}
 {description=So let's inspect that discussion. Ah, clearly, the comments are very illuminating, our problem is solved! Hopefully the author will fix the issue so that other people don't have to go searching the discussions as well. URL: https://ourbigbook.com/barack-obama/fundamental-theorem-of-calculus/-/discussion/1[]}
 
 = OurBigBook Web search
@@ -9656,7 +9669,7 @@ OurBigBook Web supports basic search for <ID> prefixes of articles and <topics>.
 \Image[feature/search/physics-arrow.png]
 {title=<OurBigBook Web search> demo}
 {description=Visible live at: https://ourbigbook.com/-/articles?body=false&search=physics-and}
-{provider=github}
+{provider=media-repo}
 {border}
 {height=650}
 
@@ -9664,7 +9677,7 @@ OurBigBook Web supports basic search for <ID> prefixes of articles and <topics>.
 {title=<OurBigBook Web search> highlighting full text search}
 {border}
 {height=738}
-{provider=github}
+{provider=media-repo}
 {source=https://ourbigbook.com/-/articles?body=false&search=calculus%20fun}
 
 Related:
@@ -9717,14 +9730,14 @@ In order to reduce the risk of spam and going over email quotas, the following r
 {title=</Article announcement> button on <OurBigBook Web>}
 {border}
 {height=712}
-{provider=github}
+{provider=media-repo}
 {source=https://ourbigbook.com/cirosantilli/chain-rule}
 
 \Image[feature/announce/modal.png]
 {title=Modal that opens up after clicking the </article announcement> button on <OurBigBook Web>}
 {border}
 {height=349}
-{provider=github}
+{provider=media-repo}
 {source=https://ourbigbook.com/cirosantilli/chain-rule}
 
 = OurBigBook Web page renaming
@@ -11799,13 +11812,13 @@ The official OurBigBook extension is published at: https://marketplace.visualstu
 
 \Image[feature/vscode/install.png]
 {title=<Visual Studio Code extension> installation}
-{provider=github}
+{provider=media-repo}
 {height=750}
 {border}
 
 \Image[feature/vscode/tree.png]
 {title=<Visual Studio Code extension> tree navigation}
-{provider=github}
+{provider=media-repo}
 {height=1100}
 {border}
 
@@ -11864,7 +11877,7 @@ Other things to try include:
 
 \Image[feature/local-editing/vscode-mathematics-calculus-derivative.png]
 {title=Screenshot of a sample OurBigBook project in VS Code}
-{provider=github}
+{provider=media-repo}
 {height=800}
 
 = Visual Studio Code documentation
@@ -12231,14 +12244,14 @@ This is editor present in <OurBigBook Web>. It is linked to the database, and ha
 \Image[feature/web-editor/cirosantilli-derivative.png]
 {title=<Web editor>}
 {description=Editing the source of the page: https://ourbigbook.com/cirosantilli/derivative}
-{provider=github}
+{provider=media-repo}
 {height=800}
 {border}
 
 \Image[feature/web-editor/cirosantilli-derivative-metadata.png]
 {title=<Web editor> metadata tab}
 {description=Editing the source of the page: https://ourbigbook.com/cirosantilli/derivative}
-{provider=github}
+{provider=media-repo}
 {height=400}
 {border}
 
@@ -13304,7 +13317,7 @@ Ciro is a big <#Stack Overflow> contributor, having reached top 50 yearly reputa
 \Image[merch/tshirtstudio/hoodie-front.jpg]
 {title=<Ciro Santilli> wearing the <tshirtstudio.com>[Sacred OurBigBook Project Hoodie]!}
 {height=800}
-{provider=github}
+{provider=media-repo}
 
 = OurBigBook Admin
 {c}
@@ -13327,18 +13340,18 @@ To modify the pinned article, admins must visit the <site settings page>.
 
 \Image[feature/pinned-article/site-settings-button-on-topics-page-arrow.png]
 {title=Site Settings link under the <topics> page}
-{provider=github}
+{provider=media-repo}
 {height=800}
 {border}
 
 \Image[feature/pinned-article/site-settings-pinned-article-filled-arrow.png]
 {title=Edit the pinned article setting in the site settings page}
-{provider=github}
+{provider=media-repo}
 {border}
 
 \Image[feature/pinned-article/pinned-article-on-topics-page-arrow.png]
 {title=The selected article now shows on the homepage for all users to see}
-{provider=github}
+{provider=media-repo}
 {height=1200}
 {border}
 
@@ -13435,13 +13448,13 @@ Very slightly too straight on shoulders, but not bad. The front color is a bit o
 This is a picture from version one, which did not have the <project slogan>. Version one is no longer available for sale, only the new one with the slogan.
 }
 {height=800}
-{provider=github}
+{provider=media-repo}
 
 \Image[merch/tshirtstudio/tshirt-back.jpg]
 {title=TShirt Studio black t-shirt back}
 {description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-black-t-shirt[].}
 {height=800}
-{provider=github}
+{provider=media-repo}
 
 \Image[merch/tshirtstudio/hoodie-front.jpg]
 {title=TShirt Studio black hoodie front}
@@ -13455,13 +13468,13 @@ This is a picture from version one, which did not have the <project slogan>. Ver
 It was slighty concerning if the hoodie would cover the URL or not, but it does not do often in practice.
 }
 {height=800}
-{provider=github}
+{provider=media-repo}
 
 \Image[merch/tshirtstudio/hoodie-back.jpg]
 {title=TShirt Studio black hoodie back}
 {description=Buy at: https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-black-zip-hoodie-2[].}
 {height=800}
-{provider=github}
+{provider=media-repo}
 
 \Image[https://www.tshirtstudio.com/marketplace/ourbigbook-com/ourbigbook-com-white-t-shirt-front.jpg]
 {title=TShirt Studio white t-shirt front}
@@ -13481,7 +13494,7 @@ It was slighty concerning if the hoodie would cover the URL or not, but it does 
 {title=Sticker SVG}
 {description=This SVG is our original sticker design for laptops.}
 {border}
-{provider=github}
+{provider=media-repo}
 {height=200}
 
 * https://www.redbubble.com/people/OurBigBook/shop (case insensitive) has a marketplace mechanism 6.64 pound/unit for the 21cm size, which is quite expensive. It is unclear how much they pay the creator.
@@ -13499,7 +13512,7 @@ It was slighty concerning if the hoodie would cover the URL or not, but it does 
 
   \Image[merch/redbubble/21cm.jpg]
   {title=Redbubble 21cm sticker}
-  {provider=github}
+  {provider=media-repo}
   {height=500}
 * https://stickerapp.co.uk/ does not seem to have a marketplace, 2 pounds/unit on an 11 unit order, so much cheaper. But why would we need 11 is the question. Just going with the marketplace for now.
 
@@ -13553,7 +13566,7 @@ Since it does not contain text, only geometric primitives, this SVG file does no
 {title=logo-256.png}
 {height=150}
 {border}
-{provider=github}
+{provider=media-repo}
 {description=
 256x256 PNG version of <image logo.svg>, ideal for profile pictures that don't support SVG. Generated with:
 ``
@@ -13565,7 +13578,7 @@ convert logo.svg -resize 256x logo-256.png
 {title=logo-transparent.svg}
 {height=150}
 {border}
-{provider=github}
+{provider=media-repo}
 {description=
 This is a version of logo.svg with a transparent background instead of the hardcoded black background.
 
@@ -13576,7 +13589,7 @@ It was useful e.g. for t-shirt merch, where the t-shirt background choices were 
 {title=logo-transparent-with-text.svg}
 {height=300}
 {border}
-{provider=github}
+{provider=media-repo}
 {description=
 This version of the logo was useful when designing project <T-shirts> on <tshirtstudio.com>. On that website, you can't easily resize images with drag and drop, so:
 * leaving some extra margin at the top would make the text more likely visible considering the hoodie
@@ -13587,14 +13600,14 @@ This version of the logo was useful when designing project <T-shirts> on <tshirt
 {title=logo-transparent-with-text-and-slogan-2000.png}
 {height=300}
 {border}
-{provider=github}
+{provider=media-repo}
 {description=This is perhaps a superior alternative to <Image logo-transparent-with-text.svg> for <merchandise>, as the <project slogan> could clarify further what the merchandise is all about.}
 
 \Image[logo-transparent-with-text-and-slogan-2000-2150.png]
 {title=logo-transparent-with-text-and-slogan-2000-2150.png}
 {height=300}
 {border}
-{provider=github}
+{provider=media-repo}
 {description=
 This is the same as `logo-transparent-with-text-and-slogan-2000.png` but with a 150 px border added to the top to ensure that the <tshirtstudio.com> hoodie hood won't hide the URL.
 
@@ -13641,36 +13654,36 @@ obb
 {title=3x4.svg text logo}
 {border}
 {description=This one was done without scaling. The font is a slightly tall rectangle, leading to a natural 3x4 aspect ratio.}
-{provider=github}
+{provider=media-repo}
 
 \Image[text-logo/3x3-1000.png]
 {title=3x4-1000.png text logo}
 {border}
 {description=This is a rasterization of 3x4.png to 1000x1000 px. Since SVG does not contain the actual font, we always need PNG exports for reproducibility.}
-{provider=github}
+{provider=media-repo}
 
 \Image[text-logo/3x3.svg]
 {title=3x3.svg text logo}
 {border}
 {description=This was made by scaling down a version of the 3x4.svg logo. We had to add some extra space between lines before however, otherwise it would feel too cramped after scaling.}
-{provider=github}
+{provider=media-repo}
 
 \Image[text-logo/3x3-1000.png]
 {title=3x3-1000.png text logo}
 {border}
-{provider=github}
+{provider=media-repo}
 
 \Image[text-logo/circle-1000.png]
 {title=circle-1000.png text logo}
 {description=Useful for circular profile pictures.}
 {border}
-{provider=github}
+{provider=media-repo}
 
 \Image[text-logo/square-1000.png]
 {title=square-1000.png text logo}
 {description=Useful for square profile pictures.}
 {border}
-{provider=github}
+{provider=media-repo}
 
 = Project slogan
 {parent=Project identity}
@@ -13711,7 +13724,7 @@ convert banner-topics-signed-in-800.png -background black -gravity center -exten
 ``
 and then drag the image selection so that the desktop view covers the area we care about.
 }
-{provider=github}
+{provider=media-repo}
 
 Websites that accept banners:
 * Twitter

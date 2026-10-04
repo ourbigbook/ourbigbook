@@ -545,7 +545,7 @@ async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbig
           order: [['to', 'ASC'], [{ model: Id, as: 'fromId' }, 'idid', 'ASC']],
         })
         for (const ref of refs) {
-          const target = FILE_PREFIX + URL_SEP + ourbigbook.fileUsagePath(ref.to, nonOurbigbookOptions.localMediaPath)
+          const target = FILE_PREFIX + URL_SEP + ourbigbook.fileUsagePath(ref.to, nonOurbigbookOptions.localMediaProviders.map(provider => provider.path))
           if (ref['fromId.idid'] === target) continue
           ;(usage[target] ||= []).push([ref['fromId.idid'], ref['aRefDefinedAt.last_parse']])
         }
@@ -596,7 +596,7 @@ async function convert_directory_stages(input_dir, ourbigbook_options, nonOurbig
           if (fs.existsSync(listingDir) && !fs.statSync(listingDir).isDirectory()) {
             cli_error(`local media collides with generated output: ${relpath}`)
           }
-          await convert_path_to_file(path.join(localMedia.root, relpath), ourbigbook_options,
+          await convert_path_to_file(localMedia.directorySources[relpath], ourbigbook_options,
             { ...nonOurbigbookOptions, virtualPath: relpath })
         }
       }
@@ -1880,34 +1880,48 @@ async function webCreateOrUpdate({
 
 // Media has its own physical root but shares the site's logical file namespace.
 function collectLocalMedia(nonOptions) {
-  if (!nonOptions.localMediaPath) return
-  const root = nonOptions.localMediaSnapshot || path.resolve(nonOptions.ourbigbook_json_dir, nonOptions.localMediaPath)
-  if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
-    cli_error(`local media directory does not exist: ${root}`)
-  }
-  const ignored = git_is_in_repo(root)
-    ? new Set(runCmd('git', ['-C', root, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory', '-z'],
-        { showCmd: false, throwOnError: true }).split('\0').filter(Boolean).map(p => p.replace(/\/$/, '')))
-    : new Set()
+  if (!nonOptions.localMediaProviders?.length) return
   const directories = { '': [] }
+  const directorySources = {}
   const files = []
-  for (const file of walk_directory_recursively(root,
-    new Set([...DEFAULT_IGNORE_BASENAMES_SET, '.gitignore', '.gitattributes', '.gitmodules']),
-    ignored, [], [], root)) {
-    const relpath = path.relative(root, file)
-    if (!relpath) continue
-    const stat = fs.lstatSync(file)
-    if (stat.isSymbolicLink()) cli_error(`local media symlinks are not supported: ${relpath}`)
-    const source = path.join(nonOptions.ourbigbook_json_dir, relpath)
-    if (fs.existsSync(source) && !(stat.isDirectory() && fs.statSync(source).isDirectory())) {
-      cli_error(`local media collides with source: ${relpath}`)
+  const seen = new Map()
+  for (const provider of nonOptions.localMediaProviders) {
+    const root = provider.snapshot || path.resolve(nonOptions.ourbigbook_json_dir, provider.path)
+    if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
+      cli_error(`local media directory does not exist: ${root}`)
     }
-    const dirname = path.dirname(relpath)
-    directories[dirname === '.' ? '' : dirname].push([path.basename(relpath), stat.isDirectory()])
-    if (stat.isDirectory()) directories[relpath] = []
-    else if (stat.isFile()) files.push({ path: file, relpath })
+    const ignored = git_is_in_repo(root)
+      ? new Set(runCmd('git', ['-C', root, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory', '-z'],
+          { showCmd: false, throwOnError: true }).split('\0').filter(Boolean).map(p => p.replace(/\/$/, '')))
+      : new Set()
+    directorySources[''] ||= root
+    for (const file of walk_directory_recursively(root,
+      new Set([...DEFAULT_IGNORE_BASENAMES_SET, '.gitignore', '.gitattributes', '.gitmodules']),
+      ignored, [], [], root)) {
+      const relpath = path.relative(root, file)
+      if (!relpath) continue
+      const stat = fs.lstatSync(file)
+      if (stat.isSymbolicLink()) cli_error(`local media symlinks are not supported: ${relpath}`)
+      const source = path.join(nonOptions.ourbigbook_json_dir, relpath)
+      if (fs.existsSync(source) && !(stat.isDirectory() && fs.statSync(source).isDirectory())) {
+        cli_error(`${nonOptions.web ? 'media upload path collision' : 'local media collides with source'}: ${relpath}`)
+      }
+      if (seen.has(relpath)) {
+        if (stat.isDirectory() && seen.get(relpath)) continue
+        cli_error(`local media providers collide: ${relpath}`)
+      }
+      seen.set(relpath, stat.isDirectory())
+      const dirname = path.dirname(relpath)
+      directories[dirname === '.' ? '' : dirname].push([path.basename(relpath), stat.isDirectory()])
+      if (stat.isDirectory()) {
+        directories[relpath] = []
+        directorySources[relpath] = file
+      } else if (stat.isFile()) {
+        files.push({ path: file, relpath })
+      }
+    }
   }
-  return { root, directories, files }
+  return { directories, directorySources, files }
 }
 
 function mergedDirectoryEntries(relpath, nonOptions) {
@@ -1933,17 +1947,20 @@ function pathIsWithin(root, file) {
   return relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative)
 }
 
-function resolvePublishedMediaPath(root, file, { localMediaPath, localMediaSnapshot }={}) {
-  if (localMediaSnapshot) {
-    const prefix = path.normalize(localMediaPath).replace(/\/$/, '')
+function resolvePublishedMediaPath(root, file, { localMediaProviders=[] }={}) {
+  for (const provider of localMediaProviders) {
+    if (!provider.snapshot) continue
+    const prefix = path.normalize(provider.path).replace(/\/$/, '')
     if (file === prefix || file.startsWith(prefix + path.sep)) {
-      return path.join(localMediaSnapshot, path.relative(prefix, file))
+      return path.join(provider.snapshot, path.relative(prefix, file))
     }
   }
   const source = path.join(root, file)
-  if (localMediaPath && !fs.existsSync(source) && pathIsWithin(root, source)) {
-    const media = path.join(localMediaSnapshot || path.resolve(root, localMediaPath), file)
-    if (fs.existsSync(media)) return media
+  if (!fs.existsSync(source) && pathIsWithin(root, source)) {
+    for (const provider of localMediaProviders) {
+      const media = path.join(provider.snapshot || path.resolve(root, provider.path), file)
+      if (fs.existsSync(media)) return media
+    }
   }
   return source
 }
@@ -1972,11 +1989,11 @@ function fileConversionOptions(ourbigbook_json_dir, mediaOptions) {
     }),
     read_file: (readpath, context, opts={}) => {
       readpath = resolveFile(readpath)
-      const mediaRoot = mediaOptions?.localMediaSnapshot || (mediaOptions?.localMediaPath &&
-        path.resolve(ourbigbook_json_dir, mediaOptions.localMediaPath))
+      const mediaRoots = (mediaOptions?.localMediaProviders || []).map(provider =>
+        provider.snapshot || path.resolve(ourbigbook_json_dir, provider.path))
       if (
         // Let's prevent path transversal a bit by default.
-        (pathIsWithin(ourbigbook_json_dir, readpath) || (mediaRoot && pathIsWithin(mediaRoot, readpath))) &&
+        (pathIsWithin(ourbigbook_json_dir, readpath) || mediaRoots.some(root => pathIsWithin(root, readpath))) &&
         fs.existsSync(readpath)
       ) {
         if (fs.lstatSync(readpath).isFile()) {
@@ -2393,7 +2410,8 @@ if (cli.helpMacros) {
         path.join(ourbigbook_json_dir, ourbigbook.OURBIGBOOK_JSON_BASENAME), ourbigbook_nodejs_webpack_safe.ENCODING)))
     }
   }
-  let webSourceRoot, webMediaSnapshot
+  let webSourceRoot
+  const webMediaSnapshots = {}
   if (web && git_is_in_repo(ourbigbook_json_dir)) {
     const opts = { throwOnError: true, showCmd: false }
     const source = chomp(runCmd('git', ['-C', ourbigbook_json_dir, 'rev-parse', '--show-toplevel'], opts))
@@ -2416,13 +2434,14 @@ if (cli.helpMacros) {
     ourbigbook_json_dir = project
     const config = path.join(project, ourbigbook.OURBIGBOOK_JSON_BASENAME)
     ourbigbook_json = fs.existsSync(config) ? JSON.parse(fs.readFileSync(config, 'utf8')) : {}
-    const mediaPath = ourbigbook_json['media-providers']?.local?.path
-    if (mediaPath) {
+    for (const { name, path: mediaPath } of ourbigbook.localMediaProviders(ourbigbook_json)) {
+      if (!mediaPath || path.normalize(mediaPath) === '.') continue
       const mediaSource = path.resolve(webSourceRoot, mediaPath)
       // Submodules inside the source checkout already use the superproject's pinned commit.
       if (!is_subpath(source, mediaSource)) {
         if (!git_is_in_repo(mediaSource)) cli_error(`local media provider must be a Git repository for committed web uploads: ${mediaSource}`)
-        webMediaSnapshot = fs.mkdtempSync(path.join(os.tmpdir(), 'ourbigbook-web-media-'))
+        const webMediaSnapshot = fs.mkdtempSync(path.join(os.tmpdir(), 'ourbigbook-web-media-'))
+        webMediaSnapshots[name] = webMediaSnapshot
         process.on('exit', () => fs.rmSync(webMediaSnapshot, { recursive: true, force: true }))
         runCmd('git', ['clone', '--shared', '--no-checkout', '--', mediaSource, webMediaSnapshot], opts)
         runCmd('git', ['-C', webMediaSnapshot, 'checkout', '--detach', gitSha(mediaSource)], opts)
@@ -2560,8 +2579,11 @@ if (cli.helpMacros) {
   }
   // Resolved options.
   const options = ourbigbook.convertInitOptions(ourbigbook_options)
-  const localMediaPath = options.ourbigbook_json['media-providers'].local.path
-  const localMediaDir = webMediaSnapshot || (localMediaPath ? path.resolve(ourbigbook_json_dir, localMediaPath) : undefined)
+  const localMediaProviders = ourbigbook.localMediaProviders(options.ourbigbook_json)
+    .filter(provider => provider.path && path.normalize(provider.path) !== '.')
+    .map(provider => ({ ...provider, snapshot: webMediaSnapshots[provider.name],
+      dir: webMediaSnapshots[provider.name] || path.resolve(ourbigbook_json_dir, provider.path) }))
+    .sort((a, b) => b.path.length - a.path.length)
 
   ourbigbook_options.log = {};
   const nonOurbigbookOptions_log = {};
@@ -2708,7 +2730,7 @@ if (cli.helpMacros) {
   const nonOurbigbookOptions = {
     ourbigbook_json_dir,
     filesystem_root: ourbigbook_json_dir,
-    localMediaPath,
+    localMediaProviders,
     ourbigbook_paths_converted: [],
     ourbigbook_paths_converted_only: false,
     cli,
@@ -2750,9 +2772,6 @@ if (cli.helpMacros) {
   }
 
   // CLI options
-  if (webMediaSnapshot) {
-    Object.assign(nonOurbigbookOptions, { localMediaPath, localMediaSnapshot: webMediaSnapshot })
-  }
   Object.assign(ourbigbook_options, fileConversionOptions(ourbigbook_json_dir, nonOurbigbookOptions))
   const cmdOpts = {
     dry_run: cli.dryRun,
@@ -2776,7 +2795,7 @@ if (cli.helpMacros) {
   const isInGitRepo = git_is_in_repo(ourbigbook_json_dir)
   const configPath = path.join(ourbigbook_json_dir, ourbigbook.OURBIGBOOK_JSON_BASENAME)
   nonOurbigbookOptions.configMtime = fs.existsSync(configPath) ? fs.statSync(configPath).mtimeMs : 0
-  if (localMediaDir) {
+  for (const { dir: localMediaDir } of localMediaProviders) {
     const mediaRelpath = path.relative(ourbigbook_json_dir, localMediaDir)
     nonOurbigbookOptions.ignore_paths.add(mediaRelpath)
     if (mediaRelpath && pathIsWithin(ourbigbook_json_dir, localMediaDir)) {
@@ -3247,34 +3266,15 @@ if (cli.helpMacros) {
         let nestedSetNeedsUpdate = false
         // Partial uploads must not delete unrelated server articles or files.
         const fullWebUpload = inputPath === '.' && !cli.webId
-        if (fullWebUpload || localMediaDir) {
+        if (fullWebUpload || localMediaProviders.length) {
           // Handle uploads
           {
             const uploadPaths = new Map(fullWebUpload
               ? [...nonOurbigbookOptions.nonBigbPathsConverted].map(p => [p, p]) : [])
-            if (localMediaDir) {
-              const ignored = git_is_in_repo(localMediaDir)
-                ? new Set(runCmd('git', ['-C', localMediaDir, 'ls-files', '--ignored', '--others', '--exclude-standard', '--directory', '-z'], cmdOptsInfo)
-                  .split('\0').filter(Boolean).map(p => p.replace(/\/$/, '')))
-                : new Set()
-              // Walk this repository separately: source discovery deliberately skips -/.
-              for (const file of walk_directory_recursively(localMediaDir,
-                new Set([...DEFAULT_IGNORE_BASENAMES_SET, '.gitignore', '.gitattributes', '.gitmodules']),
-                ignored, [], [], localMediaDir)) {
-                const stat = fs.lstatSync(file)
-                const destination = path.relative(localMediaDir, file)
-                const sourcePath = path.join(ourbigbook_json_dir, destination)
-                // Validate the source tree too, including partial uploads and
-                // article sources that are not in the ordinary upload manifest.
-                // Shared directories are fine; files must never overwrite either.
-                if (uploadPaths.has(destination) ||
-                  (fs.existsSync(sourcePath) &&
-                    !(stat.isDirectory() && fs.lstatSync(sourcePath).isDirectory()))) {
-                  cli_error(`media upload path collision: ${destination}`)
-                }
-                if (!stat.isFile()) continue
-                uploadPaths.set(destination, file)
-              }
+            // Validate every provider before making any upload/unlist requests.
+            for (const { path: file, relpath: destination } of collectLocalMedia(nonOurbigbookOptions)?.files || []) {
+              if (uploadPaths.has(destination)) cli_error(`media upload path collision: ${destination}`)
+              uploadPaths.set(destination, file)
             }
             const uploadHashes = {}
             const serverOnlyUploads = []
@@ -3613,7 +3613,8 @@ if (cli.helpMacros) {
         let srcBranch;
 
         if (publish) {
-          if (localMediaDir && publish_uses_git) {
+          for (const provider of publish_uses_git ? localMediaProviders : []) {
+            const localMediaDir = provider.dir
             const mediaGit = args => chomp(runCmd('git', ['-C', localMediaDir, ...args], cmdOptsInfo))
             if (fs.realpathSync(mediaGit(['rev-parse', '--show-toplevel'])) !== fs.realpathSync(localMediaDir)) {
               cli_error('local media path must be the root of its own Git repository for GitHub publishing')
@@ -3635,7 +3636,7 @@ if (cli.helpMacros) {
             process.on('exit', () => fs.rmSync(snapshot, { recursive: true, force: true }))
             runCmd('git', ['clone', '--shared', '--no-checkout', '--', localMediaDir, snapshot], cmdOptsNoDry)
             runCmd('git', ['-C', snapshot, 'checkout', '--detach', commit], cmdOptsNoDry)
-            Object.assign(nonOurbigbookOptions, { localMediaPath, localMediaSnapshot: snapshot })
+            provider.snapshot = snapshot
             Object.assign(ourbigbook_options, fileConversionOptions(ourbigbook_json_dir, nonOurbigbookOptions))
             // Publish media first, including before cloning a source repository with submodules.
             if (!cli.dryRunPush && !alreadyPublished) runCmd('git', ['-C', localMediaDir, 'push', 'origin', `HEAD:refs/heads/${branch}`], cmdOpts)
@@ -3881,29 +3882,36 @@ if (cli.helpMacros) {
           }
 
           if (publish_uses_git) {
-            if (nonOurbigbookOptions.localMediaSnapshot) {
+            if (localMediaProviders.length) {
               // Merge only the committed snapshot, never dirty/untracked files or Git metadata.
-              const copyMedia = (validateOnly, relative='') => {
-                for (const entry of fs.readdirSync(path.join(nonOurbigbookOptions.localMediaSnapshot, relative), { withFileTypes: true })) {
+              const destinations = new Map()
+              const copyMedia = (snapshot, validateOnly, relative='') => {
+                for (const entry of fs.readdirSync(path.join(snapshot, relative), { withFileTypes: true })) {
                   if (['.git', '.gitignore', '.gitattributes', '.gitmodules'].includes(entry.name)) continue
                   const mediaPath = path.join(relative, entry.name)
                   const destination = path.join(publishOutPublishDir, mediaPath)
+                  if (validateOnly) {
+                    if (destinations.has(mediaPath) && !(entry.isDirectory() && destinations.get(mediaPath))) {
+                      cli_error(`local media providers collide: ${mediaPath}`)
+                    }
+                    destinations.set(mediaPath, entry.isDirectory())
+                  }
                   if (entry.isSymbolicLink()) cli_error(`cannot publish local media symbolic link: ${mediaPath}`)
                   if (entry.isDirectory()) {
                     if (fs.existsSync(destination) && !fs.lstatSync(destination).isDirectory()) {
                       cli_error(`local media collides with generated output: ${mediaPath}`)
                     }
                     if (!validateOnly) fs.mkdirSync(destination, { recursive: true })
-                    copyMedia(validateOnly, mediaPath)
+                    copyMedia(snapshot, validateOnly, mediaPath)
                   } else {
                     if (fs.existsSync(destination)) cli_error(`local media collides with generated output: ${mediaPath}`)
-                    if (!validateOnly) fs.copyFileSync(path.join(nonOurbigbookOptions.localMediaSnapshot, mediaPath), destination, fs.constants.COPYFILE_EXCL)
+                    if (!validateOnly) fs.copyFileSync(path.join(snapshot, mediaPath), destination, fs.constants.COPYFILE_EXCL)
                   }
                 }
               }
               // Detect every collision before copying any media into the output.
-              copyMedia(true)
-              copyMedia(false)
+              for (const provider of localMediaProviders) copyMedia(provider.snapshot, true)
+              for (const provider of localMediaProviders) copyMedia(provider.snapshot, false)
             }
             // Commit and push.
             runCmd('git', ['-C', publishOutPublishDirCwd, 'add', '.'], cmdOpts);

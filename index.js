@@ -3361,18 +3361,13 @@ async function convert(
           if (default_for[0] == default_for[0].toUpperCase()) {
             context.errors.push(new ErrorMessage(`default-for names must start with a lower case letter`, new SourceLocation(1, 1)));
           } else {
-            if (default_for === 'all') {
-              for (const macro_name of MACRO_WITH_MEDIA_PROVIDER) {
-                context.media_provider_default[default_for] = media_provider_name;
-                context.media_provider_default[capitalizeFirstLetter(default_for)] = media_provider_name;
-              }
-            } else {
-              if (MACRO_WITH_MEDIA_PROVIDER.has(default_for)) {
-                if (context.media_provider_default[default_for] === undefined) {
-                  context.media_provider_default[default_for] = media_provider_name;
-                  context.media_provider_default[capitalizeFirstLetter(default_for)] = media_provider_name;
+            for (const macro_name of default_for === 'all' ? MACRO_WITH_MEDIA_PROVIDER : [default_for]) {
+              if (MACRO_WITH_MEDIA_PROVIDER.has(macro_name)) {
+                if (context.media_provider_default[macro_name] === undefined) {
+                  context.media_provider_default[macro_name] = media_provider_name;
+                  context.media_provider_default[capitalizeFirstLetter(macro_name)] = media_provider_name;
                 } else {
-                  context.errors.push(new ErrorMessage(`multiple media providers set for macro "${default_for}"`, new SourceLocation(1, 1)));
+                  context.errors.push(new ErrorMessage(`multiple media providers set for macro "${macro_name}"`, new SourceLocation(1, 1)));
                 }
               } else {
                 context.errors.push(new ErrorMessage(`macro "${default_for}" does not accept media providers`, new SourceLocation(1, 1)));
@@ -4385,20 +4380,20 @@ function convertInitOurbigbookJson(ourbigbook_json={}) {
         if (!(media_provider_type in media_providers)) {
           media_providers[media_provider_type] = {};
         }
-        const media_provider = media_providers[media_provider_type];
-        if (!('title-from-src' in media_provider)) {
-          media_provider['title-from-src'] = false;
-        }
-      }
-      if (media_providers.local && !('path' in media_providers.local)) {
-        media_providers.local.path = '';
-      }
-      if (media_providers.github && !('remote' in media_providers.github)) {
-        // TODO determine from git remote origin if any
-        media_providers.github.remote = undefined
       }
       for (const media_provider_name in media_providers) {
         const media_provider = media_providers[media_provider_name];
+        if (!media_provider || typeof media_provider !== 'object' || Array.isArray(media_provider)) {
+          throw new Error(`media provider "${media_provider_name}" must be an object`)
+        }
+        if (media_provider.type === undefined) media_provider.type = media_provider_name
+        if (!MEDIA_PROVIDER_TYPES.has(media_provider.type)) {
+          throw new Error(`unknown media provider type "${media_provider.type}" for "${media_provider_name}"; custom provider names require a valid type`)
+        }
+        if (media_provider.type === 'local' && media_provider.path === undefined) media_provider.path = ''
+        if (media_provider.path !== undefined && typeof media_provider.path !== 'string') {
+          throw new Error(`media provider "${media_provider_name}" path must be a string`)
+        }
         if (!('title-from-src' in media_provider)) {
           media_provider['title-from-src'] = false;
         }
@@ -4761,8 +4756,8 @@ function getTitleAndDescription({
   return `${title}${sep}${source}${description}`
 }
 
-function githubProviderPrefix(context) {
-  const github = context.options.ourbigbook_json['media-providers'].github
+function githubProviderPrefix(context, name='github') {
+  const github = context.options.ourbigbook_json['media-providers'][name]
   if (github && github.remote) {
     return `https://raw.githubusercontent.com/${github.remote}/master`;
   } else {
@@ -5493,7 +5488,7 @@ function macroImageVideoBlockConvertFunction(ast, context) {
           const [username, ...filePath] = href.split(URL_SEP)
           fileHref = `${URL_SEP}${username.slice(AT_MENTION_CHAR.length)}${URL_SEP}${FILE_PREFIX}${URL_SEP}${filePath.join(URL_SEP)}`
         } else {
-          const filePath = fileUsagePath(href, context.options.ourbigbook_json['media-providers'].local.path)
+          const filePath = fileUsagePath(href, localMediaPaths(context.options.ourbigbook_json))
           fileHref = path.join(context.root_relpath_shift, FILE_PREFIX, filePath) + (context.options.htmlXExtension ? `.${HTML_EXT}` : '')
         }
         force_separator = true
@@ -7542,10 +7537,10 @@ async function parse(tokens, options, context, extra_returns={}) {
           context.options.render_metadata
             ? options.db_provider.get_file_usage_fetch(
                 Object.values(options.indexed_ids).filter(ast => ast.file !== undefined).flatMap(ast => {
-                  const localPath = options.ourbigbook_json['media-providers'].local.path
-                  const file = fileUsagePath(ast.file, localPath)
+                  const localPaths = localMediaPaths(options.ourbigbook_json)
+                  const file = fileUsagePath(ast.file, localPaths)
                   return options.ref_prefix ? [options.ref_prefix + URL_SEP + file]
-                    : localPath ? [file, path.join(localPath, file)] : [file]
+                    : [file, ...localPaths.map(localPath => path.join(localPath, file))]
                 }),
                 { context, ignore_paths_set: context.options.include_path_set },
               )
@@ -7566,7 +7561,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       // Current-source references replace cached ones excluded by the fetch.
       for (const { to, from } of fileUsage.concat(context.aRefs)) {
         if (from === undefined) continue
-        const file = fileUsagePath(to, options.ourbigbook_json['media-providers'].local.path)
+        const file = fileUsagePath(to, localMediaPaths(options.ourbigbook_json))
         if (!context.fileUsage.has(file)) context.fileUsage.set(file, new Set())
         context.fileUsage.get(file).add(from)
       }
@@ -8475,8 +8470,9 @@ function resolveLinkToFileGetHref({
       // Modify external paths to account for scope + --split-headers
       let pref = context.root_relpath_shift
       if (media_provider_type === 'local') {
-        const localPath = context.options.ourbigbook_json['media-providers'].local.path
-        if (localPath && (href === path.normalize(localPath) || href.startsWith(path.normalize(localPath).replace(/\/$/, '') + URL_SEP))) {
+        const localPath = localMediaPaths(context.options.ourbigbook_json).find(localPath =>
+          href === localPath || href.startsWith(localPath + URL_SEP))
+        if (localPath) {
           if (context.options.localMediaPublish) {
             href = path.relative(path.normalize(localPath), href)
             hrefNoShift = href
@@ -9819,19 +9815,23 @@ exports.UNICODE_SEARCH_CHAR = UNICODE_SEARCH_CHAR
  */
 function macroImageVideoResolveParams(ast, context) {
   let error_message;
+  let media_provider_name;
   let media_provider_type;
+  const providers = context.options.ourbigbook_json['media-providers']
   let src = renderArgNoescape(ast.args.src, cloneAndSet(context, 'id_conversion', true));
   let is_url;
 
   // Provider explicitly given by user on macro.
   if (ast.validation_output.provider.given) {
     const provider_name = renderArgNoescape(ast.args.provider, cloneAndSet(context, 'id_conversion', true))
-    if (MEDIA_PROVIDER_TYPES.has(provider_name)) {
-      media_provider_type = provider_name;
+    if (Object.prototype.hasOwnProperty.call(providers, provider_name)) {
+      media_provider_name = provider_name;
+      media_provider_type = providers[provider_name].type;
     } else {
       error_message = `unknown media provider: "${htmlEscapeAttr(provider_name)}"`;
       renderError(context, error_message, ast.args.provider.source_location);
       media_provider_type = 'unknown';
+      media_provider_name = 'unknown';
     }
   }
 
@@ -9850,10 +9850,11 @@ function macroImageVideoResolveParams(ast, context) {
     if (media_provider_type === undefined) {
       if (context.media_provider_default) {
         // Relative URL, use the default provider if any.
-        media_provider_type = context.media_provider_default[ast.macro_name];
+        media_provider_name = context.media_provider_default[ast.macro_name];
       } else {
-        media_provider_type = 'local'
+        media_provider_name = 'local'
       }
+      media_provider_type = providers[media_provider_name].type
     }
     is_url = false;
   } else {
@@ -9863,6 +9864,7 @@ function macroImageVideoResolveParams(ast, context) {
     }
     if (media_provider_type === undefined) {
       media_provider_type = media_provider_type_detected;
+      media_provider_name = media_provider_type_detected;
     }
     is_url = true;
   }
@@ -9870,8 +9872,9 @@ function macroImageVideoResolveParams(ast, context) {
   // Fixup src depending for certain providers.
   let relpath_prefix
   let localSrcPrefix
+  const media_provider = providers[media_provider_name]
   if (media_provider_type === 'local') {
-    const localPath = context.options.ourbigbook_json['media-providers'].local.path;
+    const localPath = media_provider.path;
     if (localPath !== '') {
       localSrcPrefix = ''
       if (!src.startsWith(URL_SEP) && !protocolIsGiven(src)) {
@@ -9888,18 +9891,18 @@ function macroImageVideoResolveParams(ast, context) {
       src = URL_SEP + path.join(localPath, localSrcPrefix, src)
     }
   } else if (media_provider_type === 'github') {
-    const github_path = context.options.ourbigbook_json['media-providers'].github.path;
+    const github_path = media_provider.path;
     if (
       github_path &&
       context.options.fs_exists_sync(github_path) &&
-      !context.options.publish
+      !context.options.publish && !context.options.webLocalConvert
     ) {
       // Can't join it in here now or else existence check fails.
       // But we need to keep this information around to be able to link from inside _out/html/... relative path.
       relpath_prefix = path.relative('.', context.options.outdir)
       src = `${github_path}/${src}`
     } else {
-      let githubPrefix = githubProviderPrefix(context)
+      let githubPrefix = githubProviderPrefix(context, media_provider_name)
       if (githubPrefix === undefined) {
         error_message = `github provider selected but provider prefix not set in settings`
         renderError(context, error_message, ast.args.provider.source_location)
@@ -9910,6 +9913,8 @@ function macroImageVideoResolveParams(ast, context) {
 
   return {
     error_message,
+    media_provider_name,
+    media_provider,
     media_provider_type,
     is_url,
     relpath_prefix,
@@ -10044,12 +10049,12 @@ const MACRO_IMAGE_VIDEO_OPTIONS = {
     }
 
     // Title from src.
-    const media_provider_type = (macroImageVideoResolveParams(ast, context)).media_provider_type;
+    const { media_provider_type, media_provider } = macroImageVideoResolveParams(ast, context);
     if (
       ast.validation_output.titleFromSrc.boolean ||
       (
         !ast.validation_output.titleFromSrc.given &&
-        context.options.ourbigbook_json['media-providers'][media_provider_type]['title-from-src']
+        media_provider['title-from-src']
       )
     ) {
       let basename_str;
@@ -11186,8 +11191,21 @@ function headerMetadata(ast, context, firstHeader) {
 }
 
 // Local media is physically separate but appears at the site's logical root.
-function fileUsagePath(file, localPath) {
-  if (localPath) {
+function localMediaProviders(json) {
+  return Object.entries(json['media-providers'] || {})
+    .filter(([name, provider]) => provider && (provider.type ?? name) === 'local')
+    .map(([name, provider]) => ({ ...provider, name }))
+}
+exports.localMediaProviders = localMediaProviders
+
+function localMediaPaths(json) {
+  return localMediaProviders(json).map(provider => provider.path).filter(Boolean)
+    .map(p => path.normalize(p).replace(/\/$/, '')).filter(p => p !== '.')
+    .sort((a, b) => b.length - a.length)
+}
+
+function fileUsagePath(file, localPaths) {
+  for (const localPath of (Array.isArray(localPaths) ? localPaths : [localPaths]).filter(Boolean)) {
     const prefix = path.normalize(localPath).replace(/\/$/, '')
     if (file.startsWith(prefix + URL_SEP)) return file.slice(prefix.length + 1)
   }
@@ -11208,7 +11226,7 @@ function toplevelMetadata(context) {
     usedByIds: new Set(ast.file === undefined ? [] :
       Array.from(context.fileUsage.get(context.options.ref_prefix
         ? context.options.ref_prefix + URL_SEP + ast.file
-        : fileUsagePath(ast.file, context.options.ourbigbook_json['media-providers'].local.path)) || []).filter(id => id !== ast.id)),
+        : fileUsagePath(ast.file, localMediaPaths(context.options.ourbigbook_json))) || []).filter(id => id !== ast.id)),
   }
 }
 
@@ -13573,18 +13591,27 @@ function ourbigbookConvertArgs(ast, context, options={}) {
 
 function ourbigbookConvertMedia(ast, context) {
   return ourbigbookConvertSimpleElem(ast, context, { modify_callbacks: {
+    provider: (ast, context, provider) => {
+      if (!context.options.webLocalConvert) return provider
+      const params = macroImageVideoResolveParams(ast, context)
+      // Uploaded source cannot depend on the client's provider configuration.
+      return params.media_provider_type === 'github' ? 'unknown' : params.media_provider_type
+    },
     src: (ast, context, src) => {
+      const params = macroImageVideoResolveParams(ast, context)
+      if (context.options.webLocalConvert && params.media_provider_type === 'github') {
+        return `${githubProviderPrefix(context, params.media_provider_name)}/${src}`
+      }
       const rawSrc = renderArgNoescape(ast.args.src, cloneAndSet(context, 'id_conversion', true))
       if (
         !context.options.input_path || context.toplevel_output_path_dir === undefined ||
         ast.validation_output.external.boolean || protocolIsGiven(rawSrc) ||
         (context.options.x_remove_leading_at && rawSrc.startsWith(AT_MENTION_CHAR))
       ) return src
-      const params = macroImageVideoResolveParams(ast, context)
       if (params.media_provider_type !== 'local') return src
       // Splitting scoped headers moves their source into new directories.
       // Keep media pointing to its original location, including local provider prefixes.
-      const localPath = context.options.ourbigbook_json['media-providers'].local.path
+      const localPath = params.media_provider.path
       if (localPath) {
         // Provider files are merged into the user's upload root. The server does
         // not receive ourbigbook.json, so anchor relative sources there as well.

@@ -15557,6 +15557,129 @@ assert_cli(
     },
   }
 )
+it('media providers: names and types are independent, with backwards-compatible defaults', () => {
+  const providers = ourbigbook.convertInitOptions({ ourbigbook_json: { 'media-providers': {
+    'media-repo': { type: 'local', path: '../media' },
+    github: { type: 'local', path: '../other-media' },
+    pictures: { type: 'github', remote: 'user/media' },
+  } } }).ourbigbook_json['media-providers']
+  assert.strictEqual(providers.local.type, 'local')
+  assert.strictEqual(providers.local.path, '')
+  assert.strictEqual(providers.youtube.type, 'youtube')
+  assert.strictEqual(providers.github.type, 'local')
+  assert.strictEqual(providers['media-repo'].type, 'local')
+  assert.strictEqual(providers.pictures.type, 'github')
+  for (const config of [{ custom: {} }, { custom: { type: 'typo' } }]) {
+    assert.throws(() => ourbigbook.convertInitOptions({ ourbigbook_json: { 'media-providers': config } }), /unknown media provider type/)
+  }
+})
+
+assert_lib('media providers: named github defaults and title settings belong to the provider', {
+  stdin: '\\Image[my_picture.png]\n\n\\Video[movie.mp4]\n',
+  convert_opts: {
+    ourbigbook_json: { 'media-providers': {
+      pictures: { type: 'github', remote: 'user/pictures', 'default-for': ['all'], 'title-from-src': true },
+    } },
+  },
+  assert_xpath_stdout: [
+    "//x:img[@src='https://raw.githubusercontent.com/user/pictures/master/my_picture.png']",
+    "//x:video[@src='https://raw.githubusercontent.com/user/pictures/master/movie.mp4']",
+    "//x:figcaption/x:div[@class='title' and text()='my picture.']",
+  ],
+})
+
+for (const mode of ['html', 'parallel', 'publish', 'web']) {
+  const publish = mode === 'publish'
+  const web = mode === 'web'
+  const committed = publish || web
+  const firstPath = committed ? '../media-one' : '_media'
+  const output = `wiki/${TMP_DIRNAME}/${publish ? `publish/${TMP_DIRNAME}/github-pages` : web ? `publish/${TMP_DIRNAME}/web` : 'html'}`
+  const solution = 'subdir/paper/question/solution'
+  const mediaOne = `wiki/${firstPath}`
+  const relative = target => path.relative(`${output}/subdir/paper/question`, target)
+  // A built-in name can also explicitly select a different implementation.
+  const pictureProvider = mode === 'parallel' ? 'github' : 'media-repo'
+  const config = { 'media-providers': {
+    [pictureProvider]: { type: 'local', path: firstPath },
+    clips: { type: 'local', path: '../media-two', 'default-for': ['video'] },
+  } }
+  assert_cli(`media providers: multiple local roots and ordinary source files, ${mode}`, {
+    args: publish ? ['--publish', '--dry-run'] : web
+      ? ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
+      : ['.', '--split-headers', '--jobs', mode === 'parallel' ? '2' : '1'],
+    cwd: 'wiki',
+    timeout: 20000,
+    filesystem: {
+      'wiki/ourbigbook.json': JSON.stringify(config),
+      'wiki/index.bigb': '= Home\n\n\\Include[subdir/paper]\n',
+      'wiki/subdir/paper.bigb': `= Paper\n{scope}\n\n== Question\n{scope}\n\n=== Solution\n\n\\Image[own.svg]{title=Own}\n\n\\Image[plot.svg]{provider=${pictureProvider}}{title=Plot}\n\nInline \\image[/root.svg]{provider=${pictureProvider}}.\n\n\\Video[movie.mp4]\n`,
+      'wiki/subdir/own.svg': '<svg>own</svg>',
+      [`${mediaOne}/subdir/plot.svg`]: '<svg>plot</svg>',
+      [`${mediaOne}/root.svg`]: '<svg>root</svg>',
+      [`${mediaOne}/only/shared/one.txt`]: 'one',
+      [`${mediaOne}/invalid.bigb`]: '\\UnknownMacro',
+      'media-two/subdir/movie.mp4': 'video',
+      'media-two/only/shared/two.txt': 'two',
+    },
+    pre_exec: committed ? [
+      ...['../media-one', '../media-two'].flatMap(dir => [
+        ['git', ['-C', dir, 'init', '-b', 'main']],
+        ['git', ['-C', dir, 'add', '.']],
+        ['git', ['-C', dir, 'commit', '-m', 'media']],
+        ['git', ['-C', dir, 'remote', 'add', 'origin', `git@github.com:ourbigbook/${path.basename(dir)}.git`]],
+      ]),
+      ...MAKE_GIT_REPO_PRE_EXEC,
+      { filesystem_update: {
+        'media-one/root.svg': '<svg>uncommitted</svg>',
+        'media-two/uncommitted.svg': '<svg/>',
+      } },
+    ] : [],
+    assert_xpath: web ? {} : {
+      [`${output}/${solution}.html`]: [
+        "//x:img[@src='../../../-/raw/subdir/own.svg']",
+        `//x:img[@src='${publish ? '../../../subdir/plot.svg' : relative(`${mediaOne}/subdir/plot.svg`)}']`,
+        `//x:video[@src='${publish ? '../../../subdir/movie.mp4' : relative('media-two/subdir/movie.mp4')}']`,
+        `//x:figcaption/x:a[@href='../../../-/file/subdir/plot.svg${publish ? '' : '.html'}']`,
+      ],
+      [`${output}/-/dir/only/shared/index.html`]: [
+        "//x:a[contains(@href, 'one.txt')]", "//x:a[contains(@href, 'two.txt')]",
+      ],
+      [`${output}/-/file/subdir/plot.svg.html`]: [
+        "//x:ul[@data-ourbigbook-test='used-by']/x:li/x:a[contains(@href, 'solution')]",
+      ],
+    },
+    assert_contains: web ? {
+      [`${output}/${solution}.bigb`]: [
+        '\\Image[../../own.svg]', '\\Image[/subdir/plot.svg]', '{provider=local}', '\\image[/root.svg]', '\\Video[/subdir/movie.mp4]',
+      ],
+    } : {
+      [`${output}/-/raw/root.svg`]: ['<svg>root</svg>'],
+      ...(publish ? { [`${output}/root.svg`]: ['<svg>root</svg>'], [`${output}/subdir/movie.mp4`]: ['video'] } : {}),
+    },
+    assert_stdout_not_contains: web ? ['uncommitted.svg'] : [],
+    assert_not_exists: web ? [] : [`${output}/invalid.html`, `${output}/-/dir/_media/index.html`],
+  })
+}
+
+for (const mode of ['html', 'web']) {
+  for (const collision of ['same file', 'file over directory']) {
+    assert_cli(`media providers: reject collisions between providers, ${mode}, ${collision}`, {
+      args: mode === 'web' ? ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer'] : ['.'],
+      filesystem: {
+        'ourbigbook.json': JSON.stringify({ 'media-providers': {
+          first: { type: 'local', path: '_first' }, second: { type: 'local', path: '_second' },
+        } }),
+        'index.bigb': '= Home\n',
+        '_first/collision': 'first',
+        [collision === 'same file' ? '_second/collision' : '_second/collision/child.txt']: 'second',
+      },
+      assert_exit_status: 1,
+      assert_stderr_contains: ['local media providers collide: collision'],
+      assert_stdout_not_contains: ['web_upload: 0:', 'web_unlist_upload:'],
+    })
+  }
+}
+
 assert_cli('link: local media repository resolves from nested sources and skips reserved directories', {
   args: ['.'],
   filesystem: {

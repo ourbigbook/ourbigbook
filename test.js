@@ -9289,7 +9289,81 @@ it('lib: check_db bounds reference loading by source file and keeps cross-file c
   }
 })
 
-if (!ourbigbook_nodejs_front.postgres) assert_lib('check_db cache invalidates changed files, structure and configuration', {
+for (const failure of ['link', 'media', 'tag']) {
+it(`lib: check_db retains successful files after ${failure} failure and stops immediately`, async () => {
+  const sequelize = await ourbigbook_nodejs_webpack_safe.createSequelize({
+    storage: ourbigbook_nodejs_webpack_safe.SQLITE_MAGIC_MEMORY_NAME, logging: false,
+  })
+  try {
+    const { File, Id, Ref, ARef } = sequelize.models
+    const files = await File.bulkCreate(['a', 'b', 'c'].map(id => ({ path: `${id}.bigb` })))
+    const ids = await Id.bulkCreate(['a', 'b', 'c', 'target'].map((idid, i) => ({
+      idid, defined_at: files[Math.min(i, 2)].id, macro_name: 'H',
+      ast_json: JSON.stringify({ macro_name: 'H', args: {} }),
+    })))
+    const ref = (i, to_id, line=1, type=ourbigbook.REFS_TABLE_X) => ({
+      type: Ref.Types[type], from_id: ['a', 'b', 'c'][i], to_id,
+      defined_at: files[i].id, defined_at_line: line, defined_at_col: 1, inflected: false,
+    })
+    await Ref.bulkCreate([
+      ref(0, 'target'), ref(0, 'scope/target'),
+      ...(failure === 'link' ? [ref(1, 'missing')] : [ref(1, 'target'), ref(1, 'scope/target')]),
+      ref(2, 'later-missing'),
+      ...(failure === 'tag' ? [0, 1].map(i => ({
+        ...ref(i, 'a', 2, ourbigbook.REFS_TABLE_X_CHILD), from_id: 'target',
+      })) : []),
+    ])
+    if (failure === 'media') await ARef.create({
+      from: ids[1].id, to: 'missing.png', defined_at: files[1].id, defined_at_line: 2, defined_at_col: 1,
+    })
+    const before = await Ref.findAll({ where: { defined_at: files[1].id }, raw: true })
+    const visits = []
+    let stats
+    let missingMedia = true
+    const opts = {
+      stopOnError: true,
+      options: { ourbigbook_json: { lint: { filesAreIncluded: false } } },
+      filterFilesThatDontExist: refs => missingMedia ? refs : [],
+      onCache: value => { stats = value },
+      onFileStart: ({ file, cached }) => visits.push([file.path, cached]),
+    }
+    const check = () => ourbigbook_nodejs.checkDbWithCache(sequelize, undefined, opts)
+    for (let run = 0; run < 2; run++) {
+      visits.length = 0
+      const errors = await check()
+      assert.strictEqual(errors.length, 1)
+      assert(errors[0].startsWith('b.bigb:'), errors.join('\n'))
+      assert.deepStrictEqual(visits, [['a.bigb', run > 0], ['b.bigb', false]])
+      assert.deepStrictEqual(stats, { checked: run ? 2 : 3, reused: run ? 1 : 0, structural: !run })
+      // Successful normalization stays committed; failed normalization must not
+      // erase missing-link candidates and turn the next run into a false success.
+      assert.strictEqual(await Ref.count({ where: { defined_at: files[0].id, to_id: 'scope/target' } }), 0)
+      assert.deepStrictEqual(await Ref.findAll({ where: { defined_at: files[1].id }, raw: true }), before)
+      assert.strictEqual(await Ref.count({ where: { defined_at: files[2].id } }), 1)
+    }
+    if (failure === 'link') await Ref.destroy({ where: { defined_at: files[1].id } })
+    if (failure === 'tag') await Ref.destroy({ where: { defined_at: files[1].id, type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] } })
+    missingMedia = false
+    visits.length = 0
+    assert((await check())[0].startsWith('c.bigb:'))
+    assert.deepStrictEqual(visits, [['a.bigb', true], ['b.bigb', false], ['c.bigb', false]])
+    visits.length = 0
+    assert((await check())[0].startsWith('c.bigb:'))
+    assert.deepStrictEqual(visits, [['a.bigb', true], ['b.bigb', true], ['c.bigb', false]])
+    // A structural edit still invalidates even the successful partial cache.
+    await Id.create({ idid: 'new-target', defined_at: files[2].id, macro_name: 'H', ast_json: JSON.stringify({ macro_name: 'H', args: {} }) })
+    visits.length = 0
+    assert((await check())[0].startsWith('c.bigb:'))
+    assert.deepStrictEqual(visits, [['a.bigb', false], ['b.bigb', false], ['c.bigb', false]])
+    assert.strictEqual(stats.structural, true)
+  } finally {
+    await sequelize.close()
+  }
+})
+}
+
+for (const stopOnError of [false, true]) {
+if (!ourbigbook_nodejs_front.postgres) assert_lib(`check_db cache invalidates changed files, structure and configuration, stopOnError=${stopOnError}`, {
   convert_dir: true,
   filesystem: {
     'index.bigb': '= Home\n\n\\Include[branch]\n\n== Animal\n',
@@ -9302,6 +9376,7 @@ if (!ourbigbook_nodejs_front.postgres) assert_lib('check_db cache invalidates ch
     let stats
     let missingMedia = false
     const options = {
+      stopOnError,
       filterFilesThatDontExist: refs => missingMedia ? refs : [],
       onCache: value => { stats = value },
     }
@@ -9376,6 +9451,28 @@ if (!ourbigbook_nodejs_front.postgres) assert_lib('check_db cache invalidates ch
     assert((await check()).some(error => error.includes('unknown id: "leaf"')))
     assert.strictEqual(stats.structural, true)
   },
+})
+}
+
+if (!ourbigbook_nodejs_front.postgres) assert_cli('check_db logs files, stops early and resumes its cache across processes', {
+  args: ['.', '--jobs', '1'],
+  timeout: 15000,
+  filesystem: {
+    'index.bigb': '= Home\n\n\\Include[a]\n\n\\Include[b]\n\n\\Include[c]\n',
+    'a.bigb': '= A\n',
+    'b.bigb': '= B\n\n<Missing>\n',
+    'c.bigb': '= C\n\n<Later missing>\n',
+  },
+  pre_exec: [{ cmd: ['ourbigbook', ['.', '--jobs', '1']], status: 1 }],
+  assert_exit_status: 1,
+  assert_stdout_contains: [
+    /^check_db: a.bigb$/m,
+    /^check_db: a.bigb \(cached; finished in \d+ ms\)$/m,
+    /^check_db: b.bigb$/m,
+    /^check_db: b.bigb \(failed; finished in \d+ ms\)$/m,
+  ],
+  assert_stdout_not_contains: [/^check_db: c.bigb/m, /^render:/m],
+  assert_stderr_contains: ['b.bigb:3:2: internal link \\x to unknown id: "missing"'],
 })
 
 it('lib: header: duplicate tags are checked during extraction without a database', async () => {
@@ -18173,7 +18270,7 @@ if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web
   const serialLog = build(0)
   const log = build(1)
   assert(!/^check_db$/m.test(log), log)
-  assert.strictEqual((log.match(/^check_db: \d+ files to check, \d+ cached$/gm) || []).length, 1)
+  assert(!/files to check, \d+ cached/.test(log), log)
   assert(log.lastIndexOf('\nextract_ids:') < log.indexOf('\ncheck_db:'))
   assert(log.indexOf('\nrender:') > log.indexOf('check_db:'))
   if (web) {
@@ -18188,7 +18285,8 @@ if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web
     const cached = build(i)
     assert(cached.includes('extract_ids: chapter0.bigb (skipped by timestamp)'))
     assert(cached.includes('render: chapter0.bigb (skipped by timestamp)'))
-    assert(cached.includes('check_db: 0 files to check, 6 cached'), cached)
+    assert.strictEqual((cached.match(/^check_db: .* \(cached; finished in \d+ ms\)$/gm) || []).length, 6, cached)
+    assert(!/files to check, \d+ cached/.test(cached), cached)
     assert(!/^check_db$/m.test(cached), cached)
   }
   await compare()
@@ -18199,7 +18297,8 @@ if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web
   }
   for (const i of [0, 1]) {
     const edited = build(i)
-    assert(edited.includes('check_db: 1 files to check, 5 cached'), edited)
+    assert.strictEqual((edited.match(/^check_db: .* \(cached; finished in \d+ ms\)$/gm) || []).length, 5, edited)
+    assert(/^check_db: chapter1.bigb \(finished in \d+ ms\)$/m.test(edited), edited)
   }
   await compare()
   // Move an ID between files, and remove a file and its Include. All extraction

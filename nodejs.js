@@ -16,6 +16,13 @@ let checkDbCodeHash
 async function checkDbWithCache(sequelize, paths, opts = {}) {
   const check = ourbigbook_nodejs_webpack_safe.check_db
   if (sequelize.getDialect() !== 'sqlite' || opts.web || opts.transaction || opts.parentOverride) {
+    // Non-SQLite CLI checks have no persistent cache, but must still preserve
+    // failed reference candidates for the next attempt.
+    if (opts.stopOnError && !opts.web && !opts.transaction && !opts.parentOverride) {
+      return sequelize.transaction(transaction => check(sequelize, paths, {
+        ...opts, transaction, rollbackFailedFile: true,
+      }))
+    }
     return check(sequelize, paths, opts)
   }
   const crypto = require('crypto')
@@ -75,7 +82,7 @@ END`)
       if (opts.force || previous?.context !== context) previous = undefined
       const entries = {}
       const fileCache = new Map()
-      let sameStructure = !!previous && Object.keys(previous.files).length === files.length
+      let sameStructure = !!previous && previous.structuralValid !== false && Object.keys(previous.files).length === files.length
       const structure = async file => {
         // Ignore numeric Id/Ref primary keys and AST source positions: re-extracting
         // a text edit replaces those, without changing other files' dependencies.
@@ -91,7 +98,7 @@ END`)
         const old = previous?.files[file.id]
         if (old && old.revision === file.revision) {
           entries[file.id] = old
-          fileCache.set(file.id, old.tags)
+          if (old.tags !== undefined) fileCache.set(file.id, old.tags)
         } else {
           const fingerprint = await structure(file)
           entries[file.id] = { revision: file.revision, structure: fingerprint }
@@ -102,15 +109,24 @@ END`)
       // alter implicit tags anywhere below it. Neither is a local invalidation.
       if (!sameStructure) fileCache.clear()
       opts.onCache?.({ checked: files.length - fileCache.size, reused: fileCache.size, structural: !sameStructure })
+      let structuralValid = false
       const errors = await check(sequelize, paths, {
         ...opts, transaction, fileCache, skipStructuralChecks: sameStructure,
+        rollbackFailedFile: !!opts.stopOnError,
+        onStructureChecked: () => {
+          structuralValid = true
+          opts.onStructureChecked?.()
+        },
       })
-      if (errors.length) {
+      if (errors.length && !opts.stopOnError) {
         // Failed reference resolution deletes unmatched candidates. Roll it back
         // so a subsequent check cannot mistake their absence for success.
         failure = { errors }
         throw failure
       }
+      // With fail-fast checking, the failing file was rolled back independently.
+      // Keep successful reference normalization and its certificates, but never
+      // certify a failed or unvisited file merely because its revision matches.
       for (const file of await readFiles()) {
         const entry = entries[file.id]
         if (entry.revision !== file.revision) entry.structure = await structure(file)
@@ -118,7 +134,7 @@ END`)
         entry.tags = fileCache.get(file.id)
       }
       await query('INSERT INTO "CliCheckCache" (id, value) VALUES (1, :value) ON CONFLICT (id) DO UPDATE SET value = excluded.value', {
-        value: JSON.stringify({ context, files: entries }),
+        value: JSON.stringify({ context, structuralValid, files: entries }),
       })
       await query('DELETE FROM "CliCheckRevision" WHERE "fileId" NOT IN (SELECT id FROM "File")')
       return errors

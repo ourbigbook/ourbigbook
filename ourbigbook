@@ -348,11 +348,13 @@ async function check_db(nonOurbigbookOptions, { exitOnError=true }={}) {
         nonOurbigbookOptions.cli.checkDbOnly ? undefined : nonOurbigbookOptions.ourbigbook_paths_converted,
         {
           force: nonOurbigbookOptions.cli.checkDbOnly,
+          stopOnError: true,
           filterFilesThatDontExist: (aRefs) => aRefs.filter(
             aRef => !fs.existsSync(resolvePublishedMediaPath(nonOurbigbookOptions.ourbigbook_json_dir, aRef.to, nonOurbigbookOptions))),
           options: nonOurbigbookOptions.options,
-          onCache: ({ checked, reused }) => {
-            console.log(`check_db: ${checked} files to check, ${reused} cached`)
+          onFileStart: ({ file }) => console.log(`check_db: ${file.path}`),
+          onFileEnd: ({ file, cached, errors, elapsedMs }) => {
+            console.log(`check_db: ${file.path} (${errors.length ? 'failed; ' : cached ? 'cached; ' : ''}finished in ${Math.round(elapsedMs)} ms)`)
           },
           perf: false,
         }

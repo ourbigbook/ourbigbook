@@ -1161,7 +1161,7 @@ async function check_db(sequelize, paths_converted, opts={}) {
   // * ensure that all \x targets exist
   // fileCache/skipStructuralChecks are supplied only by the CLI cache after
   // validating extraction revisions and dependency fingerprints.
-  let { fileCache, filterFilesThatDontExist, parentOverride, perf, options, ref_prefix, skipStructuralChecks, transaction, web } = opts
+  let { fileCache, filterFilesThatDontExist, parentOverride, perf, options, ref_prefix, skipStructuralChecks, stopOnError, transaction, web } = opts
   if (ref_prefix === undefined) {
     ref_prefix = ''
   }
@@ -1189,7 +1189,6 @@ async function check_db(sequelize, paths_converted, opts={}) {
     unreachableFiles,
     duplicate_rows,
     invalid_title_title_rows,
-    aRefs,
   ] = await Promise.all([
     File.findAll({
       attributes: ['id', 'path'],
@@ -1228,7 +1227,8 @@ async function check_db(sequelize, paths_converted, opts={}) {
             '$to.id$': null,
             // Ignore synonyms.
             '$from.id$': null,
-          }
+          },
+          transaction,
         })
     ,
     // unreachableFiles
@@ -1251,20 +1251,19 @@ async function check_db(sequelize, paths_converted, opts={}) {
     ,
     skipStructuralChecks ? [] : Id.findDuplicates(paths_converted, transaction),
     Id.findInvalidTitleTitle(paths_converted, transaction),
-    // aRefs
-    ARef.findAll({
-      include: [{
-        model: File,
-        as: 'aRefDefinedAt',
-        where: paths_converted === undefined ? {} : { path: paths_converted },
-      }],
-      transaction,
-    })
   ])
   if (perf) {
     console.error(`perf: check_db.after_finds: ${performance.now() - t0} ms`);
   }
   const error_messages = []
+  const structuralErrors = []
+  const mediaErrors = []
+
+  // Fail-fast callers must validate the shared graph before certifying any file.
+  // Other callers retain the existing diagnostic order (file errors first).
+  collectStructuralErrors()
+  if (stopOnError && structuralErrors.length) return structuralErrors.slice(0, 1)
+  if (!structuralErrors.length) opts.onStructureChecked?.()
 
   // Candidate scopes and inflections for one source location must stay together.
   // Process one defining file at a time instead of hydrating the entire reference
@@ -1272,95 +1271,118 @@ async function check_db(sequelize, paths_converted, opts={}) {
   // across files, and run the structural checks above only once.
   const tags = new Map()
   for (const file of files) {
+    const started = performance.now()
     let tagRefs = fileCache?.get(file.id)
-    if (tagRefs === undefined) {
-      const result = await check_db_file_refs(sequelize, file, opts)
-      error_messages.push(...result.error_messages)
-      tagRefs = result.tagRefs
-      fileCache?.set(file.id, tagRefs)
-    }
-    // Cached files still participate, in file order, in cross-file tag checks.
-    for (const ref of tagRefs) {
-      const key = JSON.stringify([ref.from_id, ref.to_id])
-      const location = `${file.path}:${ref.defined_at_line}:${ref.defined_at_col}`
-      const previous = tags.get(key)
-      if (previous !== undefined) {
-        error_messages.push(`${location}: ${ourbigbook.duplicateTagMessage(ref.from_id, ref.to_id, previous)}`)
-      } else {
-        tags.set(key, location)
+    const cached = tagRefs !== undefined
+    opts.onFileStart?.({ file, cached })
+    const fileErrors = []
+    const savepoint = opts.rollbackFailedFile && !cached
+    const query = sql => sequelize.query(sql, { transaction })
+    if (savepoint) await query('SAVEPOINT cli_check_file')
+    try {
+      if (!cached) {
+        const result = await check_db_file_refs(sequelize, file, opts)
+        fileErrors.push(...result.error_messages)
+        tagRefs = result.tagRefs
       }
+      // Cached files still participate, in file order, in cross-file tag checks.
+      for (const ref of tagRefs) {
+        const key = JSON.stringify([ref.from_id, ref.to_id])
+        const location = `${file.path}:${ref.defined_at_line}:${ref.defined_at_col}`
+        const previous = tags.get(key)
+        if (previous !== undefined) {
+          fileErrors.push(`${location}: ${ourbigbook.duplicateTagMessage(ref.from_id, ref.to_id, previous)}`)
+        } else {
+          tags.set(key, location)
+        }
+      }
+      if (filterFilesThatDontExist && (!stopOnError || !fileErrors.length)) {
+        const aRefs = await ARef.findAll({ where: { defined_at: file.id }, transaction })
+        for (const a of aRefs) a.aRefDefinedAt = file
+        for (const a of await filterFilesThatDontExist(aRefs)) {
+          ;(stopOnError ? fileErrors : mediaErrors).push(
+            `${file.path}:${a.defined_at_line}:${a.defined_at_col}: link ` +
+            `to file that does not exist: "${a.to}"`
+          )
+        }
+      }
+      if (fileErrors.length && savepoint) await query('ROLLBACK TO SAVEPOINT cli_check_file')
+    } catch (error) {
+      if (savepoint) await query('ROLLBACK TO SAVEPOINT cli_check_file')
+      throw error
+    } finally {
+      if (savepoint) await query('RELEASE SAVEPOINT cli_check_file')
     }
+    if (!fileErrors.length) fileCache?.set(file.id, tagRefs)
+    else if (!cached) fileCache?.delete(file.id)
+    opts.onFileEnd?.({ file, cached, errors: fileErrors, elapsedMs: performance.now() - started })
+    error_messages.push(...fileErrors)
+    if (stopOnError && fileErrors.length) return error_messages.slice(0, 1)
   }
-
-  if (filterFilesThatDontExist) {
-    for (const a of await filterFilesThatDontExist(aRefs)) {
-      error_messages.push(
-        `${a.aRefDefinedAt.path}:${a.defined_at_line}:${a.defined_at_col}: link ` +
-        `to file that does not exist: "${a.to}"`
-      )
-    }
-  }
-
-  if (duplicate_rows.length > 0) {
-    for (const duplicate_row of duplicate_rows) {
-      const ast = ourbigbook.AstNode.fromJSON(duplicate_row.ast_json)
-      const source_location = ast.source_location
-      const other_ast = ourbigbook.AstNode.fromJSON(duplicate_row.duplicate[0].ast_json)
-      const other_source_location = other_ast.source_location
-      error_messages.push(
-        `${source_location.path}:${source_location.line}:${source_location.column}: duplicated ID: "${duplicate_row.idid}". Previous definition at: ${other_source_location.path}:${other_source_location.line}:${other_source_location.column}`
-      )
-    }
-  }
-  if (invalid_title_title_rows.length > 0) {
-    for (const invalid_title_title_row of invalid_title_title_rows) {
-      const ast = ourbigbook.AstNode.fromJSON(invalid_title_title_row.ast_json)
-      const source_location = ast.source_location
-      error_messages.push(
-        `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://docs.ourbigbook.com/x-within-title-restrictions`
-      )
-    }
-  }
-  if (noParents.length > 0) {
-    for (const id of noParents) {
-      error_messages.push(
-        `ID "${id.idid}" defined in file "${id.idDefinedAt.path}" has no parent and won't show on the toplevel table of contents, and is not Web uploadable, make sure to either include that file from another file with \\Include https://docs.ourbigbook.com/#include or add it to your ignored files: https://docs.ourbigbook.com/#ourbigbook-json/ignore`
-      )
-    }
-  } else {
-    // Only check for reachability when there are no files without parent.
-    // Otherwise, e.g. if we have aaa.bigb without parent and Include chain:
-    // aaa.bigb -> bbb.bigb -> ccc.bigb
-    // then this error would give three possible paths, which is less precise and more confusing.
-    // This check exists only to prevent cycling includes: https://github.com/ourbigbook/ourbigbook/issues/204
-    // e.g. such as:
-    // aaa.bigb -> bbb.bigb -> ccc.bigb -> aaa.bigb
-    // because in that case all files have a parent, but we have a loop. But because double parent
-    // is also forbidden, this can only happen if there is a loop.
-    if (unreachableFiles.length) {
-      error_messages.push(
-        `the following files cannot be reached from the toplevel index file via ` +
-        `${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.INCLUDE_MACRO_NAME}, ` +
-        `did you forget some ${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.INCLUDE_MACRO_NAME}? ` +
-        unreachableFiles.map(f => `"${f.path}"`).join(', ')
-      )
-    }
-  }
-  if (doubleParents.length > 0) {
-    for (const ref of doubleParents) {
-      const new_ref = ref
-      const oldRef = ref.duplicate[0]
-      error_messages.push(
-        `ID "${new_ref.to.idid}" has two parents: ` +
-        `"${new_ref.from.idid}" defined at ${new_ref.definedAt.path}:${new_ref.defined_at_line}:${new_ref.defined_at_col} and ` +
-        `"${oldRef.from.idid}" defined at ${oldRef.definedAt.path}:${oldRef.defined_at_line}:${oldRef.defined_at_col}`
-      )
-    }
-  }
+  error_messages.push(...mediaErrors, ...structuralErrors)
   if (perf) {
     console.error(`perf: check_db.finish: ${performance.now() - t0} ms`);
   }
   return error_messages
+
+  function collectStructuralErrors() {
+    if (duplicate_rows.length > 0) {
+      for (const duplicate_row of duplicate_rows) {
+        const ast = ourbigbook.AstNode.fromJSON(duplicate_row.ast_json)
+        const source_location = ast.source_location
+        const other_ast = ourbigbook.AstNode.fromJSON(duplicate_row.duplicate[0].ast_json)
+        const other_source_location = other_ast.source_location
+        structuralErrors.push(
+          `${source_location.path}:${source_location.line}:${source_location.column}: duplicated ID: "${duplicate_row.idid}". Previous definition at: ${other_source_location.path}:${other_source_location.line}:${other_source_location.column}`
+        )
+      }
+    }
+    if (invalid_title_title_rows.length > 0) {
+      for (const invalid_title_title_row of invalid_title_title_rows) {
+        const ast = ourbigbook.AstNode.fromJSON(invalid_title_title_row.ast_json)
+        const source_location = ast.source_location
+        structuralErrors.push(
+          `${source_location.path}:${source_location.line}:${source_location.column}: cannot \\x link from a title to a non-header element: https://docs.ourbigbook.com/x-within-title-restrictions`
+        )
+      }
+    }
+    if (noParents.length > 0) {
+      for (const id of noParents) {
+        structuralErrors.push(
+          `ID "${id.idid}" defined in file "${id.idDefinedAt.path}" has no parent and won't show on the toplevel table of contents, and is not Web uploadable, make sure to either include that file from another file with \\Include https://docs.ourbigbook.com/#include or add it to your ignored files: https://docs.ourbigbook.com/#ourbigbook-json/ignore`
+        )
+      }
+    } else {
+      // Only check for reachability when there are no files without parent.
+      // Otherwise, e.g. if we have aaa.bigb without parent and Include chain:
+      // aaa.bigb -> bbb.bigb -> ccc.bigb
+      // then this error would give three possible paths, which is less precise and more confusing.
+      // This check exists only to prevent cycling includes: https://github.com/ourbigbook/ourbigbook/issues/204
+      // e.g. such as:
+      // aaa.bigb -> bbb.bigb -> ccc.bigb -> aaa.bigb
+      // because in that case all files have a parent, but we have a loop. But because double parent
+      // is also forbidden, this can only happen if there is a loop.
+      if (unreachableFiles.length) {
+        structuralErrors.push(
+          `the following files cannot be reached from the toplevel index file via ` +
+          `${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.INCLUDE_MACRO_NAME}, ` +
+          `did you forget some ${ourbigbook.ESCAPE_CHAR}${ourbigbook.Macro.INCLUDE_MACRO_NAME}? ` +
+          unreachableFiles.map(f => `"${f.path}"`).join(', ')
+        )
+      }
+    }
+    if (doubleParents.length > 0) {
+      for (const ref of doubleParents) {
+        const new_ref = ref
+        const oldRef = ref.duplicate[0]
+        structuralErrors.push(
+          `ID "${new_ref.to.idid}" has two parents: ` +
+          `"${new_ref.from.idid}" defined at ${new_ref.definedAt.path}:${new_ref.defined_at_line}:${new_ref.defined_at_col} and ` +
+          `"${oldRef.from.idid}" defined at ${oldRef.definedAt.path}:${oldRef.defined_at_line}:${oldRef.defined_at_col}`
+        )
+      }
+    }
+  }
 }
 
 async function check_db_double_parent_refs(sequelize, paths_converted, transaction) {

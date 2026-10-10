@@ -13334,7 +13334,9 @@ function ourbigbookGetXHref({
       if (explicit_id && magicTitleToId(href, context) !== target_ast.id) {
         href = href_from_id
       } else {
-        if (disambiguate_arg) {
+        // Filename-based and explicit IDs override title-derived IDs, so their
+        // disambiguation is display metadata, not part of the link target.
+        if (disambiguate_arg && !explicit_id) {
           if (was_pluralized) {
             // TODO https://github.com/ourbigbook/ourbigbook/issues/244
             return { override_href: ourbigbookConvertSimpleElem(ast, context) }

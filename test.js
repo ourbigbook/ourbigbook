@@ -12528,6 +12528,38 @@ assert_lib('bigb output: x to disambiguate',
     }
   }
 )
+for (const [name, input_path, source, expectedLink] of [
+  ['filename', 'homology.bigb', '= Homology\n{disambiguate=mathematics}\n\nSee <homology>.\n', '<homology>'],
+  ['explicit ID', 'index.bigb', '= Root\n\n== Homology\n{id=homology}\n{disambiguate=mathematics}\n\nSee <homology>.\n', '<homology>'],
+  ['generated ID', 'index.bigb', '= Root\n\n== Homology\n{disambiguate=mathematics}\n\nSee <homology (mathematics)>.\n', '<homology (mathematics)>'],
+]) {
+  it(`bigb output: disambiguation preserves ${name} link targets on round trip`, async () => {
+    const options = { input_path, body_only: true }
+    const before = {}
+    const originalHtml = await ourbigbook.convert(source, options, before)
+    assert.deepStrictEqual(before.errors, [])
+    const converted = {}
+    const bigb = await ourbigbook.convert(source, {
+      ...options, output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK,
+    }, converted)
+    assert.deepStrictEqual(converted.errors, [])
+    assert(bigb.includes(`See ${expectedLink}.`), bigb)
+    const after = {}
+    const roundTripHtml = await ourbigbook.convert(bigb, options, after)
+    assert.deepStrictEqual(after.errors, [])
+    assert.strictEqual(roundTripHtml, originalHtml)
+  })
+}
+assert_lib('bigb output: cross-file link to disambiguated filename ID', {
+  filesystem: {
+    'index.bigb': '= Root\n\nSee <homology>.\n\n\\Include[homology]\n',
+    'homology.bigb': '= Homology\n{disambiguate=mathematics}\n',
+  },
+  convert_dir: true,
+  assert_bigb: {
+    'index.bigb': '= Root\n\nSee <homology>.\n\n\\Include[homology]\n',
+  },
+})
 assert_lib('bigb output: x to plural disambiguate',
   // Happens notably with pluralize false plural bugs such as "Mathematics".
   {
@@ -17581,6 +17613,21 @@ assert_cli(
   }
 )
 
+assert_cli(
+  '--web preserves links to disambiguated filename IDs',
+  {
+    args: ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer', '-j', '1', '.'],
+    filesystem: {
+      'index.bigb': '= Root\n\n\\Include[homology]\n\n== Homological algebra\n\nSee <homology>.\n',
+      'homology.bigb': '= Homology\n{disambiguate=mathematics}\n',
+      'ourbigbook.json': '{}\n',
+    },
+    assert_bigb: {
+      [`${TMP_DIRNAME}/web/homological-algebra.bigb`]: '= Homological algebra\n\nSee <homology>.\n',
+      [`${TMP_DIRNAME}/web/homology.bigb`]: '= Homology\n{disambiguate=mathematics}\n',
+    },
+  }
+)
 assert_cli(
   '--web-dry on simple repository',
   {

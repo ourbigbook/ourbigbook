@@ -1075,7 +1075,14 @@ async function convertArticle({
                 await synonymArticle.destroySideEffects({
                   logging: false,
                   transaction,
+                  updateNestedSetIndex: doUpdateNestedSetIndex,
                 })
+                if (!doUpdateNestedSetIndex) {
+                  nestedSetNeedsUpdate = true
+                  if (!author.nestedSetNeedsUpdate) {
+                    await author.update({ nestedSetNeedsUpdate: true }, { transaction })
+                  }
+                }
                 synonymNewNestedSetIndex += synonymNDescendantArticles
                 synonym_new_to_id_index += synonymNChildArticles
                 issueNumberDelta += synonymNIssues

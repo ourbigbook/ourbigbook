@@ -534,6 +534,19 @@ WHERE
         console.log(await Article.treeToString({ transaction }))
       }
 
+      // Ref is canonical, including when nested-set indexes are stale during
+      // a bulk upload. Only direct children become siblings on removal; their
+      // descendants do not consume sibling positions. Synonym merging may
+      // already have moved every child elsewhere before reaching this point.
+      const nChildren = await sequelize.models.Ref.count({
+        where: {
+          from_id: idid,
+          type: sequelize.models.Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          to_id_index: { [Op.ne]: null },
+        },
+        transaction,
+      })
+
       // Decrement the depth of all descendants of the article
       // as they are going to be moved up the tree.
       await Promise.all([
@@ -553,8 +566,7 @@ WHERE
           parentId,
           parentNestedSetIndex,
           shiftNestedSetBy: -1,
-          // Number of descendants - 1. -1 Because we are removing the article.
-          shiftRefBy: nestedSetNextSibling - (nestedSetIndex + 2),
+          shiftRefBy: nChildren - 1,
           to_id_index,
           transaction,
           updateNestedSetIndex,
@@ -602,7 +614,7 @@ WHERE
       nestedSetIndex: this.nestedSetIndex,
       nestedSetNextSibling: this.nestedSetNextSibling,
       parentId: parentArticleToplevelId.idid,
-      parentNestedSetIndex: parentArticle.nestedSetIndex,
+      parentNestedSetIndex: parentArticle?.nestedSetIndex,
       to_id_index: parentRef.to_id_index,
       transaction,
       updateNestedSetIndex,
@@ -846,7 +858,8 @@ WHERE
         }),
         this.treeRemove({
           logging: opts.logging,
-          transaction
+          transaction,
+          updateNestedSetIndex: opts.updateNestedSetIndex,
         }),
       ])
       let otherArticleSameTopic

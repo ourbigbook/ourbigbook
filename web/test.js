@@ -8307,6 +8307,97 @@ it('api: child articles inherit scope from previousSiblingId', async () => {
   })
 })
 
+for (const [extractFirst, unrenderedParent] of [[false, false], [true, false], [true, true]]) {
+it(`api: bulk synonym cleanup defers tree indexes, extractFirst=${extractFirst}, unrenderedParent=${unrenderedParent}`, async () => {
+  await testApp(async test => {
+    const sequelize = test.sequelize
+    const { Article, Ref, User } = sequelize.models
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const update = async (titleSource, opts = {}, bodySource = '') => {
+      const { data, status } = await createOrUpdateArticleApi(test,
+        createArticleArg({ i: 0, titleSource, bodySource }), opts)
+      assertStatus(status, data)
+      return data
+    }
+    await update('Target')
+    await update('Old', { previousSiblingId: '@user0/target' })
+    await update('Tail', { previousSiblingId: '@user0/old' })
+    await update('Existing', { parentId: '@user0/target' })
+    await update('Child', { parentId: '@user0/old' })
+    await update('Grandchild', { parentId: '@user0/child' })
+    await update('Sibling', { parentId: '@user0/old', previousSiblingId: '@user0/child' })
+    const issue = await test.webApi.issueCreate('user0/old', { titleSource: 'Old discussion' })
+    assertStatus(issue.status, issue.data)
+    if (unrenderedParent) {
+      await update('Pending parent', {
+        render: false, updateNestedSetIndex: false, previousSiblingId: '@user0/tail',
+      })
+      await update('Old', {
+        render: false, updateNestedSetIndex: false, parentId: '@user0/pending-parent',
+      })
+    }
+    const indexes = () => Article.findAll({
+      attributes: ['slug', 'nestedSetIndex', 'nestedSetNextSibling', 'depth'],
+      order: [['slug', 'ASC']], raw: true,
+    })
+    const before = (await indexes()).filter(a => a.slug !== 'user0/old')
+    const body = '= Old\n{synonym}\n'
+    if (extractFirst) await update('Target', { render: false, updateNestedSetIndex: false }, body)
+    const queries = []
+    const query = sequelize.query
+    sequelize.query = function(sql, ...args) {
+      queries.push(typeof sql === 'string' ? sql : sql.query)
+      return query.call(this, sql, ...args)
+    }
+    let result
+    try {
+      result = await update('Target', { updateNestedSetIndex: false }, body)
+    } finally {
+      sequelize.query = query
+    }
+    const indexUpdates = queries.filter(sql => /UPDATE ["`]Article["`] SET[\s\S]*?(?:nestedSetIndex|nestedSetNextSibling|["`]depth["`])\s*["`]?\s*=/i.test(sql))
+    assert.deepStrictEqual(indexUpdates, [], 'bulk synonym removal must not shift tree indexes')
+    assert.deepStrictEqual(await indexes(), before)
+    assert.strictEqual(result.nestedSetNeedsUpdate, true)
+    assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, true)
+    const refs = await Ref.findAll({
+      attributes: ['from_id', 'to_id', 'to_id_index'],
+      where: { type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] },
+      order: [['from_id', 'ASC'], ['to_id_index', 'ASC']], raw: true,
+    })
+    assert.deepStrictEqual(refs, [
+      { from_id: '@user0', to_id: '@user0/target', to_id_index: 0 },
+      { from_id: '@user0', to_id: '@user0/tail', to_id_index: 1 },
+      ...(unrenderedParent ? [{ from_id: '@user0', to_id: '@user0/pending-parent', to_id_index: 2 }] : []),
+      { from_id: '@user0/child', to_id: '@user0/grandchild', to_id_index: 0 },
+      { from_id: '@user0/target', to_id: '@user0/existing', to_id_index: 0 },
+      { from_id: '@user0/target', to_id: '@user0/child', to_id_index: 1 },
+      { from_id: '@user0/target', to_id: '@user0/sibling', to_id_index: 2 },
+    ])
+    const movedIssue = await test.webApi.issue('user0/target', 1)
+    assertStatus(movedIssue.status, movedIssue.data)
+    assert.strictEqual(movedIssue.data.titleRender, 'Old discussion')
+    if (unrenderedParent) {
+      await update('Pending parent', { updateNestedSetIndex: false, previousSiblingId: '@user0/tail' })
+    }
+    const rebuilt = await test.webApi.articleUpdatedNestedSet('user0')
+    assertStatus(rebuilt.status, rebuilt.data)
+    await assertNestedSets(sequelize, [
+      { slug: 'user0', nestedSetIndex: 0, nestedSetNextSibling: unrenderedParent ? 8 : 7, depth: 0, to_id_index: null },
+      { slug: 'user0/target', nestedSetIndex: 1, nestedSetNextSibling: 6, depth: 1, to_id_index: 0 },
+      { slug: 'user0/existing', nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0 },
+      { slug: 'user0/child', nestedSetIndex: 3, nestedSetNextSibling: 5, depth: 2, to_id_index: 1 },
+      { slug: 'user0/grandchild', nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 3, to_id_index: 0 },
+      { slug: 'user0/sibling', nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 2, to_id_index: 2 },
+      { slug: 'user0/tail', nestedSetIndex: 6, nestedSetNextSibling: 7, depth: 1, to_id_index: 1 },
+      ...(unrenderedParent ? [{ slug: 'user0/pending-parent', nestedSetIndex: 7, nestedSetNextSibling: 8, depth: 1, to_id_index: 2 }] : []),
+    ])
+    assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, false)
+  })
+})
+}
+
 it('api: synonym rename', async () => {
   // This is what we have to do on mass upload with ourbigbook --web
   // in order to handle circular references without having one massive

@@ -5538,14 +5538,14 @@ Trump said this and that.\x[donald-trump-access-hollywood-tape]{ref}
 ``
 renders something like:
 ``
-Trump said this and that.<a href="donald-trump-access-hollywood-tape">*</a>
+Trump said this and that.<a href="donald-trump-access-hollywood-tape"><sup class="ref">[ref]</sup></a>
 ``
 
-This could currently be replicated without `ref` by just using:
+Without content, clicking the reference navigates directly to its target. When content is given, clicking opens a small popover beside the reference instead:
 ``
-Trump said this and that.\x[donald-trump-access-hollywood-tape][*]
+\x[donald-trump-access-hollywood-tape][See the transcript and https://example.com[additional commentary].]{ref}
 ``
-but later on we might add more precise reference fields like the page of a book or date fetched as Wikipedia supports.
+The popover starts with the normal linked target title, followed by ". " and the content rendered as regular OurBigBook markup, including links, formatting and paragraphs. For <\a ref argument>, it starts with the linked URL instead. Click outside the box or press Escape to close it. References without content (including an empty content argument) remain direct links.
 
 Implemented at: https://github.com/ourbigbook/ourbigbook/issues/137
 

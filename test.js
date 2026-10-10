@@ -4671,11 +4671,135 @@ assert_lib_error('x: internal link content and full are incompatible',
 
 \\x[abc][def]{full}
 `, 3, 1);
-assert_lib_error('x: internal link content and ref are incompatible',
-  `= abc
+describe('reference popovers', function () {
+  it('initializes once, toggles, preserves modifier clicks and positions within the viewport', function () {
+    // Run the browser module with a small DOM double; no bundled/dist copy is
+    // involved, and no browser dependency is required by the normal test suite.
+    const init = require('vm').runInNewContext(
+      fs.readFileSync(path.join(__dirname, 'ourbigbook_runtime.js'), 'utf8')
+        .replace(/^export /gm, '') + '\ninitReferencePopovers',
+      { require },
+    )
+    class Element {
+      constructor() { this.listeners = {}; this.attrs = {}; this.style = {} }
+      addEventListener(type, callback) { (this.listeners[type] ||= new Set()).add(callback) }
+      removeEventListener(type, callback) { this.listeners[type]?.delete(callback) }
+      setAttribute(key, value) { this.attrs[key] = value }
+      dispatch(type, event={}) { for (const listener of this.listeners[type] || []) listener(event) }
+      focus() { this.focused = true }
+      matches(selector) { return selector === ':popover-open' && this.open }
+      showPopover() { this.open = true; this.dispatch('toggle') }
+      hidePopover() { this.open = false; this.dispatch('toggle') }
+      querySelectorAll() { return [] }
+    }
+    const doc = new Element()
+    const win = new Element()
+    doc.defaultView = win
+    win.HTMLElement = Element
+    doc.documentElement = { clientWidth: 320, clientHeight: 240 }
+    const trigger = new Element()
+    trigger.getBoundingClientRect = () => ({ left: 290, top: 220, bottom: 235 })
+    const popup = new Element()
+    popup.getBoundingClientRect = () => ({ width: 200, height: 100 })
+    popup.ownerDocument = doc
+    const root = new Element()
+    root.appendChild = elem => { assert.strictEqual(elem, popup); root.appendCount = (root.appendCount || 0) + 1 }
+    trigger.closest = () => root
+    trigger.nextElementSibling = {
+      matches: selector => selector === 'template.ref-content',
+      content: { firstElementChild: { cloneNode: () => popup } },
+    }
+    doc.querySelectorAll = () => [trigger]
+    init(doc)
+    init(doc)
+    assert.strictEqual(trigger.listeners.click.size, 1)
+    const click = (overrides={}) => {
+      const event = { button: 0, detail: 1, preventDefault() { this.defaultPrevented = true }, ...overrides }
+      trigger.dispatch('click', event)
+      return event
+    }
+    assert(!click({ ctrlKey: true }).defaultPrevented)
+    assert(!click({ metaKey: true }).defaultPrevented)
+    assert(!click({ shiftKey: true }).defaultPrevented)
+    assert(!click({ button: 1 }).defaultPrevented)
+    assert(!popup.open)
+    assert(click().defaultPrevented)
+    assert(popup.open)
+    assert(popup.focused)
+    assert.strictEqual(trigger.attrs['aria-expanded'], 'true')
+    assert.strictEqual(popup.style.left, '112px')
+    assert.strictEqual(popup.style.top, '114px')
+    trigger.dispatch('pointerdown')
+    popup.hidePopover() // Native light-dismiss precedes the click event.
+    click()
+    assert(!popup.open, 'must not reopen on the same click')
+    assert.strictEqual(trigger.attrs['aria-expanded'], 'false')
+    assert.strictEqual(doc.listeners.scroll.size, 0)
+    assert.strictEqual(win.listeners.resize.size, 0)
+    click({ detail: 0 }) // Keyboard activation has no pointerdown.
+    assert(popup.open)
+    assert.strictEqual(root.appendCount, 1, 'reuse the popup')
+    popup.hidePopover() // Native Escape/outside dismissal updates accessibility.
+    assert.strictEqual(trigger.attrs['aria-expanded'], 'false')
+  })
 
-\\x[abc][def]{ref}
-`, 3, 1);
+  for (const webMode of [false, true]) {
+    it(`renders rich content and a default target link (webMode=${webMode})`, async function () {
+      const extra = {}
+      const html = await ourbigbook.convert(String.raw`= My \b[target]
+
+Before \x[my-target][See \a[https://example.com][this] and <my target>.]{ref} after.
+
+Before \a[https://example.com][\P[Read \b[this] and \a[https://other.example][another source].]\P[Second paragraph.]]{ref} after.
+`, { body_only: true, webMode }, extra)
+      assert.deepStrictEqual(extra.errors, [])
+      assert_xpath('//x:a[@class="ref-trigger"]/x:sup[@class="ref"]', html, { count: 2 })
+      assert_xpath('//x:a//x:a', html, { count: 0 })
+      // Templates are inert document fragments, not ordinary DOM children.
+      const parse5 = require('parse5')
+      const templates = []
+      function visit(node) {
+        if (node.tagName === 'template') templates.push(parse5.serialize(node.content))
+        for (const child of node.childNodes || []) visit(child)
+      }
+      visit(parse5.parseFragment(html))
+      assert.strictEqual(templates.length, 2)
+      assert_xpath('//x:div[@role="dialog"]/x:a[1]/x:b[text()="target"]', templates[0])
+      assert_xpath('//x:a[@href="https://example.com" and text()="this"]', templates[0])
+      assert_xpath('//x:div/x:a[@href="https://example.com" and text()="https://example.com"]', templates[1])
+      assert_xpath('//x:div[@class="p"]/x:b[text()="this"]', templates[1])
+      assert_xpath('//x:a[@href="https://other.example" and text()="another source"]', templates[1])
+      assert(templates[0].includes('</a>. See '))
+      assert(templates[1].includes('</a>. <div'))
+      for (const content of templates) assert_xpath('//x:a//x:a', content, { count: 0 })
+    })
+  }
+
+  it('supports implicit paragraphs, lists, nested references and topic targets', async function () {
+    const extra = {}
+    const html = await ourbigbook.convert(String.raw`\a[https://example.com][First paragraph.
+
+* A \x[Topic][Nested note]{topic}{ref}
+* Another item
+]{ref}`, { body_only: true }, extra)
+    assert.deepStrictEqual(extra.errors, [])
+    assert(html.includes('<div class="p"'))
+    assert(html.includes('<ul'))
+    assert.strictEqual((html.match(/class="ref-content"/g) || []).length, 2)
+    assert(html.includes('href="https://ourbigbook.com/-/topic/topic">Topic</a>. Nested note'))
+  })
+})
+assert_lib_ast('ref: missing or empty content keeps direct navigation',
+  '= Target\n\n\\a[https://example.com]{ref} \\a[https://example.com][]{ref} \\a[https://example.com][\\Comment[hidden]]{ref} \\x[target]{ref} \\x[target][]{ref}',
+  undefined,
+  {
+    assert_xpath_stdout: ['(//x:a[@href="https://example.com"]/x:sup)[1]', '(//x:a[@href=""]/x:sup)[1]'],
+    assert_not_xpath_stdout: ['//x:template', '//x:a[@class="ref-trigger"]'],
+  },
+)
+assert_lib_error('ref: disabled references still forbid nested links',
+  '\\a[https://example.com][\\a[https://other.example]]{ref=0}', 1, 25,
+)
 assert_lib_error('x: internal link full and c are incompatible',
   `= abc
 

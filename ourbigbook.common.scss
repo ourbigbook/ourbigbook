@@ -1022,6 +1022,29 @@ sup.ref {
   user-select: none;
 }
 
+.ref-popover {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 0.75em;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(28em, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  overflow: auto;
+  overflow-wrap: anywhere;
+  border: 1px solid $color;
+  border-radius: 2px;
+  background: $background-color;
+  color: $color;
+  box-shadow: 0 2px 8px #0003;
+  font-size: 1rem;
+  font-weight: normal;
+  text-align: left;
+
+  > :last-child { margin-bottom: 0; }
+}
+
 // Overrides for the tablesort.css
 // https://raw.githubusercontent.com/tristen/tablesort/5.2.1/tablesort.css
 th[role=columnheader]:not(.no-sort):after {

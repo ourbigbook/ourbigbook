@@ -4691,6 +4691,18 @@ function getLinkHtml({
   }
 }
 
+function htmlReferenceContent(target, content) {
+  // Keep block content inert until opened: putting it directly beside a link
+  // inside a paragraph would make the HTML parser prematurely close the paragraph.
+  return `<template class="ref-content"><div class="ref-popover" popover="auto" role="dialog" aria-label="Reference" tabindex="-1">${target}. ${content}</div></template>`
+}
+
+function isReferenceContent(ast, argName) {
+  return argName === Macro.CONTENT_ARGUMENT_NAME &&
+    (ast.macro_name === Macro.LINK_MACRO_NAME || ast.macro_name === Macro.X_MACRO_NAME) &&
+    ast.validation_output.ref.boolean
+}
+
 /** Get the AST from the parent argument of headers or includes. */
 function getParentArgumentAst(ast, context, include_options) {
   let parent_id;
@@ -7264,8 +7276,13 @@ async function parse(tokens, options, context, extra_returns={}) {
           for (let i = arg.length() - 1; i >= 0; i--) {
             let newInlineOnly
             const macro_arg = macro.name_to_arg[arg_name]
-            let newAncestorArgs = [...ancestorArgs, [macro_arg, macro_name]]
-            if (inlineOnly) {
+            const referenceContent = isReferenceContent(ast, arg_name)
+            let newAncestorArgs = referenceContent ? [] : [...ancestorArgs, [macro_arg, macro_name]]
+            if (referenceContent) {
+              // A reference's content lives in a separate popover, not in the
+              // surrounding inline element. It may contain blocks and links.
+              newInlineOnly = undefined
+            } else if (inlineOnly) {
               newInlineOnly = inlineOnly
             } else {
               if (macro_arg && macro_arg.inlineOnly) {
@@ -11739,19 +11756,26 @@ const OUTPUT_FORMATS_LIST = [
       },
       convert_funcs: {
         [Macro.LINK_MACRO_NAME]: function(ast, context) {
-          let [href, content, hrefNoEscape] = linkGetHrefAndContent(
+          const reference = ast.validation_output.ref.boolean
+          let [href, content, hrefNoEscape] = reference ? [
+            renderArg(ast.args.href, cloneAndSet(context, 'html_is_href', true)),
+            renderArg(ast.args.content, context),
+            renderArgNoescape(ast.args.href, context),
+          ] : linkGetHrefAndContent(
             ast,
             cloneAndSet(context, 'in_a', true),
             { removeProtocol: !context.in_a }
           )
-          if (ast.validation_output.ref.boolean) {
+          const referenceContent = reference && !context.in_a && ast.args.content && ast.args.content.length() && content.trim() ? content : ''
+          if (reference) {
             content = `${HTML_REF_MARKER}`;
           }
           let attrs = htmlRenderAttrsId(ast, context);
+          if (referenceContent) attrs += ' class="ref-trigger"'
           if (context.options.ourbigbook_json.openLinksOnNewTabs) {
             attrs += ' target="_blank"'
           }
-          return getLinkHtml({
+          const linkOptions = {
             ast,
             attrs,
             content,
@@ -11760,7 +11784,14 @@ const OUTPUT_FORMATS_LIST = [
             href,
             hrefNoEscape,
             source_location: ast.args.href.source_location,
-          })
+          }
+          const link = getLinkHtml(linkOptions)
+          return link + (referenceContent ? htmlReferenceContent(getLinkHtml({
+            ...linkOptions,
+            ast: undefined,
+            attrs: context.options.ourbigbook_json.openLinksOnNewTabs ? ' target="_blank"' : '',
+            content: renderArg(ast.args.href, context),
+          }), referenceContent) : '')
         },
         [Macro.BOLD_MACRO_NAME]: htmlRenderSimpleElem('b'),
         [Macro.LINE_BREAK_MACRO_NAME]: function(ast, context) { return '<br>' },
@@ -12901,7 +12932,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
           return res;
         },
         [Macro.UNORDERED_LIST_MACRO_NAME]: htmlRenderSimpleElem('ul', UL_OL_OPTS),
-        [Macro.X_MACRO_NAME]: function(ast, context) {
+        [Macro.X_MACRO_NAME]: function htmlRenderX(ast, context) {
           const showDisambiguate = ast.validation_output.showDisambiguate.boolean
           const { href_arg, target_id, target_id_raw, target_ast } = xGetTargetAst(ast, context)
           const content_arg = ast.args.content
@@ -12958,6 +12989,7 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               content = renderArg(content_arg, context);
             }
           }
+          const referenceContent = ast.validation_output.ref.boolean && content_arg && !context.in_a && content.trim() ? content : ''
           let incompatible_pair
           if (ast.validation_output.full.given) {
             if (ast.validation_output.ref.given) {
@@ -12973,9 +13005,6 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               incompatible_pair = ['full', 'p']
             }
           } else if (ast.validation_output.content.given) {
-            if (ast.validation_output.ref.given) {
-              incompatible_pair = [Macro.CONTENT_ARGUMENT_NAME, 'ref']
-            }
             if (ast.validation_output.c.given) {
               incompatible_pair = [Macro.CONTENT_ARGUMENT_NAME, 'c']
             }
@@ -13014,7 +13043,8 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               }
               counts_str = `\nword count: ${counts[0]}\ndescendant word count: ${counts[2]}\ndescendant count: ${counts[1]}`;
             }
-            const attrs = htmlRenderAttrsId(ast, context);
+            let attrs = htmlRenderAttrsId(ast, context);
+            if (referenceContent && !incompatible_pair) attrs += ' class="ref-trigger"'
 
             // It would be cleaner to pass this up from xHrefParts. But lazy.
             let target = ''
@@ -13031,11 +13061,25 @@ window.ourbigbook_redirect_prefix = ${ourbigbook_redirect_prefix};
               }
             }
 
-            return `<a${href}${attrs}` +
+            const link = `<a${href}${attrs}` +
               (context.options.internalLinkMetadata ? htmlAttr('title', 'internal link' + counts_str) : '') +
               target +
               getTestData(ast, context) +
               `>${content}</a>`
+            if (referenceContent && !incompatible_pair) {
+              const targetAst = Object.assign(Object.create(Object.getPrototypeOf(ast)), ast, {
+                args: { ...ast.args },
+                validation_output: {
+                  ...ast.validation_output,
+                  content: { ...ast.validation_output.content, given: false },
+                  ref: { ...ast.validation_output.ref, given: false, boolean: false },
+                },
+              })
+              delete targetAst.args.content
+              const title = htmlRenderX(targetAst, cloneAndSet(context, 'in_a', true))
+              return link + htmlReferenceContent(`<a${href}${target}>${title}</a>`, referenceContent)
+            }
+            return link
           } else {
             return content
           }

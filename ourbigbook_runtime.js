@@ -39,6 +39,76 @@ const TOC_CONTAINER_CLASS = 'toc-container'
 // max-mobile-width
 const CSS_MAX_MOBILE_WIDTH = 635
 
+const initializedReferences = new WeakSet()
+let referencePopoverId = 0
+
+export function initReferencePopovers(toplevel) {
+  const doc = toplevel.ownerDocument || toplevel
+  const win = doc.defaultView
+  // Older browsers and pages without JavaScript retain the ordinary link.
+  if (!win.HTMLElement.prototype.showPopover) return
+  for (const trigger of toplevel.querySelectorAll('a.ref-trigger')) {
+    if (initializedReferences.has(trigger)) continue
+    const template = trigger.nextElementSibling
+    if (!template?.matches('template.ref-content')) continue
+    initializedReferences.add(trigger)
+    trigger.setAttribute('aria-haspopup', 'dialog')
+    trigger.setAttribute('aria-expanded', 'false')
+    let popup
+    let wasOpen = false
+    const position = () => {
+      const rect = trigger.getBoundingClientRect()
+      const box = popup.getBoundingClientRect()
+      const width = doc.documentElement.clientWidth
+      const height = doc.documentElement.clientHeight
+      popup.style.left = `${Math.max(8, Math.min(rect.left, width - box.width - 8))}px`
+      const below = rect.bottom + 6
+      popup.style.top = `${Math.max(8, Math.min(
+        below + box.height <= height - 8 ? below : rect.top - box.height - 6,
+        height - box.height - 8,
+      ))}px`
+    }
+    // Native light-dismiss happens before click. Remember pointerdown state so
+    // clicking an already open reference closes it instead of reopening it.
+    trigger.addEventListener('pointerdown', () => {
+      wasOpen = !!popup?.matches(':popover-open')
+    })
+    trigger.addEventListener('click', event => {
+      if (event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return
+      event.preventDefault()
+      const close = (event.detail !== 0 && wasOpen) || popup?.matches(':popover-open')
+      wasOpen = false
+      if (close) {
+        popup.hidePopover()
+        return
+      }
+      if (!popup) {
+        popup = template.content.firstElementChild.cloneNode(true)
+        popup.id = `ourbigbook-ref-${++referencePopoverId}`
+        trigger.setAttribute('aria-controls', popup.id)
+        // Stay inside the article's styling/React-owned subtree, but outside
+        // its paragraph so rich reference content cannot break paragraph layout.
+        ;(trigger.closest('.ref-popover, .ourbigbook') || doc.body).appendChild(popup)
+        popup.addEventListener('toggle', () => {
+          const open = popup.matches(':popover-open')
+          trigger.setAttribute('aria-expanded', String(open))
+          if (open) {
+            win.addEventListener('resize', position)
+            doc.addEventListener('scroll', position, true)
+          } else {
+            win.removeEventListener('resize', position)
+            doc.removeEventListener('scroll', position, true)
+          }
+        })
+        initReferencePopovers(popup)
+      }
+      popup.showPopover({ source: trigger })
+      position()
+      popup.focus({ preventScroll: true })
+    })
+  }
+}
+
 export function toplevelMouseleave(targetElem) {
   const firstChild = targetElem.children[0]
   if (
@@ -62,6 +132,7 @@ export function ourbigbook_runtime(toplevel, opts={}) {
     myDocument = toplevel.ownerDocument
   }
   setTheme(getStoredTheme(), { doc: myDocument, persist: false })
+  initReferencePopovers(toplevel)
   let { hoverSelfLinkCallback } = opts
   if (opts.hoverSelfLinkCallback === undefined) {
     hoverSelfLinkCallback = () => {}

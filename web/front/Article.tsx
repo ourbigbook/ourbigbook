@@ -989,6 +989,7 @@ export default function Article({
               }
               a.addEventListener('click', e => {
                 if (
+                  !e.defaultPrevented &&
                   // Don't capture Ctrl + Click, as that means user wants link to open on a separate page.
                   // https://stackoverflow.com/questions/16190455/how-to-detect-controlclick-in-javascript-from-an-onclick-div-attribute
                   !e.ctrlKey

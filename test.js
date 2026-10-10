@@ -17836,6 +17836,13 @@ assert_cli('file: _file auto-generation conversion image media provider works',
   },
 )
 
+it('VS Code excludes generated output from file discovery by default', function() {
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, 'vscode/package.json')))
+  // Markdown workspace symbols use file discovery, not watcher/search exclusions.
+  // Match _out at any depth, including projects nested inside a workspace.
+  assert.strictEqual(manifest.contributes.configurationDefaults['files.exclude']['**/_out'], true)
+})
+
 it('release-vscode waits for npm visibility and resumes failed installs without another version bump', function() {
   this.timeout(15000)
   for (const scenario of ['delayed', 'unavailable', 'retry']) {

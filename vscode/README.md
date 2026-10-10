@@ -4,6 +4,8 @@ This extension adds support for local [OurBigBook Markup](https://docs.ourbigboo
 
 This extension's documentation can be found at: <https://docs.ourbigbook.com/visual-studio-code>
 
+Generated `_out` directories are excluded from file discovery by default so their Markdown headers do not clutter workspace symbol search (`Ctrl+T`, or `#` in Quick Open). This also hides these directories in Explorer. To opt out, set `"files.exclude": { "**/_out": false }` in your user or workspace settings. After changing this setting, run **Developer: Reload Window** to clear previously indexed symbols.
+
 A demo video can be found at: https://www.youtube.com/watch?v=0W8U2YtQ8fg
 
 https://raw.githubusercontent.com/ourbigbook/ourbigbook-media/master/feature/x/hilbert-space-arrow.png

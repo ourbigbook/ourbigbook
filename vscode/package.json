@@ -62,6 +62,9 @@
       }
     },
     "configurationDefaults": {
+      "files.exclude": {
+        "**/_out": true
+      },
       "files.watcherExclude": {
         "**/.git/objects/**": true,
         "**/node_modules/**": true,

@@ -7998,6 +7998,61 @@ it('api: article tree: updateNestedSetIndex=false circular loop check is done wi
   })
 })
 
+it('api: article tree: retry extraction of a rendered child with an unrendered parent', async () => {
+  await testApp(async (test) => {
+    const { Article, Ref, User } = test.sequelize.models
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const update = async (titleSource, opts = {}) => {
+      const { data, status } = await createOrUpdateArticleApi(test,
+        createArticleArg({ i: 0, titleSource }), opts)
+      assertStatus(status, data)
+      return data
+    }
+    const tree = () => Article.findAll({
+      attributes: ['slug', 'nestedSetIndex', 'nestedSetNextSibling', 'depth'],
+      order: [['slug', 'ASC']], raw: true,
+    })
+    await update('Astrophysics')
+    await update('Physics', { render: false, updateNestedSetIndex: false })
+    const before = await tree()
+    const opts = { parentId: '@user0/physics', render: false, updateNestedSetIndex: false }
+    await update('Astrophysics', opts)
+    // The first extraction reparented an existing Article to a File/Id that
+    // has not been rendered. Retrying used to dereference the missing Article.
+    await update('Astrophysics', opts)
+    assert.deepStrictEqual(await tree(), before)
+    assert.strictEqual(await Article.count({ where: { slug: 'user0/physics' } }), 0)
+    const ref = await Ref.findOne({ where: {
+      to_id: '@user0/astrophysics', type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+    } })
+    assert.strictEqual(ref.from_id, '@user0/physics')
+    assert.strictEqual(ref.to_id_index, 0)
+
+    // Even a foreground render must defer tree indexing if its parent is not
+    // rendered yet, without changing the already stored nested-set columns.
+    const rendered = await update('Astrophysics', { parentId: '@user0/physics' })
+    assert.strictEqual(rendered.nestedSetNeedsUpdate, true)
+    assert.deepStrictEqual(await tree(), before)
+    // Moving away also needs to defer indexing: the destination exists, but
+    // the old parent still has no Article from which to read a tree position.
+    const moved = await update('Astrophysics')
+    assert.strictEqual(moved.nestedSetNeedsUpdate, true)
+    assert.deepStrictEqual(await tree(), before)
+    await update('Astrophysics', opts)
+    await update('Physics', { updateNestedSetIndex: false })
+    await update('Astrophysics', { parentId: '@user0/physics', updateNestedSetIndex: false })
+    const { data, status } = await test.webApi.articleUpdatedNestedSet('user0')
+    assertStatus(status, data)
+    await assertNestedSets(test.sequelize, [
+      { slug: 'user0', nestedSetIndex: 0, nestedSetNextSibling: 3, depth: 0, to_id_index: null },
+      { slug: 'user0/physics', nestedSetIndex: 1, nestedSetNextSibling: 3, depth: 1, to_id_index: 0 },
+      { slug: 'user0/astrophysics', nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0 },
+    ])
+    assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, false)
+  })
+})
+
 it('api: article tree: render=false sibling insertion does not make later moves create a cycle', async () => {
   // Reproduces the @codex/arithmetic-function <-> @codex/analytic-number-theory
   // cycle found in the 2026-09-22 production dump. In bulk upload mode there

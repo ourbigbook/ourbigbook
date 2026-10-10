@@ -712,7 +712,9 @@ async function convertArticle({
       if (oldArticle) {
         oldNestedSetIndex = oldArticle.nestedSetIndex
         nestedSetSize = oldArticle.nestedSetNextSibling - oldArticle.nestedSetIndex
-        oldNestedSetIndexParent = oldParentArticle.nestedSetIndex
+        // A prior extraction may have moved this rendered child under a
+        // parent whose File/Id exists but whose Article has not been rendered.
+        oldNestedSetIndexParent = oldParentArticle?.nestedSetIndex
         oldDepth = oldArticle.depth
       }
     } else if (isIndex) {
@@ -726,7 +728,11 @@ async function convertArticle({
       // then we wouldn't have to think about this kind of issue.
       render &&
       // Can happen if the new position does not have an article yet.
-      newNestedSetIndex !== undefined
+      newNestedSetIndex != null &&
+      // Ref relationships are canonical during uploads. Only maintain the
+      // derived nested set incrementally when both parent positions exist.
+      (isIndex || newParentArticle?.nestedSetIndex != null) &&
+      (!oldArticle || oldNestedSetIndexParent != null)
     if (!oldArticle) {
       nestedSetSize = 1
     }
@@ -739,6 +745,10 @@ async function convertArticle({
     }
     nestedSetNeedsUpdate = !doUpdateNestedSetIndex &&
       (
+        (render && !isIndex && (
+          newParentArticle?.nestedSetIndex == null ||
+          (oldArticle && oldNestedSetIndexParent == null)
+        )) ||
         // ID extraction can create a parent Ref before an Article exists. A
         // later render still needs tree indices even if that Ref did not move.
         (render && !isIndex && !oldArticle) ||

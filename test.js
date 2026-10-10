@@ -61,6 +61,31 @@ it('Font Awesome declarations are only emitted by bundled stylesheets', function
     }
   }
 })
+it('KaTeX font faces stay global in static and nested Web stylesheets', function () {
+  this.timeout(10000)
+  const sass = require('sass')
+  const katex = require('katex')
+  // Negation uses a private-use glyph which becomes a missing-character square
+  // without KaTeX_Main, even when ordinary letters appear to render correctly.
+  assert(katex.renderToString(String.raw`x\ne0`).includes('\ue020'))
+  const fontFaces = css => (css.match(/@font-face\s*\{[^{}]*\}/g) || [])
+    .filter(rule => /font-family:\s*["']?KaTeX_/.test(rule))
+  const expected = fontFaces(fs.readFileSync(require.resolve('katex/dist/katex.css'), 'utf8'))
+  assert(expected.length > 0)
+  for (const file of ['ourbigbook.scss', 'web/style.scss']) {
+    const css = sass.renderSync({
+      file: path.join(__dirname, file),
+      includePaths: [path.join(__dirname, 'node_modules'), path.dirname(__dirname)],
+    }).css.toString()
+    const actual = fontFaces(css)
+    assert.strictEqual(actual.length, expected.length, file)
+    for (const font of expected) {
+      const url = font.match(/url\(([^)]+\.woff2)\)/)[1]
+      assert(actual.some(rule => rule.includes(url)), `${file}: missing global font face for ${url}`)
+    }
+    assert(actual.some(rule => /font-family:\s*["']?KaTeX_Main["']?;/.test(rule) && rule.includes('KaTeX_Main-Regular.woff2')), file)
+  }
+})
 const PATH_SEP = ourbigbook.Macro.HEADER_SCOPE_SEPARATOR
 
 describe('WebApi retries', function () {

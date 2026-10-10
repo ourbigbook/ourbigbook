@@ -1,7 +1,11 @@
 // https://docs.ourbigbook.com#shorthand-link-parsing-rules#overview-of-files-in-this-repository
 
 @import 'normalize.css/normalize';
-@import 'katex/dist/katex.min';
+// Web imports this stylesheet inside a selector. KaTeX's font-face declarations
+// must remain global, otherwise private-use math glyphs render as missing boxes.
+@at-root {
+  @import 'katex/dist/katex.min';
+}
 @import 'tablesort/tablesort';
 
 @import 'ourbigbook.common.scss';

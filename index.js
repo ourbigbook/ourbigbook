@@ -6215,6 +6215,15 @@ async function parse(tokens, options, context, extra_returns={}) {
         // Required by calculateId.
         validateAst(ast, context);
 
+        // Web editors derive the article path from this argument before the
+        // full conversion, so it is not redundant there.
+        if (!options.webMode && is_first_header && context.toplevel_id !== undefined &&
+            !context.isToplevelIndex && ast.validation_output.id.given) {
+          parseError(state,
+            'the first header cannot have an "id" argument because its ID is determined by the filename; remove {id=...} and rename the file instead',
+            ast.args.id.source_location)
+        }
+
         if (ast.validation_output.wiki.given) {
           const { wiki, defaultWiki } = headerWikiParams(ast, context)
           if (wiki !== '' && wiki.replace(/ /g, '_') === defaultWiki) {
@@ -13843,6 +13852,11 @@ OUTPUT_FORMATS_LIST.push(
           if (level === 1) {
             // Happens on split headers.
             skip.add('parent')
+            if (context.options.webLocalConvert && !ast.isSynonym()) {
+              // This header becomes the first header of its own upload file,
+              // whose path already carries its ID. Synonym IDs still matter.
+              skip.add('id')
+            }
           }
           const args_string = ourbigbookConvertArgs(
             ast,
@@ -13869,7 +13883,9 @@ OUTPUT_FORMATS_LIST.push(
           } else {
             titleRender = renderArg(ast.args.title, context)
             if (titleRender.indexOf('\n') > -1) {
-              return ourbigbookConvertSimpleElem(ast, context)
+              return ourbigbookConvertSimpleElem(ast, context, {
+                skip: skip.has('id') ? new Set(['id']) : new Set(),
+              })
             }
           }
           return `${ast.parent_argument_index === 0 ? '' : '\n\n'}${SHORTHAND_HEADER_CHAR.repeat(output_level)} ${titleRender}${args_string ? '\n' : '' }${args_string}`

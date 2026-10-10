@@ -8774,6 +8774,34 @@ assert_lib_ast('header: id of first header comes from the file name if not index
     convert_before_norender: ['index.bigb', 'notindex.bigb'],
   },
 )
+for (const input_path of ['article.bigb', 'subdir/article.bigb', 'subdir/index.bigb']) {
+  for (const render of [false, true]) {
+    for (const id of ['other', 'article', '']) {
+      assert_lib_error(`header: filename ID rejects explicit id: ${input_path}, render=${render}, id=${id}`,
+        `= Article\n{id=${id}}\n`, 2, 1, input_path, {
+          convert_opts: { input_path, render, path_sep: '/' },
+          error_message: 'the first header cannot have an "id" argument because its ID is determined by the filename; remove {id=...} and rename the file instead',
+        })
+    }
+  }
+}
+it('header: filename ID rejects explicit id in Markdown during extraction', async () => {
+  const extra = {}
+  await ourbigbook.convert(await markdownToOurbigbook('# Article\n{id=other}\n'), {
+    input_path: 'article.md', render: false,
+  }, extra)
+  assert.strictEqual(extra.errors.length, 1)
+  assert(extra.errors[0].message.includes('ID is determined by the filename'))
+})
+assert_lib_stdin('header: explicit id without a filename remains valid',
+  '= Article\n{id=other}\n\n<other>\n', {
+    assert_xpath_stdout: ["//x:div[@class='h top' and @id='other']"],
+  })
+assert_lib_stdin('header: explicit id on a later header remains valid',
+  '= Article\n\n== Child\n{id=other}\n\n<other>\n', {
+    convert_opts: { input_path: 'article.bigb' },
+    assert_xpath_stdout: ["//x:div[@class='h' and @id='other']"],
+  })
 assert_lib_ast('header: id of first header is empty if index',
   `= abc
 
@@ -17625,6 +17653,22 @@ assert_cli(
     assert_bigb: {
       [`${TMP_DIRNAME}/web/homological-algebra.bigb`]: '= Homological algebra\n\nSee <homology>.\n',
       [`${TMP_DIRNAME}/web/homology.bigb`]: '= Homology\n{disambiguate=mathematics}\n',
+    },
+  }
+)
+assert_cli(
+  '--web removes explicit IDs only from split primary headers',
+  {
+    args: ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer', '-j', '1', '.'],
+    filesystem: {
+      'index.bigb': '= Root\n\n== Child\n{id=custom}\n\n= Alias\n{synonym}\n{id=other}\n\nSee <custom>.\n',
+      'ourbigbook.json': '{}\n',
+    },
+    assert_contains: {
+      [`${TMP_DIRNAME}/web/custom.bigb`]: ['= Child\n', '{synonym}', '{id=other}', 'See <custom>.'],
+    },
+    assert_not_contains: {
+      [`${TMP_DIRNAME}/web/custom.bigb`]: ['{id=custom}'],
     },
   }
 )

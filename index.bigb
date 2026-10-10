@@ -1769,8 +1769,6 @@ This is because in this case, we guess that the `h2` is the toplevel.
 = The ID of the first header is derived from the filename
 {parent=The toplevel header}
 
-With the exception of  For example:
-
 When the OurBigBook input comes from a file (and not e.g. <stdin>), the default ID of the first header in the document is derived from the basename of the OurBigBook input source file rather than from its title.
 
 The only exception to this is <the home article>, where the ID is empty.
@@ -1780,6 +1778,8 @@ For example, in file named `my-file.bigb` which contains:
 = Awesome ourbigbook file
 ``
 the ID of the header is `my-file` rather than `awesome-ourbigbook-file`. See also: <automatic ID from title>.
+
+An explicit `{id=...}` on this first header is an error, even if it matches the filename: rename the file to change its ID. This also applies to index files in subdirectories. The argument remains available on other headers, on input without a filename, and in the Web editor where it determines the article path. `{disambiguate=...}` is still allowed on filename-derived headers because it affects the displayed title and the `{wiki}` target.
 
 If the file is an <index file> other than <the toplevel index file>, then the basename of the parent directory is used instead, e.g. the toplevel ID of a file:
 ``
@@ -1794,11 +1794,11 @@ rather than:
 #index.bigb
 ``
 
-For the toplevel index file however, the ID is just taken from the header itself as usual. This is done because you often can't general control the directory name of a project.
+For the toplevel index file, the ID is empty, independent of the title and project directory name. A nonempty `{id=...}` is already forbidden there.
 
 For example, a <publish to GitHub Pages>[GitHub pages] root directory must be named as `<username>.github.io`. And users may need to rename directories to avoid naming conflicts.
 
-As a consequence of this, the toplevel index file cannot <include>[be included in other files].
+The toplevel index file cannot <include>[be included in other files].
 
 TODO: we kind of wanted this to be the ID of the toplevel header instead of the first header, but this would require an extra postprocessing pass (to determine if the first header is toplevel or not), which might affect performance, so we are not doing it right now.
 

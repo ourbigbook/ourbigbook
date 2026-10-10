@@ -8344,6 +8344,8 @@ TODO: integrate Live Preview: https://asciidoctor.org/docs/editing-asciidoc-with
 
 Sync local directory to <OurBigBook Web> instead of doing anything else.
 
+The CLI remembers usernames and login tokens (not passwords) in `_out/auth.json` under the original project's directory. This file is readable and writable only by its owner and stays outside the disposable `_out/publish` checkout, so a static publish does not forget your login. Existing logins in the conversion database are migrated when used. Deleting `_out/auth.json` or all of `_out` forgets the saved logins. Static publishing and Web uploads still share the conversion checkout and database, so run them sequentially.
+
 To upload the entire repository, run from toplevel:
 ``
 ourbigbook --web

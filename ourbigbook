@@ -3007,7 +3007,17 @@ if (cli.helpMacros) {
       } else {
         cliWhere.defaultUsernameForHost = true
       }
-      const host_row = await nonOurbigbookOptions.sequelize.models.Cli.findOne({ where: cliWhere })
+      // Keep login state in the original project's _out, outside the disposable
+      // committed-source checkout that --publish cleans and rebuilds.
+      const authPath = path.join(webSourceRoot || path.resolve(ourbigbook_json_dir),
+        ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'auth.json')
+      let host_row = ourbigbook_nodejs.readWebAuth(authPath).find(row =>
+        row.host === host && (username ? row.username === username : row.defaultUsernameForHost)
+      ) || null
+      if (!host_row && !cli.webDry) {
+        // Migrate a surviving legacy login lazily, after verifying its token.
+        host_row = await nonOurbigbookOptions.sequelize.models.Cli.findOne({ where: cliWhere })
+      }
       if (username === undefined) {
         if (host_row === null) {
           ;[err, username] = await read({ prompt: 'Username: ' })
@@ -3026,7 +3036,7 @@ if (cli.helpMacros) {
         validateStatus: () => true,
       })
       let tokenOk = true
-      if (host_row) {
+      if (host_row && !cli.webDry) {
         token = host_row.token
         let data, status
         // Can fail with "jwt expired" if expered if you wait for a long time
@@ -3062,30 +3072,14 @@ if (cli.helpMacros) {
           }
           token = data.user.token
         }
-
-        await nonOurbigbookOptions.sequelize.transaction(async (transaction) => {
-          await nonOurbigbookOptions.sequelize.models.Cli.update(
-            {
-              defaultUsernameForHost: false
-            },
-            {
-              where: {
-                host,
-              },
-              transaction,
-            }
-          )
-          await nonOurbigbookOptions.sequelize.models.Cli.upsert(
-            {
-              host,
-              username,
-              token,
-              // Use the latest one by default.
-              defaultUsernameForHost: true
-            },
-            { transaction }
-          )
+      }
+      if (!cli.webDry) {
+        ourbigbook_nodejs.saveWebAuthLogin(authPath, {
+          host, username, token,
+          defaultUsernameForHost: !host_row || !tokenOk || host_row.defaultUsernameForHost,
         })
+        // Only remove the legacy copy once the separate store is safely written.
+        await nonOurbigbookOptions.sequelize.models.Cli.destroy({ where: { host, username } })
       }
 
       let currentBuildToken

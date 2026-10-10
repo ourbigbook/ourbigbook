@@ -18085,6 +18085,102 @@ const parallelFilesystem = {
 
 const parallelWebArgs = ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
 
+describe('web login storage', function () {
+  it('keeps accounts separate and writes private files without exposing malformed tokens', function () {
+    const filename = path.join(testdir, 'auth-store', 'auth.json')
+    const save = (host, username, token) => ourbigbook_nodejs.saveWebAuthLogin(filename,
+      { host, username, token, defaultUsernameForHost: true })
+    save('one.example', 'alice', 'first')
+    save('two.example', 'alice', 'second')
+    save('one.example', 'bob', 'third')
+    save('one.example', 'bob', 'renewed')
+    const rows = ourbigbook_nodejs.readWebAuth(filename)
+    assert.strictEqual(rows.length, 3)
+    assert.strictEqual(rows.find(row => row.host === 'one.example' && row.username === 'alice').defaultUsernameForHost, false)
+    assert.strictEqual(rows.find(row => row.host === 'two.example').defaultUsernameForHost, true)
+    assert.strictEqual(rows.find(row => row.username === 'bob').token, 'renewed')
+    assert.strictEqual(fs.statSync(filename).mode & 0o777, 0o600)
+    assert.deepStrictEqual(fs.readdirSync(path.dirname(filename)), ['auth.json'])
+    fs.writeFileSync(filename, '{"secret-token-fragment')
+    assert.throws(() => ourbigbook_nodejs.readWebAuth(filename), error =>
+      error.message === `Invalid web login file: ${filename}`)
+  })
+
+  for (const git of [false, true]) {
+    it(`reuses CLI logins across runs and publish cleanup (git=${git})`, async function () {
+      this.timeout(30000)
+      const root = path.join(testdir, `web-auth-${git}`)
+      fs.mkdirSync(root, { recursive: true })
+      fs.writeFileSync(path.join(root, 'ourbigbook.json'), '{}')
+      fs.writeFileSync(path.join(root, 'index.bigb'), '= Home\n')
+      const shim = path.join(testdir, `web-auth-shim-${git}.js`)
+      // Exercise the real CLI, replacing only HTTP; never publish or contact a server.
+      fs.writeFileSync(shim, `
+const { WebApi } = require(${JSON.stringify(path.join(__dirname, 'web_api'))})
+WebApi.prototype.req = async function(method, path, opts={}) {
+  if (path === 'login') {
+    console.log('TEST LOGIN ' + opts.body.user.username)
+    return { status: 200, data: { user: { token: 'fixture-token-' + opts.body.user.username } } }
+  }
+  if (path === 'min') return { status: 200, data: { loggedIn: this.opts.getToken().startsWith('fixture-token-') } }
+  if (path === 'articles/bulk/build') return { status: 200, data: { build: null, job: null, tree: null } }
+  if (path === 'articles/bulk/build/cancel') return { status: 202, data: { message: 'cancelled' } }
+  throw new Error('Unexpected test HTTP request: ' + method + ' ' + path)
+}
+`)
+      if (git) {
+        for (const args of [['init'], ['add', '.'], ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-m', 'Initial'],
+          ['remote', 'add', 'origin', 'https://github.com/ourbigbook/ourbigbook-generate']]) {
+          const result = child_process.spawnSync('git', args, { cwd: root, encoding: 'utf8' })
+          assert.strictEqual(result.status, 0, result.stderr)
+        }
+      }
+      function run(args) {
+        const result = child_process.spawnSync(process.execPath,
+          ['--max-old-space-size=256', '-r', shim, path.join(__dirname, 'ourbigbook'), ...args],
+          { cwd: root, encoding: 'utf8', timeout: 15000 })
+        assert.strictEqual(result.status, 0, result.stdout + result.stderr)
+        return result.stdout
+      }
+      assert(run(['--web-watch', '--web-user', 'alice', '--web-password', 'not-stored']).includes('TEST LOGIN alice'))
+      const auth = path.join(root, TMP_DIRNAME, 'auth.json')
+      assert.strictEqual(fs.statSync(auth).mode & 0o777, 0o600)
+      assert(!fs.readFileSync(auth, 'utf8').includes('not-stored'))
+      const storage = path.join(root, TMP_DIRNAME, ...(git ? ['publish', TMP_DIRNAME] : []), 'db.sqlite3')
+      const db = await ourbigbook_nodejs_webpack_safe.createSequelize({ storage, logging: false })
+      try {
+        assert.strictEqual(await db.models.Cli.count(), 0, 'new logins are not stored in the conversion DB')
+        await db.models.Cli.create({ host: 'ourbigbook.com', username: 'legacy', token: 'fixture-token-legacy', defaultUsernameForHost: true })
+      } finally { await db.close() }
+      assert(!run(['--web-watch', '--web-user', 'legacy']).includes('TEST LOGIN'))
+      assert(ourbigbook_nodejs.readWebAuth(auth).some(row => row.username === 'legacy'))
+      const afterMigration = await ourbigbook_nodejs_webpack_safe.createSequelize({ storage, logging: false })
+      try { assert.strictEqual(await afterMigration.models.Cli.count(), 0) } finally { await afterMigration.close() }
+      if (git) {
+        const before = fs.readFileSync(auth, 'utf8')
+        run(['--publish', '--publish-target', 'local', '--dry-run', '-j', '1'])
+        assert.strictEqual(fs.readFileSync(auth, 'utf8'), before)
+        assert(!fs.existsSync(path.join(root, TMP_DIRNAME, 'publish', TMP_DIRNAME, 'auth.json')))
+      }
+      const watched = run(['--web-watch'])
+      assert(watched.includes('Using previous username: legacy'))
+      assert(!watched.includes('TEST LOGIN'))
+      const cancelled = run(['--web-cancel-build', '--web-user', 'alice'])
+      assert(!cancelled.includes('TEST LOGIN'))
+      assert(cancelled.includes('cancelled'))
+      const logins = ourbigbook_nodejs.readWebAuth(auth)
+      const alice = logins.find(row => row.username === 'alice')
+      ourbigbook_nodejs.saveWebAuthLogin(auth, { ...alice, token: 'expired' })
+      assert(run(['--web-watch', '--web-user', 'alice', '--web-password', 'not-stored']).includes('TEST LOGIN alice'))
+      assert(!run(['--web-watch']).includes('TEST LOGIN'))
+      const beforeDry = fs.readFileSync(auth, 'utf8')
+      const dry = run(['--web', '--web-dry', '--web-user', 'alice', '--web-password', 'not-stored', '-j', '1'])
+      assert(!dry.includes('TEST LOGIN'))
+      assert.strictEqual(fs.readFileSync(auth, 'utf8'), beforeDry, 'dry runs leave saved logins untouched')
+    })
+  }
+})
+
 assert_cli('web local media provider preserves file-relative paths when splitting scoped headers', {
   args: [...parallelWebArgs, '.'],
   filesystem: relativeLocalMediaFilesystem,
@@ -18402,8 +18498,6 @@ if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web
     }, {}, { sync: false })
     try {
       assert.deepStrictEqual((await sequelize.query('PRAGMA integrity_check'))[0], [{ integrity_check: 'ok' }])
-      // Forget dry-run credentials so repeated offline builds do not validate a saved login.
-      if (web && !webCache) await sequelize.models.Cli.destroy({ where: {} })
       const queries = webCache ? [
         'SELECT "idid", "title", "body", "inpath", "parentId", "source", "definedAt" FROM "Articles" ORDER BY "idid"',
         'SELECT "idid", "uniqueHack" FROM "IndexIds"',

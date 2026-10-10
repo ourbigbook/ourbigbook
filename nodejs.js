@@ -8,6 +8,49 @@ const ourbigbook_nodejs_webpack_safe = require('./nodejs_webpack_safe.js')
 
 const commander = require('commander')
 
+function readWebAuth(filename) {
+  let source
+  try {
+    source = fs.readFileSync(filename, 'utf8')
+  } catch (error) {
+    if (error.code === 'ENOENT') return []
+    throw error
+  }
+  try {
+    const data = JSON.parse(source)
+    if (data.version !== 1 || !Array.isArray(data.logins) || data.logins.some(login =>
+      !login || typeof login.host !== 'string' || typeof login.username !== 'string' ||
+      typeof login.token !== 'string' || typeof login.defaultUsernameForHost !== 'boolean'
+    )) throw new Error()
+    return data.logins
+  } catch (_) {
+    // JSON parser errors can expose fragments of a secret token.
+    throw new Error(`Invalid web login file: ${filename}`)
+  }
+}
+exports.readWebAuth = readWebAuth
+
+function saveWebAuthLogin(filename, login) {
+  const logins = readWebAuth(filename).filter(row => row.host !== login.host || row.username !== login.username)
+  if (login.defaultUsernameForHost) {
+    for (const row of logins) if (row.host === login.host) row.defaultUsernameForHost = false
+  }
+  logins.push({ host: login.host, username: login.username, token: login.token,
+    defaultUsernameForHost: Boolean(login.defaultUsernameForHost) })
+  fs.mkdirSync(path.dirname(filename), { recursive: true })
+  // Atomic replacement keeps an interrupted login from corrupting the store.
+  // Neither the temporary nor final file may be readable by other users.
+  const temporary = fs.mkdtempSync(path.join(path.dirname(filename), '.auth-'))
+  const temporaryFile = path.join(temporary, 'auth.json')
+  try {
+    fs.writeFileSync(temporaryFile, JSON.stringify({ version: 1, logins }, null, 2) + '\n', { mode: 0o600 })
+    fs.renameSync(temporaryFile, filename)
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true })
+  }
+}
+exports.saveWebAuthLogin = saveWebAuthLogin
+
 let checkDbCodeHash
 
 // CLI SQLite only. Revision triggers also see extraction done by worker processes;

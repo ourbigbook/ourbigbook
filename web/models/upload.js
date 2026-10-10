@@ -242,22 +242,52 @@ module.exports = (sequelize) => {
   Upload.getFileIndex = async function({ authorId, list, limit=20, offset=0, order='createdAt', orderAscDesc }={}) {
     if (!['createdAt', 'updatedAt', 'size', 'path'].includes(order)) throw new Error('Invalid file order')
     if (orderAscDesc === undefined) orderAscDesc = order === 'path' ? 'ASC' : 'DESC'
-    // Global paths start with the public username, not the numeric ID stored
-    // in Upload.path. Sort in SQL before pagination, using the displayed path.
-    const orderColumn = order === 'path' && authorId === undefined ? sequelize.literal(`COALESCE((
-      SELECT "User"."username" || substr("Upload"."path", length('${uploadPathComponent}/' || "User"."id") + 1)
-      FROM "User" WHERE ${fileOwnerWhere('"Upload"."path"')}
-    ), "Upload"."path")`) : order
-    const { count, rows } = await Upload.findAndCountAll({
-      attributes: ['id', 'path', 'size', 'contentType', 'createdAt', 'updatedAt', 'list'],
-      where: { ...Upload.fileIndexWhere(authorId), ...(list === undefined ? {} : { list }) },
-      limit,
-      offset,
-      order: [[orderColumn, orderAscDesc], ['id', 'DESC']],
-    })
+    const attributes = ['id', 'path', 'size', 'contentType', 'createdAt', 'updatedAt', 'list']
+    const where = { ...Upload.fileIndexWhere(authorId), ...(list === undefined ? {} : { list }) }
+    let count, rows
+    if (order === 'path' && authorId === undefined) {
+      if (!/^(ASC|DESC)( NULLS (FIRST|LAST))?$/i.test(orderAscDesc)) throw new Error('Invalid file order direction')
+      // Join by primary key instead of scanning User for a matching path
+      // prefix once per upload. Keep the prefix check to preserve the fallback
+      // for orphaned/malformed paths (including noncanonical numeric IDs).
+      const postgres = sequelize.getDialect() === 'postgres'
+      const suffix = `substr("Upload"."path", ${uploadPathComponent.length + 2})`
+      const ownerText = postgres ? `split_part("Upload"."path", '/', 2)`
+        : `substr(${suffix}, 1, instr(${suffix}, '/') - 1)`
+      // User.id is INTEGER. Bound the cast to prevent malformed paths from
+      // throwing or overflowing BIGINT; SQLite's integer cast never throws.
+      const ownerId = postgres
+        ? `CASE WHEN ${ownerText} ~ '^-?[0-9]{1,10}$' THEN CAST(${ownerText} AS BIGINT) END`
+        : `CAST(${ownerText} AS INTEGER)`
+      let page
+      ;[count, page] = await Promise.all([
+        Upload.count({ where }),
+        sequelize.query(`SELECT "Upload"."id"
+FROM "Upload"
+LEFT JOIN "User" ON "User"."id" = ${ownerId} AND ${fileOwnerWhere('"Upload"."path"')}
+WHERE "Upload"."path" LIKE :prefix${list === undefined ? '' : ' AND "Upload"."list" = :list'}
+ORDER BY COALESCE("User"."username" || substr("Upload"."path", length('${uploadPathComponent}/' || "User"."id") + 1), "Upload"."path") ${orderAscDesc}, "Upload"."id" DESC
+LIMIT :limit OFFSET :offset`, {
+          replacements: { prefix: `${uploadPathComponent}/%`, list, limit, offset },
+          type: Sequelize.QueryTypes.SELECT,
+        }),
+      ])
+      // Fetch metadata only for the selected page, never file bytes or hashes.
+      const selected = page.length ? await Upload.findAll({
+        attributes, where: { id: page.map(row => row.id) },
+      }) : []
+      const byId = new Map(selected.map(row => [row.id, row]))
+      rows = page.map(row => byId.get(row.id)).filter(Boolean)
+    } else {
+      ;({ count, rows } = await Upload.findAndCountAll({
+        attributes, where, limit, offset,
+        order: [[order, orderAscDesc], ['id', 'DESC']],
+      }))
+    }
     const users = await sequelize.models.User.findAll({
       attributes: ['id', 'username', 'displayName', 'image', 'score'],
-      where: { id: rows.map(row => row.path.split(URL_SEP)[1]).filter(id => /^\d+$/.test(id)) },
+      // Malformed/orphaned upload paths must not overflow User's INTEGER ID.
+      where: { id: rows.map(row => row.path.split(URL_SEP)[1]).filter(id => /^\d+$/.test(id) && Number(id) <= 2147483647) },
     })
     const authors = new Map(users.map(user => [String(user.id), {
       username: user.username,

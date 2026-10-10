@@ -1071,11 +1071,19 @@ it('benchmark discovers requests and appends runs with database metadata', async
       // A home article can tie for the highest discussion count, but its
       // empty topic ID must not suppress the search and topic lookup cases.
       assertStatus((await test.webApi.issueCreate('user0', { titleSource: 'Home discussion' })).status)
+      const { Upload } = test.sequelize.models
+      await Upload.bulkCreate([
+        { ...Upload.getCreateObj({ path: `upload/${user.id}/listed.txt`, bytes: Buffer.from('listed') }), list: true },
+        { ...Upload.getCreateObj({ path: `upload/${user.id}/unlisted.txt`, bytes: Buffer.from('unlisted') }), list: false },
+        Upload.getCreateObj({ path: `profile/${user.id}`, bytes: Buffer.from('avatar') }),
+      ])
       const db = await collectDatabase(test.sequelize)
       assert.strictEqual(db.articles, 2)
       assert.strictEqual(db.users, 1)
       assert.strictEqual(db.issues, 2)
       assert.strictEqual(db.comments, 1)
+      assert.strictEqual(db.file_uploads, 2)
+      assert.strictEqual(db.listed_uploads, 1)
       assert(!('migrations' in db))
       assert(!('article_indexes' in db))
       assert.strictEqual(db.samples.author.username, 'user0')
@@ -1087,9 +1095,15 @@ it('benchmark discovers requests and appends runs with database metadata', async
       assert(paths.includes('/api/topics?limit=20&search=title-0'))
       assert(paths.includes('/api/articles?limit=20&topicId=title-0'))
       assert(!paths.includes('/cirosantilli'))
-      const htmlPaths = buildPaths({ ...db, listed_articles: 115401 })
+      const htmlPaths = buildPaths({ ...db, listed_articles: 115401, file_uploads: 10001, listed_uploads: 9641, nonempty_topics: 272541 })
       assert(htmlPaths.includes('/cirosantilli'))
       assert(htmlPaths.includes('/-/articles?page=5771&sort=id'))
+      assert(htmlPaths.includes('/-/files?page=242&sort=path'))
+      assert(htmlPaths.includes('/-/files?page=483&sort=path-desc'))
+      assert(htmlPaths.includes('/-/files?listed=0&page=18&sort=path'))
+      assert(htmlPaths.includes('/-/files?listed=2&page=501&sort=path-desc'))
+      assert(htmlPaths.includes('/-/topics?page=13628&sort=id'))
+      assert(htmlPaths.every(path => !path.includes('NaN')))
       assert.deepStrictEqual(normalizePaths(['/cirosantilli', '/api/min?x=1', '/cirosantilli']), [
         '/cirosantilli', '/api/min?x=1',
       ])
@@ -11454,6 +11468,75 @@ it('web: global file index lists metadata, image previews, and stable pages', as
       assert(empty.data.includes('There are no files to show.'))
     }
   }, { canTestNext: true })
+})
+
+it('web: global file path sort uses an owner join and preserves legacy ordering', async () => {
+  await testApp(async test => {
+    const sequelize = test.sequelize
+    const { Upload, User } = sequelize.models
+    const user0 = await test.createUserApi(0)
+    const user1 = await test.createUserApi(1)
+    // Prefix-related usernames make sorting by (username, filename) different
+    // from sorting by the full displayed path on some collations.
+    await User.update({ username: 'aaa' }, { where: { id: user0.id } })
+    await User.update({ username: 'aaa-b' }, { where: { id: user1.id } })
+    const paths = [
+      ...[user0.id, user1.id].flatMap(id => ['a.txt', 'z.txt', 'dir/a [1].png', 'é.txt'].map(p => `upload/${id}/${p}`)),
+      'upload/9999999999/orphan.txt', 'upload/not-a-number/a.txt',
+      `upload/0${user0.id}/noncanonical.txt`, `upload/${user0.id}`,
+      'upload/999999999999999999999999999999999/overflow.txt', 'upload//empty.txt',
+      'profile/1',
+    ]
+    await Upload.bulkCreate(paths.map((path, i) => ({
+      ...Upload.getCreateObj({ path, bytes: Buffer.from('content') }), list: i % 2 === 0,
+    })))
+    for (const list of [undefined, true, false]) {
+      for (const direction of ['ASC', 'DESC', 'asc NULLS LAST', 'desc NULLS LAST']) {
+        const [expected] = await sequelize.query(`SELECT "Upload"."path", COALESCE((
+          SELECT "User"."username" || substr("Upload"."path", length('upload/' || "User"."id") + 1)
+          FROM "User" WHERE substr("Upload"."path", 1, length('upload/' || "User"."id" || '/')) = 'upload/' || "User"."id" || '/'
+        ), "Upload"."path") AS "publicPath" FROM "Upload"
+        WHERE "Upload"."path" LIKE 'upload/%'${list === undefined ? '' : ' AND "Upload"."list" = :list'}
+        ORDER BY "publicPath" ${direction}, "Upload"."id" DESC`, { replacements: { list } })
+        for (const offset of [0, 3, 9, 100]) {
+          const queries = []
+          const query = sequelize.query
+          sequelize.query = function(sql, ...args) {
+            queries.push(typeof sql === 'string' ? sql : sql.query)
+            return query.call(this, sql, ...args)
+          }
+          let result
+          try {
+            result = await Upload.getFileIndex({ order: 'path', orderAscDesc: direction, list, limit: 3, offset })
+          } finally {
+            sequelize.query = query
+          }
+          assert.strictEqual(result.count, expected.length)
+          assert.deepStrictEqual(result.files.map(file => file.path), expected.slice(offset, offset + 3).map(row => {
+            const [, uid, ...parts] = row.path.split('/')
+            const username = uid === String(user0.id) ? 'aaa' : uid === String(user1.id) ? 'aaa-b' : undefined
+            return username ? `${username}/${parts.join('/')}` : row.path
+          }))
+          const pageSql = queries.find(sql => sql.includes('LEFT JOIN "User"'))
+          assert(pageSql, 'global path sorting must join owners, not use a correlated subquery')
+          assert(pageSql.includes('"User"."id" ='))
+          assert(!/SELECT\s+"User"\."username"/.test(pageSql))
+          assert(queries.every(sql => !/["`](bytes|hash)["`]/.test(sql)), 'listing must not load file contents')
+          if (sequelize.getDialect() === 'postgres' && offset === 0 && list === undefined && direction === 'ASC') {
+            const [explain] = await sequelize.query(`EXPLAIN (FORMAT JSON) ${pageSql}`, {
+              replacements: { prefix: 'upload/%', list, limit: 3, offset },
+            })
+            const plan = JSON.stringify(explain)
+            assert(!plan.includes('SubPlan'), plan)
+          }
+        }
+      }
+    }
+    // No cached username in Upload needs updating after a rename.
+    await User.update({ username: 'zzz' }, { where: { id: user0.id } })
+    assert((await Upload.getFileIndex({ order: 'path', orderAscDesc: 'DESC', limit: 1 })).files[0].path.startsWith('zzz/'))
+    await assert.rejects(Upload.getFileIndex({ order: 'path', orderAscDesc: 'invalid' }), /Invalid file order direction/)
+  })
 })
 
 it('image dimensions migration preserves uploads, indexes and triggers', async () => {

@@ -119,12 +119,27 @@ function buildPaths(db, { limit=20, pages=true }={}) {
         add('/-/articles', { page: offset / 20 + 1, sort })
       }
     }
+    for (const [count, filters] of [
+      [db.listed_uploads, {}],
+      [db.file_uploads - db.listed_uploads, { listed: 0 }],
+      [db.file_uploads, { listed: 2 }],
+    ]) {
+      for (const offset of pageOffsets(count, 20)) {
+        for (const sort of ['created', 'size', 'path', 'path-desc']) {
+          add('/-/files', { ...filters, page: offset / 20 + 1, sort })
+        }
+      }
+    }
+    for (const offset of pageOffsets(db.nonempty_topics, 20)) {
+      for (const sort of ['created', 'article-count', 'id', 'id-desc']) {
+        add('/-/topics', { page: offset / 20 + 1, sort })
+      }
+    }
     for (const [pathname, sorts] of [
       ['/', ['article-count', 'id']],
       ['/-/users', ['created', 'score']],
       ['/-/discussions', ['created', 'score']],
       ['/-/comments', ['created']],
-      ['/-/files', ['created', 'size']],
     ]) {
       for (const sort of sorts) add(pathname, { sort })
     }
@@ -141,9 +156,11 @@ async function collectDatabase(sequelize, { author: username }={}) {
   })) {
     db[key] = await sequelize.models[model].count()
   }
-  const { Article, User, Issue, Topic } = sequelize.models
+  const { Article, User, Issue, Topic, Upload } = sequelize.models
   db.listed_articles = await Article.count({ where: { list: true } })
   db.nonempty_topics = await Topic.count({ where: { articleCount: { [Op.gt]: 0 } } })
+  db.file_uploads = await Upload.count({ where: Upload.fileIndexWhere() })
+  db.listed_uploads = await Upload.count({ where: { ...Upload.fileIndexWhere(), list: true } })
   if (db.dialect === 'postgres') {
     const [[details]] = await sequelize.query(`SELECT current_database() AS name,
       current_setting('server_version') AS version,

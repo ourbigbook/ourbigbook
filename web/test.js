@@ -1151,6 +1151,7 @@ it('benchmark discovers requests and appends runs with database metadata', async
       assert(!('article_indexes' in db))
       assert.strictEqual(db.samples.author.username, 'user0')
       assert.strictEqual(db.samples.article.topicId, 'title-0')
+      assert.strictEqual(db.samples.deepArticle.slug, 'user0/title-0')
       const paths = buildPaths(db, { pages: false })
       assert(paths.includes('/api/articles?limit=20&offset=0&sort=id'))
       assert(paths.includes('/api/issues/1/comments?id=user0%2Ftitle-0'))
@@ -1158,8 +1159,10 @@ it('benchmark discovers requests and appends runs with database metadata', async
       assert(paths.includes('/api/topics?limit=20&search=title-0'))
       assert(paths.includes('/api/articles?limit=20&topicId=title-0'))
       assert(!paths.includes('/cirosantilli'))
+      assert(!paths.includes('/user0/title-0'))
       const htmlPaths = buildPaths({ ...db, listed_articles: 115401, file_uploads: 10001, listed_uploads: 9641, nonempty_topics: 272541 })
       assert(htmlPaths.includes('/cirosantilli'))
+      assert(htmlPaths.includes('/user0/title-0'))
       assert(htmlPaths.includes('/-/articles?page=5771&sort=id'))
       assert(htmlPaths.includes('/-/files?page=242&sort=path'))
       assert(htmlPaths.includes('/-/files?page=483&sort=path-desc'))
@@ -1286,6 +1289,29 @@ it('benchmark saves failures and stops after a request timeout', async function(
     await new Promise(resolve => server.close(resolve))
     fs.rmSync(directory, { recursive: true, force: true })
   }
+})
+
+it('benchmark selects a deep listed descendant late in the largest author tree', async function() {
+  const { buildPaths, collectDatabase } = require('./bin/benchmark')
+  const sequelize = this.test.sequelize
+  const user = await createUser(sequelize, 0)
+  const other = await createUser(sequelize, 1)
+  await createArticle(sequelize, user, { titleSource: 'Parent' })
+  // New children are prepended: creation order is not tree order.
+  const late = await createArticle(sequelize, user, { titleSource: 'Late', parentId: '@user0/parent' })
+  await createArticle(sequelize, user, { titleSource: 'Early', parentId: '@user0/parent' })
+  const hidden = await createArticle(sequelize, user, { titleSource: 'Hidden', parentId: '@user0/early' })
+  await hidden.update({ list: false })
+  const pending = await createArticle(sequelize, user, { titleSource: 'Pending', parentId: '@user0/early' })
+  await pending.update({ nestedSetIndex: null })
+  const sample = (await collectDatabase(sequelize)).samples.deepArticle
+  assert.strictEqual(sample.slug, late.slug)
+  assert.strictEqual(sample.depth, late.depth)
+  const otherDb = await collectDatabase(sequelize, { author: other.username })
+  assert.strictEqual(otherDb.samples.deepArticle, null)
+  assert(!buildPaths(otherDb).includes('/undefined'))
+  const otherChild = await createArticle(sequelize, other, { titleSource: 'Child' })
+  assert.strictEqual((await collectDatabase(sequelize, { author: other.username })).samples.deepArticle.slug, otherChild.slug)
 })
 
 it('benchmark captures auto_explain plans for each API request', async function() {
@@ -2274,6 +2300,58 @@ it('HTML article lists omit unused source and headers without changing list cont
   }
 })
 
+it('ancestor ID selection preserves legacy metadata, author isolation and tree boundaries', async function() {
+  const { Op } = require('sequelize')
+  const sequelize = this.test.sequelize
+  const { Article, File, Id } = sequelize.models
+  for (let i = 0; i < 2; i++) {
+    const user = await createUser(sequelize, i)
+    const parent = await createArticle(sequelize, user, { titleSource: 'Parent' })
+    await createArticle(sequelize, user, { titleSource: 'Child', parentId: `@${user.username}/parent` })
+    await createArticle(sequelize, user, { titleSource: 'Sibling', parentId: `@${user.username}/parent` })
+    await createArticle(sequelize, user, { titleSource: 'Other' })
+    await parent.update({ list: false })
+  }
+  for (const slug of ['user0', 'user0/parent', 'user0/child', 'user0/sibling', 'user0/other', 'user1/child']) {
+    const article = await Article.getArticle({ sequelize, slug })
+    for (const metadataOnly of [false, true]) {
+      await sequelize.transaction(async transaction => {
+        const attributes = metadataOnly ? ['slug', 'titleRender', 'titleRenderPlaintext'] : undefined
+        // The original single-query implementation is the correctness oracle.
+        const legacy = await Article.findAll({
+          attributes,
+          where: {
+            nestedSetIndex: { [Op.lt]: article.nestedSetIndex },
+            nestedSetNextSibling: { [Op.gt]: article.nestedSetIndex },
+          },
+          include: [{
+            model: File, as: 'file', required: true,
+            attributes: metadataOnly ? ['id'] : undefined,
+            where: { authorId: article.file.authorId },
+            include: [{ model: Id, as: 'toplevelId', attributes: metadataOnly ? ['id', 'ast_json'] : undefined }],
+          }],
+          order: [['nestedSetIndex', 'ASC']],
+          transaction,
+        })
+        const actual = await article.treeFindAncestors({ attributes, metadataOnly, transaction })
+        assert.deepStrictEqual(actual.map(a => a.toJSON()), legacy.map(a => a.toJSON()))
+        if (slug.endsWith('/child') || slug.endsWith('/sibling')) {
+          const username = slug.split('/')[0]
+          assert.deepStrictEqual(actual.map(a => a.slug), [username, `${username}/parent`])
+        }
+      })
+    }
+  }
+  const home = await Article.getArticle({ sequelize, slug: 'user0' })
+  const sql = []
+  assert.deepStrictEqual(await home.treeFindAncestors({ logging: statement => sql.push(statement) }), [])
+  assert.strictEqual(sql.length, 1)
+  assert(!sql[0].includes(' JOIN '), sql[0])
+  const pending = await Article.getArticle({ sequelize, slug: 'user0/child' })
+  await pending.update({ nestedSetIndex: null })
+  assert.deepStrictEqual(await pending.treeFindAncestors(), [])
+})
+
 it('HTML ancestor metadata avoids loading ancestor source files', async function() {
   const sequelize = this.test.sequelize
   const { Article } = sequelize.models
@@ -2302,10 +2380,16 @@ it('HTML ancestor metadata avoids loading ancestor source files', async function
   assert(lean.length >= 2)
   assert(full.some(a => a.file.bodySource.includes('Large ancestor source.')))
   assert(lean.every(a => a.file.bodySource === undefined))
-  assert.strictEqual(sql.length, 1)
-  const selected = sql[0].slice(0, sql[0].indexOf(' FROM '))
-  assert(!selected.includes('bodySource'), selected)
-  assert(!selected.includes('titleSource'), selected)
+  assert.strictEqual(sql.length, 2)
+  assert(!sql[0].includes(' JOIN '), sql[0])
+  assert(!sql[0].includes('ast_json'), sql[0])
+  assert(/[`"]authorId[`"] =/.test(sql[0]), sql[0])
+  assert(sql[1].includes(' IN ('), sql[1])
+  for (const statement of sql) {
+    const selected = statement.slice(0, statement.indexOf(' FROM '))
+    assert(!selected.includes('bodySource'), selected)
+    assert(!selected.includes('titleSource'), selected)
+  }
 })
 
 it('Comment listing eagerly loads article files before serialization', async function() {

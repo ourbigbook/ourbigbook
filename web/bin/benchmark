@@ -78,7 +78,7 @@ function buildPaths(db, { limit=20, pages=true }={}) {
       for (const sort of sorts) add(`/api/${object}`, { limit, offset, sort })
     }
   }
-  const { author, article, issue } = db.samples
+  const { author, article, deepArticle, issue } = db.samples
   if (author) {
     add('/api/users', { username: author.username })
     add('/api/users', { followedBy: author.username, limit })
@@ -112,6 +112,9 @@ function buildPaths(db, { limit=20, pages=true }={}) {
   }
   if (pages) {
     add('/cirosantilli')
+    // Home pages have no ancestors. Exercise the expensive descendant SSR
+    // path too, rather than only the article API (which skips ancestor loading).
+    if (deepArticle) add(`/${deepArticle.slug}`)
     // HTML listings apply filters/order directions that differ from the API.
     // In particular these reproduce the expensive global article-list queries.
     for (const offset of pageOffsets(db.listed_articles, 20)) {
@@ -190,6 +193,20 @@ async function collectDatabase(sequelize, { author: username }={}) {
     if (largest) author = await User.findByPk(largest.authorId, { attributes: ['id', 'username'], raw: true })
   }
   if (author) author.articles = await Article.count({ where: { authorId: author.id } })
+  // Prefer the deepest listed descendant of the largest (or selected) author.
+  // Among equally deep articles, pick the latest tree position: ancestor lookup
+  // must search a larger preceding range. Keep the choice deterministic.
+  const deepArticle = author ? await Article.findOne({
+    attributes: ['slug', 'depth', 'nestedSetIndex'],
+    where: {
+      authorId: author.id,
+      list: true,
+      depth: { [Op.gt]: 0 },
+      nestedSetIndex: { [Op.ne]: null },
+    },
+    order: [['depth', 'DESC'], ['nestedSetIndex', 'DESC'], ['id', 'DESC']],
+    raw: true,
+  }) : null
   const article = await Article.findOne({
     // Home articles have an empty topicId: they would skip search benchmarks
     // and turn the topicId lookup into another unfiltered article listing.
@@ -203,6 +220,7 @@ async function collectDatabase(sequelize, { author: username }={}) {
   db.samples = {
     author: author || null,
     article,
+    deepArticle,
     issue: issue ? { number: issue.number, slug: issue.article.slug } : null,
   }
   return db

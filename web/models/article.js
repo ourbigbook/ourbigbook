@@ -1219,11 +1219,28 @@ WHERE
   }
 
   Article.prototype.treeFindAncestors = async function(opts={}) {
+    const where = {
+      authorId: this.file.authorId,
+      nestedSetIndex: { [Op.lt]: this.nestedSetIndex },
+      nestedSetNextSibling: { [Op.gt]: this.nestedSetIndex },
+    }
+    // Use the author/tree index before loading File and Id metadata. The two
+    // nested-set bounds are strongly correlated: PostgreSQL can estimate many
+    // thousands of ancestors where only a handful exist, then scan whole tables
+    // for the joins. Explicit IDs keep the metadata query small as well.
+    const ids = await Article.findAll({
+      attributes: ['id'],
+      where,
+      raw: true,
+      logging: opts.logging,
+      transaction: opts.transaction,
+    })
+    if (!ids.length) return []
     return Article.findAll({
       attributes: opts.attributes,
       where: {
-        nestedSetIndex: { [Op.lt]: this.nestedSetIndex },
-        nestedSetNextSibling: { [Op.gt]: this.nestedSetIndex },
+        ...where,
+        id: { [Op.in]: ids.map(row => row.id) },
       },
       include: [{
         model: sequelize.models.File,
@@ -1238,6 +1255,8 @@ WHERE
         }]
       }],
       order: [['nestedSetIndex', 'ASC']],
+      logging: opts.logging,
+      transaction: opts.transaction,
     })
   }
 

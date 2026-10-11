@@ -1711,6 +1711,10 @@ it('Topic HTML sorts use ordered indexes without changing filtered pagination', 
               assert(nodes.some(node => node['Index Name']), JSON.stringify(nodes))
               assert(!nodes.some(node => node['Node Type'].includes('Sort')), JSON.stringify(nodes))
             }
+            if (sort === 'id') {
+              assert(nodes.some(node => node['Index Name'] === 'topic_topic_id_asc_created_at_id_nonempty' &&
+                node['Node Type'] === 'Index Only Scan'), JSON.stringify(nodes))
+            }
           })
         }
       }
@@ -1721,6 +1725,10 @@ it('Topic HTML sorts use ordered indexes without changing filtered pagination', 
 it('Topic empty filters have ordered listing indexes', async function() {
   const sequelize = this.test.sequelize
   const qi = sequelize.getQueryInterface()
+  // Exercise migration 53 against its historical schema; migration 64 replaces
+  // its nonempty alphabetical index with a covering one.
+  const replacement = require('./migrations/21000101000064-topic-cover-nonempty-alphabetical-index')
+  await replacement.down(qi)
   const migration = require('./migrations/21000101000053-topic-add-empty-order-indexes')
   const indexNamesExpected = [
     'topic_article_count_created_at',
@@ -1788,6 +1796,79 @@ it('Topic empty filters have ordered listing indexes', async function() {
   await migration.up(qi)
   assert.deepStrictEqual(await indexNames(), originalIndexes)
   await assertOrderedIndexScans()
+  await replacement.up(qi)
+})
+
+it('Topic alphabetical covering index migration replaces and restores the old index', async function() {
+  const sequelize = this.test.sequelize
+  const qi = sequelize.getQueryInterface()
+  const migration = require('./migrations/21000101000064-topic-cover-nonempty-alphabetical-index')
+  const name = 'topic_topic_id_asc_created_at_id_nonempty'
+  const oldName = 'topic_topic_id_asc_created_at_nonempty'
+  const indexes = async () => (await qi.showIndex('Topic'))
+    .map(({ seq, ...index }) => index)
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const original = await indexes()
+  assert(!original.some(i => i.name === oldName))
+  assert.deepStrictEqual(original.find(i => i.name === name).fields.map(f => f.attribute), ['topicId', 'createdAt', 'id'])
+  const user = await createUser(sequelize, 0)
+  for (let i = 0; i < 4; i++) await createArticle(sequelize, user, { i, list: i !== 1 })
+  const page = async () => {
+    const result = await sequelize.models.Topic.getTopics({
+      sequelize, hasArticles: true, order: 'topicId', orderAscDesc: 'ASC NULLS LAST', offset: 1, limit: 2,
+    })
+    return { count: result.count, ids: result.rows.map(row => row.id) }
+  }
+  const expected = await page()
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexes(), original)
+  await migration.down(qi)
+  await migration.down(qi)
+  const reverted = await indexes()
+  assert(!reverted.some(i => i.name === name))
+  assert.deepStrictEqual(reverted.find(i => i.name === oldName).fields.map(f => f.attribute), ['topicId', 'createdAt'])
+  assert.deepStrictEqual(await page(), expected)
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexes(), original)
+  assert.deepStrictEqual(await page(), expected)
+})
+
+it('Topic HTML pagination reuses the tab count only for unfiltered nonempty topics', async function() {
+  if (!testNext) return this.skip()
+  await testApp(async test => {
+    const user = await createUser(test.sequelize, 0)
+    for (let i = 0; i < 3; i++) await createArticle(test.sequelize, user, { i, list: i !== 2 })
+    const queries = []
+    const logging = test.sequelize.options.logging
+    try {
+      test.sequelize.options.logging = sql => queries.push(sql)
+      for (const [url, count, length, reuse] of [
+        ['/-/topics?sort=id', 2, 2, true],
+        ['/-/topics?sort=id&page=14114', 2, 0, true],
+        ['/', 2, 2, true],
+        ['/-/topics?sort=id&empty=0', 1, 1, false],
+        ['/-/topics?sort=id&empty=2', 3, 3, false],
+        ['/-/topics?sort=id&search=title-0', 1, 1, false],
+        ['/-/topics?sort=id&search=missing', 0, 0, false],
+      ]) {
+        queries.length = 0
+        const { data, status } = await test.sendJsonHttp('GET', url)
+        assertStatus(status, data)
+        const props = JSON.parse(data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1]).props.pageProps
+        assert.strictEqual(props.totalTopics, 2, url)
+        assert.strictEqual(props.articlesCount, count, url)
+        assert.strictEqual(props.articles.length, length, url)
+        assert.strictEqual(props.hasEmptyTopics, true, url)
+        const counts = queries.filter(sql => /SELECT count\(/i.test(sql) && /FROM ["`]Topic["`]/.test(sql))
+        // One count for the tab, one for the empty-topic notice. Filtered
+        // listings still need their own pagination count(s).
+        if (reuse) assert.strictEqual(counts.length, 2, counts.join('\n'))
+        else assert(counts.length >= 3, counts.join('\n'))
+      }
+    } finally {
+      test.sequelize.options.logging = logging
+    }
+  }, { canTestNext: true })
 })
 
 it('Article author topic ordering index avoids filtering and sorting the author page', async function() {

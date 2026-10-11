@@ -53,6 +53,9 @@ export const getServerSidePropsIndexHoc = ({
     if (err) { res.statusCode = 422 }
     const offset = page * articleLimit
     const limit = articleLimit
+    // Without search or empty-topic overrides, pagination and the Topics tab
+    // count exactly the same rows. Reuse the tab count instead of scanning twice.
+    const reuseTopicCount = itemTypeEff === 'topic' && list === true && query.search === undefined
     const [
       [articles, articlesCount],
       commentsAndCount,
@@ -117,6 +120,7 @@ export const getServerSidePropsIndexHoc = ({
             break
           case 'topic':
             articlesAndCounts = await Topic.getTopics({
+              count: !reuseTopicCount,
               hasArticles: list,
               limit,
               offset,
@@ -125,7 +129,7 @@ export const getServerSidePropsIndexHoc = ({
               topicIdSearch: query.search,
               sequelize,
             })
-            articles = await Promise.all(articlesAndCounts.rows.map(
+            articles = await Promise.all((reuseTopicCount ? articlesAndCounts : articlesAndCounts.rows).map(
               (article) => { return article.toJson(loggedInUser) }))
             articlesCount = articlesAndCounts.count
             break
@@ -198,7 +202,7 @@ export const getServerSidePropsIndexHoc = ({
     } else {
       if (articles) {
         props.articles = articles
-        props.articlesCount = articlesCount
+        props.articlesCount = reuseTopicCount ? totalTopics : articlesCount
       }
     }
     if (loggedInUser) {

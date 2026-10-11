@@ -81,10 +81,12 @@ module.exports = (sequelize) => {
           ],
         },
         {
-          name: 'topic_topic_id_asc_created_at_nonempty',
+          // Cover the deep A–Z page's ID selector without visiting table rows.
+          name: 'topic_topic_id_asc_created_at_id_nonempty',
           fields: [
             { name: 'topicId', order: 'ASC' },
             { name: 'createdAt', order: 'DESC' },
+            'id',
           ],
           where: { articleCount: { [Op.gt]: 0 } },
         },

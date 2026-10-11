@@ -42,6 +42,18 @@ module.exports = (sequelize) => {
             { name: 'createdAt', order: 'DESC' },
           ],
         },
+        // The API defaults to descending IDs and nonempty topics. Include the
+        // row ID as a trailing key so its selector can use an index-only scan.
+        // Unlike PostgreSQL INCLUDE, this also works with Sequelize/SQLite.
+        {
+          name: 'topic_topic_id_created_at_id_nonempty',
+          fields: [
+            { name: 'topicId', order: 'DESC' },
+            { name: 'createdAt', order: 'DESC' },
+            'id',
+          ],
+          where: { articleCount: { [Op.gt]: 0 } },
+        },
         // Listing indexes for the three topic tabs and their empty-topic
         // filters. The partial indexes keep the default, nonempty listing from
         // walking past large runs of spam-created empty topics.

@@ -172,6 +172,24 @@ module.exports = (sequelize) => {
         { fields: ['createdAt'], },
         // For ORDER BY updatedAt without list specified
         { fields: ['updatedAt', 'createdAt'], },
+        // Global API sorts include unlisted articles. Cover the ID selector and
+        // match its NULL placement and pagination tie-breaker exactly.
+        {
+          name: 'article_updated_at_created_at_id',
+          fields: [
+            { name: 'updatedAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
+        {
+          name: 'article_follower_count_created_at_id',
+          fields: [
+            { name: 'followerCount', order: 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         // For WHERE list = 1 ORDER BY creatdAt
         { fields: ['list', 'createdAt'], },
         // Deep HTML sort=created pages. Match NULL placement and the stable

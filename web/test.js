@@ -2018,6 +2018,85 @@ it('Article discussion ordering index preserves pagination and avoids sorting gl
   await assertOrderAndPlan()
 })
 
+for (const table of ['Article', 'Topic']) {
+  it(`${table} deep API indexes preserve pagination and support index-only scans`, async function() {
+    const sequelize = this.test.sequelize
+    const { Article, Topic } = sequelize.models
+    const qi = sequelize.getQueryInterface()
+    const migration = require(table === 'Article'
+      ? './migrations/21000101000062-article-add-global-api-order-indexes'
+      : './migrations/21000101000063-topic-add-nonempty-api-order-index')
+    const cases = table === 'Article' ? [
+      ['updatedAt', 'article_updated_at_created_at_id'],
+      ['followerCount', 'article_follower_count_created_at_id'],
+    ] : [['topicId', 'topic_topic_id_created_at_id_nonempty']]
+    const indexNames = async () => (await qi.showIndex(table)).map(index => index.name).sort()
+    const originalIndexes = await indexNames()
+    for (const [, name] of cases) assert(originalIndexes.includes(name))
+    const user = await createUser(sequelize, 0)
+    const articles = []
+    for (let i = 0; i < 5; i++) {
+      const article = await createArticle(sequelize, user, { i, list: i !== 3 })
+      await article.update({
+        followerCount: i === 0 ? 3 : 2,
+        updatedAt: i === 4 ? null : new Date('2020-01-01T00:00:00Z'),
+        createdAt: i === 1 ? null : new Date('2020-01-01T00:00:00Z'),
+      }, { silent: true })
+      articles.push(article)
+    }
+    const indexArticle = await Article.findOne({ where: { slug: user.username } })
+    await indexArticle.update({ updatedAt: null, createdAt: null }, { silent: true })
+    const expectedArticles = {
+      updatedAt: [articles[3], articles[2], articles[0], articles[1], articles[4], indexArticle],
+      followerCount: [articles[0], articles[4], articles[3], articles[2], articles[1], indexArticle],
+    }
+    const expectedTopics = await Topic.findAll({
+      where: { articleCount: { [require('sequelize').Op.gt]: 0 } },
+      order: [['topicId', 'DESC'], ['createdAt', 'DESC']],
+    })
+    async function assertPages(checkPlan) {
+      for (const [order, name] of cases) {
+        const expected = table === 'Article' ? expectedArticles[order] : expectedTopics
+        for (const offset of [0, 2, 4, 20]) {
+          const queries = []
+          const options = { sequelize, order, limit: 2, offset, logging: sql => queries.push(sql) }
+          const page = table === 'Article'
+            ? await Article.getArticles(options)
+            : await Topic.getTopics({ ...options, hasArticles: true })
+          assert.strictEqual(page.count, expected.length)
+          assert.deepStrictEqual(page.rows.map(row => row.id), expected.slice(offset, offset + 2).map(row => row.id))
+          if (checkPlan && sequelize.getDialect() === 'postgres' && offset === 2) {
+            const selector = queries.find(sql => new RegExp(`SELECT "id" FROM "${table}"`).test(sql))
+            assert(selector, queries.join('\n'))
+            await sequelize.transaction(async transaction => {
+              // The tiny fixture normally favours a sequential scan. Explain
+              // the actual application's ID selector, including NULL ordering.
+              await sequelize.query('SET LOCAL enable_seqscan = off', { transaction })
+              const [rows] = await sequelize.query(`EXPLAIN (FORMAT JSON) ${selector.slice(selector.indexOf('SELECT '))}`, { transaction })
+              const plan = rows[0]['QUERY PLAN'][0].Plan
+              const nodes = []
+              const visit = node => { nodes.push(node); (node.Plans || []).forEach(visit) }
+              visit(plan)
+              assert(nodes.some(node => node['Index Name'] === name && node['Node Type'] === 'Index Only Scan'), JSON.stringify(plan))
+              assert(!nodes.some(node => node['Node Type'].includes('Sort')), JSON.stringify(plan))
+            })
+          }
+        }
+      }
+    }
+    await assertPages(true)
+    await migration.up(qi)
+    assert.deepStrictEqual(await indexNames(), originalIndexes)
+    await migration.down(qi)
+    await migration.down(qi)
+    assert.deepStrictEqual(await indexNames(), originalIndexes.filter(name => !cases.some(c => c[1] === name)))
+    await assertPages(false)
+    await migration.up(qi)
+    assert.deepStrictEqual(await indexNames(), originalIndexes)
+    await assertPages(true)
+  })
+}
+
 it('File author path ordering index avoids sorting article hash manifests', async function() {
   const sequelize = this.test.sequelize
   const qi = sequelize.getQueryInterface()

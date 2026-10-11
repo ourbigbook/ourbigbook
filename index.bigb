@@ -11666,6 +11666,11 @@ Fix the counts of issue follower if any are wrong with `-f`, thus potentially al
 web/bin/normalize -f -u barack-obama issue-follower-count
 ``
 
+User-page article totals are maintained transactionally in `User.listedArticleCount`, including the home article and excluding unlisted articles. The migration backfills existing users automatically. To check a user's count, or repair it by replacing `-c` with `-f`:
+``
+web/bin/normalize -c -u barack-obama user-listed-article-count
+``
+
 Backfill image dimensions for existing uploads after deploying the image-dimensions migration:
 ``
 web/bin/normalize -f upload-image-dimensions

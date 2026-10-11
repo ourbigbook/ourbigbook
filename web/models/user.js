@@ -97,6 +97,12 @@ module.exports = (sequelize) => {
         allowNull: false,
         defaultValue: 0,
       },
+      listedArticleCount: {
+        // Exact tab total, maintained by Article insert/update/delete triggers.
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+      },
       fileCount: {
         type: DataTypes.INTEGER,
         allowNull: false,

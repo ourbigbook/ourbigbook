@@ -479,6 +479,63 @@ it('getVerified', function() {
   assert.deepStrictEqual(parse([TRI_TRUE]), [true, 422])
 })
 
+it('User listedArticleCount cache follows article changes, rollback, migration and normalization', async function() {
+  const sequelize = this.test.sequelize
+  const { Article, User } = sequelize.models
+  const user0 = await createUser(sequelize, 0)
+  const user1 = await createUser(sequelize, 1)
+  async function check() {
+    for (const user of [user0, user1]) {
+      await user.reload()
+      assert.strictEqual(user.listedArticleCount, await Article.count({ where: { authorId: user.id, list: true } }))
+    }
+  }
+  await check()
+  assert.strictEqual(user0.listedArticleCount, 1) // Includes the user's home article.
+  const article = await createArticle(sequelize, user0, { i: 0 })
+  await createArticle(sequelize, user0, { i: 1, list: false })
+  await check()
+  assert.strictEqual(user0.listedArticleCount, 2)
+  await article.update({ list: false })
+  await check()
+  await article.update({ list: true })
+  await article.update({ titleRender: 'Unrelated update' })
+  await check()
+  await assert.rejects(sequelize.transaction(async transaction => {
+    await article.update({ list: false }, { transaction })
+    const changed = await User.findByPk(user0.id, { transaction })
+    assert.strictEqual(changed.listedArticleCount, 1)
+    throw new Error('rollback article count')
+  }), /rollback article count/)
+  await article.reload()
+  await check()
+  await article.update({ authorId: user1.id })
+  await check()
+  assert.strictEqual(user1.listedArticleCount, 2)
+  await article.destroy()
+  await check()
+  const migration = require('./migrations/21000101000067-user-cache-listed-article-count')
+  const qi = sequelize.getQueryInterface()
+  const indexNames = async () => (await qi.showIndex('User')).map(i => i.name).sort()
+  const indexes = await indexNames()
+  await migration.down(qi)
+  await sequelize.query(`UPDATE "Article" SET "list" = ${sequelize.escape(false)} WHERE "authorId" = ${user0.id}`)
+  await migration.up(qi, require('sequelize'))
+  assert.deepStrictEqual(await indexNames(), indexes)
+  for (const field of ['username', 'email']) {
+    await assert.rejects(User.update({ [field]: user0[field] }, { where: { id: user1.id } }),
+      error => error.name === 'SequelizeUniqueConstraintError')
+  }
+  await check()
+  assert.strictEqual(user0.listedArticleCount, 0)
+  await Article.update({ list: true }, { where: { authorId: user0.id } })
+  await check()
+  await User.update({ listedArticleCount: 99 }, { where: { id: user0.id } })
+  await models.normalize({ fix: true, sequelize, usernames: [user0.username], whats: ['user-listed-article-count'] })
+  await models.normalize({ check: true, sequelize, usernames: [user0.username], whats: ['user-listed-article-count'] })
+  await check()
+})
+
 it('User discussionCount and commentCount caches', async function() {
   const sequelize = this.test.sequelize
   const { Comment, Issue, User } = sequelize.models
@@ -1164,6 +1221,8 @@ it('benchmark discovers requests and appends runs with database metadata', async
       assert(htmlPaths.includes('/cirosantilli'))
       assert(htmlPaths.includes('/user0/title-0'))
       assert(htmlPaths.includes('/-/articles?page=5771&sort=id'))
+      assert(htmlPaths.includes('/-/articles?page=5771&sort=updated'))
+      assert(htmlPaths.includes('/user0/-/articles?page=1&sort=updated'))
       assert(htmlPaths.includes('/-/files?page=242&sort=path'))
       assert(htmlPaths.includes('/-/files?page=483&sort=path-desc'))
       assert(htmlPaths.includes('/-/files?listed=0&page=18&sort=path'))
@@ -1171,6 +1230,7 @@ it('benchmark discovers requests and appends runs with database metadata', async
       assert(htmlPaths.includes('/-/topics?page=13628&sort=id'))
       for (const page of [1, 7141, 14282]) {
         assert(htmlPaths.includes(`/-/topics?empty=2&page=${page}&sort=id`))
+        assert(htmlPaths.includes(`/-/topics?empty=2&page=${page}&sort=article-count`))
       }
       assert(htmlPaths.every(path => !path.includes('NaN')))
       assert.deepStrictEqual(normalizePaths(['/cirosantilli', '/api/min?x=1', '/cirosantilli']), [
@@ -1291,6 +1351,29 @@ it('benchmark saves failures and stops after a request timeout', async function(
     server.closeAllConnections()
     await new Promise(resolve => server.close(resolve))
     fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+it('benchmark selects the busiest listed incoming-link page for the selected author', async function() {
+  const { buildPaths, collectDatabase } = require('./bin/benchmark')
+  const sequelize = this.test.sequelize
+  const user = await createUser(sequelize, 0)
+  const other = await createUser(sequelize, 1)
+  await createArticle(sequelize, user, { titleSource: 'Target' })
+  await createArticle(sequelize, user, { titleSource: 'Other target' })
+  await createArticle(sequelize, user, { i: 0, bodySource: '<target> <other target>' })
+  await createArticle(sequelize, user, { i: 1, bodySource: '<target>' })
+  await createArticle(sequelize, user, { i: 2, bodySource: '<other target>', list: false })
+  await createArticle(sequelize, user, { i: 3, bodySource: '<other target>', list: false })
+  await createArticle(sequelize, other, { i: 0, bodySource: '<@user0/other-target>' })
+  const db = await collectDatabase(sequelize, { author: user.username })
+  assert.deepStrictEqual(db.samples.incomingArticle, { slug: 'user0/target', incoming: 2 })
+  assert.strictEqual(db.samples.author.listed_articles, 5)
+  assert(buildPaths(db).includes('/user0/target/-/incoming?page=1'))
+  assert(!buildPaths(db, { pages: false }).some(path => path.includes('/-/incoming')))
+  for (const page of [1, 65, 130]) {
+    assert(buildPaths({ ...db, samples: { ...db.samples, incomingArticle: { slug: 'user0/target', incoming: 2596 } } })
+      .includes(`/user0/target/-/incoming?page=${page}`))
   }
 })
 
@@ -1733,6 +1816,8 @@ it('Topic empty filters have ordered listing indexes', async function() {
   // Exercise migration 53 against its historical schema, before the covering
   // alphabetical index replacements in migrations 64 and 65.
   const allReplacement = require('./migrations/21000101000065-topic-cover-all-alphabetical-index')
+  const topReplacement = require('./migrations/21000101000066-cover-html-updated-and-top-topics')
+  await topReplacement.down(qi)
   await allReplacement.down(qi)
   const replacement = require('./migrations/21000101000064-topic-cover-nonempty-alphabetical-index')
   await replacement.down(qi)
@@ -1805,6 +1890,7 @@ it('Topic empty filters have ordered listing indexes', async function() {
   await assertOrderedIndexScans()
   await replacement.up(qi)
   await allReplacement.up(qi)
+  await topReplacement.up(qi)
 })
 
 it('Topic alphabetical covering index migration replaces and restores the old index', async function() {
@@ -1874,6 +1960,103 @@ it('Topic all-topics covering index migration preserves empty=2 pagination', asy
   await migration.up(qi)
   assert.deepStrictEqual(await indexes(), original)
   assert.deepStrictEqual(await pages(), expected)
+})
+
+it('HTML updated article and top-topic covering indexes preserve results through migration', async function() {
+  const sequelize = this.test.sequelize
+  const { Article, Topic } = sequelize.models
+  const qi = sequelize.getQueryInterface()
+  const migration = require('./migrations/21000101000066-cover-html-updated-and-top-topics')
+  const user = await createUser(sequelize, 0)
+  const other = await createUser(sequelize, 1)
+  for (let i = 0; i < 5; i++) {
+    const article = await createArticle(sequelize, i === 4 ? other : user, { i, list: i !== 1 })
+    await article.update({ updatedAt: i === 2 ? null : new Date('2020-01-01'), createdAt: i === 3 ? null : new Date('2020-01-01') })
+  }
+  const cases = [
+    [Article, { order: 'updatedAt', list: true }, 'article_list_updated_at_created_at_id'],
+    [Article, { order: 'updatedAt', list: true, author: user.username }, 'article_author_list_updated_at_created_at_id'],
+    [Topic, { order: 'articleCount' }, 'topic_article_count_created_at_id'],
+  ]
+  const indexes = async () => Promise.all(['Article', 'Topic'].map(async table =>
+    (await qi.showIndex(table)).map(({ seq, ...index }) => index).sort((a, b) => a.name.localeCompare(b.name))))
+  const original = await indexes()
+  async function pages(checkPlan) {
+    const results = []
+    for (const [model, options, indexName] of cases) {
+      for (const offset of [0, 2, 20]) {
+        const queries = []
+        const opts = { ...options, sequelize, offset, limit: 2, logging: sql => queries.push(sql) }
+        const result = model === Article ? await Article.getArticles(opts) : await Topic.getTopics(opts)
+        results.push({ count: result.count, ids: result.rows.map(row => row.id) })
+        if (checkPlan && sequelize.getDialect() === 'postgres' && offset === 2) {
+          const sql = queries.find(sql => new RegExp(`SELECT "id" FROM "${model.name}"`).test(sql))
+          assert(sql, queries.join('\n'))
+          await sequelize.transaction(async transaction => {
+            await sequelize.query('SET LOCAL enable_seqscan = off', { transaction })
+            await sequelize.query('SET LOCAL enable_sort = off', { transaction })
+            const [rows] = await sequelize.query(`EXPLAIN (FORMAT JSON) ${sql.slice(sql.indexOf('SELECT '))}`, { transaction })
+            const nodes = []
+            const visit = node => { nodes.push(node); (node.Plans || []).forEach(visit) }
+            visit(rows[0]['QUERY PLAN'][0].Plan)
+            assert(nodes.some(node => node['Node Type'] === 'Index Only Scan' && node['Index Name'] === indexName), JSON.stringify(nodes))
+            assert(!nodes.some(node => node['Node Type'].includes('Sort')), JSON.stringify(nodes))
+          })
+        }
+      }
+    }
+    return results
+  }
+  const expected = await pages(true)
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexes(), original)
+  await migration.down(qi)
+  await migration.down(qi)
+  assert.deepStrictEqual(await pages(false), expected)
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexes(), original)
+  assert.deepStrictEqual(await pages(true), expected)
+})
+
+it('User HTML listings use the exact cached tab total and lean incoming heading', async function() {
+  if (!testNext) return this.skip()
+  await testApp(async test => {
+    const user = await createUser(test.sequelize, 0)
+    await createArticle(test.sequelize, user, { titleSource: 'Target', bodySource: 'Parent body marker' })
+    await createArticle(test.sequelize, user, { i: 0, bodySource: '<target>' })
+    await createArticle(test.sequelize, user, { i: 1, bodySource: '<target>', list: false })
+    const queries = []
+    const logging = test.sequelize.options.logging
+    test.sequelize.options.logging = sql => queries.push(sql)
+    try {
+      for (const [url, count] of [
+        ['/user0/-/articles?sort=updated', 3],
+        ['/user0/-/articles?sort=updated&page=100', 3],
+        ['/user0/-/articles?sort=updated&listed=0', 1],
+        ['/user0/-/articles?sort=updated&listed=2', 4],
+        ['/user0/-/articles?sort=updated&search=title-0', 1],
+        ['/user0/target/-/incoming', 1],
+        ['/user0/target/-/incoming?listed=2', 2],
+      ]) {
+        queries.length = 0
+        const { data, status } = await test.sendJsonHttp('GET', url)
+        assertStatus(status, data)
+        const props = JSON.parse(data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1]).props.pageProps
+        assert.strictEqual(props.totalArticlesByUser, 3, url)
+        assert.strictEqual(props.articlesCount, count, url)
+        assert.strictEqual(props.hasUnlisted, !url.includes('search='), url)
+        assert(!queries.some(sql => /SELECT count\(\*\).*FROM ["`]Article["`]/i.test(sql)), queries.join('\n'))
+        if (url.includes('/incoming')) {
+          assert.deepStrictEqual(Object.keys(props.parentArticle).sort(), ['slug', 'titleRenderPlaintext', 'titleRenderWithScope'])
+          assert.strictEqual(props.parentArticle.slug, 'user0/target')
+          assert.strictEqual(props.parentArticle.titleRenderPlaintext, 'Target')
+          assert(!data.includes('Parent body marker'))
+        }
+      }
+    } finally {
+      test.sequelize.options.logging = logging
+    }
+  }, { canTestNext: true })
 })
 
 it('Topic HTML pagination reuses the tab count only for unfiltered nonempty topics', async function() {

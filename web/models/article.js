@@ -204,6 +204,15 @@ module.exports = (sequelize) => {
         },
         // For WHERE list = 1 ORDER BY updatedAt
         { fields: ['list', 'updatedAt', 'createdAt'], },
+        {
+          name: 'article_list_updated_at_created_at_id',
+          fields: [
+            'list',
+            { name: 'updatedAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         { fields: ['list', 'announcedAt'], },
         { fields: ['list', 'issueCount', 'createdAt'], },
         { fields: ['list', 'followerCount', 'createdAt'], },
@@ -287,6 +296,15 @@ module.exports = (sequelize) => {
         { fields: ['authorId', 'nestedSetIndex', 'nestedSetNextSibling'], },
         { fields: ['authorId', 'list', 'createdAt'], },
         { fields: ['authorId', 'list', 'updatedAt', 'createdAt'], },
+        {
+          name: 'article_author_list_updated_at_created_at_id',
+          fields: [
+            'authorId', 'list',
+            { name: 'updatedAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         { fields: ['authorId', 'list', 'announcedAt'], },
         { fields: ['authorId', 'list', 'score', 'createdAt'], },
         { fields: ['authorId', 'list', 'followerCount', 'createdAt'], },

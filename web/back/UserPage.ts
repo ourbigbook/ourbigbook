@@ -145,6 +145,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       })
       if (err) { res.statusCode = 422 }
       const offset = page * articleLimit
+      const reuseArticleCount = what === 'user-articles' && list === true && query.search === undefined
       const getArticlesOpts = {
         forList: true,
         author,
@@ -162,7 +163,7 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         sequelize,
       }
       const articlesPromise =
-        itemType === 'article' ? Article.getArticles(getArticlesOpts) :
+        itemType === 'article' ? Article.getArticles({ ...getArticlesOpts, count: !reuseArticleCount }) :
         itemType === 'discussion' ? Issue.getIssues({
           author,
           likedBy,
@@ -261,11 +262,17 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         ,
         // parentArticleJson
         (parentId !== undefined)
-          ? Article.getArticle({ slug: idToSlug(parentId), sequelize }).then(article => article ? article.toJson(loggedInUser) : null)
+          // The heading/link only needs these fields, not the parent's body,
+          // file, author, follows, likes, or source metadata.
+          ? Article.findOne({
+              attributes: ['slug', 'titleRenderPlaintext', 'titleRenderWithScope'],
+              where: { slug: idToSlug(parentId) },
+              raw: true,
+            })
           : null
         ,
         // totalArticlesByUser
-        Article.count({ where: { authorId: user.id, list: true } }),
+        user.listedArticleCount,
         // totalCommentsByUser
         user.commentCount,
         // totalDiscussionsByUser
@@ -325,8 +332,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         props.users = await Promise.all(users.rows.map(user => user.toJson(loggedInUser)))
         props.usersCount = users.count
       } else if (itemType === 'article' || itemType === 'discussion') {
-        props.articles = await Promise.all(articles.rows.map(article => article.toJson(loggedInUser)))
-        props.articlesCount = articles.count
+        props.articles = await Promise.all((reuseArticleCount ? articles : articles.rows).map(article => article.toJson(loggedInUser)))
+        props.articlesCount = reuseArticleCount ? totalArticlesByUser : articles.count
       } else if (itemType === 'like' || itemType === 'discussion-like') {
         const articles = []
         for (const like of likes.rows) {

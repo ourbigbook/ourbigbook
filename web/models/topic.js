@@ -58,10 +58,11 @@ module.exports = (sequelize) => {
         // filters. The partial indexes keep the default, nonempty listing from
         // walking past large runs of spam-created empty topics.
         {
-          name: 'topic_article_count_created_at',
+          name: 'topic_article_count_created_at_id',
           fields: [
             { name: 'articleCount', order: 'DESC' },
             { name: 'createdAt', order: 'DESC' },
+            'id',
           ],
         },
         {

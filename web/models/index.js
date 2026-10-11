@@ -438,6 +438,11 @@ async function sync(sequelize, opts={}) {
         nameExtra: 'user_discussion_count',
       })
     await sequelizeCreateTriggerUpdateCount(
+      sequelize, User, Article, 'listedArticleCount', 'authorId', {
+        countBooleanField: 'list',
+        nameExtra: 'user_listed_article_count',
+      })
+    await sequelizeCreateTriggerUpdateCount(
       sequelize, User, Comment, 'commentCount', 'authorId', {
         countBooleanField: 'list',
         nameExtra: 'user_comment_count',
@@ -578,6 +583,7 @@ async function normalize({
     } else {
       for (const username of usernames) {
         const userCache = {
+          'user-listed-article-count': [Article, 'listedArticleCount'],
           'user-discussion-count': [Issue, 'discussionCount'],
           'user-comment-count': [Comment, 'commentCount'],
           'user-file-count': [Upload, 'fileCount'],

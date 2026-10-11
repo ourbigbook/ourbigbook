@@ -78,7 +78,7 @@ function buildPaths(db, { limit=20, pages=true }={}) {
       for (const sort of sorts) add(`/api/${object}`, { limit, offset, sort })
     }
   }
-  const { author, article, deepArticle, issue } = db.samples
+  const { author, article, deepArticle, incomingArticle, issue } = db.samples
   if (author) {
     add('/api/users', { username: author.username })
     add('/api/users', { followedBy: author.username, limit })
@@ -118,8 +118,18 @@ function buildPaths(db, { limit=20, pages=true }={}) {
     // HTML listings apply filters/order directions that differ from the API.
     // In particular these reproduce the expensive global article-list queries.
     for (const offset of pageOffsets(db.listed_articles, 20)) {
-      for (const sort of ['created', 'score', 'id', 'id-desc']) {
+      for (const sort of ['created', 'updated', 'score', 'id', 'id-desc']) {
         add('/-/articles', { page: offset / 20 + 1, sort })
+      }
+    }
+    if (author) {
+      for (const offset of pageOffsets(author.listed_articles ?? author.articles, 20)) {
+        add(`/${author.username}/-/articles`, { page: offset / 20 + 1, sort: 'updated' })
+      }
+    }
+    if (incomingArticle) {
+      for (const offset of pageOffsets(incomingArticle.incoming, 20)) {
+        add(`/${incomingArticle.slug}/-/incoming`, { page: offset / 20 + 1 })
       }
     }
     for (const [count, filters] of [
@@ -142,6 +152,7 @@ function buildPaths(db, { limit=20, pages=true }={}) {
     // default listing's partial index cannot cover this unfiltered query.
     for (const offset of pageOffsets(db.topics, 20)) {
       add('/-/topics', { empty: 2, page: offset / 20 + 1, sort: 'id' })
+      add('/-/topics', { empty: 2, page: offset / 20 + 1, sort: 'article-count' })
     }
     for (const [pathname, sorts] of [
       ['/', ['article-count', 'id']],
@@ -197,7 +208,29 @@ async function collectDatabase(sequelize, { author: username }={}) {
     })
     if (largest) author = await User.findByPk(largest.authorId, { attributes: ['id', 'username'], raw: true })
   }
-  if (author) author.articles = await Article.count({ where: { authorId: author.id } })
+  if (author) {
+    author.articles = await Article.count({ where: { authorId: author.id } })
+    author.listed_articles = await Article.count({ where: { authorId: author.id, list: true } })
+  }
+  // Pick the busiest incoming-link page for this author. Match the source
+  // toplevel/file joins used by getArticles, rather than counting inline IDs
+  // that do not produce rows on the incoming listing.
+  const [incomingArticles] = author ? await sequelize.query(`
+    SELECT target.slug, COUNT(*) AS incoming
+    FROM "Ref" r
+    JOIN "Id" source_id ON source_id.idid = r.from_id
+    JOIN "File" source_file ON source_file.toplevel_id = source_id.idid
+    JOIN "Article" source ON source."fileId" = source_file.id
+    JOIN "Id" target_id ON target_id.idid = r.to_id
+    JOIN "File" target_file ON target_file.toplevel_id = target_id.idid
+    JOIN "Article" target ON target."fileId" = target_file.id
+    WHERE r.type = :type AND source."authorId" = :authorId
+      AND source.list = :listed AND target."authorId" = :authorId
+    GROUP BY target.slug ORDER BY COUNT(*) DESC, target.slug ASC LIMIT 1`, {
+    replacements: { type: sequelize.models.Ref.Types[require('ourbigbook').REFS_TABLE_X], authorId: author.id, listed: true },
+  }) : [[]]
+  const incomingArticle = incomingArticles[0] || null
+  if (incomingArticle) incomingArticle.incoming = Number(incomingArticle.incoming)
   // Prefer the deepest listed descendant of the largest (or selected) author.
   // Among equally deep articles, pick the latest tree position: ancestor lookup
   // must search a larger preceding range. Keep the choice deterministic.
@@ -226,6 +259,7 @@ async function collectDatabase(sequelize, { author: username }={}) {
     author: author || null,
     article,
     deepArticle,
+    incomingArticle,
     issue: issue ? { number: issue.number, slug: issue.article.slug } : null,
   }
   return db

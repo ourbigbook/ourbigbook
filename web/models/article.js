@@ -595,6 +595,7 @@ WHERE
   // Remove this article from the nested set altogether.
   // Used when deleting the article. All children are reassigned to its parent.
   Article.prototype.treeRemove = async function({
+    allowDetachedLeaf=false,
     logging,
     transaction,
     updateNestedSetIndex,
@@ -606,6 +607,25 @@ WHERE
       updateNestedSetIndex = true
     }
     const parentRef = await this.findParentRef({ transaction })
+    if (!parentRef && allowDetachedLeaf && !updateNestedSetIndex) {
+      // Synonym merging first moves the children away. Only then may an old
+      // detached article be deleted without closing a slot in its parent.
+      // Check raw edges: a failed parent join does not prove there is no edge.
+      const { Ref } = sequelize.models
+      const idid = front_js.slugToId(this.slug)
+      const edge = await Ref.findOne({
+        where: {
+          type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+          [Op.or]: [
+            { to_id: idid },
+            { from_id: idid, to_id_index: { [Op.ne]: null } },
+          ],
+        },
+        transaction,
+      })
+      if (!edge) return
+      throw new Error(`Cannot remove detached article with remaining tree edges: ${this.slug}`)
+    }
     const parentArticleToplevelId = parentRef.from
     const parentArticle = parentArticleToplevelId.toplevelId.articles[0]
     return Article.treeRemove({
@@ -857,6 +877,7 @@ WHERE
           transaction,
         }),
         this.treeRemove({
+          allowDetachedLeaf: opts.allowDetachedLeaf,
           logging: opts.logging,
           transaction,
           updateNestedSetIndex: opts.updateNestedSetIndex,

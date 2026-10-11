@@ -8544,6 +8544,106 @@ it(`api: bulk synonym cleanup defers tree indexes, extractFirst=${extractFirst},
 })
 }
 
+for (const updateNestedSetIndex of [false, true]) {
+for (const withChildren of [false, true]) {
+it(`api: synonym merge recovers a detached article, updateNestedSetIndex=${updateNestedSetIndex}, withChildren=${withChildren}`, async () => {
+  await testApp(async test => {
+    const { sequelize } = test
+    const { Article, File, Id, Ref, User } = sequelize.models
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const update = async (titleSource, opts={}, bodySource='') => {
+      const ret = await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource, bodySource }), opts)
+      assertStatus(ret.status, ret.data)
+      return ret.data
+    }
+    await update('Target')
+    await update('Old', { previousSiblingId: '@user0/target' })
+    await update('Existing', { parentId: '@user0/target' })
+    if (withChildren) {
+      await update('Child', { parentId: '@user0/old' })
+      await update('Grandchild', { parentId: '@user0/child' })
+      await update('Sibling', { parentId: '@user0/old', previousSiblingId: '@user0/child' })
+    }
+    assertStatus((await test.webApi.issueCreate('user0/target', { titleSource: 'Target discussion' })).status)
+    assertStatus((await test.webApi.issueCreate('user0/old', { titleSource: 'Old discussion' })).status)
+    assertStatus((await test.webApi.commentCreate('user0/old', 1, 'Keep this comment')).status)
+    const body = '= Old\n{synonym}\n'
+    // Ordinary extraction preserves canonical parent refs (defined_at=null).
+    await update('Target', { render: false, updateNestedSetIndex: false }, body)
+    const parentWhere = { to_id: '@user0/old', type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] }
+    assert.strictEqual(await Ref.count({ where: parentWhere }), 1)
+    // Reproduce the confirmed production state: File/Id/Article exist but the
+    // old article has no incoming parent ref. Its descendant refs still exist.
+    await Ref.destroy({ where: parentWhere })
+    assert(await Id.findOne({ where: { idid: '@user0/old' } }))
+    if (withChildren) {
+      const old = await Article.findOne({ where: { slug: 'user0/old' } })
+      await assert.rejects(old.destroySideEffects({ allowDetachedLeaf: true, updateNestedSetIndex: false }),
+        /Cannot remove detached article with remaining tree edges/)
+      assert.strictEqual(await Article.count({ where: { slug: 'user0/old' } }), 1)
+    }
+    const indexes = () => Article.findAll({ attributes: ['slug', 'depth', 'nestedSetIndex', 'nestedSetNextSibling'], order: [['slug', 'ASC']], raw: true })
+    const before = (await indexes()).filter(a => a.slug !== 'user0/old')
+    const result = await update('Target', { updateNestedSetIndex }, body)
+    assert(result.nestedSetNeedsUpdate)
+    assert((await User.findByPk(user.id)).nestedSetNeedsUpdate)
+    assert.deepStrictEqual(await indexes(), before, 'detached merges must defer stale nested-set arithmetic')
+    assert.strictEqual(await Article.count({ where: { slug: 'user0/old' } }), 0)
+    assert.strictEqual(await File.count({ where: { path: '@user0/old.bigb' } }), 0)
+    assert.strictEqual(await Ref.count({ where: { from_id: '@user0/old', type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] } }), 0)
+    const children = await Ref.findAll({ where: { from_id: '@user0/target', type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] }, order: [['to_id_index', 'ASC']], raw: true })
+    assert.deepStrictEqual(children.map(r => [r.to_id, r.to_id_index]), [
+      ['@user0/existing', 0], ...(withChildren ? [['@user0/child', 1], ['@user0/sibling', 2]] : []),
+    ])
+    const issue = await test.webApi.issue('user0/target', 2)
+    assertStatus(issue.status, issue.data)
+    assert.strictEqual(issue.data.titleRender, 'Old discussion')
+    assert.strictEqual(await sequelize.models.Comment.count({ where: { issueId: issue.data.id } }), 1)
+    const redirects = await test.webApi.articleRedirects({ id: 'user0/old' })
+    assert.strictEqual(redirects.data.redirects['user0/old'], 'user0/target')
+    assertStatus((await test.webApi.articleUpdatedNestedSet('user0')).status)
+    await assertNestedSets(sequelize, [
+      { slug: 'user0', nestedSetIndex: 0, nestedSetNextSibling: withChildren ? 6 : 3, depth: 0, to_id_index: null },
+      { slug: 'user0/target', nestedSetIndex: 1, nestedSetNextSibling: withChildren ? 6 : 3, depth: 1, to_id_index: 0 },
+      { slug: 'user0/existing', nestedSetIndex: 2, nestedSetNextSibling: 3, depth: 2, to_id_index: 0 },
+      ...(withChildren ? [
+        { slug: 'user0/child', nestedSetIndex: 3, nestedSetNextSibling: 5, depth: 2, to_id_index: 1 },
+        { slug: 'user0/grandchild', nestedSetIndex: 4, nestedSetNextSibling: 5, depth: 3, to_id_index: 0 },
+        { slug: 'user0/sibling', nestedSetIndex: 5, nestedSetNextSibling: 6, depth: 2, to_id_index: 2 },
+      ] : []),
+    ])
+  })
+})
+}
+}
+
+it('api: extracting a disambiguated article with a same-title synonym preserves the old parent', async () => {
+  await testApp(async test => {
+    const { Article, Ref } = test.sequelize.models
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const titleSource = 'Cayley transform'
+    assertStatus((await createArticleApi(test, createArticleArg({ i: 0, titleSource }))).status)
+    const article = createArticleArg({ i: 0, titleSource, bodySource: '{disambiguate=complex analysis}\n\n= Cayley transform\n{synonym}\n' })
+    const opts = { path: 'cayley-transform-complex-analysis', updateNestedSetIndex: false, list: true }
+    // Repeated extraction and a separate check pass model a retried bulk upload.
+    for (let i = 0; i < 2; i++) {
+      const ret = await createOrUpdateArticleApi(test, article, { ...opts, render: false })
+      assertStatus(ret.status, ret.data)
+      assert.strictEqual(await Ref.count({ where: {
+        to_id: '@user0/cayley-transform', type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+      } }), 1)
+      assert.deepStrictEqual(await convert.checkArticleDb(test.sequelize,
+        ['@user0/cayley-transform-complex-analysis.bigb'], user), [])
+    }
+    const ret = await createOrUpdateArticleApi(test, article, opts)
+    assertStatus(ret.status, ret.data)
+    assert.strictEqual(await Article.count({ where: { slug: 'user0/cayley-transform' } }), 0)
+    assert.strictEqual(await Article.count({ where: { slug: 'user0/cayley-transform-complex-analysis' } }), 1)
+  })
+})
+
 it('api: synonym rename', async () => {
   // This is what we have to do on mass upload with ourbigbook --web
   // in order to handle circular references without having one massive

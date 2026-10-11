@@ -732,7 +732,10 @@ async function convertArticle({
       // Ref relationships are canonical during uploads. Only maintain the
       // derived nested set incrementally when both parent positions exist.
       (isIndex || newParentArticle?.nestedSetIndex != null) &&
-      (!oldArticle || oldNestedSetIndexParent != null)
+      (!oldArticle || oldNestedSetIndexParent != null) &&
+      // A detached synonym can still be merged using its canonical Ref edges,
+      // but its old nested-set position cannot safely be used for arithmetic.
+      synonymArticles.every(article => article.parentRef)
     if (!oldArticle) {
       nestedSetSize = 1
     }
@@ -1025,8 +1028,9 @@ async function convertArticle({
                 const synonymNDescendantArticles = synonymArticle.nestedSetNextSibling - synonymArticle.nestedSetIndex - 1
                 const synonymNChildArticles = await Ref.count({
                   where: {
-                    from_id: synonymArticle.idid,
+                    from_id: synonymId,
                     type: Ref.Types[ourbigbook.REFS_TABLE_PARENT],
+                    to_id_index: { [sequelize.Sequelize.Op.ne]: null },
                   },
                   transaction
                 })
@@ -1054,7 +1058,7 @@ async function convertArticle({
                     new_to_id_index: synonym_new_to_id_index,
                     oldNestedSetIndex: synonymArticle.nestedSetIndex + 1,
                     oldNestedSetIndexParent: synonymArticle.nestedSetIndex,
-                    oldParentId: synonymArticle.idid,
+                    oldParentId: synonymId,
                     old_to_id_index: 0,
                     transaction,
                     updateNestedSetIndex: doUpdateNestedSetIndex,
@@ -1065,7 +1069,7 @@ async function convertArticle({
                 // Account for changes in position due to descendant moving since we fetched this from DB.
                 let forceNestedSetIndex
                 if (
-                  synonymArticle.parentId.idid === newParentId &&
+                  synonymArticle.parentId?.idid === newParentId &&
                   new_to_id_index <= synonym_new_to_id_index
                 ) {
                   synonymArticle.nestedSetIndex += synonymNDescendantArticles
@@ -1073,6 +1077,7 @@ async function convertArticle({
                 synonymArticle.nestedSetNextSibling = synonymArticle.nestedSetIndex + 1
 
                 await synonymArticle.destroySideEffects({
+                  allowDetachedLeaf: true,
                   logging: false,
                   transaction,
                   updateNestedSetIndex: doUpdateNestedSetIndex,

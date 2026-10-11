@@ -230,6 +230,16 @@ module.exports = (sequelize) => {
             { name: 'id', order: 'DESC' },
           ],
         },
+        // Global API sort=issues includes unlisted articles. Match the complete
+        // ordering so deep offsets can scan IDs without sorting article rows.
+        {
+          name: 'article_issue_count_created_at_id',
+          fields: [
+            { name: 'issueCount', order: 'DESC' },
+            { name: 'createdAt', order: sequelize.options.dialect === 'postgres' ? 'DESC NULLS LAST' : 'DESC' },
+            { name: 'id', order: 'DESC' },
+          ],
+        },
         // Top articles in the entire site.
         { fields: ['list', 'score', 'createdAt'], },
         // Deep HTML sort=score pages. Match NULL placement and the stable
@@ -1433,7 +1443,7 @@ WHERE
     topicId,
     transaction,
   }) {
-    const { Article, File, Id, Ref, User } = sequelize.models
+    const { Article, File, Id, Ref, User, UserFollowArticle } = sequelize.models
     if (orderAscDesc === undefined) {
       orderAscDesc = 'DESC'
     }
@@ -1563,14 +1573,33 @@ WHERE
         include: fileInclude.slice(-1),
       }]))
     }
+    let followedById
     if (followedBy) {
+      // Resolve the username first: hiding userId behind the User join makes
+      // PostgreSQL estimate an average user's follows, even for huge accounts.
+      const follower = await User.findOne({
+        attributes: ['id'],
+        logging,
+        transaction,
+        where: { username: followedBy },
+      })
+      if (!follower) {
+        if (count) return rows ? { count: 0, rows: [] } : { count: 0 }
+        return []
+      }
+      followedById = follower.id
       const followedInclude = {
         model: User,
         as: 'followers',
-        where: { username: followedBy },
+        where: { id: followedById },
       }
       include.push(followedInclude)
-      filterInclude.push(...narrowIncludes([{ ...followedInclude, through: {} }]))
+      filterInclude.push({
+        model: UserFollowArticle,
+        as: 'follows',
+        required: true,
+        where: { userId: followedById },
+      })
     }
     if (likedBy) {
       const likedInclude = {
@@ -1646,31 +1675,37 @@ WHERE
       })
     }
 
+    function countArticles(findArgs) {
+      if (followedById !== undefined && findArgs.where === undefined && filterInclude.length === 1) {
+        // The unique (userId, articleId) key and foreign keys guarantee one
+        // existing article per follow. Extra article filters still need a join.
+        return UserFollowArticle.count({
+          logging: findArgs.logging,
+          transaction,
+          where: { userId: followedById },
+        })
+      }
+      return Article.count({
+        ...findArgs,
+        attributes: undefined,
+        include: narrowIncludes(filterInclude),
+        limit: undefined,
+        offset: undefined,
+        order: undefined,
+      })
+    }
+
     // Do the searches.
     const rets = await Promise.all(findArgss.map(async (findArgs) => {
       if (count) {
         if (rows) {
           const [retCount, retRows] = await Promise.all([
-            Article.count({
-              ...findArgs,
-              attributes: undefined,
-              include: narrowIncludes(filterInclude),
-              limit: undefined,
-              offset: undefined,
-              order: undefined,
-            }),
+            countArticles(findArgs),
             findPage(findArgs),
           ])
           return { count: retCount, rows: retRows }
         } else {
-          return { count: await Article.count({
-            ...findArgs,
-            attributes: undefined,
-            include: narrowIncludes(filterInclude),
-            limit: undefined,
-            offset: undefined,
-            order: undefined,
-          }) }
+          return { count: await countArticles(findArgs) }
         }
       } else {
         return { rows: await findPage(findArgs) }

@@ -173,6 +173,7 @@ function getSequelize(toplevelDir, toplevelBasename, databaseOptions) {
   )
   Article.belongsToMany(User, { through: UserFollowArticle, as: 'followers', foreignKey: 'articleId', otherKey: 'userId' })
   User.belongsToMany(Article, { through: UserFollowArticle, as: 'followedArticles', foreignKey: 'userId', otherKey: 'articleId' })
+  Article.hasMany(UserFollowArticle, { foreignKey: 'articleId', as: 'follows' })
 
   // User like Issue
   const UserLikeIssue = sequelize.define('UserLikeIssue',

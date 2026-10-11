@@ -1931,6 +1931,67 @@ it('Article topic ordering index avoids sorting deep global API pages', async fu
   await assertOrderedIndexScan()
 })
 
+it('Article discussion ordering index preserves pagination and avoids sorting global API pages', async function() {
+  const sequelize = this.test.sequelize
+  const { Article } = sequelize.models
+  const qi = sequelize.getQueryInterface()
+  const migration = require('./migrations/21000101000061-article-add-issue-count-order-index')
+  const indexName = 'article_issue_count_created_at_id'
+  const indexNames = async () => (await qi.showIndex('Article')).map(index => index.name).sort()
+  const originalIndexes = await indexNames()
+  assert(originalIndexes.includes(indexName))
+  const user = await createUser(sequelize, 0)
+  const articles = []
+  for (let i = 0; i < 4; i++) {
+    const article = await createArticle(sequelize, user, { i })
+    await article.update({
+      issueCount: i === 0 ? 3 : 2,
+      createdAt: i === 1 ? null : new Date('2020-01-01T00:00:00Z'),
+      list: i !== 3,
+    }, { silent: true })
+    articles.push(article)
+  }
+  const expected = [articles[0], articles[3], articles[2], articles[1]]
+  const indexArticle = await Article.findOne({ where: { slug: user.username } })
+  expected.push(indexArticle)
+
+  async function assertOrderAndPlan() {
+    for (const offset of [0, 2, 4, 6]) {
+      const result = await Article.getArticles({ sequelize, order: 'issueCount', limit: 2, offset })
+      assert.strictEqual(result.count, expected.length)
+      assert.deepStrictEqual(result.rows.map(a => a.id), expected.slice(offset, offset + 2).map(a => a.id))
+    }
+    if (sequelize.options.dialect !== 'postgres') return
+    await sequelize.transaction(async transaction => {
+      // This small fixture normally favours a sequential scan. Verify the
+      // index can satisfy the exact production ordering without a sort.
+      await sequelize.query('SET LOCAL enable_seqscan = off', { transaction })
+      const [rows] = await sequelize.query(`EXPLAIN (FORMAT JSON)
+        SELECT "id" FROM "Article"
+        ORDER BY "issueCount" DESC, "createdAt" DESC NULLS LAST, "id" DESC
+        LIMIT 20 OFFSET 2`, { transaction })
+      const plan = rows[0]['QUERY PLAN'][0].Plan
+      const nodes = []
+      const visit = node => {
+        nodes.push(node)
+        for (const child of node.Plans || []) visit(child)
+      }
+      visit(plan)
+      assert(nodes.some(node => node['Index Name'] === indexName), JSON.stringify(plan))
+      assert(!nodes.some(node => node['Node Type'].includes('Sort')), JSON.stringify(plan))
+    })
+  }
+  await assertOrderAndPlan()
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexNames(), originalIndexes)
+  await migration.down(qi)
+  await migration.down(qi)
+  assert.deepStrictEqual(await indexNames(), originalIndexes.filter(name => name !== indexName))
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexNames(), originalIndexes)
+  await assertOrderAndPlan()
+})
+
 it('File author path ordering index avoids sorting article hash manifests', async function() {
   const sequelize = this.test.sequelize
   const qi = sequelize.getQueryInterface()
@@ -2070,6 +2131,84 @@ it('Article and Topic keep offset pagination narrow until page hydration', async
   assert(!/ JOIN /.test(topicIdSql), topicIdSql)
   assert(!topicIdSql.includes('articleCount'), topicIdSql)
   assert(topicSql.some(sql => sql.includes('articleCount') && / IN \(/.test(sql)), topicSql.join('\n'))
+})
+
+it('Article followed listings resolve user IDs and preserve filtered counts and pagination', async function() {
+  const sequelize = this.test.sequelize
+  const { Article, UserFollowArticle } = sequelize.models
+  const author = await createUser(sequelize, 0)
+  const other = await createUser(sequelize, 1)
+  const reader = await createUser(sequelize, 2)
+  // Exclude the reader's automatic self-follow so the fixture has only these
+  // explicit follows, including one article with multiple followers.
+  await UserFollowArticle.destroy({ where: { userId: reader.id } })
+  const first = await createArticle(sequelize, author, { titleSource: 'Alpha first' })
+  const second = await createArticle(sequelize, author, {
+    titleSource: 'Second alpha', parentId: '@user0/alpha-first',
+  })
+  const beta = await createArticle(sequelize, other, { titleSource: 'Beta' })
+  await createArticle(sequelize, other, { titleSource: 'Unfollowed' })
+  for (const article of [first, second, beta]) {
+    await reader.addArticleFollowSideEffects(article)
+    await article.update({ createdAt: new Date('2020-01-01T00:00:00Z') }, { silent: true })
+  }
+  await first.update({ createdAt: null, announcedAt: new Date('2020-01-01T00:00:00Z') }, { silent: true })
+  await second.update({ list: false })
+  await other.addArticleLikeSideEffects(second)
+  const all = [beta, second, first]
+  const args = { sequelize, followedBy: reader.username, order: 'createdAt' }
+  const sql = []
+  const result = await Article.getArticles({ ...args, offset: 1, limit: 1, logging: statement => sql.push(statement) })
+  assert.strictEqual(result.count, 3)
+  assert.deepStrictEqual(result.rows.map(a => a.id), [second.id])
+  assert.strictEqual(result.rows[0].file.author.username, author.username)
+  assert.deepStrictEqual(result.rows[0].followers.map(u => u.id), [reader.id])
+  const countSql = sql.find(s => /SELECT count\(/i.test(s))
+  assert(countSql.includes('FROM "UserFollowArticle"') || countSql.includes('FROM `UserFollowArticle`'), countSql)
+  assert(!countSql.includes(' JOIN '), countSql)
+  const pageSql = sql.find(s => /SELECT [`"]Article[`"]\.[`"]id[`"] FROM/.test(s))
+  assert(pageSql.includes('UserFollowArticle'), pageSql)
+  assert(!/JOIN [`"]User[`"]/.test(pageSql), pageSql)
+  assert(new RegExp('[`"]userId[`"] = ' + reader.id + '\\b').test(pageSql), pageSql)
+
+  for (const [filter, expected] of [
+    [{}, all],
+    [{ author: author.username }, [second, first]],
+    [{ author: other.username }, [beta]],
+    [{ author: 'missing' }, []],
+    [{ list: true }, [beta, first]],
+    [{ list: false }, [second]],
+    [{ slug: first.slug }, [first]],
+    [{ topicId: second.topicId }, [second]],
+    [{ excludeIds: [beta.id] }, [second, first]],
+    [{ parentId: '@user0/alpha-first' }, [second]],
+    [{ likedBy: other.username }, [second]],
+    [{ likedBy: other.username, list: true }, []],
+    [{ order: 'announcedAt' }, [first]],
+    [{ topicIdSearch: 'alpha' }, config.postgres ? [first, second] : [first]],
+    [{ followedBy: 'missing' }, []],
+  ]) {
+    const opts = { ...args, ...filter }
+    const countOnly = await Article.getArticles({ ...opts, rows: false, offset: 1, limit: 1 })
+    assert.deepStrictEqual(countOnly, { count: expected.length }, JSON.stringify(filter))
+    for (const offset of [0, 1, 3]) {
+      const paged = await Article.getArticles({ ...opts, offset, limit: 1 })
+      assert.strictEqual(paged.count, expected.length, JSON.stringify(filter))
+      // Search concatenates prefix and FTS matches, with independent offsets;
+      // its pre-existing pagination is not ordinary offset pagination.
+      if (filter.topicIdSearch === undefined) {
+        assert.deepStrictEqual(paged.rows.map(a => a.id), expected.slice(offset, offset + 1).map(a => a.id), JSON.stringify(filter))
+      }
+    }
+    const withoutCount = await Article.getArticles({ ...opts, count: false, limit: 20 })
+    assert.deepStrictEqual(withoutCount.map(a => a.id), expected.map(a => a.id), JSON.stringify(filter))
+  }
+
+  await sequelize.transaction(async transaction => {
+    await UserFollowArticle.destroy({ where: { userId: reader.id }, transaction })
+    const empty = await Article.getArticles({ ...args, transaction, limit: 20 })
+    assert.deepStrictEqual(empty, { count: 0, rows: [] })
+  })
 })
 
 it('HTML article lists omit unused source and headers without changing list content or pagination', async function() {

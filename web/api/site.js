@@ -15,7 +15,8 @@ const {
   validateParam,
 } = lib
 
-// Public history deliberately omits precise timestamps, payloads and private error details.
+// Public history omits precise timestamps and payloads. Only owners/admins
+// may see error details; others still see the phase or cancellation reason.
 router.get('/jobs', auth.optional, async function(req, res, next) {
   try {
     const { ArticleJob, User } = req.app.get('sequelize').models
@@ -23,6 +24,7 @@ router.get('/jobs', auth.optional, async function(req, res, next) {
     if (!['todo', 'done'].includes(view)) throw new ValidationError('Invalid job view', 422)
     const [limit, offset] = lib.getLimitAndOffset(req, res, { limitMax: 100 })
     const history = await ArticleJob.history(null, { view, limit, offset })
+    const loggedInUser = req.payload ? await User.findByPk(req.payload.id, { attributes: ['id', 'admin'] }) : null
     const users = await User.findAll({
       attributes: ['id', 'username'],
       where: { id: [...new Set(history.jobs.map(job => job.userId))] },
@@ -39,7 +41,7 @@ router.get('/jobs', auth.optional, async function(req, res, next) {
       total: job.total,
       createdAt: new Date(job.createdAt).toISOString().slice(0, 10),
       runtimeMs: job.runtimeMs,
-      error: job.error ? 'Job failed' : null,
+      error: front.formatBuildJobError(job.error, job.phase, !cant.viewUserSettings(loggedInUser, { id: job.userId })),
     })) })
   } catch (error) {
     next(error)

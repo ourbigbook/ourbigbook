@@ -6,6 +6,7 @@ import Pagination from 'front/Pagination'
 import { CancelIcon, ListIcon, OkIcon } from 'front'
 import { webApi } from 'front/api'
 import routes from 'front/routes'
+import { formatBuildJobError } from 'front/js'
 import { formatNumberApprox } from 'ourbigbook'
 
 type BulkJob = { username?: string; id: number; batchIndex?: number | null; batchCount?: number | null; phase: string; status: string; completed: number | null; total: number | null; error: string | null; createdAt: string; runtimeMs: number | null }
@@ -26,7 +27,7 @@ const BuildJobTable = ({ jobs, loading, error, done, global }: { jobs: BulkJob[]
       <td className="right">{job.total === null ? '—' : `${job.completed} / ${job.total}`}</td>
       <td><time dateTime={job.createdAt}>{job.createdAt ? (global ? job.createdAt : new Date(job.createdAt).toISOString().slice(0, 19).replace('T', ' ')) : '—'}</time></td>
       {done && <td className="right">{job.runtimeMs == null ? '—' : `${(job.runtimeMs / 1000).toFixed(3)} s`}</td>}
-      <td>{job.error || ''}</td>
+      <td>{formatBuildJobError(job.error, job.phase) || ''}</td>
     </tr>)}</tbody>
   </table>
 }

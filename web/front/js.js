@@ -338,6 +338,22 @@ function restoreTocState(elem, branches) {
   }
 }
 
+function buildJobPhaseFailure(phase) {
+  return { extract: 'ID extraction failed', check: 'Database check failed', render: 'Rendering failed', tree: 'Tree rebuild failed' }[phase] || 'Processing failed'
+}
+
+function formatBuildJobError(error, phase, showDetails=true) {
+  if (!error) return null
+  // Recognize the old stored message too; no history migration is needed.
+  if (error === 'Build stopped after an earlier job failed.' || error === 'Cancelled due to previous failure') {
+    return 'Cancelled due to previous failure'
+  }
+  if (error === 'Build cancelled.') return 'Build cancelled.'
+  if (!showDetails) return `Job failed: ${buildJobPhaseFailure(phase)}`
+  error = error.replace(/^Bulk processing failed(?= at )/, buildJobPhaseFailure(phase))
+  return error.startsWith('Job failed') ? error : `Job failed: ${error}`
+}
+
 function openUserTabs(users, openWindow) {
   // Open newest first: browsers normally place subsequent related tabs after
   // the earlier ones. Sort a copy so the displayed table stays unchanged.
@@ -356,6 +372,8 @@ module.exports = {
   TRI_ALL,
   TRI_FALSE,
   TRI_TRUE,
+  buildJobPhaseFailure,
+  formatBuildJobError,
   captureTocState,
   restoreTocState,
   getClientIp,

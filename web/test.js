@@ -6145,7 +6145,7 @@ it('build history: public jobs include all users without precise timestamps or p
     assert.strictEqual(job.phase, 'tree')
     assert.strictEqual(job.createdAt, '2026-09-25')
     assert.strictEqual(job.runtimeMs, 1234)
-    assert.strictEqual(job.error, 'Job failed')
+    assert.strictEqual(job.error, 'Job failed: Tree rebuild failed')
     assert.deepStrictEqual(Object.keys(job).sort(), [
       'username', 'id', 'batchIndex', 'batchCount', 'phase', 'status',
       'completed', 'total', 'createdAt', 'runtimeMs', 'error',
@@ -6157,6 +6157,67 @@ it('build history: public jobs include all users without precise timestamps or p
     assert.strictEqual(ret.data.doneCount, 2)
     assert.strictEqual((await test.webApi.siteJobs({}, { view: 'invalid' })).status, 422)
     assert.strictEqual((await test.webApi.articlesBulkStatus('user0', {}, { view: 'todo' })).status, 401)
+    // The same public table reveals details only to the job owner or an admin.
+    test.loginUser(user)
+    ret = await test.webApi.siteJobs({}, { view: 'done' })
+    assert(!JSON.stringify(ret.data).includes('Private'))
+    test.loginUser(other)
+    ret = await test.webApi.siteJobs({}, { view: 'done' })
+    assert(ret.data.jobs.some(job => job.error === 'Job failed: Private article source'))
+    await test.sequelize.models.User.update({ admin: true }, { where: { id: user.id } })
+    test.loginUser(user)
+    ret = await test.webApi.siteJobs({}, { view: 'done' })
+    assert(ret.data.jobs.some(job => job.error === 'Job failed: Private article source'))
+    for (const [i, error] of ['Build stopped after an earlier job failed.', 'Cancelled due to previous failure', 'Build cancelled.'].entries()) {
+      await ArticleJob.create({ userId: other.id, requestId: `cancelled-${i}`, requestHash: 'hash',
+        items: '[]', total: 1, status: 'failed', phase: 'render', error })
+    }
+    test.disableToken()
+    ret = await test.webApi.siteJobs({}, { view: 'done' })
+    assert.strictEqual(ret.data.jobs.filter(job => job.error === 'Cancelled due to previous failure').length, 2)
+    assert.strictEqual(ret.data.jobs.filter(job => job.error === 'Build cancelled.').length, 1)
+    assert(!JSON.stringify(ret.data).includes('Private'))
+  })
+})
+
+it('build job error labels preserve safe detail and distinguish cancellation', () => {
+  const { formatBuildJobError } = require('./front/js')
+  assert.strictEqual(formatBuildJobError(null, 'render'), null)
+  assert.strictEqual(formatBuildJobError('Missing target: example', 'render'), 'Job failed: Missing target: example')
+  assert.strictEqual(formatBuildJobError('Job failed: Rendering failed', 'render'), 'Job failed: Rendering failed')
+  assert.strictEqual(formatBuildJobError('Bulk processing failed at example.', 'render'), 'Job failed: Rendering failed at example.')
+  assert.strictEqual(formatBuildJobError('Private source', 'render', false), 'Job failed: Rendering failed')
+  assert.strictEqual(formatBuildJobError('Private source', 'extract', false), 'Job failed: ID extraction failed')
+  assert.strictEqual(formatBuildJobError('Private source', 'check', false), 'Job failed: Database check failed')
+  assert.strictEqual(formatBuildJobError('Build stopped after an earlier job failed.', 'render'), 'Cancelled due to previous failure')
+  assert.strictEqual(formatBuildJobError('Cancelled due to previous failure', 'render'), 'Cancelled due to previous failure')
+})
+
+it('background renders: unexpected failures retain a safe reason without exposing exception internals', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const Job = test.sequelize.models.ArticleJob
+    const articles = require('./api/articles')
+    const original = articles.createOrUpdateArticleData
+    try {
+      for (const [i, reason, expected] of [
+        [0, Object.assign(new Error('Private SQL and credentials'), { original: { code: '55P03' } }), 'Timed out waiting for a database lock.'],
+        [1, Object.assign(new Error('Private connection options'), { name: 'SequelizeConnectionAcquireTimeoutError' }), 'Timed out waiting for a database connection.'],
+        [2, new Error('Private unexpected details'), 'Unexpected server error.'],
+        [3, new Error('Render job expired'), 'Worker deadline exceeded.'],
+      ]) {
+        articles.createOrUpdateArticleData = async () => { throw reason }
+        const job = await Job.create({ userId: user.id, requestId: `safe-error-${i}`, requestHash: 'hash',
+          phase: 'render', status: 'pending', queuedAt: new Date(), total: 1, items: JSON.stringify([{ path: 'example' }]) })
+        await assert.rejects(Job.run(job.id), error => error === reason)
+        await job.reload()
+        assert.strictEqual(job.status, 'failed')
+        assert(job.error.startsWith(`Rendering failed at example. ${expected}`), job.error)
+        assert(!job.error.includes('Private'), job.error)
+      }
+    } finally {
+      articles.createOrUpdateArticleData = original
+    }
   })
 })
 
@@ -7272,6 +7333,11 @@ it('background builds: failed checks stop rendering and tree rebuilding', async 
     assert(build.error.includes('missing'))
     assert.strictEqual(build.activeUserId, null)
     assert.strictEqual(await Job.count({ where: { buildId: id, status: 'failed' } }), 2)
+    const failedCheck = await Job.findOne({ where: { buildId: id, phase: 'check' } })
+    assert(failedCheck.error.startsWith('Database check failed at bad.'), failedCheck.error)
+    assert(failedCheck.error.includes('missing'), failedCheck.error)
+    const cancelledRender = await Job.findOne({ where: { buildId: id, phase: 'render' } })
+    assert.strictEqual(cancelledRender.error, 'Cancelled due to previous failure')
     assert.strictEqual(await TreeRebuildJob.count(), 0)
     assert.strictEqual(await Article.count({ where: { slug: 'user0/bad' } }), 0)
   })

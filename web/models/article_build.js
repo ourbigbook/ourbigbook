@@ -147,7 +147,7 @@ module.exports = sequelize => {
       const build = await Build.findByPk(candidate.id, { transaction, lock: transaction.LOCK.UPDATE })
       if (!build || build.status !== 'running') return
       const finish = async (error=null) => {
-        if (error) await ArticleJob.update({ status: 'failed', error: 'Build stopped after an earlier job failed.', items: '[]', finishedAt: new Date() }, {
+        if (error) await ArticleJob.update({ status: 'failed', error: 'Cancelled due to previous failure', items: '[]', finishedAt: new Date() }, {
           where: { buildId: build.id, status: 'waiting' }, transaction,
         })
         await build.update({ status: error ? 'failed' : 'completed', error, activeUserId: null, finishedAt: new Date() }, { transaction })

@@ -45,6 +45,31 @@ module.exports = sequelize => {
 
   Job.launch = job => sequelize.models.TreeRebuildJob.launch(job, { articles: true })
 
+  // Validation messages are intended for the author. Never serialize arbitrary
+  // exception messages, stacks, SQL or connection configuration into job history.
+  Job.errorDetails = error => {
+    if (error instanceof require('../api/lib').ValidationError) {
+      return (Array.isArray(error.errors) ? error.errors.join('\n') : String(error.errors)).slice(0, 4000)
+    }
+    if (error.message === 'Render job expired') return 'Worker deadline exceeded.'
+    if (error.message === 'Build replaced or cancelled') return 'Build replaced or cancelled.'
+    if (error.message?.startsWith('Source changed before check: ')) return 'Source changed before the database check.'
+    const databaseError = {
+      '55P03': 'Timed out waiting for a database lock.',
+      '57014': 'Database query was cancelled or exceeded its time limit.',
+      '40P01': 'Database deadlock detected.',
+      '53300': 'Database connection limit reached.',
+      '53200': 'Database ran out of memory.',
+    }[error.original?.code || error.parent?.code || error.code]
+    if (databaseError) return databaseError
+    if (error.name === 'SequelizeConnectionAcquireTimeoutError') return 'Timed out waiting for a database connection.'
+    if (error.name === 'SequelizeTimeoutError') return 'Database operation timed out.'
+    if (['ECONNRESET', 'ECONNREFUSED', 'ETIMEDOUT', 'EPIPE'].includes(error.original?.code || error.parent?.code || error.code)) {
+      return 'Connection to a required service failed or timed out.'
+    }
+    return 'Unexpected server error.'
+  }
+
   // Shared shape for user and site Settings; never load job source payloads.
   Job.historySql = `SELECT "id", "userId", 'ArticleJob' AS "kind", "phase", "status", "completed", "total", "error", "createdAt", "startedAt", "finishedAt", "buildId", "batchIndex", "batchCount" FROM "ArticleJob"
     UNION ALL SELECT "id", "userId", 'TreeRebuildJob' AS "kind", 'tree' AS "phase", "status", NULL AS "completed", NULL AS "total", "error", "createdAt", "startedAt", "finishedAt",
@@ -104,10 +129,11 @@ module.exports = sequelize => {
       where: { id, status: 'pending', queuedAt: { [Op.gte]: new Date(Date.now() - timeoutMs) } },
     })
     if (!claimed) return
-    let currentPath
+    let currentPath, phase
     try {
       const initial = await Job.findByPk(id)
       if (!initial) return
+      phase = initial.phase
       const items = JSON.parse(initial.items)
       const { createOrUpdateArticleData } = require('../api/articles')
       const { cant } = require('../front/cant')
@@ -160,13 +186,10 @@ module.exports = sequelize => {
         console.log(`${logPrefix} (finished in ${Math.floor(performance.now() - startedAt)} ms)`)
       }
     } catch (error) {
-      const validation = error instanceof require('../api/lib').ValidationError
-        ? (Array.isArray(error.errors) ? error.errors.join('\n') : String(error.errors)).slice(0, 4000)
-        : ''
       await Job.update({
         status: 'failed', activeUserId: null, finishedAt: new Date(),
         items: '[]',
-        error: `Bulk processing failed at ${currentPath || 'startup'}. ${validation ? `${validation}\n` : ''}Rerun --web to resume. Check worker logs for details.`,
+        error: `${require('../front/js').buildJobPhaseFailure(phase)} at ${currentPath || 'startup'}. ${Job.errorDetails(error)}\nRerun --web to resume. Check worker logs for details.`,
       }, { where: { id, status: 'running' } })
       throw error
     }

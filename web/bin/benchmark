@@ -138,6 +138,11 @@ function buildPaths(db, { limit=20, pages=true }={}) {
         add('/-/topics', { page: offset / 20 + 1, sort })
       }
     }
+    // Crawlers also reach deep A–Z pages with empty topics included. The
+    // default listing's partial index cannot cover this unfiltered query.
+    for (const offset of pageOffsets(db.topics, 20)) {
+      add('/-/topics', { empty: 2, page: offset / 20 + 1, sort: 'id' })
+    }
     for (const [pathname, sorts] of [
       ['/', ['article-count', 'id']],
       ['/-/users', ['created', 'score']],

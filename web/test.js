@@ -1160,7 +1160,7 @@ it('benchmark discovers requests and appends runs with database metadata', async
       assert(paths.includes('/api/articles?limit=20&topicId=title-0'))
       assert(!paths.includes('/cirosantilli'))
       assert(!paths.includes('/user0/title-0'))
-      const htmlPaths = buildPaths({ ...db, listed_articles: 115401, file_uploads: 10001, listed_uploads: 9641, nonempty_topics: 272541 })
+      const htmlPaths = buildPaths({ ...db, listed_articles: 115401, file_uploads: 10001, listed_uploads: 9641, nonempty_topics: 272541, topics: 285636 })
       assert(htmlPaths.includes('/cirosantilli'))
       assert(htmlPaths.includes('/user0/title-0'))
       assert(htmlPaths.includes('/-/articles?page=5771&sort=id'))
@@ -1169,6 +1169,9 @@ it('benchmark discovers requests and appends runs with database metadata', async
       assert(htmlPaths.includes('/-/files?listed=0&page=18&sort=path'))
       assert(htmlPaths.includes('/-/files?listed=2&page=501&sort=path-desc'))
       assert(htmlPaths.includes('/-/topics?page=13628&sort=id'))
+      for (const page of [1, 7141, 14282]) {
+        assert(htmlPaths.includes(`/-/topics?empty=2&page=${page}&sort=id`))
+      }
       assert(htmlPaths.every(path => !path.includes('NaN')))
       assert.deepStrictEqual(normalizePaths(['/cirosantilli', '/api/min?x=1', '/cirosantilli']), [
         '/cirosantilli', '/api/min?x=1',
@@ -1698,7 +1701,8 @@ it('Topic HTML sorts use ordered indexes without changing filtered pagination', 
         assert(!selector.includes('NULLS'), selector)
         // Explain the actual selector produced by getTopics with HTML's sort
         // arguments, not a handwritten query that could hide a mismatch.
-        if (sequelize.getDialect() === 'postgres' && hasArticles === true && offset === 2) {
+        if (sequelize.getDialect() === 'postgres' && offset === 2 &&
+            (hasArticles === true || (hasArticles === undefined && sort === 'id'))) {
           await sequelize.transaction(async transaction => {
             await sequelize.query('SET LOCAL enable_seqscan = off', { transaction })
             const [rows] = await sequelize.query(`EXPLAIN (FORMAT JSON) ${selector.slice(selector.indexOf('SELECT '))}`, { transaction })
@@ -1712,7 +1716,8 @@ it('Topic HTML sorts use ordered indexes without changing filtered pagination', 
               assert(!nodes.some(node => node['Node Type'].includes('Sort')), JSON.stringify(nodes))
             }
             if (sort === 'id') {
-              assert(nodes.some(node => node['Index Name'] === 'topic_topic_id_asc_created_at_id_nonempty' &&
+              const indexName = 'topic_topic_id_asc_created_at_id' + (hasArticles === true ? '_nonempty' : '')
+              assert(nodes.some(node => node['Index Name'] === indexName &&
                 node['Node Type'] === 'Index Only Scan'), JSON.stringify(nodes))
             }
           })
@@ -1725,8 +1730,10 @@ it('Topic HTML sorts use ordered indexes without changing filtered pagination', 
 it('Topic empty filters have ordered listing indexes', async function() {
   const sequelize = this.test.sequelize
   const qi = sequelize.getQueryInterface()
-  // Exercise migration 53 against its historical schema; migration 64 replaces
-  // its nonempty alphabetical index with a covering one.
+  // Exercise migration 53 against its historical schema, before the covering
+  // alphabetical index replacements in migrations 64 and 65.
+  const allReplacement = require('./migrations/21000101000065-topic-cover-all-alphabetical-index')
+  await allReplacement.down(qi)
   const replacement = require('./migrations/21000101000064-topic-cover-nonempty-alphabetical-index')
   await replacement.down(qi)
   const migration = require('./migrations/21000101000053-topic-add-empty-order-indexes')
@@ -1797,6 +1804,7 @@ it('Topic empty filters have ordered listing indexes', async function() {
   assert.deepStrictEqual(await indexNames(), originalIndexes)
   await assertOrderedIndexScans()
   await replacement.up(qi)
+  await allReplacement.up(qi)
 })
 
 it('Topic alphabetical covering index migration replaces and restores the old index', async function() {
@@ -1831,6 +1839,41 @@ it('Topic alphabetical covering index migration replaces and restores the old in
   await migration.up(qi)
   assert.deepStrictEqual(await indexes(), original)
   assert.deepStrictEqual(await page(), expected)
+})
+
+it('Topic all-topics covering index migration preserves empty=2 pagination', async function() {
+  const sequelize = this.test.sequelize
+  const qi = sequelize.getQueryInterface()
+  const migration = require('./migrations/21000101000065-topic-cover-all-alphabetical-index')
+  const name = 'topic_topic_id_asc_created_at_id'
+  const oldName = 'topic_topic_id_asc_created_at'
+  const indexes = async () => (await qi.showIndex('Topic'))
+    .map(({ seq, ...index }) => index)
+    .sort((a, b) => a.name.localeCompare(b.name))
+  const original = await indexes()
+  assert(!original.some(i => i.name === oldName))
+  assert.deepStrictEqual(original.find(i => i.name === name).fields.map(f => f.attribute), ['topicId', 'createdAt', 'id'])
+  const user = await createUser(sequelize, 0)
+  for (let i = 0; i < 4; i++) await createArticle(sequelize, user, { i, list: i !== 1 })
+  const pages = async () => Promise.all([0, 2, 20].map(async offset => {
+    const result = await sequelize.models.Topic.getTopics({
+      sequelize, order: 'topicId', orderAscDesc: 'ASC NULLS LAST', offset, limit: 2,
+    })
+    return { count: result.count, ids: result.rows.map(row => row.id) }
+  }))
+  const expected = await pages()
+  assert.strictEqual(expected[0].count, 4)
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexes(), original)
+  await migration.down(qi)
+  await migration.down(qi)
+  const reverted = await indexes()
+  assert(!reverted.some(i => i.name === name))
+  assert.deepStrictEqual(reverted.find(i => i.name === oldName).fields.map(f => f.attribute), ['topicId', 'createdAt'])
+  assert.deepStrictEqual(await pages(), expected)
+  await migration.up(qi)
+  assert.deepStrictEqual(await indexes(), original)
+  assert.deepStrictEqual(await pages(), expected)
 })
 
 it('Topic HTML pagination reuses the tab count only for unfiltered nonempty topics', async function() {

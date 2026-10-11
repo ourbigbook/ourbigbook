@@ -74,10 +74,12 @@ module.exports = (sequelize) => {
           where: { articleCount: { [Op.gt]: 0 } },
         },
         {
-          name: 'topic_topic_id_asc_created_at',
+          // Cover A–Z listings including empty topics (empty=2).
+          name: 'topic_topic_id_asc_created_at_id',
           fields: [
             { name: 'topicId', order: 'ASC' },
             { name: 'createdAt', order: 'DESC' },
+            'id',
           ],
         },
         {

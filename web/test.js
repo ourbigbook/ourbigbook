@@ -556,6 +556,69 @@ it('User discussionCount and commentCount caches', async function() {
   await assertCounts(user0, 0, 0)
 })
 
+it('web: protected page redirects avoid anonymous database queries', async () => {
+  if (!testNext) return
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    await createOrUpdateArticleApi(test, createArticleArg({ titleSource: 'Article', bodySource: 'Body' }))
+    const slug = 'user0/article'
+    assertStatus((await test.webApi.issueCreate(slug, { titleSource: 'Discussion' })).status)
+    const pages = [
+      routes.articleNew(),
+      routes.articleNewFrom(slug),
+      routes.articleEdit(slug),
+      routes.issueNew(slug),
+      routes.issueEdit(slug, 1),
+      routes.userEdit('user0'),
+    ]
+    const initialPage = await test.sendJsonHttp('GET', routes.issueNew(slug))
+    assertStatus(initialPage.status, initialPage.data)
+    const { buildId } = JSON.parse(initialPage.data.match(/<script id="__NEXT_DATA__" type="application\/json">(.*?)<\/script>/s)[1])
+    const queries = []
+    const logging = test.sequelize.options.logging
+    test.sequelize.options.logging = sql => queries.push(sql)
+    try {
+      test.disableToken()
+      const expiredToken = require('./jwt').sign({ id: user.id, exp: Math.floor(Date.now() / 1000) - 60 })
+      for (const token of [undefined, 'invalid-token', expiredToken]) {
+        for (const url of [...pages, routes.issueNew('missing/article'), routes.userEdit('missing')]) {
+          // No Referer: the independent external-referrer tracking feature is
+          // intentionally outside the page's authentication/database work.
+          const opts = { ...test.webApi.opts, headers: token ? { Cookie: `${AUTH_COOKIE_NAME}=${token}` } : {} }
+          queries.length = 0
+          const response = await web_api.sendJsonHttp('GET', url, opts)
+          assert.strictEqual(response.status, 307, url)
+          assert.strictEqual(response.headers.location, routes.userNew(), url)
+          assert.deepStrictEqual(queries, [], url)
+          queries.length = 0
+          const navigation = await web_api.sendJsonHttp('GET', `/_next/data/${buildId}${url}.json`, {
+            ...opts, headers: { ...opts.headers, 'x-nextjs-data': '1' },
+          })
+          assert.strictEqual(navigation.status, 200, url)
+          assert.strictEqual(navigation.data.pageProps.__N_REDIRECT, routes.userNew(), url)
+          assert.deepStrictEqual(queries, [], `Client navigation to ${url}`)
+        }
+      }
+      // Authenticated owners still get their editor/settings pages, and
+      // settings permissions still reject other users but permit admins.
+      test.loginUser(user)
+      for (const url of pages) {
+        const response = await test.sendJsonHttp('GET', url)
+        assertStatus(response.status, url)
+      }
+      assert.strictEqual((await test.sendJsonHttp('GET', routes.userEdit('missing'))).status, 404)
+      const other = await test.createUserApi(1)
+      test.loginUser(other)
+      assert.strictEqual((await test.sendJsonHttp('GET', routes.userEdit('user0'))).status, 404)
+      await test.sequelize.models.User.update({ admin: true }, { where: { id: other.id } })
+      assertStatus((await test.sendJsonHttp('GET', routes.userEdit('user0'))).status)
+    } finally {
+      test.sequelize.options.logging = logging
+    }
+  }, { canTestNext: true })
+})
+
 // Run Next's actual client router in a child process so browser globals do not
 // leak into the server. Only DOM rendering and component loading are stubbed;
 // rewrite resolution, middleware, history and HTTP data requests are exercised.

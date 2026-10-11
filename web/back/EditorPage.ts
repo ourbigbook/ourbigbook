@@ -47,6 +47,17 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
     ) {
       return { notFound: true }
     } else {
+      // Anonymous editor requests only need a redirect. Do not start article,
+      // discussion or count queries while checking authentication.
+      const loggedInUser = await getLoggedInUser(req, res)
+      if (!loggedInUser) {
+        return {
+          redirect: {
+            destination: routes.userNew(),
+            permanent: false,
+          }
+        }
+      }
       const slug = params ? params.slug : undefined
       const slugString = slug instanceof Array ? slug.join('/') : undefined
       const number = params ? params.number ? Number(params.number) : undefined : undefined
@@ -55,7 +66,7 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
       const [
         article,
         issue,
-        [loggedInUser, articleCountByLoggedInUser],
+        articleCountByLoggedInUser,
       ] = await Promise.all([
         slugString ? sequelize.models.Article.getArticle({
           includeParentAndPreviousSibling: !isIssue,
@@ -67,23 +78,10 @@ export const getServerSidePropsEditorHoc = ({ isIssue=false }={}): MyGetServerSi
           number,
           slug: slugString,
         }) : null,
-        getLoggedInUser(req, res).then(loggedInUser => Promise.all([
-          loggedInUser,
-          loggedInUser
-            ? isIssue
-              ? sequelize.models.Issue.count({ where: { authorId: loggedInUser.id } })
-              : sequelize.models.File.count({ where: { authorId: loggedInUser.id } })
-            : null,
-        ])),
+        isIssue
+          ? sequelize.models.Issue.count({ where: { authorId: loggedInUser.id } })
+          : sequelize.models.File.count({ where: { authorId: loggedInUser.id } }),
       ])
-      if (!loggedInUser) {
-        return {
-          redirect: {
-            destination: routes.userNew(),
-            permanent: false,
-          }
-        }
-      }
       if (
         (slugString && !article) ||
         (isIssue && number && !issue)

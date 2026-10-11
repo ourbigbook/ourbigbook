@@ -485,14 +485,7 @@ export async function getServerSideProps(context) {
     typeof uid === 'string'
   ) {
     const sequelize = req.sequelize
-    const [loggedInUser, user] = await Promise.all([
-      getLoggedInUser(req, res),
-      sequelize.models.User.findOne({
-        where: { username: uid },
-      }),
-    ])
-    if (!user) { return { notFound: true } }
-    const props: SettingsProps = {}
+    const loggedInUser = await getLoggedInUser(req, res)
     if (!loggedInUser) {
       return {
         redirect: {
@@ -501,6 +494,11 @@ export async function getServerSideProps(context) {
         }
       }
     }
+    const user = await sequelize.models.User.findOne({
+      where: { username: uid },
+    })
+    if (!user) { return { notFound: true } }
+    const props: SettingsProps = {}
     if (cant.viewUserSettings(loggedInUser, user)) {
       return { notFound: true }
     } else {

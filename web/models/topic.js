@@ -154,6 +154,12 @@ module.exports = (sequelize) => {
     }
     const orderList = []
     if (topicIdSearch === undefined) {
+      // HTML listings supply NULLS LAST, but PostgreSQL cannot use a DESC
+      // index (implicitly NULLS FIRST) for that order, even on NOT NULL
+      // columns. Drop the redundant clause only when the column forbids nulls.
+      if (Topic.rawAttributes[order]?.allowNull === false) {
+        orderAscDesc = orderAscDesc.replace(/\s+NULLS\s+(FIRST|LAST)$/i, '')
+      }
       orderList.push([order, orderAscDesc])
       if (order !== 'createdAt') {
         orderList.push(['createdAt', 'DESC'])

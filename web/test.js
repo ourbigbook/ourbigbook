@@ -1116,12 +1116,19 @@ it('benchmark discovers requests and appends runs with database metadata', async
         output, baseUrl: `http://localhost:${test.webApi.opts.port}`,
         runs: 1, warmup: 0, log: () => {}, about: { git_sha: 'same-sha', db },
       }
-      const first = await benchmark({ ...opts, paths })
+      const messages = []
+      const first = await benchmark({ ...opts, paths, log: message => messages.push(message) })
       assert.deepStrictEqual(first.errors, {})
       assert(first.about.completed)
       assert.strictEqual(Object.keys(first.results).length, paths.length)
       assert(Object.values(first.results).every(time => Number.isFinite(time) && time >= 0))
       assert(Object.values(first.samples).every(samples => samples.length === 1))
+      const timingLine = ([request, elapsed]) => `${elapsed} ms ${request}`
+      assert.deepStrictEqual(messages, [
+        ...Object.entries(first.results).map(timingLine),
+        '\nBenchmark summary (fastest first, slowest last):',
+        ...Object.entries(first.results).sort((a, b) => a[1] - b[1]).map(timingLine),
+      ])
       const second = await benchmark({ ...opts, paths: ['/api/min'] })
       const history = JSON.parse(fs.readFileSync(output, 'utf8'))
       assert.strictEqual(history.length, 2)
@@ -1176,10 +1183,11 @@ it('benchmark saves failures and stops after a request timeout', async function(
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve))
   try {
     const output = path.join(directory, 'api.json')
+    const messages = []
     const result = await benchmark({
       output, baseUrl: `http://127.0.0.1:${server.address().port}`,
       paths: ['/api/ok', '/api/slow', '/api/unreached'],
-      runs: 2, warmup: 1, timeout: 100, log: () => {}, about: { git_sha: 'test' },
+      runs: 2, warmup: 1, timeout: 100, log: message => messages.push(message), about: { git_sha: 'test' },
     })
     assert.deepStrictEqual(received, ['/api/ok', '/api/ok', '/api/ok', '/api/slow'])
     assert.strictEqual(result.samples['/api/ok'].length, 2)
@@ -1187,6 +1195,11 @@ it('benchmark saves failures and stops after a request timeout', async function(
     assert(result.errors['/api/slow'].includes('TimeoutError'))
     assert.strictEqual(result.about.completed, false)
     assert.strictEqual(result.explain, undefined)
+    assert.deepStrictEqual(messages.slice(-3), [
+      '\nBenchmark summary (fastest first, slowest last):',
+      `${result.results['/api/ok']} ms /api/ok`,
+      `FAILED /api/slow: ${result.errors['/api/slow']}`,
+    ])
     assert.deepStrictEqual(JSON.parse(fs.readFileSync(output, 'utf8')), [result])
     const noCapture = await benchmark({
       output, explain: directory, baseUrl: `http://127.0.0.1:${server.address().port}`,
@@ -1561,6 +1574,59 @@ it('Topic ID ordering index avoids sorting the last topic page', async function(
   await migration.up(qi)
   assert.deepStrictEqual(await indexNames(), originalIndexes)
   await assertOrderedIndexScan()
+})
+
+it('Topic HTML sorts use ordered indexes without changing filtered pagination', async function() {
+  const { Op } = require('sequelize')
+  const sequelize = this.test.sequelize
+  const { Topic } = sequelize.models
+  const user = await createUser(sequelize, 0)
+  for (let i = 0; i < 4; i++) await createArticle(sequelize, user, { i, list: i !== 3 })
+  const topics = await Topic.findAll({ order: [['id', 'ASC']] })
+  for (let i = 0; i < topics.length; i++) {
+    await Topic.update({ createdAt: new Date(Date.UTC(2020, 0, i + 1)) }, { where: { id: topics[i].id } })
+  }
+  for (const hasArticles of [undefined, true, false]) {
+    for (const sort of ['id', 'id-desc', 'created', 'created-asc', 'article-count', 'article-count-asc']) {
+      const [order, error, orderAscDesc] = require('./front/js').getOrder({ query: { sort } }, {
+        allowedSortsExtra: Topic.ALLOWED_SORTS_EXTRA,
+      })
+      assert.strictEqual(error, undefined)
+      const where = hasArticles === undefined ? {} : { articleCount: hasArticles ? { [Op.gt]: 0 } : 0 }
+      const orderList = [[order, orderAscDesc]]
+      if (order !== 'createdAt') orderList.push(['createdAt', 'DESC'])
+      const expected = await Topic.findAll({ attributes: ['id'], where, order: orderList, raw: true })
+      for (const offset of [0, 2, 20]) {
+        const queries = []
+        const page = await Topic.getTopics({
+          sequelize, hasArticles, order, orderAscDesc, limit: 2, offset,
+          logging: sql => queries.push(sql),
+        })
+        assert.strictEqual(page.count, expected.length)
+        assert.deepStrictEqual(page.rows.map(row => row.id), expected.slice(offset, offset + 2).map(row => row.id), `${sort}, hasArticles=${hasArticles}, offset=${offset}`)
+        const selector = queries.find(sql => /SELECT [`"]id[`"] FROM [`"]Topic[`"]/.test(sql))
+        assert(selector, queries.join('\n'))
+        assert(!selector.includes('NULLS'), selector)
+        // Explain the actual selector produced by getTopics with HTML's sort
+        // arguments, not a handwritten query that could hide a mismatch.
+        if (sequelize.getDialect() === 'postgres' && hasArticles === true && offset === 2) {
+          await sequelize.transaction(async transaction => {
+            await sequelize.query('SET LOCAL enable_seqscan = off', { transaction })
+            const [rows] = await sequelize.query(`EXPLAIN (FORMAT JSON) ${selector.slice(selector.indexOf('SELECT '))}`, { transaction })
+            const nodes = []
+            const visit = node => { nodes.push(node); (node.Plans || []).forEach(visit) }
+            visit(rows[0]['QUERY PLAN'][0].Plan)
+            // Ascending article count has mixed directions and is not a tab's
+            // default order. The other HTML orders have matching indexes.
+            if (sort !== 'article-count-asc') {
+              assert(nodes.some(node => node['Index Name']), JSON.stringify(nodes))
+              assert(!nodes.some(node => node['Node Type'].includes('Sort')), JSON.stringify(nodes))
+            }
+          })
+        }
+      }
+    }
+  }
 })
 
 it('Topic empty filters have ordered listing indexes', async function() {

@@ -334,6 +334,15 @@ async function benchmark({ paths, about, output, explain, baseUrl='http://localh
   entry.about.completed = Object.keys(entry.results).length === paths.length && !Object.keys(entry.errors).length
   entry.about.finished_at = new Date().toISOString()
   saveHistory(output, history)
+  log('\nBenchmark summary (fastest first, slowest last):')
+  for (const [request, elapsed] of Object.entries(entry.results)
+    .filter(([, elapsed]) => elapsed !== null)
+    .sort((a, b) => a[1] - b[1])) {
+    log(`${elapsed} ms ${request}`)
+  }
+  for (const [request, error] of Object.entries(entry.errors)) {
+    log(`FAILED ${request}: ${error}`)
+  }
   return entry
 }
 

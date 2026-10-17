@@ -493,6 +493,8 @@ async function convertArticle({
           throw new ValidationError(`Article ID cannot contain uppercase characters: "${toplevelId}"`)
         }
       }
+      const lengthError = ourbigbook.getIdLengthError(toplevelId)
+      if (lengthError) throw new ValidationError(lengthError)
       if (forceNew && (await File.findOne({ where: { path: input_path }, transaction }))) {
         throw new ValidationError(`Article with this ID already exists: ${toplevelId}`)
       }

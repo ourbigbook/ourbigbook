@@ -3029,6 +3029,12 @@ function calculateId(
     if (index_id && userId && userId.split(Macro.HEADER_SCOPE_SEPARATOR).includes(RESERVED_ID_SEPARATOR)) {
       parseError(state, `The ID path component "-" is reserved for website routes: "${ast.id}"`, ast.source_location)
     }
+    if (index_id && userId) {
+      const lengthError = getIdLengthError(userId)
+      if (lengthError) {
+        parseError(state, lengthError, ast.source_location)
+      }
+    }
     let rootId = ast.id
     if (rootId && context.options.ref_prefix && rootId.startsWith(context.options.ref_prefix + Macro.HEADER_SCOPE_SEPARATOR)) {
       rootId = rootId.slice(context.options.ref_prefix.length + 1)
@@ -3733,6 +3739,15 @@ function renderAstList({ asts, context, first_toplevel, header_count, outputPath
     )
     const { path: default_output_path, split_suffix } = output_path_ret
     const output_path = outputPathOverride === undefined ? default_output_path : outputPathOverride
+    if (output_path !== undefined) {
+      // Include generated suffixes such as "-split". Do not hand an unsafe
+      // filename to callers, including parallel CLI conversion workers.
+      const lengthError = getIdLengthError(pathSplitext(output_path)[0])
+      if (lengthError) {
+        context.errors.push(new ErrorMessage(lengthError, first_ast.source_location))
+        return ''
+      }
+    }
     if (options.log['split-headers']) {
       console.error(`split-headers${split ? '' : ' nosplit'}: ` + output_path);
     }
@@ -9611,6 +9626,19 @@ const SYNONYM_LINKS_ID_UNRESERVED = 'synonyms'
 exports.SYNONYM_LINKS_ID_UNRESERVED = SYNONYM_LINKS_ID_UNRESERVED
 const ID_SEPARATOR = runtime_common.ID_SEPARATOR
 exports.ID_SEPARATOR = ID_SEPARATOR
+// Leave room for .bigb / .html on filesystems with a 255-byte filename limit.
+// Scopes become directories, so the limit applies to each component, not the full ID.
+const MAX_ID_COMPONENT_BYTES = 250
+exports.MAX_ID_COMPONENT_BYTES = MAX_ID_COMPONENT_BYTES
+function getIdLengthError(id) {
+  for (const component of id.split('/')) {
+    const bytes = new TextEncoder().encode(component).length
+    if (bytes > MAX_ID_COMPONENT_BYTES) {
+      return `ID path component is too long: ${bytes} UTF-8 bytes, maximum ${MAX_ID_COMPONENT_BYTES}: "${component}". Shorten the title or set a shorter {id}.`
+    }
+  }
+}
+exports.getIdLengthError = getIdLengthError
 const SHORTHAND_LIST_START = '* ';
 const SHORTHAND_TD_START = '| ';
 const SHORTHAND_TH_START = '|| ';

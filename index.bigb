@@ -6595,6 +6595,8 @@ The following IDs are reserved:
 
 Other uses of hyphens, such as `my-article`, and leading underscores, such as `_toc` and `_1`, are allowed. `_out` and `.git` are allowed in nested IDs such as `parent/_out` and `parent/.git`.
 
+Each slash-separated ID component is limited to 250 UTF-8 bytes, leaving five bytes for the `.bigb` or `.html` extension within the filesystem's 255-byte filename limit. This applies to both local conversion and web uploads; existing database IDs are not changed. Scoped paths may exceed 250 bytes in total. Shorten an oversized title or give it an explicit shorter `id`. Generated filename suffixes such as `-split` must also fit within this limit.
+
 OurBigBook uses the `-/` namespace for generated IDs. For example:
 * the <table of contents> uses the fixed ID `-/toc`
 * elements without an explicit ID may receive automatically generated IDs of type `-/1`, `-/2` and so on

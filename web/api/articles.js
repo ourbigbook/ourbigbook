@@ -781,6 +781,11 @@ router.put('/bulk', auth.required, async function(req, res, next) {
       if (!item || typeof item.path !== 'string' || !item.path || item.path.length > 4096 || seen.has(item.path)) {
         throw new lib.ValidationError('Each render target must have a distinct, nonempty path of at most 4096 characters')
       }
+      // Reject before staging any jobs. Still allow deletion of legacy oversized IDs.
+      if (phase !== 'delete') {
+        const lengthError = ourbigbook.getIdLengthError(item.path)
+        if (lengthError) throw new lib.ValidationError(lengthError)
+      }
       seen.add(item.path)
       const target = { path: item.path, article: {}, render: phase !== 'extract' }
       if (phase === 'extract') {

@@ -991,6 +991,8 @@ async function convert_path_to_file(input_path, ourbigbook_options, nonOurbigboo
           ourbigbook_options.output_format === ourbigbook.OUTPUT_FORMAT_HTML
         ) {
           for (const header_ast of extra_returns.context.synonym_headers) {
+            // Already reported as a source error by the converter.
+            if (ourbigbook.getIdLengthError(header_ast.id)) continue
             const new_options_redir = { ...nonOurbigbookOptions.options }
             new_options_redir.db_provider = extra_returns.context.db_provider;
             await generate_redirect(new_options_redir, header_ast.id, header_ast.synonym, nonOurbigbookOptions.outdir);

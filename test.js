@@ -10143,6 +10143,72 @@ assert_lib_error('toc: -/toc is a reserved id',
 {id=-/toc}
 `,
   3, 1);
+it('lib: ID components are limited to 250 UTF-8 bytes', async () => {
+  for (const id of ['a'.repeat(250), 'é'.repeat(125), 'scope/'.repeat(60) + 'a'.repeat(250)]) {
+    assert.strictEqual(ourbigbook.getIdLengthError(id), undefined)
+    const extra = {}
+    await ourbigbook.convert(`\\i[text]{id=${id}}`, {}, extra)
+    assert.deepStrictEqual(extra.errors, [])
+  }
+  for (const id of ['a'.repeat(251), '中'.repeat(84), 'scope/' + 'a'.repeat(251)]) {
+    const error = ourbigbook.getIdLengthError(id)
+    assert(error.includes('maximum 250'))
+    for (const [source, options] of [
+      [`= ${id}\n`, {}],
+      [`= Short\n{id=${id}}\n`, {}],
+      [`\\i[text]{id=${id}}`, {}],
+      ['= Short\n', { input_path: id + '.bigb' }],
+      [`= Short\n\n== ${id}\n{synonym}\n`, {}],
+    ]) {
+      for (const render of [false, true]) {
+        const extra = {}
+        await ourbigbook.convert(source, { ...options, render }, extra)
+        assert(extra.errors.some(e => e.message.startsWith('ID path component is too long:')),
+          JSON.stringify({ source, options, render, errors: extra.errors }))
+      }
+    }
+  }
+})
+for (const outputFormat of ['html', 'bigb']) {
+  assert_cli(`ID length: reject oversized split ${outputFormat} filenames cleanly`, {
+    args: ['--split-headers', '--output-format', outputFormat, 'index.bigb'],
+    filesystem: { 'index.bigb': `= Home\n\n== ${'a'.repeat(251)}\n` },
+    assert_exit_status: 1,
+    assert_stderr_contains: [
+      'index.bigb:3:1: ID path component is too long: 251 UTF-8 bytes, maximum 250',
+      /^(?![\s\S]*ENAMETOOLONG)[\s\S]*$/,
+    ],
+  })
+}
+assert_cli('ID length: accept a 250-byte split filename', {
+  args: ['--split-headers', 'index.bigb'],
+  filesystem: { 'index.bigb': `= Home\n\n== ${'a'.repeat(250)}\n` },
+  assert_exists: [`_out/html/${'a'.repeat(250)}.html`],
+})
+assert_cli('ID length: reject oversized synonym filenames cleanly', {
+  args: ['--split-headers', 'index.bigb'],
+  filesystem: { 'index.bigb': `= Home\n\n== Short\n\n== ${'a'.repeat(251)}\n{synonym}\n` },
+  assert_exit_status: 1,
+  assert_stderr_contains: ['index.bigb:5:1: ID path component is too long'],
+})
+assert_cli('ID length: check generated split suffixes too', {
+  args: ['--split-headers', `${'a'.repeat(250)}.bigb`],
+  filesystem: { [`${'a'.repeat(250)}.bigb`]: '= Header\n' },
+  assert_exit_status: 1,
+  assert_stderr_contains: ['ID path component is too long: 256 UTF-8 bytes, maximum 250'],
+})
+assert_cli('ID length: parallel directory builds report source errors without crashing workers', {
+  args: ['--jobs', '2', '--split-headers', '.'],
+  filesystem: {
+    'index.bigb': `= Home\n\n== ${'a'.repeat(251)}\n`,
+    'other.bigb': '= Other\n',
+  },
+  assert_exit_status: 1,
+  assert_stderr_contains: [
+    'index.bigb:3:1: ID path component is too long',
+    /^(?![\s\S]*(ENAMETOOLONG|worker exited unexpectedly))[\s\S]*$/,
+  ],
+})
 for (const id of ['-', '-/child', 'parent/-', 'parent/-/child']) {
   assert_lib_error(`id: reserved route separator ${id}`, `= Header\n{id=${id}}\n`, 1, 1)
   assert_lib_error(`id: reserved route separator on inline macro ${id}`, `\\i[text]{id=${id}}`, 1, 1)

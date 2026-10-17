@@ -1041,6 +1041,44 @@ it('api: reserved route separator cannot be an article or inline ID', async () =
   })
 })
 
+it('api: ID length is checked for individual uploads and before bulk staging', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const { Article, ArticleJob, File } = test.sequelize.models
+    const counts = async () => Promise.all([Article.count(), ArticleJob.count(), File.count()])
+    const before = await counts()
+    for (const id of ['a'.repeat(251), '中'.repeat(84), 'scope/' + 'a'.repeat(251)]) {
+      for (const render of [false, true]) {
+        for (const [article, options] of [
+          [{ titleSource: id, bodySource: '' }, {}],
+          [{ titleSource: 'Short', bodySource: '' }, { path: id }],
+          [{ titleSource: 'Short', bodySource: `\\i[text]{id=${id}}` }, {}],
+        ]) {
+          const response = await createOrUpdateArticleApi(test, article, { ...options, render })
+          assert.strictEqual(response.status, 422, JSON.stringify({ article, options, render, data: response.data }))
+          assert(JSON.stringify(response.data).includes('maximum 250'), JSON.stringify(response.data))
+        }
+      }
+      for (const phase of ['extract', 'check', 'render']) {
+        const response = await test.webApi.articlesBulk([
+          { path: 'valid', article: { titleSource: 'Valid', bodySource: '' } },
+          { path: id, article: { titleSource: 'Short', bodySource: '' } },
+        ], 'oversized-id-test', {}, { phase, start: false })
+        assert.strictEqual(response.status, 422, JSON.stringify(response.data))
+        assert(JSON.stringify(response.data).includes('maximum 250'))
+      }
+      // Neither an article nor a partial batch should have been saved.
+      assert.deepStrictEqual(await counts(), before)
+    }
+    for (const id of ['a'.repeat(250), 'é'.repeat(125), 'scope/'.repeat(60) + 'short']) {
+      const response = await createOrUpdateArticleApi(test,
+        { titleSource: 'Short', bodySource: '' }, { path: id })
+      assert.strictEqual(response.status, 200, JSON.stringify(response.data))
+    }
+  })
+})
+
 it('User fileCount cache and migration', async function() {
   const sequelize = this.test.sequelize
   const { Upload, User } = sequelize.models

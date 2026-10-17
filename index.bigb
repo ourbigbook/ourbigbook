@@ -13279,11 +13279,7 @@ TODO. Describe OurBigBook's formal grammar, and classify it in the grammar hiera
 
 This section describes the release procedure for <OurBigBook CLI>, which is an npm package. For <OurBigBook Web> deployment see: <OurBigBook Web deployment>.
 
-Before the first time you release, make sure that you can login to NPM with:
-``
-npm login
-``
-This prompts you to login via the browser with 2FA. Currently you can also tick a box to not ask again for the next 5 minutes, which should be enough for the following \a[release] command. If you don't select this option, you will be prompted midway through the release command for login.
+The \a[release] script first runs `npm login --auth-type=web` against the public npm registry and verifies the login with `npm whoami`, before building, deploying documentation or changing Git. Open the exact URL printed by npm and complete the CLI authorization and 2FA flow in your browser; being logged into the npm website alone is not sufficient. Publishing may still require another 2FA prompt or fail if the account lacks package publishing permissions.
 
 Releases should always be made with the official https://www.npmjs.com/~ourbigbook-admin NPM user.
 
@@ -13296,6 +13292,7 @@ or to just increment the minor version, e.g. from the current `0.7.1` to `0.7.2`
 ./release
 ``
 That script does the following actions, aborting immediately if any of them fails:
+* logs into npm and verifies the authenticated username
 * runs <test system>[the tests]
 * publishes this documentation
 * updates `version` in `package.json`

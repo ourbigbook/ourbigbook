@@ -18158,6 +18158,37 @@ it('VS Code excludes generated output from file discovery by default', function(
   assert.strictEqual(manifest.contributes.configurationDefaults['files.exclude']['**/_out'], true)
 })
 
+it('release authenticates before building or changing versions', function() {
+  for (const scenario of ['login', 'whoami', 'authenticated']) {
+    const root = path.join(testdir, `release-auth-${scenario}`)
+    const bin = path.join(root, 'bin')
+    fs.mkdirSync(bin, { recursive: true })
+    const manifest = '{"version":"0.9.49"}\n'
+    fs.writeFileSync(path.join(root, 'package.json'), manifest)
+    // Never contact npm or run any publishing/build commands in this test.
+    fs.writeFileSync(path.join(bin, 'npm'), `#!/usr/bin/env node
+const fs = require('fs')
+const args = process.argv.slice(2)
+fs.appendFileSync('calls.jsonl', JSON.stringify(args) + '\\n')
+if (args[0] === process.env.RELEASE_AUTH_TEST_FAILURE) process.exit(1)
+if (args[0] === 'login' || args[0] === 'whoami') process.exit(0)
+process.exit(37)
+`, { mode: 0o755 })
+    const result = child_process.spawnSync('bash', [path.join(__dirname, 'release'), '-T', '0.9.50'], {
+      cwd: root,
+      env: { ...process.env, PATH: bin + path.delimiter + process.env.PATH, RELEASE_AUTH_TEST_FAILURE: scenario },
+      encoding: 'utf8', timeout: 5000,
+    })
+    assert.strictEqual(result.status, scenario === 'authenticated' ? 37 : 1, result.stderr)
+    const calls = fs.readFileSync(path.join(root, 'calls.jsonl'), 'utf8').trim().split('\n').map(JSON.parse)
+    const expected = [['login', '--auth-type=web', '--registry=https://registry.npmjs.org/']]
+    if (scenario !== 'login') expected.push(['whoami', '--registry=https://registry.npmjs.org/'])
+    if (scenario === 'authenticated') expected.push(['run', 'build-assets'])
+    assert.deepStrictEqual(calls, expected)
+    assert.strictEqual(fs.readFileSync(path.join(root, 'package.json'), 'utf8'), manifest)
+  }
+})
+
 it('release-vscode waits for npm visibility and resumes failed installs without another version bump', function() {
   this.timeout(15000)
   for (const scenario of ['delayed', 'unavailable', 'retry']) {

@@ -9558,7 +9558,9 @@ const WEB_TOPIC_PATH = '-/topic';
 exports.WEB_TOPIC_PATH = WEB_TOPIC_PATH
 const PARAGRAPH_SEP = '\n\n';
 exports.PARAGRAPH_SEP = PARAGRAPH_SEP;
-const PLURALIZE_WORD_SPLIT_REGEX = /[^a-zA-Z]/
+// Keep apostrophes inside words: <Nicolaas Bloembergen's> must replace
+// "Bloembergen" with "Bloembergen's", not with the isolated suffix "s".
+const PLURALIZE_WORD_SPLIT_REGEX = /[^a-zA-Z']/
 const REFS_TABLE_PARENT = 'PARENT';
 exports.REFS_TABLE_PARENT = REFS_TABLE_PARENT;
 const REFS_TABLE_X = 'X';

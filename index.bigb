@@ -9886,6 +9886,8 @@ heroku run -a ourbigbook web/bin/make-admin -f barack-obama
 = Account locking
 {parent=OurBigBook Web admin}
 
+The user-page Spammer, Lock/Unlock, Blacklist/Unblacklist IP, and Unlist all content buttons ask for confirmation when the target account is more than 30 days old.
+
 When an account is locked, the locked user can login into it and view the account, but they cannot take any action sthat would lead to changes to the database, including:
 * creating or editing articles and discussions
 * liking, unliking articles or following or unfollowing users
@@ -9897,6 +9899,21 @@ This section is about <OurBigBook Web> features that currently require either:
 * direct database access
 * environment variable access
 They could at some point be exposed to <OurBigBook Web admins>, but we were just lazy to do so for now.
+
+= Delete unlisted articles
+{parent=Database access-only admin}
+
+Use \a[web/bin/delete-unlisted-articles] to permanently delete a user's unlisted articles. This runs outside HTTP requests because hundreds of deletions and the final tree rebuild can exceed the router timeout. It requires database access, not merely a website admin login. Preview the candidates first:
+``
+./heroku run -- web/bin/delete-unlisted-articles codex
+``
+After reviewing the list and taking a database backup, explicitly authorize deletion:
+``
+./heroku run -- web/bin/delete-unlisted-articles codex --execute
+``
+For local PostgreSQL, use `web/bin/pg web/bin/delete-unlisted-articles codex`, adding `--execute` only when ready. Without `--execute`, no data is changed. Stop or cancel the user's build first; the script refuses to delete while any upload or tree job is unfinished.
+
+The home article is always preserved, even if unlisted. Listed descendants are preserved and moved to the deleted article's parent. Each deleted article's source, rendered content, discussions, comments, likes and follows are removed, and counts, scores and topic representatives are maintained. Uploaded media is not deleted. Existing links to deleted articles may break; this is permanent deletion, not unlisting. Each deletion commits independently and the tree is rebuilt once at the end. If interrupted, rerun the command: committed deletions stay deleted, and the next run finishes the remainder and repairs the tree. Articles relisted before their turn are skipped. There is no undo other than restoring a backup.
 
 = OurBigBook Web signup IP blacklist
 {parent=Database access-only admin}

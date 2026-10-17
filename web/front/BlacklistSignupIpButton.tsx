@@ -5,10 +5,14 @@ import ToggleButton from 'front/ToggleButton'
 import { LockIcon, UnlockIcon } from 'front'
 
 const BlacklistSignupIpButton = ({
+  confirmOff=undefined,
+  confirmOn=undefined,
   ip,
   on,
   onChange,
 }) => <ToggleButton {...{
+  confirmOff,
+  confirmOn,
   callbackOff: async () => {
     return webApi.siteSettingsBlacklistSignupIpCreate({ ips: [ip] })
   },

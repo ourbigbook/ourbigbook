@@ -1,0 +1,27 @@
+#!/usr/bin/env node
+
+const path = require('path')
+const { program } = require('commander')
+const models = require('../models')
+
+program.description('Preview or permanently delete one user’s unlisted articles, excluding their home article. Requires database administrator access.')
+program.argument('<username>')
+program.option('--execute', 'permanently delete articles, discussions, comments, likes and follows; back up the database first', false)
+program.parse(process.argv)
+const [username] = program.processedArgs
+const { execute } = program.opts()
+const sequelize = models.getSequelize(path.dirname(__dirname))
+;(async () => {
+  if (execute) console.log(`Permanently deleting unlisted articles for @${username}; keeping the home article and listed descendants.`)
+  else console.log(`Preview only for @${username}. Nothing will be deleted. Use --execute after reviewing this list and backing up the database.`)
+  const start = Date.now()
+  const result = await sequelize.models.Article.deleteUnlisted(username, {
+    execute,
+    onProgress: ({ index, total, slug, removed }) => console.log(`${index}/${total}: ${!execute ? 'would delete' : removed ? 'deleted' : 'skipped (no longer unlisted)'} ${slug}`),
+  })
+  console.log(`${result.candidates} candidates, ${result.deleted} deleted (finished in ${Date.now() - start} ms).`)
+})().catch(error => {
+  console.error(error.message)
+  if (execute) console.error('Completed deletions are committed. Resolve the error and rerun to finish cleanup and rebuild the tree.')
+  process.exitCode = 1
+}).finally(() => sequelize.close())

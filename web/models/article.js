@@ -592,6 +592,9 @@ WHERE
         },
         transaction,
       })
+      const author = updateNestedSetIndex && await sequelize.models.User.findOne({
+        attributes: ['id'], where: { username }, transaction,
+      })
 
       // Decrement the depth of all descendants of the article
       // as they are going to be moved up the tree.
@@ -599,6 +602,7 @@ WHERE
         updateNestedSetIndex && sequelize.models.Article.decrement('depth', {
           logging: logging ? console.log : false,
           where: {
+            authorId: author.id,
             nestedSetIndex: {
               [Op.gt]: nestedSetIndex,
               [Op.lt]: nestedSetNextSibling,
@@ -739,7 +743,8 @@ WHERE
                   model: sequelize.models.Article,
                   as: 'articles',
                   subQuery: false,
-                  required: true,
+                  // The canonical parent may only have been ID-extracted.
+                  required: false,
                 }
               ],
             }
@@ -901,27 +906,33 @@ WHERE
     }
   }
 
-  // TODO https://docs.ourbigbook.com/todo/delete-articles
   Article.prototype.destroySideEffects = async function(opts={}) {
     return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
-      await sequelize.models.User.findByPk(this.authorId, { transaction, lock: transaction.LOCK.UPDATE })
+      const { Comment, File, Issue, Topic, User, UserLikeArticle, UserFollowArticle, UserLikeIssue, UserFollowIssue } = sequelize.models
+      const author = await User.findByPk(this.authorId, { transaction, lock: transaction.LOCK.UPDATE })
       // The instance may have been loaded before waiting for a rebuild.
       await this.reload({ transaction })
+      if (this.isToplevelIndex()) throw new Error('Cannot delete the home article')
+      this.file = await File.findByPk(this.fileId, {
+        attributes: ['id', 'path', 'authorId'],
+        include: [{ model: User, as: 'author', attributes: ['id', 'username'] }], transaction,
+      })
+      if (!this.file || this.file.authorId !== author.id) throw new Error(`Invalid source file for ${this.slug}`)
+      if (await Article.count({ where: { fileId: this.fileId }, transaction }) !== 1) {
+        throw new Error(`Cannot delete a shared source file: ${this.file.path}`)
+      }
+      // Discard an association loaded before acquiring the author lock.
+      this.parentRef = undefined
+      this.parentRef = await this.findParentRef({ transaction })
       const [articles, topic, _] = await Promise.all([
         sequelize.models.Article.findAll({
+          attributes: ['id', 'topicId'],
           where: { topicId: this.topicId },
           limit: 2,
           order: [['id', 'ASC']],
           transaction,
         }),
-        sequelize.models.Topic.findOne({
-          include: [{
-            model: sequelize.models.Article,
-            as: 'article',
-            where: { topicId: this.topicId },
-          }],
-          transaction,
-        }),
+        Topic.findOne({ where: { topicId: this.topicId }, transaction }),
         this.treeRemove({
           allowDetachedLeaf: opts.allowDetachedLeaf,
           logging: opts.logging,
@@ -937,11 +948,25 @@ WHERE
           otherArticleSameTopic = articles[0]
         }
       }
+      // Explicit child-first deletion also works with older databases whose
+      // foreign keys don't cascade. Keep parents alive while count/score
+      // triggers process comments, discussions and their join rows.
+      const issueIds = sequelize.literal(`(SELECT "id" FROM "Issue" WHERE "articleId" = ${sequelize.escape(this.id)})`)
+      for (const Model of [Comment, UserLikeIssue, UserFollowIssue]) {
+        await Model.destroy({ where: { issueId: { [Op.in]: issueIds } }, transaction })
+      }
+      await Issue.destroy({ where: { articleId: this.id }, transaction })
+      for (const Model of [UserLikeArticle, UserFollowArticle]) {
+        await Model.destroy({ where: { articleId: this.id }, transaction })
+      }
       await this.destroy({ transaction })
+      if (opts.updateNestedSetIndex === false) {
+        await author.update({ nestedSetNeedsUpdate: true }, { transaction })
+      }
       return Promise.all([
         this.parentRef ? this.parentRef.destroy({ transaction }) : null,
-        // Has to come after File.destroy finished because the file is needed in order for the
-        // DELETE ARTICLE trigger to be able to link the article to the author.
+        // File must outlive Article deletion: the DELETE ARTICLE trigger uses
+        // the file to link the article to its author.
         //
         // Cannot be easily done on CASCADE currently because we had a setup where each File
         // could have many Articles, which is basically gone.
@@ -949,17 +974,62 @@ WHERE
         otherArticleSameTopic
           ? // Set it to another article provisorily just in case it points to the current article,
             // because we are going to destroy the current article.
-            topic.update({ articleId: otherArticleSameTopic.id }, { transaction }).then(
+            (topic ? topic.update({ articleId: otherArticleSameTopic.id }, { transaction }) : Promise.resolve()).then(
               // Then update to whatever is actually correct.
               () => sequelize.models.Topic.updateTopics([ otherArticleSameTopic ], { deleteArticle: true, transaction })
             )
-            : topic.destroy({ transaction })
+            : topic && topic.destroy({ transaction })
       ])
-      // TODO move child articles to parent
-      // destroy issues, and then comments. Not doig this now because our "deletion" is for migration to another article only initially
-      //   This can be done on delete cascade as there are no side effects of issues/comments that are not taken care of by triggers
-      //   Sequelize does not set on delete cascade by default however on belongsTo, it uses on delete set null, which would need changing
     })
+  }
+
+  // Administrative/offline operation: do not hold an HTTP request open while
+  // deleting hundreds of articles and rebuilding a potentially large tree.
+  Article.deleteUnlisted = async function(username, { execute=false, onProgress=() => {} }={}) {
+    const { ArticleBuild, ArticleJob, TreeRebuildJob, User } = sequelize.models
+    const author = await User.findOne({ where: { username } })
+    if (!author) throw new Error(`User not found: ${username}`)
+    // Freeze the candidates, not their large rendered bodies. Recheck list and
+    // ownership under the author lock before each deletion.
+    const candidates = await Article.findAll({
+      attributes: ['id', 'slug'], where: { authorId: author.id, list: false, slug: { [Op.ne]: username } },
+      order: [['id', 'ASC']], raw: true,
+    })
+    const assertIdle = async transaction => {
+      const unfinished = { [Op.notIn]: ['completed', 'failed'] }
+      for (const Model of [ArticleBuild, ArticleJob, TreeRebuildJob]) {
+        if (await Model.findOne({ attributes: ['id'], where: { userId: author.id, status: unfinished }, transaction })) {
+          throw new Error(`@${username} has an unfinished build; finish or cancel it before deleting articles`)
+        }
+      }
+    }
+    let deleted = 0
+    for (const [index, candidate] of candidates.entries()) {
+      let removed = false
+      if (execute) await sequelize.transaction(async transaction => {
+        if (sequelize.getDialect() === 'postgres') {
+          await sequelize.query("SET LOCAL lock_timeout = '5s'", { transaction })
+        }
+        await User.findByPk(author.id, { transaction, lock: transaction.LOCK.UPDATE })
+        await assertIdle(transaction)
+        const article = await Article.findOne({ where: { id: candidate.id, authorId: author.id, list: false }, transaction })
+        if (!article) return
+        await article.destroySideEffects({ transaction, updateNestedSetIndex: false, allowDetachedLeaf: true })
+        removed = true
+      })
+      if (removed) deleted++
+      await onProgress({ ...candidate, index: index + 1, total: candidates.length, removed, execute })
+    }
+    if (execute) await sequelize.transaction(async transaction => {
+      const user = await User.findByPk(author.id, { transaction, lock: transaction.LOCK.UPDATE })
+      await assertIdle(transaction)
+      // Also repairs a previous interrupted run with no candidates left.
+      if (user.nestedSetNeedsUpdate) {
+        await Article.updateNestedSets(username, { transaction })
+        await user.update({ nestedSetNeedsUpdate: false }, { transaction })
+      }
+    })
+    return { candidates: candidates.length, deleted }
   }
 
   Article.prototype.getAuthor = async function() {

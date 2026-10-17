@@ -29,6 +29,8 @@ const {
 const { path_sep } = convertOptions
 const { hasReachedMaxItemCount, idToSlug, slugToId } = require('./front/js')
 
+let builtInKatexMacros
+
 async function checkArticleDb(sequelize, paths, author, { transaction, parentOverride, perf } = {}) {
   return ourbigbook_nodejs_webpack_safe.check_db(sequelize, paths, {
     parentOverride, web: true, transaction, perf,
@@ -90,6 +92,12 @@ function getConvertOpts({
   type,
   transaction,
 }) {
+  // Workers and maintenance scripts convert without starting the HTTP server.
+  // Cache the defaults, then merge into a fresh options object per conversion
+  // so macros defined by one article cannot leak into another.
+  if (builtInKatexMacros === undefined) {
+    builtInKatexMacros = require('./back/js').preloadKatex()
+  }
   const db_provider = new SqlDbProvider(sequelize)
   const referencedUploads = new Map()
   function getReferencedUploads(aRefs) {
@@ -120,6 +128,7 @@ function getConvertOpts({
     convertOptions: lodash.merge(
       {
         db_provider,
+        katex_macros: lodash.cloneDeep(builtInKatexMacros),
         getAFileTypes: async aRefs => (await getReferencedUploads(aRefs)).types,
         getAFileMetadata: async aRefs => (await getReferencedUploads(aRefs)).metadata,
         input_path,

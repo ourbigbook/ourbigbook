@@ -5,10 +5,14 @@ import ToggleButton from 'front/ToggleButton'
 import { LockIcon, UnlockIcon } from 'front'
 
 const LockUserButton = ({
+  confirmOff=undefined,
+  confirmOn=undefined,
   onChange,
   username,
   on,
 }) => <ToggleButton {...{
+  confirmOff,
+  confirmOn,
   callbackOff: async () => {
     return webApi.userUpdate(username, { locked: true })
   },

@@ -5805,6 +5805,25 @@ assert_lib('x: pluralize uses plural given for user in case of differences',
     },
   }
 )
+it('x: possessive magic links preserve the last word in HTML and bigb round trips', async () => {
+  for (const [title, capitalized] of [['Nicolaas Bloembergen', true], ['Laser', false], ["O'Neill", true]]) {
+    const text = `${capitalized ? title : title.toLowerCase()}'s`
+    const source = `= Home\n\n== ${title}\n${capitalized ? '{c}\n' : ''}\n== Other\n\n<${text}> theoretical work.\n`
+    const checkHtml = async input => {
+      const extra = {}
+      const html = await ourbigbook.convert(input, {}, extra)
+      assert.deepStrictEqual(extra.errors, [])
+      assert_xpath(`//x:div[@class="p"]/x:a[@href="#${ourbigbook.titleToId(title)}" and text()="${text}"]`, html)
+    }
+    await checkHtml(source)
+    const extra = {}
+    const output = await ourbigbook.convert(source, { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK }, extra)
+    assert.deepStrictEqual(extra.errors, [])
+    assert(output.includes(`<${text}> theoretical work.`), output)
+    await checkHtml(output)
+  }
+})
+
 assert_lib('x: internal link magic detects capitalization and plural on output',
   {
     convert_dir: true,
@@ -17653,6 +17672,21 @@ assert_cli(
     assert_bigb: {
       [`${TMP_DIRNAME}/web/homological-algebra.bigb`]: '= Homological algebra\n\nSee <homology>.\n',
       [`${TMP_DIRNAME}/web/homology.bigb`]: '= Homology\n{disambiguate=mathematics}\n',
+    },
+  }
+)
+assert_cli(
+  '--web preserves possessive magic links when splitting articles',
+  {
+    args: ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer', '-j', '1', '.'],
+    filesystem: {
+      'index.bigb': '= Root\n\n\\Include[physicist]\n\\Include[optics]\n',
+      'physicist.bigb': '= Physicist\n\n== Nicolaas Bloembergen\n{c}\n',
+      'optics.bigb': "= Optics\n\n== Nonlinear optics\n\n<Nicolaas Bloembergen's> work uses a <laser's> light.\n\n== Laser\n",
+      'ourbigbook.json': '{}\n',
+    },
+    assert_bigb: {
+      [`${TMP_DIRNAME}/web/nonlinear-optics.bigb`]: "= Nonlinear optics\n\n<Nicolaas Bloembergen's> work uses a <laser's> light.\n",
     },
   }
 )

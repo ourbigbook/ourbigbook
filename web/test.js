@@ -41,6 +41,57 @@ const { QUERY_TRUE_VAL } = web_api
 
 const testNext = process.env.OURBIGBOOK_TEST_NEXT === 'true'
 
+it('admin user actions confirm accounts older than 30 days, including missing dates', () => {
+  const { confirmAdminUserAction } = require('./front/js')
+  const now = Date.parse('2026-10-18T12:00:00Z')
+  const thirtyDays = 30 * 24 * 60 * 60 * 1000
+  for (const action of ['Spammer', 'Lock', 'Unlock', 'Blacklist IP', 'Unblacklist IP', 'Unlist all content']) {
+    let calls = 0
+    const confirm = message => {
+      calls++
+      assert(message.includes('@user0'))
+      assert(message.includes(action))
+      return false
+    }
+    assert.strictEqual(confirmAdminUserAction({ username: 'user0', createdAt: new Date(now - thirtyDays).toISOString() }, action, confirm, now), true)
+    assert.strictEqual(calls, 0)
+    for (const createdAt of [new Date(now - thirtyDays - 1).toISOString(), undefined, 'invalid']) {
+      assert.strictEqual(confirmAdminUserAction({ username: 'user0', createdAt }, action, confirm, now), false)
+      assert.strictEqual(confirmAdminUserAction({ username: 'user0', createdAt }, action, () => true, now), true)
+    }
+    assert.strictEqual(calls, 3)
+  }
+})
+
+it('admin toggle confirmations cancel before sending requests in either direction', () => {
+  const React = require('react')
+  const source = require('fs').readFileSync(require('path').join(__dirname, 'front/ToggleButton.tsx'), 'utf8')
+  const js = require('typescript').transpileModule(source, {
+    compilerOptions: { jsx: require('typescript').JsxEmit.React, module: require('typescript').ModuleKind.CommonJS, esModuleInterop: true },
+  }).outputText
+  for (const on of [false, true]) {
+    let calls = 0, changes = 0, confirmations = 0
+    const mockReact = { ...React, useState: () => [on, () => { changes++ }], useEffect: () => {} }
+    const exports = {}
+    new Function('require', 'exports', js)(name => {
+      assert.strictEqual(name, 'react')
+      return mockReact
+    }, exports)
+    const props = {
+      on, callbackOn: () => { calls++ }, callbackOff: () => { calls++ },
+      [on ? 'confirmOn' : 'confirmOff']: () => { confirmations++; return false },
+    }
+    exports.default(props).props.onClick({ preventDefault() {} })
+    assert.strictEqual(confirmations, 1)
+    assert.strictEqual(calls, 0)
+    assert.strictEqual(changes, 0)
+    props[on ? 'confirmOn' : 'confirmOff'] = () => true
+    exports.default(props).props.onClick({ preventDefault() {} })
+    assert.strictEqual(calls, 1)
+    assert.strictEqual(changes, 1)
+  }
+})
+
 describe('ToC state after lazy loading', () => {
   it('keeps opened ancestors and the requested branch open while preserving closed siblings', () => {
     const html = `<div class="toc-container"><ul><li class="has-child toplevel">
@@ -5087,13 +5138,12 @@ it('api: article delete', async () => {
       assertStatus(status, data)
       assert.strictEqual(data.topics[0].articleCount, 1)
 
-      //// Issues are deleted TODO
-      //;({data, status} = await test.webApi.issue('user0/calculus', 1))
-      //assert.strictEqual(status, 404)
+      // Discussions and comments are deleted too.
+      ;({data, status} = await test.webApi.issues({ id: 'user0/calculus', number: 1 }))
+      assert.strictEqual(status, 404)
 
-      //// Comments are deleted TODO
-      //;({data, status} = await test.webApi.comment('user0/calculus', 1, 1))
-      ////assert.strictEqual(status, 404)
+      ;({data, status} = await test.webApi.comment('user0/calculus', 1, 1))
+      assert.strictEqual(status, 404)
 
       // The in-article ID image-my-calculus-image was deleted
       {
@@ -5188,6 +5238,99 @@ it('api: article delete', async () => {
       ;({data, status} = await test.webApi.topics({ id: 'calculus' }))
       assertStatus(status, data)
       assertRows(data.topics, [])
+  })
+})
+
+it('admin deletion: unlisted cleanup preserves home and listed descendants, removes dependent content and repairs counts', async () => {
+  await testApp(async test => {
+    const { sequelize } = test
+    const { Article, ArticleBuild, Comment, File, Issue, Ref, Site, Topic, User, UserLikeArticle, UserFollowArticle, UserLikeIssue, UserFollowIssue } = sequelize.models
+    const owner = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    test.loginUser(owner)
+    for (const [titleSource, opts] of [
+      ['Old', { list: false }],
+      ['Child', { parentId: '@user0/old' }],
+      ['Old child', { parentId: '@user0/old', list: false }],
+      ['Tail', {}],
+    ]) assertStatus((await createOrUpdateArticleApi(test, { titleSource, bodySource: 'Body' }, opts)).status)
+    const old = await Article.findOne({ where: { slug: 'user0/old' } })
+    await Site.update({ pinnedArticleId: old.id }, { where: {} })
+    // Even an unlisted home must survive.
+    await Article.update({ list: false }, { where: { slug: 'user0' } })
+    test.loginUser(other)
+    assertStatus((await createOrUpdateArticleApi(test, { titleSource: 'Old', bodySource: 'Other user' })).status)
+    assertStatus((await test.webApi.articleLike('user0/old')).status)
+    assertStatus((await test.webApi.articleLike('user0/tail')).status)
+    assertStatus((await test.webApi.articleFollow('user0/old')).status)
+    assertStatus((await test.webApi.issueCreate('user0/old', { titleSource: 'Discussion', bodySource: 'Discuss' })).status)
+    assertStatus((await test.webApi.commentCreate('user0/old', 1, 'Comment')).status)
+    test.loginUser(owner)
+    assertStatus((await test.webApi.issueLike('user0/old', 1)).status)
+    assertStatus((await test.webApi.issueFollow('user0/old', 1)).status)
+    const issue = await Issue.findOne({ where: { articleId: old.id } })
+    const otherTree = await Article.findAll({ attributes: ['id', 'depth', 'nestedSetIndex', 'nestedSetNextSibling'], where: { authorId: other.id }, order: [['id', 'ASC']], raw: true })
+    const preview = []
+    assert.deepStrictEqual(await Article.deleteUnlisted('user0', { onProgress: row => preview.push(row.slug) }), { candidates: 2, deleted: 0 })
+    assert.deepStrictEqual(preview, ['user0/old', 'user0/old-child'])
+    assert(await Article.findByPk(old.id))
+    const blocked = await ArticleBuild.create({ id: 'prevent-admin-delete', userId: owner.id })
+    await assert.rejects(Article.deleteUnlisted('user0', { execute: true }), /unfinished build/)
+    await blocked.destroy()
+    await assert.rejects(Article.deleteUnlisted('user0', {
+      execute: true, onProgress: () => { throw new Error('Interrupted after commit') },
+    }), /Interrupted after commit/)
+    assert.strictEqual(await Article.findByPk(old.id), null)
+    assert.strictEqual((await User.findByPk(owner.id)).nestedSetNeedsUpdate, true)
+    assert.deepStrictEqual(await Article.deleteUnlisted('user0', { execute: true }), { candidates: 1, deleted: 1 })
+    assert.strictEqual((await User.findByPk(owner.id)).nestedSetNeedsUpdate, false)
+    assert(await Article.findOne({ where: { slug: 'user0' } }))
+    assert(await Article.findOne({ where: { slug: 'user0/child', list: true } }))
+    assert.strictEqual((await Ref.findOne({ where: { to_id: '@user0/child', type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] } })).from_id, '@user0')
+    assert.strictEqual(await File.count({ where: { path: ['@user0/old.bigb', '@user0/old-child.bigb'] } }), 0)
+    assert.strictEqual(await Comment.count({ where: { issueId: issue.id } }), 0)
+    assert.strictEqual(await Issue.count({ where: { articleId: old.id } }), 0)
+    for (const Model of [UserLikeIssue, UserFollowIssue]) assert.strictEqual(await Model.count({ where: { issueId: issue.id } }), 0)
+    for (const Model of [UserLikeArticle, UserFollowArticle]) assert.strictEqual(await Model.count({ where: { articleId: old.id } }), 0)
+    assert.strictEqual((await User.findByPk(owner.id)).score, 1)
+    assert.strictEqual((await User.findByPk(other.id)).discussionCount, 0)
+    assert.strictEqual((await User.findByPk(other.id)).commentCount, 0)
+    assert.strictEqual((await User.findByPk(owner.id)).listedArticleCount, 2)
+    assert.strictEqual((await Site.findOne()).pinnedArticleId, null)
+    const topic = await Topic.findOne({ where: { topicId: 'old' } })
+    assert.strictEqual(topic.articleCount, 1)
+    assert.strictEqual((await Article.findByPk(topic.articleId)).slug, 'user1/old')
+    assert.strictEqual(await Topic.count({ where: { topicId: 'old-child' } }), 0)
+    assert.deepStrictEqual(await Article.findAll({ attributes: ['id', 'depth', 'nestedSetIndex', 'nestedSetNextSibling'], where: { authorId: other.id }, order: [['id', 'ASC']], raw: true }), otherTree)
+    assert.deepStrictEqual(await Article.deleteUnlisted('user0', { execute: true }), { candidates: 0, deleted: 0 })
+    const home = await Article.findOne({ where: { slug: 'user0' } })
+    await assert.rejects(home.destroySideEffects(), /Cannot delete the home/)
+  })
+})
+
+it('admin deletion: individual removal is atomic and only shifts its own author tree', async () => {
+  await testApp(async test => {
+    const { Article, User } = test.sequelize.models
+    const owner = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    for (const user of [owner, other]) {
+      test.loginUser(user)
+      assertStatus((await createOrUpdateArticleApi(test, { titleSource: 'Parent', bodySource: '' })).status)
+      assertStatus((await createOrUpdateArticleApi(test, { titleSource: 'Child', bodySource: '' }, { parentId: `@${user.username}/parent` })).status)
+    }
+    const tree = () => Article.findAll({ attributes: ['id', 'slug', 'depth', 'nestedSetIndex', 'nestedSetNextSibling'], order: [['id', 'ASC']], raw: true })
+    const before = await tree()
+    const article = await Article.findOne({ where: { slug: 'user0/parent' } })
+    await assert.rejects(test.sequelize.transaction(async transaction => {
+      await article.destroySideEffects({ transaction })
+      throw new Error('Rollback deletion')
+    }), /Rollback deletion/)
+    assert.deepStrictEqual(await tree(), before)
+    assert.strictEqual((await User.findByPk(owner.id)).listedArticleCount, 3)
+    await (await Article.findByPk(article.id)).destroySideEffects()
+    assert.deepStrictEqual((await tree()).filter(row => row.slug.startsWith('user1')), before.filter(row => row.slug.startsWith('user1')))
+    assert.strictEqual((await Article.findOne({ where: { slug: 'user0/child' } })).depth, 1)
+    assert.strictEqual((await User.findByPk(owner.id)).listedArticleCount, 2)
   })
 })
 
@@ -6863,6 +7006,51 @@ it('build job error labels preserve safe detail and distinguish cancellation', (
   assert.strictEqual(formatBuildJobError('Private source', 'check', false), 'Job failed: Database check failed')
   assert.strictEqual(formatBuildJobError('Build stopped after an earlier job failed.', 'render'), 'Cancelled due to previous failure')
   assert.strictEqual(formatBuildJobError('Cancelled due to previous failure', 'render'), 'Cancelled due to previous failure')
+})
+
+it('conversion math defaults are isolated between articles', () => {
+  const opts = { author: { username: 'user0' }, sequelize: {} }
+  const first = convert.getConvertOpts(opts).convertOptions.katex_macros
+  const second = convert.getConvertOpts(opts).convertOptions.katex_macros
+  assert(first['\\LTwo'])
+  assert(first['\\LP'])
+  assert.deepStrictEqual(first, second)
+  assert.notStrictEqual(first['\\LTwo'], second['\\LTwo'])
+  first['\\LTwo'].tokens.length = 0
+  first['\\OnlyThisArticle'] = 'x'
+  const next = convert.getConvertOpts(opts).convertOptions.katex_macros
+  assert.deepStrictEqual(next, second)
+})
+
+it('background renders: built-in math macros work without HTTP server initialization', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    test.loginUser(user)
+    const { ArticleJob: Job, Article } = test.sequelize.models
+    Job.launch = async () => {}
+    const target = { path: 'l2', parentId: '@user0', list: true, updateNestedSetIndex: false }
+    const result = await createOrUpdateArticleApi(test,
+      createArticleArg({ i: 0, titleSource: '$\\LTwo$', bodySource: '$\\LTwo$ and $\\LP$' }),
+      { ...target, render: false })
+    assertStatus(result.status, result.data)
+    const queued = await test.webApi.articlesBulk([target], 'builtin-math-macros')
+    assert.strictEqual(queued.status, 202)
+    // Standalone workers never call app.start(), unlike most API tests.
+    const previousMacros = config.convertOptions.katex_macros
+    delete config.convertOptions.katex_macros
+    try {
+      await Job.run(queued.data.job.id)
+      const job = await Job.findByPk(queued.data.job.id)
+      assert.strictEqual(job.status, 'completed')
+      const article = await Article.findOne({ where: { slug: 'user0/l2' } })
+      assert(article.titleRender.includes('katex'), article.titleRender)
+      assert(article.render.includes('katex'), article.render)
+      assert(!article.render.includes('ourbigbook-error'), article.render)
+    } finally {
+      if (previousMacros === undefined) delete config.convertOptions.katex_macros
+      else config.convertOptions.katex_macros = previousMacros
+    }
+  })
 })
 
 it('background renders: unexpected failures retain a safe reason without exposing exception internals', async () => {

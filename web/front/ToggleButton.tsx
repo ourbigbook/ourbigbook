@@ -4,6 +4,7 @@ const ToggleButton = ({
   callbackOff,
   callbackOn,
   confirmOff,
+  confirmOn,
   contentOff,
   contentOn,
   disabled=false,
@@ -14,6 +15,7 @@ const ToggleButton = ({
   callbackOff: () => Promise<void>;
   callbackOn?: () => Promise<void>;
   confirmOff?: () => boolean;
+  confirmOn?: () => boolean;
   contentOff: React.ReactNode;
   contentOn: React.ReactNode;
   disabled?: boolean,
@@ -38,7 +40,8 @@ const ToggleButton = ({
       onClick={(e) => {
         e.preventDefault()
         if (!disabled) {
-          if (!on && confirmOff && !confirmOff()) {
+          const confirm = on ? confirmOn : confirmOff
+          if (confirm && !confirm()) {
             return
           }
           let ret

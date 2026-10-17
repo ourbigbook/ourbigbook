@@ -5,9 +5,11 @@ import ToggleButton from 'front/ToggleButton'
 import { UnlistedIcon } from 'front'
 
 const UnlistAllContentButton = ({
+  confirmOff=undefined,
   username,
   on,
 }) => <ToggleButton {...{
+  confirmOff,
   callbackOff: async () => {
     return webApi.userUnlistContent(username)
   },

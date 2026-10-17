@@ -354,6 +354,13 @@ function formatBuildJobError(error, phase, showDetails=true) {
   return error.startsWith('Job failed') ? error : `Job failed: ${error}`
 }
 
+function confirmAdminUserAction(user, action, confirm, now=Date.now()) {
+  const createdAt = Date.parse(user.createdAt)
+  // Fail safe if an old/malformed response does not include a usable date.
+  return Number.isFinite(createdAt) && now - createdAt <= 30 * 24 * 60 * 60 * 1000 ||
+    confirm(`${action} for @${user.username}? This account was created ${Number.isFinite(createdAt) ? 'more than 30 days ago' : 'on an unknown date'}.`)
+}
+
 function openUserTabs(users, openWindow) {
   // Open newest first: browsers normally place subsequent related tabs after
   // the earlier ones. Sort a copy so the displayed table stays unchanged.
@@ -368,6 +375,7 @@ function openUserTabs(users, openWindow) {
 }
 
 module.exports = {
+  confirmAdminUserAction,
   AUTH_COOKIE_NAME: 'auth',
   TRI_ALL,
   TRI_FALSE,

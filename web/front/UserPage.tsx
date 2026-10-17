@@ -36,6 +36,7 @@ import {
 import ArticleList from 'front/ArticleList'
 import CommentList from 'front/CommentList'
 import { cant } from 'front/cant'
+import { confirmAdminUserAction } from 'front/js'
 import config from 'front/config'
 import CustomLink from 'front/CustomLink'
 import CustomImage from 'front/CustomImage'
@@ -244,6 +245,7 @@ export default function UserPage({
   }
 
   const handleShortFragmentSkipOnce = React.useRef(false)
+  const confirmAdminAction = action => confirmAdminUserAction(user, action, message => window.confirm(message))
   if (router.isFallback) { return <LoadingSpinner />; }
   const statuses = []
   if (user.admin) {
@@ -282,6 +284,7 @@ export default function UserPage({
               }
               {!cant.setUserLimits(loggedInUser, user) &&
                 <SpammerButton {...{
+                  confirmOff: () => confirmAdminAction('Mark as spammer, lock, blacklist IP and unlist all content'),
                   username,
                   on: moderationLocked && moderationIpBlacklisted && moderationContentUnlisted,
                   onSuccess: () => {
@@ -293,6 +296,8 @@ export default function UserPage({
               }
               {!cant.setUserLimits(loggedInUser, user) &&
                 <LockUserButton {...{
+                  confirmOff: () => confirmAdminAction('Lock account'),
+                  confirmOn: () => confirmAdminAction('Unlock account'),
                   username,
                   on: moderationLocked,
                   onChange: setModerationLocked,
@@ -300,13 +305,18 @@ export default function UserPage({
               }
               {(!cant.setUserLimits(loggedInUser, user) && user.ip) &&
                 <BlacklistSignupIpButton {...{
+                  confirmOff: () => confirmAdminAction(`Blacklist IP ${user.ip}`),
+                  confirmOn: () => confirmAdminAction(`Unblacklist IP ${user.ip}`),
                   ip: user.ip,
                   on: moderationIpBlacklisted,
                   onChange: setModerationIpBlacklisted,
                 }} />
               }
               {!cant.setUserLimits(loggedInUser, user) &&
-                <UnlistAllContentButton {...{ username, on: moderationContentUnlisted }} />
+                <UnlistAllContentButton {...{
+                  username, on: moderationContentUnlisted,
+                  confirmOff: () => confirmAdminAction('Unlist all content'),
+                }} />
               }
               {isCurrentUser &&
                 <LogoutButton />

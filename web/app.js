@@ -175,8 +175,6 @@ async function start(port, startNext, cb) {
 
   // Handle API routes.
   {
-    // This is not visible on frontend unfortunately, we just have to redo it there again.
-    config.convertOptions.katex_macros = back_js.preloadKatex()
     const router = express.Router()
     router.use(config.apiPath, api)
     router.get('/:username/-/raw/:path(*)', auth.optional, async function(req, res, next) {

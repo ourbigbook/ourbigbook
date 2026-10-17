@@ -6,9 +6,13 @@ const path = require('path')
 function preloadKatex() {
   // Other backend helpers are also used before the benchmark has detected the
   // server's dialect. Do not cache environment-dependent DB config on import.
-  const ourbigbook_nodejs_webpack_safe = require('ourbigbook/nodejs_webpack_safe')
-  return ourbigbook_nodejs_webpack_safe.preload_katex_from_file(
-    path.join(path.dirname(require.resolve(path.join('ourbigbook', 'package.json'))), 'default.tex'))
+  // Next embeds TeX through the same asset/source rule used by the editor.
+  // A dynamic require.resolve becomes a Webpack context lookup, not a Node
+  // package lookup. Standalone workers instead read the repository asset.
+  const tex = typeof __webpack_require__ === 'function'
+    ? require('ourbigbook/default.tex')
+    : fs.readFileSync(path.join(__dirname, '../../default.tex'), 'utf8')
+  return require('ourbigbook/nodejs_front').preload_katex(tex)
 }
 
 const explainHeader = 'x-ourbigbook-explain'

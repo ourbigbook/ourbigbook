@@ -47,7 +47,7 @@ module.exports = phase => ({
   webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
     config.module.rules.push(
       {
-        // To allow embedding the default defines into the Web Editor.
+        // Embed the default macros in the editor and server-side previews.
         test: /\.tex$/,
         type: 'asset/source',
       }

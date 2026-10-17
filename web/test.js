@@ -7008,6 +7008,43 @@ it('build job error labels preserve safe detail and distinguish cancellation', (
   assert.strictEqual(formatBuildJobError('Cancelled due to previous failure', 'render'), 'Cancelled due to previous failure')
 })
 
+it('built-in math macros load in production bundles as well as standalone workers', async function() {
+  this.timeout(20000)
+  const fs = require('fs')
+  const path = require('path')
+  const webpack = require('webpack')
+  const directory = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ourbigbook-katex-bundle-'))
+  const webpackConfig = require('./next.config')('phase-production-build').webpack({
+    mode: 'production',
+    target: 'node',
+    entry: path.join(__dirname, 'back/js.js'),
+    output: { path: directory, filename: 'backend.js', library: { type: 'commonjs2' } },
+    module: { rules: [] },
+    // Bundle the backend helper and TeX asset, leaving its Node dependencies
+    // external as Next does. Avoid bundling the database/native libraries.
+    externals: [({ request }, callback) => {
+      if (request.startsWith('ourbigbook/') && !request.endsWith('.tex')) {
+        return callback(null, `commonjs ${require.resolve(request)}`)
+      }
+      callback()
+    }],
+  }, { isServer: true, dev: false, webpack })
+  const compiler = webpack(webpackConfig)
+  try {
+    const stats = await new Promise((resolve, reject) => compiler.run((error, stats) => error ? reject(error) : resolve(stats)))
+    assert(!stats.hasErrors(), stats.toString({ all: false, errors: true }))
+    const bundled = require(path.join(directory, 'backend.js')).preloadKatex()
+    const standalone = require('./back/js').preloadKatex()
+    assert.deepStrictEqual(bundled, standalone)
+    for (const tex of ['\\LTwo', '\\LP']) {
+      assert(require('katex').renderToString(tex, { macros: bundled, throwOnError: true }).includes('katex'))
+    }
+  } finally {
+    await new Promise((resolve, reject) => compiler.close(error => error ? reject(error) : resolve()))
+    fs.rmSync(directory, { recursive: true, force: true })
+  }
+})
+
 it('conversion math defaults are isolated between articles', () => {
   const opts = { author: { username: 'user0' }, sequelize: {} }
   const first = convert.getConvertOpts(opts).convertOptions.katex_macros

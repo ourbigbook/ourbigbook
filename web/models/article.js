@@ -1524,12 +1524,28 @@ WHERE
     return article
   }
 
+  // One snapshot for both visibility counts. Most follows are listed, so count
+  // the small unlisted subset rather than joining every listed article. The
+  // unique follow key, article FK and non-null list flag make subtraction exact.
+  Article.countFollowedArticles = async function(userId, { logging, transaction }={}) {
+    const [[counts]] = await sequelize.query(`SELECT
+      (SELECT COUNT(*) FROM "UserFollowArticle" WHERE "userId" = :userId) AS total,
+      (SELECT COUNT(*) FROM "Article" a WHERE a.list = :unlisted AND EXISTS (
+        SELECT 1 FROM "UserFollowArticle" f WHERE f."userId" = :userId AND f."articleId" = a.id
+      )) AS unlisted`, { replacements: { userId, unlisted: false }, logging, transaction })
+    const total = Number(counts.total)
+    const unlisted = Number(counts.unlisted)
+    return { total, unlisted, listed: total - unlisted }
+  }
+
   // Helper for common queries.
   Article.getArticles = async function getArticles({
     // Author username string.
     author,
     count,
     excludeIds,
+    // Only test membership, without counting or fetching article bodies.
+    exists=false,
     followedBy,
     // HTML list cards need the body preview, but not editor source or headers.
     // Opt in only on SSR callers; the API's default representation is unchanged.
@@ -1623,6 +1639,7 @@ WHERE
         where: { username: author },
       })
       if (!authorRow) {
+        if (exists) return false
         if (count) return rows ? { count: 0, rows: [] } : { count: 0 }
         return []
       }
@@ -1646,16 +1663,28 @@ WHERE
     }
     if (parentId) {
       const parentFromToOther = parentFromTo === 'to' ? 'from' : 'to'
-      fileInclude.push({
+      const sourceColumn = parentFromTo === 'from' ? 'from_id' : 'to_id'
+      const targetColumn = parentFromTo === 'from' ? 'to_id' : 'from_id'
+      // A file can refer to the same target repeatedly. Filter by membership
+      // instead of multiplying Article rows by Ref rows before LIMIT/count.
+      // Retain both Id joins: dangling references must not produce matches.
+      const referenceWhere = { fileId: { [Op.in]: sequelize.literal(`(
+        SELECT rf.id FROM "File" rf
+        INNER JOIN "Id" source_id ON source_id.idid = rf.toplevel_id
+        INNER JOIN "Ref" r ON r.${sourceColumn} = source_id.idid
+        INNER JOIN "Id" target_id ON target_id.idid = r.${targetColumn}
+        WHERE r.${targetColumn} = ${sequelize.escape(parentId)} AND r.type = ${sequelize.escape(parentType)}
+      )`) } }
+      where = where ? { [Op.and]: [where, referenceWhere] } : referenceWhere
+      if (whereFts) whereFts = { [Op.and]: [whereFts, referenceWhere] }
+      if (!forList) fileInclude.push({
         model: Id,
         as: 'toplevelId',
-        attributes: forList ? [] : undefined,
         required: true,
         subQuery: false,
         include: [{
           model: Ref,
           as: parentFromTo,
-          attributes: forList ? [] : undefined,
           required: true,
           subQuery: false,
           where: {
@@ -1665,7 +1694,6 @@ WHERE
           include: [{
             model: Id,
             as: parentFromToOther,
-            attributes: forList ? [] : undefined,
             required: true,
             subQuery: false,
           }]
@@ -1689,15 +1717,6 @@ WHERE
     const filterInclude = []
     // Keep joins needed only for filtering in the ID and count queries. The
     // complete include tree is applied after LIMIT/OFFSET, to at most one page.
-    if (parentId) {
-      filterInclude.push(...narrowIncludes([{
-        model: File,
-        as: 'file',
-        required: true,
-        subQuery: false,
-        include: fileInclude.slice(-1),
-      }]))
-    }
     let followedById
     if (followedBy) {
       // Resolve the username first: hiding userId behind the User join makes
@@ -1709,6 +1728,7 @@ WHERE
         where: { username: followedBy },
       })
       if (!follower) {
+        if (exists) return false
         if (count) return rows ? { count: 0, rows: [] } : { count: 0 }
         return []
       }
@@ -1778,6 +1798,16 @@ WHERE
         ...findArgs,
         where: whereFts,
       })
+    }
+
+    if (exists) {
+      for (const args of findArgss) {
+        if (await Article.findOne({
+          ...args, attributes: ['id'], include: narrowIncludes(filterInclude),
+          limit: 1, offset: undefined, order: undefined, raw: true,
+        })) return true
+      }
+      return false
     }
 
     async function findPage(findArgs) {

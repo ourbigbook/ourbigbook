@@ -146,6 +146,8 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
       if (err) { res.statusCode = 422 }
       const offset = page * articleLimit
       const reuseArticleCount = what === 'user-articles' && list === true && query.search === undefined
+      const reuseFollowedCount = what === 'followed-articles' && query.search === undefined
+      const followedCounts = reuseFollowedCount ? Article.countFollowedArticles(user.id) : null
       const getArticlesOpts = {
         forList: true,
         author,
@@ -163,6 +165,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         sequelize,
       }
       const articlesPromise =
+        reuseFollowedCount ? Promise.all([
+          Article.getArticles({ ...getArticlesOpts, count: false }), followedCounts,
+        ]).then(([rows, counts]) => ({ rows, count: list === undefined ? counts.total : list ? counts.listed : counts.unlisted })) :
         itemType === 'article' ? Article.getArticles({ ...getArticlesOpts, count: !reuseArticleCount }) :
         itemType === 'discussion' ? Issue.getIssues({
           author,
@@ -244,7 +249,9 @@ export const getServerSidePropsUserHoc = (what): MyGetServerSideProps => {
         likesPromise,
         // unlisted content
         itemType === 'article'
-          ? Article.getArticles(Object.assign({}, getArticlesOpts, { list: false, rows: false }))
+          ? reuseFollowedCount
+            ? followedCounts.then(counts => ({ count: counts.unlisted }))
+            : Article.getArticles({ ...getArticlesOpts, list: false, exists: true }).then(exists => ({ count: Number(exists) }))
           : itemType === 'discussion'
             ? Issue.getIssues({
                 author,

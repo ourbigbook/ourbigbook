@@ -1417,6 +1417,10 @@ it('benchmark selects the busiest listed incoming-link page for the selected aut
   await createArticle(sequelize, user, { i: 2, bodySource: '<other target>', list: false })
   await createArticle(sequelize, user, { i: 3, bodySource: '<other target>', list: false })
   await createArticle(sequelize, other, { i: 0, bodySource: '<@user0/other-target>' })
+  // Repeated references must not inflate the selected page's size.
+  const ref = await sequelize.models.Ref.findOne({ where: { from_id: '@user0/title-0', to_id: '@user0/target', type: 1 }, raw: true })
+  delete ref.id
+  await sequelize.models.Ref.create(ref)
   const db = await collectDatabase(sequelize, { author: user.username })
   assert.deepStrictEqual(db.samples.incomingArticle, { slug: 'user0/target', incoming: 2 })
   assert.strictEqual(db.samples.author.listed_articles, 5)
@@ -1426,6 +1430,20 @@ it('benchmark selects the busiest listed incoming-link page for the selected aut
     assert(buildPaths({ ...db, samples: { ...db.samples, incomingArticle: { slug: 'user0/target', incoming: 2596 } } })
       .includes(`/user0/target/-/incoming?page=${page}`))
   }
+  assert(db.samples.followedUsers.some(follower => follower.username === user.username))
+  assert(db.samples.followedUsers.some(follower => follower.username === other.username))
+  for (const follower of db.samples.followedUsers) {
+    assert.strictEqual(follower.total, follower.listed + follower.unlisted)
+  }
+  const followedDb = { ...db, samples: { ...db.samples, followedUsers: [
+    { username: 'reader', total: 2596, listed: 2001, unlisted: 595 },
+  ] } }
+  const paths = buildPaths(followedDb)
+  for (const page of [1, 51, 101]) assert(paths.includes(`/reader/-/follows-articles?page=${page}`))
+  for (const page of [1, 15, 30]) assert(paths.includes(`/reader/-/follows-articles?listed=0&page=${page}`))
+  for (const page of [1, 65, 130]) assert(paths.includes(`/reader/-/follows-articles?listed=2&page=${page}`))
+  assert(paths.includes('/reader/-/follows-articles?page=101&sort=updated'))
+  assert(!buildPaths(followedDb, { pages: false }).some(path => path.includes('/-/follows-articles')))
 })
 
 it('benchmark selects a deep listed descendant late in the largest author tree', async function() {
@@ -2088,6 +2106,11 @@ it('User HTML listings use the exact cached tab total and lean incoming heading'
         ['/user0/-/articles?sort=updated&search=title-0', 1],
         ['/user0/target/-/incoming', 1],
         ['/user0/target/-/incoming?listed=2', 2],
+        ['/user0/-/follows-articles', 3],
+        ['/user0/-/follows-articles?listed=0', 1],
+        ['/user0/-/follows-articles?listed=2', 4],
+        ['/user0/-/follows-articles?page=100', 3],
+        ['/user0/-/follows-articles?search=title-0', 1],
       ]) {
         queries.length = 0
         const { data, status } = await test.sendJsonHttp('GET', url)
@@ -2096,7 +2119,13 @@ it('User HTML listings use the exact cached tab total and lean incoming heading'
         assert.strictEqual(props.totalArticlesByUser, 3, url)
         assert.strictEqual(props.articlesCount, count, url)
         assert.strictEqual(props.hasUnlisted, !url.includes('search='), url)
-        assert(!queries.some(sql => /SELECT count\(\*\).*FROM ["`]Article["`]/i.test(sql)), queries.join('\n'))
+        if (url.includes('/follows-articles') && !url.includes('search=')) {
+          assert.strictEqual(queries.filter(sql => sql.includes('AS total')).length, 1, queries.join('\n'))
+          assert(!queries.some(sql => /SELECT count\(["`]Article["`]/i.test(sql)), queries.join('\n'))
+          assert(!queries.some(sql => /SELECT count\([\s\S]*["`]list["`] = (true|1)/i.test(sql)), queries.join('\n'))
+        } else {
+          assert(!queries.some(sql => /SELECT count\(\*\).*FROM ["`]Article["`]/i.test(sql)), queries.join('\n'))
+        }
         if (url.includes('/incoming')) {
           assert.deepStrictEqual(Object.keys(props.parentArticle).sort(), ['slug', 'titleRenderPlaintext', 'titleRenderWithScope'])
           assert.strictEqual(props.parentArticle.slug, 'user0/target')
@@ -2596,6 +2625,50 @@ it('Article and Topic keep offset pagination narrow until page hydration', async
   assert(topicSql.some(sql => sql.includes('articleCount') && / IN \(/.test(sql)), topicSql.join('\n'))
 })
 
+it('reference listings count and paginate distinct articles before hydration', async function() {
+  const sequelize = this.test.sequelize
+  const { Article, Ref } = sequelize.models
+  const user = await createUser(sequelize, 0)
+  const other = await createUser(sequelize, 1)
+  await createArticle(sequelize, user, { titleSource: 'Target' })
+  const first = await createArticle(sequelize, user, { titleSource: 'Alpha', bodySource: '<target> <target>' })
+  const second = await createArticle(sequelize, user, { titleSource: 'Beta', bodySource: '<target>' })
+  const hidden = await createArticle(sequelize, user, { titleSource: 'Hidden', bodySource: '<target>', list: false })
+  await createArticle(sequelize, other, { titleSource: 'Foreign', bodySource: '<@user0/target>' })
+  const ref = await Ref.findOne({ where: { from_id: '@user0/alpha', to_id: '@user0/target', type: Ref.Types[ourbigbook.REFS_TABLE_X] }, raw: true })
+  delete ref.id
+  await Ref.create(ref)
+  const args = { sequelize, author: user.username, parentId: '@user0/target', parentFromTo: 'from',
+    parentType: Ref.Types[ourbigbook.REFS_TABLE_X], order: 'slug', orderAscDesc: 'ASC' }
+  for (const forList of [false, true]) {
+    for (const [list, expected] of [[true, [first, second]], [false, [hidden]], [undefined, [first, second, hidden]]]) {
+      for (const offset of [0, 1, 2, 10]) {
+        const result = await Article.getArticles({ ...args, forList, list, offset, limit: 2 })
+        assert.strictEqual(result.count, expected.length)
+        assert.deepStrictEqual(result.rows.map(a => a.id), expected.slice(offset, offset + 2).map(a => a.id))
+      }
+      assert.deepStrictEqual(await Article.getArticles({ ...args, forList, list, rows: false }), { count: expected.length })
+      assert.deepStrictEqual((await Article.getArticles({ ...args, forList, list, count: false })).map(a => a.id), expected.map(a => a.id))
+      assert.strictEqual(await Article.getArticles({ ...args, forList, list, exists: true, offset: 999 }), true)
+    }
+    const search = await Article.getArticles({ ...args, forList, topicIdSearch: 'alpha', limit: 2 })
+    assert.strictEqual(search.count, 1)
+    assert.deepStrictEqual(search.rows.map(a => a.id), [first.id])
+    const missing = { ...args, forList, parentId: "@user0/target' OR 1=1 --" }
+    assert.deepStrictEqual(await Article.getArticles({ ...missing, limit: 2 }), { count: 0, rows: [] })
+    assert.strictEqual(await Article.getArticles({ ...missing, exists: true }), false)
+  }
+  // The same membership filter also serves the opposite direction (tags and
+  // direct children), without multiplying rows for duplicate tag references.
+  const tagged = await createArticle(sequelize, user, { titleSource: 'Tagged', bodySource: '{tag=Target}' })
+  const tag = await Ref.findOne({ where: { from_id: '@user0/target', to_id: '@user0/tagged', type: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD] }, raw: true })
+  delete tag.id
+  await Ref.create(tag)
+  const tags = await Article.getArticles({ ...args, parentFromTo: 'to', parentType: Ref.Types[ourbigbook.REFS_TABLE_X_CHILD], limit: 2 })
+  assert.strictEqual(tags.count, 1)
+  assert.deepStrictEqual(tags.rows.map(a => a.id), [tagged.id])
+})
+
 it('Article followed listings resolve user IDs and preserve filtered counts and pagination', async function() {
   const sequelize = this.test.sequelize
   const { Article, UserFollowArticle } = sequelize.models
@@ -2619,6 +2692,11 @@ it('Article followed listings resolve user IDs and preserve filtered counts and 
   await second.update({ list: false })
   await other.addArticleLikeSideEffects(second)
   const all = [beta, second, first]
+  const countSqls = []
+  assert.deepStrictEqual(await Article.countFollowedArticles(reader.id, { logging: sql => countSqls.push(sql) }),
+    { total: 3, listed: 2, unlisted: 1 })
+  assert.strictEqual(countSqls.length, 1)
+  assert(!/list["`]? = (true|1)/i.test(countSqls[0]), countSqls[0])
   const args = { sequelize, followedBy: reader.username, order: 'createdAt' }
   const sql = []
   const result = await Article.getArticles({ ...args, offset: 1, limit: 1, logging: statement => sql.push(statement) })
@@ -2652,6 +2730,9 @@ it('Article followed listings resolve user IDs and preserve filtered counts and 
     [{ followedBy: 'missing' }, []],
   ]) {
     const opts = { ...args, ...filter }
+    const existenceSql = []
+    assert.strictEqual(await Article.getArticles({ ...opts, exists: true, offset: 999, logging: sql => existenceSql.push(sql) }), expected.length > 0)
+    assert(!existenceSql.some(sql => /count\(|bodySource|["`]render["`]/i.test(sql)), existenceSql.join('\n'))
     const countOnly = await Article.getArticles({ ...opts, rows: false, offset: 1, limit: 1 })
     assert.deepStrictEqual(countOnly, { count: expected.length }, JSON.stringify(filter))
     for (const offset of [0, 1, 3]) {
@@ -2671,6 +2752,7 @@ it('Article followed listings resolve user IDs and preserve filtered counts and 
     await UserFollowArticle.destroy({ where: { userId: reader.id }, transaction })
     const empty = await Article.getArticles({ ...args, transaction, limit: 20 })
     assert.deepStrictEqual(empty, { count: 0, rows: [] })
+    assert.deepStrictEqual(await Article.countFollowedArticles(reader.id, { transaction }), { total: 0, listed: 0, unlisted: 0 })
   })
 })
 

@@ -132,6 +132,16 @@ function buildPaths(db, { limit=20, pages=true }={}) {
         add(`/${incomingArticle.slug}/-/incoming`, { page: offset / 20 + 1 })
       }
     }
+    // Followers' HTML pages count listed/unlisted articles separately and can
+    // reach much deeper offsets than the first-page API benchmark above.
+    for (const user of db.samples.followedUsers || []) {
+      for (const [count, filters] of [[user.listed, {}], [user.unlisted, { listed: 0 }], [user.total, { listed: 2 }]]) {
+        for (const offset of pageOffsets(count, 20)) {
+          add(`/${user.username}/-/follows-articles`, { ...filters, page: offset / 20 + 1 })
+          add(`/${user.username}/-/follows-articles`, { ...filters, page: offset / 20 + 1, sort: 'updated' })
+        }
+      }
+    }
     for (const [count, filters] of [
       [db.listed_uploads, {}],
       [db.file_uploads - db.listed_uploads, { listed: 0 }],
@@ -216,7 +226,7 @@ async function collectDatabase(sequelize, { author: username }={}) {
   // toplevel/file joins used by getArticles, rather than counting inline IDs
   // that do not produce rows on the incoming listing.
   const [incomingArticles] = author ? await sequelize.query(`
-    SELECT target.slug, COUNT(*) AS incoming
+    SELECT target.slug, COUNT(DISTINCT source.id) AS incoming
     FROM "Ref" r
     JOIN "Id" source_id ON source_id.idid = r.from_id
     JOIN "File" source_file ON source_file.toplevel_id = source_id.idid
@@ -226,7 +236,7 @@ async function collectDatabase(sequelize, { author: username }={}) {
     JOIN "Article" target ON target."fileId" = target_file.id
     WHERE r.type = :type AND source."authorId" = :authorId
       AND source.list = :listed AND target."authorId" = :authorId
-    GROUP BY target.slug ORDER BY COUNT(*) DESC, target.slug ASC LIMIT 1`, {
+    GROUP BY target.slug ORDER BY COUNT(DISTINCT source.id) DESC, target.slug ASC LIMIT 1`, {
     replacements: { type: sequelize.models.Ref.Types[require('ourbigbook').REFS_TABLE_X], authorId: author.id, listed: true },
   }) : [[]]
   const incomingArticle = incomingArticles[0] || null
@@ -255,11 +265,20 @@ async function collectDatabase(sequelize, { author: username }={}) {
     attributes: ['number'], where: { list: true }, order: [['id', 'ASC']],
     include: [{ model: Article, as: 'article', attributes: ['slug'], required: true }],
   })
+  // Include both large follower sets (currently codex and wikibot), plus an
+  // explicitly selected author, rather than assuming the largest author wins.
+  const [largestFollowers] = await sequelize.query(`SELECT u.id, u.username
+    FROM "UserFollowArticle" f JOIN "User" u ON u.id = f."userId"
+    GROUP BY u.id, u.username ORDER BY COUNT(*) DESC, u.id ASC LIMIT 2`)
+  const followedUsers = await Promise.all([...new Map(
+    [...largestFollowers, ...(author ? [author] : [])].map(user => [user.id, user])
+  ).values()].map(async user => ({ username: user.username, ...await Article.countFollowedArticles(user.id) })))
   db.samples = {
     author: author || null,
     article,
     deepArticle,
     incomingArticle,
+    followedUsers,
     issue: issue ? { number: issue.number, slug: issue.article.slug } : null,
   }
   return db

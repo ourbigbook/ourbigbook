@@ -339,7 +339,7 @@ function restoreTocState(elem, branches) {
 }
 
 function buildJobPhaseFailure(phase) {
-  return { extract: 'ID extraction failed', check: 'Database check failed', render: 'Rendering failed', tree: 'Tree rebuild failed' }[phase] || 'Processing failed'
+  return { delete: 'Article cleanup failed', extract: 'ID extraction failed', check: 'Database check failed', render: 'Rendering failed', tree: 'Tree rebuild failed' }[phase] || 'Processing failed'
 }
 
 function formatBuildJobError(error, phase, showDetails=true) {

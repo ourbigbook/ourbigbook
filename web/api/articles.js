@@ -760,7 +760,7 @@ router.put('/bulk', auth.required, async function(req, res, next) {
     }
     const input = req.body.articles
     const phase = req.body.phase || 'render'
-    if (!['extract', 'check', 'render'].includes(phase)) throw new lib.ValidationError('Invalid bulk phase')
+    if (!['delete', 'extract', 'check', 'render'].includes(phase)) throw new lib.ValidationError('Invalid bulk phase')
     const start = req.body.start === undefined ? true : req.body.start
     if (typeof start !== 'boolean') throw new lib.ValidationError('start must be a boolean')
     const { batchIndex, batchCount } = req.body
@@ -802,10 +802,18 @@ router.put('/bulk', auth.required, async function(req, res, next) {
           target[key] = item[key]
         }
       }
+      if (phase === 'delete') {
+        // Cleanup preserves the article/title/URL, but empties and unlists it.
+        // Do not accept arbitrary source or tree changes for this phase.
+        target.article = { bodySource: '' }
+        target.list = false
+        delete target.parentId
+        delete target.previousSiblingId
+      }
       return target
     })
     if (Buffer.byteLength(JSON.stringify(items)) > 8 * 1024 * 1024) throw new lib.ValidationError('Bulk batch exceeds 8 MiB')
-    if (buildId !== undefined && phase !== 'extract' && items.some(item => !item.hash)) {
+    if (buildId !== undefined && ['check', 'render'].includes(phase) && items.some(item => !item.hash)) {
       throw new lib.ValidationError('Build check/render targets require a source hash')
     }
     const requestHash = webApi.hashToHex(JSON.stringify({ phase, items, batchIndex, batchCount, buildId, buildIndex }))

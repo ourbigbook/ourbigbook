@@ -100,7 +100,7 @@ module.exports = sequelize => {
       for (const job of jobs) counts[job.phase] = (counts[job.phase] || 0) + 1
       const indices = {}
       for (const [i, job] of jobs.entries()) {
-        const phase = ['extract', 'check', 'render'].indexOf(job.phase)
+        const phase = ['delete', 'extract', 'check', 'render'].indexOf(job.phase)
         const index = indices[job.phase] || 0
         if (job.status !== 'staged' || job.buildIndex !== i || phase < 0 || phase < previousPhase ||
             job.batchIndex !== index || job.batchCount !== counts[job.phase]) throw invalid('Invalid or incomplete build order')

@@ -22,7 +22,7 @@ const BuildJobTable = ({ jobs, loading, error, done, global }: { jobs: BulkJob[]
       {global && <td><CustomLink href={routes.user(job.username)}>{job.username}</CustomLink></td>}
       <td>{job.batchIndex == null || job.batchCount == null ? '—' : `${job.batchIndex + 1}/${job.batchCount}`}</td>
       <td>{job.id}</td>
-      <td>{{ extract: 'ID extraction', check: 'Database check', render: 'Rendering', tree: 'Tree rebuild' }[job.phase] || job.phase}</td>
+      <td>{{ delete: 'Article cleanup', extract: 'ID extraction', check: 'Database check', render: 'Rendering', tree: 'Tree rebuild' }[job.phase] || job.phase}</td>
       <td>{job.status}</td>
       <td className="right">{job.total === null ? '—' : `${job.completed} / ${job.total}`}</td>
       <td><time dateTime={job.createdAt}>{job.createdAt ? (global ? job.createdAt : new Date(job.createdAt).toISOString().slice(0, 19).replace('T', ' ')) : '—'}</time></td>

@@ -7624,8 +7624,9 @@ it('background renders: real CLI uploads all sources first, batches large reposi
         } finally {
           test.app._router.stack.splice(test.app._router.stack.indexOf(buildMiddleware), 1)
         }
-        // Kill the CLI before the first extraction starts. Every phase and
-        // the final tree rebuild must still finish using the persisted plan.
+        // A large refactor stages cleanup in bounded batches too. Kill the CLI
+        // before cleanup starts: all phases and the tree rebuild must finish.
+        fs.writeFileSync(path.join(wiki, 'index.bigb'), '= Home\n\n== Extra\n\nNo rendering yet.\n')
         const launchWorker = TreeRebuildJob.launchWorker
         let heldJob, signalSubmitted
         const submitted = new Promise(resolve => { signalSubmitted = resolve })
@@ -7645,16 +7646,27 @@ it('background renders: real CLI uploads all sources first, batches large reposi
             timeout = setTimeout(() => reject(new Error('Build was not submitted')), 15000)
           })])
           disconnected.child.kill('SIGTERM')
-          await disconnectedResult
+          const disconnectedOutput = (await disconnectedResult).stdout
+          assert(disconnectedOutput.includes('web_delete_stage: job 1/2 (100 articles)'))
+          assert(disconnectedOutput.includes('web_delete_stage: job 2/2 (5 articles)'))
+          assert(!disconnectedOutput.includes('web_delete:'))
+          assert.strictEqual(heldJob.job.phase, 'delete')
+          assert.strictEqual((await Article.findOne({ where: { slug: 'user0/entry-0' } })).list, true)
           const build = await test.sequelize.models.ArticleBuild.findByPk(heldJob.job.buildId)
-          assert.strictEqual(build.jobCount, 6)
+          assert.strictEqual(build.jobCount, 5)
           assert.strictEqual(build.rebuildTree, true)
-          assert.strictEqual(await Job.count({ where: { buildId: build.id, status: 'waiting' } }), 5)
+          assert.strictEqual(await Job.count({ where: { buildId: build.id, status: 'waiting' } }), 4)
           const worker = await launchWorker(heldJob.job, heldJob.options)
           await children.find(entry => entry.child === worker).exited
           assert.strictEqual((await build.reload()).status, 'completed')
-          assert.strictEqual(await Job.count({ where: { buildId: build.id, status: 'completed' } }), 6)
+          assert.strictEqual(await Job.count({ where: { buildId: build.id, status: 'completed' } }), 5)
           assert.strictEqual((await TreeRebuildJob.findByPk(build.treeJobId)).status, 'completed')
+          assert.strictEqual(await Article.count({ where: { authorId: user.id, list: false } }), count)
+          for (const path of ['entry-0', 'entry-104']) {
+            const file = await File.findOne({ where: { path: `@user0/${path}.bigb` } })
+            assert.strictEqual(file.bodySource, '')
+            assert(file.titleSource.startsWith('Entry '))
+          }
         } finally {
           clearTimeout(timeout)
           TreeRebuildJob.launchWorker = launchWorker
@@ -7719,6 +7731,16 @@ it('background renders: real CLI uploads all sources first, batches large reposi
             assert.strictEqual(await Upload.count({ where: { path: Upload.uidAndPathToUploadPath(user.id, missing) } }), 0)
           }
         }
+        // Already cleaned articles are not resubmitted. The legacy fallback
+        // still performs cleanup directly and preserves the old article URL.
+        const unchanged = await run([])
+        assert(!unchanged.stdout.includes('web_delete_stage:'))
+        fs.writeFileSync(path.join(wiki, 'index.bigb'), '= Home\n\n\\Include[subdir/paper]\n')
+        const deleted = await run(['--web-individual-upload'])
+        assert(deleted.stdout.includes('web_delete:'))
+        assert(!deleted.stdout.includes('web_delete_stage:'))
+        assert.strictEqual((await Article.findOne({ where: { slug: 'user0/extra' } })).list, false)
+        assert.strictEqual((await File.findOne({ where: { path: '@user0/extra.bigb' } })).bodySource, '')
         // A collision fails before changing uploads, even when other media
         // entries sort before the offending file in the directory walk.
         const { Upload } = test.sequelize.models
@@ -7979,6 +8001,137 @@ it('background builds: commit is atomic, ordered and durable across a batch-boun
     assert.strictEqual(await Job.count({ where: { buildId, status: 'completed' } }), 6)
     assert.strictEqual((await TreeRebuildJob.findByPk(build.treeJobId)).status, 'completed')
     assert((await Article.findOne({ where: { slug: 'user0/a' } })).render.includes('user0/b'))
+  })
+})
+
+it('background builds: staged cleanup is owner-scoped, ordered, idempotent and checkpointed', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    test.loginUser(other)
+    await createOrUpdateArticleApi(test, createArticleArg({ i: 1, titleSource: 'Old', bodySource: 'Other user body' }))
+    test.loginUser(user)
+    for (const titleSource of ['Old', 'Second']) {
+      await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource, bodySource: 'Old body' }))
+    }
+    const { ArticleBuild: Build, ArticleJob: Job, File, Article } = test.sequelize.models
+    Job.launch = async () => {}
+    const file = path => File.findOne({ where: { path: `@user0/${path}.bigb` } })
+    const old = await file('old')
+    const second = await file('second')
+    const buildId = 'cleanup-build-test-001'
+    await test.webApi.articlesBuildCreate(buildId)
+    const targets = [{ path: 'old', hash: old.hash }, { path: 'second', hash: second.hash }]
+    const options = { phase: 'delete', start: false, buildId, buildIndex: 0, batchIndex: 0, batchCount: 1 }
+    const staged = await test.webApi.articlesBulk(targets, 'cleanup-batch-test-001', {}, options)
+    assert.strictEqual(staged.status, 202)
+    assert.strictEqual((await test.webApi.articlesBulk(targets, 'cleanup-batch-test-001', {}, options)).data.job.id, staged.data.job.id)
+    assert.strictEqual((await old.reload()).bodySource, 'Old body')
+    test.loginUser(other)
+    assert.strictEqual((await test.webApi.articlesBulkJob(staged.data.job.id)).status, 404)
+    test.loginUser(user)
+    // Reversed phase order is invalid, including a cleanup after extraction.
+    await Job.create({ userId: user.id, buildId, buildIndex: 1, batchIndex: 0, batchCount: 1,
+      phase: 'extract', requestId: 'cleanup-order-extract', requestHash: 'hash', items: '[]', total: 0 })
+    await Job.update({ buildIndex: 2 }, { where: { id: staged.data.job.id } })
+    await assert.rejects(Build.commit(buildId, user.id, 2, false))
+    await Job.destroy({ where: { buildId, phase: 'extract' } })
+    await Job.update({ buildIndex: 0 }, { where: { id: staged.data.job.id } })
+    await Build.commit(buildId, user.id, 1, false)
+    await Job.update({ status: 'pending', queuedAt: new Date() }, { where: { id: staged.data.job.id } })
+    // Simulate a process dying between articles: the second conversion never
+    // commits, and recovery resumes without replaying the completed first one.
+    const api = require('./api/articles')
+    const convertArticle = api.createOrUpdateArticleData
+    try {
+      api.createOrUpdateArticleData = async (...args) => {
+        if (args[2].path === 'second') throw new Error('Simulated worker crash')
+        return convertArticle(...args)
+      }
+      await assert.rejects(Job.run(staged.data.job.id), /Simulated worker crash/)
+    } finally {
+      api.createOrUpdateArticleData = convertArticle
+    }
+    const job = await Job.findByPk(staged.data.job.id)
+    assert.strictEqual(job.completed, 1)
+    assert(job.error.startsWith('Article cleanup failed at second.'))
+    assert.strictEqual((await old.reload()).bodySource, '')
+    assert.strictEqual(old.titleSource, 'Old')
+    assert.strictEqual((await Article.findOne({ where: { slug: 'user0/old' } })).list, false)
+    assert.strictEqual((await second.reload()).bodySource, 'Old body')
+    // Crash recovery retains payloads (unlike an ordinary caught failure).
+    await job.update({ status: 'pending', items: JSON.stringify(targets.map(target => ({
+      ...target, article: { bodySource: '' }, render: true, list: false,
+    }))), error: null })
+    await Job.run(job.id)
+    assert.strictEqual((await job.reload()).completed, 2)
+    assert.strictEqual(job.status, 'completed')
+    assert.strictEqual((await second.reload()).bodySource, '')
+    assert.strictEqual((await File.findOne({ where: { path: '@user1/old.bigb' } })).bodySource, 'Other user body')
+    // A changed source must not be silently cleared using stale staging data.
+    await Build.advance(user.id)
+    const changed = await test.webApi.articlesBulk([{ path: 'old', hash: old.hash }], 'cleanup-stale-source', {}, { phase: 'delete' })
+    assert.strictEqual(changed.status, 202)
+    await old.update({ hash: 'changed-after-staging', bodySource: 'New edit' })
+    await assert.rejects(Job.run(changed.data.job.id), error => String(error.errors).includes('Source changed'))
+    assert.strictEqual((await old.reload()).bodySource, 'New edit')
+  })
+})
+
+it('background builds: cleanup is staged, owner-scoped, hash-guarded and checkpointed', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    test.loginUser(user)
+    const { ArticleJob: Job, ArticleBuild: Build, Article, File } = test.sequelize.models
+    Job.launch = async () => {}
+    for (const titleSource of ['Old A', 'Old B']) {
+      await createOrUpdateArticleApi(test, createArticleArg({ i: 0, titleSource, bodySource: 'Old body' }))
+    }
+    const files = await File.findAll({ where: { path: ['@user0/old-a.bigb', '@user0/old-b.bigb'] }, order: [['path', 'ASC']] })
+    const targets = files.map(file => ({ path: file.path.slice('@user0/'.length, -5), hash: file.hash, updateNestedSetIndex: false }))
+    const result = await test.webApi.articlesBulk(targets, 'cleanup-checkpoint-test', {}, { phase: 'delete', start: false })
+    assert.strictEqual(result.status, 202)
+    assert.strictEqual((await test.webApi.articlesBulk(targets, 'cleanup-checkpoint-test', {}, { phase: 'delete', start: false })).data.job.id, result.data.job.id)
+    assert.strictEqual((await files[0].reload()).bodySource, 'Old body')
+    test.loginUser(other)
+    assert.strictEqual((await test.webApi.articlesBulkStart(result.data.job.id)).status, 404)
+    // A different owner cannot even stage cleanup of this user's path.
+    assert.strictEqual((await test.webApi.articlesBulk([{ path: '@user0/old-a' }], 'cleanup-other-user', {}, { phase: 'delete' })).status, 404)
+    test.loginUser(user)
+    await files[1].update({ hash: 'concurrent-edit' })
+    assert.strictEqual((await test.webApi.articlesBulkStart(result.data.job.id)).status, 202)
+    await assert.rejects(Job.run(result.data.job.id), error => String(error.errors).includes('Source changed'))
+    const job = await Job.findByPk(result.data.job.id)
+    assert.strictEqual(job.completed, 1)
+    assert.strictEqual(job.status, 'failed')
+    assert(job.error.startsWith('Article cleanup failed at old-b.'))
+    assert.strictEqual((await files[0].reload()).bodySource, '')
+    assert.strictEqual((await files[0].reload()).titleSource, 'Old A')
+    assert.strictEqual((await files[1].reload()).bodySource, 'Old body')
+    assert.strictEqual((await Article.findOne({ where: { slug: 'user0/old-a' } })).list, false)
+    assert.strictEqual((await Article.findOne({ where: { slug: 'user0/old-b' } })).list, true)
+    // Simulate recovery after the first committed item. Its old hash no longer
+    // matches, so replaying it instead of resuming would fail this test.
+    await files[1].update({ hash: targets[1].hash })
+    await job.update({ status: 'pending', items: JSON.stringify(targets.map(target => ({
+      ...target, article: { bodySource: '' }, list: false, render: true,
+    }))) })
+    await Job.run(job.id)
+    assert.strictEqual((await job.reload()).completed, 2)
+    assert.strictEqual(job.status, 'completed')
+    assert.strictEqual((await files[1].reload()).bodySource, '')
+    // Cleanup must precede extraction, not remove freshly extracted IDs later.
+    const buildId = 'cleanup-wrong-order'
+    await Build.replace(user.id, buildId, null)
+    for (const [i, phase] of ['extract', 'delete'].entries()) {
+      assert.strictEqual((await test.webApi.articlesBulk([{
+        path: 'old-a', article: { titleSource: 'Old A', bodySource: '' },
+      }], `cleanup-wrong-order-${phase}`, {}, {
+        phase, start: false, buildId, buildIndex: i, batchIndex: 0, batchCount: 1,
+      })).status, 202)
+    }
+    assert.strictEqual((await test.webApi.articlesBuildCommit(buildId, 2, true)).status, 422)
   })
 })
 

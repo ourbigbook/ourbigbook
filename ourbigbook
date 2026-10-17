@@ -3380,6 +3380,20 @@ if (cli.helpMacros) {
           }
 
         }
+        let buildId = currentBuildToken
+        const buildJobs = []
+        const stageBatches = async (phase, batches) => {
+          for (const [batchIndex, targets] of batches.entries()) {
+            if (cli.webDry) {
+              console.log(`web_${phase}: would queue ${targets.length} articles`)
+              continue
+            }
+            const id = await queueWebArticles(webApi, targets, {
+              phase, start: false, batchIndex, batchCount: batches.length, buildId, buildIndex: buildJobs.length,
+            })
+            buildJobs.push({ id, phase, batchIndex, batchCount: batches.length, firstArticle: targets[0].path })
+          }
+        }
         if (fullWebUpload) {
           // https://docs.ourbigbook.com/todo/make-articles-removed-locally-empty-on-web-upload
           const serverOnlyPaths = new Set(Object.keys(webPathToArticle))
@@ -3387,8 +3401,20 @@ if (cli.helpMacros) {
             serverOnlyPaths.delete(pathUsernameAndExt(username, header_tree_entry.to_id))
           }
           let i = 0
+          const deleteBatches = []
           for (const path of serverOnlyPaths) {
             if (webPathToArticle[path].cleanupIfDeleted) {
+              if (!cli.webIndividualUpload) {
+                if (!deleteBatches.length || deleteBatches[deleteBatches.length - 1].length === ARTICLE_RENDER_BATCH_LIMIT) {
+                  deleteBatches.push([])
+                }
+                deleteBatches[deleteBatches.length - 1].push({
+                  path: pathNoUsernameNoext(path),
+                  ...(webPathToArticle[path].hash ? { hash: webPathToArticle[path].hash } : {}),
+                  updateNestedSetIndex: !cli.webNestedSetBulk,
+                })
+                continue
+              }
               const render = true
               const ret = await webCreateOrUpdate({
                 cleanupDeleted: true,
@@ -3413,9 +3439,8 @@ if (cli.helpMacros) {
               }
             }
           }
+          await stageBatches('delete', deleteBatches)
         }
-        let buildId = currentBuildToken
-        const buildJobs = []
         for (const render of dorender) {
           let i = 0
           let renderBatch = []

@@ -3085,7 +3085,122 @@ it('ancestor ID selection preserves legacy metadata, author isolation and tree b
   assert(!sql[0].includes(' JOIN '), sql[0])
   const pending = await Article.getArticle({ sequelize, slug: 'user0/child' })
   await pending.update({ nestedSetIndex: null })
-  assert.deepStrictEqual(await pending.treeFindAncestors(), [])
+  assert.deepStrictEqual((await pending.treeFindAncestors()).map(a => a.slug), ['user0', 'user0/parent'])
+})
+
+it('web publishing commits articles and a coalesced tree job without updating nested sets inline', async function() {
+  const sequelize = this.test.sequelize
+  const { Article, User, TreeRebuildJob, BuildQueue } = sequelize.models
+  const { createOrUpdateArticleData } = require('./api/articles')
+  const user = await createUser(sequelize, 0)
+  await createArticle(sequelize, user, { titleSource: 'Parent', bodySource: '{scope}' })
+  await createArticle(sequelize, user, { titleSource: 'Other' })
+  await createArticle(sequelize, user, { titleSource: 'Existing', parentId: '@user0/other' })
+  const home = await Article.getArticle({ sequelize, slug: 'user0' })
+  const oldEnd = home.nestedSetNextSibling
+  TreeRebuildJob.useBackground = () => true
+  TreeRebuildJob.launchWorker = async () => { throw new Error('Publishing must not launch a worker inline') }
+  const write = (titleSource, parentId='@user0/parent', extra={}) => createOrUpdateArticleData(sequelize, user.id, {
+    article: { titleSource, bodySource: 'Body' }, parentId, deferNestedSetIndex: true, ...extra,
+  }, { forceNew: false })
+  const first = await write('Child')
+  assert.strictEqual(first.nestedSetNeedsUpdate, true)
+  assert.strictEqual(first.articles[0].slug, 'user0/parent/child')
+  await home.reload()
+  assert.strictEqual(home.nestedSetNextSibling, oldEnd)
+  assert.strictEqual(await TreeRebuildJob.count(), 1)
+  assert.strictEqual(await BuildQueue.count(), 0)
+  await write('Second')
+  await write('Existing', '@user0/parent', { path: 'existing' })
+  assert.strictEqual(await TreeRebuildJob.count(), 1)
+  // Existing non-null bounds are stale after a move; new articles have none.
+  for (const slug of ['user0/parent/child', 'user0/existing']) {
+    const article = await Article.getArticle({ sequelize, slug })
+    const ancestors = await article.treeFindAncestors({
+      attributes: ['slug', 'titleRender', 'titleRenderPlaintext'], metadataOnly: true,
+    })
+    assert.deepStrictEqual(ancestors.map(a => a.slug), ['user0', 'user0/parent'])
+    assert(ancestors.every(a => a.file.toplevelId.ast_json && a.file.bodySource === undefined))
+  }
+  const job = await TreeRebuildJob.findOne()
+  let launch
+  TreeRebuildJob.launchWorker = async (job, options) => { launch = options }
+  // The startup/periodic dispatcher recovers the committed pending job.
+  await BuildQueue.tick()
+  assert(launch)
+  await BuildQueue.run(launch.queueId, launch.workerToken)
+  await BuildQueue.workerExited(launch.queueId, launch.workerToken)
+  await job.reload()
+  assert.strictEqual(job.status, 'completed')
+  assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, false)
+  const child = await Article.getArticle({ sequelize, slug: 'user0/parent/child' })
+  assert.notStrictEqual(child.nestedSetIndex, null)
+  assert.deepStrictEqual((await child.treeFindAncestors()).map(a => a.slug), ['user0', 'user0/parent'])
+  // The article and the durable rebuild request must roll back together.
+  await assert.rejects(sequelize.transaction(async transaction => {
+    await createOrUpdateArticleData(sequelize, user.id, {
+      article: { titleSource: 'Rolled back', bodySource: '' }, parentId: '@user0', deferNestedSetIndex: true,
+    }, { forceNew: true, transaction })
+    throw new Error('rollback publish')
+  }), /rollback publish/)
+  assert.strictEqual(await Article.count({ where: { slug: 'user0/rolled-back' } }), 0)
+  assert.strictEqual(await TreeRebuildJob.count({ where: { activeUserId: user.id } }), 0)
+  assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, false)
+  // Keep the prior CLI build's tree checkpoint when another web save occurs.
+  await sequelize.models.ArticleBuild.create({
+    id: 'completed-build-checkpoint', userId: user.id, status: 'completed', treeJobId: job.id,
+  })
+  await write('Third')
+  assert(await TreeRebuildJob.findByPk(job.id))
+  const failed = await TreeRebuildJob.findOne({ where: { activeUserId: user.id } })
+  const rebuild = Article.updateNestedSets
+  Article.updateNestedSets = async () => { throw new Error('test rebuild failure') }
+  try {
+    await assert.rejects(TreeRebuildJob.run(failed.id), /test rebuild failure/)
+  } finally {
+    Article.updateNestedSets = rebuild
+  }
+  assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, true)
+  // Even a content-only save must repair a previously failed rebuild.
+  await write('Third')
+  const retry = await TreeRebuildJob.findOne({ where: { activeUserId: user.id } })
+  assert(retry && retry.id !== failed.id)
+  await TreeRebuildJob.run(retry.id)
+  assert.strictEqual((await User.findByPk(user.id)).nestedSetNeedsUpdate, false)
+})
+
+it('web publishing bounds PostgreSQL tree lock waits and rolls back before retry', async function() {
+  if (!config.postgres) this.skip()
+  const sequelize = this.test.sequelize
+  const { User, Article, TreeRebuildJob } = sequelize.models
+  const user = await createUser(sequelize, 0)
+  TreeRebuildJob.useBackground = () => true
+  const write = () => require('./api/articles').createOrUpdateArticleData(sequelize, user.id, {
+    article: { titleSource: 'Locked', bodySource: '' }, parentId: '@user0', deferNestedSetIndex: true,
+  }, { forceNew: true })
+  await sequelize.transaction(async transaction => {
+    await User.findByPk(user.id, { transaction, lock: transaction.LOCK.UPDATE })
+    const start = Date.now()
+    await assert.rejects(write(), error => error.original.code === '55P03')
+    assert(Date.now() - start < 5000)
+    assert.strictEqual(await Article.count({ where: { slug: 'user0/locked' }, transaction }), 0)
+  })
+  await write()
+  assert.strictEqual(await Article.count({ where: { slug: 'user0/locked' } }), 1)
+})
+
+it('web publishing retries only explicitly rolled-back tree lock conflicts', async () => {
+  for (const method of ['articleCreate', 'articleCreateOrUpdate']) {
+    const api = new WebApi({})
+    let calls = 0
+    const success = { status: 200, data: { articles: [] } }
+    api.req = async () => ++calls === 1 ? { status: 409, data: { code: 'TREE_BUSY' } } : success
+    assert.strictEqual(await api[method]({}, { deferNestedSetIndex: true }), success)
+    assert.strictEqual(calls, 2)
+    const conflict = { status: 409, data: { errors: ['Article already exists'] } }
+    api.req = async () => conflict
+    assert.strictEqual(await api[method]({}, { deferNestedSetIndex: true }), conflict)
+  }
 })
 
 it('HTML ancestor metadata avoids loading ancestor source files', async function() {

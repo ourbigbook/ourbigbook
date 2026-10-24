@@ -627,7 +627,7 @@ export default function EditorPageHoc({
       if (e) {
         e.preventDefault()
       }
-      if (hasError || imageUpload) {
+      if (hasError || imageUpload || isLoading) {
         // Although the button should be disabled from clicks,
         // this could still be reached via the Ctrl shortcut.
         return
@@ -654,12 +654,14 @@ export default function EditorPageHoc({
         }
         } else {
         const baseOpts: {
+          deferNestedSetIndex: boolean;
           list: boolean;
           owner: string;
           path?: string;
           parentId?: string;
           previousSiblingId?: string;
         } = {
+          deferNestedSetIndex: true,
           list,
           owner: ownerUsername,
         }

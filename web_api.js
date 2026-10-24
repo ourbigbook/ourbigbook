@@ -195,18 +195,21 @@ class WebApi {
   }
 
   async articleCreate(article, opts={}, reqOpts={}) {
-    const { path, parentId, previousSiblingId, render } = opts
-    return this.req('post',
-      `articles`,
-      { body: Object.assign({ article }, opts), ...reqOpts },
-    )
+    return this.articleWrite('post', article, opts, reqOpts)
   }
 
   async articleCreateOrUpdate(article, opts={}, reqOpts={}) {
-    return this.req('put',
-      `articles`,
-      { body: Object.assign({ article }, opts), ...reqOpts },
-    )
+    return this.articleWrite('put', article, opts, reqOpts)
+  }
+
+  async articleWrite(method, article, opts, reqOpts) {
+    for (;;) {
+      const response = await this.req(method, 'articles', { body: { article, ...opts }, ...reqOpts })
+      if (!opts.deferNestedSetIndex || response.status !== 409 || response.data?.code !== 'TREE_BUSY') return response
+      // Only retry an explicitly rolled-back transaction, never an ambiguous
+      // timeout or a validation error. Keep the editor's progress modal open.
+      await new Promise(resolve => setTimeout(resolve, 1000))
+    }
   }
 
   async articleDelete(slug, reqOpts={}) {

@@ -24,14 +24,19 @@ module.exports = sequelize => {
     updatedAt: { [Op.lt]: new Date(Date.now() - timeoutMs) },
   } })
 
-  Job.enqueue = async userId => {
-    await Job.expire()
-    return sequelize.transaction(sequelize.getDialect() === 'sqlite' ? { type: 'IMMEDIATE' } : {}, async transaction => {
+  Job.enqueue = async (userId, { transaction } = {}) => {
+    if (!transaction) await Job.expire()
+    return sequelize.transaction({ ...(sequelize.getDialect() === 'sqlite' ? { type: 'IMMEDIATE' } : {}), transaction }, async transaction => {
       await sequelize.models.User.findByPk(userId, { transaction, lock: transaction.LOCK.UPDATE })
       const active = await Job.findOne({ where: { activeUserId: userId }, transaction })
       if (active) return [active, false]
       // Standalone tree updates also retain just their latest result.
-      await Job.destroy({ where: { userId, status: ['completed', 'failed'] }, transaction })
+      await Job.destroy({ where: {
+        userId, status: ['completed', 'failed'],
+        // A completed build (or one about to advance) still references its
+        // result. Interactive publishing must not remove that checkpoint.
+        id: { [Op.notIn]: sequelize.literal('(SELECT "treeJobId" FROM "ArticleBuild" WHERE "treeJobId" IS NOT NULL)') },
+      }, transaction })
       await sequelize.models.BuildQueue.removeFinished(userId, transaction)
       return [await Job.create({ userId, activeUserId: userId }, { transaction }), true]
     })

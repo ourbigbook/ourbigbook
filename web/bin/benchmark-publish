@@ -1,0 +1,135 @@
+#!/usr/bin/env node
+
+const fs = require('fs')
+const path = require('path')
+const { performance } = require('perf_hooks')
+const { Command } = require('commander')
+
+const repoRoot = path.resolve(__dirname, '../..')
+const median = values => {
+  const sorted = [...values].sort((a, b) => a - b)
+  const middle = Math.floor(sorted.length / 2)
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
+}
+const fingerprint = sql => sql.replace(/^(?:Executed|Executing) \([^)]*\):\s*/, '')
+  .replace(/'(?:''|[^'])*'/g, '?').replace(/\b\d+\b/g, '?').replace(/\s+/g, ' ').trim()
+
+async function main() {
+  const program = new Command()
+    .description('Compare synchronous and deferred article publishing; every trial is rolled back, and no workers are launched.')
+    .option('--author <username>', 'existing article owner', 'cirosantilli')
+    .option('--parent <slug>', 'parent article (default: author home article)')
+    .option('--runs <count>', 'measured trials per mode', Number, 3)
+    .option('--warmup <count>', 'unmeasured trials per mode', Number, 1)
+    .option('--sqlite <file>', 'use a SQLite database instead of the configured database')
+    .option('--output <file>', 'JSON results, including full SQL timings', path.join(repoRoot, 'tmp/benchmark-publish.json'))
+    .parse()
+  const opts = program.opts()
+  if (!Number.isInteger(opts.runs) || opts.runs < 1 || !Number.isInteger(opts.warmup) || opts.warmup < 0) {
+    throw new Error('runs must be positive and warmup must be nonnegative integers')
+  }
+  const models = require('../models')
+  const db = models.getSequelize(path.join(repoRoot, 'web'), undefined, opts.sqlite
+    ? { dialect: 'sqlite', storage: path.resolve(opts.sqlite), logging: false } : undefined)
+  try {
+    // Publishing takes write locks even though it rolls back. Restrict this
+    // diagnostic to a local database, not an inherited production DATABASE_URL.
+    if (db.getDialect() === 'postgres' && !['localhost', '127.0.0.1', '::1'].includes(db.config.host)) {
+      throw new Error('This benchmark requires a local PostgreSQL database')
+    }
+    const { Article, User, TreeRebuildJob } = db.models
+    const author = await User.findOne({ where: { username: opts.author } })
+    if (!author) throw new Error(`Author ${opts.author} not found in ${db.getDialect()} database`)
+    const parent = await Article.getArticle({ sequelize: db, slug: opts.parent || opts.author })
+    if (!parent || parent.authorId !== author.id) throw new Error('Parent must be an existing article by the selected author')
+    if (parent.nestedSetIndex == null || parent.nestedSetNextSibling == null) {
+      throw new Error('Parent needs existing nested-set positions to benchmark synchronous shifts')
+    }
+    const articleCount = await Article.count({ where: { authorId: author.id } })
+    const { createOrUpdateArticleData } = require('../api/articles')
+    TreeRebuildJob.useBackground = () => true
+    TreeRebuildJob.launchWorker = async () => { throw new Error('Benchmark must not launch a worker') }
+    let capture
+    const originalQuery = db.query.bind(db)
+    db.query = async (sql, options={}) => {
+      const queries = capture
+      if (!queries) return originalQuery(sql, options)
+      const started = performance.now()
+      let executedSql
+      let databaseMs
+      try {
+        return await originalQuery(sql, { ...options, benchmark: true, logging: (statement, ms) => {
+          executedSql = statement
+          databaseMs = ms
+        } })
+      } finally {
+        queries.push({
+          sql: executedSql || (typeof sql === 'string' ? sql : sql.query),
+          elapsedMs: performance.now() - started,
+          databaseMs,
+        })
+      }
+    }
+    const result = {
+      date: new Date().toISOString(), dialect: db.getDialect(), author: author.username,
+      articleCount, parent: parent.slug, parentNestedSetIndex: parent.nestedSetIndex,
+      nestedSetNeedsUpdate: author.nestedSetNeedsUpdate,
+      runs: opts.runs, warmup: opts.warmup, trials: [], summaries: [],
+      notes: 'Measures the publish handler, excluding HTTP and outer BEGIN/ROLLBACK. Query durations may overlap. All trial writes roll back; PostgreSQL sequences may advance.',
+    }
+    console.log(`${result.dialect}: @${author.username}, ${articleCount} articles, parent ${parent.slug}`)
+    const titleSource = `Publish benchmark ${Date.now()}`
+    for (let i = -opts.warmup; i < opts.runs; i++) {
+      for (const mode of i % 2 ? ['deferred', 'synchronous'] : ['synchronous', 'deferred']) {
+        const transaction = await db.transaction()
+        try {
+          if (db.getDialect() === 'postgres') {
+            await db.query("SET LOCAL statement_timeout = '120s'", { transaction })
+          }
+          capture = []
+          const started = performance.now()
+          const response = await createOrUpdateArticleData(db, author.id, {
+            article: { titleSource, bodySource: 'A short paragraph for the publishing benchmark.' },
+            parentId: `@${parent.slug}`, deferNestedSetIndex: mode === 'deferred',
+          }, { forceNew: true, transaction })
+          const elapsedMs = performance.now() - started
+          if (response.articles.length !== 1) throw new Error('Expected one published article')
+          console.log(`${i < 0 ? 'warmup' : `trial ${i + 1}`} ${mode}: ${elapsedMs.toFixed(1)} ms, ${capture.length} queries`)
+          if (i >= 0) result.trials.push({ mode, elapsedMs, queries: capture })
+        } finally {
+          capture = null
+          await transaction.rollback()
+        }
+      }
+    }
+    for (const mode of ['synchronous', 'deferred']) {
+      const trials = result.trials.filter(trial => trial.mode === mode)
+      const groups = new Map()
+      for (const trial of trials) {
+        for (const query of trial.queries) {
+          const key = fingerprint(query.sql)
+          if (!groups.has(key)) groups.set(key, [])
+          groups.get(key).push(query.databaseMs ?? query.elapsedMs)
+        }
+      }
+      const topQueries = [...groups].map(([sql, durations]) => ({
+        sql, callsPerTrial: durations.length / opts.runs,
+        medianMs: median(durations), totalMsPerTrial: durations.reduce((a, b) => a + b, 0) / opts.runs,
+      })).sort((a, b) => b.totalMsPerTrial - a.totalMsPerTrial)
+      const summary = { mode, medianMs: median(trials.map(t => t.elapsedMs)), topQueries }
+      result.summaries.push(summary)
+      console.log(`\n${mode}: median ${summary.medianMs.toFixed(1)} ms`)
+      for (const query of topQueries.slice(0, 8)) {
+        console.log(`  ${query.totalMsPerTrial.toFixed(1)} SQL ms/trial (${query.callsPerTrial.toFixed(1)} calls): ${query.sql.slice(0, 180)}`)
+      }
+    }
+    const output = path.resolve(opts.output)
+    fs.mkdirSync(path.dirname(output), { recursive: true })
+    fs.writeFileSync(output, JSON.stringify(result, null, 2) + '\n')
+    console.log(`\nFull SQL timings: ${output}`)
+  } finally {
+    await db.close()
+  }
+}
+
+main().catch(error => { console.error(`${error.name}: ${error.message}`); process.exitCode = 1 })

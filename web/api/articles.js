@@ -435,11 +435,26 @@ router.post('/announce', auth.required, async function(req, res, next) {
 
 async function createOrUpdateArticle(req, res, opts) {
   const sequelize = req.app.get('sequelize')
-  return res.json(await createOrUpdateArticleData(sequelize, req.payload.id, lib.validateParam(req, 'body'), opts))
+  const body = lib.validateParam(req, 'body')
+  try {
+    return res.json(await createOrUpdateArticleData(sequelize, req.payload.id, body, opts))
+  } catch (error) {
+    if (body.deferNestedSetIndex === true && sequelize.models.ArticleBuild.lockBusy(error)) {
+      // The transaction has rolled back, so retrying cannot publish twice.
+      return res.status(409).json({ code: 'TREE_BUSY', errors: ['The article tree is being updated. Retrying…'] })
+    }
+    throw error
+  }
 }
 
 async function createOrUpdateArticleData(sequelize, userId, body, opts) {
   return sequelize.transaction({ transaction: opts.transaction }, async (transaction) => {
+    const deferNestedSetIndex = lib.validateParam(body, 'deferNestedSetIndex', {
+      validators: [front.isBoolean], defaultValue: false,
+    })
+    if (deferNestedSetIndex && sequelize.getDialect() === 'postgres') {
+      await sequelize.query("SET LOCAL lock_timeout = '1s'", { transaction })
+    }
     const forceNew = opts.forceNew
     const { Article, File, Site, User } = sequelize.models
     const [loggedInUser, site] = await Promise.all([
@@ -474,8 +489,10 @@ async function createOrUpdateArticleData(sequelize, userId, body, opts) {
       validators: [front.isBoolean], defaultValue: true})
     let list = lib.validateParam(body, 'list', {
       validators: [front.isBoolean], defaultValue: undefined})
-    const updateNestedSetIndex = lib.validateParam(body, 'updateNestedSetIndex', {
+    let updateNestedSetIndex = lib.validateParam(body, 'updateNestedSetIndex', {
       validators: [front.isBoolean], defaultValue: true})
+    const backgroundTree = deferNestedSetIndex && sequelize.models.TreeRebuildJob.useBackground()
+    if (backgroundTree) updateNestedSetIndex = false
     const parentId = lib.validateParam(body,
       // ID of article that will be the parent of this article, including the @username/ part.
       // However, at least to start with, @username/ will have to match your own username to
@@ -592,6 +609,11 @@ async function createOrUpdateArticleData(sequelize, userId, body, opts) {
     })
     articles = ret.articles
     nestedSetNeedsUpdate = ret.nestedSetNeedsUpdate
+    if (backgroundTree && author.nestedSetNeedsUpdate) {
+      // Commit the job with the article. The queue timer dispatches it after
+      // the response, including after a server restart; no dyno launch here.
+      await sequelize.models.TreeRebuildJob.enqueue(author.id, { transaction })
+    }
     return {
       articles: opts.skipJson ? [] : await Promise.all(articles.map(article => article.toJson(loggedInUser))),
       nestedSetNeedsUpdate,

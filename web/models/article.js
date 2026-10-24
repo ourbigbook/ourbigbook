@@ -1325,29 +1325,43 @@ WHERE
   }
 
   Article.prototype.treeFindAncestors = async function(opts={}) {
-    const where = {
+    let where = {
       authorId: this.file.authorId,
       nestedSetIndex: { [Op.lt]: this.nestedSetIndex },
       nestedSetNextSibling: { [Op.gt]: this.nestedSetIndex },
     }
-    // Use the author/tree index before loading File and Id metadata. The two
-    // nested-set bounds are strongly correlated: PostgreSQL can estimate many
-    // thousands of ancestors where only a handful exist, then scan whole tables
-    // for the joins. Explicit IDs keep the metadata query small as well.
-    const ids = await Article.findAll({
-      attributes: ['id'],
-      where,
-      raw: true,
-      logging: opts.logging,
-      transaction: opts.transaction,
+    let order = [['nestedSetIndex', 'ASC']]
+    const author = this.author || this.file.author || await sequelize.models.User.findByPk(this.file.authorId, {
+      attributes: ['nestedSetNeedsUpdate'], transaction: opts.transaction,
     })
-    if (!ids.length) return []
+    if (author.nestedSetNeedsUpdate || this.nestedSetIndex == null || this.nestedSetNextSibling == null) {
+      // Parent Refs are canonical even while rendered tree positions are
+      // missing or stale. This traversal also terminates on malformed cycles.
+      const ancestors = await ourbigbook_nodejs_webpack_safe.fetch_ancestors(sequelize, front_js.slugToId(this.slug), {
+        transaction: opts.transaction,
+      })
+      const slugs = [...new Set(ancestors.map(row => front_js.idToSlug(row.idid)))].filter(slug => slug !== this.slug)
+      if (!slugs.length) return []
+      where = { authorId: this.file.authorId, slug: { [Op.in]: slugs } }
+      order = [sequelize.literal(`CASE "Article"."slug" ${slugs.map((slug, i) => `WHEN ${sequelize.escape(slug)} THEN ${i}`).join(' ')} END`)]
+    } else {
+      // Use the author/tree index before loading File and Id metadata. The two
+      // nested-set bounds are strongly correlated: PostgreSQL can estimate many
+      // thousands of ancestors where only a handful exist, then scan whole tables
+      // for the joins. Explicit IDs keep the metadata query small as well.
+      const ids = await Article.findAll({
+        attributes: ['id'],
+        where,
+        raw: true,
+        logging: opts.logging,
+        transaction: opts.transaction,
+      })
+      if (!ids.length) return []
+      where.id = { [Op.in]: ids.map(row => row.id) }
+    }
     return Article.findAll({
       attributes: opts.attributes,
-      where: {
-        ...where,
-        id: { [Op.in]: ids.map(row => row.id) },
-      },
+      where,
       include: [{
         model: sequelize.models.File,
         as: 'file',
@@ -1360,7 +1374,7 @@ WHERE
           attributes: opts.metadataOnly ? ['id', 'ast_json'] : undefined,
         }]
       }],
-      order: [['nestedSetIndex', 'ASC']],
+      order,
       logging: opts.logging,
       transaction: opts.transaction,
     })

@@ -92,6 +92,88 @@ it('admin toggle confirmations cancel before sending requests in either directio
   }
 })
 
+it('discussion editor submits server-loaded identifiers after client navigation', async () => {
+  const React = require('react')
+  const ts = require('typescript')
+  const source = require('fs').readFileSync(require('path').join(__dirname, 'front/EditorPage.tsx'), 'utf8')
+  const js = ts.transpileModule(source, {
+    compilerOptions: { jsx: ts.JsxEmit.React, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+  }).outputText
+  // Home articles and scoped articles both use the same editor. Exercise
+  // missing/stale router parameters as well as the parameters from a refresh.
+  for (const slug of ['user0', 'user0/parent/child']) {
+    for (const query of [{}, { slug: ['wrong', 'article'], number: '99' }, { slug: slug.split('/'), number: '7' }]) {
+      for (const isNew of [true, false]) {
+        const requests = []
+        const redirects = []
+        let keyboardSubmit
+        const mockReact = {
+          ...React,
+          useState: value => [value, () => {}],
+          useEffect: () => {},
+          useRef: value => ({ current: value }),
+        }
+        const front = new Proxy({
+          capitalize: value => value,
+          useCtrlEnterSubmit: callback => { keyboardSubmit = callback },
+        }, { get: (target, key) => target[key] || (() => null) })
+        const api = Object.fromEntries(['issueCreate', 'issueEdit'].map(method => [method, async (...args) => {
+          requests.push([method, ...args])
+          return { status: 200, data: { issue: { number: 7 } } }
+        }]))
+        const mocks = {
+          react: mockReact,
+          'next/router': { useRouter: () => ({ query }), push: url => redirects.push(url) },
+          'next/link': () => null,
+          '@monaco-editor/react': {},
+          'ourbigbook/default.tex': '',
+          'ourbigbook/nodejs_front': {},
+          'ourbigbook/dist/ourbigbook_runtime.js': {},
+          'ourbigbook/editor.js': {},
+          front,
+          'front/api': { webApi: api },
+          'front/config': config,
+          'front/js': require('./front/js'),
+          'front/routes': routes,
+          'front/user': {},
+          'front/ErrorList': () => null,
+          'front/Label': () => null,
+          './CustomLink': () => null,
+        }
+        const exports = {}
+        new Function('require', 'exports', js)(name => name in mocks ? mocks[name] : require(name), exports)
+        const author = { id: 1, username: 'user0', displayName: 'User 0' }
+        const tree = exports.default({ isIssue: true, isNew })({
+          article: isNew ? null : { number: 7, author, titleSource: 'Discussion', bodySource: 'Old body', list: true },
+          issueArticle: { slug, author, titleSource: 'Article' },
+          loggedInUser: author,
+          articleCountByLoggedInUser: 0,
+          titleSource: 'Discussion',
+        })
+        let clickSubmit
+        function visit(element) {
+          if (!React.isValidElement(element)) return
+          if (element.props.className === 'ourbigbook-editor') {
+            element.ref.current = { ourbigbookEditor: { getValue: () => 'Discussion body', dispose() {} } }
+          }
+          if (element.props.children?.includes?.('Save Changes') ||
+              element.props.children?.includes?.('Publish discussion')) {
+            clickSubmit = element.props.onClick
+          }
+          React.Children.forEach(element.props.children, visit)
+        }
+        visit(tree)
+        assert.strictEqual(clickSubmit, keyboardSubmit)
+        assert.strictEqual(typeof clickSubmit, 'function')
+        await clickSubmit({ preventDefault() {} })
+        const file = { titleSource: 'Discussion', bodySource: 'Discussion body', list: true }
+        assert.deepStrictEqual(requests, [isNew ? ['issueCreate', slug, file] : ['issueEdit', slug, 7, file]])
+        assert.deepStrictEqual(redirects, [routes.issue(slug, 7)])
+      }
+    }
+  }
+})
+
 describe('ToC state after lazy loading', () => {
   it('keeps opened ancestors and the requested branch open while preserving closed siblings', () => {
     const html = `<div class="toc-container"><ul><li class="has-child toplevel">

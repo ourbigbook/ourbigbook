@@ -1,6 +1,6 @@
 import { loader } from '@monaco-editor/react'
 import React, { useEffect, useRef, useState, } from 'react'
-import Router, { useRouter } from 'next/router'
+import Router from 'next/router'
 import Link from 'next/link'
 
 import lodash from 'lodash'
@@ -499,17 +499,10 @@ export default function EditorPageHoc({
     previousSiblingTitle: initialPreviousSiblingTitle,
     titleSource,
   }: EditorPageProps) {
-    const router = useRouter()
-    const {
-      query: { slug },
-    } = router
+    // Rewritten URLs can lack router query parameters after client navigation.
+    // Use the same server-loaded article that the editor displays.
+    const slugString = isIssue ? issueArticle.slug : initialArticle?.slug
     let bodySource
-    let slugString
-    if (Array.isArray(slug)) {
-      slugString = slug.join('/')
-    } else {
-      slugString = slug
-    }
     let initialFileState
     let initialFile
     let isIndex
@@ -657,7 +650,7 @@ export default function EditorPageHoc({
         if (isNew) {
           ;({ data, status } = await webApi.issueCreate(slugString, file))
         } else {
-          ;({ data, status } = await webApi.issueEdit(slugString, router.query.number, file))
+          ;({ data, status } = await webApi.issueEdit(slugString, initialArticle.number, file))
         }
         } else {
         const baseOpts: {

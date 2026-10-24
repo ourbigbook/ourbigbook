@@ -651,7 +651,8 @@ export function getShortFragFromLong(fragNoHash) {
 
 /** Modify the current URL to have this hash. Do not add alter browser history. */
 export function replaceFrag(fragNoHash) {
-  const newUrl = window.location.pathname + window.location.search + '#' + routes.encodeUrlFragment(fragNoHash)
+  const newUrl = window.location.pathname + window.location.search +
+    (fragNoHash ? '#' + routes.encodeUrlFragment(fragNoHash) : '')
   // Using this internal-looking API works. Not amazing, bu we can't find a better way.
   // replaceState first arg is an arbitrary object, and we just make it into what Next.js uses.
   // https://github.com/vercel/next.js/discussions/18072

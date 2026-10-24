@@ -35,6 +35,7 @@ import {
   fragSetTarget,
   getShortFragFromLong,
   getShortFragFromLongForPath,
+  replaceFrag,
   shortFragGoTo,
   addParameterToUrlPath,
   removeParameterFromUrlPath,
@@ -825,7 +826,7 @@ export default function Article({
                 // E.g. barack-obama/mathematics. So the handling can be a bit simplified.
                 const frag = routes.decodeUrlPath(new URL(a.href).hash.substring(1))
                 const shortFrag = getShortFragFromLong(frag)
-                a.href = '#' + routes.encodeUrlFragment(shortFrag)
+                a.href = shortFrag ? '#' + routes.encodeUrlFragment(shortFrag) : window.location.pathname + window.location.search
                 a.addEventListener(
                   'click',
                   (ev) => {
@@ -981,7 +982,7 @@ export default function Article({
                 !url.search
               ) {
                 goToTargetInPage = true
-                a.href = '#' + routes.encodeUrlFragment(shortFrag)
+                a.href = shortFrag ? '#' + routes.encodeUrlFragment(shortFrag) : window.location.pathname + window.location.search
               } else {
                 goToTargetInPage = false
                 const frag = getShortFragFromLongForPath(urlFrag, urlPath)
@@ -1095,7 +1096,15 @@ export default function Article({
 
     html += h1RenderElem.outerHTML
   }
-  html += article.render
+  if (isIssue) {
+    // Stored discussion HTML uses an internal source path for its title link.
+    // Resolve it when displaying the page so existing discussions work too.
+    const renderElem = parse(article.render)
+    renderElem.querySelector('h1 > a')?.setAttribute('href', routes.issue(issueArticle.slug, article.number))
+    html += renderElem.outerHTML
+  } else {
+    html += article.render
+  }
   if (!isIssue) {
     // A mega hacky version. TODO benchmark: would it significantly improve rendering time?
     //const tocHtml = articlesInSamePage.slice(1).map(a => `<div style="padding-left:${30 * (a.depth - firstArticle.depth)}px;"><a href="../${article.author.username}/${a.topicId}">${a.titleRender}</a></div>`).join('') +
@@ -1261,9 +1270,17 @@ export default function Article({
       key={`${article.slug}:${curArticlesInSamePage.length}:${curArticlesInSamePageForToc.length}:${tocLoadedChildren.size}:${tocOpen.size}`}
       onClick={event => {
         const link = event.target instanceof Element
-          ? event.target.closest(`a.${TOC_LINK_ELEM_CLASS_NAME}`)
+          ? event.target.closest('a')
           : null
-        if (link && event.currentTarget.contains(link)) {
+        if (isIssue && link && link === event.currentTarget.querySelector('h1 > a') &&
+            !event.defaultPrevented && event.button === 0 &&
+            !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) {
+          event.preventDefault()
+          replaceFrag('')
+          link.scrollIntoView()
+          return
+        }
+        if (link && link.classList.contains(TOC_LINK_ELEM_CLASS_NAME) && event.currentTarget.contains(link)) {
           const href = link.getAttribute('href')
           if (href && href.startsWith('#')) {
             const target = findTocTarget(routes.decodeUrlPath(href.slice(1)), article.slug)

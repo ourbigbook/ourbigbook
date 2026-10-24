@@ -174,6 +174,103 @@ it('discussion editor submits server-loaded identifiers after client navigation'
   }
 })
 
+it('discussion title links use the public URL and empty fragments are removed', () => {
+  const React = require('react')
+  const ts = require('typescript')
+  const fs = require('fs')
+  const path = require('path')
+  const component = () => null
+  const mocks = {
+    'next/router': { useRouter: () => ({ query: {}, asPath: '/user0/article/-/discussion/2' }) },
+    'front/config': config,
+    'front/js': require('./front/js'),
+    './js': require('./front/js'),
+    './date': {},
+    'front/routes': routes,
+    'front/cant': { cant: { editIssue: () => true, deleteIssue: () => true } },
+    'ourbigbook/dist/ourbigbook_runtime.js': {},
+  }
+  function load(file) {
+    const js = ts.transpileModule(fs.readFileSync(path.join(__dirname, file), 'utf8'), {
+      compilerOptions: { jsx: ts.JsxEmit.React, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+    }).outputText
+    const exports = {}
+    new Function('require', 'exports', js)(name => name in mocks ? mocks[name]
+      : name.startsWith('front/') || name.startsWith('next/') ? component : require(name), exports)
+    return exports
+  }
+  const front = load('front.tsx')
+  mocks.front = new Proxy({ replaceFrag: front.replaceFrag }, { get: (target, key) => target[key] || component })
+  let clickArticle
+  mocks.react = { ...React, createElement(type, props, ...children) {
+    if (props?.className === 'ourbigbook') clickArticle = props.onClick
+    return React.createElement(type, props, ...children)
+  } }
+  const Article = load('front/Article.tsx').default
+  const render = '<h1><a href="/user0/_issue-user0/article/2">Discussion</a></h1>' +
+    '<h2 id="section"><a href="#section">Section</a></h2><p><a href="/user0/other">Other article</a></p>'
+  const html = require('react-dom/server').renderToStaticMarkup(React.createElement(Article, {
+    article: { id: 1, number: 2, author: { username: 'user0' }, render },
+    issueArticle: { slug: 'user0/article' },
+    isIssue: true,
+    comments: [],
+  }))
+  const parsed = parse(html)
+  assert.strictEqual(parsed.querySelector('h1 > a').getAttribute('href'), '/user0/article/-/discussion/2')
+  assert.strictEqual(parsed.querySelector('h2 > a').getAttribute('href'), '#section')
+  assert.strictEqual(parsed.querySelector('p > a').getAttribute('href'), '/user0/other')
+
+  const originalWindow = global.window
+  const originalElement = global.Element
+  try {
+    for (const pathname of ['/user0/article', '/user0/article/-/discussion/2']) {
+      const location = new URL(`http://localhost${pathname}?listed=2#section`)
+      const state = { __N: true, key: 'keep-history-key' }
+      global.window = { location, history: {
+        state,
+        replaceState(nextState, title, url) {
+          assert.deepStrictEqual(nextState, { ...state, as: url, url })
+          location.href = new URL(url, location).href
+        },
+      } }
+      front.replaceFrag('')
+      assert.strictEqual(location.href, `http://localhost${pathname}?listed=2`)
+      front.replaceFrag('section with spaces')
+      assert.strictEqual(location.href, `http://localhost${pathname}?listed=2#section%20with%20spaces`)
+    }
+    let scrolls = 0
+    global.Element = class {
+      closest() { return this }
+      scrollIntoView() { scrolls++ }
+      classList = { contains: () => false }
+    }
+    const titleLink = new Element()
+    const event = {
+      target: titleLink,
+      currentTarget: { querySelector: () => titleLink },
+      button: 0,
+      preventDefault() { this.defaultPrevented = true },
+    }
+    // Normal clicks clear the hash without following the link. Modified clicks
+    // retain the canonical href for opening the discussion in another tab.
+    for (const modifier of ['ctrlKey', 'metaKey', 'shiftKey', 'altKey']) {
+      const modified = { ...event, [modifier]: true }
+      clickArticle(modified)
+      assert(!modified.defaultPrevented)
+      assert(global.window.location.hash)
+    }
+    clickArticle(event)
+    assert.strictEqual(event.defaultPrevented, true)
+    assert.strictEqual(global.window.location.href, 'http://localhost/user0/article/-/discussion/2?listed=2')
+    assert.strictEqual(scrolls, 1)
+  } finally {
+    if (originalWindow === undefined) delete global.window
+    else global.window = originalWindow
+    if (originalElement === undefined) delete global.Element
+    else global.Element = originalElement
+  }
+})
+
 describe('ToC state after lazy loading', () => {
   it('keeps opened ancestors and the requested branch open while preserving closed siblings', () => {
     const html = `<div class="toc-container"><ul><li class="has-child toplevel">

@@ -1413,13 +1413,14 @@ export default function Article({
                 {' '}
                 <FollowArticleButton {...{
                   article,
-                  classNames: ['btn', 'small'],
+                  classNames: ['btn'],
                   isIssue: false,
                   loggedInUser,
                   showText: false,
                 }} />
+                {' '}
+                { seeAllCreateNew }
               </h2>
-              { seeAllCreateNew }
             </div>
             <div>
               { latestIssues.length > 0 ?
@@ -1448,11 +1449,6 @@ export default function Article({
                       showControls: false,
                       what: 'discussions',
                     }}/>
-                    {seeAllCreateNew &&
-                      <div className="content-not-ourbigbook">
-                        { seeAllCreateNew }
-                      </div>
-                    }
                   </>
                 : <p className="content-not-ourbigbook">There are no discussions about this article yet.</p>
               }

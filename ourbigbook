@@ -3133,6 +3133,11 @@ if (cli.helpMacros) {
       // Do a local conversion that splits mutiheader files into single header files for upload.
       ourbigbook_options.split_headers = true
       ourbigbook_options.render_include = false
+      // Upload preparation emits source, not a page with a ToC. Building the
+      // full descendant AST tree here can exhaust a worker's heap on a large
+      // wiki. Parents/ancestors and source references are still resolved;
+      // upload ordering is read separately from the canonical Ref graph below.
+      ourbigbook_options.render_metadata = false
       ourbigbook_options.forbid_multi_h1 = true
       // We create this quick and dirty separate database to store information for upload.
       // Technically much of this information is part of Article, but factoring that would be risky/hard,
@@ -3190,6 +3195,9 @@ if (cli.helpMacros) {
             [treeToplevelId],
             {
               definedAtFileId: treeToplevelFileId,
+              // Ordering and parent/sibling placement need edges, not every
+              // header's serialized AST (hundreds of MB on a large wiki).
+              idAttrs: '"RecRefs"."to_id", "RecRefs"."from_id"',
             }
           ))
         }

@@ -18684,6 +18684,35 @@ assert_cli('web-start-id rejects an ID outside the upload tree', {
   assert_stderr_contains: ['--web-start-id ID not found in the upload tree: "missing"'],
 })
 
+it('cli: Web preparation and upload ordering avoid hydrating descendant ASTs', function() {
+  this.timeout(20000)
+  for (const jobs of [1, 2]) {
+    const root = path.join(testdir, `web-no-descendant-asts-${jobs}`)
+    fs.mkdirSync(root, { recursive: true })
+    update_filesystem({
+      ...webIncludeFilesystem,
+      'ourbigbook.json': '{}',
+      'check-tree-fetch.js': `
+const assert = require('assert')
+const { SqlDbProvider } = require(${JSON.stringify(path.join(__dirname, 'nodejs_webpack_safe'))})
+const fetch = SqlDbProvider.prototype.fetch_header_tree_ids
+SqlDbProvider.prototype.fetch_header_tree_ids = async function(ids, opts) {
+  assert(opts && opts.idAttrs, 'Web preparation must not hydrate the full descendant tree')
+  const rows = await fetch.call(this, ids, opts)
+  assert(rows.every(row => !('ast_json' in row)), 'Upload ordering only needs tree edges')
+  return rows
+}
+`,
+    }, root)
+    const out = child_process.spawnSync(process.execPath, [
+      '--require', path.join(root, 'check-tree-fetch.js'),
+      path.join(__dirname, 'ourbigbook'), '-j', String(jobs), '.', ...parallelWebArgs,
+    ], { cwd: root, encoding: 'utf8', timeout: 15000 })
+    assert.strictEqual(out.status, 0, out.stdout + out.stderr)
+    assert(out.stdout.includes('web_render:'), out.stdout)
+  }
+})
+
 for (const web of [false, true]) {
 if (!ourbigbook_nodejs_front.postgres) it(`cli: parallel and serial ${web ? 'Web' : 'HTML'} builds have identical output and database contents`, async function() {
   this.timeout(30000)

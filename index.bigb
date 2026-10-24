@@ -9124,7 +9124,7 @@ If <ourbigbook.liquid.html> exists but you don't want to use it, set the option 
 = `tocMaxEntries`
 {parent=ourbigbook.json}
 
-Maximum number of entries in each static HTML <table of contents>. Set a non-negative integer; `0` (the default) means unlimited. For example:
+Maximum number of entries in each static HTML or GitHub Markdown <table of contents>. Set a non-negative integer; `0` (the default) means unlimited. For example:
 ``
 {
   "tocMaxEntries": 1000
@@ -9136,6 +9136,8 @@ If the table exceeds this limit, the deepest level is removed in full, repeatedl
 For example, if successive levels contain 4, 10, and 20 entries, a limit of 15 keeps the first two levels (14 entries). A limit of 10 keeps only the first level (4 entries), and a limit of 2 still keeps all 4 first-level entries.
 
 The limit is calculated independently for each output page, including <split headers> and <includes>. Only TOC entries are removed; all document sections remain. TOC shortcuts on omitted headings link to the table of contents itself. This setting does not change <OurBigBook Web> tables of contents.
+
+For non-embedded includes, a nonzero limit also reduces conversion memory use: full header syntax trees are loaded only for visible TOC entries, referenced headers, and their ancestors. The complete descendant structure is still queried in compact form to preserve ordering and descendant word counts.
 
 = `toSplitHeaders`
 {parent=ourbigbook.json}

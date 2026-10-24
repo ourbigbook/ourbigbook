@@ -10530,6 +10530,47 @@ assert_cli('toc: tocMaxEntries is passed to parallel static workers', {
   },
 })
 
+const compactTocFilesystem = {
+  'ourbigbook.json': JSON.stringify({ tocMaxEntries: 3, h: { numbered: true } }),
+  'index.bigb': '= Home\n\n<hidden leaf 99>{full}\n\n\\Include[branch]\n\n== Other\n\n\\Include[second]\n',
+  'branch.bigb': '= Branch\n{numbered=0}\n\nBranch words here.\n\n== Middle\n{numbered}\n\nMiddle words.\n\n' +
+    Array.from({ length: 150 }, (_, i) => `=== Hidden leaf ${i}\n\nLeaf words ${i}.\n`).join('\n'),
+  'second.bigb': '= Second\n\n== Second <hidden leaf 98>{full}\n{id=second-child}\n\n=== Second deep\n\nSecond body words.\n',
+}
+assert_lib('toc: compact descendant loading preserves rendered pages and referenced hidden nodes', {
+  convert_dir: true,
+  convert_opts: { split_headers: true },
+  filesystem: compactTocFilesystem,
+  postConvert: async ({ sequelize, convertOpts }) => {
+    for (const output_format of [ourbigbook.OUTPUT_FORMAT_HTML, ourbigbook.OUTPUT_FORMAT_GITHUB_MARKDOWN]) {
+      const results = []
+      const parsedIds = []
+      for (const compact of [false, true]) {
+        const provider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize)
+        const parsed = new Set()
+        const parse = provider.row_to_ast.bind(provider)
+        provider.row_to_ast = (row, context) => { parsed.add(row.idid); return parse(row, context) }
+        if (!compact) {
+          const fetch = provider.fetch_header_tree_ids.bind(provider)
+          provider.fetch_header_tree_ids = (ids, opts) => fetch(ids, { ...opts, compact: false })
+        }
+        const extra = {}
+        await ourbigbook.convert(compactTocFilesystem['index.bigb'], {
+          ...convertOpts, output_format, input_path: 'index.bigb', db_provider: provider,
+        }, extra)
+        assert.deepStrictEqual(extra.errors, [])
+        results.push(Object.fromEntries(Object.entries(extra.rendered_outputs).map(([name, row]) => [name, row.full])))
+        parsedIds.push(parsed)
+      }
+      assert.deepStrictEqual(results[1], results[0], output_format)
+      assert(parsedIds[0].size > 150)
+      assert(parsedIds[1].size < 20, [...parsedIds[1]].join(', '))
+      assert(parsedIds[1].has('hidden-leaf-99'))
+      assert(!parsedIds[1].has('hidden-leaf-100'))
+    }
+  },
+})
+
 if (false) {
 // Not implemented yet.
 assert_lib('toc: json: table of contents respects tocMaxCrossSource',

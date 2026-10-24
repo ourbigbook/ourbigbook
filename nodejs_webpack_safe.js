@@ -429,6 +429,7 @@ async function find_article_parent_issues(sequelize, opts={}) {
 async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
   let {
     crossFileBoundaries,
+    compact=false,
     definedAtFileId,
     unreachableFiles,
     idAttrs,
@@ -445,6 +446,16 @@ async function fetch_header_tree_ids(sequelize, starting_ids, opts={}) {
   }
   if (idAttrs === undefined) {
     idAttrs = '*'
+    if (compact) {
+      // Keep the complete topology/counts, but don't transfer every title AST
+      // when a static page will only display a bounded part of its ToC.
+      const json = field => sequelize.getDialect() === 'postgres'
+        ? `"${Id.tableName}"."ast_json"::json ->> '${field}'`
+        : `json_extract("${Id.tableName}"."ast_json", '$.${field}')`
+      idAttrs = `"${Id.tableName}"."idid", "RecRefs"."from_id",\n` +
+        `${json('synonym')} AS "synonym",\n` +
+        `COALESCE(CAST(${json('header_tree_node_word_count')} AS INTEGER), 0) AS "treeWordCount"`
+    }
   }
   if (unreachableFiles === undefined) {
     unreachableFiles = false
@@ -786,13 +797,29 @@ class SqlDbProvider extends web_api.DbProviderBase {
   // because we want to first fetch everything
   // and populate the ID cache with the include entry points that have proper header_tree_node.
   // Only then are we ready for linking up the rest of the tree.
-  build_header_tree(fetch_header_tree_ids_rows, { context, toplevelHeaderTreeNode }) {
+  async build_header_tree(fetch_header_tree_ids_rows, { context, toplevelHeaderTreeNode }) {
     const asts = []
+    const compact = fetch_header_tree_ids_rows.length && 'treeWordCount' in fetch_header_tree_ids_rows[0]
+    const treeAsts = new Map()
+    const tocRoots = [context.header_tree]
+    if (compact) {
+      // Each source header may get its own split page. Include placeholders
+      // have their own source page and don't create split pages here.
+      for (const ast of Object.values(context.options.indexed_ids)) {
+        if (ast.macro_name === ourbigbook.Macro.HEADER_MACRO_NAME && !ast.from_include && ast.header_tree_node) {
+          tocRoots.push(ast.header_tree_node)
+        }
+      }
+    }
     for (const row of fetch_header_tree_ids_rows) {
-      const ast = this.row_to_ast(row, context)
+      const ast = compact ? {
+        id: row.idid, macro_name: ourbigbook.Macro.HEADER_MACRO_NAME,
+        word_count: 0, header_tree_node_word_count: Number(row.treeWordCount),
+        synonym: row.synonym === null ? undefined : row.synonym,
+      } : this.row_to_ast(row, context)
       if (ast.synonym === undefined) {
         const parent_id = row.from_id
-        const parent_ast = this.id_cache[parent_id]
+        const parent_ast = treeAsts.get(parent_id) || this.id_cache[parent_id]
         let parent_ast_header_tree_node
         if (parent_ast) {
           parent_ast_header_tree_node = parent_ast.header_tree_node
@@ -816,10 +843,70 @@ class SqlDbProvider extends web_api.DbProviderBase {
             parent_ast_header_tree_node.add_child(ast.header_tree_node);
           }
         }
-        ourbigbook.propagateNumbered(ast, context)
-        this.id_cache[ast.id] = ast
+        if (compact) {
+          treeAsts.set(ast.id, ast)
+        } else {
+          ourbigbook.propagateNumbered(ast, context)
+          this.id_cache[ast.id] = ast
+        }
         asts.push(ast)
       }
+    }
+    if (compact) {
+      const needed = new Set()
+      const ids = []
+      const needNode = node => {
+        while (node?.ast && treeAsts.has(node.ast.id) && !needed.has(node.ast.id)) {
+          needed.add(node.ast.id)
+          ids.push(node.ast.id)
+          node = node.parent_ast
+        }
+      }
+      // Cross-references and metadata can refer to a node outside the visible
+      // outline. Keep its parent chain too, for numbering and ancestor links.
+      for (const id of Object.keys(this.id_cache)) needNode(treeAsts.get(id)?.header_tree_node)
+      for (const root of tocRoots) {
+        const maxDepth = ourbigbook.tocMaxDepth(root, context.options.ourbigbook_json.tocMaxEntries)
+        let level = root.children
+        for (let depth = 1; level.length && depth <= maxDepth; depth++) {
+          for (const node of level) needNode(node)
+          if (depth < maxDepth) level = level.flatMap(node => node.children)
+        }
+      }
+      // Bound SQL argument counts even when a source has many split pages or
+      // a first ToC level which deliberately exceeds tocMaxEntries.
+      const { Id, Ref } = this.sequelize.models
+      for (let offset = 0; offset < ids.length;) {
+        const batch = ids.slice(offset, offset + 500)
+        offset += batch.length
+        // Visible titles can themselves reference omitted descendants. Follow
+        // those dependencies transitively, without joining every child Ref.
+        const titleRefs = await Ref.findAll({
+          attributes: ['to_id'],
+          where: { from_id: batch, type: Ref.Types[ourbigbook.REFS_TABLE_X_TITLE_TITLE] },
+          raw: true,
+        })
+        for (const ref of titleRefs) needNode(treeAsts.get(ref.to_id)?.header_tree_node)
+        const rows = await Id.findAll({
+          where: { idid: batch }, raw: true,
+        })
+        for (const row of rows) {
+          const ast = this.row_to_ast(row, context)
+          ast.header_tree_node = treeAsts.get(ast.id).header_tree_node
+          ast.header_tree_node.ast = ast
+          this.id_cache[ast.id] = ast
+        }
+      }
+      const hydrated = []
+      // Input order is parents before children, including across source files.
+      for (const stub of asts) {
+        if (needed.has(stub.id)) {
+          const ast = this.id_cache[stub.id]
+          ourbigbook.propagateNumbered(ast, context)
+          hydrated.push(ast)
+        }
+      }
+      return hydrated
     }
     return asts
   }

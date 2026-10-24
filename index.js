@@ -7608,7 +7608,10 @@ async function parse(tokens, options, context, extra_returns={}) {
                   // Since \Include is not allowed, we must check every header.
                   // Parent relations are encoded directly on DB only. Used in Web.
                   ? header_ids
-                  : Object.keys(options.include_hrefs)
+                  : Object.keys(options.include_hrefs),
+                { compact: !options.webMode && !options.embed_includes &&
+                  options.ourbigbook_json.tocMaxEntries > 0 &&
+                  [OUTPUT_FORMAT_HTML, OUTPUT_FORMAT_GITHUB_MARKDOWN].includes(options.output_format) }
               )
             : []
           ,
@@ -7713,7 +7716,7 @@ async function parse(tokens, options, context, extra_returns={}) {
       }
       let build_header_tree_asts
       if (options.db_provider !== undefined) {
-        build_header_tree_asts = context.options.db_provider.build_header_tree(
+        build_header_tree_asts = await context.options.db_provider.build_header_tree(
           fetch_header_tree_ids_rows, { context })
         context.options.db_provider.fetch_ancestors_build_tree(
           fetch_ancestors_rows, context)
@@ -8345,6 +8348,24 @@ function renderTocFromEntryList({
 }
 exports.renderTocFromEntryList = renderTocFromEntryList
 
+// Shared by database hydration and renderers: keep complete depth levels and
+// always show the first level, even when it alone exceeds the entry budget.
+function tocMaxDepth(root, maxEntries) {
+  if (!maxEntries) return Infinity
+  let nodes = root.children
+  let count = 0
+  let depth = 0
+  while (nodes.length) {
+    if (depth && count + nodes.length > maxEntries) break
+    count += nodes.length
+    depth++
+    if (count >= maxEntries) break
+    nodes = nodes.flatMap(node => node.children)
+  }
+  return depth
+}
+exports.tocMaxDepth = tocMaxDepth
+
 function renderToc(context) {
   if (context.toc_was_rendered || !checkHasToc(context)) {
     // Empty ToC. Don't render. Initial common case: leaf split header nodes.
@@ -8359,22 +8380,10 @@ function renderToc(context) {
   if (root_node.children.length === 1) {
     root_node = root_node.children[0];
   }
-  let max_level = Infinity
   let toc_limited = false
   const max_entries = context.options.webMode ? 0 : context.options.ourbigbook_json.tocMaxEntries
+  const max_level = tocMaxDepth(root_node, max_entries)
   if (max_entries) {
-    // Admit whole depth levels, always retaining the first even if it exceeds
-    // the budget. Count before rendering so omitted titles cost no render work.
-    let nodes = root_node.children
-    let count = 0
-    max_level = 0
-    while (nodes.length) {
-      if (max_level && count + nodes.length > max_entries) break
-      count += nodes.length
-      max_level++
-      if (count >= max_entries) break
-      nodes = nodes.flatMap(node => node.children)
-    }
     context.toc_entry_ids = new Set()
   }
   let descendant_count_html = getDescendantCountHtml(context, root_node, { long_style: false, show_descendant_count: true });
@@ -11429,6 +11438,8 @@ function markdownToplevelMetadata(context) {
 }
 
 function markdownToc(ast, context, maxDepth=Infinity) {
+  maxDepth = Math.min(maxDepth, tocMaxDepth(ast.header_tree_node,
+    context.options.webMode ? 0 : context.options.ourbigbook_json.tocMaxEntries))
   const lines = []
   const visit = (nodes, depth) => {
     for (const node of nodes) {

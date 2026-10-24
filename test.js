@@ -16335,7 +16335,7 @@ for (const mode of ['html', 'html-used', 'html-external-used', 'parallel', 'para
   const web = mode === 'web'
   const committed = publish || web
   const firstPath = committed || mode === 'html-external-used' ? '../media-one' : '_media'
-  const output = `wiki/${TMP_DIRNAME}/${publish ? `publish/${TMP_DIRNAME}/github-pages` : web ? `web-publish/${TMP_DIRNAME}/web` : 'html'}`
+  const output = `wiki/${TMP_DIRNAME}/${publish ? `publish/${TMP_DIRNAME}/github-pages` : web ? `publish/${TMP_DIRNAME}/web` : 'html'}`
   const solution = 'subdir/paper/question/solution'
   const mediaOne = `wiki/${firstPath}`
   const relative = target => path.relative(`${output}/subdir/paper/question`, target)
@@ -18348,6 +18348,154 @@ const parallelFilesystem = {
 
 const parallelWebArgs = ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
 
+describe('shared publish checkout', function () {
+  this.timeout(30000)
+  const targets = {
+    web: [...parallelWebArgs, '-j', '2'],
+    html: ['--publish', '--dry-run', '-j', '2'],
+    md: ['--publish', '--publish-target', 'github-md', '--dry-run', '-j', '2'],
+  }
+  function fixture(name, subdir='') {
+    const repository = path.join(testdir, 'shared-publish-' + name)
+    const root = path.join(repository, subdir)
+    fs.mkdirSync(root, { recursive: true })
+    fs.writeFileSync(path.join(root, '.gitignore'), '_out/\n')
+    fs.writeFileSync(path.join(root, 'ourbigbook.json'), JSON.stringify({
+      target: { 'github-md': { publishRemoteUrl: 'git@github.com:ourbigbook/docs-md.git' } },
+    }))
+    fs.writeFileSync(path.join(root, 'index.bigb'), '= Home\n\n<child>{full}\n\n\\Include[chapter]\n')
+    fs.writeFileSync(path.join(root, 'chapter.bigb'), '= Chapter\n\n== Child\n\nOriginal content.\n')
+    for (const [cmd, args] of MAKE_GIT_REPO_PRE_EXEC) {
+      const result = child_process.spawnSync(cmd, args, { cwd: repository, encoding: 'utf8' })
+      assert.strictEqual(result.status, 0, result.stderr)
+    }
+    return root
+  }
+  function run(root, target, extra=[]) {
+    const result = child_process.spawnSync(process.execPath, [path.join(__dirname, 'ourbigbook'), ...targets[target], ...extra],
+      { cwd: root, encoding: 'utf8', timeout: 15000 })
+    assert.strictEqual(result.status, 0, result.stdout + result.stderr)
+    return result.stdout
+  }
+  async function ids(root, subdir='') {
+    const db = await ourbigbook_nodejs_webpack_safe.createSequelize({
+      storage: path.join(root, TMP_DIRNAME, 'publish', subdir, TMP_DIRNAME, 'db.sqlite3'), logging: false,
+    }, {}, { sync: false })
+    try { return await db.models.Id.findAll({ raw: true, order: [['id', 'ASC']] }) }
+    finally { await db.close() }
+  }
+  let canonicalIds
+  for (const order of [['web', 'html', 'md'], ['md', 'html', 'web']]) {
+    it(`reuses extracted IDs in ${order.join(', ')} order`, async function () {
+      const root = fixture(order.join('-'))
+      run(root, order[0])
+      const before = await ids(root)
+      const extracted = before.map(row => [row.idid, row.ast_json]).sort((a, b) => a[0].localeCompare(b[0]))
+      if (canonicalIds) assert.deepStrictEqual(extracted, canonicalIds, 'extraction must not depend on the first target')
+      canonicalIds = extracted
+      for (const target of order.slice(1)) {
+        const stdout = run(root, target)
+        assert.match(stdout, /extract_ids: .*index\.bigb \(skipped by timestamp\)/)
+        assert.match(stdout, /extract_ids: .*chapter\.bigb \(skipped by timestamp\)/)
+        assert.deepStrictEqual(await ids(root), before, target)
+      }
+      const out = path.join(root, TMP_DIRNAME, 'publish', TMP_DIRNAME)
+      const html = fs.readFileSync(path.join(out, 'github-pages/index.html'), 'utf8')
+      assert_xpath("//x:a[@href='chapter#child']", html, { count: 2 })
+      assert(fs.readFileSync(path.join(out, 'github-md/README.md'), 'utf8').includes('chapter.md#child'))
+      const prepared = fs.readFileSync(path.join(out, 'web/child.bigb'), 'utf8')
+      assert(prepared.includes('Original content.'))
+      const again = run(root, 'web')
+      assert(again.includes('render: chapter.bigb (skipped by timestamp)'), again)
+      assert(!fs.existsSync(path.join(root, TMP_DIRNAME, 'web-publish')))
+
+      // Refresh source and extraction options, and remove stale target output.
+      fs.writeFileSync(path.join(root, 'chapter.bigb'), '= Chapter\n\n== Child\n\nNew content.\n')
+      const configPath = path.join(root, 'ourbigbook.json')
+      const config = JSON.parse(fs.readFileSync(configPath))
+      config.h = { splitDefault: true }
+      fs.writeFileSync(configPath, JSON.stringify(config))
+      child_process.execFileSync('git', ['add', '.'], { cwd: root })
+      child_process.execFileSync('git', ['commit', '-m', 'Change source and defaults'], { cwd: root })
+      fs.writeFileSync(path.join(out, 'github-pages/stale.html'), 'stale')
+      const changed = run(root, 'html')
+      assert.doesNotMatch(changed, /extract_ids: .*chapter\.bigb \(skipped by timestamp\)/)
+      assert(!fs.existsSync(path.join(out, 'github-pages/stale.html')))
+      assert(fs.readFileSync(path.join(out, 'github-pages/child.html'), 'utf8').includes('New content.'))
+      assert.notDeepStrictEqual(await ids(root), before)
+      run(root, 'web')
+      assert(fs.readFileSync(path.join(out, 'web/child.bigb'), 'utf8').includes('New content.'))
+      fs.writeFileSync(path.join(root, 'index.bigb'), '= Home\n\nRemaining content.\n')
+      child_process.execFileSync('git', ['rm', 'chapter.bigb'], { cwd: root })
+      child_process.execFileSync('git', ['add', '.'], { cwd: root })
+      child_process.execFileSync('git', ['commit', '-m', 'Remove chapter'], { cwd: root })
+      run(root, 'html')
+      assert(!(await ids(root)).some(row => row.idid === 'child'))
+      assert(!fs.existsSync(path.join(out, 'github-pages/child.html')))
+    })
+  }
+  it('shares the same database for a project below the Git root', async function () {
+    const root = fixture('subdirectory', 'docs')
+    run(root, 'web')
+    const before = await ids(root, 'docs')
+    for (const target of ['html', 'md']) {
+      assert.match(run(root, target), /extract_ids: .*chapter\.bigb \(skipped by timestamp\)/)
+      assert.deepStrictEqual(await ids(root, 'docs'), before)
+    }
+  })
+  it('keeps the shared database when Web preparation uses --outdir', async function () {
+    const root = fixture('custom-output')
+    run(root, 'web', ['--outdir', '_out/custom-web'])
+    const before = await ids(root)
+    assert(!fs.existsSync(path.join(root, TMP_DIRNAME, 'custom-web', TMP_DIRNAME, 'db.sqlite3')))
+    assert.match(run(root, 'html'), /extract_ids: .*chapter\.bigb \(skipped by timestamp\)/)
+    assert.deepStrictEqual(await ids(root), before)
+    run(root, 'web')
+    assert(fs.readFileSync(path.join(root, TMP_DIRNAME, 'publish', TMP_DIRNAME, 'web/child.bigb'), 'utf8')
+      .includes('Original content.'))
+  })
+  it('rejects overlapping Web/static publishes and releases the lock after SIGKILL', async function () {
+    const root = fixture('lock')
+    const shim = path.join(testdir, 'shared-publish-lock-shim.js')
+    fs.writeFileSync(shim, `
+const { WebApi } = require(${JSON.stringify(path.join(__dirname, 'web_api'))})
+WebApi.prototype.req = async () => {
+  console.log('PUBLISH LOCK HELD')
+  await new Promise(() => setInterval(() => {}, 1000))
+}
+`)
+    const worker = child_process.spawn(process.execPath, ['-r', shim, path.join(__dirname, 'ourbigbook'),
+      '--web-watch', '--web-user', 'asdf', '--web-password', 'unused'], { cwd: root, stdio: ['ignore', 'pipe', 'pipe'] })
+    const exited = new Promise(resolve => worker.once('exit', resolve))
+    try {
+      await new Promise((resolve, reject) => {
+        let output = ''
+        const timeout = setTimeout(() => reject(new Error('publish did not acquire lock: ' + output)), 10000)
+        worker.once('exit', () => { clearTimeout(timeout); reject(new Error('publish exited: ' + output)) })
+        worker.stderr.on('data', chunk => { output += chunk })
+        worker.stdout.on('data', chunk => {
+          output += chunk
+          if (output.includes('PUBLISH LOCK HELD')) { clearTimeout(timeout); resolve() }
+        })
+      })
+      const checkout = path.join(root, TMP_DIRNAME, 'publish')
+      const before = fs.statSync(path.join(checkout, 'index.bigb')).mtimeMs
+      for (const target of ['html', 'md', 'web']) {
+        const result = child_process.spawnSync(process.execPath, [path.join(__dirname, 'ourbigbook'), ...targets[target]],
+          { cwd: root, encoding: 'utf8', timeout: 10000 })
+        assert.strictEqual(result.status, 1, result.stdout + result.stderr)
+        assert(result.stderr.includes('another publish is running'), result.stderr)
+        assert.strictEqual(fs.statSync(path.join(checkout, 'index.bigb')).mtimeMs, before)
+      }
+    } finally {
+      worker.kill('SIGKILL')
+      await exited
+    }
+    run(root, 'web')
+    run(root, 'html')
+  })
+})
+
 assert_cli('web preparation cache survives HTML and Markdown publishes', {
   args: [...parallelWebArgs, '-j', '1', '.'],
   timeout: 30000,
@@ -18365,8 +18513,8 @@ assert_cli('web preparation cache survives HTML and Markdown publishes', {
     ['node', ['-e', `
       const fs = require('fs')
       const crypto = require('crypto')
-      const root = '${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}'
-      const files = ['db.sqlite3', 'web/web.sqlite3', 'web/index.bigb', 'web/chapter.bigb']
+      const root = '${TMP_DIRNAME}/publish/${TMP_DIRNAME}'
+      const files = ['web/web.sqlite3', 'web/index.bigb', 'web/chapter.bigb']
       const snapshot = Object.fromEntries(files.map(file => [file, {
         hash: crypto.createHash('sha256').update(fs.readFileSync(root + '/' + file)).digest('hex'),
         mtime: fs.statSync(root + '/' + file).mtimeMs,
@@ -18379,7 +18527,7 @@ assert_cli('web preparation cache survives HTML and Markdown publishes', {
       const fs = require('fs')
       const assert = require('assert')
       const crypto = require('crypto')
-      const root = '${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}'
+      const root = '${TMP_DIRNAME}/publish/${TMP_DIRNAME}'
       const snapshot = JSON.parse(fs.readFileSync('${TMP_DIRNAME}/web-cache-before.json'))
       for (const [file, before] of Object.entries(snapshot)) {
         assert.strictEqual(crypto.createHash('sha256').update(fs.readFileSync(root + '/' + file)).digest('hex'), before.hash, file)
@@ -18394,7 +18542,7 @@ assert_cli('web preparation cache survives HTML and Markdown publishes', {
     'render: chapter.bigb (skipped by timestamp)',
   ],
   assert_contains: {
-    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/chapter.bigb`]: ['Committed content.'],
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/chapter.bigb`]: ['Committed content.'],
     [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/chapter.md`]: ['Committed content.'],
   },
 })
@@ -18460,7 +18608,7 @@ WebApi.prototype.req = async function(method, path, opts={}) {
       const auth = path.join(root, TMP_DIRNAME, 'auth.json')
       assert.strictEqual(fs.statSync(auth).mode & 0o777, 0o600)
       assert(!fs.readFileSync(auth, 'utf8').includes('not-stored'))
-      const storage = path.join(root, TMP_DIRNAME, ...(git ? ['web-publish', TMP_DIRNAME] : []), 'db.sqlite3')
+      const storage = path.join(root, TMP_DIRNAME, ...(git ? ['publish', TMP_DIRNAME] : []), 'db.sqlite3')
       const db = await ourbigbook_nodejs_webpack_safe.createSequelize({ storage, logging: false })
       try {
         assert.strictEqual(await db.models.Cli.count(), 0, 'new logins are not stored in the conversion DB')
@@ -18500,7 +18648,7 @@ assert_cli('web local media provider preserves file-relative paths when splittin
   filesystem: relativeLocalMediaFilesystem,
   pre_exec: MAKE_GIT_REPO_PRE_EXEC,
   assert_contains: {
-    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/subdir/paper/question/solution.bigb`]: [
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/subdir/paper/question/solution.bigb`]: [
       '\\Image[/subdir/figure.svg]', '\\Image[/figure.svg]', '\\Image[/shared.svg]',
       '\\Image[/subdir/legacy.svg]', '\\Image[/subdir/figure \\[1\\].svg]', '\\Video[/subdir/video.mp4]',
     ],
@@ -18545,7 +18693,7 @@ assert_cli(`web local media root-relative paths match local builds (${mediaPath 
     ],
   },
   assert_contains: {
-    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/subdir/paper/question/solution.bigb`]: ['\\Image[/nested/diagram.svg]\n\n\\Image[/nested/diagram.svg]'],
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/subdir/paper/question/solution.bigb`]: ['\\Image[/nested/diagram.svg]\n\n\\Image[/nested/diagram.svg]'],
   },
   assert_stdout_contains: [/web_upload: \d+: nested\/diagram\.svg /],
   assert_stdout_not_contains: ['media/nested/diagram.svg'],
@@ -18592,11 +18740,11 @@ assert_cli(`web committed snapshot ignores working tree changes (${input})`, {
   ],
   assert_stdout_contains: ['Web upload uses committed source:'],
   assert_contains: {
-    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/index.bigb`]: ['Committed title', 'Committed content.'],
-    [`${TMP_DIRNAME}/web-publish/asset.txt`]: ['committed asset'],
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['Committed title', 'Committed content.'],
+    [`${TMP_DIRNAME}/publish/asset.txt`]: ['committed asset'],
     'index.bigb': ['Dirty title'],
   },
-  assert_not_exists: [`${TMP_DIRNAME}/web`, `${TMP_DIRNAME}/web-publish/untracked.bigb`],
+  assert_not_exists: [`${TMP_DIRNAME}/web`, `${TMP_DIRNAME}/publish/untracked.bigb`],
 })
 }
 
@@ -18608,17 +18756,17 @@ assert_cli('web committed snapshot refreshes HEAD and preserves cache', {
     ['ourbigbook', [...parallelWebArgs, '.']],
     { filesystem_update: {
       'index.bigb': '= Second commit\n',
-      [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/keep-cache`]: 'keep me',
-      [`${TMP_DIRNAME}/web-publish/stale.bigb`]: '\\UnknownMacro',
+      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/keep-cache`]: 'keep me',
+      [`${TMP_DIRNAME}/publish/stale.bigb`]: '\\UnknownMacro',
     } },
     ['git', ['add', 'index.bigb']],
     ['git', ['commit', '-m', 'second']],
   ],
   assert_contains: {
-    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/index.bigb`]: ['Second commit'],
-    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/keep-cache`]: ['keep me'],
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['Second commit'],
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/keep-cache`]: ['keep me'],
   },
-  assert_not_exists: [`${TMP_DIRNAME}/web-publish/stale.bigb`],
+  assert_not_exists: [`${TMP_DIRNAME}/publish/stale.bigb`],
 })
 
 assert_cli('web committed snapshot includes committed external local media', {
@@ -18637,7 +18785,7 @@ assert_cli('web committed snapshot includes committed external local media', {
     { filesystem_update: { 'wiki-media/untracked.svg': '<svg/>', 'wiki-media/diagram.svg': 'dirty media' } },
   ],
   assert_contains: {
-    [`wiki/${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/index.bigb`]: ['\\Image[/diagram.svg]'],
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['\\Image[/diagram.svg]'],
   },
   assert_stdout_contains: [/web_upload: \d+: diagram\.svg /],
   assert_stdout_not_contains: ['untracked.svg'],
@@ -18672,8 +18820,8 @@ assert_cli('web committed snapshot uses pinned media submodule', {
     ['git', ['-C', '-/media', 'commit', '-m', 'unpinned']],
   ],
   assert_contains: {
-    [`wiki/${TMP_DIRNAME}/web-publish/-/media/diagram.svg`]: ['<svg>pinned</svg>'],
-    [`wiki/${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/index.bigb`]: ['\\Image[/diagram.svg]'],
+    [`wiki/${TMP_DIRNAME}/publish/-/media/diagram.svg`]: ['<svg>pinned</svg>'],
+    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['\\Image[/diagram.svg]'],
   },
   assert_stdout_contains: [/web_upload: \d+: diagram\.svg /],
 })

@@ -722,6 +722,15 @@ async function convert_file_preview(onePath, ourbigbook_options, nonOurbigbookOp
  */
 async function convert_input(input, ourbigbook_options, nonOurbigbookOptions={}) {
   const new_options = { ...ourbigbook_options }
+  if (!new_options.render && nonOurbigbookOptions.publishExtractionJson) {
+    // Store the same ID graph regardless of which target renders it first.
+    new_options.ourbigbook_json = nonOurbigbookOptions.publishExtractionJson
+    new_options.output_format = ourbigbook.OUTPUT_FORMAT_HTML
+    new_options.webLocalConvert = false
+    new_options.publish = true
+    new_options.htmlXExtension = true
+    new_options.split_headers = false
+  }
   if ('input_path' in nonOurbigbookOptions) {
     new_options.input_path = nonOurbigbookOptions.input_path
   }
@@ -851,7 +860,7 @@ function isBigbPath(input_path, cli) {
 function skipFileConversion(input_path, relpath, options, nonOptions) {
   const row = nonOptions.file_rows_dict[nonOptions.renderType]?.[relpath]
   if (!row) return false
-  if (row.last_parse && new Date(row.last_parse).getTime() <= nonOptions.configMtime) {
+  if (!nonOptions.publishExtractionJson && row.last_parse && new Date(row.last_parse).getTime() <= nonOptions.configMtime) {
     if (row.Render) row.Render.outdated = true
     return false
   }
@@ -1326,6 +1335,14 @@ async function create_db(ourbigbook_options, nonOurbigbookOptions) {
   )
   nonOurbigbookOptions.sequelize = sequelize;
   ourbigbook_options.db_provider = new ourbigbook_nodejs_webpack_safe.SqlDbProvider(sequelize);
+  if (nonOurbigbookOptions.publishExtractionJson) {
+    await ourbigbook_nodejs.preparePublishCache(sequelize, {
+      extractionJson: nonOurbigbookOptions.publishExtractionJson,
+      options: ourbigbook_options,
+      cli: nonOurbigbookOptions.cli,
+      renderType: nonOurbigbookOptions.renderType,
+    })
+  }
   perfPrint('create_db_end', ourbigbook_options)
 }
 
@@ -1443,11 +1460,32 @@ function gitSha(input_path, srcBranch) {
   return chomp(runCmd('git', args, {showCmd: false, throwOnError: true}))
 }
 
+// SQLite supplies an OS-backed exclusive lock, released even after SIGKILL.
+// It lives outside the checkout and is never part of the conversion database.
+async function lockPublish(project) {
+  const filename = path.join(project, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'publish-lock.sqlite3')
+  fs.mkdirSync(path.dirname(filename), { recursive: true })
+  const sqlite3 = require('sqlite3')
+  const db = await new Promise((resolve, reject) => {
+    const connection = new sqlite3.Database(filename, error => error ? reject(error) : resolve(connection))
+  })
+  db.configure('busyTimeout', 0)
+  try {
+    await new Promise((resolve, reject) => db.run('BEGIN EXCLUSIVE', error => error ? reject(error) : resolve()))
+  } catch (error) {
+    db.close()
+    if (error.code === 'SQLITE_BUSY') cli_error(`another publish is running for ${project}; wait for it to finish`)
+    throw error
+  }
+  // Keep the connection alive until process exit, including uploads and pushes.
+  process.once('exit', () => db.close())
+}
+
 // A reusable, disposable checkout. Keep conversion caches, but never source edits.
-function checkoutWebSnapshot(source, destination) {
+function checkoutPublishSnapshot(source, destination) {
   const opts = { throwOnError: true, showCmd: false }
   const commit = gitSha(source)
-  if (!fs.existsSync(destination)) {
+  if (!fs.existsSync(path.join(destination, '.git'))) {
     fs.mkdirSync(path.dirname(destination), { recursive: true })
     runCmd('git', ['clone', '--no-checkout', '--', source, destination], opts)
   } else {
@@ -2471,14 +2509,20 @@ if (cli.helpMacros) {
     }
   }
   let webSourceRoot
+  let sharedPublishDir
+  if (web || publish) {
+    const project = fs.realpathSync(ourbigbook_json_dir)
+    await lockPublish(project)
+    if (git_is_in_repo(project)) {
+      sharedPublishDir = path.join(project, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'publish')
+    }
+  }
   const webMediaSnapshots = {}
   if (web && git_is_in_repo(ourbigbook_json_dir)) {
     const opts = { throwOnError: true, showCmd: false }
     const source = chomp(runCmd('git', ['-C', ourbigbook_json_dir, 'rev-parse', '--show-toplevel'], opts))
     webSourceRoot = path.resolve(ourbigbook_json_dir)
-    // Static publishing cleans _out/publish, including its conversion database.
-    // Keep the reusable Web preparation cache in an independent clean checkout.
-    const snapshot = path.join(webSourceRoot, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'web-publish')
+    const snapshot = sharedPublishDir
     const project = path.join(snapshot, path.relative(source, webSourceRoot))
     const absoluteInputs = inputPaths.map(p => path.resolve(p))
     for (const p of absoluteInputs) {
@@ -2486,7 +2530,7 @@ if (cli.helpMacros) {
     }
     if (cli.outdir !== undefined) cli.outdir = path.resolve(cli.outdir)
     if (cli.template !== undefined) cli.template = path.join(snapshot, path.relative(source, path.resolve(cli.template)))
-    const commit = checkoutWebSnapshot(source, snapshot)
+    const commit = checkoutPublishSnapshot(source, snapshot)
     console.log(`Web upload uses committed source: ${commit} (checkout: ${project})`)
     process.chdir(project)
     inputPaths = absoluteInputs.map(p => path.relative(project, path.join(snapshot, path.relative(source, p))) || '.')
@@ -2523,6 +2567,7 @@ if (cli.helpMacros) {
       publish_target_options
     )
   }
+  const publishExtractionJson = sharedPublishDir ? structuredClone(ourbigbook_json) : undefined
   if (web) {
     let jsonH = ourbigbook_json.h
     if (jsonH === undefined) {
@@ -2828,6 +2873,7 @@ if (cli.helpMacros) {
     outdir,
     post_convert_callback: undefined,
     publish,
+    publishExtractionJson,
     renderType,
     sitemap: [],
     web,
@@ -2946,15 +2992,14 @@ if (cli.helpMacros) {
       if (publish) {
         input_git_toplevel = git_toplevel(inputPath);
         subdir_relpath = path.relative(input_git_toplevel, inputPath);
-        publishDir = path.join(tmpdir, 'publish');
+        publishDir = sharedPublishDir || path.join(tmpdir, 'publish');
         publishDirCwd = relpathCwd(publishDir)
-        publish_git_dir = path.join(publishDir, '.git');
-        if (fs.existsSync(publish_git_dir)) {
-          // This cleanup has to be done before the database initialization.
-          runCmd('git', ['-C', publishDirCwd, 'clean', '-x', '-d', '-f'], cmdOpts);
-        }
         publish_tmpdir = path.join(publishDir, subdir_relpath, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME);
       }
+    }
+    if (web && sharedPublishDir) {
+      // --outdir changes prepared output, not the shared extraction database.
+      publish_tmpdir = path.join(ourbigbook_json_dir, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME)
     }
     if (publish_tmpdir === undefined) {
       publish_tmpdir = tmpdir;
@@ -3155,6 +3200,12 @@ if (cli.helpMacros) {
       nonOurbigbookOptions.post_convert_callback = webCache.postConvert
       let treeToplevelId, treeToplevelFileId
       if (input_path_is_file) {
+        if (publishExtractionJson) {
+          await convert_path_to_file(inputPath, { ...ourbigbook_options, render: false }, nonOurbigbookOptions)
+          if (nonOurbigbookOptions.had_error) process.exit(1)
+          await check_db(nonOurbigbookOptions)
+          nonOurbigbookOptions.is_render_after_extract = true
+        }
         await convert_path_to_file(inputPath, ourbigbook_options, nonOurbigbookOptions)
         treeToplevelFile = await nonOurbigbookOptions.sequelize.models.File.findOne({
           where: { path: inputPath } })
@@ -3785,16 +3836,7 @@ if (cli.helpMacros) {
             runCmd( 'git', ['-C', inputPathCwd, 'commit', '-m', cli.publishCommit], cmdOpts);
           }
           sourceCommit = gitSha(inputPath, srcBranch);
-          if (fs.existsSync(publish_git_dir)) {
-            runCmd('git', ['-C', publishDirCwd, 'checkout', '--', '.'], cmdOptsNoDry);
-            runCmd('git', ['-C', publishDirCwd, 'fetch'], cmdOptsNoDry);
-            runCmd('git', ['-C', publishDirCwd, 'checkout', sourceCommit], cmdOptsNoDry);
-            runCmd('git', ['-C', publishDirCwd, 'submodule', 'update', '--init'], cmdOptsNoDry);
-            runCmd('git', ['-C', publishDirCwd, 'clean', '-xdf'], cmdOptsNoDry);
-          } else {
-            runCmd('git', ['clone', '--recursive', '--depth', '1', input_git_toplevel, publishDirCwd],
-              ourbigbook.cloneAndSet(cmdOpts, 'dry_run', false));
-          }
+          checkoutPublishSnapshot(input_git_toplevel, publishDirCwd)
 
           // Set some variables especially for publishing.
           actualInputDir = path.join(publishDir, subdir_relpath);
@@ -3817,17 +3859,12 @@ if (cli.helpMacros) {
                 runCmd('git', ['-C', publishOutPublishDirCwd, 'rm', '--quiet', '-r', '-f', '--ignore-unmatch', '--', '.'], cmdOptsNoDry)
                 // An interrupted publish can also leave untracked/ignored output.
                 runCmd('git', ['-C', publishOutPublishDirCwd, 'clean', '--quiet', '-fdx'], cmdOptsNoDry)
+              } else {
+                fs.rmSync(publishOutPublishDir, { recursive: true, force: true })
               }
             } else {
               fs.rmSync(publishOutPublishDir, { recursive: true, force: true })
             }
-
-            // Clean database to ensure a clean conversion. TODO: this is dangerous, if some day we
-            // start adding more conversion state outside of db.sqlite3. Better would be to remove the
-            // entire _out/publish/_out. Te slight downside of that is that:
-            // - it deletes other publish targets
-            // - it forces re-fetch of git history on the gh-pages branch
-            fs.rmSync(path.join(publish_tmpdir, ourbigbook_nodejs_front.SQLITE_DB_BASENAME), { force: true })
 
             fs.mkdirSync(publishOutPublishDir, { recursive: true })
           }
@@ -3840,6 +3877,11 @@ if (cli.helpMacros) {
 
         if (!cli.publishNoConvert) {
           await create_db(ourbigbook_options, nonOurbigbookOptions);
+          if (publish) {
+            // The selected output was cleaned; reuse IDs, but recreate its pages.
+            const { Render } = nonOurbigbookOptions.sequelize.models
+            await Render.update({ outdated: true }, { where: { type: Render.Types[renderType] } })
+          }
 
           // Do the actual conversion.
           await convert_directory_extract_ids_and_render(actualInputDir, ourbigbook_options, nonOurbigbookOptions)

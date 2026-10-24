@@ -51,6 +51,40 @@ function saveWebAuthLogin(filename, login) {
 }
 exports.saveWebAuthLogin = saveWebAuthLogin
 
+// One extraction cache shared by all publishing targets. Render state remains
+// per format; changes to parser/configuration must invalidate cached IDs first.
+async function preparePublishCache(sequelize, { extractionJson, options, cli, renderType }) {
+  const hash = value => require('crypto').createHash('sha256').update(value).digest('hex')
+  const compiler = hash(['index.js', 'ourbigbook', 'nodejs.js', 'nodejs_webpack_safe.js', 'web_api.js', 'package.json']
+    .map(name => fs.readFileSync(path.join(__dirname, name))).join('\n'))
+  const config = ourbigbook.convertInitOptions({ ourbigbook_json: structuredClone(extractionJson) }).ourbigbook_json
+  // These settings affect the destination or rendering, not extracted IDs.
+  for (const key of ['publishRemoteUrl', 'publishBranch', 'generateSitemap', 'redirects',
+    'template', 'htmlXExtension', 'githubMarkdownMaxBytes']) delete config[key]
+  const extraction = hash(JSON.stringify([compiler, config, cli.inputFormat, cli.embedIncludes]))
+  const rendering = hash(JSON.stringify([compiler, options.ourbigbook_json, cli.inputFormat,
+    options.htmlXExtension, options.split_headers, options.template, options.outfile, cli.outdir]))
+  await sequelize.query('CREATE TABLE IF NOT EXISTS "CliPublishCache" ("key" TEXT PRIMARY KEY, "value" TEXT NOT NULL)')
+  await sequelize.transaction(async transaction => {
+    const [rows] = await sequelize.query('SELECT "key", "value" FROM "CliPublishCache"', { transaction })
+    const previous = Object.fromEntries(rows.map(row => [row.key, row.value]))
+    const { File, Render } = sequelize.models
+    if (previous.extraction !== extraction) {
+      await File.update({ last_parse: null }, { where: {}, transaction })
+      await Render.update({ outdated: true }, { where: {}, transaction })
+    } else if (previous[renderType] !== rendering) {
+      await Render.update({ outdated: true }, { where: { type: Render.Types[renderType] }, transaction })
+    }
+    for (const [key, value] of [['extraction', extraction], [renderType, rendering]]) {
+      await sequelize.query('INSERT INTO "CliPublishCache" ("key", "value") VALUES (:key, :value) ' +
+        'ON CONFLICT ("key") DO UPDATE SET "value" = excluded."value"', {
+        replacements: { key, value }, transaction,
+      })
+    }
+  })
+}
+exports.preparePublishCache = preparePublishCache
+
 let checkDbCodeHash
 
 // CLI SQLite only. Revision triggers also see extraction done by worker processes;

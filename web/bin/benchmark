@@ -295,7 +295,7 @@ function saveHistory(output, history) {
   }
 }
 
-async function benchmark({ paths, about, output, explain, baseUrl='http://localhost:3000', runs=3, warmup=1, timeout=60000, log=console.log }) {
+async function benchmark({ paths, about, output, explain, validateResponse, baseUrl='http://localhost:3000', runs=3, warmup=1, timeout=60000, log=console.log }) {
   if (explain === undefined) {
     explain = process.env.OURBIGBOOK_EXPLAIN && process.env.OURBIGBOOK_EXPLAIN !== '0'
       ? process.env.OURBIGBOOK_EXPLAIN : true
@@ -388,6 +388,7 @@ async function benchmark({ paths, about, output, explain, baseUrl='http://localh
           }
           JSON.parse(Buffer.from(body).toString('utf8'))
         }
+        if (validateResponse) await validateResponse({ request, response, body })
         if (i >= warmup) samples.push(elapsed)
       }
       const sorted = [...samples].sort((a, b) => a - b)

@@ -29,6 +29,7 @@ import { TopicType } from 'front/types/TopicType'
 import { Macro } from 'ourbigbook'
 
 export interface ArticlePageProps extends CommonPropsType {
+  debugTocRecursive?: boolean;
   ancestors?: ArticleAncestorType[];
   article: ArticleType & IssueType;
   articleInTopicByLoggedInUser?: ArticleType,
@@ -57,6 +58,7 @@ export interface ArticlePageProps extends CommonPropsType {
 
 const ArticlePageHoc = (isIssue=false) => {
   return function ArticlePage({
+    debugTocRecursive,
     ancestors,
     article,
     articleInTopicByLoggedInUser,
@@ -132,6 +134,7 @@ const ArticlePageHoc = (isIssue=false) => {
         }
         <div className="container page">
           <Article {...{
+            debugTocRecursive,
             ancestors,
             article,
             articlesInSamePage,

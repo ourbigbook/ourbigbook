@@ -85,7 +85,7 @@ import { ourbigbook_runtime, toplevelMouseleave } from 'ourbigbook/dist/ourbigbo
 import { encodeGetParams, QUERY_TRUE_VAL } from 'ourbigbook/web_api'
 import UserLinkWithImage from 'front/UserLinkWithImage'
 import { ArticleLinkType, ArticleType } from 'front/types/ArticleType'
-import { captureTocState, restoreTocState, slugToTopic, uidTopicIdToSlug } from './js'
+import { captureTocState, compareArticleTreeOrder, restoreTocState, slugToTopic, uidTopicIdToSlug } from './js'
 import { formatDate } from './date'
 
 const ANNOUNCE_QUERY_PARAM = 'announce'
@@ -144,7 +144,7 @@ function mergeTocArticles(current: ArticleType[], incoming: ArticleType[]) {
   for (const article of incoming) {
     bySlug.set(article.slug, { ...bySlug.get(article.slug), ...article })
   }
-  return Array.from(bySlug.values()).sort((a, b) => a.nestedSetIndex - b.nestedSetIndex)
+  return Array.from(bySlug.values()).sort(compareArticleTreeOrder)
 }
 
 function AnnounceModal({
@@ -427,6 +427,7 @@ function WebMeta({
 
 /** The name of this element is not very accurate, it should likely be ArticleDescendantsAndMeta or something like that. */
 export default function Article({
+  debugTocRecursive=false,
   ancestors,
   article: articleInit,
   articlesInSamePage,
@@ -813,7 +814,7 @@ export default function Article({
       // Without this check, the callbacks do get added twice after
       // pressing the + button which opens a modal. This was noticed with
       // console.log on the selflink mouseenter and mouseleave.
-      const runtimeKey = `${article.slug}:${curArticlesInSamePage.length}:${curArticlesInSamePageForToc.length}:${tocLoadedChildren.size}:${tocOpen.size}`
+      const runtimeKey = `${debugTocRecursive}:${article.slug}:${curArticlesInSamePage.length}:${curArticlesInSamePageForToc.length}:${tocLoadedChildren.size}:${tocOpen.size}`
       if (staticHtmlRefMap.current.get(elem) !== runtimeKey) {
         staticHtmlRefMap.current.set(elem, runtimeKey)
         ourbigbook_runtime(
@@ -848,7 +849,9 @@ export default function Article({
                       new URL(parentLink.getAttribute('href'), window.location.href).pathname.substring(1)
                     )
                   }
-                  const { data, status } = await webApi.articleToc(parentSlug)
+                  const { data, status } = await webApi.articleToc(parentSlug, {}, {
+                    debug_toc_recursive: debugTocRecursive ? 1 : undefined,
+                  })
                   if (status !== 200) {
                     throw new Error(`Could not load table of contents children: HTTP ${status}`)
                   }
@@ -866,6 +869,7 @@ export default function Article({
     }
   }, [
     isIssue,
+    debugTocRecursive,
     handleShortFragmentSkipOnce,
     getParamString,
     article.slug,
@@ -1267,7 +1271,7 @@ export default function Article({
     <div
       dangerouslySetInnerHTML={{ __html: html }}
       className="ourbigbook"
-      key={`${article.slug}:${curArticlesInSamePage.length}:${curArticlesInSamePageForToc.length}:${tocLoadedChildren.size}:${tocOpen.size}`}
+      key={`${debugTocRecursive}:${article.slug}:${curArticlesInSamePage.length}:${curArticlesInSamePageForToc.length}:${tocLoadedChildren.size}:${tocOpen.size}`}
       onClick={event => {
         const link = event.target instanceof Element
           ? event.target.closest('a')
@@ -1305,6 +1309,7 @@ export default function Article({
             setLoadMoreError(undefined)
             try {
               const { data, status } = await webApi.articleSamePage(article.slug, {
+                debug_toc_recursive: debugTocRecursive ? 1 : undefined,
                 limit: maxArticlesFetch,
                 offset: curArticlesInSamePage.length,
               })

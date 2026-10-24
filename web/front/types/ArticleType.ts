@@ -43,6 +43,7 @@ export type ArticleType = {
   likedByDate?: string;
   list?: boolean;
   nestedSetIndex?: number;
+  treeOrder?: string;
   followed?: boolean;
   followerCount?: number;
   image?: string;

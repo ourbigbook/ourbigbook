@@ -15,6 +15,13 @@ const TRI_FALSE = '0'
 const TRI_TRUE = '1'
 const TRI_ALL = '2'
 
+function compareArticleTreeOrder(a, b) {
+  if (a.treeOrder !== undefined && b.treeOrder !== undefined) {
+    return a.treeOrder < b.treeOrder ? -1 : a.treeOrder > b.treeOrder ? 1 : 0
+  }
+  return a.nestedSetIndex - b.nestedSetIndex
+}
+
 // https://stackoverflow.com/questions/14382725/how-to-get-the-correct-ip-address-of-a-client-into-a-node-socket-io-app-hosted-o/14382990#14382990
 // Works on Heroku 2021.
 function getClientIp(req) {
@@ -375,6 +382,7 @@ function openUserTabs(users, openWindow) {
 }
 
 module.exports = {
+  compareArticleTreeOrder,
   confirmAdminUserAction,
   AUTH_COOKIE_NAME: 'auth',
   TRI_ALL,

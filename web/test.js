@@ -3106,6 +3106,12 @@ it('web publishing commits articles and a coalesced tree job without updating ne
   const first = await write('Child')
   assert.strictEqual(first.nestedSetNeedsUpdate, true)
   assert.strictEqual(first.articles[0].slug, 'user0/parent/child')
+  const published = await Article.getArticle({ sequelize, slug: first.articles[0].slug })
+  assert.strictEqual(published.nestedSetIndex, null)
+  // Topic metadata must be available immediately, before the tree worker runs.
+  assert.deepStrictEqual(await Article.getArticlesInSamePage({
+    article: published, h1: true, metadataOnly: true, sequelize,
+  }), [{ topicCount: 1, hasSameTopic: false }])
   await home.reload()
   assert.strictEqual(home.nestedSetNextSibling, oldEnd)
   assert.strictEqual(await TreeRebuildJob.count(), 1)
@@ -3201,6 +3207,195 @@ it('web publishing retries only explicitly rolled-back tree lock conflicts', asy
     api.req = async () => conflict
     assert.strictEqual(await api[method]({}, { deferNestedSetIndex: true }), conflict)
   }
+})
+
+it('recursive article pages preserve tree order, counts, lazy branches and pagination without nested sets', async function() {
+  this.timeout(10000)
+  const sequelize = this.test.sequelize
+  const { Article, Ref } = sequelize.models
+  const user = await createUser(sequelize, 0)
+  const reader = await createUser(sequelize, 1)
+  await createArticle(sequelize, user, { titleSource: 'Parent', bodySource: '{scope}' })
+  await createArticle(sequelize, user, { titleSource: 'Child', parentId: '@user0/parent' })
+  await createArticle(sequelize, user, { titleSource: 'Deep', parentId: '@user0/parent/child' })
+  await createArticle(sequelize, user, { titleSource: 'Hidden', list: false, parentId: '@user0/parent' })
+  await createArticle(sequelize, user, { titleSource: 'Visible', parentId: '@user0/parent/hidden' })
+  for (let i = 0; i < 12; i++) await createArticle(sequelize, user, { titleSource: `Sibling ${i}` })
+  const clean = rows => rows.map(({ nestedSetIndex, treeOrder, ...row }) => row)
+  const snapshots = []
+  for (const slug of ['user0', 'user0/parent', 'user0/parent/child', 'user0/parent/deep']) {
+    const article = await Article.getArticle({ sequelize, slug })
+    const recursive = await Article.getRecursiveTreePosition(article)
+    assert.strictEqual(recursive.depth, article.depth)
+    for (const loggedInUser of [undefined, reader]) {
+      for (const extra of [
+        { toc: true, getHasChild: true },
+        { getHasChild: true, getTagged: true, limit: 3, offset: 1 },
+        { h1: true, metadataOnly: true, list: undefined },
+      ]) {
+        const args = { article, loggedInUser, list: true, sequelize, ...extra }
+        const expected = clean(await Article.getArticlesInSamePage(args))
+        assert.deepStrictEqual(clean(await Article.getArticlesInSamePage({ ...args, recursive })), expected)
+        snapshots.push({ slug, args, expected })
+      }
+    }
+    for (const maxEntries of [1, 100]) {
+      const args = { article, maxEntries, preloadEntries: 2, sequelize }
+      const normal = await Article.getArticlesInSamePageForToc(args)
+      const alternate = await Article.getArticlesInSamePageForToc({ ...args, recursive })
+      assert.deepStrictEqual([clean(alternate[0]), ...alternate.slice(1)], [clean(normal[0]), ...normal.slice(1)])
+    }
+    const children = await article.getTocChildren({ recursive })
+    assert.deepStrictEqual(clean(children), clean(await article.getTocChildren()))
+    const full = await Article.getArticlesInSamePage({ article, recursive, toc: true, list: true, sequelize })
+    for (const child of children) {
+      const childArticle = await Article.getArticle({ sequelize, slug: child.slug })
+      const position = await Article.getRecursiveTreePosition(childArticle)
+      assert.strictEqual(position.treeOrder, child.treeOrder)
+      const branch = await childArticle.getTocChildren({ recursive: position })
+      for (const row of branch) assert.strictEqual(row.treeOrder, full.find(a => a.slug === row.slug).treeOrder)
+    }
+  }
+  await Article.update({ depth: null, nestedSetIndex: null, nestedSetNextSibling: null }, { where: { authorId: user.id } })
+  for (const { slug, args, expected } of snapshots) {
+    const article = await Article.getArticle({ sequelize, slug })
+    const recursive = await Article.getRecursiveTreePosition(article)
+    assert.deepStrictEqual(clean(await Article.getArticlesInSamePage({ ...args, article, recursive })), expected)
+  }
+  const deep = await Article.getArticle({ sequelize, slug: 'user0/parent/deep' })
+  assert.deepStrictEqual((await deep.treeFindAncestors({ recursive: true })).map(a => a.slug),
+    ['user0', 'user0/parent', 'user0/parent/child'])
+  // Corrupt parent cycles must terminate in both directions.
+  const cycle = await Ref.findOne({ where: { to_id: '@user0/parent',
+    type: Ref.Types[ourbigbook.REFS_TABLE_PARENT] }, raw: true })
+  delete cycle.id
+  await Ref.create({ ...cycle, from_id: '@user0/parent/deep' })
+  const recursive = await Article.getRecursiveTreePosition(deep)
+  const rows = await Article.getArticlesInSamePage({ article: deep, recursive, toc: true, sequelize })
+  assert(rows.length < 20)
+})
+
+it('recursive ToC debug parameter requires explicit server opt-in', () => {
+  const { debugTocRecursive } = require('./back/js')
+  const before = process.env.OURBIGBOOK_DEBUG_APIS
+  try {
+    for (const enabled of [undefined, '0', 'true', '1']) {
+      if (enabled === undefined) delete process.env.OURBIGBOOK_DEBUG_APIS
+      else process.env.OURBIGBOOK_DEBUG_APIS = enabled
+      for (const value of [undefined, '0', '1', ['1'], 'true']) {
+        assert.strictEqual(debugTocRecursive({ debug_toc_recursive: value }), enabled === '1' && value === '1')
+      }
+    }
+  } finally {
+    if (before === undefined) delete process.env.OURBIGBOOK_DEBUG_APIS
+    else process.env.OURBIGBOOK_DEBUG_APIS = before
+  }
+})
+
+it('article SSR uses the gated recursive mode with missing tree positions', async function() {
+  const fs = require('fs')
+  const ts = require('typescript')
+  const { treeModeHeader } = require('./back/js')
+  const { pageSnapshot } = require('./bin/benchmark-toc')
+  const source = fs.readFileSync(require('path').join(__dirname, 'back/ArticlePage.ts'), 'utf8')
+  const js = ts.transpileModule(source, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, esModuleInterop: true, target: ts.ScriptTarget.ES2020 },
+  }).outputText
+  const exports = {}
+  new Function('require', 'exports', js)(name => {
+    if (name === 'back') return { getLoggedInUser: async () => undefined }
+    if (name.startsWith('front/') || name.startsWith('back/')) return require('./' + name)
+    return require(name)
+  }, exports)
+  const sequelize = this.test.sequelize
+  const user = await createUser(sequelize, 0)
+  await createArticle(sequelize, user, { titleSource: 'Parent', bodySource: '{scope}' })
+  await createArticle(sequelize, user, { titleSource: 'Child', parentId: '@user0/parent' })
+  const handler = exports.getServerSidePropsArticleHoc()
+  const load = async (slug, query) => {
+    const headers = {}
+    const { props } = await handler({ params: { slug: slug.split('/') }, query,
+      req: { sequelize }, res: { setHeader: (name, value) => { headers[name] = value } } })
+    assert.strictEqual(headers[treeModeHeader], props.debugTocRecursive ? 'recursive' : 'nested-set')
+    return props
+  }
+  const before = process.env.OURBIGBOOK_DEBUG_APIS
+  try {
+    delete process.env.OURBIGBOOK_DEBUG_APIS
+    const expected = []
+    for (const slug of ['user0', 'user0/parent', 'user0/parent/child']) {
+      const props = await load(slug, { debug_toc_recursive: '1' })
+      assert.strictEqual(props.debugTocRecursive, false)
+      expected.push([slug, pageSnapshot(props), props.article.topicCount])
+    }
+    process.env.OURBIGBOOK_DEBUG_APIS = '1'
+    assert.strictEqual((await load('user0', {})).debugTocRecursive, false)
+    await sequelize.models.Article.update({ depth: null, nestedSetIndex: null, nestedSetNextSibling: null },
+      { where: { authorId: user.id } })
+    for (const [slug, snapshot, topicCount] of expected) {
+      const normal = await load(slug, {})
+      assert.strictEqual(normal.article.topicCount, topicCount)
+      if (slug !== 'user0') {
+        assert.strictEqual(normal.article.topicCount - (normal.article.list === false ? 0 : 1), 0)
+      }
+      const props = await load(slug, { debug_toc_recursive: '1' })
+      assert.strictEqual(props.debugTocRecursive, true)
+      assert.deepStrictEqual(pageSnapshot(props), snapshot)
+    }
+  } finally {
+    if (before === undefined) delete process.env.OURBIGBOOK_DEBUG_APIS
+    else process.env.OURBIGBOOK_DEBUG_APIS = before
+  }
+})
+
+it('ToC benchmark selects large and deep subtrees and excludes stale indexes', async function() {
+  const { collectCandidates } = require('./bin/benchmark-toc')
+  const sequelize = this.test.sequelize
+  const user = await createUser(sequelize, 0)
+  await createUser(sequelize, 1)
+  for (const [titleSource, parentId] of [
+    ['Parent', '@user0'], ['Child', '@user0/parent'],
+    ['Deep', '@user0/child'], ['Leaf', '@user0/deep'], ['Sibling', '@user0'],
+  ]) await createArticle(sequelize, user, { titleSource, parentId })
+  const candidates = await collectCandidates(sequelize, { candidates: 1, minLarge: 2 })
+  assert.deepStrictEqual(candidates, [
+    { slug: 'user0', depth: 0, descendants: 5 },
+    { slug: 'user0/parent', depth: 1, descendants: 3 },
+    { slug: 'user0/child', depth: 2, descendants: 2 },
+  ])
+  assert.deepStrictEqual(await collectCandidates(sequelize, { slug: 'user0/child' }), [candidates[2]])
+  assert.deepStrictEqual(await collectCandidates(sequelize, { author: 'user1' }), [
+    { slug: 'user1', depth: 0, descendants: 0 },
+  ])
+  await user.update({ nestedSetNeedsUpdate: true })
+  assert.deepStrictEqual(await collectCandidates(sequelize), [{ slug: 'user1', depth: 0, descendants: 0 }])
+  await assert.rejects(collectCandidates(sequelize, { author: 'user0' }), /No listed articles/)
+})
+
+it('ToC benchmark rejects ignored debug mode and mismatched page content', () => {
+  const { pageValidator } = require('./bin/benchmark-toc')
+  const { treeModeHeader } = require('./back/js')
+  const props = { debugTocRecursive: false, article: { slug: 'user0', depth: 0 }, ancestors: [],
+    articlesInSamePage: [{ slug: 'user0/child', depth: 1 }],
+    articlesInSamePageForToc: [{ slug: 'user0/child', depth: 1, hasChild: 0, nestedSetIndex: 1 }],
+    articlesInSamePageCount: 1, articlesInSamePageForTocCount: 1,
+    articlesInSamePageForTocHasMoreDirectChildren: false }
+  const sizes = {}
+  const validate = pageValidator(sizes)
+  const run = (recursive, mode, overrides={}) => validate({
+    request: '/user0' + (recursive ? '?debug_toc_recursive=1' : ''),
+    response: { headers: new Headers({ [treeModeHeader]: mode }) },
+    body: Buffer.from(`<script id="__NEXT_DATA__" type="application/json">${JSON.stringify({
+      props: { pageProps: { ...props, debugTocRecursive: recursive, ...overrides } },
+    })}</script>`),
+  })
+  run(false, 'nested-set')
+  assert.throws(() => run(true, 'nested-set'), /OURBIGBOOK_DEBUG_APIS/)
+  run(true, 'recursive', { articlesInSamePageForToc: [
+    { slug: 'user0/child', depth: 1, hasChild: 0, treeOrder: '/0000000000' },
+  ] })
+  assert.strictEqual(sizes['/user0?debug_toc_recursive=1'].totalDescendants, 1)
+  assert.throws(() => run(true, 'recursive', { articlesInSamePageForToc: [] }), /page content differ/)
 })
 
 it('HTML ancestor metadata avoids loading ancestor source files', async function() {

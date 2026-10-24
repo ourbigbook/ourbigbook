@@ -1,4 +1,5 @@
 import { findSynonymOr404, getLoggedInUser } from 'back'
+import { debugTocRecursive, treeModeHeader } from 'back/js'
 import { ArticlePageProps } from 'front/ArticlePage'
 import {
   articleLimitSmall,
@@ -69,7 +70,7 @@ export const getServerSidePropsArticleHoc = ({
     loggedInUserCache?: UserType,
   }
 ={}): MyGetServerSideProps => {
-  return async function getServerSidePropsArticle({ params: { slug }, req, res }) {
+  return async function getServerSidePropsArticle({ params: { slug }, query, req, res }) {
     let t0
     if (log.perf) {
       t0 = performance.now()
@@ -89,6 +90,8 @@ export const getServerSidePropsArticleHoc = ({
       if (!article) {
         return await findSynonymOr404(sequelize, slugString, routes.article)
       }
+      const recursive = debugTocRecursive(query) ? await Article.getRecursiveTreePosition(article) : undefined
+      res.setHeader(treeModeHeader, recursive ? 'recursive' : 'nested-set')
       const isIndex = article.isIndex()
       const getIssueJson = async order => Promise.all((await Issue.getArticleIssues({
         articleId: article.id, limit, order,
@@ -114,6 +117,7 @@ export const getServerSidePropsArticleHoc = ({
       ] = await Promise.all([
         // ancestors
         article.treeFindAncestors({
+          recursive,
           attributes: ['slug', 'titleRender', 'titleRenderPlaintext'],
           metadataOnly: true,
         }),
@@ -121,6 +125,7 @@ export const getServerSidePropsArticleHoc = ({
         // articlesInSamePage
         Article.getArticlesInSamePage({
           article,
+          recursive,
           getTagged: true,
           loggedInUser,
           limit: maxArticlesFetch,
@@ -131,6 +136,7 @@ export const getServerSidePropsArticleHoc = ({
         // articlesInSamePageForToc
         Article.getArticlesInSamePageForToc({
           article,
+          recursive,
           loggedInUser,
           maxEntries: maxArticlesFetchToc,
           preloadEntries: maxArticlesFetch,
@@ -140,6 +146,7 @@ export const getServerSidePropsArticleHoc = ({
         // h1ArticlesInSamePage
         Article.getArticlesInSamePage({
           article,
+          recursive,
           loggedInUser,
           list: undefined,
           h1: true,
@@ -198,6 +205,7 @@ export const getServerSidePropsArticleHoc = ({
         includeIssues ? getIssueJson('score') : null,
       ])
       const h1ArticleInSamePage = h1ArticlesInSamePage[0]
+      if (recursive) articleJson.depth = recursive.depth
       if (
         // False for Index pages, I think because they have no associated topic.
         // Which is correct.
@@ -207,6 +215,7 @@ export const getServerSidePropsArticleHoc = ({
         articleJson.hasSameTopic = h1ArticleInSamePage.hasSameTopic
       }
       const props: ArticlePageProps = {
+        debugTocRecursive: Boolean(recursive),
         ancestors: ancestors.map((a, i) => {
           return {
             hasScope: i !== 0 && ourbigbook.AstNode.fromJSON(a.file.toplevelId.ast_json, convertContext)

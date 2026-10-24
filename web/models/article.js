@@ -11,6 +11,7 @@ const config = require('../front/config')
 const front_js = require('../front/js')
 const { orderAscDescNullsLast, querySearchToTopicId } = front_js
 const convert = require('../convert')
+const recursiveTree = require('./article_tree')
 const e = require('cors')
 
 module.exports = (sequelize) => {
@@ -1095,7 +1096,13 @@ WHERE
   }
 
   /** Direct children used to expand one level of the Web ToC. */
-  Article.prototype.getTocChildren = async function({ limit }={}) {
+  Article.getRecursiveTreePosition = article => recursiveTree.getPosition(sequelize, article)
+
+  Article.prototype.getTocChildren = async function({ limit, recursive }={}) {
+    if (recursive) return Article.getArticlesInSamePage({
+      article: this, limit, recursive, directChildren: true,
+      toc: true, getHasChild: true, list: true, sequelize,
+    })
     const where = {
       authorId: this.authorId,
       depth: this.depth + 1,
@@ -1334,7 +1341,7 @@ WHERE
     const author = this.author || this.file.author || await sequelize.models.User.findByPk(this.file.authorId, {
       attributes: ['nestedSetNeedsUpdate'], transaction: opts.transaction,
     })
-    if (author.nestedSetNeedsUpdate || this.nestedSetIndex == null || this.nestedSetNextSibling == null) {
+    if (opts.recursive || author.nestedSetNeedsUpdate || this.nestedSetIndex == null || this.nestedSetNextSibling == null) {
       // Parent Refs are canonical even while rendered tree positions are
       // missing or stale. This traversal also terminates on malformed cycles.
       const ancestors = await ourbigbook_nodejs_webpack_safe.fetch_ancestors(sequelize, front_js.slugToId(this.slug), {
@@ -1966,6 +1973,8 @@ WHERE
   // Maybe try to merge into getArticle one day?
   Article.getArticlesInSamePage = async ({
     article,
+    recursive,
+    directChildren=false,
     getCount,
     getHasChild,
     getTagged,
@@ -2141,14 +2150,16 @@ WHERE
     const { File, Id, Ref } = sequelize.models
     function getQuery(countOnly) {
       const articleTableName = sequelize.models.Article.tableName
-      return `SELECT
+      // Main-article metadata must work immediately after a deferred publish,
+      // while nested-set positions may still be missing or stale.
+      return `${recursive && !h1 ? recursiveTree.descendantsCte(sequelize, directChildren) : ''}SELECT
   ${countOnly
     ? 'COUNT(*) AS "count"'
     : metadataOnly ? `"Topic"."articleCount" AS "topicCount"${loggedInUser ? ',\n  "ArticleSameTopicByLoggedIn"."id" AS "hasSameTopic"' : ''}`
-    : `"Article"."depth" AS "depth",
+    : `${recursive && !h1 ? '"tree"."depth"' : '"Article"."depth"'} AS "depth",${recursive && !h1 ? '\n  "tree"."treeOrder" AS "treeOrder",' : ''}
   "Article"."slug" AS "slug",
   "Article"."titleRender" AS "titleRender"${getHasChild ? `,
-  "Article"."nestedSetIndex" AS "nestedSetIndex",
+  ${recursive ? recursiveTree.hasChildSql() : `"Article"."nestedSetIndex" AS "nestedSetIndex",
   CASE WHEN EXISTS (
     SELECT 1 FROM "${articleTableName}" AS "TocChild"
     WHERE "TocChild"."authorId" = "Article"."authorId"
@@ -2156,7 +2167,7 @@ WHERE
       AND "TocChild"."depth" = "Article"."depth" + 1
       AND "TocChild"."nestedSetIndex" > "Article"."nestedSetIndex"
       AND "TocChild"."nestedSetIndex" < "Article"."nestedSetNextSibling"
-  ) THEN 1 ELSE 0 END AS "hasChild"` : ''}${!toc ? `,
+  ) THEN 1 ELSE 0 END`} AS "hasChild"` : ''}${!toc ? `,
   "Article"."id" AS "id",
   "Article"."list" AS "list",
   "Article"."score" AS "score",
@@ -2175,7 +2186,7 @@ WHERE
   "UserLikeArticle"."userId" AS "liked"` : ''
 }` : ''}`}
 FROM
-  "Article"${!toc ? `
+  "Article"${recursive && !h1 ? '\nINNER JOIN tree ON "Article"."slug" = substr(tree.id, 2)' : ''}${!toc ? `
 INNER JOIN "User" AS "Article.Author" ON "Article"."authorId" = "Article.Author"."id"
 INNER JOIN "Topic" ON "Article"."topicId" = "Topic"."topicId"${toplevelId ? `
 INNER JOIN "${File.tableName}" ON "Article"."fileId" = "${File.tableName}"."id"` : ''}${loggedInUser ? `
@@ -2187,12 +2198,12 @@ LEFT OUTER JOIN "UserLikeArticle"
      "UserLikeArticle"."userId" = :loggedInUserId` : ''}` : ''}
 WHERE "Article"."authorId" = ( SELECT id FROM "User" WHERE username = :authorUsername ) AND${list === undefined ? '' : `
   "Article"."list" = :list AND`}
-${h1
-  ? `  "Article"."nestedSetIndex" = :nestedSetIndex`
+${h1 ? '  "Article"."slug" = :rootSlug' : recursive
+  ? '  tree.id <> :rootId'
   : `  "Article"."nestedSetIndex" > :nestedSetIndex AND
   "Article"."nestedSetIndex" < :nestedSetNextSibling`
 }${countOnly ? '' : `
-ORDER BY "Article"."nestedSetIndex" ASC${limit !== undefined ? `
+ORDER BY ${h1 ? '"Article"."slug"' : recursive ? recursiveTree.orderSql(sequelize) : '"Article"."nestedSetIndex"'} ASC${limit !== undefined ? `
 LIMIT ${limit}${offset !== undefined ? `
 OFFSET ${offset}` : ''}` : ''}`}
 `
@@ -2200,6 +2211,8 @@ OFFSET ${offset}` : ''}` : ''}`}
     const queryOpts = {
       logging,
       replacements: {
+        ...(recursive ? recursiveTree.replacements(sequelize, article, recursive) : {}),
+        rootSlug: article.slug,
         authorUsername: article.author.username,
         loggedInUserId: loggedInUser ? loggedInUser.id : null,
         list,
@@ -2310,6 +2323,7 @@ OFFSET ${offset}` : ''}` : ''}`}
    */
   Article.getArticlesInSamePageForToc = async ({
     article,
+    recursive,
     loggedInUser,
     maxEntries,
     preloadEntries,
@@ -2317,6 +2331,7 @@ OFFSET ${offset}` : ''}` : ''}`}
   }) => {
     const [preload, count] = await Article.getArticlesInSamePage({
       article,
+      recursive,
       getCount: true,
       getHasChild: true,
       limit: preloadEntries,
@@ -2331,6 +2346,7 @@ OFFSET ${offset}` : ''}` : ''}`}
       }
       return [await Article.getArticlesInSamePage({
         article,
+        recursive,
         getHasChild: true,
         limit: maxEntries,
         list: true,
@@ -2340,6 +2356,7 @@ OFFSET ${offset}` : ''}` : ''}`}
       }), count, false]
     }
     const directChildrenWithExtra = await article.getTocChildren({
+      recursive,
       limit: maxEntries + 1,
     })
     const hasMoreDirectChildren = directChildrenWithExtra.length > maxEntries
@@ -2349,7 +2366,7 @@ OFFSET ${offset}` : ''}` : ''}`}
       bySlug.set(row.slug, row)
     }
     return [
-      Array.from(bySlug.values()).sort((a, b) => a.nestedSetIndex - b.nestedSetIndex),
+      Array.from(bySlug.values()).sort(front_js.compareArticleTreeOrder),
       count,
       hasMoreDirectChildren,
     ]

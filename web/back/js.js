@@ -19,6 +19,11 @@ const explainHeader = 'x-ourbigbook-explain'
 const databaseDialectHeader = 'x-ourbigbook-db-dialect'
 const defaultExplainDirectory = path.resolve(__dirname, '../../tmp/benchmark-explain')
 const explainUuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+const treeModeHeader = 'x-ourbigbook-tree-mode'
+
+function debugTocRecursive(query) {
+  return process.env.OURBIGBOOK_DEBUG_APIS === '1' && query?.debug_toc_recursive === '1'
+}
 
 function explainDirectory(value) {
   return value === true || value === '1' ? defaultExplainDirectory : path.resolve(value)
@@ -137,6 +142,8 @@ function installExplain(sequelize, outputDirectory) {
 }
 
 module.exports = {
+  debugTocRecursive,
+  treeModeHeader,
   databaseDialectHeader,
   explainDirectory,
   explainHeader,

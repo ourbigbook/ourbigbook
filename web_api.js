@@ -163,8 +163,8 @@ class WebApi {
     return this.req('get', `articles${encodeGetParamsWithOffset(opts)}`, reqOpts)
   }
 
-  async articleToc(slug, reqOpts={}) {
-    return this.req('get', `articles/toc${encodeGetParams({ id: slug })}`, reqOpts)
+  async articleToc(slug, reqOpts={}, opts={}) {
+    return this.req('get', `articles/toc${encodeGetParams({ id: slug, ...opts })}`, reqOpts)
   }
 
   async articleSamePage(slug, opts={}, reqOpts={}) {

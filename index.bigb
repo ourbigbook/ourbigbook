@@ -11364,6 +11364,26 @@ Server and benchmark must share the trace directory. To use another directory, s
 
 The benchmark detects PostgreSQL or SQLite from the running server's `/api/` response before loading database configuration. No `--sqlite` option is needed. For PostgreSQL, set the same connection environment variables (`DATABASE_URL`, `OURBIGBOOK_DB_NAME`) as the server; for SQLite, metadata is read from `web/db.sqlite3`. This detection makes one preliminary request outside the measured timings. Rebuild or restart the server for the commit being measured: the recorded Git SHA identifies the local checkout. Use the same data and server mode when comparing runs.
 
+= `web/bin/benchmark-toc`
+{parent=OurBigBook Web performance benchmarking}
+
+Compare recursive parent-reference traversal with nested sets on article pages. Start the updated server with the debug mode enabled:
+``
+OURBIGBOOK_DEBUG_APIS=1 npm run dev-pg --prefix web
+``
+Then run from another terminal:
+``
+web/bin/benchmark-toc
+``
+
+The benchmark selects the three largest subtrees across all authors, the largest non-home article subtree, and the deepest subtree with at least 1000 descendants, removing duplicates. Selection uses current nested-set indexes outside the timed requests. Authors awaiting an index rebuild are excluded. This targets expensive recursive workloads; it does not exhaustively time every article. Use `--author cirosantilli` to restrict selection, `--candidates N` to increase coverage, or `--slug cirosantilli/test-article-3` to choose a page.
+
+Each selected page is requested with and without `?debug_toc_recursive=1`, using one warmup and three measured requests per mode. The benchmark checks the server's mode header and verifies matching article content, ancestors, ToC order, depths, child indicators and counts. A disabled debug flag or mismatched page fails the run. Results, response sizes and individual timings are appended to `tmp/benchmark-toc.json`. The summary identifies the slowest measured recursive candidate and compares median times. Keep the database unchanged during comparison.
+
+Timings cover server rendering and complete HTML transfer, excluding browser hydration and painting. Both modes keep the existing body and ToC limits; large ToCs still load lazily. Recursive mode derives descendant order, depth, child indicators and ancestors from parent references, and carries the mode into Load more and ToC expansion requests. It does not require valid stored nested-set positions to display a page. The query parameter is ignored unless the server environment variable is exactly `1`; remove the variable after debugging.
+
+The same flag works when starting a rebuilt server with `npm run start-dev-pg --prefix web`. Compare the same server mode in both cases. The `--runs`, `--warmup`, `--timeout`, `--output`, and optional query-plan collection options work as in <`web/bin/benchmark`>. To collect PostgreSQL plans, also enable `OURBIGBOOK_EXPLAIN=1` on the server; measured times then include instrumentation overhead.
+
 = Next.js web vitals
 {parent=OurBigBook Web performance benchmarking}
 

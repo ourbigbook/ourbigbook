@@ -1,0 +1,148 @@
+#!/usr/bin/env node
+
+const path = require('path')
+const { isDeepStrictEqual } = require('util')
+const { execFileSync } = require('child_process')
+const { benchmark, detectDatabaseDialect } = require('./benchmark')
+const { treeModeHeader } = require('../back/js')
+
+const repoRoot = path.resolve(__dirname, '../..')
+
+async function collectCandidates(sequelize, { author, slug, candidates=3, minLarge=1000 }={}) {
+  // Use the existing index only to select the workloads, outside the timed
+  // requests. It must be current for a meaningful comparison with recursion.
+  const select = `SELECT a.slug, a.depth,
+    a."nestedSetNextSibling" - a."nestedSetIndex" - 1 AS descendants
+    FROM "Article" a JOIN "User" u ON u.id = a."authorId"
+    WHERE a.list = :listed AND u."nestedSetNeedsUpdate" = :ready
+      AND a."nestedSetIndex" IS NOT NULL AND a."nestedSetNextSibling" IS NOT NULL
+      ${author ? 'AND u.username = :author' : ''}`
+  const query = suffix => sequelize.query(select + suffix, {
+    replacements: { listed: true, ready: false, author, slug, candidates, minLarge },
+    type: sequelize.QueryTypes.SELECT, logging: false,
+  })
+  if (slug) {
+    const rows = await query(' AND a.slug = :slug')
+    if (!rows.length) throw new Error('Article not found, unlisted, or its nested-set index needs rebuilding')
+    return rows
+  }
+  const groups = await Promise.all([
+    query(' ORDER BY descendants DESC, a.slug ASC LIMIT :candidates'),
+    // Include an ordinary article page even when the largest trees are homes.
+    query(' AND a.depth > 0 ORDER BY descendants DESC, a.slug ASC LIMIT 1'),
+    // Depth adds ancestor/path work; also cover a deep but still large ToC.
+    query(' AND a."nestedSetNextSibling" - a."nestedSetIndex" - 1 >= :minLarge ORDER BY a.depth DESC, descendants DESC, a.slug ASC LIMIT 1'),
+  ])
+  const rows = [...new Map(groups.flat().map(row => [row.slug, row])).values()]
+  if (!rows.length) throw new Error('No listed articles with current nested-set indexes found')
+  return rows
+}
+
+function pageSnapshot(props) {
+  const rows = articles => articles?.map(({ nestedSetIndex, treeOrder, ...article }) => article)
+  return {
+    article: { slug: props.article.slug, depth: props.article.depth,
+      render: props.article.render, h1Render: props.article.h1Render },
+    ancestors: props.ancestors,
+    articles: rows(props.articlesInSamePage),
+    toc: rows(props.articlesInSamePageForToc),
+    count: props.articlesInSamePageCount,
+    tocCount: props.articlesInSamePageForTocCount,
+    hasMoreDirectChildren: props.articlesInSamePageForTocHasMoreDirectChildren,
+  }
+}
+
+function pageValidator(pageSizes={}) {
+  const snapshots = new Map()
+  return ({ request, response, body }) => {
+    const url = new URL(request, 'http://benchmark.invalid')
+    const recursive = url.searchParams.get('debug_toc_recursive') === '1'
+    const expected = recursive ? 'recursive' : 'nested-set'
+    if (response.headers.get(treeModeHeader) !== expected) {
+      throw new Error(`Expected ${expected} mode. Restart the updated server with OURBIGBOOK_DEBUG_APIS=1`)
+    }
+    const html = Buffer.from(body).toString('utf8')
+    const data = html.match(/<script\b[^>]*\bid="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/)
+    if (!data) throw new Error('Expected article HTML containing __NEXT_DATA__')
+    const props = JSON.parse(data[1]).props?.pageProps
+    if (!props?.article || props.debugTocRecursive !== recursive) throw new Error('Unexpected article page or tree mode in page props')
+    const snapshot = pageSnapshot(props)
+    if (snapshots.has(url.pathname) && !isDeepStrictEqual(snapshots.get(url.pathname), snapshot)) {
+      throw new Error('Nested-set and recursive page content differ (or the database changed during the benchmark)')
+    }
+    snapshots.set(url.pathname, snapshot)
+    pageSizes[request] = { bytes: body.byteLength, bodyArticles: snapshot.articles.length,
+      tocEntries: snapshot.toc.length, totalDescendants: snapshot.tocCount }
+  }
+}
+
+async function main() {
+  const { Command, InvalidArgumentError } = require('commander')
+  const integer = minimum => value => {
+    const number = Number(value)
+    if (!Number.isInteger(number) || number < minimum) throw new InvalidArgumentError(`Expected an integer >= ${minimum}`)
+    return number
+  }
+  const program = new Command()
+    .description('Compare recursive and nested-set HTML page loads on the largest current subtrees. Start the server with OURBIGBOOK_DEBUG_APIS=1.')
+    .option('--url <url>', 'local server origin', 'http://localhost:3000')
+    .option('--author <username>', 'restrict candidate selection to this author (default: all authors)')
+    .option('--slug <slug>', 'benchmark only this article')
+    .option('--candidates <n>', 'number of largest subtrees, plus largest non-home and deepest large subtree', integer(1), 3)
+    .option('--runs <n>', 'measured requests per page and mode', integer(1), 3)
+    .option('--warmup <n>', 'unmeasured requests per page and mode', integer(0), 1)
+    .option('--timeout <ms>', 'request timeout', integer(1), 60000)
+    .option('--explain [directory]', 'collect query plans when OURBIGBOOK_EXPLAIN is enabled on the server')
+    .option('--no-explain', 'disable query-plan collection')
+    .option('-o, --output <file>', 'JSON benchmark history', path.join(repoRoot, 'tmp/benchmark-toc.json'))
+    .parse()
+  const opts = program.opts()
+  const url = new URL(opts.url)
+  if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password ||
+      url.pathname !== '/' || url.search || url.hash || !['localhost', '127.0.0.1', '[::1]'].includes(url.hostname)) {
+    throw new Error('--url must be a local HTTP(S) server origin')
+  }
+  const dialect = await detectDatabaseDialect(url.origin, opts.timeout)
+  // Models cache configuration at import time. Match the running server.
+  process.env.OURBIGBOOK_POSTGRES = dialect === 'postgres' ? '1' : '0'
+  const sequelize = require('../models').getSequelize(path.join(repoRoot, 'web'))
+  let candidates
+  try {
+    candidates = await collectCandidates(sequelize, opts)
+  } finally {
+    await sequelize.close()
+  }
+  console.log(`${dialect}: candidate subtrees (including unlisted descendants):`)
+  for (const row of candidates) console.log(`  ${row.slug}: ${row.descendants} descendants, depth ${row.depth}`)
+  console.log('Timing complete HTML responses (SSR and transfer, excluding browser hydration).')
+  const paths = candidates.flatMap(({ slug }) => {
+    const pathname = '/' + slug.split('/').map(encodeURIComponent).join('/')
+    return [pathname, `${pathname}?debug_toc_recursive=1`]
+  })
+  const pageSizes = {}
+  const entry = await benchmark({
+    ...opts, baseUrl: url.origin, output: path.resolve(opts.output), paths,
+    validateResponse: pageValidator(pageSizes),
+    about: {
+      benchmark: 'toc', dialect, candidates, pageSizes,
+      git_sha: execFileSync('git', ['-C', repoRoot, 'rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+      git_dirty: execFileSync('git', ['-C', repoRoot, 'status', '--porcelain'], { encoding: 'utf8' }).trim() !== '',
+      note: 'Largest subtrees plus deepest large subtree; slowest measured candidate is not an exhaustive search of every page. Same body/ToC limits in both modes. Validation is outside measured time.',
+    },
+  })
+  console.log('\nComparison (median full HTML response):')
+  for (let i = 0; i < paths.length; i += 2) {
+    const nested = entry.results[paths[i]]
+    const recursive = entry.results[paths[i + 1]]
+    if (nested == null || recursive == null) continue
+    console.log(`  ${paths[i]}: nested-set ${nested.toFixed(1)} ms; recursive ${recursive.toFixed(1)} ms (${(recursive / nested).toFixed(2)}x)`)
+  }
+  const slowest = paths.filter(p => p.includes('?') && entry.results[p] != null)
+    .sort((a, b) => entry.results[b] - entry.results[a])[0]
+  if (slowest) console.log(`Slowest recursive candidate: ${url.origin}${slowest}`)
+  console.log(`Results and response sizes: ${path.resolve(opts.output)}`)
+  if (!entry.about.completed) process.exitCode = 1
+}
+
+module.exports = { collectCandidates, pageSnapshot, pageValidator }
+if (require.main === module) main().catch(error => { console.error(error.message); process.exitCode = 1 })

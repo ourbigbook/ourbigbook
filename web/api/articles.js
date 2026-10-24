@@ -16,6 +16,7 @@ const { MILLIS_PER_MONTH, oneMonthAgo } = lib
 const config = require('../front/config')
 const { maxArticleAnnouncesPerMonth } = config
 const { host, user } = require('../front/routes')
+const { debugTocRecursive, treeModeHeader } = require('../back/js')
 
 const ANNOUNCE_YOU_ARE_RECEIVING_MESSAGE = 'You are receiving this email because a user you follow has announced their article.'
 
@@ -87,7 +88,10 @@ router.get('/', auth.optional, async function(req, res, next) {
 router.get('/toc', auth.optional, async function(req, res, next) {
   try {
     const article = await lib.getArticle(req, res)
-    return res.json({ articles: await article.getTocChildren() })
+    const recursive = debugTocRecursive(req.query)
+      ? await req.app.get('sequelize').models.Article.getRecursiveTreePosition(article) : undefined
+    res.setHeader(treeModeHeader, recursive ? 'recursive' : 'nested-set')
+    return res.json({ articles: await article.getTocChildren({ recursive }) })
   } catch(error) {
     next(error)
   }
@@ -106,9 +110,12 @@ router.get('/same-page', auth.optional, async function(req, res, next) {
       lib.getArticle(req, res),
       req.payload ? User.findByPk(req.payload.id) : null,
     ])
+    const recursive = debugTocRecursive(req.query) ? await sequelize.models.Article.getRecursiveTreePosition(article) : undefined
+    res.setHeader(treeModeHeader, recursive ? 'recursive' : 'nested-set')
     return res.json({
       articles: await sequelize.models.Article.getArticlesInSamePage({
         article,
+        recursive,
         getHasChild: true,
         getTagged: true,
         limit,

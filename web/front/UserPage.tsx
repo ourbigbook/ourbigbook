@@ -62,6 +62,7 @@ import SpammerButton from './SpammerButton'
 import UnlistAllContentButton from './UnlistAllContentButton'
 
 export interface UserPageProps extends CommonPropsType {
+  debugTocRecursive?: boolean;
   ancestors?: ArticleLinkType[];
   article?: ArticleType & IssueType;
   articles?: (ArticleType & IssueType & TopicType)[];
@@ -134,6 +135,7 @@ export default function UserPage({
   articlesInSamePageForToc,
   articlesInSamePageForTocCount,
   articlesInSamePageForTocHasMoreDirectChildren,
+  debugTocRecursive,
   ancestors,
   comments,
   commentsCount,
@@ -508,6 +510,7 @@ export default function UserPage({
           articlesInSamePageForToc,
           articlesInSamePageForTocCount,
           articlesInSamePageForTocHasMoreDirectChildren,
+          debugTocRecursive,
           comments,
           commentCountByLoggedInUser,
           handleShortFragmentSkipOnce,

@@ -9588,7 +9588,9 @@ const PARAGRAPH_SEP = '\n\n';
 exports.PARAGRAPH_SEP = PARAGRAPH_SEP;
 // Keep apostrophes inside words: <Nicolaas Bloembergen's> must replace
 // "Bloembergen" with "Bloembergen's", not with the isolated suffix "s".
-const PLURALIZE_WORD_SPLIT_REGEX = /[^a-zA-Z']/
+// Unicode letters and combining marks also belong to the word: replacing
+// only the final "m" of "Ångström" with "angstroms" corrupts the link target.
+const PLURALIZE_WORD_SPLIT_REGEX = /[^\p{L}\p{M}']/u
 const REFS_TABLE_PARENT = 'PARENT';
 exports.REFS_TABLE_PARENT = REFS_TABLE_PARENT;
 const REFS_TABLE_X = 'X';

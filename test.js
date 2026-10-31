@@ -5805,6 +5805,30 @@ assert_lib('x: pluralize uses plural given for user in case of differences',
     },
   }
 )
+it('x: accented plural magic links preserve whole words in HTML and bigb round trips', async () => {
+  for (const [title, text] of [
+    ['Ångström', 'angstroms'],
+    ['Ångström', 'Angstroms'],
+    ['Ångström', 'ångströms'],
+    ['Cafe\u0301', 'cafes'],
+    ['Cafe\u0301', 'cafe\u0301s'],
+  ]) {
+    const source = `= Home\n\n== ${title}\n\n== Other\n\nDistances in <${text}>.\n`
+    const checkHtml = async input => {
+      const extra = {}
+      const html = await ourbigbook.convert(input, {}, extra)
+      assert.deepStrictEqual(extra.errors, [])
+      assert_xpath(`//x:div[@class="p"]/x:a[@href="#${ourbigbook.titleToId(title)}" and text()="${text}"]`, html)
+    }
+    await checkHtml(source)
+    const extra = {}
+    const output = await ourbigbook.convert(source, { output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK }, extra)
+    assert.deepStrictEqual(extra.errors, [])
+    assert(output.includes(`Distances in <${text}>.`), output)
+    await checkHtml(output)
+  }
+})
+
 it('x: possessive magic links preserve the last word in HTML and bigb round trips', async () => {
   for (const [title, capitalized] of [['Nicolaas Bloembergen', true], ['Laser', false], ["O'Neill", true]]) {
     const text = `${capitalized ? title : title.toLowerCase()}'s`
@@ -17903,6 +17927,21 @@ assert_cli(
     },
     assert_bigb: {
       [`${TMP_DIRNAME}/web/nonlinear-optics.bigb`]: "= Nonlinear optics\n\n<Nicolaas Bloembergen's> work uses a <laser's> light.\n",
+    },
+  }
+)
+assert_cli(
+  '--web preserves plural links to accented titles when splitting articles',
+  {
+    args: ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer', '-j', '1', '.'],
+    filesystem: {
+      'index.bigb': '= Root\n\n\\Include[physics]\n\\Include[biochemistry-author]\n',
+      'physics.bigb': '= Physics\n\n== Ångström\n',
+      'biochemistry-author.bigb': '= Biochemistry author\n\n== Gabriele Varani\n{c}\n\nDistances in <angstroms>.\n',
+      'ourbigbook.json': '{}\n',
+    },
+    assert_bigb: {
+      [`${TMP_DIRNAME}/web/gabriele-varani.bigb`]: '= Gabriele Varani\n{c}\n\nDistances in <angstroms>.\n',
     },
   }
 )

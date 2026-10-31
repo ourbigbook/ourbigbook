@@ -16562,6 +16562,86 @@ assert_cli('link: local media provider supports file-relative paths across scope
     [`${TMP_DIRNAME}/html/index.html`]: ["//x:img[@src='../../-/media/subdir/figure.svg']"],
   },
 })
+describe('persistent media checkouts', function () {
+  this.timeout(30000)
+  for (const layout of ['external', 'ignored', 'submodule']) {
+    it(`reuses and refreshes ${layout} media across Web, HTML and Markdown publishes`, function () {
+      const base = path.join(testdir, `persistent-media-${layout}`)
+      const root = path.join(base, 'wiki')
+      let media = layout === 'ignored' ? path.join(root, '_media') : path.join(base, 'media files')
+      fs.mkdirSync(root, { recursive: true })
+      fs.mkdirSync(media, { recursive: true })
+      const git = (cwd, args) => child_process.execFileSync('git', args, { cwd, encoding: 'utf8' }).trim()
+      const commit = (cwd, message) => {
+        git(cwd, ['add', '.'])
+        git(cwd, ['-c', 'user.name=Test', '-c', 'user.email=test@example.com', 'commit', '-m', message])
+        return git(cwd, ['rev-parse', 'HEAD'])
+      }
+      git(media, ['init', '-b', 'main'])
+      fs.writeFileSync(path.join(media, 'diagram.svg'), '<svg>first</svg>')
+      fs.writeFileSync(path.join(media, 'obsolete.svg'), '<svg>obsolete</svg>')
+      const first = commit(media, 'First media')
+      git(media, ['remote', 'add', 'origin', 'git@github.com:ourbigbook/media.git'])
+      git(root, ['init'])
+      if (layout === 'submodule') {
+        git(root, ['-c', 'protocol.file.allow=always', 'submodule', 'add', '--', media, '_media'])
+        media = path.join(root, '_media')
+        git(media, ['remote', 'set-url', 'origin', 'git@github.com:ourbigbook/media.git'])
+      }
+      fs.writeFileSync(path.join(root, '.gitignore'), '_out/\n' + (layout === 'ignored' ? '_media/\n' : ''))
+      fs.writeFileSync(path.join(root, 'ourbigbook.json'), JSON.stringify({
+        'media-providers': { local: { path: path.relative(root, media) } },
+        target: { 'github-md': { publishRemoteUrl: 'git@github.com:ourbigbook/docs-md.git' } },
+      }))
+      fs.writeFileSync(path.join(root, 'index.bigb'), '= Home\n\n\\Image[diagram.svg]\n')
+      commit(root, 'Source')
+      git(root, ['remote', 'add', 'origin', 'git@github.com:ourbigbook/wiki.git'])
+      const run = target => {
+        const args = target === 'web'
+          ? ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
+          : ['--publish', '--dry-run', '--publish-target', target]
+        const result = child_process.spawnSync(process.execPath, [path.join(__dirname, 'ourbigbook'), ...args, '-j', '1'],
+          { cwd: root, encoding: 'utf8', timeout: 15000, env: { ...process.env, GIT_ALLOW_PROTOCOL: 'file' } })
+        assert.strictEqual(result.status, 0, result.stdout + result.stderr)
+        assert(!/ourbigbook-(publish|web)-media-/.test(result.stdout), result.stdout)
+        return result.stdout
+      }
+      const checkout = path.join(root, TMP_DIRNAME, 'publish')
+      const snapshot = layout === 'external'
+        ? path.join(root, TMP_DIRNAME, 'media', path.relative(path.parse(media).root, media))
+        : path.join(checkout, '_media')
+      const initial = run('web')
+      assert(initial.includes(`git clone --no-checkout -- ${root} ${checkout}`), initial)
+      assert.strictEqual(fs.readFileSync(path.join(snapshot, 'diagram.svg'), 'utf8'), '<svg>first</svg>')
+      fs.writeFileSync(path.join(snapshot, '.git', 'reuse-proof'), 'keep this Git checkout')
+      fs.writeFileSync(path.join(snapshot, 'diagram.svg'), 'dirty cached file')
+      fs.writeFileSync(path.join(snapshot, 'untracked.svg'), 'dirty cached file')
+      fs.writeFileSync(path.join(media, 'diagram.svg'), '<svg>second</svg>')
+      fs.unlinkSync(path.join(media, 'obsolete.svg'))
+      const second = commit(media, 'Second media')
+      fs.writeFileSync(path.join(media, 'diagram.svg'), 'dirty source file')
+      const html = run('github-pages')
+      assert(!html.includes('git clone '), html)
+      assert(!fs.existsSync(path.join(snapshot, 'untracked.svg')))
+      const expected = layout === 'submodule' ? '<svg>first</svg>' : '<svg>second</svg>'
+      assert.strictEqual(fs.readFileSync(path.join(checkout, TMP_DIRNAME, 'github-pages/diagram.svg'), 'utf8'), expected)
+      if (layout === 'submodule') commit(root, 'Advance media pin')
+      const markdown = run('github-md')
+      assert(!markdown.includes('git clone '), markdown)
+      assert.strictEqual(git(snapshot, ['rev-parse', 'HEAD']), second)
+      assert.strictEqual(fs.readFileSync(path.join(checkout, TMP_DIRNAME, 'github-md/diagram.svg'), 'utf8'), '<svg>second</svg>')
+      assert(!fs.existsSync(path.join(snapshot, 'obsolete.svg')))
+      // Returning to an older local HEAD must refresh the cache too. Submodules
+      // keep the superproject's pin even when its working submodule moves back.
+      git(media, ['checkout', '--force', '--detach', first])
+      const again = run('web')
+      assert(!again.includes('git clone '), again)
+      assert.strictEqual(git(snapshot, ['rev-parse', 'HEAD']), layout === 'submodule' ? second : first)
+      assert.strictEqual(fs.readFileSync(path.join(snapshot, '.git', 'reuse-proof'), 'utf8'), 'keep this Git checkout')
+    })
+  }
+})
+
 for (const publishTarget of ['github-pages', 'github-md']) {
 for (const usedOnly of [false, true]) {
 const output = `wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/${publishTarget}`

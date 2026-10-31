@@ -1482,35 +1482,40 @@ async function lockPublish(project) {
 }
 
 // A reusable, disposable checkout. Keep conversion caches, but never source edits.
-function checkoutPublishSnapshot(source, destination) {
-  const opts = { throwOnError: true, showCmd: false }
+function checkoutPublishSnapshot(source, destination, { cleanExcludes=[], preserveOutput=true, submodules=new Set() }={}) {
+  const opts = { throwOnError: true }
+  const infoOpts = { ...opts, showCmd: false }
   const commit = gitSha(source)
   if (!fs.existsSync(path.join(destination, '.git'))) {
     fs.mkdirSync(path.dirname(destination), { recursive: true })
     runCmd('git', ['clone', '--no-checkout', '--', source, destination], opts)
   } else {
-    const origin = chomp(runCmd('git', ['-C', destination, 'remote', 'get-url', 'origin'], opts))
+    const origin = chomp(runCmd('git', ['-C', destination, 'remote', 'get-url', 'origin'], infoOpts))
     if (path.resolve(origin) !== path.resolve(source)) cli_error(`unexpected snapshot repository origin: ${destination}`)
     runCmd('git', ['-C', destination, 'fetch', 'origin', commit], opts)
   }
   runCmd('git', ['-C', destination, 'checkout', '--force', '--detach', commit], opts)
-  runCmd('git', ['-C', destination, 'clean', '-ffd', '-x', '-e', '_out/'], opts)
+  runCmd('git', ['-C', destination, 'clean', '--quiet', '-ffd', '-x',
+    ...(preserveOutput ? ['-e', '_out/'] : []),
+    ...cleanExcludes.flatMap(relative => ['-e', '/' + relative.split(path.sep).join('/').replace(/[\\*?\[\]]/g, '\\$&') + '/']),
+  ], opts)
   const updateSubmodules = (original, checkout) => {
     const modules = path.join(checkout, '.gitmodules')
     if (!fs.existsSync(modules)) return
     const entries = runCmd('git', ['config', '--file', modules, '--null', '--get-regexp', '^submodule\\..*\\.path$'], {
-      ...opts, throwOnError: false,
+      ...infoOpts, throwOnError: false,
     }).split('\0').filter(Boolean)
     for (const entry of entries) {
       const newline = entry.indexOf('\n')
       const relative = entry.slice(newline + 1)
       const local = path.join(original, relative)
       const nested = path.join(checkout, relative)
+      submodules.add(path.resolve(nested))
       const initialized = fs.existsSync(path.join(local, '.git'))
       if (initialized) {
         // Use local objects even when the pinned commit has not been pushed yet.
         // Clone directly: Git's submodule helper rejects paths starting with '-'.
-        const pinned = chomp(runCmd('git', ['-C', checkout, 'rev-parse', `HEAD:${relative}`], opts))
+        const pinned = chomp(runCmd('git', ['-C', checkout, 'rev-parse', `HEAD:${relative}`], infoOpts))
         if (!fs.existsSync(path.join(nested, '.git'))) {
           runCmd('git', ['clone', '--no-checkout', '--', local, nested], opts)
         } else {
@@ -1520,12 +1525,38 @@ function checkoutPublishSnapshot(source, destination) {
       } else {
         runCmd('git', ['-C', checkout, 'submodule', 'update', '--init', '--force', '--', relative], opts)
       }
-      runCmd('git', ['-C', nested, 'clean', '-ffd', '-x'], opts)
+      runCmd('git', ['-C', nested, 'clean', '--quiet', '-ffd', '-x'], opts)
       updateSubmodules(local, nested)
     }
   }
   updateSubmodules(source, destination)
   return commit
+}
+
+function mediaSnapshotExcludes(source, project, providers) {
+  return providers.map(provider => path.resolve(project, provider.path)).filter(media =>
+    is_subpath(source, media) && fs.existsSync(path.join(media, '.git'))
+  ).map(media => path.relative(source, media))
+}
+
+function checkoutMediaSnapshots(source, project, checkout, providers, submodules) {
+  const snapshots = {}
+  for (const provider of providers) {
+    const media = path.resolve(project, provider.path)
+    const internal = pathIsWithin(source, media)
+    const destination = internal
+      ? path.join(checkout, path.relative(source, media))
+      : path.join(project, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'media', path.relative(path.parse(media).root, media))
+    // Tracked media and submodules are already checked out at the source pin.
+    // An independent, ignored repository inside the project needs its own refresh.
+    if (!internal || (path.resolve(media) !== path.resolve(source) && fs.existsSync(path.join(media, '.git')) &&
+        ![...submodules].some(root => pathIsWithin(root, destination)))) {
+      if (!git_is_in_repo(media)) cli_error(`local media provider must be a Git repository for committed uploads: ${media}`)
+      checkoutPublishSnapshot(media, destination, { preserveOutput: false })
+    }
+    snapshots[provider.name] = destination
+  }
+  return snapshots
 }
 
 function git_toplevel(input_path) {
@@ -2517,11 +2548,16 @@ if (cli.helpMacros) {
       sharedPublishDir = path.join(project, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'publish')
     }
   }
-  const webMediaSnapshots = {}
+  let webMediaSnapshots = {}
   if (web && git_is_in_repo(ourbigbook_json_dir)) {
     const opts = { throwOnError: true, showCmd: false }
     const source = chomp(runCmd('git', ['-C', ourbigbook_json_dir, 'rev-parse', '--show-toplevel'], opts))
     webSourceRoot = path.resolve(ourbigbook_json_dir)
+    const configSource = runCmd('git', ['-C', source, 'show',
+      `HEAD:${path.relative(source, path.join(webSourceRoot, ourbigbook.OURBIGBOOK_JSON_BASENAME)).split(path.sep).join('/')}`,
+    ], { ...opts, throwOnError: false })
+    const mediaProviders = ourbigbook.localMediaProviders(configSource ? JSON.parse(configSource) : {})
+      .filter(provider => provider.path && path.normalize(provider.path) !== '.')
     const snapshot = sharedPublishDir
     const project = path.join(snapshot, path.relative(source, webSourceRoot))
     const absoluteInputs = inputPaths.map(p => path.resolve(p))
@@ -2530,7 +2566,11 @@ if (cli.helpMacros) {
     }
     if (cli.outdir !== undefined) cli.outdir = path.resolve(cli.outdir)
     if (cli.template !== undefined) cli.template = path.join(snapshot, path.relative(source, path.resolve(cli.template)))
-    const commit = checkoutPublishSnapshot(source, snapshot)
+    const submodules = new Set()
+    const commit = checkoutPublishSnapshot(source, snapshot, {
+      cleanExcludes: mediaSnapshotExcludes(source, webSourceRoot, mediaProviders), submodules,
+    })
+    webMediaSnapshots = checkoutMediaSnapshots(source, webSourceRoot, snapshot, mediaProviders, submodules)
     console.log(`Web upload uses committed source: ${commit} (checkout: ${project})`)
     process.chdir(project)
     inputPaths = absoluteInputs.map(p => path.relative(project, path.join(snapshot, path.relative(source, p))) || '.')
@@ -2540,19 +2580,6 @@ if (cli.helpMacros) {
     ourbigbook_json_dir = project
     const config = path.join(project, ourbigbook.OURBIGBOOK_JSON_BASENAME)
     ourbigbook_json = fs.existsSync(config) ? JSON.parse(fs.readFileSync(config, 'utf8')) : {}
-    for (const { name, path: mediaPath } of ourbigbook.localMediaProviders(ourbigbook_json)) {
-      if (!mediaPath || path.normalize(mediaPath) === '.') continue
-      const mediaSource = path.resolve(webSourceRoot, mediaPath)
-      // Submodules inside the source checkout already use the superproject's pinned commit.
-      if (!is_subpath(source, mediaSource)) {
-        if (!git_is_in_repo(mediaSource)) cli_error(`local media provider must be a Git repository for committed web uploads: ${mediaSource}`)
-        const webMediaSnapshot = fs.mkdtempSync(path.join(os.tmpdir(), 'ourbigbook-web-media-'))
-        webMediaSnapshots[name] = webMediaSnapshot
-        process.on('exit', () => fs.rmSync(webMediaSnapshot, { recursive: true, force: true }))
-        runCmd('git', ['clone', '--shared', '--no-checkout', '--', mediaSource, webMediaSnapshot], opts)
-        runCmd('git', ['-C', webMediaSnapshot, 'checkout', '--detach', gitSha(mediaSource)], opts)
-      }
-    }
   }
   const publish_target = cli.publishTarget
   const publish_target_options = publish && ourbigbook_json.target
@@ -3777,12 +3804,6 @@ if (cli.helpMacros) {
               branch = mediaGit(['symbolic-ref', '--short', 'refs/remotes/origin/HEAD']).replace(/^origin\//, '')
             }
             ourbigbook_options.localMediaPublish = true
-            const snapshot = fs.mkdtempSync(path.join(require('os').tmpdir(), 'ourbigbook-publish-media-'))
-            process.on('exit', () => fs.rmSync(snapshot, { recursive: true, force: true }))
-            runCmd('git', ['clone', '--shared', '--no-checkout', '--', localMediaDir, snapshot], cmdOptsNoDry)
-            runCmd('git', ['-C', snapshot, 'checkout', '--detach', commit], cmdOptsNoDry)
-            provider.snapshot = snapshot
-            Object.assign(ourbigbook_options, fileConversionOptions(ourbigbook_json_dir, nonOurbigbookOptions))
             // Publish media first, including before cloning a source repository with submodules.
             if (!cli.dryRunPush && !alreadyPublished) runCmd('git', ['-C', localMediaDir, 'push', 'origin', `HEAD:refs/heads/${branch}`], cmdOpts)
           }
@@ -3836,7 +3857,15 @@ if (cli.helpMacros) {
             runCmd( 'git', ['-C', inputPathCwd, 'commit', '-m', cli.publishCommit], cmdOpts);
           }
           sourceCommit = gitSha(inputPath, srcBranch);
-          checkoutPublishSnapshot(input_git_toplevel, publishDirCwd)
+          const submodules = new Set()
+          const mediaProviders = publish_uses_git ? localMediaProviders : []
+          checkoutPublishSnapshot(input_git_toplevel, publishDirCwd, {
+            cleanExcludes: mediaSnapshotExcludes(input_git_toplevel, ourbigbook_json_dir, mediaProviders), submodules,
+          })
+          const snapshots = checkoutMediaSnapshots(input_git_toplevel, ourbigbook_json_dir, publishDir,
+            mediaProviders, submodules)
+          for (const provider of mediaProviders) provider.snapshot = snapshots[provider.name]
+          Object.assign(ourbigbook_options, fileConversionOptions(ourbigbook_json_dir, nonOurbigbookOptions))
 
           // Set some variables especially for publishing.
           actualInputDir = path.join(publishDir, subdir_relpath);

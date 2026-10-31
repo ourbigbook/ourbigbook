@@ -8910,6 +8910,8 @@ Provider types and their type-specific properties:
 
     When publishing to GitHub, the media directory must be its own Git repository with a GitHub `origin`: OurBigBook pushes its current commit and merges its committed files into the generated site's root directory, preserving their relative paths. Images and videos use relative links on the site's own domain, without a Git commit SHA in their URLs. Git metadata is excluded, and collisions with generated files and symbolic links are rejected. Commit media changes before publishing; `--dry-run` and `--dry-run-push` suppress the push but still copy the media into the local publish output.
 
+    Web, HTML, and Markdown publishing reuse persistent media checkouts. Media inside the source Git repository stays at the corresponding path under `_out/publish`, for example `_media` becomes `_out/publish/_media`. Git submodules use the commit pinned by the source repository. Independent media repositories outside the source repository use `_out/media` followed by their absolute source path without its leading slash: `/home/user/media` becomes `_out/media/home/user/media`. These checkouts are fetched and reset to the required commit on subsequent publishes; dirty and untracked cached files are removed. The CLI prints the Git clone, fetch, and checkout commands, including those for `_out/publish`.
+
     With `--web`, files from the media directory are merged into your upload root, preserving their paths without an extra `media/` prefix. Image and video references are rewritten automatically, preserving source-relative paths even when scoped headers become separate articles. Git-ignored files and Git metadata are excluded; unchanged files are skipped by hash. Collisions with source-repository files or directories abort before any files are uploaded or unlisted.
   * `usedMediaOnly`: default `false`. When `true`, only copy files from this provider that are referenced by the project's markup, both during ordinary local directory conversion and publishing. For example:
     ``
@@ -12742,6 +12744,7 @@ OurBigBook stores some metadata and outputs it generates/needs inside the `./_ou
 Overview of files it contains:
 * `db.sqlite3`: <cross file internal link internals>
 * `publish-lock.sqlite3`: an exclusive publishing lock, released automatically when the process exits, including after a crash
+* `media`: persistent checkouts of external media repositories, arranged by absolute source path
 * `publish`: a clean Git checkout shared by Web, HTML, and Markdown publishing
   * `publish/_out/db.sqlite3`: shared extracted IDs, references, and per-format render status
   * `publish/_out/web`: prepared single-article sources and the `web.sqlite3` upload-preparation cache

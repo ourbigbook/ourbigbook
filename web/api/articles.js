@@ -913,7 +913,7 @@ router.get('/bulk', auth.required, async function(req, res, next) {
     const denied = cant.viewUserSettings(loggedInUser, user)
     if (denied) throw new lib.ValidationError('Cannot view another user’s upload status', 403)
     if (req.query.view !== undefined) {
-      if (!['todo', 'done'].includes(req.query.view)) throw new lib.ValidationError('Invalid job view')
+      if (!front.buildJobViews.includes(req.query.view)) throw new lib.ValidationError('Invalid job view')
       const [limit, offset] = lib.getLimitAndOffset(req, res, { limitMax: 100 })
       const history = await Job.history(user.id, { view: req.query.view, limit, offset })
       const ongoing = history.todoCount > 0 || Boolean(await req.app.get('sequelize').models.ArticleBuild.findOne({

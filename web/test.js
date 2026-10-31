@@ -7494,7 +7494,7 @@ it('settings: account and build jobs use separate tabs', async function() {
     assert.strictEqual(buildsHtml.querySelector('#background-uploads h2, #background-uploads h3, #background-uploads p'), null)
     assert(buildsHtml.querySelector('.tab-item.active').text.includes('Build jobs'))
     assert.strictEqual(buildsHtml.querySelector('input[autocomplete="username"]'), null)
-    assert.strictEqual(buildsHtml.querySelectorAll('.tab-item .icon').length, 4)
+    assert.strictEqual(buildsHtml.querySelectorAll('.tab-item .icon').length, 6)
     assert(buildsHtml.querySelector('#background-uploads .tab-item.active').text.trim().endsWith('TODO'))
     const done = await test.sendJsonHttp('GET', `${routes.userEdit('user0')}?tab=builds&jobs=done`)
     assert.strictEqual(done.status, 200)
@@ -7512,6 +7512,50 @@ it('settings: account and build jobs use separate tabs', async function() {
   }, { canTestNext: true })
 })
 
+it('build jobs tabs select filtered views, counts and pagination from the URL', () => {
+  const React = require('react')
+  const ts = require('typescript')
+  const source = require('fs').readFileSync(require('path').join(__dirname, 'front/BuildJobs.tsx'), 'utf8')
+  const js = ts.transpileModule(source, {
+    compilerOptions: { jsx: ts.JsxEmit.React, module: ts.ModuleKind.CommonJS, esModuleInterop: true },
+  }).outputText
+  let query
+  const exports = {}
+  new Function('require', 'exports', js)(name => {
+    if (name === 'next/router') return { useRouter: () => ({ query }) }
+    if (name === 'front') return Object.fromEntries(['CancelIcon', 'ErrorIcon', 'ListIcon', 'OkIcon'].map(name => [name, () => null]))
+    if (name === 'front/api') return { webApi: {} }
+    if (name === 'front/js') return require('./front/js')
+    if (name === 'front/CustomLink') return ({ href, className, children }) => React.createElement('a', { href, className }, children)
+    if (name === 'front/Pagination') return ({ itemsCount, currentPage }) => React.createElement('div', { id: 'pagination', 'data-count': itemsCount, 'data-page': currentPage })
+    return require(name)
+  }, exports)
+  const counts = { todoCount: 3, doneCount: 40, failedCount: 2, cancelledCount: 30 }
+  for (const username of [undefined, 'user0']) {
+    for (const [view, label] of [['todo', 'TODO'], ['done', 'Done'], ['failed', 'Failed'], ['cancelled', 'Cancelled'], ['invalid', 'TODO']]) {
+      query = { tab: 'builds', jobs: view, page: '3' }
+      const selectedView = view === 'invalid' ? 'todo' : view
+      const baseUrl = username ? routes.userEdit(username) : routes.siteSettings()
+      function Settings() {
+        const buildJobs = exports.useBuildJobs(username)
+        return React.createElement(exports.default, { username, baseUrl, buildJobs: {
+          ...buildJobs, bulkStatus: { ...counts, jobs: [], jobsCount: counts[`${selectedView}Count`] },
+        } })
+      }
+      const html = parse(require('react-dom/server').renderToStaticMarkup(React.createElement(Settings)))
+      const tabs = html.querySelectorAll('.tab-item')
+      assert.deepStrictEqual(tabs.map(tab => tab.text.trim()), ['TODO (3)', 'Done (40)', 'Failed (2)', 'Cancelled (30)'])
+      assert(html.querySelector('.tab-item.active').text.trim().startsWith(label))
+      assert.deepStrictEqual(tabs.map(tab => tab.getAttribute('href')), [
+        `${baseUrl}?tab=builds`, ...['done', 'failed', 'cancelled'].map(view => `${baseUrl}?tab=builds&jobs=${view}`),
+      ])
+      assert.strictEqual(html.querySelectorAll('th').some(cell => cell.text === 'Runtime'), selectedView !== 'todo')
+      assert.strictEqual(html.querySelector('#pagination').getAttribute('data-count'), String(counts[`${selectedView}Count`]))
+      assert.strictEqual(html.querySelector('#pagination').getAttribute('data-page'), '2')
+    }
+  }
+})
+
 it('settings: public site build jobs reuse the settings tabs', async function() {
   if (!testNext) return this.skip()
   await testApp(async test => {
@@ -7521,15 +7565,15 @@ it('settings: public site build jobs reuse the settings tabs', async function() 
     assert.strictEqual(settings.status, 200)
     assert.strictEqual(parse(settings.data).querySelector('#background-uploads'), null)
     assert(parse(settings.data).querySelector('.tab-item.active').text.trim().endsWith('Settings'))
-    for (const view of ['todo', 'done']) {
+    for (const [view, label] of [['todo', 'TODO'], ['done', 'Done'], ['failed', 'Failed'], ['cancelled', 'Cancelled']]) {
       const ret = await test.sendJsonHttp('GET', `${routes.siteSettings()}?tab=builds&jobs=${view}`)
       assert.strictEqual(ret.status, 200)
       const html = parse(ret.data)
       assert.strictEqual(html.querySelectorAll('#background-uploads table.list').length, 1)
       assert.strictEqual(html.querySelector('#background-uploads th').text, 'Username')
-      assert.strictEqual(html.querySelector('#background-uploads tbody td').getAttribute('colspan'), view === 'done' ? '9' : '8')
+      assert.strictEqual(html.querySelector('#background-uploads tbody td').getAttribute('colspan'), view === 'todo' ? '8' : '9')
       assert(html.querySelector('.tab-item.active').text.includes('Build jobs'))
-      assert(html.querySelector('#background-uploads .tab-item.active').text.endsWith(view === 'done' ? 'Done' : 'TODO'))
+      assert(html.querySelector('#background-uploads .tab-item.active').text.endsWith(label))
       assert.strictEqual(html.querySelector('form'), null)
       assert.strictEqual(html.querySelector('#background-uploads button'), null)
     }
@@ -7601,6 +7645,73 @@ it('build history: public jobs include all users without precise timestamps or p
     assert.strictEqual(ret.data.jobs.filter(job => job.error === 'Cancelled due to previous failure').length, 2)
     assert.strictEqual(ret.data.jobs.filter(job => job.error === 'Build cancelled.').length, 1)
     assert(!JSON.stringify(ret.data).includes('Private'))
+  })
+})
+
+it('build history: failed and cancelled filters separate root errors before pagination', async () => {
+  await testApp(async test => {
+    const user = await test.createUserApi(0)
+    const other = await test.createUserApi(1)
+    const { ArticleJob: Job, TreeRebuildJob } = test.sequelize.models
+    const create = (requestId, values) => Job.create({ userId: user.id, requestId, requestHash: 'hash',
+      items: '[]', total: 100, phase: 'check', ...values })
+    const root = await create('root-error', { status: 'failed', completed: 10,
+      finishedAt: new Date('2026-11-04T01:00:00Z'), error: 'Database check failed at private-path. Missing target.' })
+    await create('unknown-error', { status: 'failed', finishedAt: new Date('2026-11-04T00:00:00Z'), error: null })
+    await create('done', { status: 'completed', completed: 100 })
+    await create('waiting', { status: 'waiting' })
+    const cancellations = ['Cancelled due to previous failure', 'Build cancelled.', 'Build stopped after an earlier job failed.']
+    await Job.bulkCreate(Array.from({ length: 25 }, (_, i) => ({
+      userId: user.id, requestId: `cancelled-${i}`, requestHash: 'hash', items: '[]', total: 100,
+      phase: 'render', status: 'failed', error: cancellations[i % cancellations.length],
+      finishedAt: new Date('2026-11-04T02:00:00Z'),
+    })))
+    await TreeRebuildJob.create({ userId: user.id, status: 'failed', error: 'Build cancelled.',
+      finishedAt: new Date('2026-11-04T03:00:00Z') })
+    const treeError = await TreeRebuildJob.create({ userId: other.id, status: 'failed', error: 'Private tree error',
+      finishedAt: new Date('2026-11-04T04:00:00Z') })
+
+    test.disableToken()
+    let ret = await test.webApi.siteJobs({}, { view: 'failed', limit: 1 })
+    assert.strictEqual(ret.status, 200)
+    assert.deepStrictEqual([ret.data.todoCount, ret.data.doneCount, ret.data.failedCount, ret.data.cancelledCount], [1, 30, 3, 26])
+    assert.strictEqual(ret.data.jobsCount, 3)
+    assert.strictEqual(ret.data.jobs[0].id, treeError.id)
+    assert.strictEqual(ret.data.jobs[0].phase, 'tree')
+    assert.strictEqual(ret.data.jobs[0].error, 'Job failed: Tree rebuild failed')
+    ret = await test.webApi.siteJobs({}, { view: 'failed', limit: 1, offset: 1 })
+    assert.strictEqual(ret.data.jobs[0].id, root.id)
+    assert(!JSON.stringify(ret.data).includes('private-path'))
+    ret = await test.webApi.siteJobs({}, { view: 'cancelled', limit: 20, offset: 20 })
+    assert.strictEqual(ret.status, 200)
+    assert.strictEqual(ret.data.jobsCount, 26)
+    assert.strictEqual(ret.data.jobs.length, 6)
+    assert(ret.data.jobs.every(job => job.status === 'cancelled'))
+    assert(ret.data.jobs.every(job => ['Build cancelled.', 'Cancelled due to previous failure'].includes(job.error)))
+
+    test.loginUser(user)
+    ret = await test.webApi.articlesBulkStatus('user0', {}, { view: 'failed', limit: 1 })
+    assert.strictEqual(ret.status, 200)
+    assert.strictEqual(ret.data.jobsCount, 2)
+    assert.strictEqual(ret.data.jobs[0].id, root.id)
+    assert(ret.data.jobs[0].error.includes('private-path'))
+    assert.strictEqual(ret.data.ongoing, true)
+    ret = await test.webApi.articlesBulkStatus('user0', {}, { view: 'cancelled', limit: 1 })
+    assert.strictEqual(ret.status, 200)
+    assert.strictEqual(ret.data.jobsCount, 26)
+    assert.strictEqual(ret.data.jobs[0].phase, 'tree')
+    assert.strictEqual(ret.data.jobs[0].status, 'cancelled')
+    ret = await test.webApi.articlesBulkStatus('user0', {}, { view: 'done', limit: 100 })
+    assert.strictEqual(ret.data.jobsCount, 29)
+    assert.strictEqual(ret.data.jobs.filter(job => job.status === 'cancelled').length, 26)
+    assert.strictEqual(ret.data.jobs.filter(job => job.status === 'failed').length, 2)
+    ret = await test.webApi.articlesBulkStatus('user0', {}, { view: 'cancelled', limit: 0 })
+    assert.strictEqual(ret.data.jobsCount, 26)
+    assert.deepStrictEqual(ret.data.jobs, [])
+    assert.strictEqual((await test.webApi.articlesBulkStatus('user1', {}, { view: 'failed' })).status, 403)
+    assert.strictEqual((await test.webApi.articlesBulkStatus('user0', {}, { view: 'invalid' })).status, 422)
+    // History classification does not change the worker's persisted state.
+    assert.strictEqual(await Job.count({ where: { userId: user.id, status: 'failed' } }), 27)
   })
 })
 
@@ -8610,7 +8721,7 @@ it('build history: ongoing flag includes empty staged builds and updates after c
     const status = view => test.webApi.articlesBulkStatus('user0', {}, { view, limit: 1, offset: 100 })
     assert.strictEqual((await status('todo')).data.ongoing, false)
     const build = await test.sequelize.models.ArticleBuild.create({ id: 'empty-staged-build', userId: user.id })
-    for (const view of ['todo', 'done']) {
+    for (const view of ['todo', 'done', 'failed', 'cancelled']) {
       const ret = await status(view)
       assert.strictEqual(ret.data.jobs.length, 0)
       assert.strictEqual(ret.data.ongoing, true)

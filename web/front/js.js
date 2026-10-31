@@ -345,6 +345,13 @@ function restoreTocState(elem, branches) {
   }
 }
 
+const buildJobViews = ['todo', 'done', 'failed', 'cancelled']
+const buildJobCancellationErrors = [
+  'Build stopped after an earlier job failed.',
+  'Cancelled due to previous failure',
+  'Build cancelled.',
+]
+
 function buildJobPhaseFailure(phase) {
   return { delete: 'Article cleanup failed', extract: 'ID extraction failed', check: 'Database check failed', render: 'Rendering failed', tree: 'Tree rebuild failed' }[phase] || 'Processing failed'
 }
@@ -352,10 +359,9 @@ function buildJobPhaseFailure(phase) {
 function formatBuildJobError(error, phase, showDetails=true) {
   if (!error) return null
   // Recognize the old stored message too; no history migration is needed.
-  if (error === 'Build stopped after an earlier job failed.' || error === 'Cancelled due to previous failure') {
-    return 'Cancelled due to previous failure'
+  if (buildJobCancellationErrors.includes(error)) {
+    return error === 'Build cancelled.' ? error : 'Cancelled due to previous failure'
   }
-  if (error === 'Build cancelled.') return 'Build cancelled.'
   if (!showDetails) return `Job failed: ${buildJobPhaseFailure(phase)}`
   error = error.replace(/^Bulk processing failed(?= at )/, buildJobPhaseFailure(phase))
   return error.startsWith('Job failed') ? error : `Job failed: ${error}`
@@ -388,6 +394,8 @@ module.exports = {
   TRI_ALL,
   TRI_FALSE,
   TRI_TRUE,
+  buildJobViews,
+  buildJobCancellationErrors,
   buildJobPhaseFailure,
   formatBuildJobError,
   captureTocState,

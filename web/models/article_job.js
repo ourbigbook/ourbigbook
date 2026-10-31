@@ -1,5 +1,6 @@
 const { performance } = require('perf_hooks')
 const { DataTypes, Op } = require('sequelize')
+const { buildJobCancellationErrors } = require('../front/js')
 
 const timeoutMs = 20 * 60 * 1000
 
@@ -76,22 +77,32 @@ module.exports = sequelize => {
       (SELECT "id" FROM "ArticleBuild" WHERE "treeJobId" = "TreeRebuildJob"."id" LIMIT 1) AS "buildId", NULL AS "batchIndex", NULL AS "batchCount" FROM "TreeRebuildJob"`
   Job.history = async (userId, { view, limit, offset }) => {
     const userWhere = userId == null ? '1 = 1' : '"userId" = :userId'
-    const where = `${userWhere} AND "status" ${view === 'done' ? '' : 'NOT'} IN ('completed', 'failed')`
-    const order = view === 'done'
-      ? 'COALESCE("finishedAt", "createdAt") DESC, "id" DESC, "kind" ASC'
-      : `CASE "status" WHEN 'running' THEN 0 WHEN 'pending' THEN 1 WHEN 'queued' THEN 2 WHEN 'waiting' THEN 3 ELSE 4 END, "createdAt" ASC, "id" ASC, "kind" ASC`
-    const replacements = { userId, limit, offset }
+    // Cancellations historically share the failed worker state. Classify them
+    // in history without changing the queue's terminal-state semantics.
+    const filters = {
+      todo: `"status" NOT IN ('completed', 'failed')`,
+      done: `"status" IN ('completed', 'failed')`,
+      failed: `"status" = 'failed' AND ("error" IS NULL OR "error" NOT IN (:cancellationErrors))`,
+      cancelled: `"status" = 'failed' AND "error" IN (:cancellationErrors)`,
+    }
+    const where = `${userWhere} AND (${filters[view]})`
+    const order = view === 'todo'
+      ? `CASE "status" WHEN 'running' THEN 0 WHEN 'pending' THEN 1 WHEN 'queued' THEN 2 WHEN 'waiting' THEN 3 ELSE 4 END, "createdAt" ASC, "id" ASC, "kind" ASC`
+      : 'COALESCE("finishedAt", "createdAt") DESC, "id" DESC, "kind" ASC'
+    const replacements = { userId, limit, offset, cancellationErrors: buildJobCancellationErrors }
     const [rows, counts] = await Promise.all([
       sequelize.query(`SELECT * FROM (${Job.historySql}) AS history WHERE ${where} ORDER BY ${order} LIMIT :limit OFFSET :offset`, { replacements, type: sequelize.QueryTypes.SELECT }),
       sequelize.query(`SELECT
-        COUNT(CASE WHEN "status" NOT IN ('completed', 'failed') THEN 1 END) AS "todoCount",
-        COUNT(CASE WHEN "status" IN ('completed', 'failed') THEN 1 END) AS "doneCount"
+        ${Object.entries(filters).map(([name, condition]) =>
+          `COUNT(CASE WHEN ${condition} THEN 1 END) AS "${name}Count"`).join(',\n        ')}
         FROM (${Job.historySql}) AS history WHERE ${userWhere}`, { replacements, type: sequelize.QueryTypes.SELECT }),
     ])
-    const todoCount = Number(counts[0].todoCount)
-    const doneCount = Number(counts[0].doneCount)
-    return { jobs: rows.map(job => ({ ...job, runtimeMs: job.startedAt && job.finishedAt
-      ? Math.max(0, new Date(job.finishedAt) - new Date(job.startedAt)) : null })), jobsCount: view === 'done' ? doneCount : todoCount, todoCount, doneCount }
+    const totals = Object.fromEntries(Object.keys(filters).map(name => [`${name}Count`, Number(counts[0][`${name}Count`])]))
+    return { jobs: rows.map(job => ({ ...job,
+      status: job.status === 'failed' && buildJobCancellationErrors.includes(job.error) ? 'cancelled' : job.status,
+      runtimeMs: job.startedAt && job.finishedAt
+        ? Math.max(0, new Date(job.finishedAt) - new Date(job.startedAt)) : null,
+    })), jobsCount: totals[`${view}Count`], ...totals }
   }
 
   Job.start = async job => {

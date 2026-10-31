@@ -21,7 +21,7 @@ router.get('/jobs', auth.optional, async function(req, res, next) {
   try {
     const { ArticleJob, User } = req.app.get('sequelize').models
     const view = req.query.view || 'todo'
-    if (!['todo', 'done'].includes(view)) throw new ValidationError('Invalid job view', 422)
+    if (!front.buildJobViews.includes(view)) throw new ValidationError('Invalid job view', 422)
     const [limit, offset] = lib.getLimitAndOffset(req, res, { limitMax: 100 })
     const history = await ArticleJob.history(null, { view, limit, offset })
     const loggedInUser = req.payload ? await User.findByPk(req.payload.id, { attributes: ['id', 'admin'] }) : null

@@ -4496,6 +4496,10 @@ function forceLastWordReplace(text, forceLastWord) {
   if (forceLastWord) {
     const words = text.split(PLURALIZE_WORD_SPLIT_REGEX)
     const lastWord = words[words.length - 1]
+    // A title ending in punctuation has no terminal word to replace. In
+    // particular, slice(0, -0) would discard the entire title, turning a link
+    // to "Power iteration (lecture notes)" into a link to just "notes".
+    if (!lastWord.length) return text
     const forceLastWordCap = []
     for (let i = 0; i < forceLastWord.length; i++) {
       const forceLastWordC = forceLastWord[i]

@@ -1,0 +1,66 @@
+#!/usr/bin/env node
+
+// Read-only diagnostics using the existing Heroku CLI login.
+const { spawnSync } = require('child_process')
+const fs = require('fs')
+const os = require('os')
+const path = require('path')
+const { Command, InvalidArgumentError } = require('commander')
+
+const program = new Command()
+  .description('List recent failed article and tree-rebuild jobs with their full stored errors, newest first.')
+  .option('--app <name>', 'Heroku app', 'ourbigbook')
+  .option('-a, --author <username>', 'only show jobs belonging to this author')
+  .option('-n, --limit <count>', 'maximum number of jobs', value => {
+    if (!/^[1-9][0-9]*$/.test(value) || !Number.isSafeInteger(Number(value))) {
+      throw new InvalidArgumentError('must be a positive integer')
+    }
+    return Number(value)
+  }, 20)
+  .option('--include-cancelled', 'also show jobs cancelled by an earlier failure or user action')
+  .parse()
+const opts = program.opts()
+// PostgreSQL escape strings: preserve literal backslashes and quotes in input.
+const literal = value => "E'" + value.replace(/\\/g, '\\\\').replace(/'/g, "''") + "'"
+const sql = `\\set ON_ERROR_STOP on
+\\pset pager off
+\\x on
+BEGIN READ ONLY;
+SET LOCAL statement_timeout = '10s';
+SELECT u."username", j."kind", j."id", j."phase",
+       j."batchIndex" + 1 AS "batch", j."batchCount",
+       j."completed", j."total", j."startedAt", j."finishedAt", j."error"
+FROM (
+  SELECT "userId", 'ArticleJob' AS "kind", "id", "phase", "status",
+         "batchIndex", "batchCount", "completed", "total",
+         "createdAt", "startedAt", "finishedAt", "error"
+  FROM "ArticleJob"
+  UNION ALL
+  SELECT "userId", 'TreeRebuildJob' AS "kind", "id", 'tree' AS "phase", "status",
+         NULL, NULL, NULL, NULL, "createdAt", "startedAt", "finishedAt", "error"
+  FROM "TreeRebuildJob"
+) AS j
+JOIN "User" AS u ON u."id" = j."userId"
+WHERE j."status" = 'failed'
+${opts.author === undefined ? '' : `  AND u."username" = ${literal(opts.author)}\n`}${opts.includeCancelled ? '' : `  AND (j."error" IS NULL OR j."error" NOT IN (
+    'Cancelled due to previous failure',
+    'Build stopped after an earlier job failed.',
+    'Build cancelled.'
+  ))\n`}ORDER BY COALESCE(j."finishedAt", j."createdAt") DESC, j."id" DESC, j."kind" ASC
+LIMIT ${opts.limit};
+COMMIT;
+`
+
+const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'ourbigbook-failed-jobs-'))
+try {
+  const filename = path.join(directory, 'jobs.sql')
+  fs.writeFileSync(filename, sql, { mode: 0o600 })
+  const result = spawnSync('heroku', ['pg:psql', '--app', opts.app, '--file', filename], { stdio: 'inherit' })
+  if (result.error) throw result.error
+  process.exitCode = result.status === null ? 1 : result.status
+} catch (error) {
+  console.error(error.message)
+  process.exitCode = 1
+} finally {
+  fs.rmSync(directory, { recursive: true, force: true })
+}

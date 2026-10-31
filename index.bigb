@@ -10648,6 +10648,22 @@ List all queries that are a currently running on PostgreSQL database.
 
 Useful in the sad cases that our recursive queries go infinite due to bugs.
 
+= web/bin/heroku-failed-jobs
+{parent=OurBigBook Web PostgreSQL utils}
+{file}
+
+Show the latest 20 failed article and tree-rebuild jobs on Heroku, with author, progress, timestamps and full stored error messages:
+``
+web/bin/heroku-failed-jobs
+``
+Filter by author or change the result count:
+``
+web/bin/heroku-failed-jobs --author codex --limit 10
+``
+The helper uses your Heroku CLI login and defaults to the `ourbigbook` app. Use `--app` to select another app. It runs a read-only query and prints one expanded record per job.
+
+Jobs cancelled by an earlier failure or by the user are omitted by default so that they do not obscure the original error. Add `--include-cancelled` to include them.
+
 = OurBigBook Web without Next.js
 {parent=OurBigBook Web development}
 

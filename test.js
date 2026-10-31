@@ -12704,6 +12704,35 @@ for (const [name, input_path, source, expectedLink] of [
     assert.strictEqual(roundTripHtml, originalHtml)
   })
 }
+it('bigb output: scoped plural link preserves a title ending in punctuation on round trip', async () => {
+  const source = `= Home
+
+<numerical-analysis-spring-2022/power-iteration-2022-03-07-lecture-notes>[author attribution]{ref}
+
+== Numerical Analysis, Spring 2022
+{scope}
+
+=== Power iteration (2022-03-07 lecture notes)
+{c}
+`
+  const options = { input_path: 'index.bigb', body_only: true }
+  const before = {}
+  const originalHtml = await ourbigbook.convert(source, options, before)
+  assert.deepStrictEqual(before.errors, [])
+  const linkXpath = '//x:a[@class="ref-trigger" and @href="#numerical-analysis-spring-2022/power-iteration-2022-03-07-lecture-notes"]'
+  assert_xpath(linkXpath, originalHtml)
+  const converted = {}
+  const bigb = await ourbigbook.convert(source, {
+    ...options, output_format: ourbigbook.OUTPUT_FORMAT_OURBIGBOOK,
+  }, converted)
+  assert.deepStrictEqual(converted.errors, [])
+  assert(bigb.includes('<numerical-analysis-spring-2022/Power iteration (2022-03-07 lecture notes)>[author attribution]{ref}'), bigb)
+  const after = {}
+  const roundTripHtml = await ourbigbook.convert(bigb, options, after)
+  assert.deepStrictEqual(after.errors, [])
+  assert_xpath(linkXpath, roundTripHtml)
+})
+
 assert_lib('bigb output: cross-file link to disambiguated filename ID', {
   filesystem: {
     'index.bigb': '= Root\n\nSee <homology>.\n\n\\Include[homology]\n',

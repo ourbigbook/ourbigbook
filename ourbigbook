@@ -2476,7 +2476,9 @@ if (cli.helpMacros) {
     const opts = { throwOnError: true, showCmd: false }
     const source = chomp(runCmd('git', ['-C', ourbigbook_json_dir, 'rev-parse', '--show-toplevel'], opts))
     webSourceRoot = path.resolve(ourbigbook_json_dir)
-    const snapshot = path.join(webSourceRoot, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'publish')
+    // Static publishing cleans _out/publish, including its conversion database.
+    // Keep the reusable Web preparation cache in an independent clean checkout.
+    const snapshot = path.join(webSourceRoot, ourbigbook_nodejs_webpack_safe.TMP_DIRNAME, 'web-publish')
     const project = path.join(snapshot, path.relative(source, webSourceRoot))
     const absoluteInputs = inputPaths.map(p => path.resolve(p))
     for (const p of absoluteInputs) {

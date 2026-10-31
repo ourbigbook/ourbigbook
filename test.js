@@ -16335,7 +16335,7 @@ for (const mode of ['html', 'html-used', 'html-external-used', 'parallel', 'para
   const web = mode === 'web'
   const committed = publish || web
   const firstPath = committed || mode === 'html-external-used' ? '../media-one' : '_media'
-  const output = `wiki/${TMP_DIRNAME}/${publish ? `publish/${TMP_DIRNAME}/github-pages` : web ? `publish/${TMP_DIRNAME}/web` : 'html'}`
+  const output = `wiki/${TMP_DIRNAME}/${publish ? `publish/${TMP_DIRNAME}/github-pages` : web ? `web-publish/${TMP_DIRNAME}/web` : 'html'}`
   const solution = 'subdir/paper/question/solution'
   const mediaOne = `wiki/${firstPath}`
   const relative = target => path.relative(`${output}/subdir/paper/question`, target)
@@ -18348,6 +18348,57 @@ const parallelFilesystem = {
 
 const parallelWebArgs = ['--web', '--web-dry', '--web-user', 'asdf', '--web-password', 'qwer']
 
+assert_cli('web preparation cache survives HTML and Markdown publishes', {
+  args: [...parallelWebArgs, '-j', '1', '.'],
+  timeout: 30000,
+  filesystem: {
+    '.gitignore': '_out/\n',
+    'ourbigbook.json': JSON.stringify({
+      target: { 'github-md': { publishRemoteUrl: 'git@github.com:ourbigbook/docs-md.git' } },
+    }),
+    'index.bigb': '= Home\n\n\\Include[chapter]\n',
+    'chapter.bigb': '= Chapter\n\nCommitted content.\n',
+  },
+  pre_exec: [
+    ...MAKE_GIT_REPO_PRE_EXEC,
+    ['ourbigbook', [...parallelWebArgs, '-j', '1', '.']],
+    ['node', ['-e', `
+      const fs = require('fs')
+      const crypto = require('crypto')
+      const root = '${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}'
+      const files = ['db.sqlite3', 'web/web.sqlite3', 'web/index.bigb', 'web/chapter.bigb']
+      const snapshot = Object.fromEntries(files.map(file => [file, {
+        hash: crypto.createHash('sha256').update(fs.readFileSync(root + '/' + file)).digest('hex'),
+        mtime: fs.statSync(root + '/' + file).mtimeMs,
+      }]))
+      fs.writeFileSync('${TMP_DIRNAME}/web-cache-before.json', JSON.stringify(snapshot))
+    `]],
+    ['ourbigbook', ['--publish', '--dry-run', '-j', '1']],
+    ['ourbigbook', ['--publish', '--publish-target', 'github-md', '--dry-run', '-j', '1']],
+    ['node', ['-e', `
+      const fs = require('fs')
+      const assert = require('assert')
+      const crypto = require('crypto')
+      const root = '${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}'
+      const snapshot = JSON.parse(fs.readFileSync('${TMP_DIRNAME}/web-cache-before.json'))
+      for (const [file, before] of Object.entries(snapshot)) {
+        assert.strictEqual(crypto.createHash('sha256').update(fs.readFileSync(root + '/' + file)).digest('hex'), before.hash, file)
+        assert.strictEqual(fs.statSync(root + '/' + file).mtimeMs, before.mtime, file)
+      }
+    `]],
+  ],
+  assert_stdout_contains: [
+    'extract_ids: index.bigb (skipped by timestamp)',
+    'extract_ids: chapter.bigb (skipped by timestamp)',
+    'render: index.bigb (skipped by timestamp)',
+    'render: chapter.bigb (skipped by timestamp)',
+  ],
+  assert_contains: {
+    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/chapter.bigb`]: ['Committed content.'],
+    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/github-md/chapter.md`]: ['Committed content.'],
+  },
+})
+
 describe('web login storage', function () {
   it('keeps accounts separate and writes private files without exposing malformed tokens', function () {
     const filename = path.join(testdir, 'auth-store', 'auth.json')
@@ -18409,7 +18460,7 @@ WebApi.prototype.req = async function(method, path, opts={}) {
       const auth = path.join(root, TMP_DIRNAME, 'auth.json')
       assert.strictEqual(fs.statSync(auth).mode & 0o777, 0o600)
       assert(!fs.readFileSync(auth, 'utf8').includes('not-stored'))
-      const storage = path.join(root, TMP_DIRNAME, ...(git ? ['publish', TMP_DIRNAME] : []), 'db.sqlite3')
+      const storage = path.join(root, TMP_DIRNAME, ...(git ? ['web-publish', TMP_DIRNAME] : []), 'db.sqlite3')
       const db = await ourbigbook_nodejs_webpack_safe.createSequelize({ storage, logging: false })
       try {
         assert.strictEqual(await db.models.Cli.count(), 0, 'new logins are not stored in the conversion DB')
@@ -18449,7 +18500,7 @@ assert_cli('web local media provider preserves file-relative paths when splittin
   filesystem: relativeLocalMediaFilesystem,
   pre_exec: MAKE_GIT_REPO_PRE_EXEC,
   assert_contains: {
-    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/subdir/paper/question/solution.bigb`]: [
+    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/subdir/paper/question/solution.bigb`]: [
       '\\Image[/subdir/figure.svg]', '\\Image[/figure.svg]', '\\Image[/shared.svg]',
       '\\Image[/subdir/legacy.svg]', '\\Image[/subdir/figure \\[1\\].svg]', '\\Video[/subdir/video.mp4]',
     ],
@@ -18494,7 +18545,7 @@ assert_cli(`web local media root-relative paths match local builds (${mediaPath 
     ],
   },
   assert_contains: {
-    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/subdir/paper/question/solution.bigb`]: ['\\Image[/nested/diagram.svg]\n\n\\Image[/nested/diagram.svg]'],
+    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/subdir/paper/question/solution.bigb`]: ['\\Image[/nested/diagram.svg]\n\n\\Image[/nested/diagram.svg]'],
   },
   assert_stdout_contains: [/web_upload: \d+: nested\/diagram\.svg /],
   assert_stdout_not_contains: ['media/nested/diagram.svg'],
@@ -18541,11 +18592,11 @@ assert_cli(`web committed snapshot ignores working tree changes (${input})`, {
   ],
   assert_stdout_contains: ['Web upload uses committed source:'],
   assert_contains: {
-    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['Committed title', 'Committed content.'],
-    [`${TMP_DIRNAME}/publish/asset.txt`]: ['committed asset'],
+    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/index.bigb`]: ['Committed title', 'Committed content.'],
+    [`${TMP_DIRNAME}/web-publish/asset.txt`]: ['committed asset'],
     'index.bigb': ['Dirty title'],
   },
-  assert_not_exists: [`${TMP_DIRNAME}/web`, `${TMP_DIRNAME}/publish/untracked.bigb`],
+  assert_not_exists: [`${TMP_DIRNAME}/web`, `${TMP_DIRNAME}/web-publish/untracked.bigb`],
 })
 }
 
@@ -18557,17 +18608,17 @@ assert_cli('web committed snapshot refreshes HEAD and preserves cache', {
     ['ourbigbook', [...parallelWebArgs, '.']],
     { filesystem_update: {
       'index.bigb': '= Second commit\n',
-      [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/keep-cache`]: 'keep me',
-      [`${TMP_DIRNAME}/publish/stale.bigb`]: '\\UnknownMacro',
+      [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/keep-cache`]: 'keep me',
+      [`${TMP_DIRNAME}/web-publish/stale.bigb`]: '\\UnknownMacro',
     } },
     ['git', ['add', 'index.bigb']],
     ['git', ['commit', '-m', 'second']],
   ],
   assert_contains: {
-    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['Second commit'],
-    [`${TMP_DIRNAME}/publish/${TMP_DIRNAME}/keep-cache`]: ['keep me'],
+    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/index.bigb`]: ['Second commit'],
+    [`${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/keep-cache`]: ['keep me'],
   },
-  assert_not_exists: [`${TMP_DIRNAME}/publish/stale.bigb`],
+  assert_not_exists: [`${TMP_DIRNAME}/web-publish/stale.bigb`],
 })
 
 assert_cli('web committed snapshot includes committed external local media', {
@@ -18586,7 +18637,7 @@ assert_cli('web committed snapshot includes committed external local media', {
     { filesystem_update: { 'wiki-media/untracked.svg': '<svg/>', 'wiki-media/diagram.svg': 'dirty media' } },
   ],
   assert_contains: {
-    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['\\Image[/diagram.svg]'],
+    [`wiki/${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/index.bigb`]: ['\\Image[/diagram.svg]'],
   },
   assert_stdout_contains: [/web_upload: \d+: diagram\.svg /],
   assert_stdout_not_contains: ['untracked.svg'],
@@ -18621,8 +18672,8 @@ assert_cli('web committed snapshot uses pinned media submodule', {
     ['git', ['-C', '-/media', 'commit', '-m', 'unpinned']],
   ],
   assert_contains: {
-    [`wiki/${TMP_DIRNAME}/publish/-/media/diagram.svg`]: ['<svg>pinned</svg>'],
-    [`wiki/${TMP_DIRNAME}/publish/${TMP_DIRNAME}/web/index.bigb`]: ['\\Image[/diagram.svg]'],
+    [`wiki/${TMP_DIRNAME}/web-publish/-/media/diagram.svg`]: ['<svg>pinned</svg>'],
+    [`wiki/${TMP_DIRNAME}/web-publish/${TMP_DIRNAME}/web/index.bigb`]: ['\\Image[/diagram.svg]'],
   },
   assert_stdout_contains: [/web_upload: \d+: diagram\.svg /],
 })
